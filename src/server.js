@@ -38,7 +38,7 @@ var getGroupManagerDict = function() {
 };
 
 var GroupManagers = getGroupManagerDict(),
-    def = 'basic',
+    def = 'TwoPlayer',
     group = argv.g || def,
     manager = GroupManagers[group.toLowerCase()] || GroupManagers[def];
 
