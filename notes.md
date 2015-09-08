@@ -1,19 +1,5 @@
 # Misc NetsBlocks/Snap notes
 ## Snap cloud storage API
-+ I am reverse engineering the Snap! server
-
-+ API names
-    + saveProject
-    + cancelAccount
-    + changePassword
-    + deleteProject
-    + getProject
-    + getProjectList
-    + logout
-    + login
-    + publishProject
-    + unpublishProject
-
 + I need to update the "SnapCloud" name to "netsblox"
 
 + I need to add some tests for sign in, etc
@@ -104,17 +90,55 @@
 + Create a testing framework/hooks for Snap 
     + Created one for the server-side logic
 
-+ Create a testing framework/hooks for Snap 
++ Create the `RPC` blocks (REST `API`)
+    + These can be created with the block creator in Snap from http request blocks
+        + Need http request blocks that support custom params
+            + username should be implicit
+
+            + reportURL should be extended to support args
+
+            + How should these look?
+                + How should I represent a key-value store?
+                    + Like blockly, I can create a key-value object then support a 
+                        list of them in the http request
+
+            + I can actually do all of this with the current blocks.
+                + EXCEPT programmatically retrieving the username...
+                    + nvm
+
+    + I should be able to make these blocks almost, if not entirely, with the current blocks
+    + I need to be able to get the `JS` function to evaluate correctly
+        + It keeps printing it's source
+
+    + I think creating these `RPC` calls using other blocks is probably the best choice
+        + This will allow the students to incrementally edit/adjust/etc the blocks to 
+            remove the scaffolding
+
+    + Can I make this seamless to the end user? Otherwise I might still need to define 
+        them in the source...
 
 + Message type checking
 
-## Adding websocket support
+## Adding WebSocket support
 I will probably want to have a couple methods for handling websocket communication:
 + Registering/opening a socket
 + Sending a message
 + Closing a socket (when not running the script)
 
 ## Finished To do/Fix me!
++ I am reverse engineering the Snap! server
+    + API names
+        + saveProject
+        + cancelAccount
+        + changePassword
+        + deleteProject
+        + getProject
+        + getProjectList
+        + logout
+        + login
+        + publishProject
+        + unpublishProject
+
 + Create network messages for Snap
     + How can the `receiveSocketMessage` hat receive the content sent?
         + Can I create a variable context and pass it with the block?
