@@ -163,6 +163,7 @@ SpriteMorph.prototype.categories =
         'operators',
         'pen',
         'variables',
+        'network',
         'lists',
         'other'
     ];
@@ -176,6 +177,7 @@ SpriteMorph.prototype.blockColor = {
     sensing : new Color(4, 148, 220),
     operators : new Color(98, 194, 19),
     variables : new Color(243, 118, 29),
+    network : new Color(217, 77, 17),
     lists : new Color(217, 77, 17),
     other: new Color(150, 150, 150)
 };
@@ -605,12 +607,12 @@ SpriteMorph.prototype.initBlocks = function () {
         // WebSockets
         doRegisterClient: {  // for use with the generic group manager
             type: 'command',
-            category: 'control',
+            category: 'network',
             spec: 'register as %role'
         },
         doSocketDisconnect: {
             type: 'command',
-            category: 'control',
+            category: 'network',
             spec: 'unregister'
         },
         receiveSocketEvent: {
@@ -620,12 +622,12 @@ SpriteMorph.prototype.initBlocks = function () {
         },
         doSocketEvent: {
             type: 'command',
-            category: 'control',
+            category: 'network',
             spec: 'broadcast event %socketMsg'
         },
         doSocketMessage: {
             type: 'command',
-            category: 'control',
+            category: 'network',
             spec: 'broadcast msg %socketMsg %mult%s'
         },
         receiveSocketMessage: {
@@ -905,9 +907,21 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: '%att of %spr',
             defaults: [['costume #']]
         },
+        // Creating URL block with params
+        //param: {
+            //type: 'reporter',
+            //category: 'network',
+            //spec: 'name: %s value: %s'
+        //},
+        callRPC: {
+            type: 'reporter',
+            category: 'network',
+            spec: 'call %s with %s',
+            defaults: ['tictactoe']
+        },
         reportURL: {
             type: 'reporter',
-            category: 'sensing',
+            category: 'network',
             spec: 'http:// %s',
             defaults: ['snap.berkeley.edu']
         },
@@ -1911,11 +1925,6 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(watcherToggle('getLastMessage'));
         blocks.push(block('getLastMessage'));
         blocks.push('-');
-        blocks.push(block('doRegisterClient'));
-        blocks.push(block('doSocketEvent'));
-        blocks.push(block('doSocketDisconnect'));
-        blocks.push(block('doSocketMessage'));
-        blocks.push('-');
         blocks.push(block('doWarp'));
         blocks.push('-');
         blocks.push(block('doWait'));
@@ -1959,6 +1968,17 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doPauseAll'));
 
+    } else if (cat === 'network') {
+        // TODO: Move these later to other categories
+        blocks.push(block('doRegisterClient'));
+        blocks.push(block('doSocketEvent'));
+        blocks.push(block('doSocketDisconnect'));
+        blocks.push(block('doSocketMessage'));
+        blocks.push('-');
+        blocks.push(block('reportURL'));
+        blocks.push(block('callRPC'));
+        //blocks.push(block('param'));
+        blocks.push('-');
     } else if (cat === 'sensing') {
 
         blocks.push(block('reportTouchingObject'));
@@ -1984,8 +2004,6 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getTimer'));
         blocks.push('-');
         blocks.push(block('reportAttributeOf'));
-        blocks.push('-');
-        blocks.push(block('reportURL'));
         blocks.push('-');
         blocks.push(block('reportIsFastTracking'));
         blocks.push(block('doSetFastTracking'));
@@ -5586,8 +5604,8 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('reportAttributeOf'));
         blocks.push('-');
-        blocks.push(block('reportURL'));
-        blocks.push('-');
+        //blocks.push(block('reportURL'));
+        //blocks.push('-');
         blocks.push(block('reportIsFastTracking'));
         blocks.push(block('doSetFastTracking'));
         blocks.push('-');

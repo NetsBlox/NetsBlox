@@ -5,7 +5,8 @@ var express = require('express'),
     _ = require('lodash'),
     Utils = _.extend(require('./Utils'), require('./ServerUtils.js')),
     R = require('ramda'),
-    NetsBlocksServer = require('./NetsBlocksServer'),
+    CommunicationManager = require('./groups/CommunicationManager'),
+    RPCManager = require('./rpc/RPCManager'),
     MongoClient = require('mongodb').MongoClient,
     ObjectID = require('mongodb').ObjectID,
     API = require('./UserAPI.js'),
@@ -16,7 +17,12 @@ var express = require('express'),
         mongoURI: 'mongodb://localhost:27017'
     },
     key = process.env.SECRET_KEY || 'change this',
-    hash = require('./client/sha512').hex_sha512,
+    hash = require('../client/sha512').hex_sha512,
+
+    // Logging
+    debug = require('debug'),
+    log = debug('NetsBlocks:API:log'),
+    info = debug('NetsBlocks:API:info'),
 
     // Session and cookie info
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
@@ -25,29 +31,35 @@ var express = require('express'),
 
 var Server = function(opts) {
     opts = _.extend({}, DEFAULT_OPTIONS, opts);
-    NetsBlocksServer.call(this, opts);
     this._port = opts.port;
     this.app = express();
 
-    // Connect to mongo
+    // Mongo variables
     this._users = null;
     this._server = null;
-    MongoClient.connect(opts.mongoURI, function(err, db) {
+    this._mongoURI = opts.mongoURI;
+
+    // Group and RPC Managers
+    this.groupManager = new CommunicationManager(opts);
+    this.rpcManager = new RPCManager(this.groupManager);
+};
+
+Server.prototype.connectToMongo = function(callback) {
+    MongoClient.connect(this._mongoURI, function(err, db) {
         if (err) {
             throw err;
         }
 
         this._users = db.collection('users');
         this.configureRoutes();
-        console.log('Connected to '+opts.mongoURI);
-        if (this.onComplete) {
-            this.start(this.onComplete);
-        }
+
+        console.log('Connected to '+this._mongoURI);
+        callback(err);
     }.bind(this));
 };
 
 Server.prototype.configureRoutes = function() {
-    this.app.use(express.static(__dirname + '/client/'));
+    this.app.use(express.static(__dirname + '/../client/'));
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({
         extended: true
@@ -62,11 +74,7 @@ Server.prototype.configureRoutes = function() {
         res.redirect('/snap.html');
     });
 
-    // TODO: Storage endpoints
-    //this.app.all('/api', function(req, res) {
-        //console.log('req:', req);
-    //});
-
+    // TODO: Move this to a subrouter
     this.app.get('/api/ResetPW', function(req, res) {
         console.log('password reset request:', req.query.Username);
         // Change the password
@@ -85,7 +93,6 @@ Server.prototype.configureRoutes = function() {
             tmpPassword = 'password';
 
         this._users.findOne({username: uname}, function(e, user) {
-            console.log('User is:', user, '('+uname+')');
             if (!user) {
                 // Default password is "password". Change this to update password
                 // and email it to the user 
@@ -97,15 +104,15 @@ Server.prototype.configureRoutes = function() {
 
                 this.emailPassword(newUser, tmpPassword);
                 this._users.insert(newUser, function (err, result) {
-                                   // FIXME: Change password to something meaningful
                     if (err) {
                         return res.serverError(err);
                     }
+                    log('Created new user: "'+uname+'"');
                     return res.sendStatus(200);
                 });
                 return;
             }
-            console.log('User exists');
+            log('User "'+uname+'" already exists. Could not make new user.');
             return res.status(401).send('ERROR: user exists');
         }.bind(this));
     }.bind(this));
@@ -125,7 +132,12 @@ Server.prototype.configureRoutes = function() {
     }.bind(this));
 
     // Add User API routes (routes requiring logged in user)
+    // I would make this a sub router but the client expects the structure
+    // TODO: There may still be a better way to do this
     API.forEach(this.addAPIRoute.bind(this));
+
+    // Add RPC routes
+    this.app.use('/rpc', this.rpcManager.router);
 };
 
 Server.prototype.addAPIRoute = function(api) {
@@ -138,20 +150,17 @@ Server.prototype.emailPassword = function(user, password) {
     // TODO
 };
 
-_.extend(Server.prototype, NetsBlocksServer.prototype);
-
 Server.prototype.start = function(done) {
     done = done || Utils.nop;
-    if (this._users) {
+    this.connectToMongo(function (err) {
         this._server = this.app.listen(this._port, done);
-        NetsBlocksServer.prototype.start.call(this);
-    }
-    this.onComplete = done;
+        this.groupManager.start();
+    }.bind(this));
 };
 
 Server.prototype.stop = function(done) {
     done = done || Utils.nop;
-    NetsBlocksServer.prototype.stop.call(this);
+    this.groupManager.stop();
     this._server.close(done);
 };
 
