@@ -10,9 +10,9 @@ var BaseParadigm = require('./Basic.js'),
     Utils = require('../../Utils.js'),
     assert = require('assert'),
     _debug = require('debug'),
-    log = _debug('NetsBlocks:GroupManager:log'),
-    info = _debug('NetsBlocks:GroupManager:info'),
-    debug = _debug('NetsBlocks:GroupManager:debug'),
+    log = _debug('NetsBlox:GroupManager:log'),
+    info = _debug('NetsBlox:GroupManager:info'),
+    debug = _debug('NetsBlox:GroupManager:debug'),
     R = require('ramda'),
     COUNT = 0;
 

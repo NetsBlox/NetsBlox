@@ -10,8 +10,8 @@ var PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'Media
     // Logging
     // TODO: change this to winston or something with forking
     debug = require('debug'),
-    log = debug('NetsBlocks:API:log'),
-    info = debug('NetsBlocks:API:info');
+    log = debug('NetsBlox:API:log'),
+    info = debug('NetsBlox:API:info');
 
 var createProject = function(info) {
     var project = R.pick(PROJECT_FIELDS, info);

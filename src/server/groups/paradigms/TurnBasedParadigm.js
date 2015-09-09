@@ -10,9 +10,9 @@ var TwoPlayerParadigm = require('./TwoPlayerParadigm'),
     Utils = require('../../Utils.js'),
     assert = require('assert'),
     _debug = require('debug'),
-    log = _debug('NetsBlocks:GroupManager:log'),
-    info = _debug('NetsBlocks:GroupManager:info'),
-    debug = _debug('NetsBlocks:GroupManager:debug'),
+    log = _debug('NetsBlox:GroupManager:log'),
+    info = _debug('NetsBlox:GroupManager:info'),
+    debug = _debug('NetsBlox:GroupManager:debug'),
     R = require('ramda');
 
 var getId = R.partialRight(Utils.getAttribute, 'id');

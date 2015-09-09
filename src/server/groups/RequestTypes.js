@@ -1,6 +1,6 @@
 'use strict';
 var debug = require('debug');
-var log = debug('NetsBlocks:RequestTypes:log');
+var log = debug('NetsBlox:RequestTypes:log');
 var Requests = {
         /**
          * Register the socket's role.

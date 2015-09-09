@@ -21,8 +21,8 @@ var express = require('express'),
 
     // Logging
     debug = require('debug'),
-    log = debug('NetsBlocks:API:log'),
-    info = debug('NetsBlocks:API:info'),
+    log = debug('NetsBlox:API:log'),
+    info = debug('NetsBlox:API:info'),
 
     // Session and cookie info
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
