@@ -36,7 +36,7 @@ modules.cloud = '2015-January-12';
 
 var Cloud;
 var SnapCloud = new Cloud(
-    'http://localhost:8080/api/'  // FIXME: Set this intelligently
+    'http://localhost:8080'  // FIXME: Set this intelligently
 );
 
 // Cloud /////////////////////////////////////////////////////////////

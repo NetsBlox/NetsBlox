@@ -6,6 +6,12 @@ var supertest = require('supertest'),
     port = 8493,
     api = supertest('http://localhost:'+port+'/api'),  // https?
     Server = require('../../src/server/Server'),
+
+    _ = require('lodash'),
+    basicRoutes = require('../../src/server/routes/BasicRoutes'),
+    userRoutes = require('../../src/server/routes/Users'),
+    DefaultGameTypes = require('../../src/server/routes/GameTypes'),
+
     not = function(checkCode) {
         return function(v) {
             assert(checkCode !== +v.statusCode);
@@ -29,27 +35,12 @@ describe('Server Storage Tests', function() {
 
     describe('SignUp tests', function() {
         // FIXME: Unauthorized stream readable error
-        it.skip('should exist', function(done) {
-            api.get('/SignUp?Username='+username+'&Email='+email)
-                .expect(not(404))
-                .end(done);
-        });
     });
 
     describe('Reset Password tests', function() {
-        it('should exist', function(done) {
-            api.get('/ResetPW?Username='+username)
-                .expect(not(404))
-                .end(done);
-        });
     });
 
     describe('login tests', function() {
-        it('should exist', function(done) {
-            api.post('/')
-                .expect(403)
-                .end(done);
-        });
 
         it.skip('should return API details', function(done) {
             var key = process.env.SECRET_KEY || 'change this',
@@ -68,19 +59,52 @@ describe('Server Storage Tests', function() {
     });
 
     describe('unregister tests', function() {
-        it.skip('should exist', function(done) {
-            api.post('/Goodbye')
-                .expect(200)
-                .end(done);
+    });
+
+    // Check that all routes exist
+    var verifyExists = function(route) {
+        var endpoint = route.URL,
+            method = route.Method.toLowerCase();
+
+        it('should have endpoint '+endpoint, function(done) {
+            api[method](endpoint)
+                .end(function(err, result) {
+                    assert(result.status !== 404);
+                    done();
+                });
+        });
+    };
+
+    describe('Existence tests', function() {
+        var routes = userRoutes.concat(basicRoutes);
+        routes.forEach(verifyExists);
+    });
+
+    describe('Game Types', function() {
+        describe('/', function() {
+            it('should return the default game types', function(done) {
+                api.get('/GameTypes')
+                    .end(function(err, result) {
+                        assert(result.status !== 404);
+                        assert(_.matches(result.body, DefaultGameTypes));
+                        done();
+                    });
+            });
         });
     });
 
     describe('SignUp tests', function() {
+
+        it('should require both username and password', function(done) {
+            api.get('/SignUp?Username='+username)
+                .end(function(result) {
+                    assert.equal(result.status, 400);
+                    done();
+                });
+        });
+
         it.skip('should create user account /SignUp', function(done) {
         });
-    });
-
-    describe('SignUp tests', function() {
     });
 
     describe('Static function tests', function() {

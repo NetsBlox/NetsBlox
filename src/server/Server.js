@@ -1,24 +1,19 @@
-// TODO: Refactor this file 
 'use strict';
 var express = require('express'),
     bodyParser = require('body-parser'),
     _ = require('lodash'),
     Utils = _.extend(require('./Utils'), require('./ServerUtils.js')),
-    R = require('ramda'),
     CommunicationManager = require('./groups/CommunicationManager'),
     RPCManager = require('./rpc/RPCManager'),
     MongoClient = require('mongodb').MongoClient,
-    ObjectID = require('mongodb').ObjectID,
-    API = require('./UserAPI.js'),
-    EXTERNAL_API = R.map(R.partial(R.omit,['Handler']), API),
     DEFAULT_OPTIONS = {
         port: 8080,
         path: '',
         mongoURI: 'mongodb://localhost:27017'
     },
-    key = process.env.SECRET_KEY || 'change this',
-    hash = require('../client/sha512').hex_sha512,
 
+    // Routes
+    createRouter = require('./CreateRouter'),
     // Logging
     debug = require('debug'),
     log = debug('NetsBlox:API:log'),
@@ -69,81 +64,14 @@ Server.prototype.configureRoutes = function() {
     this.app.use(cookieParser());
     this.app.use(expressSession({secret: sessionSecret}));
 
+    // Add routes
+    this.app.use('/rpc', this.rpcManager.router);
+    this.app.use('/api', createRouter.call(this));
+
     // Initial page
     this.app.get('/', function(req, res) {
         res.redirect('/snap.html');
     });
-
-    // TODO: Move this to a subrouter
-    this.app.get('/api/ResetPW', function(req, res) {
-        console.log('password reset request:', req.query.Username);
-        // Change the password
-        // TODO
-        // Look up the email
-        // TODO
-        // Email the user the temporary password
-        // TODO
-        res.sendStatus(200);
-    });
-
-    this.app.get('/api/SignUp', function(req, res) {
-        console.log('Sign up request:', req.query.Username, req.query.Email);
-        var uname = req.query.Username,
-            email = req.query.Email,
-            tmpPassword = 'password';
-
-        this._users.findOne({username: uname}, function(e, user) {
-            if (!user) {
-                // Default password is "password". Change this to update password
-                // and email it to the user 
-                // FIXME
-                var newUser = {username: uname, 
-                               email: email,
-                               hash: hash(tmpPassword),
-                               projects: []};
-
-                this.emailPassword(newUser, tmpPassword);
-                this._users.insert(newUser, function (err, result) {
-                    if (err) {
-                        return res.serverError(err);
-                    }
-                    log('Created new user: "'+uname+'"');
-                    return res.sendStatus(200);
-                });
-                return;
-            }
-            log('User "'+uname+'" already exists. Could not make new user.');
-            return res.status(401).send('ERROR: user exists');
-        }.bind(this));
-    }.bind(this));
-
-    this.app.post('/api', function(req, res) {
-        this._users.findOne({username: req.body.__u, hash: req.body.__h}, function(e, user) {
-            if (e) {
-                return res.serverError(e);
-            }
-            if (user) {  // Sign in 
-                req.session.username = req.body.__u;
-                return res.send(Utils.serializeArray(EXTERNAL_API));
-            }
-
-            return res.sendStatus(403);
-        }.bind(this));
-    }.bind(this));
-
-    // Add User API routes (routes requiring logged in user)
-    // I would make this a sub router but the client expects the structure
-    // TODO: There may still be a better way to do this
-    API.forEach(this.addAPIRoute.bind(this));
-
-    // Add RPC routes
-    this.app.use('/rpc', this.rpcManager.router);
-};
-
-Server.prototype.addAPIRoute = function(api) {
-    // TODO: Add an authentication step (check the cookie)
-    var method = api.Method.toLowerCase();
-    this.app[method]('/api/'+api.URL, api.Handler.bind(this));
 };
 
 Server.prototype.emailPassword = function(user, password) {

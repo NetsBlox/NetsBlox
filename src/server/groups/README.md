@@ -1,6 +1,9 @@
-# Communication Paradigms
+# Groups
 *Groups* are created to manage the scope of network communication between NetsBlox apps. These group managers represent different methods for creating and managing these groups and the messaging between members of the group. I will refer to these different communication assumptions and rules as different *messaging paradigms*.
 
+When using RPC's, groups also define the clients who share an RPC context. For example, in the TicTacToe RPC, the clients sharing a group also share a board state.
+
+# Communication Paradigms
 Some examples of messaging paradigms are as follows:
 + **Basic**- All messages are shared among all other players in a single group
 + **Two Player**- Players are placed into groups of 2 which then share messages
