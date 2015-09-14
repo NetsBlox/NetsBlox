@@ -12,6 +12,10 @@ var express = require('express'),
         mongoURI: 'mongodb://localhost:27017'
     },
 
+    // Mailer
+    nodemailer = require('nodemailer'),
+    transporter = nodemailer.createTransport(),  // TODO: Change to smtp
+
     // Routes
     createRouter = require('./CreateRouter'),
     // Logging
@@ -75,7 +79,14 @@ Server.prototype.configureRoutes = function() {
 };
 
 Server.prototype.emailPassword = function(user, password) {
-    // TODO
+    transporter.sendMail({
+        from: 'no-reply@netsblox.com',
+        to: user.email,
+        subject: 'Temporary Password',
+        text: 'Hello '+user.username+',\nYour NetsBlox password has been '+
+            'temporarily set to '+password+'. Please change it after '+
+            'logging in.'
+    });
 };
 
 Server.prototype.start = function(done) {
