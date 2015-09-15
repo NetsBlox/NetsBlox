@@ -428,7 +428,6 @@ Cloud.prototype.changePassword = function (
 };
 
 Cloud.prototype.cancelAccount = function (callBack, errorCall) {
-    this.clear();
     this.callService(
         'cancelAccount',
         callBack,
