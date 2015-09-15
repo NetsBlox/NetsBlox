@@ -148,6 +148,14 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
 };
 
 WebSocketManager.prototype.destroy = function () {
+    if (this.websocket.readyState === this.websocket.OPEN) {
+        this._destroy();
+    } else {
+        this.websocket.onopen = this._destroy.bind(this);
+    }
+};
+
+WebSocketManager.prototype._destroy = function () {
     this.websocket.onclose = nop;
     this.websocket.close();
 };

@@ -54,6 +54,11 @@
     + Also, check that it works in the database
 
 # Additional features
++ "respond" block for messages to allow communication between people?
+
++ Drag and drop invalid blocks to other actors (Snap bug)
+
+## Finished
 + Client reconnect should update paradigm
     FIXED
 
@@ -64,13 +69,10 @@
     FIXED
 
 + Clients not leaving groups correctly
-
-+ "respond" block for messages to allow communication between people?
+    FIXED
 
 + It keeps creating new sockets...
     + I don't think the sockets are being closed on the client
     + There are duplicates from the `onclose` being executed when websockets.destroy is called
     FIXED
-
-+ Drag and drop invalid blocks to other actors (Snap bug)
 
