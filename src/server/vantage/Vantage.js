@@ -19,10 +19,9 @@ banner = ['\n'+
     .join('\n');
 
 var NetsBloxVantage = function(server) {
-    console.log('process.env.DEBUG: "'+ process.env.DEBUG+'"');
     this.initGroupManagement(server);
 
-    // set DEBUG level
+    // set DEBUG level FIXME
     vantage
         .command('debug <level>', 'Set the debug level')
         .action(function(args, cb) {

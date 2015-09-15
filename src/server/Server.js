@@ -6,7 +6,7 @@ var express = require('express'),
     CommunicationManager = require('./groups/CommunicationManager'),
     RPCManager = require('./rpc/RPCManager'),
     MongoClient = require('mongodb').MongoClient,
-    Vantage = require('./Vantage'),
+    Vantage = require('./vantage/Vantage'),
     DEFAULT_OPTIONS = {
         port: 8080,
         path: '',

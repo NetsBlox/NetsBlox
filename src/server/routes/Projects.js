@@ -110,14 +110,18 @@ module.exports = [
                 if (e) {
                     return res.serverError(e);
                 }
-                // Get the projects
-                var projects = R.map(R.partial(R.pick,LIST_FIELDS), user.projects);
-                info('Projects for '+username +' are '+JSON.stringify(
-                    R.map(R.partialRight(Utils.getAttribute, 'ProjectName'),
-                        projects)
-                    )
-                );
-                return res.send(Utils.serializeArray(projects));
+                if (user) {
+                    // Get the projects
+                    user.projects = user.projects || [];
+                    var projects = R.map(R.partial(R.pick,LIST_FIELDS), user.projects);
+                    info('Projects for '+username +' are '+JSON.stringify(
+                        R.map(R.partialRight(Utils.getAttribute, 'ProjectName'),
+                            projects)
+                        )
+                    );
+                    return res.send(Utils.serializeArray(projects));
+                }
+                return res.status(404);
             });
         }
     },

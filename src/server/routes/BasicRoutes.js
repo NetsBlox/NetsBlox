@@ -61,7 +61,7 @@ module.exports = [
             var self = this,
                 uname = req.query.Username,
                 email = req.query.Email,
-                tmpPassword = 'password';
+                tmpPassword = generateRandomPassword();
 
             // Must have an email and username
             if (!email || !uname) {
