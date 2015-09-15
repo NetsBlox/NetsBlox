@@ -14,17 +14,21 @@ var BaseParadigm = require('./Basic.js'),
     debug = require('debug'),
     log = debug('NetsBlox:CommunicationManager:Paradigms:Sandbox:log'),
     info = debug('NetsBlox:CommunicationManager:Paradigms:Sandbox:info'),
+    assert = require('assert'),
     groups = [],
     count = 0;
 
 var SandboxParadigm = function() {
+    BaseParadigm.call(this);
 };
 
 Utils.inherit(SandboxParadigm.prototype, BaseParadigm.prototype);
 
-SandboxParadigm.prototype.getName = function() {
+SandboxParadigm.getName = function() {
     return 'Sandbox';
 };
+
+SandboxParadigm.prototype.getName = SandboxParadigm.getName;
 
 /**
  * Return arrays of sockets grouped by their groups.
@@ -67,6 +71,7 @@ SandboxParadigm.prototype.getGroupId = function(socket) {
 
 SandboxParadigm.prototype.onConnect = function(socket) {
     groups.push({id: count++, user: socket});
+    this.memberCount++;
 };
 
 /**
@@ -91,6 +96,8 @@ SandboxParadigm.prototype.onDisconnect = function(socket) {
         this.notifyGroupClose(socket);
         index = groups.indexOf(group);
         groups.splice(index,1);
+        this.memberCount--;
+        assert(this.memberCount >= 0);
     }
 };
 

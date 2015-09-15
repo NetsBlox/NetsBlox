@@ -453,6 +453,12 @@ SnapSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
             true
         );
     }
+
+    project.stage.setGameType({
+        name: model.stage.attributes['game-type'],
+        paradigm: model.stage.attributes['game-paradigm']
+    });
+
     this.loadObject(project.stage, model.stage);
 
     /* Sprites */
@@ -1437,6 +1443,7 @@ StageMorph.prototype.toXML = function (serializer) {
             '<thumbnail>$</thumbnail>' +
             '<stage name="@" width="@" height="@" ' +
             'costume="@" tempo="@" threadsafe="@" ' +
+            'game-type="@" game-paradigm="@" ' +
             'lines="@" ' +
             'codify="@" ' +
             'inheritance="@" ' +
@@ -1465,6 +1472,8 @@ StageMorph.prototype.toXML = function (serializer) {
         this.getCostumeIdx(),
         this.getTempo(),
         this.isThreadSafe,
+        this.gameType.name || localize('None'),
+        this.gameType.paradigm || localize('sandbox'),
         SpriteMorph.prototype.useFlatLineEnds ? 'flat' : 'round',
         this.enableCodeMapping,
         this.enableInheritance,

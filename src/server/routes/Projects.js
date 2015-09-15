@@ -5,7 +5,7 @@ var PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'Media
     R = require('ramda'),
     parseXml = require('xml2js').parseString,
     _ = require('lodash'),
-    Utils = _.extend(require('./Utils'), require('./ServerUtils.js')),
+    Utils = _.extend(require('../Utils'), require('../ServerUtils.js')),
 
     debug = require('debug'),
     log = debug('NetsBlox:API:Projects:log'),
@@ -221,6 +221,6 @@ module.exports = [
     }
 ].map(function(api) {
     // Set the URL to be the service name
-    api.URL = '/'+api.Service;
+    api.URL = api.Service;
     return api;
 });

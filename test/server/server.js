@@ -63,10 +63,12 @@ describe('Server Storage Tests', function() {
 
     // Check that all routes exist
     var verifyExists = function(route) {
-        var endpoint = route.URL,
+        var endpoint = '/'+route.URL,
             method = route.Method.toLowerCase();
 
         it('should have endpoint '+endpoint, function(done) {
+            console.log('method:', method);
+            console.log('endpoint:', endpoint);
             api[method](endpoint)
                 .end(function(err, result) {
                     assert(result.status !== 404);

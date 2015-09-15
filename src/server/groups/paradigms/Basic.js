@@ -10,13 +10,17 @@
 // assigning the role)
 'use strict';
 
-var globalGroup = [];
+var assert = require('assert');
 var BasicParadigm = function() {
+    this.globalGroup = [];  // TODO: Move this elsewhere
+    this.memberCount = 0;
 };
 
-BasicParadigm.prototype.getName = function() {
+BasicParadigm.getName = function() {
     return 'Basic';
 };
+
+BasicParadigm.prototype.getName = BasicParadigm.getName;
 
 BasicParadigm.prototype.getDescription = function() {
     // TODO
@@ -29,7 +33,7 @@ BasicParadigm.prototype.getDescription = function() {
  * @return {undefined}
  */
 BasicParadigm.prototype.getAllGroups = function() {
-    return globalGroup.slice();
+    return [this.globalGroup.slice()];
 };
 
 /**
@@ -39,11 +43,12 @@ BasicParadigm.prototype.getAllGroups = function() {
  * @return {undefined}
  */
 BasicParadigm.prototype.getGroupMembersToMessage = function(socket) {
-    return globalGroup.slice();
+    return this.globalGroup.slice();
 };
 
 BasicParadigm.prototype.getGroupMembers = function(socket) {
-    return globalGroup.filter(function(s) { 
+    assert(this.globalGroup instanceof Array);
+    return this.globalGroup.filter(function(s) { 
         return s !== socket;
     });
 };
@@ -59,7 +64,9 @@ BasicParadigm.prototype.getGroupId = function(socket) {
 };
 
 BasicParadigm.prototype.onConnect = function(socket) {
-    globalGroup.push(socket);
+    assert(this.globalGroup instanceof Array);
+    this.globalGroup.push(socket);
+    this.memberCount++;
 };
 
 /**
@@ -78,8 +85,13 @@ BasicParadigm.prototype.onMessage = function(socket, message) {
 };
 
 BasicParadigm.prototype.onDisconnect = function(socket) {
-    var i = globalGroup.indexOf(socket);
-    globalGroup.splice(i,1);
+    assert(this.globalGroup instanceof Array);
+    var i = this.globalGroup.indexOf(socket);
+    this.globalGroup.splice(i,1);
+    this.memberCount--;
+
+    assert(this.globalGroup instanceof Array);
+    assert(this.memberCount >= 0);
 };
 
 /**

@@ -6,6 +6,7 @@
 var R = require('ramda'),
     debug = require('debug'),
     log = debug('NetsBlox:RPCManager:TicTacToe:log'),
+    trace = debug('NetsBlox:RPCManager:TicTacToe:trace'),
     info = debug('NetsBlox:RPCManager:TicTacToe:info');
 
 /**
@@ -90,6 +91,10 @@ TicTacToeRPC.prototype.play = function(req, res) {
         open = this.board[row][column] === null,
         isOnBoard = [row, column].every(this.isValidPosition.bind(this));
 
+    trace('"'+username+'" is trying to play at '+row+','+column+'. Board is \n'+
+        this.board.map(function(row) {
+            return row.join(' ');
+    }));
     // Check that...
 
     // ...the game is still going
@@ -110,6 +115,7 @@ TicTacToeRPC.prototype.play = function(req, res) {
     if (open) {
         this.board[row][column] = username;
         this.winner = TicTacToeRPC.getWinner(this.board);
+        trace('"'+username+'" successfully played at '+row+','+column);
         return res.status(200).send(true);
     }
     return res.status(400).send(false);

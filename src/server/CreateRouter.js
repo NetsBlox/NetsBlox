@@ -17,7 +17,8 @@ var createRouter = function() {
     routes.forEach(function(api) {
         // TODO: Add an authentication step to user routes (check the cookie)
         var method = api.Method.toLowerCase();
-        router.route(api.URL)[method](api.Handler.bind(self));
+        console.log('adding "'+method+'" to /'+api.URL);
+        router.route('/'+api.URL)[method](api.Handler.bind(self));
     });
     return router;
 };

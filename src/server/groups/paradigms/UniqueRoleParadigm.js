@@ -15,6 +15,7 @@ var BaseParadigm = require('./Basic.js'),
     COUNT = 0;
 
 var UniqueRoleParadigm = function() {
+    BaseParadigm.call(this);
     // A group is a hash map of role names to ids
     this.groups = [];
     this.globalGroup = this._createNewGroup();
@@ -28,9 +29,11 @@ var UniqueRoleParadigm = function() {
 Utils.inherit(UniqueRoleParadigm.prototype, BaseParadigm.prototype);
 
 // Public API
-UniqueRoleParadigm.prototype.getName = function() {
+UniqueRoleParadigm.getName = function() {
     return 'UniqueRole';
 };
+
+UniqueRoleParadigm.prototype.getName = UniqueRoleParadigm.getName;
 
 /**
  * Get the group id given the username
@@ -81,6 +84,7 @@ UniqueRoleParadigm.prototype.onConnect = function(socket) {
     this.id2Socket[id] = socket;
     this.id2Role[id] = 'default_'+id;  // Unique default role
 
+    this.memberCount++;
     this._addClientToGroup(socket, this.globalGroup);
 };
 
@@ -133,6 +137,8 @@ UniqueRoleParadigm.prototype.onDisconnect = function(socket) {
     if (group !== undefined) {
         // Remove role from group
         this._removeClientFromGroup(id, role);
+        this.memberCount--;
+        assert(this.memberCount >= 0);
     }
  
 };

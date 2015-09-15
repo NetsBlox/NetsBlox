@@ -6,6 +6,7 @@ var express = require('express'),
     CommunicationManager = require('./groups/CommunicationManager'),
     RPCManager = require('./rpc/RPCManager'),
     MongoClient = require('mongodb').MongoClient,
+    Vantage = require('./Vantage'),
     DEFAULT_OPTIONS = {
         port: 8080,
         path: '',
@@ -41,6 +42,7 @@ var Server = function(opts) {
     // Group and RPC Managers
     this.groupManager = new CommunicationManager(opts);
     this.rpcManager = new RPCManager(this.groupManager);
+
 };
 
 Server.prototype.connectToMongo = function(callback) {
@@ -94,6 +96,8 @@ Server.prototype.start = function(done) {
     this.connectToMongo(function (err) {
         this._server = this.app.listen(this._port, done);
         this.groupManager.start();
+        // Enable Vantage
+        new Vantage(this).start();
     }.bind(this));
 };
 

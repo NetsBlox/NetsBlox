@@ -4800,6 +4800,8 @@ StageMorph.prototype.init = function (globals) {
     this.tempo = 60; // bpm
     this.lastMessage = '';
 
+    this.gameType = {};
+
     this.watcherUpdateFrequency = 2;
     this.lastWatcherUpdate = Date.now();
 
@@ -5076,6 +5078,13 @@ StageMorph.prototype.changeTempo = function (delta) {
 
 StageMorph.prototype.getTempo = function () {
     return +this.tempo;
+};
+
+// StageMorph Game Type
+StageMorph.prototype.setGameType = function (gameType) {
+    // Update the server
+    this.sockets.setGameType(gameType);
+    return this.gameType = gameType;
 };
 
 // StageMorph messages

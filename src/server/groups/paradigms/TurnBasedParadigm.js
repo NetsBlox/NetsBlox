@@ -22,9 +22,11 @@ var TurnBasedParadigm = function() {
 
 Utils.inherit(TurnBasedParadigm.prototype, TwoPlayerParadigm.prototype);
 
-TurnBasedParadigm.prototype.getName = function() {
+TurnBasedParadigm.getName = function() {
     return 'TurnBased';
 };
+
+TurnBasedParadigm.prototype.getName = TurnBasedParadigm.getName;
 
 TurnBasedParadigm.prototype.isMessageAllowed = function(socket, message) {
     var group = this.id2Group[socket.id],

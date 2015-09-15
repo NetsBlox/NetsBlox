@@ -55,8 +55,9 @@ describe('NetsBlocksServer tests', function() {
 
             it('should use sandbox by default', function(done) {
                 setTimeout(function() {
-                    var id = server.uuid2Socket[uuid].id;
-                    assert(server.socket2Paradigm[id].getName(), 'Sandbox');
+                    var socket = server.uuid2Socket[uuid],
+                        paradigm = server.paradigmManager.getParadigmInstance(socket);
+                    assert(paradigm.getName(), 'Sandbox');
                     done();
                 }, 200);
             });
@@ -64,8 +65,9 @@ describe('NetsBlocksServer tests', function() {
             it('should change the paradigm with "paradigm"', function(done) {
                 socket.send('paradigm uniquerole');
                 setTimeout(function() {
-                    var id = server.uuid2Socket[uuid].id;
-                    assert(server.socket2Paradigm[id].getName(), 'UniqueRole');
+                    var socket = server.uuid2Socket[uuid],
+                        paradigm = server.paradigmManager.getParadigmInstance(socket);
+                    assert(paradigm.getName(), 'UniqueRole');
                     done();
                 }, 200);
             });
@@ -79,13 +81,13 @@ describe('NetsBlocksServer tests', function() {
                         newUuid = msg.split(' ').pop();
                         setTimeout(function() {
                             var expectedParadigms = ['UniqueRole', 'Sandbox'];
-                            [uuid, newUuid].map(function(username) {
-                                var id = server.uuid2Socket[username].id;
-                                // Get the paradigm
-                                return server.socket2Paradigm[id];
+                            [uuid, newUuid].map(function(uuid) {
+                                var socket = server.uuid2Socket[uuid],
+                                    paradigm = server.paradigmManager.getParadigmInstance(socket);
+                                return paradigm.getName();
                             })
                             .forEach(function(paradigm, index) {
-                                assert.equal(paradigm.getName(), expectedParadigms[index]);
+                                assert.equal(paradigm, expectedParadigms[index]);
                             });
                             done();
                         }, 200);
@@ -191,7 +193,6 @@ describe('NetsBlocksServer tests', function() {
                     };
 
                 s2.on('message', function(msg) {
-                    console.log('<< Received:', msg);
                     if(msg.indexOf('leave leaveSocket') !== -1) {
                         done();
                     }
@@ -231,6 +232,158 @@ describe('NetsBlocksServer tests', function() {
             });
 
         });
+
+        describe('GroupTypes', function() {
+            var uuid;
+
+            var getNewSocketAndId = function(gameType, callback) {
+                var socket = new WebSocket(host);
+                socket.on('open', function() {
+                    socket.send('paradigm basic');
+                    socket.send('gameType '+gameType);
+                    socket.on('message', function(message) {
+                        var data = message.split(' '),
+                            type = data.shift(),
+                            body = data.join(' ');
+
+                        if (type === 'uuid') {
+                            return callback([socket, body]);
+                        }
+                    });
+                });
+            };
+
+            before(function(done) {
+                server = new NetsBlocks();
+                server.start();
+                getNewSocketAndId('game1', function(info) {
+                    socket = info[0];
+                    uuid = info[1];
+                        done();
+                    //});
+                });
+            });
+
+            after(function() {
+                server.stop();
+            });
+
+            it.skip('should update player game type', function(done) {
+                var newGameType = 'MyNewGame';
+                socket.send('gameType '+newGameType);
+                setTimeout(function() {
+                    var socketId = server.uuid2Socket[uuid].id,
+                        gameType = server.paradigmManager.socket2GameType[socketId];
+                    assert(gameType === newGameType);
+                    done();
+                }, 100);
+            });
+
+            it.skip('should add player to paradigm instance', function() {
+                var newGameType = 'MyNewGame',
+                    socket = server.uuid2Socket[uuid],
+                    oldParadigm = server.paradigmManager.getParadigmInstance(socket);
+
+                assert.notEqual(oldParadigm.globalGroup.indexOf(socket), -1);
+            });
+
+            describe('switch paradigmInstances', function() {
+                var oldParadigm;
+
+                before(function(done) {
+                    var newGameType = 'MyNewGame',
+                        socket = server.uuid2Socket[uuid];
+
+                    oldParadigm = server.paradigmManager.getParadigmInstance(socket);
+                    socket.send('paradigm basic');
+                    socket.send('gameType '+newGameType);
+                    setTimeout(done, 100);
+                });
+
+                it.skip('should remove player from old paradigm', function() {
+                    var socket = server.uuid2Socket[uuid];
+                    assert.equal(oldParadigm.globalGroup.indexOf(socket), -1);
+                });
+
+                it.skip('should add player to new paradigm instance', function(done) {
+                    console.log('STARTING TEST');
+                    var paradigm = server.paradigmManager.getParadigmInstance(socket);
+                    console.log('FINISHING TEST');
+                    assert.notEqual(paradigm.globalGroup.indexOf(socket), -1);
+                });
+
+            });
+
+
+            describe.skip('multi-socket', function() {
+                var newSocket,
+                    newUuid;
+
+                before(function(done) {
+                    getNewSocketAndId('game2', function(info) {
+                        newSocket = info[0];
+                        newUuid = info[1];
+                        done();
+                    });
+                });
+
+                it.skip('should group players by game type', function() {
+                    [uuid, newUuid]
+                        .map(server.getGroupId.bind(server))
+                        .reduce(assert.notEqual.bind(assert));
+                });
+
+                it.skip('should place each person in only one group', function() {
+                    var sockets = [uuid, newUuid]
+                        .map(function(uuid) {
+                            var socket = server.uuid2Socket[uuid];
+                            return server.paradigmManager.getParadigmInstance(socket)
+                                .getAllGroups();
+                        })
+                        .reduce(function(prev, curr) {
+                            return prev.concat(curr);
+                        })
+                        .map(function(socket) {
+                            return socket.id;
+                        });
+
+                     var groups = server.paradigmManager.gameTypeRooms;
+                     for (var gameType in groups) {
+                         for (var paradigm in groups[gameType]) {
+                            console.log(gameType+'/'+paradigm+': '+
+                            groups[gameType][paradigm].getAllGroups().map(function(socket) {
+                                return socket.id;
+                            }));
+                         }
+                     }
+
+                     console.log('sockets:', sockets);
+                     assert.equal(R.uniq(sockets).length, sockets.length);
+                });
+
+                it.skip('should place players in different groups', function() {
+                    var paradigms = [uuid, newUuid]
+                        .map(function(uuid) {
+                            var socket = server.uuid2Socket[uuid];
+                            return server.paradigmManager.getParadigmInstance(socket);
+                        });
+                        //.reduce(assert.notEqual.bind(assert));
+
+                    console.log('paradigms:', paradigms.map(function(p) {
+                        return p.getAllGroups().map(function(group) {
+                            return group.id;
+                        });
+                    }));
+                    //assert.equal(members.length, 0);
+                    //newSocket.on('message', function(msg) {
+                        //console.log('RECEIVED: ', msg);
+                        //assert.equal(msg.indexOf('hey!'), -1);
+                    //});
+                    //socket.send('message hey!');
+                    //setTimeout(done, 200);
+                });
+            });
+        });
     });
 
 });
@@ -255,7 +408,6 @@ describe('GroupManager Testing', function() {
     var createOnStart = function(socketCount, cb) {
         var count = 0;
         return function() {
-            console.log('socket connected!');
             if (++count === socketCount) {
                 cb();
             }
@@ -351,7 +503,6 @@ describe('GroupManager Testing', function() {
 
             setTimeout(function() {
                 var groups = usernames.map(server.getGroupId.bind(server));
-                console.log('groups:', groups);
                 assert.notEqual(groups[1],groups[2]);
                 assert(groups[0] === groups[2] || groups[0] === groups[1]);
                 done();
@@ -384,10 +535,6 @@ describe('GroupManager Testing', function() {
             sockets[1].send('register hey2');
         });
 
-        it.skip('should group players by game id', function(done) {
-            // TODO
-        });
-
     });
 
     describe('2 player tests', function() {
@@ -410,8 +557,7 @@ describe('GroupManager Testing', function() {
                     // Testing logic
                     var groups = usernames.map(server.getGroupId.bind(server));
                     assert.equal(R.uniq(groups).length, 2, 'Incorrect number of groups. '+
-                        'Expected 2 but found '+R.uniq(groups).length+'.\n'+
-                        JSON.stringify(server.paradigms.twoplayer._printableGroups()));
+                        'Expected 2 but found '+R.uniq(groups).length+'.');
                     done();
                 };
 

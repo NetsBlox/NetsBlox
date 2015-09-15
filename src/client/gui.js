@@ -75,6 +75,7 @@ modules.gui = '2015-July-28';
 // Declarations
 
 var IDE_Morph;
+var GameTypeDialogMorph;
 var ProjectDialogMorph;
 var SpriteIconMorph;
 var CostumeIconMorph;
@@ -543,6 +544,7 @@ IDE_Morph.prototype.createControlBar = function () {
         stopButton,
         pauseButton,
         startButton,
+        networkButton,
         projectButton,
         settingsButton,
         stageSizeButton,
@@ -686,6 +688,31 @@ IDE_Morph.prototype.createControlBar = function () {
     this.controlBar.add(pauseButton);
     this.controlBar.pauseButton = pauseButton; // for refreshing
 
+    // networkButton
+    // TODO
+    button = new PushButtonMorph(
+        this,
+        'toggleNetwork',
+        new SymbolMorph('flag', 14)
+    );
+    button.corner = 12;
+    button.color = colors[0];
+    button.highlightColor = colors[1];
+    button.pressColor = colors[2];
+    button.labelMinExtent = new Point(36, 18);
+    button.padding = 0;
+    button.labelShadowOffset = new Point(-1, -1);
+    button.labelShadowColor = colors[1];
+    button.labelColor = new Color(0, 200, 0);
+    button.contrast = this.buttonContrast;
+    button.drawNew();
+    // button.hint = 'start green\nflag scripts';
+    button.fixLayout();
+
+    networkButton = button;
+    this.controlBar.add(networkButton);
+    this.controlBar.networkButton = networkButton;
+
     // startButton
     button = new PushButtonMorph(
         this,
@@ -782,7 +809,7 @@ IDE_Morph.prototype.createControlBar = function () {
 
     this.controlBar.fixLayout = function () {
         x = this.right() - padding;
-        [stopButton, pauseButton, startButton].forEach(
+        [stopButton, pauseButton, startButton, networkButton].forEach(
             function (button) {
                 button.setCenter(myself.controlBar.center());
                 button.setRight(x);
@@ -792,7 +819,7 @@ IDE_Morph.prototype.createControlBar = function () {
         );
 
         x = Math.min(
-            startButton.left() - (3 * padding + 2 * stageSizeButton.width()),
+            networkButton.left() - (3 * padding + 2 * stageSizeButton.width()),
             myself.right() - StageMorph.prototype.dimensions.x *
                 (myself.isSmallStage ? myself.stageRatio : 1)
         );
@@ -1710,6 +1737,10 @@ IDE_Morph.prototype.refreshPalette = function (shouldIgnorePosition) {
     if (!shouldIgnorePosition) {
         this.palette.contents.setTop(oldTop);
     }
+};
+
+IDE_Morph.prototype.toggleNetwork = function () {
+    this.stage.sockets.toggleNetwork();
 };
 
 IDE_Morph.prototype.pressStart = function () {
@@ -2919,6 +2950,58 @@ IDE_Morph.prototype.newProject = function () {
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
+    // This isn't called on the first open of the page. FIXME
+    this.promptGameType();
+};
+
+IDE_Morph.prototype.promptGameType = function () {
+    var myself = this,
+        world = this.world(),
+        gameTypeList,
+        listField,
+        selected,
+        dialog = new DialogBoxMorph().withKey('gameType'),
+        body = new AlignmentMorph('column', this.padding);
+
+    gameTypeList = JSON.parse(this.getURL(baseURL + 'api/GameTypes'));
+    selected = gameTypeList[0];  // Highlight the first thing
+
+    dialog.ok = function() {
+        myself.stage.setGameType(selected);
+        DialogBoxMorph.prototype.ok.call(this);
+    };
+
+    // Create the list field
+    listField = new ListMorph(
+        gameTypeList,
+        gameTypeList.length > 0 ?
+            function(element) {
+                return element.name;
+            } : null,
+        null,
+        function() {dialog.ok();}
+    );
+
+    listField.action = function(item) {
+        selected = item;
+    };
+
+    listField.setWidth(120);
+    listField.setHeight(50);
+    listField.activateIndex(0);
+    body.add(listField);
+
+    dialog.labelString = 'Select Game Type';
+    dialog.createLabel();
+
+    dialog.addBody(body);
+
+    // Buttons
+    dialog.addButton('ok', 'Get started!');
+
+    dialog.fixLayout();
+    dialog.drawNew();
+    dialog.popUp(world);
 };
 
 IDE_Morph.prototype.save = function () {
@@ -4371,6 +4454,62 @@ IDE_Morph.prototype.prompt = function (message, callback, choices, key) {
         choices
     );
 };
+
+// FIXME
+// GameTypeDialogMorph ////////////////////////////////////////////////////
+
+// GameTypeDialogMorph inherits from DialogBoxMorph:
+//GameTypeDialogMorph.prototype = new DialogBoxMorph();
+//GameTypeDialogMorph.prototype.constructor = GameTypeDialogMorph;
+//GameTypeDialogMorph.uber = DialogBoxMorph.prototype;
+
+//// GameTypeDialogMorph instance creation:
+
+//function GameTypeDialogMorph(ide, label) {
+    //this.init(ide, label);
+//}
+
+//GameTypeDialogMorph.prototype.init = function (ide, task) {
+    //var myself = this;
+
+    //// additional properties:
+    //this.ide = ide;
+    //this.task = task || 'open'; // String describing what do do (open, save)
+    //this.source = ide.source || 'local'; // or 'cloud' or 'examples'
+    //this.projectList = []; // [{name: , thumb: , notes:}]
+
+    //this.handle = null;
+    //this.srcBar = null;
+    //this.nameField = null;
+    //this.listField = null;
+    //this.preview = null;
+    //this.notesText = null;
+    //this.notesField = null;
+    //this.deleteButton = null;
+    //this.shareButton = null;
+    //this.unshareButton = null;
+
+    //// initialize inherited properties:
+    //GameTypeDialogMorph.uber.init.call(
+        //this,
+        //this, // target
+        //null, // function
+        //null // environment
+    //);
+
+    //// override inherited properites:
+    //this.labelString = this.task === 'save' ? 'Save Project' : 'Open Project';
+    //this.createLabel();
+    //this.key = 'project' + task;
+
+    //// build contents
+    //this.buildContents();
+    //this.onNextStep = function () { // yield to show "updating" message
+        //myself.setSource(myself.source);
+    //};
+//};
+
+// TODO: Finish this
 
 // ProjectDialogMorph ////////////////////////////////////////////////////
 

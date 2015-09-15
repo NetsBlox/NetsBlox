@@ -1,8 +1,9 @@
 'use strict';
 var R = require('ramda'),
     Utils = require('../ServerUtils.js'),
-    API = require('./Users'),
-    EXTERNAL_API = R.map(R.partial(R.omit,['Handler']), API),
+    UserAPI = require('./Users'),
+    ProjectAPI = require('./Projects'),
+    EXTERNAL_API = R.map(R.partial(R.omit,['Handler']), UserAPI.concat(ProjectAPI)),
     GameTypes = require('./GameTypes'),
 
     debug = require('debug'),
@@ -15,7 +16,7 @@ var generateRandomPassword = randomString.bind(null, 8);
 module.exports = [
     { 
         Method: 'get', 
-        URL: '/ResetPW',
+        URL: 'ResetPW',
         Handler: function(req, res) {
             log('password reset request:', req.query.Username);
             var self = this,
@@ -54,7 +55,7 @@ module.exports = [
     },
     { 
         Method: 'get', 
-        URL: '/SignUp',
+        URL: 'SignUp',
         Handler: function(req, res) {
             log('Sign up request:', req.query.Username, req.query.Email);
             var self = this,
@@ -94,7 +95,7 @@ module.exports = [
     },
     { 
         Method: 'post', 
-        URL: '/',
+        URL: '',
         Handler: function(req, res) {
             this._users.findOne({username: req.body.__u, hash: req.body.__h}, function(e, user) {
                 if (e) {
@@ -115,7 +116,7 @@ module.exports = [
     // Add game types query
     { 
         Method: 'get', 
-        URL: '/GameTypes',
+        URL: 'GameTypes',
         Handler: function(req, res) {
             return res.status(200).json(GameTypes);
         }

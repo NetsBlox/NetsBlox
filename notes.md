@@ -32,6 +32,12 @@
 + Blocks for Comments?
 
 + Creating Microservices and RPC's?
+    + RPC's are done
+    + Microservices could be created from allowing the user to write a server in the 
+        block code... This code could then be hosted by the server in /containers or
+        /microservices
+
+        + It will need to be properly sandboxed
 
 + Creating a `Cordova` project
     + GUI
@@ -78,18 +84,31 @@
     + How do we call the atomic process methods from the `SpriteMorph`?
 
 ## Fix me!
-+ Should I implement the DDP protocol?
-    + They have a library for it
++ Communication Manager should group by game type
+    + Use a "none" catchall for any project without a game type
+        + Much like the wild west :)
 
-+ I need server side grouping by project id
-    + How can I get the project id on the client?
-        + Is it in the `globalVariables` variable?
-    + Should I move the Websocket manager?
+    + The communication manager will create 
+    + Added endpoint for index of all game types
+        + Later, I will need to move them to a DB
+
++ I need to be able to view the game types in the client
+    + Added index endpoint on the server
+    + (Select and store also)
+
++ Storing the game type info
+    + I can store the game type in the project
+        + and paradigm
+
++ Stateless RPC support
 
 ## To Do
 + Create a testing framework/hooks for Snap 
     + Created one for the server-side logic
 
++ Message type checking
+
+## Finished To do/Fix me!
 + Create the `RPC` blocks (REST `API`)
     + These can be created with the block creator in Snap from http request blocks
         + Need http request blocks that support custom params
@@ -117,15 +136,8 @@
     + Can I make this seamless to the end user? Otherwise I might still need to define 
         them in the source...
 
-+ Message type checking
+    + DONE - I created a basic RPC block and then composed the tictactoe specific blocks from it
 
-## Adding WebSocket support
-I will probably want to have a couple methods for handling websocket communication:
-+ Registering/opening a socket
-+ Sending a message
-+ Closing a socket (when not running the script)
-
-## Finished To do/Fix me!
 + I am reverse engineering the Snap! server
     + API names
         + saveProject
@@ -244,4 +256,10 @@ I will probably want to have a couple methods for handling websocket communicati
 + Close the web sockets when the project changes...
     + Close the web sockets when the project changes...
     DONE
+
+## Adding WebSocket support
+I will probably want to have a couple methods for handling websocket communication:
++ Registering/opening a socket
++ Sending a message
++ Closing a socket (when not running the script)
 

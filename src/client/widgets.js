@@ -2502,6 +2502,11 @@ DialogBoxMorph.prototype.fixLayout = function () {
     }
 
     if (this.label) {
+        w = this.label.width() + this.padding * 2;  // TODO: Contribute this back...
+        if (this.width() < w) {
+            this.silentSetWidth(w);
+        }
+
         this.label.setCenter(this.center());
         this.label.setTop(this.top() + (th - this.label.height()) / 2);
     }

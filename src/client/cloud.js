@@ -36,7 +36,7 @@ modules.cloud = '2015-January-12';
 
 var Cloud;
 var SnapCloud = new Cloud(
-    'http://localhost:8080'  // FIXME: Set this intelligently
+    'http://localhost:8080/api/'  // FIXME: Set this intelligently
 );
 
 // Cloud /////////////////////////////////////////////////////////////
@@ -253,7 +253,6 @@ Cloud.prototype.login = function (
     errorCall
 ) {
     // both callBack and errorCall are two-argument functions
-    console.log('password:', password);
     var request = new XMLHttpRequest(),
         usr = JSON.stringify({'__h': password, '__u': username}),
         myself = this;

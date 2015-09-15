@@ -28,9 +28,11 @@ var TwoPlayerParadigm = function() {
 
 Utils.inherit(TwoPlayerParadigm.prototype, BaseParadigm.prototype);
 
-TwoPlayerParadigm.prototype.getName = function() {
+TwoPlayerParadigm.getName = function() {
     return 'TwoPlayer';
 };
+
+TwoPlayerParadigm.prototype.getName = TwoPlayerParadigm.getName;
 
 /**
  * Get the group id given the username
@@ -69,6 +71,7 @@ TwoPlayerParadigm.prototype.onMessage = function(socket) {
 
 TwoPlayerParadigm.prototype.onConnect = function(socket) {
     this._addToGroup(socket);
+    this.memberCount++;
 };
 
 TwoPlayerParadigm.prototype.onDisconnect = function(socket) {
@@ -77,6 +80,8 @@ TwoPlayerParadigm.prototype.onDisconnect = function(socket) {
         peer;
 
     info('Removing #'+socket.id+' from '+TwoPlayerParadigm._printGroup(group));
+    this.memberCount--;
+    assert(this.memberCount >= 0);
 
     // Remove the given group and add the other socket back to a group
     // TODO: This could cause problems as this means the RPC context will be 

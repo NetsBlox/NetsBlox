@@ -66,6 +66,6 @@ module.exports = [
     ]
     .map(function(api) {
         // Set the URL to be the service name
-        api.URL = '/'+api.Service;
+        api.URL = api.Service;
         return api;
     });

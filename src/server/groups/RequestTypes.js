@@ -16,7 +16,7 @@ var Requests = {
         },
 
         /**
-         * Change the paradigm. 
+         * Change the paradigm with in the given GameType.
          *
          * @param {WebSocket} socket
          * @param {Array<String>} msg
@@ -24,31 +24,27 @@ var Requests = {
          */
         paradigm: function(socket, msg) {
             // Set the paradigm for this message
-            var name = msg.shift().toLowerCase();
-            if (this.paradigms[name]) {
+            var name = msg.shift();
+            if (this.paradigmManager.isValidParadigm(name)) {
                 // Leave the current paradigm
-                this.leaveParadigm(socket);
+                this.leaveParadigmInstance(socket);
+
                 // Join the new one
-                this.joinParadigm(socket, this.paradigms[name]);
-                console.log('moved '+socket.id+' to '+this.paradigms[name].getName());
+                this.joinParadigmInstance(socket, null, name);
+                log('Moved '+socket.id+' to '+name);
                 return;
             }
             // TODO: Log an error
         },
 
-        /**
-         * Record the username for the WebSocket.
-         *
-         * @param {WebSocket} socket
-         * @param {Array<String>} msg
-         * @return {undefined}
-         */
-        //username: function(socket, msg) {
-            //// Set the username for the socket
-            //var username = msg.join(' ');
-            //this.socket2Username[socket.id] = username;
-            //this.username2Socket[username] = socket;
-        //},
+        gameType: function(socket, msg) {
+            var name = msg.join(' ');
+
+            this.leaveParadigmInstance(socket);
+            this.joinParadigmInstance(socket, name, null);
+            log('Moved '+socket.id+' to game type: '+name);
+            // TODO: Log an error
+        },
 
         /**
          * Message to be emitted to the user's peers wrt the given paradigm.
@@ -62,7 +58,7 @@ var Requests = {
                 peers,
                 paradigm;
             // broadcast the message, role to all peers
-            paradigm = this.socket2Paradigm[socket.id];
+            paradigm = this.paradigmManager.getParadigmInstance(socket);
             role = this.socket2Role[socket.id];
             msg.push(role);
             log('About to broadcast '+msg.join(' ')+

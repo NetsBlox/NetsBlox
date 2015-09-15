@@ -19,6 +19,30 @@
 		<script type="text/javascript" src="locale.js"></script>
 		<script type="text/javascript" src="cloud.js"></script>
 		<script type="text/javascript" src="sha512.js"></script>
+    <!-- Make sure to remove this in production -->
+    <!-- include it above the </body> tag -->
+<script>
+/*    var ws;
+    function socket() {
+        ws = new WebSocket("ws://127.0.0.1:9001");
+        ws.onmessage = function ( e ) {
+            var data = JSON.parse(e.data);
+            if ( data.r ) {
+                location.reload();
+            }
+        };
+    }
+    setInterval(function () {
+        if ( ws ) {
+            if ( ws.readyState !== 1 ) {
+                socket();
+            }
+            } else {
+            socket();
+        }
+    }, 1000);
+    */
+</script> 
 		<script type="text/javascript">
 			var world;
 			window.onload = function () {
