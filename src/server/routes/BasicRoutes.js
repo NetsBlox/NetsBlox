@@ -9,7 +9,10 @@ var R = require('ramda'),
     debug = require('debug'),
     log = debug('NetsBlox:API:log'),
     hash = require('../../client/sha512').hex_sha512,
-    randomString = require('just.randomstring');
+    randomString = require('just.randomstring'),
+    fs = require('fs'),
+    path = require('path'),
+    COSTUMES_PATH = path.join(__dirname, '..', '..', 'client', 'Costumes');
 
 var generateRandomPassword = randomString.bind(null, 8);
 
@@ -110,6 +113,24 @@ module.exports = [
                 log('Could not find user "'+req.body.__u+'"');
 
                 return res.sendStatus(403);
+            });
+        }
+    },
+    // Costumes
+    { 
+        Method: 'get', 
+        URL: 'Costumes',
+        Handler: function(req, res) {
+            // Load the costumes and create rough HTML content...
+            fs.readdir(COSTUMES_PATH, function(err, costumes) {
+                if (err) {
+                    return res.send(err);
+                }
+
+                var result = costumes.map(function(costume) {
+                    return '<a href="'+costume+'">'+costume+'</a><br/>';
+                }).join('\n');
+                return res.send(result);
             });
         }
     },
