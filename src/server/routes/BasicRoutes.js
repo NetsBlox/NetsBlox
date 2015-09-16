@@ -12,7 +12,8 @@ var R = require('ramda'),
     randomString = require('just.randomstring'),
     fs = require('fs'),
     path = require('path'),
-    COSTUMES_PATH = path.join(__dirname, '..', '..', 'client', 'Costumes');
+    COSTUMES_PATH = path.join(__dirname, '..', '..', 'client', 'Costumes'),
+    SOUNDS_PATH = path.join(__dirname, '..', '..', 'client', 'Sounds');
 
 var generateRandomPassword = randomString.bind(null, 8);
 
@@ -129,6 +130,24 @@ module.exports = [
 
                 var result = costumes.map(function(costume) {
                     return '<a href="'+costume+'">'+costume+'</a><br/>';
+                }).join('\n');
+                return res.send(result);
+            });
+        }
+    },
+    // Sounds
+    { 
+        Method: 'get', 
+        URL: 'Sounds',
+        Handler: function(req, res) {
+            // Load the costumes and create rough HTML content...
+            fs.readdir(SOUNDS_PATH, function(err, sounds) {
+                if (err) {
+                    return res.send(err);
+                }
+
+                var result = sounds.map(function(sound) {
+                    return '<a href="'+sound+'">'+sound+'</a><br/>';
                 }).join('\n');
                 return res.send(result);
             });
