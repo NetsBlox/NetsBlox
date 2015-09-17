@@ -689,12 +689,26 @@ IDE_Morph.prototype.createControlBar = function () {
     this.controlBar.pauseButton = pauseButton; // for refreshing
 
     // networkButton
-    // TODO
     button = new PushButtonMorph(
         this,
         'toggleNetwork',
-        new SymbolMorph('flag', 14)
+        new SymbolMorph('networkOff', 16)
     );
+    // Change symbolmorph on click
+    button.setIconTo = function(symbolName) {
+        this.labelString = new SymbolMorph(symbolName, 16);
+        this.createLabel();
+    };
+
+    button.trigger = function() {
+        var newSymbol = 'networkOff';
+        if (this.label.name === 'networkOff') {
+            newSymbol = 'networkOn';
+        }
+        this.setIconTo(newSymbol);
+        PushButtonMorph.prototype.trigger.call(this);
+    };
+
     button.corner = 12;
     button.color = colors[0];
     button.highlightColor = colors[1];
@@ -703,10 +717,9 @@ IDE_Morph.prototype.createControlBar = function () {
     button.padding = 0;
     button.labelShadowOffset = new Point(-1, -1);
     button.labelShadowColor = colors[1];
-    button.labelColor = new Color(0, 200, 0);
+    button.labelColor = new Color(100, 100, 250);
     button.contrast = this.buttonContrast;
     button.drawNew();
-    // button.hint = 'start green\nflag scripts';
     button.fixLayout();
 
     networkButton = button;
@@ -2968,6 +2981,9 @@ IDE_Morph.prototype.promptGameType = function () {
 
     dialog.ok = function() {
         myself.stage.setGameType(selected);
+        // Set the button to connected
+        myself.controlBar.networkButton.setIconTo('networkOn');
+        myself.controlBar.networkButton.fixLayout();
         DialogBoxMorph.prototype.ok.call(this);
     };
 

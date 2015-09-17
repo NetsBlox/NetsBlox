@@ -8242,6 +8242,10 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
         return this.drawSymbolPause(canvas, aColor);
     case 'flag':
         return this.drawSymbolFlag(canvas, aColor);
+    case 'networkOn':
+        return this.drawSymbolNetworkOn(canvas, aColor);
+    case 'networkOff':
+        return this.drawSymbolNetworkOff(canvas, aColor);
     case 'octagon':
         return this.drawSymbolOctagon(canvas, aColor);
     case 'cloud':
@@ -8605,6 +8609,53 @@ SymbolMorph.prototype.drawSymbolFlag = function (canvas, color) {
         w,
         h * 0.5
     );
+    ctx.stroke();
+
+    return canvas;
+};
+
+SymbolMorph.prototype.drawSymbolNetworkOn = function (canvas, color) {
+    var ctx = canvas.getContext('2d'),
+        w = canvas.width,
+        l = Math.max(w / 12, 1),
+        h = canvas.height,
+        arcWidth = h / 4;
+
+    ctx.lineWidth = l;
+    ctx.strokeStyle = color.toString();
+    ctx.fillStyle = color.toString();
+
+    // Draw center circle
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, arcWidth, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Inner arcs
+    arcWidth = h / 2.2;
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, arcWidth, 2 * Math.PI / 3, 4 * Math.PI / 3);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, arcWidth, 5 * Math.PI / 3, Math.PI / 3, false);
+    ctx.stroke();
+
+    return canvas;
+};
+
+SymbolMorph.prototype.drawSymbolNetworkOff = function (canvas, color) {
+    this.drawSymbolNetworkOn(canvas, color);
+    // Add red vertical line to the network button
+    var ctx = canvas.getContext('2d'),
+        w = canvas.width,
+        l = Math.max(w / 12, 1),
+        h = canvas.height;
+
+    ctx.lineWidth = l;
+    ctx.strokeStyle = new Color(200, 0, 0).toString();
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    ctx.lineTo(w, 0);
     ctx.stroke();
 
     return canvas;
