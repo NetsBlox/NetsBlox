@@ -146,9 +146,10 @@ module.exports = [
                 }
                 // Send the project to the user
                 var project = Utils.serialize(
-                    R.omit(['SourceCode'], user.projects[projectIndex])
+                    R.omit(['SourceCode', 'Media'], user.projects[projectIndex])
                 // Add the SourceCode portion
-                )+'&SourceCode='+encodeURIComponent(user.projects[projectIndex].SourceCode);
+                )+'&SourceCode=<snapdata>+'+encodeURIComponent(user.projects[projectIndex].SourceCode+
+                user.projects[projectIndex].Media)+'</snapdata>';
                 return res.send(project);
             });
         }
