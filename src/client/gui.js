@@ -695,18 +695,9 @@ IDE_Morph.prototype.createControlBar = function () {
         new SymbolMorph('networkOff', 16)
     );
     // Change symbolmorph on click
-    button.setIconTo = function(symbolName) {
-        this.labelString = new SymbolMorph(symbolName, 16);
-        this.createLabel();
-    };
-
     button.trigger = function() {
-        var newSymbol = 'networkOff';
-        if (this.label.name === 'networkOff') {
-            newSymbol = 'networkOn';
-        }
-        this.setIconTo(newSymbol);
         PushButtonMorph.prototype.trigger.call(this);
+        myself.updateNetworkButton();
     };
 
     button.corner = 12;
@@ -884,6 +875,18 @@ IDE_Morph.prototype.createControlBar = function () {
         this.label.setCenter(this.center());
         this.label.setLeft(this.settingsButton.right() + padding);
     };
+};
+
+// Update the network button to reflect the connectivity of the project
+IDE_Morph.prototype.updateNetworkButton = function () {
+    var newSymbol = 'networkOff',
+        btn = this.controlBar.networkButton;
+    if (this.stage.sockets.connected) {
+        newSymbol = 'networkOn';
+    }
+    btn.labelString = new SymbolMorph(newSymbol, 16);
+    btn.createLabel();
+    btn.fixLayout();
 };
 
 IDE_Morph.prototype.createCategories = function () {
@@ -2982,8 +2985,7 @@ IDE_Morph.prototype.promptGameType = function () {
     dialog.ok = function() {
         myself.stage.setGameType(selected);
         // Set the button to connected
-        myself.controlBar.networkButton.setIconTo('networkOn');
-        myself.controlBar.networkButton.fixLayout();
+        myself.updateNetworkButton();
         DialogBoxMorph.prototype.ok.call(this);
     };
 

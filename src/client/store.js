@@ -454,6 +454,7 @@ SnapSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
         );
     }
 
+    // Set up the network
     project.stage.setGameType({
         name: model.stage.attributes['game-type'],
         paradigm: model.stage.attributes['game-paradigm']
@@ -1397,6 +1398,8 @@ SnapSerializer.prototype.openProject = function (project, ide) {
     //  watcher.onNextStep = function () {this.currentValue = null;};
     //})
 
+    // Update the network icon
+    ide.updateNetworkButton();
     ide.world().keyboardReceiver = project.stage;
 };
 
