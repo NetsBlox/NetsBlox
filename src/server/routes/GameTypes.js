@@ -8,7 +8,12 @@ module.exports = [
     },
     {
         name: 'Text Messaging',
-        paradigm: 'uniquerole',
+        paradigm: 'basic',
+        clientLibs: []
+    },
+    {
+        name: 'SimpleHangman',
+        paradigm: 'sandbox',
         clientLibs: []
     },
     {
