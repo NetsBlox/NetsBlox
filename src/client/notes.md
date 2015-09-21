@@ -31,14 +31,6 @@
         + Recalculates the layout based on the latest sizes of the children
 
 
-# Connect/Disconnect Network Button
-## Checkpoints:
-+ Create a nice icon for it
-    + Probably in `SpriteMorph` (though I will need to draw it programmatically :/)
-
-## Previous Checkpoints:
-+ Create the functionality
-
 # Selecting Specific Groups
 + The user should be able to name the groups
 + Otherwise, they can use the default names?
@@ -50,13 +42,17 @@
 # Save project info
 + Need to add gameType and paradigm to the project info that gets saved
     + Add to toXML in store.js
-    + Deserialize 
+    + deserialize 
     + Also, check that it works in the database
 
 # Additional features
 + "respond" block for messages to allow communication between people?
 
 + Drag and drop invalid blocks to other actors (Snap bug)
+
++ Costumes not loading from server
+    + Missing an entry in object.costumes.contents
+        + Is it when loading a sprite?
 
 ## Finished
 + Client reconnect should update paradigm
@@ -75,4 +71,15 @@
     + I don't think the sockets are being closed on the client
     + There are duplicates from the `onclose` being executed when websockets.destroy is called
     FIXED
+
+# Connect/Disconnect Network Button
+## Checkpoints:
+
+## Previous Checkpoints:
++ Create the functionality
++ Create a nice icon for it
+    + Probably in `SymbolMorph` (though I will need to draw it programmatically :/)
+    + I think I am going to make a circle with curves on both sides -->   ( ( O ) )
+        + Line 8220 is worthwhile
+        + Created an icon. Might change it later
 

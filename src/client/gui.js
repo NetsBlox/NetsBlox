@@ -4973,7 +4973,7 @@ ProjectDialogMorph.prototype.getExamplesProjectList = function () {
         projects = [];
         //alert(baseURL);
 
-    dir = this.ide.getURL(baseURL + 'Examples/');
+    dir = this.ide.getURL(baseURL + 'api/Examples/');
     dir.split('\n').forEach(
         function (line) {
             var startIdx = line.search(new RegExp('href=".*xml"')),

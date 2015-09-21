@@ -12,10 +12,18 @@ var R = require('ramda'),
     randomString = require('just.randomstring'),
     fs = require('fs'),
     path = require('path'),
-    COSTUMES_PATH = path.join(__dirname, '..', '..', 'client', 'Costumes'),
-    SOUNDS_PATH = path.join(__dirname, '..', '..', 'client', 'Sounds');
 
-var generateRandomPassword = randomString.bind(null, 8);
+    // PATHS
+    COSTUMES_PATH = path.join(__dirname, '..', '..', 'client', 'Costumes'),
+    SOUNDS_PATH = path.join(__dirname, '..', '..', 'client', 'Sounds'),
+    EXAMPLES_PATH = path.join(__dirname, '..', '..', 'client', 'Examples');
+
+var generateRandomPassword = randomString.bind(null, 8),
+    makeDummyHtml = function(list) {
+        return list.map(function(item) {
+            return '<a href="'+item+'">'+item+'</a><br/>';
+        }).join('\n');
+    };
 
 module.exports = [
     { 
@@ -146,9 +154,23 @@ module.exports = [
                     return res.send(err);
                 }
 
-                var result = sounds.map(function(sound) {
-                    return '<a href="'+sound+'">'+sound+'</a><br/>';
-                }).join('\n');
+                var result = makeDummyHtml(sounds);
+                return res.send(result);
+            });
+        }
+    },
+    // Examples
+    { 
+        Method: 'get', 
+        URL: 'Examples',
+        Handler: function(req, res) {
+            // Load the examples
+            fs.readdir(EXAMPLES_PATH, function(err, examples) {
+                if (err) {
+                    return res.send(err);
+                }
+
+                var result = makeDummyHtml(examples);
                 return res.send(result);
             });
         }
