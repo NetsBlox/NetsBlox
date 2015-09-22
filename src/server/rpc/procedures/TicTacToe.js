@@ -38,8 +38,8 @@ TicTacToeRPC.getPath = function() {
 TicTacToeRPC.getActions = function() {
     return ['isOpen', // Check if a space is open
             'getTile', // Get the tile at a location
-            'getWinner',  // Get the winner
-            'clear',
+            'didIWin',  // Get the winner
+            'clear',  // Clear the board
             'play',  // Play a tile at the given location
             'isGameOver'];  // Check for game over
 };
@@ -80,8 +80,8 @@ TicTacToeRPC.prototype.getTile = function(req, res) {
     }
 };
 
-TicTacToeRPC.prototype.getWinner = function(req, res) {
-    res.send(this.winner);
+TicTacToeRPC.prototype.didIWin = function(req, res) {
+    res.send(this.winner === req.query.username);
 };
 
 TicTacToeRPC.prototype.play = function(req, res) {
@@ -122,8 +122,16 @@ TicTacToeRPC.prototype.play = function(req, res) {
 };
 
 TicTacToeRPC.prototype.isGameOver = function(req, res) {
-    log('isGameOver: '+(this.winner !== null)+' ('+this.winner+')');
-    res.send(this.winner !== null);
+    var isOver = false;
+
+    // Game is over if someone has won
+    isOver = this.winner !== null;
+
+    // or all tiles are filled
+    isOver = isOver || this.isFullBoard();
+
+    log('isGameOver: ' + isOver + ' (' + this.winner + ')');
+    res.send(isOver);
 };
 
 // Helper functions
@@ -170,6 +178,17 @@ TicTacToeRPC.rotateBoard = function(board) {
         }
     }
     return rotatedBoard;
+};
+
+TicTacToeRPC.prototype.isFullBoard = function() {
+    for (var i = this.board.length; i--;) {
+        for (var j = this.board[i].length; j--;) {
+            if (this.board[i][j] === null) {
+                return false;
+            }
+        }
+    }
+    return true;
 };
 
 TicTacToeRPC.getDiagonalWinner = function(board) {
