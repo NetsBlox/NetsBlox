@@ -4,11 +4,16 @@ module.exports = [
     {
         name: 'TicTacToe',
         paradigm: 'turnbased',
-        clientLibs: []
+        clientLibs: ['tictactoe.xml']
     },
     {
         name: 'Text Messaging',
         paradigm: 'basic',
+        clientLibs: []
+    },
+    {
+        name: 'Hangman',
+        paradigm: 'uniquerole',
         clientLibs: []
     },
     {

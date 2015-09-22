@@ -16,6 +16,8 @@
 + Import libraries for paradigm
     + Lower priority
     + Check out the "Import library" menu
+        + myself.droppedText(myself.getURL(url), name)
+
 + Add more buttons and stuff to the dialog?
 + Add game type to title bar. Probably in parenthesis
 
@@ -50,11 +52,13 @@
 
 + Drag and drop invalid blocks to other actors (Snap bug)
 
+## Finished
 + Costumes not loading from server
     + Missing an entry in object.costumes.contents
         + Is it when loading a sprite?
+        + It appears to be happening in rawLoadProjectModel
+        + DONE
 
-## Finished
 + Client reconnect should update paradigm
     FIXED
 

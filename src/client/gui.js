@@ -2986,6 +2986,13 @@ IDE_Morph.prototype.promptGameType = function () {
         myself.stage.setGameType(selected);
         // Set the button to connected
         myself.updateNetworkButton();
+
+        // Load any client libraries
+        selected.clientLibs.forEach(function(lib) {
+            var url = baseURL+'libraries/rpc/'+lib;
+            myself.droppedText(myself.getURL(url), name);
+        });
+
         DialogBoxMorph.prototype.ok.call(this);
     };
 

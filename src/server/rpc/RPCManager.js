@@ -49,6 +49,7 @@ RPCManager.loadRPCs = function() {
 
 RPCManager.prototype.createRouter = function() {
     var router = express.Router({mergeParams: true});
+
     // For each RPC, create the respective endpoints
     this.rpcs.forEach(this.addRoute.bind(this, router));
 
