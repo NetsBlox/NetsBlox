@@ -39,6 +39,7 @@ var paradigms = getParadigmsDict(),
 var opts = {port: port,
             wsPort: wsPort,
             path: '',
+            mongoURI: process.env.MONGO_URI || null,
             GroupManager: manager};
 
 var Server = require('../src/server/Server'),
