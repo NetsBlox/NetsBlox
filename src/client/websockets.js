@@ -19,8 +19,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
         address;
 
     address = 'ws://'+(window.location.origin
-        .replace('http://','')
-        .replace(/:?[0-9]*$/,':5432'));
+        .replace('http://',''));
 
     // Don't connect if the already connected
     if (isReconnectAttempt) {

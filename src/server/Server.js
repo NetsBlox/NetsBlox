@@ -9,7 +9,6 @@ var express = require('express'),
     Vantage = require('./vantage/Vantage'),
     DEFAULT_OPTIONS = {
         port: 8080,
-        path: '',
         mongoURI: 'mongodb://localhost:27017'
     },
 
@@ -95,7 +94,7 @@ Server.prototype.start = function(done) {
     done = done || Utils.nop;
     this.connectToMongo(function (err) {
         this._server = this.app.listen(this._port, done);
-        this.groupManager.start();
+        this.groupManager.start({server: this._server});
         // Enable Vantage
         new Vantage(this).start();
     }.bind(this));

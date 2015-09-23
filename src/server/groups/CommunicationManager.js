@@ -10,11 +10,6 @@ var WebSocketServer = require('ws').Server,
     GenericManager = require('./paradigms/UniqueRoleParadigm'),
     ParadigmManager = require('./ParadigmManager'),
     _ = require('lodash'),
-    defOptions = {
-        wsPort: 5432,
-        GroupManager: require('./paradigms/Basic')
-    },
-
     debug = require('debug'),
     log = debug('NetsBlox:CommunicationManager:log'),
     info = debug('NetsBlox:CommunicationManager:info'),
@@ -29,8 +24,6 @@ var DEFAULT_PARADIGM = 'sandbox',
     NO_GAME_TYPE = '__none__';
 
 var CommunicationManager = function(opts) {
-    opts = _.extend({}, defOptions, opts);
-    this._wsPort = opts.wsPort;
     this._wss = null;
     this.sockets = [];
     this.socket2Role = {};
@@ -247,10 +240,10 @@ CommunicationManager.prototype.onMsgReceived = function(socket, message) {
  * @param {Object} opts
  * @return {undefined}
  */
-CommunicationManager.prototype.start = function() {
+CommunicationManager.prototype.start = function(options) {
     var uuid;
-    this._wss = new WebSocketServer({port: this._wsPort});
-    info('WebSocket server listening on '+this._wsPort);
+    this._wss = new WebSocketServer(options);
+    info('WebSocket server started!');
 
     this._wss.on('connection', function(socket) {
         this._prepSocket(socket);
