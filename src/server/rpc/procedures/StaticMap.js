@@ -6,20 +6,10 @@ var debug = require('debug'),
     log = debug('NetsBlox:RPCManager:StaticMap:log'),
     trace = debug('NetsBlox:RPCManager:StaticMap:trace'),
     info = debug('NetsBlox:RPCManager:StaticMap:info'),
-    fs = require('fs'),
-    //through = require('through'),
-    path = require('path'),
     request = require('request'),
     key = process.env.GOOGLE_MAPS_KEY;
 
 var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
-
-var testMap = path.join(__dirname, 'staticmap.png'),
-    //rawMap = fs.readFileSync(testMap, 'utf8');
-    rawMap = fs.readFileSync(testMap),
-    uMap = fs.readFileSync(testMap, 'utf8');
-    console.log('encoding:', rawMap.toString('utf8') === uMap);
-    //console.log('rawMap.isEncoding(utf8)',rawMap.isEncoding('utf8'));
 
 var getGoogleParams = function(options) {
     var params = [];
