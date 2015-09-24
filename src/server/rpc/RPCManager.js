@@ -62,19 +62,26 @@ RPCManager.prototype.addRoute = function(router, RPC) {
         .get(this.handleRPCRequest.bind(this, RPC));
 };
 
-RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
+/**
+ * This retrieves the RPC instance for the given uuid. If the RPC is stateless
+ * then all uuids share a single instance.
+ *
+ * @param {RPC|Constructor} RPC
+ * @param {String} uuid
+ * @return {RPC}
+ */
+RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
     var groupId,
-        group,
-        action,
-        rpc;
+        group;
 
-    action = req.params.action;
-    info('Received request to '+RPC.getPath()+' for '+action);
+    if (RPC.isStateless) {
+        return RPC;
+    }
+
     // Get the group id
-    groupId = this.groupManager.getGroupId(req.query.username);
+    groupId = this.groupManager.getGroupId(uuid);
     if (!groupId) {
-        log('Could not find group for user "'+req.query.username+'"');
-        return res.status(401).send('ERROR: user not found. who are you?');
+        return null;
     }
 
     // Look up the specific RPC and call the given action on it
@@ -88,10 +95,25 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         info('Creating new RPC ('+RPC.getPath()+') for '+groupId);
         group[RPC.getPath()] = new RPC();
     }
-    rpc = group[RPC.getPath()];
+    return group[RPC.getPath()];
+
+};
+
+RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
+    var action,
+        uuid = req.param.uuid,
+        rpc;
+
+    action = req.params.action;
+    info('Received request to '+RPC.getPath()+' for '+action);
 
     // Then pass the call through
     if (RPC.getActions().indexOf(action) !== -1) {
+        rpc = this.getRPCInstance(RPC, uuid);
+        if (rpc === null) {  // Could not create/find rpc (rpc is stateful and group is unknown)
+            log('Could not find group for user "'+req.query.username+'"');
+            return res.status(401).send('ERROR: user not found. who are you?');
+        }
         console.log('About to call '+RPC.getPath()+'=>'+action);
         return rpc[action](req, res);
     } else {
