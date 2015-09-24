@@ -4,6 +4,7 @@ var express = require('express'),
     port = process.env.PORT || 8080,
     mongoURI = process.env.MONGO_URI || process.env.MONGOLAB_URI;
 
+require('dotenv').load();
 app.use(express.static(__dirname + '/client/'));
 
 app.get('/', function(req, res) {
