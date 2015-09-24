@@ -1,16 +1,25 @@
-# Misc NetsBlocks/Snap notes
+# Misc NetsBlox/Snap notes
++ onKeyPressed sometimes not working...
+    + Need to replicate..
+        + Doesn't work in the Hangman example
+    + Compare working and not-working
+
++ Should message formats be part of the game type?
+    + Otherwise, the games might not be able to play against one another
+
++ Thoughts about my earlier design
+    + Minimal logic in the paradigm logic (they shouldn't all have to group by 
+        game type first -> a lot of logic duplication).
+    + I should have only one paradigm per game type
+
++ Example of multiple RPC collection contexts in a single game
+    + Stateless examples:
+        + 
+
 ## Snap cloud storage API
 + I need to update the "SnapCloud" name to "netsblox"
 
 + I need to add some tests for sign in, etc
-
-
-## Thoughts on interrupts/websocket msg receiving
-+ Add game "namespaces" to the server
-
-+ I may need to queue it or create a new process and add it in
-  + That is, the event listener for the web socket may need to queue or create a process for the event handling...
-    + startProcess
 
 ## Misc Design Comments
 + Added 3 primitives to the Process object: `doSocketConnect`, `doSocketDisconnect` and `doSocketMessage`
@@ -257,9 +266,21 @@
     + Close the web sockets when the project changes...
     DONE
 
+## Thoughts on interrupts/websocket msg receiving
++ I may need to queue it or create a new process and add it in
+  + That is, the event listener for the web socket may need to queue or create a process for the event handling...
+    + startProcess
+
++ Add game "namespaces" to the server
+    + DONE - Added gameTypes
+
 ## Adding WebSocket support
 I will probably want to have a couple methods for handling websocket communication:
 + Registering/opening a socket
 + Sending a message
 + Closing a socket (when not running the script)
+
+## Costumes
++ Add endpoint (use href='file name')
++ DONE
 

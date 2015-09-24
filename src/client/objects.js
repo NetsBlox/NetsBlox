@@ -913,11 +913,17 @@ SpriteMorph.prototype.initBlocks = function () {
             //category: 'network',
             //spec: 'name: %s value: %s'
         //},
-        callRPC: {
+        getJSFromRPC: {  // JSON response
             type: 'reporter',
             category: 'network',
             spec: 'call %s with %s',
             defaults: ['tictactoe']
+        },
+        getCostumeFromRPC: {
+            type: 'reporter',
+            category: 'network',
+            spec: 'costume from %s with %s',
+            defaults: ['staticmap/getMap']
         },
         reportURL: {
             type: 'reporter',
@@ -1976,7 +1982,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doSocketMessage'));
         blocks.push('-');
         blocks.push(block('reportURL'));
-        blocks.push(block('callRPC'));
+        blocks.push(block('getJSFromRPC'));
+        blocks.push(block('getCostumeFromRPC'));
         //blocks.push(block('param'));
         blocks.push('-');
     } else if (cat === 'sensing') {

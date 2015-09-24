@@ -1,6 +1,22 @@
 # Client side notes
 + I am currently trying to create a menu for selecting the game type of the current project. The game type will then determine who shares network communication (at the highest level) and some client libs that will be loaded.
 
+# Image data type
++ Should behave like any other data type EXCEPT:
+    + set costume should render it
+        + How is the costume set currently?
+            + What is this Costume type?
+            + Could I use this instead of the image type?
+                + I can do this by creating an Image with src of the url
+                + Creating a canvas and drawing the image on it
+                + Creating a costume
+                + Then wearing the costume (Snap has support for first class costumes)
+
+    + say blocks should render it
+    + think blocks should render it
+    + show variable should render it
+
+
 # Game Type Menu
 + Creating a menu
     + This will need to be done every time a new project is created. There is a method called `newProject` in `gui.js` owned by `IDE_Morph` but this is not called on the first load.
@@ -17,6 +33,8 @@
     + Lower priority
     + Check out the "Import library" menu
         + myself.droppedText(myself.getURL(url), name)
+
+        + need to add a path on the server for rpc libraries
 
 + Add more buttons and stuff to the dialog?
 + Add game type to title bar. Probably in parenthesis

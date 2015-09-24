@@ -1891,14 +1891,21 @@ Process.prototype.reportLastAnswer = function () {
 
 // Process URI retrieval (interpolated)
 
-Process.prototype.callRPC = function (rpc, params) {
+Process.prototype.createRPCUrl = function (rpc, params) {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph),
-        uuid = stage.sockets.uuid,
-        url,
-        result;
+        uuid = stage.sockets.uuid;
 
-    url = window.location.host+'/rpc/'+rpc+'?username='+uuid+'&'+params;
-    result = this.reportURL(url);
+    return window.location.host+'/rpc/'+rpc+'?username='+uuid+'&'+params;
+};
+
+Process.prototype.callRPC = function (rpc, params) {
+    var url = this.createRPCUrl(rpc, params);
+    return this.reportURL(url);
+};
+
+// TODO: Consider moving these next two functions to the Stage
+Process.prototype.getJSFromRPC = function (rpc, params) {
+    var result = this.callRPC(rpc, params);
     if (result) {
         try {  // Try to convert it to JSON
             result = JSON.parse(result);
@@ -1907,6 +1914,37 @@ Process.prototype.callRPC = function (rpc, params) {
         }
     }
     return result;
+};
+
+Process.prototype.getCostumeFromRPC = function (rpc, params) {
+    var result,
+        image,
+        stage = this.homeContext.receiver.parentThatIsA(StageMorph),
+        paramItems = params.length ? params.split('&') : [],
+        canvas;
+        
+    // Add the width and height of the stage as default params
+    if (params.indexOf('width') === -1) {
+        paramItems.push('width=' + stage.width());
+    }
+
+    if (params.indexOf('height') === -1) {
+        paramItems.push('height=' + stage.height());
+    }
+
+    params = paramItems.join('&');
+
+    result = this.callRPC(rpc, params);
+
+    // Create the costume
+    image = new Image();
+    image.src = 'http://' + this.createRPCUrl(rpc, params);
+
+    canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    canvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height);
+    return new Costume(image, rpc);
 };
 
 Process.prototype.reportURL = function (url) {
