@@ -925,6 +925,11 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'costume from %s with %s',
             defaults: ['staticmap/getMap']
         },
+        reportUsername: {  // TODO: Finish this!
+            type: 'reporter',
+            category: 'sensing',
+            spec: 'username',
+        },
         reportURL: {
             type: 'reporter',
             category: 'network',
@@ -2016,6 +2021,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doSetFastTracking'));
         blocks.push('-');
         blocks.push(block('reportDate'));
+        blocks.push(block('reportUsername'));
 
     // for debugging: ///////////////
 
@@ -2831,6 +2837,10 @@ SpriteMorph.prototype.playSound = function (name) {
 
 SpriteMorph.prototype.reportSounds = function () {
     return this.sounds;
+};
+
+SpriteMorph.prototype.reportUsername = function () {
+    return SnapCloud.username || '';
 };
 
 // SpriteMorph user menu
@@ -5626,6 +5636,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doSetFastTracking'));
         blocks.push('-');
         blocks.push(block('reportDate'));
+        blocks.push(block('reportUsername'));
 
     // for debugging: ///////////////
 
