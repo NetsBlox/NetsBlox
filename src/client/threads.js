@@ -368,6 +368,7 @@ function Process(topBlock, onComplete, context) {
     this.isAtomic = false;
     this.prompter = null;
     this.httpRequest = null;
+    this.requestedImage = null;
     this.isPaused = false;
     this.pauseOffset = null;
     this.frameCount = 0;
@@ -1934,17 +1935,23 @@ Process.prototype.getCostumeFromRPC = function (rpc, params) {
 
     params = paramItems.join('&');
 
-    result = this.callRPC(rpc, params);
-
-    // Create the costume
-    image = new Image();
-    image.src = 'http://' + this.createRPCUrl(rpc, params);
-
-    canvas = document.createElement('canvas');
-    canvas.width = image.width;
-    canvas.height = image.height;
-    canvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height);
-    return new Costume(image, rpc);
+    // Create the costume (analogous to reportURL)
+    if (!this.requestedImage) {
+        // Create new request
+        this.requestedImage = new Image();
+        this.requestedImage.src = 'http://' + this.createRPCUrl(rpc, params);
+    } else if (this.requestedImage.complete && this.requestedImage.naturalWidth) {
+        // Clear request
+        var image = this.requestedImage;
+        this.requestedImage = null;
+        canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        canvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height);
+        return new Costume(image, rpc);
+    }
+    this.pushContext('doYield');
+    this.pushContext();
 };
 
 Process.prototype.reportURL = function (url) {
