@@ -5562,6 +5562,15 @@ StageMorph.prototype.blockTemplates = function (category) {
 
         blocks.push(block('clear'));
 
+    } else if (cat === 'network') {
+        blocks.push(block('doRegisterClient'));
+        blocks.push(block('doSocketEvent'));
+        blocks.push(block('doSocketDisconnect'));
+        blocks.push(block('doSocketMessage'));
+        blocks.push('-');
+        blocks.push(block('getJSFromRPC'));
+        blocks.push(block('getCostumeFromRPC'));
+
     } else if (cat === 'control') {
 
         blocks.push(block('receiveGo'));
@@ -5575,11 +5584,6 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doBroadcastAndWait'));
         blocks.push(watcherToggle('getLastMessage'));
         blocks.push(block('getLastMessage'));
-        blocks.push('-');
-        blocks.push(block('doRegisterClient'));
-        blocks.push(block('doSocketEvent'));
-        blocks.push(block('doSocketDisconnect'));
-        blocks.push(block('doSocketMessage'));
         blocks.push('-');
         blocks.push(block('doWarp'));
         blocks.push('-');
@@ -6101,6 +6105,9 @@ StageMorph.prototype.resumeAllActiveSounds = function () {
         audio.play();
     });
 };
+
+StageMorph.prototype.reportUsername
+    = SpriteMorph.prototype.reportUsername;
 
 StageMorph.prototype.reportSounds
     = SpriteMorph.prototype.reportSounds;
