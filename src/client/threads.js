@@ -369,6 +369,7 @@ function Process(topBlock, onComplete, context) {
     this.prompter = null;
     this.httpRequest = null;
     this.requestedImage = null;
+    this.location = null;
     this.isPaused = false;
     this.pauseOffset = null;
     this.frameCount = 0;
@@ -2785,6 +2786,39 @@ Process.prototype.reportTimer = function () {
         }
     }
     return 0;
+};
+
+// Process Geo
+Process.prototype.reportLatitude = function () {
+    var self = this;
+    if (!this.location) {
+        navigator.geolocation.getCurrentPosition(function(location) {
+            self.location = location;
+        });
+        this.location = 'loading...';
+    } else if (this.location !== 'loading...') {
+        var location = this.location;
+        this.location = null;
+        return location.coords.latitude;
+    }
+    this.pushContext('doYield');
+    this.pushContext();
+};
+
+Process.prototype.reportLongitude = function () {
+    var self = this;
+    if (!this.location) {
+        navigator.geolocation.getCurrentPosition(function(location) {
+            self.location = location;
+        });
+        this.location = 'loading...';
+    } else if (this.location !== 'loading...') {
+        var location = this.location;
+        this.location = null;
+        return location.coords.longitude;
+    }
+    this.pushContext('doYield');
+    this.pushContext();
 };
 
 // Process Dates and times in Snap

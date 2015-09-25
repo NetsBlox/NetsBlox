@@ -930,6 +930,16 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'sensing',
             spec: 'username',
         },
+        reportLatitude: {
+            type: 'reporter',
+            category: 'sensing',
+            spec: 'my latitude',
+        },
+        reportLongitude: {
+            type: 'reporter',
+            category: 'sensing',
+            spec: 'my longitude',
+        },
         reportURL: {
             type: 'reporter',
             category: 'network',
@@ -2022,6 +2032,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('reportDate'));
         blocks.push(block('reportUsername'));
+        blocks.push(block('reportLatitude'));
+        blocks.push(block('reportLongitude'));
 
     // for debugging: ///////////////
 
@@ -5637,6 +5649,8 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('reportDate'));
         blocks.push(block('reportUsername'));
+        blocks.push(block('reportLatitude'));
+        blocks.push(block('reportLongitude'));
 
     // for debugging: ///////////////
 
