@@ -26,6 +26,7 @@ module.exports = {
         return ['temp',
                 'humidity',
                 'icon',
+                'name',
                 'description'];
     },
 
@@ -85,6 +86,18 @@ module.exports = {
                 iconName = body.weather[0].icon+'.png';
             }
             request.get(baseIconUrl+iconName).pipe(res);
+        });
+    },
+
+    name: function(req, res) {
+        var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+        request(url, function(err, response, body) {
+            if (err) {
+                return res.status(500).send('ERROR: '+err);
+            }
+            body = JSON.parse(body);
+            var name = body.name || 'unknown';
+            res.json(name);
         });
     }
 };
