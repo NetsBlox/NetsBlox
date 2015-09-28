@@ -1897,7 +1897,7 @@ Process.prototype.createRPCUrl = function (rpc, params) {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph),
         uuid = stage.sockets.uuid;
 
-    return window.location.host+'/rpc/'+rpc+'?username='+uuid+'&'+params;
+    return window.location.host+'/rpc/'+rpc+'?uuid='+uuid+'&'+params;
 };
 
 Process.prototype.callRPC = function (rpc, params) {

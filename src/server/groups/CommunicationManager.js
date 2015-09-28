@@ -42,21 +42,26 @@ var CommunicationManager = function(opts) {
 };
 
 CommunicationManager.prototype.getGroupId = function(username) {
-    var separator = '/',
+    var id,
+        separator = '/',
         socket,
         gameType,
         paradigm;
 
+    trace('Getting group id for '+username);
     socket = this.uuid2Socket[username];
     if (!socket) {  // Return null if no socket has the given username
+        trace(username+' does not have a socket');
         return null;
     }
 
     gameType = this.paradigmManager.getGameType(socket);
     paradigm = this.paradigmManager.getParadigmInstance(socket);
     assert(paradigm, 'Paradigm not defined for socket #'+socket.id);
-    return [gameType, paradigm.getName(), paradigm.getGroupId(socket)]
+    id = [gameType, paradigm.getName(), paradigm.getGroupId(socket)]
         .join(separator);
+    trace('Group id for "'+username+'" is '+id);
+    return id;
 };
 
 CommunicationManager.prototype.onGroupClose = function(fn) {

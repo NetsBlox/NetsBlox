@@ -101,11 +101,11 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
 
 RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     var action,
-        uuid = req.param.uuid,
+        uuid = req.query.uuid,
         rpc;
 
     action = req.params.action;
-    info('Received request to '+RPC.getPath()+' for '+action);
+    info('Received request to '+RPC.getPath()+' for '+action+' (from '+uuid+')');
 
     // Then pass the call through
     if (RPC.getActions().indexOf(action) !== -1) {
