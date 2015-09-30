@@ -91,13 +91,16 @@ Server.prototype.emailPassword = function(user, password) {
 };
 
 Server.prototype.start = function(done) {
+    var self = this;
     done = done || Utils.nop;
-    this.connectToMongo(function (err) {
-        this._server = this.app.listen(this._port, done);
-        this.groupManager.start({server: this._server});
-        // Enable Vantage
-        new Vantage(this).start();
-    }.bind(this));
+    self.connectToMongo(function (err) {
+        self._server = self.app.listen(self._port, function() {
+            self.groupManager.start({server: self._server});
+            // Enable Vantage
+            new Vantage(self).start();
+            done();
+        });
+    });
 };
 
 Server.prototype.stop = function(done) {
