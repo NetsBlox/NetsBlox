@@ -12,6 +12,19 @@ var debug = require('debug'),
 var baseUrl = 'http://api.openweathermap.org/data/2.5/weather',
     baseIconUrl = 'http://openweathermap.org/img/w/';
 
+
+var getField = function(field, req, res) {
+    var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+    request(url, function(err, response, body) {
+        if (err) {
+            return res.status(500).send('ERROR: '+err);
+        }
+        body = JSON.parse(body);
+        var name = body[field] || 'unknown';
+        res.json(name);
+    });
+};
+
 module.exports = {
 
     // This is very important => Otherwise it will try to instantiate this
@@ -89,6 +102,31 @@ module.exports = {
         });
     },
 
+    windSpeed: function(req, res) {
+        var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+        request(url, function(err, response, body) {
+            if (err) {
+                return res.status(500).send('ERROR: '+err);
+            }
+            body = JSON.parse(body);
+            var name = body.wind.speed || 'unknown';
+            res.json(name);
+        });
+    },
+
+    windAngle: function(req, res) {
+        var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+        request(url, function(err, response, body) {
+            if (err) {
+                return res.status(500).send('ERROR: '+err);
+            }
+            body = JSON.parse(body);
+            var name = body.wind.deg || 'unknown';
+            res.json(name);
+        });
+    },
+
+    // Consider moving this to a map utils rpc FIXME
     name: function(req, res) {
         var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
