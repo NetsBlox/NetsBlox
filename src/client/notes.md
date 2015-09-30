@@ -1,23 +1,8 @@
 # Client side notes
 + I am currently trying to create a menu for selecting the game type of the current project. The game type will then determine who shares network communication (at the highest level) and some client libs that will be loaded.
 
-# Image data type
-+ Should behave like any other data type EXCEPT:
-    + set costume should render it
-        + How is the costume set currently?
-            + What is this Costume type?
-            + Could I use this instead of the image type?
-                + I can do this by creating an Image with src of the url
-                + Creating a canvas and drawing the image on it
-                + Creating a costume
-                + Then wearing the costume (Snap has support for first class costumes)
-
-    + say blocks should render it
-    + think blocks should render it
-    + show variable should render it
-
-
-# Game Type Menu
+# Game Type 
+## Menu
 + Creating a menu
     + This will need to be done every time a new project is created. There is a method called `newProject` in `gui.js` owned by `IDE_Morph` but this is not called on the first load.
 
@@ -27,6 +12,9 @@
         + It will be a combination of the "Sign in" and Open project screen
             + Size and layout of the Sign in menu but the selection options of the Open Project menu
             + There have to be more tools for this kinda stuff...
+
+## Messages
++ Game types should have an agreed upon message type
 
 ## Checkpoints:
 + Import libraries for paradigm
@@ -94,6 +82,33 @@
     + There are duplicates from the `onclose` being executed when websockets.destroy is called
     FIXED
 
+# Bugs
++ Space bar doesn't trigger the control hat block
+    + Hat is not found...
+    + No scripts for the child...
+        + Did it get added?
+            + Yes
+        + Somewhere it is getting removed...
+        + but it is correct when I drop a new one...
+            + Is the scripts morph attached to the correct sprite?
+    + There are 2 stages
+    + The wrong one is listening to the key events
+        + where is the keyboardReceiver set (when loading the stage)?
+
+    + Sometimes it seems that it doesn't detect the key press. Other times, it adds the thread but doesn't seem to be executed
+        + One problem at a time...
+            + myself.keyboardReceiver and myself.children[0].stage are not the same...
+                + They are the same in Snap!
+                + This only happens when I add a network receiving block...
+
+        + It happens when the keypressed hat block is created
+            + It is broken by the time we get a 'mouseup'
+                + ... what about 'mousedown'?
+                + There are 2 stages in the ide (not in Snap!)
+                + I think stage.destroy is not removing itself from it's parent
+
+    + FIXED: StageMorph wasn't calling it's base class' destroy method
+
 # Connect/Disconnect Network Button
 ## Checkpoints:
 
@@ -104,4 +119,20 @@
     + I think I am going to make a circle with curves on both sides -->   ( ( O ) )
         + Line 8220 is worthwhile
         + Created an icon. Might change it later
+
+# Image data type
++ Should behave like any other data type EXCEPT:
+    + set costume should render it
+        + How is the costume set currently?
+            + What is this Costume type?
+            + Could I use this instead of the image type?
+                + I can do this by creating an Image with src of the url
+                + Creating a canvas and drawing the image on it
+                + Creating a costume
+                + Then wearing the costume (Snap has support for first class costumes)
+
+    + say blocks should render it
+    + think blocks should render it
+    + show variable should render it
+    + DONE
 
