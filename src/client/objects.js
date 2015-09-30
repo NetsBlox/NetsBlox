@@ -5874,6 +5874,7 @@ StageMorph.prototype.clear = function () {
 StageMorph.prototype.destroy = function () {
     console.log('Calling destroy on the stage morph!');
     this.sockets.destroy();
+    Morph.prototype.destroy.call(this);
 };
 
 // StageMorph user menu
