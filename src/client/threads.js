@@ -83,7 +83,7 @@ ArgLabelMorph, localize, XML_Element, hex_sha512*/
 
 // Global stuff ////////////////////////////////////////////////////////
 
-modules.threads = '2015-July-27';
+modules.threads = '2015-September-23';
 
 var ThreadManager;
 var Process;
@@ -2244,6 +2244,9 @@ Process.prototype.reportMonadic = function (fname, n) {
     case 'abs':
         result = Math.abs(x);
         break;
+    case 'ceiling':
+        result = Math.ceil(x);
+        break;
     case 'floor':
         result = Math.floor(x);
         break;
@@ -2709,6 +2712,7 @@ Process.prototype.reportContextFor = function (context, otherObj) {
     result.receiver = otherObj;
     if (result.outerContext) {
         result.outerContext = copy(result.outerContext);
+        result.outerContext.variables = copy(result.outerContext.variables);
         result.outerContext.receiver = otherObj;
         result.outerContext.variables.parentFrame = otherObj.variables;
     }
