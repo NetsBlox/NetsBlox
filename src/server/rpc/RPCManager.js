@@ -111,7 +111,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     if (RPC.getActions().indexOf(action) !== -1) {
         rpc = this.getRPCInstance(RPC, uuid);
         if (rpc === null) {  // Could not create/find rpc (rpc is stateful and group is unknown)
-            log('Could not find group for user "'+req.query.username+'"');
+            log('Could not find group for user "'+req.query.uuid+'"');
             return res.status(401).send('ERROR: user not found. who are you?');
         }
         console.log('About to call '+RPC.getPath()+'=>'+action);

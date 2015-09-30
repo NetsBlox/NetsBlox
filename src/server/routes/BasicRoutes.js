@@ -39,7 +39,7 @@ module.exports = [
             // Look up the email
             self._users.findOne({username: username}, function(e, user) {
                 if (e) {
-                    log('Could not find user to reset password. Error: '+e);
+                    log('Server error when looking for user: "'+username+'". Error:', e);
                     return res.serverError(e);
                 }
 
@@ -60,7 +60,8 @@ module.exports = [
                         return res.send('A temporary password has been emailed to you');
                     });
                 } else {
-                    return res.status(404).send('ERROR: could not find user "'+username+'"');
+                    log('Could not find user to reset password (user "'+username+'")');
+                    return res.status(400).send('ERROR: could not find user "'+username+'"');
                 }
             });
         }

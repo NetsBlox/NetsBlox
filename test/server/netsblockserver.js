@@ -46,7 +46,7 @@ describe('NetsBlocksServer tests', function() {
                         });
                     });
                 }
-                server.start();
+                server.start(opts);
             });
 
             after(function() {
@@ -99,7 +99,7 @@ describe('NetsBlocksServer tests', function() {
         describe('Connection tests', function() {
             beforeEach(function(done) {
                 server = new NetsBlocks();
-                server.start();
+                server.start(opts);
                 if (!socket || socket.readyState !== 1) {
                     socket = new WebSocket(host);
                 }
@@ -133,7 +133,7 @@ describe('NetsBlocksServer tests', function() {
             beforeEach(function(done) {
                 var count = 0;
                 server = new NetsBlocks();
-                server.start();
+                server.start(opts);
                 if (!socket || socket.readyState !== 1) {
                     count++;
                     socket = new WebSocket(host);
@@ -255,7 +255,7 @@ describe('NetsBlocksServer tests', function() {
 
             before(function(done) {
                 server = new NetsBlocks();
-                server.start();
+                server.start(opts);
                 getNewSocketAndId('game1', function(info) {
                     socket = info[0];
                     uuid = info[1];
@@ -446,7 +446,7 @@ describe('GroupManager Testing', function() {
     describe('N-player tests', function() {
         beforeEach(function(done) {
             server = new NetsBlocks();
-            server.start();
+            server.start(opts);
             sockets = [];
 
             refreshSockets(socketCount);
@@ -540,7 +540,7 @@ describe('GroupManager Testing', function() {
     describe('2 player tests', function() {
         beforeEach(function() {
             server = new NetsBlocks();
-            server.start();
+            server.start(opts);
             sockets = [];
         });
 

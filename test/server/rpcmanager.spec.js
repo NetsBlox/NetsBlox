@@ -4,7 +4,6 @@
 var supertest = require('supertest'),
     assert = require('assert'),
     port = 4493,
-    wsPort = 4492,
     WebSocket = require('ws'),  // jshint ignore:line
     api = supertest('http://localhost:'+port+'/rpc/tictactoe'),  // https?
     Server = require('../../src/server/Server'),
@@ -15,11 +14,11 @@ var supertest = require('supertest'),
     };
 
 describe('RPC Manager Tests', function() {
-    var username,
+    var uuid,
         server;
 
     before(function(done) {
-        server = new Server({port: port, wsPort: wsPort});
+        server = new Server({port: port});
         server.start(done);
     });
 
@@ -30,7 +29,7 @@ describe('RPC Manager Tests', function() {
     // Testing an example RPC
     describe('Basic tests', function() {
         it('should exist', function(done) {
-            api.get('/isGameOver?username='+username)
+            api.get('/isGameOver?uuid='+uuid)
                 .expect(401)
                 .end(done);
         });
@@ -38,7 +37,7 @@ describe('RPC Manager Tests', function() {
 
     describe('TicTacToe tests', function() {
         var socket,
-            host = 'http://localhost:'+wsPort+'/rpc';
+            host = 'ws://localhost:'+port;
 
         // Connect a websocket
         before(function(done) {
@@ -48,7 +47,8 @@ describe('RPC Manager Tests', function() {
                     var data = msg.split(' '),
                         type = data.shift();
                     if (type === 'uuid') {
-                        username = data.join(' ');
+                        uuid = data.join(' ');
+                        console.log('WEBSOCKET CONNECTED ('+uuid+')');
                         done();
                     }
                 });
@@ -56,19 +56,19 @@ describe('RPC Manager Tests', function() {
         });
 
         afterEach(function(done) {
-            api.get('/clear?username='+username)
+            api.get('/clear?uuid='+uuid)
                 .expect(200)
                 .end(done);
         });
 
         it('should return 400 if bad action', function(done) {
-            api.get('/I_dont_exist?username='+username)
+            api.get('/I_dont_exist?uuid='+uuid)
                 .expect(400)
                 .end(done);
         });
 
         it('should respond to queries', function(done) {
-            api.get('/isGameOver?username='+username)
+            api.get('/isGameOver?uuid='+uuid)
                 .expect(function(res) {
                     assert.equal(res.body, false);
                 })
@@ -76,12 +76,12 @@ describe('RPC Manager Tests', function() {
         });
 
         it('should maintain state', function(done) {
-            var play = api.get('/play?username='+username+'&row=1&column=1')
+            var play = api.get('/play?uuid='+uuid+'&row=1&column=1')
                 .expect(200)
                 .end(function() {
-                    api.get('/getTile?username='+username+'&row=1&column=1')
+                    api.get('/getTile?uuid='+uuid+'&row=1&column=1')
                         .expect(function(res) {
-                            assert.equal(res.text, username);
+                            assert.equal(res.text, uuid);
                         })
                         .end(done);
                 });
@@ -106,16 +106,16 @@ describe('RPC Manager Tests', function() {
             });
 
             beforeEach(function(done) {
-                api.get('/play?username='+username+'&row=1&column=1')
+                api.get('/play?uuid='+uuid+'&row=1&column=1')
                     .expect(200)
                     .end(done);
             });
 
             afterEach(function(done) {
-                api.get('/clear?username='+username)
+                api.get('/clear?uuid='+uuid)
                     .expect(200)
                     .end(function() {
-                        api.get('/clear?username='+username2)
+                        api.get('/clear?uuid='+username2)
                             .expect(200)
                             .end(done);
                     });
@@ -133,7 +133,7 @@ describe('RPC Manager Tests', function() {
 
                     positions.forEach(function(row) {
                         row.forEach(function(pos) {
-                            api.get('/isOpen?username='+username+'&row='+pos[0]+'&column='+pos[1])
+                            api.get('/isOpen?uuid='+uuid+'&row='+pos[0]+'&column='+pos[1])
                                 .expect(200)
                                 .end(function(res) {
                                     assert.equal(res, null);
@@ -153,13 +153,13 @@ describe('RPC Manager Tests', function() {
                 });
 
                 it('should share a state with both sockets', function(done) {
-                    api.get('/play?username='+username+'&row=1&column=1')
+                    api.get('/play?uuid='+uuid+'&row=1&column=1')
                         .expect(200)
                         .end(function() {
                             // Check for the played position
-                            api.get('/getTile?username='+username2+'&row=1&column=1')
+                            api.get('/getTile?uuid='+username2+'&row=1&column=1')
                                 .expect(function(res) {
-                                    assert.equal(res.text, username);
+                                    assert.equal(res.text, uuid);
                                 })
                                 .end(done);
                         });

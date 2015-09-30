@@ -11,7 +11,11 @@ describe('Server Utils', function() {
             ServerUtils.loadJsFiles(__dirname+'/../../src/server/rpc/procedures')
                 .forEach(function(procedure) {
                     assert.equal(typeof procedure.getPath(), 'string');
-                    assert.equal(typeof procedure, 'function');
+                    if (procedure.isStateless) {
+                        assert.equal(typeof procedure, 'object');
+                    } else {
+                        assert.equal(typeof procedure, 'function');
+                    }
                 });
         });
     });

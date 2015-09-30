@@ -4,6 +4,10 @@
 var supertest = require('supertest'),
     assert = require('assert'),
     port = 8493,
+    options = {
+        port: port,
+        vantage: false
+    },
     api = supertest('http://localhost:'+port+'/api'),  // https?
     Server = require('../../src/server/Server'),
 
@@ -25,7 +29,7 @@ describe('Server Storage Tests', function() {
         server;
 
     before(function(done) {
-        server = new Server({port: port});
+        server = new Server(options);
         server.start(done);
     });
 
@@ -56,9 +60,6 @@ describe('Server Storage Tests', function() {
                 })
                 .end(done);
         });
-    });
-
-    describe('unregister tests', function() {
     });
 
     // Check that all routes exist

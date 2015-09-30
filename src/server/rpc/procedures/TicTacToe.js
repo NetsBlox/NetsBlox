@@ -61,7 +61,7 @@ TicTacToeRPC.prototype.isOpen = function(req, res) {
 TicTacToeRPC.prototype.clear = function(req, res) {
     this.winner = null;
     this.board = TicTacToeRPC.getNewBoard();
-    info(req.query.username+' is clearing board');
+    info(req.query.uuid+' is clearing board');
     res.status(200).send(true);
 };
 
@@ -72,7 +72,7 @@ TicTacToeRPC.prototype.getTile = function(req, res) {
 
     if (isOnBoard) {
         info('Requesting tile at '+row+', '+column+' ('+this.board[row][column]+') from '+
-            req.query.username);
+            req.query.uuid);
         res.send(this.board[row][column]);
     } else {
         log('Received invalid position in tile request: '+row+', '+column);
@@ -81,17 +81,17 @@ TicTacToeRPC.prototype.getTile = function(req, res) {
 };
 
 TicTacToeRPC.prototype.didIWin = function(req, res) {
-    res.send(this.winner === req.query.username);
+    res.send(this.winner === req.query.uuid);
 };
 
 TicTacToeRPC.prototype.play = function(req, res) {
-    var username = req.query.username,
+    var uuid = req.query.uuid,
         row = req.query.row-1,
         column = req.query.column-1,
         open = this.board[row][column] === null,
         isOnBoard = [row, column].every(this.isValidPosition.bind(this));
 
-    trace('"'+username+'" is trying to play at '+row+','+column+'. Board is \n'+
+    trace('"'+uuid+'" is trying to play at '+row+','+column+'. Board is \n'+
         this.board.map(function(row) {
             return row.join(' ');
     }));
@@ -99,23 +99,23 @@ TicTacToeRPC.prototype.play = function(req, res) {
 
     // ...the game is still going
     if (this.winner) {
-        log('"'+username+'" is trying to play after the game is over');
+        log('"'+uuid+'" is trying to play after the game is over');
         return res.status(400).send('ERROR: game is over. '+
             TicTacToeRPC.getWinner(this.board)+' won.');
     }
 
     // ...it's a valid position
     if (!isOnBoard) {
-        log('"'+username+'" is trying to play in an invalid position ('+row+','+column+')');
+        log('"'+uuid+'" is trying to play in an invalid position ('+row+','+column+')');
         return res.status(400).send('ERROR: invalid position. Please select a '+
             'position between 1 and 3');
     }
 
     // ...it's not occupied
     if (open) {
-        this.board[row][column] = username;
+        this.board[row][column] = uuid;
         this.winner = TicTacToeRPC.getWinner(this.board);
-        trace('"'+username+'" successfully played at '+row+','+column);
+        trace('"'+uuid+'" successfully played at '+row+','+column);
         return res.status(200).send(true);
     }
     return res.status(400).send(false);

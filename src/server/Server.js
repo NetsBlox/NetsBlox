@@ -9,6 +9,7 @@ var express = require('express'),
     Vantage = require('./vantage/Vantage'),
     DEFAULT_OPTIONS = {
         port: 8080,
+        vantage: true,
         mongoURI: 'mongodb://localhost:27017'
     },
 
@@ -29,14 +30,12 @@ var express = require('express'),
     cookieParser = require('cookie-parser');
 
 var Server = function(opts) {
-    opts = _.extend({}, DEFAULT_OPTIONS, opts);
-    this._port = opts.port;
+    this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
 
     // Mongo variables
     this._users = null;
     this._server = null;
-    this._mongoURI = opts.mongoURI;
 
     // Group and RPC Managers
     this.groupManager = new CommunicationManager(opts);
@@ -45,7 +44,7 @@ var Server = function(opts) {
 };
 
 Server.prototype.connectToMongo = function(callback) {
-    MongoClient.connect(this._mongoURI, function(err, db) {
+    MongoClient.connect(this.opts.mongoURI, function(err, db) {
         if (err) {
             throw err;
         }
@@ -53,7 +52,7 @@ Server.prototype.connectToMongo = function(callback) {
         this._users = db.collection('users');
         this.configureRoutes();
 
-        console.log('Connected to '+this._mongoURI);
+        console.log('Connected to '+this.opts.mongoURI);
         callback(err);
     }.bind(this));
 };
@@ -94,10 +93,12 @@ Server.prototype.start = function(done) {
     var self = this;
     done = done || Utils.nop;
     self.connectToMongo(function (err) {
-        self._server = self.app.listen(self._port, function() {
+        self._server = self.app.listen(self.opts.port, function() {
             self.groupManager.start({server: self._server});
             // Enable Vantage
-            new Vantage(self).start();
+            if (self.opts.vantage) {
+                new Vantage(self).start();
+            }
             done();
         });
     });

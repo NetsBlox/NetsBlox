@@ -5,3 +5,4 @@ variadic-reporters	Variadic reporters
 word-sentence	Words, sentences
 cases	Multi-branched conditional (switch)
 leap-library LEAP Motion controller
+map-helpers	Map utilities
