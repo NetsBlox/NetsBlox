@@ -14,12 +14,12 @@ var BaseParadigm = require('./Basic.js'),
     debug = require('debug'),
     log = debug('NetsBlox:CommunicationManager:Paradigms:Sandbox:log'),
     info = debug('NetsBlox:CommunicationManager:Paradigms:Sandbox:info'),
-    assert = require('assert'),
-    groups = [],
-    count = 0;
+    assert = require('assert');
 
 var SandboxParadigm = function() {
     BaseParadigm.call(this);
+    this.groups = [];
+    this.count = 0;
 };
 
 Utils.inherit(SandboxParadigm.prototype, BaseParadigm.prototype);
@@ -36,7 +36,7 @@ SandboxParadigm.prototype.getName = SandboxParadigm.getName;
  * @return {Array<WebSocket>}
  */
 SandboxParadigm.prototype.getAllGroups = function() {
-    return groups.map(function(group) {
+    return this.groups.map(function(group) {
         return [group.user];
     });
 };
@@ -70,7 +70,7 @@ SandboxParadigm.prototype.getGroupId = function(socket) {
 };
 
 SandboxParadigm.prototype.onConnect = function(socket) {
-    groups.push({id: count++, user: socket});
+    this.groups.push({id: this.count++, user: socket});
     this.memberCount++;
 };
 
@@ -94,17 +94,17 @@ SandboxParadigm.prototype.onDisconnect = function(socket) {
         index;
     if (group) {
         this.notifyGroupClose(socket);
-        index = groups.indexOf(group);
-        groups.splice(index,1);
+        index = this.groups.indexOf(group);
+        this.groups.splice(index,1);
         this.memberCount--;
         assert(this.memberCount >= 0);
     }
 };
 
 SandboxParadigm.prototype._findGroupContaining = function(socket) {
-    for (var i = groups.length; i--;) {
-        if (groups[i].user === socket) {
-            return groups[i];
+    for (var i = this.groups.length; i--;) {
+        if (this.groups[i].user === socket) {
+            return this.groups[i];
         }
     }
     return null;

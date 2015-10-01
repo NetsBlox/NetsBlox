@@ -4,7 +4,7 @@ var R = require('ramda'),
     UserAPI = require('./Users'),
     ProjectAPI = require('./Projects'),
     EXTERNAL_API = R.map(R.partial(R.omit,['Handler']), UserAPI.concat(ProjectAPI)),
-    GameTypes = require('./GameTypes'),
+    GameTypes = require('../GameTypes'),
 
     debug = require('debug'),
     log = debug('NetsBlox:API:log'),

@@ -5,53 +5,121 @@
 
 // Web Sockets
 var WebSocketServer = require('ws').Server,
+    NBSocket = require('./NetsBloxSocket'),
+    GameType = require('./GameType'),
+    GameTypes = require('../GameTypes'),
+    Utils = require('../ServerUtils'),
+
     fs = require('fs'),
-    counter = 0,
+    R = require('ramda'),
+    path = require('path'),
+
     GenericManager = require('./paradigms/UniqueRoleParadigm'),
     ParadigmManager = require('./ParadigmManager'),
     _ = require('lodash'),
+
     debug = require('debug'),
     log = debug('NetsBlox:CommunicationManager:log'),
     info = debug('NetsBlox:CommunicationManager:info'),
     trace = debug('NetsBlox:CommunicationManager:trace'),
     assert = require('assert'),
 
-    HandleSocketRequest = require('./RequestTypes'),
-    vantage = require('vantage')();
+    HandleSocketRequest = require('./RequestTypes');
 
 // Settings
-var DEFAULT_PARADIGM = 'sandbox',
-    NO_GAME_TYPE = '__none__';
+var DEFAULT_GAME_TYPE = 'none',
+    loadParadigms,
+    Paradigms;
+
+loadParadigms = function() {
+    var paradigmDir = path.join(__dirname, 'paradigms'),
+        result = {};
+
+    Utils.loadJsFiles(paradigmDir)
+        .map(function(Paradigm) {
+            return Paradigm;
+        })
+        .forEach(function(Paradigm) {
+            result[Paradigm.getName().toLowerCase()] = Paradigm;
+        }, this);
+    return result;
+};
+
+Paradigms = loadParadigms();
 
 var CommunicationManager = function(opts) {
     this._wss = null;
     this.sockets = [];
-    this.socket2Role = {};
+    this.socket2Role = {};  // TODO: Move this to the UniqueRoleParadigm
 
     // These next two are for group id retrieval
-    this.socket2Uuid = {};
     this.uuid2Socket = {};
+    this.gameTypes = this.loadGameTypes();
+    this.uuid2GameType = {};
 
     // Group close callbacks
     this._groupCloseListeners = [];
-
-    this.paradigmManager = new ParadigmManager(this.fireGroupCloseEvents.bind(this));
-
-    // Set the default to Sandbox
-    info('Default messaging paradigm: "'+DEFAULT_PARADIGM+'"');
 };
 
-CommunicationManager.prototype.getGroupId = function(username) {
+/**
+ * Start the WebSocket server and start the socket updating interval.
+ *
+ * @param {Object} opts
+ * @return {undefined}
+ */
+CommunicationManager.prototype.start = function(options) {
+    var self = this,
+        uuid;
+
+    self._wss = new WebSocketServer(options);
+    info('WebSocket server started!');
+
+    self._wss.on('connection', function(rawSocket) {
+        var socket = self._prepSocket(rawSocket);
+
+        // Set up event handlers
+        rawSocket.on('message', function(data) {
+            log('Received message: "'+data+ '" from', socket.uuid);
+            self.onMsgReceived(socket, data);
+        });
+
+        rawSocket.on('close', function() {
+            self.updateSocket(socket);
+            info(socket.uuid+' closed!');
+        });
+
+    });
+};
+
+CommunicationManager.prototype.loadGameTypes = function() {
+    var types = GameTypes.map(CommunicationManager.loadGameType),
+        result = {};
+
+    for (var i = types.length; i--;) {
+        result[GameTypes[i].name.toLowerCase()] = types[i];
+    }
+    return result;
+};
+
+CommunicationManager.loadGameType = function(description) {
+    var name = description.name,
+        paradigmName = description.paradigm.toLowerCase(),
+        paradigmInstance = new Paradigms[paradigmName]();
+
+    return new GameType(name, paradigmInstance);
+};
+
+CommunicationManager.prototype.getGroupId = function(uuid) {
     var id,
         separator = '/',
         socket,
         gameType,
         paradigm;
 
-    trace('Getting group id for '+username);
-    socket = this.uuid2Socket[username];
-    if (!socket) {  // Return null if no socket has the given username
-        trace(username+' does not have a socket');
+    trace('Getting group id for '+uuid);
+    socket = this.uuid2Socket[uuid];
+    if (!socket) {  // Return null if no socket has the given uuid
+        trace(uuid+' does not have a socket');
         return null;
     }
 
@@ -60,7 +128,7 @@ CommunicationManager.prototype.getGroupId = function(username) {
     assert(paradigm, 'Paradigm not defined for socket #'+socket.id);
     id = [gameType, paradigm.getName(), paradigm.getGroupId(socket)]
         .join(separator);
-    trace('Group id for "'+username+'" is '+id);
+    trace('Group id for "'+uuid+'" is '+id);
     return id;
 };
 
@@ -74,49 +142,42 @@ CommunicationManager.prototype.fireGroupCloseEvents = function(groupId) {
     });
 };
 
-CommunicationManager.prototype._prepSocket = function(socket) {
-    var uuid;
+CommunicationManager.prototype._prepSocket = function(rawSocket) {
+    var socket = new NBSocket(rawSocket);
 
-    // ID the socket
-    socket.id = ++counter;
+    // Record the socket
+    this.uuid2Socket[socket.uuid] = socket;
     this.sockets.push(socket);
-    this.socket2Role[socket.id] = 'default_'+socket.id;
 
-    // Provide a uuid
-    uuid = 'user_'+socket.id;
-    this.socket2Uuid[socket.id] = uuid;
-    this.uuid2Socket[uuid] = socket;
-    socket.send('uuid '+uuid);
+    this.socket2Role[socket.id] = 'default_'+socket.id;  // FIXME: move this to UniqueRoleParadigm
+    log('A new NetsBlox client has connected! UUID: ' + socket.uuid);
 
-    log('A new NetsBlox client has connected! UUID: '+uuid);
-
-    // Add the socket to the default paradigm
-    this.joinParadigmInstance(socket, NO_GAME_TYPE, DEFAULT_PARADIGM);
+    // Add the socket to the default GameType
+    this.joinGameType(socket, DEFAULT_GAME_TYPE);
+    return socket;
 };
 
-CommunicationManager.prototype.joinParadigmInstance = function(socket, gameType, paradigmName) {
-    this.paradigmManager.joinParadigmInstance(socket, gameType, paradigmName);
+CommunicationManager.prototype.joinGameType = function(socket, gameType) {
+    var gameTypeInstance = this.gameTypes[gameType];
 
-    var paradigm = this.paradigmManager.getParadigmInstance(socket);
-    paradigm.onConnect(socket);
+    trace('Adding ' + socket.uuid + ' to Game Type "' + gameType + '"');
+    assert(gameTypeInstance, 'Game type "' + gameType + '" is not defined!');
+    this.uuid2GameType[socket.uuid] = gameTypeInstance;
+    gameTypeInstance.onConnect(socket);
     // Broadcast 'join' on connect
     this.notifyGroupJoin(socket);
 };
 
-CommunicationManager.prototype.leaveParadigmInstance = function(socket) {
-    var paradigm = this.paradigmManager.getParadigmInstance(socket),
-        role = this.socket2Role[socket.id],
-        peers = paradigm.getGroupMembers(socket);
+CommunicationManager.prototype.leaveGameType = function(socket) {
+    var gameType = this.uuid2GameType[socket.uuid],
+        role = this.socket2Role[socket.id],    // FIXME: Move this to UniqueRoleParadigm #47
+        peers = gameType.getGroupMembers(socket);
 
     // Broadcast the leave message to peers of the given socket
-    info('Socket', socket.id, 'is leaving');
-    paradigm.onDisconnect(socket);
+    info('Socket', socket.uuid, 'is leaving (peer count: '+peers.length+')');
+    gameType.onDisconnect(socket);
     this.broadcast('leave '+role, peers);
-
-    // Remove the instance if empty
-    if (paradigm.memberCount <= 0) {
-        this.paradigmManager.removeInstance(socket);
-    }
+    delete this.uuid2GameType[socket.uuid];
 };
 
 /**
@@ -132,7 +193,7 @@ CommunicationManager.prototype.broadcast = function(message, peers) {
     for (var i = peers.length; i--;) {
         socket = peers[i];
         // Check if the socket is open
-        if (socket.readyState === socket.OPEN) {
+        if (socket.getState() === socket.OPEN) {
             info('Sending message "'+message+'" to socket #'+socket.id);
             socket.send(message);
         }
@@ -146,11 +207,11 @@ CommunicationManager.prototype.broadcast = function(message, peers) {
  * @return {Boolean} connected?
  */
 CommunicationManager.prototype.updateSocket = function(socket) {
-    if (socket.readyState !== socket.OPEN) {
+    console.log('socket ('+socket.uuid+') state:', socket.getState());
+    if (socket.getState() !== socket.OPEN) {
         info('Removing disconnected socket ('+socket.id+')');
 
-        this.leaveParadigmInstance(socket);
-        this.paradigmManager.remove(socket);
+        this.leaveGameType(socket);
         this._removeFromRecords(socket);
         return false;
     }
@@ -159,9 +220,10 @@ CommunicationManager.prototype.updateSocket = function(socket) {
 
 CommunicationManager.prototype._removeFromRecords = function(socket) {
     var index = this.sockets.indexOf(socket),
-        role = this.socket2Role[socket.id];
+        role = this.socket2Role[socket.id];    // FIXME: Move this to UniqueRoleParadigm #47
 
-    delete this.socket2Role[socket.id];
+    delete this.socket2Role[socket.id];    // FIXME: Move this to UniqueRoleParadigm #47
+    delete this.uuid2Socket[socket.id];
     this.sockets.splice(index,1);
     return socket;
 };
@@ -174,21 +236,21 @@ CommunicationManager.prototype._removeFromRecords = function(socket) {
  */
 CommunicationManager.prototype.notifyGroupJoin = function(socket) {
     var role,
-        paradigm,
+        gameType,
         peers;
 
-    role = this.socket2Role[socket.id];
-    paradigm = this.paradigmManager.getParadigmInstance(socket);
-    assert(paradigm, 'Paradigm not defined for socket #'+socket.id);
+    role = this.socket2Role[socket.id];    // FIXME: Move this to UniqueRoleParadigm #47
+    gameType = this.uuid2GameType[socket.uuid];
+    assert(gameType, 'Game Type not defined for socket '+socket.uuid);
 
-    peers = paradigm.getGroupMembers(socket);
+    peers = gameType.getGroupMembers(socket);
     // Send 'join' messages to peers in the 'group'
     this.broadcast('join '+role, peers);
 
     // Send new member join messages from everyone else
     for (var i = peers.length; i--;) {
         if (peers[i] !== socket.id) {
-            socket.send('join '+this.socket2Role[peers[i].id]);
+            socket.send('join '+this.socket2Role[peers[i].id]);  // FIXME: Update this with #47
         }
     }
 };
@@ -203,31 +265,31 @@ CommunicationManager.prototype.notifyGroupJoin = function(socket) {
 CommunicationManager.prototype.onMsgReceived = function(socket, message) {
     var msg = message.split(' '),
         type = msg.shift(),
-        oldRole = this.socket2Role[socket.id],
-        paradigm = this.paradigmManager.getParadigmInstance(socket),
+        oldRole = this.socket2Role[socket.id],    // FIXME: Move this to UniqueRoleParadigm #47
+        gameType = this.uuid2GameType[socket.uuid],
         peers,
         group,
         oldMembers,
         role;
 
-    assert(paradigm, 'Paradigm not defined for socket #'+socket.id);
+    assert(gameType, 'Game Type not defined for socket #'+socket.id);
 
     // Early return..
-    if (!paradigm.isMessageAllowed(socket, message)) {
+    if (!gameType.isMessageAllowed(socket, message)) {
         info('GroupManager blocking message "'+message+'" from '+socket.id);
         return;
     }
 
-    oldMembers = paradigm.onMessage(socket, message);
+    oldMembers = gameType.onMessage(socket, message);
 
     // Handle the different request types
     if (HandleSocketRequest[type] !== undefined) {
-        HandleSocketRequest[type].call(this,socket, msg);
+        HandleSocketRequest[type].call(this, socket, msg);
     } else {
         log('Received invalid message type: '+type);
     }
 
-    if (oldMembers) { // Update group change
+    if (oldMembers) {  // Update group change
         var k;
 
         // Broadcast 'leave' to old peers
@@ -237,34 +299,6 @@ CommunicationManager.prototype.onMsgReceived = function(socket, message) {
 
         this.notifyGroupJoin(socket);
     }
-};
-
-/**
- * Start the WebSocket server and start the socket updating interval.
- *
- * @param {Object} opts
- * @return {undefined}
- */
-CommunicationManager.prototype.start = function(options) {
-    var uuid;
-    this._wss = new WebSocketServer(options);
-    info('WebSocket server started!');
-
-    this._wss.on('connection', function(socket) {
-        this._prepSocket(socket);
-
-        // Set up event handlers
-        socket.on('message', function(data) {
-            log('Received message: "'+data+ '" from', socket.id);
-            this.onMsgReceived(socket, data);
-        }.bind(this));
-
-        socket.on('close', function() {
-            this.updateSocket(socket);
-            info('socket #'+socket.id+' closed!');
-        }.bind(this));
-
-    }.bind(this));
 };
 
 CommunicationManager.prototype.stop = function() {
@@ -278,19 +312,19 @@ CommunicationManager.prototype.stop = function() {
  */
 CommunicationManager.prototype.allGroups = function() {
     var self = this,
-        instances = this.paradigmManager.getAllParadigmInstances();
+        gameTypes = R.values(this.gameTypes);
 
-    return instances.reduce(function(groups, container) {
-        var uuidGroups = container.instance
+    return gameTypes.map(function(gameType) {
+        var uuidGroups = gameType
             .getAllGroups()
             .map(function(group) {
                 return group.map(function(socket) {
-                    return self.socket2Uuid[socket.id];
+                    return socket.uuid;
                 });
             });
 
-        return groups.concat({name: container.name, groups: uuidGroups});
-    }, []);
+        return {name: gameType.name, groups: uuidGroups};
+    });
 };
 
 module.exports = CommunicationManager;

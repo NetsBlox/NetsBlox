@@ -12,7 +12,12 @@ var BaseParadigm = require('./Basic.js'),
     R = require('ramda'),
     defaultRolePrefix = 'default_',
     ID_KEY = '__id__',
-    COUNT = 0;
+    COUNT = 0,
+
+    debug = require('debug'),
+    log = debug('NetsBlox:CommunicationManager:Paradigm:UniqueRole:log'),
+    info = debug('NetsBlox:CommunicationManager:Paradigm:UniqueRole:info'),
+    trace = debug('NetsBlox:CommunicationManager:Paradigm:UniqueRole:trace');
 
 var UniqueRoleParadigm = function() {
     BaseParadigm.call(this);
@@ -80,6 +85,7 @@ UniqueRoleParadigm.prototype.getGroupMembers = function(socket) {
  * @return {undefined}
  */
 UniqueRoleParadigm.prototype.onConnect = function(socket) {
+    trace('Socket connected: "' + socket.uuid + '"');
     var id = socket.id;
     this.id2Socket[id] = socket;
     this.id2Role[id] = 'default_'+id;  // Unique default role

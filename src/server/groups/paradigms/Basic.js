@@ -110,4 +110,7 @@ BasicParadigm.prototype.notifyGroupClose = function(socket) {
     this.onGroupClose(groupId);
 };
 
+// Protected Methods
+// TODO: Move notifyGroupJoin and notifyGroupLeave here
+
 module.exports = BasicParadigm;
