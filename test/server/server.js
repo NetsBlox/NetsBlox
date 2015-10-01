@@ -14,7 +14,7 @@ var supertest = require('supertest'),
     _ = require('lodash'),
     basicRoutes = require('../../src/server/routes/BasicRoutes'),
     userRoutes = require('../../src/server/routes/Users'),
-    DefaultGameTypes = require('../../src/server/routes/GameTypes'),
+    DefaultGameTypes = require('../../src/server/GameTypes'),
 
     not = function(checkCode) {
         return function(v) {
