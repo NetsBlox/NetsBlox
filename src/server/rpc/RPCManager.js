@@ -37,12 +37,13 @@ var RPCManager = function(groupManager) {
  */
 RPCManager.loadRPCs = function() {
     // Load the rpcs from the __dirname+'/procedures' directory
-    return fs.readdirSync(PROCEDURES_DIR).filter(function(name) {
-            return path.extname(name) === '.js';
+    return fs.readdirSync(PROCEDURES_DIR)
+        .map(function(name) {
+            return path.join(PROCEDURES_DIR, name, name+'.js');
         })
-        .map(function(rpc) {
-            var fullPath = path.join(PROCEDURES_DIR,rpc),
-                RPCConstructor = require(fullPath);
+        .filter(fs.existsSync.bind(fs))
+        .map(function(fullPath) {
+            var RPCConstructor = require(fullPath);
             return RPCConstructor;
         });
 };
