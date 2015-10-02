@@ -8,6 +8,7 @@
 
 var debug = require('debug'),
     log = debug('NetsBlox:RPCManager:AirQuality:log'),
+    error = debug('NetsBlox:RPCManager:AirQuality:error'),
     trace = debug('NetsBlox:RPCManager:AirQuality:trace'),
     API_KEY = process.env.AIR_NOW_KEY,
     path = require('path'),
@@ -83,10 +84,14 @@ module.exports = {
             if (err) {
                 return res.status(500).send('ERROR: '+err);
             }
-            body = JSON.parse(body).shift();
             var name = 'unknown';
-            if (body && body.Category) {
-                name = body.Category[category];
+            try {
+                body = JSON.parse(body).shift();
+                if (body && body.Category) {
+                    name = body.Category[category];
+                }
+            } catch (e) {
+                error('Could not get air quality: ', e);
             }
 
             res.json(name);
@@ -109,17 +114,20 @@ module.exports = {
         trace('Requesting air quality at '+ nearest);
         
         request(url, function(err, response, body) {
-            if (err) {
-                return res.status(500).send('ERROR: '+err);
-            }
-            body = JSON.parse(body).shift();
-            var aqi = -1;
-            if (body && body.AQI) {
-                aqi = +body.AQI;
-                trace('Air quality at '+ nearest + ' is ' + aqi);
+            var aqi = -1,
+                code = err ? 500 : response.statusCode;
+            try {
+                body = JSON.parse(body).shift();
+                if (body && body.AQI) {
+                    aqi = +body.AQI;
+                    trace('Air quality at '+ nearest + ' is ' + aqi);
+                }
+            } catch (e) {
+                // Just send -1 if anything bad happens
+                error('Could not get air quality index: ', e);
             }
 
-            res.json(aqi);
+            res.status(code).json(aqi);
         });
     }
 };
