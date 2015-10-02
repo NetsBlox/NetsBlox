@@ -29,6 +29,7 @@
     "dotenv": "^1.2.0",
     "express": "^4.12.3",
     "express-session": "^1.11.3",
+    "geolib": "^2.0.18",
     "jade": "^1.9.2",
     "just.randomstring": "^0.1.1",
     "lodash": "^3.9.1",
