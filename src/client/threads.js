@@ -132,8 +132,6 @@ function snapEquals(a, b) {
 
 function ThreadManager() {
     this.processes = [];
-    // At least for now, the ThreadManager manages the websocket as well
-    this.websocket = null;  //FIXME
 }
 
 ThreadManager.prototype.toggleProcess = function (block) {
@@ -1970,20 +1968,41 @@ Process.prototype.reportURL = function (url) {
     this.pushContext();
 };
 
-// Process event websocket primitives
+// Process event networked messaging primitives
+
+Process.prototype.setValueInNetworkMessage = function(attr, msgName, type, value) {
+    var msg = this.context.variables.getVar(msgName);
+    if (!(msg instanceof Message)) {
+        throw Error(msgName + ' is not a message!');
+    } else if (msg.type.name !== type) {
+        throw Error(msgName + ' is a ' + msg.type.name + ' message not a ' + type + ' message');
+    } else if (!contains(msg.getFieldNames(), attr)) {
+        throw Error(msgName + ' does not have the field "' + attr + '"!');
+    } else {
+        msg.set(attr, value);
+    } 
+};
+
+Process.prototype.getValueFromNetworkMessage = function(attr, msgName, type) {
+    var msg = this.context.variables.getVar(msgName);
+    return msg.get(attr);
+};
+
+Process.prototype.doCreateMessage = function(type) {
+    var stage = this.homeContext.receiver.parentThatIsA(StageMorph),
+        msgType = stage.messageTypes.getMsgType(type);
+
+    if (msgType) {
+        return new Message(msgType);
+    } else {
+        throw new Error('"'+type+'" messages no longer exist');
+    }
+};
 
 Process.prototype.doRegisterClient = function (message) {
     // Get the websocket manager
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
     stage.sockets.sendMessage('register ' + message);
-};
-
-Process.prototype.doSocketDisconnect = function () {
-    // Close the socket
-    if (!!this.websocket) {
-        // TODO: Should I close the socket or simply send an "exit"
-        // message to the server?
-    }
 };
 
 Process.prototype.doSocketEvent = function (message) {
@@ -1993,8 +2012,8 @@ Process.prototype.doSocketEvent = function (message) {
     stage.sockets.sendMessage('message ' + message);
 };
 
-Process.prototype.doSocketMessage = function (type, list) {
-    this.doSocketEvent(type+' '+JSON.stringify(list.contents));
+Process.prototype.doSocketMessage = function (msg) {
+    this.doSocketEvent(msg.type.name+' '+JSON.stringify(msg.contents));
 };
 
 /**
@@ -2003,23 +2022,26 @@ Process.prototype.doSocketMessage = function (type, list) {
  *
  * @return {undefined}
  */
-Process.prototype.receiveSocketMessage = function (type, list) {
-    var names = list.contents,
-        varFrame = this.context.outerContext.variables,
-        tmpNames = this.context.variables.parentFrame.names(),
-        len = Math.min(tmpNames.length, names.length),
-        value,
-        i;
+Process.prototype.receiveSocketMessage = function (type, name) {
+    var varFrame = this.context.outerContext.variables,
+        stage = this.homeContext.receiver.parentThatIsA(StageMorph),
+        msgType = stage.messageTypes.getMsgType(type),
+        content,
+        msg;
 
-    for (i = 0; i < len; i++) {
-        value = this.context.variables.getVar(tmpNames[i]);
-        varFrame.addVar(names[i], value);
-        varFrame.deleteVar(tmpNames[i]);
+    // Check for the message type in the stage
+    if (!msgType) {
+        return new Error('Received unsupported message type: "' + type + '"');
     }
 
-    while (i < names.length) {
-        varFrame.addVar(names[i++]);
-    }
+    content = this.context.variables.getVar('__message__');
+    msg = new Message(msgType);
+
+    // Populate the message content
+    msg.contents = content;
+
+    varFrame.addVar(name, msg);
+    varFrame.deleteVar('__message__');
 };
 
 // Process event messages primitives

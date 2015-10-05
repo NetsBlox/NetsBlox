@@ -1169,6 +1169,24 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             );
             part.isStatic = true;
             break;
+        case '%msgType':
+            part = new InputSlotMorph(
+                null,
+                false,
+                'messageTypesMenu',
+                true
+            );
+            part.isStatic = true;
+            break;
+        case '%msgField':
+            part = new InputSlotMorph(
+                null,
+                false,
+                'messageFieldsMenu',
+                true
+            );
+            part.isStatic = true;
+            break;
         case '%att':
             part = new InputSlotMorph(
                 null,
@@ -1341,6 +1359,9 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             break;
         case '%t':
             part = new TemplateSlotMorph('a');
+            break;
+        case '%message':
+            part = new TemplateSlotMorph('message');
             break;
         case '%upvar':
             part = new TemplateSlotMorph('\u2191'); // up-arrow
@@ -6866,9 +6887,11 @@ InputSlotMorph.prototype.rolesReceivedMenu = function () {
 
 InputSlotMorph.prototype.socketMessagesReceivedMenu = function () {
     var dict = {'join': 'join',
-                'leave': 'leave',
-                'any message': ['any message']};
-    return this.socketMessagesMenu(dict);
+                'leave': 'leave'};
+    this.socketMessagesMenu(dict);
+    dict['any event'] = ['any event'];
+    dict['new...'] = dict['new...'];
+    return dict;
 };
 
 /**
@@ -6881,7 +6904,7 @@ InputSlotMorph.prototype.socketMessagesMenu = function (dict) {
     var myself = this;
 
     dict = dict || {};
-    this._populateMenu(dict, 'allMessageNames'),
+    this._populateMenu(dict, 'allEventNames'),
 
     dict['~'] = null;
     dict['new...'] = function () {
@@ -6891,7 +6914,7 @@ InputSlotMorph.prototype.socketMessagesMenu = function (dict) {
             myself.setContents,
             myself
         ).prompt(
-            'Message name',
+            'Event name',
             null,
             myself.world()
         );
@@ -6951,6 +6974,43 @@ InputSlotMorph.prototype.messagesReceivedMenu = function () {
         );
     };
 
+    return dict;
+};
+
+InputSlotMorph.prototype.messageFieldsMenu = function() {
+    // Get the parent block and then get the current message type
+    // Look up the message type fields from this
+    var block = this.parentThatIsA(BlockMorph),
+        stage = block.receiver().parentThatIsA(StageMorph),
+        messageTypeInput,
+        messageTypeName,
+        dict = {},
+        names;
+
+    messageTypeInput = detect(block.inputs(), function(input) {
+        return input.choices === 'messageTypesMenu';
+    });
+    messageTypeName = messageTypeInput.contents().text;
+
+    if (messageTypeName) {
+        names = stage.messageTypes.getMsgType(messageTypeName).fields;
+        for (var i = names.length; i--;) {
+            dict[names[i]] = names[i];
+        }
+    }
+
+    return dict;
+};
+
+InputSlotMorph.prototype.messageTypesMenu = function() {
+    var rcvr = this.parentThatIsA(BlockMorph).receiver(),
+        stage = rcvr.parentThatIsA(StageMorph),
+        names = stage.messageTypes.names(),
+        dict = {};
+
+    for (var i = names.length; i--;) {
+        dict[names[i]] = names[i];
+    }
     return dict;
 };
 

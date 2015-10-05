@@ -164,6 +164,7 @@ SpriteMorph.prototype.categories =
         'pen',
         'variables',
         'network',
+        //'messages',
         'lists',
         'other'
     ];
@@ -178,6 +179,7 @@ SpriteMorph.prototype.blockColor = {
     operators : new Color(98, 194, 19),
     variables : new Color(243, 118, 29),
     network : new Color(217, 77, 17),
+    messages : new Color(120, 120, 120),
     lists : new Color(217, 77, 17),
     other: new Color(150, 150, 150)
 };
@@ -604,17 +606,42 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'control',
             spec: 'when I receive %msgHat'
         },
-        // WebSockets
-        doRegisterClient: {  // for use with the unique role paradigm
+        // Networking blocks
+        // RPC's
+        getJSFromRPC: {  // primitive JSON response
+            type: 'reporter',
+            category: 'network',
+            spec: 'call %s with %s',
+            defaults: ['tictactoe']
+        },
+        getCostumeFromRPC: {
+            type: 'reporter',
+            category: 'network',
+            spec: 'costume from %s with %s',
+            defaults: ['staticmap/getMap']
+        },
+        // TODO: get list from RPC; get message from RPC
+        // Network Messages
+        getValueFromNetworkMessage: {
+            type: 'reporter',
+            category: 'messages',
+            spec: '%msgField from %var as %msgType'
+        },
+        setValueInNetworkMessage: {
+            type: 'command',
+            category: 'messages',
+            spec: 'set %msgField of %var as %msgType to %s'
+        },
+        doCreateMessage: {
+            type: 'reporter',
+            category: 'messages',
+            spec: 'new %msgType message'
+        },
+        doRegisterClient: {  // for use with the generic group manager
             type: 'command',
             category: 'network',
             spec: 'register as %role'
         },
-        //doSocketDisconnect: {
-            //type: 'command',
-            //category: 'network',
-            //spec: 'unregister'
-        //},
         receiveSocketEvent: {
             type: 'hat',
             category: 'network',
@@ -628,12 +655,12 @@ SpriteMorph.prototype.initBlocks = function () {
         doSocketMessage: {
             type: 'command',
             category: 'network',
-            spec: 'broadcast msg %socketMsg %mult%s'
+            spec: 'broadcast msg %socketMsg'
         },
         receiveSocketMessage: {
             type: 'hat',
             category: 'network',
-            spec: 'when I receive msg %socketMsg %scriptVars'
+            spec: 'when I receive %msgType %message'
         },
         doBroadcast: {
             type: 'command',
@@ -907,25 +934,7 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: '%att of %spr',
             defaults: [['costume #']]
         },
-        // Creating URL block with params
-        //param: {
-            //type: 'reporter',
-            //category: 'network',
-            //spec: 'name: %s value: %s'
-        //},
-        getJSFromRPC: {  // JSON response
-            type: 'reporter',
-            category: 'network',
-            spec: 'call %s with %s',
-            defaults: ['tictactoe']
-        },
-        getCostumeFromRPC: {
-            type: 'reporter',
-            category: 'network',
-            spec: 'costume from %s with %s',
-            defaults: ['staticmap/getMap']
-        },
-        reportUsername: {  // TODO: Finish this!
+        reportUsername: {
             type: 'reporter',
             category: 'sensing',
             spec: 'username',
@@ -1809,6 +1818,16 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         }
     }
 
+    function addMessageType(pair) {
+        // TODO
+        console.log('Creating network message type', pair);
+    }
+
+    function addMessage(pair) {
+        console.log('Creating network message', pair);
+        // TODO
+    }
+
     if (cat === 'motion') {
 
         blocks.push(block('forward'));
@@ -1994,15 +2013,21 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doSocketEvent'));
         blocks.push(block('doSocketMessage'));
+        blocks.push('-');
         // TODO: Only add this block if unique role paradigm
         blocks.push(block('doRegisterClient'));
+        blocks.push('-');
         //blocks.push(block('doSocketDisconnect'));
         if (this.world().isDevMode) {
-            blocks.push('-');
             blocks.push(block('getJSFromRPC'));
             blocks.push(block('getCostumeFromRPC'));
             blocks.push('-');
         }
+        blocks.push(block('doCreateMessage'));
+        blocks.push(block('setValueInNetworkMessage'));
+        blocks.push(block('getValueFromNetworkMessage'));
+        blocks.push('-');
+
     } else if (cat === 'sensing') {
 
         blocks.push(block('reportTouchingObject'));
@@ -2716,6 +2741,34 @@ SpriteMorph.prototype.deleteVariable = function (varName) {
     this.variables.deleteVar(varName);
     if (ide) {
         ide.flushBlocksCache('variables'); // b/c the var could be global
+        ide.refreshPalette();
+    }
+};
+
+// SpriteMorph network messages management
+
+SpriteMorph.prototype.addNetworkMessageType = function (name, fields, isGlobal) {
+    // FIXME: They are currently all global
+    var stage = this.parentThatIsA(StageMorph),
+        ide = this.parentThatIsA(IDE_Morph);
+        msgType = new MessageType(name, fields);
+
+    stage.messageTypes.addMsgType(msgType);
+
+    if (ide) {
+        ide.flushBlocksCache('messages');
+        ide.refreshPalette();
+    }
+};
+
+SpriteMorph.prototype.deleteNetworkMessageType = function (msgName) {
+    var stage = this.parentThatIsA(StageMorph),
+        ide = this.parentThatIsA(IDE_Morph);
+
+    stage.messageTypes.deleteMsgType(msgName);
+
+    if (ide) {
+        ide.flushBlocksCache('messages');
         ide.refreshPalette();
     }
 };
@@ -3776,6 +3829,35 @@ SpriteMorph.prototype.allMessageNames = function () {
     return msgs;
 };
 
+SpriteMorph.prototype.allEventNames = function () {
+    var msgs = [];
+    this.scripts.allChildren().forEach(function (morph) {
+        var txt;
+        if (morph.selector) {
+            if (contains(
+                    ['doSocketEvent', 
+                     'receiveSocketEvent'],
+                    morph.selector
+                )) {
+                txt = morph.inputs()[0].evaluate();
+                if (morph.selector !== 'receiveSocketEvent' ||  // Ignore 'join' and 'leave' from 
+                       (txt !== 'join' && txt !== 'leave')) {     // receiveSocketEvent
+                    if (isString(txt) && txt !== '') {
+                        if (!contains(msgs, txt)) {
+                            msgs.push(txt);
+                        }
+                    }
+                }
+            }
+        }
+    });
+    return msgs;
+};
+
+SpriteMorph.prototype.allNetworkMessageNames = function () {
+    // TODO
+};
+
 SpriteMorph.prototype.allHatSocketBlocksFor = function (message, role) {
     if (typeof message === 'number') {
         message = message.toString(); 
@@ -4818,6 +4900,7 @@ StageMorph.prototype.init = function (globals) {
     this.name = localize('Stage');
     this.threads = new ThreadManager();
     this.sockets = new WebSocketManager(this);
+    this.messageTypes = new MessageFrame();
     this.variables = new VariableFrame(globals || null, this);
     this.scripts = new ScriptsMorph(this);
     this.customBlocks = [];
@@ -5117,7 +5200,42 @@ StageMorph.prototype.getTempo = function () {
 StageMorph.prototype.setGameType = function (gameType) {
     // Update the server
     this.sockets.setGameType(gameType);
+
+    // Look up the messageTypes for the gameType
+    if (!gameType.messageTypes) {
+        var req = new XMLHttpRequest(),
+            self = this;
+
+        req.onload = function() {
+            gameType = detect(
+                JSON.parse(req.responseText),
+                function(otherGameType) {
+                    return otherGameType.name === gameType.name;
+                });
+            self.setMessageTypes(gameType);
+        };
+        req.open('get', baseURL + 'api/GameTypes');
+        req.send();
+    } else {
+        this.setMessageTypes(gameType);
+    }
     return this.gameType = gameType;
+};
+
+StageMorph.prototype.setMessageTypes = function (gameType) {
+    // Load the supported message types
+    var msgFrame = new MessageFrame(),
+        msgType,
+        name,
+        fields;
+
+    for (var i = gameType.messageTypes.length; i--;) {
+        name = gameType.messageTypes[i].name;
+        fields = gameType.messageTypes[i].fields;
+        msgType = new MessageType(name, fields);
+        msgFrame.addMsgType(msgType);
+    }
+    this.messageTypes = msgFrame;
 };
 
 // StageMorph messages
@@ -5578,13 +5696,20 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doSocketEvent'));
         blocks.push(block('doSocketMessage'));
+        blocks.push('-');
         blocks.push(block('doRegisterClient'));
-        //blocks.push(block('doSocketDisconnect'));
+        blocks.push('-');
+
         if (this.world().isDevMode) {
-            blocks.push('-');
             blocks.push(block('getJSFromRPC'));
             blocks.push(block('getCostumeFromRPC'));
+            blocks.push('-');
         }
+
+        blocks.push(block('doCreateMessage'));
+        blocks.push(block('setValueInNetworkMessage'));
+        blocks.push(block('getValueFromNetworkMessage'));
+        blocks.push('-');
 
     } else if (cat === 'control') {
 
@@ -6150,6 +6275,9 @@ StageMorph.prototype.allRoleNames
 
 StageMorph.prototype.allMessageNames
     = SpriteMorph.prototype.allMessageNames;
+
+StageMorph.prototype.allEventNames
+    = SpriteMorph.prototype.allEventNames;
 
 StageMorph.prototype.allHatSocketBlocksFor 
     = SpriteMorph.prototype.allHatSocketBlocksFor;
