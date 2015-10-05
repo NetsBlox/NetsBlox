@@ -133,20 +133,6 @@ ParadigmManager.prototype.joinGameType = function(socket, gameType) {
 };
 
 // Private API
-ParadigmManager.prototype._loadParadigms = function() {
-    var paradigmDir = path.join(__dirname, 'paradigms'),
-        result = {};
-
-    Utils.loadJsFiles(paradigmDir)
-        .map(function(Paradigm) {
-            return Paradigm;
-        })
-        .forEach(function(Paradigm) {
-            result[Paradigm.getName().toLowerCase()] = Paradigm;
-        }, this);
-    return result;
-};
-
 ParadigmManager.prototype._createParadigmIfNeeded = function(gameType, name) {
     if (!this.gameTypeRooms[gameType][name]) {
         trace('Creating paradigm instance in "'+gameType+'" of type "'+name+'"');

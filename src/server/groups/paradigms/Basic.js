@@ -10,11 +10,16 @@
 // assigning the role)
 'use strict';
 
-var assert = require('assert');
+var assert = require('assert'),
+    BaseParadigm = require('./AbstractParadigm'),
+    _ = require('lodash');
+
 var BasicParadigm = function() {
-    this.globalGroup = [];  // TODO: Move this elsewhere
-    this.memberCount = 0;
+    BaseParadigm.call(this);
+    this.globalGroup = [];
 };
+
+_.extend(BasicParadigm.prototype, BaseParadigm.prototype);
 
 BasicParadigm.getName = function() {
     return 'Basic';
@@ -23,7 +28,6 @@ BasicParadigm.getName = function() {
 BasicParadigm.prototype.getName = BasicParadigm.getName;
 
 BasicParadigm.prototype.getDescription = function() {
-    // TODO
     return 'Every one can receive messages from everyone else';
 };
 
@@ -64,50 +68,19 @@ BasicParadigm.prototype.getGroupId = function(socket) {
 };
 
 BasicParadigm.prototype.onConnect = function(socket) {
+    BaseParadigm.prototype.onConnect.call(this, socket);
     assert(this.globalGroup instanceof Array);
     this.globalGroup.push(socket);
-    this.memberCount++;
-};
-
-/**
- * Filter socket messages.
- *
- * @param {WebSocket} socket
- * @param {String} message
- * @return {undefined}
- */
-BasicParadigm.prototype.isMessageAllowed = function(socket, message) {
-    return true;
-};
-
-BasicParadigm.prototype.onMessage = function(socket, message) {
-    return null;
 };
 
 BasicParadigm.prototype.onDisconnect = function(socket) {
+    BaseParadigm.prototype.onDisconnect.call(this, socket);
+
     assert(this.globalGroup instanceof Array);
     var i = this.globalGroup.indexOf(socket);
     this.globalGroup.splice(i,1);
-    this.memberCount--;
 
     assert(this.globalGroup instanceof Array);
-    assert(this.memberCount >= 0);
-};
-
-/**
- * Callback for closing a group. This will be overridden by the Communication
- * Manager to allow functions to be evaluated when this event occurs
- *
- * @param {String} groupId
- * @return {undefined}
- */
-BasicParadigm.prototype.onGroupClose = function(groupId) {
-    // nop
-};
-
-BasicParadigm.prototype.notifyGroupClose = function(socket) {
-    var groupId = this.getGroupId(socket);
-    this.onGroupClose(groupId);
 };
 
 module.exports = BasicParadigm;

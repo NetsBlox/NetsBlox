@@ -6,13 +6,18 @@
  */
 
 'use strict';
-var BaseParadigm = require('./Basic.js'),
+var BaseParadigm = require('./AbstractParadigm'),
     Utils = require('../../Utils.js'),
     assert = require('assert'),
     R = require('ramda'),
     defaultRolePrefix = 'default_',
     ID_KEY = '__id__',
-    COUNT = 0;
+    COUNT = 0,
+
+    debug = require('debug'),
+    log = debug('NetsBlox:CommunicationManager:Paradigm:UniqueRole:log'),
+    info = debug('NetsBlox:CommunicationManager:Paradigm:UniqueRole:info'),
+    trace = debug('NetsBlox:CommunicationManager:Paradigm:UniqueRole:trace');
 
 var UniqueRoleParadigm = function() {
     BaseParadigm.call(this);
@@ -21,9 +26,9 @@ var UniqueRoleParadigm = function() {
     this.globalGroup = this._createNewGroup();
 
     // Dictionary records
-    this.id2Group = {};
-    this.id2Role = {};
-    this.id2Socket = {};
+    this.uuid2Group = {};
+    this.uuid2Socket = {};
+    this.uuid2Role = {};
 };
 
 Utils.inherit(UniqueRoleParadigm.prototype, BaseParadigm.prototype);
@@ -42,7 +47,7 @@ UniqueRoleParadigm.prototype.getName = UniqueRoleParadigm.getName;
  * @return {Int} group id
  */
 UniqueRoleParadigm.prototype.getGroupId = function(socket) {
-    return this.id2Group[socket.id][ID_KEY];
+    return this.uuid2Group[socket.uuid][ID_KEY];
 };
 
 UniqueRoleParadigm.prototype.getAllGroups = function() {
@@ -52,9 +57,9 @@ UniqueRoleParadigm.prototype.getAllGroups = function() {
 
 UniqueRoleParadigm.prototype.getGroupMembersToMessage = function(socket) {
     var self = this,
-        group = this.id2Group[socket.id];
+        group = this.uuid2Group[socket.uuid];
 
-    assert(group, 'Socket '+socket.id+' does not have a group');
+    assert(group, 'Socket '+socket.uuid+' does not have a group');
     return this._getGroupSockets(group);
 };
 
@@ -66,8 +71,8 @@ UniqueRoleParadigm.prototype.getGroupMembersToMessage = function(socket) {
  */
 UniqueRoleParadigm.prototype.getGroupMembers = function(socket) {
     var group = this.getGroupMembersToMessage(socket),
-        getId = R.partialRight(Utils.getAttribute, 'id'),
-        isSocketId = R.partial(R.eq, socket.id);
+        getId = R.partialRight(Utils.getAttribute, 'uuid'),
+        isSocketId = R.partial(R.eq, socket.uuid);
 
     return R.reject(R.pipe(getId, isSocketId), group);
 };
@@ -80,12 +85,13 @@ UniqueRoleParadigm.prototype.getGroupMembers = function(socket) {
  * @return {undefined}
  */
 UniqueRoleParadigm.prototype.onConnect = function(socket) {
-    var id = socket.id;
-    this.id2Socket[id] = socket;
-    this.id2Role[id] = 'default_'+id;  // Unique default role
+    trace('Socket connected: "' + socket.uuid + '"');
+    var uuid = socket.uuid;
+    this.uuid2Socket[uuid] = socket;
+    this.uuid2Role[uuid] = uuid;  // Unique default role
 
-    this.memberCount++;
     this._addClientToGroup(socket, this.globalGroup);
+    BaseParadigm.prototype.onConnect.call(this, socket);
 };
 
 /**
@@ -96,27 +102,36 @@ UniqueRoleParadigm.prototype.onConnect = function(socket) {
  * @return {Array<Ids>|null} 
  */
 UniqueRoleParadigm.prototype.onMessage = function(socket, message) {
-    var id = socket.id,
+    var uuid = socket.uuid,
         data = message.split(' '),
         type = data.shift(),
         role,
-        oldRole = this.id2Role[id],
+        oldRole = this.uuid2Role[uuid],
         oldGroupMembers = null;
 
+    console.log('MESSAGE:', message);
     if (type === 'register') {
         role = data.join(' ');
         if (oldRole !== role) {
-            this.id2Role[id] = role;
+            console.log('setting', uuid, 'to', role);
+            this.uuid2Role[uuid] = role;
             // Check if can stay in current group
-            if (this._canSwitchRolesInCurrentGroup(id, role)) {
-                delete this.id2Group[id][oldRole];
+            if (this._canSwitchRolesInCurrentGroup(uuid, role)) {
+                delete this.uuid2Group[uuid][oldRole];
             } else {
                 oldGroupMembers = this.getGroupMembers(socket);
                 // Remove the socket from the current group
-                this._removeClientFromGroup(id, oldRole);
+                this._removeClientFromGroup(uuid, oldRole);
                 this._findGroupForClient(socket);
             }
+
+            // Join the new group
+            this.notifyGroupJoin(socket);
         }
+    }
+
+    if (oldGroupMembers) {
+        this.broadcast('leave '+oldRole, oldGroupMembers);
     }
 
     return oldGroupMembers;
@@ -130,29 +145,59 @@ UniqueRoleParadigm.prototype.onMessage = function(socket, message) {
  */
 UniqueRoleParadigm.prototype.onDisconnect = function(socket) {
     // Update the groups
-    var id = socket.id,
-        role = this.id2Role[id],
-        group = this.id2Group[id];
+    var uuid = socket.uuid,
+        role = this.uuid2Role[uuid],
+        group = this.uuid2Group[uuid];
 
+    BaseParadigm.prototype.onDisconnect.call(this, socket);
     if (group !== undefined) {
         // Remove role from group
-        this._removeClientFromGroup(id, role);
-        this.memberCount--;
-        assert(this.memberCount >= 0);
+        this._removeClientFromGroup(uuid, role);
     }
- 
 };
+
+/**
+ * Broadcast a JOIN message to the other members in the group.
+ *
+ * @param {WebSocket} socket
+ * @return {undefined}
+ */
+UniqueRoleParadigm.prototype.notifyGroupJoin = function(socket) {
+    var role,
+        gameType,
+        peers;
+
+    role = this.uuid2Role[socket.uuid];
+    peers = this.getGroupMembers(socket);
+    // Send 'join' messages to peers in the 'group'
+    this.broadcast('join '+role, peers);
+
+    // Send new member join messages from everyone else
+    for (var i = peers.length; i--;) {
+        if (peers[i] !== socket.uuid) {
+            socket.send('join '+this.uuid2Role[peers[i].uuid]);
+        }
+    }
+};
+
+UniqueRoleParadigm.prototype.notifyGroupLeave = function(socket) {
+    var peers = this.getGroupMembers(socket),
+        role = this.uuid2Role[socket.uuid];
+
+    this.broadcast('leave '+role, peers);
+};
+
 
 // Internal API
 UniqueRoleParadigm.prototype._removeClientFromGroup = function(id, role) {
-    var oldGroup = this.id2Group[id];
+    var oldGroup = this.uuid2Group[id];
 
     if (Object.keys(oldGroup).length === 1) {
-        this.notifyGroupClose(this.id2Socket[id]);
+        this.notifyGroupClose(this.uuid2Socket[id]);
     }
 
     delete oldGroup[role];
-    delete this.id2Group[id];
+    delete this.uuid2Group[id];
 };
 
 /**
@@ -163,11 +208,11 @@ UniqueRoleParadigm.prototype._removeClientFromGroup = function(id, role) {
  * @return {undefined}
  */
 UniqueRoleParadigm.prototype._addClientToGroup = function(socket, group) {
-    var id = socket.id,
-        role = this.id2Role[id];
+    var id = socket.uuid,
+        role = this.uuid2Role[id];
 
     group[role] = socket;
-    this.id2Group[id] = group;
+    this.uuid2Group[id] = group;
 };
 
 /**
@@ -180,8 +225,8 @@ UniqueRoleParadigm.prototype._addClientToGroup = function(socket, group) {
  */
 
 UniqueRoleParadigm.prototype._findGroupForClient = function(socket) {
-    var id = socket.id,
-        role = this.id2Role[id];
+    var uuid = socket.uuid,
+        role = this.uuid2Role[uuid];
 
     // Add client to group based on it's role
     for (var i = 0; i < this.groups.length; i++) {
@@ -196,7 +241,7 @@ UniqueRoleParadigm.prototype._findGroupForClient = function(socket) {
 };
 
 UniqueRoleParadigm.prototype._canSwitchRolesInCurrentGroup = function(id, newRole) {
-    var group = this.id2Group[id];
+    var group = this.uuid2Group[id];
 
     return !group[newRole] && group !== this.globalGroup;
 };
@@ -222,7 +267,7 @@ UniqueRoleParadigm.prototype._printGroups = function() {
 
 UniqueRoleParadigm.prototype._printGroup = function(group) {
     var number = this.groups.indexOf(group);
-    console.log('Group', number, ':', R.mapObj(function(s){return s.id;}, group));
+    console.log('Group', number, ':', R.mapObj(s => s.uuid, group));
 };
 
 module.exports = UniqueRoleParadigm;
