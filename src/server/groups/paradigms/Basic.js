@@ -69,8 +69,7 @@ BasicParadigm.prototype.getGroupId = function(socket) {
 
 BasicParadigm.prototype.onConnect = function(socket) {
     BaseParadigm.prototype.onConnect.call(this, socket);
-    console.log(this.globalGroup);
-    assert(this.globalGroup instanceof Array, 'globalGroup is '+this.globalGroup);
+    assert(this.globalGroup instanceof Array);
     this.globalGroup.push(socket);
 };
 

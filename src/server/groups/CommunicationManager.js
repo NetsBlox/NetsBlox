@@ -51,7 +51,6 @@ Paradigms = loadParadigms();
 var CommunicationManager = function(opts) {
     this._wss = null;
     this.sockets = [];
-    this.socket2Role = {};  // TODO: Move this to the UniqueRoleParadigm
 
     // These next two are for group id retrieval
     this.uuid2Socket = {};
@@ -149,7 +148,6 @@ CommunicationManager.prototype._prepSocket = function(rawSocket) {
     this.uuid2Socket[socket.uuid] = socket;
     this.sockets.push(socket);
 
-    this.socket2Role[socket.id] = 'default_'+socket.id;  // FIXME: move this to UniqueRoleParadigm
     log('A new NetsBlox client has connected! UUID: ' + socket.uuid);
 
     // Add the socket to the default GameType
@@ -167,8 +165,7 @@ CommunicationManager.prototype.joinGameType = function(socket, gameType) {
 };
 
 CommunicationManager.prototype.leaveGameType = function(socket) {
-    var gameType = this.uuid2GameType[socket.uuid],
-        role = this.socket2Role[socket.id];    // FIXME: Move this to UniqueRoleParadigm #47
+    var gameType = this.uuid2GameType[socket.uuid];
 
     // Broadcast the leave message to peers of the given socket
     info('Socket', socket.uuid, 'is leaving');
@@ -195,11 +192,9 @@ CommunicationManager.prototype.updateSocket = function(socket) {
 };
 
 CommunicationManager.prototype._removeFromRecords = function(socket) {
-    var index = this.sockets.indexOf(socket),
-        role = this.socket2Role[socket.id];    // FIXME: Move this to UniqueRoleParadigm #47
+    var index = this.sockets.indexOf(socket);
 
-    delete this.socket2Role[socket.id];    // FIXME: Move this to UniqueRoleParadigm #47
-    delete this.uuid2Socket[socket.id];
+    delete this.uuid2Socket[socket.uuid];
     this.sockets.splice(index,1);
     return socket;
 };
@@ -214,7 +209,6 @@ CommunicationManager.prototype._removeFromRecords = function(socket) {
 CommunicationManager.prototype.onMsgReceived = function(socket, message) {
     var msg = message.split(' '),
         type = msg.shift(),
-        oldRole = this.socket2Role[socket.id],    // FIXME: Move this to UniqueRoleParadigm #47
         gameType = this.uuid2GameType[socket.uuid],
         peers,
         group,
@@ -229,7 +223,7 @@ CommunicationManager.prototype.onMsgReceived = function(socket, message) {
         return;
     }
 
-    /*oldMembers = */gameType.onMessage(socket, message);
+    gameType.onMessage(socket, message);
 
     // Handle the different request types
     if (HandleSocketRequest[type] !== undefined) {
@@ -237,15 +231,6 @@ CommunicationManager.prototype.onMsgReceived = function(socket, message) {
     } else {
         log('Received invalid message type: '+type);
     }
-
-    //if (oldMembers) {  // Update group change
-        //var k;
-
-        // Broadcast 'leave' to old peers
-        //k = oldMembers.indexOf(socket);
-        //oldMembers.splice(k,1);
-        //this.broadcast('leave '+oldRole, oldMembers);
-    //}
 };
 
 CommunicationManager.prototype.stop = function() {

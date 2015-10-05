@@ -5,19 +5,6 @@ var debug = require('debug'),
     nop = require('nop');
 
 var Requests = {
-        /**
-         * Register the socket's role.
-         *
-         * @param {WebSocket} socket
-         * @param {Array<String>} msg
-         * @return {undefined}
-         */
-        register: function(socket, msg) {
-            var role = msg.shift();  // record the roleId
-            console.log('registering '+socket.id+' as '+role);
-            this.socket2Role[socket.id] = role;  // FIXME: Move this to UniqueRoleParadigm #47
-        },
-
         gameType: function(socket, msg) {
             var name = msg.join(' ');
 
@@ -41,7 +28,6 @@ var Requests = {
 
             // broadcast the message, role to all peers
             gameType = this.uuid2GameType[socket.uuid];
-            role = this.socket2Role[socket.id];  // FIXME: Move this to UniqueRoleParadigm #47
             msg.push(role);
             log('About to broadcast '+msg.join(' ')+
                         ' from socket #'+socket.id+' ('+role+')');

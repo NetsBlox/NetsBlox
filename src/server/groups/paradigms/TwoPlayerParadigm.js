@@ -71,7 +71,7 @@ TwoPlayerParadigm.prototype.onMessage = function(socket) {
 
 TwoPlayerParadigm.prototype.onConnect = function(socket) {
     this._addToGroup(socket);
-    BaseParadigm.onConnect.call(this, socket);
+    BaseParadigm.prototype.onConnect.call(this, socket);
 };
 
 TwoPlayerParadigm.prototype.onDisconnect = function(socket) {
@@ -80,7 +80,7 @@ TwoPlayerParadigm.prototype.onDisconnect = function(socket) {
         peer;
 
     info('Removing #'+socket.id+' from '+TwoPlayerParadigm._printGroup(group));
-    BaseParadigm.onDisconnect.call(this, socket);
+    BaseParadigm.prototype.onDisconnect.call(this, socket);
 
     // Remove the given group and add the other socket back to a group
     // TODO: This could cause problems as this means the RPC context will be 
