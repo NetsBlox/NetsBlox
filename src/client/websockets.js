@@ -7,7 +7,7 @@ var WebSocketManager = function (stage) {
     this.websocket = null;
     this.messages = [];
     this.gameType = 'None';
-    this.devMode = true;
+    this.devMode = false;
     this._connectWebSocket();
 };
 
