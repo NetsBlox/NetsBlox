@@ -6,9 +6,8 @@ var WebSocketManager = function (stage) {
     this.uuid = null;
     this.websocket = null;
     this.messages = [];
-    this.gameType = null;
-    this.paradigm = null;
-    this.connected = false;
+    this.gameType = 'None';
+    this.devMode = true;
     this._connectWebSocket();
 };
 
@@ -37,9 +36,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
     // Set up message firing queue
     this.websocket.onopen = function() {
         console.log('Connection established');  // REMOVE this
-        if (self.gameType || self.paradigm) {
-            self.updateGameType();
-        }
+        self._updateProjectNetworkState();
 
         while (self.messages.length) {
             self.websocket.send(self.messages.shift());
@@ -80,27 +77,22 @@ WebSocketManager.prototype.sendMessage = function(message) {
 };
 
 WebSocketManager.prototype.setGameType = function(gameType) {
-    this.paradigm = gameType.paradigm;
     this.gameType = gameType.name;
-    this.connected = true;
-    this.updateGameType();
+    this._updateProjectNetworkState();
 };
 
-WebSocketManager.prototype.updateGameType = function() {
-    this.sendMessage('paradigm '+this.paradigm);
+WebSocketManager.prototype._updateProjectNetworkState = function() {
     this.sendMessage('gameType '+this.gameType);
+    var cmd = this.devMode ? 'on' : 'off';
+    console.log('dev mode is now ' + cmd);
+    this.sendMessage('devMode ' + cmd + ' ' + (SnapCloud.username || ''));
+    
 };
 
-// If setting paradigm, record if the connection is 'on' or 'off'
-// Technically, it is always on; it simply toggles communication paradigms
-// on the server ('off' is the 'sandbox' paradigm)
+// FIXME: Toggle dev mode
 WebSocketManager.prototype.toggleNetwork = function() {
-    var newParadigm;
-
-    this.connected = !this.connected;
-    console.log('Network is now '+ (this.connected ? '' : 'dis') + 'connected');
-    newParadigm = this.connected ? this.paradigm :'sandbox';
-    this.sendMessage('paradigm '+newParadigm);
+    this.devMode = !this.devMode;
+    this._updateProjectNetworkState();
 };
 
 /**

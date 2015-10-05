@@ -158,7 +158,7 @@ CommunicationManager.prototype._prepSocket = function(rawSocket) {
 };
 
 CommunicationManager.prototype.joinGameType = function(socket, gameType) {
-    var gameTypeInstance = this.gameTypes[gameType];
+    var gameTypeInstance = this.gameTypes[gameType.toLowerCase()];
 
     trace('Adding ' + socket.uuid + ' to Game Type "' + gameType + '"');
     assert(gameTypeInstance, 'Game type "' + gameType + '" is not defined!');
@@ -316,12 +316,7 @@ CommunicationManager.prototype.allGroups = function() {
 
     return gameTypes.map(function(gameType) {
         var uuidGroups = gameType
-            .getAllGroups()
-            .map(function(group) {
-                return group.map(function(socket) {
-                    return socket.uuid;
-                });
-            });
+            .getAllGroups();
 
         return {name: gameType.name, groups: uuidGroups};
     });

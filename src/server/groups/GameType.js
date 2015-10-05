@@ -63,10 +63,13 @@ GameType.prototype.getMemberCount = function(socket) {
 
 GameType.prototype.getAllGroups = function() {
     return this.devParadigm.getAllGroups()
-        .concat(this.paradigmInstance.getAllGroups());
+        .map(group => group.map(socket => socket.uuid + ' (devMode)'))
+        .concat(this.paradigmInstance.getAllGroups()
+            .map(group => group.map(socket => socket.uuid))
+        );
 };
 
-// TODO: Listen for 'devMode' messages
+// Listen for 'devMode' messages
 // 'devMode on <username>'
 // 'devMode off'
 GameType.prototype.onMessage = function(socket, message) {
@@ -74,10 +77,9 @@ GameType.prototype.onMessage = function(socket, message) {
         type = data.shift();
 
     if (type === 'devMode') {  // Check for devMode messages
-        switch (data[0]) {
+        switch (data.shift()) {
             case 'on':
-                trace('Moving ' + socket.uuid + ' to dev mode');
-                data.shift();
+                trace('Moving ' + socket.uuid + ' ('+ data.join(' ') + ') to dev mode');
                 this.moveSocket(true, socket, data.join(' '));
                 break;
 
@@ -112,7 +114,13 @@ GameType.prototype.getParadigmInstance = function(socket) {
 
 GameType.prototype.moveSocket = function(toDev, socket, username) {
     var srcParadigm,
-        dstParadigm;
+        dstParadigm,
+        isInDev = !this.productionUuids[socket.uuid];
+
+    // Check if it even needs to be moved
+    if (isInDev === toDev) {
+        return;
+    }
 
     if (toDev) {
         srcParadigm = this.devParadigm;
