@@ -35,7 +35,7 @@ modules.cloud = '2015-January-12';
 // Global stuff
 
 var Cloud;
-var SnapCloud = new Cloud('http://'+window.location.host+'/api');
+var SnapCloud = new Cloud('http://'+window.location.host+'/api/');
 
 // Cloud /////////////////////////////////////////////////////////////
 
