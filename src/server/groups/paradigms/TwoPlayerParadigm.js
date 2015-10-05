@@ -6,7 +6,7 @@
 
 'use strict';
 
-var BaseParadigm = require('./Basic.js'),
+var BaseParadigm = require('./AbstractParadigm'),
     Utils = require('../../Utils.js'),
     assert = require('assert'),
     _debug = require('debug'),
@@ -71,7 +71,7 @@ TwoPlayerParadigm.prototype.onMessage = function(socket) {
 
 TwoPlayerParadigm.prototype.onConnect = function(socket) {
     this._addToGroup(socket);
-    this.memberCount++;
+    BaseParadigm.onConnect.call(this, socket);
 };
 
 TwoPlayerParadigm.prototype.onDisconnect = function(socket) {
@@ -80,8 +80,7 @@ TwoPlayerParadigm.prototype.onDisconnect = function(socket) {
         peer;
 
     info('Removing #'+socket.id+' from '+TwoPlayerParadigm._printGroup(group));
-    this.memberCount--;
-    assert(this.memberCount >= 0);
+    BaseParadigm.onDisconnect.call(this, socket);
 
     // Remove the given group and add the other socket back to a group
     // TODO: This could cause problems as this means the RPC context will be 

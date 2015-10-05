@@ -9,7 +9,7 @@
 
 'use strict';
 
-var BaseParadigm = require('./Basic.js'),
+var BaseParadigm = require('./AbstractParadigm'),
     Utils = require('../../Utils.js'),
     debug = require('debug'),
     log = debug('NetsBlox:CommunicationManager:Paradigms:Sandbox:log'),
@@ -71,7 +71,7 @@ SandboxParadigm.prototype.getGroupId = function(socket) {
 
 SandboxParadigm.prototype.onConnect = function(socket) {
     this.groups.push({id: this.count++, user: socket});
-    this.memberCount++;
+    BaseParadigm.prototype.onConnect.call(this, socket);
 };
 
 /**
@@ -92,13 +92,14 @@ SandboxParadigm.prototype.onMessage = function(socket, message) {
 SandboxParadigm.prototype.onDisconnect = function(socket) {
     var group = this._findGroupContaining(socket),
         index;
+
     if (group) {
         this.notifyGroupClose(socket);
         index = this.groups.indexOf(group);
         this.groups.splice(index,1);
-        this.memberCount--;
-        assert(this.memberCount >= 0);
     }
+
+    BaseParadigm.prototype.onDisconnect.call(this, socket);
 };
 
 SandboxParadigm.prototype._findGroupContaining = function(socket) {

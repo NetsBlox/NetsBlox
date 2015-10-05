@@ -6,7 +6,7 @@
  */
 
 'use strict';
-var BaseParadigm = require('./Basic.js'),
+var BaseParadigm = require('./AbstractParadigm'),
     Utils = require('../../Utils.js'),
     assert = require('assert'),
     R = require('ramda'),
@@ -90,8 +90,8 @@ UniqueRoleParadigm.prototype.onConnect = function(socket) {
     this.id2Socket[id] = socket;
     this.id2Role[id] = 'default_'+id;  // Unique default role
 
-    this.memberCount++;
     this._addClientToGroup(socket, this.globalGroup);
+    BaseParadigm.prototype.onConnect.call(this, socket);
 };
 
 /**
@@ -140,13 +140,11 @@ UniqueRoleParadigm.prototype.onDisconnect = function(socket) {
         role = this.id2Role[id],
         group = this.id2Group[id];
 
+    BaseParadigm.prototype.onDisconnect.call(this, socket);
     if (group !== undefined) {
         // Remove role from group
         this._removeClientFromGroup(id, role);
-        this.memberCount--;
-        assert(this.memberCount >= 0);
     }
- 
 };
 
 // Internal API

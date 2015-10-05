@@ -16,6 +16,7 @@ var WebSocketServer = require('ws').Server,
 
     GenericManager = require('./paradigms/UniqueRoleParadigm'),
     ParadigmManager = require('./ParadigmManager'),
+    BroadcastInterface = require('./Broadcaster'),
     _ = require('lodash'),
 
     debug = require('debug'),
@@ -60,6 +61,8 @@ var CommunicationManager = function(opts) {
     // Group close callbacks
     this._groupCloseListeners = [];
 };
+
+_.extend(CommunicationManager.prototype, BroadcastInterface);
 
 /**
  * Start the WebSocket server and start the socket updating interval.
@@ -113,8 +116,7 @@ CommunicationManager.prototype.getGroupId = function(uuid) {
     var id,
         separator = '/',
         socket,
-        gameType,
-        paradigm;
+        gameType;
 
     trace('Getting group id for '+uuid);
     socket = this.uuid2Socket[uuid];
@@ -123,10 +125,8 @@ CommunicationManager.prototype.getGroupId = function(uuid) {
         return null;
     }
 
-    gameType = this.paradigmManager.getGameType(socket);
-    paradigm = this.paradigmManager.getParadigmInstance(socket);
-    assert(paradigm, 'Paradigm not defined for socket #'+socket.id);
-    id = [gameType, paradigm.getName(), paradigm.getGroupId(socket)]
+    gameType = this.uuid2GameType[socket.uuid];
+    id = [gameType.name, gameType.getGroupId(socket)]
         .join(separator);
     trace('Group id for "'+uuid+'" is '+id);
     return id;
@@ -164,40 +164,16 @@ CommunicationManager.prototype.joinGameType = function(socket, gameType) {
     assert(gameTypeInstance, 'Game type "' + gameType + '" is not defined!');
     this.uuid2GameType[socket.uuid] = gameTypeInstance;
     gameTypeInstance.onConnect(socket);
-    // Broadcast 'join' on connect
-    this.notifyGroupJoin(socket);
 };
 
 CommunicationManager.prototype.leaveGameType = function(socket) {
     var gameType = this.uuid2GameType[socket.uuid],
-        role = this.socket2Role[socket.id],    // FIXME: Move this to UniqueRoleParadigm #47
-        peers = gameType.getGroupMembers(socket);
+        role = this.socket2Role[socket.id];    // FIXME: Move this to UniqueRoleParadigm #47
 
     // Broadcast the leave message to peers of the given socket
-    info('Socket', socket.uuid, 'is leaving (peer count: '+peers.length+')');
+    info('Socket', socket.uuid, 'is leaving');
     gameType.onDisconnect(socket);
-    this.broadcast('leave '+role, peers);
     delete this.uuid2GameType[socket.uuid];
-};
-
-/**
- * Broadcast the given message to the given peers.
- *
- * @param {String} message
- * @param {WebSocket} peers
- * @return {undefined}
- */
-CommunicationManager.prototype.broadcast = function(message, peers) {
-    log('Broadcasting '+message,'to', peers.map(function(r){return r.id;}));
-    var socket;
-    for (var i = peers.length; i--;) {
-        socket = peers[i];
-        // Check if the socket is open
-        if (socket.getState() === socket.OPEN) {
-            info('Sending message "'+message+'" to socket #'+socket.id);
-            socket.send(message);
-        }
-    }
 };
 
 /**
@@ -229,33 +205,6 @@ CommunicationManager.prototype._removeFromRecords = function(socket) {
 };
 
 /**
- * Broadcast a JOIN message to the other members in the group.
- *
- * @param {WebSocket} socket
- * @return {undefined}
- */
-CommunicationManager.prototype.notifyGroupJoin = function(socket) {
-    var role,
-        gameType,
-        peers;
-
-    role = this.socket2Role[socket.id];    // FIXME: Move this to UniqueRoleParadigm #47
-    gameType = this.uuid2GameType[socket.uuid];
-    assert(gameType, 'Game Type not defined for socket '+socket.uuid);
-
-    peers = gameType.getGroupMembers(socket);
-    // Send 'join' messages to peers in the 'group'
-    this.broadcast('join '+role, peers);
-
-    // Send new member join messages from everyone else
-    for (var i = peers.length; i--;) {
-        if (peers[i] !== socket.id) {
-            socket.send('join '+this.socket2Role[peers[i].id]);  // FIXME: Update this with #47
-        }
-    }
-};
-
-/**
  * Handle a WebSocket message from a client.
  *
  * @param {WebSocket} socket
@@ -280,7 +229,7 @@ CommunicationManager.prototype.onMsgReceived = function(socket, message) {
         return;
     }
 
-    oldMembers = gameType.onMessage(socket, message);
+    /*oldMembers = */gameType.onMessage(socket, message);
 
     // Handle the different request types
     if (HandleSocketRequest[type] !== undefined) {
@@ -289,16 +238,14 @@ CommunicationManager.prototype.onMsgReceived = function(socket, message) {
         log('Received invalid message type: '+type);
     }
 
-    if (oldMembers) {  // Update group change
-        var k;
+    //if (oldMembers) {  // Update group change
+        //var k;
 
         // Broadcast 'leave' to old peers
-        k = oldMembers.indexOf(socket);
-        oldMembers.splice(k,1);
-        this.broadcast('leave '+oldRole, oldMembers);
-
-        this.notifyGroupJoin(socket);
-    }
+        //k = oldMembers.indexOf(socket);
+        //oldMembers.splice(k,1);
+        //this.broadcast('leave '+oldRole, oldMembers);
+    //}
 };
 
 CommunicationManager.prototype.stop = function() {

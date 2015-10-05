@@ -9,8 +9,8 @@
 
 'use strict';
 
-var BaseParadigm = require('./Basic.js'),
-    Utils = require('../../Utils.js'),
+var BaseParadigm = require('./AbstractParadigm'),
+    Utils = require('../../Utils'),
     R = require('ramda'),
     debug = require('debug'),
     log = debug('NetsBlox:CommunicationManager:Paradigms:DevMode:log'),
@@ -121,6 +121,7 @@ DevModeParadigm.prototype.addSocket = function(socket, username) {
 };
 
 DevModeParadigm.prototype.onDisconnect = function(socket) {
+    BaseParadigm.prototype.onDisconnect.call(this, socket);
     var uuid = socket.uuid,
         username = this.uuidToUsername[uuid],
         groupId = this.uuidToGroupId[uuid],
@@ -141,12 +142,11 @@ DevModeParadigm.prototype.onDisconnect = function(socket) {
     delete this.uuidToUsername[uuid];
     delete this.uuidToGroupId[uuid];
     delete this.unknownUuids[uuid];
-    this.memberCount--;
 };
 
 DevModeParadigm.prototype.onConnect = function(socket, username) {
+    BaseParadigm.prototype.onConnect.call(this, socket);
     this.addSocket(socket, username);
-    this.memberCount++;
 };
 
 /**
