@@ -1,48 +1,16 @@
 'use strict';
-var debug = require('debug');
-var log = debug('NetsBlox:RequestTypes:log');
+var debug = require('debug'),
+    log = debug('NetsBlox:RequestTypes:log'),
+    trace = debug('NetsBlox:RequestTypes:trace'),
+    nop = require('nop');
+
 var Requests = {
-        /**
-         * Register the socket's role.
-         *
-         * @param {WebSocket} socket
-         * @param {Array<String>} msg
-         * @return {undefined}
-         */
-        register: function(socket, msg) {
-            var role = msg.shift();  // record the roleId
-            console.log('registering '+socket.id+' as '+role);
-            this.socket2Role[socket.id] = role;
-        },
-
-        /**
-         * Change the paradigm with in the given GameType.
-         *
-         * @param {WebSocket} socket
-         * @param {Array<String>} msg
-         * @return {undefined}
-         */
-        paradigm: function(socket, msg) {
-            // Set the paradigm for this message
-            var name = msg.shift();
-            if (this.paradigmManager.isValidParadigm(name)) {
-                // Leave the current paradigm
-                this.leaveParadigmInstance(socket);
-
-                // Join the new one
-                this.joinParadigmInstance(socket, null, name);
-                log('Moved '+socket.id+' to '+name);
-                return;
-            }
-            // TODO: Log an error
-        },
-
         gameType: function(socket, msg) {
             var name = msg.join(' ');
 
-            this.leaveParadigmInstance(socket);
-            this.joinParadigmInstance(socket, name, null);
-            log('Moved '+socket.id+' to game type: '+name);
+            this.leaveGameType(socket);
+            this.joinGameType(socket, name, null);
+            trace('Moved '+socket.uuid+' to game type: "'+name+'"');
             // TODO: Log an error
         },
 
@@ -56,15 +24,16 @@ var Requests = {
         message: function(socket, msg) {
             var role,
                 peers,
-                paradigm;
+                gameType;
+
             // broadcast the message, role to all peers
-            paradigm = this.paradigmManager.getParadigmInstance(socket);
-            role = this.socket2Role[socket.id];
+            gameType = this.uuid2GameType[socket.uuid];
             msg.push(role);
             log('About to broadcast '+msg.join(' ')+
                         ' from socket #'+socket.id+' ('+role+')');
-            peers = paradigm.getGroupMembersToMessage(socket);
+            peers = gameType.getGroupMembersToMessage(socket);
             this.broadcast(msg.join(' '), peers);
-        }
+        },
+        devMode: nop  // Suppress unknown message warnings. This is used by the GameType
 };
 module.exports = Requests;

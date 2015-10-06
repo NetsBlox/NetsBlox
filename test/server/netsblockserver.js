@@ -32,7 +32,7 @@ describe('NetsBlocksServer tests', function() {
         var socket,
             uuid;
 
-        describe('Paradigm Selection tests', function() {
+        describe.skip('Paradigm Selection tests', function() {
             before(function(done) {
                 server = new NetsBlocks();
                 if (!socket || socket.readyState !== 1) {
@@ -138,7 +138,8 @@ describe('NetsBlocksServer tests', function() {
                     count++;
                     socket = new WebSocket(host);
                     socket.on('open', function() {
-                        socket.send('paradigm uniquerole');
+                        socket.send('gameType text messaging');
+                        socket.send('devMode off');
                         if (--count === 0) {
                             done();
                         }
@@ -148,7 +149,8 @@ describe('NetsBlocksServer tests', function() {
                     count++;
                     newSocket = new WebSocket(host);
                     newSocket.on('open', function() {
-                        newSocket.send('paradigm uniquerole');
+                        newSocket.send('gameType text messaging');
+                        newSocket.send('devMode off');
                         if (--count === 0) {
                             done();
                         }
@@ -171,7 +173,8 @@ describe('NetsBlocksServer tests', function() {
                         }
                     },
                     checkFn = function() {
-                        assert.equal(joinCount,2);
+                        console.log(server.gameTypes.simplehangman.getAllGroups());
+                        assert.equal(joinCount, 2);
                         done();
                     };
 
@@ -198,11 +201,13 @@ describe('NetsBlocksServer tests', function() {
                     }
                 });
                 s2.on('open', function() {
-                    s2.send('paradigm uniquerole');
+                    s2.send('gameType hangman');
+                    s2.send('devMode off');
                     setTimeout(onAllConnected,100);
                 });
                 s1.on('open', function() {
-                    s1.send('paradigm uniquerole');
+                    s1.send('gameType hangman');
+                    s1.send('devMode off');
                     setTimeout(onAllConnected,100);
                 });
             });
@@ -213,7 +218,9 @@ describe('NetsBlocksServer tests', function() {
                     matches = false;
 
                 socket2.on('open', function() {
-                    socket2.send('paradigm uniquerole');
+                    socket2.send('gameType text messaging');
+                    socket2.send('devMode off');
+                    socket.send('devMode off');
                     socket2.on('message', function(data) {
                         var msg, 
                             sender;
@@ -222,7 +229,7 @@ describe('NetsBlocksServer tests', function() {
                         sender = data.pop();
                         msg = data.join(' ');
 
-                        matches = msg === sentMsg && sender.indexOf('default') > -1;
+                        matches = msg === sentMsg;
                         if (matches) {
                             done();
                         }
@@ -239,7 +246,6 @@ describe('NetsBlocksServer tests', function() {
             var getNewSocketAndId = function(gameType, callback) {
                 var socket = new WebSocket(host);
                 socket.on('open', function() {
-                    socket.send('paradigm basic');
                     socket.send('gameType '+gameType);
                     socket.on('message', function(message) {
                         var data = message.split(' '),
@@ -256,7 +262,7 @@ describe('NetsBlocksServer tests', function() {
             before(function(done) {
                 server = new NetsBlocks();
                 server.start(opts);
-                getNewSocketAndId('game1', function(info) {
+                getNewSocketAndId('text messaging', function(info) {
                     socket = info[0];
                     uuid = info[1];
                         done();
@@ -282,7 +288,7 @@ describe('NetsBlocksServer tests', function() {
             it.skip('should add player to paradigm instance', function() {
                 var newGameType = 'MyNewGame',
                     socket = server.uuid2Socket[uuid],
-                    oldParadigm = server.paradigmManager.getParadigmInstance(socket);
+                    oldParadigm = server.uuid2GameType[uuid].getParadigmInstance(socket);
 
                 assert.notEqual(oldParadigm.globalGroup.indexOf(socket), -1);
             });
@@ -294,8 +300,7 @@ describe('NetsBlocksServer tests', function() {
                     var newGameType = 'MyNewGame',
                         socket = server.uuid2Socket[uuid];
 
-                    oldParadigm = server.paradigmManager.getParadigmInstance(socket);
-                    socket.send('paradigm basic');
+                    oldParadigm = server.uuid2GameType[uuid].getParadigmInstance(socket);
                     socket.send('gameType '+newGameType);
                     setTimeout(done, 100);
                 });
@@ -306,9 +311,7 @@ describe('NetsBlocksServer tests', function() {
                 });
 
                 it.skip('should add player to new paradigm instance', function(done) {
-                    console.log('STARTING TEST');
-                    var paradigm = server.paradigmManager.getParadigmInstance(socket);
-                    console.log('FINISHING TEST');
+                    var paradigm = server.uuid2GameType[uuid].getParadigmInstance(socket);
                     assert.notEqual(paradigm.globalGroup.indexOf(socket), -1);
                 });
 
@@ -422,11 +425,12 @@ describe('GroupManager Testing', function() {
         }
     };
 
-    var refreshSocketsWithParadigm = function(count, paradigm, callback) {
+    var refreshSocketsWithGameType = function(count, gameType, callback) {
         refreshSockets(count);
         sockets.forEach(function(socket) {
             socket.on('open', function() {
-                socket.send('paradigm '+paradigm);
+                socket.send('gameType '+gameType);
+                socket.send('devMode off');
                 socket.on('message', function(msg) {
                     var data = msg.split(' '),
                         type = data.shift();
@@ -453,7 +457,8 @@ describe('GroupManager Testing', function() {
             var count = sockets.length;
             sockets.forEach(function(socket) {
                 socket.on('open', function() {
-                    socket.send('paradigm uniquerole');
+                    socket.send('gameType hangman');
+                    socket.send('devMode off');
                     socket.on('message', function(msg) {
                         var data = msg.split(' '),
                             type = data.shift();
@@ -561,7 +566,7 @@ describe('GroupManager Testing', function() {
                     done();
                 };
 
-            refreshSocketsWithParadigm(3, 'twoplayer', function() {
+            refreshSocketsWithGameType(3, 'tictactoe', function() {
                 setTimeout(checkFn, 100);
             });
         });
@@ -583,7 +588,7 @@ describe('GroupManager Testing', function() {
                     }
                 };
 
-            refreshSocketsWithParadigm(4, 'twoplayer', onStart);
+            refreshSocketsWithGameType(4, 'tictactoe', onStart);
 
             setTimeout(function() {
                 assert.equal(count, 2);
@@ -615,7 +620,7 @@ describe('GroupManager Testing', function() {
 
         describe('2 player turn based tests', function() {
             beforeEach(function(done) {
-                refreshSocketsWithParadigm(2, 'turnbased', done);
+                refreshSocketsWithGameType(2, 'tictactoe', done);
             });
 
             afterEach(function() {
