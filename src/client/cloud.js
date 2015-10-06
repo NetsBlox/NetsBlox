@@ -277,15 +277,8 @@ Cloud.prototype.login = function (
             if (request.readyState === 4) {
                 if (request.status === 200) {
                     myself.api = myself.parseAPI(request.responseText);
-                    // TODO: Update session info 
-                    myself.session = document.cookie;
-                    // set the cookie identifier:
-                    myself.limo = myself.session.substring(0, myself.session.indexOf('='));
-                    //myself.limo = this.getResponseHeader("miocracker")
-                        //.substring(
-                            //9,
-                            //this.getResponseHeader("miocracker").indexOf("=")
-                        //);
+                    // Update session info 
+                    myself.session = true;
                     if (myself.api.logout) {
                         myself.username = username;
                         myself.password = password;
