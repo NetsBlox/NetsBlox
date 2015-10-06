@@ -7,47 +7,22 @@
 'use strict';
 
 var debug = require('debug'),
-    log = debug('NetsBlox:RPCManager:Earthquakes.js:log'),
-    error = debug('NetsBlox:RPCManager:Earthquakes.js:error'),
-    trace = debug('NetsBlox:RPCManager:Earthquakes.js:trace'),
-    API_KEY = process.env.AIR_NOW_KEY,
+    log = debug('NetsBlox:RPCManager:Earthquakes:log'),
+    error = debug('NetsBlox:RPCManager:Earthquakes:error'),
+    trace = debug('NetsBlox:RPCManager:Earthquakes:trace'),
     path = require('path'),
     fs = require('fs'),
+    R = require('ramda'),
     geolib = require('geolib'),
     request = require('request');
 
-//var baseUrl = 'http://www.airnowapi.org/aq/forecast/latLong/?format=application/' + 
-        //'json&API_KEY=' + API_KEY,
-var baseUrl = 'http://www.airnowapi.org/aq/forecast/zipCode/?format=application/' + 
-        'json&API_KEY=' + API_KEY,
-    reportingLocations = (function() {  // Parse csv
-        var locationPath = path.join(__dirname, 'air-reporting-locations.csv'),
-            text = fs.readFileSync(locationPath, 'utf8'),
-            rawLocations = text.split('\n');
+var baseUrl = 'http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&';
+    //minlatitude=30&maxlatitude=40&minlongitude=-90&maxlongitude=-75';
 
-        rawLocations.pop();  // Remove trailing \n
-        rawLocations.shift();  // Remove header
-        return rawLocations
-            .map(function(line) {
-                var data = line.split('|');
-                return {
-                    city: data[0],
-                    state: data[1],
-                    zipcode: data[2],
-                    latitude: +data[3],
-                    longitude: +data[4]
-                };
-            });
-    })();
-
-
-var updateCache = function() {
-    //request(url, function(err, response, body) {
-        //if (err) {
-            //return res.status(500).send('ERROR: '+err);
-        //}
-        //// TODO
-    //});
+var createParams = function(obj) {
+    return R.toPairs(obj)
+        .map(keyVal => keyVal.join('='))
+        .join('&');
 };
 
 module.exports = {
@@ -61,11 +36,49 @@ module.exports = {
     },
 
     getActions: function() {
-        // TODO
-        return [];
+        return ['byRegion'];
     },
 
-    earthquakes: function(req, res) {
-        // TODO
+    byRegion: function(req, res) {
+        var params = createParams({
+                minlatitude: req.query.minlat || 0,
+                minlongitude: req.query.minlng || 0,
+                maxlatitude: req.query.maxlat || 0,
+                maxlongitude: req.query.maxlng || 0
+            }),
+            url = baseUrl + params;
+
+        trace('Requesting earthquakes at : ' + params);
+
+        // TODO: This method will not respond with anything... It will simply
+        // trigger socket messages to the given client
+        request(url, function(err, response, body) {
+            if (err) {
+                res.serverError(err);
+            }
+            log('Found ' + JSON.parse(body).metadata.count + ' earthquakes');
+            res.sendStatus(200);
+
+            var earthquakes = [],
+                socket = req.netsbloxSocket,  // Get the websocket for network messages
+                msg;
+
+            try {
+                earthquakes = JSON.parse(body).features;
+            } catch (e) {
+                log('Could not parse earthquakes (returning empty array): ' + e);
+            }
+
+            for (var i = earthquakes.length; i--;) {
+                // For now, I will send lat, lng, size, date
+                msg = 'earthquake ' + JSON.stringify([
+                    earthquakes[i].geometry.coordinates[1],
+                    earthquakes[i].geometry.coordinates[0],
+                    earthquakes[i].properties.mag,
+                    earthquakes[i].properties.time
+                ]) + ' rpc';
+                socket.send(msg);
+            }
+        });
     }
 };

@@ -116,6 +116,10 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
             return res.status(401).send('ERROR: user not found. who are you?');
         }
         console.log('About to call '+RPC.getPath()+'=>'+action);
+
+        // Add the netsblox socket for triggering network messages from an RPC
+        req.netsbloxSocket = this.groupManager.getSocket(uuid);
+
         return rpc[action](req, res);
     } else {
         log('Invalid action requested for '+RPC.getPath()+': '+action);

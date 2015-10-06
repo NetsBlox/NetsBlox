@@ -111,6 +111,10 @@ CommunicationManager.loadGameType = function(description) {
     return new GameType(name, paradigmInstance);
 };
 
+CommunicationManager.prototype.getSocket = function(uuid) {
+    return this.uuid2Socket[uuid];
+};
+
 CommunicationManager.prototype.getGroupId = function(uuid) {
     var id,
         separator = '/',
