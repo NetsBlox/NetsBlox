@@ -6,6 +6,7 @@ var WebSocketManager = function (stage) {
     this.uuid = null;
     this.websocket = null;
     this.messages = [];
+    this.processes = [];  // Queued processes to start
     this.gameType = 'None';
     this.devMode = false;
     this._connectWebSocket();
@@ -104,7 +105,7 @@ WebSocketManager.prototype.toggleNetwork = function() {
 WebSocketManager.prototype.onMessageReceived = function (message, content, role) {
     var self = this,
         hats = [],
-        procs = [];
+        context;
 
     content = content || [];
     if (message !== '') {
@@ -118,24 +119,54 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
         hats.forEach(function (block) {
             // Initialize the variable frame with the message content for 
             // receiveSocketMessage blocks
+            context = null;
             if (block.selector === 'receiveSocketMessage') {
                 // Create the network context
-                var context = new Context();
+                context = new Context();
                 for (var i = content.length; i--;) {
                     context.variables.addVar(i, content[i]);
                 }
-                procs.push(self.stage.threads.startProcess(
-                    block, 
-                    self.stage.isThreadSafe, 
-                    undefined,
-                    undefined,
-                    context));
-            } else {
-                procs.push(self.stage.threads.startProcess(block, self.stage.isThreadSafe));
             }
+
+            self.processes.push({
+                block: block,
+                isThreadSafe: self.stage.isThreadSafe,
+                context: context
+            });
         });
+
+        this.startProcesses();
     }
-    return procs;
+};
+
+/**
+ * We will create a mutex on the network message/event listening blocks. That is,
+ * network messages will not trigger a process until the currently running
+ * process for the network event has terminated
+ *
+ * @return {undefined}
+ */
+WebSocketManager.prototype.startProcesses = function () {
+    var process,
+        active;
+    for (var i = 0; i < this.processes.length; i++) {
+        process = this.processes[i];
+        active = this.stage.threads.findProcess(process.block);
+        if (!active) {  // Check if the process can be added
+            this.stage.threads.startProcess(
+                process.block,
+                process.isThreadSafe,
+                undefined,
+                undefined,
+                process.context
+            );
+            this.processes.splice(i, 1);
+        }
+    }
+
+    if (this.processes.length) {
+        setTimeout(this.startProcesses.bind(this), 100);
+    }
 };
 
 WebSocketManager.prototype.destroy = function () {
