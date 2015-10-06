@@ -276,9 +276,9 @@ Cloud.prototype.login = function (
                 if (request.status === 200) {
                     myself.api = myself.parseAPI(request.responseText);
                     // TODO: Update session info 
-                    myself.session = document.cookie;
+                    myself.session = true;
                     // set the cookie identifier:
-                    myself.limo = myself.session.substring(0, myself.session.indexOf('='));
+                    //myself.limo = myself.session.substring(0, myself.session.indexOf('='));
                     //myself.limo = this.getResponseHeader("miocracker")
                         //.substring(
                             //9,
