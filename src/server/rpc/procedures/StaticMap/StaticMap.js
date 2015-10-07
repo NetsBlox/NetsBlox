@@ -32,7 +32,6 @@ StaticMap.getPath = function() {
 StaticMap.getActions = function() {
     return ['getMap',
             'getLatitude',
-            'getMapOld',
             'getLongitude',
             'getYFromLatitude',
             'getXFromLongitude'];
@@ -75,16 +74,6 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
     this.userMaps[socket.uuid] = map;
 
     trace('Stored map for ' + socket.uuid + ': ' + JSON.stringify(map));
-};
-
-// REMOVE
-StaticMap.prototype.getMapOld = function(req, res) {
-    var params = this._getGoogleParams(req.query),
-        url = baseUrl+'?'+params;
-
-    this._recordUserMap(req.netsbloxSocket, req.query);
-    // TODO: Check the cache
-    request.get(url).pipe(res);
 };
 
 StaticMap.prototype.getMap = function(req, res) {
