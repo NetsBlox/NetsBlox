@@ -33,6 +33,10 @@ StaticMap.getActions = function() {
     return ['getMap',
             'getLatitude',
             'getLongitude',
+            'minLongitude',
+            'minLatitude',
+            'maxLongitude',
+            'maxLatitude',
             'getYFromLatitude',
             'getXFromLongitude'];
 };
@@ -201,6 +205,27 @@ StaticMap.prototype.getYFromLatitude = function(req, res) {
 
     trace('y value is ' + y);
     return res.json(y);  // Translate y to account for 0 in center
+};
+
+// Getting current map settings
+StaticMap.prototype.maxLongitude = function(req, res) {
+    var map = this.userMaps[req.netsbloxSocket.uuid];
+    return res.json(map.max.lng);
+};
+
+StaticMap.prototype.maxLatitude = function(req, res) {
+    var map = this.userMaps[req.netsbloxSocket.uuid];
+    return res.json(map.max.lat);
+};
+
+StaticMap.prototype.minLongitude = function(req, res) {
+    var map = this.userMaps[req.netsbloxSocket.uuid];
+    return res.json(map.min.lng);
+};
+
+StaticMap.prototype.minLatitude = function(req, res) {
+    var map = this.userMaps[req.netsbloxSocket.uuid];
+    return res.json(map.min.lat);
 };
 
 module.exports = StaticMap;
