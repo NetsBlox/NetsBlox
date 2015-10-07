@@ -1,7 +1,7 @@
 'use strict';
 var express = require('express'),
     app = express(),
-    port = process.env.PORT || 7777,
+    port = process.env.PORT || 8080,
     mongoURI = process.env.MONGO_URI || process.env.MONGOLAB_URI;
 
 require('dotenv').load();
