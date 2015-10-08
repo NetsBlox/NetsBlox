@@ -105,7 +105,9 @@ WebSocketManager.prototype.toggleNetwork = function() {
 WebSocketManager.prototype.onMessageReceived = function (message, content, role) {
     var self = this,
         hats = [],
-        context;
+        context,
+        idle = !this.processes.length,
+        block;
 
     content = content || [];
     if (message !== '') {
@@ -116,7 +118,8 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
             }
         });
 
-        hats.forEach(function (block) {
+        for (var h = hats.length; h--;) {
+            block = hats[h];
             // Initialize the variable frame with the message content for 
             // receiveSocketMessage blocks
             context = null;
@@ -128,15 +131,38 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
                 }
             }
 
-            self.processes.push({
+            // Find the process list for the given block
+            this.addProcess({
                 block: block,
-                isThreadSafe: self.stage.isThreadSafe,
+                isThreadSafe: this.stage.isThreadSafe,
                 context: context
             });
-        });
+        }
 
-        this.startProcesses();
+        if (idle) {
+            // This is done in a setTimeout to allow for some of the processes to accumulate
+            // and not block the main UI thread. Otherwise, it would simply try to start the
+            // last message each time (we are more efficient when we can batch it like this).
+            setTimeout(this.startProcesses.bind(this), 50);
+        }
     }
+};
+
+/**
+ * Add a process to the queue of processes to run. These processes are sorted
+ * by their top block
+ *
+ * @param process
+ * @return {undefined}
+ */
+WebSocketManager.prototype.addProcess = function (process) {
+    for (var i = 0; i < this.processes.length; i++) {
+        if (process.block === this.processes[i][0].block) {
+            this.processes[i].push(process);
+            return;
+        }
+    }
+    this.processes.push([process]);
 };
 
 /**
@@ -148,11 +174,15 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
  */
 WebSocketManager.prototype.startProcesses = function () {
     var process,
-        active;
+        block,
+        activeBlock;
+
+    // Check each set of processes to see if the block is free
     for (var i = 0; i < this.processes.length; i++) {
-        process = this.processes[i];
-        active = this.stage.threads.findProcess(process.block);
-        if (!active) {  // Check if the process can be added
+        block = this.processes[i][0].block;
+        activeBlock = !!this.stage.threads.findProcess(block);
+        if (!activeBlock) {  // Check if the process can be added
+            process = this.processes[i].shift();
             this.stage.threads.startProcess(
                 process.block,
                 process.isThreadSafe,
@@ -160,7 +190,10 @@ WebSocketManager.prototype.startProcesses = function () {
                 undefined,
                 process.context
             );
-            this.processes.splice(i, 1);
+            if (!this.processes[i].length) {
+                this.processes.splice(i,1);
+                i--;
+            }
         }
     }
 
