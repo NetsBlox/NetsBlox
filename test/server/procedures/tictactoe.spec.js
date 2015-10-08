@@ -1,7 +1,7 @@
 /*globals describe,it,before,beforeEach,afterEach*/
 'use strict';
 
-var TicTacToe = require('../../../src/server/rpc/procedures/TicTacToe.js'),
+var TicTacToe = require('../../../src/server/rpc/procedures/TicTacToe/TicTacToe.js'),
     RPCMock = require('../../assets/MockRPC'),
     tictactoe = new RPCMock(TicTacToe),
     assert = require('assert');

@@ -14,9 +14,12 @@ var R = require('ramda'),
     path = require('path'),
 
     // PATHS
-    COSTUMES_PATH = path.join(__dirname, '..', '..', 'client', 'Costumes'),
-    SOUNDS_PATH = path.join(__dirname, '..', '..', 'client', 'Sounds'),
-    EXAMPLES_PATH = path.join(__dirname, '..', '..', 'client', 'Examples');
+    PATHS = [
+        'Costumes',
+        'Sounds',
+        'Examples',
+        'Backgrounds'
+    ];
 
 var generateRandomPassword = randomString.bind(null, 8),
     makeDummyHtml = function(list) {
@@ -24,6 +27,27 @@ var generateRandomPassword = randomString.bind(null, 8),
             return '<a href="'+item+'">'+item+'</a><br/>';
         }).join('\n');
     };
+
+
+// Create the paths
+var resourcePaths = PATHS.map(function(name) {
+    var resPath = path.join(__dirname, '..', '..', 'client', name);
+    return { 
+        Method: 'get', 
+        URL: name,
+        Handler: function(req, res) {
+            // Load the costumes and create rough HTML content...
+            fs.readdir(resPath, function(err, resources) {
+                if (err) {
+                    return res.send(err);
+                }
+
+                var result = makeDummyHtml(resources);
+                return res.send(result);
+            });
+        }
+    };
+});
 
 module.exports = [
     { 
@@ -126,56 +150,6 @@ module.exports = [
             });
         }
     },
-    // Costumes
-    { 
-        Method: 'get', 
-        URL: 'Costumes',
-        Handler: function(req, res) {
-            // Load the costumes and create rough HTML content...
-            fs.readdir(COSTUMES_PATH, function(err, costumes) {
-                if (err) {
-                    return res.send(err);
-                }
-
-                var result = costumes.map(function(costume) {
-                    return '<a href="'+costume+'">'+costume+'</a><br/>';
-                }).join('\n');
-                return res.send(result);
-            });
-        }
-    },
-    // Sounds
-    { 
-        Method: 'get', 
-        URL: 'Sounds',
-        Handler: function(req, res) {
-            // Load the costumes and create rough HTML content...
-            fs.readdir(SOUNDS_PATH, function(err, sounds) {
-                if (err) {
-                    return res.send(err);
-                }
-
-                var result = makeDummyHtml(sounds);
-                return res.send(result);
-            });
-        }
-    },
-    // Examples
-    { 
-        Method: 'get', 
-        URL: 'Examples',
-        Handler: function(req, res) {
-            // Load the examples
-            fs.readdir(EXAMPLES_PATH, function(err, examples) {
-                if (err) {
-                    return res.send(err);
-                }
-
-                var result = makeDummyHtml(examples);
-                return res.send(result);
-            });
-        }
-    },
     // Add game types query
     { 
         Method: 'get', 
@@ -184,4 +158,4 @@ module.exports = [
             return res.status(200).json(GameTypes);
         }
     }
-];
+].concat(resourcePaths);
