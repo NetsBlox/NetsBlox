@@ -165,7 +165,7 @@ WebSocketManager.prototype.startProcesses = function () {
     }
 
     if (this.processes.length) {
-        setTimeout(this.startProcesses.bind(this), 100);
+        setTimeout(this.startProcesses.bind(this), 5);
     }
 };
 

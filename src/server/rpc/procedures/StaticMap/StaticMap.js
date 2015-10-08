@@ -163,6 +163,7 @@ StaticMap.prototype.getLatitude = function(req, res) {
     }
 
     // Just approximate here
+    trace('y is:', y);
     trace('Latitude window is', lats);
     latWidth = Math.abs(lats[1] - lats[0]);
     trace('window width is', latWidth);
