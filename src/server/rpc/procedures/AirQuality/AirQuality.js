@@ -16,8 +16,6 @@ var debug = require('debug'),
     geolib = require('geolib'),
     request = require('request');
 
-//var baseUrl = 'http://www.airnowapi.org/aq/forecast/latLong/?format=application/' + 
-        //'json&API_KEY=' + API_KEY,
 var baseUrl = 'http://www.airnowapi.org/aq/forecast/zipCode/?format=application/' + 
         'json&API_KEY=' + API_KEY,
     reportingLocations = (function() {  // Parse csv

@@ -47,9 +47,9 @@ module.exports = {
         var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
         trace('Request for ' + req.query.lat + ', ' + req.query.lng);
         request(url, function(err, response, body) {
-            if (err) {
-                log('ERROR: ',body);
-                return res.status(500).send('ERROR: '+err);
+            if (err || response.statusCode < 200 || response.statusCode > 299) {
+                log('ERROR: ', (err || body));
+                return res.status(500).send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             var temp = '?';
@@ -65,8 +65,9 @@ module.exports = {
     humidity: function(req, res) {
         var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
-            if (err) {
-                return res.status(500).send('ERROR: '+err);
+            if (err || response.statusCode < 200 || response.statusCode > 299) {
+                log('ERROR: ', (err || body));
+                return res.status(500).send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             var humidity = body.main.humidity;
@@ -77,8 +78,9 @@ module.exports = {
     description: function(req, res) {
         var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
-            if (err) {
-                return res.status(500).send('ERROR: '+err);
+            if (err || response.statusCode < 200 || response.statusCode > 299) {
+                log('ERROR: ', (err || body));
+                return res.status(500).send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             var description = body.weather[0].description;
@@ -89,8 +91,9 @@ module.exports = {
     icon: function(req, res) {
         var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
-            if (err) {
-                return res.status(500).send('ERROR: '+err);
+            if (err || response.statusCode < 200 || response.statusCode > 299) {
+                log('ERROR: ', (err || body));
+                return res.status(500).send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             // Return sunny if unknown
@@ -105,8 +108,9 @@ module.exports = {
     windSpeed: function(req, res) {
         var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
-            if (err) {
-                return res.status(500).send('ERROR: '+err);
+            if (err || response.statusCode < 200 || response.statusCode > 299) {
+                log('ERROR: ', (err || body));
+                return res.status(500).send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             var name = body.wind.speed || 'unknown';
@@ -117,8 +121,9 @@ module.exports = {
     windAngle: function(req, res) {
         var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
-            if (err) {
-                return res.status(500).send('ERROR: '+err);
+            if (err || response.statusCode < 200 || response.statusCode > 299) {
+                log('ERROR: ', (err || body));
+                return res.status(500).send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             var name = body.wind.deg || 'unknown';
@@ -130,8 +135,9 @@ module.exports = {
     name: function(req, res) {
         var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
-            if (err) {
-                return res.status(500).send('ERROR: '+err);
+            if (err || response.statusCode < 200 || response.statusCode > 299) {
+                log('ERROR: ', (err || body));
+                return res.status(500).send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             var name = body.name || 'unknown';
