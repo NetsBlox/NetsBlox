@@ -7,14 +7,15 @@ var debug = require('debug'),
     trace = debug('NetsBlox:RPCManager:StaticMap:trace'),
     path = require('path'),
     tuc = require('temp-units-conv'),
+    API_KEY = process.env.OPEN_WEATHER_MAP_KEY,
     request = require('request');
 
-var baseUrl = 'http://api.openweathermap.org/data/2.5/weather',
+var baseUrl = 'http://api.openweathermap.org/data/2.5/weather?APPID='+API_KEY,
     baseIconUrl = 'http://openweathermap.org/img/w/';
 
 
 var getField = function(field, req, res) {
-    var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+    var url = baseUrl + '&lat=' + req.query.lat + '&lon=' + req.query.lng;
     request(url, function(err, response, body) {
         if (err) {
             return res.status(500).send('ERROR: '+err);
@@ -44,7 +45,7 @@ module.exports = {
     },
 
     temp: function(req, res) {
-        var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+        var url = baseUrl + '&lat=' + req.query.lat + '&lon=' + req.query.lng;
         trace('Request for ' + req.query.lat + ', ' + req.query.lng);
         request(url, function(err, response, body) {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
@@ -63,7 +64,7 @@ module.exports = {
     },
 
     humidity: function(req, res) {
-        var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+        var url = baseUrl + '&lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
@@ -76,7 +77,7 @@ module.exports = {
     },
 
     description: function(req, res) {
-        var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+        var url = baseUrl + '&lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
@@ -89,7 +90,7 @@ module.exports = {
     },
 
     icon: function(req, res) {
-        var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+        var url = baseUrl + '&lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
@@ -106,7 +107,7 @@ module.exports = {
     },
 
     windSpeed: function(req, res) {
-        var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+        var url = baseUrl + '&lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
@@ -119,7 +120,7 @@ module.exports = {
     },
 
     windAngle: function(req, res) {
-        var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+        var url = baseUrl + '&lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
@@ -133,7 +134,7 @@ module.exports = {
 
     // Consider moving this to a map utils rpc FIXME
     name: function(req, res) {
-        var url = baseUrl + '?lat=' + req.query.lat + '&lon=' + req.query.lng;
+        var url = baseUrl + '&lat=' + req.query.lat + '&lon=' + req.query.lng;
         request(url, function(err, response, body) {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
