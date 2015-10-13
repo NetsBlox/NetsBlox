@@ -34,6 +34,8 @@ var Requests = {
             peers = gameType.getGroupMembersToMessage(socket);
             this.broadcast(msg.join(' '), peers);
         },
-        devMode: nop  // Suppress unknown message warnings. This is used by the GameType
+        // Suppress unknown message warnings. This is used by the GameType
+        devMode: nop,
+        register: nop
 };
 module.exports = Requests;

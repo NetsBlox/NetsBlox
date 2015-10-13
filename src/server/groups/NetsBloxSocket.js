@@ -2,7 +2,10 @@
  * This is a socket for NetsBlox that wraps a standard WebSocket
  */
 'use strict';
-var counter = 0;
+var counter = 0,
+    debug = require('debug'),
+    trace = debug('NetsBlox:NetsBloxSocket:trace');
+    
 var NetsBloxSocket = function(socket) {
     var id = ++counter;
     this.id = id;
@@ -14,7 +17,7 @@ var NetsBloxSocket = function(socket) {
 };
 
 NetsBloxSocket.prototype.send = function(msg) {
-    console.log('sending:', msg);
+    trace('Sending message to ' + this.uuid + ' ' + msg);
     this._socket.send(msg);
 };
 
