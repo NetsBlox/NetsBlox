@@ -37,6 +37,15 @@ AbstractParadigm.prototype.getDescription = function() {
  * @return {undefined}
  */
 AbstractParadigm.prototype.getAllGroups = function() {
+    return this._getAllGroups().map(group => group.map(socket => socket.uuid));
+};
+
+/**
+ * Get all the groups organized by the sockets.
+ *
+ * @return {undefined}
+ */
+AbstractParadigm.prototype._getAllGroups = function() {
     return [];
 };
 

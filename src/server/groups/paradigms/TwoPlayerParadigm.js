@@ -44,7 +44,7 @@ TwoPlayerParadigm.prototype.getGroupId = function(socket) {
     return this.id2Group[socket.id].id;
 };
 
-TwoPlayerParadigm.prototype.getAllGroups = function() {
+TwoPlayerParadigm.prototype._getAllGroups = function() {
     return R.clone(this.groups);
 };
 

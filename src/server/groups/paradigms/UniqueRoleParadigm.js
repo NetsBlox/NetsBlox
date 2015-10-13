@@ -51,6 +51,11 @@ UniqueRoleParadigm.prototype.getGroupId = function(socket) {
 };
 
 UniqueRoleParadigm.prototype.getAllGroups = function() {
+    var groups = BaseParadigm.prototype.getAllGroups.call(this);
+    return groups.map(uuids => uuids.map(uuid => uuid + ' (' + this.uuid2Role[uuid] + ')'));
+};
+
+UniqueRoleParadigm.prototype._getAllGroups = function() {
     var groups = this.groups.concat([this.globalGroup]);
     return groups.map(this._getGroupSockets);
 };
@@ -109,11 +114,10 @@ UniqueRoleParadigm.prototype.onMessage = function(socket, message) {
         oldRole = this.uuid2Role[uuid],
         oldGroupMembers = null;
 
-    console.log('MESSAGE:', message);
     if (type === 'register') {
         role = data.join(' ');
         if (oldRole !== role) {
-            console.log('setting', uuid, 'to', role);
+            trace('setting', uuid, 'to', role);
             this.uuid2Role[uuid] = role;
             // Check if can stay in current group
             if (this._canSwitchRolesInCurrentGroup(uuid, role)) {

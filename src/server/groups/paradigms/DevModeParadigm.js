@@ -40,7 +40,7 @@ DevModeParadigm.prototype.getName = DevModeParadigm.getName;
  *
  * @return {Array<WebSocket>}
  */
-DevModeParadigm.prototype.getAllGroups = function() {
+DevModeParadigm.prototype._getAllGroups = function() {
     var groups = R.values(this.unknownUuids)
             .map(function(socket) {
                 return [socket];
@@ -48,6 +48,11 @@ DevModeParadigm.prototype.getAllGroups = function() {
 
     // TODO: Add userGroups
     return groups;
+};
+
+DevModeParadigm.prototype.getAllGroups = function() {
+    var groups = BaseParadigm.prototype.getAllGroups.call(this);
+    return groups.map(uuids => uuids.map(uuid => uuid + '(devMode)'));
 };
 
 /**

@@ -35,7 +35,7 @@ SandboxParadigm.prototype.getName = SandboxParadigm.getName;
  *
  * @return {Array<WebSocket>}
  */
-SandboxParadigm.prototype.getAllGroups = function() {
+SandboxParadigm.prototype._getAllGroups = function() {
     return this.groups.map(function(group) {
         return [group.user];
     });

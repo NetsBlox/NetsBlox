@@ -63,10 +63,7 @@ GameType.prototype.getMemberCount = function(socket) {
 
 GameType.prototype.getAllGroups = function() {
     return this.devParadigm.getAllGroups()
-        .map(group => group.map(socket => socket.uuid + ' (devMode)'))
-        .concat(this.paradigmInstance.getAllGroups()
-            .map(group => group.map(socket => socket.uuid))
-        );
+        .concat(this.paradigmInstance.getAllGroups());
 };
 
 // Listen for 'devMode' messages

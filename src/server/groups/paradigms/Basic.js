@@ -36,7 +36,7 @@ BasicParadigm.prototype.getDescription = function() {
  *
  * @return {undefined}
  */
-BasicParadigm.prototype.getAllGroups = function() {
+BasicParadigm.prototype._getAllGroups = function() {
     return [this.globalGroup.slice()];
 };
 
