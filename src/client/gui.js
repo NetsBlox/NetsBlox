@@ -2646,6 +2646,36 @@ IDE_Morph.prototype.projectMenu = function () {
     );
 
     menu.addItem(
+        'Remote Calls...',
+        function () {
+            // read a list of libraries from an external file,
+            var libMenu = new MenuMorph(this, 'Import library'),
+                libUrl = baseURL + 'libraries/rpc/' + 'RPCS';
+
+            function loadLib(name) {
+                var url = baseURL + 'libraries/rpc/' + name + '.xml';
+                myself.droppedText(myself.getURL(url), name);
+            }
+
+            myself.getURL(libUrl).split('\n').forEach(function (line) {
+                if (line.length > 0) {
+                    libMenu.addItem(
+                        line.substring(line.indexOf('\t') + 1),
+                        function () {
+                            loadLib(
+                                line.substring(0, line.indexOf('\t'))
+                            );
+                        }
+                    );
+                }
+            });
+
+            libMenu.popup(world, pos);
+        },
+        'Select remote procedure calls to add to this project.'
+    );
+
+    menu.addItem(
         localize(graphicsName) + '...',
         function () {
             var dir = graphicsName,

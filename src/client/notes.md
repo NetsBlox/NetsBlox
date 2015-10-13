@@ -1,3 +1,21 @@
+# Custom messages for various paradigms
++ I will make a block for sending raw messages...?
+    + Could this present a security issue?
+        + I don't believe so bc the same functionality can be done in the browser
+
+# RPC dropdowns
++ I will need to create a subclass of InputSlotMorph which can...
+    + make http requests when `contents` is called
+    + have updated `getSpec`
+
++ How will I create the secondary morph type?
+    + I need to know the value of the other InputSlotMorph...
+        + Closures, Arguments, Lookup?
+        + I am going to try lookup? :/
+
++ Should I even split them up here? What if I ignored the action + RPC connection?
+    + The number of actions would be overwhelming
+
 # Client side notes
 + I am currently trying to create a menu for selecting the game type of the current project. The game type will then determine who shares network communication (at the highest level) and some client libs that will be loaded.
 

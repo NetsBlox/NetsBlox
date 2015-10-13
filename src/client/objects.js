@@ -605,19 +605,19 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'when I receive %msgHat'
         },
         // WebSockets
-        doRegisterClient: {  // for use with the generic group manager
+        doRegisterClient: {  // for use with the unique role paradigm
             type: 'command',
             category: 'network',
             spec: 'register as %role'
         },
-        doSocketDisconnect: {
-            type: 'command',
-            category: 'network',
-            spec: 'unregister'
-        },
+        //doSocketDisconnect: {
+            //type: 'command',
+            //category: 'network',
+            //spec: 'unregister'
+        //},
         receiveSocketEvent: {
             type: 'hat',
-            category: 'control',
+            category: 'network',
             spec: 'when I receive %socketMsgHat from %roleHat'
         },
         doSocketEvent: {
@@ -632,7 +632,7 @@ SpriteMorph.prototype.initBlocks = function () {
         },
         receiveSocketMessage: {
             type: 'hat',
-            category: 'control',
+            category: 'network',
             spec: 'when I receive msg %socketMsg %scriptVars'
         },
         doBroadcast: {
@@ -942,7 +942,7 @@ SpriteMorph.prototype.initBlocks = function () {
         },
         reportURL: {
             type: 'reporter',
-            category: 'network',
+            category: 'sensing',
             spec: 'http:// %s',
             defaults: ['snap.berkeley.edu']
         },
@@ -1938,8 +1938,6 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('receiveKey'));
         blocks.push(block('receiveInteraction'));
         blocks.push(block('receiveMessage'));
-        blocks.push(block('receiveSocketEvent'));
-        blocks.push(block('receiveSocketMessage'));
         blocks.push('-');
         blocks.push(block('doBroadcast'));
         blocks.push(block('doBroadcastAndWait'));
@@ -1991,16 +1989,20 @@ SpriteMorph.prototype.blockTemplates = function (category) {
 
     } else if (cat === 'network') {
         // TODO: Move these later to other categories
-        blocks.push(block('doRegisterClient'));
+        blocks.push(block('receiveSocketEvent'));
+        blocks.push(block('receiveSocketMessage'));
+        blocks.push('-');
         blocks.push(block('doSocketEvent'));
-        blocks.push(block('doSocketDisconnect'));
         blocks.push(block('doSocketMessage'));
-        blocks.push('-');
-        blocks.push(block('reportURL'));
-        blocks.push(block('getJSFromRPC'));
-        blocks.push(block('getCostumeFromRPC'));
-        //blocks.push(block('param'));
-        blocks.push('-');
+        // TODO: Only add this block if unique role paradigm
+        blocks.push(block('doRegisterClient'));
+        //blocks.push(block('doSocketDisconnect'));
+        if (this.world().isDevMode) {
+            blocks.push('-');
+            blocks.push(block('getJSFromRPC'));
+            blocks.push(block('getCostumeFromRPC'));
+            blocks.push('-');
+        }
     } else if (cat === 'sensing') {
 
         blocks.push(block('reportTouchingObject'));
@@ -2026,6 +2028,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getTimer'));
         blocks.push('-');
         blocks.push(block('reportAttributeOf'));
+        blocks.push('-');
+        blocks.push(block('reportURL'));
         blocks.push('-');
         blocks.push(block('reportIsFastTracking'));
         blocks.push(block('doSetFastTracking'));
@@ -5569,13 +5573,18 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('clear'));
 
     } else if (cat === 'network') {
-        blocks.push(block('doRegisterClient'));
-        blocks.push(block('doSocketEvent'));
-        blocks.push(block('doSocketDisconnect'));
-        blocks.push(block('doSocketMessage'));
+        blocks.push(block('receiveSocketEvent'));
+        blocks.push(block('receiveSocketMessage'));
         blocks.push('-');
-        blocks.push(block('getJSFromRPC'));
-        blocks.push(block('getCostumeFromRPC'));
+        blocks.push(block('doSocketEvent'));
+        blocks.push(block('doSocketMessage'));
+        blocks.push(block('doRegisterClient'));
+        //blocks.push(block('doSocketDisconnect'));
+        if (this.world().isDevMode) {
+            blocks.push('-');
+            blocks.push(block('getJSFromRPC'));
+            blocks.push(block('getCostumeFromRPC'));
+        }
 
     } else if (cat === 'control') {
 
@@ -5583,8 +5592,6 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('receiveKey'));
         blocks.push(block('receiveInteraction'));
         blocks.push(block('receiveMessage'));
-        blocks.push(block('receiveSocketEvent'));  // FIXME Why do we have this twice? --> refactor!
-        blocks.push(block('receiveSocketMessage'));
         blocks.push('-');
         blocks.push(block('doBroadcast'));
         blocks.push(block('doBroadcastAndWait'));
@@ -5652,8 +5659,8 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('reportAttributeOf'));
         blocks.push('-');
-        //blocks.push(block('reportURL'));
-        //blocks.push('-');
+        blocks.push(block('reportURL'));
+        blocks.push('-');
         blocks.push(block('reportIsFastTracking'));
         blocks.push(block('doSetFastTracking'));
         blocks.push('-');
