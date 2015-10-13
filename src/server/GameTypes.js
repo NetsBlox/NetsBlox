@@ -16,9 +16,14 @@ module.exports = [
         paradigm: 'uniquerole',
         clientLibs: []
     },
-    {
+    {  // TODO: Remove this and change the project to use 'none'
         name: 'SimpleHangman',
         paradigm: 'sandbox',
+        clientLibs: []
+    },
+    {
+        name: 'Fox and Geese',
+        paradigm: 'uniquerole',
         clientLibs: []
     },
     {
