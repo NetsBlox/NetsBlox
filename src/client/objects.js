@@ -5212,7 +5212,7 @@ StageMorph.prototype.setGameType = function (gameType) {
                 function(otherGameType) {
                     return otherGameType.name === gameType.name;
                 });
-            self.setMessageTypes(gameType);
+            self.setMessageTypes(gameType.messageTypes || []);
         };
         req.open('get', baseURL + 'api/GameTypes');
         req.send();
@@ -5222,20 +5222,23 @@ StageMorph.prototype.setGameType = function (gameType) {
     return this.gameType = gameType;
 };
 
-StageMorph.prototype.setMessageTypes = function (gameType) {
+StageMorph.prototype.setMessageTypes = function (messageTypes) {
     // Load the supported message types
-    var msgFrame = new MessageFrame(),
-        msgType,
+    this.messageTypes = new MessageFrame();
+    for (var i = messageTypes.length; i--;) {
+        this.addMessageType(messageTypes[i]);
+    }
+};
+
+StageMorph.prototype.addMessageType = function (messageType) {
+    var msgType,
         name,
         fields;
 
-    for (var i = gameType.messageTypes.length; i--;) {
-        name = gameType.messageTypes[i].name;
-        fields = gameType.messageTypes[i].fields;
-        msgType = new MessageType(name, fields);
-        msgFrame.addMsgType(msgType);
-    }
-    this.messageTypes = msgFrame;
+    name = messageType.name;
+    fields = messageType.fields;
+    msgType = new MessageType(name, fields);
+    this.messageTypes.addMsgType(msgType);
 };
 
 // StageMorph messages

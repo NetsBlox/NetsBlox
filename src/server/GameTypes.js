@@ -1,26 +1,13 @@
 // This file contains the default game types
 'use strict';
 var _ = require('lodash'),
-    R = require('ramda'),
     DEFAULT_GAME_TYPE = {
         name: 'None',
         paradigm: 'sandbox',
         clientLibs: [],
         messageTypes: []
-    };
-
-var convertMsgType = function(value, key) {
-    return {name: key, fields: value};
-}; 
-
-var Messages = R.mapObjIndexed(convertMsgType,
-    // Message Type List
-    {
-        TicTacToe: ['row', 'column'],
-        SimpleMessage: ['sender', 'body'],
-        MoveGoose: ['goose', 'row', 'column'],
-        MoveFox: ['row', 'column']
-    });
+    },
+    Messages = require('./MessageTypes');
 
 module.exports = [
     {

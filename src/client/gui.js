@@ -2676,6 +2676,43 @@ IDE_Morph.prototype.projectMenu = function () {
     );
 
     menu.addItem(
+        'Message Types...',
+        function () {
+            // read a list of libraries from an external file,
+            var MsgTypeMenu = new MenuMorph(this, 'Import Network Message Type'),
+                msgTypeUrl = baseURL + 'api/MessageTypes/index';
+
+            function loadMessageType(name) {
+                var url = baseURL + 'api/MessageTypes/' + name;
+                try {
+                    var msgType = JSON.parse(myself.getURL(url));
+                    myself.stage.addMessageType(msgType);
+                } catch (e) {
+                    console.error('could not load the message type "' + name + '"');
+                }
+            }
+
+            var msgTypes = [];
+
+            try {
+                msgTypes = JSON.parse(myself.getURL(msgTypeUrl));
+            } catch(e) {
+                console.error('could not load the message types');
+            }
+
+            msgTypes.forEach(function (name) {
+                MsgTypeMenu.addItem(
+                    name,
+                    loadMessageType.bind(null, name)
+                );
+            });
+
+            MsgTypeMenu.popup(world, pos);
+        },
+        'Select remote procedure calls to add to this project.'
+    );
+
+    menu.addItem(
         localize(graphicsName) + '...',
         function () {
             var dir = graphicsName,
