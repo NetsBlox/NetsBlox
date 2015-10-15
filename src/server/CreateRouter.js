@@ -1,8 +1,7 @@
 // This creates the express router for the server from the routes in ./routes
 var express = require('express'),
-    userRoutes = require('./routes/Users'),
-    projectRoutes = require('./routes/Projects'),
-    basicRoutes = require('./routes/BasicRoutes'),
+    fs = require('fs'),
+    path = require('path'),
 
     debug = require('debug'),
     log = debug('NetsBlox:API:log');
@@ -13,9 +12,11 @@ var createRouter = function() {
     var router = express.Router({mergeParams: true}),
         self = this;
 
-    var routes = basicRoutes
-        .concat(userRoutes)
-        .concat(projectRoutes);
+    var routes = fs.readdirSync(path.join(__dirname, 'routes'))
+        .filter(name => path.extname(name) === '.js')  // Only read js files
+        .map(name => __dirname + '/routes/' + name)  // Create the file path
+        .map(filePath => require(filePath))  // Load the routes
+        .reduce((prev, next) => prev.concat(next), []);  // Merge all routes
 
     routes.forEach(function(api) {
         // TODO: Add an authentication step to user routes (check the cookie)

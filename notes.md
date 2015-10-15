@@ -1,16 +1,56 @@
+# Creating Message Type Support
++ To do:
+    + Create the basic blocks
+        + Get attribute
+        + Set attribute
+
+        + Get network message from RPC
+            + 'register' the network message
+        + Create network message
+            + like the 'Make a variable' button?
+                + Prompt for the fields
+                    + Like the 'Make a block stuff'?
+
+    + Add the network message type
+        + Should populate the dropdowns
+
+    + Need to make sure that the messages can be exported
+        + Then these can be imported with game types analogously to clientLibs
+
+    + How can I handle these messages
+
+    + Create the 
+
+    + Update the whe
+
+
++ Updating Examples
+    + Messaging
+        + DONE
+    + TicTacToe
+        + DONE
+    + Fox
+        + DONE
+    + Geese
+        + DONE
+    + Earthquakes
+        + DONE
+
+## General thoughts
++ Can I differentiate between variables set to messages and otherwise? (using variables and messages)
+    + No. It is easy to come up w/ an example where the variable is set to a non-message value
+    + What if I say that variables cannot be set to messages (or just treat it like 'up casting')?
+
+    + What if we create a message instances button?
+        + Then we would have to basically recreate the 'variables' stuff with messages...
+        + This might be the best approach :/
+
 # Misc NetsBlox/Snap notes
-+ onKeyPressed sometimes not working...
-    + Need to replicate..
-        + Doesn't work in the Hangman example
-    + Compare working and not-working
-
-+ Should message formats be part of the game type?
-    + Otherwise, the games might not be able to play against one another
-
 + Thoughts about my earlier design
     + Minimal logic in the paradigm logic (they shouldn't all have to group by 
         game type first -> a lot of logic duplication).
     + I should have only one paradigm per game type
+    + refactor is in progress...
 
 + Example of multiple RPC collection contexts in a single game
     + Stateless examples:
@@ -56,9 +96,6 @@
         + I believe touch is already supported
     + Some methods may need to be overridden
         + XMLHttpRequest?
-
-+ Central repository for projects?
-    + Berkeley already hosts one
 
 + Currently open games/apps?
     + Should we be able to invite people to collaborate with us on projects?
@@ -283,4 +320,18 @@ I will probably want to have a couple methods for handling websocket communicati
 ## Costumes
 + Add endpoint (use href='file name')
 + DONE
+
++ Central repository for projects?
+    + Berkeley already hosts one
+    + DONE
+
++ onKeyPressed sometimes not working...
+    + Need to replicate..
+        + Doesn't work in the Hangman example
+    + Compare working and not-working
+    + FIXED
+
++ Should message formats be part of the game type?
+    + Otherwise, the games might not be able to play against one another
+    + Yes
 

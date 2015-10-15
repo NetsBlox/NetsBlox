@@ -201,12 +201,12 @@ describe('NetsBlocksServer tests', function() {
                     }
                 });
                 s2.on('open', function() {
-                    s2.send('gameType hangman');
+                    s2.send('gameType Fox and Geese');
                     s2.send('devMode off');
                     setTimeout(onAllConnected,100);
                 });
                 s1.on('open', function() {
-                    s1.send('gameType hangman');
+                    s1.send('gameType Fox and Geese');
                     s1.send('devMode off');
                     setTimeout(onAllConnected,100);
                 });
@@ -457,7 +457,7 @@ describe('GroupManager Testing', function() {
             var count = sockets.length;
             sockets.forEach(function(socket) {
                 socket.on('open', function() {
-                    socket.send('gameType hangman');
+                    socket.send('gameType Fox and Geese');
                     socket.send('devMode off');
                     socket.on('message', function(msg) {
                         var data = msg.split(' '),
@@ -629,8 +629,8 @@ describe('GroupManager Testing', function() {
                 });
             });
 
-            // Sometimes fails when run with all the other tests...
-            it('should block multiple turns by same person', function(done) {
+            // TODO: I changed the TicTacToe to be twoplayer not turnbased...
+            it.skip('should block multiple turns by same person', function(done) {
                 var count = 0,
                     checkReceive = function(msg) {
                         if (msg.indexOf('Hey') + msg.indexOf('Listen') > -2) {

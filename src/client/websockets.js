@@ -126,9 +126,7 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
             if (block.selector === 'receiveSocketMessage') {
                 // Create the network context
                 context = new Context();
-                for (var i = content.length; i--;) {
-                    context.variables.addVar(i, content[i]);
-                }
+                context.variables.addVar('__message__', content);
             }
 
             // Find the process list for the given block
