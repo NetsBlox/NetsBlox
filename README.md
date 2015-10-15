@@ -12,11 +12,11 @@ Along with the events and messages, we also currently support _remote procedure 
 
 For example, if you import the `map-utilities` RPC blocks which gives the user access to Google Maps with a `map of (latitude), (longitude) with zoom (zoom)` block:
 
-[](./map-blocks.png)
+![Remote Procedure Returning a Costume](./map-blocks.png)
 
 This results in the stage costume changing:
 
-[](./map-example.png)
+![Google map costume on the stage](./map-example.png)
 
 ## Quick Start
 First clone the repository and install the dependencies.
