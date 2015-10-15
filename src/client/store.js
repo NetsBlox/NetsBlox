@@ -457,8 +457,18 @@ SnapSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     // Set up the network
     project.stage.setGameType({
         name: model.stage.attributes['game-type']
-        // TODO: Add message types
     });
+
+    // Add message types
+    model.messageTypes = model.stage.childNamed('messageTypes');
+    if (model.messageTypes) {
+        var messageTypes = model.messageTypes.children
+                .map(function(xml) {
+                    return xml.contents;
+                });
+
+        messageTypes.forEach(this.loadMessageType.bind(this, project.stage));
+    }
 
     this.loadObject(project.stage, model.stage);
 
@@ -795,6 +805,16 @@ SnapSerializer.prototype.loadVariables = function (varFrame, element) {
         varFrame.vars[child.attributes.name] = new Variable(value ?
                 myself.loadValue(value) : 0);
     });
+};
+
+SnapSerializer.prototype.loadMessageType = function (stage, name) {
+    var req = new XMLHttpRequest();
+
+    req.onload = function() {
+        stage.addMessageType(JSON.parse(req.responseText));
+    };
+    req.open('get', baseURL + 'api/MessageTypes/' + name);
+    req.send();
 };
 
 SnapSerializer.prototype.loadCustomBlocks = function (
@@ -1460,6 +1480,7 @@ StageMorph.prototype.toXML = function (serializer) {
             '<sounds>%</sounds>' +
             '<variables>%</variables>' +
             '<blocks>%</blocks>' +
+            '<messageTypes>%</messageTypes>' +
             '<scripts>%</scripts><sprites>%</sprites>' +
             '</stage>' +
             '<hidden>$</hidden>' +
@@ -1489,6 +1510,7 @@ StageMorph.prototype.toXML = function (serializer) {
         serializer.store(this.sounds, this.name + '_snd'),
         serializer.store(this.variables),
         serializer.store(this.customBlocks),
+        serializer.store(this.messageTypes),
         serializer.store(this.scripts),
         serializer.store(this.children),
         Object.keys(StageMorph.prototype.hiddenPrimitives).reduce(
@@ -1953,4 +1975,14 @@ CommentMorph.prototype.toXML = function (serializer) {
         this.isCollapsed,
         serializer.escape(this.text())
     );
+};
+
+MessageFrame.prototype.toXML = function (serializer) {
+    var names = this.names();
+    return names.map(function(name) {
+        return serializer.format(
+            '<messageType>%</messageType>',
+            serializer.escape(name)
+        );
+    }).join('');
 };

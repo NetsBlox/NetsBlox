@@ -2649,7 +2649,7 @@ IDE_Morph.prototype.projectMenu = function () {
         'Remote Calls...',
         function () {
             // read a list of libraries from an external file,
-            var libMenu = new MenuMorph(this, 'Import library'),
+            var libMenu = new MenuMorph(this, 'Import RPC'),
                 libUrl = baseURL + 'libraries/rpc/' + 'RPCS';
 
             function loadLib(name) {

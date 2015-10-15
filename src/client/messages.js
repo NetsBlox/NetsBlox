@@ -73,5 +73,4 @@ MessageFrame.prototype.names = function() {
     return Object.keys(this.msgTypes);
 };
 
-// TODO: add toXML
 // TODO: Consider making them scoped... They are currently all global
