@@ -41,16 +41,16 @@ module.exports = {
 
     byRegion: function(req, res) {
         var params = createParams({
-                minlatitude: req.query.minlat || 0,
-                minlongitude: req.query.minlng || 0,
-                maxlatitude: req.query.maxlat || 0,
-                maxlongitude: req.query.maxlng || 0
+                minlatitude: +req.query.minlat || 0,
+                minlongitude: +req.query.minlng || 0,
+                maxlatitude: +req.query.maxlat || 0,
+                maxlongitude: +req.query.maxlng || 0
             }),
             url = baseUrl + params;
 
         trace('Requesting earthquakes at : ' + params);
 
-        // TODO: This method will not respond with anything... It will simply
+        // This method will not respond with anything... It will simply
         // trigger socket messages to the given client
         request(url, function(err, response, body) {
             if (err) {
@@ -71,12 +71,12 @@ module.exports = {
 
             for (var i = earthquakes.length; i--;) {
                 // For now, I will send lat, lng, size, date
-                msg = 'earthquake ' + JSON.stringify([
-                    earthquakes[i].geometry.coordinates[1],
-                    earthquakes[i].geometry.coordinates[0],
-                    earthquakes[i].properties.mag,
-                    earthquakes[i].properties.time
-                ]) + ' rpc';
+                msg = 'Earthquake ' + JSON.stringify({
+                    latitude: earthquakes[i].geometry.coordinates[1],
+                    longitude: earthquakes[i].geometry.coordinates[0],
+                    size: earthquakes[i].properties.mag,
+                    time: earthquakes[i].properties.time
+                }) + ' rpc';
                 socket.send(msg);
             }
         });
