@@ -22,7 +22,19 @@
     + Create the 
 
     + Update the whe
-+ How 
+
+
++ Updating Examples
+    + Messaging
+        + DONE
+    + TicTacToe
+        + DONE
+    + Fox
+        + DONE
+    + Geese
+        + DONE
+    + Earthquakes
+        + DONE
 
 ## General thoughts
 + Can I differentiate between variables set to messages and otherwise? (using variables and messages)
