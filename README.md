@@ -8,7 +8,15 @@ Netsblox is an extension of _Snap!_ which allows users to use some distributed s
 
 Currently, we have support for networked _events_ and _messages_ where a message is like an event except contains some additional information. For example, in the Tic-Tac-Toe example, the user is able to  create a "TicTacToe" message which contains the row and column that the user played in.
 
-Along with the events and messages, we also currently support _remote procedure calls_. RPC's are implemented as REST endpoints on the server which can perform some of the more challenging computation for the student (allowing support to make more complicated apps) as well as providing access to extra utilities not otherwise available to the student. For example, if you import the `map-utilities` RPC blocks which gives the user access to Google Maps with a `map of (latitude), (longitude) with zoom (zoom)` block.
+Along with the events and messages, we also currently support _remote procedure calls_. RPC's are implemented as REST endpoints on the server which can perform some of the more challenging computation for the student (allowing support to make more complicated apps) as well as providing access to extra utilities not otherwise available to the student.
+
+For example, if you import the `map-utilities` RPC blocks which gives the user access to Google Maps with a `map of (latitude), (longitude) with zoom (zoom)` block:
+
+[](./map-blocks.png)
+
+This results in the stage costume changing:
+
+[](./map-example.png)
 
 ## Quick Start
 First clone the repository and install the dependencies.
