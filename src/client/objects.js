@@ -949,6 +949,16 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'sensing',
             spec: 'my longitude',
         },
+        reportStageWidth: {
+            type: 'reporter',
+            category: 'sensing',
+            spec: 'stage width',
+        },
+        reportStageHeight: {
+            type: 'reporter',
+            category: 'sensing',
+            spec: 'stage height',
+        },
         reportURL: {
             type: 'reporter',
             category: 'sensing',
@@ -2061,8 +2071,12 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('reportDate'));
         blocks.push(block('reportUsername'));
+        blocks.push('-');
         blocks.push(block('reportLatitude'));
         blocks.push(block('reportLongitude'));
+        blocks.push('-');
+        blocks.push(block('reportStageHeight'));
+        blocks.push(block('reportStageWidth'));
 
     // for debugging: ///////////////
 
@@ -5794,8 +5808,12 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('reportDate'));
         blocks.push(block('reportUsername'));
+        blocks.push('-');
         blocks.push(block('reportLatitude'));
         blocks.push(block('reportLongitude'));
+        blocks.push('-');
+        blocks.push(block('reportStageHeight'));
+        blocks.push(block('reportStageWidth'));
 
     // for debugging: ///////////////
 

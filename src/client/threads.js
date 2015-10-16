@@ -1968,6 +1968,16 @@ Process.prototype.reportURL = function (url) {
     this.pushContext();
 };
 
+Process.prototype.reportStageWidth = function () {
+    var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
+    return stage.width();
+};
+
+Process.prototype.reportStageHeight = function () {
+    var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
+    return stage.height();
+};
+
 // Process event networked messaging primitives
 
 Process.prototype.setValueInNetworkMessage = function(attr, msgName, type, value) {
