@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>NetsBlox</title>
+		<link rel="shortcut icon" href="favicon.ico">
+		<script type="text/javascript" src="morphic.js"></script>
+		<script type="text/javascript" src="widgets.js"></script>
+		<script type="text/javascript" src="blocks.js"></script>
+		<script type="text/javascript" src="websockets.js"></script>
+		<script type="text/javascript" src="threads.js"></script>
+		<script type="text/javascript" src="messages.js"></script>
+		<script type="text/javascript" src="netsblox.js"></script>
+		<script type="text/javascript" src="objects.js"></script>
+		<script type="text/javascript" src="gui.js"></script>
+		<script type="text/javascript" src="paint.js"></script>
+		<script type="text/javascript" src="lists.js"></script>
+		<script type="text/javascript" src="byob.js"></script>
+		<script type="text/javascript" src="xml.js"></script>
+		<script type="text/javascript" src="store.js"></script>
+		<script type="text/javascript" src="locale.js"></script>
+		<script type="text/javascript" src="cloud.js"></script>
+		<script type="text/javascript" src="sha512.js"></script>
+		<script type="text/javascript" src="deploy.js"></script>
+		<script type="text/javascript" src="deploy-project.js"></script>
+    <!-- Make sure to remove this in production -->
+    <!-- include it above the </body> tag -->
+<script>
+    var ws;
+    function socket() {
+        ws = new WebSocket("ws://127.0.0.1:9001");
+        ws.onmessage = function ( e ) {
+            var data = JSON.parse(e.data);
+            if ( data.r ) {
+                location.reload();
+            }
+        };
+    }
+    setInterval(function () {
+        if ( ws ) {
+            if ( ws.readyState !== 1 ) {
+                socket();
+            }
+            } else {
+            socket();
+        }
+    }, 1000);
+</script> 
+		<script type="text/javascript">
+
+            var getIde = function() {
+                var ide = new IDE_Morph();
+                // Mock opening in the world
+                ide.logo = new Morph();
+                ide.categories = new Morph();
+                ide.corralBar = new Morph();
+
+                ide.controlBar = new Morph();
+                ide.controlBar.fixLayout = nop;
+                ide.controlBar.networkButton = new PushButtonMorph();
+                ide.world = function() { return {}; };
+
+                return ide;
+            };
+
+			var loadStage = function(text) {
+                // Create an ide and load the project. Then remove the stage
+                var ide = getIde();
+                ide.serializer.openProject(ide.serializer.load(project, ide), ide);
+
+                return ide.stage;
+            };
+
+			var world;
+			window.onload = function () {
+				world = new WorldMorph(document.getElementById('world'));
+                world.worldCanvas.focus();
+                // Load the stage morph from the TicTacToe Example
+                var stage = loadStage(project);
+				stage.openIn(world);
+				setInterval(loop, 1);
+			};
+
+			function loop() {
+				world.doOneCycle();
+			}
+		</script>
+	</head>
+	<body style="margin: 0;">
+		<canvas id="world" tabindex="1" style="position: absolute;" />
+	</body>
+</html>
