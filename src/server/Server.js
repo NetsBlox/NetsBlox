@@ -68,6 +68,13 @@ Server.prototype.configureRoutes = function() {
     this.app.use(cookieParser());
     this.app.use(expressSession({secret: sessionSecret}));
 
+    // CORS
+    this.app.use(function(req, res, next) {
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+      next();
+    });
+
     // Add routes
     this.app.use('/rpc', this.rpcManager.router);
     this.app.use('/api', createRouter.call(this));
