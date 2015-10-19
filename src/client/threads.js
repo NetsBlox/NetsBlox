@@ -1895,7 +1895,7 @@ Process.prototype.createRPCUrl = function (rpc, params) {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph),
         uuid = stage.sockets.uuid;
 
-    return window.location.host+'/rpc/'+rpc+'?uuid='+uuid+'&'+params;
+    return baseURL+'rpc/'+rpc+'?uuid='+uuid+'&'+params;
 };
 
 Process.prototype.callRPC = function (rpc, params) {
@@ -1957,7 +1957,7 @@ Process.prototype.reportURL = function (url) {
     var response;
     if (!this.httpRequest) {
         this.httpRequest = new XMLHttpRequest();
-        this.httpRequest.open("GET", 'http://' + url, true);
+        this.httpRequest.open("GET", url.replace(/^(http:\/\/)?/, 'http://'), true);
         this.httpRequest.send(null);
     } else if (this.httpRequest.readyState === 4) {
         response = this.httpRequest.responseText;
