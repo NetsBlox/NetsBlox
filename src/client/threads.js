@@ -1938,6 +1938,7 @@ Process.prototype.getCostumeFromRPC = function (rpc, params) {
     if (!this.requestedImage) {
         // Create new request
         this.requestedImage = new Image();
+        this.requestedImage.crossOrigin = 'Anonymous';
         this.requestedImage.src = this.createRPCUrl(rpc, params);
     } else if (this.requestedImage.complete && this.requestedImage.naturalWidth) {
         // Clear request
