@@ -1,25 +1,30 @@
 
-// Some basic hacking to get StageMorph to work standalone
+// Some adjustments to get StageMorph to work standalone
 StageMorph.prototype.openIn = function(world) {
     var self = this;
     world.add(this);
 
     // Set size to screen size
-    self.setExtent(new Point(world.width(), world.height()));
-    self.setPosition(new Point(0,0));
+    self.fill(new Point(world.width(), world.height()));
 
     world.setExtent = function() {
         Morph.prototype.setExtent.apply(world, arguments);
-        self.setExtent.apply(self, arguments);
+        self.fill.apply(self, arguments);
     };
+};
 
-    // REMOVE: Hack for introspection into method calls
-    //Object.keys(Morph.prototype).forEach(function(method) {
-        //if (typeof world[method] == 'function' && method.indexOf('step') === -1) {
-            //world[method] = function() {
-            //console.log('world is calling '+ method);
-            //return Morph.prototype[method].apply(world, arguments);
-            //};
-        //}
-    //});
+StageMorph.prototype.fill = function(size) {
+    var xRatio = size.x/this.dimensions.x,
+        yRatio = size.y/this.dimensions.y,
+        ratio = Math.min(xRatio, yRatio);
+
+    this.setExtent(this.dimensions.multiplyBy(ratio));
+    this.setScale(ratio);
+
+    // Set the origin
+    var x = (size.x - this.width())/2,
+        y = (size.y - this.height())/2;
+
+    this.setPosition(new Point(x, y));
+    this.changed();
 };
