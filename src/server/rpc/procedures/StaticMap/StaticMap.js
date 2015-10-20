@@ -44,8 +44,14 @@ StaticMap.getActions = function() {
 StaticMap.prototype._getGoogleParams = function(options) {
     // Create the params for Google
     var params = [];
-    params.push('center=' + options.lat + ',' + options.lon);
+    // Double the scale if the image is too large (half the dimensions)
+    options.scale = options.width <= 640 && options.height <= 640 ? 1 : 2;
+    options.width = Math.ceil(options.width/options.scale);
+    options.height = Math.ceil(options.height/options.scale);
     params.push('size=' + options.width + 'x' + options.height);
+    params.push('scale=' + options.scale);
+
+    params.push('center=' + options.lat + ',' + options.lon);
     params.push('key=' + key);
     params.push('zoom='+(options.zoom || '12'));
     return params.join('&');

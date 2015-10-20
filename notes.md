@@ -1,3 +1,35 @@
+# Project size stuff
++ When it shrinks, does it change size?
+    + aka is full screen mode inconsistent?
+    + no, the x/y coordinates are scaled to the 360x480 dimensions
+    + what about different screen ratios?
+
+    + Basically, I see 3 different approaches here:
+
+        + Keep the same width/heights as done currently
+            + Weird skews, etc on different screens or large dead zones
+
+        + Change the stage pixel coordinates based on screen size
+            + More challenging programming
+
+        + Keep the same width/heights but get different ratios for different devices
+
+    + I might start by keeping the same width/heights and adding a dead zone
+        then consider different ratios in the future
+    + These values are stored in `stage.dimensions`
+
+
+
+
+    + The "turtle" is not stored in the center of the page...
+        + Fixed
+
+
++ Blurry images on large screens
+    + Could I use svg's for them?
+
+
+
 # Creating Message Type Support
 + To do:
     + Create the basic blocks
