@@ -1938,10 +1938,10 @@ Process.prototype.getCostumeFromRPC = function (rpc, params) {
     if (!this.requestedImage) {
         // Create new request
         this.requestedImage = new Image();
-        this.requestedImage.src = 'http://' + this.createRPCUrl(rpc, params);
+        this.requestedImage.src = this.createRPCUrl(rpc, params);
     } else if (this.requestedImage.complete && this.requestedImage.naturalWidth) {
         // Clear request
-        var image = this.requestedImage;
+        image = this.requestedImage;
         this.requestedImage = null;
         canvas = document.createElement('canvas');
         canvas.width = image.width;

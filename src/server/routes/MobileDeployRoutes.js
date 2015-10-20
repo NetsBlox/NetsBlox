@@ -4,7 +4,7 @@ var debug = require('debug'),
     trace = debug('NetsBlox:Routes:MobileManager:trace'),
     error = debug('NetsBlox:Routes:MobileManager:error'),
     
-    DEFAULT_NETSBLOX_URL = 'http://netsblox.herokuapp.com';
+    DEFAULT_NETSBLOX_URL = 'http://netsblox.herokuapp.com/';
 
 module.exports = [
     { 
@@ -25,8 +25,8 @@ module.exports = [
                     ' Please contact your administrator if this is not expected.');
             }
 
-            // TODO: Fix the baseURL if localhost or 127.0.0.1
-            // This should only happen when accessing 
+            // Fix the baseURL if localhost or 127.0.0.1
+            // This should only happen during development
             if (!baseURL || baseURL.includes('localhost') || baseURL.includes('127.0.0.1')) {
                 baseURL = DEFAULT_NETSBLOX_URL;
             }
@@ -45,7 +45,7 @@ module.exports = [
                 if (user) {
                     self.mobileManager.emailProjectApk(project, user.email, baseURL, xml);
                     return res.status(200).send('Building the Android app. ' + 
-                        'Results will be emailed to ' + user.email + ' on completion.');
+                        '\nResults will be emailed to ' + user.email + ' on completion.');
                 } else {
                     error('Could not find user to build android app (user "'+username+'")');
                     return res.status(400).send('ERROR: could not find user "'+username+'"');
