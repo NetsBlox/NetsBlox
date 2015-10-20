@@ -2587,6 +2587,22 @@ IDE_Morph.prototype.projectMenu = function () {
         shiftClicked ? new Color(100, 0, 0) : null
     );
 
+    if (SnapCloud.username) {  // If logged in
+        menu.addItem(
+            'Create Android App...',
+            function () {
+                if (myself.projectName) {
+                    myself.requestAndroidApp(myself.projectName);
+                } else {
+                    myself.prompt('What is the name of this project?', function (name) {
+                        myself.requestAndroidApp(name);
+                    }, null, 'requestAndroidApp');
+                }
+            },
+            'create an Android app from the current project'
+        );
+    }
+
     menu.addItem(
         'Export blocks...',
         function () {myself.exportGlobalBlocks(); },
@@ -3169,6 +3185,31 @@ IDE_Morph.prototype.saveProjectToDisk = function () {
         link.click();
         document.body.removeChild(link);
     }
+};
+
+IDE_Morph.prototype.requestAndroidApp = function(name) {
+    var myself = this,
+        projectXml,
+        req,
+        params;
+
+    this.setProjectName(name);
+
+    projectXml = encodeURIComponent(
+        this.serializer.serialize(this.stage)
+    );
+    // POST request with projectName, xml, username
+    req = new XMLHttpRequest();
+    params = 'projectName=' + name + '&username=' +
+        SnapCloud.username + '&xml=' + projectXml +
+        '&baseURL=' + encodeURIComponent(baseURL);
+
+    req.open('post', baseURL + 'api/mobile/compile', true);
+    req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    req.onload = function() {
+        myself.showMessage(req.responseText);
+    };
+    req.send(params);
 };
 
 IDE_Morph.prototype.exportProject = function (name, plain) {

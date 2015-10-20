@@ -5,6 +5,7 @@ var express = require('express'),
     Utils = _.extend(require('./Utils'), require('./ServerUtils.js')),
     CommunicationManager = require('./groups/CommunicationManager'),
     RPCManager = require('./rpc/RPCManager'),
+    MobileManager = require('./mobile/MobileManager'),
     MongoClient = require('mongodb').MongoClient,
     Vantage = require('./vantage/Vantage'),
     DEFAULT_OPTIONS = {
@@ -15,6 +16,7 @@ var express = require('express'),
 
     // Mailer
     nodemailer = require('nodemailer'),
+    markdown = require('nodemailer-markdown').markdown,
     transporter = nodemailer.createTransport(),  // TODO: Change to smtp
 
     // Routes
@@ -37,10 +39,13 @@ var Server = function(opts) {
     this._users = null;
     this._server = null;
 
+    // Mailer
+    transporter.use('compile', markdown());
+
     // Group and RPC Managers
     this.groupManager = new CommunicationManager(opts);
     this.rpcManager = new RPCManager(this.groupManager);
-
+    this.mobileManager = new MobileManager(transporter);
 };
 
 Server.prototype.connectToMongo = function(callback) {
@@ -59,14 +64,21 @@ Server.prototype.connectToMongo = function(callback) {
 
 Server.prototype.configureRoutes = function() {
     this.app.use(express.static(__dirname + '/../client/'));
-    this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({
         extended: true
     }));
+    this.app.use(bodyParser.json());
 
     // Session & Cookie settings
     this.app.use(cookieParser());
     this.app.use(expressSession({secret: sessionSecret}));
+
+    // CORS
+    this.app.use(function(req, res, next) {
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+      next();
+    });
 
     // Add routes
     this.app.use('/rpc', this.rpcManager.router);

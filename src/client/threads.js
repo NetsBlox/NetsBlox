@@ -1895,7 +1895,7 @@ Process.prototype.createRPCUrl = function (rpc, params) {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph),
         uuid = stage.sockets.uuid;
 
-    return window.location.host+'/rpc/'+rpc+'?uuid='+uuid+'&'+params;
+    return baseURL+'rpc/'+rpc+'?uuid='+uuid+'&'+params;
 };
 
 Process.prototype.callRPC = function (rpc, params) {
@@ -1938,10 +1938,11 @@ Process.prototype.getCostumeFromRPC = function (rpc, params) {
     if (!this.requestedImage) {
         // Create new request
         this.requestedImage = new Image();
-        this.requestedImage.src = 'http://' + this.createRPCUrl(rpc, params);
+        this.requestedImage.crossOrigin = 'Anonymous';
+        this.requestedImage.src = this.createRPCUrl(rpc, params);
     } else if (this.requestedImage.complete && this.requestedImage.naturalWidth) {
         // Clear request
-        var image = this.requestedImage;
+        image = this.requestedImage;
         this.requestedImage = null;
         canvas = document.createElement('canvas');
         canvas.width = image.width;
@@ -1957,7 +1958,7 @@ Process.prototype.reportURL = function (url) {
     var response;
     if (!this.httpRequest) {
         this.httpRequest = new XMLHttpRequest();
-        this.httpRequest.open("GET", 'http://' + url, true);
+        this.httpRequest.open("GET", url.replace(/^(http:\/\/)?/, 'http://'), true);
         this.httpRequest.send(null);
     } else if (this.httpRequest.readyState === 4) {
         response = this.httpRequest.responseText;

@@ -18,8 +18,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
         isReconnectAttempt = this.websocket !== null,
         address;
 
-    address = 'ws://'+(window.location.origin
-        .replace('http://',''));
+    address = 'ws://'+(baseURL.replace('http://',''));
 
     // Don't connect if the already connected
     if (isReconnectAttempt) {
