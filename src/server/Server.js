@@ -95,7 +95,7 @@ Server.prototype.emailPassword = function(user, password) {
         from: 'no-reply@netsblox.com',
         to: user.email,
         subject: 'Temporary Password',
-        text: 'Hello '+user.username+',\nYour NetsBlox password has been '+
+        markdown: 'Hello '+user.username+',\nYour NetsBlox password has been '+
             'temporarily set to '+password+'. Please change it after '+
             'logging in.'
     });

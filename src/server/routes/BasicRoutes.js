@@ -120,7 +120,7 @@ module.exports = [
                         if (err) {
                             return res.serverError(err);
                         }
-                        log('Created new user: "'+uname+'"');
+                        log('Created new user: "'+uname+'" with email "' + newUser.email + '"');
                         return res.sendStatus(200);
                     });
                     return;
