@@ -36,13 +36,7 @@ var MobileManager = function(mailTransport) {
 
     // Check environment for cordova command
     this.supported = false;
-    MobileManager.cordova([], {}, err => {
-        if (err) {
-            warn('Mobile app compilation not supported in this environment. Is cordova installed?');
-        } else {
-            this.supported = true;
-        }
-    });
+    this.checkCommands('android', 'cordova');
 };
 
 MobileManager.prototype.emailProjectApk = function(name, email, baseURL, xml) {
@@ -50,12 +44,12 @@ MobileManager.prototype.emailProjectApk = function(name, email, baseURL, xml) {
         myTmpDir = path.join(TMP_DIR, name + new Date().getTime()),
         myProjectDir = path.join(myTmpDir, name);
 
-    assert(this.supported);
+    assert(this.supported, 'Cannot create APK when Android is not supported.');
 
     async.series([
         rm_rf.bind(null, TMP_DIR),
         fs.mkdirs.bind(fs, myTmpDir),
-        MobileManager.cordova.bind(null, ['create', name], {cwd: myTmpDir}),
+        MobileManager.cordova.bind(null, ['create', myProjectDir], null),
         MobileManager.customizeCordovaApp.bind(null, {
             projectName: name,
             baseURL,
@@ -63,8 +57,8 @@ MobileManager.prototype.emailProjectApk = function(name, email, baseURL, xml) {
             cordovaRoot: myProjectDir,
             email
         }),
-        MobileManager.cordova.bind(null, ['platform', 'add', 'android'], {cwd: myProjectDir}),
-        MobileManager.cordova.bind(null, ['compile', 'android'], {cwd: myProjectDir})
+        MobileManager.cordova.bind(null, ['platform', 'add', 'android'], myProjectDir),
+        MobileManager.cordova.bind(null, ['compile', 'android', '-Xlint:deprecation'], myProjectDir)
         ], 
         function(err) {
             // Get the apk 
@@ -105,6 +99,25 @@ MobileManager.prototype._emailResults = function(err, email, project, projectPat
     this.transport.sendMail(emailOptions);
 };
 
+
+MobileManager.prototype.checkCommands = function() {
+    var cmds = Array.prototype.slice.call(arguments),
+        len = cmds.length,
+        supported = new Array(len),
+        updateSupport = (name, i, err) => {
+            supported[i] = !err.includes('ENOENT');
+            this.supported = supported.reduce((prev, next) => prev && next);
+            if (!supported[i]) {
+                warn('Mobile app compilation not supported in this environment.' +
+                    ' Is ' + name + ' installed?');
+            }
+        };
+
+    for (var i = cmds.length; i--;) {
+        MobileManager.cmd(cmds[i], ['-h'], {}, updateSupport.bind(this, cmds[i], i));
+    }
+};
+
 /**
  * Spawn a cordova command in a child process
  *
@@ -113,20 +126,46 @@ MobileManager.prototype._emailResults = function(err, email, project, projectPat
  * @param {Function} callback
  * @return {undefined}
  */
-MobileManager.cordova = function(args, options, callback) {
-    var job = spawn('cordova', args, options), 
-        error = '';
+MobileManager.cordova = function(args, dir, callback) {
+    var options = {cwd: dir || __dirname},
+        cordovaPath = path.join(__dirname, '..', '..', '..', 'node_modules', 'cordova',
+            'bin', 'cordova');
 
-    trace('Invoking cordova ' + args.join(' '));
+    args.unshift(cordovaPath);
+    return MobileManager.cmd('node', args, options, callback);
+};
+
+/**
+ * A helper function for invoking something from the commandline
+ *
+ * @param {String} command
+ * @param {String[]} args
+ * @param {Object} options
+ * @param {Function} callback
+ * @return {undefined}
+ */
+MobileManager.cmd = function(command, args, options, callback) {
+    var job = spawn(command, args, options),
+        err = '';
+
+    trace('Invoking ' + command + ' ' + args.join(' '));
+
     job.stderr.on('data', function(data) {
-        error += data.toString();
+        err += data.toString();
+    });
+
+    job.on('error', function(error) {
+        warn(command + ' ' + args.join(' ') + ' failed: ' + error);
+        err += error;
     });
 
     job.on('close', function(code) {
         if (code !== 0) {
-            error = error || 'Unknown error';
+            err = err || 'Unknown err';
+            err += '(' + code + ')';
+            warn(command + ' ' + args.join(' ') + ' failed: ' + err);
         }
-        callback(error);
+        return callback(err);
     });
 };
 
@@ -145,7 +184,6 @@ MobileManager.customizeCordovaApp = function(content, callback) {
         };
 
     R.mapObj(dst => path.join(content.cordovaRoot, dst));
-    //indexHtml = path.join(resDir, ),
     content.projectXml = content.projectXml.replace(/'/g, "\\'");
 
     async.series([
@@ -166,7 +204,6 @@ MobileManager.customizeCordovaApp = function(content, callback) {
                             return next(e);
                         }
                         var outputText = _.template(text)(content);
-                        trace('Writing ' + outputText + ' to ' + dstPath);
                         fs.writeFile(dstPath, outputText, () => {
                             if (--len === 0) {
                                 next();
