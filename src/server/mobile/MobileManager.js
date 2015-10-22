@@ -4,6 +4,7 @@
 var _ = require('lodash'),
     fs = require('fs-extra'),
     path = require('path'),
+    R = require('ramda'),
     assert = require('assert'),
     successText = fs.readFileSync(path.join(__dirname, 'install-instructions.md.ejs')),
     errorText = fs.readFileSync(path.join(__dirname, 'build-failure.md.ejs')),
@@ -55,8 +56,14 @@ MobileManager.prototype.emailProjectApk = function(name, email, baseURL, xml) {
         rm_rf.bind(null, TMP_DIR),
         fs.mkdirs.bind(fs, myTmpDir),
         MobileManager.cordova.bind(null, ['create', name], {cwd: myTmpDir}),
+        MobileManager.customizeCordovaApp.bind(null, {
+            projectName: name,
+            baseURL,
+            projectXml: xml,
+            cordovaRoot: myProjectDir,
+            email
+        }),
         MobileManager.cordova.bind(null, ['platform', 'add', 'android'], {cwd: myProjectDir}),
-        MobileManager.customizeCordovaApp.bind(null, name, baseURL, xml, myProjectDir),
         MobileManager.cordova.bind(null, ['compile', 'android'], {cwd: myProjectDir})
         ], 
         function(err) {
@@ -110,6 +117,7 @@ MobileManager.cordova = function(args, options, callback) {
     var job = spawn('cordova', args, options), 
         error = '';
 
+    trace('Invoking cordova ' + args.join(' '));
     job.stderr.on('data', function(data) {
         error += data.toString();
     });
@@ -129,38 +137,55 @@ MobileManager.cordova = function(args, options, callback) {
  * @param {Function} callback
  * @return {undefined}
  */
-MobileManager.customizeCordovaApp = function(project, baseURL, xml, cordovaRoot, callback) {
+MobileManager.customizeCordovaApp = function(content, callback) {
     var resDir = path.join(__dirname, 'resources'),
-        content = {
-            projectName: project,
-            url: baseURL,
-            projectXml: xml.replace(/'/g, "\\'")
-        },
-        indexHtml = path.join(resDir, 'index.html.ejs'),
-        dstPath = path.join(cordovaRoot, 'www');
+        specialFiles = {
+            'index.html.ejs': 'www',
+            'config.xml.ejs': ''
+        };
+
+    R.mapObj(dst => path.join(content.cordovaRoot, dst));
+    //indexHtml = path.join(resDir, ),
+    content.projectXml = content.projectXml.replace(/'/g, "\\'");
 
     async.series([
-        // Create the new index.html file
+        // Create the new special files (index.html, config.xml.ejs, etc)
         function(next) {
-            fs.readFile(indexHtml, 'utf8', function(e, text) {
-                if (e) {
-                    return next(e);
-                }
-                var outputText = _.template(text)(content);
-                fs.writeFile(path.join(dstPath, 'index.html'), outputText, next);
-            });
+            var files = Object.keys(specialFiles),
+                len = files.length;
+
+            files
+                .forEach(srcFile => {
+                    var srcPath = path.join(resDir, srcFile),
+                        dstPath = path.join(content.cordovaRoot,
+                            specialFiles[srcFile],
+                            srcFile.replace(/\.ejs$/, ''));
+
+                    fs.readFile(srcPath, 'utf8', function(e, text) {
+                        if (e) {
+                            return next(e);
+                        }
+                        var outputText = _.template(text)(content);
+                        trace('Writing ' + outputText + ' to ' + dstPath);
+                        fs.writeFile(dstPath, outputText, () => {
+                            if (--len === 0) {
+                                next();
+                            }
+                        });
+                    });
+                });
         },
         // Copy the remaining resource files
         function(next) {
             fs.readdir(resDir, function(e, files) {
-                var i = files.indexOf('index.html.ejs');
-                files.splice(i, 1);
+                files = _.difference(files, Object.keys(specialFiles))
+                    .filter(name => name[0] !== '.');  // no hidden files
 
                 // Copy the remaining to the root/www/js dir
                 files
                     .forEach(file => {
                         var src = path.join(resDir, file),
-                            dst = path.join(dstPath, 'js', file);
+                            dst = path.join(content.cordovaRoot, 'www', 'js', file);
                         if (file.indexOf('.ejs') > -1) {  // ejs file
                             let rawText = fs.readFileSync(src, 'utf8'),
                                 outputText = _.template(rawText)(content);
@@ -175,17 +200,11 @@ MobileManager.customizeCordovaApp = function(project, baseURL, xml, cordovaRoot,
         },
         // Copy the js files from src/client
         function(next) {
-            var dstDir = path.join(dstPath, 'js');
+            var dstDir = path.join(content.cordovaRoot, 'www', 'js');
             CLIENT_JS.forEach(file => fs.copySync(file, path.join(dstDir, path.basename(file))));
             next(null);
         }
     ], callback);
-    // TODO: Copy the necessary js files to the www/js path
-    // TODO: Copy the deploy.html file to the www/index.html path
-    // TODO: Create the deploy-project.js file
-    //   It should contain 
-    //      + the serialized project
-    //      + the baseURL override
 };
 
 module.exports = MobileManager;
