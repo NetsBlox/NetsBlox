@@ -105,7 +105,7 @@ MobileManager.prototype.checkCommands = function() {
         len = cmds.length,
         supported = new Array(len),
         updateSupport = (name, i, err) => {
-            supported[i] = !err.includes('ENOENT');
+            supported[i] = !(err || '').includes('ENOENT');
             this.supported = supported.reduce((prev, next) => prev && next);
             if (!supported[i]) {
                 warn('Mobile app compilation not supported in this environment.' +
@@ -162,10 +162,10 @@ MobileManager.cmd = function(command, args, options, callback) {
     job.on('close', function(code) {
         if (code !== 0) {
             err = err || 'Unknown err';
-            err += '(' + code + ')';
             warn(command + ' ' + args.join(' ') + ' failed: ' + err);
+            return callback(err);
         }
-        return callback(err);
+        return callback(null);
     });
 };
 
