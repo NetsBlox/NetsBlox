@@ -1971,12 +1971,12 @@ Process.prototype.reportURL = function (url) {
 
 Process.prototype.reportStageWidth = function () {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
-    return stage.width();
+    return stage.dimensions.x;
 };
 
 Process.prototype.reportStageHeight = function () {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
-    return stage.height();
+    return stage.dimensions.y;
 };
 
 // Process event networked messaging primitives
