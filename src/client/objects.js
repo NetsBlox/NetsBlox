@@ -635,7 +635,7 @@ SpriteMorph.prototype.initBlocks = function () {
         doCreateMessage: {
             type: 'reporter',
             category: 'messages',
-            spec: 'new %msgType message'
+            spec: 'create %msgType'
         },
         doRegisterClient: {  // for use with the generic group manager
             type: 'command',

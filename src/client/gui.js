@@ -2589,7 +2589,7 @@ IDE_Morph.prototype.projectMenu = function () {
 
     if (SnapCloud.username) {  // If logged in
         menu.addItem(
-            'Create Android App...',
+            'Export as Android App...',
             function () {
                 if (myself.projectName) {
                     myself.requestAndroidApp(myself.projectName);
