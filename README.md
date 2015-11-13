@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/NetsBlox/NetsBlox.png?label=ready&title=Ready)](http://waffle.io/NetsBlox/NetsBlox)
 # NetsBlox
 NetsBlox is a visual programming language which allows people to develop networked programs.
 
