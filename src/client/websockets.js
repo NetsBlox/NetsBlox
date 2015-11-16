@@ -113,7 +113,7 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
         this.stage.lastMessage = message;
         this.stage.children.concat(this.stage).forEach(function (morph) {
             if (morph instanceof SpriteMorph || morph instanceof StageMorph) {
-                hats = hats.concat(morph.allHatSocketBlocksFor(message, role));
+                hats = hats.concat(morph.allHatBlocksForSocket(message, role));
             }
         });
 

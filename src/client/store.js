@@ -1079,6 +1079,45 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter) {
     }
     block.isDraggable = true;
     inputs = block.inputs();
+    // Try to batch children for the inputs if appropriate. This is
+    // used with MessageInputSlotMorph and MessageOutputSlotMorph
+    // FIXME
+    if (inputs.length < model.children.length) {
+        var batch = [],
+            skipTypes = ['comment', 'receiver'];
+
+        // While the tag is not 'comment' or 'receiver', group the children
+        // into an array.
+        for (var i = model.children.length; i--;) {
+            if (skipTypes.indexOf(model.children[i].tag) !== -1) {
+                break;
+            }
+            batch = model.children.splice(i,1).concat(batch);
+        }
+
+        if (batch.length) {
+            // Set the contents for the entire batch
+            var self = this,
+                vals = batch.map(function(value) {
+                    if (value.tag === 'block' || value.tag === 'custom-block') {
+                        return self.loadBlock(value);
+                    }
+                    if (value.tag === 'script') {
+                        return self.loadScript(value);
+                    }
+                    if (value.tag === 'color') {
+                        return self.loadColor(value);
+                    }
+                    return self.loadValue(value) || '';
+                }),
+                input = inputs[++i];
+
+            if (input.setContents) {
+                input.setContents(vals[0], vals.slice(1));
+            }
+        }
+    }
+
     model.children.forEach(function (child, i) {
         if (child.tag === 'comment') {
             block.comment = this.loadComment(child);

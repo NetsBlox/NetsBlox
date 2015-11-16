@@ -1,20 +1,43 @@
+# Message sending/receiving blocks
++ Do we need networked events?
+    + Can we have the same things with simply messages that have no body?
+    + Are they achieving the same thing?
+    + Roles are then significantly easier (they are their own message type)
+    + Changing this. It is discussed in more detail in `concepts.md`
+
++ Changing type with existing blocks
+    + blocks stay on and extra things are added. They should be popped off like lists
+
+# Notes on InputSlotMorph
++ It has:
+    + getSpec
+    + contents
+    + arrow ... ?
+    + setContents
+        + used in dropDownMenu
+    + setChoices
+    + fixLayout
+    + mouseDownLeft
+    + mouseClickLeft
+
+    + reactToKeystroke
+    + reactToEdit
+    + reactToSliderEdit
+
+    + mapToCode
+    + evaluate
+    + isEmptySlot
+
+    + drawNew
+    + drawRectBorder
+    + drawRoundBorder
+    + A bunch of menus...
+
+
 # Custom messages for various paradigms
 + I will make a block for sending raw messages...?
     + Could this present a security issue?
         + I don't believe so bc the same functionality can be done in the browser
-
-# RPC dropdowns
-+ I will need to create a subclass of InputSlotMorph which can...
-    + make http requests when `contents` is called
-    + have updated `getSpec`
-
-+ How will I create the secondary morph type?
-    + I need to know the value of the other InputSlotMorph...
-        + Closures, Arguments, Lookup?
-        + I am going to try lookup? :/
-
-+ Should I even split them up here? What if I ignored the action + RPC connection?
-    + The number of actions would be overwhelming
 
 # Client side notes
 + I am currently trying to create a menu for selecting the game type of the current project. The game type will then determine who shares network communication (at the highest level) and some client libs that will be loaded.
@@ -154,3 +177,71 @@
     + show variable should render it
     + DONE
 
+# RPC dropdowns
++ I decided not to implement this
++ I will need to create a subclass of InputSlotMorph which can...
+    + make http requests when `contents` is called
+    + have updated `getSpec`
+
++ How will I create the secondary morph type?
+    + I need to know the value of the other InputSlotMorph...
+        + Closures, Arguments, Lookup?
+        + I am going to try lookup? :/
+
++ Should I even split them up here? What if I ignored the action + RPC connection?
+    + The number of actions would be overwhelming
+
+# Message sending/receiving blocks
++ I will make a complex input type for the block in which the dropdown
+
++ Custom block receiving
+    + I need a read only `TemplateSlotMorph`
+        + TSM <- ArgMorph <- SyntaxElementMorph <- Morph
+
+        + Override mouseClickLeft?
+            + The ReporterBlockMorph calls this and checks its parent... 
+
++ Custom block sending
+    + How do I create grayed out text?
+        + InputSlotMorph <- ArgMorph <- SyntaxElementMorph <- Morph
+        + I may need to override `contents` for the InputSlotMorph
+            + OW, I might be able to make 
+
++ Both
+    + How can I make a message type dropdown which edits other morphs on select?
+        + Is there an `onSelect` callback for InputSlotMorph?
+            + `setContents`
+    + DONE
+
++ Import/Export problems
+    + This structure is new (an input which modifies the children of the parent)... How can we import these?
+        + Can I override silentReplaceInput?
+        + We can only load inputs if `inputs[i]` is defined
+            + This will lose the info stored in the nodes (for the send message)
+        + Can we batch the children into the last input?
+        + This is the approach I have taken... Not sure if I like it...
+check into `setContents`
+
+    + Fix the problem when a block is contained in an `MessageInputSlotMorph`
+        + Is it an import problem?
+            + Yes
+        + How are other reporter blocks handled?
+
+        + Can I change the message input block to add the nodes to be it's own children (rather than children of it's parent)?
+            + Can I load it in a better way?
+
+
+
+    + I find this rather annoying... The best way to do this would probably to change the message input field so that it is rendered correctly w/ the subsequent boxes as children.
+        + However, when I do this, the layouts are messed up
+
+    + I think I am going to keep it as it currently is. The input should receive the batched children
+        + These children should be converted to the correct type:
+            + script
+            + block
+            + value
+            + color
+
+    + Fixed the issues
+
++ Evaluate is not done correctly... How do the variables get resolved
