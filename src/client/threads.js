@@ -1981,35 +1981,6 @@ Process.prototype.reportStageHeight = function () {
 
 // Process event networked messaging primitives
 
-Process.prototype.setValueInNetworkMessage = function(attr, msgName, type, value) {
-    var msg = this.context.variables.getVar(msgName);
-    if (!(msg instanceof Message)) {
-        throw Error(msgName + ' is not a message!');
-    } else if (msg.type.name !== type) {
-        throw Error(msgName + ' is a ' + msg.type.name + ' message not a ' + type + ' message');
-    } else if (!contains(msg.getFieldNames(), attr)) {
-        throw Error(msgName + ' does not have the field "' + attr + '"!');
-    } else {
-        msg.set(attr, value);
-    } 
-};
-
-Process.prototype.getValueFromNetworkMessage = function(attr, msgName, type) {
-    var msg = this.context.variables.getVar(msgName);
-    return msg.get(attr);
-};
-
-Process.prototype.doCreateMessage = function(type) {
-    var stage = this.homeContext.receiver.parentThatIsA(StageMorph),
-        msgType = stage.messageTypes.getMsgType(type);
-
-    if (msgType) {
-        return new Message(msgType);
-    } else {
-        throw new Error('"'+type+'" messages no longer exist');
-    }
-};
-
 Process.prototype.doRegisterClient = function (message) {
     // Get the websocket manager
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
@@ -2023,7 +1994,19 @@ Process.prototype.doSocketEvent = function (message) {
     stage.sockets.sendMessage('message ' + message);
 };
 
-Process.prototype.doSocketMessage = function (msg) {
+Process.prototype.doSocketMessage = function (name) {
+    var fields = Array.prototype.slice.call(arguments, 1),
+        stage = this.homeContext.receiver.parentThatIsA(StageMorph),
+        messageType = stage.messageTypes.getMsgType(name),
+        fieldNames = messageType.fields,
+        msg;
+
+    // Create the message
+    msg = new Message(messageType);
+    // Set the fields
+    for (var i = fieldNames.length; i--;) {
+        msg.set(fieldNames[i], fields[i] || '');
+    }
     this.doSocketEvent(msg.type.name+' '+JSON.stringify(msg.contents));
 };
 
@@ -2033,25 +2016,18 @@ Process.prototype.doSocketMessage = function (msg) {
  *
  * @return {undefined}
  */
-Process.prototype.receiveSocketMessage = function (type, name) {
+Process.prototype.receiveSocketMessage = function (fields) {
     var varFrame = this.context.outerContext.variables,
-        stage = this.homeContext.receiver.parentThatIsA(StageMorph),
-        msgType = stage.messageTypes.getMsgType(type),
-        content,
-        msg;
+        content;
 
     // Check for the message type in the stage
-    if (!msgType) {
-        return new Error('Received unsupported message type: "' + type + '"');
-    }
-
+    // FIXME: Provide an error message about how we must receive an actual msg
     content = this.context.variables.getVar('__message__');
-    msg = new Message(msgType);
 
-    // Populate the message content
-    msg.contents = content;
-
-    varFrame.addVar(name, msg);
+    // Add variables by the type, NOT a complex object!
+    for (var i = fields.length; i--;) {
+        varFrame.addVar(fields[i], content[fields[i]]);
+    }
     varFrame.deleteVar('__message__');
 };
 

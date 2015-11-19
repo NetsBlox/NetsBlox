@@ -1169,23 +1169,11 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             );
             part.isStatic = true;
             break;
-        case '%msgType':
-            part = new InputSlotMorph(
-                null,
-                false,
-                'messageTypesMenu',
-                true
-            );
-            part.isStatic = true;
+        case '%msgOutput':
+            part = new MessageOutputSlotMorph();
             break;
-        case '%msgField':
-            part = new InputSlotMorph(
-                null,
-                false,
-                'messageFieldsMenu',
-                true
-            );
-            part.isStatic = true;
+        case '%msgInput':
+            part = new MessageInputSlotMorph();
             break;
         case '%att':
             part = new InputSlotMorph(

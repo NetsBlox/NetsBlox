@@ -622,21 +622,6 @@ SpriteMorph.prototype.initBlocks = function () {
         },
         // TODO: get list from RPC; get message from RPC
         // Network Messages
-        getValueFromNetworkMessage: {
-            type: 'reporter',
-            category: 'messages',
-            spec: '%msgField from %var as %msgType'
-        },
-        setValueInNetworkMessage: {
-            type: 'command',
-            category: 'messages',
-            spec: 'set %msgField of %var as %msgType to %s'
-        },
-        doCreateMessage: {
-            type: 'reporter',
-            category: 'messages',
-            spec: 'create %msgType'
-        },
         doRegisterClient: {  // for use with the generic group manager
             type: 'command',
             category: 'network',
@@ -655,12 +640,12 @@ SpriteMorph.prototype.initBlocks = function () {
         doSocketMessage: {
             type: 'command',
             category: 'network',
-            spec: 'broadcast msg %socketMsg'
+            spec: 'broadcast msg %msgInput'
         },
         receiveSocketMessage: {
             type: 'hat',
             category: 'network',
-            spec: 'when I receive %msgType %message'
+            spec: 'when I receive %msgOutput'
         },
         doBroadcast: {
             type: 'command',
@@ -2033,9 +2018,6 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('getCostumeFromRPC'));
             blocks.push('-');
         }
-        blocks.push(block('doCreateMessage'));
-        blocks.push(block('setValueInNetworkMessage'));
-        blocks.push(block('getValueFromNetworkMessage'));
         blocks.push('-');
 
     } else if (cat === 'sensing') {
@@ -3868,31 +3850,6 @@ SpriteMorph.prototype.allEventNames = function () {
     return msgs;
 };
 
-SpriteMorph.prototype.allNetworkMessageNames = function () {
-    // TODO
-};
-
-SpriteMorph.prototype.allHatSocketBlocksFor = function (message, role) {
-    if (typeof message === 'number') {
-        message = message.toString(); 
-    }
-
-    var event,
-        r;  // receiver listened for by block
-    return this.scripts.children.filter(function (morph) {
-        if (morph.selector === 'receiveSocketEvent') {
-            event = morph.inputs()[0].evaluate();
-            r = morph.inputs()[1].evaluate();
-            return (event === message || (event instanceof Array)) &&
-                (r === role || (r instanceof Array));
-        } else if (morph.selector === 'receiveSocketMessage') {
-            event = morph.inputs()[0].evaluate();
-            return event === message || (event instanceof Array);
-        }
-        return false;
-    });
-};
-
 SpriteMorph.prototype.allHatBlocksFor = function (message) {
     if (typeof message === 'number') {message = message.toString(); }
     return this.scripts.children.filter(function (morph) {
@@ -3910,11 +3867,6 @@ SpriteMorph.prototype.allHatBlocksFor = function (message) {
             }
             if (morph.selector === 'receiveOnClone') {
                 return message === '__clone__init__';
-            }
-            if (morph.selector === 'receiveSocketMessage' || 
-                morph.selector === 'receiveSocketEvent') {
-                    event = morph.inputs()[0].evaluate();
-                    return ('__socket__'+event) === message || (event instanceof Array);
             }
         }
         return false;
@@ -5723,11 +5675,6 @@ StageMorph.prototype.blockTemplates = function (category) {
             blocks.push('-');
         }
 
-        blocks.push(block('doCreateMessage'));
-        blocks.push(block('setValueInNetworkMessage'));
-        blocks.push(block('getValueFromNetworkMessage'));
-        blocks.push('-');
-
     } else if (cat === 'control') {
 
         blocks.push(block('receiveGo'));
@@ -6299,9 +6246,6 @@ StageMorph.prototype.allMessageNames
 
 StageMorph.prototype.allEventNames
     = SpriteMorph.prototype.allEventNames;
-
-StageMorph.prototype.allHatSocketBlocksFor 
-    = SpriteMorph.prototype.allHatSocketBlocksFor;
 
 StageMorph.prototype.allHatBlocksFor
     = SpriteMorph.prototype.allHatBlocksFor;
