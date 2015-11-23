@@ -93,8 +93,9 @@ TicTacToeRPC.prototype.play = function(req, res) {
 
     trace('"'+uuid+'" is trying to play at '+row+','+column+'. Board is \n'+
         this.board.map(function(row) {
-            return row.join(' ');
-    }));
+            return row.map(t => t || '_').join(' ');
+    })
+    .join('\n'));
     // Check that...
 
     // ...the game is still going

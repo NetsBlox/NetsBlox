@@ -50,7 +50,7 @@ TwoPlayerParadigm.prototype._getAllGroups = function() {
 
 TwoPlayerParadigm.prototype.getGroupMembersToMessage = function(socket) {
     var members = this.getGroupMembers(socket);
-    info('Getting group members to message for '+socket.id+': '+members.map(getId));
+    info('Getting group members to message for '+socket.id+': '+members.map(m => m.id));
     return members;
 };
 
@@ -59,7 +59,7 @@ TwoPlayerParadigm.prototype.getGroupMembers = function(socket) {
         isSocketId = R.partial(R.eq, socket.id),
         members = R.reject(R.pipe(getId, isSocketId), group);
 
-    log('Group members of', socket.id, 'are', members.map(getId));
+    log('Group members of', socket.id, 'are', members.map(m => m.id));
     this._printGroups();
     assert(members.length < 2);
     return members;

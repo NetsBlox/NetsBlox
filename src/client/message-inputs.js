@@ -46,6 +46,16 @@ MessageInputSlotMorph.prototype._updateMessage = function(name, cb) {
     cb();
 };
 
+/**
+ * Check that the block is a non MessageInputSlotMorph reporter.
+ *
+ * @param block
+ * @return {undefined}
+ */
+MessageInputSlotMorph.isNonMISMReporter = function(block) {
+    return !(block instanceof CommandBlockMorph || block instanceof MessageInputSlotMorph);
+};
+
 MessageInputSlotMorph.prototype._updateFields = function(values) {
     // Remove the old message fields (parent's inputs)
     var children = this.parent.children,
@@ -54,7 +64,7 @@ MessageInputSlotMorph.prototype._updateFields = function(values) {
         removed = [],
         scripts = this.parentThatIsA(ScriptsMorph);
 
-    while (i-- && !(input instanceof MessageInputSlotMorph)) {
+    while (i-- && MessageInputSlotMorph.isNonMISMReporter(input)) {
         removed.push(input);
         this.parent.removeChild(input);
         input = children[i];
