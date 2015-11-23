@@ -30,7 +30,7 @@ var Requests = {
             gameType = this.uuid2GameType[socket.uuid];
             msg.push(role);
             log('About to broadcast '+msg.join(' ')+
-                        ' from socket #'+socket.id+' ('+role+')');
+                        ' from socket #'+socket.id);
             peers = gameType.getGroupMembersToMessage(socket);
             this.broadcast(msg.join(' '), peers);
         },

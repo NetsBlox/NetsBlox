@@ -1,3 +1,10 @@
+# Bugs
++ Sometimes the messages seem to be dropped...
+    + Fixed the log messages (though they aren't the problem...)
+    + It looks like the receive block isn't working somehow...
+
+    + The blocks are not connecting to their following block...
+
 # Message sending/receiving blocks
 + Do we need networked events?
     + Can we have the same things with simply messages that have no body?
@@ -7,6 +14,9 @@
 
 + Changing type with existing blocks
     + blocks stay on and extra things are added. They should be popped off like lists
+
++ How does the `MultiArgMorph` work?
+    + nvm, I made it my own way. It's not the prettiest implementation but it is effective
 
 # Notes on InputSlotMorph
 + It has:
