@@ -101,15 +101,13 @@ TicTacToeRPC.prototype.play = function(req, res) {
     // ...the game is still going
     if (this.winner) {
         log('"'+uuid+'" is trying to play after the game is over');
-        return res.status(400).send('ERROR: game is over. '+
-            TicTacToeRPC.getWinner(this.board)+' won.');
+        return res.status(400).send(false);
     }
 
     // ...it's a valid position
     if (!isOnBoard) {
         log('"'+uuid+'" is trying to play in an invalid position ('+row+','+column+')');
-        return res.status(400).send('ERROR: invalid position. Please select a '+
-            'position between 1 and 3');
+        return res.status(400).send(false);
     }
 
     // ...it's not occupied
