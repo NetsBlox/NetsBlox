@@ -164,7 +164,7 @@ SpriteMorph.prototype.categories =
         'pen',
         'variables',
         'network',
-        //'messages',
+        'custom',
         'lists',
         'other'
     ];
@@ -179,7 +179,7 @@ SpriteMorph.prototype.blockColor = {
     operators : new Color(98, 194, 19),
     variables : new Color(243, 118, 29),
     network : new Color(217, 77, 17),
-    messages : new Color(120, 120, 120),
+    custom : new Color(120, 120, 120),
     lists : new Color(217, 77, 17),
     other: new Color(150, 150, 150)
 };
@@ -2252,6 +2252,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             blocks.push('=');
         }
 
+    } else if (cat === 'custom') {
         button = new PushButtonMorph(
             null,
             function () {
@@ -2445,46 +2446,35 @@ SpriteMorph.prototype.freshPalette = function (category) {
 
     // global custom blocks:
 
-    if (stage) {
-        y += unit * 1.6;
+    if (category === 'custom') {
+        if (stage) {
+            y += unit * 1.6;
 
-        stage.globalBlocks.forEach(function (definition) {
-            var block;
-            if (definition.category === category ||
-                    (category === 'variables'
-                        && contains(
-                            ['lists', 'other'],
-                            definition.category
-                        ))) {
-                block = definition.templateInstance();
+            stage.globalBlocks.forEach(function (definition) {
+                var block = definition.templateInstance();
                 y += unit * 0.3;
                 block.setPosition(new Point(x, y));
                 palette.addContents(block);
                 x = 0;
                 y += block.height();
-            }
-        });
-    }
+            });
+        }
 
-    // local custom blocks:
+        // local custom blocks:
 
-    y += unit * 1.6;
-    this.customBlocks.forEach(function (definition) {
-        var block;
-        if (definition.category === category ||
-                (category === 'variables'
-                    && contains(
-                        ['lists', 'other'],
-                        definition.category
-                    ))) {
-            block = definition.templateInstance();
+        y += unit * 1.6;
+        this.customBlocks.forEach(function (definition) {
+            var block = definition.templateInstance();
             y += unit * 0.3;
             block.setPosition(new Point(x, y));
             palette.addContents(block);
             x = 0;
             y += block.height();
-        }
-    });
+        });
+
+        // Make a block
+        // TODO
+    }
 
     //layout
 
@@ -5939,6 +5929,7 @@ StageMorph.prototype.blockTemplates = function (category) {
             blocks.push('=');
         }
 
+    } else if (cat === 'custom') {
         button = new PushButtonMorph(
             null,
             function () {
