@@ -163,7 +163,7 @@ SpriteMorph.prototype.categories =
         'operators',
         'pen',
         'variables',
-        'network',
+        'services',
         //'messages',
         'lists',
         'other'
@@ -178,7 +178,7 @@ SpriteMorph.prototype.blockColor = {
     sensing : new Color(4, 148, 220),
     operators : new Color(98, 194, 19),
     variables : new Color(243, 118, 29),
-    network : new Color(217, 77, 17),
+    services : new Color(217, 77, 17),
     messages : new Color(120, 120, 120),
     lists : new Color(217, 77, 17),
     other: new Color(150, 150, 150)
@@ -610,13 +610,13 @@ SpriteMorph.prototype.initBlocks = function () {
         // RPC's
         getJSFromRPC: {  // primitive JSON response
             type: 'reporter',
-            category: 'network',
+            category: 'services',
             spec: 'call %s with %s',
             defaults: ['tictactoe']
         },
         getCostumeFromRPC: {
             type: 'reporter',
-            category: 'network',
+            category: 'services',
             spec: 'costume from %s with %s',
             defaults: ['staticmap/getMap']
         },
@@ -624,27 +624,27 @@ SpriteMorph.prototype.initBlocks = function () {
         // Network Messages
         doRegisterClient: {  // for use with the generic group manager
             type: 'command',
-            category: 'network',
+            category: 'services',
             spec: 'register as %role'
         },
         receiveSocketEvent: {
             type: 'hat',
-            category: 'network',
+            category: 'services',
             spec: 'when I receive %socketMsgHat from %roleHat'
         },
         doSocketEvent: {
             type: 'command',
-            category: 'network',
+            category: 'services',
             spec: 'broadcast event %socketMsg'
         },
         doSocketMessage: {
             type: 'command',
-            category: 'network',
+            category: 'services',
             spec: 'broadcast msg %msgInput'
         },
         receiveSocketMessage: {
             type: 'hat',
-            category: 'network',
+            category: 'services',
             spec: 'when I receive %msgOutput'
         },
         doBroadcast: {
@@ -1815,11 +1815,11 @@ SpriteMorph.prototype.blockTemplates = function (category) {
 
     function addMessageType(pair) {
         // TODO
-        console.log('Creating network message type', pair);
+        console.log('Creating services message type', pair);
     }
 
     function addMessage(pair) {
-        console.log('Creating network message', pair);
+        console.log('Creating services message', pair);
         // TODO
     }
 
@@ -2001,7 +2001,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doPauseAll'));
 
-    } else if (cat === 'network') {
+    } else if (cat === 'services') {
         // TODO: Move these later to other categories
         blocks.push(block('receiveSocketEvent'));
         blocks.push(block('receiveSocketMessage'));
@@ -5659,7 +5659,7 @@ StageMorph.prototype.blockTemplates = function (category) {
 
         blocks.push(block('clear'));
 
-    } else if (cat === 'network') {
+    } else if (cat === 'services') {
         blocks.push(block('receiveSocketEvent'));
         blocks.push(block('receiveSocketMessage'));
         blocks.push('-');
