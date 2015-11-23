@@ -48,16 +48,16 @@ MessageInputSlotMorph.prototype._updateMessage = function(name, cb) {
 
 MessageInputSlotMorph.prototype._updateFields = function(values) {
     // Remove the old message fields (parent's inputs)
-    var inputs = this.parent.inputs(),
-        i = inputs.length,
-        input = inputs[--i],
+    var children = this.parent.children,
+        i = children.length,
+        input = children[--i],
         removed = [],
         scripts = this.parentThatIsA(ScriptsMorph);
 
     while (i-- && !(input instanceof MessageInputSlotMorph)) {
         removed.push(input);
         this.parent.removeChild(input);
-        input = inputs[i];
+        input = children[i];
     }
 
     if (scripts) {
@@ -71,7 +71,7 @@ MessageInputSlotMorph.prototype._updateFields = function(values) {
     // Create new message fields
     this._msgContent = [];
     values = values || [];
-    for (var i = 0; i < this.msgFields.length; i++) {
+    for (i = 0; i < this.msgFields.length; i++) {
         this._msgContent.push(this._updateField(this.msgFields[i], values[i]));
     }
     this.fixLayout();
