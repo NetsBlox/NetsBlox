@@ -111,6 +111,9 @@ module.exports = [
                     return res.serverError(e);
                 }
                 if (user) {
+                    // If it is the ghost user, provide a list of all project/tables
+                    // TODO
+
                     // Get the projects
                     user.projects = user.projects || [];
                     var projects = R.map(R.partial(R.pick,LIST_FIELDS), user.projects);

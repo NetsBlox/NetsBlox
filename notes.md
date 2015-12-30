@@ -1,3 +1,8 @@
+# Debugging notes
++ TypeError: 'null' is not an object (evaluating 'project.stage.trailsCanvas.getContext')
+    + It looks like events fire faster in phantomjs
+        + It looks like the event queue is actually getting interrupted... This is very strange...
+
 # Project size stuff
 + When it shrinks, does it change size?
     + aka is full screen mode inconsistent?

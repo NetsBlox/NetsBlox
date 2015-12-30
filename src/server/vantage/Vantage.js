@@ -7,7 +7,8 @@ var vantage = require('vantage')(),
     banner,
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
-    ];
+    ],
+    CONSTANTS = require('../../common/Constants');
 
 // Set the banner
 banner = ['\n'+
@@ -20,6 +21,15 @@ banner = ['\n'+
 
 var NetsBloxVantage = function(server) {
     this.initGroupManagement(server);
+
+    vantage
+        .command('ghost', 'Get info about ghost user')
+        .action( (args, cb) => {
+            console.log(`username: ${CONSTANTS.GHOST.USER}\n` +
+                `password: ${CONSTANTS.GHOST.PASSWORD}\n` +
+                `email: ${CONSTANTS.GHOST.EMAIL}`);
+            return cb();
+        });
 
     // set DEBUG level FIXME
     vantage

@@ -29,7 +29,11 @@ var express = require('express'),
     // Session and cookie info
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
     expressSession = require('express-session'),
-    cookieParser = require('cookie-parser');
+    cookieParser = require('cookie-parser'),
+
+    // Shared constants
+    hash = require('../client/sha512').hex_sha512,
+    CONSTANTS = require(__dirname + '/../common/Constants');
 
 var Server = function(opts) {
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
@@ -49,17 +53,18 @@ var Server = function(opts) {
 };
 
 Server.prototype.connectToMongo = function(callback) {
-    MongoClient.connect(this.opts.mongoURI, function(err, db) {
+    MongoClient.connect(this.opts.mongoURI, (err, db) => {
         if (err) {
             throw err;
         }
 
         this._users = db.collection('users');
+        this.onDatabaseConnected();
         this.configureRoutes();
 
         console.log('Connected to '+this.opts.mongoURI);
         callback(err);
-    }.bind(this));
+    });
 };
 
 Server.prototype.configureRoutes = function() {
@@ -98,6 +103,46 @@ Server.prototype.emailPassword = function(user, password) {
         markdown: 'Hello '+user.username+',\nYour NetsBlox password has been '+
             'temporarily set to '+password+'. Please change it after '+
             'logging in.'
+    });
+};
+
+Server.prototype.onDatabaseConnected = function() {
+    // TODO: Add the ghost user if it doesn't exist
+    // Check for the ghost user
+    var username = CONSTANTS.GHOST.USER,
+        password = CONSTANTS.GHOST.PASSWORD,
+        email = CONSTANTS.GHOST.EMAIL;
+    this._users.findOne({username: username}, (e, user) => {
+        if (e) {
+            return log('Error:', e);
+        }
+        if (!user) {
+            // Create the user with the given username, email, password
+            var newUser = {username: username, 
+                           email: email,
+                           hash: hash(password),
+                           projects: []};
+
+            this.emailPassword(newUser, password);
+            this._users.insert(newUser, (err, result) => {
+                if (err) {
+                    return log('Error:', err);
+                }
+                log('Created ghost user.');
+            });
+        } else {
+            // Set the password
+            this._users.update({username: username}, {$set: {hash: hash(password)}}, (e, data) => {
+                var result = data.result;
+
+                if (result.nModified === 0 || e) {
+                    return log('Could not set password for ghost user');
+                }
+
+                // Email the user the temporary password
+                this.emailPassword(user, password);
+            });
+        }
     });
 };
 

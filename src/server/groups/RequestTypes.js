@@ -5,37 +5,69 @@ var debug = require('debug'),
     nop = require('nop');
 
 var Requests = {
-        gameType: function(socket, msg) {
-            var name = msg.join(' ');
+        /**
+         * Join the table
+         *
+         * @param {WebSocket} socket
+         * @param {String} msg
+         * @return {undefined}
+         */
+        'join': function joinTable(username, socket, msg) {
+            var table = msg.join(' ');
+            // Check that the socket is a member of the table
+            // TODO
 
-            this.leaveGameType(socket);
-            this.joinGameType(socket, name, null);
-            trace('Moved '+socket.uuid+' to game type: "'+name+'"');
+            // Get the username from the socket
+            // TODO
+
+            trace('Join table request from ' + socket.uuid);
             // TODO: Log an error
         },
 
         /**
-         * Message to be emitted to the user's peers wrt the given paradigm.
+         * Leave the given table
          *
+         * @param {String} username
          * @param {WebSocket} socket
-         * @param {Array<String>} msg
+         * @param {String} msg
          * @return {undefined}
          */
-        message: function(socket, msg) {
-            var role,
-                peers,
-                gameType;
+        'leave': function leaveTable(username, socket, msg) {
+            // TODO
+            var table = msg.join(' ');
 
-            // broadcast the message, role to all peers
-            gameType = this.uuid2GameType[socket.uuid];
-            msg.push(role);
-            log('About to broadcast '+msg.join(' ')+
-                        ' from socket #'+socket.id);
-            peers = gameType.getGroupMembersToMessage(socket);
-            this.broadcast(msg.join(' '), peers);
+            trace('Join table request from ' + socket.uuid);
+            // TODO: Log an error
         },
-        // Suppress unknown message warnings. This is used by the GameType
-        devMode: nop,
-        register: nop
+
+        'table-join-request': function viewSeat(username, socket, msg) {
+            // TODO: Decorate and forward
+        },
+
+        'table-join-response': function (username, socket, msg) {
+            // TODO: Forward
+        },
+
+        'direct-message': function(username, socket, msg) {
+            // Send the message to the associated seats
+            // TODO
+        },
+
+        'basic-message': function(username, socket, msg) {
+            // Send the message to the table
+            // TODO
+        },
+
+        // Lower priority
+        'view': function(username, socket, msg) {
+            // TODO
+        },
+
+        'seat-join-request': function viewSeat(username, socket, msg) {
+            // TODO: Forward
+        }
 };
+
+// Check the message formats?
+// TODO
 module.exports = Requests;
