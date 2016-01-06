@@ -38924,6 +38924,7 @@ IDE_Morph.prototype.init = function (isAutoFill) {
     this.spriteEditor = null;
     this.stage = null;
     this.stageHandle = null;
+    this.table = null;
     this.corralBar = null;
     this.corral = null;
 
@@ -39168,6 +39169,7 @@ IDE_Morph.prototype.buildPanes = function () {
     this.createCategories();
     this.createPalette();
     this.createStage();
+    this.createTable();
     this.createSpriteBar();
     this.createSpriteEditor();
     this.createCorralBar();
@@ -39736,6 +39738,81 @@ IDE_Morph.prototype.createStageHandle = function () {
     this.add(this.stageHandle);
 };
 
+IDE_Morph.prototype._getCurrentTabs = function () {
+    return ['Scripts', 'Costumes', 'Sounds'];
+};
+
+IDE_Morph.prototype._createTabs = function () {
+    var myself = this,
+        tabCorner = 15,
+        tabBar = new AlignmentMorph('row', -tabCorner * 2),
+        tabs = this._getCurrentTabs(),
+        tabLabels;
+
+    // tab bar
+    tabBar.tabTo = function (tabString) {
+        var active;
+        myself.currentTab = tabString;
+        this.children.forEach(function (each) {
+            each.refresh();
+            if (each.state) { active = each; }
+        });
+        active.refresh(); // needed when programmatically tabbing
+        myself.createSpriteEditor();
+        myself.fixLayout('tabEditor');
+    };
+
+    this.spriteBar.tabBar = tabBar;
+    tabs.forEach(this._addTab.bind(this));
+
+    tabBar.fixLayout();
+    tabBar.children.forEach(function (each) {
+        each.refresh();
+    });
+    this.spriteBar.add(this.spriteBar.tabBar);
+
+    this.spriteBar.fixLayout = function () {
+        this.tabBar.setLeft(this.left());
+        this.tabBar.setBottom(this.bottom());
+    };
+
+    // If the currentTab no longer exists, select the first tab
+    tabLabels = tabs.map(function(label) {
+        return label.toLowerCase();
+    });
+    if (tabLabels[0] !== this.currentTab) {
+        tabBar.tabTo(tabLabels[0]);
+    }
+
+};
+
+IDE_Morph.prototype._addTab = function (label) {
+    var myself = this,
+        lowercase = label.toLowerCase(),
+        tabBar = this.spriteBar.tabBar,
+        tabCorner = 15,
+        tab;
+
+    tab = new TabMorph(
+        this.tabColors,
+        null, // target
+        function () {tabBar.tabTo(lowercase); },
+        localize(label), // label
+        function () {  // query
+            return myself.currentTab === lowercase;
+        }
+    );
+    tab.padding = 3;
+    tab.corner = tabCorner;
+    tab.edge = 1;
+    tab.labelShadowOffset = new Point(-1, -1);
+    tab.labelShadowColor = this.tabColors[1];
+    tab.labelColor = this.buttonLabelColor;
+    tab.drawNew();
+    tab.fixLayout();
+    tabBar.add(tab);
+};
+
 IDE_Morph.prototype.createSpriteBar = function () {
     // assumes that the categories pane has already been created
     var rotationStyleButtons = [],
@@ -39877,87 +39954,7 @@ IDE_Morph.prototype.createSpriteBar = function () {
         padlock.hide();
     }
 
-    // tab bar
-    tabBar.tabTo = function (tabString) {
-        var active;
-        myself.currentTab = tabString;
-        this.children.forEach(function (each) {
-            each.refresh();
-            if (each.state) {active = each; }
-        });
-        active.refresh(); // needed when programmatically tabbing
-        myself.createSpriteEditor();
-        myself.fixLayout('tabEditor');
-    };
-
-    tab = new TabMorph(
-        tabColors,
-        null, // target
-        function () {tabBar.tabTo('scripts'); },
-        localize('Scripts'), // label
-        function () {  // query
-            return myself.currentTab === 'scripts';
-        }
-    );
-    tab.padding = 3;
-    tab.corner = tabCorner;
-    tab.edge = 1;
-    tab.labelShadowOffset = new Point(-1, -1);
-    tab.labelShadowColor = tabColors[1];
-    tab.labelColor = this.buttonLabelColor;
-    tab.drawNew();
-    tab.fixLayout();
-    tabBar.add(tab);
-
-    tab = new TabMorph(
-        tabColors,
-        null, // target
-        function () {tabBar.tabTo('costumes'); },
-        localize('Costumes'), // label
-        function () {  // query
-            return myself.currentTab === 'costumes';
-        }
-    );
-    tab.padding = 3;
-    tab.corner = tabCorner;
-    tab.edge = 1;
-    tab.labelShadowOffset = new Point(-1, -1);
-    tab.labelShadowColor = tabColors[1];
-    tab.labelColor = this.buttonLabelColor;
-    tab.drawNew();
-    tab.fixLayout();
-    tabBar.add(tab);
-
-    tab = new TabMorph(
-        tabColors,
-        null, // target
-        function () {tabBar.tabTo('sounds'); },
-        localize('Sounds'), // label
-        function () {  // query
-            return myself.currentTab === 'sounds';
-        }
-    );
-    tab.padding = 3;
-    tab.corner = tabCorner;
-    tab.edge = 1;
-    tab.labelShadowOffset = new Point(-1, -1);
-    tab.labelShadowColor = tabColors[1];
-    tab.labelColor = this.buttonLabelColor;
-    tab.drawNew();
-    tab.fixLayout();
-    tabBar.add(tab);
-
-    tabBar.fixLayout();
-    tabBar.children.forEach(function (each) {
-        each.refresh();
-    });
-    this.spriteBar.tabBar = tabBar;
-    this.spriteBar.add(this.spriteBar.tabBar);
-
-    this.spriteBar.fixLayout = function () {
-        this.tabBar.setLeft(this.left());
-        this.tabBar.setBottom(this.bottom());
-    };
+    this._createTabs();
 };
 
 IDE_Morph.prototype.createSpriteEditor = function () {
@@ -41729,6 +41726,7 @@ IDE_Morph.prototype.newProject = function () {
     this.setProjectName('');
     this.projectNotes = '';
     this.createStage();
+    this.createTable();
     this.add(this.stage);
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
@@ -43645,15 +43643,12 @@ ProjectDialogMorph.prototype.setSource = function (source) {
     case 'cloud':
         msg = myself.ide.showMessage('Updating\nproject list...');
         this.projectList = [];
-        console.log('about to retrieve project list');
         SnapCloud.getProjectList(
             function (projectList) {
-                console.log('retrieved project list:', projectList);
                 myself.installCloudProjectList(projectList);
                 msg.destroy();
             },
             function (err, lbl) {
-                console.log('retrieving project list failed:', err);
                 msg.destroy();
                 myself.ide.cloudError().call(null, err, lbl);
             }
@@ -53768,7 +53763,6 @@ Cloud.prototype.callService = function (
         //request.setRequestHeader('MioCracker', this.session);
         //request.setRequestHeader('SESSIONGLUE', this.route);
         request.onreadystatechange = function () {
-            console.log('readyState changed!', request.readyState);
             if (request.readyState === 4) {
                 var responseList = [];
                 // FIXME: This should use error codes
@@ -53790,10 +53784,8 @@ Cloud.prototype.callService = function (
                 callBack.call(null, responseList, service.url);
             }
         };
-        console.log('sending request:', this.encodeDict(postDict));
         request.send(this.encodeDict(postDict));
     } catch (err) {
-        console.log('not sending the ajax request...');
         errorCall.call(this, err.toString(), service.url);
     }
 };
@@ -54535,4 +54527,117 @@ SpriteMorph.prototype.allHatBlocksForSocket = function (message, role) {
 };
 
 StageMorph.prototype.allHatBlocksForSocket = SpriteMorph.prototype.allHatBlocksForSocket;
+
+// NetsBlox table stuff
+IDE_Morph.prototype.createTable = function() {
+    // FIXME
+    this.table = new TableMorph();
+};
+
+IDE_Morph.prototype._createCorral = IDE_Morph.prototype.createCorral;
+IDE_Morph.prototype.createCorral = function() {
+    var padding = 5;  // Same as in IDE_Morph.prototype.createCorral
+    this._createCorral();
+
+    // Add table morph button
+    this.corral.tableIcon = new SpriteIconMorph(this.table);
+    this.corral.tableIcon.isDraggable = false;
+    this.corral.add(this.corral.tableIcon);
+
+    // Position the
+    this.corral.fixLayout = function() {
+        this.stageIcon.setCenter(this.center());
+        this.stageIcon.setLeft(this.left() + padding);
+
+        this.tableIcon.setCenter(this.center());
+        this.tableIcon.setLeft(this.stageIcon.width() + this.left() + padding);
+
+        this.frame.setLeft(this.stageIcon.right() + padding);
+        this.frame.setExtent(new Point(
+            this.right() - this.frame.left(),
+            this.height()
+        ));
+        this.arrangeIcons();
+        this.refresh();
+    };
+
+    this.corral.refresh = function() {
+        this.stageIcon.refresh();
+        this.tableIcon.refresh();
+        this.frame.contents.children.forEach(function(icon) {
+            icon.refresh();
+        });
+    };
+
+    // TODO
+};
+
+IDE_Morph.prototype._getCurrentTabs = function () {
+    if (this.currentSprite === this.table) {
+        return ['Projects', 'Scripts'];
+    }
+    return ['Scripts', 'Costumes', 'Sounds'];
+};
+
+// Creating the 'projects' view for the table
+IDE_Morph.prototype._createSpriteEditor = IDE_Morph.prototype.createSpriteEditor;
+IDE_Morph.prototype.createSpriteEditor = function() {
+    if (this.currentTab === 'projects') {
+        if (this.spriteEditor) {
+            this.spriteEditor.destroy();
+        }
+        console.log('Creating project view...');
+        // TODO:
+    } else {
+        this._createSpriteEditor();
+    }
+};
+
+// NetsBlox Table
+TableMorph.prototype = new FrameMorph();
+//TableMorph.prototype = new SpriteMorph();
+TableMorph.prototype.constructor = TableMorph;
+TableMorph.uber = FrameMorph.prototype;
+
+function TableMorph() {
+    console.log('creating tablemorph..');
+    this.init();
+    this.name = localize('Table');
+
+    //this.image = newCanvas();
+    //this.createImage();
+}
+
+// 'Inherit' from SpriteMorph
+(function() {
+    var methods = Object.keys(SpriteMorph.prototype);
+    for (var i = methods.length; i--;) {
+        if (StageMorph.prototype[methods[i]]) {
+            TableMorph.prototype[methods[i]] = SpriteMorph.prototype[methods[i]];
+        }
+    }
+})();
+
+//TableMorph.prototype.createImage = function() {
+    //var cxt = this.image.getContext('2d'),
+        //radius = Math.min(this.width(), this.height())/2;
+
+    //cxt.arc(radius, radius, radius, 0, 2*Math.PI, false);
+    //cxt.fillStyle = 'blue';
+//};
+
+TableMorph.prototype.inheritedVariableNames = function() {
+    return [];
+};
+
+// Create the tabs
+// + Projects (primary)
+// + Scripts
+// TODO
+
+// Create the available blocks
+// TODO
+
+// Fix the icon for the table
+// TODO
 

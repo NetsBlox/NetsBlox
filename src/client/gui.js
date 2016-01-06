@@ -240,6 +240,7 @@ IDE_Morph.prototype.init = function (isAutoFill) {
     this.spriteEditor = null;
     this.stage = null;
     this.stageHandle = null;
+    this.table = null;
     this.corralBar = null;
     this.corral = null;
 
@@ -484,6 +485,7 @@ IDE_Morph.prototype.buildPanes = function () {
     this.createCategories();
     this.createPalette();
     this.createStage();
+    this.createTable();
     this.createSpriteBar();
     this.createSpriteEditor();
     this.createCorralBar();
@@ -1052,6 +1054,81 @@ IDE_Morph.prototype.createStageHandle = function () {
     this.add(this.stageHandle);
 };
 
+IDE_Morph.prototype._getCurrentTabs = function () {
+    return ['Scripts', 'Costumes', 'Sounds'];
+};
+
+IDE_Morph.prototype._createTabs = function () {
+    var myself = this,
+        tabCorner = 15,
+        tabBar = new AlignmentMorph('row', -tabCorner * 2),
+        tabs = this._getCurrentTabs(),
+        tabLabels;
+
+    // tab bar
+    tabBar.tabTo = function (tabString) {
+        var active;
+        myself.currentTab = tabString;
+        this.children.forEach(function (each) {
+            each.refresh();
+            if (each.state) { active = each; }
+        });
+        active.refresh(); // needed when programmatically tabbing
+        myself.createSpriteEditor();
+        myself.fixLayout('tabEditor');
+    };
+
+    this.spriteBar.tabBar = tabBar;
+    tabs.forEach(this._addTab.bind(this));
+
+    tabBar.fixLayout();
+    tabBar.children.forEach(function (each) {
+        each.refresh();
+    });
+    this.spriteBar.add(this.spriteBar.tabBar);
+
+    this.spriteBar.fixLayout = function () {
+        this.tabBar.setLeft(this.left());
+        this.tabBar.setBottom(this.bottom());
+    };
+
+    // If the currentTab no longer exists, select the first tab
+    tabLabels = tabs.map(function(label) {
+        return label.toLowerCase();
+    });
+    if (tabLabels[0] !== this.currentTab) {
+        tabBar.tabTo(tabLabels[0]);
+    }
+
+};
+
+IDE_Morph.prototype._addTab = function (label) {
+    var myself = this,
+        lowercase = label.toLowerCase(),
+        tabBar = this.spriteBar.tabBar,
+        tabCorner = 15,
+        tab;
+
+    tab = new TabMorph(
+        this.tabColors,
+        null, // target
+        function () {tabBar.tabTo(lowercase); },
+        localize(label), // label
+        function () {  // query
+            return myself.currentTab === lowercase;
+        }
+    );
+    tab.padding = 3;
+    tab.corner = tabCorner;
+    tab.edge = 1;
+    tab.labelShadowOffset = new Point(-1, -1);
+    tab.labelShadowColor = this.tabColors[1];
+    tab.labelColor = this.buttonLabelColor;
+    tab.drawNew();
+    tab.fixLayout();
+    tabBar.add(tab);
+};
+
 IDE_Morph.prototype.createSpriteBar = function () {
     // assumes that the categories pane has already been created
     var rotationStyleButtons = [],
@@ -1193,87 +1270,7 @@ IDE_Morph.prototype.createSpriteBar = function () {
         padlock.hide();
     }
 
-    // tab bar
-    tabBar.tabTo = function (tabString) {
-        var active;
-        myself.currentTab = tabString;
-        this.children.forEach(function (each) {
-            each.refresh();
-            if (each.state) {active = each; }
-        });
-        active.refresh(); // needed when programmatically tabbing
-        myself.createSpriteEditor();
-        myself.fixLayout('tabEditor');
-    };
-
-    tab = new TabMorph(
-        tabColors,
-        null, // target
-        function () {tabBar.tabTo('scripts'); },
-        localize('Scripts'), // label
-        function () {  // query
-            return myself.currentTab === 'scripts';
-        }
-    );
-    tab.padding = 3;
-    tab.corner = tabCorner;
-    tab.edge = 1;
-    tab.labelShadowOffset = new Point(-1, -1);
-    tab.labelShadowColor = tabColors[1];
-    tab.labelColor = this.buttonLabelColor;
-    tab.drawNew();
-    tab.fixLayout();
-    tabBar.add(tab);
-
-    tab = new TabMorph(
-        tabColors,
-        null, // target
-        function () {tabBar.tabTo('costumes'); },
-        localize('Costumes'), // label
-        function () {  // query
-            return myself.currentTab === 'costumes';
-        }
-    );
-    tab.padding = 3;
-    tab.corner = tabCorner;
-    tab.edge = 1;
-    tab.labelShadowOffset = new Point(-1, -1);
-    tab.labelShadowColor = tabColors[1];
-    tab.labelColor = this.buttonLabelColor;
-    tab.drawNew();
-    tab.fixLayout();
-    tabBar.add(tab);
-
-    tab = new TabMorph(
-        tabColors,
-        null, // target
-        function () {tabBar.tabTo('sounds'); },
-        localize('Sounds'), // label
-        function () {  // query
-            return myself.currentTab === 'sounds';
-        }
-    );
-    tab.padding = 3;
-    tab.corner = tabCorner;
-    tab.edge = 1;
-    tab.labelShadowOffset = new Point(-1, -1);
-    tab.labelShadowColor = tabColors[1];
-    tab.labelColor = this.buttonLabelColor;
-    tab.drawNew();
-    tab.fixLayout();
-    tabBar.add(tab);
-
-    tabBar.fixLayout();
-    tabBar.children.forEach(function (each) {
-        each.refresh();
-    });
-    this.spriteBar.tabBar = tabBar;
-    this.spriteBar.add(this.spriteBar.tabBar);
-
-    this.spriteBar.fixLayout = function () {
-        this.tabBar.setLeft(this.left());
-        this.tabBar.setBottom(this.bottom());
-    };
+    this._createTabs();
 };
 
 IDE_Morph.prototype.createSpriteEditor = function () {
@@ -3045,6 +3042,7 @@ IDE_Morph.prototype.newProject = function () {
     this.setProjectName('');
     this.projectNotes = '';
     this.createStage();
+    this.createTable();
     this.add(this.stage);
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
