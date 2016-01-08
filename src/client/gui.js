@@ -1058,12 +1058,12 @@ IDE_Morph.prototype._getCurrentTabs = function () {
     return ['Scripts', 'Costumes', 'Sounds'];
 };
 
-IDE_Morph.prototype._createTabs = function () {
+IDE_Morph.prototype._createTabs = function (oldTabs) {
     var myself = this,
         tabCorner = 15,
         tabBar = new AlignmentMorph('row', -tabCorner * 2),
         tabs = this._getCurrentTabs(),
-        tabLabels;
+        changed;
 
     // tab bar
     tabBar.tabTo = function (tabString) {
@@ -1092,12 +1092,15 @@ IDE_Morph.prototype._createTabs = function () {
         this.tabBar.setBottom(this.bottom());
     };
 
-    // If the currentTab no longer exists, select the first tab
-    tabLabels = tabs.map(function(label) {
-        return label.toLowerCase();
-    });
-    if (tabLabels[0] !== this.currentTab) {
-        tabBar.tabTo(tabLabels[0]);
+    // If the tabs have changed, select the first tab
+    if (oldTabs) {
+        changed = tabs.length !== oldTabs.length;
+        tabs.forEach(function(label, index) {
+            changed = changed || label !== tabs[index];
+        });
+        if (changed) {
+            tabBar.tabTo(tabs[0].toLowerCase());
+        }
     }
 
 };
@@ -1142,10 +1145,16 @@ IDE_Morph.prototype.createSpriteBar = function () {
         tab,
         symbols = ['\u2192', '\u21BB', '\u2194'],
         labels = ['don\'t rotate', 'can rotate', 'only face left/right'],
-        myself = this;
+        myself = this,
+        oldTabs;
 
     if (this.spriteBar) {
         this.spriteBar.destroy();
+        oldTabs = [];
+        for (var i = this.spriteBar.tabBar.children.length; i--;) {
+            tab = this.spriteBar.tabBar.children[i];
+            oldTabs.push(tab.label.text);
+        }
     }
 
     this.spriteBar = new Morph();
@@ -1270,7 +1279,7 @@ IDE_Morph.prototype.createSpriteBar = function () {
         padlock.hide();
     }
 
-    this._createTabs();
+    this._createTabs(oldTabs);
 };
 
 IDE_Morph.prototype.createSpriteEditor = function () {

@@ -39742,12 +39742,12 @@ IDE_Morph.prototype._getCurrentTabs = function () {
     return ['Scripts', 'Costumes', 'Sounds'];
 };
 
-IDE_Morph.prototype._createTabs = function () {
+IDE_Morph.prototype._createTabs = function (oldTabs) {
     var myself = this,
         tabCorner = 15,
         tabBar = new AlignmentMorph('row', -tabCorner * 2),
         tabs = this._getCurrentTabs(),
-        tabLabels;
+        changed;
 
     // tab bar
     tabBar.tabTo = function (tabString) {
@@ -39776,12 +39776,15 @@ IDE_Morph.prototype._createTabs = function () {
         this.tabBar.setBottom(this.bottom());
     };
 
-    // If the currentTab no longer exists, select the first tab
-    tabLabels = tabs.map(function(label) {
-        return label.toLowerCase();
-    });
-    if (tabLabels[0] !== this.currentTab) {
-        tabBar.tabTo(tabLabels[0]);
+    // If the tabs have changed, select the first tab
+    if (oldTabs) {
+        changed = tabs.length !== oldTabs.length;
+        tabs.forEach(function(label, index) {
+            changed = changed || label !== tabs[index];
+        });
+        if (changed) {
+            tabBar.tabTo(tabs[0].toLowerCase());
+        }
     }
 
 };
@@ -39826,10 +39829,16 @@ IDE_Morph.prototype.createSpriteBar = function () {
         tab,
         symbols = ['\u2192', '\u21BB', '\u2194'],
         labels = ['don\'t rotate', 'can rotate', 'only face left/right'],
-        myself = this;
+        myself = this,
+        oldTabs;
 
     if (this.spriteBar) {
         this.spriteBar.destroy();
+        oldTabs = [];
+        for (var i = this.spriteBar.tabBar.children.length; i--;) {
+            tab = this.spriteBar.tabBar.children[i];
+            oldTabs.push(tab.label.text);
+        }
     }
 
     this.spriteBar = new Morph();
@@ -39954,7 +39963,7 @@ IDE_Morph.prototype.createSpriteBar = function () {
         padlock.hide();
     }
 
-    this._createTabs();
+    this._createTabs(oldTabs);
 };
 
 IDE_Morph.prototype.createSpriteEditor = function () {
@@ -54527,117 +54536,4 @@ SpriteMorph.prototype.allHatBlocksForSocket = function (message, role) {
 };
 
 StageMorph.prototype.allHatBlocksForSocket = SpriteMorph.prototype.allHatBlocksForSocket;
-
-// NetsBlox table stuff
-IDE_Morph.prototype.createTable = function() {
-    // FIXME
-    this.table = new TableMorph();
-};
-
-IDE_Morph.prototype._createCorral = IDE_Morph.prototype.createCorral;
-IDE_Morph.prototype.createCorral = function() {
-    var padding = 5;  // Same as in IDE_Morph.prototype.createCorral
-    this._createCorral();
-
-    // Add table morph button
-    this.corral.tableIcon = new SpriteIconMorph(this.table);
-    this.corral.tableIcon.isDraggable = false;
-    this.corral.add(this.corral.tableIcon);
-
-    // Position the
-    this.corral.fixLayout = function() {
-        this.stageIcon.setCenter(this.center());
-        this.stageIcon.setLeft(this.left() + padding);
-
-        this.tableIcon.setCenter(this.center());
-        this.tableIcon.setLeft(this.stageIcon.width() + this.left() + padding);
-
-        this.frame.setLeft(this.stageIcon.right() + padding);
-        this.frame.setExtent(new Point(
-            this.right() - this.frame.left(),
-            this.height()
-        ));
-        this.arrangeIcons();
-        this.refresh();
-    };
-
-    this.corral.refresh = function() {
-        this.stageIcon.refresh();
-        this.tableIcon.refresh();
-        this.frame.contents.children.forEach(function(icon) {
-            icon.refresh();
-        });
-    };
-
-    // TODO
-};
-
-IDE_Morph.prototype._getCurrentTabs = function () {
-    if (this.currentSprite === this.table) {
-        return ['Projects', 'Scripts'];
-    }
-    return ['Scripts', 'Costumes', 'Sounds'];
-};
-
-// Creating the 'projects' view for the table
-IDE_Morph.prototype._createSpriteEditor = IDE_Morph.prototype.createSpriteEditor;
-IDE_Morph.prototype.createSpriteEditor = function() {
-    if (this.currentTab === 'projects') {
-        if (this.spriteEditor) {
-            this.spriteEditor.destroy();
-        }
-        console.log('Creating project view...');
-        // TODO:
-    } else {
-        this._createSpriteEditor();
-    }
-};
-
-// NetsBlox Table
-TableMorph.prototype = new FrameMorph();
-//TableMorph.prototype = new SpriteMorph();
-TableMorph.prototype.constructor = TableMorph;
-TableMorph.uber = FrameMorph.prototype;
-
-function TableMorph() {
-    console.log('creating tablemorph..');
-    this.init();
-    this.name = localize('Table');
-
-    //this.image = newCanvas();
-    //this.createImage();
-}
-
-// 'Inherit' from SpriteMorph
-(function() {
-    var methods = Object.keys(SpriteMorph.prototype);
-    for (var i = methods.length; i--;) {
-        if (StageMorph.prototype[methods[i]]) {
-            TableMorph.prototype[methods[i]] = SpriteMorph.prototype[methods[i]];
-        }
-    }
-})();
-
-//TableMorph.prototype.createImage = function() {
-    //var cxt = this.image.getContext('2d'),
-        //radius = Math.min(this.width(), this.height())/2;
-
-    //cxt.arc(radius, radius, radius, 0, 2*Math.PI, false);
-    //cxt.fillStyle = 'blue';
-//};
-
-TableMorph.prototype.inheritedVariableNames = function() {
-    return [];
-};
-
-// Create the tabs
-// + Projects (primary)
-// + Scripts
-// TODO
-
-// Create the available blocks
-// TODO
-
-// Fix the icon for the table
-// TODO
 
