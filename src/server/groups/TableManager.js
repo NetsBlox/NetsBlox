@@ -7,6 +7,7 @@
 'use strict';
 
 var Table = require('./Table');
+
 var TableManager = function(logger) {
     this._logger = logger.fork('Tables');
     this.tables = {};
@@ -24,6 +25,17 @@ TableManager.prototype.onCreate = function(id) {
 };
 
 TableManager.prototype.getActiveMembers = function() {
+};
+
+TableManager.prototype.checkTable = function(table) {
+    var uuid = table.uuid,
+        seats = Object.keys(table.seats);
+
+    if (seats.length === 0) {
+        // FIXME: This will need to be updated for virtual clients
+        this._logger.trace('Removing empty table: ' + uuid);
+        delete this.tables[uuid];
+    }
 };
 
 module.exports = TableManager;

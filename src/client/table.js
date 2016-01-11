@@ -1,7 +1,6 @@
 // NetsBlox table stuff
 IDE_Morph.prototype.createTable = function() {
-    // FIXME
-    this.table = new TableMorph();
+    this.table = new TableMorph(this);
 };
 
 IDE_Morph.prototype._createCorral = IDE_Morph.prototype.createCorral;
@@ -85,20 +84,10 @@ TableMorph.COLORS = [
 ];
 TableMorph.SIZE = 300;
 
-function TableMorph() {
+function TableMorph(ide) {
     // Get the users at the table
-    this._seats = {};
-
-    // REMOVE
-    this._seats = {
-        'first': 'adam',
-        'third': 'brian',
-        'four': 'casey',
-        'fix': 'derik',
-        'asd': 'evan',
-        'sda': 'frank',
-        'second': 'gerald'
-    };  // REMOVE
+    this.ide = ide;
+    this.seats = {};
 
     this.init();
     this.name = localize('Table');
@@ -124,7 +113,7 @@ function TableMorph() {
 TableMorph.prototype.update = function(name, seats) {
     // Update the seats, etc
     // this.name = name;
-    this._seats = seats;
+    this.seats = seats;
     this.version = Date.now();
 
     this.drawNew();
@@ -141,7 +130,7 @@ TableMorph.prototype.drawNew = function() {
     cxt = this.image.getContext('2d');
 
     // Draw the seats
-    var seats = Object.keys(this._seats),
+    var seats = Object.keys(this.seats),
         angleSize = 2*Math.PI/seats.length,
         angle = 0,
         len = TableMorph.COLORS.length,
@@ -172,6 +161,9 @@ TableMorph.prototype.drawNew = function() {
     cxt.arc(center, center, radius/5, 0, 2*Math.PI, false);
     cxt.fillStyle = '#9e9e9e';
     cxt.fill();
+    cxt.fillStyle = 'black';
+    cxt.font = '14px';
+    cxt.fillText('TABLE', center, center);
 
     // TODO: Add children for each seat
     this.changed();
@@ -181,11 +173,84 @@ TableMorph.prototype.inheritedVariableNames = function() {
     return [];
 };
 
-TableMorph.prototype.createNewSeat = function() {
-    console.log('Creating a new seat!');
-    // TODO
+TableMorph.prototype._createNewSeat = function (name) {
+    // Create the new seat
+    this.ide.sockets.sendMessage('add-seat ' + name);
 };
 
+TableMorph.prototype.createNewSeat = function () {
+    // Ask for a new seat name
+    // TODO
+
+    // Verify that it isn't already existing
+    // TODO
+
+    // on success, send a socket message to the server
+    // TODO
+    var dialog = new DialogBoxMorph().withKey('createSeat'),
+        frame = new ScrollFrameMorph(),
+        text = new TextMorph(''),
+        ok = dialog.ok,
+        myself = this,
+        size = 150,
+        world = this.world();
+
+    frame.padding = 6;
+    frame.setWidth(size);
+    frame.acceptsDrops = false;
+    frame.contents.acceptsDrops = false;
+
+    text.setWidth(size - frame.padding * 2);
+    text.setPosition(frame.topLeft().add(frame.padding));
+    text.enableSelecting();
+    text.isEditable = true;
+
+    frame.setHeight(size-100);
+    frame.fixLayout = nop;
+    frame.edge = InputFieldMorph.prototype.edge;
+    frame.fontSize = InputFieldMorph.prototype.fontSize;
+    frame.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    frame.contrast = InputFieldMorph.prototype.contrast;
+    frame.drawNew = InputFieldMorph.prototype.drawNew;
+    frame.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+
+    frame.addContents(text);
+    text.drawNew();
+
+    dialog.ok = function () {
+        // Check that it doesn't already exist
+        var seatName = text.text;
+        if (myself.seats.hasOwnProperty(seatName)) {
+            // Error! Seat exists
+            new DialogBoxMorph().inform(
+                'Existing Seat Name',
+                'Could not create a new seat because\n' +
+                'the provided name already exists.',
+                world
+            );
+        } else {
+            myself._createNewSeat(seatName);
+        }
+        console.error('seat already exists');
+        ok.call(this);
+    };
+
+    dialog.justDropped = function () {
+        text.edit();
+    };
+
+    dialog.labelString = 'New Seat Name';
+    dialog.createLabel();
+    dialog.addBody(frame);
+    frame.drawNew();
+    dialog.addButton('ok', 'OK');
+    dialog.addButton('cancel', 'Cancel');
+    dialog.fixLayout();
+    dialog.drawNew();
+    dialog.popUp(world);
+    dialog.setCenter(world.center());
+    text.edit();
+};
 // Create the available blocks
 // TODO
 

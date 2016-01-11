@@ -49,6 +49,15 @@ NetsBloxSocket.MessageHandlers = {
             table;
         table = this.getTable(tableName, this.username);
         this.join(table, seat);
+    },
+    'add-seat': function(msg) {
+        var seatName = msg[0];
+        if (!this._table) {
+            this._logger.error('can not create seat - user has no table!');
+            return;
+        }
+        // TODO: make sure this is the table leader
+        this._table.createSeat(seatName);
     }
 };
 
@@ -68,7 +77,7 @@ NetsBloxSocket.prototype._initialize = function(msg) {
     this._socket.on('close', data => {
         this._logger.trace('closed!');
         if (this._table) {
-            this._table.remove(this._seatId);
+            this.leave();
         }
     });
 };
@@ -85,14 +94,28 @@ NetsBloxSocket.prototype.onLogin = function(username) {
 };
 
 NetsBloxSocket.prototype.join = function(table, seat) {
+    if (this._table === table) {
+        return this.changeSeats(seat);
+    }
+
     this._logger.log(`joining ${table.uuid}/${seat}`);
     if (this._table) {
-        this._table.remove(this._seatId);
+        this.leave();
     }
 
     this._table = table;
     this._table.add(this, seat);
     this._seatId = seat;
+};
+
+NetsBloxSocket.prototype.leave = function() {
+    this._table.remove(this._seatId);
+    this.checkTable(this._table);
+};
+
+NetsBloxSocket.prototype.changeSeats = function(seat) {
+    this._logger.log(`changing to seat ${this._table.uuid}/${seat}`);
+    this._table.move(this, seat);
 };
 
 NetsBloxSocket.prototype.sendToTable = function(msg) {
@@ -101,7 +124,11 @@ NetsBloxSocket.prototype.sendToTable = function(msg) {
 
 NetsBloxSocket.prototype.send = function(msg) {
     this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
-    this._socket.send(msg);
+    if (this._socket.readyState === this.OPEN) {
+        this._socket.send(msg);
+    } else {
+        this._logger.log('could not send msg - socket no longer open');
+    }
 };
 
 NetsBloxSocket.prototype.getState = function() {

@@ -70,7 +70,7 @@ NetsBloxVantage.prototype.initGroupManagement = function(server) {
                             return `\t${seat}: ${client}`;
                         });
 
-                    return `${table.uuid}:\n${clients.join('\n')}`;
+                    return `${table.uuid}:\n${clients.join('\n')}\n`;
                 }).join('\n');
             console.log(header+text);
             return cb();

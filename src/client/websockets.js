@@ -97,7 +97,15 @@ WebSocketManager.prototype.setGameType = function(gameType) {
 
 WebSocketManager.prototype._onConnect = function() {
     // FIXME: Fix these tmp settings
-    this.sendMessage('join-table __demo__ ' + this.uuid);
+    var tableName = this.ide.projectName;
+
+    if (!tableName) {
+        tableName = [
+            (SnapCloud.username || this.uuid),
+            '__new_project__'
+            ].join('/');
+    }
+    this.sendMessage(['join-table', tableName, this.uuid].join(' '));
 };
 
 WebSocketManager.prototype.toggleNetwork = function() {

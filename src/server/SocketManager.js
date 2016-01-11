@@ -13,6 +13,7 @@ var SocketManager = function(logger) {
 
     // Provide getter for sockets
     Socket.prototype.getTable = TableManager.prototype.get.bind(this.tables);
+    Socket.prototype.checkTable = TableManager.prototype.checkTable.bind(this.tables);
 };
 
 

@@ -26,6 +26,7 @@ Table.prototype.add = function(socket, seat) {
 
 Table.prototype.createSeat = function(seat) {
     // TODO
+    this.seats[seat] = null;
     this.onSeatsChanged();
 };
 
@@ -61,6 +62,12 @@ Table.prototype.remove = function(seat) {
     //this.seats[seat] = this.createVirtualClient(seat);
     delete this.seats[seat];
     this.onSeatsChanged();
+};
+
+Table.prototype.move = function(socket, dst) {
+    var src = socket._seatId;
+    delete this.seats[src];
+    this.add(socket, dst);
 };
 
 Table.prototype.createVirtualClient = function(seat) {
