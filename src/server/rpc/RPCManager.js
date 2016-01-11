@@ -8,17 +8,15 @@
 var fs = require('fs'),
     path = require('path'),
     express = require('express'),
-    PROCEDURES_DIR = path.join(__dirname,'procedures'),
-    debug = require('debug'),
-    log = debug('NetsBlox:RPCManager:log'),
-    info = debug('NetsBlox:RPCManager:info');
+    PROCEDURES_DIR = path.join(__dirname,'procedures');
 
 /**
  * RPCManager
  *
  * @constructor
  */
-var RPCManager = function(groupManager) {
+var RPCManager = function(logger, groupManager) {
+    this._logger = logger.fork('RPCManager');
     this.rpcs = RPCManager.loadRPCs();
     this.router = this.createRouter();
 
@@ -26,7 +24,7 @@ var RPCManager = function(groupManager) {
     // communication manager. In this object, they contain the RPC's owned by
     // the group.
     this.groupManager = groupManager;
-    this.groupManager.onGroupClose(this.onGroupClose.bind(this));
+    //this.groupManager.onGroupClose(this.onGroupClose.bind(this));
     this.groups = {};
 };
 
@@ -58,7 +56,7 @@ RPCManager.prototype.createRouter = function() {
 };
 
 RPCManager.prototype.addRoute = function(router, RPC) {
-    info('Adding route for '+RPC.getPath());
+    this._logger.info('Adding route for '+RPC.getPath());
     router.route(RPC.getPath()+'/:action')
         .get(this.handleRPCRequest.bind(this, RPC));
 };
@@ -93,7 +91,7 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
 
     // If the RPC hasn't been created for the given room, create one 
     if (!group[RPC.getPath()]) {
-        info('Creating new RPC ('+RPC.getPath()+') for '+groupId);
+        this._logger.info('Creating new RPC ('+RPC.getPath()+') for '+groupId);
         group[RPC.getPath()] = new RPC();
     }
     return group[RPC.getPath()];
@@ -106,13 +104,13 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         rpc;
 
     action = req.params.action;
-    info('Received request to '+RPC.getPath()+' for '+action+' (from '+uuid+')');
+    this._logger.info('Received request to '+RPC.getPath()+' for '+action+' (from '+uuid+')');
 
     // Then pass the call through
     if (RPC.getActions().indexOf(action) !== -1) {
         rpc = this.getRPCInstance(RPC, uuid);
         if (rpc === null) {  // Could not create/find rpc (rpc is stateful and group is unknown)
-            log('Could not find group for user "'+req.query.uuid+'"');
+            this._logger.log('Could not find group for user "'+req.query.uuid+'"');
             return res.status(401).send('ERROR: user not found. who are you?');
         }
         console.log('About to call '+RPC.getPath()+'=>'+action);
@@ -122,7 +120,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
 
         return rpc[action](req, res);
     } else {
-        log('Invalid action requested for '+RPC.getPath()+': '+action);
+        this._logger.log('Invalid action requested for '+RPC.getPath()+': '+action);
         return res.status(400).send('unrecognized action');
     }
 };

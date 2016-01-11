@@ -4,6 +4,7 @@
 var vantage = require('vantage')(),
     chalk = require('chalk'),
     repl = require('vantage-repl'),
+    R = require('ramda'),
     banner,
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
@@ -53,16 +54,24 @@ var NetsBloxVantage = function(server) {
 
 NetsBloxVantage.prototype.initGroupManagement = function(server) {
     vantage
-        .command('groups', 'List all groups')
-        .alias('g')
+        .command('tables', 'List all tables')
+        .alias('t')
         //.option('--with-names', 'Include the group names')
         .action(function(args, cb) {
             // Get all groups
-            var header = '* * * * * * * Groups * * * * * * * \n',
-                groups = server.groupManager.allGroups(),
-                text = groups.reduce(function(prev, group) {
-                    return prev+'\n'+NetsBloxVantage.prettyPrintGroup(group)+'\n';
-                }, '');
+            var header = '* * * * * * * Tables * * * * * * * \n',
+                tables = R.values(server.socketManager.tables.tables),
+                text = tables.map(function(table) {
+                    var clients = Object.keys(table.seats)
+                        .map(seat => {
+                            let client = table.seats[seat] ? 
+                                table.seats[seat].username : '<ghost user>';
+
+                            return `\t${seat}: ${client}`;
+                        });
+
+                    return `${table.uuid}:\n${clients.join('\n')}`;
+                }).join('\n');
             console.log(header+text);
             return cb();
         });

@@ -2023,6 +2023,8 @@ Process.prototype.receiveSocketMessage = function (fields) {
     // Check for the message type in the stage
     // FIXME: Provide an error message about how we must receive an actual msg
     content = this.context.variables.getVar('__message__');
+    // REMOVE
+    console.log('content is' + JSON.stringify(content));
 
     // Add variables by the type, NOT a complex object!
     for (var i = fields.length; i--;) {

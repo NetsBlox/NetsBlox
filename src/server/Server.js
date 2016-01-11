@@ -3,7 +3,7 @@ var express = require('express'),
     bodyParser = require('body-parser'),
     _ = require('lodash'),
     Utils = _.extend(require('./Utils'), require('./ServerUtils.js')),
-    CommunicationManager = require('./groups/CommunicationManager'),
+    SocketManager = require('./SocketManager'),
     RPCManager = require('./rpc/RPCManager'),
     MobileManager = require('./mobile/MobileManager'),
     MongoClient = require('mongodb').MongoClient,
@@ -22,9 +22,7 @@ var express = require('express'),
     // Routes
     createRouter = require('./CreateRouter'),
     // Logging
-    debug = require('debug'),
-    log = debug('NetsBlox:API:log'),
-    info = debug('NetsBlox:API:info'),
+    Logger = require('./logger'),
 
     // Session and cookie info
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
@@ -35,7 +33,11 @@ var express = require('express'),
     hash = require('../client/sha512').hex_sha512,
     CONSTANTS = require(__dirname + '/../common/Constants');
 
+var BASE_CLASSES = [
+    SocketManager
+];
 var Server = function(opts) {
+    this._logger = new Logger('NetsBlox');
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
 
@@ -47,8 +49,8 @@ var Server = function(opts) {
     transporter.use('compile', markdown());
 
     // Group and RPC Managers
-    this.groupManager = new CommunicationManager(opts);
-    this.rpcManager = new RPCManager(this.groupManager);
+    this.socketManager = new SocketManager(this._logger);
+    this.rpcManager = new RPCManager(this._logger, this.socketManager);
     this.mobileManager = new MobileManager(transporter);
 };
 
@@ -114,7 +116,7 @@ Server.prototype.onDatabaseConnected = function() {
         email = CONSTANTS.GHOST.EMAIL;
     this._users.findOne({username: username}, (e, user) => {
         if (e) {
-            return log('Error:', e);
+            return this._logger.log('Error:', e);
         }
         if (!user) {
             // Create the user with the given username, email, password
@@ -126,9 +128,9 @@ Server.prototype.onDatabaseConnected = function() {
             this.emailPassword(newUser, password);
             this._users.insert(newUser, (err, result) => {
                 if (err) {
-                    return log('Error:', err);
+                    return this._logger.log('Error:', err);
                 }
-                log('Created ghost user.');
+                this._logger.log('Created ghost user.');
             });
         } else {
             // Set the password
@@ -136,7 +138,7 @@ Server.prototype.onDatabaseConnected = function() {
                 var result = data.result;
 
                 if (result.nModified === 0 || e) {
-                    return log('Could not set password for ghost user');
+                    return this._logger.log('Could not set password for ghost user');
                 }
 
                 // Email the user the temporary password
@@ -151,7 +153,7 @@ Server.prototype.start = function(done) {
     done = done || Utils.nop;
     self.connectToMongo(function (err) {
         self._server = self.app.listen(self.opts.port, function() {
-            self.groupManager.start({server: self._server});
+            self.socketManager.start({server: self._server});
             // Enable Vantage
             if (self.opts.vantage) {
                 new Vantage(self).start();
@@ -163,7 +165,7 @@ Server.prototype.start = function(done) {
 
 Server.prototype.stop = function(done) {
     done = done || Utils.nop;
-    this.groupManager.stop();
+    this.socketManager.stop();
     this._server.close(done);
 };
 

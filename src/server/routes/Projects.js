@@ -11,7 +11,7 @@ var PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'Media
     log = debug('NetsBlox:API:Projects:log'),
     info = debug('NetsBlox:API:Projects:info');
 
-var createProject = function(info) {
+var createSerializedTable = function(info) {
     var project = R.pick(PROJECT_FIELDS, info);
     // Set defaults
     project.Public = false;
@@ -19,7 +19,7 @@ var createProject = function(info) {
 
     // Add the thumbnail,notes from the project content
     var inProjectSource = ['Thumbnail', 'Notes'];
-    inProjectSource.forEach(function(field) {
+    inProjectSource.forEach(field => {
         project[field] = parseXml(project.SourceCode)[field.toLowerCase()];
     });
 
@@ -62,7 +62,7 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username;
             info('Saving project "'+req.body.ProjectName+'" for '+username);
-            this._users.findOne({username: username}, function(e, user) {
+            this._users.findOne({username}, (e, user) => {
                 if (e) {
                     return res.serverError(e);
                 }
@@ -73,7 +73,7 @@ module.exports = [
 
                 // Add the project to the user's projects
                 var index = getProjectIndexFrom(req.body.ProjectName, user),
-                    project = createProject(req.body);
+                    project = createSerializedTable(req.body);
 
                 // Overwrite existing project, if appropriate
                 if (index !== -1) {
@@ -95,7 +95,7 @@ module.exports = [
                     log('Saved project "'+req.body.ProjectName+'" for '+username);
                     return res.send('Project saved!');
                 });
-            }.bind(this));
+            });
         }
     },
     {

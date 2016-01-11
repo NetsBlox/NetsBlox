@@ -244,6 +244,14 @@ Cloud.prototype.resetPassword = function (
     }
 };
 
+Cloud.prototype.socketId = function () {
+    var ide = world.children.find(function(child) {
+        return child instanceof IDE_Morph;
+    });
+    // FIXME: Should I make the WebSocketManager a singleton (rather than being a part of the stage?)
+    return ide.stage.sockets.uuid;
+};
+
 Cloud.prototype.login = function (
     username,
     password,
@@ -252,7 +260,11 @@ Cloud.prototype.login = function (
 ) {
     // both callBack and errorCall are two-argument functions
     var request = new XMLHttpRequest(),
-        usr = JSON.stringify({'__h': password, '__u': username}),
+        usr = JSON.stringify({
+            '__h': password,
+            '__u': username,
+            '__sId': this.socketId()
+        }),
         myself = this;
     this.setRoute(username);
     try {

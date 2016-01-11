@@ -12,6 +12,21 @@ var WebSocketManager = function (stage) {
     this._connectWebSocket();
 };
 
+WebSocketManager.MessageHandlers = {
+    'uuid': function(data) {
+        console.log('Setting uuid to '+data.join(' '));
+        this.uuid = data.join(' ');
+        this._onConnect();
+    },
+    'message': function(data) {
+        console.log('handling message...', data);
+        var messageType = data.shift(),
+            content = JSON.parse(data.join(' ') || null);
+
+        this.onMessageReceived(messageType, content, 'role');
+    }
+};
+
 WebSocketManager.prototype._connectWebSocket = function() {
     // Connect socket to the server
     var self = this,
@@ -36,7 +51,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
     // Set up message firing queue
     this.websocket.onopen = function() {
         console.log('Connection established');  // REMOVE this
-        self._updateProjectNetworkState();
+        //self._onConnect();
 
         while (self.messages.length) {
             self.websocket.send(self.messages.shift());
@@ -51,13 +66,10 @@ WebSocketManager.prototype._connectWebSocket = function() {
             role,
             content;
 
-        if (type === 'uuid') {
-            console.log('Setting uuid to '+data.join(' '));
-            self.uuid = data.join(' ');
+        if (WebSocketManager.MessageHandlers[type]) {
+            WebSocketManager.MessageHandlers[type].call(self, data, message.data);
         } else {
-            role = data.pop();
-            content = JSON.parse(data.join(' ') || null);
-            self.onMessageReceived(type, content, role);
+            console.error('Unknown message:', message.data);
         }
     };
 
@@ -78,21 +90,17 @@ WebSocketManager.prototype.sendMessage = function(message) {
 
 WebSocketManager.prototype.setGameType = function(gameType) {
     this.gameType = gameType.name;
-    this._updateProjectNetworkState();
+    // FIXME: Remove this
 };
 
-WebSocketManager.prototype._updateProjectNetworkState = function() {
-    this.sendMessage('gameType '+this.gameType);
-    var cmd = this.devMode ? 'on' : 'off';
-    console.log('dev mode is now ' + cmd);
-    this.sendMessage('devMode ' + cmd + ' ' + (SnapCloud.username || ''));
-    
+WebSocketManager.prototype._onConnect = function() {
+    // FIXME: Fix these tmp settings
+    this.sendMessage('join-table __demo__ ' + this.uuid);
 };
 
-// FIXME: Toggle dev mode
 WebSocketManager.prototype.toggleNetwork = function() {
     this.devMode = !this.devMode;
-    this._updateProjectNetworkState();
+    // FIXME: Remove this function
 };
 
 /**

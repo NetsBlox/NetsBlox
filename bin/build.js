@@ -6,7 +6,6 @@ var concat = require('concat'),
     dstPath = path.join(__dirname, '..', 'build');
 
 // Get the given js files
-// TODO: Parse these files from the index.html file
 var jsFiles = [
     'build-message',
     'map-shim',
@@ -28,9 +27,11 @@ var jsFiles = [
     'cloud',
     'sha512',
     'message-inputs',
-    'message-listeners'
+    'message-listeners',
+    'table'
 ].map(name => path.join(srcPath, name + '.js'));
 
+// TODO: Add uglify, etc
 concat(jsFiles, path.join(srcPath, 'build.js'), function(err) {
     if (err) {
         return console.log('Error!', err);
@@ -39,7 +40,8 @@ concat(jsFiles, path.join(srcPath, 'build.js'), function(err) {
 });
 
 var devFiles = [
-    path.join(__dirname, '..', 'src', 'virtual-client', 'virtual-helpers.js')
+    path.join(__dirname, '..', 'src', 'virtual-client', 'virtual-helpers.js'),
+    path.join(__dirname, '..', 'src', 'virtual-client', 'phantomjs-shim.js')
 ];
 
 concat(jsFiles.concat(devFiles), path.join(srcPath, 'build-dev.js'), function(err) {

@@ -8,8 +8,8 @@ var phantom = require('phantom'),
 // TODO: Add command line flag for monitoring
 // TODO: We need to be able to query the state remotely...
 if (args.length < 3) {
-    console.log('Usage: node start-virtual-client.js <HOST> <PROJECT>');
-    phantom.exit(1);
+    console.log('Usage: node start-virtual-client.js <HOST> [PROJECT]');
+    process.exit(1);
 }
 
 var host = args[2],
@@ -61,10 +61,14 @@ var startVirtualClient = function(page, done) {
     page.evaluate(login);
 
     // Open the given project
-    setTimeout(
-        function() {page.evaluate(openProject);},
-        500
-    );
+    console.log('project:', typeof project);
+    console.log('project:', !!project);
+    if (project) {
+        setTimeout(
+            function() {page.evaluate(openProject);},
+            500
+        );
+    }
     setTimeout(done, 1100);
 };
 
@@ -80,7 +84,7 @@ phantom.create(ph => {
         page.open(host, function(status) {
             if (status !== 'success') {
                 console.error('Could not open page: ' + status);
-                phantom.exit(1);
+                process.exit(1);
             }
             // Testing
             setTimeout(function() {

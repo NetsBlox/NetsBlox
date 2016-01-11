@@ -1,3 +1,4 @@
+// bind shim
 if (!Function.prototype.bind) {
   Function.prototype.bind = function(oThis) {
     if (typeof this !== 'function') {
@@ -10,8 +11,7 @@ if (!Function.prototype.bind) {
         fToBind = this,
         fNOP    = function() {},
         fBound  = function() {
-          return fToBind.apply(this instanceof fNOP
-                 ? this
+          return fToBind.apply(this instanceof fNOP ? this
                  : oThis,
                  aArgs.concat(Array.prototype.slice.call(arguments)));
         };
@@ -24,4 +24,15 @@ if (!Function.prototype.bind) {
 
     return fBound;
   };
+}
+
+// find shim
+if (!Array.prototype.find) {
+    Array.prototype.find = function(fn) {
+        for (var i = 0; i < this.length; i++) {
+            if (fn(this[i])) {
+                return this[i];
+            }
+        }
+    };
 }
