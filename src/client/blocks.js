@@ -8267,6 +8267,13 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     var canvas = newCanvas(new Point(this.symbolWidth(), this.size));
 
     switch (this.name) {
+    case 'plus':
+        return this.drawSymbolPlus(canvas, aColor);
+    case 'networkOn':
+        return this.drawSymbolNetworkOn(canvas, aColor);
+    case 'networkOff':
+        return this.drawSymbolNetworkOff(canvas, aColor);
+
     case 'square':
         return this.drawSymbolStop(canvas, aColor);
     case 'pointRight':
@@ -8293,10 +8300,6 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
         return this.drawSymbolPause(canvas, aColor);
     case 'flag':
         return this.drawSymbolFlag(canvas, aColor);
-    case 'networkOn':
-        return this.drawSymbolNetworkOn(canvas, aColor);
-    case 'networkOff':
-        return this.drawSymbolNetworkOff(canvas, aColor);
     case 'octagon':
         return this.drawSymbolOctagon(canvas, aColor);
     case 'cloud':
@@ -8660,6 +8663,26 @@ SymbolMorph.prototype.drawSymbolFlag = function (canvas, color) {
         w,
         h * 0.5
     );
+    ctx.stroke();
+
+    return canvas;
+};
+
+SymbolMorph.prototype.drawSymbolPlus = function (canvas, color) {
+    var ctx = canvas.getContext('2d'),
+        w = canvas.width,
+        l = Math.max(w / 12, 1),
+        h = canvas.height,
+        arcWidth = h / 4;
+
+    ctx.lineWidth = l;
+    ctx.strokeStyle = color.toString();
+    ctx.fillStyle = color.toString();
+
+    ctx.moveTo(0, h/2);
+    ctx.lineTo(w, h/2);
+    ctx.moveTo(w/2, 0);
+    ctx.lineTo(w/2, h);
     ctx.stroke();
 
     return canvas;

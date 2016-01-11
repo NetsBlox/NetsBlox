@@ -290,7 +290,7 @@ ProjectsMorph.prototype.updateTable = function() {
     newButton = new PushButtonMorph(
         this.table,
         'createNewSeat',
-        new SymbolMorph('pointRight', 12)  // FIXME: make this a "+"
+        new SymbolMorph('plus', 12)
     );
     newButton.padding = 0;
     newButton.corner = 12;
