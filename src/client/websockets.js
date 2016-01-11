@@ -1,8 +1,8 @@
 /*globals nop,SnapCloud,Context,VariableFrame,SpriteMorph,StageMorph*/
 // WebSocket Manager
 
-var WebSocketManager = function (stage) {
-    this.stage = stage;
+var WebSocketManager = function (ide) {
+    this.ide = ide;
     this.uuid = null;
     this.websocket = null;
     this.messages = [];
@@ -14,16 +14,19 @@ var WebSocketManager = function (stage) {
 
 WebSocketManager.MessageHandlers = {
     'uuid': function(data) {
-        console.log('Setting uuid to '+data.join(' '));
         this.uuid = data.join(' ');
         this._onConnect();
     },
     'message': function(data) {
-        console.log('handling message...', data);
         var messageType = data.shift(),
             content = JSON.parse(data.join(' ') || null);
 
         this.onMessageReceived(messageType, content, 'role');
+    },
+    'table-seats': function(data) {
+        var name = data.shift(),
+            seats = JSON.parse(data.join(' '));
+        this.ide.table.update(name, seats);
     }
 };
 
@@ -74,7 +77,6 @@ WebSocketManager.prototype._connectWebSocket = function() {
     };
 
     this.websocket.onclose = function() {
-        console.log('Connection closed');  // REMOVE this
         setTimeout(self._connectWebSocket.bind(self), 500);
     };
 };
@@ -114,12 +116,12 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
         hats = [],
         context,
         idle = !this.processes.length,
+        stage = this.ide.stage,
         block;
 
     content = content || [];
     if (message !== '') {
-        this.stage.lastMessage = message;
-        this.stage.children.concat(this.stage).forEach(function (morph) {
+        stage.children.concat(stage).forEach(function (morph) {
             if (morph instanceof SpriteMorph || morph instanceof StageMorph) {
                 hats = hats.concat(morph.allHatBlocksForSocket(message, role));
             }
@@ -139,7 +141,7 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
             // Find the process list for the given block
             this.addProcess({
                 block: block,
-                isThreadSafe: this.stage.isThreadSafe,
+                isThreadSafe: stage.isThreadSafe,
                 context: context
             });
         }
@@ -180,15 +182,16 @@ WebSocketManager.prototype.addProcess = function (process) {
 WebSocketManager.prototype.startProcesses = function () {
     var process,
         block,
+        stage = this.ide.stage,
         activeBlock;
 
     // Check each set of processes to see if the block is free
     for (var i = 0; i < this.processes.length; i++) {
         block = this.processes[i][0].block;
-        activeBlock = !!this.stage.threads.findProcess(block);
+        activeBlock = !!stage.threads.findProcess(block);
         if (!activeBlock) {  // Check if the process can be added
             process = this.processes[i].shift();
-            this.stage.threads.startProcess(
+            stage.threads.startProcess(
                 process.block,
                 process.isThreadSafe,
                 undefined,

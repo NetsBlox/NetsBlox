@@ -75,12 +75,12 @@ TableMorph.uber = SpriteMorph.prototype;
 
 // TODO: Pick better colors
 TableMorph.COLORS = [
-    '#e57373',
+    '#0d47a1',
     '#64b5f6',
+    '#f57c00',
     '#ce93d8',
     '#4527a0',
-    '#0d47a1',
-    '#f57c00',
+    '#e57373',
     '#ffe082'
 ];
 TableMorph.SIZE = 300;
@@ -107,8 +107,8 @@ function TableMorph() {
     this.silentSetWidth(TableMorph.SIZE);
     this.silentSetHeight(TableMorph.SIZE);
 
-    // TODO: Set up the websocket manager
-    this.update();
+    this.isDraggable = false;
+    this.drawNew();
 }
 
 // 'Inherit' from SpriteMorph
@@ -121,8 +121,12 @@ function TableMorph() {
     //}
 //})();
 
-TableMorph.prototype.update = function() {
-    // TODO: Update the seats, etc
+TableMorph.prototype.update = function(name, seats) {
+    // Update the seats, etc
+    // this.name = name;
+    this._seats = seats;
+    this.version = Date.now();
+
     this.drawNew();
 };
 
@@ -140,8 +144,10 @@ TableMorph.prototype.drawNew = function() {
     var seats = Object.keys(this._seats),
         angleSize = 2*Math.PI/seats.length,
         angle = 0,
-        len = TableMorph.COLORS.length;
+        len = TableMorph.COLORS.length,
+        x,y;
 
+    cxt.textAlign = 'center';
     for (var i = 0; i < seats.length; i++) {
         cxt.fillStyle = TableMorph.COLORS[i%len];
         cxt.beginPath();
@@ -151,6 +157,12 @@ TableMorph.prototype.drawNew = function() {
 
         cxt.lineTo(center, center);
         cxt.fill();
+        // Write the seat name on the seat
+        // TODO: Change this to string morph
+        cxt.fillStyle = 'black';
+        x = center + (0.75 *radius * Math.cos(angle+angleSize/2));
+        y = center + (0.75 *radius * Math.sin(angle+angleSize/2));
+        cxt.fillText(seats[i], x, y);
 
         angle += angleSize;
     }
@@ -162,6 +174,7 @@ TableMorph.prototype.drawNew = function() {
     cxt.fill();
 
     // TODO: Add children for each seat
+    this.changed();
 };
 
 TableMorph.prototype.inheritedVariableNames = function() {

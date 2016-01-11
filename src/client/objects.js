@@ -4855,7 +4855,6 @@ function StageMorph(globals) {
 StageMorph.prototype.init = function (globals) {
     this.name = localize('Stage');
     this.threads = new ThreadManager();
-    this.sockets = new WebSocketManager(this);
     this.messageTypes = new MessageFrame();
     this.variables = new VariableFrame(globals || null, this);
     this.scripts = new ScriptsMorph(this);
@@ -5153,10 +5152,8 @@ StageMorph.prototype.getTempo = function () {
 };
 
 // StageMorph Game Type
+// FIXME: Remove this
 StageMorph.prototype.setGameType = function (gameType) {
-    // Update the server
-    this.sockets.setGameType(gameType);
-
     // Look up the messageTypes for the gameType
     if (!gameType.messageTypes) {
         var req = new XMLHttpRequest(),
@@ -5966,12 +5963,6 @@ StageMorph.prototype.blockTemplates = function (category) {
 
 StageMorph.prototype.clear = function () {
     this.clearPenTrails();
-};
-
-StageMorph.prototype.destroy = function () {
-    console.log('Calling destroy on the stage morph!');
-    this.sockets.destroy();
-    Morph.prototype.destroy.call(this);
 };
 
 // StageMorph user menu

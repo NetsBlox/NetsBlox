@@ -232,6 +232,8 @@ IDE_Morph.prototype.init = function (isAutoFill) {
     this.projectName = '';
     this.projectNotes = '';
 
+    // TODO: Create the websocket manager
+    this.sockets = new WebSocketManager(this);
     this.logo = null;
     this.controlBar = null;
     this.categories = null;
@@ -3057,9 +3059,10 @@ IDE_Morph.prototype.newProject = function () {
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
     // This isn't called on the first open of the page. FIXME
-    this.promptGameType();
+    //this.promptGameType();
 };
 
+// TODO: Remove this. I am currently leaving it for an example...
 IDE_Morph.prototype.promptGameType = function () {
     var myself = this,
         world = this.world(),

@@ -26853,8 +26853,8 @@ ScriptFocusMorph.prototype.reactToKeyEvent = function (key) {
 /*globals nop,SnapCloud,Context,VariableFrame,SpriteMorph,StageMorph*/
 // WebSocket Manager
 
-var WebSocketManager = function (stage) {
-    this.stage = stage;
+var WebSocketManager = function (ide) {
+    this.ide = ide;
     this.uuid = null;
     this.websocket = null;
     this.messages = [];
@@ -26866,16 +26866,19 @@ var WebSocketManager = function (stage) {
 
 WebSocketManager.MessageHandlers = {
     'uuid': function(data) {
-        console.log('Setting uuid to '+data.join(' '));
         this.uuid = data.join(' ');
         this._onConnect();
     },
     'message': function(data) {
-        console.log('handling message...', data);
         var messageType = data.shift(),
             content = JSON.parse(data.join(' ') || null);
 
         this.onMessageReceived(messageType, content, 'role');
+    },
+    'table-seats': function(data) {
+        var name = data.shift(),
+            seats = JSON.parse(data.join(' '));
+        this.ide.table.update(name, seats);
     }
 };
 
@@ -26926,7 +26929,6 @@ WebSocketManager.prototype._connectWebSocket = function() {
     };
 
     this.websocket.onclose = function() {
-        console.log('Connection closed');  // REMOVE this
         setTimeout(self._connectWebSocket.bind(self), 500);
     };
 };
@@ -26966,12 +26968,12 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
         hats = [],
         context,
         idle = !this.processes.length,
+        stage = this.ide.stage,
         block;
 
     content = content || [];
     if (message !== '') {
-        this.stage.lastMessage = message;
-        this.stage.children.concat(this.stage).forEach(function (morph) {
+        stage.children.concat(stage).forEach(function (morph) {
             if (morph instanceof SpriteMorph || morph instanceof StageMorph) {
                 hats = hats.concat(morph.allHatBlocksForSocket(message, role));
             }
@@ -26991,7 +26993,7 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
             // Find the process list for the given block
             this.addProcess({
                 block: block,
-                isThreadSafe: this.stage.isThreadSafe,
+                isThreadSafe: stage.isThreadSafe,
                 context: context
             });
         }
@@ -27032,15 +27034,16 @@ WebSocketManager.prototype.addProcess = function (process) {
 WebSocketManager.prototype.startProcesses = function () {
     var process,
         block,
+        stage = this.ide.stage,
         activeBlock;
 
     // Check each set of processes to see if the block is free
     for (var i = 0; i < this.processes.length; i++) {
         block = this.processes[i][0].block;
-        activeBlock = !!this.stage.threads.findProcess(block);
+        activeBlock = !!stage.threads.findProcess(block);
         if (!activeBlock) {  // Check if the process can be added
             process = this.processes[i].shift();
-            this.stage.threads.startProcess(
+            stage.threads.startProcess(
                 process.block,
                 process.isThreadSafe,
                 undefined,
@@ -35463,7 +35466,6 @@ function StageMorph(globals) {
 StageMorph.prototype.init = function (globals) {
     this.name = localize('Stage');
     this.threads = new ThreadManager();
-    this.sockets = new WebSocketManager(this);
     this.messageTypes = new MessageFrame();
     this.variables = new VariableFrame(globals || null, this);
     this.scripts = new ScriptsMorph(this);
@@ -35761,10 +35763,8 @@ StageMorph.prototype.getTempo = function () {
 };
 
 // StageMorph Game Type
+// FIXME: Remove this
 StageMorph.prototype.setGameType = function (gameType) {
-    // Update the server
-    this.sockets.setGameType(gameType);
-
     // Look up the messageTypes for the gameType
     if (!gameType.messageTypes) {
         var req = new XMLHttpRequest(),
@@ -36574,12 +36574,6 @@ StageMorph.prototype.blockTemplates = function (category) {
 
 StageMorph.prototype.clear = function () {
     this.clearPenTrails();
-};
-
-StageMorph.prototype.destroy = function () {
-    console.log('Calling destroy on the stage morph!');
-    this.sockets.destroy();
-    Morph.prototype.destroy.call(this);
 };
 
 // StageMorph user menu
@@ -38927,6 +38921,8 @@ IDE_Morph.prototype.init = function (isAutoFill) {
     this.projectName = '';
     this.projectNotes = '';
 
+    // TODO: Create the websocket manager
+    this.sockets = new WebSocketManager(this);
     this.logo = null;
     this.controlBar = null;
     this.categories = null;
@@ -41752,9 +41748,10 @@ IDE_Morph.prototype.newProject = function () {
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
     // This isn't called on the first open of the page. FIXME
-    this.promptGameType();
+    //this.promptGameType();
 };
 
+// TODO: Remove this. I am currently leaving it for an example...
 IDE_Morph.prototype.promptGameType = function () {
     var myself = this,
         world = this.world(),
@@ -54637,12 +54634,12 @@ TableMorph.uber = SpriteMorph.prototype;
 
 // TODO: Pick better colors
 TableMorph.COLORS = [
-    '#e57373',
+    '#0d47a1',
     '#64b5f6',
+    '#f57c00',
     '#ce93d8',
     '#4527a0',
-    '#0d47a1',
-    '#f57c00',
+    '#e57373',
     '#ffe082'
 ];
 TableMorph.SIZE = 300;
@@ -54669,8 +54666,8 @@ function TableMorph() {
     this.silentSetWidth(TableMorph.SIZE);
     this.silentSetHeight(TableMorph.SIZE);
 
-    // TODO: Set up the websocket manager
-    this.update();
+    this.isDraggable = false;
+    this.drawNew();
 }
 
 // 'Inherit' from SpriteMorph
@@ -54683,8 +54680,12 @@ function TableMorph() {
     //}
 //})();
 
-TableMorph.prototype.update = function() {
-    // TODO: Update the seats, etc
+TableMorph.prototype.update = function(name, seats) {
+    // Update the seats, etc
+    // this.name = name;
+    this._seats = seats;
+    this.version = Date.now();
+
     this.drawNew();
 };
 
@@ -54702,8 +54703,10 @@ TableMorph.prototype.drawNew = function() {
     var seats = Object.keys(this._seats),
         angleSize = 2*Math.PI/seats.length,
         angle = 0,
-        len = TableMorph.COLORS.length;
+        len = TableMorph.COLORS.length,
+        x,y;
 
+    cxt.textAlign = 'center';
     for (var i = 0; i < seats.length; i++) {
         cxt.fillStyle = TableMorph.COLORS[i%len];
         cxt.beginPath();
@@ -54713,6 +54716,12 @@ TableMorph.prototype.drawNew = function() {
 
         cxt.lineTo(center, center);
         cxt.fill();
+        // Write the seat name on the seat
+        // TODO: Change this to string morph
+        cxt.fillStyle = 'black';
+        x = center + (0.75 *radius * Math.cos(angle+angleSize/2));
+        y = center + (0.75 *radius * Math.sin(angle+angleSize/2));
+        cxt.fillText(seats[i], x, y);
 
         angle += angleSize;
     }
@@ -54724,6 +54733,7 @@ TableMorph.prototype.drawNew = function() {
     cxt.fill();
 
     // TODO: Add children for each seat
+    this.changed();
 };
 
 TableMorph.prototype.inheritedVariableNames = function() {
