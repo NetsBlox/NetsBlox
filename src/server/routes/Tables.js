@@ -21,10 +21,12 @@ module.exports = [
             var username = req.session.username,
                 uuids = Object.keys(this.sockets),
                 socket,
+                table,
                 resp = {};
 
             log(username +' requested friend list');
-            warn('returning ALL active sockets');
+
+            warn('returning ALL active sockets not at the table');
             for (var i = uuids.length; i--;) {
                 socket = this.sockets[uuids[i]];
                 if (socket.username !== username) {
@@ -86,7 +88,6 @@ module.exports = [
                 seat: seatId,
                 invitee
             };
-            console.log('invites:', invites);
 
             // If the user is online, send the invitation via ws to the browser
             inviteeSockets.forEach(socket => {
@@ -100,6 +101,7 @@ module.exports = [
                 ].join(' ');
                 socket.send(msg);
             });
+            res.send('ok');
         }
     },
     {

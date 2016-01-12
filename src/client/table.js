@@ -181,8 +181,14 @@ TableMorph.prototype._createNewSeat = function (name) {
 
 TableMorph.prototype.inviteFriend = function () {
     // Ajax request
-    SnapCloud.getFriendList(
-        this._inviteFriendDialog.bind(this),  // on success
+    var tablemates = Object.keys(this.seats)
+        .map(seat => this.seats[seat]);
+
+    SnapCloud.getFriendList(friends => {
+        // Remove friends at the table
+        this._inviteFriendDialog(friends
+            .filter(friend => tablemates.indexOf(friend) === -1));
+        },
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         }
@@ -326,6 +332,7 @@ ProjectsMorph.prototype.updateTable = function() {
     this.addBack(this.contents);
 
     // Draw the table
+    //this.table.setExtent
     this.table.drawNew();
     this.addContents(this.table);
 

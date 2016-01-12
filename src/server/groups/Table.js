@@ -82,6 +82,24 @@ Table.prototype.sendFrom = function(srcSeat, msg) {
         .forEach(seat => this.seats[seat].send(msg));
 };
 
+Table.prototype.sockets = function() {
+    return R.values(this.seats)
+        .filter(socket => !!socket);
+};
+
+Table.prototype.contains = function(username) {
+    var seats = Object.keys(this.seats),
+        socket;
+
+    for (var i = seats.length; i--;) {
+        socket = this.seats[seats[i]];
+        if (socket && socket.username === username) {
+            return true;
+        }
+    }
+    return false;
+};
+
 //Table.prototype.remove = function(seat) {
 //};
 
