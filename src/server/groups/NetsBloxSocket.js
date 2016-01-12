@@ -79,6 +79,7 @@ NetsBloxSocket.prototype._initialize = function(msg) {
         if (this._table) {
             this.leave();
         }
+        this.onClose(this.uuid);
     });
 };
 

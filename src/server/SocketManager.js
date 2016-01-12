@@ -14,6 +14,7 @@ var SocketManager = function(logger) {
     // Provide getter for sockets
     Socket.prototype.getTable = TableManager.prototype.get.bind(this.tables);
     Socket.prototype.checkTable = TableManager.prototype.checkTable.bind(this.tables);
+    Socket.prototype.onClose = SocketManager.prototype.onClose.bind(this);
 };
 
 
@@ -35,6 +36,10 @@ SocketManager.prototype.start = function(options) {
 
 SocketManager.prototype.stop = function() {
     this._wss.close();
+};
+
+SocketManager.prototype.onClose = function(uuid) {
+    delete this.sockets[uuid];
 };
 
 module.exports = SocketManager;
