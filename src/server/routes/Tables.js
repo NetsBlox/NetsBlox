@@ -26,7 +26,7 @@ module.exports = [
 
             log(username +' requested friend list');
 
-            warn('returning ALL active sockets not at the table');
+            warn('returning ALL active sockets');
             for (var i = uuids.length; i--;) {
                 socket = this.sockets[uuids[i]];
                 if (socket.username !== username) {

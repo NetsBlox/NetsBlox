@@ -3,7 +3,8 @@
  */
 'use strict';
 var counter = 0;
-    
+var CONSTANTS = require(__dirname + '/../../common/Constants');
+
 var NetsBloxSocket = function(logger, socket) {
     var id = ++counter;
     this.id = id;
@@ -134,6 +135,10 @@ NetsBloxSocket.prototype.send = function(msg) {
 
 NetsBloxSocket.prototype.getState = function() {
     return this._socket.readyState;
+};
+
+NetsBloxSocket.prototype.isVirtualUser = function() {
+    return this.username === CONSTANTS.GHOST.USER;
 };
 
 module.exports = NetsBloxSocket;
