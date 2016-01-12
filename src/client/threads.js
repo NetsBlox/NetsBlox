@@ -1892,6 +1892,7 @@ Process.prototype.reportLastAnswer = function () {
 // Process URI retrieval (interpolated)
 
 Process.prototype.createRPCUrl = function (rpc, params) {
+    // FIXME
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph),
         uuid = stage.sockets.uuid;
 
@@ -1983,15 +1984,16 @@ Process.prototype.reportStageHeight = function () {
 
 Process.prototype.doRegisterClient = function (message) {
     // Get the websocket manager
-    var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
-    stage.sockets.sendMessage('register ' + message);
+    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
+    // FIXME
+    ide.sockets.sendMessage('register ' + message);
 };
 
 Process.prototype.doSocketEvent = function (message) {
     // Get the websocket manager
-    var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
+    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
 
-    stage.sockets.sendMessage('message ' + message);
+    ide.sockets.sendMessage('message ' + message);
 };
 
 Process.prototype.doSocketMessage = function (name) {
