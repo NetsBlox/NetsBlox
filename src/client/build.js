@@ -26992,7 +26992,7 @@ WebSocketManager.prototype._onConnect = function() {
             '__new_project__'
             ].join('/');
     }
-    this.sendMessage(['join-table', tableName, this.uuid].join(' '));
+    this.sendMessage(['join-table', tableName, 'mySeat'].join(' '));
 };
 
 WebSocketManager.prototype.toggleNetwork = function() {
@@ -54684,6 +54684,7 @@ function TableMorph(ide) {
     // Get the users at the table
     this.ide = ide;
     this.seats = {};
+    this.seatLabels = {};
 
     this.init();
     this.name = localize('Table');
@@ -54695,6 +54696,9 @@ function TableMorph(ide) {
 
     this.isDraggable = false;
     this.drawNew();
+
+    // Set up callbacks for SeatMorphs
+    SeatMorph.prototype.inviteFriend = TableMorph.prototype.inviteFriend.bind(this);
 }
 
 // 'Inherit' from SpriteMorph
@@ -54720,21 +54724,32 @@ TableMorph.prototype.drawNew = function() {
     var cxt,
         padding = 4,
         radius = (Math.min(this.width(), this.height())-padding)/2,
-        center = padding + radius;
+        label,
+        seats,
+        center = padding + radius,
+        i;
         
 
+    // Remove the old seatLabels
+    seats = Object.keys(this.seatLabels);
+    for (i = seats.length; i--;) {
+        this.seatLabels[seats[i]].destroy();
+    }
+    
     this.image = newCanvas(this.extent());
     cxt = this.image.getContext('2d');
 
     // Draw the seats
-    var seats = Object.keys(this.seats),
-        angleSize = 2*Math.PI/seats.length,
+    var angleSize,
         angle = 0,
         len = TableMorph.COLORS.length,
         x,y;
 
+    seats = Object.keys(this.seats);
+    angleSize = 2*Math.PI/seats.length;
+
     cxt.textAlign = 'center';
-    for (var i = 0; i < seats.length; i++) {
+    for (i = 0; i < seats.length; i++) {
         cxt.fillStyle = TableMorph.COLORS[i%len];
         cxt.beginPath();
         cxt.moveTo(center, center);
@@ -54743,12 +54758,15 @@ TableMorph.prototype.drawNew = function() {
 
         cxt.lineTo(center, center);
         cxt.fill();
+
         // Write the seat name on the seat
-        // TODO: Change this to string morph
-        cxt.fillStyle = 'black';
         x = center + (0.75 *radius * Math.cos(angle+angleSize/2));
         y = center + (0.75 *radius * Math.sin(angle+angleSize/2));
-        cxt.fillText(seats[i], x, y);
+        // Create the label
+        label = new SeatMorph(localize(seats[i]), localize(this.seats[seats[i]]));
+        label.setCenter(new Point(x, y).translateBy(this.topLeft()));
+        this.add(label);
+        this.seatLabels[seats[i]] = label;
 
         angle += angleSize;
     }
@@ -54775,14 +54793,14 @@ TableMorph.prototype._createNewSeat = function (name) {
     this.ide.sockets.sendMessage('add-seat ' + name);
 };
 
-TableMorph.prototype.inviteFriend = function () {
+TableMorph.prototype.inviteFriend = function (seat) {
     // Ajax request
     var tablemates = Object.keys(this.seats)
         .map(seat => this.seats[seat]);
 
     SnapCloud.getFriendList(friends => {
         // Remove friends at the table
-        this._inviteFriendDialog(friends
+        this._inviteFriendDialog(seat, friends
             .filter(friend => tablemates.indexOf(friend) === -1));
         },
         function (err, lbl) {
@@ -54791,14 +54809,9 @@ TableMorph.prototype.inviteFriend = function () {
     );
 };
 
-TableMorph.prototype._inviteFriendDialog = function (friends) {
+TableMorph.prototype._inviteFriendDialog = function (seat, friends) {
     // Create a list of clients to invite (retrieve from server - ajax)
-    // TODO
-
     // Allow the user to select the person and seat
-    // TODO
-
-    // Ask for a new seat name
     var dialog = new DialogBoxMorph().withKey('inviteFriend'),
         frame = new AlignmentMorph('column', 7),
         listField,
@@ -54838,7 +54851,7 @@ TableMorph.prototype._inviteFriendDialog = function (friends) {
             // TODO: Add the friend to the given seat
             // For now, I might just make a new seat on the server
             console.log('inviting friend! (' + friend + ')');
-            myself._inviteFriend(friend);
+            myself._inviteFriend(friend, seat);
         }
         ok.call(this);
     };
@@ -54900,8 +54913,24 @@ TableMorph.prototype.createNewSeat = function () {
 // Create the available blocks
 // TODO
 
-// Fix the icon for the table
-// TODO
+SeatMorph.prototype = new StringMorph();
+SeatMorph.prototype.constructor = SeatMorph;
+SeatMorph.uber = StringMorph.prototype;
+
+function SeatMorph(name, user) {
+    this.name = name;
+    this.user = user;
+    SeatMorph.uber.init.call(this, this.name);
+}
+
+SeatMorph.prototype.mouseClickLeft = function() {
+    if (!this.user) {
+        this.inviteFriend(this.name);
+        console.log('inviting user to seat ' + this.name);
+    } else {
+        console.log('occupied! (' + this.user + ')');
+    }
+};
 
 ProjectsMorph.prototype = new ScrollFrameMorph();
 ProjectsMorph.prototype.constructor = ProjectsMorph;
@@ -54939,19 +54968,6 @@ ProjectsMorph.prototype.updateTable = function() {
         hint: 'Add a seat to the table',
         left: this.table.right() + padding*4
     });
-
-    // Draw the "invite" button
-    // TODO: Finish me!
-    this._addButton({
-        selector: 'inviteFriend',
-        icon: 'speechBubbleOutline',
-        hint: 'Invite a friend to the table',
-        left: this.table.right() + padding*4,
-        top: btn.bottom() + padding
-    });
-
-    // TODO
-    //speechBubbleOutline
 
     // Draw the "remove seat" button
     // TODO

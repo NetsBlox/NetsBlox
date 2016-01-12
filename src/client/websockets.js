@@ -117,7 +117,7 @@ WebSocketManager.prototype._onConnect = function() {
             '__new_project__'
             ].join('/');
     }
-    this.sendMessage(['join-table', tableName, this.uuid].join(' '));
+    this.sendMessage(['join-table', tableName, 'mySeat'].join(' '));
 };
 
 WebSocketManager.prototype.toggleNetwork = function() {
