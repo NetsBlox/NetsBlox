@@ -9,7 +9,8 @@ var vantage = require('vantage')(),
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
     ],
-    CONSTANTS = require('../../common/Constants');
+    CONSTANTS = require('../../common/Constants'),
+    NO_USER_LABEL = '<vacant>';
 
 // Set the banner
 banner = ['\n'+
@@ -64,10 +65,13 @@ NetsBloxVantage.prototype.initGroupManagement = function(server) {
                 text = tables.map(function(table) {
                     var clients = Object.keys(table.seats)
                         .map(seat => {
-                            let client = table.seats[seat] ? 
-                                table.seats[seat].username : '<ghost user>';
+                            let client = table.seats[seat],
+                                username = NO_USER_LABEL;
+                            if (client) {
+                                username = client.isVirtualUser() ? '<virtual user>' : client.username;
+                            }
 
-                            return `\t${seat}: ${client}`;
+                            return `\t${seat}: ${username}`;
                         });
 
                     return `${table.uuid}:\n${clients.join('\n')}\n`;
