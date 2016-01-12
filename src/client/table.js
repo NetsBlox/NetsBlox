@@ -91,6 +91,7 @@ function TableMorph(ide) {
 
     this.init();
     this.name = localize('Table');
+    this.uuid = null;
 
     // TODO: Make this dynamic
     this.silentSetWidth(TableMorph.SIZE);
@@ -110,9 +111,9 @@ function TableMorph(ide) {
     //}
 //})();
 
-TableMorph.prototype.update = function(name, seats) {
+TableMorph.prototype.update = function(uuid, seats) {
     // Update the seats, etc
-    // this.name = name;
+    this.uuid = uuid;
     this.seats = seats;
     this.version = Date.now();
 
@@ -178,32 +179,47 @@ TableMorph.prototype._createNewSeat = function (name) {
     this.ide.sockets.sendMessage('add-seat ' + name);
 };
 
-TableMorph.prototype.createNewSeat = function () {
+TableMorph.prototype.inviteFriend = function () {
+    // Ajax request
+    SnapCloud.getFriendList(
+        this._inviteFriendDialog.bind(this),  // on success
+        function (err, lbl) {
+            myself.ide.cloudError().call(null, err, lbl);
+        }
+    );
+};
+
+TableMorph.prototype._inviteFriendDialog = function (friends) {
+    // Create a list of clients to invite (retrieve from server - ajax)
+    // TODO
+
+    // Allow the user to select the person and seat
+    // TODO
+
     // Ask for a new seat name
-    // TODO
-
-    // Verify that it isn't already existing
-    // TODO
-
-    // on success, send a socket message to the server
-    // TODO
-    var dialog = new DialogBoxMorph().withKey('createSeat'),
-        frame = new ScrollFrameMorph(),
-        text = new TextMorph(''),
+    var dialog = new DialogBoxMorph().withKey('inviteFriend'),
+        frame = new AlignmentMorph('column', 7),
+        listField,
         ok = dialog.ok,
         myself = this,
-        size = 150,
+        size = 200,
         world = this.world();
 
     frame.padding = 6;
     frame.setWidth(size);
     frame.acceptsDrops = false;
-    frame.contents.acceptsDrops = false;
 
-    text.setWidth(size - frame.padding * 2);
-    text.setPosition(frame.topLeft().add(frame.padding));
-    text.enableSelecting();
-    text.isEditable = true;
+    listField = new ListMorph(friends);
+    listField.fixLayout = nop;
+    listField.edge = InputFieldMorph.prototype.edge;
+    listField.fontSize = InputFieldMorph.prototype.fontSize;
+    listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    listField.contrast = InputFieldMorph.prototype.contrast;
+    listField.drawNew = InputFieldMorph.prototype.drawNew;
+    listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+    listField.setWidth(size-2*frame.padding);
+
+    frame.add(listField);
 
     frame.setHeight(size-100);
     frame.fixLayout = nop;
@@ -214,12 +230,58 @@ TableMorph.prototype.createNewSeat = function () {
     frame.drawNew = InputFieldMorph.prototype.drawNew;
     frame.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
 
-    frame.addContents(text);
-    text.drawNew();
-
     dialog.ok = function () {
-        // Check that it doesn't already exist
-        var seatName = text.text;
+        var friend = listField.selected;
+        if (friend) {
+            // TODO: Add the friend to the given seat
+            // For now, I might just make a new seat on the server
+            console.log('inviting friend! (' + friend + ')');
+            myself._inviteFriend(friend);
+        }
+        ok.call(this);
+    };
+
+    dialog.labelString = 'Invite a Friend to the Table';
+    dialog.createLabel();
+    dialog.addBody(frame);
+    frame.drawNew();
+    dialog.addButton('ok', 'OK');
+    dialog.addButton('cancel', 'Cancel');
+    dialog.fixLayout();
+    dialog.drawNew();
+    dialog.popUp(world);
+    dialog.setCenter(world.center());
+};
+
+TableMorph.prototype._inviteFriend = function (friend, seat) {
+    // TODO: Change this to ajax
+    // Use inviteToTable service
+    SnapCloud.inviteToTable(friend, this.uuid, seat);
+};
+
+TableMorph.prototype.promptInvite = function (id, table, seat) {
+    // Create a confirm dialog about joining the group
+    var myself = this,
+        action = SnapCloud.invitationResponse.bind(SnapCloud, id, true),
+        dialog = new DialogBoxMorph(null, action);
+
+    dialog.cancel = function() {
+        SnapCloud.invitationResponse(id, false);
+        this.destroy();
+    };
+
+    dialog.askYesNo(
+        'Table Invitation',
+        localize('Would you like to join table ') +
+        '\n"' + table + '" at "' + seat + '"?',
+        this.ide.world()
+    );
+};
+
+TableMorph.prototype.createNewSeat = function () {
+    // Ask for a new seat name
+    var myself = this;
+    this.ide.prompt('New Seat Name', function (seatName) {
         if (myself.seats.hasOwnProperty(seatName)) {
             // Error! Seat exists
             new DialogBoxMorph().inform(
@@ -231,25 +293,7 @@ TableMorph.prototype.createNewSeat = function () {
         } else {
             myself._createNewSeat(seatName);
         }
-        console.error('seat already exists');
-        ok.call(this);
-    };
-
-    dialog.justDropped = function () {
-        text.edit();
-    };
-
-    dialog.labelString = 'New Seat Name';
-    dialog.createLabel();
-    dialog.addBody(frame);
-    frame.drawNew();
-    dialog.addButton('ok', 'OK');
-    dialog.addButton('cancel', 'Cancel');
-    dialog.fixLayout();
-    dialog.drawNew();
-    dialog.popUp(world);
-    dialog.setCenter(world.center());
-    text.edit();
+    }, null, 'exportProject');
 };
 // Create the available blocks
 // TODO
@@ -274,7 +318,8 @@ function ProjectsMorph(table, sliderColor) {
 ProjectsMorph.prototype.updateTable = function() {
     // Receive updates about the table from the server
     // TODO
-    var padding = 4;
+    var padding = 4,
+        btn;
 
     this.contents.destroy();
     this.contents = new FrameMorph(this);
@@ -285,12 +330,42 @@ ProjectsMorph.prototype.updateTable = function() {
     this.addContents(this.table);
 
     // Draw the "new seat" button
-    var newButton;
+    btn = this._addButton({
+        selector: 'createNewSeat',
+        icon: 'plus',
+        hint: 'Add a seat to the table',
+        left: this.table.right() + padding*4
+    });
+
+    // Draw the "invite" button
+    // TODO: Finish me!
+    this._addButton({
+        selector: 'inviteFriend',
+        icon: 'speechBubbleOutline',
+        hint: 'Invite a friend to the table',
+        left: this.table.right() + padding*4,
+        top: btn.bottom() + padding
+    });
+
+    // TODO
+    //speechBubbleOutline
+
+    // Draw the "remove seat" button
+    // TODO
+};
+
+ProjectsMorph.prototype._addButton = function(params) {
+    var selector = params.selector,
+        icon = params.icon,
+        hint = params.hint,
+        left = params.left || this.table.center().x,
+        top = params.top || this.table.center().y,
+        newButton;
 
     newButton = new PushButtonMorph(
         this.table,
-        'createNewSeat',
-        new SymbolMorph('plus', 12)
+        selector,
+        new SymbolMorph(icon, 12)
     );
     newButton.padding = 0;
     newButton.corner = 12;
@@ -303,18 +378,88 @@ ProjectsMorph.prototype.updateTable = function() {
     newButton.labelColor = TurtleIconMorph.prototype.labelColor;
     newButton.contrast = this.buttonContrast;
     newButton.drawNew();
-    newButton.hint = "Add a seat to the table";
+
+    if (hint) {
+        newButton.hint = hint;
+    }
+
     newButton.fixLayout();
-    newButton.setCenter(this.table.center());
-    newButton.setLeft(this.table.left() + this.table.width() + padding*4);
+    newButton.setLeft(left);
+    newButton.setTop(top);
 
     this.addContents(newButton);
-
-    // Draw the "remove seat" button
-    // TODO
-
-    //this.changed();
+    return newButton;
 };
+
+// Cloud extensions
+Cloud.prototype.invitationResponse = function (id, accepted) {
+    var myself = this,
+        args = [id, accepted, this.socketId()],
+        response = accepted ? 'joined table.' : 'invitation denied.';
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'invitationResponse',
+                function (response, url) {
+                    myself.ide.showMessage(response, 2);
+                    myself.disconnect();
+                },
+                function(err) {
+                    myself.ide.showMessage(err, 2);
+                },
+                args
+            );
+        },
+        function(err) {
+            myself.ide.showMessage(err, 2);
+        }
+    );
+    // TODO
+};
+
+Cloud.prototype.inviteToTable = function () {
+    var myself = this,
+        args = arguments;
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'inviteToTable',
+                myself.disconnect.bind(myself),
+                nop,
+                args
+            );
+        },
+        nop
+    );
+};
+
+Cloud.prototype.getFriendList = function (callBack, errorCall) {
+    var myself = this;
+    this.reconnect(
+        function () {
+            myself.callService(
+                'getFriendList',
+                function (response, url) {
+                    var ids = Object.keys(response[0] || {});
+                    callBack.call(null, ids, url);
+                    myself.disconnect();
+                },
+                errorCall
+            );
+        },
+        errorCall
+    );
+};
+
+Cloud.prototype.socketId = function () {
+    var ide = world.children.find(function(child) {
+        return child instanceof IDE_Morph;
+    });
+    return ide.sockets.uuid;
+};
+
 
 // Table Editor
 //function Table

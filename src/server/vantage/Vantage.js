@@ -60,7 +60,7 @@ NetsBloxVantage.prototype.initGroupManagement = function(server) {
         .action(function(args, cb) {
             // Get all groups
             var header = '* * * * * * * Tables * * * * * * * \n',
-                tables = R.values(server.socketManager.tables.tables),
+                tables = R.values(server.tables.tables),
                 text = tables.map(function(table) {
                     var clients = Object.keys(table.seats)
                         .map(seat => {

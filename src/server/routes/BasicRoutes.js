@@ -2,8 +2,9 @@
 var R = require('ramda'),
     Utils = require('../ServerUtils.js'),
     UserAPI = require('./Users'),
+    TableAPI = require('./Tables'),
     ProjectAPI = require('./Projects'),
-    EXTERNAL_API = R.map(R.partial(R.omit,['Handler']), UserAPI.concat(ProjectAPI)),
+    EXTERNAL_API = R.map(R.partial(R.omit,['Handler']), UserAPI.concat(ProjectAPI).concat(TableAPI)),
     GameTypes = require('../GameTypes'),
 
     debug = require('debug'),
@@ -143,7 +144,7 @@ module.exports = [
                     req.session.username = req.body.__u;
                     log('"'+req.session.username+'" has logged in.');
                     // Associate the websocket with the username
-                    this.socketManager.sockets[req.body.__sId].onLogin(req.body.__u);
+                    this.sockets[req.body.__sId].onLogin(req.body.__u);
                     return res.send(Utils.serializeArray(EXTERNAL_API));
                 }
                 log('Could not find user "'+req.body.__u+'"');

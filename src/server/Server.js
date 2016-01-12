@@ -38,6 +38,7 @@ var BASE_CLASSES = [
 ];
 var Server = function(opts) {
     this._logger = new Logger('NetsBlox');
+    SocketManager.call(this, this._logger);
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
 
@@ -49,10 +50,11 @@ var Server = function(opts) {
     transporter.use('compile', markdown());
 
     // Group and RPC Managers
-    this.socketManager = new SocketManager(this._logger);
-    this.rpcManager = new RPCManager(this._logger, this.socketManager);
+    this.rpcManager = new RPCManager(this._logger, this);
     this.mobileManager = new MobileManager(transporter);
 };
+
+_.extend(Server.prototype, SocketManager.prototype);
 
 Server.prototype.connectToMongo = function(callback) {
     MongoClient.connect(this.opts.mongoURI, (err, db) => {
@@ -153,7 +155,7 @@ Server.prototype.start = function(done) {
     done = done || Utils.nop;
     self.connectToMongo(function (err) {
         self._server = self.app.listen(self.opts.port, function() {
-            self.socketManager.start({server: self._server});
+            SocketManager.prototype.start.call(self, {server: self._server});
             // Enable Vantage
             if (self.opts.vantage) {
                 new Vantage(self).start();
@@ -165,7 +167,7 @@ Server.prototype.start = function(done) {
 
 Server.prototype.stop = function(done) {
     done = done || Utils.nop;
-    this.socketManager.stop();
+    SocketManager.prototype.stop.call(this);
     this._server.close(done);
 };
 

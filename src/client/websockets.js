@@ -13,20 +13,32 @@ var WebSocketManager = function (ide) {
 };
 
 WebSocketManager.MessageHandlers = {
+    // Receive an assigned uuid
     'uuid': function(data) {
         this.uuid = data.join(' ');
         this._onConnect();
     },
+
+    // Game play message
     'message': function(data) {
         var messageType = data.shift(),
             content = JSON.parse(data.join(' ') || null);
 
+        // TODO: filter for gameplay and pass to debugger
         this.onMessageReceived(messageType, content, 'role');
     },
+
+    // Update on the current seats at the given table
     'table-seats': function(data) {
         var name = data.shift(),
             seats = JSON.parse(data.join(' '));
         this.ide.table.update(name, seats);
+    },
+
+    // Receive an invite to join a table
+    'table-invitation': function(data) {
+        console.log('Received invite to table:', data);
+        this.ide.table.promptInvite.apply(this.ide.table, data);
     }
 };
 

@@ -3,13 +3,14 @@
 
 var WebSocketServer = require('ws').Server,
     TableManager = require('./groups/TableManager'),
-    Socket = require('./groups/NetsBloxSocket');
+    Socket = require('./groups/NetsBloxSocket'),
+    logger;
 
-var SocketManager = function(logger) {
-    this._logger = logger.fork('SocketManager');
+var SocketManager = function(_logger) {
+    logger = _logger.fork('SocketManager');
     this._wss = null;
     this.sockets = {};
-    this.tables = new TableManager(this._logger);
+    this.tables = new TableManager(logger);
 
     // Provide getter for sockets
     Socket.prototype.getTable = TableManager.prototype.get.bind(this.tables);
@@ -26,10 +27,10 @@ var SocketManager = function(logger) {
  */
 SocketManager.prototype.start = function(options) {
     this._wss = new WebSocketServer(options);
-    this._logger.info('WebSocket server started!');
+    logger.info('WebSocket server started!');
 
     this._wss.on('connection', rawSocket => {
-        var socket = new Socket(this._logger, rawSocket);
+        var socket = new Socket(logger, rawSocket);
         this.sockets[socket.uuid] = socket;
     });
 };
@@ -40,6 +41,20 @@ SocketManager.prototype.stop = function() {
 
 SocketManager.prototype.onClose = function(uuid) {
     delete this.sockets[uuid];
+};
+
+SocketManager.prototype.socketsFor = function(username) {
+    var uuids = Object.keys(this.sockets),
+        sockets = [],
+        socket;
+
+    for (var i = uuids.length; i--;) {
+        socket = this.sockets[uuids[i]];
+        if (socket.username === username) {
+            sockets.push(socket);
+        }
+    }
+    return sockets;
 };
 
 module.exports = SocketManager;

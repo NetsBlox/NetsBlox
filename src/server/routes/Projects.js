@@ -9,6 +9,7 @@ var PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'Media
 
     debug = require('debug'),
     log = debug('NetsBlox:API:Projects:log'),
+    warn = debug('NetsBlox:API:Projects:warn'),
     info = debug('NetsBlox:API:Projects:info');
 
 var createSerializedTable = function(info) {
