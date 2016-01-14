@@ -28,6 +28,7 @@ var NetsBloxVantage = function(server) {
     vantage
         .command('user <username>', 'Get info about a specific user')
         .option('-t, --tables', 'Get the user\'s saved tables')
+        .option('-u, --update', 'Update the user\'s schema')
         .alias('u')
         .action( (args, cb) => {
             var username = args.username;
@@ -41,6 +42,11 @@ var NetsBloxVantage = function(server) {
                 }
                 if (args.options.tables) {
                     console.log(user._saveable().tables);
+                } else if (args.options.update) {
+                    user.tables = user.tables || [];
+                    delete user.projects;
+                    user.save();
+                    console.log('User updated!');
                 } else {
                     console.log(user._saveable());
                 }
