@@ -4,6 +4,7 @@ var express = require('express'),
     _ = require('lodash'),
     Utils = _.extend(require('./Utils'), require('./ServerUtils.js')),
     SocketManager = require('./SocketManager'),
+    TableManager = require('./groups/TableManager'),
     RPCManager = require('./rpc/RPCManager'),
     MobileManager = require('./mobile/MobileManager'),
     Storage = require('./storage/Storage'),
@@ -29,11 +30,11 @@ var express = require('express'),
     cookieParser = require('cookie-parser');
 
 var BASE_CLASSES = [
-    SocketManager
+    SocketManager,
+    TableManager
 ];
 var Server = function(opts) {
     this._logger = new Logger('NetsBlox');
-    SocketManager.call(this, this._logger);
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
 
@@ -48,9 +49,12 @@ var Server = function(opts) {
     // Group and RPC Managers
     this.rpcManager = new RPCManager(this._logger, this);
     this.mobileManager = new MobileManager(transporter);
+
+    BASE_CLASSES.forEach(BASE => BASE.call(this, this._logger));
 };
 
-_.extend(Server.prototype, SocketManager.prototype);
+var classes = [Server].concat(BASE_CLASSES).map(fn => fn.prototype);
+_.extend.apply(null, classes);
 
 Server.prototype.configureRoutes = function() {
     this.app.use(express.static(__dirname + '/../client/'));

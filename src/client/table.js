@@ -93,6 +93,7 @@ function TableMorph(ide) {
     this.init();
     this.name = localize('Table');
     this.uuid = null;
+    this.nextUuid = null;  // next table id
 
     // TODO: Make this dynamic
     this.silentSetWidth(TableMorph.SIZE);
@@ -587,6 +588,7 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
                     SnapCloud.disconnect();
                     myself.ide.source = 'cloud';
                     myself.ide.droppedText(response[0].SourceCode);
+                    myself.ide.table.nextUuid = proj.TableUuid;
                     if (proj.Public === 'true') {
                         location.hash = '#present:Username=' +
                             encodeURIComponent(SnapCloud.username) +
@@ -601,6 +603,49 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
         myself.ide.cloudError()
     );
     this.destroy();
+};
+
+IDE_Morph.prototype._loadTable = function () {
+    if (this.table.nextUuid) {
+        // try to load this table
+    }
+};
+
+IDE_Morph.prototype.rawOpenCloudDataString = function (str) {
+    var model;
+    StageMorph.prototype.hiddenPrimitives = {};
+    StageMorph.prototype.codeMappings = {};
+    StageMorph.prototype.codeHeaders = {};
+    StageMorph.prototype.enableCodeMapping = false;
+    StageMorph.prototype.enableInheritance = false;
+    if (Process.prototype.isCatchingErrors) {
+        try {
+            model = this.serializer.parse(str);
+            this.serializer.loadMediaModel(model.childNamed('media'));
+            this.serializer.openProject(
+                this.serializer.loadProjectModel(
+                    model.childNamed('project'),
+                    this
+                ),
+                this
+            );
+            // Join the table
+            this._loadTable();
+        } catch (err) {
+            this.showMessage('Load failed: ' + err);
+        }
+    } else {
+        model = this.serializer.parse(str);
+        this.serializer.loadMediaModel(model.childNamed('media'));
+        this.serializer.openProject(
+            this.serializer.loadProjectModel(
+                model.childNamed('project'),
+                this
+            ),
+            this
+        );
+    }
+    this.stopFastTracking();
 };
 
 

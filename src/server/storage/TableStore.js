@@ -9,9 +9,9 @@ class TableStore {
         this._tables = db.collection('tables');
     }
 
-    get(leaderId, name, callback) {
+    get(uuid, callback) {
         // Get the table from the global store
-        this._tables.findOne({leaderId, name}, (e, data) => {
+        this._tables.findOne({uuid}, (e, data) => {
             var params = {
                 logger: this._logger,
                 db: this._tables,
@@ -20,10 +20,6 @@ class TableStore {
             // The returned table is read-only (no user set)
             callback(e, data ? new Table(params) : null);
         });
-    }
-
-    get(uuid, callback) {
-        // TODO: Get the table from 
     }
 
     // Create table from ActiveTable (request projects from clients)
@@ -65,23 +61,37 @@ class Table extends DataWrapper {
             }
 
             // create the table from the projects
-            var content = {
-                uuid: this._table.uuid,
-                name: this._table.name,
-                leaderId: this._table.leader.username,
-                seatOwners: {},
-                seats: {}
-            };
+            var seats = Object.keys(this._table.seats),
+                socket,
+                k,
+                content = {
+                    uuid: this._table.uuid,
+                    name: this._table.name,
+                    leaderId: this._table.leader.username,
+                    seatOwners: {},
+                    seats: {}
+                };
 
-            console.log('arguments:', arguments);
-            for (var i = sockets.length; i--;) {
-                // seat content
-                content.seats[sockets[i]._seatId] = projects[i];
+            for (var i = seats.length; i--;) {
+                socket = this._table.seats[seats[i]];
                 // seat owners
-                content.seatOwners[sockets[i]._seatId] = sockets[i].username;
+                content.seatOwners[seats[i]] = socket ? socket.username : null;
+
+                k = sockets.indexOf(socket);
+                if (k !== -1) {
+                    // seat content
+                    content.seats[seats[i]] = projects[k];
+                } else {
+                    content.seats[seats[i]] = null;
+                }
             }
             callback(null, content);
         });
+    }
+
+    prepare() {
+        // regenerate the uuid
+        this.uuid = `${this.leaderId}/${this.name}`;
     }
 
     // Override

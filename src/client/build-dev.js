@@ -26995,9 +26995,20 @@ WebSocketManager.prototype.setGameType = function(gameType) {
 
 WebSocketManager.prototype._onConnect = function() {
     // FIXME: Fix these tmp settings
-    var tableName = this.ide.projectName || '__new_project__';
+    var tableUuid = this.ide.table.uuid,
+        tableName = this.ide.table.name || '__new_project__';
+        
 
-    this.sendMessage(['create-table', tableName, 'mySeat'].join(' '));
+    // Set the username
+    // FIXME: This is insecure!!!
+    if (SnapCloud.username) {
+        this.sendMessage('username ' + SnapCloud.username);
+    }
+    if (this.ide.table.uuid) {
+        this.sendMessage(['join-table', tableUuid, tableName, 'mySeat'].join(' '));
+    } else {
+        this.sendMessage(['create-table', tableName, 'mySeat'].join(' '));
+    }
 };
 
 WebSocketManager.prototype.toggleNetwork = function() {
@@ -54735,6 +54746,7 @@ function TableMorph(ide) {
     this.init();
     this.name = localize('Table');
     this.uuid = null;
+    this.nextUuid = null;  // next table id
 
     // TODO: Make this dynamic
     this.silentSetWidth(TableMorph.SIZE);
@@ -55229,6 +55241,7 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
                     SnapCloud.disconnect();
                     myself.ide.source = 'cloud';
                     myself.ide.droppedText(response[0].SourceCode);
+                    myself.ide.table.nextUuid = proj.TableUuid;
                     if (proj.Public === 'true') {
                         location.hash = '#present:Username=' +
                             encodeURIComponent(SnapCloud.username) +
@@ -55243,6 +55256,49 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
         myself.ide.cloudError()
     );
     this.destroy();
+};
+
+IDE_Morph.prototype._loadTable = function () {
+    if (this.table.nextUuid) {
+        // try to load this table
+    }
+};
+
+IDE_Morph.prototype.rawOpenCloudDataString = function (str) {
+    var model;
+    StageMorph.prototype.hiddenPrimitives = {};
+    StageMorph.prototype.codeMappings = {};
+    StageMorph.prototype.codeHeaders = {};
+    StageMorph.prototype.enableCodeMapping = false;
+    StageMorph.prototype.enableInheritance = false;
+    if (Process.prototype.isCatchingErrors) {
+        try {
+            model = this.serializer.parse(str);
+            this.serializer.loadMediaModel(model.childNamed('media'));
+            this.serializer.openProject(
+                this.serializer.loadProjectModel(
+                    model.childNamed('project'),
+                    this
+                ),
+                this
+            );
+            // Join the table
+            this._loadTable();
+        } catch (err) {
+            this.showMessage('Load failed: ' + err);
+        }
+    } else {
+        model = this.serializer.parse(str);
+        this.serializer.loadMediaModel(model.childNamed('media'));
+        this.serializer.openProject(
+            this.serializer.loadProjectModel(
+                model.childNamed('project'),
+                this
+            ),
+            this
+        );
+    }
+    this.stopFastTracking();
 };
 
 

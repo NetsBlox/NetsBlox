@@ -7,10 +7,20 @@ var ActiveTable = function(logger, name, leader) {
     this.name = name;
     this._logger = logger.fork('ActiveTable:' + uuid);
     this.uuid = uuid;
-    // TODO: Add the server routing logic
-    this.seats = {};
+
+    // Seats
+    this.seats = {};  // actual occupants
+    this.seatOwners = {};
+
     this.leader = leader;
     this._logger.log('created!');
+};
+
+ActiveTable.fromStore = function(logger, socket, data) {
+    var table = new ActiveTable(logger, data.name, socket);
+    // Set up the seats
+    table.seatOwners = data.seatOwners;
+    return table;
 };
 
 ActiveTable.createUUID = function(leader, name) {
@@ -19,12 +29,14 @@ ActiveTable.createUUID = function(leader, name) {
 
 ActiveTable.prototype.add = function(socket, seat) {
     // FIXME: verify that the seat exists
-    if (this.seats[seat] === undefined) {  // Seat doesn't exist or is occupied
-        this._logger.warn('Cannot add ' + (socket.username || socket.uuid) + ' to ' + seat);
+    if (this.seatOwners[seat] !== socket.username &&
+            !socket.isVirtualUser()) {  // virtual clients can sit anywhere
+
+        this._logger.warn(`${socket.username} does not own seat ${seat}`);
         return;
     }
 
-    if (this.seats[seat] && this.seats[seat].isVirtualClient()) {
+    if (this.seats[seat] && this.seats[seat].isVirtualUser()) {
         // TODO: Shutdown the virtual client
     }
     this.seats[seat] = socket;
@@ -34,6 +46,7 @@ ActiveTable.prototype.add = function(socket, seat) {
 ActiveTable.prototype.createSeat = function(seat) {
     // TODO
     this.seats[seat] = null;
+    this.seatOwners[seat] = null;
     this.onSeatsChanged();
 };
 

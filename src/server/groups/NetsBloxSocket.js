@@ -75,18 +75,28 @@ NetsBloxSocket.MessageHandlers = {
         });
     },
 
+    'username': function(username) {  // FIXME: this is insecure!
+        console.log('setting username to ' + username);
+        this.username = username;
+    },
+
     'create-table': function(tableName, seat) {
         var table = this.createTable(this, tableName);
         table.createSeat(seat);
+        table.seatOwners[seat] = this.username;
         this.join(table, seat);
     },
 
-    'join-table': function(tableName, seat) {
-        var table = this.getTable(tableName, this.username);
-        if (table) {
+    'join-table': function(uuid, name, seat) {
+        this.getTable(uuid, name, (table) => {
+            // create the seat if need be (and if we are the owner)
+            if (!table.seats.hasOwnProperty(seat) && table.leader === this) {
+                this._logger.info(`creating seat ${seat} at ${table.uuid}`);
+                table.createSeat(seat);
+                table.seatOwners[seat] = this.username;
+            }
             return this.join(table, seat);
-        }
-        this._logger.error('Cannot join non-existent table "' + tableName + '"');
+        });
         
     },
     'add-seat': function(seatName) {
@@ -144,6 +154,16 @@ NetsBloxSocket.prototype.join = function(table, seat) {
     this._table = table;
     this._table.add(this, seat);
     this._seatId = seat;
+};
+
+NetsBloxSocket.prototype.assignSeat = function(seat, username) {
+    if (!this._table) {
+        return this._logger.warn('Cannot assign seat when table does not exist!');
+    }
+    if (!this._table.seatOwners.hasOwnProperty(seat)) {
+        return this._logger.warn('Cannot assign seat when seat does not exist!');
+    }
+    this._table.seatOwners[seat] = username;
 };
 
 NetsBloxSocket.prototype.leave = function() {

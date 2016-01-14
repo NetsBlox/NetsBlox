@@ -11,6 +11,9 @@ var ActiveTable = require('./ActiveTable');
 var TableManager = function(logger) {
     this._logger = logger.fork('Tables');
     this.tables = {};
+    if (!this.storage) {
+        this._logger.warn('missing storage component!');
+    }
 };
 
 TableManager.prototype.create = function(socket, name) {
@@ -22,8 +25,26 @@ TableManager.prototype.create = function(socket, name) {
     return this.tables[uuid];
 };
 
-TableManager.prototype.get = function(uuid) {
-    return this.tables[uuid] || null;
+TableManager.prototype.getTable = function(socket, uuid, name, callback) {
+    if (!this.tables[uuid]) {
+        // If table is not active, try to retrieve it from the db
+        this.storage.tables.get(uuid, (err, table) => {  // global only FIXME!
+            if (err || !table) {
+                this._logger.error(err || 'No table found for ' + uuid);
+                // If no table is found, create a new table for the user
+                table = table || new ActiveTable(this._logger, name, socket);
+                this.tables[uuid] = table;
+                return callback(table);
+            }
+            // Create an active table from the global stored table
+            var activeTable = ActiveTable.fromStore(this._logger, socket, table);
+            this.tables[uuid] = activeTable;
+            return callback(activeTable);
+        });
+        this._logger.trace('Checking database for table');
+    } else {
+        return callback(null, this.tables[uuid]);
+    }
 };
 
 TableManager.prototype.onCreate = function(id) {

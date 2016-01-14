@@ -10,12 +10,14 @@ var SocketManager = function(_logger) {
     logger = _logger.fork('SocketManager');
     this._wss = null;
     this.sockets = {};
-    this.tables = new TableManager(logger);
 
     // Provide getter for sockets
-    Socket.prototype.getTable = TableManager.prototype.get.bind(this.tables);
-    Socket.prototype.createTable = TableManager.prototype.create.bind(this.tables);
-    Socket.prototype.checkTable = TableManager.prototype.checkTable.bind(this.tables);
+    var self = this;
+    Socket.prototype.getTable = function(uuid, name, callback) {
+        return self.getTable(this, uuid, name, callback);
+    };
+    Socket.prototype.createTable = TableManager.prototype.create.bind(this);
+    Socket.prototype.checkTable = TableManager.prototype.checkTable.bind(this);
     Socket.prototype.onClose = SocketManager.prototype.onClose.bind(this);
 };
 

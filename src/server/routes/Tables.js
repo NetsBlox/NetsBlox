@@ -67,7 +67,7 @@ module.exports = [
                 tableId = req.body.tableId,
                 userId = req.body.userId,
                 socket,
-                table = this.tables.tables[tableId];
+                table = this.tables[tableId];
 
             // Get the socket at the given table seat
             socket = table.seats[seatId];
@@ -167,7 +167,7 @@ module.exports = [
 
             if (response) {
                 // Add the seatId to the table (if doesn't exist)
-                table = this.tables.tables[invite.table];
+                table = this.tables[invite.table];
                 if (!table) {
                     // TODO: Create table
                 }

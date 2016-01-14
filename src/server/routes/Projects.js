@@ -103,6 +103,8 @@ module.exports = [
                             seats = Object.keys(table.seatOwners)
                                 .map(seat => table.seats[seat]);
 
+                            // FIXME: returns null sometimes
+
                             return seats;
                         })
                         .reduce((l1, l2) => l1.concat(l2), []);  // flatten

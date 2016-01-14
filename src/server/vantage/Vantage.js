@@ -127,7 +127,7 @@ NetsBloxVantage.prototype.initGroupManagement = function(server) {
             if (args.uuid === 'all') {
                 result = Object.keys(server.sockets).map(function(uuid) {
                     var socket = server.sockets[uuid];
-                    return uuid + ':  ' + checkSocket(socket);
+                    return `${uuid} (${socket.username}):  ${checkSocket(socket)}`;
                 }).join('\n');
 
             } else {
