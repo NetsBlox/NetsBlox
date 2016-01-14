@@ -92,7 +92,7 @@ NetsBloxVantage.prototype.initGroupManagement = function(server) {
         .action(function(args, cb) {
             // Get all groups
             var header = '* * * * * * * Tables * * * * * * * \n',
-                tables = R.values(server.tables.tables),
+                tables = R.values(server.tables),
                 text = tables.map(function(table) {
                     var clients = Object.keys(table.seats)
                         .map(seat => {
@@ -125,12 +125,13 @@ NetsBloxVantage.prototype.initGroupManagement = function(server) {
                 checkSocket = NetsBloxVantage.checkSocket.bind(null, args);
 
             if (args.uuid === 'all') {
-                result = server.groupManager.sockets.map(function(socket) {
-                    var uuid = server.groupManager.socket2Uuid[socket.id];
+                result = Object.keys(server.sockets).map(function(uuid) {
+                    var socket = server.sockets[uuid];
                     return uuid + ':  ' + checkSocket(socket);
                 }).join('\n');
+
             } else {
-                var socket = server.groupManager.uuid2Socket[args.uuid];
+                var socket = server.sockets[args.uuid];
                 result = checkSocket(socket);
             }
             console.log(result);
@@ -148,8 +149,9 @@ NetsBloxVantage.prototype.initGroupManagement = function(server) {
         });
 };
 
-NetsBloxVantage.checkSocket = function(args, socket) {
-    var result = null;
+NetsBloxVantage.checkSocket = function(args, nbSocket) {
+    var socket = nbSocket._socket,
+        result = null;
 
     if (!socket) {
         result = 'socket not found';
