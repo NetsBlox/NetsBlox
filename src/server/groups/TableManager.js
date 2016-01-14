@@ -36,7 +36,9 @@ TableManager.prototype.getTable = function(socket, uuid, name, callback) {
                 this.tables[uuid] = table;
                 return callback(table);
             }
+
             // Create an active table from the global stored table
+            this._logger.trace(`retrieving table ${uuid} from database`);
             var activeTable = ActiveTable.fromStore(this._logger, socket, table);
             this.tables[uuid] = activeTable;
             return callback(activeTable);

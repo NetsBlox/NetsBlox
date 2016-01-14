@@ -111,10 +111,10 @@ NetsBloxSocket.MessageHandlers = {
 
 NetsBloxSocket.prototype._initialize = function(msg) {
     this._socket.on('message', data => {
-        this._logger.trace('received "' + data+ '"');
         var msg = data.split(' '),
             type = msg.shift();
 
+        this._logger.trace(`received "${type === 'project-response' ? type : data}" message`);
         if (NetsBloxSocket.MessageHandlers[type]) {
             NetsBloxSocket.MessageHandlers[type].apply(this, msg);
         } else {

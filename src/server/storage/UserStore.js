@@ -16,19 +16,26 @@ class UserStore {
     get (username, callback) {
         // Retrieve the user
         this._users.findOne({username}, (e, data) => {
-            callback(e, data ? new User(this._users, data) : null);
+            callback(e, data ? new User(this._logger, this._users, data) : null);
         });
     }
 
     new(username, email) {
-        return new User(this._users, {username, email});
+        return new User(this._logger, this._users, {username, email});
     }
 }
 
 class User extends DataWrapper {
 
-    constructor(db, data) {
+    constructor(logger, db, data) {
         super(db, data);
+        this._logger = logger.fork(data.username);
+    }
+
+    pretty() {
+        var prettyUser = this._saveable();
+        prettyUser.hash = '<omitted>';
+        return prettyUser;
     }
 
     prepare() {

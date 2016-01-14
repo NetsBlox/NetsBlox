@@ -22,7 +22,7 @@ banner = ['\n'+
     .join('\n');
 
 var NetsBloxVantage = function(server) {
-    this.initGroupManagement(server);
+    this.initTableManagement(server);
 
     // get user info
     vantage
@@ -41,14 +41,14 @@ var NetsBloxVantage = function(server) {
                     cb();
                 }
                 if (args.options.tables) {
-                    console.log(user._saveable().tables);
+                    console.log(user.pretty().tables);
                 } else if (args.options.update) {
                     user.tables = user.tables || [];
                     delete user.projects;
                     user.save();
                     console.log('User updated!');
                 } else {
-                    console.log(user._saveable());
+                    console.log(user.pretty());
                 }
                 cb();
             });
@@ -81,20 +81,20 @@ var NetsBloxVantage = function(server) {
 
     // Expose variables for easy debugging
     global.server = server;
-    global.com = server.groupManager;
+    global.storage = server.storage;
 };
 
-NetsBloxVantage.prototype.initGroupManagement = function(server) {
+NetsBloxVantage.prototype.initTableManagement = function(server) {
     vantage
-        .command('tables', 'List all tables')
-        .alias('t')
+        .command('tables', 'List all active tables')
+        .alias('ts')
         //.option('--with-names', 'Include the group names')
         .action(function(args, cb) {
             // Get all groups
             var header = '* * * * * * * Tables * * * * * * * \n',
                 tables = R.values(server.tables),
                 text = tables.map(function(table) {
-                    var clients = Object.keys(table.seats)
+                    var clients = Object.keys(table.seatOwners)
                         .map(seat => {
                             let client = table.seats[seat],
                                 username = NO_USER_LABEL;
@@ -109,6 +109,25 @@ NetsBloxVantage.prototype.initGroupManagement = function(server) {
                 }).join('\n');
             console.log(header+text);
             return cb();
+        });
+
+    vantage
+        .command('table <uuid>', 'Look up table info from global database')
+        .option('-o, --ownership', 'Show the ownership for the table seats')
+        .alias('t')
+        .action((args, cb) => {
+            var table = server.storage.tables.get(args.uuid, (err, table) => {
+                if (err || !table) {
+                    return cb(err || 'Table not found');
+                }
+                if (args.options.ownership) {
+                    console.log(table.seatOwners);
+                    return cb();
+                }
+                var prettyTable = table.pretty();
+                console.log(prettyTable);
+                cb();
+            });
         });
 
     // Check socket status

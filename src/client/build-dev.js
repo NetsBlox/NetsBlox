@@ -26912,7 +26912,6 @@ WebSocketManager.MessageHandlers = {
 
     // Receive an invite to join a table
     'table-invitation': function(data) {
-        console.log('Received invite to table:', data);
         this.ide.table.promptInvite.apply(this.ide.table, data);
     },
 

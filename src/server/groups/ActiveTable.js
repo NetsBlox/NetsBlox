@@ -20,6 +20,7 @@ ActiveTable.fromStore = function(logger, socket, data) {
     var table = new ActiveTable(logger, data.name, socket);
     // Set up the seats
     table.seatOwners = data.seatOwners;
+    console.log('data.seatOwners:', data.seatOwners);
     return table;
 };
 
@@ -44,7 +45,6 @@ ActiveTable.prototype.add = function(socket, seat) {
 };
 
 ActiveTable.prototype.createSeat = function(seat) {
-    // TODO
     this.seats[seat] = null;
     this.seatOwners[seat] = null;
     this.onSeatsChanged();
@@ -62,9 +62,9 @@ ActiveTable.prototype.onSeatsChanged = function() {
         sockets,
         msg;
 
-    Object.keys(this.seats)
+    Object.keys(this.seatOwners)
         .forEach(seat => {
-            seats[seat] = this.seats[seat] ? this.seats[seat].username : null;
+            seats[seat] = this.seatOwners[seat];
         });
 
     msg = [

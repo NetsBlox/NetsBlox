@@ -10,13 +10,22 @@ class Data {
         for (var i = keys.length; i--;) {
             this[keys[i]] = data[keys[i]];
         }
+        console.log('getting', this.pretty());
     }
 
     save() {
-        var data;
+        var data,
+            result;
+
         this.prepare();
         data = this._saveable();
-        this._db.save(data);
+        this._logger.trace('saving', this.pretty());
+        return this._db.save(data)
+            .then(result => {
+                if (result.writeError) {
+                    this._logger.error('could not save to database: ' + result.errmsg);
+                }
+            });
     }
 
     prepare() {
@@ -35,7 +44,11 @@ class Data {
     destroy() {
         this._db.deleteOne({_id: ObjectId(this._id)});  // jshint ignore:line
     }
+
+    pretty() {
+        return this._saveable();
+    }
 }
 
-Data.prototype.IGNORE_KEYS = ['_db'];
+Data.prototype.IGNORE_KEYS = ['_db', '_logger'];
 module.exports = Data;

@@ -44,7 +44,7 @@ class TableStore {
 class Table extends DataWrapper {
     constructor(params) {
         super(params.db, params.data || {});
-        this._logger = params.logger.fork('Table' + (this._table ? ':' + this._table.uuid : ''));
+        this._logger = params.logger.fork((this._table ? this._table.uuid : this.uuid));
         this._user = params.user;
         this._table = params.table;
     }
@@ -97,7 +97,9 @@ class Table extends DataWrapper {
     // Override
     save(callback) {
         if (!this._user) {
-            return this._save(callback);
+            this._logger.trace('saving globally only');
+            DataWrapper.prototype.save.call(this);
+            return callback(null);
             //return callback('Cannot save table without a user!');
         }
         this.collectProjects((err, content) => {
@@ -125,26 +127,49 @@ class Table extends DataWrapper {
 
         // Every time a local table is saved, it is saved for the user AND in the global store
         // Create the global table and save it
-        DataWrapper.prototype.save.call(this);
+        // Set the id...
+        this._db.replaceOne(
+            {uuid: table.uuid},  // search criteria
+            table,  // new value
+            {upsert: true},  // settings
+            (e, data) => {
+                if (e) {
+                    this._logger.error(e);
+                }
+                this._logger.trace('updated in global table database');
+                // Add this project to the user's list of tables and save the user
+                index = this._user.tables.reduce((i, table, index) => {
+                    if (i > -1) {
+                        return i;
+                    }
+                    return table.leaderId === this._table.leader.username &&
+                        table.name === this._table.name ? index : i;
+                }, -1);
 
-        // Add this project to the user's list of tables and save the user
-        this._user.tables = this._user.tables || [];
-        index = this._user.tables.reduce((i, table, index) => {
-            if (i > -1) {
-                return i;
+                console.log('table seatOwners:', table.seatOwners);
+                if (index === -1) {
+                    this._user.tables.push(table);
+                } else {
+                    this._user.tables.splice(index, 1, table);
+                }
+                this._user.save();
+                this._logger.log(`saved table "${table.uuid}" for ${this._user.username}`);
+                callback(null);
             }
-            return table.leaderId === this._table.leader.username &&
-                table.name === this._table.name ? index : i;
-        }, -1);
+        );
+    }
 
-        if (index === -1) {
-            this._user.tables.push(table);
-        } else {
-            this._user.tables.splice(index, 1, table);
-        }
-        this._user.save();
-        this._logger.log(`saved table "${table.uuid}" for ${this._user.username}`);
-        callback(null);
+    pretty() {
+        var prettyTable = this._saveable();
+        Object.keys(prettyTable.seats || {})
+            .forEach(seat => {
+                if (prettyTable.seats[seat]) {
+                    prettyTable.seats[seat] = '<project xml>';
+                }
+            });
+
+        return prettyTable;
+
     }
 
     destroy() {
@@ -155,7 +180,7 @@ class Table extends DataWrapper {
     }
 }
 
-var EXTRA_KEYS = ['_user', '_table', '_content', '_logger'];
+var EXTRA_KEYS = ['_user', '_table', '_content'];
 Table.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(EXTRA_KEYS);
 
 module.exports = TableStore;
