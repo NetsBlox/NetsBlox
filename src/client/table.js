@@ -194,6 +194,11 @@ TableMorph.prototype.inheritedVariableNames = function() {
     return [];
 };
 
+TableMorph.prototype.join = function (id) {
+    this.uuid = id;
+    //this.ide.sockets.sendMessage('join-table'
+};
+
 TableMorph.prototype._createNewSeat = function (name) {
     // Create the new seat
     this.ide.sockets.sendMessage('add-seat ' + name);
@@ -606,8 +611,12 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
 };
 
 IDE_Morph.prototype._loadTable = function () {
+    // Check if the table has diverged and optionally fork
+    // TODO
     if (this.table.nextUuid) {
-        // try to load this table
+        this.table.name = this.table.uuid.split('/').pop();  // FIXME
+        // try to load this table TODO
+        //this.table.uuid = 
     }
 };
 

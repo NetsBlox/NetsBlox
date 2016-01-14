@@ -71,6 +71,11 @@ module.exports = [
 
             // Get the socket at the given table seat
             socket = table.seats[seatId];
+            if (!socket) {  // user is not online
+                table.remove(seatId);
+                return res.send('user has been evicted!');
+            }
+
             if (socket.username === userId) {
                 // TODO: provide the option for userId to fork the table
                 // user at least needs SOME table FIXME FIXME
@@ -119,7 +124,6 @@ module.exports = [
             // If the user is online, send the invitation via ws to the browser
             inviteeSockets.forEach(socket => {
                 // Send the invite to the sockets
-                // Should the invitation have an id?
                 var msg = [
                     'table-invitation',
                     inviteId,
@@ -142,7 +146,6 @@ module.exports = [
             //  invitee
             //  tableId
             //  seatId
-            console.log('req.body:', req.body);
             var username = req.session.username,
                 inviteId = req.body.inviteId,
                 response = req.body.response === 'true',
@@ -152,7 +155,6 @@ module.exports = [
                 table;
 
 
-            console.log('response:', response);
             // Ignore if the invite no longer exists
             if (!invite) {
                 return res.status(404).send('ERROR: invite no longer exists');
@@ -177,6 +179,7 @@ module.exports = [
                 }
 
                 // Add the user to the table
+                table.seatOwners[invite.seat] = username;
                 socket.join(table, invite.seat);
 
                 // Persist this in the database

@@ -53,6 +53,7 @@ var Server = function(opts) {
     BASE_CLASSES.forEach(BASE => BASE.call(this, this._logger));
 };
 
+// Inherit from all the base classes
 var classes = [Server].concat(BASE_CLASSES).map(fn => fn.prototype);
 _.extend.apply(null, classes);
 

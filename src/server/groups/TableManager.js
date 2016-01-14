@@ -43,7 +43,7 @@ TableManager.prototype.getTable = function(socket, uuid, name, callback) {
         });
         this._logger.trace('Checking database for table');
     } else {
-        return callback(null, this.tables[uuid]);
+        return callback(this.tables[uuid]);
     }
 };
 
