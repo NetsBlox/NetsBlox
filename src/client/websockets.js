@@ -39,6 +39,17 @@ WebSocketManager.MessageHandlers = {
     'table-invitation': function(data) {
         console.log('Received invite to table:', data);
         this.ide.table.promptInvite.apply(this.ide.table, data);
+    },
+
+    'project-request': function(data) {
+        var id = data.shift(),
+            project = this.getSerializedProject(),
+            msg = [
+                'project-response',
+                id,
+                JSON.stringify(project)
+            ].join(' ');
+        this.sendMessage(msg);
     }
 };
 
@@ -109,15 +120,9 @@ WebSocketManager.prototype.setGameType = function(gameType) {
 
 WebSocketManager.prototype._onConnect = function() {
     // FIXME: Fix these tmp settings
-    var tableName = this.ide.projectName;
+    var tableName = this.ide.projectName || '__new_project__';
 
-    if (!tableName) {
-        tableName = [
-            (SnapCloud.username || this.uuid),
-            '__new_project__'
-            ].join('/');
-    }
-    this.sendMessage(['join-table', tableName, 'mySeat'].join(' '));
+    this.sendMessage(['create-table', tableName, 'mySeat'].join(' '));
 };
 
 WebSocketManager.prototype.toggleNetwork = function() {
@@ -228,6 +233,47 @@ WebSocketManager.prototype.startProcesses = function () {
     if (this.processes.length) {
         setTimeout(this.startProcesses.bind(this), 5);
     }
+};
+
+WebSocketManager.prototype.getSerializedProject = function(callBack, errorCall) {
+    var myself = this,
+        ide = this.ide,
+        pdata,
+        media;
+
+    ide.serializer.isCollectingMedia = true;
+    pdata = ide.serializer.serialize(ide.stage);
+    media = ide.hasChangedMedia ?
+            ide.serializer.mediaXML(ide.projectName) : null;
+    ide.serializer.isCollectingMedia = false;
+    ide.serializer.flushMedia();
+
+    // check if serialized data can be parsed back again
+    try {
+        ide.serializer.parse(pdata);
+    } catch (err) {
+        ide.showMessage('Serialization of program data failed:\n' + err);
+        throw new Error('Serialization of program data failed:\n' + err);
+    }
+    if (media !== null) {
+        try {
+            ide.serializer.parse(media);
+        } catch (err) {
+            ide.showMessage('Serialization of media failed:\n' + err);
+            throw new Error('Serialization of media failed:\n' + err);
+        }
+    }
+    ide.serializer.isCollectingMedia = false;
+    ide.serializer.flushMedia();
+
+    return {
+            ProjectName: ide.projectName,
+            SourceCode: pdata,
+            Media: media,
+            SourceSize: pdata.length,
+            MediaSize: media ? media.length : 0,
+            TableUuid: this.ide.table.uuid
+        };
 };
 
 WebSocketManager.prototype.destroy = function () {

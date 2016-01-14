@@ -6,6 +6,7 @@ var _ = require('lodash'),
     debug = require('debug'),
     log = debug('NetsBlox:API:Tables:log'),
     warn = debug('NetsBlox:API:Tables:warn'),
+    error = debug('NetsBlox:API:Tables:error'),
     info = debug('NetsBlox:API:Tables:info');
 
 // REMOVE
@@ -35,7 +36,7 @@ module.exports = [
             }
             log(Utils.serialize(resp));
             return res.send(Utils.serialize(resp));
-            //this._users.findOne({username: username}, function(e, user) {
+            //this.storage.users.get(username, function(e, user) {
                 //if (e) {
                     //return res.serverError(e);
                 //}
@@ -54,6 +55,32 @@ module.exports = [
                 //}
                 //return res.status(404);
             //});
+        }
+    },
+    {
+        Service: 'evictUser',
+        Parameters: 'userId,seatId,tableId',
+        Method: 'post',
+        Note: '',
+        Handler: function(req, res) {
+            var seatId = req.body.seatId,
+                tableId = req.body.tableId,
+                userId = req.body.userId,
+                socket,
+                table = this.tables.tables[tableId];
+
+            // Get the socket at the given table seat
+            socket = table.seats[seatId];
+            if (socket.username === userId) {
+                // TODO: provide the option for userId to fork the table
+                // user at least needs SOME table FIXME FIXME
+                log(`${userId} is evicted from table ${tableId}`);
+                socket.leave();
+            } else {
+                var err = `${userId} is not at ${seatId} at table ${tableId}`;
+                error(err);
+                return res.status(400).send(err);
+            }
         }
     },
     {

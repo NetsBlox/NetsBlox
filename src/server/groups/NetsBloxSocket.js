@@ -2,8 +2,31 @@
  * This is a socket for NetsBlox that wraps a standard WebSocket
  */
 'use strict';
-var counter = 0;
-var CONSTANTS = require(__dirname + '/../../common/Constants');
+var counter = 0,
+    CONSTANTS = require(__dirname + '/../../common/Constants'),
+    PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'MediaSize', 'TableUuid'],
+    R = require('ramda'),
+    parseXml = require('xml2js').parseString;
+
+var createSaveableProject = function(json, callback) {
+    var project = R.pick(PROJECT_FIELDS, json);
+    // Set defaults
+    project.Public = false;
+    project.Updated = new Date();
+
+    // Add the thumbnail,notes from the project content
+    var inProjectSource = ['Thumbnail', 'Notes'];
+
+    parseXml(project.SourceCode, (err, jsonSrc) => {
+        if (err) {
+            return callback(err);
+        }
+        inProjectSource.forEach(field => {
+            project[field] = jsonSrc[field.toLowerCase()];
+        });
+        callback(null, project);
+    });
+};
 
 var NetsBloxSocket = function(logger, socket) {
     var id = ++counter;
@@ -17,6 +40,7 @@ var NetsBloxSocket = function(logger, socket) {
 
     this.username = this.uuid;
     this._socket = socket;
+    this._projectRequests = {};  // saving
     this._initialize();
 
     // Provide a uuid
@@ -32,27 +56,40 @@ NetsBloxSocket.prototype.CLOSED = 3;
 
 // TODO: Every message should contain the sender and receiver
 NetsBloxSocket.MessageHandlers = {
-    'message': function(msg, rawMsg) {
+    'message': function() {
+        var rawMsg = Array.prototype.slice.call(arguments);
+        rawMsg.unshift('message');
         this.sendToTable(rawMsg);
     },
-    'save-project': function(msg) {
-        // Request the projects from all other peers at the table
-        // TODO
-        this.sendToTable('project-request ' + this._seatId);
+    'project-response': function(id) {
+        var content = Array.prototype.slice.call(arguments, 1).join(' '),
+            json = JSON.parse(content);
 
-        // Request the projects from all other peers at the table
-        // TODO
+        createSaveableProject(json, (err, project) => {
+            if (err) {
+                return this._projectRequests[id].call(null, err);
+            }
+            this._logger.log('created saveable project for request ' + id);
+            this._projectRequests[id].call(null, null, project);
+            delete this._projectRequests[id];
+        });
     },
 
-    'join-table': function(msg) {
-        var tableName = msg[0],  // Get the seat
-            seat = msg[1],
-            table;
-        table = this.getTable(tableName, this.username);
+    'create-table': function(tableName, seat) {
+        var table = this.createTable(this, tableName);
+        table.createSeat(seat);
         this.join(table, seat);
     },
-    'add-seat': function(msg) {
-        var seatName = msg[0];
+
+    'join-table': function(tableName, seat) {
+        var table = this.getTable(tableName, this.username);
+        if (table) {
+            return this.join(table, seat);
+        }
+        this._logger.error('Cannot join non-existent table "' + tableName + '"');
+        
+    },
+    'add-seat': function(seatName) {
         if (!this._table) {
             this._logger.error('can not create seat - user has no table!');
             return;
@@ -69,7 +106,7 @@ NetsBloxSocket.prototype._initialize = function(msg) {
             type = msg.shift();
 
         if (NetsBloxSocket.MessageHandlers[type]) {
-            NetsBloxSocket.MessageHandlers[type].call(this, msg, data);
+            NetsBloxSocket.MessageHandlers[type].apply(this, msg);
         } else {
             this._logger.warn('message "' + data + '" not recognized');
         }
@@ -89,10 +126,9 @@ NetsBloxSocket.prototype.onLogin = function(username) {
     this.username = username;
 
     // Update the user's table name
-    // TODO
-
-    // Update the user's table name
-    // TODO
+    if (this._table) {
+        this._table.update();
+    }
 };
 
 NetsBloxSocket.prototype.join = function(table, seat) {
@@ -139,6 +175,12 @@ NetsBloxSocket.prototype.getState = function() {
 
 NetsBloxSocket.prototype.isVirtualUser = function() {
     return this.username === CONSTANTS.GHOST.USER;
+};
+
+NetsBloxSocket.prototype.getProjectJson = function(callback) {
+    var id = ++counter;
+    this.send('project-request ' + id);
+    this._projectRequests[id] = callback;
 };
 
 module.exports = NetsBloxSocket;

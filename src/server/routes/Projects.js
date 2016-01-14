@@ -1,7 +1,6 @@
 'use strict';
 
-var PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'MediaSize'],
-    LIST_FIELDS = ['Notes', 'ProjectName', 'Public', 'Thumbnail', 'URL', 'Updated'],
+var LIST_FIELDS = ['Notes', 'ProjectName', 'Public', 'Thumbnail', 'URL', 'Updated', 'TableUuid'],
     R = require('ramda'),
     parseXml = require('xml2js').parseString,
     _ = require('lodash'),
@@ -11,21 +10,6 @@ var PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'Media
     log = debug('NetsBlox:API:Projects:log'),
     warn = debug('NetsBlox:API:Projects:warn'),
     info = debug('NetsBlox:API:Projects:info');
-
-var createSerializedTable = function(info) {
-    var project = R.pick(PROJECT_FIELDS, info);
-    // Set defaults
-    project.Public = false;
-    project.Updated = new Date();
-
-    // Add the thumbnail,notes from the project content
-    var inProjectSource = ['Thumbnail', 'Notes'];
-    inProjectSource.forEach(field => {
-        project[field] = parseXml(project.SourceCode)[field.toLowerCase()];
-    });
-
-    return project;
-};
 
 var getProjectIndexFrom = function(name, user) {
     for (var i = user.projects.length; i--;) {
@@ -57,13 +41,18 @@ var setProjectPublic = function(name, user, value) {
 module.exports = [
     {
         Service: 'saveProject',
-        Parameters: PROJECT_FIELDS.join(','),
+        Parameters: 'socketId',
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
-            var username = req.session.username;
-            info('Saving project "'+req.body.ProjectName+'" for '+username);
-            this._users.findOne({username}, (e, user) => {
+            var username = req.session.username,
+                socketId = req.body.socketId;
+
+            info('Initiating table save for ' + username);
+            this.storage.users.get(username, (e, user) => {
+                var table,
+                    activeTable;
+
                 if (e) {
                     return res.serverError(e);
                 }
@@ -72,29 +61,19 @@ module.exports = [
                     return res.status(400).send('ERROR: user not found');
                 }
 
-                // Add the project to the user's projects
-                var index = getProjectIndexFrom(req.body.ProjectName, user),
-                    project = createSerializedTable(req.body);
-
-                // Overwrite existing project, if appropriate
-                if (index !== -1) {
-                    info('Overwriting existing project ('+req.body.ProjectName+')');
-                    user.projects[index] = project;
-                } else {
-                    info('Creating new project ('+req.body.ProjectName+')');
-                    user.projects.push(project);
+                // Look up the user's table
+                activeTable = this.sockets[socketId]._table;
+                if (!activeTable) {
+                    return res.status(500).send('ERROR: active table not found');
                 }
 
-                // Save the new project list
-                this._users.update({username: username}, 
-                    {$set: {projects: user.projects}}, function(e, data) {
-                    var result = data.result;
-
-                    if (e || result.nModified === 0) {
-                        return res.status(500).send('ERROR: could not save project');
+                // Save the table
+                table = this.storage.tables.new(user, activeTable);
+                table.save(function(err) {
+                    if (err) {
+                        return res.status(500).send('ERROR: ' + err);
                     }
-                    log('Saved project "'+req.body.ProjectName+'" for '+username);
-                    return res.send('Project saved!');
+                    return res.send('table saved!');
                 });
             });
         }
@@ -107,7 +86,9 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username;
             log(username +' requested project list');
-            this._users.findOne({username: username}, function(e, user) {
+            this.storage.users.get(username, function(e, user) {
+                var projects,
+                    tables = user.tables || [];
                 if (e) {
                     return res.serverError(e);
                 }
@@ -116,8 +97,18 @@ module.exports = [
                     // TODO
 
                     // Get the projects
-                    user.projects = user.projects || [];
-                    var projects = R.map(R.partial(R.pick,LIST_FIELDS), user.projects);
+                    projects = tables.map(table => {
+                            var seats;
+
+                            seats = Object.keys(table.seatOwners)
+                                .map(seat => table.seats[seat]);
+
+                            return seats;
+                        })
+                        .reduce((l1, l2) => l1.concat(l2), []);  // flatten
+
+                    // Update this to parse the projects from the table list
+                    projects = R.map(R.partial(R.pick, LIST_FIELDS), projects);
                     info('Projects for '+username +' are '+JSON.stringify(
                         R.map(R.partialRight(Utils.getAttribute, 'ProjectName'),
                             projects)
@@ -131,57 +122,55 @@ module.exports = [
     },
     {
         Service: 'getProject',
-        Parameters: 'ProjectName',
+        Parameters: 'ProjectName,TableUuid',
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
             var username = req.session.username;
-            log(username +' requested project '+req.body.ProjectName);
-            this._users.findOne({username: username}, function(e, user) {
+            log(username + ' requested project ' + req.body.ProjectName);
+            this.storage.users.get(username, function(e, user) {
                 if (e) {
                     return res.serverError(e);
                 }
-                // Look up the project
-                var projectIndex = getProjectIndexFrom(req.body.ProjectName, user);
-                info('Found the project at index '+projectIndex);
 
-                if (projectIndex === -1) {
+                // For now, just return the project
+                var table = user.tables.find(table => table.uuid === req.body.TableUuid),
+                    project;
+
+                project = Object.keys(table.seatOwners)
+                    .filter(seat => table.seatOwners[seat] === username)
+                    .map(seat => table.seats[seat])
+                    .find(project => project.ProjectName === req.body.ProjectName);
+
+                if (!project) {
                     return res.send('ERROR: project not found!');
                 }
                 // Send the project to the user
-                var project = Utils.serialize(
-                    R.omit(['SourceCode', 'Media'], user.projects[projectIndex])
+                project = Utils.serialize(R.omit(['SourceCode', 'Media'], project)) + 
                 // Add the SourceCode portion
-                )+'&SourceCode=<snapdata>+'+encodeURIComponent(user.projects[projectIndex].SourceCode+
-                user.projects[projectIndex].Media)+'</snapdata>';
+                    '&SourceCode=<snapdata>+' + encodeURIComponent(project.SourceCode +
+                    project.Media)+'</snapdata>';
                 return res.send(project);
             });
         }
     },
     {
         Service: 'deleteProject',
-        Parameters: 'ProjectName',
+        Parameters: 'ProjectName,TableUuid',
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
             var username = req.session.username;
             log(username +' requested project '+req.body.ProjectName);
-            this._users.findOne({username: username}, function(e, user) {
+            this.storage.users.get(username, (e, user) => {
+                // TODO: Update this to the new table stuff
                 var index = getProjectIndexFrom(req.body.ProjectName, user);
                 if (index === -1) {
                     return res.send('ERROR: project not found');
                 }
                 user.projects.splice(index,1);
-                this._users.update({username: username}, 
-                    {$set: {projects: user.projects}}, function(e, data) {
-
-                    if (e || data.result.nModified === 0) {
-                        return res.status(500).send('ERROR: could not remove project');
-                    }
-                    log('Deleted project "'+req.body.ProjectName+'" for '+username);
-                    return res.send('project removed!');
-                });
-            }.bind(this));
+                user.save();
+            });
         }
     },
     {
@@ -194,11 +183,12 @@ module.exports = [
                 name = req.body.ProjectName;
 
             log(username +' is publishing project '+name);
-            this._users.findOne({username: username}, function(e, user) {
+            this.storage.users.get(username, function(e, user) {
                 if (e) {
                     res.serverError(e);
                 }
                 var success = setProjectPublic(name, user, true);
+                user.save();
                 if (success) {
                     return res.send('"'+name+'" is now shared!');
                 }
@@ -216,11 +206,12 @@ module.exports = [
                 name = req.body.ProjectName;
 
             log(username +' is unpublishing project '+name);
-            this._users.findOne({username: username}, function(e, user) {
+            this.storage.users.get(username, function(e, user) {
                 if (e) {
                     return res.serverError(e);
                 }
                 var success = setProjectPublic(name, user, false);
+                user.save();
                 if (success) {
                     return res.send('"'+name+'" is no longer shared');
                 }

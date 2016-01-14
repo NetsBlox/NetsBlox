@@ -24,6 +24,31 @@ banner = ['\n'+
 var NetsBloxVantage = function(server) {
     this.initGroupManagement(server);
 
+    // get user info
+    vantage
+        .command('user <username>', 'Get info about a specific user')
+        .option('-t, --tables', 'Get the user\'s saved tables')
+        .alias('u')
+        .action( (args, cb) => {
+            var username = args.username;
+            server.storage.users.get(username, function(err, user) {
+                if (err) {
+                    return cb(err);
+                }
+                if (!user) {
+                    console.log('user does not exist!');
+                    cb();
+                }
+                if (args.options.tables) {
+                    console.log(user._saveable().tables);
+                } else {
+                    console.log(user._saveable());
+                }
+                cb();
+            });
+        });
+
+    // get ghost user info
     vantage
         .command('ghost', 'Get info about ghost user')
         .action( (args, cb) => {

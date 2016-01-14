@@ -14,6 +14,7 @@ var SocketManager = function(_logger) {
 
     // Provide getter for sockets
     Socket.prototype.getTable = TableManager.prototype.get.bind(this.tables);
+    Socket.prototype.createTable = TableManager.prototype.create.bind(this.tables);
     Socket.prototype.checkTable = TableManager.prototype.checkTable.bind(this.tables);
     Socket.prototype.onClose = SocketManager.prototype.onClose.bind(this);
 };

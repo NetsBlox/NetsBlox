@@ -103,6 +103,7 @@ function TableMorph(ide) {
 
     // Set up callbacks for SeatMorphs
     SeatMorph.prototype.inviteFriend = TableMorph.prototype.inviteFriend.bind(this);
+    SeatMorph.prototype.evictUser = TableMorph.prototype.evictUser.bind(this);
 }
 
 // 'Inherit' from SpriteMorph
@@ -197,8 +198,20 @@ TableMorph.prototype._createNewSeat = function (name) {
     this.ide.sockets.sendMessage('add-seat ' + name);
 };
 
+// FIXME: create ide.confirm
+TableMorph.prototype.evictUser = function (user, seat) {
+    SnapCloud.evictUser(err => {
+            myself.ide.showMessage(err || 'evicted ' + user + '!');
+        },
+        function (err, lbl) {
+            myself.ide.cloudError().call(null, err, lbl);
+        },
+        [user, seat, this.uuid]
+    );
+};
+
 TableMorph.prototype.inviteFriend = function (seat) {
-    // Ajax request
+    // TODO: Check if the user is the leader
     var tablemates = Object.keys(this.seats)
         .map(seat => this.seats[seat]);
 
@@ -317,21 +330,51 @@ TableMorph.prototype.createNewSeat = function () {
 // Create the available blocks
 // TODO
 
-SeatMorph.prototype = new StringMorph();
+SeatMorph.prototype = new AlignmentMorph();
 SeatMorph.prototype.constructor = SeatMorph;
-SeatMorph.uber = StringMorph.prototype;
+SeatMorph.uber = AlignmentMorph.prototype;
 
 function SeatMorph(name, user) {
     this.name = name;
     this.user = user;
-    SeatMorph.uber.init.call(this, this.name);
+    this.init('column', 4);
+    //var text = this.name + '\n(' + this.user + ')';
+    //SeatMorph.uber.init.call(this, text);
+    this.drawNew();
 }
+
+SeatMorph.prototype.drawNew = function() {
+    if (this._seatLabel) {
+        this._seatLabel.destroy();
+        this._userLabel.destroy();
+    }
+
+    this._seatLabel = new StringMorph(
+        this.name,
+        14,
+        null,
+        true,
+        false
+    );
+    this._userLabel = new StringMorph(
+        this.user || '<empty>',
+        14,
+        null,
+        false,
+        true
+    );
+    this.add(this._seatLabel);
+    this.add(this._userLabel);
+    this.fixLayout();
+};
 
 SeatMorph.prototype.mouseClickLeft = function() {
     if (!this.user) {
         this.inviteFriend(this.name);
-        console.log('inviting user to seat ' + this.name);
     } else {
+        this.evictUser(this.user, this.name);
+        // Ask to evict
+        // TODO
         console.log('occupied! (' + this.user + ')');
     }
 };
@@ -476,11 +519,78 @@ Cloud.prototype.getFriendList = function (callBack, errorCall) {
     );
 };
 
+Cloud.prototype.evictUser = function(onSuccess, onFail, args) {
+    var myself = this;
+    this.reconnect(
+        function () {
+            myself.callService(
+                'evictUser',
+                function () {
+                    onSuccess.call(null);
+                    myself.disconnect();
+                },
+                onFail,
+                args
+            );
+        },
+        onFail
+    );
+};
+
 Cloud.prototype.socketId = function () {
     var ide = world.children.find(function(child) {
         return child instanceof IDE_Morph;
     });
     return ide.sockets.uuid;
+};
+
+// Override
+Cloud.prototype.saveProject = function (ide, callBack, errorCall) {
+    var myself = this;
+    myself.reconnect(
+        function () {
+            myself.callService(
+                'saveProject',
+                function (response, url) {
+                    callBack.call(null, response, url);
+                    myself.disconnect();
+                },
+                errorCall,
+                [
+                    myself.socketId()
+                ]
+            );
+        },
+        errorCall
+    );
+};
+
+// Override
+ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
+    var myself = this;
+    console.log('tableuuid is', proj.TableUuid);
+    SnapCloud.reconnect(
+        function () {
+            SnapCloud.callService(
+                'getProject',
+                function (response) {
+                    SnapCloud.disconnect();
+                    myself.ide.source = 'cloud';
+                    myself.ide.droppedText(response[0].SourceCode);
+                    if (proj.Public === 'true') {
+                        location.hash = '#present:Username=' +
+                            encodeURIComponent(SnapCloud.username) +
+                            '&ProjectName=' +
+                            encodeURIComponent(proj.ProjectName);
+                    }
+                },
+                myself.ide.cloudError(),
+                [proj.ProjectName, proj.TableUuid]
+            );
+        },
+        myself.ide.cloudError()
+    );
+    this.destroy();
 };
 
 

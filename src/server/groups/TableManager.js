@@ -6,19 +6,24 @@
 
 'use strict';
 
-var Table = require('./Table');
+var ActiveTable = require('./ActiveTable');
 
 var TableManager = function(logger) {
     this._logger = logger.fork('Tables');
     this.tables = {};
 };
 
-TableManager.prototype.get = function(uuid, socketId) {
-    if (!this.tables[uuid]) {
-        // FIXME: the requestor should not be set to the leader...
-        this.tables[uuid] = new Table(this._logger, uuid, socketId);
+TableManager.prototype.create = function(socket, name) {
+    var uuid = ActiveTable.createUUID(socket, name);
+    if (!!this.tables[uuid]) {
+        this._logger.error('table already exists! (' + uuid + ')');
     }
+    this.tables[uuid] = new ActiveTable(this._logger, name, socket);
     return this.tables[uuid];
+};
+
+TableManager.prototype.get = function(uuid) {
+    return this.tables[uuid] || null;
 };
 
 TableManager.prototype.onCreate = function(id) {

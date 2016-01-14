@@ -885,7 +885,7 @@ IDE_Morph.prototype.createControlBar = function () {
 IDE_Morph.prototype.updateNetworkButton = function () {
     var newSymbol = 'networkOff',
         btn = this.controlBar.networkButton;
-    if (this.stage.sockets.connected) {
+    if (this.sockets.connected) {
         newSymbol = 'networkOn';
     }
     btn.labelString = new SymbolMorph(newSymbol, 16);
