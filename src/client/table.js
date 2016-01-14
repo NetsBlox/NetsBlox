@@ -294,11 +294,11 @@ TableMorph.prototype._inviteFriend = function (friend, seat) {
 TableMorph.prototype.promptInvite = function (id, table, seat) {
     // Create a confirm dialog about joining the group
     var myself = this,
-        action = SnapCloud.invitationResponse.bind(SnapCloud, id, true),
+        action = this._invitationResponse.bind(this, id, true),
         dialog = new DialogBoxMorph(null, action);
 
     dialog.cancel = function() {
-        SnapCloud.invitationResponse(id, false);
+        this._invitationResponse(id, false);
         this.destroy();
     };
 
@@ -307,6 +307,21 @@ TableMorph.prototype.promptInvite = function (id, table, seat) {
         localize('Would you like to join table ') +
         '\n"' + table + '" at "' + seat + '"?',
         this.ide.world()
+    );
+};
+
+TableMorph.prototype._invitationResponse = function (id, response) {
+    var myself = this;
+    SnapCloud.invitationResponse(
+        id,
+        response,
+        function (response, url) {
+            myself.ide.showMessage(response, 2);
+            myself.disconnect();
+        },
+        function(err) {
+            myself.ide.showMessage(err, 2);
+        }
     );
 };
 
@@ -458,7 +473,7 @@ ProjectsMorph.prototype._addButton = function(params) {
 };
 
 // Cloud extensions
-Cloud.prototype.invitationResponse = function (id, accepted) {
+Cloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) {
     var myself = this,
         args = [id, accepted, this.socketId()],
         response = accepted ? 'joined table.' : 'invitation denied.';
@@ -467,13 +482,8 @@ Cloud.prototype.invitationResponse = function (id, accepted) {
         function () {
             myself.callService(
                 'invitationResponse',
-                function (response, url) {
-                    myself.ide.showMessage(response, 2);
-                    myself.disconnect();
-                },
-                function(err) {
-                    myself.ide.showMessage(err, 2);
-                },
+                onSuccess,
+                onFail,
                 args
             );
         },

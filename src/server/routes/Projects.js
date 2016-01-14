@@ -163,13 +163,64 @@ module.exports = [
             var username = req.session.username;
             log(username +' requested project '+req.body.ProjectName);
             this.storage.users.get(username, (e, user) => {
-                // TODO: Update this to the new table stuff
-                var index = getProjectIndexFrom(req.body.ProjectName, user);
-                if (index === -1) {
-                    return res.send('ERROR: project not found');
+                var tableUuid = req.body.TableUuid,
+                    table = user.tables.find(table => table.uuid === tableUuid),
+                    projectName = req.body.ProjectName,
+                    remainingSeats,
+                    seatId;
+
+                if (!table) {
+                    return res.status(404).send('ERROR: table not found');
                 }
-                user.projects.splice(index,1);
-                user.save();
+
+                // Get the seatId
+                seatId = Object.keys(table.seats)
+                    .map(seat => [seat, table.seats[seat].ProjectName])
+                    .find(pair => pair[1] === projectName)[0];
+
+                // I am using the project name and seat name as the same... should they be?
+                if (!seatId || !table.seats[seatId]) {
+                    return res.status(404).send('ERROR: project not found');
+                }
+                // Does the user own the given seat?
+                if (table.seatOwners[seatId] !== username) {
+                    return res.status(403)
+                        .send(`ERROR: you don\'t have permission to delete ${projectName}`);
+                }
+                this.storage.tables.get(table.uuid, (err, globalTable) => {
+                    if (err || !globalTable) {
+                        err = err || 'Global table does not exist!';
+                        this._logger.error('Could not find global table:', err);
+                        return res.status(500).send('ERROR:', err);
+                    }
+                    this._logger.trace('Removing ownership of the seat');
+
+                    // Remove ownership of the seat
+                    table.seatOwners[seatId] = null;
+
+                    if (globalTable.seatOwners[seatId] === username) {
+                        globalTable.seatOwners[seatId] = null;
+                        globalTable.save(e => e && 
+                            this._logger.error(`could not save global table "${globalTable.uuid}": ${e}`));
+                    } else {
+                        this._logger.warn('global and local tables\' seat ownership out of sync!');
+                    }
+
+                    remainingSeats = Object.keys(table.seats)
+                        .map(seat => [seat, table.seatOwners[seat]])
+                        .filter(pair => pair[1] === username)
+                        .map(pair => pair[0]);  // Get the seat names
+
+                    // if no more projects for this user, remove the table
+                    if (remainingSeats.length === 0) {
+                        this._logger.trace(`Removing table for ${user.username}`);
+                        var index = user.tables.indexOf(table);
+                        user.tables.splice(index, 1);
+                    }
+                    user.save();
+                    this._logger.trace(`project ${projectName} deleted for ${username}`);
+                    res.send('project deleted!');
+                });
             });
         }
     },

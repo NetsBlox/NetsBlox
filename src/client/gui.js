@@ -5360,7 +5360,7 @@ ProjectDialogMorph.prototype.deleteProject = function () {
                                     ); // refresh list
                                 },
                                 myself.ide.cloudError(),
-                                [proj.ProjectName]
+                                [proj.ProjectName, proj.TableUuid]
                             );
                         },
                         myself.ide.cloudError()

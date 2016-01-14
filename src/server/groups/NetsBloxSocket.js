@@ -59,7 +59,7 @@ NetsBloxSocket.MessageHandlers = {
     'message': function() {
         var rawMsg = Array.prototype.slice.call(arguments);
         rawMsg.unshift('message');
-        this.sendToTable(rawMsg);
+        this.sendToTable(rawMsg.join(' '));
     },
     'project-response': function(id) {
         var content = Array.prototype.slice.call(arguments, 1).join(' '),
