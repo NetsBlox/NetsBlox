@@ -96,8 +96,8 @@ NetsBloxSocket.MessageHandlers = {
         this.join(table, seat);
     },
 
-    'join-table': function(uuid, name, seat) {
-        this.getTable(uuid, name, (table) => {
+    'join-table': function(leader, name, seat) {
+        this.getTable(leader, name, (table) => {
             // create the seat if need be (and if we are the owner)
             if (!table.seats.hasOwnProperty(seat) && table.leader === this) {
                 this._logger.info(`creating seat ${seat} at ${table.uuid}`);
@@ -152,6 +152,9 @@ NetsBloxSocket.prototype.onLogin = function(username) {
     // Update the user's table name
     if (this._table) {
         this._table.update();
+        // Update the seatOwner for the given seat
+        this._table.seatOwners[this._seatId] = this.username;
+        this._table.onSeatsChanged();
     }
 };
 

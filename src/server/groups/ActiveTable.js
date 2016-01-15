@@ -125,11 +125,14 @@ ActiveTable.prototype.contains = function(username) {
     return false;
 };
 
-ActiveTable.prototype.update = function(username) {
+ActiveTable.prototype.update = function() {
     var oldUuid = this.uuid;
     this.uuid = utils.uuid(this.leader.username, this.name);
     this._logger.trace('Updating uuid to ' + this.uuid);
-    this.onUuidChange(oldUuid);
+
+    if (this.uuid !== oldUuid) {
+        this.onUuidChange(oldUuid);
+    }
 };
 
 module.exports = ActiveTable;
