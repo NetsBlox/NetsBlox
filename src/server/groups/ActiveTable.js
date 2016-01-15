@@ -1,9 +1,11 @@
 
 'use strict';
 
-var R = require('ramda');
+var R = require('ramda'),
+    utils = require('../ServerUtils');
+
 var ActiveTable = function(logger, name, leader) {
-    var uuid = ActiveTable.createUUID(leader, name);
+    var uuid = utils.uuid(leader.username, name);
     this.name = name;
     this._logger = logger.fork('ActiveTable:' + uuid);
     this.uuid = uuid;
@@ -22,12 +24,7 @@ ActiveTable.fromStore = function(logger, socket, data) {
     table.seatOwners = data.seatOwners;
     table._uuid = data.uuid;  // save over the old uuid even if it changes
                               // this should be reset if the table is forked TODO
-    console.log('data.seatOwners:', data.seatOwners);
     return table;
-};
-
-ActiveTable.createUUID = function(leader, name) {
-    return `${leader.username}/${name}`;
 };
 
 ActiveTable.prototype.add = function(socket, seat) {
@@ -69,7 +66,8 @@ ActiveTable.prototype.getStateMsg = function() {
 
     msg = [
         'table-seats',
-        this.uuid,
+        this.leader.username,
+        this.name,
         JSON.stringify(seats)
     ].join(' ');
     return msg;
@@ -128,9 +126,10 @@ ActiveTable.prototype.contains = function(username) {
 };
 
 ActiveTable.prototype.update = function(username) {
-    this.uuid = ActiveTable.createUUID(this.leader, this.name);
+    var oldUuid = this.uuid;
+    this.uuid = utils.uuid(this.leader.username, this.name);
     this._logger.trace('Updating uuid to ' + this.uuid);
-    this.onUuidChange();
+    this.onUuidChange(oldUuid);
 };
 
 module.exports = ActiveTable;

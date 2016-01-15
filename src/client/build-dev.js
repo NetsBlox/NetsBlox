@@ -26905,9 +26905,10 @@ WebSocketManager.MessageHandlers = {
 
     // Update on the current seats at the given table
     'table-seats': function(data) {
-        var name = data.shift(),
+        var leaderId = data.shift(),
+            name = data.shift(),
             seats = JSON.parse(data.join(' '));
-        this.ide.table.update(name, seats);
+        this.ide.table.update(leaderId, name, seats);
     },
 
     // Receive an invite to join a table
@@ -27002,11 +27003,11 @@ WebSocketManager.prototype._onConnect = function() {
 };
 
 WebSocketManager.prototype._updateTableInfo = function() {
-    var tableUuid = this.ide.table.uuid,
+    var tableLeader = this.ide.table.leaderId,
         tableName = this.ide.table.name || '__new_project__';
         
-    if (this.ide.table.uuid) {
-        this.sendMessage(['join-table', tableUuid, tableName, 'mySeat'].join(' '));
+    if (this.ide.table.leaderId) {
+        this.sendMessage(['join-table', tableLeader, tableName, 'mySeat'].join(' '));
     } else {
         this.sendMessage(['create-table', tableName, 'mySeat'].join(' '));
     }
@@ -27159,7 +27160,8 @@ WebSocketManager.prototype.getSerializedProject = function(callBack, errorCall) 
             Media: media,
             SourceSize: pdata.length,
             MediaSize: media ? media.length : 0,
-            TableUuid: this.ide.table.uuid
+            TableLeaderId: this.ide.table.leaderId,
+            TableName: this.ide.table.name
         };
 };
 
@@ -54754,8 +54756,9 @@ function TableMorph(ide) {
         set: this._onNameChanged.bind(this)
     });
 
-    this.uuid = null;
-    this.nextUuid = null;  // next table id
+    // Set up the leaderId
+    this.leaderId = null;
+    this.nextTable = null;  // next table info
 
     // TODO: Make this dynamic
     this.silentSetWidth(TableMorph.SIZE);
@@ -54786,9 +54789,10 @@ TableMorph.prototype._onNameChanged = function(newName) {
     }
 };
 
-TableMorph.prototype.update = function(uuid, seats) {
+TableMorph.prototype.update = function(leaderId, name, seats) {
     // Update the seats, etc
-    this.uuid = uuid;
+    this.leaderId = leaderId;
+    this._name = name;
     this.seats = seats;
     this.version = Date.now();
 
@@ -54808,7 +54812,7 @@ TableMorph.prototype.drawNew = function() {
         center = padding + radius,
         i;
         
-    if (this.uuid === null) {  // If the table isn't set, trigger an update
+    if (this.leaderId === null) {  // If the table isn't set, trigger an update
         this.triggerUpdate();
     }
 
@@ -54869,9 +54873,9 @@ TableMorph.prototype.inheritedVariableNames = function() {
     return [];
 };
 
-TableMorph.prototype.join = function (id) {
-    this.uuid = id;
-    //this.ide.sockets.sendMessage('join-table'
+TableMorph.prototype.join = function (leaderId, name) {
+    this.leaderId = id;
+    this._name = name;
 };
 
 TableMorph.prototype._createNewSeat = function (name) {
@@ -54887,7 +54891,7 @@ TableMorph.prototype.evictUser = function (user, seat) {
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         },
-        [user, seat, this.uuid]
+        [user, seat, this.leaderId, this.name]
     );
 };
 
@@ -54969,7 +54973,7 @@ TableMorph.prototype._inviteFriendDialog = function (seat, friends) {
 TableMorph.prototype._inviteFriend = function (friend, seat) {
     // TODO: Change this to ajax
     // Use inviteToTable service
-    SnapCloud.inviteToTable(friend, this.uuid, seat);
+    SnapCloud.inviteToTable(friend, this.leaderId, this.name, seat);
 };
 
 TableMorph.prototype.promptInvite = function (id, table, seat) {
@@ -55259,7 +55263,6 @@ Cloud.prototype.saveProject = function (ide, callBack, errorCall) {
 // Override
 ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
     var myself = this;
-    console.log('tableuuid is', proj.TableUuid);
     SnapCloud.reconnect(
         function () {
             SnapCloud.callService(

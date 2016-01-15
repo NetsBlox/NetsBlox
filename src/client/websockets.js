@@ -30,9 +30,10 @@ WebSocketManager.MessageHandlers = {
 
     // Update on the current seats at the given table
     'table-seats': function(data) {
-        var name = data.shift(),
+        var leaderId = data.shift(),
+            name = data.shift(),
             seats = JSON.parse(data.join(' '));
-        this.ide.table.update(name, seats);
+        this.ide.table.update(leaderId, name, seats);
     },
 
     // Receive an invite to join a table
@@ -127,11 +128,11 @@ WebSocketManager.prototype._onConnect = function() {
 };
 
 WebSocketManager.prototype._updateTableInfo = function() {
-    var tableUuid = this.ide.table.uuid,
+    var tableLeader = this.ide.table.leaderId,
         tableName = this.ide.table.name || '__new_project__';
         
-    if (this.ide.table.uuid) {
-        this.sendMessage(['join-table', tableUuid, tableName, 'mySeat'].join(' '));
+    if (this.ide.table.leaderId) {
+        this.sendMessage(['join-table', tableLeader, tableName, 'mySeat'].join(' '));
     } else {
         this.sendMessage(['create-table', tableName, 'mySeat'].join(' '));
     }
@@ -284,7 +285,8 @@ WebSocketManager.prototype.getSerializedProject = function(callBack, errorCall) 
             Media: media,
             SourceSize: pdata.length,
             MediaSize: media ? media.length : 0,
-            TableUuid: this.ide.table.uuid
+            TableLeaderId: this.ide.table.leaderId,
+            TableName: this.ide.table.name
         };
 };
 

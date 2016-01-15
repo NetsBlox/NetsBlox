@@ -6,7 +6,8 @@
 
 'use strict';
 
-var ActiveTable = require('./ActiveTable');
+var ActiveTable = require('./ActiveTable'),
+    utils = require('../ServerUtils');
 
 var TableManager = function(logger) {
     var self = this;
@@ -19,13 +20,14 @@ var TableManager = function(logger) {
     ActiveTable.prototype.onUuidChange = function(oldUuid) {
         var table = this;
         // update the tables dictionary
+        self._logger.trace(`moving record from ${oldUuid} to ${table.uuid}`);
         self.tables[table.uuid] = table;
         delete self.tables[oldUuid];
     };
 };
 
 TableManager.prototype.create = function(socket, name) {
-    var uuid = ActiveTable.createUUID(socket, name);
+    var uuid = utils.uuid(socket.username, name);
     if (!!this.tables[uuid]) {
         this._logger.error('table already exists! (' + uuid + ')');
     }
@@ -33,7 +35,8 @@ TableManager.prototype.create = function(socket, name) {
     return this.tables[uuid];
 };
 
-TableManager.prototype.getTable = function(socket, uuid, name, callback) {
+TableManager.prototype.getTable = function(socket, leaderId, name, callback) {
+    var uuid = utils.uuid(leaderId, name);
     if (!this.tables[uuid]) {
         // If table is not active, try to retrieve it from the db
         this.storage.tables.get(uuid, (err, table) => {  // global only FIXME!

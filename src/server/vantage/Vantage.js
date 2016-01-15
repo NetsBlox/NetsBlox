@@ -86,12 +86,12 @@ var NetsBloxVantage = function(server) {
 
     // Expose variables for easy debugging
     global.server = server;
-    global.storage;
 };
 
 NetsBloxVantage.prototype.initTableManagement = function(server) {
     vantage
         .command('tables', 'List all active tables')
+        .option('-e, --entries', 'List the entries from the manager')
         .alias('ts')
         //.option('--with-names', 'Include the group names')
         .action(function(args, cb) {
@@ -112,6 +112,9 @@ NetsBloxVantage.prototype.initTableManagement = function(server) {
 
                     return `${table.uuid}:\n${clients.join('\n')}\n`;
                 }).join('\n');
+            if (args.options.entries) {
+                text = Object.keys(server.tables).join('\n');
+            }
             console.log(header+text);
             return cb();
         });

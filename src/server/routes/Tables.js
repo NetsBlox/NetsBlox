@@ -7,7 +7,8 @@ var _ = require('lodash'),
     log = debug('NetsBlox:API:Tables:log'),
     warn = debug('NetsBlox:API:Tables:warn'),
     error = debug('NetsBlox:API:Tables:error'),
-    info = debug('NetsBlox:API:Tables:info');
+    info = debug('NetsBlox:API:Tables:info'),
+    utils = require('../ServerUtils');
 
 // REMOVE
 var invites = {};
@@ -90,7 +91,7 @@ module.exports = [
     },
     {
         Service: 'inviteToTable',
-        Parameters: 'invitee,tableId,seatId',
+        Parameters: 'invitee,tableLeaderId,tableName,seatId',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
@@ -101,7 +102,7 @@ module.exports = [
             //  seatId
             var inviter = req.session.username,
                 invitee = req.body.invitee,
-                tableId = req.body.tableId,
+                tableId = utils.uuid(req.body.tableLeaderId, req.body.tableName),
                 seatId = req.body.seatId,
                 inviteId = [inviter, invitee, tableId, seatId].join('-'),
                 inviteeSockets = this.socketsFor(invitee);

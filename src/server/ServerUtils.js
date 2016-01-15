@@ -28,9 +28,14 @@ var loadJsFiles = function(dir) {
         ));
 };
 
+var uuid = function(leader, name) {
+    return leader + '/' + name;
+};
+
 module.exports = {
     serialize: serialize,
     loadJsFiles: loadJsFiles,
-    serializeArray: serializeArray
+    serializeArray: serializeArray,
+    uuid: uuid
 
 };

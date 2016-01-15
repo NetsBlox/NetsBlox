@@ -100,8 +100,9 @@ function TableMorph(ide) {
         set: this._onNameChanged.bind(this)
     });
 
-    this.uuid = null;
-    this.nextUuid = null;  // next table id
+    // Set up the leaderId
+    this.leaderId = null;
+    this.nextTable = null;  // next table info
 
     // TODO: Make this dynamic
     this.silentSetWidth(TableMorph.SIZE);
@@ -132,9 +133,10 @@ TableMorph.prototype._onNameChanged = function(newName) {
     }
 };
 
-TableMorph.prototype.update = function(uuid, seats) {
+TableMorph.prototype.update = function(leaderId, name, seats) {
     // Update the seats, etc
-    this.uuid = uuid;
+    this.leaderId = leaderId;
+    this._name = name;
     this.seats = seats;
     this.version = Date.now();
 
@@ -154,7 +156,7 @@ TableMorph.prototype.drawNew = function() {
         center = padding + radius,
         i;
         
-    if (this.uuid === null) {  // If the table isn't set, trigger an update
+    if (this.leaderId === null) {  // If the table isn't set, trigger an update
         this.triggerUpdate();
     }
 
@@ -215,9 +217,9 @@ TableMorph.prototype.inheritedVariableNames = function() {
     return [];
 };
 
-TableMorph.prototype.join = function (id) {
-    this.uuid = id;
-    //this.ide.sockets.sendMessage('join-table'
+TableMorph.prototype.join = function (leaderId, name) {
+    this.leaderId = id;
+    this._name = name;
 };
 
 TableMorph.prototype._createNewSeat = function (name) {
@@ -233,7 +235,7 @@ TableMorph.prototype.evictUser = function (user, seat) {
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         },
-        [user, seat, this.uuid]
+        [user, seat, this.leaderId, this.name]
     );
 };
 
@@ -315,7 +317,7 @@ TableMorph.prototype._inviteFriendDialog = function (seat, friends) {
 TableMorph.prototype._inviteFriend = function (friend, seat) {
     // TODO: Change this to ajax
     // Use inviteToTable service
-    SnapCloud.inviteToTable(friend, this.uuid, seat);
+    SnapCloud.inviteToTable(friend, this.leaderId, this.name, seat);
 };
 
 TableMorph.prototype.promptInvite = function (id, table, seat) {
@@ -605,7 +607,6 @@ Cloud.prototype.saveProject = function (ide, callBack, errorCall) {
 // Override
 ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
     var myself = this;
-    console.log('tableuuid is', proj.TableUuid);
     SnapCloud.reconnect(
         function () {
             SnapCloud.callService(
