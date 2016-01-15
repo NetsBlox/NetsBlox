@@ -10,7 +10,6 @@ class Data {
         for (var i = keys.length; i--;) {
             this[keys[i]] = data[keys[i]];
         }
-        console.log('getting', this.pretty());
     }
 
     save() {

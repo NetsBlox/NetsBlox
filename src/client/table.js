@@ -91,7 +91,15 @@ function TableMorph(ide) {
     this.seatLabels = {};
 
     this.init();
-    this.name = localize('Table');
+    // Set up the table name
+    this._name = localize('MyNewTable');
+    Object.defineProperty(this, 'name', {
+        get: () => {
+            return this._name;
+        },
+        set: this._onNameChanged.bind(this)
+    });
+
     this.uuid = null;
     this.nextUuid = null;  // next table id
 
@@ -116,6 +124,13 @@ function TableMorph(ide) {
         //}
     //}
 //})();
+
+TableMorph.prototype._onNameChanged = function(newName) {
+    if (this._name !== newName) {
+        this._name = newName;
+        this.ide.sockets.sendMessage('rename-table ' + newName);
+    }
+};
 
 TableMorph.prototype.update = function(uuid, seats) {
     // Update the seats, etc

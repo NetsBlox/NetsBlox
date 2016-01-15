@@ -29,6 +29,7 @@ var NetsBloxVantage = function(server) {
         .command('user <username>', 'Get info about a specific user')
         .option('-t, --tables', 'Get the user\'s saved tables')
         .option('-u, --update', 'Update the user\'s schema')
+        .option('-c, --clear', 'Clear the table info')
         .alias('u')
         .action( (args, cb) => {
             var username = args.username;
@@ -45,6 +46,10 @@ var NetsBloxVantage = function(server) {
                 } else if (args.options.update) {
                     user.tables = user.tables || [];
                     delete user.projects;
+                    user.save();
+                    console.log('User updated!');
+                } else if (args.options.clear) {
+                    user.tables = [];
                     user.save();
                     console.log('User updated!');
                 } else {
@@ -81,7 +86,7 @@ var NetsBloxVantage = function(server) {
 
     // Expose variables for easy debugging
     global.server = server;
-    global.storage = server.storage;
+    global.storage;
 };
 
 NetsBloxVantage.prototype.initTableManagement = function(server) {

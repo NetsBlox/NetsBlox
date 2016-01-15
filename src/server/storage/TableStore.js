@@ -122,14 +122,13 @@ class Table extends DataWrapper {
     }
 
     _save(callback) {
-        var table = this._saveable(),
-            index;
+        var table = this._saveable();
 
         // Every time a local table is saved, it is saved for the user AND in the global store
-        // Create the global table and save it
-        // Set the id...
+        var originalUuid = table._uuid;
+        delete table._uuid;
         this._db.replaceOne(
-            {uuid: table.uuid},  // search criteria
+            {uuid: originalUuid || table.uuid},  // search criteria
             table,  // new value
             {upsert: true},  // settings
             (e, data) => {
@@ -137,26 +136,30 @@ class Table extends DataWrapper {
                     this._logger.error(e);
                 }
                 this._logger.trace('updated in global table database');
-                // Add this project to the user's list of tables and save the user
-                index = this._user.tables.reduce((i, table, index) => {
-                    if (i > -1) {
-                        return i;
-                    }
-                    return table.leaderId === this._table.leader.username &&
-                        table.name === this._table.name ? index : i;
-                }, -1);
-
-                console.log('table seatOwners:', table.seatOwners);
-                if (index === -1) {
-                    this._user.tables.push(table);
-                } else {
-                    this._user.tables.splice(index, 1, table);
-                }
-                this._user.save();
-                this._logger.log(`saved table "${table.uuid}" for ${this._user.username}`);
-                callback(null);
+                this._saveLocal(originalUuid, table, callback);
             }
         );
+    }
+
+    _saveLocal(uuid, table, callback) {
+        // Add this project to the user's list of tables and save the user
+        uuid = uuid || table.uuid;  // FIXME: What if they forked it?
+        var index = this._user.tables.reduce((i, table, index) => {
+            if (i > -1) {
+                return i;
+            }
+            return table.leaderId === this._table.leader.username &&
+                table.name === this._table.name ? index : i;
+        }, -1);
+
+        if (index === -1) {
+            this._user.tables.push(table);
+        } else {
+            this._user.tables.splice(index, 1, table);
+        }
+        this._user.save();
+        this._logger.log(`saved table "${table.uuid}" for ${this._user.username}`);
+        callback(null);
     }
 
     pretty() {

@@ -80,6 +80,15 @@ NetsBloxSocket.MessageHandlers = {
         this.username = username;
     },
 
+    'rename-table': function(tableName) {
+        if (!this._table) {
+            this._logger.error('cannot rename table - no active table!');
+            return;
+        }
+        this._table.name = tableName;
+        this._table.update();
+    },
+
     'create-table': function(tableName, seat) {
         var table = this.createTable(this, tableName);
         table.createSeat(seat);

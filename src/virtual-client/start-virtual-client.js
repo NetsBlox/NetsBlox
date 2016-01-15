@@ -61,8 +61,6 @@ var startVirtualClient = function(page, done) {
     page.evaluate(login);
 
     // Open the given project
-    console.log('project:', typeof project);
-    console.log('project:', !!project);
     if (project) {
         setTimeout(
             function() {page.evaluate(openProject);},
@@ -88,9 +86,6 @@ phantom.create(ph => {
             }
             // Testing
             setTimeout(function() {
-                // Setup
-                page.injectJs('./virtual-helpers.js');
-                page.injectJs('./phantomjs-shim.js');
 
                 // Periodically take screenshots to help with debugging
                 var filename = 'whole.png';
