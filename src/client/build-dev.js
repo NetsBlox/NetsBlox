@@ -26993,16 +26993,18 @@ WebSocketManager.prototype.setGameType = function(gameType) {
 };
 
 WebSocketManager.prototype._onConnect = function() {
-    // FIXME: Fix these tmp settings
+    if (SnapCloud.username) {  // Reauthenticate if needed
+        var updateTable = this._updateTableInfo.bind(this);
+        SnapCloud.reconnect(updateTable, updateTable);
+    } else {
+        this._updateTableInfo();
+    }
+};
+
+WebSocketManager.prototype._updateTableInfo = function() {
     var tableUuid = this.ide.table.uuid,
         tableName = this.ide.table.name || '__new_project__';
         
-
-    // Set the username
-    // FIXME: This is insecure!!!
-    if (SnapCloud.username) {
-        this.sendMessage('username ' + SnapCloud.username);
-    }
     if (this.ide.table.uuid) {
         this.sendMessage(['join-table', tableUuid, tableName, 'mySeat'].join(' '));
     } else {

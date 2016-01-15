@@ -75,11 +75,6 @@ NetsBloxSocket.MessageHandlers = {
         });
     },
 
-    'username': function(username) {  // FIXME: this is insecure!
-        console.log('setting username to ' + username);
-        this.username = username;
-    },
-
     'rename-table': function(tableName) {
         if (this.hasTable()) {
             this._table.name = tableName;
