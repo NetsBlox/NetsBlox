@@ -2543,7 +2543,7 @@ IDE_Morph.prototype.projectMenu = function () {
             new Color(100, 0, 0)
         );
     }
-    menu.addItem('Save As...', 'saveProjectsBrowser');
+    //menu.addItem('Save As...', 'saveProjectsBrowser');
     menu.addLine();
     menu.addItem(
         'Import...',

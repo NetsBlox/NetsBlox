@@ -103,6 +103,10 @@ function TableMorph(ide) {
     // Set up the leaderId
     this.leaderId = null;
     this.nextTable = null;  // next table info
+    // The projectName is used for the seatId
+    if (!this.ide.projectName) {
+        this.ide.projectName = 'myNewProject';
+    }
 
     // TODO: Make this dynamic
     this.silentSetWidth(TableMorph.SIZE);
@@ -133,12 +137,15 @@ TableMorph.prototype._onNameChanged = function(newName) {
     }
 };
 
-TableMorph.prototype.update = function(leaderId, name, seats) {
+TableMorph.prototype.update = function(leaderId, name, /*seatId,*/ seats) {
     // Update the seats, etc
+    console.log('updating table! leaderId is ', leaderId);
     this.leaderId = leaderId;
     this._name = name;
     this.seats = seats;
     this.version = Date.now();
+
+    //this.ide.setProjectName(seatId);  // seat name and project name are the same
 
     this.drawNew();
 };
@@ -173,6 +180,7 @@ TableMorph.prototype.drawNew = function() {
     var angleSize,
         angle = 0,
         len = TableMorph.COLORS.length,
+        currentSeat = this.ide.projectName,
         x,y;
 
     seats = Object.keys(this.seats);
@@ -198,6 +206,10 @@ TableMorph.prototype.drawNew = function() {
         this.add(label);
         this.seatLabels[seats[i]] = label;
 
+        if (seats[i] === currentSeat) {  // active seat
+            label.mouseClickLeft = this.setSeatName.bind(this);
+        }
+
         angle += angleSize;
     }
 
@@ -222,13 +234,56 @@ TableMorph.prototype.join = function (leaderId, name) {
     this._name = name;
 };
 
+TableMorph.prototype.createNewSeat = function () {
+    // Ask for a new seat name
+    var myself = this;
+    this.ide.prompt('New Seat Name', function (seatName) {
+        if (myself.seats.hasOwnProperty(seatName)) {
+            // Error! Seat exists
+            new DialogBoxMorph().inform(
+                'Existing Seat Name',
+                'Could not create a new seat because\n' +
+                'the provided name already exists.',
+                world
+            );
+        } else {
+            myself._createNewSeat(seatName);
+        }
+    }, null, 'createNewSeat');
+};
+
 TableMorph.prototype._createNewSeat = function (name) {
     // Create the new seat
     this.ide.sockets.sendMessage('add-seat ' + name);
 };
 
+TableMorph.prototype.setSeatName = function() {
+    // Ask for a new seat name
+    var myself = this;
+    this.ide.prompt('New Seat Name', function (seatName) {
+        if (myself.seats.hasOwnProperty(seatName)) {
+            // Error! Seat exists
+            new DialogBoxMorph().inform(
+                'Existing Seat Name',
+                'Could not create a new seat because\n' +
+                'the provided name already exists.',
+                world
+            );
+        } else {
+            // TODO: Should we have a confirmation message?
+            myself.ide.sockets.sendMessage([
+                'rename-seat',
+                myself.ide.projectName,
+                seatName].join(' ')
+            );
+            myself.ide.setProjectName(seatName);  // seat name and project name are the same
+        }
+    }, null, 'setSeatName');
+};
+
 // FIXME: create ide.confirm
 TableMorph.prototype.evictUser = function (user, seat) {
+    var myself = this;
     SnapCloud.evictUser(err => {
             myself.ide.showMessage(err || 'evicted ' + user + '!');
         },
@@ -323,11 +378,11 @@ TableMorph.prototype._inviteFriend = function (friend, seat) {
 TableMorph.prototype.promptInvite = function (id, table, seat) {
     // Create a confirm dialog about joining the group
     var myself = this,
-        action = this._invitationResponse.bind(this, id, true),
+        action = this._invitationResponse.bind(this, id, true, seat),
         dialog = new DialogBoxMorph(null, action);
 
     dialog.cancel = function() {
-        this._invitationResponse(id, false);
+        this._invitationResponse(id, false, seat);
         this.destroy();
     };
 
@@ -339,14 +394,17 @@ TableMorph.prototype.promptInvite = function (id, table, seat) {
     );
 };
 
-TableMorph.prototype._invitationResponse = function (id, response) {
+TableMorph.prototype._invitationResponse = function (id, response, seat) {
     var myself = this;
     SnapCloud.invitationResponse(
         id,
         response,
-        function (response, url) {
-            myself.ide.showMessage(response, 2);
-            myself.disconnect();
+        function (res, url) {
+            if (response) {
+                myself.ide.showMessage('you have joined the table!', 2);
+                myself.ide.setProjectName(seat);  // Set the seat name
+            }
+            SnapCloud.disconnect();
         },
         function(err) {
             myself.ide.showMessage(err, 2);
@@ -354,23 +412,6 @@ TableMorph.prototype._invitationResponse = function (id, response) {
     );
 };
 
-TableMorph.prototype.createNewSeat = function () {
-    // Ask for a new seat name
-    var myself = this;
-    this.ide.prompt('New Seat Name', function (seatName) {
-        if (myself.seats.hasOwnProperty(seatName)) {
-            // Error! Seat exists
-            new DialogBoxMorph().inform(
-                'Existing Seat Name',
-                'Could not create a new seat because\n' +
-                'the provided name already exists.',
-                world
-            );
-        } else {
-            myself._createNewSeat(seatName);
-        }
-    }, null, 'exportProject');
-};
 // Create the available blocks
 // TODO
 
@@ -415,6 +456,7 @@ SeatMorph.prototype.drawNew = function() {
 SeatMorph.prototype.mouseClickLeft = function() {
     if (!this.user) {
         this.inviteFriend(this.name);
+    } else if (this.isActiveSeat) {  // Rename the ide
     } else {
         this.evictUser(this.user, this.name);
         // Ask to evict
@@ -615,6 +657,7 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
                     SnapCloud.disconnect();
                     myself.ide.source = 'cloud';
                     myself.ide.droppedText(response[0].SourceCode);
+                    // FIXME: Change this to leaderId, name, seatId
                     myself.ide.table.nextUuid = proj.TableUuid;
                     if (proj.Public === 'true') {
                         location.hash = '#present:Username=' +

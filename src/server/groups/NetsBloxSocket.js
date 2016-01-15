@@ -82,6 +82,12 @@ NetsBloxSocket.MessageHandlers = {
         }
     },
 
+    'rename-seat': function(seatId, newId) {
+        if (this.hasTable()) {
+            this._table.renameSeat(seatId, newId);
+        }
+    },
+
     'request-table-state': function() {
         if (this.hasTable()) {
             var msg = this._table.getStateMsg();
@@ -154,7 +160,7 @@ NetsBloxSocket.prototype.onLogin = function(username) {
         this._table.update();
         // Update the seatOwner for the given seat
         this._table.seatOwners[this._seatId] = this.username;
-        this._table.onSeatsChanged();
+        this._table.updateSeat(this._seatId);
     }
 };
 
