@@ -6,7 +6,6 @@ var ActiveTable = function(logger, name, leader) {
     var uuid = ActiveTable.createUUID(leader, name);
     this.name = name;
     this._logger = logger.fork('ActiveTable:' + uuid);
-    this._uuid = uuid;  // initial uuid -> the uuid used in the database
     this.uuid = uuid;
 
     // Seats
@@ -21,6 +20,8 @@ ActiveTable.fromStore = function(logger, socket, data) {
     var table = new ActiveTable(logger, data.name, socket);
     // Set up the seats
     table.seatOwners = data.seatOwners;
+    table._uuid = data.uuid;  // save over the old uuid even if it changes
+                              // this should be reset if the table is forked TODO
     console.log('data.seatOwners:', data.seatOwners);
     return table;
 };
@@ -56,9 +57,7 @@ ActiveTable.prototype.removeSeat = function(seat) {
     this.onSeatsChanged();
 };
 
-ActiveTable.prototype.onSeatsChanged = function() {
-    // This should be called when the table layout changes
-    // Send the table info to the socket
+ActiveTable.prototype.getStateMsg = function() {
     var seats = {},
         sockets,
         msg;
@@ -73,9 +72,16 @@ ActiveTable.prototype.onSeatsChanged = function() {
         this.uuid,
         JSON.stringify(seats)
     ].join(' ');
+    return msg;
+};
 
-    sockets = R.values(this.seats).filter(socket => !!socket);
-    sockets.map(socket => socket.send(msg));
+ActiveTable.prototype.onSeatsChanged = function() {
+    // This should be called when the table layout changes
+    // Send the table info to the socket
+    var msg = this.getStateMsg(),
+        sockets = R.values(this.seats).filter(socket => !!socket);
+
+    sockets.forEach(socket => socket.send(msg));
 };
 
 ActiveTable.prototype.remove = function(seat) {

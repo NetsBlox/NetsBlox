@@ -86,7 +86,7 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username;
             log(username +' requested project list');
-            this.storage.users.get(username, function(e, user) {
+            this.storage.users.get(username, (e, user) => {
                 var projects,
                     tables = user.tables || [];
                 if (e) {
@@ -116,6 +116,8 @@ module.exports = [
                             projects)
                         )
                     );
+                        
+                    info(`Tables are ${projects.map(project => project.TableUuid)}`);
                     return res.send(Utils.serializeArray(projects));
                 }
                 return res.status(404);
@@ -130,10 +132,11 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username;
             log(username + ' requested project ' + req.body.ProjectName);
-            this.storage.users.get(username, function(e, user) {
+            this.storage.users.get(username, (e, user) => {
                 if (e) {
                     return res.serverError(e);
                 }
+                this._logger.trace(`looking up table with uuid of ${req.body.TableUuid}`);
 
                 // For now, just return the project
                 var table = user.tables.find(table => table.uuid === req.body.TableUuid),

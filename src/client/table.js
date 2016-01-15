@@ -141,6 +141,10 @@ TableMorph.prototype.update = function(uuid, seats) {
     this.drawNew();
 };
 
+TableMorph.prototype.triggerUpdate = function() {
+    // TODO: Message the server requesting an update
+};
+
 TableMorph.prototype.drawNew = function() {
     var cxt,
         padding = 4,
@@ -150,6 +154,9 @@ TableMorph.prototype.drawNew = function() {
         center = padding + radius,
         i;
         
+    if (this.uuid === null) {  // If the table isn't set, trigger an update
+        this.triggerUpdate();
+    }
 
     // Remove the old seatLabels
     seats = Object.keys(this.seatLabels);
@@ -201,7 +208,6 @@ TableMorph.prototype.drawNew = function() {
     cxt.font = '14px';
     cxt.fillText('TABLE', center, center);
 
-    // TODO: Add children for each seat
     this.changed();
 };
 

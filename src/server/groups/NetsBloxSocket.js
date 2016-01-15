@@ -81,12 +81,17 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'rename-table': function(tableName) {
-        if (!this._table) {
-            this._logger.error('cannot rename table - no active table!');
-            return;
+        if (this.hasTable()) {
+            this._table.name = tableName;
+            this._table.update();
         }
-        this._table.name = tableName;
-        this._table.update();
+    },
+
+    'request-table-state': function() {
+        if (this.hasTable()) {
+            var msg = this._table.getStateMsg();
+            this.send(msg);
+        }
     },
 
     'create-table': function(tableName, seat) {
@@ -109,13 +114,18 @@ NetsBloxSocket.MessageHandlers = {
         
     },
     'add-seat': function(seatName) {
-        if (!this._table) {
-            this._logger.error('can not create seat - user has no table!');
-            return;
-        }
         // TODO: make sure this is the table leader
-        this._table.createSeat(seatName);
+        if (this.hasTable()) {
+            this._table.createSeat(seatName);
+        }
     }
+};
+
+NetsBloxSocket.prototype.hasTable = function(msg) {
+    if (!this._table) {
+        this._logger.error('user has no table!');
+    }
+    return !!this._table;
 };
 
 NetsBloxSocket.prototype._initialize = function(msg) {

@@ -127,6 +127,7 @@ class Table extends DataWrapper {
         // Every time a local table is saved, it is saved for the user AND in the global store
         var originalUuid = table._uuid;
         delete table._uuid;
+        this._logger.trace(`saving as ${table._uuid || table.uuid}`);
         this._db.replaceOne(
             {uuid: originalUuid || table.uuid},  // search criteria
             table,  // new value
@@ -143,7 +144,7 @@ class Table extends DataWrapper {
 
     _saveLocal(uuid, table, callback) {
         // Add this project to the user's list of tables and save the user
-        uuid = uuid || table.uuid;  // FIXME: What if they forked it?
+        uuid = uuid || table.uuid;
         var index = this._user.tables.reduce((i, table, index) => {
             if (i > -1) {
                 return i;
