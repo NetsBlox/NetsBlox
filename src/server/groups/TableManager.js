@@ -9,11 +9,19 @@
 var ActiveTable = require('./ActiveTable');
 
 var TableManager = function(logger) {
+    var self = this;
     this._logger = logger.fork('Tables');
     this.tables = {};
     if (!this.storage) {
         this._logger.warn('missing storage component!');
     }
+
+    ActiveTable.prototype.onUuidChange = function(oldUuid) {
+        var table = this;
+        // update the tables dictionary
+        self.tables[table.uuid] = table;
+        delete self.tables[oldUuid];
+    };
 };
 
 TableManager.prototype.create = function(socket, name) {

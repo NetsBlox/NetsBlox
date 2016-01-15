@@ -130,6 +130,7 @@ ActiveTable.prototype.contains = function(username) {
 ActiveTable.prototype.update = function(username) {
     this.uuid = ActiveTable.createUUID(this.leader, this.name);
     this._logger.trace('Updating uuid to ' + this.uuid);
+    this.onUuidChange();
 };
 
 module.exports = ActiveTable;
