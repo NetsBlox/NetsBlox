@@ -6,6 +6,7 @@ var ActiveTable = function(logger, name, leader) {
     var uuid = ActiveTable.createUUID(leader, name);
     this.name = name;
     this._logger = logger.fork('ActiveTable:' + uuid);
+    this._uuid = uuid;  // initial uuid -> the uuid used in the database
     this.uuid = uuid;
 
     // Seats
@@ -121,7 +122,8 @@ ActiveTable.prototype.contains = function(username) {
 };
 
 ActiveTable.prototype.update = function(username) {
-    var uuid = ActiveTable.createUUID(this.leader, this.name);
+    this.uuid = ActiveTable.createUUID(this.leader, this.name);
+    this._logger.trace('Updating uuid to ' + this.uuid);
 };
 
 module.exports = ActiveTable;
