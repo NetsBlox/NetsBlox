@@ -55342,12 +55342,12 @@ IDE_Morph.prototype._loadTable = function () {
     // TODO
     if (this.table.nextTable) {
         var next = this.table.nextTable;
-        this.table.name = next.tableName;
+        this.table._name = next.tableName;  // silent set
         this.table.leaderId = next.leaderId;
-        this.ide.setProjectName(next.seatId);
+        this.setProjectName(next.seatId);
 
         // Send the message to the server
-        this.ide.sockets.updateTableInfo();
+        this.sockets.updateTableInfo();
 
         this.table.nextTable = null;
     }
