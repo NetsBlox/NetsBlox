@@ -658,7 +658,11 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
                     myself.ide.source = 'cloud';
                     myself.ide.droppedText(response[0].SourceCode);
                     // FIXME: Change this to leaderId, name, seatId
-                    myself.ide.table.nextUuid = proj.TableUuid;
+                    myself.ide.table.nextTable = {
+                        leaderId: proj.TableLeader,
+                        tableName: proj.TableName,
+                        seatId: proj.ProjectName
+                    };
                     if (proj.Public === 'true') {
                         location.hash = '#present:Username=' +
                             encodeURIComponent(SnapCloud.username) +
@@ -667,7 +671,7 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
                     }
                 },
                 myself.ide.cloudError(),
-                [proj.ProjectName, proj.TableUuid]
+                [proj.ProjectName, proj.TableLeader, proj.TableName]
             );
         },
         myself.ide.cloudError()
@@ -678,10 +682,16 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
 IDE_Morph.prototype._loadTable = function () {
     // Check if the table has diverged and optionally fork
     // TODO
-    if (this.table.nextUuid) {
-        this.table.name = this.table.uuid.split('/').pop();  // FIXME
-        // try to load this table TODO
-        //this.table.uuid = 
+    if (this.table.nextTable) {
+        var next = this.table.nextTable;
+        this.table.name = next.tableName;
+        this.table.leaderId = next.leaderId;
+        this.ide.setProjectName(next.seatId);
+
+        // Send the message to the server
+        this.ide.sockets.updateTableInfo();
+
+        this.table.nextTable = null;
     }
 };
 

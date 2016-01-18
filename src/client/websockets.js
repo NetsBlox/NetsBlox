@@ -121,14 +121,14 @@ WebSocketManager.prototype.setGameType = function(gameType) {
 
 WebSocketManager.prototype._onConnect = function() {
     if (SnapCloud.username) {  // Reauthenticate if needed
-        var updateTable = this._updateTableInfo.bind(this);
+        var updateTable = this.updateTableInfo.bind(this);
         SnapCloud.reconnect(updateTable, updateTable);
     } else {
-        this._updateTableInfo();
+        this.updateTableInfo();
     }
 };
 
-WebSocketManager.prototype._updateTableInfo = function() {
+WebSocketManager.prototype.updateTableInfo = function() {
     var tableLeader = this.ide.table.leaderId,
         seatId = this.ide.projectName,
         tableName = this.ide.table.name || '__new_project__';

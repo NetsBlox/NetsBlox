@@ -1,6 +1,15 @@
 'use strict';
 
-var LIST_FIELDS = ['Notes', 'ProjectName', 'Public', 'Thumbnail', 'URL', 'Updated', 'TableUuid'],
+var LIST_FIELDS = [
+        'Notes',
+        'ProjectName',
+        'Public',
+        'Thumbnail',
+        'URL',
+        'Updated',
+        'TableLeader',
+        'TableName'
+    ],
     R = require('ramda'),
     parseXml = require('xml2js').parseString,
     _ = require('lodash'),
@@ -103,6 +112,12 @@ module.exports = [
                             seats = Object.keys(table.seatOwners)
                                 .map(seat => table.seats[seat]);
 
+                            // Add the table uuids
+                            seats.forEach(project => {
+                                project.TableLeader = table.leaderId;
+                                project.TableName = table.name;
+                            });
+
                             // FIXME: returns null sometimes
 
                             return seats;
@@ -126,22 +141,28 @@ module.exports = [
     },
     {
         Service: 'getProject',
-        Parameters: 'ProjectName,TableUuid',
+        Parameters: 'ProjectName,TableLeader,TableName',
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
-            var username = req.session.username;
+            var username = req.session.username,
+                uuid = Utils.uuid(req.body.TableLeader, req.body.TableName);
+
             log(username + ' requested project ' + req.body.ProjectName);
             this.storage.users.get(username, (e, user) => {
                 if (e) {
                     return res.serverError(e);
                 }
-                this._logger.trace(`looking up table with uuid of ${req.body.TableUuid}`);
+                this._logger.trace(`looking up table with uuid of ${uuid}`);
 
                 // For now, just return the project
-                var table = user.tables.find(table => table.uuid === req.body.TableUuid),
+                var table = user.tables.find(table => table.uuid === uuid),
                     project;
 
+                if (!table) {
+                    this._logger.error(`could not find table ${uuid}`);
+                    return res.status(404).send('ERROR: could not find table');
+                }
                 project = Object.keys(table.seatOwners)
                     .filter(seat => table.seatOwners[seat] === username)
                     .map(seat => table.seats[seat])
