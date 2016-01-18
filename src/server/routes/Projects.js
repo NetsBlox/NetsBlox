@@ -110,6 +110,7 @@ module.exports = [
                             var seats;
 
                             seats = Object.keys(table.seatOwners)
+                                .filter(seat => table.seatOwners[seat] === username)
                                 .map(seat => table.seats[seat]);
 
                             // Add the table uuids
