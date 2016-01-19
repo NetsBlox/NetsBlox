@@ -92,7 +92,7 @@ function TableMorph(ide) {
 
     this.init();
     // Set up the table name
-    this._name = localize('MyNewTable');
+    this._name = localize('MyTable');
     Object.defineProperty(this, 'name', {
         get: () => {
             return this._name;
@@ -105,7 +105,7 @@ function TableMorph(ide) {
     this.nextTable = null;  // next table info
     // The projectName is used for the seatId
     if (!this.ide.projectName) {
-        this.ide.projectName = 'myNewProject';
+        this.ide.projectName = 'mySeat';
     }
 
     // TODO: Make this dynamic
