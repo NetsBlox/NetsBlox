@@ -2005,8 +2005,13 @@ Process.prototype.doTableMessage = function() {
 };
 
 Process.prototype.doSocketMessage = function (name) {
-    var msg = this._createMsg.apply(this, arguments);
-    this.doSocketEvent(msg.type.name+' '+JSON.stringify(msg.contents));
+    var msg = this._createMsg.apply(this, arguments),
+        ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
+        targetSeat = arguments[arguments.length-1],
+        mySeat = ide.projectName,  // same as seat name
+        message = msg.type.name + ' ' + JSON.stringify(msg.contents);
+
+    ide.sockets.sendMessage(['message', targetSeat, mySeat, message].join(' '));
 };
 
 Process.prototype._createMsg = function (name) {

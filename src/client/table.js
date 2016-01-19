@@ -474,6 +474,7 @@ function ProjectsMorph(table, sliderColor) {
     ProjectsMorph.uber.init.call(this, null, null, sliderColor);
     this.acceptsDrops = false;
     this.table = table;
+    this.add(table);
     // Reset the position
     this.table.silentSetPosition(new Point(0,0));
     this.updateTable();

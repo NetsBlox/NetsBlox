@@ -59,7 +59,7 @@ NetsBloxSocket.MessageHandlers = {
     'message': function() {
         var rawMsg = Array.prototype.slice.call(arguments);
         rawMsg.unshift('message');
-        this.sendToTable(rawMsg.join(' '));
+        this.sendToEveryone(rawMsg.join(' '));
     },
 
     'table-message': function() {
@@ -210,7 +210,7 @@ NetsBloxSocket.prototype.changeSeats = function(seat) {
     this._table.move(this, seat);
 };
 
-NetsBloxSocket.prototype.sendToTable = function(msg) {
+NetsBloxSocket.prototype.sendToEveryone = function(msg) {
     this._table.sendFrom(this._seatId, msg);
 };
 

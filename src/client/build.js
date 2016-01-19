@@ -15935,6 +15935,15 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         case '%msgInput':
             part = new MessageInputSlotMorph();
             break;
+        case '%seats':
+            // Seat ids
+            part = new InputSlotMorph(
+                null,
+                false,
+                'seatNames',
+                true
+            );
+            break;
         case '%att':
             part = new InputSlotMorph(
                 null,
@@ -21880,6 +21889,21 @@ InputSlotMorph.prototype.objectsMenu = function () {
     return dict;
 };
 
+InputSlotMorph.prototype.seatNames = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        seats = Object.keys(ide.table.seats),
+        dict = {};
+
+    for (var i = seats.length; i--;) {
+        if (ide.projectName !== seats[i]) {  // project name is seatid
+            dict[seats[i]] = seats[i];
+        }
+    }
+
+    dict['everyone'] = 'everyone';
+    return dict;
+};
+
 InputSlotMorph.prototype.attributesMenu = function () {
     var block = this.parentThatIsA(BlockMorph),
         objName = block.inputs()[1].evaluate(),
@@ -26896,11 +26920,15 @@ WebSocketManager.MessageHandlers = {
 
     // Game play message
     'message': function(data) {
-        var messageType = data.shift(),
+        var dstId = data.shift(),
+            srcId = data.shift(),
+            messageType = data.shift(),
             content = JSON.parse(data.join(' ') || null);
 
         // TODO: filter for gameplay and pass to debugger
-        this.onMessageReceived(messageType, content, 'role');
+        if (dstId === this.ide.projectName || dstId === 'everyone') {
+            this.onMessageReceived(messageType, content, 'role');
+        }
     },
 
     // Update on the current seats at the given table
@@ -29186,8 +29214,13 @@ Process.prototype.doTableMessage = function() {
 };
 
 Process.prototype.doSocketMessage = function (name) {
-    var msg = this._createMsg.apply(this, arguments);
-    this.doSocketEvent(msg.type.name+' '+JSON.stringify(msg.contents));
+    var msg = this._createMsg.apply(this, arguments),
+        ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
+        targetSeat = arguments[arguments.length-1],
+        mySeat = ide.projectName,  // same as seat name
+        message = msg.type.name + ' ' + JSON.stringify(msg.contents);
+
+    ide.sockets.sendMessage(['message', targetSeat, mySeat, message].join(' '));
 };
 
 Process.prototype._createMsg = function (name) {
@@ -31371,7 +31404,7 @@ SpriteMorph.prototype.initBlocks = function () {
         doSocketMessage: {
             type: 'command',
             category: 'services',
-            spec: 'send msg %msgInput'
+            spec: 'send msg %msgInput to %seats'
         },
         doTableMessage: {
             type: 'command',
@@ -55151,6 +55184,7 @@ function ProjectsMorph(table, sliderColor) {
     ProjectsMorph.uber.init.call(this, null, null, sliderColor);
     this.acceptsDrops = false;
     this.table = table;
+    this.add(table);
     // Reset the position
     this.table.silentSetPosition(new Point(0,0));
     this.updateTable();

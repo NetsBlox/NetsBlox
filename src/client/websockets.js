@@ -21,11 +21,15 @@ WebSocketManager.MessageHandlers = {
 
     // Game play message
     'message': function(data) {
-        var messageType = data.shift(),
+        var dstId = data.shift(),
+            srcId = data.shift(),
+            messageType = data.shift(),
             content = JSON.parse(data.join(' ') || null);
 
         // TODO: filter for gameplay and pass to debugger
-        this.onMessageReceived(messageType, content, 'role');
+        if (dstId === this.ide.projectName || dstId === 'everyone') {
+            this.onMessageReceived(messageType, content, 'role');
+        }
     },
 
     // Update on the current seats at the given table

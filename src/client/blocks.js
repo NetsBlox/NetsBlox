@@ -7135,10 +7135,12 @@ InputSlotMorph.prototype.seatNames = function () {
         dict = {};
 
     for (var i = seats.length; i--;) {
-        dict[seats[i]] = seats[i];
+        if (ide.projectName !== seats[i]) {  // project name is seatid
+            dict[seats[i]] = seats[i];
+        }
     }
 
-    dict['everyone'] = ['everyone'];
+    dict['everyone'] = 'everyone';
     return dict;
 };
 
