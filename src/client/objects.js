@@ -642,6 +642,11 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'services',
             spec: 'send msg %msgInput'
         },
+        doTableMessage: {
+            type: 'command',
+            category: 'services',
+            spec: 'put msg %msgInput on table'
+        },
         receiveSocketMessage: {
             type: 'hat',
             category: 'services',
@@ -2008,6 +2013,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doSocketEvent'));
         blocks.push(block('doSocketMessage'));
+        blocks.push(block('doTableMessage'));
         blocks.push('-');
         // TODO: Only add this block if unique role paradigm
         blocks.push(block('doRegisterClient'));
@@ -3797,6 +3803,7 @@ SpriteMorph.prototype.allMessageNames = function () {
                      'doSocketEvent', 
                      'receiveSocketEvent',
                      'doSocketMessage', 
+                     'doTableMessage', 
                      'receiveSocketMessage'],
                     morph.selector
                 )) {
@@ -5652,6 +5659,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doSocketEvent'));
         blocks.push(block('doSocketMessage'));
+        blocks.push(block('doTableMessage'));
         blocks.push('-');
         blocks.push(block('doRegisterClient'));
         blocks.push('-');

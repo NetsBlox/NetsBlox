@@ -4,6 +4,7 @@
 var R = require('ramda'),
     utils = require('../ServerUtils');
 
+// TODO: Create the table client
 class ActiveTable {
     constructor(logger, name, leader) {
         var uuid = utils.uuid(leader.username, name);

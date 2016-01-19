@@ -113,13 +113,13 @@ module.exports = [
                                 .filter(seat => table.seatOwners[seat] === username)
                                 .map(seat => table.seats[seat]);
 
+                            // FIXME: returns null sometimes (if no project stored at the seat, return empty project).
+
                             // Add the table uuids
                             seats.forEach(project => {
                                 project.TableLeader = table.leaderId;
                                 project.TableName = table.name;
                             });
-
-                            // FIXME: returns null sometimes
 
                             return seats;
                         })

@@ -61,6 +61,17 @@ NetsBloxSocket.MessageHandlers = {
         rawMsg.unshift('message');
         this.sendToTable(rawMsg.join(' '));
     },
+
+    'table-message': function() {
+        // TODO: Send a message to the table client
+        var rawMsg = Array.prototype.slice.call(arguments),
+            msg;
+
+        rawMsg.unshift('message');
+        msg = rawMsg.join(' ');
+        this._logger.trace(`sending message to table: "${msg}"`);
+    },
+
     'project-response': function(id) {
         var content = Array.prototype.slice.call(arguments, 1).join(' '),
             json = JSON.parse(content);

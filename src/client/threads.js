@@ -1996,7 +1996,20 @@ Process.prototype.doSocketEvent = function (message) {
     ide.sockets.sendMessage('message ' + message);
 };
 
+Process.prototype.doTableMessage = function() {
+    var msg = this._createMsg.apply(this, arguments),
+        ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
+        message = msg.type.name + ' ' + JSON.stringify(msg.contents);
+
+    ide.sockets.sendMessage('table-message ' + message);
+};
+
 Process.prototype.doSocketMessage = function (name) {
+    var msg = this._createMsg.apply(this, arguments);
+    this.doSocketEvent(msg.type.name+' '+JSON.stringify(msg.contents));
+};
+
+Process.prototype._createMsg = function (name) {
     var fields = Array.prototype.slice.call(arguments, 1),
         stage = this.homeContext.receiver.parentThatIsA(StageMorph),
         messageType = stage.messageTypes.getMsgType(name),
@@ -2009,7 +2022,7 @@ Process.prototype.doSocketMessage = function (name) {
     for (var i = fieldNames.length; i--;) {
         msg.set(fieldNames[i], fields[i] || '');
     }
-    this.doSocketEvent(msg.type.name+' '+JSON.stringify(msg.contents));
+    return msg;
 };
 
 /**
