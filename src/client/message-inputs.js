@@ -46,25 +46,17 @@ MessageInputSlotMorph.prototype._updateMessage = function(name, cb) {
     cb();
 };
 
-/**
- * Check that the block is a non MessageInputSlotMorph reporter.
- *
- * @param block
- * @return {undefined}
- */
-MessageInputSlotMorph.isNonMISMReporter = function(block) {
-    return !(block instanceof CommandBlockMorph || block instanceof MessageInputSlotMorph);
-};
-
 MessageInputSlotMorph.prototype._updateFields = function(values) {
     // Remove the old message fields (parent's inputs)
     var children = this.parent.children,
-        i = children.length,
+        myIndex = children.indexOf(this),
+        i = this._msgContent.length + myIndex + 1,
         input = children[--i],
         removed = [],
         scripts = this.parentThatIsA(ScriptsMorph);
 
-    while (i-- && MessageInputSlotMorph.isNonMISMReporter(input)) {
+    // Remove the "i" fields after the current morph
+    while (i-- > myIndex) {
         removed.push(input);
         this.parent.removeChild(input);
         input = children[i];
@@ -107,16 +99,22 @@ MessageInputSlotMorph.prototype._updateField = function(field, value) {
     // + undefined
     // + string
 
+    // Add the fields at the correct place wrt the current morph
+    var index = this.parent.children.indexOf(this) + this.msgFields.indexOf(field) + 1;
     // Input slot is empty or has a string
     if (!value || typeof value === 'string') {
         var result = new HintInputSlotMorph(value || '', field);
-        this.parent.add(result);
+        this.parent.children.splice(index, 0, result);
+        result.parent = this.parent;
+        //this.parent.add(result);
         return result;
     }
 
     // The input slot is occupied by another block
     if (value && typeof value !== 'string') {
-        this.parent.add(value);
+        //this.parent.add(value);
+        this.parent.children.splice(index, 0, value);
+        value.parent = this.parent;
     }
     return value;
 };
