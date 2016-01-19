@@ -1175,6 +1175,15 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         case '%msgInput':
             part = new MessageInputSlotMorph();
             break;
+        case '%seats':
+            // Seat ids
+            part = new InputSlotMorph(
+                null,
+                false,
+                'seatNames',
+                true
+            );
+            break;
         case '%att':
             part = new InputSlotMorph(
                 null,
@@ -7117,6 +7126,19 @@ InputSlotMorph.prototype.objectsMenu = function () {
             dict[name] = name;
         });
     }
+    return dict;
+};
+
+InputSlotMorph.prototype.seatNames = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        seats = Object.keys(ide.table.seats),
+        dict = {};
+
+    for (var i = seats.length; i--;) {
+        dict[seats[i]] = seats[i];
+    }
+
+    dict['everyone'] = ['everyone'];
     return dict;
 };
 

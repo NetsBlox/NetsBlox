@@ -640,7 +640,7 @@ SpriteMorph.prototype.initBlocks = function () {
         doSocketMessage: {
             type: 'command',
             category: 'services',
-            spec: 'send msg %msgInput'
+            spec: 'send msg %msgInput to %seats'
         },
         doTableMessage: {
             type: 'command',
