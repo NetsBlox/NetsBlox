@@ -12,7 +12,7 @@
                     return setTimeout(tryLoadWorld, 100);
                 }
 
-                world = new WorldMorph(document.getElementById('world'));
+                world = new WorldMorph(document.getElementById('world-container'));
                 world.worldCanvas.focus();
                 new IDE_Morph().openIn(world);
                 setInterval(loop, 1);
@@ -25,7 +25,7 @@
         </script>
     </head>
     <body style="margin: 0;">
-        <canvas id="world" tabindex="1" style="position: absolute;" />
+        <canvas id="world-container" tabindex="1" style="position: absolute;" />
     </body>
 </html>
 

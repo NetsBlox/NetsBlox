@@ -8,19 +8,19 @@
 		<script type="text/javascript">
 			var world;
 			window.onload = function () {
-				world = new WorldMorph(document.getElementById('world'));
-                world.worldCanvas.focus();
-				new IDE_Morph().openIn(world);
-                initHelpers(window);
-				setInterval(loop, 1);
+				//world = new WorldMorph(document.getElementById('world-container'));
+                //world.worldCanvas.focus();
+				//new IDE_Morph().openIn(world);
+                //initHelpers(window);
+				//setInterval(loop, 1);
 			};
-			function loop() {
-				world.doOneCycle();
-			}
+			//function loop() {
+				//world.doOneCycle();
+			//}
 		</script>
 	</head>
 	<body style="margin: 0;">
-		<canvas id="world" tabindex="1" style="position: absolute;" />
+		<canvas id="world-container" tabindex="1" style="position: absolute;" />
 	</body>
 </html>
 

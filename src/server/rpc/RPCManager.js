@@ -15,17 +15,15 @@ var fs = require('fs'),
  *
  * @constructor
  */
-var RPCManager = function(logger, groupManager) {
+var RPCManager = function(logger, socketManager) {
     this._logger = logger.fork('RPCManager');
     this.rpcs = RPCManager.loadRPCs();
     this.router = this.createRouter();
 
     // The RPCManager contains groups with the same ids as those owned by the 
     // communication manager. In this object, they contain the RPC's owned by
-    // the group.
-    this.groupManager = groupManager;
-    //this.groupManager.onGroupClose(this.onGroupClose.bind(this));
-    this.groups = {};
+    // the active table.
+    this.socketManager = socketManager;
 };
 
 /**
@@ -70,31 +68,28 @@ RPCManager.prototype.addRoute = function(router, RPC) {
  * @return {RPC}
  */
 RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
-    var groupId,
-        group;
+    var socket,
+        rpcs;
 
     if (RPC.isStateless) {
         return RPC;
     }
 
-    // Get the group id
-    groupId = this.groupManager.getGroupId(uuid);
-    if (!groupId) {
+    // Look up the rpc context
+    // socket -> active table -> rpc contexts
+    socket = this.socketManager.sockets[uuid];
+    if (!socket || !socket._table) {
         return null;
     }
-
-    // Look up the specific RPC and call the given action on it
-    if (!this.groups[groupId]) {
-        this.groups[groupId] = {};
-    }
-    group = this.groups[groupId];
+    rpcs = socket._table.rpcs;
 
     // If the RPC hasn't been created for the given room, create one 
-    if (!group[RPC.getPath()]) {
-        this._logger.info('Creating new RPC ('+RPC.getPath()+') for '+groupId);
-        group[RPC.getPath()] = new RPC();
+    if (!rpcs[RPC.getPath()]) {
+        this._logger.info('Creating new RPC (' + RPC.getPath() +
+            ') for ' + socket._table.uuid);
+        rpcs[RPC.getPath()] = new RPC();
     }
-    return group[RPC.getPath()];
+    return rpcs[RPC.getPath()];
 
 };
 
@@ -116,17 +111,13 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         console.log('About to call '+RPC.getPath()+'=>'+action);
 
         // Add the netsblox socket for triggering network messages from an RPC
-        req.netsbloxSocket = this.groupManager.getSocket(uuid);
+        req.netsbloxSocket = this.socketManager.sockets[uuid];
 
         return rpc[action](req, res);
     } else {
         this._logger.log('Invalid action requested for '+RPC.getPath()+': '+action);
         return res.status(400).send('unrecognized action');
     }
-};
-
-RPCManager.prototype.onGroupClose = function(groupId) {
-    delete this.groups[groupId];
 };
 
 module.exports = RPCManager;

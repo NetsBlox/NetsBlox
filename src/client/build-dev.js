@@ -29101,9 +29101,8 @@ Process.prototype.reportLastAnswer = function () {
 // Process URI retrieval (interpolated)
 
 Process.prototype.createRPCUrl = function (rpc, params) {
-    // FIXME
-    var stage = this.homeContext.receiver.parentThatIsA(StageMorph),
-        uuid = stage.sockets.uuid;
+    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
+        uuid = ide.sockets.uuid;
 
     return baseURL+'rpc/'+rpc+'?uuid='+uuid+'&'+params;
 };

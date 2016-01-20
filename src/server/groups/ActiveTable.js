@@ -18,6 +18,9 @@ class ActiveTable {
 
         this.leader = leader;
         this._logger.log('created!');
+
+        // RPC contexts
+        this.rpcs = {};
     }
 
     add (socket, seat) {
