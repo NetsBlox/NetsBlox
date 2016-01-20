@@ -37,40 +37,26 @@ module.exports = [
             }
             log(Utils.serialize(resp));
             return res.send(Utils.serialize(resp));
-            //this.storage.users.get(username, function(e, user) {
-                //if (e) {
-                    //return res.serverError(e);
-                //}
-                //if (user) {
-                    //// If it is the ghost user, provide a list of all project/tables
-                    //// TODO
-
-                    //// Get the projects
-                    //user.projects = user.projects || [];
-                    //info('Projects for '+username +' are '+JSON.stringify(
-                        //R.map(R.partialRight(Utils.getAttribute, 'ProjectName'),
-                            //projects)
-                        //)
-                    //);
-                    //return res.send(Utils.serializeArray(projects));
-                //}
-                //return res.status(404);
-            //});
         }
     },
     {
         Service: 'evictUser',
-        Parameters: 'userId,seatId,tableId',
+        Parameters: 'userId,seatId,leaderId,tableName',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             var seatId = req.body.seatId,
-                tableId = req.body.tableId,
+                tableName = req.body.tableName,
+                leaderId = req.body.leaderId,
+                tableId = Utils.uuid(leaderId, tableName),  // FIXME
                 userId = req.body.userId,
                 socket,
                 table = this.tables[tableId];
 
             // Get the socket at the given table seat
+            log(`tableId is ${tableId}`);
+            log(`seatId is ${seatId}`);
+            log(`userId is ${userId}`);
             socket = table.seats[seatId];
             if (!socket) {  // user is not online
                 table.remove(seatId);
