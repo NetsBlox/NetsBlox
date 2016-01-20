@@ -23,13 +23,27 @@ function MessageInputSlotMorph() {
 }
 
 MessageInputSlotMorph.prototype.setContents = function(messageType, inputs) {
-    var self = this;
+    var self = this,
+        targetSeat = inputs ? inputs.pop() : '',
+        targetDropdown,
+        len;
+
+    // Set the value for the dropdown
     InputSlotMorph.prototype.setContents.call(this, messageType);
+
+    // Create the message fields
     this._updateMessage(messageType, function() {
         if (self.parent) {
             self._updateFields(inputs);
         }
     });
+
+    // Set the target
+    if (targetSeat) {
+        len = this.parent.inputs().length;
+        targetDropdown = this.parent.inputs()[len-1];
+        targetDropdown.setContents(targetSeat);
+    }
 };
 
 MessageInputSlotMorph.prototype._updateMessage = function(name, cb) {
