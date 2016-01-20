@@ -24,7 +24,7 @@ function MessageInputSlotMorph() {
 
 MessageInputSlotMorph.prototype.setContents = function(messageType, inputs) {
     var self = this,
-        targetSeat = inputs ? inputs.pop() : '',
+        targetSeat = inputs && inputs.pop ? inputs.pop() : '',
         targetDropdown,
         len;
 
