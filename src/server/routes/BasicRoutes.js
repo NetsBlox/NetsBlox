@@ -107,7 +107,9 @@ module.exports = [
         Method: 'post', 
         URL: '',  // login/SignUp method
         Handler: function(req, res) {
-            var hash = req.body.__h;
+            var hash = req.body.__h,
+                socket;
+
             this.storage.users.get(req.body.__u, (e, user) => {
                 if (e) {
                     log('Could not find user "'+req.body.__u+'": ' +e);
@@ -117,7 +119,10 @@ module.exports = [
                     req.session.username = req.body.__u;
                     log('"'+req.session.username+'" has logged in.');
                     // Associate the websocket with the username
-                    this.sockets[req.body.__sId].onLogin(req.body.__u);
+                    socket = this.sockets[req.body.__sId];
+                    if (!!socket) {  // websocket has already connected
+                        socket.onLogin(req.body.__u);
+                    }
                     return res.send(Utils.serializeArray(EXTERNAL_API));
                 }
                 log('Could not find user "'+req.body.__u+'"');
