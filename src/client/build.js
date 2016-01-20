@@ -54668,11 +54668,20 @@ TableMorph.prototype._onNameChanged = function(newName) {
 };
 
 TableMorph.prototype.update = function(leaderId, name, /*seatId,*/ seats) {
+    var username = SnapCloud.username || this.ide.sockets.uuid;
     // Update the seats, etc
-    console.log('updating table! leaderId is ', leaderId);
     this.leaderId = leaderId;
     this._name = name;
     this.seats = seats;
+
+    // Convert uuid to 'me' if applicable
+    var ids = Object.keys(this.seats);
+    for (var i = ids.length; i--;) {
+        if (this.seats[ids[i]] === username) {
+            this.seats[ids[i]] = 'me';
+        }
+    }
+
     this.version = Date.now();
 
     //this.ide.setProjectName(seatId);  // seat name and project name are the same

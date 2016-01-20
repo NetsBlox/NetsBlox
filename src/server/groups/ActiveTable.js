@@ -73,7 +73,6 @@ class ActiveTable {
 
     getStateMsg () {
         var seats = {},
-            sockets,
             msg;
 
         Object.keys(this.seatOwners)
@@ -85,7 +84,6 @@ class ActiveTable {
             'table-seats',
             this.leader.username,
             this.name,
-            // add the seatId
             JSON.stringify(seats)
         ].join(' ');
         return msg;
