@@ -296,13 +296,9 @@ TableMorph.prototype.evictUser = function (user, seat) {
 
 TableMorph.prototype.inviteFriend = function (seat) {
     // TODO: Check if the user is the leader
-    var tablemates = Object.keys(this.seats)
-        .map(seat => this.seats[seat]);
-
     SnapCloud.getFriendList(friends => {
         // Remove friends at the table
-        this._inviteFriendDialog(seat, friends
-            .filter(friend => tablemates.indexOf(friend) === -1));
+            this._inviteFriendDialog(seat, friends);
         },
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);

@@ -54221,7 +54221,7 @@ function MessageInputSlotMorph() {
 
 MessageInputSlotMorph.prototype.setContents = function(messageType, inputs) {
     var self = this,
-        targetSeat = inputs ? inputs.pop() : '',
+        targetSeat = inputs && inputs.pop ? inputs.pop() : '',
         targetDropdown,
         len;
 
@@ -54455,6 +54455,20 @@ function MessageOutputSlotMorph() {
 MessageOutputSlotMorph.prototype.evaluate = function() {
     return this._msgContent.map(function(c) {
         return c.evaluate();
+    });
+};
+
+MessageOutputSlotMorph.prototype.setContents = function(messageType, inputs) {
+    var self = this;
+
+    // Set the value for the dropdown
+    InputSlotMorph.prototype.setContents.call(this, messageType);
+
+    // Create the message fields
+    this._updateMessage(messageType, function() {
+        if (self.parent) {
+            self._updateFields(inputs);
+        }
     });
 };
 
@@ -54812,13 +54826,9 @@ TableMorph.prototype.evictUser = function (user, seat) {
 
 TableMorph.prototype.inviteFriend = function (seat) {
     // TODO: Check if the user is the leader
-    var tablemates = Object.keys(this.seats)
-        .map(seat => this.seats[seat]);
-
     SnapCloud.getFriendList(friends => {
         // Remove friends at the table
-        this._inviteFriendDialog(seat, friends
-            .filter(friend => tablemates.indexOf(friend) === -1));
+            this._inviteFriendDialog(seat, friends);
         },
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
