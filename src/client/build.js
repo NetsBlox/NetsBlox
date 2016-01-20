@@ -15880,22 +15880,6 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part = this.labelPart('%key');
             part.isStatic = true;
             break;
-        case '%role':
-            part = new InputSlotMorph(
-                null,
-                false,
-                'rolesMenu',
-                true
-            );
-            break;
-        case '%roleHat':
-            part = new InputSlotMorph(
-                null,
-                false,
-                'rolesReceivedMenu',
-                true
-            );
-            break;
         case '%socketMsgHat':
             part = new InputSlotMorph(
                 null,
@@ -21589,98 +21573,6 @@ InputSlotMorph.prototype.dropDownMenu = function (enableKeyboard) {
 };
 
 /**
- * Populate the roles menus for use with networking blocks.
- *
- * @return {Dictionary} dict
- */
-InputSlotMorph.prototype.rolesMenu = function () {
-    var dict = this._populateMenu({}, 'allRoleNames'),
-        myself = this;
-
-    if (Object.keys(dict).length > 0) {
-        dict['~'] = null;
-    }
-    dict['new...'] = function () {
-
-        new DialogBoxMorph(
-            myself,
-            myself.setContents,
-            myself
-        ).prompt(
-            'Role name',
-            null,
-            myself.world()
-        );
-    };
-
-    return dict;
-};
-
-/**
- * Create dropdown menu for networking roles.
- *
- * @return {Dictionary} dict
- */
-InputSlotMorph.prototype.rolesReceivedMenu = function () {
-    var dict = this._populateMenu({'any role': ['any role']}, 'allRoleNames'),
-        myself = this;
-
-    dict['~'] = null;
-    dict['new...'] = function () {
-
-        new DialogBoxMorph(
-            myself,
-            myself.setContents,
-            myself
-        ).prompt(
-            'Role name',
-            null,
-            myself.world()
-        );
-    };
-
-    return dict;
-};
-
-InputSlotMorph.prototype.socketMessagesReceivedMenu = function () {
-    var dict = {'join': 'join',
-                'leave': 'leave'};
-    this.socketMessagesMenu(dict);
-    dict['any event'] = ['any event'];
-    dict['new...'] = dict['new...'];
-    return dict;
-};
-
-/**
- * socketMessagesMenu
- *
- * @param {Dictionary} dict
- * @return {Dictionary}
- */
-InputSlotMorph.prototype.socketMessagesMenu = function (dict) {
-    var myself = this;
-
-    dict = dict || {};
-    this._populateMenu(dict, 'allEventNames'),
-
-    dict['~'] = null;
-    dict['new...'] = function () {
-
-        new DialogBoxMorph(
-            myself,
-            myself.setContents,
-            myself
-        ).prompt(
-            'Event name',
-            null,
-            myself.world()
-        );
-    };
-
-    return dict;
-};
-
-/**
  * Create the dropdown menu for the broadcast message blocks (`doBroadcast` and `doBroadcastAndWait`).
  *
  * @return {Dictionary} dict
@@ -26925,10 +26817,11 @@ WebSocketManager.MessageHandlers = {
             messageType = data.shift(),
             content = JSON.parse(data.join(' ') || null);
 
-        // TODO: filter for gameplay and pass to debugger
+        // filter for gameplay
         if (dstId === this.ide.projectName || dstId === 'everyone') {
             this.onMessageReceived(messageType, content, 'role');
         }
+        // TODO: pass to debugger
     },
 
     // Update on the current seats at the given table
@@ -29190,20 +29083,6 @@ Process.prototype.reportStageHeight = function () {
 
 // Process event networked messaging primitives
 
-Process.prototype.doRegisterClient = function (message) {
-    // Get the websocket manager
-    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
-    // FIXME
-    ide.sockets.sendMessage('register ' + message);
-};
-
-Process.prototype.doSocketEvent = function (message) {
-    // Get the websocket manager
-    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
-
-    ide.sockets.sendMessage('message ' + message);
-};
-
 Process.prototype.doTableMessage = function() {
     var msg = this._createMsg.apply(this, arguments),
         ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
@@ -31383,23 +31262,7 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'costume from %s with %s',
             defaults: ['staticmap/getMap']
         },
-        // TODO: get list from RPC; get message from RPC
         // Network Messages
-        doRegisterClient: {  // for use with the generic group manager
-            type: 'command',
-            category: 'services',
-            spec: 'register as %role'
-        },
-        receiveSocketEvent: {
-            type: 'hat',
-            category: 'services',
-            spec: 'when I receive %socketMsgHat from %roleHat'
-        },
-        doSocketEvent: {
-            type: 'command',
-            category: 'services',
-            spec: 'broadcast event %socketMsg'
-        },
         doSocketMessage: {
             type: 'command',
             category: 'services',
@@ -32771,17 +32634,11 @@ SpriteMorph.prototype.blockTemplates = function (category) {
 
     } else if (cat === 'services') {
         // TODO: Move these later to other categories
-        blocks.push(block('receiveSocketEvent'));
         blocks.push(block('receiveSocketMessage'));
         blocks.push('-');
-        blocks.push(block('doSocketEvent'));
         blocks.push(block('doSocketMessage'));
         blocks.push(block('doTableMessage'));
         blocks.push('-');
-        // TODO: Only add this block if unique role paradigm
-        blocks.push(block('doRegisterClient'));
-        blocks.push('-');
-        //blocks.push(block('doSocketDisconnect'));
         if (this.world().isDevMode) {
             blocks.push(block('getJSFromRPC'));
             blocks.push(block('getCostumeFromRPC'));
@@ -34527,29 +34384,6 @@ SpriteMorph.prototype.bounceOffEdge = function () {
 // SpriteMorph message broadcasting
 
 /**
- * Search all child scripts for networking blocks and return all known roles.
- *
- * @return {Array} roles
- */
-SpriteMorph.prototype.allRoleNames = function () {
-    var roles = {},
-        networkingBlocks = ['doRegisterClient', 'receiveSocketEvent'];
-    this.scripts.allChildren().forEach(function (morph) {
-        var txt;
-        if (morph.selector) {
-            var index = networkingBlocks.indexOf(morph.selector);
-            if (index > -1) {
-                txt = morph.inputs()[index].evaluate();
-                if (isString(txt) && txt !== '') {
-                    roles[txt] = true;
-                }
-            }
-        }
-    });
-    return Object.keys(roles);
-};
-
-/**
  * Search all scripts for messaging blocks and return any message types they contain.
  *
  * @return {Array} msgs
@@ -34563,45 +34397,15 @@ SpriteMorph.prototype.allMessageNames = function () {
                     ['receiveMessage', 
                      'doBroadcast', 
                      'doBroadcastAndWait', 
-                     'doSocketEvent', 
-                     'receiveSocketEvent',
                      'doSocketMessage', 
                      'doTableMessage', 
                      'receiveSocketMessage'],
                     morph.selector
                 )) {
                 txt = morph.inputs()[0].evaluate();
-                if (morph.selector !== 'receiveSocketEvent' ||  // Ignore 'join' and 'leave' from 
-                       (txt !== 'join' && txt !== 'leave')) {     // receiveSocketEvent
-                    if (isString(txt) && txt !== '') {
-                        if (!contains(msgs, txt)) {
-                            msgs.push(txt);
-                        }
-                    }
-                }
-            }
-        }
-    });
-    return msgs;
-};
-
-SpriteMorph.prototype.allEventNames = function () {
-    var msgs = [];
-    this.scripts.allChildren().forEach(function (morph) {
-        var txt;
-        if (morph.selector) {
-            if (contains(
-                    ['doSocketEvent', 
-                     'receiveSocketEvent'],
-                    morph.selector
-                )) {
-                txt = morph.inputs()[0].evaluate();
-                if (morph.selector !== 'receiveSocketEvent' ||  // Ignore 'join' and 'leave' from 
-                       (txt !== 'join' && txt !== 'leave')) {     // receiveSocketEvent
-                    if (isString(txt) && txt !== '') {
-                        if (!contains(msgs, txt)) {
-                            msgs.push(txt);
-                        }
+                if (isString(txt) && txt !== '') {
+                    if (!contains(msgs, txt)) {
+                        msgs.push(txt);
                     }
                 }
             }
@@ -36417,14 +36221,10 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('clear'));
 
     } else if (cat === 'services') {
-        blocks.push(block('receiveSocketEvent'));
         blocks.push(block('receiveSocketMessage'));
         blocks.push('-');
-        blocks.push(block('doSocketEvent'));
         blocks.push(block('doSocketMessage'));
         blocks.push(block('doTableMessage'));
-        blocks.push('-');
-        blocks.push(block('doRegisterClient'));
         blocks.push('-');
 
         if (this.world().isDevMode) {
@@ -36996,9 +36796,6 @@ StageMorph.prototype.allRoleNames
 
 StageMorph.prototype.allMessageNames
     = SpriteMorph.prototype.allMessageNames;
-
-StageMorph.prototype.allEventNames
-    = SpriteMorph.prototype.allEventNames;
 
 StageMorph.prototype.allHatBlocksFor
     = SpriteMorph.prototype.allHatBlocksFor;

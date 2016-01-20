@@ -620,23 +620,7 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'costume from %s with %s',
             defaults: ['staticmap/getMap']
         },
-        // TODO: get list from RPC; get message from RPC
         // Network Messages
-        doRegisterClient: {  // for use with the generic group manager
-            type: 'command',
-            category: 'services',
-            spec: 'register as %role'
-        },
-        receiveSocketEvent: {
-            type: 'hat',
-            category: 'services',
-            spec: 'when I receive %socketMsgHat from %roleHat'
-        },
-        doSocketEvent: {
-            type: 'command',
-            category: 'services',
-            spec: 'broadcast event %socketMsg'
-        },
         doSocketMessage: {
             type: 'command',
             category: 'services',
@@ -2008,17 +1992,11 @@ SpriteMorph.prototype.blockTemplates = function (category) {
 
     } else if (cat === 'services') {
         // TODO: Move these later to other categories
-        blocks.push(block('receiveSocketEvent'));
         blocks.push(block('receiveSocketMessage'));
         blocks.push('-');
-        blocks.push(block('doSocketEvent'));
         blocks.push(block('doSocketMessage'));
         blocks.push(block('doTableMessage'));
         blocks.push('-');
-        // TODO: Only add this block if unique role paradigm
-        blocks.push(block('doRegisterClient'));
-        blocks.push('-');
-        //blocks.push(block('doSocketDisconnect'));
         if (this.world().isDevMode) {
             blocks.push(block('getJSFromRPC'));
             blocks.push(block('getCostumeFromRPC'));
@@ -3764,29 +3742,6 @@ SpriteMorph.prototype.bounceOffEdge = function () {
 // SpriteMorph message broadcasting
 
 /**
- * Search all child scripts for networking blocks and return all known roles.
- *
- * @return {Array} roles
- */
-SpriteMorph.prototype.allRoleNames = function () {
-    var roles = {},
-        networkingBlocks = ['doRegisterClient', 'receiveSocketEvent'];
-    this.scripts.allChildren().forEach(function (morph) {
-        var txt;
-        if (morph.selector) {
-            var index = networkingBlocks.indexOf(morph.selector);
-            if (index > -1) {
-                txt = morph.inputs()[index].evaluate();
-                if (isString(txt) && txt !== '') {
-                    roles[txt] = true;
-                }
-            }
-        }
-    });
-    return Object.keys(roles);
-};
-
-/**
  * Search all scripts for messaging blocks and return any message types they contain.
  *
  * @return {Array} msgs
@@ -3800,45 +3755,15 @@ SpriteMorph.prototype.allMessageNames = function () {
                     ['receiveMessage', 
                      'doBroadcast', 
                      'doBroadcastAndWait', 
-                     'doSocketEvent', 
-                     'receiveSocketEvent',
                      'doSocketMessage', 
                      'doTableMessage', 
                      'receiveSocketMessage'],
                     morph.selector
                 )) {
                 txt = morph.inputs()[0].evaluate();
-                if (morph.selector !== 'receiveSocketEvent' ||  // Ignore 'join' and 'leave' from 
-                       (txt !== 'join' && txt !== 'leave')) {     // receiveSocketEvent
-                    if (isString(txt) && txt !== '') {
-                        if (!contains(msgs, txt)) {
-                            msgs.push(txt);
-                        }
-                    }
-                }
-            }
-        }
-    });
-    return msgs;
-};
-
-SpriteMorph.prototype.allEventNames = function () {
-    var msgs = [];
-    this.scripts.allChildren().forEach(function (morph) {
-        var txt;
-        if (morph.selector) {
-            if (contains(
-                    ['doSocketEvent', 
-                     'receiveSocketEvent'],
-                    morph.selector
-                )) {
-                txt = morph.inputs()[0].evaluate();
-                if (morph.selector !== 'receiveSocketEvent' ||  // Ignore 'join' and 'leave' from 
-                       (txt !== 'join' && txt !== 'leave')) {     // receiveSocketEvent
-                    if (isString(txt) && txt !== '') {
-                        if (!contains(msgs, txt)) {
-                            msgs.push(txt);
-                        }
+                if (isString(txt) && txt !== '') {
+                    if (!contains(msgs, txt)) {
+                        msgs.push(txt);
                     }
                 }
             }
@@ -5654,14 +5579,10 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('clear'));
 
     } else if (cat === 'services') {
-        blocks.push(block('receiveSocketEvent'));
         blocks.push(block('receiveSocketMessage'));
         blocks.push('-');
-        blocks.push(block('doSocketEvent'));
         blocks.push(block('doSocketMessage'));
         blocks.push(block('doTableMessage'));
-        blocks.push('-');
-        blocks.push(block('doRegisterClient'));
         blocks.push('-');
 
         if (this.world().isDevMode) {
@@ -6233,9 +6154,6 @@ StageMorph.prototype.allRoleNames
 
 StageMorph.prototype.allMessageNames
     = SpriteMorph.prototype.allMessageNames;
-
-StageMorph.prototype.allEventNames
-    = SpriteMorph.prototype.allEventNames;
 
 StageMorph.prototype.allHatBlocksFor
     = SpriteMorph.prototype.allHatBlocksFor;

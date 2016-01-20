@@ -26,10 +26,11 @@ WebSocketManager.MessageHandlers = {
             messageType = data.shift(),
             content = JSON.parse(data.join(' ') || null);
 
-        // TODO: filter for gameplay and pass to debugger
+        // filter for gameplay
         if (dstId === this.ide.projectName || dstId === 'everyone') {
             this.onMessageReceived(messageType, content, 'role');
         }
+        // TODO: pass to debugger
     },
 
     // Update on the current seats at the given table

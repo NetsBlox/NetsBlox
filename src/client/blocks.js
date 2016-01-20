@@ -1120,22 +1120,6 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part = this.labelPart('%key');
             part.isStatic = true;
             break;
-        case '%role':
-            part = new InputSlotMorph(
-                null,
-                false,
-                'rolesMenu',
-                true
-            );
-            break;
-        case '%roleHat':
-            part = new InputSlotMorph(
-                null,
-                false,
-                'rolesReceivedMenu',
-                true
-            );
-            break;
         case '%socketMsgHat':
             part = new InputSlotMorph(
                 null,
@@ -6826,98 +6810,6 @@ InputSlotMorph.prototype.dropDownMenu = function (enableKeyboard) {
     } else {
         return null;
     }
-};
-
-/**
- * Populate the roles menus for use with networking blocks.
- *
- * @return {Dictionary} dict
- */
-InputSlotMorph.prototype.rolesMenu = function () {
-    var dict = this._populateMenu({}, 'allRoleNames'),
-        myself = this;
-
-    if (Object.keys(dict).length > 0) {
-        dict['~'] = null;
-    }
-    dict['new...'] = function () {
-
-        new DialogBoxMorph(
-            myself,
-            myself.setContents,
-            myself
-        ).prompt(
-            'Role name',
-            null,
-            myself.world()
-        );
-    };
-
-    return dict;
-};
-
-/**
- * Create dropdown menu for networking roles.
- *
- * @return {Dictionary} dict
- */
-InputSlotMorph.prototype.rolesReceivedMenu = function () {
-    var dict = this._populateMenu({'any role': ['any role']}, 'allRoleNames'),
-        myself = this;
-
-    dict['~'] = null;
-    dict['new...'] = function () {
-
-        new DialogBoxMorph(
-            myself,
-            myself.setContents,
-            myself
-        ).prompt(
-            'Role name',
-            null,
-            myself.world()
-        );
-    };
-
-    return dict;
-};
-
-InputSlotMorph.prototype.socketMessagesReceivedMenu = function () {
-    var dict = {'join': 'join',
-                'leave': 'leave'};
-    this.socketMessagesMenu(dict);
-    dict['any event'] = ['any event'];
-    dict['new...'] = dict['new...'];
-    return dict;
-};
-
-/**
- * socketMessagesMenu
- *
- * @param {Dictionary} dict
- * @return {Dictionary}
- */
-InputSlotMorph.prototype.socketMessagesMenu = function (dict) {
-    var myself = this;
-
-    dict = dict || {};
-    this._populateMenu(dict, 'allEventNames'),
-
-    dict['~'] = null;
-    dict['new...'] = function () {
-
-        new DialogBoxMorph(
-            myself,
-            myself.setContents,
-            myself
-        ).prompt(
-            'Event name',
-            null,
-            myself.world()
-        );
-    };
-
-    return dict;
 };
 
 /**

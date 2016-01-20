@@ -13,6 +13,11 @@ module.exports = R.mapObjIndexed(convertMsgType,
         SimpleMessage: ['sender', 'body'],
         MoveGoose: ['goose', 'row', 'column'],
         MoveFox: ['row', 'column'],
-        Earthquake: ['latitude', 'longitude', 'size', 'time']
+        Earthquake: ['latitude', 'longitude', 'size', 'time'],
+
+        // basic events
+        reset: [],
+        join: [],
+        leave: []
     });
 

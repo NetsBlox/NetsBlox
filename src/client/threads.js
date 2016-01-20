@@ -1981,20 +1981,6 @@ Process.prototype.reportStageHeight = function () {
 
 // Process event networked messaging primitives
 
-Process.prototype.doRegisterClient = function (message) {
-    // Get the websocket manager
-    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
-    // FIXME
-    ide.sockets.sendMessage('register ' + message);
-};
-
-Process.prototype.doSocketEvent = function (message) {
-    // Get the websocket manager
-    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
-
-    ide.sockets.sendMessage('message ' + message);
-};
-
 Process.prototype.doTableMessage = function() {
     var msg = this._createMsg.apply(this, arguments),
         ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
