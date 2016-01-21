@@ -31,7 +31,7 @@ module.exports = [
             warn('returning ALL active sockets');
             for (var i = uuids.length; i--;) {
                 socket = this.sockets[uuids[i]];
-                if (socket.username !== username) {
+                if (socket.username !== username && socket.loggedIn) {
                     resp[socket.username] = uuids[i];
                 }
             }

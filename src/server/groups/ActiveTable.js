@@ -120,6 +120,7 @@ class ActiveTable {
     sendFrom (srcSeat, msg) {
         Object.keys(this.seats)
             .filter(seat => seat !== srcSeat)  // Don't send to origin
+            .filter(seat => !!this.seats[seat])  // Make sure it is occupied
             .forEach(seat => this.seats[seat].send(msg));
     }
 
