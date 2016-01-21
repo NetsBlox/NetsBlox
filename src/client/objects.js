@@ -626,11 +626,6 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'services',
             spec: 'send msg %msgInput to %seats'
         },
-        doTableMessage: {
-            type: 'command',
-            category: 'services',
-            spec: 'put msg %msgInput on table'
-        },
         receiveSocketMessage: {
             type: 'hat',
             category: 'services',
@@ -1995,7 +1990,6 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('receiveSocketMessage'));
         blocks.push('-');
         blocks.push(block('doSocketMessage'));
-        blocks.push(block('doTableMessage'));
         blocks.push('-');
         if (this.world().isDevMode) {
             blocks.push(block('getJSFromRPC'));
@@ -3756,7 +3750,6 @@ SpriteMorph.prototype.allMessageNames = function () {
                      'doBroadcast', 
                      'doBroadcastAndWait', 
                      'doSocketMessage', 
-                     'doTableMessage', 
                      'receiveSocketMessage'],
                     morph.selector
                 )) {
@@ -5582,7 +5575,6 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('receiveSocketMessage'));
         blocks.push('-');
         blocks.push(block('doSocketMessage'));
-        blocks.push(block('doTableMessage'));
         blocks.push('-');
 
         if (this.world().isDevMode) {

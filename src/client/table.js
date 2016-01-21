@@ -3,58 +3,17 @@ IDE_Morph.prototype.createTable = function() {
     this.table = new TableMorph(this);
 };
 
-IDE_Morph.prototype._createCorral = IDE_Morph.prototype.createCorral;
-IDE_Morph.prototype.createCorral = function() {
-    var padding = 5;  // Same as in IDE_Morph.prototype.createCorral
-    this._createCorral();
-
-    // Add table morph button
-    this.corral.tableIcon = new SpriteIconMorph(this.table);
-    this.corral.tableIcon.isDraggable = false;
-    this.corral.add(this.corral.tableIcon);
-
-    // Position the
-    this.corral.fixLayout = function() {
-        this.stageIcon.setCenter(this.center());
-        this.stageIcon.setLeft(this.left() + padding);
-
-        this.tableIcon.setCenter(this.center());
-        this.tableIcon.setLeft(this.stageIcon.width() + this.left() + padding);
-
-        this.frame.setLeft(this.stageIcon.right() + padding);
-        this.frame.setExtent(new Point(
-            this.right() - this.frame.left(),
-            this.height()
-        ));
-        this.arrangeIcons();
-        this.refresh();
-    };
-
-    this.corral.refresh = function() {
-        this.stageIcon.refresh();
-        this.tableIcon.refresh();
-        this.frame.contents.children.forEach(function(icon) {
-            icon.refresh();
-        });
-    };
-
-    // TODO
-};
-
 // Create the tabs
 // + Projects (primary)
 // + Scripts
 IDE_Morph.prototype._getCurrentTabs = function () {
-    if (this.currentSprite === this.table) {
-        return ['Projects', 'Scripts'];
-    }
-    return ['Scripts', 'Costumes', 'Sounds'];
+    return ['Scripts', 'Costumes', 'Sounds', 'Table'];
 };
 
 // Creating the 'projects' view for the table
 IDE_Morph.prototype._createSpriteEditor = IDE_Morph.prototype.createSpriteEditor;
 IDE_Morph.prototype.createSpriteEditor = function() {
-    if (this.currentTab === 'projects') {
+    if (this.currentTab === 'table') {
         if (this.spriteEditor) {
             this.spriteEditor.destroy();
         }

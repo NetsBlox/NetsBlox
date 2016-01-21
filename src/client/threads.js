@@ -1981,16 +1981,6 @@ Process.prototype.reportStageHeight = function () {
 
 // Process event networked messaging primitives
 
-Process.prototype.doTableMessage = function() {
-    var msg = this._createMsg.apply(this, arguments),
-        ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
-
-    ide.sockets.sendMessage({
-        type: 'table-message',
-        content: msg.contents
-    });
-};
-
 Process.prototype.doSocketMessage = function (name) {
     var msg = this._createMsg.apply(this, arguments),
         ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
