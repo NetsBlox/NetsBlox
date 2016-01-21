@@ -80,12 +80,12 @@ class ActiveTable {
                 seats[seat] = this.seatOwners[seat];
             });
 
-        msg = [
-            'table-seats',
-            this.leader.username,
-            this.name,
-            JSON.stringify(seats)
-        ].join(' ');
+        msg = {
+            type: 'table-seats',
+            leader: this.leader.username,
+            name: this.name,
+            seats: seats
+        };
         return msg;
     }
 

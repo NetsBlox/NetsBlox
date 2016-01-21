@@ -111,12 +111,12 @@ module.exports = [
             // If the user is online, send the invitation via ws to the browser
             inviteeSockets.forEach(socket => {
                 // Send the invite to the sockets
-                var msg = [
-                    'table-invitation',
-                    inviteId,
-                    tableId,
-                    seatId
-                ].join(' ');
+                var msg = {
+                    type: 'table-invitation',
+                    id: inviteId,
+                    table: tableId,
+                    seat: seatId
+                };
                 socket.send(msg);
             });
             res.send('ok');

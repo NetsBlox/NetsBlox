@@ -46,7 +46,7 @@ class NetsBloxSocket {
         this._initialize();
 
         // Provide a uuid
-        socket.send('uuid '+ this.uuid);
+        this.send({type: 'uuid', body: this.uuid});
         this._logger.trace('created');
     }
 
@@ -60,12 +60,12 @@ class NetsBloxSocket {
 
     _initialize (msg) {
         this._socket.on('message', data => {
-            var msg = data.split(' '),
-                type = msg.shift();
+            var msg = JSON.parse(data),
+                type = msg.type;
 
             this._logger.trace(`received "${type === 'project-response' ? type : data}" message`);
             if (NetsBloxSocket.MessageHandlers[type]) {
-                NetsBloxSocket.MessageHandlers[type].apply(this, msg);
+                NetsBloxSocket.MessageHandlers[type].call(this, msg);
             } else {
                 this._logger.warn('message "' + data + '" not recognized');
             }
@@ -136,6 +136,7 @@ class NetsBloxSocket {
     }
 
     send (msg) {
+        msg = JSON.stringify(msg);
         this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
         if (this._socket.readyState === this.OPEN) {
             this._socket.send(msg);
@@ -154,7 +155,10 @@ class NetsBloxSocket {
 
     getProjectJson (callback) {
         var id = ++counter;
-        this.send('project-request ' + id);
+        this.send({
+            type: 'project-request',
+            id: id
+        });
         this._projectRequests[id] = callback;
     }
 }
@@ -165,27 +169,14 @@ NetsBloxSocket.prototype.OPEN = 1;
 NetsBloxSocket.prototype.CLOSING = 2;
 NetsBloxSocket.prototype.CLOSED = 3;
 
-// TODO: Every message should contain the sender and receiver
 NetsBloxSocket.MessageHandlers = {
-    'message': function() {
-        var rawMsg = Array.prototype.slice.call(arguments);
-        rawMsg.unshift('message');
-        this.sendToEveryone(rawMsg.join(' '));
+    'message': function(msg) {
+        this.sendToEveryone(msg);
     },
 
-    'table-message': function() {
-        // TODO: Send a message to the table client
-        var rawMsg = Array.prototype.slice.call(arguments),
-            msg;
-
-        rawMsg.unshift('message');
-        msg = rawMsg.join(' ');
-        this._logger.trace(`sending message to table: "${msg}"`);
-    },
-
-    'project-response': function(id) {
-        var content = Array.prototype.slice.call(arguments, 1).join(' '),
-            json = JSON.parse(content);
+    'project-response': function(msg) {
+        var id = msg.id,
+            json = msg.project;
 
         createSaveableProject(json, (err, project) => {
             if (err) {
@@ -197,16 +188,16 @@ NetsBloxSocket.MessageHandlers = {
         });
     },
 
-    'rename-table': function(tableName) {
+    'rename-table': function(msg) {
         if (this.hasTable()) {
-            this._table.name = tableName;
+            this._table.name = msg.name;
             this._table.update();
         }
     },
 
-    'rename-seat': function(seatId, newId) {
+    'rename-seat': function(msg) {
         if (this.hasTable()) {
-            this._table.renameSeat(seatId, newId);
+            this._table.renameSeat(msg.seatId, msg.name);
         }
     },
 
@@ -217,14 +208,18 @@ NetsBloxSocket.MessageHandlers = {
         }
     },
 
-    'create-table': function(tableName, seat) {
-        var table = this.createTable(this, tableName);
-        table.createSeat(seat);
-        table.seatOwners[seat] = this.username;
-        this.join(table, seat);
+    'create-table': function(msg) {
+        var table = this.createTable(this, msg.table);
+        table.createSeat(msg.seat);
+        table.seatOwners[msg.seat] = this.username;
+        this.join(table, msg.seat);
     },
 
-    'join-table': function(leader, name, seat) {
+    'join-table': function(msg) {
+        var leader = msg.leader,
+            name = msg.table,
+            seat = msg.seat;
+
         this.getTable(leader, name, (table) => {
             // create the seat if need be (and if we are the owner)
             if (!table.seats.hasOwnProperty(seat) && table.leader === this) {
@@ -236,10 +231,10 @@ NetsBloxSocket.MessageHandlers = {
         });
         
     },
-    'add-seat': function(seatName) {
+    'add-seat': function(msg) {
         // TODO: make sure this is the table leader
         if (this.hasTable()) {
-            this._table.createSeat(seatName);
+            this._table.createSeat(msg.name);
         }
     }
 };

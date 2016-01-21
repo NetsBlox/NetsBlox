@@ -14,17 +14,16 @@ var WebSocketManager = function (ide) {
 
 WebSocketManager.MessageHandlers = {
     // Receive an assigned uuid
-    'uuid': function(data) {
-        this.uuid = data.join(' ');
+    'uuid': function(msg) {
+        this.uuid = msg.body;
         this._onConnect();
     },
 
     // Game play message
-    'message': function(data) {
-        var dstId = data.shift(),
-            srcId = data.shift(),
-            messageType = data.shift(),
-            content = JSON.parse(data.join(' ') || null);
+    'message': function(msg) {
+        var dstId = msg.dstId,
+            messageType = msg.msgType,
+            content = msg.content;
 
         // filter for gameplay
         if (dstId === this.ide.projectName || dstId === 'everyone') {
@@ -34,27 +33,20 @@ WebSocketManager.MessageHandlers = {
     },
 
     // Update on the current seats at the given table
-    'table-seats': function(data) {
-        var leaderId = data.shift(),
-            name = data.shift(),
-            /*seatId = data.shift(),*/
-            seats = JSON.parse(data.join(' '));
-        this.ide.table.update(leaderId, name, /*seatId,*/ seats);
+    'table-seats': function(msg) {
+        this.ide.table.update(msg.leader, msg.name, /*seatId,*/ msg.seats);
     },
 
     // Receive an invite to join a table
-    'table-invitation': function(data) {
-        this.ide.table.promptInvite.apply(this.ide.table, data);
+    'table-invitation': function(msg) {
+        this.ide.table.promptInvite(msg.id, msg.table, msg.seat);
     },
 
-    'project-request': function(data) {
-        var id = data.shift(),
-            project = this.getSerializedProject(),
-            msg = [
-                'project-response',
-                id,
-                JSON.stringify(project)
-            ].join(' ');
+    'project-request': function(msg) {
+        var project = this.getSerializedProject();
+        msg.type = 'project-response';
+        msg.project = project;
+
         this.sendMessage(msg);
     }
 };
@@ -92,16 +84,15 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
     // Set up message events
     // Where should I set this up now?
-    this.websocket.onmessage = function(message) {
-        var data = message.data.split(' '),
-            type = data.shift(),
-            role,
+    this.websocket.onmessage = function(rawMsg) {
+        var msg = JSON.parse(rawMsg.data),
+            type = msg.type,
             content;
 
         if (WebSocketManager.MessageHandlers[type]) {
-            WebSocketManager.MessageHandlers[type].call(self, data, message.data);
+            WebSocketManager.MessageHandlers[type].call(self, msg);
         } else {
-            console.error('Unknown message:', message.data);
+            console.error('Unknown message:', msg);
         }
     };
 
@@ -112,6 +103,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
 WebSocketManager.prototype.sendMessage = function(message) {
     var state = this.websocket.readyState;
+    message = JSON.stringify(message);
     if (state === this.websocket.OPEN) {
         this.websocket.send(message);
     } else {
@@ -136,13 +128,18 @@ WebSocketManager.prototype._onConnect = function() {
 WebSocketManager.prototype.updateTableInfo = function() {
     var tableLeader = this.ide.table.leaderId,
         seatId = this.ide.projectName,
-        tableName = this.ide.table.name || '__new_project__';
+        tableName = this.ide.table.name || '__new_project__',
+        msg = {
+            type: 'create-table',
+            table: tableName,
+            seat: seatId
+        };
         
     if (this.ide.table.leaderId) {
-        this.sendMessage(['join-table', tableLeader, tableName, seatId].join(' '));
-    } else {
-        this.sendMessage(['create-table', tableName, seatId].join(' '));
+        msg.type = 'join-table';
+        msg.leader = tableLeader;
     }
+    this.sendMessage(msg);
 };
 
 WebSocketManager.prototype.toggleNetwork = function() {
@@ -168,7 +165,7 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
     if (message !== '') {
         stage.children.concat(stage).forEach(function (morph) {
             if (morph instanceof SpriteMorph || morph instanceof StageMorph) {
-                hats = hats.concat(morph.allHatBlocksForSocket(message, role));
+                hats = hats.concat(morph.allHatBlocksForSocket(message, role));  // FIXME
             }
         });
 

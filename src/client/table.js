@@ -133,7 +133,10 @@ function TableMorph(ide) {
 TableMorph.prototype._onNameChanged = function(newName) {
     if (this._name !== newName) {
         this._name = newName;
-        this.ide.sockets.sendMessage('rename-table ' + newName);
+        this.ide.sockets.sendMessage({
+            type: 'rename-table',
+            name: newName
+        });
     }
 };
 
@@ -263,7 +266,10 @@ TableMorph.prototype.createNewSeat = function () {
 
 TableMorph.prototype._createNewSeat = function (name) {
     // Create the new seat
-    this.ide.sockets.sendMessage('add-seat ' + name);
+    this.ide.sockets.sendMessage({
+        type: 'add-seat',
+        name: name
+    });
 };
 
 TableMorph.prototype.setSeatName = function() {
@@ -280,11 +286,11 @@ TableMorph.prototype.setSeatName = function() {
             );
         } else {
             // TODO: Should we have a confirmation message?
-            myself.ide.sockets.sendMessage([
-                'rename-seat',
-                myself.ide.projectName,
-                seatName].join(' ')
-            );
+            myself.ide.sockets.sendMessage({
+                type: 'rename-seat',
+                seatId: myself.ide.projectName,
+                name: seatName
+            });
             myself.ide.setProjectName(seatName);  // seat name and project name are the same
         }
     }, null, 'setSeatName');

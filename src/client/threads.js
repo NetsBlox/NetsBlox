@@ -1983,20 +1983,27 @@ Process.prototype.reportStageHeight = function () {
 
 Process.prototype.doTableMessage = function() {
     var msg = this._createMsg.apply(this, arguments),
-        ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
-        message = msg.type.name + ' ' + JSON.stringify(msg.contents);
+        ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
 
-    ide.sockets.sendMessage('table-message ' + message);
+    ide.sockets.sendMessage({
+        type: 'table-message',
+        content: msg.contents
+    });
 };
 
 Process.prototype.doSocketMessage = function (name) {
     var msg = this._createMsg.apply(this, arguments),
         ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
         targetSeat = arguments[arguments.length-1],
-        mySeat = ide.projectName,  // same as seat name
-        message = msg.type.name + ' ' + JSON.stringify(msg.contents);
+        mySeat = ide.projectName;  // same as seat name
 
-    ide.sockets.sendMessage(['message', targetSeat, mySeat, message].join(' '));
+    ide.sockets.sendMessage({
+        type: 'message',
+        dstId: targetSeat,
+        srcId: mySeat,
+        msgType: msg.type.name,
+        content: msg.contents
+    });
 };
 
 Process.prototype._createMsg = function (name) {

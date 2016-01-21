@@ -26805,17 +26805,16 @@ var WebSocketManager = function (ide) {
 
 WebSocketManager.MessageHandlers = {
     // Receive an assigned uuid
-    'uuid': function(data) {
-        this.uuid = data.join(' ');
+    'uuid': function(msg) {
+        this.uuid = msg.body;
         this._onConnect();
     },
 
     // Game play message
-    'message': function(data) {
-        var dstId = data.shift(),
-            srcId = data.shift(),
-            messageType = data.shift(),
-            content = JSON.parse(data.join(' ') || null);
+    'message': function(msg) {
+        var dstId = msg.dstId,
+            messageType = msg.msgType,
+            content = msg.content;
 
         // filter for gameplay
         if (dstId === this.ide.projectName || dstId === 'everyone') {
@@ -26825,27 +26824,20 @@ WebSocketManager.MessageHandlers = {
     },
 
     // Update on the current seats at the given table
-    'table-seats': function(data) {
-        var leaderId = data.shift(),
-            name = data.shift(),
-            /*seatId = data.shift(),*/
-            seats = JSON.parse(data.join(' '));
-        this.ide.table.update(leaderId, name, /*seatId,*/ seats);
+    'table-seats': function(msg) {
+        this.ide.table.update(msg.leader, msg.name, /*seatId,*/ msg.seats);
     },
 
     // Receive an invite to join a table
-    'table-invitation': function(data) {
-        this.ide.table.promptInvite.apply(this.ide.table, data);
+    'table-invitation': function(msg) {
+        this.ide.table.promptInvite(msg.id, msg.table, msg.seat);
     },
 
-    'project-request': function(data) {
-        var id = data.shift(),
-            project = this.getSerializedProject(),
-            msg = [
-                'project-response',
-                id,
-                JSON.stringify(project)
-            ].join(' ');
+    'project-request': function(msg) {
+        var project = this.getSerializedProject();
+        msg.type = 'project-response';
+        msg.project = project;
+
         this.sendMessage(msg);
     }
 };
@@ -26883,16 +26875,15 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
     // Set up message events
     // Where should I set this up now?
-    this.websocket.onmessage = function(message) {
-        var data = message.data.split(' '),
-            type = data.shift(),
-            role,
+    this.websocket.onmessage = function(rawMsg) {
+        var msg = JSON.parse(rawMsg.data),
+            type = msg.type,
             content;
 
         if (WebSocketManager.MessageHandlers[type]) {
-            WebSocketManager.MessageHandlers[type].call(self, data, message.data);
+            WebSocketManager.MessageHandlers[type].call(self, msg);
         } else {
-            console.error('Unknown message:', message.data);
+            console.error('Unknown message:', msg);
         }
     };
 
@@ -26903,6 +26894,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
 WebSocketManager.prototype.sendMessage = function(message) {
     var state = this.websocket.readyState;
+    message = JSON.stringify(message);
     if (state === this.websocket.OPEN) {
         this.websocket.send(message);
     } else {
@@ -26927,13 +26919,18 @@ WebSocketManager.prototype._onConnect = function() {
 WebSocketManager.prototype.updateTableInfo = function() {
     var tableLeader = this.ide.table.leaderId,
         seatId = this.ide.projectName,
-        tableName = this.ide.table.name || '__new_project__';
+        tableName = this.ide.table.name || '__new_project__',
+        msg = {
+            type: 'create-table',
+            table: tableName,
+            seat: seatId
+        };
         
     if (this.ide.table.leaderId) {
-        this.sendMessage(['join-table', tableLeader, tableName, seatId].join(' '));
-    } else {
-        this.sendMessage(['create-table', tableName, seatId].join(' '));
+        msg.type = 'join-table';
+        msg.leader = tableLeader;
     }
+    this.sendMessage(msg);
 };
 
 WebSocketManager.prototype.toggleNetwork = function() {
@@ -26959,7 +26956,7 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
     if (message !== '') {
         stage.children.concat(stage).forEach(function (morph) {
             if (morph instanceof SpriteMorph || morph instanceof StageMorph) {
-                hats = hats.concat(morph.allHatBlocksForSocket(message, role));
+                hats = hats.concat(morph.allHatBlocksForSocket(message, role));  // FIXME
             }
         });
 
@@ -29085,20 +29082,27 @@ Process.prototype.reportStageHeight = function () {
 
 Process.prototype.doTableMessage = function() {
     var msg = this._createMsg.apply(this, arguments),
-        ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
-        message = msg.type.name + ' ' + JSON.stringify(msg.contents);
+        ide = this.homeContext.receiver.parentThatIsA(IDE_Morph);
 
-    ide.sockets.sendMessage('table-message ' + message);
+    ide.sockets.sendMessage({
+        type: 'table-message',
+        content: msg.contents
+    });
 };
 
 Process.prototype.doSocketMessage = function (name) {
     var msg = this._createMsg.apply(this, arguments),
         ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
         targetSeat = arguments[arguments.length-1],
-        mySeat = ide.projectName,  // same as seat name
-        message = msg.type.name + ' ' + JSON.stringify(msg.contents);
+        mySeat = ide.projectName;  // same as seat name
 
-    ide.sockets.sendMessage(['message', targetSeat, mySeat, message].join(' '));
+    ide.sockets.sendMessage({
+        type: 'message',
+        dstId: targetSeat,
+        srcId: mySeat,
+        msgType: msg.type.name,
+        content: msg.contents
+    });
 };
 
 Process.prototype._createMsg = function (name) {
@@ -54663,7 +54667,10 @@ function TableMorph(ide) {
 TableMorph.prototype._onNameChanged = function(newName) {
     if (this._name !== newName) {
         this._name = newName;
-        this.ide.sockets.sendMessage('rename-table ' + newName);
+        this.ide.sockets.sendMessage({
+            type: 'rename-table',
+            name: newName
+        });
     }
 };
 
@@ -54793,7 +54800,10 @@ TableMorph.prototype.createNewSeat = function () {
 
 TableMorph.prototype._createNewSeat = function (name) {
     // Create the new seat
-    this.ide.sockets.sendMessage('add-seat ' + name);
+    this.ide.sockets.sendMessage({
+        type: 'add-seat',
+        name: name
+    });
 };
 
 TableMorph.prototype.setSeatName = function() {
@@ -54810,11 +54820,11 @@ TableMorph.prototype.setSeatName = function() {
             );
         } else {
             // TODO: Should we have a confirmation message?
-            myself.ide.sockets.sendMessage([
-                'rename-seat',
-                myself.ide.projectName,
-                seatName].join(' ')
-            );
+            myself.ide.sockets.sendMessage({
+                type: 'rename-seat',
+                seatId: myself.ide.projectName,
+                name: seatName
+            });
             myself.ide.setProjectName(seatName);  // seat name and project name are the same
         }
     }, null, 'setSeatName');
