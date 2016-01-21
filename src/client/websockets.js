@@ -39,7 +39,7 @@ WebSocketManager.MessageHandlers = {
 
     // Receive an invite to join a table
     'table-invitation': function(msg) {
-        this.ide.table.promptInvite(msg.id, msg.table, msg.seat);
+        this.ide.table.promptInvite(msg);
     },
 
     'project-request': function(msg) {

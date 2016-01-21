@@ -26830,7 +26830,7 @@ WebSocketManager.MessageHandlers = {
 
     // Receive an invite to join a table
     'table-invitation': function(msg) {
-        this.ide.table.promptInvite(msg.id, msg.table, msg.seat);
+        this.ide.table.promptInvite(msg);
     },
 
     'project-request': function(msg) {
@@ -54861,21 +54861,28 @@ TableMorph.prototype._inviteFriend = function (friend, seat) {
     SnapCloud.inviteToTable(friend, this.leaderId, this.name, seat);
 };
 
-TableMorph.prototype.promptInvite = function (id, table, seat) {
+TableMorph.prototype.promptInvite = function (params) {  // id, table, tableName, seat
     // Create a confirm dialog about joining the group
     var myself = this,
+        // unpack the params
+        id = params.id,
+        table = params.table,
+        seat = params.seat,
+        tableName = params.tableName,
+
         action = this._invitationResponse.bind(this, id, true, seat),
-        dialog = new DialogBoxMorph(null, action);
+        dialog = new DialogBoxMorph(null, action),
+        msg = params.inviter + ' has invited you to join\nhim/her at "' + tableName +
+            '"\nAccept?';
 
     dialog.cancel = function() {
-        this._invitationResponse(id, false, seat);
+        myself._invitationResponse(id, false, seat);
         this.destroy();
     };
 
     dialog.askYesNo(
         'Table Invitation',
-        localize('Would you like to join table ') +
-        '\n"' + table + '" at "' + seat + '"?',
+        localize(msg),
         this.ide.world()
     );
 };

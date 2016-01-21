@@ -88,7 +88,8 @@ module.exports = [
             //  seatId
             var inviter = req.session.username,
                 invitee = req.body.invitee,
-                tableId = utils.uuid(req.body.tableLeaderId, req.body.tableName),
+                tableName = req.body.tableName,
+                tableId = utils.uuid(req.body.tableLeaderId, tableName),
                 seatId = req.body.seatId,
                 inviteId = [inviter, invitee, tableId, seatId].join('-'),
                 inviteeSockets = this.socketsFor(invitee);
@@ -114,7 +115,9 @@ module.exports = [
                 var msg = {
                     type: 'table-invitation',
                     id: inviteId,
+                    tableName: tableName,
                     table: tableId,
+                    inviter,
                     seat: seatId
                 };
                 socket.send(msg);
