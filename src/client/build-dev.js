@@ -31267,6 +31267,19 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'services',
             spec: 'when I receive %msgOutput'
         },
+
+        // Seat Reporters
+        getProjectId: {
+            type: 'reporter',
+            category: 'services',
+            spec: 'seat name'
+        },
+        getProjectIds: {
+            type: 'reporter',
+            category: 'services',
+            spec: 'all seat names'
+        },
+
         doBroadcast: {
             type: 'command',
             category: 'control',
@@ -32624,8 +32637,10 @@ SpriteMorph.prototype.blockTemplates = function (category) {
     } else if (cat === 'services') {
         // TODO: Move these later to other categories
         blocks.push(block('receiveSocketMessage'));
-        blocks.push('-');
         blocks.push(block('doSocketMessage'));
+        blocks.push('-');
+        blocks.push(block('getProjectId'));
+        blocks.push(block('getProjectIds'));
         blocks.push('-');
         if (this.world().isDevMode) {
             blocks.push(block('getJSFromRPC'));
@@ -34626,6 +34641,19 @@ SpriteMorph.prototype.deleteVariableWatcher = function (varName) {
     }
 };
 
+// SpriteMorph project/sead id(s)
+
+SpriteMorph.prototype.getProjectId = function () {
+    var ide = this.parentThatIsA(IDE_Morph);
+    return ide.projectName;
+};
+
+SpriteMorph.prototype.getProjectIds = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        seats = Object.keys(ide.table.seats);
+    return new List(seats);
+};
+
 // SpriteMorph non-variable watchers
 
 SpriteMorph.prototype.toggleWatcher = function (selector, label, color) {
@@ -36209,8 +36237,10 @@ StageMorph.prototype.blockTemplates = function (category) {
 
     } else if (cat === 'services') {
         blocks.push(block('receiveSocketMessage'));
-        blocks.push('-');
         blocks.push(block('doSocketMessage'));
+        blocks.push('-');
+        blocks.push(block('getProjectId'));
+        blocks.push(block('getProjectIds'));
         blocks.push('-');
 
         if (this.world().isDevMode) {
@@ -36757,6 +36787,14 @@ StageMorph.prototype.reportUsername
 
 StageMorph.prototype.reportSounds
     = SpriteMorph.prototype.reportSounds;
+
+// StageMorph project/seat id(s)
+
+StageMorph.prototype.getProjectId
+    = SpriteMorph.prototype.getProjectId;
+
+StageMorph.prototype.getProjectIds
+    = SpriteMorph.prototype.getProjectIds;
 
 // StageMorph non-variable watchers
 
