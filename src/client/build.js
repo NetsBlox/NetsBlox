@@ -41175,7 +41175,7 @@ IDE_Morph.prototype.projectMenu = function () {
             new Color(100, 0, 0)
         );
     }
-    //menu.addItem('Save As...', 'saveProjectsBrowser');
+    menu.addItem('Save As...', 'saveProjectsBrowser');
     menu.addLine();
     menu.addItem(
         'Import...',
@@ -54514,7 +54514,7 @@ SpriteMorph.prototype.allHatBlocksForSocket = function (message, role) {
 
 StageMorph.prototype.allHatBlocksForSocket = SpriteMorph.prototype.allHatBlocksForSocket;
 
-// NetsBlox table stuff
+/* * * * * * * IDE_Morph Overrides * * * * * * */
 IDE_Morph.prototype.createTable = function() {
     this.table = new TableMorph(this);
 };
@@ -54542,7 +54542,65 @@ IDE_Morph.prototype.createSpriteEditor = function() {
     }
 };
 
-// NetsBlox Table
+IDE_Morph.prototype._setProjectName = IDE_Morph.prototype.setProjectName;
+IDE_Morph.prototype.setProjectName = function (string) {
+    this.table.setSeatName(string);
+};
+
+IDE_Morph.prototype._loadTable = function () {
+    // Check if the table has diverged and optionally fork
+    // TODO
+    if (this.table.nextTable) {
+        var next = this.table.nextTable;
+        this.table._name = next.tableName;  // silent set
+        this.table.leaderId = next.leaderId;
+        this.setProjectName(next.seatId);
+
+        // Send the message to the server
+        this.sockets.updateTableInfo();
+
+        this.table.nextTable = null;
+    }
+};
+
+IDE_Morph.prototype.rawOpenCloudDataString = function (str) {
+    var model;
+    StageMorph.prototype.hiddenPrimitives = {};
+    StageMorph.prototype.codeMappings = {};
+    StageMorph.prototype.codeHeaders = {};
+    StageMorph.prototype.enableCodeMapping = false;
+    StageMorph.prototype.enableInheritance = false;
+    if (Process.prototype.isCatchingErrors) {
+        try {
+            model = this.serializer.parse(str);
+            this.serializer.loadMediaModel(model.childNamed('media'));
+            this.serializer.openProject(
+                this.serializer.loadProjectModel(
+                    model.childNamed('project'),
+                    this
+                ),
+                this
+            );
+            // Join the table
+            this._loadTable();
+        } catch (err) {
+            this.showMessage('Load failed: ' + err);
+        }
+    } else {
+        model = this.serializer.parse(str);
+        this.serializer.loadMediaModel(model.childNamed('media'));
+        this.serializer.openProject(
+            this.serializer.loadProjectModel(
+                model.childNamed('project'),
+                this
+            ),
+            this
+        );
+    }
+    this.stopFastTracking();
+};
+
+/* * * * * * * * * TableMorph * * * * * * * * */
 TableMorph.prototype = new SpriteMorph();
 TableMorph.prototype.constructor = TableMorph;
 TableMorph.uber = SpriteMorph.prototype;
@@ -54631,9 +54689,6 @@ TableMorph.prototype.update = function(leaderId, name, /*seatId,*/ seats) {
     }
 
     this.version = Date.now();
-
-    //this.ide.setProjectName(seatId);  // seat name and project name are the same
-
     this.drawNew();
 };
 
@@ -54747,7 +54802,7 @@ TableMorph.prototype._createNewSeat = function (name) {
     });
 };
 
-TableMorph.prototype.setSeatName = function() {
+TableMorph.prototype.editSeatName = function() {
     // Ask for a new seat name
     var myself = this;
     this.ide.prompt('New Seat Name', function (seatName) {
@@ -54761,14 +54816,18 @@ TableMorph.prototype.setSeatName = function() {
             );
         } else {
             // TODO: Should we have a confirmation message?
-            myself.ide.sockets.sendMessage({
-                type: 'rename-seat',
-                seatId: myself.ide.projectName,
-                name: seatName
-            });
-            myself.ide.setProjectName(seatName);  // seat name and project name are the same
+            myself.setSeatName(seatName);
         }
-    }, null, 'setSeatName');
+    }, null, 'editSeatName');
+};
+
+TableMorph.prototype.setSeatName = function(seat) {
+    this.ide.sockets.sendMessage({
+        type: 'rename-seat',
+        seatId: this.ide.projectName,
+        name: seat
+    });
+    this.ide._setProjectName(seat);  // seat name and project name are the same
 };
 
 // FIXME: create ide.confirm
@@ -54895,7 +54954,7 @@ TableMorph.prototype._invitationResponse = function (id, response, seat) {
         function (res, url) {
             if (response) {
                 myself.ide.showMessage('you have joined the table!', 2);
-                myself.ide.setProjectName(seat);  // Set the seat name
+                myself.ide._setProjectName(seat);  // Set the seat name
             }
             SnapCloud.disconnect();
         },
@@ -55249,60 +55308,3 @@ ProjectDialogMorph.prototype.installCloudProjectList = function (pl) {
         this.clearDetails();
     }
 };
-
-IDE_Morph.prototype._loadTable = function () {
-    // Check if the table has diverged and optionally fork
-    // TODO
-    if (this.table.nextTable) {
-        var next = this.table.nextTable;
-        this.table._name = next.tableName;  // silent set
-        this.table.leaderId = next.leaderId;
-        this.setProjectName(next.seatId);
-
-        // Send the message to the server
-        this.sockets.updateTableInfo();
-
-        this.table.nextTable = null;
-    }
-};
-
-IDE_Morph.prototype.rawOpenCloudDataString = function (str) {
-    var model;
-    StageMorph.prototype.hiddenPrimitives = {};
-    StageMorph.prototype.codeMappings = {};
-    StageMorph.prototype.codeHeaders = {};
-    StageMorph.prototype.enableCodeMapping = false;
-    StageMorph.prototype.enableInheritance = false;
-    if (Process.prototype.isCatchingErrors) {
-        try {
-            model = this.serializer.parse(str);
-            this.serializer.loadMediaModel(model.childNamed('media'));
-            this.serializer.openProject(
-                this.serializer.loadProjectModel(
-                    model.childNamed('project'),
-                    this
-                ),
-                this
-            );
-            // Join the table
-            this._loadTable();
-        } catch (err) {
-            this.showMessage('Load failed: ' + err);
-        }
-    } else {
-        model = this.serializer.parse(str);
-        this.serializer.loadMediaModel(model.childNamed('media'));
-        this.serializer.openProject(
-            this.serializer.loadProjectModel(
-                model.childNamed('project'),
-                this
-            ),
-            this
-        );
-    }
-    this.stopFastTracking();
-};
-
-
-// Table Editor
-//function Table
