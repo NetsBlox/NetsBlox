@@ -54317,11 +54317,61 @@ MessageInputSlotMorph.prototype._updateFields = function(values) {
 
 MessageInputSlotMorph.prototype.setDefaultFieldArg = function(index) {
     // Reset the field and return it
-    var oldArg = this._msgContent[index];
-    if (this.parent.children.indexOf(oldArg)) {
-        this.parent.removeChild(oldArg);
+    var isMessageField = index < this.msgFields.length,
+        oldArg,
+        arg;
+
+    if (isMessageField) {
+        //oldArg = this._msgContent[index];
+        //if (this.parent.children.indexOf(oldArg) !== -1) {
+            //this.parent.removeChild(oldArg);
+        //}
+        arg = this._msgContent[index] = this._getFieldValue(this.msgFields[index]);
+
+        index++;
+        oldArg = this.parent.inputs()[index];
+
+        index = this.parent.children.indexOf(oldArg);
+        this.parent.children.splice(index, 1, arg);
+        arg.parent = this.parent;
+    } else {  // recipient field
+        var specIndex,
+            spec;
+
+        index++;
+        specIndex = index - this.msgFields.length;
+        spec = this.parent.blockSpec.split(' ')
+            .filter(function(spec) {
+                return spec[0] === '%';
+            })[specIndex];
+        arg = this.labelPart(spec);
+
+        oldArg = this.parent.inputs()[index];
+
+        index = this.parent.children.indexOf(oldArg);
+        this.parent.children.splice(index, 1, arg);
+        arg.parent = this.parent;
     }
-    return this._msgContent[index] = this._updateField(this.msgFields[index]);
+
+    arg.drawNew();
+    arg.fixLayout();
+    arg.drawNew();
+
+    this.parent.drawNew();
+    this.parent.fixLayout();
+    this.parent.drawNew();
+
+    return arg;
+};
+
+MessageInputSlotMorph.prototype._getFieldValue = function(field, value) {
+    // Input slot is empty or has a string
+    if (!value || typeof value === 'string') {
+        var result = new HintInputSlotMorph(value || '', field);
+        return result;
+    }
+
+    return value;  // The input slot is occupied by another block
 };
 
 MessageInputSlotMorph.prototype._updateField = function(field, value) {
@@ -54335,22 +54385,12 @@ MessageInputSlotMorph.prototype._updateField = function(field, value) {
     // + string
 
     // Add the fields at the correct place wrt the current morph
-    var index = this.parent.children.indexOf(this) + this.msgFields.indexOf(field) + 1;
-    // Input slot is empty or has a string
-    if (!value || typeof value === 'string') {
-        var result = new HintInputSlotMorph(value || '', field);
-        this.parent.children.splice(index, 0, result);
-        result.parent = this.parent;
-        //this.parent.add(result);
-        return result;
-    }
+    var index = this.parent.children.indexOf(this) + this.msgFields.indexOf(field) + 1,
+        result = this._getFieldValue(field, value);
 
-    // The input slot is occupied by another block
-    if (value && typeof value !== 'string') {
-        //this.parent.add(value);
-        this.parent.children.splice(index, 0, value);
-        value.parent = this.parent;
-    }
+    this.parent.children.splice(index, 0, result);
+    result.parent = this.parent;
+
     return value;
 };
 
