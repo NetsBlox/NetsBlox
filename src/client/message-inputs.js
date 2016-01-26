@@ -101,10 +101,6 @@ MessageInputSlotMorph.prototype.setDefaultFieldArg = function(index) {
         arg;
 
     if (isMessageField) {
-        //oldArg = this._msgContent[index];
-        //if (this.parent.children.indexOf(oldArg) !== -1) {
-            //this.parent.removeChild(oldArg);
-        //}
         arg = this._msgContent[index] = this._getFieldValue(this.msgFields[index]);
 
         index++;

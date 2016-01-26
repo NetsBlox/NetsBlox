@@ -2,10 +2,12 @@
 'use strict';
 
 var R = require('ramda'),
-    utils = require('../ServerUtils');
+    utils = require('../ServerUtils'),
+    VirtualClient = require('../../virtual-client/VirtualClient'),
+    HOST = 'http://localhost:8080/netsblox-dev.html';  // FIXME
 
-// TODO: Create the table client
 class ActiveTable {
+
     constructor(logger, name, leader) {
         var uuid = utils.uuid(leader.username, name);
         this.name = name;
@@ -16,11 +18,15 @@ class ActiveTable {
         this.seats = {};  // actual occupants
         this.seatOwners = {};
 
+        // virtual clients
+        this.virtual = {};
+
         this.leader = leader;
-        this._logger.log('created!');
 
         // RPC contexts
         this.rpcs = {};
+
+        this._logger.log('created!');
     }
 
     add (socket, seat) {
@@ -32,8 +38,9 @@ class ActiveTable {
             return;
         }
 
-        if (this.seats[seat] && this.seats[seat].isVirtualUser()) {
-            // TODO: Shutdown the virtual client
+        if (this.seats[seat] && this.seats[seat].isVirtualUser() && this.virtual[seat]) {
+            this._logger.log('about to close vc at ' + seat);
+            this.virtual[seat].close();
         }
         this.seats[seat] = socket;
         this.onSeatsChanged();  // Update all clients
@@ -42,6 +49,7 @@ class ActiveTable {
     createSeat (seat) {
         this.seats[seat] = null;
         this.seatOwners[seat] = null;
+        this.createVirtualClient(seat);
         this.onSeatsChanged();
     }
 
@@ -53,6 +61,11 @@ class ActiveTable {
 
     removeSeat (seat) {
         delete this.seats[seat];
+        this._logger.trace(`removing seat "${seat}"`);
+        if (this.virtual[seat]) {
+            this.virtual[seat].close();
+            delete this.virtual[seat];
+        }
         this.onSeatsChanged();
     }
 
@@ -100,7 +113,7 @@ class ActiveTable {
 
     remove (seat) {
         // FIXME: Add virtual clients
-        //this.seats[seat] = this.createVirtualClient(seat);
+        this.createVirtualClient(seat);
         delete this.seats[seat];
         this.onSeatsChanged();
     }
@@ -112,8 +125,14 @@ class ActiveTable {
     }
 
     createVirtualClient (seat) {
-        this._logger.log('creating virtual client at ' + seat);
-        // TODO
+        //this._logger.log('creating virtual client at ' + seat);
+        //var client = new VirtualClient(this._logger, HOST);
+        //client.connect(() => {
+            //// open the correct project
+            //// TODO
+            //console.log('connected!');
+        //});
+        //this.virtual[seat] = client;
         return null;
     }
 

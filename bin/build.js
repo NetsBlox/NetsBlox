@@ -44,6 +44,6 @@ var devFiles = [
     path.join(__dirname, '..', 'src', 'virtual-client', 'phantomjs-shim.js')
 ];
 
-concat(jsFiles.concat(devFiles), path.join(srcPath, 'build-dev.js'), function(err) {
+concat(devFiles.concat(jsFiles), path.join(srcPath, 'build-dev.js'), function(err) {
     console.log('Finished building build-dev.js');
 });

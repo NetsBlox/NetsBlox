@@ -31,7 +31,9 @@ module.exports = [
             warn('returning ALL active sockets');
             for (var i = uuids.length; i--;) {
                 socket = this.sockets[uuids[i]];
-                if (socket.username !== username && socket.loggedIn) {
+                // FIXME: We should be able to invite ourselves somehow...
+                if (socket.username !== username && socket.loggedIn &&
+                    !socket.isVirtualUser()) {
                     resp[socket.username] = uuids[i];
                 }
             }
@@ -94,6 +96,9 @@ module.exports = [
                 inviteId = [inviter, invitee, tableId, seatId].join('-'),
                 inviteeSockets = this.socketsFor(invitee);
 
+            if (invitee === 'myself') {  // TODO: Make this more flexible
+                invitee = inviter;
+            }
             log(`${inviter} is inviting ${invitee} to ${seatId} at ${tableId}`);
             // Verify that the inviter is the table leader
             // TODO
