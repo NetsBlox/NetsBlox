@@ -111,7 +111,7 @@ function TableMorph(ide) {
     // Set up the table name
     this._name = localize('MyTable');
     Object.defineProperty(this, 'name', {
-        get: () => {
+        get: function() {
             return this._name;
         },
         set: this._onNameChanged.bind(this)
@@ -133,7 +133,7 @@ function TableMorph(ide) {
     this.drawNew();
 
     // Set up callbacks for SeatMorphs
-    SeatMorph.prototype.inviteFriend = TableMorph.prototype.inviteFriend.bind(this);
+    SeatMorph.prototype.addUserTo = TableMorph.prototype.addUserTo.bind(this);
     SeatMorph.prototype.evictUser = TableMorph.prototype.evictUser.bind(this);
 }
 
@@ -317,7 +317,7 @@ TableMorph.prototype.setSeatName = function(seat) {
 // FIXME: create ide.confirm
 TableMorph.prototype.evictUser = function (user, seat) {
     var myself = this;
-    SnapCloud.evictUser(err => {
+    SnapCloud.evictUser(function(err) {
             myself.ide.showMessage(err || 'evicted ' + user + '!');
         },
         function (err, lbl) {
@@ -327,16 +327,24 @@ TableMorph.prototype.evictUser = function (user, seat) {
     );
 };
 
-TableMorph.prototype.inviteFriend = function (seat) {
+TableMorph.prototype.addUserTo = function (seat) {
+    var myself = this,
+        callback;
+
+    callback = function(friends) {
+        friends.push('myself');
+        myself._inviteFriendDialog(seat, friends);
+    };
     // TODO: Check if the user is the leader
-    SnapCloud.getFriendList(friends => {
-        // Remove friends at the table
-            this._inviteFriendDialog(seat, friends);
-        },
-        function (err, lbl) {
-            myself.ide.cloudError().call(null, err, lbl);
-        }
-    );
+    if (SnapCloud.username) {
+        SnapCloud.getFriendList(callback,
+            function (err, lbl) {
+                myself.ide.cloudError().call(null, err, lbl);
+            }
+        );
+    } else {
+        callback([]);
+    }
 };
 
 TableMorph.prototype._inviteFriendDialog = function (seat, friends) {
@@ -380,7 +388,6 @@ TableMorph.prototype._inviteFriendDialog = function (seat, friends) {
         if (friend) {
             // TODO: Add the friend to the given seat
             // For now, I might just make a new seat on the server
-            console.log('inviting friend! (' + friend + ')');
             myself._inviteFriend(friend, seat);
         }
         ok.call(this);
@@ -491,7 +498,7 @@ SeatMorph.prototype.drawNew = function() {
 
 SeatMorph.prototype.mouseClickLeft = function() {
     if (!this.user) {
-        this.inviteFriend(this.name);
+        this.addUserTo(this.name);
     } else if (this.isActiveSeat) {  // Rename the ide
     } else {
         this.evictUser(this.user, this.name);
