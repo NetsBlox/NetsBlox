@@ -54823,7 +54823,7 @@ TableMorph.prototype.drawNew = function() {
         this.seatLabels[seats[i]] = label;
 
         if (seats[i] === currentSeat) {  // active seat
-            label.mouseClickLeft = this.setSeatName.bind(this);
+            label.mouseClickLeft = this.editSeatName.bind(this);
         }
 
         angle += angleSize;
