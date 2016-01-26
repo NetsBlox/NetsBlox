@@ -60,8 +60,11 @@ class ActiveTable {
     }
 
     removeSeat (seat) {
-        delete this.seats[seat];
         this._logger.trace(`removing seat "${seat}"`);
+
+        delete this.seats[seat];
+        delete this.seatOwners[seat];
+
         if (this.virtual[seat]) {
             this.virtual[seat].close();
             delete this.virtual[seat];

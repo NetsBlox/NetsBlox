@@ -14401,6 +14401,12 @@ DialogBoxMorph.prototype.fixLayout = function () {
                     + this.buttons.height()
                     + this.padding
         );
+        this.silentSetWidth(Math.max(
+                this.width(),
+                this.buttons.width()
+                        + (2 * this.padding)
+            )
+        );
         this.buttons.setCenter(this.center());
         this.buttons.setBottom(this.bottom() - this.padding);
     }
@@ -14815,6 +14821,7 @@ AlignmentMorph.prototype.fixLayout = function () {
                         ))
                     );
                 }
+                cfb = c.fullBounds();
                 newBounds = newBounds.merge(cfb);
             } else {
                 newBounds = cfb;
@@ -55143,9 +55150,8 @@ function TableMorph(ide) {
     this.isDraggable = false;
     this.drawNew();
 
-    // Set up callbacks for SeatMorphs
-    SeatMorph.prototype.addUserTo = TableMorph.prototype.addUserTo.bind(this);
-    SeatMorph.prototype.evictUser = TableMorph.prototype.evictUser.bind(this);
+    // Set up callback(s) for SeatMorphs
+    SeatMorph.prototype.editSeat = TableMorph.prototype.editSeat.bind(this);
 }
 
 // 'Inherit' from SpriteMorph
@@ -55174,14 +55180,6 @@ TableMorph.prototype.update = function(leaderId, name, /*seatId,*/ seats) {
     this.leaderId = leaderId;
     this._name = name;
     this.seats = seats;
-
-    // Convert uuid to 'me' if applicable
-    var ids = Object.keys(this.seats);
-    for (var i = ids.length; i--;) {
-        if (this.seats[ids[i]] === username) {
-            this.seats[ids[i]] = 'me';
-        }
-    }
 
     this.version = Date.now();
     this.drawNew();
@@ -55243,10 +55241,6 @@ TableMorph.prototype.drawNew = function() {
         this.add(label);
         this.seatLabels[seats[i]] = label;
 
-        if (seats[i] === currentSeat) {  // active seat
-            label.mouseClickLeft = this.editSeatName.bind(this);
-        }
-
         angle += angleSize;
     }
 
@@ -55297,6 +55291,23 @@ TableMorph.prototype._createNewSeat = function (name) {
     });
 };
 
+TableMorph.prototype.editSeat = function(seat) {
+    // Show a dialog of options
+    //   + rename seat
+    //   + delete seat
+    //   + invite user (if unoccupied)
+    //   + transfer ownership (if occupied)
+    //   + evict user (if occupied)
+    //   + change seat (if owned by self)
+    var dialog = new EditSeatMorph(this, seat);
+
+    dialog.fixLayout();
+    dialog.drawNew();
+
+    dialog.popUp(world);
+    dialog.setCenter(world.center());
+};
+
 TableMorph.prototype.editSeatName = function() {
     // Ask for a new seat name
     var myself = this;
@@ -55305,7 +55316,7 @@ TableMorph.prototype.editSeatName = function() {
             // Error! Seat exists
             new DialogBoxMorph().inform(
                 'Existing Seat Name',
-                'Could not create a new seat because\n' +
+                'Could not rename seat because\n' +
                 'the provided name already exists.',
                 world
             );
@@ -55314,6 +55325,23 @@ TableMorph.prototype.editSeatName = function() {
             myself.setSeatName(seatName);
         }
     }, null, 'editSeatName');
+};
+
+TableMorph.prototype.moveToSeat = function() {
+    this.ide.showMessage('still implementing moveToSeat!');
+    // TODO
+};
+
+TableMorph.prototype.deleteSeat = function(seat) {
+    var myself = this;
+    SnapCloud.deleteSeat(function(err) {
+            myself.ide.showMessage('deleted ' + seat + '!');
+        },
+        function (err, lbl) {
+            myself.ide.cloudError().call(null, err, lbl);
+        },
+        [seat, this.leaderId, this.name]
+    );
 };
 
 TableMorph.prototype.setSeatName = function(seat) {
@@ -55338,7 +55366,7 @@ TableMorph.prototype.evictUser = function (user, seat) {
     );
 };
 
-TableMorph.prototype.addUserTo = function (seat) {
+TableMorph.prototype.inviteUser = function (seat) {
     var myself = this,
         callback;
 
@@ -55482,7 +55510,25 @@ function SeatMorph(name, user) {
     this.drawNew();
 }
 
+SeatMorph.prototype.isOccupied = function() {
+    // TODO
+    return false;
+};
+
+SeatMorph.prototype.isMine = function() {
+    if (!SnapCloud.username) {
+        return !!this.user;
+    }
+    return this.user === SnapCloud.username;
+};
+
 SeatMorph.prototype.drawNew = function() {
+    var usrTxt = this.user ? this.user : '<empty>';
+
+    if (this.isMine()) {
+        usrTxt = 'me';
+    }
+
     if (this._seatLabel) {
         this._seatLabel.destroy();
         this._userLabel.destroy();
@@ -55496,7 +55542,7 @@ SeatMorph.prototype.drawNew = function() {
         false
     );
     this._userLabel = new StringMorph(
-        this.user || '<empty>',
+        usrTxt,
         14,
         null,
         false,
@@ -55508,15 +55554,79 @@ SeatMorph.prototype.drawNew = function() {
 };
 
 SeatMorph.prototype.mouseClickLeft = function() {
-    if (!this.user) {
-        this.addUserTo(this.name);
-    } else if (this.isActiveSeat) {  // Rename the ide
+    this.editSeat(this);
+};
+
+EditSeatMorph.prototype = new DialogBoxMorph();
+EditSeatMorph.prototype.constructor = EditSeatMorph;
+EditSeatMorph.uber = DialogBoxMorph.prototype;
+function EditSeatMorph(table, seat) {
+    DialogBoxMorph.call(this);
+    this.table = table;
+    this.seat = seat;
+
+    var txt = new TextMorph(
+        'What would you like to do?',
+        null,
+        null,
+        true,
+        false,
+        'center',
+        null,
+        null,
+        MorphicPreferences.isFlat ? null : new Point(1, 1),
+        new Color(255, 255, 255)
+    );
+
+    this.labelString = 'Edit ' + seat.name;
+    this.createLabel();
+    this.addBody(txt);
+
+    if (seat.user) {
+        this.addButton('evictUser', 'Evict Owner');
+        if (seat.isMine()) {
+            this.addButton('editSeatName', 'Rename');
+            if (!seat.isOccupied()) {
+                this.addButton('moveToSeat', 'Move to');
+            }
+            this.addButton('deleteSeat', 'Delete seat');
+        }
     } else {
-        this.evictUser(this.user, this.name);
-        // Ask to evict
-        // TODO
-        console.log('occupied! (' + this.user + ')');
+        // FIXME: If only one option, don't ask!
+        this.addButton('inviteUser', 'Invite User');
     }
+    this.addButton('cancel', 'Cancel');
+
+    // FIXME: This isn't centering it
+    this.drawNew();
+    var center = this.center();
+    this.label.setCenter(center);
+    txt.setCenter(center);
+}
+
+EditSeatMorph.prototype.inviteUser = function() {
+    this.table.inviteUser(this.seat.name);
+    this.destroy();
+};
+
+EditSeatMorph.prototype.editSeatName = function() {
+    this.table.editSeatName();
+    this.destroy();
+};
+
+EditSeatMorph.prototype.deleteSeat = function() {
+    this.table.deleteSeat(this.seat.name);
+    this.destroy();
+};
+
+EditSeatMorph.prototype.moveToSeat = function() {
+    this.table.moveToSeat(this.seat.name);
+    this.destroy();
+};
+
+EditSeatMorph.prototype.evictUser = function() {
+    this.table.evictUser(this.seat.user, this.seat);
+    this.destroy();
 };
 
 ProjectsMorph.prototype = new ScrollFrameMorph();
@@ -55556,9 +55666,6 @@ ProjectsMorph.prototype.updateTable = function() {
         hint: 'Add a seat to the table',
         left: this.table.right() + padding*4
     });
-
-    // Draw the "remove seat" button
-    // TODO
 };
 
 ProjectsMorph.prototype._addButton = function(params) {
@@ -55622,7 +55729,8 @@ Cloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) 
 
 Cloud.prototype.inviteToTable = function () {
     var myself = this,
-        args = arguments;
+        args = arguments,
+        inviter = arguments[0];
 
     this.reconnect(
         function () {
@@ -55652,6 +55760,24 @@ Cloud.prototype.getFriendList = function (callBack, errorCall) {
             );
         },
         errorCall
+    );
+};
+
+Cloud.prototype.deleteSeat = function(onSuccess, onFail, args) {
+    var myself = this;
+    this.reconnect(
+        function () {
+            myself.callService(
+                'deleteSeat',
+                function () {
+                    onSuccess.call(null);
+                    myself.disconnect();
+                },
+                onFail,
+                args
+            );
+        },
+        onFail
     );
 };
 

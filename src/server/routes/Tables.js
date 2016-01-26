@@ -10,8 +10,52 @@ var _ = require('lodash'),
     info = debug('NetsBlox:API:Tables:info'),
     utils = require('../ServerUtils');
 
+var acceptInvitation = function(username, id, response, socketId, callback) {
+    var socket = this.sockets[socketId],
+        invite = invites[id];  // FIXME: Use the database
+
+    // Ignore if the invite no longer exists
+    if (!invite) {
+        return callback('ERROR: invite no longer exists');
+    }
+
+    log(`${username} ${!!response ? 'accepted' : 'denied'} ` +
+        `invitation for ${invite.seat} at ${invite.table}`);
+
+    // Remove the invite from the database
+    // TODO
+    delete invites[id];
+
+    if (response) {
+        // Add the seatId to the table (if doesn't exist)
+        let table = this.tables[invite.table];
+        if (!table) {
+            // TODO: Create table
+        }
+
+        if (table.seats[invite.seat]) {
+            return callback('ERROR: seat is occupied');
+        }
+
+        // Add the user to the table
+        table.seatOwners[invite.seat] = username;
+
+        if (socket) {
+            socket.join(table, invite.seat);
+        } else {
+            table.onSeatsChanged();
+        }
+
+        // Persist this in the database
+        // TODO
+
+        callback(null);
+    }
+};
+
 // REMOVE
 var invites = {};
+
 module.exports = [
     // Friends
     {
@@ -50,7 +94,7 @@ module.exports = [
             var seatId = req.body.seatId,
                 tableName = req.body.tableName,
                 leaderId = req.body.leaderId,
-                tableId = Utils.uuid(leaderId, tableName),  // FIXME
+                tableId = Utils.uuid(leaderId, tableName),
                 userId = req.body.userId,
                 socket,
                 table = this.tables[tableId];
@@ -97,7 +141,32 @@ module.exports = [
                 inviteeSockets = this.socketsFor(invitee);
 
             if (invitee === 'myself') {  // TODO: Make this more flexible
+                let socketId = inviteeSockets[0] ? inviteeSockets[0].uuid : null;
+
                 invitee = inviter;
+                invites[inviteId] = {
+                    table: tableId,
+                    seat: seatId,
+                    invitee
+                };
+
+                // no invitation msg, just accept it
+                this._logger.info(`${inviter} is adding self to ${seatId}`);
+                acceptInvitation.call(this,
+                    inviter,
+                    inviteId,
+                    true,
+                    socketId,
+                    (err) => {
+                        if (err) {
+                            this._logger.error(err);
+                            return res.status(500).send(err);
+                        }
+                        this._logger.info('success!');
+                        res.status(200).send('ok');
+                    }
+                );
+                return;
             }
             log(`${inviter} is inviting ${invitee} to ${seatId} at ${tableId}`);
             // Verify that the inviter is the table leader
@@ -144,43 +213,51 @@ module.exports = [
             var username = req.session.username,
                 inviteId = req.body.inviteId,
                 response = req.body.response === 'true',
-                socketId = req.body.socketId,
-                socket = this.sockets[socketId],
-                invite = invites[inviteId],  // FIXME: Use the database
-                table;
+                socketId = req.body.socketId;
 
+            acceptInvitation.call(this,
+                username,
+                inviteId,
+                response,
+                socketId,
+                (err) => {
+                    if (err) {
+                        return res.status(500).send(err);
+                    }
+                    res.status(200).send('ok');
+                }
+            );
+        }
+    },
+    {
+        Service: 'deleteSeat',
+        Parameters: 'seatId,leaderId,tableName',
+        Method: 'post',
+        Note: '',
+        Handler: function(req, res) {
+            var username = req.session.username,
+                seatId = req.body.seatId,
+                leaderId = req.body.leaderId,
+                tableName = req.body.tableName,
+                tableId = Utils.uuid(leaderId, tableName),
+                table = this.tables[tableId];
 
-            // Ignore if the invite no longer exists
-            if (!invite) {
-                return res.status(404).send('ERROR: invite no longer exists');
+            //  Get the table
+            if (!table) {
+                this._logger.error(`Could not find table ${tableId} for ${username}`);
+                return res.status(404).send('ERROR: Could not find table');
+            }
+            
+            //  Verify that the username is either the leaderId
+            //      or the owner of the seat
+            if (table.leaderId !== username && table.seatOwners[seatId] !== username) {
+                this._logger.error(`${username} does not have permission to edit ${seatId} at ${tableId}`);
+                return res.status(403).send(`ERROR: You do not have permission to delete ${seatId}`);
             }
 
-            log(`${username} ${!!response ? 'accepted' : 'denied'} ` +
-                `invitation for ${invite.seat} at ${invite.table}`);
-
-            // Remove the invite from the database
-            // TODO
-            delete invites[inviteId];
-
-            if (response) {
-                // Add the seatId to the table (if doesn't exist)
-                table = this.tables[invite.table];
-                if (!table) {
-                    // TODO: Create table
-                }
-
-                if (table.seats[invite.seat]) {
-                    return res.status(400).send('ERROR: seat is occupied');
-                }
-
-                // Add the user to the table
-                table.seatOwners[invite.seat] = username;
-                socket.join(table, invite.seat);
-
-                // Persist this in the database
-                // TODO
-            }
-            res.status(200).send('ok');
+            //  Remove the given seat
+            table.removeSeat(seatId);
+            res.send('ok');
         }
     }
 ].map(function(api) {
