@@ -97,6 +97,7 @@ class NetsBloxSocket {
     }
 
     join (table, seat) {
+        seat = seat || this._seatId;
         if (this._table === table) {
             return this.changeSeats(seat);
         }
@@ -121,8 +122,9 @@ class NetsBloxSocket {
         this._table.seatOwners[seat] = username;
     }
 
+    // This should only be called internally *EXCEPT* when the socket is going to close
     leave () {
-        this._table.remove(this._seatId);
+        this._table.seats[this._seatId] = null;
         this.checkTable(this._table);
     }
 

@@ -607,7 +607,7 @@ EditSeatMorph.prototype.moveToSeat = function() {
 };
 
 EditSeatMorph.prototype.evictUser = function() {
-    this.table.evictUser(this.seat.user, this.seat);
+    this.table.evictUser(this.seat.user, this.seat.name);
     this.destroy();
 };
 

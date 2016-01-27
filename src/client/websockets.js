@@ -42,6 +42,10 @@ WebSocketManager.MessageHandlers = {
         this.ide.table.promptInvite(msg);
     },
 
+    'project-fork': function(msg) {
+        this.ide.showMessage('That other table sucked. You are now the boss.');
+    },
+
     'project-request': function(msg) {
         var project = this.getSerializedProject();
         msg.type = 'project-response';

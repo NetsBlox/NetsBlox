@@ -29,6 +29,28 @@ class ActiveTable {
         this._logger.log('created!');
     }
 
+    // This should only be called by the TableManager (otherwise, the table will not be recorded)
+    fork (logger, socket) {
+        // Create a copy of the table with the socket as the new leader
+        var fork = new ActiveTable(logger, this.name, socket),
+            seats = Object.keys(this.seats),
+            currentSeat = socket._seatId;
+
+        seats.forEach(seat => fork.createSeat(seat));
+        fork.seatOwners[currentSeat] = socket.username;
+
+        // TODO: Copy the data from each project
+
+        // Notify the socket of the fork
+        socket.send({
+            type: 'project-fork',
+            table: fork.name
+        });
+        fork.onSeatsChanged();
+
+        return fork;
+    }
+
     add (socket, seat) {
         // FIXME: verify that the seat exists
         if (this.seatOwners[seat] !== socket.username &&
@@ -112,13 +134,6 @@ class ActiveTable {
             sockets = R.values(this.seats).filter(socket => !!socket);
 
         sockets.forEach(socket => socket.send(msg));
-    }
-
-    remove (seat) {
-        // FIXME: Add virtual clients
-        this.createVirtualClient(seat);
-        delete this.seats[seat];
-        this.onSeatsChanged();
     }
 
     move (socket, dst) {

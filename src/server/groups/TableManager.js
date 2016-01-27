@@ -26,6 +26,24 @@ var TableManager = function(logger) {
     };
 };
 
+TableManager.prototype.forkTable = function(params) {
+    var table = params.table,
+        socket = params.socket || table.seats[params.seatId],
+        newTable;
+
+    if (socket === table.leader) {
+        this._logger.error(`${socket.username} tried to fork it's own table: ${table.name}`);
+        return;
+    }
+
+    this._logger.trace(`${socket.username} is forking table ${table.uuid}`);
+
+    // Create the new table
+    newTable = table.fork(this._logger, socket);
+    this.tables[newTable.uuid] = newTable;
+    socket.join(newTable);
+};
+
 TableManager.prototype.create = function(socket, name) {
     var uuid = utils.uuid(socket.username, name);
     if (!!this.tables[uuid]) {

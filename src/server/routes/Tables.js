@@ -105,15 +105,19 @@ module.exports = [
             log(`userId is ${userId}`);
             socket = table.seats[seatId];
             if (!socket) {  // user is not online
-                table.remove(seatId);
+                this._logger.info(`Removing seat ${seatId}`);
+                delete table.seatOwners[seatId];
+                // Fork the user's stored table
+                // TODO
                 return res.send('user has been evicted!');
             }
 
             if (socket.username === userId) {
-                // TODO: provide the option for userId to fork the table
-                // user at least needs SOME table FIXME FIXME
+                // Fork the table
                 log(`${userId} is evicted from table ${tableId}`);
-                socket.leave();
+                this.forkTable({table, socket});
+                table.seatOwners[socket._seatId] = null;
+                table.onSeatsChanged();
             } else {
                 var err = `${userId} is not at ${seatId} at table ${tableId}`;
                 error(err);
@@ -254,6 +258,9 @@ module.exports = [
                 this._logger.error(`${username} does not have permission to edit ${seatId} at ${tableId}`);
                 return res.status(403).send(`ERROR: You do not have permission to delete ${seatId}`);
             }
+
+            //  Get the socket and join a different table (if not the leader)
+            this.forkTable({table, seatId});
 
             //  Remove the given seat
             table.removeSeat(seatId);
