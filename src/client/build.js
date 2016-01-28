@@ -26841,6 +26841,7 @@ WebSocketManager.MessageHandlers = {
     },
 
     'project-fork': function(msg) {
+        // I should probably change this... FIXME
         this.ide.showMessage('That other table sucked. You are now the boss.');
     },
 
@@ -27062,8 +27063,7 @@ WebSocketManager.prototype.getSerializedProject = function(callBack, errorCall) 
 
     ide.serializer.isCollectingMedia = true;
     pdata = ide.serializer.serialize(ide.stage);
-    media = ide.hasChangedMedia ?
-            ide.serializer.mediaXML(ide.projectName) : null;
+    media = ide.serializer.mediaXML(ide.projectName);
     ide.serializer.isCollectingMedia = false;
     ide.serializer.flushMedia();
 
@@ -27452,7 +27452,7 @@ ThreadManager.prototype.findProcess = function (block) {
 Process.prototype = {};
 Process.prototype.constructor = Process;
 Process.prototype.timeout = 500; // msecs after which to force yield
-Process.prototype.isCatchingErrors = true;
+Process.prototype.isCatchingErrors = false;
 
 /**
  * Process
@@ -41713,7 +41713,7 @@ IDE_Morph.prototype.editProjectNotes = function () {
     text.edit();
 };
 
-IDE_Morph.prototype.newProject = function () {
+IDE_Morph.prototype.newProject = function (projectName) {
     this.source = SnapCloud.username ? 'cloud' : 'local';
     if (this.stage) {
         this.stage.destroy();
@@ -41731,7 +41731,7 @@ IDE_Morph.prototype.newProject = function () {
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
     SpriteMorph.prototype.useFlatLineEnds = false;
-    this.setProjectName('');
+    this.setProjectName(projectName || '');  // This is causing problems...
     this.projectNotes = '';
     this.createStage();
     this.createTable();
@@ -54910,9 +54910,33 @@ TableMorph.prototype.editSeatName = function() {
     }, null, 'editSeatName');
 };
 
-TableMorph.prototype.moveToSeat = function() {
-    this.ide.showMessage('still implementing moveToSeat!');
-    // TODO
+TableMorph.prototype.moveToSeat = function(dstId) {
+    var myself = this,
+        mySeat = this.ide.projectName;
+
+    SnapCloud.moveToSeat(function(args) {
+            myself.ide.showMessage('moved to ' + dstId + '!');
+            myself.ide.projectName = dstId;
+            var proj = args[0];
+            // Load the project or make the project empty
+            if (proj) {
+                myself.ide.source = 'cloud';
+                myself.ide.droppedText(proj.SourceCode);
+                if (proj.Public === 'true') {
+                    location.hash = '#present:Username=' +
+                        encodeURIComponent(SnapCloud.username) +
+                        '&ProjectName=' +
+                        encodeURIComponent(proj.ProjectName);
+                }
+            } else {  // Empty the project
+                myself.ide.newProject(dstId);
+            }
+        },
+        function (err, lbl) {
+            myself.ide.cloudError().call(null, err, lbl);
+        },
+        [dstId, mySeat, this.leaderId, this.name]
+    );
 };
 
 TableMorph.prototype.deleteSeat = function(seat) {
@@ -55289,6 +55313,24 @@ ProjectsMorph.prototype._addButton = function(params) {
 };
 
 // Cloud extensions
+Cloud.prototype.moveToSeat = function(onSuccess, onFail, args) {
+    var myself = this;
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'moveToSeat',
+                onSuccess,
+                onFail,
+                args
+            );
+        },
+        function(err) {
+            myself.ide.showMessage(err, 2);
+        }
+    );
+};
+
 Cloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) {
     var myself = this,
         args = [id, accepted, this.socketId()],
@@ -55307,7 +55349,6 @@ Cloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) 
             myself.ide.showMessage(err, 2);
         }
     );
-    // TODO
 };
 
 Cloud.prototype.inviteToTable = function () {

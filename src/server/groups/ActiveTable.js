@@ -17,6 +17,7 @@ class ActiveTable {
         // Seats
         this.seats = {};  // actual occupants
         this.seatOwners = {};
+        this.cachedProjects = {};  // 
 
         // virtual clients
         this.virtual = {};
@@ -136,9 +137,12 @@ class ActiveTable {
         sockets.forEach(socket => socket.send(msg));
     }
 
-    move (socket, dst) {
-        var src = socket._seatId;
-        delete this.seats[src];
+    move (params) {
+        var src = params.src || params.socket._seatId,
+            socket = this.seats[src],
+            dst = params.dst;
+
+        this.seats[src] = null;
         this.add(socket, dst);
     }
 
@@ -187,6 +191,25 @@ class ActiveTable {
         if (this.uuid !== oldUuid) {
             this.onUuidChange(oldUuid);
         }
+    }
+
+    cache (seat, callback) {
+        var socket = this.seats[seat];
+
+        if (!socket) {
+            let err = 'No socket in ' + seat;
+            this._logger.error(err);
+            return callback(err);
+        }
+        this._logger.trace('caching ' + seat);
+        // Get the project json from the socket
+        socket.getProjectJson((err, project) => {
+            if (err) {
+                return callback(err);
+            }
+            this.cachedProjects[seat] = project;
+            return callback(err);
+        });
     }
 }
 

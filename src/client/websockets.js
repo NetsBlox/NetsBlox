@@ -43,6 +43,7 @@ WebSocketManager.MessageHandlers = {
     },
 
     'project-fork': function(msg) {
+        // I should probably change this... FIXME
         this.ide.showMessage('That other table sucked. You are now the boss.');
     },
 
@@ -264,8 +265,7 @@ WebSocketManager.prototype.getSerializedProject = function(callBack, errorCall) 
 
     ide.serializer.isCollectingMedia = true;
     pdata = ide.serializer.serialize(ide.stage);
-    media = ide.hasChangedMedia ?
-            ide.serializer.mediaXML(ide.projectName) : null;
+    media = ide.serializer.mediaXML(ide.projectName);
     ide.serializer.isCollectingMedia = false;
     ide.serializer.flushMedia();
 

@@ -260,11 +260,45 @@ module.exports = [
             }
 
             //  Get the socket and join a different table (if not the leader)
+            //  TODO: Check that it isn't the leader
+            //  TODO: Check that the leader doesn't remove the last seat
             this.forkTable({table, seatId});
 
             //  Remove the given seat
             table.removeSeat(seatId);
             res.send('ok');
+        }
+    },
+    {
+        Service: 'moveToSeat',
+        Parameters: 'dstId,seatId,leaderId,tableName',
+        Method: 'post',
+        Note: '',
+        Handler: function(req, res) {
+            var username = req.session.username,
+                seatId = req.body.seatId,
+                dstId = req.body.dstId,
+                leaderId = req.body.leaderId,
+                tableName = req.body.tableName,
+                tableId = Utils.uuid(leaderId, tableName),
+                table = this.tables[tableId];
+
+            //  Cache the current state in the active table
+            table.cache(seatId, err => {
+                if (err) {
+                    return res.status(500).send('ERROR: ' + err);
+                }
+
+                // Update the table state
+                table.move({src: seatId, dst: dstId})
+
+                // Reply w/ the new seat code
+                var project = table.cachedProjects[dstId] || null;
+                if (project) {
+                    project = Utils.serializeProject(project);
+                }
+                res.send(project);
+            });
         }
     }
 ].map(function(api) {

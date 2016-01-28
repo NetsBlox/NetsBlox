@@ -3032,7 +3032,7 @@ IDE_Morph.prototype.editProjectNotes = function () {
     text.edit();
 };
 
-IDE_Morph.prototype.newProject = function () {
+IDE_Morph.prototype.newProject = function (projectName) {
     this.source = SnapCloud.username ? 'cloud' : 'local';
     if (this.stage) {
         this.stage.destroy();
@@ -3050,7 +3050,7 @@ IDE_Morph.prototype.newProject = function () {
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
     SpriteMorph.prototype.useFlatLineEnds = false;
-    this.setProjectName('');
+    this.setProjectName(projectName || '');  // This is causing problems...
     this.projectNotes = '';
     this.createStage();
     this.createTable();

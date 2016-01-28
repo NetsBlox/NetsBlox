@@ -198,7 +198,7 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'rename-seat': function(msg) {
-        if (this.hasTable()) {
+        if (this.hasTable() && msg.seatId !== msg.name) {
             this._table.renameSeat(msg.seatId, msg.name);
         }
     },

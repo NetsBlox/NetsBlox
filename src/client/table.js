@@ -309,9 +309,33 @@ TableMorph.prototype.editSeatName = function() {
     }, null, 'editSeatName');
 };
 
-TableMorph.prototype.moveToSeat = function() {
-    this.ide.showMessage('still implementing moveToSeat!');
-    // TODO
+TableMorph.prototype.moveToSeat = function(dstId) {
+    var myself = this,
+        mySeat = this.ide.projectName;
+
+    SnapCloud.moveToSeat(function(args) {
+            myself.ide.showMessage('moved to ' + dstId + '!');
+            myself.ide.projectName = dstId;
+            var proj = args[0];
+            // Load the project or make the project empty
+            if (proj) {
+                myself.ide.source = 'cloud';
+                myself.ide.droppedText(proj.SourceCode);
+                if (proj.Public === 'true') {
+                    location.hash = '#present:Username=' +
+                        encodeURIComponent(SnapCloud.username) +
+                        '&ProjectName=' +
+                        encodeURIComponent(proj.ProjectName);
+                }
+            } else {  // Empty the project
+                myself.ide.newProject(dstId);
+            }
+        },
+        function (err, lbl) {
+            myself.ide.cloudError().call(null, err, lbl);
+        },
+        [dstId, mySeat, this.leaderId, this.name]
+    );
 };
 
 TableMorph.prototype.deleteSeat = function(seat) {
@@ -688,6 +712,24 @@ ProjectsMorph.prototype._addButton = function(params) {
 };
 
 // Cloud extensions
+Cloud.prototype.moveToSeat = function(onSuccess, onFail, args) {
+    var myself = this;
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'moveToSeat',
+                onSuccess,
+                onFail,
+                args
+            );
+        },
+        function(err) {
+            myself.ide.showMessage(err, 2);
+        }
+    );
+};
+
 Cloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) {
     var myself = this,
         args = [id, accepted, this.socketId()],
@@ -706,7 +748,6 @@ Cloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) 
             myself.ide.showMessage(err, 2);
         }
     );
-    // TODO
 };
 
 Cloud.prototype.inviteToTable = function () {
