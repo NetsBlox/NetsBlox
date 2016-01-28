@@ -183,13 +183,17 @@ class ActiveTable {
         return false;
     }
 
-    update () {
+    update (name) {
         var oldUuid = this.uuid;
+        this.name = name || this.name;
         this.uuid = utils.uuid(this.leader.username, this.name);
         this._logger.trace('Updating uuid to ' + this.uuid);
 
         if (this.uuid !== oldUuid) {
             this.onUuidChange(oldUuid);
+        }
+        if (name) {
+            this.onSeatsChanged();
         }
     }
 

@@ -75,6 +75,7 @@ class NetsBloxSocket {
             this._logger.trace('closed!');
             if (this._table) {
                 this.leave();
+                this.checkTable(this._table);
             }
             this.onClose(this.uuid);
         });
@@ -192,8 +193,7 @@ NetsBloxSocket.MessageHandlers = {
 
     'rename-table': function(msg) {
         if (this.hasTable()) {
-            this._table.name = msg.name;
-            this._table.update();
+            this._table.update(msg.name);
         }
     },
 
