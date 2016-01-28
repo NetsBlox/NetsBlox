@@ -27873,7 +27873,7 @@ ThreadManager.prototype.findProcess = function (block) {
 Process.prototype = {};
 Process.prototype.constructor = Process;
 Process.prototype.timeout = 500; // msecs after which to force yield
-Process.prototype.isCatchingErrors = false;
+Process.prototype.isCatchingErrors = true;
 
 /**
  * Process
@@ -29518,21 +29518,31 @@ Process.prototype.doSocketMessage = function (name) {
         targetSeat = arguments[arguments.length-1],
         mySeat = ide.projectName;  // same as seat name
 
-    ide.sockets.sendMessage({
-        type: 'message',
-        dstId: targetSeat,
-        srcId: mySeat,
-        msgType: msg.type.name,
-        content: msg.contents
-    });
+    if (msg) {
+        ide.sockets.sendMessage({
+            type: 'message',
+            dstId: targetSeat,
+            srcId: mySeat,
+            msgType: msg.type.name,
+            content: msg.contents
+        });
+    }
 };
 
 Process.prototype._createMsg = function (name) {
     var fields = Array.prototype.slice.call(arguments, 1),
         stage = this.homeContext.receiver.parentThatIsA(StageMorph),
-        messageType = stage.messageTypes.getMsgType(name),
-        fieldNames = messageType.fields,
+        messageType,
+        fieldNames,
         msg;
+
+    // If there is no name, return null
+    if (!name) {
+        return null;
+    }
+
+    messageType = stage.messageTypes.getMsgType(name);
+    fieldNames = messageType.fields;
 
     // Create the message
     msg = new Message(messageType);
@@ -29551,7 +29561,13 @@ Process.prototype._createMsg = function (name) {
  */
 Process.prototype.receiveSocketMessage = function (fields) {
     var varFrame = this.context.outerContext.variables,
+        names = this.context.variables.names(),
         content;
+
+    // If we haven't received a message, do nothing
+    if (names.indexOf('__message__') === -1) {
+        return;
+    }
 
     // Check for the message type in the stage
     // FIXME: Provide an error message about how we must receive an actual msg
