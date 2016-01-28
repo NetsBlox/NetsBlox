@@ -2,8 +2,8 @@
 'use strict';
 
 var WebSocketServer = require('ws').Server,
-    TableManager = require('./groups/TableManager'),
-    Socket = require('./groups/NetsBloxSocket'),
+    TableManager = require('./tables/TableManager'),
+    Socket = require('./tables/NetsBloxSocket'),
     logger;
 
 var SocketManager = function(_logger) {
