@@ -4809,6 +4809,9 @@ StageMorph.prototype.init = function (globals) {
     this.name = localize('Stage');
     this.threads = new ThreadManager();
     this.messageTypes = new MessageFrame();
+    // Add initial message types
+    this.addMessageTypeByName('message');
+
     this.variables = new VariableFrame(globals || null, this);
     this.scripts = new ScriptsMorph(this);
     this.customBlocks = [];
@@ -5134,6 +5137,26 @@ StageMorph.prototype.setMessageTypes = function (messageTypes) {
     for (var i = messageTypes.length; i--;) {
         this.addMessageType(messageTypes[i]);
     }
+};
+
+StageMorph.prototype.addMessageTypeByName = function (name) {
+    var url = baseURL + 'api/MessageTypes/' + name,
+        request = new XMLHttpRequest(),
+        msgType;
+
+    try {
+        request.open('GET', url, false);
+        request.send();
+        if (!request.status === 200) {
+            throw new Error('unable to retrieve ' + url);
+        }
+    } catch (err) {
+        console.error('could not retrieve message "' + name + '": ' + err);
+        return;
+    }
+
+    msgType = JSON.parse(request.responseText);
+    this.addMessageType(msgType);
 };
 
 StageMorph.prototype.addMessageType = function (messageType) {
