@@ -173,10 +173,7 @@ module.exports = [
                     return res.send('ERROR: project not found!');
                 }
                 // Send the project to the user
-                project = Utils.serialize(R.omit(['SourceCode', 'Media'], project)) + 
-                // Add the SourceCode portion
-                    '&SourceCode=<snapdata>+' + encodeURIComponent(project.SourceCode +
-                    project.Media)+'</snapdata>';
+                project = Utils.serializeProject(project);
                 return res.send(project);
             });
         }
