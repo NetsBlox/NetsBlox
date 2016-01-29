@@ -107,6 +107,7 @@ function TableMorph(ide) {
     this.seats = {};
     this.seatLabels = {};
 
+    this.tableLabel = null;
     this.init();
     // Set up the table name
     this._name = localize('MyTable');
@@ -135,16 +136,6 @@ function TableMorph(ide) {
     // Set up callback(s) for SeatMorphs
     SeatMorph.prototype.editSeat = TableMorph.prototype.editSeat.bind(this);
 }
-
-// 'Inherit' from SpriteMorph
-//(function() {
-    //var methods = Object.keys(SpriteMorph.prototype);
-    //for (var i = methods.length; i--;) {
-        //if (StageMorph.prototype[methods[i]]) {
-            //TableMorph.prototype[methods[i]] = SpriteMorph.prototype[methods[i]];
-        //}
-    //}
-//})();
 
 TableMorph.prototype._onNameChanged = function(newName) {
     if (this._name !== newName) {
@@ -182,6 +173,7 @@ TableMorph.prototype.drawNew = function() {
         
     if (this.leaderId === null) {  // If the table isn't set, trigger an update
         this.triggerUpdate();
+        return;
     }
 
     // Remove the old seatLabels
@@ -226,20 +218,44 @@ TableMorph.prototype.drawNew = function() {
         angle += angleSize;
     }
 
-    // Center circle
-    cxt.beginPath();
-    cxt.arc(center, center, radius/5, 0, 2*Math.PI, false);
+    // Table name
+    var width = 100,
+        height = 25;
+
     cxt.fillStyle = '#9e9e9e';
-    cxt.fill();
-    cxt.fillStyle = 'black';
-    cxt.font = '14px';
-    cxt.fillText('TABLE', center, center);
+    cxt.fillRect(center-(width/2), center-(height/2), width, height);
+    this.renderTableTitle(new Point(center, center).translateBy(this.topLeft()));
 
     this.changed();
 };
 
-TableMorph.prototype.inheritedVariableNames = function() {
-    return [];
+TableMorph.prototype.renderTableTitle = function(center) {
+    if (this.tableLabel) {
+        this.tableLabel.destroy();
+    }
+
+    this.tableLabel = new StringMorph(
+        this.name,
+        15,
+        null,
+        true,
+        false
+    );
+    this.tableLabel.mouseClickLeft = this.editTableName.bind(this);
+    this.add(this.tableLabel);
+
+    this.tableLabel.setCenter(center);
+    this.tableLabel.text = this.name;
+    this.tableLabel.drawNew();
+};
+
+TableMorph.prototype.editTableName = function () {
+    var myself = this;
+    this.ide.prompt('New Table Name', function (name) {
+        if (name) {
+            myself.name = name;
+        }
+    }, null, 'editTableName');
 };
 
 TableMorph.prototype.join = function (leaderId, name) {
