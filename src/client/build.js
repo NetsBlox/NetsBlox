@@ -29140,7 +29140,7 @@ Process.prototype._createMsg = function (name) {
  */
 Process.prototype.receiveSocketMessage = function (fields) {
     var varFrame = this.context.outerContext.variables,
-        names = this.context.variables.names(),
+        names = varFrame.names(),
         content;
 
     // If we haven't received a message, do nothing
