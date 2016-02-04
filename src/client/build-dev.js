@@ -42482,6 +42482,9 @@ IDE_Morph.prototype.openProjectString = function (str) {
         },
         function () {nop(); }, // yield (bug in Chrome)
         function () {
+            if (str === undefined) {
+                throw 'str is undefined!';
+            }
             myself.rawOpenProjectString(str);
         },
         function () {
@@ -55928,6 +55931,40 @@ Cloud.prototype.saveProject = function (ide, callBack, errorCall) {
 };
 
 // Override
+var superOpenProj = ProjectDialogMorph.prototype.openProject;
+ProjectDialogMorph.prototype.openProject = function () {
+    var proj = this.listField.selected,
+        response;
+
+    if (this.source === 'examples') {
+        // Will this be stored in the examples?
+        // TODO
+        this.ide.table.nextTable = {
+            leaderId: 'EXAMPLE_' + (Date.now() % 1000),
+            tableName: proj,
+            seatId: proj.ProjectName
+        };
+
+        // Add table info
+        // Seats
+        // TODO
+
+        // SeatOwners
+        // TODO
+
+        // seat name
+        this.ide.setProjectName(proj);
+        return superOpenProj.call(this);
+        response = this.ide.getURL(baseURL + 'Examples/' + proj.name + '.xml');
+        this.ide.openProjectString(response.src);
+        this.destroy();
+        // TODO: G
+        //this._loadTable();
+    } else {
+        return superOpenProj.call(this);
+    }
+};
+
 ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
     var myself = this;
     SnapCloud.reconnect(

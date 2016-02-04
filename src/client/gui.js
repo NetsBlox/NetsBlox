@@ -3341,6 +3341,9 @@ IDE_Morph.prototype.openProjectString = function (str) {
         },
         function () {nop(); }, // yield (bug in Chrome)
         function () {
+            if (str === undefined) {
+                throw 'str is undefined!';
+            }
             myself.rawOpenProjectString(str);
         },
         function () {

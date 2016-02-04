@@ -71,18 +71,17 @@ module.exports = {
 
             for (var i = earthquakes.length; i--;) {
                 // For now, I will send lat, lng, size, date
-                msg = [
-                    'message',
-                    socket._seatId,
-                    'rpc',
-                    'Earthquake',
-                    JSON.stringify({
+                msg = {
+                    type: 'message',
+                    dstId: socket._seatId,
+                    msgType: 'Earthquake',
+                    content: {
                         latitude: earthquakes[i].geometry.coordinates[1],
                         longitude: earthquakes[i].geometry.coordinates[0],
                         size: earthquakes[i].properties.mag,
                         time: earthquakes[i].properties.time
-                    })
-                ].join(' ');
+                    }
+                };
                 socket.send(msg);
             }
         });
