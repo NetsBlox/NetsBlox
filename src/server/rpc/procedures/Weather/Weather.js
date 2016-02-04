@@ -57,7 +57,7 @@ module.exports = {
             if (body.main) {
                 temp = body.main.temp;
                 trace('Kelvin temp is '+temp+' fahrenheit is '+tuc.k2f(temp));
-                temp = Math.round(tuc.k2f(temp)*100, 2)/100;  // Round to 2 spots
+                temp = Math.round(tuc.k2f(temp));
             }
             return res.json(temp);
         });
