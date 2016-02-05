@@ -132,6 +132,7 @@ class ActiveTable {
         var msg = this.getStateMsg(),
             sockets = R.values(this.seats).filter(socket => !!socket);
 
+        console.log('sockets:', sockets.map(socket => socket ? socket.username : socket));
         sockets.forEach(socket => socket.send(msg));
     }
 
@@ -140,6 +141,7 @@ class ActiveTable {
             socket = this.seats[src],
             dst = params.dst;
 
+        console.log('src:', src);
         this.seats[src] = null;
         this.add(socket, dst);
     }

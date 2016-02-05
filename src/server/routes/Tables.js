@@ -28,7 +28,9 @@ var acceptInvitation = function(username, id, response, socketId, callback) {
 
     if (response) {
         // Add the seatId to the table (if doesn't exist)
-        let table = this.tables[invite.table];
+        let table = this.tables[invite.table],
+            project;
+
         if (!table) {
             // TODO: Create table
         }
@@ -49,7 +51,11 @@ var acceptInvitation = function(username, id, response, socketId, callback) {
         // Persist this in the database
         // TODO
 
-        callback(null);
+        project = table.cachedProjects[invite.seat] || null;
+        if (project) {
+            project = Utils.serializeProject(project);
+        }
+        callback(null, project);
     }
 };
 
@@ -161,13 +167,13 @@ module.exports = [
                     inviteId,
                     true,
                     socketId,
-                    (err) => {
+                    (err, project) => {
                         if (err) {
                             this._logger.error(err);
                             return res.status(500).send(err);
                         }
                         this._logger.info('success!');
-                        res.status(200).send('ok');
+                        res.status(200).send(project);
                     }
                 );
                 return;
@@ -224,11 +230,11 @@ module.exports = [
                 inviteId,
                 response,
                 socketId,
-                (err) => {
+                (err, project) => {
                     if (err) {
                         return res.status(500).send(err);
                     }
-                    res.status(200).send('ok');
+                    res.status(200).send(project);
                 }
             );
         }

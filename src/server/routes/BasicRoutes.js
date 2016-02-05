@@ -8,17 +8,18 @@ var R = require('ramda'),
     GameTypes = require('../GameTypes'),
 
     debug = require('debug'),
+    _ = require('lodash'),
     log = debug('NetsBlox:API:log'),
     hash = require('../../client/sha512').hex_sha512,
     randomString = require('just.randomstring'),
     fs = require('fs'),
     path = require('path'),
+    EXAMPLES = require('../examples'),
 
     // PATHS
     PATHS = [
         'Costumes',
         'Sounds',
-        'Examples',
         'Backgrounds'
     ];
 
@@ -137,6 +138,60 @@ module.exports = [
         URL: 'GameTypes',
         Handler: function(req, res) {
             return res.status(200).json(GameTypes);
+        }
+    },
+    // index
+    {
+        Method: 'get',
+        URL: 'Examples',
+        Handler: function(req, res) {
+            // if no name requested, get index
+            console.log('Object.keys(EXAMPLES)',Object.keys(EXAMPLES));
+            var result = makeDummyHtml(Object.keys(EXAMPLES).map(name => name + '.xml'));
+            console.log('result:', result);
+            return res.send(result);
+        }
+    },
+    // individual example
+    {
+        Method: 'get',
+        URL: 'Examples/:name',
+        Handler: function(req, res) {
+            var name = req.params.name,
+                uuid = req.query.sId,
+                socket,
+                example;
+
+            if (!uuid) {
+                return res.status(400).send('ERROR: No socket id provided');
+            }
+
+            if (!EXAMPLES.hasOwnProperty(name)) {
+                this._logger.warn(`ERROR: Could not find example "${name}`);
+                return res.status(500).send('ERROR: Could not find example.');
+            }
+
+            // This needs to...
+            //  + create the table for the socket
+            example = _.cloneDeep(EXAMPLES[name]);
+            socket = this.sockets[uuid];
+            var table = this.create(socket, name),
+                seat = example.primarySeat,
+                result;
+
+            //  + customize and return the table for the socket
+            table = _.extend(table, example);
+
+            //  Load the projects into the cache
+            table.seatOwners[seat] = socket.username || socket.uuid;
+
+            result = {
+                src: table.cachedProjects[seat],
+                tableName: table.tableName,
+                leaderId: table.leader.username,
+                primarySeat: table.primarySeat
+            }
+            return res.json(result);
         }
     }
 ].concat(resourcePaths);

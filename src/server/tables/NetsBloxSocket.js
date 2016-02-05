@@ -130,8 +130,8 @@ class NetsBloxSocket {
     }
 
     changeSeats (seat) {
-        this._logger.log(`changing to seat ${this._table.uuid}/${seat}`);
-        this._table.move(this, seat);
+        this._logger.log(`changing to seat ${this._table.uuid}/${seat} from ${this._seatId}`);
+        this._table.move({socket: this, dst: seat});
     }
 
     sendToEveryone (msg) {

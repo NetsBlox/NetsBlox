@@ -54674,7 +54674,7 @@ IDE_Morph.prototype.setProjectName = function (string) {
     this.table.setSeatName(string);
 };
 
-IDE_Morph.prototype._loadTable = function () {
+IDE_Morph.prototype.loadNextTable = function () {
     // Check if the table has diverged and optionally fork
     // TODO
     if (this.table.nextTable) {
@@ -54709,7 +54709,7 @@ IDE_Morph.prototype.rawOpenCloudDataString = function (str) {
                 this
             );
             // Join the table
-            this._loadTable();
+            this.loadNextTable();
         } catch (err) {
             this.showMessage('Load failed: ' + err);
         }
@@ -55146,8 +55146,22 @@ TableMorph.prototype._invitationResponse = function (id, response, seat) {
     SnapCloud.invitationResponse(
         id,
         response,
-        function (res, url) {
+        function (args, url) {
             if (response) {
+                var proj = args[0];
+                // Load the project or make the project empty
+                if (proj) {
+                    myself.ide.source = 'cloud';
+                    myself.ide.droppedText(proj.SourceCode);
+                    if (proj.Public === 'true') {
+                        location.hash = '#present:Username=' +
+                            encodeURIComponent(SnapCloud.username) +
+                            '&ProjectName=' +
+                            encodeURIComponent(proj.ProjectName);
+                    }
+                } else {  // Empty the project
+                    myself.ide.newProject(seat);
+                }
                 myself.ide.showMessage('you have joined the table!', 2);
                 myself.ide._setProjectName(seat);  // Set the seat name
             }
@@ -55513,35 +55527,56 @@ Cloud.prototype.saveProject = function (ide, callBack, errorCall) {
 var superOpenProj = ProjectDialogMorph.prototype.openProject;
 ProjectDialogMorph.prototype.openProject = function () {
     var proj = this.listField.selected,
-        response;
+        projectNameRegex = /name="(.*)" app/,
+        response,
+        src;
 
     if (this.source === 'examples') {
-        // Will this be stored in the examples?
-        // TODO
+        response = JSON.parse(this.ide.getURL(baseURL + 'api/Examples/' + proj.name +
+            '?sId=' + this.ide.sockets.uuid));
         this.ide.table.nextTable = {
-            leaderId: 'EXAMPLE_' + (Date.now() % 1000),
-            tableName: proj,
-            seatId: proj.ProjectName
+            leaderId: response.leaderId,
+            tableName: response.tableName,
+            seatId: response.primarySeat
         };
 
-        // Add table info
-        // Seats
-        // TODO
-
-        // SeatOwners
-        // TODO
-
         // seat name
-        this.ide.setProjectName(proj);
-        return superOpenProj.call(this);
-        response = this.ide.getURL(baseURL + 'Examples/' + proj.name + '.xml');
-        this.ide.openProjectString(response.src);
+        this.ide.openProjectString(response.src.SourceCode);
+        this.ide.loadNextTable();
         this.destroy();
-        // TODO: G
-        //this._loadTable();
     } else {
         return superOpenProj.call(this);
     }
+};
+
+var superSetSource = ProjectDialogMorph.prototype.setSource;
+ProjectDialogMorph.prototype.setSource = function (source) {
+    var myself = this;
+    superSetSource.call(this, source);
+    if (this.source === 'examples') {
+        this.listField.action = function(item) {
+            var src, xml;
+            if (item === undefined) {return; }
+            if (myself.nameField) {
+                myself.nameField.setContents(item.name || '');
+            }
+            src = JSON.parse(myself.ide.getURL(
+                baseURL + 'api/Examples/' + item.name + '?sId=' + myself.ide.sockets.uuid
+            )).src.SourceCode;
+
+            xml = myself.ide.serializer.parse(src);
+            myself.notesText.text = xml.childNamed('notes').contents
+                || '';
+            myself.notesText.drawNew();
+            myself.notesField.contents.adjustBounds();
+            myself.preview.texture = xml.childNamed('thumbnail').contents
+                || null;
+            myself.preview.cachedTexture = null;
+            myself.preview.drawNew();
+            myself.edit();
+        }
+    }
+    // TODO
 };
 
 ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
