@@ -2,9 +2,7 @@
 'use strict';
 
 var R = require('ramda'),
-    utils = require('../ServerUtils'),
-    VirtualClient = require('../../virtual-client/VirtualClient'),
-    HOST = 'http://localhost:8080/netsblox-dev.html';  // FIXME
+    utils = require('../ServerUtils');
 
 class ActiveTable {
 
