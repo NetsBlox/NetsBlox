@@ -106,6 +106,7 @@ Server.prototype.start = function(done) {
     done = done || Utils.nop;
     self.connectToMongo(function (err) {
         self._server = self.app.listen(self.opts.port, function() {
+            console.log('listening on port ' + self.opts.port);
             self.groupManager.start({server: self._server});
             // Enable Vantage
             if (self.opts.vantage) {
