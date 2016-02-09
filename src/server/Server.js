@@ -91,6 +91,7 @@ Server.prototype.start = function(done) {
     self.storage.connect(function (err) {
         self.configureRoutes();
         self._server = self.app.listen(self.opts.port, function() {
+            console.log('listening on port ' + self.opts.port);
             SocketManager.prototype.start.call(self, {server: self._server});
             // Enable Vantage
             if (self.opts.vantage) {
