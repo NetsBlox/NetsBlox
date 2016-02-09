@@ -1,7 +1,11 @@
+// This is a wrapper around the storage table. It provides the extra functionality expected
+// of a table that is actively being used
+// TODO
 
 'use strict';
 
 var R = require('ramda'),
+    _ = require('lodash'),
     utils = require('../ServerUtils');
 
 class ActiveTable {
@@ -25,6 +29,9 @@ class ActiveTable {
         // RPC contexts
         this.rpcs = {};
 
+        // Saving
+        this._store = null;
+
         this._logger.log('created!');
     }
 
@@ -33,12 +40,18 @@ class ActiveTable {
         // Create a copy of the table with the socket as the new leader
         var fork = new ActiveTable(logger, this.name, socket),
             seats = Object.keys(this.seats),
-            currentSeat = socket._seatId;
+            currentSeat = socket._seatId,
+            data;
 
         seats.forEach(seat => fork.createSeat(seat));
         fork.seatOwners[currentSeat] = socket.username;
 
-        // TODO: Copy the data from each project
+        // Clone the table storage data
+        data = this._store.fork(fork);
+        fork.setStorage(data);
+
+        // Copy the data from each project
+        fork.cachedProjects = _.cloneDeep(this.cachedProjects);
 
         // Notify the socket of the fork
         socket.send({
@@ -133,8 +146,24 @@ class ActiveTable {
         var msg = this.getStateMsg(),
             sockets = R.values(this.seats).filter(socket => !!socket);
 
-        console.log('sockets:', sockets.map(socket => socket ? socket.username : socket));
         sockets.forEach(socket => socket.send(msg));
+
+        this.save();
+    }
+
+    setStorage(store) {
+        this._store = store;
+    }
+
+    save() {
+        // Save the updated table in the global tables database
+        this._store.saveSeats(err => {
+            if (err) {
+                this._logger.error('Could not save:', err);
+                return;
+            }
+            this._logger.trace('seat metadata saved');
+        });
     }
 
     move (params) {
@@ -221,6 +250,10 @@ class ActiveTable {
 // Factory method
 ActiveTable.fromStore = function(logger, socket, data) {
     var table = new ActiveTable(logger, data.name, socket);
+
+    // Store the data
+    table.setStorage(data);
+
     // Set up the seats
     table.seatOwners = data.seatOwners;
     table._uuid = data.uuid;  // save over the old uuid even if it changes

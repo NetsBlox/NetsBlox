@@ -1,6 +1,7 @@
 // This is a wrapper for data from storage that implements
 // save(), destroy() and (optionally) prepare() functions
 'use strict';
+var ObjectId = require('mongodb').ObjectId;
 
 class Data {
     constructor (db, data) {
