@@ -55561,7 +55561,8 @@ ProjectDialogMorph.prototype.setSource = function (source) {
                 myself.nameField.setContents(item.name || '');
             }
             src = JSON.parse(myself.ide.getURL(
-                baseURL + 'api/Examples/' + item.name + '?sId=' + myself.ide.sockets.uuid
+                baseURL + 'api/Examples/' + item.name + '?sId=' + myself.ide.sockets.uuid +
+                '&preview=true'
             )).src.SourceCode;
 
             xml = myself.ide.serializer.parse(src);
