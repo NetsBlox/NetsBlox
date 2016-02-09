@@ -159,6 +159,7 @@ module.exports = [
         Handler: function(req, res) {
             var name = req.params.name,
                 uuid = req.query.sId,
+                isPreview = req.query.preview,
                 socket,
                 example;
 
@@ -175,10 +176,16 @@ module.exports = [
             //  + create the table for the socket
             example = _.cloneDeep(EXAMPLES[name]);
             socket = this.sockets[uuid];
-            var table = this.create(socket, name),
-                seat = example.primarySeat,
+            var seat = example.primarySeat,
+                table,
                 result;
 
+            if (!isPreview) {
+                table = this.create(socket, name);
+            } else {
+                table = example;
+                table.leader = socket;
+            }
             //  + customize and return the table for the socket
             table = _.extend(table, example);
 
