@@ -28,9 +28,22 @@ var loadJsFiles = function(dir) {
         ));
 };
 
+var uuid = function(leader, name) {
+    return leader + '/' + name;
+};
+
+var serializeProject = (project) => {
+    return serialize(R.omit(['SourceCode', 'Media'], project)) + 
+    // Add the SourceCode portion
+        '&SourceCode=<snapdata>+' + encodeURIComponent(project.SourceCode +
+        project.Media)+'</snapdata>';
+};
+
 module.exports = {
     serialize: serialize,
     loadJsFiles: loadJsFiles,
-    serializeArray: serializeArray
+    serializeArray: serializeArray,
+    serializeProject: serializeProject,
+    uuid: uuid
 
 };

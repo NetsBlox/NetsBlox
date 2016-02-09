@@ -1,0 +1,1 @@
+<blocks app="Snap! 4.0, http://snap.berkeley.edu" version="1"><block-definition s="I am not logged in" type="predicate" category="sensing"><header></header><code></code><inputs></inputs><script><block s="doReport"><block s="reportEquals"><block s="reportStringSize"><block s="reportUsername"></block></block><l>0</l></block></block></script></block-definition></blocks>

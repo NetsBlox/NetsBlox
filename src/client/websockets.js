@@ -1,8 +1,8 @@
 /*globals nop,SnapCloud,Context,VariableFrame,SpriteMorph,StageMorph*/
 // WebSocket Manager
 
-var WebSocketManager = function (stage) {
-    this.stage = stage;
+var WebSocketManager = function (ide) {
+    this.ide = ide;
     this.uuid = null;
     this.websocket = null;
     this.messages = [];
@@ -10,6 +10,50 @@ var WebSocketManager = function (stage) {
     this.gameType = 'None';
     this.devMode = false;
     this._connectWebSocket();
+};
+
+WebSocketManager.MessageHandlers = {
+    // Receive an assigned uuid
+    'uuid': function(msg) {
+        this.uuid = msg.body;
+        this._onConnect();
+    },
+
+    // Game play message
+    'message': function(msg) {
+        var dstId = msg.dstId,
+            messageType = msg.msgType,
+            content = msg.content;
+
+        // filter for gameplay
+        if (dstId === this.ide.projectName || dstId === 'everyone') {
+            this.onMessageReceived(messageType, content, 'role');
+        }
+        // TODO: pass to debugger
+    },
+
+    // Update on the current seats at the given table
+    'table-seats': function(msg) {
+        this.ide.table.update(msg.leader, msg.name, /*seatId,*/ msg.seats);
+    },
+
+    // Receive an invite to join a table
+    'table-invitation': function(msg) {
+        this.ide.table.promptInvite(msg);
+    },
+
+    'project-fork': function(msg) {
+        // I should probably change this... FIXME
+        this.ide.showMessage('That other table sucked. You are now the boss.');
+    },
+
+    'project-request': function(msg) {
+        var project = this.getSerializedProject();
+        msg.type = 'project-response';
+        msg.project = project;
+
+        this.sendMessage(msg);
+    }
 };
 
 WebSocketManager.prototype._connectWebSocket = function() {
@@ -36,7 +80,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
     // Set up message firing queue
     this.websocket.onopen = function() {
         console.log('Connection established');  // REMOVE this
-        self._updateProjectNetworkState();
+        //self._onConnect();
 
         while (self.messages.length) {
             self.websocket.send(self.messages.shift());
@@ -45,30 +89,26 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
     // Set up message events
     // Where should I set this up now?
-    this.websocket.onmessage = function(message) {
-        var data = message.data.split(' '),
-            type = data.shift(),
-            role,
+    this.websocket.onmessage = function(rawMsg) {
+        var msg = JSON.parse(rawMsg.data),
+            type = msg.type,
             content;
 
-        if (type === 'uuid') {
-            console.log('Setting uuid to '+data.join(' '));
-            self.uuid = data.join(' ');
+        if (WebSocketManager.MessageHandlers[type]) {
+            WebSocketManager.MessageHandlers[type].call(self, msg);
         } else {
-            role = data.pop();
-            content = JSON.parse(data.join(' ') || null);
-            self.onMessageReceived(type, content, role);
+            console.error('Unknown message:', msg);
         }
     };
 
     this.websocket.onclose = function() {
-        console.log('Connection closed');  // REMOVE this
         setTimeout(self._connectWebSocket.bind(self), 500);
     };
 };
 
 WebSocketManager.prototype.sendMessage = function(message) {
     var state = this.websocket.readyState;
+    message = JSON.stringify(message);
     if (state === this.websocket.OPEN) {
         this.websocket.send(message);
     } else {
@@ -78,21 +118,38 @@ WebSocketManager.prototype.sendMessage = function(message) {
 
 WebSocketManager.prototype.setGameType = function(gameType) {
     this.gameType = gameType.name;
-    this._updateProjectNetworkState();
+    // FIXME: Remove this
 };
 
-WebSocketManager.prototype._updateProjectNetworkState = function() {
-    this.sendMessage('gameType '+this.gameType);
-    var cmd = this.devMode ? 'on' : 'off';
-    console.log('dev mode is now ' + cmd);
-    this.sendMessage('devMode ' + cmd + ' ' + (SnapCloud.username || ''));
-    
+WebSocketManager.prototype._onConnect = function() {
+    if (SnapCloud.username) {  // Reauthenticate if needed
+        var updateTable = this.updateTableInfo.bind(this);
+        SnapCloud.reconnect(updateTable, updateTable);
+    } else {
+        this.updateTableInfo();
+    }
 };
 
-// FIXME: Toggle dev mode
+WebSocketManager.prototype.updateTableInfo = function() {
+    var tableLeader = this.ide.table.leaderId,
+        seatId = this.ide.projectName,
+        tableName = this.ide.table.name || '__new_project__',
+        msg = {
+            type: 'create-table',
+            table: tableName,
+            seat: seatId
+        };
+        
+    if (this.ide.table.leaderId) {
+        msg.type = 'join-table';
+        msg.leader = tableLeader;
+    }
+    this.sendMessage(msg);
+};
+
 WebSocketManager.prototype.toggleNetwork = function() {
     this.devMode = !this.devMode;
-    this._updateProjectNetworkState();
+    // FIXME: Remove this function
 };
 
 /**
@@ -106,14 +163,14 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
         hats = [],
         context,
         idle = !this.processes.length,
+        stage = this.ide.stage,
         block;
 
     content = content || [];
     if (message !== '') {
-        this.stage.lastMessage = message;
-        this.stage.children.concat(this.stage).forEach(function (morph) {
+        stage.children.concat(stage).forEach(function (morph) {
             if (morph instanceof SpriteMorph || morph instanceof StageMorph) {
-                hats = hats.concat(morph.allHatBlocksForSocket(message, role));
+                hats = hats.concat(morph.allHatBlocksForSocket(message, role));  // FIXME
             }
         });
 
@@ -131,7 +188,7 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
             // Find the process list for the given block
             this.addProcess({
                 block: block,
-                isThreadSafe: this.stage.isThreadSafe,
+                isThreadSafe: stage.isThreadSafe,
                 context: context
             });
         }
@@ -172,15 +229,16 @@ WebSocketManager.prototype.addProcess = function (process) {
 WebSocketManager.prototype.startProcesses = function () {
     var process,
         block,
+        stage = this.ide.stage,
         activeBlock;
 
     // Check each set of processes to see if the block is free
     for (var i = 0; i < this.processes.length; i++) {
         block = this.processes[i][0].block;
-        activeBlock = !!this.stage.threads.findProcess(block);
+        activeBlock = !!stage.threads.findProcess(block);
         if (!activeBlock) {  // Check if the process can be added
             process = this.processes[i].shift();
-            this.stage.threads.startProcess(
+            stage.threads.startProcess(
                 process.block,
                 process.isThreadSafe,
                 undefined,
@@ -197,6 +255,47 @@ WebSocketManager.prototype.startProcesses = function () {
     if (this.processes.length) {
         setTimeout(this.startProcesses.bind(this), 5);
     }
+};
+
+WebSocketManager.prototype.getSerializedProject = function(callBack, errorCall) {
+    var myself = this,
+        ide = this.ide,
+        pdata,
+        media;
+
+    ide.serializer.isCollectingMedia = true;
+    pdata = ide.serializer.serialize(ide.stage);
+    media = ide.serializer.mediaXML(ide.projectName);
+    ide.serializer.isCollectingMedia = false;
+    ide.serializer.flushMedia();
+
+    // check if serialized data can be parsed back again
+    try {
+        ide.serializer.parse(pdata);
+    } catch (err) {
+        ide.showMessage('Serialization of program data failed:\n' + err);
+        throw new Error('Serialization of program data failed:\n' + err);
+    }
+    if (media !== null) {
+        try {
+            ide.serializer.parse(media);
+        } catch (err) {
+            ide.showMessage('Serialization of media failed:\n' + err);
+            throw new Error('Serialization of media failed:\n' + err);
+        }
+    }
+    ide.serializer.isCollectingMedia = false;
+    ide.serializer.flushMedia();
+
+    return {
+            ProjectName: ide.projectName,
+            SourceCode: pdata,
+            Media: media,
+            SourceSize: pdata.length,
+            MediaSize: media ? media.length : 0,
+            TableLeaderId: this.ide.table.leaderId,
+            TableName: this.ide.table.name
+        };
 };
 
 WebSocketManager.prototype.destroy = function () {

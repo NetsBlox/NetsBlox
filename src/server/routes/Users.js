@@ -18,10 +18,11 @@ module.exports = [
             Handler: function(req, res) {
                 var username = req.session.username;
                 log('Deleting user "'+username+'"');
-                this._users.remove({username: username}, function(e, numRemoved) {
-                    if (e || !numRemoved) {
+                this.storage.users.get(username, function(e, user) {
+                    if (e || !user) {
                         return res.serverError(e || 'Could not remove "'+username+'"');
                     }
+                    user.destroy();
                     req.session.destroy();
                     return res.send('account for "'+username+'" has been deleted');
                 });
@@ -51,15 +52,16 @@ module.exports = [
                 info('Changing password for '+username);
                 console.log('Changing password for '+username);
                 // Verify that the old password is correct
-                this._users.update({username: username, hash: oldPassword}, 
-                    {$set: {hash: newPassword}}, function(e, data) {
-                    var result = data.result;
-
-                    if (result.nModified === 0) {
-                        return res.status(403).send('ERROR: incorrect login');
-                    }
-
-                    return res.send('Password has been updated!');
+                this.storage.users.get(username, (e, user) => {
+                        if (e) {
+                            return res.serverError('ERROR: ' + e);
+                        }
+                        if (!user || user.hash !== oldPassword) {
+                            return res.status(403).send('ERROR: incorrect login');
+                        }
+                        user.hash = newPassword;
+                        user.save();
+                        return res.send('Password has been updated!');
                 });
             }
         }

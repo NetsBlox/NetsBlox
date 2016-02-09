@@ -36,7 +36,7 @@ module.exports = [
                     'logged in to compile Android apps');
             }
 
-            self._users.findOne({username: username}, function(e, user) {
+            self.storage.users.get(username, (e, user) => {
                 if (e) {
                     error('Server error when looking for user: "'+username+'". Error:', e);
                     return res.serverError(e);

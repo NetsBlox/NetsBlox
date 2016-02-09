@@ -2,27 +2,28 @@
 var R = require('ramda'),
     Utils = require('../ServerUtils.js'),
     UserAPI = require('./Users'),
+    TableAPI = require('./Tables'),
     ProjectAPI = require('./Projects'),
-    EXTERNAL_API = R.map(R.partial(R.omit,['Handler']), UserAPI.concat(ProjectAPI)),
+    EXTERNAL_API = R.map(R.partial(R.omit,['Handler']), UserAPI.concat(ProjectAPI).concat(TableAPI)),
     GameTypes = require('../GameTypes'),
 
     debug = require('debug'),
+    _ = require('lodash'),
     log = debug('NetsBlox:API:log'),
     hash = require('../../client/sha512').hex_sha512,
     randomString = require('just.randomstring'),
     fs = require('fs'),
     path = require('path'),
+    EXAMPLES = require('../examples'),
 
     // PATHS
     PATHS = [
         'Costumes',
         'Sounds',
-        'Examples',
         'Backgrounds'
     ];
 
-var generateRandomPassword = randomString.bind(null, 8),
-    makeDummyHtml = function(list) {
+var makeDummyHtml = function(list) {
         return list.map(function(item) {
             return '<a href="'+item+'">'+item+'</a><br/>';
         }).join('\n');
@@ -61,28 +62,15 @@ module.exports = [
                 password;
 
             // Look up the email
-            self._users.findOne({username: username}, function(e, user) {
+            self.storage.users.get(username, function(e, user) {
                 if (e) {
                     log('Server error when looking for user: "'+username+'". Error:', e);
                     return res.serverError(e);
                 }
 
                 if (user) {
-                    email = user.email;
-                    password = generateRandomPassword();
-                    // Change the password
-                    self._users.update({username: username}, {$set: {hash: hash(password)}}, function(e, data) {
-                        var result = data.result;
-
-                        if (result.nModified === 0 || e) {
-                            log('Could not set temp password for "'+username+'"');
-                            return res.status(403).send('ERROR: could not set temporary password');
-                        }
-
-                        // Email the user the temporary password
-                        self.emailPassword(user, password);
-                        return res.send('A temporary password has been emailed to you');
-                    });
+                    delete user.hash;  // force tmp password creation
+                    user.save();
                 } else {
                     log('Could not find user to reset password (user "'+username+'")');
                     return res.status(400).send('ERROR: could not find user "'+username+'"');
@@ -97,8 +85,7 @@ module.exports = [
             log('Sign up request:', req.query.Username, req.query.Email);
             var self = this,
                 uname = req.query.Username,
-                email = req.query.Email,
-                tmpPassword = generateRandomPassword();
+                email = req.query.Email;
 
             // Must have an email and username
             if (!email || !uname) {
@@ -106,23 +93,10 @@ module.exports = [
                 return res.status(400).send('ERROR: need both username and email!');
             }
 
-            self._users.findOne({username: uname}, function(e, user) {
+            self.storage.users.get(uname, function(e, user) {
                 if (!user) {
-                    // Default password is "password". Change server to update password
-                    // and email it to the user 
-                    var newUser = {username: uname, 
-                                   email: email,
-                                   hash: hash(tmpPassword),
-                                   projects: []};
-
-                    self.emailPassword(newUser, tmpPassword);
-                    self._users.insert(newUser, function (err, result) {
-                        if (err) {
-                            return res.serverError(err);
-                        }
-                        log('Created new user: "'+uname+'" with email "' + newUser.email + '"');
-                        return res.sendStatus(200);
-                    });
+                    var newUser = self.storage.users.new(uname, email);
+                    newUser.save();
                     return;
                 }
                 log('User "'+uname+'" already exists. Could not make new user.');
@@ -132,16 +106,24 @@ module.exports = [
     },
     { 
         Method: 'post', 
-        URL: '',
+        URL: '',  // login/SignUp method
         Handler: function(req, res) {
-            this._users.findOne({username: req.body.__u, hash: req.body.__h}, function(e, user) {
+            var hash = req.body.__h,
+                socket;
+
+            this.storage.users.get(req.body.__u, (e, user) => {
                 if (e) {
                     log('Could not find user "'+req.body.__u+'": ' +e);
                     return res.serverError(e);
                 }
-                if (user) {  // Sign in 
+                if (user && user.hash === hash) {  // Sign in 
                     req.session.username = req.body.__u;
                     log('"'+req.session.username+'" has logged in.');
+                    // Associate the websocket with the username
+                    socket = this.sockets[req.body.__sId];
+                    if (!!socket) {  // websocket has already connected
+                        socket.onLogin(req.body.__u);
+                    }
                     return res.send(Utils.serializeArray(EXTERNAL_API));
                 }
                 log('Could not find user "'+req.body.__u+'"');
@@ -156,6 +138,60 @@ module.exports = [
         URL: 'GameTypes',
         Handler: function(req, res) {
             return res.status(200).json(GameTypes);
+        }
+    },
+    // index
+    {
+        Method: 'get',
+        URL: 'Examples',
+        Handler: function(req, res) {
+            // if no name requested, get index
+            console.log('Object.keys(EXAMPLES)',Object.keys(EXAMPLES));
+            var result = makeDummyHtml(Object.keys(EXAMPLES).map(name => name + '.xml'));
+            console.log('result:', result);
+            return res.send(result);
+        }
+    },
+    // individual example
+    {
+        Method: 'get',
+        URL: 'Examples/:name',
+        Handler: function(req, res) {
+            var name = req.params.name,
+                uuid = req.query.sId,
+                socket,
+                example;
+
+            if (!uuid) {
+                return res.status(400).send('ERROR: No socket id provided');
+            }
+
+            if (!EXAMPLES.hasOwnProperty(name)) {
+                this._logger.warn(`ERROR: Could not find example "${name}`);
+                return res.status(500).send('ERROR: Could not find example.');
+            }
+
+            // This needs to...
+            //  + create the table for the socket
+            example = _.cloneDeep(EXAMPLES[name]);
+            socket = this.sockets[uuid];
+            var table = this.create(socket, name),
+                seat = example.primarySeat,
+                result;
+
+            //  + customize and return the table for the socket
+            table = _.extend(table, example);
+
+            //  Load the projects into the cache
+            table.seatOwners[seat] = socket.username || socket.uuid;
+
+            result = {
+                src: table.cachedProjects[seat],
+                tableName: table.tableName,
+                leaderId: table.leader.username,
+                primarySeat: table.primarySeat
+            }
+            return res.json(result);
         }
     }
 ].concat(resourcePaths);

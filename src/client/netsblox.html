@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>NetsBlox</title>
+        <link rel="shortcut icon" href="favicon.ico">
+        <script type="text/javascript" src="build.js"></script>
+        <script type="text/javascript">
+            var world;
+            var tryLoadWorld = function() {
+                if (typeof WorldMorph === 'undefined') {
+                    return setTimeout(tryLoadWorld, 100);
+                }
+
+                world = new WorldMorph(document.getElementById('world-container'));
+                world.worldCanvas.focus();
+                new IDE_Morph().openIn(world);
+                setInterval(loop, 1);
+            };
+
+            window.onload = tryLoadWorld;
+            function loop() {
+                world.doOneCycle();
+            }
+        </script>
+    </head>
+    <body style="margin: 0;">
+        <canvas id="world-container" tabindex="1" style="position: absolute;" />
+    </body>
+</html>
+

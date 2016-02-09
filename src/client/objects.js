@@ -620,33 +620,30 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'costume from %s with %s',
             defaults: ['staticmap/getMap']
         },
-        // TODO: get list from RPC; get message from RPC
         // Network Messages
-        doRegisterClient: {  // for use with the generic group manager
-            type: 'command',
-            category: 'services',
-            spec: 'register as %role'
-        },
-        receiveSocketEvent: {
-            type: 'hat',
-            category: 'services',
-            spec: 'when I receive %socketMsgHat from %roleHat'
-        },
-        doSocketEvent: {
-            type: 'command',
-            category: 'services',
-            spec: 'broadcast event %socketMsg'
-        },
         doSocketMessage: {
             type: 'command',
             category: 'services',
-            spec: 'broadcast msg %msgInput'
+            spec: 'send msg %msgInput to %seats'
         },
         receiveSocketMessage: {
             type: 'hat',
             category: 'services',
             spec: 'when I receive %msgOutput'
         },
+
+        // Seat Reporters
+        getProjectId: {
+            type: 'reporter',
+            category: 'services',
+            spec: 'seat name'
+        },
+        getProjectIds: {
+            type: 'reporter',
+            category: 'services',
+            spec: 'all seat names'
+        },
+
         doBroadcast: {
             type: 'command',
             category: 'control',
@@ -2003,16 +2000,12 @@ SpriteMorph.prototype.blockTemplates = function (category) {
 
     } else if (cat === 'services') {
         // TODO: Move these later to other categories
-        blocks.push(block('receiveSocketEvent'));
         blocks.push(block('receiveSocketMessage'));
-        blocks.push('-');
-        blocks.push(block('doSocketEvent'));
         blocks.push(block('doSocketMessage'));
         blocks.push('-');
-        // TODO: Only add this block if unique role paradigm
-        blocks.push(block('doRegisterClient'));
+        blocks.push(block('getProjectId'));
+        blocks.push(block('getProjectIds'));
         blocks.push('-');
-        //blocks.push(block('doSocketDisconnect'));
         if (this.world().isDevMode) {
             blocks.push(block('getJSFromRPC'));
             blocks.push(block('getCostumeFromRPC'));
@@ -3758,29 +3751,6 @@ SpriteMorph.prototype.bounceOffEdge = function () {
 // SpriteMorph message broadcasting
 
 /**
- * Search all child scripts for networking blocks and return all known roles.
- *
- * @return {Array} roles
- */
-SpriteMorph.prototype.allRoleNames = function () {
-    var roles = {},
-        networkingBlocks = ['doRegisterClient', 'receiveSocketEvent'];
-    this.scripts.allChildren().forEach(function (morph) {
-        var txt;
-        if (morph.selector) {
-            var index = networkingBlocks.indexOf(morph.selector);
-            if (index > -1) {
-                txt = morph.inputs()[index].evaluate();
-                if (isString(txt) && txt !== '') {
-                    roles[txt] = true;
-                }
-            }
-        }
-    });
-    return Object.keys(roles);
-};
-
-/**
  * Search all scripts for messaging blocks and return any message types they contain.
  *
  * @return {Array} msgs
@@ -3794,44 +3764,14 @@ SpriteMorph.prototype.allMessageNames = function () {
                     ['receiveMessage', 
                      'doBroadcast', 
                      'doBroadcastAndWait', 
-                     'doSocketEvent', 
-                     'receiveSocketEvent',
                      'doSocketMessage', 
                      'receiveSocketMessage'],
                     morph.selector
                 )) {
                 txt = morph.inputs()[0].evaluate();
-                if (morph.selector !== 'receiveSocketEvent' ||  // Ignore 'join' and 'leave' from 
-                       (txt !== 'join' && txt !== 'leave')) {     // receiveSocketEvent
-                    if (isString(txt) && txt !== '') {
-                        if (!contains(msgs, txt)) {
-                            msgs.push(txt);
-                        }
-                    }
-                }
-            }
-        }
-    });
-    return msgs;
-};
-
-SpriteMorph.prototype.allEventNames = function () {
-    var msgs = [];
-    this.scripts.allChildren().forEach(function (morph) {
-        var txt;
-        if (morph.selector) {
-            if (contains(
-                    ['doSocketEvent', 
-                     'receiveSocketEvent'],
-                    morph.selector
-                )) {
-                txt = morph.inputs()[0].evaluate();
-                if (morph.selector !== 'receiveSocketEvent' ||  // Ignore 'join' and 'leave' from 
-                       (txt !== 'join' && txt !== 'leave')) {     // receiveSocketEvent
-                    if (isString(txt) && txt !== '') {
-                        if (!contains(msgs, txt)) {
-                            msgs.push(txt);
-                        }
+                if (isString(txt) && txt !== '') {
+                    if (!contains(msgs, txt)) {
+                        msgs.push(txt);
                     }
                 }
             }
@@ -4063,6 +4003,19 @@ SpriteMorph.prototype.deleteVariableWatcher = function (varName) {
     if (watcher !== null) {
         watcher.destroy();
     }
+};
+
+// SpriteMorph project/sead id(s)
+
+SpriteMorph.prototype.getProjectId = function () {
+    var ide = this.parentThatIsA(IDE_Morph);
+    return ide.projectName;
+};
+
+SpriteMorph.prototype.getProjectIds = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        seats = Object.keys(ide.table.seats);
+    return new List(seats);
 };
 
 // SpriteMorph non-variable watchers
@@ -4855,8 +4808,10 @@ function StageMorph(globals) {
 StageMorph.prototype.init = function (globals) {
     this.name = localize('Stage');
     this.threads = new ThreadManager();
-    this.sockets = new WebSocketManager(this);
     this.messageTypes = new MessageFrame();
+    // Add initial message types
+    this.addMessageTypeByName('message');
+
     this.variables = new VariableFrame(globals || null, this);
     this.scripts = new ScriptsMorph(this);
     this.customBlocks = [];
@@ -5153,10 +5108,8 @@ StageMorph.prototype.getTempo = function () {
 };
 
 // StageMorph Game Type
+// FIXME: Remove this
 StageMorph.prototype.setGameType = function (gameType) {
-    // Update the server
-    this.sockets.setGameType(gameType);
-
     // Look up the messageTypes for the gameType
     if (!gameType.messageTypes) {
         var req = new XMLHttpRequest(),
@@ -5184,6 +5137,26 @@ StageMorph.prototype.setMessageTypes = function (messageTypes) {
     for (var i = messageTypes.length; i--;) {
         this.addMessageType(messageTypes[i]);
     }
+};
+
+StageMorph.prototype.addMessageTypeByName = function (name) {
+    var url = baseURL + 'api/MessageTypes/' + name,
+        request = new XMLHttpRequest(),
+        msgType;
+
+    try {
+        request.open('GET', url, false);
+        request.send();
+        if (!request.status === 200) {
+            throw new Error('unable to retrieve ' + url);
+        }
+    } catch (err) {
+        console.error('could not retrieve message "' + name + '": ' + err);
+        return;
+    }
+
+    msgType = JSON.parse(request.responseText);
+    this.addMessageType(msgType);
 };
 
 StageMorph.prototype.addMessageType = function (messageType) {
@@ -5650,13 +5623,11 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('clear'));
 
     } else if (cat === 'services') {
-        blocks.push(block('receiveSocketEvent'));
         blocks.push(block('receiveSocketMessage'));
-        blocks.push('-');
-        blocks.push(block('doSocketEvent'));
         blocks.push(block('doSocketMessage'));
         blocks.push('-');
-        blocks.push(block('doRegisterClient'));
+        blocks.push(block('getProjectId'));
+        blocks.push(block('getProjectIds'));
         blocks.push('-');
 
         if (this.world().isDevMode) {
@@ -5968,12 +5939,6 @@ StageMorph.prototype.clear = function () {
     this.clearPenTrails();
 };
 
-StageMorph.prototype.destroy = function () {
-    console.log('Calling destroy on the stage morph!');
-    this.sockets.destroy();
-    Morph.prototype.destroy.call(this);
-};
-
 // StageMorph user menu
 
 StageMorph.prototype.userMenu = function () {
@@ -6210,6 +6175,14 @@ StageMorph.prototype.reportUsername
 StageMorph.prototype.reportSounds
     = SpriteMorph.prototype.reportSounds;
 
+// StageMorph project/seat id(s)
+
+StageMorph.prototype.getProjectId
+    = SpriteMorph.prototype.getProjectId;
+
+StageMorph.prototype.getProjectIds
+    = SpriteMorph.prototype.getProjectIds;
+
 // StageMorph non-variable watchers
 
 StageMorph.prototype.toggleWatcher
@@ -6234,9 +6207,6 @@ StageMorph.prototype.allRoleNames
 
 StageMorph.prototype.allMessageNames
     = SpriteMorph.prototype.allMessageNames;
-
-StageMorph.prototype.allEventNames
-    = SpriteMorph.prototype.allEventNames;
 
 StageMorph.prototype.allHatBlocksFor
     = SpriteMorph.prototype.allHatBlocksFor;

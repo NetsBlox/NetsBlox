@@ -232,6 +232,8 @@ IDE_Morph.prototype.init = function (isAutoFill) {
     this.projectName = '';
     this.projectNotes = '';
 
+    // TODO: Create the websocket manager
+    this.sockets = new WebSocketManager(this);
     this.logo = null;
     this.controlBar = null;
     this.categories = null;
@@ -240,6 +242,7 @@ IDE_Morph.prototype.init = function (isAutoFill) {
     this.spriteEditor = null;
     this.stage = null;
     this.stageHandle = null;
+    this.table = null;
     this.corralBar = null;
     this.corral = null;
 
@@ -484,6 +487,7 @@ IDE_Morph.prototype.buildPanes = function () {
     this.createCategories();
     this.createPalette();
     this.createStage();
+    this.createTable();
     this.createSpriteBar();
     this.createSpriteEditor();
     this.createCorralBar();
@@ -881,7 +885,7 @@ IDE_Morph.prototype.createControlBar = function () {
 IDE_Morph.prototype.updateNetworkButton = function () {
     var newSymbol = 'networkOff',
         btn = this.controlBar.networkButton;
-    if (this.stage.sockets.connected) {
+    if (this.sockets.connected) {
         newSymbol = 'networkOn';
     }
     btn.labelString = new SymbolMorph(newSymbol, 16);
@@ -1052,6 +1056,84 @@ IDE_Morph.prototype.createStageHandle = function () {
     this.add(this.stageHandle);
 };
 
+IDE_Morph.prototype._getCurrentTabs = function () {
+    return ['Scripts', 'Costumes', 'Sounds'];
+};
+
+IDE_Morph.prototype._createTabs = function (oldTabs) {
+    var myself = this,
+        tabCorner = 15,
+        tabBar = new AlignmentMorph('row', -tabCorner * 2),
+        tabs = this._getCurrentTabs(),
+        changed;
+
+    // tab bar
+    tabBar.tabTo = function (tabString) {
+        var active;
+        myself.currentTab = tabString;
+        this.children.forEach(function (each) {
+            each.refresh();
+            if (each.state) { active = each; }
+        });
+        active.refresh(); // needed when programmatically tabbing
+        myself.createSpriteEditor();
+        myself.fixLayout('tabEditor');
+    };
+
+    this.spriteBar.tabBar = tabBar;
+    tabs.forEach(this._addTab.bind(this));
+
+    tabBar.fixLayout();
+    tabBar.children.forEach(function (each) {
+        each.refresh();
+    });
+    this.spriteBar.add(this.spriteBar.tabBar);
+
+    this.spriteBar.fixLayout = function () {
+        this.tabBar.setLeft(this.left());
+        this.tabBar.setBottom(this.bottom());
+    };
+
+    // If the tabs have changed, select the first tab
+    if (oldTabs) {
+        changed = tabs.length !== oldTabs.length;
+        tabs.forEach(function(label, index) {
+            changed = changed || label !== tabs[index];
+        });
+        if (changed) {
+            tabBar.tabTo(tabs[0].toLowerCase());
+        }
+    }
+
+};
+
+IDE_Morph.prototype._addTab = function (label) {
+    var myself = this,
+        lowercase = label.toLowerCase(),
+        tabBar = this.spriteBar.tabBar,
+        tabCorner = 15,
+        tab;
+
+    tab = new TabMorph(
+        this.tabColors,
+        null, // target
+        function () {tabBar.tabTo(lowercase); },
+        localize(label), // label
+        function () {  // query
+            return myself.currentTab === lowercase;
+        }
+    );
+    tab.padding = 3;
+    tab.corner = tabCorner;
+    tab.edge = 1;
+    tab.labelShadowOffset = new Point(-1, -1);
+    tab.labelShadowColor = this.tabColors[1];
+    tab.labelColor = this.buttonLabelColor;
+    tab.drawNew();
+    tab.fixLayout();
+    tabBar.add(tab);
+};
+
 IDE_Morph.prototype.createSpriteBar = function () {
     // assumes that the categories pane has already been created
     var rotationStyleButtons = [],
@@ -1065,10 +1147,16 @@ IDE_Morph.prototype.createSpriteBar = function () {
         tab,
         symbols = ['\u2192', '\u21BB', '\u2194'],
         labels = ['don\'t rotate', 'can rotate', 'only face left/right'],
-        myself = this;
+        myself = this,
+        oldTabs;
 
     if (this.spriteBar) {
         this.spriteBar.destroy();
+        oldTabs = [];
+        for (var i = this.spriteBar.tabBar.children.length; i--;) {
+            tab = this.spriteBar.tabBar.children[i];
+            oldTabs.push(tab.label.text);
+        }
     }
 
     this.spriteBar = new Morph();
@@ -1193,87 +1281,7 @@ IDE_Morph.prototype.createSpriteBar = function () {
         padlock.hide();
     }
 
-    // tab bar
-    tabBar.tabTo = function (tabString) {
-        var active;
-        myself.currentTab = tabString;
-        this.children.forEach(function (each) {
-            each.refresh();
-            if (each.state) {active = each; }
-        });
-        active.refresh(); // needed when programmatically tabbing
-        myself.createSpriteEditor();
-        myself.fixLayout('tabEditor');
-    };
-
-    tab = new TabMorph(
-        tabColors,
-        null, // target
-        function () {tabBar.tabTo('scripts'); },
-        localize('Scripts'), // label
-        function () {  // query
-            return myself.currentTab === 'scripts';
-        }
-    );
-    tab.padding = 3;
-    tab.corner = tabCorner;
-    tab.edge = 1;
-    tab.labelShadowOffset = new Point(-1, -1);
-    tab.labelShadowColor = tabColors[1];
-    tab.labelColor = this.buttonLabelColor;
-    tab.drawNew();
-    tab.fixLayout();
-    tabBar.add(tab);
-
-    tab = new TabMorph(
-        tabColors,
-        null, // target
-        function () {tabBar.tabTo('costumes'); },
-        localize('Costumes'), // label
-        function () {  // query
-            return myself.currentTab === 'costumes';
-        }
-    );
-    tab.padding = 3;
-    tab.corner = tabCorner;
-    tab.edge = 1;
-    tab.labelShadowOffset = new Point(-1, -1);
-    tab.labelShadowColor = tabColors[1];
-    tab.labelColor = this.buttonLabelColor;
-    tab.drawNew();
-    tab.fixLayout();
-    tabBar.add(tab);
-
-    tab = new TabMorph(
-        tabColors,
-        null, // target
-        function () {tabBar.tabTo('sounds'); },
-        localize('Sounds'), // label
-        function () {  // query
-            return myself.currentTab === 'sounds';
-        }
-    );
-    tab.padding = 3;
-    tab.corner = tabCorner;
-    tab.edge = 1;
-    tab.labelShadowOffset = new Point(-1, -1);
-    tab.labelShadowColor = tabColors[1];
-    tab.labelColor = this.buttonLabelColor;
-    tab.drawNew();
-    tab.fixLayout();
-    tabBar.add(tab);
-
-    tabBar.fixLayout();
-    tabBar.children.forEach(function (each) {
-        each.refresh();
-    });
-    this.spriteBar.tabBar = tabBar;
-    this.spriteBar.add(this.spriteBar.tabBar);
-
-    this.spriteBar.fixLayout = function () {
-        this.tabBar.setLeft(this.left());
-        this.tabBar.setBottom(this.bottom());
-    };
+    this._createTabs(oldTabs);
 };
 
 IDE_Morph.prototype.createSpriteEditor = function () {
@@ -3024,7 +3032,7 @@ IDE_Morph.prototype.editProjectNotes = function () {
     text.edit();
 };
 
-IDE_Morph.prototype.newProject = function () {
+IDE_Morph.prototype.newProject = function (projectName) {
     this.source = SnapCloud.username ? 'cloud' : 'local';
     if (this.stage) {
         this.stage.destroy();
@@ -3042,17 +3050,19 @@ IDE_Morph.prototype.newProject = function () {
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
     SpriteMorph.prototype.useFlatLineEnds = false;
-    this.setProjectName('');
+    this.setProjectName(projectName || '');  // This is causing problems...
     this.projectNotes = '';
     this.createStage();
+    this.createTable();
     this.add(this.stage);
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
     // This isn't called on the first open of the page. FIXME
-    this.promptGameType();
+    //this.promptGameType();
 };
 
+// TODO: Remove this. I am currently leaving it for an example...
 IDE_Morph.prototype.promptGameType = function () {
     var myself = this,
         world = this.world(),
@@ -3331,6 +3341,9 @@ IDE_Morph.prototype.openProjectString = function (str) {
         },
         function () {nop(); }, // yield (bug in Chrome)
         function () {
+            if (str === undefined) {
+                throw 'str is undefined!';
+            }
             myself.rawOpenProjectString(str);
         },
         function () {
@@ -5350,7 +5363,7 @@ ProjectDialogMorph.prototype.deleteProject = function () {
                                     ); // refresh list
                                 },
                                 myself.ide.cloudError(),
-                                [proj.ProjectName]
+                                [proj.ProjectName, proj.TableUuid]
                             );
                         },
                         myself.ide.cloudError()

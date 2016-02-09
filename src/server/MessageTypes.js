@@ -11,8 +11,14 @@ module.exports = R.mapObjIndexed(convertMsgType,
     {
         TicTacToe: ['row', 'column'],
         SimpleMessage: ['sender', 'body'],
+        message: ['msg'],
         MoveGoose: ['goose', 'row', 'column'],
         MoveFox: ['row', 'column'],
-        Earthquake: ['latitude', 'longitude', 'size', 'time']
+        Earthquake: ['latitude', 'longitude', 'size', 'time'],
+
+        // basic events
+        reset: [],
+        join: [],
+        leave: []
     });
 

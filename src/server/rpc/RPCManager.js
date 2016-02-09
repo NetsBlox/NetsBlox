@@ -8,26 +8,22 @@
 var fs = require('fs'),
     path = require('path'),
     express = require('express'),
-    PROCEDURES_DIR = path.join(__dirname,'procedures'),
-    debug = require('debug'),
-    log = debug('NetsBlox:RPCManager:log'),
-    info = debug('NetsBlox:RPCManager:info');
+    PROCEDURES_DIR = path.join(__dirname,'procedures');
 
 /**
  * RPCManager
  *
  * @constructor
  */
-var RPCManager = function(groupManager) {
+var RPCManager = function(logger, socketManager) {
+    this._logger = logger.fork('RPCManager');
     this.rpcs = RPCManager.loadRPCs();
     this.router = this.createRouter();
 
     // The RPCManager contains groups with the same ids as those owned by the 
     // communication manager. In this object, they contain the RPC's owned by
-    // the group.
-    this.groupManager = groupManager;
-    this.groupManager.onGroupClose(this.onGroupClose.bind(this));
-    this.groups = {};
+    // the active table.
+    this.socketManager = socketManager;
 };
 
 /**
@@ -58,7 +54,7 @@ RPCManager.prototype.createRouter = function() {
 };
 
 RPCManager.prototype.addRoute = function(router, RPC) {
-    info('Adding route for '+RPC.getPath());
+    this._logger.info('Adding route for '+RPC.getPath());
     router.route(RPC.getPath()+'/:action')
         .get(this.handleRPCRequest.bind(this, RPC));
 };
@@ -72,31 +68,28 @@ RPCManager.prototype.addRoute = function(router, RPC) {
  * @return {RPC}
  */
 RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
-    var groupId,
-        group;
+    var socket,
+        rpcs;
 
     if (RPC.isStateless) {
         return RPC;
     }
 
-    // Get the group id
-    groupId = this.groupManager.getGroupId(uuid);
-    if (!groupId) {
+    // Look up the rpc context
+    // socket -> active table -> rpc contexts
+    socket = this.socketManager.sockets[uuid];
+    if (!socket || !socket._table) {
         return null;
     }
-
-    // Look up the specific RPC and call the given action on it
-    if (!this.groups[groupId]) {
-        this.groups[groupId] = {};
-    }
-    group = this.groups[groupId];
+    rpcs = socket._table.rpcs;
 
     // If the RPC hasn't been created for the given room, create one 
-    if (!group[RPC.getPath()]) {
-        info('Creating new RPC ('+RPC.getPath()+') for '+groupId);
-        group[RPC.getPath()] = new RPC();
+    if (!rpcs[RPC.getPath()]) {
+        this._logger.info('Creating new RPC (' + RPC.getPath() +
+            ') for ' + socket._table.uuid);
+        rpcs[RPC.getPath()] = new RPC();
     }
-    return group[RPC.getPath()];
+    return rpcs[RPC.getPath()];
 
 };
 
@@ -106,29 +99,25 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         rpc;
 
     action = req.params.action;
-    info('Received request to '+RPC.getPath()+' for '+action+' (from '+uuid+')');
+    this._logger.info('Received request to '+RPC.getPath()+' for '+action+' (from '+uuid+')');
 
     // Then pass the call through
     if (RPC.getActions().indexOf(action) !== -1) {
         rpc = this.getRPCInstance(RPC, uuid);
         if (rpc === null) {  // Could not create/find rpc (rpc is stateful and group is unknown)
-            log('Could not find group for user "'+req.query.uuid+'"');
+            this._logger.log('Could not find group for user "'+req.query.uuid+'"');
             return res.status(401).send('ERROR: user not found. who are you?');
         }
         console.log('About to call '+RPC.getPath()+'=>'+action);
 
         // Add the netsblox socket for triggering network messages from an RPC
-        req.netsbloxSocket = this.groupManager.getSocket(uuid);
+        req.netsbloxSocket = this.socketManager.sockets[uuid];
 
         return rpc[action](req, res);
     } else {
-        log('Invalid action requested for '+RPC.getPath()+': '+action);
+        this._logger.log('Invalid action requested for '+RPC.getPath()+': '+action);
         return res.status(400).send('unrecognized action');
     }
-};
-
-RPCManager.prototype.onGroupClose = function(groupId) {
-    delete this.groups[groupId];
 };
 
 module.exports = RPCManager;

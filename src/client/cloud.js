@@ -252,7 +252,11 @@ Cloud.prototype.login = function (
 ) {
     // both callBack and errorCall are two-argument functions
     var request = new XMLHttpRequest(),
-        usr = JSON.stringify({'__h': password, '__u': username}),
+        usr = JSON.stringify({
+            '__h': password,
+            '__u': username,
+            '__sId': this.socketId()
+        }),
         myself = this;
     this.setRoute(username);
     try {

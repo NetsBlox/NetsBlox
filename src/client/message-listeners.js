@@ -22,6 +22,20 @@ MessageOutputSlotMorph.prototype.evaluate = function() {
     });
 };
 
+MessageOutputSlotMorph.prototype.setContents = function(messageType, inputs) {
+    var self = this;
+
+    // Set the value for the dropdown
+    InputSlotMorph.prototype.setContents.call(this, messageType);
+
+    // Create the message fields
+    this._updateMessage(messageType, function() {
+        if (self.parent) {
+            self._updateFields(inputs);
+        }
+    });
+};
+
 MessageOutputSlotMorph.prototype._updateField = function(field) {
     var result = new ReadOnlyTemplateSlotMorph(field);
     this.parent.add(result);

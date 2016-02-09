@@ -1120,22 +1120,6 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part = this.labelPart('%key');
             part.isStatic = true;
             break;
-        case '%role':
-            part = new InputSlotMorph(
-                null,
-                false,
-                'rolesMenu',
-                true
-            );
-            break;
-        case '%roleHat':
-            part = new InputSlotMorph(
-                null,
-                false,
-                'rolesReceivedMenu',
-                true
-            );
-            break;
         case '%socketMsgHat':
             part = new InputSlotMorph(
                 null,
@@ -1174,6 +1158,15 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             break;
         case '%msgInput':
             part = new MessageInputSlotMorph();
+            break;
+        case '%seats':
+            // Seat ids
+            part = new InputSlotMorph(
+                null,
+                false,
+                'seatNames',
+                true
+            );
             break;
         case '%att':
             part = new InputSlotMorph(
@@ -6820,98 +6813,6 @@ InputSlotMorph.prototype.dropDownMenu = function (enableKeyboard) {
 };
 
 /**
- * Populate the roles menus for use with networking blocks.
- *
- * @return {Dictionary} dict
- */
-InputSlotMorph.prototype.rolesMenu = function () {
-    var dict = this._populateMenu({}, 'allRoleNames'),
-        myself = this;
-
-    if (Object.keys(dict).length > 0) {
-        dict['~'] = null;
-    }
-    dict['new...'] = function () {
-
-        new DialogBoxMorph(
-            myself,
-            myself.setContents,
-            myself
-        ).prompt(
-            'Role name',
-            null,
-            myself.world()
-        );
-    };
-
-    return dict;
-};
-
-/**
- * Create dropdown menu for networking roles.
- *
- * @return {Dictionary} dict
- */
-InputSlotMorph.prototype.rolesReceivedMenu = function () {
-    var dict = this._populateMenu({'any role': ['any role']}, 'allRoleNames'),
-        myself = this;
-
-    dict['~'] = null;
-    dict['new...'] = function () {
-
-        new DialogBoxMorph(
-            myself,
-            myself.setContents,
-            myself
-        ).prompt(
-            'Role name',
-            null,
-            myself.world()
-        );
-    };
-
-    return dict;
-};
-
-InputSlotMorph.prototype.socketMessagesReceivedMenu = function () {
-    var dict = {'join': 'join',
-                'leave': 'leave'};
-    this.socketMessagesMenu(dict);
-    dict['any event'] = ['any event'];
-    dict['new...'] = dict['new...'];
-    return dict;
-};
-
-/**
- * socketMessagesMenu
- *
- * @param {Dictionary} dict
- * @return {Dictionary}
- */
-InputSlotMorph.prototype.socketMessagesMenu = function (dict) {
-    var myself = this;
-
-    dict = dict || {};
-    this._populateMenu(dict, 'allEventNames'),
-
-    dict['~'] = null;
-    dict['new...'] = function () {
-
-        new DialogBoxMorph(
-            myself,
-            myself.setContents,
-            myself
-        ).prompt(
-            'Event name',
-            null,
-            myself.world()
-        );
-    };
-
-    return dict;
-};
-
-/**
  * Create the dropdown menu for the broadcast message blocks (`doBroadcast` and `doBroadcastAndWait`).
  *
  * @return {Dictionary} dict
@@ -7117,6 +7018,21 @@ InputSlotMorph.prototype.objectsMenu = function () {
             dict[name] = name;
         });
     }
+    return dict;
+};
+
+InputSlotMorph.prototype.seatNames = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        seats = Object.keys(ide.table.seats),
+        dict = {};
+
+    for (var i = seats.length; i--;) {
+        if (ide.projectName !== seats[i]) {  // project name is seatid
+            dict[seats[i]] = seats[i];
+        }
+    }
+
+    dict['everyone'] = 'everyone';
     return dict;
 };
 
@@ -8267,6 +8183,13 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     var canvas = newCanvas(new Point(this.symbolWidth(), this.size));
 
     switch (this.name) {
+    case 'plus':
+        return this.drawSymbolPlus(canvas, aColor);
+    case 'networkOn':
+        return this.drawSymbolNetworkOn(canvas, aColor);
+    case 'networkOff':
+        return this.drawSymbolNetworkOff(canvas, aColor);
+
     case 'square':
         return this.drawSymbolStop(canvas, aColor);
     case 'pointRight':
@@ -8293,10 +8216,6 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
         return this.drawSymbolPause(canvas, aColor);
     case 'flag':
         return this.drawSymbolFlag(canvas, aColor);
-    case 'networkOn':
-        return this.drawSymbolNetworkOn(canvas, aColor);
-    case 'networkOff':
-        return this.drawSymbolNetworkOff(canvas, aColor);
     case 'octagon':
         return this.drawSymbolOctagon(canvas, aColor);
     case 'cloud':
@@ -8660,6 +8579,26 @@ SymbolMorph.prototype.drawSymbolFlag = function (canvas, color) {
         w,
         h * 0.5
     );
+    ctx.stroke();
+
+    return canvas;
+};
+
+SymbolMorph.prototype.drawSymbolPlus = function (canvas, color) {
+    var ctx = canvas.getContext('2d'),
+        w = canvas.width,
+        l = Math.max(w / 12, 1),
+        h = canvas.height,
+        arcWidth = h / 4;
+
+    ctx.lineWidth = l;
+    ctx.strokeStyle = color.toString();
+    ctx.fillStyle = color.toString();
+
+    ctx.moveTo(0, h/2);
+    ctx.lineTo(w, h/2);
+    ctx.moveTo(w/2, 0);
+    ctx.lineTo(w/2, h);
     ctx.stroke();
 
     return canvas;

@@ -3,15 +3,15 @@ var express = require('express'),
     bodyParser = require('body-parser'),
     _ = require('lodash'),
     Utils = _.extend(require('./Utils'), require('./ServerUtils.js')),
-    CommunicationManager = require('./groups/CommunicationManager'),
+    SocketManager = require('./SocketManager'),
+    TableManager = require('./tables/TableManager'),
     RPCManager = require('./rpc/RPCManager'),
     MobileManager = require('./mobile/MobileManager'),
-    MongoClient = require('mongodb').MongoClient,
+    Storage = require('./storage/Storage'),
     Vantage = require('./vantage/Vantage'),
     DEFAULT_OPTIONS = {
         port: 8080,
-        vantage: true,
-        mongoURI: 'mongodb://localhost:27017'
+        vantage: true
     },
 
     // Mailer
@@ -22,45 +22,40 @@ var express = require('express'),
     // Routes
     createRouter = require('./CreateRouter'),
     // Logging
-    debug = require('debug'),
-    log = debug('NetsBlox:API:log'),
-    info = debug('NetsBlox:API:info'),
+    Logger = require('./logger'),
 
     // Session and cookie info
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
     expressSession = require('express-session'),
     cookieParser = require('cookie-parser');
 
+var BASE_CLASSES = [
+    SocketManager,
+    TableManager
+];
 var Server = function(opts) {
+    this._logger = new Logger('NetsBlox');
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
-
-    // Mongo variables
-    this._users = null;
-    this._server = null;
 
     // Mailer
     transporter.use('compile', markdown());
 
+    // Mongo variables
+    opts.transporter = transporter;
+    this.storage = new Storage(this._logger, opts);
+    this._server = null;
+
     // Group and RPC Managers
-    this.groupManager = new CommunicationManager(opts);
-    this.rpcManager = new RPCManager(this.groupManager);
+    this.rpcManager = new RPCManager(this._logger, this);
     this.mobileManager = new MobileManager(transporter);
+
+    BASE_CLASSES.forEach(BASE => BASE.call(this, this._logger));
 };
 
-Server.prototype.connectToMongo = function(callback) {
-    MongoClient.connect(this.opts.mongoURI, function(err, db) {
-        if (err) {
-            throw err;
-        }
-
-        this._users = db.collection('users');
-        this.configureRoutes();
-
-        console.log('Connected to '+this.opts.mongoURI);
-        callback(err);
-    }.bind(this));
-};
+// Inherit from all the base classes
+var classes = [Server].concat(BASE_CLASSES).map(fn => fn.prototype);
+_.extend.apply(null, classes);
 
 Server.prototype.configureRoutes = function() {
     this.app.use(express.static(__dirname + '/../client/'));
@@ -90,23 +85,13 @@ Server.prototype.configureRoutes = function() {
     });
 };
 
-Server.prototype.emailPassword = function(user, password) {
-    transporter.sendMail({
-        from: 'no-reply@netsblox.com',
-        to: user.email,
-        subject: 'Temporary Password',
-        markdown: 'Hello '+user.username+',\nYour NetsBlox password has been '+
-            'temporarily set to '+password+'. Please change it after '+
-            'logging in.'
-    });
-};
-
 Server.prototype.start = function(done) {
     var self = this;
     done = done || Utils.nop;
-    self.connectToMongo(function (err) {
+    self.storage.connect(function (err) {
+        self.configureRoutes();
         self._server = self.app.listen(self.opts.port, function() {
-            self.groupManager.start({server: self._server});
+            SocketManager.prototype.start.call(self, {server: self._server});
             // Enable Vantage
             if (self.opts.vantage) {
                 new Vantage(self).start();
@@ -118,7 +103,7 @@ Server.prototype.start = function(done) {
 
 Server.prototype.stop = function(done) {
     done = done || Utils.nop;
-    this.groupManager.stop();
+    SocketManager.prototype.stop.call(this);
     this._server.close(done);
 };
 

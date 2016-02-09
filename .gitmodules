@@ -1,0 +1,3 @@
+[submodule "src/client/Snap--Build-Your-Own-Blocks"]
+	path = src/client/Snap--Build-Your-Own-Blocks
+	url = https://github.com/brollb/Snap--Build-Your-Own-Blocks

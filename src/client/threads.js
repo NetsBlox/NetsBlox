@@ -1892,8 +1892,8 @@ Process.prototype.reportLastAnswer = function () {
 // Process URI retrieval (interpolated)
 
 Process.prototype.createRPCUrl = function (rpc, params) {
-    var stage = this.homeContext.receiver.parentThatIsA(StageMorph),
-        uuid = stage.sockets.uuid;
+    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
+        uuid = ide.sockets.uuid;
 
     return baseURL+'rpc/'+rpc+'?uuid='+uuid+'&'+params;
 };
@@ -1981,25 +1981,37 @@ Process.prototype.reportStageHeight = function () {
 
 // Process event networked messaging primitives
 
-Process.prototype.doRegisterClient = function (message) {
-    // Get the websocket manager
-    var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
-    stage.sockets.sendMessage('register ' + message);
-};
-
-Process.prototype.doSocketEvent = function (message) {
-    // Get the websocket manager
-    var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
-
-    stage.sockets.sendMessage('message ' + message);
-};
-
 Process.prototype.doSocketMessage = function (name) {
+    var msg = this._createMsg.apply(this, arguments),
+        ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
+        targetSeat = arguments[arguments.length-1],
+        mySeat = ide.projectName;  // same as seat name
+
+    if (msg) {
+        ide.sockets.sendMessage({
+            type: 'message',
+            dstId: targetSeat,
+            srcId: mySeat,
+            msgType: msg.type.name,
+            content: msg.contents
+        });
+    }
+};
+
+Process.prototype._createMsg = function (name) {
     var fields = Array.prototype.slice.call(arguments, 1),
         stage = this.homeContext.receiver.parentThatIsA(StageMorph),
-        messageType = stage.messageTypes.getMsgType(name),
-        fieldNames = messageType.fields,
+        messageType,
+        fieldNames,
         msg;
+
+    // If there is no name, return null
+    if (!name) {
+        return null;
+    }
+
+    messageType = stage.messageTypes.getMsgType(name);
+    fieldNames = messageType.fields;
 
     // Create the message
     msg = new Message(messageType);
@@ -2007,7 +2019,7 @@ Process.prototype.doSocketMessage = function (name) {
     for (var i = fieldNames.length; i--;) {
         msg.set(fieldNames[i], fields[i] || '');
     }
-    this.doSocketEvent(msg.type.name+' '+JSON.stringify(msg.contents));
+    return msg;
 };
 
 /**
@@ -2018,11 +2030,20 @@ Process.prototype.doSocketMessage = function (name) {
  */
 Process.prototype.receiveSocketMessage = function (fields) {
     var varFrame = this.context.outerContext.variables,
+        names = varFrame.names(),
         content;
+
+    // If we haven't received a message, do nothing
+    if (names.indexOf('__message__') === -1) {
+        return;
+    }
 
     // Check for the message type in the stage
     // FIXME: Provide an error message about how we must receive an actual msg
     content = this.context.variables.getVar('__message__');
+    if (!fields.length) {
+        fields = Object.keys(content);
+    }
 
     // Add variables by the type, NOT a complex object!
     for (var i = fields.length; i--;) {

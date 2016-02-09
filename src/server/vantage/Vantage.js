@@ -4,10 +4,13 @@
 var vantage = require('vantage')(),
     chalk = require('chalk'),
     repl = require('vantage-repl'),
+    R = require('ramda'),
     banner,
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
-    ];
+    ],
+    CONSTANTS = require('../../common/Constants'),
+    NO_USER_LABEL = '<vacant>';
 
 // Set the banner
 banner = ['\n'+
@@ -19,7 +22,52 @@ banner = ['\n'+
     .join('\n');
 
 var NetsBloxVantage = function(server) {
-    this.initGroupManagement(server);
+    this.initTableManagement(server);
+
+    // get user info
+    vantage
+        .command('user <username>', 'Get info about a specific user')
+        .option('-t, --tables', 'Get the user\'s saved tables')
+        .option('-u, --update', 'Update the user\'s schema')
+        .option('-c, --clear', 'Clear the table info')
+        .alias('u')
+        .action( (args, cb) => {
+            var username = args.username;
+            server.storage.users.get(username, function(err, user) {
+                if (err) {
+                    return cb(err);
+                }
+                if (!user) {
+                    console.log('user does not exist!');
+                    cb();
+                }
+                if (args.options.tables) {
+                    console.log(user.pretty().tables);
+                } else if (args.options.update) {
+                    user.tables = user.tables || [];
+                    delete user.projects;
+                    user.save();
+                    console.log('User updated!');
+                } else if (args.options.clear) {
+                    user.tables = [];
+                    user.save();
+                    console.log('User updated!');
+                } else {
+                    console.log(user.pretty());
+                }
+                cb();
+            });
+        });
+
+    // get ghost user info
+    vantage
+        .command('ghost', 'Get info about ghost user')
+        .action( (args, cb) => {
+            console.log(`username: ${CONSTANTS.GHOST.USER}\n` +
+                `password: ${CONSTANTS.GHOST.PASSWORD}\n` +
+                `email: ${CONSTANTS.GHOST.EMAIL}`);
+            return cb();
+        });
 
     // set DEBUG level FIXME
     vantage
@@ -38,23 +86,56 @@ var NetsBloxVantage = function(server) {
 
     // Expose variables for easy debugging
     global.server = server;
-    global.com = server.groupManager;
 };
 
-NetsBloxVantage.prototype.initGroupManagement = function(server) {
+NetsBloxVantage.prototype.initTableManagement = function(server) {
     vantage
-        .command('groups', 'List all groups')
-        .alias('g')
+        .command('tables', 'List all active tables')
+        .option('-e, --entries', 'List the entries from the manager')
+        .alias('ts')
         //.option('--with-names', 'Include the group names')
         .action(function(args, cb) {
             // Get all groups
-            var header = '* * * * * * * Groups * * * * * * * \n',
-                groups = server.groupManager.allGroups(),
-                text = groups.reduce(function(prev, group) {
-                    return prev+'\n'+NetsBloxVantage.prettyPrintGroup(group)+'\n';
-                }, '');
+            var header = '* * * * * * * Tables * * * * * * * \n',
+                tables = R.values(server.tables),
+                text = tables.map(function(table) {
+                    var clients = Object.keys(table.seatOwners)
+                        .map(seat => {
+                            let client = table.seats[seat],
+                                username = NO_USER_LABEL;
+                            if (client) {
+                                username = client.isVirtualUser() ? '<virtual user>' : client.username;
+                            }
+
+                            return `\t${seat}: ${username}`;
+                        });
+
+                    return `${table.uuid}:\n${clients.join('\n')}\n`;
+                }).join('\n');
+            if (args.options.entries) {
+                text = Object.keys(server.tables).join('\n');
+            }
             console.log(header+text);
             return cb();
+        });
+
+    vantage
+        .command('table <uuid>', 'Look up table info from global database')
+        .option('-o, --ownership', 'Show the ownership for the table seats')
+        .alias('t')
+        .action((args, cb) => {
+            var table = server.storage.tables.get(args.uuid, (err, table) => {
+                if (err || !table) {
+                    return cb(err || 'Table not found');
+                }
+                if (args.options.ownership) {
+                    console.log(table.seatOwners);
+                    return cb();
+                }
+                var prettyTable = table.pretty();
+                console.log(prettyTable);
+                cb();
+            });
         });
 
     // Check socket status
@@ -71,12 +152,13 @@ NetsBloxVantage.prototype.initGroupManagement = function(server) {
                 checkSocket = NetsBloxVantage.checkSocket.bind(null, args);
 
             if (args.uuid === 'all') {
-                result = server.groupManager.sockets.map(function(socket) {
-                    var uuid = server.groupManager.socket2Uuid[socket.id];
-                    return uuid + ':  ' + checkSocket(socket);
+                result = Object.keys(server.sockets).map(function(uuid) {
+                    var socket = server.sockets[uuid];
+                    return `${uuid} (${socket.username}):  ${checkSocket(socket)}`;
                 }).join('\n');
+
             } else {
-                var socket = server.groupManager.uuid2Socket[args.uuid];
+                var socket = server.sockets[args.uuid];
                 result = checkSocket(socket);
             }
             console.log(result);
@@ -94,8 +176,9 @@ NetsBloxVantage.prototype.initGroupManagement = function(server) {
         });
 };
 
-NetsBloxVantage.checkSocket = function(args, socket) {
-    var result = null;
+NetsBloxVantage.checkSocket = function(args, nbSocket) {
+    var socket = nbSocket._socket,
+        result = null;
 
     if (!socket) {
         result = 'socket not found';

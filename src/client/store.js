@@ -599,10 +599,6 @@ SnapSerializer.prototype.loadBlocks = function (xmlString, targetStage) {
     var stage = new StageMorph(),
         model;
 
-    // Preserve the old websocket connection
-    stage.sockets.destroy();
-    stage.sockets = targetStage.sockets;
-
     this.project = {
         stage: stage,
         sprites: {},
