@@ -3050,16 +3050,14 @@ IDE_Morph.prototype.newProject = function (projectName) {
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
     SpriteMorph.prototype.useFlatLineEnds = false;
-    this.setProjectName(projectName || '');  // This is causing problems...
+    //this.setProjectName(projectName || '');  // This is causing problems...
     this.projectNotes = '';
     this.createStage();
-    this.createTable();
+    //this.createTable();
     this.add(this.stage);
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
-    // This isn't called on the first open of the page. FIXME
-    //this.promptGameType();
 };
 
 // TODO: Remove this. I am currently leaving it for an example...

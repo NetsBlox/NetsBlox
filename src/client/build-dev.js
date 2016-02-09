@@ -42191,16 +42191,14 @@ IDE_Morph.prototype.newProject = function (projectName) {
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
     SpriteMorph.prototype.useFlatLineEnds = false;
-    this.setProjectName(projectName || '');  // This is causing problems...
+    //this.setProjectName(projectName || '');  // This is causing problems...
     this.projectNotes = '';
     this.createStage();
-    this.createTable();
+    //this.createTable();
     this.add(this.stage);
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
-    // This isn't called on the first open of the page. FIXME
-    //this.promptGameType();
 };
 
 // TODO: Remove this. I am currently leaving it for an example...
@@ -55434,7 +55432,7 @@ TableMorph.prototype.setSeatName = function(seat) {
     this.ide.sockets.sendMessage({
         type: 'rename-seat',
         seatId: this.ide.projectName,
-        name: seat
+        name: seat || 'untitled'
     });
     this.ide._setProjectName(seat);  // seat name and project name are the same
 };
@@ -55968,6 +55966,23 @@ ProjectDialogMorph.prototype.openProject = function () {
     } else {
         return superOpenProj.call(this);
     }
+};
+
+var superNewProj = IDE_Morph.prototype.newProject;
+IDE_Morph.prototype.newProject = function (projectName) {
+    superNewProj.call(this);
+
+    // Get new table name
+    this.sockets.sendMessage({
+        type: 'create-table',
+        table: 'Table ' + (Date.now() % 100),
+        seat: projectName || 'mySeat'
+    });
+    if (projectName) {
+        this.setProjectName(projectName || '');
+    }
+    this.createTable();
+    this.selectSprite(this.stage.children[0]);
 };
 
 var superSetSource = ProjectDialogMorph.prototype.setSource;

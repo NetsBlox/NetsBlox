@@ -370,7 +370,7 @@ TableMorph.prototype.setSeatName = function(seat) {
     this.ide.sockets.sendMessage({
         type: 'rename-seat',
         seatId: this.ide.projectName,
-        name: seat
+        name: seat || 'untitled'
     });
     this.ide._setProjectName(seat);  // seat name and project name are the same
 };
@@ -904,6 +904,23 @@ ProjectDialogMorph.prototype.openProject = function () {
     } else {
         return superOpenProj.call(this);
     }
+};
+
+var superNewProj = IDE_Morph.prototype.newProject;
+IDE_Morph.prototype.newProject = function (projectName) {
+    superNewProj.call(this);
+
+    // Get new table name
+    this.sockets.sendMessage({
+        type: 'create-table',
+        table: 'Table ' + (Date.now() % 100),
+        seat: projectName || 'mySeat'
+    });
+    if (projectName) {
+        this.setProjectName(projectName || '');
+    }
+    this.createTable();
+    this.selectSprite(this.stage.children[0]);
 };
 
 var superSetSource = ProjectDialogMorph.prototype.setSource;
