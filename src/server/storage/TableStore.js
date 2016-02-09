@@ -1,7 +1,8 @@
 'use strict';
 
 var DataWrapper = require('./Data'),
-    async = require('async');
+    async = require('async'),
+    ObjectId = require('mongodb').ObjectId;
 
 class TableStore {
     constructor(logger, db) {
@@ -47,6 +48,17 @@ class Table extends DataWrapper {
         this._logger = params.logger.fork((this._table ? this._table.uuid : this.uuid));
         this._user = params.user;
         this._table = params.table;
+    }
+
+    fork(table) {
+        var params = {
+                user: this._user,
+                table: table,
+                logger: this._logger,
+                db: this._db
+            };
+        this._logger.trace('forking (' + table.uuid + ')');
+        return new Table(params);
     }
 
     // Override
@@ -161,6 +173,19 @@ class Table extends DataWrapper {
         this._user.save();
         this._logger.log(`saved table "${table.uuid}" for ${this._user.username}`);
         callback(null);
+    }
+
+    saveSeats() {  // Saving only the seat owners
+        // If the seat entry doesn't exist, add it
+        this._db.updateOne(
+            {_id: ObjectId(this._id)},  // jshint ignore:line
+            {
+                $set: { seatOwners: this.seatOwners }
+            },
+            (err, res) => {
+                this._logger.trace('updated seatOwners');
+            }
+        );
     }
 
     pretty() {

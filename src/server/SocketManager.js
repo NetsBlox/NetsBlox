@@ -16,7 +16,7 @@ var SocketManager = function(_logger) {
     Socket.prototype.getTable = function(uuid, name, callback) {
         return self.getTable(this, uuid, name, callback);
     };
-    Socket.prototype.createTable = TableManager.prototype.create.bind(this);
+    Socket.prototype.createTable = TableManager.prototype.createTable.bind(this);
     Socket.prototype.checkTable = TableManager.prototype.checkTable.bind(this);
     Socket.prototype.onClose = SocketManager.prototype.onClose.bind(this);
 };

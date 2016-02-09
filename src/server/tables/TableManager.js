@@ -44,12 +44,18 @@ TableManager.prototype.forkTable = function(params) {
     socket.join(newTable);
 };
 
-TableManager.prototype.create = function(socket, name) {
+TableManager.prototype.createTable = function(socket, name) {
     var uuid = utils.uuid(socket.username, name);
     if (!!this.tables[uuid]) {
         this._logger.error('table already exists! (' + uuid + ')');
     }
+
     this.tables[uuid] = new ActiveTable(this._logger, name, socket);
+    // Create the data element
+    var data = this.storage.tables.new(null, this.tables[uuid]);
+    this.tables[uuid].setStorage(data);
+    console.log(data.pretty());
+
     return this.tables[uuid];
 };
 
@@ -61,7 +67,7 @@ TableManager.prototype.getTable = function(socket, leaderId, name, callback) {
             if (err || !table) {
                 this._logger.error(err || 'No table found for ' + uuid);
                 // If no table is found, create a new table for the user
-                table = table || new ActiveTable(this._logger, name, socket);
+                table = table || this.createTable(socket, name);
                 this.tables[uuid] = table;
                 return callback(table);
             }
