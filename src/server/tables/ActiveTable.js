@@ -63,6 +63,7 @@ class ActiveTable {
             this._logger.log('about to close vc at ' + seat);
             this.virtual[seat].close();
         }
+        this._logger.trace(`adding ${socket.uuid} to ${seat}`);
         this.seats[seat] = socket;
         this.onSeatsChanged();  // Update all clients
     }

@@ -182,6 +182,10 @@ module.exports = [
 
             if (!isPreview) {
                 table = this.create(socket, name);
+                // TODO: Add a timeout on the table
+                console.log('\nchecking table ("'+ uuid + '") in 10000')
+                // Check the table in 10 seconds
+                setTimeout(this.checkTable.bind(this, table), 10000);
             } else {
                 table = example;
                 table.leader = socket;

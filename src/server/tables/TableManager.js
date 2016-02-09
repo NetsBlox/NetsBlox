@@ -86,8 +86,10 @@ TableManager.prototype.getActiveMembers = function() {
 
 TableManager.prototype.checkTable = function(table) {
     var uuid = table.uuid,
-        seats = Object.keys(table.seats);
+        seats = Object.keys(table.seats)
+            .filter(seat => !!table.seats[seat]);
 
+    this._logger.trace('Checking table ' + uuid + ' (' + seats.length + ')');
     if (seats.length === 0) {
         // FIXME: This will need to be updated for virtual clients
         this._logger.trace('Removing empty table: ' + uuid);
