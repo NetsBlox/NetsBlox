@@ -182,6 +182,8 @@ module.exports = [
 
             if (!isPreview) {
                 table = this.create(socket, name);
+                // TODO: Add a timeout on the table
+                this.checkTableIn(table, 10000);
             } else {
                 table = example;
                 table.leader = socket;
