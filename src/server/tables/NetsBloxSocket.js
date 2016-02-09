@@ -103,7 +103,11 @@ class NetsBloxSocket {
             return this.changeSeats(seat);
         }
 
-        this._logger.log(`joining ${table.uuid}/${seat}`);
+        if (this._table) {
+            this._logger.log(`joining ${table.uuid}/${seat} from ${this._table.uuid}`);
+        } else {
+            this._logger.log(`joining ${table.uuid}/${seat}`);
+        }
         if (this._table && this._table.uuid !== table.uuid) {
             this.leave();
         }
