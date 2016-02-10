@@ -5107,38 +5107,6 @@ StageMorph.prototype.getTempo = function () {
     return +this.tempo;
 };
 
-// StageMorph Game Type
-// FIXME: Remove this
-StageMorph.prototype.setGameType = function (gameType) {
-    // Look up the messageTypes for the gameType
-    if (!gameType.messageTypes) {
-        var req = new XMLHttpRequest(),
-            self = this;
-
-        req.onload = function() {
-            gameType = detect(
-                JSON.parse(req.responseText),
-                function(otherGameType) {
-                    return otherGameType.name === gameType.name;
-                });
-            self.setMessageTypes(gameType.messageTypes || []);
-        };
-        req.open('get', baseURL + 'api/GameTypes');
-        req.send();
-    } else {
-        this.setMessageTypes(gameType);
-    }
-    return this.gameType = gameType;
-};
-
-StageMorph.prototype.setMessageTypes = function (messageTypes) {
-    // Load the supported message types
-    this.messageTypes = new MessageFrame();
-    for (var i = messageTypes.length; i--;) {
-        this.addMessageType(messageTypes[i]);
-    }
-};
-
 StageMorph.prototype.addMessageTypeByName = function (name) {
     var url = baseURL + 'api/MessageTypes/' + name,
         request = new XMLHttpRequest(),

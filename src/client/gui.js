@@ -3058,66 +3058,6 @@ IDE_Morph.prototype.newProject = function (projectName) {
     this.fixLayout();
 };
 
-// TODO: Remove this. I am currently leaving it for an example...
-IDE_Morph.prototype.promptGameType = function () {
-    var myself = this,
-        world = this.world(),
-        gameTypeList,
-        listField,
-        selected,
-        dialog = new DialogBoxMorph().withKey('gameType'),
-        body = new AlignmentMorph('column', this.padding);
-
-    gameTypeList = JSON.parse(this.getURL(baseURL + 'api/GameTypes'));
-    selected = gameTypeList[0];  // Highlight the first thing
-
-    dialog.ok = function() {
-        myself.stage.setGameType(selected);
-        // Set the button to connected
-        myself.updateNetworkButton();
-
-        // Load any client libraries
-        selected.clientLibs.forEach(function(lib) {
-            var url = baseURL+'libraries/rpc/'+lib;
-            myself.droppedText(myself.getURL(url), name);
-        });
-
-        DialogBoxMorph.prototype.ok.call(this);
-    };
-
-    // Create the list field
-    listField = new ListMorph(
-        gameTypeList,
-        gameTypeList.length > 0 ?
-            function(element) {
-                return element.name;
-            } : null,
-        null,
-        function() {dialog.ok();}
-    );
-
-    listField.action = function(item) {
-        selected = item;
-    };
-
-    listField.setWidth(120);
-    listField.setHeight(50);
-    listField.activateIndex(0);
-    body.add(listField);
-
-    dialog.labelString = 'Select Game Type';
-    dialog.createLabel();
-
-    dialog.addBody(body);
-
-    // Buttons
-    dialog.addButton('ok', 'Get started!');
-
-    dialog.fixLayout();
-    dialog.drawNew();
-    dialog.popUp(world);
-};
-
 IDE_Morph.prototype.save = function () {
     if (this.source === 'examples') {
         this.source = 'local'; // cannot save to examples

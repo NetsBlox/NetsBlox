@@ -36191,38 +36191,6 @@ StageMorph.prototype.getTempo = function () {
     return +this.tempo;
 };
 
-// StageMorph Game Type
-// FIXME: Remove this
-StageMorph.prototype.setGameType = function (gameType) {
-    // Look up the messageTypes for the gameType
-    if (!gameType.messageTypes) {
-        var req = new XMLHttpRequest(),
-            self = this;
-
-        req.onload = function() {
-            gameType = detect(
-                JSON.parse(req.responseText),
-                function(otherGameType) {
-                    return otherGameType.name === gameType.name;
-                });
-            self.setMessageTypes(gameType.messageTypes || []);
-        };
-        req.open('get', baseURL + 'api/GameTypes');
-        req.send();
-    } else {
-        this.setMessageTypes(gameType);
-    }
-    return this.gameType = gameType;
-};
-
-StageMorph.prototype.setMessageTypes = function (messageTypes) {
-    // Load the supported message types
-    this.messageTypes = new MessageFrame();
-    for (var i = messageTypes.length; i--;) {
-        this.addMessageType(messageTypes[i]);
-    }
-};
-
 StageMorph.prototype.addMessageTypeByName = function (name) {
     var url = baseURL + 'api/MessageTypes/' + name,
         request = new XMLHttpRequest(),
@@ -42197,66 +42165,6 @@ IDE_Morph.prototype.newProject = function (projectName) {
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
-};
-
-// TODO: Remove this. I am currently leaving it for an example...
-IDE_Morph.prototype.promptGameType = function () {
-    var myself = this,
-        world = this.world(),
-        gameTypeList,
-        listField,
-        selected,
-        dialog = new DialogBoxMorph().withKey('gameType'),
-        body = new AlignmentMorph('column', this.padding);
-
-    gameTypeList = JSON.parse(this.getURL(baseURL + 'api/GameTypes'));
-    selected = gameTypeList[0];  // Highlight the first thing
-
-    dialog.ok = function() {
-        myself.stage.setGameType(selected);
-        // Set the button to connected
-        myself.updateNetworkButton();
-
-        // Load any client libraries
-        selected.clientLibs.forEach(function(lib) {
-            var url = baseURL+'libraries/rpc/'+lib;
-            myself.droppedText(myself.getURL(url), name);
-        });
-
-        DialogBoxMorph.prototype.ok.call(this);
-    };
-
-    // Create the list field
-    listField = new ListMorph(
-        gameTypeList,
-        gameTypeList.length > 0 ?
-            function(element) {
-                return element.name;
-            } : null,
-        null,
-        function() {dialog.ok();}
-    );
-
-    listField.action = function(item) {
-        selected = item;
-    };
-
-    listField.setWidth(120);
-    listField.setHeight(50);
-    listField.activateIndex(0);
-    body.add(listField);
-
-    dialog.labelString = 'Select Game Type';
-    dialog.createLabel();
-
-    dialog.addBody(body);
-
-    // Buttons
-    dialog.addButton('ok', 'Get started!');
-
-    dialog.fixLayout();
-    dialog.drawNew();
-    dialog.popUp(world);
 };
 
 IDE_Morph.prototype.save = function () {
@@ -52125,11 +52033,6 @@ SnapSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
             true
         );
     }
-
-    // Set up the network
-    project.stage.setGameType({
-        name: model.stage.attributes['game-type']
-    });
 
     // Add message types
     model.messageTypes = model.stage.childNamed('messageTypes');
