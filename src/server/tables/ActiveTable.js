@@ -82,6 +82,7 @@ class ActiveTable {
     }
 
     createSeat (seat) {
+        this._logger.trace(`Adding seat ${seat}`);
         this.seats[seat] = null;
         this.seatOwners[seat] = null;
         this.createVirtualClient(seat);
