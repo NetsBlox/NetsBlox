@@ -31,34 +31,6 @@ Storage.prototype.connect = function(callback) {
 };
 
 Storage.prototype.onDatabaseConnected = function() {
-    // Add the ghost user if it doesn't exist
-    // Check for the ghost user
-    var username = CONSTANTS.GHOST.USER,
-        password = CONSTANTS.GHOST.PASSWORD,
-        email = CONSTANTS.GHOST.EMAIL;
-
-    this.users.get(username, (e, user) => {
-        if (e) {
-            return this._logger.log('Error:', e);
-        }
-        if (!user) {
-            // Create the user with the given username, email, password
-            var newUser = this.users.new(username, email);
-
-            this._users.insert(newUser, (err, result) => {
-                if (err) {
-                    return this._logger.log('Error:', err);
-                }
-                this._logger.log('Created ghost user.');
-            });
-        } else {
-            this._logger.info('Setting ghost user\'s password to tmp');
-            // Set the password
-            //delete user.hash;  // regenerate password
-            user.hash = hash('tmp');
-            user.save();
-        }
-    });
 };
 
 module.exports = Storage;
