@@ -16,7 +16,8 @@ module.exports = [
         Method: 'get', 
         URL: 'MessageTypes/:name',
         Handler: function(req, res) {
-            trace('Received request for MessageType "' + req.params.name + '"');
+            trace(`Received request for MessageType "${req.params.name}":\n` +
+                JSON.stringify(Messages[req.params.name]));
             return res.json(Messages[req.params.name]);
         }
     }

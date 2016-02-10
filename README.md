@@ -2,8 +2,6 @@
 # NetsBlox
 NetsBlox is a visual programming language which allows people to develop networked programs.
 
-An example is available on [heroku](http://netsblox.herokuapp.com).
-
 ## Overview
 Netsblox is an extension of _Snap!_ which allows users to use some distributed systems principles and develop networked apps. That is, users can create apps that can interact with other instances of Netsblox.
 

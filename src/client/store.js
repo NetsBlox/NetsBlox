@@ -454,11 +454,6 @@ SnapSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
         );
     }
 
-    // Set up the network
-    project.stage.setGameType({
-        name: model.stage.attributes['game-type']
-    });
-
     // Add message types
     model.messageTypes = model.stage.childNamed('messageTypes');
     if (model.messageTypes) {
