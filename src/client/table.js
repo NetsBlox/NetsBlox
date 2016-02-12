@@ -1,3 +1,89 @@
+/* * * * * * * IDE_Morph Overrides * * * * * * */
+IDE_Morph.prototype.createTable = function() {
+    this.table = new TableMorph(this);
+};
+
+// Create the tabs
+// + Projects (primary)
+// + Scripts
+IDE_Morph.prototype._getCurrentTabs = function () {
+    return ['Scripts', 'Costumes', 'Sounds', 'Table'];
+};
+
+// Creating the 'projects' view for the table
+IDE_Morph.prototype._createSpriteEditor = IDE_Morph.prototype.createSpriteEditor;
+IDE_Morph.prototype.createSpriteEditor = function() {
+    if (this.currentTab === 'table') {
+        if (this.spriteEditor) {
+            this.spriteEditor.destroy();
+        }
+
+        this.spriteEditor = new ProjectsMorph(this.table, this.sliderColor);
+        this.spriteEditor.color = this.groupColor;
+        this.add(this.spriteEditor);
+    } else {
+        this._createSpriteEditor();
+    }
+};
+
+IDE_Morph.prototype._setProjectName = IDE_Morph.prototype.setProjectName;
+IDE_Morph.prototype.setProjectName = function (string) {
+    this.table.setSeatName(string);
+};
+
+IDE_Morph.prototype.loadNextTable = function () {
+    // Check if the table has diverged and optionally fork
+    // TODO
+    if (this.table.nextTable) {
+        var next = this.table.nextTable;
+        this.table._name = next.tableName;  // silent set
+        this.table.leaderId = next.leaderId;
+        this.setProjectName(next.seatId);
+
+        // Send the message to the server
+        this.sockets.updateTableInfo();
+
+        this.table.nextTable = null;
+    }
+};
+
+IDE_Morph.prototype.rawOpenCloudDataString = function (str) {
+    var model;
+    StageMorph.prototype.hiddenPrimitives = {};
+    StageMorph.prototype.codeMappings = {};
+    StageMorph.prototype.codeHeaders = {};
+    StageMorph.prototype.enableCodeMapping = false;
+    StageMorph.prototype.enableInheritance = false;
+    if (Process.prototype.isCatchingErrors) {
+        try {
+            model = this.serializer.parse(str);
+            this.serializer.loadMediaModel(model.childNamed('media'));
+            this.serializer.openProject(
+                this.serializer.loadProjectModel(
+                    model.childNamed('project'),
+                    this
+                ),
+                this
+            );
+            // Join the table
+            this.loadNextTable();
+        } catch (err) {
+            this.showMessage('Load failed: ' + err);
+        }
+    } else {
+        model = this.serializer.parse(str);
+        this.serializer.loadMediaModel(model.childNamed('media'));
+        this.serializer.openProject(
+            this.serializer.loadProjectModel(
+                model.childNamed('project'),
+                this
+            ),
+            this
+        );
+    }
+    this.stopFastTracking();
+};
+
 /* * * * * * * * * TableMorph * * * * * * * * */
 TableMorph.prototype = new SpriteMorph();
 TableMorph.prototype.constructor = TableMorph;
@@ -257,8 +343,8 @@ TableMorph.prototype.moveToSeat = function(dstId) {
                         '&ProjectName=' +
                         encodeURIComponent(proj.ProjectName);
                 }
-            } else {  // Empty the project FIXME
-                myself.ide.clearProject(dstId);
+            } else {  // Empty the project
+                myself.ide.newProject(dstId);
             }
         },
         function (err, lbl) {
@@ -286,7 +372,7 @@ TableMorph.prototype.setSeatName = function(seat) {
         seatId: this.ide.projectName,
         name: seat || 'untitled'
     });
-    this.ide.silentSetProjectName(seat);  // seat name and project name are the same
+    this.ide._setProjectName(seat);  // seat name and project name are the same
 };
 
 // FIXME: create ide.confirm
@@ -431,10 +517,10 @@ TableMorph.prototype._invitationResponse = function (id, response, seat) {
                             encodeURIComponent(proj.ProjectName);
                     }
                 } else {  // Empty the project
-                    myself.ide.clearProject(seat);
+                    myself.ide.newProject(seat);
                 }
                 myself.ide.showMessage('you have joined the table!', 2);
-                myself.ide.silentSetProjectName(seat);  // Set the seat name FIXME
+                myself.ide._setProjectName(seat);  // Set the seat name
             }
             SnapCloud.disconnect();
         },
@@ -474,9 +560,6 @@ SeatMorph.prototype.isMine = function() {
 
 SeatMorph.prototype.drawNew = function() {
     var usrTxt = this.user ? this.user : '<empty>';
-
-    // Prevent crash...
-    this.image = newCanvas(this.extent());
 
     if (this.isMine()) {
         usrTxt = 'me';
@@ -658,6 +741,145 @@ ProjectsMorph.prototype._addButton = function(params) {
     return newButton;
 };
 
+// Cloud extensions
+Cloud.prototype.moveToSeat = function(onSuccess, onFail, args) {
+    var myself = this;
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'moveToSeat',
+                onSuccess,
+                onFail,
+                args
+            );
+        },
+        function(err) {
+            myself.ide.showMessage(err, 2);
+        }
+    );
+};
+
+Cloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) {
+    var myself = this,
+        args = [id, accepted, this.socketId()],
+        response = accepted ? 'joined table.' : 'invitation denied.';
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'invitationResponse',
+                onSuccess,
+                onFail,
+                args
+            );
+        },
+        function(err) {
+            myself.ide.showMessage(err, 2);
+        }
+    );
+};
+
+Cloud.prototype.inviteToTable = function () {
+    var myself = this,
+        args = arguments,
+        inviter = arguments[0];
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'inviteToTable',
+                myself.disconnect.bind(myself),
+                nop,
+                args
+            );
+        },
+        nop
+    );
+};
+
+Cloud.prototype.getFriendList = function (callBack, errorCall) {
+    var myself = this;
+    this.reconnect(
+        function () {
+            myself.callService(
+                'getFriendList',
+                function (response, url) {
+                    var ids = Object.keys(response[0] || {});
+                    callBack.call(null, ids, url);
+                    myself.disconnect();
+                },
+                errorCall
+            );
+        },
+        errorCall
+    );
+};
+
+Cloud.prototype.deleteSeat = function(onSuccess, onFail, args) {
+    var myself = this;
+    this.reconnect(
+        function () {
+            myself.callService(
+                'deleteSeat',
+                function () {
+                    onSuccess.call(null);
+                    myself.disconnect();
+                },
+                onFail,
+                args
+            );
+        },
+        onFail
+    );
+};
+
+Cloud.prototype.evictUser = function(onSuccess, onFail, args) {
+    var myself = this;
+    this.reconnect(
+        function () {
+            myself.callService(
+                'evictUser',
+                function () {
+                    onSuccess.call(null);
+                    myself.disconnect();
+                },
+                onFail,
+                args
+            );
+        },
+        onFail
+    );
+};
+
+Cloud.prototype.socketId = function () {
+    var ide = world.children.find(function(child) {
+        return child instanceof IDE_Morph;
+    });
+    return ide.sockets.uuid;
+};
+
+// Override
+Cloud.prototype.saveProject = function (ide, callBack, errorCall) {
+    var myself = this;
+    myself.reconnect(
+        function () {
+            myself.callService(
+                'saveProject',
+                function (response, url) {
+                    callBack.call(null, response, url);
+                    myself.disconnect();
+                },
+                errorCall,
+                [
+                    myself.socketId()
+                ]
+            );
+        },
+        errorCall
+    );
+};
+
 // Override
 var superOpenProj = ProjectDialogMorph.prototype.openProject;
 ProjectDialogMorph.prototype.openProject = function () {
@@ -667,7 +889,7 @@ ProjectDialogMorph.prototype.openProject = function () {
         src;
 
     if (this.source === 'examples') {
-        response = JSON.parse(this.ide.getURL('api/Examples/' + proj.name +
+        response = JSON.parse(this.ide.getURL(baseURL + 'api/Examples/' + proj.name +
             '?sId=' + this.ide.sockets.uuid));
         this.ide.table.nextTable = {
             leaderId: response.leaderId,
@@ -684,6 +906,23 @@ ProjectDialogMorph.prototype.openProject = function () {
     }
 };
 
+var superNewProj = IDE_Morph.prototype.newProject;
+IDE_Morph.prototype.newProject = function (projectName) {
+    superNewProj.call(this);
+
+    // Get new table name
+    this.sockets.sendMessage({
+        type: 'create-table',
+        table: 'Table ' + (Date.now() % 100),
+        seat: projectName || 'mySeat'
+    });
+    if (projectName) {
+        this.setProjectName(projectName || '');
+    }
+    this.createTable();
+    this.selectSprite(this.stage.children[0]);
+};
+
 var superSetSource = ProjectDialogMorph.prototype.setSource;
 ProjectDialogMorph.prototype.setSource = function (source) {
     var myself = this;
@@ -696,7 +935,7 @@ ProjectDialogMorph.prototype.setSource = function (source) {
                 myself.nameField.setContents(item.name || '');
             }
             src = JSON.parse(myself.ide.getURL(
-                'api/Examples/' + item.name + '?sId=' + myself.ide.sockets.uuid +
+                baseURL + 'api/Examples/' + item.name + '?sId=' + myself.ide.sockets.uuid +
                 '&preview=true'
             )).src.SourceCode;
 

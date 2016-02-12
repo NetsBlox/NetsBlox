@@ -10,7 +10,7 @@ var R = require('ramda'),
     debug = require('debug'),
     _ = require('lodash'),
     log = debug('NetsBlox:API:log'),
-    hash = require('../../common/sha512').hex_sha512,
+    hash = require('../../client/sha512').hex_sha512,
     randomString = require('just.randomstring'),
     fs = require('fs'),
     path = require('path'),
@@ -143,13 +143,12 @@ module.exports = [
     // index
     {
         Method: 'get',
-        URL: 'Examples/EXAMPLES',
+        URL: 'Examples',
         Handler: function(req, res) {
             // if no name requested, get index
             console.log('Object.keys(EXAMPLES)',Object.keys(EXAMPLES));
-            var result = Object.keys(EXAMPLES)
-                .map(name => `${name}\t${name}\t  `)
-                .join('\n');
+            var result = makeDummyHtml(Object.keys(EXAMPLES).map(name => name + '.xml'));
+            console.log('result:', result);
             return res.send(result);
         }
     },
