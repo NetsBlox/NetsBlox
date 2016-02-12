@@ -1,7 +1,7 @@
 'use strict';
 
 var randomString = require('just.randomstring'),
-    hash = require('../../common/sha512').hex_sha512,
+    hash = require('../../client/sha512').hex_sha512,
     ObjectId = require('mongodb').ObjectId,
     DataWrapper = require('./Data'),
     MAILER;

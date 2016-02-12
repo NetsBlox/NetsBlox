@@ -21,7 +21,6 @@ var express = require('express'),
 
     // Routes
     createRouter = require('./CreateRouter'),
-    path = require('path'),
     // Logging
     Logger = require('./logger'),
 
@@ -82,7 +81,7 @@ Server.prototype.configureRoutes = function() {
 
     // Initial page
     this.app.get('/', function(req, res) {
-        res.sendFile(path.join(__dirname, '..', 'client', 'netsblox.html'));
+        res.redirect('/snap.html');
     });
 };
 
