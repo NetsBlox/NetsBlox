@@ -25,7 +25,32 @@ NetsBloxMorph.prototype.resourceURL = function (folder, file) {
     return 'api/' + folder + '/' + file;
 };
 
-NetsBloxMorph.prototype.clearProject = NetsBloxMorph.uber.newProject;
+NetsBloxMorph.prototype.clearProject = function () {
+    this.source = SnapCloud.username ? 'cloud' : 'local';
+    if (this.stage) {
+        this.stage.destroy();
+    }
+    if (location.hash.substr(0, 6) !== '#lang:') {
+        location.hash = '';
+    }
+    this.globalVariables = new VariableFrame();
+    this.currentSprite = new SpriteMorph(this.globalVariables);
+    this.sprites = new List([this.currentSprite]);
+    StageMorph.prototype.dimensions = new Point(480, 360);
+    StageMorph.prototype.hiddenPrimitives = {};
+    StageMorph.prototype.codeMappings = {};
+    StageMorph.prototype.codeHeaders = {};
+    StageMorph.prototype.enableCodeMapping = false;
+    StageMorph.prototype.enableInheritance = false;
+    SpriteMorph.prototype.useFlatLineEnds = false;
+    this.projectNotes = '';
+    this.createStage();
+    this.add(this.stage);
+    this.createCorral();
+    this.selectSprite(this.stage.children[0]);
+    this.fixLayout();
+};
+
 
 NetsBloxMorph.prototype.newProject = function (projectName) {
     this.clearProject();
@@ -75,7 +100,6 @@ NetsBloxMorph.prototype.loadNextTable = function () {
     // TODO
     if (this.table.nextTable) {
         var next = this.table.nextTable;
-        console.log('next is', next);
         this.table._name = next.tableName;  // silent set
         this.table.leaderId = next.leaderId;
         this.silentSetProjectName(next.seatId);
