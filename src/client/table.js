@@ -602,6 +602,7 @@ ProjectsMorph.prototype.updateTable = function() {
 
     this.contents.destroy();
     this.contents = new FrameMorph(this);
+    this.contents.acceptsDrops = false;
     this.addBack(this.contents);
 
     // Draw the table
