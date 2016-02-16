@@ -488,6 +488,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
         );
     }
 
+    /*
     if (SnapCloud.username) {  // If logged in
         menu.addItem(
             'Export as Android App...',
@@ -503,6 +504,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
             'create an Android app from the current project'
         );
     }
+    */
 
     menu.addItem(
         'Export summary...',
