@@ -388,9 +388,23 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         }
     }
 
-    function addMessageType(pair) {
-        // TODO
-        console.log('Creating services message type', pair);
+    function addMessageType(desc) {
+        var stage = myself.parentThatIsA(StageMorph),
+            ide;
+
+        desc.fields = desc.fields.filter(function(field) {
+            return !!field;
+        });
+
+        // Check that the message type doesn't already exist
+        if (stage.messageTypes.getMsgType(desc.name)) {
+            myself.inform('that name is already in use');
+        } else {
+            stage.addMessageType(desc);
+            ide = myself.parentThatIsA(IDE_Morph);
+            ide.flushBlocksCache(cat); // b/c of inheritance
+            ide.refreshPalette();
+        }
     }
 
     if (cat === 'motion') {
@@ -572,19 +586,55 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doPauseAll'));
 
     } else if (cat === 'services') {
-        // TODO: Move these later to other categories
         blocks.push(block('receiveSocketMessage'));
         blocks.push(block('doSocketMessage'));
         blocks.push('-');
         blocks.push(block('getProjectId'));
         blocks.push(block('getProjectIds'));
         blocks.push('-');
+
         if (this.world().isDevMode) {
             blocks.push(block('getJSFromRPC'));
             blocks.push(block('getCostumeFromRPC'));
             blocks.push('-');
         }
         blocks.push('-');
+
+        // Add custom message types
+        button = new PushButtonMorph(
+            null,
+            function () {
+                new MessageCreatorMorph(
+                    myself,
+                    addMessageType
+                ).popUp();
+            },
+            'Make a message type'
+        );
+        blocks.push(button);
+
+        // Add delete message type block
+        if (this.deletableMessageNames().length > 0) {
+            button = new PushButtonMorph(
+                null,
+                function () {
+                    var menu = new MenuMorph(
+                        myself.deleteMessageType,
+                        null,
+                        myself
+                    );
+                    myself.deletableMessageNames().forEach(function (name) {
+                        menu.addItem(name, name);
+                    });
+                    menu.popUpAtHand(myself.world());
+                },
+                'Delete a message type'
+            );
+            button.userMenu = helpMenu;
+            button.selector = 'deleteMessageType';
+            button.showHelp = BlockMorph.prototype.showHelp;
+            blocks.push(button);
+        }
 
     } else if (cat === 'sensing') {
 
@@ -855,6 +905,31 @@ SpriteMorph.prototype.blockTemplates = function (category) {
     return blocks;
 };
 
+SpriteMorph.prototype.deletableMessageNames = function() {
+    var stage = this.parentThatIsA(StageMorph);
+    return stage.deletableMessageNames();
+};
+
+StageMorph.prototype.deletableMessageNames = function() {
+    return this.messageTypes.names().filter(function(name) {
+        return name !== 'message';
+    });
+};
+
+SpriteMorph.prototype.deleteMessageType = function(name) {
+    var ide = this.parentThatIsA(IDE_Morph),
+        stage = ide.stage,
+        cat = 'services';
+
+    stage.messageTypes.deleteMsgType(name);
+
+    ide.flushBlocksCache(cat); // b/c of inheritance
+    ide.refreshPalette();
+};
+
+StageMorph.prototype.deleteMessageType =
+    SpriteMorph.prototype.deleteMessageType;
+
 // StageMorph Overrides
 StageMorph.prototype.freshPalette = SpriteMorph.prototype.freshPalette;
 //Add loading of "message" type
@@ -969,6 +1044,25 @@ StageMorph.prototype.blockTemplates = function (category) {
         }
     }
 
+    function addMessageType(desc) {
+        var stage = myself.parentThatIsA(StageMorph),
+            ide;
+
+        desc.fields = desc.fields.filter(function(field) {
+            return !!field;
+        });
+
+        // Check that the message type doesn't already exist
+        if (stage.messageTypes.getMsgType(desc.name)) {
+            myself.inform('that name is already in use');
+        } else {
+            stage.addMessageType(desc);
+            ide = myself.parentThatIsA(IDE_Morph);
+            ide.flushBlocksCache(cat); // b/c of inheritance
+            ide.refreshPalette();
+        }
+    }
+
     if (cat === 'motion') {
 
         txt = new TextMorph(localize(
@@ -1058,6 +1152,41 @@ StageMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('getJSFromRPC'));
             blocks.push(block('getCostumeFromRPC'));
             blocks.push('-');
+        }
+
+        // Add custom message types
+        button = new PushButtonMorph(
+            null,
+            function () {
+                new MessageCreatorMorph(
+                    myself,
+                    addMessageType
+                ).popUp();
+            },
+            'Make a message type'
+        );
+        blocks.push(button);
+
+        // Add delete message type block
+        if (this.deletableMessageNames().length > 0) {
+            button = new PushButtonMorph(
+                null,
+                function () {
+                    var menu = new MenuMorph(
+                        myself.deleteMessageType,
+                        null,
+                        myself
+                    );
+                    myself.deletableMessageNames().forEach(function (name) {
+                        menu.addItem(name, name);
+                    });
+                    menu.popUpAtHand(myself.world());
+                },
+                'Delete a message type'
+            );
+            button.selector = 'deleteMessageType';
+            button.showHelp = BlockMorph.prototype.showHelp;
+            blocks.push(button);
         }
 
     } else if (cat === 'control') {

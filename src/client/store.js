@@ -1,11 +1,15 @@
-SnapSerializer.prototype.loadMessageType = function (stage, name) {
-    var req = new XMLHttpRequest();
+SnapSerializer.prototype.loadMessageType = function (stage, model) {
+    var name = model.childNamed('name').contents,
+        fields = model.childNamed('fields')
+            .children
+            .map(function(child) {
+                return child.contents;
+            });
 
-    req.onload = function() {
-        stage.addMessageType(JSON.parse(req.responseText));
-    };
-    req.open('get', 'api/MessageTypes/' + name);
-    req.send();
+    stage.addMessageType({
+        name: name,
+        fields: fields
+    });
 };
 
 // It would be good to refactor the MessageInputMorph so we don't have to modify
@@ -253,11 +257,7 @@ SnapSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     // Add message types
     model.messageTypes = model.stage.childNamed('messageTypes');
     if (model.messageTypes) {
-        var messageTypes = model.messageTypes.children
-                .map(function(xml) {
-                    return xml.contents;
-                });
-
+        var messageTypes = model.messageTypes.children;
         messageTypes.forEach(this.loadMessageType.bind(this, project.stage));
     }
 
@@ -473,11 +473,31 @@ StageMorph.prototype.toXML = function (serializer) {
 };
 
 MessageFrame.prototype.toXML = function (serializer) {
-    var names = this.names();
-    return names.map(function(name) {
+    var myself = this,
+        msgTypes = this.names().map(function(name) {
+            return myself.getMsgType(name);
+        });
+
+    return msgTypes.map(function(type) {
         return serializer.format(
             '<messageType>%</messageType>',
-            serializer.escape(name)
+            serializer.store(type)
         );
     }).join('');
+};
+
+MessageType.prototype.toXML = function (serializer) {
+    var fields = this.fields.map(function(field) {
+        return serializer.format(
+            '<field>%</field>',
+            serializer.escape(field)
+        );
+    }).join('');
+
+    return serializer.format(
+        '<name>%</name>' +
+        '<fields>%</fields>',
+        serializer.escape(this.name),
+        fields
+    );
 };
