@@ -19,6 +19,7 @@ function TableMorph(ide) {
     // Get the users at the table
     this.ide = ide;
     this.seats = {};
+    this.occupied = {};
     this.seatLabels = {};
 
     this.tableLabel = null;
@@ -61,12 +62,13 @@ TableMorph.prototype._onNameChanged = function(newName) {
     }
 };
 
-TableMorph.prototype.update = function(leaderId, name, /*seatId,*/ seats) {
+TableMorph.prototype.update = function(leaderId, name, seats, occupied) {
     var username = SnapCloud.username || this.ide.sockets.uuid;
     // Update the seats, etc
     this.leaderId = leaderId;
     this._name = name;
     this.seats = seats;
+    this.occupied = occupied;
 
     this.version = Date.now();
     this.drawNew();
@@ -211,7 +213,7 @@ TableMorph.prototype.editSeat = function(seat) {
     //   + transfer ownership (if occupied)
     //   + evict user (if occupied)
     //   + change seat (if owned by self)
-    var dialog = new EditSeatMorph(this, seat);
+    var dialog = new EditSeatMorph(this, seat, this.occupied[seat.name]);
 
     dialog.fixLayout();
     dialog.drawNew();
@@ -460,11 +462,6 @@ function SeatMorph(name, user) {
     this.drawNew();
 }
 
-SeatMorph.prototype.isOccupied = function() {
-    // TODO
-    return false;
-};
-
 SeatMorph.prototype.isMine = function() {
     if (!SnapCloud.username) {
         return !!this.user;
@@ -513,7 +510,7 @@ SeatMorph.prototype.mouseClickLeft = function() {
 EditSeatMorph.prototype = new DialogBoxMorph();
 EditSeatMorph.prototype.constructor = EditSeatMorph;
 EditSeatMorph.uber = DialogBoxMorph.prototype;
-function EditSeatMorph(table, seat) {
+function EditSeatMorph(table, seat, isOccupied) {
     DialogBoxMorph.call(this);
     this.table = table;
     this.seat = seat;
@@ -539,7 +536,7 @@ function EditSeatMorph(table, seat) {
         this.addButton('evictUser', 'Evict Owner');
         if (seat.isMine()) {
             this.addButton('editSeatName', 'Rename');
-            if (!seat.isOccupied()) {
+            if (!isOccupied) {
                 this.addButton('moveToSeat', 'Move to');
             }
             this.addButton('deleteSeat', 'Delete seat');
