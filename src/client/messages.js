@@ -74,3 +74,98 @@ MessageFrame.prototype.names = function() {
 };
 
 // TODO: Consider making them scoped... They are currently all global
+
+// MessageCreatorMorph ///////////////////////////////////////////
+
+// A MessageCreatorMorph is used to create custom message types.
+
+MessageCreatorMorph.prototype = new DialogBoxMorph();
+MessageCreatorMorph.prototype.constructor = MessageCreatorMorph;
+MessageCreatorMorph.uber = DialogBoxMorph.prototype;
+
+function MessageCreatorMorph(target, action) {
+    this.init(target, action);
+}
+
+MessageCreatorMorph.prototype.init = function(target, action) {
+    var myself = this;
+
+    MessageCreatorMorph.uber.init.call(this, target);  // FIXME
+
+    this.key = 'createNewMsgType';
+    this.labelString = 'Create Message Type';
+    this.createLabel();
+
+    // Create message definition area
+    var messageBlock = new MessageDefinitionBlock();
+
+    // When the block is edited, resize the container
+    // TODO
+
+    this.addBody(messageBlock);
+    var fixLayout = messageBlock.fixLayout;
+    messageBlock.fixLayout = function() {
+        fixLayout.call(this);
+        myself.fixLayout();
+        myself.handle.drawNew();  // Should this be automatic?
+        myself.drawNew();
+    };
+
+    this.ok = function() {
+        // Get the info for the message type
+        var desc = {
+            name: messageBlock.messageName(),
+            fields: messageBlock.fields()
+        };
+
+        if (desc.name) {
+            action(desc);
+        }
+        this.destroy();
+    };
+
+    this.addButton('ok', 'OK');
+    this.addButton('cancel', 'Cancel');
+    this.fixLayout();
+    this.drawNew();
+};
+
+MessageCreatorMorph.prototype.popUp = function () {
+    var world = this.target.world();
+
+    if (world) {
+        BlockEditorMorph.uber.popUp.call(this, world);
+        this.handle = new HandleMorph(
+            this,
+            280,
+            220,
+            this.corner,
+            this.corner
+        );
+    }
+};
+
+MessageDefinitionBlock.prototype = new ReporterBlockMorph();
+MessageDefinitionBlock.prototype.constructor = MessageDefinitionBlock;
+MessageDefinitionBlock.uber = ReporterBlockMorph.prototype;
+
+function MessageDefinitionBlock() {
+    this.init();
+}
+
+MessageDefinitionBlock.prototype.init = function() {
+    MessageDefinitionBlock.uber.init.call(this);
+
+    this.color = SpriteMorph.prototype.blockColor.services;
+    this.category = 'services';
+    this.setSpec('name: %s fields: %exp');
+    this.drawNew();
+};
+
+MessageDefinitionBlock.prototype.messageName = function() {
+    return this.inputs()[0].evaluate();
+};
+
+MessageDefinitionBlock.prototype.fields = function() {
+    return this.inputs()[1].evaluate();
+};

@@ -388,9 +388,23 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         }
     }
 
-    function addMessageType(pair) {
-        // TODO
-        console.log('Creating services message type', pair);
+    function addMessageType(desc) {
+        var stage = myself.parentThatIsA(StageMorph),
+            ide;
+
+        desc.fields = desc.fields.filter(function(field) {
+            return !!field;
+        });
+
+        // Check that the message type doesn't already exist
+        if (stage.messageTypes.getMsgType(desc.name)) {
+            myself.inform('that name is already in use');
+        } else {
+            stage.addMessageType(desc);
+            ide = myself.parentThatIsA(IDE_Morph);
+            ide.flushBlocksCache(cat); // b/c of inheritance
+            ide.refreshPalette();
+        }
     }
 
     if (cat === 'motion') {
@@ -572,19 +586,55 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doPauseAll'));
 
     } else if (cat === 'services') {
-        // TODO: Move these later to other categories
         blocks.push(block('receiveSocketMessage'));
         blocks.push(block('doSocketMessage'));
         blocks.push('-');
         blocks.push(block('getProjectId'));
         blocks.push(block('getProjectIds'));
         blocks.push('-');
+
         if (this.world().isDevMode) {
             blocks.push(block('getJSFromRPC'));
             blocks.push(block('getCostumeFromRPC'));
             blocks.push('-');
         }
         blocks.push('-');
+
+        // Add custom message types
+        button = new PushButtonMorph(
+            null,
+            function () {
+                new MessageCreatorMorph(
+                    myself,
+                    addMessageType
+                ).popUp();
+            },
+            'Make a message type'
+        );
+        blocks.push(button);
+
+        // Add delete message type block
+        if (this.deletableMessageNames().length > 0) {
+            button = new PushButtonMorph(
+                null,
+                function () {
+                    var menu = new MenuMorph(
+                        myself.deleteMessageType,
+                        null,
+                        myself
+                    );
+                    myself.deletableMessageNames().forEach(function (name) {
+                        menu.addItem(name, name);
+                    });
+                    menu.popUpAtHand(myself.world());
+                },
+                'Delete a message type'
+            );
+            button.userMenu = helpMenu;
+            button.selector = 'deleteMessageType';
+            button.showHelp = BlockMorph.prototype.showHelp;
+            blocks.push(button);
+        }
 
     } else if (cat === 'sensing') {
 
@@ -855,6 +905,31 @@ SpriteMorph.prototype.blockTemplates = function (category) {
     return blocks;
 };
 
+SpriteMorph.prototype.deletableMessageNames = function() {
+    var stage = this.parentThatIsA(StageMorph);
+    return stage.deletableMessageNames();
+};
+
+StageMorph.prototype.deletableMessageNames = function() {
+    return this.messageTypes.names().filter(function(name) {
+        return name !== 'message';
+    });
+};
+
+SpriteMorph.prototype.deleteMessageType = function(name) {
+    var ide = this.parentThatIsA(IDE_Morph),
+        stage = ide.stage,
+        cat = 'services';
+
+    stage.messageTypes.deleteMsgType(name);
+
+    ide.flushBlocksCache(cat); // b/c of inheritance
+    ide.refreshPalette();
+};
+
+StageMorph.prototype.deleteMessageType =
+    SpriteMorph.prototype.deleteMessageType;
+
 // StageMorph Overrides
 StageMorph.prototype.freshPalette = SpriteMorph.prototype.freshPalette;
 //Add loading of "message" type
@@ -896,6 +971,55 @@ StageMorph.prototype.addMessageType = function (messageType) {
     msgType = new MessageType(name, fields);
     this.messageTypes.addMsgType(msgType);
 };
+
+StageMorph.prototype.processKeyEvent = function (event, action) {
+    var keyName;
+
+    // this.inspectKeyEvent(event);
+    switch (event.keyCode) {
+    case 13:
+        keyName = 'enter';
+        if (event.ctrlKey || event.metaKey) {
+            keyName = 'ctrl enter';
+        } else if (event.shiftKey) {
+            keyName = 'shift enter';
+        }
+        break;
+    // Added for netsblox
+    case 187:
+        keyName = '+';
+        break;
+    case 189:
+        keyName = '-';
+        break;
+    // Added for netsblox (end)
+    case 27:
+        keyName = 'esc';
+        break;
+    case 32:
+        keyName = 'space';
+        break;
+    case 37:
+        keyName = 'left arrow';
+        break;
+    case 39:
+        keyName = 'right arrow';
+        break;
+    case 38:
+        keyName = 'up arrow';
+        break;
+    case 40:
+        keyName = 'down arrow';
+        break;
+    default:
+        keyName = String.fromCharCode(event.keyCode || event.charCode);
+        if (event.ctrlKey || event.metaKey) {
+            keyName = 'ctrl ' + (event.shiftKey ? 'shift ' : '') + keyName;
+        }
+    }
+    action.call(this, keyName);
+};
+
 
 StageMorph.prototype.blockTemplates = function (category) {
     var blocks = [], myself = this, varNames, button,
@@ -966,6 +1090,25 @@ StageMorph.prototype.blockTemplates = function (category) {
                 myself.paletteCache[cat] = null;
                 myself.parentThatIsA(IDE_Morph).refreshPalette();
             }
+        }
+    }
+
+    function addMessageType(desc) {
+        var stage = myself.parentThatIsA(StageMorph),
+            ide;
+
+        desc.fields = desc.fields.filter(function(field) {
+            return !!field;
+        });
+
+        // Check that the message type doesn't already exist
+        if (stage.messageTypes.getMsgType(desc.name)) {
+            myself.inform('that name is already in use');
+        } else {
+            stage.addMessageType(desc);
+            ide = myself.parentThatIsA(IDE_Morph);
+            ide.flushBlocksCache(cat); // b/c of inheritance
+            ide.refreshPalette();
         }
     }
 
@@ -1058,6 +1201,41 @@ StageMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('getJSFromRPC'));
             blocks.push(block('getCostumeFromRPC'));
             blocks.push('-');
+        }
+
+        // Add custom message types
+        button = new PushButtonMorph(
+            null,
+            function () {
+                new MessageCreatorMorph(
+                    myself,
+                    addMessageType
+                ).popUp();
+            },
+            'Make a message type'
+        );
+        blocks.push(button);
+
+        // Add delete message type block
+        if (this.deletableMessageNames().length > 0) {
+            button = new PushButtonMorph(
+                null,
+                function () {
+                    var menu = new MenuMorph(
+                        myself.deleteMessageType,
+                        null,
+                        myself
+                    );
+                    myself.deletableMessageNames().forEach(function (name) {
+                        menu.addItem(name, name);
+                    });
+                    menu.popUpAtHand(myself.world());
+                },
+                'Delete a message type'
+            );
+            button.selector = 'deleteMessageType';
+            button.showHelp = BlockMorph.prototype.showHelp;
+            blocks.push(button);
         }
 
     } else if (cat === 'control') {
