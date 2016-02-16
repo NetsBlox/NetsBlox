@@ -384,3 +384,100 @@ SnapSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     return project;
 };
 
+StageMorph.prototype.toXML = function (serializer) {
+    var thumbnail = this.thumbnail(SnapSerializer.prototype.thumbnailSize),
+        thumbdata,
+        ide = this.parentThatIsA(IDE_Morph);
+
+    // catch cross-origin tainting exception when using SVG costumes
+    try {
+        thumbdata = thumbnail.toDataURL('image/png');
+    } catch (error) {
+        thumbdata = null;
+    }
+
+    function code(key) {
+        var str = '';
+        Object.keys(StageMorph.prototype[key]).forEach(
+            function (selector) {
+                str += (
+                    '<' + selector + '>' +
+                        XML_Element.prototype.escape(
+                            StageMorph.prototype[key][selector]
+                        ) +
+                        '</' + selector + '>'
+                );
+            }
+        );
+        return str;
+    }
+
+    this.removeAllClones();
+    return serializer.format(
+        '<project name="@" app="@" version="@">' +
+            '<notes>$</notes>' +
+            '<thumbnail>$</thumbnail>' +
+            '<stage name="@" width="@" height="@" ' +
+            'costume="@" tempo="@" threadsafe="@" ' +
+            'lines="@" ' +
+            'codify="@" ' +
+            'inheritance="@" ' +
+            'scheduled="@" ~>' +
+            '<pentrails>$</pentrails>' +
+            '<costumes>%</costumes>' +
+            '<sounds>%</sounds>' +
+            '<variables>%</variables>' +
+            '<blocks>%</blocks>' +
+            '<messageTypes>%</messageTypes>' +
+            '<scripts>%</scripts><sprites>%</sprites>' +
+            '</stage>' +
+            '<hidden>$</hidden>' +
+            '<headers>%</headers>' +
+            '<code>%</code>' +
+            '<blocks>%</blocks>' +
+            '<variables>%</variables>' +
+            '</project>',
+        (ide && ide.projectName) ? ide.projectName : localize('Untitled'),
+        serializer.app,
+        serializer.version,
+        (ide && ide.projectNotes) ? ide.projectNotes : '',
+        thumbdata,
+        this.name,
+        StageMorph.prototype.dimensions.x,
+        StageMorph.prototype.dimensions.y,
+        this.getCostumeIdx(),
+        this.getTempo(),
+        this.isThreadSafe,
+        SpriteMorph.prototype.useFlatLineEnds ? 'flat' : 'round',
+        this.enableCodeMapping,
+        this.enableInheritance,
+        StageMorph.prototype.frameRate !== 0,
+        this.trailsCanvas.toDataURL('image/png'),
+        serializer.store(this.costumes, this.name + '_cst'),
+        serializer.store(this.sounds, this.name + '_snd'),
+        serializer.store(this.variables),
+        serializer.store(this.customBlocks),
+        serializer.store(this.messageTypes),
+        serializer.store(this.scripts),
+        serializer.store(this.children),
+        Object.keys(StageMorph.prototype.hiddenPrimitives).reduce(
+                function (a, b) {return a + ' ' + b; },
+                ''
+            ),
+        code('codeHeaders'),
+        code('codeMappings'),
+        serializer.store(this.globalBlocks),
+        (ide && ide.globalVariables) ?
+                    serializer.store(ide.globalVariables) : ''
+    );
+};
+
+MessageFrame.prototype.toXML = function (serializer) {
+    var names = this.names();
+    return names.map(function(name) {
+        return serializer.format(
+            '<messageType>%</messageType>',
+            serializer.escape(name)
+        );
+    }).join('');
+};

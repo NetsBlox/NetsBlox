@@ -20,9 +20,8 @@ var RPCManager = function(logger, socketManager) {
     this.rpcs = RPCManager.loadRPCs();
     this.router = this.createRouter();
 
-    // The RPCManager contains groups with the same ids as those owned by the 
-    // communication manager. In this object, they contain the RPC's owned by
-    // the active table.
+    // In this object, they contain the RPC's owned by
+    // the associated active table.
     this.socketManager = socketManager;
 };
 
@@ -46,6 +45,9 @@ RPCManager.loadRPCs = function() {
 
 RPCManager.prototype.createRouter = function() {
     var router = express.Router({mergeParams: true});
+
+    // Create the index for the rpcs
+    // TODO
 
     // For each RPC, create the respective endpoints
     this.rpcs.forEach(this.addRoute.bind(this, router));
