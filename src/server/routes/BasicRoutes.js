@@ -20,35 +20,81 @@ var R = require('ramda'),
     PATHS = [
         'Costumes',
         'Sounds',
+        'libraries',
         'Backgrounds'
-    ];
+    ],
+    CLIENT_ROOT = path.join(__dirname, '..', '..', 'client', 'Snap--Build-Your-Own-Blocks');
 
-var makeDummyHtml = function(list) {
-        return list.map(function(item) {
-            return '<a href="'+item+'">'+item+'</a><br/>';
+var createIndexFor = function(name, list) {
+        return list
+        .filter(item => item.toUpperCase() !== name.toUpperCase())
+        .map(function(item) {
+            return [item, item, item].join('\t');
         }).join('\n');
     };
 
 
 // Create the paths
 var resourcePaths = PATHS.map(function(name) {
-    var resPath = path.join(__dirname, '..', '..', 'client', name);
+    var resPath = path.join(CLIENT_ROOT, name);
+
     return { 
         Method: 'get', 
-        URL: name,
+        URL: name + '/:filename',
         Handler: function(req, res) {
-            // Load the costumes and create rough HTML content...
-            fs.readdir(resPath, function(err, resources) {
+            if (req.params.filename === name.toUpperCase()) {  // index
+                // Load the costumes and create rough HTML content...
+                fs.readdir(resPath, function(err, resources) {
+                    if (err) {
+                        return res.send(err);
+                    }
+
+                    var result = createIndexFor(name, resources);
+                    return res.send(result);
+                });
+            } else {  // retrieve a file
+                res.sendFile(path.join(resPath, req.params.filename));
+            }
+        }
+    };
+});
+
+// Add importing tools to the resource paths
+var toolRoute = { 
+    Method: 'get', 
+    URL: 'tools.xml',
+    Handler: function(req, res) {
+        // Load the costumes and create rough HTML content...
+        res.sendFile(path.join(CLIENT_ROOT, 'tools.xml'));
+    }
+};
+resourcePaths.push(toolRoute);
+
+// Add importing rpcs to the resource paths
+var rpcRoute = { 
+    Method: 'get', 
+    URL: 'rpc/:filename',
+    Handler: function(req, res) {
+        var RPC_ROOT = path.join(__dirname, '..', 'rpc', 'libs');
+        if (req.params.filename === 'RPC') {
+            fs.readdir(RPC_ROOT, function(err, resources) {
                 if (err) {
                     return res.send(err);
                 }
 
-                var result = makeDummyHtml(resources);
+                // Only xml files
+                resources = resources.filter(res => res.indexOf('.xml') > -1);
+                var result = createIndexFor('rpc', resources);
                 return res.send(result);
             });
+        } else {  // Send RPC file
+            res.sendFile(path.join(RPC_ROOT, req.params.filename));
         }
-    };
-});
+    }
+};
+resourcePaths.push(rpcRoute);
+
+
 
 module.exports = [
     { 
