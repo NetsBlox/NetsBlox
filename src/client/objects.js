@@ -856,6 +856,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
 };
 
 // StageMorph Overrides
+StageMorph.prototype.freshPalette = SpriteMorph.prototype.freshPalette;
 //Add loading of "message" type
 // FIXME: Subclass stagemorph?
 StageMorph.prototype._init = StageMorph.prototype.init;
