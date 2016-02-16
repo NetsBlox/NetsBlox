@@ -7,8 +7,7 @@ var WebSocketManager = function (ide) {
     this.websocket = null;
     this.messages = [];
     this.processes = [];  // Queued processes to start
-    this.gameType = 'None';
-    this.devMode = false;
+    this.url = window.location.origin.replace('http://','ws://');
     this._connectWebSocket();
 };
 
@@ -59,10 +58,7 @@ WebSocketManager.MessageHandlers = {
 WebSocketManager.prototype._connectWebSocket = function() {
     // Connect socket to the server
     var self = this,
-        isReconnectAttempt = this.websocket !== null,
-        address;
-
-    address = 'ws://'+(baseURL.replace('http://',''));
+        isReconnectAttempt = this.websocket !== null;
 
     // Don't connect if the already connected
     if (isReconnectAttempt) {
@@ -76,7 +72,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
         }
     }
 
-    this.websocket = new WebSocket(address);
+    this.websocket = new WebSocket(this.url);
     // Set up message firing queue
     this.websocket.onopen = function() {
         console.log('Connection established');  // REMOVE this
@@ -145,11 +141,6 @@ WebSocketManager.prototype.updateTableInfo = function() {
         msg.leader = tableLeader;
     }
     this.sendMessage(msg);
-};
-
-WebSocketManager.prototype.toggleNetwork = function() {
-    this.devMode = !this.devMode;
-    // FIXME: Remove this function
 };
 
 /**
@@ -241,8 +232,9 @@ WebSocketManager.prototype.startProcesses = function () {
             stage.threads.startProcess(
                 process.block,
                 process.isThreadSafe,
-                undefined,
-                undefined,
+                null,
+                null,
+                null,
                 process.context
             );
             if (!this.processes[i].length) {
