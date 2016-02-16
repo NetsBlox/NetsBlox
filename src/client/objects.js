@@ -972,6 +972,55 @@ StageMorph.prototype.addMessageType = function (messageType) {
     this.messageTypes.addMsgType(msgType);
 };
 
+StageMorph.prototype.processKeyEvent = function (event, action) {
+    var keyName;
+
+    // this.inspectKeyEvent(event);
+    switch (event.keyCode) {
+    case 13:
+        keyName = 'enter';
+        if (event.ctrlKey || event.metaKey) {
+            keyName = 'ctrl enter';
+        } else if (event.shiftKey) {
+            keyName = 'shift enter';
+        }
+        break;
+    // Added for netsblox
+    case 187:
+        keyName = '+';
+        break;
+    case 189:
+        keyName = '-';
+        break;
+    // Added for netsblox (end)
+    case 27:
+        keyName = 'esc';
+        break;
+    case 32:
+        keyName = 'space';
+        break;
+    case 37:
+        keyName = 'left arrow';
+        break;
+    case 39:
+        keyName = 'right arrow';
+        break;
+    case 38:
+        keyName = 'up arrow';
+        break;
+    case 40:
+        keyName = 'down arrow';
+        break;
+    default:
+        keyName = String.fromCharCode(event.keyCode || event.charCode);
+        if (event.ctrlKey || event.metaKey) {
+            keyName = 'ctrl ' + (event.shiftKey ? 'shift ' : '') + keyName;
+        }
+    }
+    action.call(this, keyName);
+};
+
+
 StageMorph.prototype.blockTemplates = function (category) {
     var blocks = [], myself = this, varNames, button,
         cat = category || 'motion', txt;
