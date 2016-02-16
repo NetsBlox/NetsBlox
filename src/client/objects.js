@@ -286,6 +286,27 @@ SpriteMorph.prototype.initBlocks = function () {
 
 };
 
+// SpriteMorph project/sead id(s)
+
+SpriteMorph.prototype.getProjectId = function () {
+    var ide = this.parentThatIsA(IDE_Morph);
+    return ide.projectName;
+};
+
+SpriteMorph.prototype.getProjectIds = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        seats = Object.keys(ide.table.seats);
+    return new List(seats);
+};
+
+StageMorph.prototype.getProjectId =
+    SpriteMorph.prototype.getProjectId
+
+StageMorph.prototype.getProjectIds =
+    SpriteMorph.prototype.getProjectIds
+
+// SpriteMorph non-variable watchers
+
 SpriteMorph.prototype.reportUsername = function () {
     return SnapCloud.username || '';
 };
