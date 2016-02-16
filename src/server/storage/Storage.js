@@ -1,6 +1,6 @@
 'use strict';
 var MongoClient = require('mongodb').MongoClient,
-    hash = require('../../client/sha512').hex_sha512,
+    hash = require('../../common/sha512').hex_sha512,
     UserStore = require('./UserStore'),
     TableStore = require('./TableStore'),
     CONSTANTS = require(__dirname + '/../../common/Constants');
