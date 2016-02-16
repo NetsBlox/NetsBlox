@@ -1,6 +1,5 @@
 // This is a wrapper around the storage table. It provides the extra functionality expected
 // of a table that is actively being used
-// TODO
 
 'use strict';
 
@@ -124,19 +123,22 @@ class ActiveTable {
     }
 
     getStateMsg () {
-        var seats = {},
+        var owners = {},
+            occupied = {},
             msg;
 
         Object.keys(this.seatOwners)
             .forEach(seat => {
-                seats[seat] = this.seatOwners[seat];
+                owners[seat] = this.seatOwners[seat];
+                occupied[seat] = !!this.seats[seat];
             });
 
         msg = {
             type: 'table-seats',
             leader: this.leader.username,
             name: this.name,
-            seats: seats
+            owners: owners,
+            occupied: occupied
         };
         return msg;
     }

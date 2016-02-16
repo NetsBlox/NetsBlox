@@ -33,7 +33,11 @@ WebSocketManager.MessageHandlers = {
 
     // Update on the current seats at the given table
     'table-seats': function(msg) {
-        this.ide.table.update(msg.leader, msg.name, /*seatId,*/ msg.seats);
+        this.ide.table.update(msg.leader,
+            msg.name,
+            msg.owners,
+            msg.occupied
+        );
     },
 
     // Receive an invite to join a table
