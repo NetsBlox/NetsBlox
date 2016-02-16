@@ -95,6 +95,43 @@ NetsBloxMorph.prototype.silentSetProjectName = function (string) {
     return NetsBloxMorph.uber.setProjectName.call(this, string);
 };
 
+NetsBloxMorph.prototype.createControlBar = function () {
+    var myself = this,
+        padding = 5;
+
+    NetsBloxMorph.uber.createControlBar.call(this);
+
+    this.controlBar.updateLabel = function () {
+        var suffix = ' @ ' + myself.table.name;
+
+        suffix += myself.world().isDevMode ?
+                ' - ' + localize('development mode') : '';
+
+        if (this.label) {
+            this.label.destroy();
+        }
+        if (myself.isAppMode) {
+            return;
+        }
+
+        this.label = new StringMorph(
+            (myself.projectName || localize('untitled')) + suffix,
+            14,
+            'sans-serif',
+            true,
+            false,
+            false,
+            MorphicPreferences.isFlat ? null : new Point(2, 1),
+            myself.frameColor.darker(myself.buttonContrast)
+        );
+        this.label.color = myself.buttonLabelColor;
+        this.label.drawNew();
+        this.add(this.label);
+        this.label.setCenter(this.center());
+        this.label.setLeft(this.settingsButton.right() + padding);
+    };
+};
+
 NetsBloxMorph.prototype.loadNextTable = function () {
     // Check if the table has diverged and optionally fork
     // TODO
