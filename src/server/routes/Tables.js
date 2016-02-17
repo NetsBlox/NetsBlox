@@ -112,7 +112,7 @@ module.exports = [
             socket = table.seats[seatId];
             if (!socket) {  // user is not online
                 this._logger.info(`Removing seat ${seatId}`);
-                delete table.seatOwners[seatId];
+                table.seatOwners[seatId] = null;
                 // Fork the user's stored table
                 // TODO
                 return res.send('user has been evicted!');

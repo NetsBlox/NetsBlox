@@ -42,12 +42,12 @@ class ActiveTable {
             currentSeat = socket._seatId,
             data;
 
-        seats.forEach(seat => fork.createSeat(seat));
-        fork.seatOwners[currentSeat] = socket.username;
-
         // Clone the table storage data
         data = this._store.fork(fork);
         fork.setStorage(data);
+
+        seats.forEach(seat => fork.silentCreateSeat(seat));
+        fork.seatOwners[currentSeat] = socket.username;
 
         // Copy the data from each project
         fork.cachedProjects = _.cloneDeep(this.cachedProjects);
@@ -58,6 +58,7 @@ class ActiveTable {
             table: fork.name
         });
         fork.onSeatsChanged();
+        this.onSeatsChanged();
 
         return fork;
     }
@@ -81,11 +82,15 @@ class ActiveTable {
     }
 
     createSeat (seat) {
+        this.silentCreateSeat(seat);
+        this.onSeatsChanged();
+    }
+
+    silentCreateSeat (seat) {
         this._logger.trace(`Adding seat ${seat}`);
         this.seats[seat] = null;
         this.seatOwners[seat] = null;
         this.createVirtualClient(seat);
-        this.onSeatsChanged();
     }
 
     updateSeat (seat) {
