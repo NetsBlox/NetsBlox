@@ -158,7 +158,7 @@ MessageDefinitionBlock.prototype.init = function() {
 
     this.color = SpriteMorph.prototype.blockColor.services;
     this.category = 'services';
-    this.setSpec('name: %s fields: %exp');
+    this.setSpec('name: %hintname fields: %mhintfield');
     this.drawNew();
 };
 

@@ -11,6 +11,15 @@ InputSlotMorph.prototype.messageTypesMenu = function() {
     return dict;
 };
 
+MultiArgMorph.prototype.addHintInput = function (text) {
+    var newPart = this.labelPart('%hint' + text),
+        idx = this.children.length - 1;
+    newPart.parent = this;
+    this.children.splice(idx, 0, newPart);
+    newPart.drawNew();
+    this.fixLayout();
+};
+
 // TODO: Refactor
 SyntaxElementMorph.prototype.labelPart = function (spec) {
     var part, tokens;
@@ -25,6 +34,25 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.addInput();
             return part;
         }
+
+        // Netsblox addition -- hint text
+        if ((spec.length > 5) && (spec.slice(0, 5) === '%hint')) {
+            part = new HintInputSlotMorph('', spec.slice(5));
+            return part;
+        }
+
+        if ((spec.length > 6) && (spec.slice(0, 6) === '%mhint')) {
+            tokens = spec.slice(6).split('%');
+            part = new MultiArgMorph('%s', null, 0);
+
+            tokens.forEach(function(token) {
+                part.addHintInput(token);
+            });
+            part.isStatic = true;
+            part.canBeEmpty = false;
+            return part;
+        }
+        // Netsblox addition (end)
 
         // single-arg and specialized multi-arg slots:
         switch (spec) {
@@ -332,8 +360,10 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
                     'right arrow': ['right arrow'],
                     'left arrow': ['left arrow'],
                     space : ['space'],
+                    // Netsblox addition
                     '+' : ['+'],
                     '-' : ['-'],
+                    // Netsblox addition (end)
                     a : ['a'],
                     b : ['b'],
                     c : ['c'],
@@ -379,6 +409,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part = this.labelPart('%key');
             part.isStatic = true;
             break;
+        // Netsblox addition
         case '%socketMsgHat':
             part = new InputSlotMorph(
                 null,
@@ -395,6 +426,22 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
                 true
             );
             break;
+        case '%msgOutput':
+            part = new MessageOutputSlotMorph();
+            break;
+        case '%msgInput':
+            part = new MessageInputSlotMorph();
+            break;
+        case '%seats':
+            // Seat ids
+            part = new InputSlotMorph(
+                null,
+                false,
+                'seatNames',
+                true
+            );
+            break;
+        // Netsblox addition (end)
         case '%msg':
             part = new InputSlotMorph(
                 null,
@@ -411,21 +458,6 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
                 true
             );
             part.isStatic = true;
-            break;
-        case '%msgOutput':
-            part = new MessageOutputSlotMorph();
-            break;
-        case '%msgInput':
-            part = new MessageInputSlotMorph();
-            break;
-        case '%seats':
-            // Seat ids
-            part = new InputSlotMorph(
-                null,
-                false,
-                'seatNames',
-                true
-            );
             break;
         case '%att':
             part = new InputSlotMorph(
@@ -784,7 +816,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         );
     }
     return part;
-}
+};
 
 InputSlotMorph.prototype.seatNames = function () {
     var ide = this.parentThatIsA(IDE_Morph),
