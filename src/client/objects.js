@@ -211,7 +211,7 @@ SpriteMorph.prototype.freshPalette = function (category) {
 // RPC's
 SpriteMorph.prototype._initBlocks = SpriteMorph.prototype.initBlocks;
 SpriteMorph.prototype.initBlocks = function () {
-    this._initBlocks();  // super
+    SpriteMorph.prototype._initBlocks();  // super
     SpriteMorph.prototype.blocks.getJSFromRPC = {  // primitive JSON response
         type: 'reporter',
         category: 'services',
@@ -285,6 +285,7 @@ SpriteMorph.prototype.initBlocks = function () {
     };
 
 };
+SpriteMorph.prototype.initBlocks();
 
 // SpriteMorph project/sead id(s)
 
