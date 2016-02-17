@@ -533,17 +533,19 @@ function EditSeatMorph(table, seat, isOccupied) {
     this.addBody(txt);
 
     if (seat.user) {
-        this.addButton('evictUser', 'Evict Owner');
-        if (seat.isMine()) {
+        if (seat.isMine()) {  // Can only edit/delete seats that are your own
             this.addButton('editSeatName', 'Rename');
             if (!isOccupied) {
                 this.addButton('moveToSeat', 'Move to');
+                this.addButton('evictUser', 'Disown');
             }
-            this.addButton('deleteSeat', 'Delete seat');
+        } else {
+            this.addButton('evictUser', 'Evict Owner');
         }
     } else {
         // FIXME: If only one option, don't ask!
         this.addButton('inviteUser', 'Invite User');
+        this.addButton('deleteSeat', 'Delete seat');
     }
     this.addButton('cancel', 'Cancel');
 

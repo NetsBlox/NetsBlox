@@ -36,6 +36,7 @@ TableManager.prototype.forkTable = function(params) {
         return;
     }
 
+    this._logger.trace(`${params.seatId} is forking table`);
     this._logger.trace(`${socket.username} is forking table ${table.uuid}`);
 
     // Create the new table

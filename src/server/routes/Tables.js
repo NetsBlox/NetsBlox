@@ -260,7 +260,8 @@ module.exports = [
             
             //  Verify that the username is either the leaderId
             //      or the owner of the seat
-            if (table.leaderId !== username && table.seatOwners[seatId] !== username) {
+            this._logger.trace(`leaderId is ${table.leader.username} and username is ${username}`);
+            if (table.leader.username !== username && table.seatOwners[seatId] !== username) {
                 this._logger.error(`${username} does not have permission to edit ${seatId} at ${tableId}`);
                 return res.status(403).send(`ERROR: You do not have permission to delete ${seatId}`);
             }
@@ -268,7 +269,10 @@ module.exports = [
             //  Get the socket and join a different table (if not the leader)
             //  TODO: Check that it isn't the leader
             //  TODO: Check that the leader doesn't remove the last seat
-            this.forkTable({table, seatId});
+            // If the seat has an owner...
+            if (table.seatOwners[seatId]) {
+                this.forkTable({table, seatId});
+            }
 
             //  Remove the given seat
             table.removeSeat(seatId);
