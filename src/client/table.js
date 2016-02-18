@@ -3,16 +3,6 @@ TableMorph.prototype = new SpriteMorph();
 TableMorph.prototype.constructor = TableMorph;
 TableMorph.uber = SpriteMorph.prototype;
 
-// TODO: Pick better colors
-TableMorph.COLORS = [
-    '#0d47a1',
-    '#64b5f6',
-    '#f57c00',
-    '#ce93d8',
-    '#4527a0',
-    '#e57373',
-    '#ffe082'
-];
 TableMorph.SIZE = 300;
 
 function TableMorph(ide) {
@@ -41,7 +31,6 @@ function TableMorph(ide) {
         this.ide.projectName = 'mySeat';
     }
 
-    // TODO: Make this dynamic
     this.silentSetWidth(TableMorph.SIZE);
     this.silentSetHeight(TableMorph.SIZE);
 
@@ -80,11 +69,14 @@ TableMorph.prototype.triggerUpdate = function() {
 
 TableMorph.prototype.drawNew = function() {
     var cxt,
+        label,
         padding = 4,
         radius = (Math.min(this.width(), this.height())-padding)/2,
-        label,
-        seats,
         center = padding + radius,
+        seats,
+        len,
+        x,
+        y,
         i;
         
     if (this.leaderId === null) {  // If the table isn't set, trigger an update
@@ -99,57 +91,47 @@ TableMorph.prototype.drawNew = function() {
     }
     
     this.image = newCanvas(this.extent());
-    cxt = this.image.getContext('2d');
 
     // Draw the seats
-    var angleSize,
-        angle = 0,
-        len = TableMorph.COLORS.length,
-        currentSeat = this.ide.projectName,
-        x,y;
-
     seats = Object.keys(this.seats);
-    angleSize = 2*Math.PI/seats.length;
+    len = seats.length;
 
-    cxt.textAlign = 'center';
     for (i = 0; i < seats.length; i++) {
-        cxt.fillStyle = TableMorph.COLORS[i%len];
-        cxt.beginPath();
-        cxt.moveTo(center, center);
-
-        cxt.arc(center, center, radius, angle, angle+angleSize, false);
-
-        cxt.lineTo(center, center);
-        cxt.fill();
-
-        // Write the seat name on the seat
-        x = center + (0.75 *radius * Math.cos(angle+angleSize/2));
-        y = center + (0.75 *radius * Math.sin(angle+angleSize/2));
         // Create the label
-        label = new SeatMorph(localize(seats[i]), localize(this.seats[seats[i]]));
-        label.setCenter(new Point(x, y).translateBy(this.topLeft()));
+        label = new SeatMorph(
+            localize(seats[i]),
+            localize(this.seats[seats[i]]),
+            i,
+            len
+        );
         this.add(label);
+        label.setExtent(this.extent());
+        label.setCenter(this.center());
         this.seatLabels[seats[i]] = label;
-
-        angle += angleSize;
     }
-
     // Table name
-    var width = 100,
-        height = 25;
-
-    cxt.fillStyle = '#9e9e9e';
-    cxt.fillRect(center-(width/2), center-(height/2), width, height);
     this.renderTableTitle(new Point(center, center).translateBy(this.topLeft()));
-
-    this.changed();
 };
 
 TableMorph.prototype.renderTableTitle = function(center) {
+    var width = 100,
+        height = 25;
+
     if (this.tableLabel) {
         this.tableLabel.destroy();
+        this.titleBox.destroy();
     }
 
+    // Create the background box
+    this.titleBox = new Morph();
+    this.titleBox.image = newCanvas(this.extent());
+    this.titleBox.color = new Color(158, 158, 158);
+    this.add(this.titleBox);
+    this.titleBox.setExtent(new Point(width, height));
+    this.titleBox.setCenter(center);
+    this.titleBox.mouseClickLeft = this.editTableName.bind(this);
+
+    // Add the table name text
     this.tableLabel = new StringMorph(
         this.name,
         15,
@@ -157,12 +139,8 @@ TableMorph.prototype.renderTableTitle = function(center) {
         true,
         false
     );
-    this.tableLabel.mouseClickLeft = this.editTableName.bind(this);
-    this.add(this.tableLabel);
-
+    this.titleBox.add(this.tableLabel);
     this.tableLabel.setCenter(center);
-    this.tableLabel.text = this.name;
-    this.tableLabel.drawNew();
 };
 
 TableMorph.prototype.editTableName = function () {
@@ -446,42 +424,102 @@ TableMorph.prototype._invitationResponse = function (id, response, seat) {
     );
 };
 
-// Create the available blocks
-// TODO
-
-SeatMorph.prototype = new AlignmentMorph();
+SeatMorph.prototype = new Morph();
 SeatMorph.prototype.constructor = SeatMorph;
-SeatMorph.uber = AlignmentMorph.prototype;
+SeatMorph.uber = Morph.prototype;
+SeatMorph.COLORS = [
+    '#0d47a1',
+    '#64b5f6',
+    '#f57c00',
+    '#ce93d8',
+    '#4527a0',
+    '#e57373',
+    '#ffe082'
+];
 
-function SeatMorph(name, user) {
-    this.name = name;
-    this.user = user;
-    this.init('column', 4);
-    //var text = this.name + '\n(' + this.user + ')';
-    //SeatMorph.uber.init.call(this, text);
-    this.drawNew();
+// The seat morph needs to know where to draw itself
+function SeatMorph(name, user, index, total) {
+    this.init(name, user, index, total);
 }
 
-SeatMorph.prototype.isMine = function() {
-    if (!SnapCloud.username) {
-        return !!this.user;
+SeatMorph.prototype.init = function(name, user, index, total) {
+    SeatMorph.uber.init.call(this, true);
+    this.name = name;
+    this.user = user;
+
+    this._label = new SeatLabelMorph(name, user);
+    this.add(this._label);
+    this.index = index;
+    this.total = total;
+    this.drawNew();
+};
+
+SeatMorph.prototype.destroy = function() {
+    for (var i = this.children.length; i--;) {
+        this.children[i].destroy();
     }
-    return this.user === SnapCloud.username;
+    SeatMorph.uber.destroy.call(this);
 };
 
 SeatMorph.prototype.drawNew = function() {
-    var usrTxt = this.user ? this.user : '<empty>';
+    var padding = 4,
+        radius = (Math.min(this.width(), this.height())-padding)/2,
+        center = padding + radius,
+        pos,
+        cxt;
 
-    // Prevent crash...
+    // Create the image
     this.image = newCanvas(this.extent());
+    cxt = this.image.getContext('2d');
 
+    // Draw the seats
+    var angleSize = 2*Math.PI/this.total,
+        angle = this.index*angleSize,
+        len = SeatMorph.COLORS.length,
+        x,y;
+
+    cxt.textAlign = 'center';
+
+    // Draw the seat
+    cxt.fillStyle = SeatMorph.COLORS[this.index%len];
+    cxt.beginPath();
+    cxt.moveTo(center, center);
+    cxt.arc(center, center, radius, angle, angle+angleSize, false);
+    cxt.lineTo(center, center);
+    cxt.fill();
+
+    // Write the seat name on the seat
+    x = 0.65 * radius * Math.cos(angle + angleSize/2);
+    y = 0.65 * radius * Math.sin(angle + angleSize/2);
+    pos = new Point(x, y).translateBy(this.center());
+
+    if (this._label) {
+        this._label.destroy();
+    }
+    this._label = new SeatLabelMorph(this.name, this.user);
+    this.add(this._label);
+    this._label.setCenter(pos);
+};
+
+SeatMorph.prototype.mouseClickLeft = function() {
+    this.editSeat(this._label);
+};
+
+SeatLabelMorph.prototype = new Morph();
+SeatLabelMorph.prototype.constructor = SeatLabelMorph;
+SeatLabelMorph.uber = Morph.prototype;
+
+// Label containing the seat & user names
+function SeatLabelMorph(name, user) {
+    this.name = name;
+    this.user = user;
+    this.init();
+}
+
+SeatLabelMorph.prototype.init = function() {
+    var usrTxt = this.user || '<empty>';
     if (this.isMine()) {
         usrTxt = 'me';
-    }
-
-    if (this._seatLabel) {
-        this._seatLabel.destroy();
-        this._userLabel.destroy();
     }
 
     this._seatLabel = new StringMorph(
@@ -498,13 +536,42 @@ SeatMorph.prototype.drawNew = function() {
         false,
         true
     );
+
+    SeatLabelMorph.uber.init.call(this);
+
     this.add(this._seatLabel);
     this.add(this._userLabel);
+    this.drawNew();
+};
+
+SeatLabelMorph.prototype.isMine = function() {
+    if (!SnapCloud.username) {
+        return !!this.user;
+    }
+    return this.user === SnapCloud.username;
+};
+
+SeatLabelMorph.prototype.drawNew = function() {
+    this.image = newCanvas(new Point(1, 1));
     this.fixLayout();
 };
 
-SeatMorph.prototype.mouseClickLeft = function() {
-    this.editSeat(this);
+SeatLabelMorph.prototype.fixLayout = function() {
+    var center = this.center(),
+        height,
+        x = center.x;
+
+    height = this._seatLabel.height();
+    this._seatLabel.setCenter(new Point(
+        center.x/2,
+        center.y - height/2
+    ));
+
+    height = this._userLabel.height();
+    this._userLabel.setCenter(new Point(
+        center.x/2,
+        center.y + height/2
+    ));
 };
 
 EditSeatMorph.prototype = new DialogBoxMorph();
