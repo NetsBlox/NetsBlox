@@ -428,14 +428,19 @@ SeatMorph.prototype = new Morph();
 SeatMorph.prototype.constructor = SeatMorph;
 SeatMorph.uber = Morph.prototype;
 SeatMorph.COLORS = [
-    '#0d47a1',
-    '#64b5f6',
-    '#f57c00',
-    '#ce93d8',
-    '#4527a0',
-    '#e57373',
-    '#ffe082'
-];
+    new Color(74, 108, 212),
+    new Color(217, 77, 17).lighter(),
+    new Color(207, 74, 217),
+    new Color(0, 161, 120),
+    new Color(143, 86, 227),
+    new Color(230, 168, 34),
+    new Color(4, 148, 220),
+    new Color(98, 194, 19),
+    new Color(243, 118, 29),
+    new Color(150, 150, 150)
+].map(function(color) {
+    return color.darker();
+});
 
 // The seat morph needs to know where to draw itself
 function SeatMorph(name, user, index, total) {
@@ -481,7 +486,7 @@ SeatMorph.prototype.drawNew = function() {
     cxt.textAlign = 'center';
 
     // Draw the seat
-    cxt.fillStyle = SeatMorph.COLORS[this.index%len];
+    cxt.fillStyle = SeatMorph.COLORS[this.index%len].toString();
     cxt.beginPath();
     cxt.moveTo(center, center);
     cxt.arc(center, center, radius, angle, angle+angleSize, false);
