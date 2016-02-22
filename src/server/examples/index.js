@@ -12,6 +12,15 @@ var examples = {};
 
 // Multiplayer examples
 [
+    // Pong
+    {
+        tableName: 'Pong',
+        cachedProjects: {
+            left: example('Pong-left'),
+            right: example('Pong-right')
+        },
+        primarySeat: 'right'
+    },
     // TicTacToe
     {
         tableName: 'TicTacToe',
