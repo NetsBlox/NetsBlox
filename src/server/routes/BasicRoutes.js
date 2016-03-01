@@ -143,7 +143,7 @@ module.exports = [
                 if (!user) {
                     var newUser = self.storage.users.new(uname, email);
                     newUser.save();
-                    return;
+                    return res.send('User Created!');
                 }
                 log('User "'+uname+'" already exists. Could not make new user.');
                 return res.status(401).send('ERROR: user exists');

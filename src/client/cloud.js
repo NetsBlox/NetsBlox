@@ -1,4 +1,4 @@
-var SnapCloud = new Cloud('http://'+window.location.host+'/api');
+var SnapCloud = new Cloud('http://'+window.location.host+'/api/');
 
 Cloud.prototype.login = function (
     username,
