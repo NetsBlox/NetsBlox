@@ -4,36 +4,6 @@ var DataWrapper = require('./Data'),
     async = require('async'),
     ObjectId = require('mongodb').ObjectId;
 
-class TableStore {
-    constructor(logger, db) {
-        this._logger = logger.fork('Tables');
-        this._tables = db.collection('tables');
-    }
-
-    get(uuid, callback) {
-        // Get the table from the global store
-        this._tables.findOne({uuid}, (e, data) => {
-            var params = {
-                logger: this._logger,
-                db: this._tables,
-                data
-            };
-            // The returned table is read-only (no user set)
-            callback(e, data ? new Table(params) : null);
-        });
-    }
-
-    // Create table from ActiveTable (request projects from clients)
-    new(user, activeTable) {
-        return new Table({
-            logger: this._logger,
-            db: this._tables,
-            user: user,
-            table: activeTable
-        });
-    }
-}
-
 // Every time a table is saved, it is saved for some user AND in the global store
 // Schema:
 // + uuid (leaderId/name)
@@ -65,6 +35,7 @@ class Table extends DataWrapper {
     collectProjects(callback) {
         // Collect the projects from the websockets
         var sockets = this._table.sockets();
+        // Add saving the cached projects
         async.map(sockets, (socket, callback) => {
             socket.getProjectJson(callback);
         }, (err, projects) => {
@@ -80,21 +51,19 @@ class Table extends DataWrapper {
                     uuid: this._table.uuid,
                     name: this._table.name,
                     leaderId: this._table.leader.username,
-                    seatOwners: {},
+                    seatOwners: this._table.seatOwners,
                     seats: {}
                 };
 
             for (var i = seats.length; i--;) {
                 socket = this._table.seats[seats[i]];
-                // seat owners
-                content.seatOwners[seats[i]] = socket ? socket.username : null;
 
                 k = sockets.indexOf(socket);
                 if (k !== -1) {
                     // seat content
                     content.seats[seats[i]] = projects[k];
                 } else {
-                    content.seats[seats[i]] = null;
+                    content.seats[seats[i]] = this._table.cachedProjects[seats[i]] || null;
                 }
             }
             callback(null, content);
@@ -211,5 +180,35 @@ class Table extends DataWrapper {
 
 var EXTRA_KEYS = ['_user', '_table', '_content'];
 Table.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(EXTRA_KEYS);
+
+class TableStore {
+    constructor(logger, db) {
+        this._logger = logger.fork('Tables');
+        this._tables = db.collection('tables');
+    }
+
+    get(uuid, callback) {
+        // Get the table from the global store
+        this._tables.findOne({uuid}, (e, data) => {
+            var params = {
+                logger: this._logger,
+                db: this._tables,
+                data
+            };
+            // The returned table is read-only (no user set)
+            callback(e, data ? new Table(params) : null);
+        });
+    }
+
+    // Create table from ActiveTable (request projects from clients)
+    new(user, activeTable) {
+        return new Table({
+            logger: this._logger,
+            db: this._tables,
+            user: user,
+            table: activeTable
+        });
+    }
+}
 
 module.exports = TableStore;

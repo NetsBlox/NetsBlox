@@ -99,11 +99,12 @@ class NetsBloxSocket {
 
     join (table, seat) {
         seat = seat || this._seatId;
-        if (this._table === table) {
+        console.log(`joining ${table.uuid}/${seat} from ${this._seatId}`);
+        if (this._table === table && seat !== this._seatId) {
             return this.changeSeats(seat);
         }
 
-        this._logger.log(`joining ${table.uuid}/${seat}`);
+        this._logger.log(`joining ${table.uuid}/${seat} from ${this._seatId}`);
         if (this._table && this._table.uuid !== table.uuid) {
             this.leave();
         }

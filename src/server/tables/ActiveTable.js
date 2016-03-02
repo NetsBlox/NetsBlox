@@ -179,7 +179,7 @@ class ActiveTable {
             socket = this.seats[src],
             dst = params.dst;
 
-        console.log('src:', src);
+        this._logger.info(`moving from ${src} to ${dst}`);
         this.seats[src] = null;
         this.add(socket, dst);
     }
@@ -266,6 +266,8 @@ ActiveTable.fromStore = function(logger, socket, data) {
     table.seatOwners = data.seatOwners;
     table._uuid = data.uuid;  // save over the old uuid even if it changes
                               // this should be reset if the table is forked TODO
+    // load cached projects
+    table.cachedProjects = data.seats;
     return table;
 };
 
