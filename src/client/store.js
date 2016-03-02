@@ -12,6 +12,56 @@ SnapSerializer.prototype.loadMessageType = function (stage, model) {
     });
 };
 
+SnapSerializer.prototype.openProject = function (project, ide) {
+    var stage = ide.stage,
+        sprites = [],
+        sprite;
+    if (!project || !project.stage) {
+        return;
+    }
+    // Only load the projectName if the current name is the default
+    if (ide.projectName === 'mySeat') {
+        ide.setProjectName(project.name);
+    }
+    ide.projectNotes = project.notes || '';
+    if (ide.globalVariables) {
+        ide.globalVariables = project.globalVariables;
+    }
+    if (stage) {
+        stage.destroy();
+    }
+    ide.add(project.stage);
+    ide.stage = project.stage;
+    sprites = ide.stage.children.filter(function (child) {
+        return child instanceof SpriteMorph;
+    });
+    sprites.sort(function (x, y) {
+        return x.idx - y.idx;
+    });
+
+    ide.sprites = new List(sprites);
+    sprite = sprites[0] || project.stage;
+
+    if (sizeOf(this.mediaDict) > 0) {
+        ide.hasChangedMedia = false;
+        this.mediaDict = {};
+    } else {
+        ide.hasChangedMedia = true;
+    }
+    project.stage.drawNew();
+    ide.createCorral();
+    ide.selectSprite(sprite);
+    ide.fixLayout();
+
+    // force watchers to update
+    //project.stage.watchers().forEach(function (watcher) {
+    //  watcher.onNextStep = function () {this.currentValue = null;};
+    //})
+
+    ide.world().keyboardReceiver = project.stage;
+};
+
+
 // It would be good to refactor the MessageInputMorph so we don't have to modify
 // loadBlock
 SnapSerializer.prototype.loadBlock = function (model, isReporter) {
