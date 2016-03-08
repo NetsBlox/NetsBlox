@@ -53,19 +53,24 @@ NetsBloxMorph.prototype.clearProject = function () {
 
 
 NetsBloxMorph.prototype.newProject = function (projectName) {
+    var tableName = 'Table ' + (Date.now() % 100);
     this.clearProject();
 
     // Get new table name
     this.sockets.sendMessage({
         type: 'create-table',
-        table: 'Table ' + (Date.now() % 100),
-        seat: projectName || 'mySeat'
+        table: tableName,
+        seat: projectName || TableMorph.DEFAULT_SEAT
     });
     if (projectName) {
         this.setProjectName(projectName || '');
+    } else {
+        this.silentSetProjectName(TableMorph.DEFAULT_SEAT);
     }
     this.createTable();
+    this.table.name = tableName;
     this.selectSprite(this.stage.children[0]);
+    this.controlBar.updateLabel();
 };
 
 NetsBloxMorph.prototype.createTable = function() {

@@ -18,7 +18,15 @@ var LIST_FIELDS = [
     debug = require('debug'),
     log = debug('NetsBlox:API:Projects:log'),
     warn = debug('NetsBlox:API:Projects:warn'),
-    info = debug('NetsBlox:API:Projects:info');
+    info = debug('NetsBlox:API:Projects:info'),
+    error = debug('NetsBlox:API:Projects:error'),
+    PREVIEW_FIELDS = [
+        'ProjectName',
+        'Notes',
+        'Thumbnail',
+        'Public',
+        'Updated'
+    ];
 
 var getProjectIndexFrom = function(name, user) {
     for (var i = user.projects.length; i--;) {
@@ -60,6 +68,7 @@ module.exports = [
             info('Initiating table save for ' + username);
             this.storage.users.get(username, (e, user) => {
                 var table,
+                    socket = this.sockets[socketId],
                     activeTable;
 
                 if (e) {
@@ -71,19 +80,30 @@ module.exports = [
                 }
 
                 // Look up the user's table
-                activeTable = this.sockets[socketId]._table;
+                activeTable = socket._table;
                 if (!activeTable) {
                     return res.status(500).send('ERROR: active table not found');
                 }
 
-                // Save the table
-                table = this.storage.tables.new(user, activeTable);
-                table.save(function(err) {
-                    if (err) {
-                        return res.status(500).send('ERROR: ' + err);
-                    }
-                    return res.send('table saved!');
-                });
+                // Save the entire table
+                if (socket.isOwner()) {
+                    log(`saving entire table for ${socket.username}`);
+                    table = this.storage.tables.new(user, activeTable);
+                    table.save(function(err) {
+                        if (err) {
+                            return res.status(500).send('ERROR: ' + err);
+                        }
+                        return res.send('table saved!');
+                    });
+                } else {  // just update the project cache for the given user
+                    log(`caching ${socket._seatId} for ${socket.username}`);
+                    activeTable.cache(socket._seatId, err => {
+                        if (err) {
+                            return res.status(500).send('ERROR: ' + err);
+                        }
+                        return res.send('code saved!');
+                    });
+                }
             });
         }
     },
@@ -96,45 +116,65 @@ module.exports = [
             var username = req.session.username;
             log(username +' requested project list');
             this.storage.users.get(username, (e, user) => {
-                var projects,
+                var previews,
                     tables = user.tables || [];
+
                 if (e) {
                     return res.serverError(e);
                 }
                 if (user) {
-                    // If it is the ghost user, provide a list of all project/tables
-                    // TODO
-
-                    // Get the projects
-                    projects = tables.map(table => {
-                            var seats;
-
-                            seats = Object.keys(table.seatOwners)
-                                .filter(seat => table.seatOwners[seat] === username)
-                                .map(seat => table.seats[seat]);
-
-                            // FIXME: returns null sometimes (if no project stored at the seat, return empty project).
-
-                            // Add the table uuids
-                            seats.forEach(project => {
-                                project.TableLeader = table.leaderId;
-                                project.TableName = table.name;
-                            });
-
-                            return seats;
-                        })
-                        .reduce((l1, l2) => l1.concat(l2), []);  // flatten
+                    // Return the following for each table:
+                    //
+                    //  + ProjectName
+                    //  + Updated
+                    //  + Notes
+                    //  + Thumbnail
+                    //  + Public?
+                    //
+                    // These values are retrieved from whatever seat has notes
+                    // or chosen arbitrarily (for now)
 
                     // Update this to parse the projects from the table list
-                    projects = R.map(R.partial(R.pick, LIST_FIELDS), projects);
+                    previews = tables.map(table => {
+                        var preview,
+                            seats = Object.keys(table.seats),
+                            seat;
+
+                        preview = {
+                            ProjectName: table.name,
+                            Public: !!table.public
+                        };
+
+                        for (var i = seats.length; i--;) {
+                            seat = table.seats[seats[i]];
+                            if (seat) {
+                                // Get the most recent time
+                                preview.Updated = Math.max(
+                                    preview.Updated || 0,
+                                    new Date(seat.Updated).getTime()
+                                );
+
+                                // Notes
+                                preview.Notes = preview.Notes || seat.Notes;
+                                console.log(seat.Thumbnail);
+                                preview.Thumbnail = preview.Thumbnail ||
+                                    seat.Thumbnail;
+                            }
+                        }
+                        console.log('preview.Thumbnail?', !!preview.Thumbnail);
+                        preview.Updated = new Date(preview.Updated);  // to string
+                        return preview;
+                    });
+
+                    console.log('previews', previews);
                     info('Projects for '+username +' are '+JSON.stringify(
                         R.map(R.partialRight(Utils.getAttribute, 'ProjectName'),
-                            projects)
+                            previews)
                         )
                     );
                         
-                    info(`Tables are ${projects.map(project => project.TableUuid)}`);
-                    return res.send(Utils.serializeArray(projects));
+                    info(`Tables are ${previews.map(project => project.TableUuid)}`);
+                    return res.send(Utils.serializeArray(previews));
                 }
                 return res.status(404);
             });
@@ -142,109 +182,70 @@ module.exports = [
     },
     {
         Service: 'getProject',
-        Parameters: 'ProjectName,TableLeader,TableName',
+        Parameters: 'ProjectName',
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
             var username = req.session.username,
-                uuid = Utils.uuid(req.body.TableLeader, req.body.TableName);
+                tableName = req.body.ProjectName;
 
             log(username + ' requested project ' + req.body.ProjectName);
             this.storage.users.get(username, (e, user) => {
                 if (e) {
                     return res.serverError(e);
                 }
-                this._logger.trace(`looking up table with uuid of ${uuid}`);
+                this._logger.trace(`looking up table "${tableName}"`);
 
                 // For now, just return the project
-                var table = user.tables.find(table => table.uuid === uuid),
-                    project;
+                var table = user.tables.find(table => table.name === tableName),
+                    project,
+                    seat;
 
                 if (!table) {
-                    this._logger.error(`could not find table ${uuid}`);
+                    this._logger.error(`could not find table ${tableName}`);
                     return res.status(404).send('ERROR: could not find table');
                 }
-                project = Object.keys(table.seatOwners)
-                    .filter(seat => table.seatOwners[seat] === username)
-                    .map(seat => table.seats[seat])
-                    .find(project => project.ProjectName === req.body.ProjectName);
 
-                if (!project) {
-                    return res.send('ERROR: project not found!');
+                // Pick a seat arbitrarily
+                seat = Object.keys(table.seats)
+                    .map(seat => table.seats[seat])  // values
+                    .filter(project => !!project)[0];  // get the first non-null
+
+                if (!seat) {
+                    this._logger.warn('Found table with no seats!');
+                    return res.status(500).send('ERROR: project has no seats');
                 }
+
                 // Send the project to the user
-                project = Utils.serializeProject(project);
+                project = Utils.serializeProject(seat);
                 return res.send(project);
             });
         }
     },
     {
         Service: 'deleteProject',
-        Parameters: 'ProjectName,TableUuid',
+        Parameters: 'ProjectName,TableName',
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
-            var username = req.session.username;
-            log(username +' requested project '+req.body.ProjectName);
+            var username = req.session.username,
+                project = req.body.ProjectName;
+
+            log(username +' trying to delete "' + project + '"');
             this.storage.users.get(username, (e, user) => {
-                var tableUuid = req.body.TableUuid,
-                    table = user.tables.find(table => table.uuid === tableUuid),
-                    projectName = req.body.ProjectName,
-                    remainingSeats,
-                    seatId;
+                var table;
 
-                if (!table) {
-                    return res.status(404).send('ERROR: table not found');
-                }
-
-                // Get the seatId
-                seatId = Object.keys(table.seats)
-                    .map(seat => [seat, table.seats[seat].ProjectName])
-                    .find(pair => pair[1] === projectName)[0];
-
-                // I am using the project name and seat name as the same... should they be?
-                if (!seatId || !table.seats[seatId]) {
-                    return res.status(404).send('ERROR: project not found');
-                }
-                // Does the user own the given seat?
-                if (table.seatOwners[seatId] !== username) {
-                    return res.status(403)
-                        .send(`ERROR: you don\'t have permission to delete ${projectName}`);
-                }
-                this.storage.tables.get(table.uuid, (err, globalTable) => {
-                    if (err || !globalTable) {
-                        err = err || 'Global table does not exist!';
-                        this._logger.error('Could not find global table:', err);
-                        return res.status(500).send('ERROR:', err);
-                    }
-                    this._logger.trace('Removing ownership of the seat');
-
-                    // Remove ownership of the seat
-                    table.seatOwners[seatId] = null;
-
-                    if (globalTable.seatOwners[seatId] === username) {
-                        globalTable.seatOwners[seatId] = null;
-                        globalTable.save(e => e && 
-                            this._logger.error(`could not save global table "${globalTable.uuid}": ${e}`));
-                    } else {
-                        this._logger.warn('global and local tables\' seat ownership out of sync!');
+                for (var i = user.tables.length; i--;) {
+                    table = user.tables[i];
+                    if (table.name === project) {
+                        user.tables.splice(i, 1);
+                        this._logger.trace(`project ${project} deleted`);
+                        user.save();
+                        return res.send('project deleted!');
                     }
 
-                    remainingSeats = Object.keys(table.seats)
-                        .map(seat => [seat, table.seatOwners[seat]])
-                        .filter(pair => pair[1] === username)
-                        .map(pair => pair[0]);  // Get the seat names
-
-                    // if no more projects for this user, remove the table
-                    if (remainingSeats.length === 0) {
-                        this._logger.trace(`Removing table for ${user.username}`);
-                        var index = user.tables.indexOf(table);
-                        user.tables.splice(index, 1);
-                    }
-                    user.save();
-                    this._logger.trace(`project ${projectName} deleted for ${username}`);
-                    res.send('project deleted!');
-                });
+                }
+                error(`project ${project} not found`);
             });
         }
     },

@@ -6,11 +6,8 @@ var DataWrapper = require('./Data'),
 
 // Every time a table is saved, it is saved for some user AND in the global store
 // Schema:
-// + uuid (leaderId/name)
 // + name
-// + leaderId
-// + lastUpdated
-// + seatOwners
+// + owner
 
 class Table extends DataWrapper {
     constructor(params) {
@@ -21,12 +18,13 @@ class Table extends DataWrapper {
     }
 
     fork(table) {
-        var params = {
-                user: this._user,
-                table: table,
-                logger: this._logger,
-                db: this._db
-            };
+        var params;
+        params = {
+            user: this._user,
+            table: table,
+            logger: this._logger,
+            db: this._db
+        };
         this._logger.trace('forking (' + table.uuid + ')');
         return new Table(params);
     }
@@ -48,10 +46,8 @@ class Table extends DataWrapper {
                 socket,
                 k,
                 content = {
-                    uuid: this._table.uuid,
+                    owner: this._table.owner.username,
                     name: this._table.name,
-                    leaderId: this._table.leader.username,
-                    seatOwners: this._table.seatOwners,
                     seats: {}
                 };
 
@@ -70,18 +66,12 @@ class Table extends DataWrapper {
         });
     }
 
-    prepare() {
-        // regenerate the uuid
-        this.uuid = `${this.leaderId}/${this.name}`;
-    }
-
     // Override
     save(callback) {
         if (!this._user) {
             this._logger.trace('saving globally only');
             DataWrapper.prototype.save.call(this);
             return callback(null);
-            //return callback('Cannot save table without a user!');
         }
         this.collectProjects((err, content) => {
             if (err) {
@@ -108,12 +98,12 @@ class Table extends DataWrapper {
         // Every time a local table is saved, it is saved for the user AND in the global store
         var originalUuid = table._uuid;
         delete table._uuid;
-        this._logger.trace(`saving as ${table._uuid || table.uuid}`);
+        this._logger.trace(`saving as ${table.name}`);
         this._db.replaceOne(
             {uuid: originalUuid || table.uuid},  // search criteria
             table,  // new value
             {upsert: true},  // settings
-            (e, data) => {
+            (e) => {
                 if (e) {
                     this._logger.error(e);
                 }
@@ -130,7 +120,7 @@ class Table extends DataWrapper {
             if (i > -1) {
                 return i;
             }
-            return table.leaderId === this._table.leader.username &&
+            return table.owner === this._table.owner.username &&
                 table.name === this._table.name ? index : i;
         }, -1);
 
@@ -140,21 +130,8 @@ class Table extends DataWrapper {
             this._user.tables.splice(index, 1, table);
         }
         this._user.save();
-        this._logger.log(`saved table "${table.uuid}" for ${this._user.username}`);
+        this._logger.log(`saved table "${table.name}" for ${this._user.username}`);
         callback(null);
-    }
-
-    saveSeats() {  // Saving only the seat owners
-        // If the seat entry doesn't exist, add it
-        this._db.updateOne(
-            {_id: ObjectId(this._id)},  // jshint ignore:line
-            {
-                $set: { seatOwners: this.seatOwners }
-            },
-            (err, res) => {
-                this._logger.trace('updated seatOwners');
-            }
-        );
     }
 
     pretty() {

@@ -28,8 +28,8 @@ var loadJsFiles = function(dir) {
         ));
 };
 
-var uuid = function(leader, name) {
-    return leader + '/' + name;
+var uuid = function(owner, name) {
+    return owner + '/' + name;
 };
 
 var serializeProject = (project) => {

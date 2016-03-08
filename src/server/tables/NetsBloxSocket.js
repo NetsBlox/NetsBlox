@@ -51,14 +51,18 @@ class NetsBloxSocket {
     }
 
 
-    hasTable (msg) {
+    hasTable () {
         if (!this._table) {
             this._logger.error('user has no table!');
         }
         return !!this._table;
     }
 
-    _initialize (msg) {
+    isOwner () {
+        return this._table && this._table.owner.username === this.username;
+    }
+
+    _initialize () {
         this._socket.on('message', data => {
             var msg = JSON.parse(data),
                 type = msg.type;
@@ -71,11 +75,10 @@ class NetsBloxSocket {
             }
         });
 
-        this._socket.on('close', data => {
+        this._socket.on('close', () => {
             this._logger.trace('closed!');
             if (this._table) {
                 this.leave();
-                this.checkTable(this._table);
             }
             this.onClose(this.uuid);
         });
@@ -89,9 +92,7 @@ class NetsBloxSocket {
         // Update the user's table name
         if (this._table) {
             this._table.update();
-            // Update the seatOwner for the given seat
             if (this._table.seats[this._seatId] === this) {
-                this._table.seatOwners[this._seatId] = this.username;
                 this._table.updateSeat(this._seatId);
             }
         }
@@ -99,7 +100,7 @@ class NetsBloxSocket {
 
     join (table, seat) {
         seat = seat || this._seatId;
-        console.log(`joining ${table.uuid}/${seat} from ${this._seatId}`);
+        this._logger.log(`joining ${table.uuid}/${seat} from ${this._seatId}`);
         if (this._table === table && seat !== this._seatId) {
             return this.changeSeats(seat);
         }
@@ -114,20 +115,16 @@ class NetsBloxSocket {
         this._seatId = seat;
     }
 
-    assignSeat (seat, username) {
-        if (!this._table) {
-            return this._logger.warn('Cannot assign seat when table does not exist!');
-        }
-        if (!this._table.seatOwners.hasOwnProperty(seat)) {
-            return this._logger.warn('Cannot assign seat when seat does not exist!');
-        }
-        this._table.seatOwners[seat] = username;
-    }
-
     // This should only be called internally *EXCEPT* when the socket is going to close
     leave () {
         this._table.seats[this._seatId] = null;
-        this.checkTable(this._table);
+
+        if (this.isOwner() && this._table.ownerCount() === 0) {  // last owner socket closing
+            this._table.close();
+        } else {
+            this._table.onSeatsChanged();
+            this.checkTable(this._table);
+        }
     }
 
     changeSeats (seat) {
@@ -136,7 +133,7 @@ class NetsBloxSocket {
     }
 
     sendToEveryone (msg) {
-        this._table.sendFrom(this._seatId, msg);
+        this._table.sendFrom(this, msg);
     }
 
     send (msg) {
@@ -193,14 +190,20 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'rename-table': function(msg) {
-        if (this.hasTable()) {
+        if (this.isOwner()) {
             this._table.update(msg.name);
         }
     },
 
     'rename-seat': function(msg) {
-        if (this.hasTable() && msg.seatId !== msg.name) {
+        var socket;
+        if (this.isOwner() && msg.seatId !== msg.name) {
             this._table.renameSeat(msg.seatId, msg.name);
+
+            socket = this._table.seats[msg.name];
+            if (socket) {
+                socket.send(msg);
+            }
         }
     },
 
@@ -214,28 +217,31 @@ NetsBloxSocket.MessageHandlers = {
     'create-table': function(msg) {
         var table = this.createTable(this, msg.table);
         table.createSeat(msg.seat);
-        table.seatOwners[msg.seat] = this.username;
         this.join(table, msg.seat);
     },
 
     'join-table': function(msg) {
-        var leader = msg.leader,
+        var owner = msg.owner,
             name = msg.table,
             seat = msg.seat;
 
-        this.getTable(leader, name, (table) => {
+        this.getTable(owner, name, (table, a2) => {
+            if (!table) {
+                this._logger.error(`Could not join table ${name}`);
+                return;
+            }
             // create the seat if need be (and if we are the owner)
-            if (!table.seats.hasOwnProperty(seat) && table.leader === this) {
+            if (!table.seats.hasOwnProperty(seat) && table.owner === this) {
                 this._logger.info(`creating seat ${seat} at ${table.uuid}`);
                 table.createSeat(seat);
-                table.seatOwners[seat] = this.username;
             }
             return this.join(table, seat);
         });
         
     },
+
     'add-seat': function(msg) {
-        // TODO: make sure this is the table leader
+        // TODO: make sure this is the table owner
         if (this.hasTable()) {
             this._table.createSeat(msg.name);
         }

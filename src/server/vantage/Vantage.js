@@ -99,10 +99,11 @@ NetsBloxVantage.prototype.initTableManagement = function(server) {
             var header = '* * * * * * * Tables * * * * * * * \n',
                 tables = R.values(server.tables),
                 text = tables.map(function(table) {
-                    var clients = Object.keys(table.seatOwners)
+                    var clients = Object.keys(table.seats)
                         .map(seat => {
                             let client = table.seats[seat],
                                 username = NO_USER_LABEL;
+
                             if (client) {
                                 username = client.isVirtualUser() ? '<virtual user>' : client.username;
                             }
@@ -121,16 +122,11 @@ NetsBloxVantage.prototype.initTableManagement = function(server) {
 
     vantage
         .command('table <uuid>', 'Look up table info from global database')
-        .option('-o, --ownership', 'Show the ownership for the table seats')
         .alias('t')
         .action((args, cb) => {
             var table = server.storage.tables.get(args.uuid, (err, table) => {
                 if (err || !table) {
                     return cb(err || 'Table not found');
-                }
-                if (args.options.ownership) {
-                    console.log(table.seatOwners);
-                    return cb();
                 }
                 var prettyTable = table.pretty();
                 console.log(prettyTable);

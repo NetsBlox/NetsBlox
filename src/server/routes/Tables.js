@@ -7,23 +7,22 @@ var _ = require('lodash'),
     log = debug('NetsBlox:API:Tables:log'),
     warn = debug('NetsBlox:API:Tables:warn'),
     error = debug('NetsBlox:API:Tables:error'),
-    info = debug('NetsBlox:API:Tables:info'),
-    utils = require('../ServerUtils');
+    utils = require('../ServerUtils'),
+    invites = {};
+
 
 var acceptInvitation = function(username, id, response, socketId, callback) {
     var socket = this.sockets[socketId],
-        invite = invites[id];  // FIXME: Use the database
+        invite = invites[id];
 
     // Ignore if the invite no longer exists
     if (!invite) {
         return callback('ERROR: invite no longer exists');
     }
 
-    log(`${username} ${!!response ? 'accepted' : 'denied'} ` +
+    log(`${username} ${response ? 'accepted' : 'denied'} ` +
         `invitation for ${invite.seat} at ${invite.table}`);
 
-    // Remove the invite from the database
-    // TODO
     delete invites[id];
 
     if (response) {
@@ -32,24 +31,19 @@ var acceptInvitation = function(username, id, response, socketId, callback) {
             project;
 
         if (!table) {
-            // TODO: Create table
+            warn(`table no longer exists "${invite.table}`);
+            return callback('ERROR: project is no longer open');
         }
 
         if (table.seats[invite.seat]) {
             return callback('ERROR: seat is occupied');
         }
 
-        // Add the user to the table
-        table.seatOwners[invite.seat] = username;
-
         if (socket) {
             socket.join(table, invite.seat);
         } else {
             table.onSeatsChanged();
         }
-
-        // Persist this in the database
-        // TODO
 
         project = table.cachedProjects[invite.seat] || null;
         if (project) {
@@ -58,9 +52,6 @@ var acceptInvitation = function(username, id, response, socketId, callback) {
         callback(null, project);
     }
 };
-
-// REMOVE
-var invites = {};
 
 module.exports = [
     // Friends
@@ -93,14 +84,14 @@ module.exports = [
     },
     {
         Service: 'evictUser',
-        Parameters: 'userId,seatId,leaderId,tableName',
+        Parameters: 'userId,seatId,ownerId,tableName',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             var seatId = req.body.seatId,
                 tableName = req.body.tableName,
-                leaderId = req.body.leaderId,
-                tableId = Utils.uuid(leaderId, tableName),
+                ownerId = req.body.ownerId,
+                tableId = Utils.uuid(ownerId, tableName),
                 userId = req.body.userId,
                 socket,
                 table = this.tables[tableId];
@@ -112,17 +103,17 @@ module.exports = [
             socket = table.seats[seatId];
             if (!socket) {  // user is not online
                 this._logger.info(`Removing seat ${seatId}`);
-                table.seatOwners[seatId] = null;
-                // Fork the user's stored table
+                // Remove the user from the table!
                 // TODO
                 return res.send('user has been evicted!');
             }
 
             if (socket.username === userId) {
+                // Remove the user from the table!
+                // TODO
                 // Fork the table
                 log(`${userId} is evicted from table ${tableId}`);
                 this.forkTable({table, socket});
-                table.seatOwners[socket._seatId] = null;
                 table.onSeatsChanged();
             } else {
                 var err = `${userId} is not at ${seatId} at table ${tableId}`;
@@ -133,7 +124,7 @@ module.exports = [
     },
     {
         Service: 'inviteToTable',
-        Parameters: 'invitee,tableLeaderId,tableName,seatId',
+        Parameters: 'socketId,invitee,ownerId,tableName,seatId',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
@@ -145,48 +136,14 @@ module.exports = [
             var inviter = req.session.username,
                 invitee = req.body.invitee,
                 tableName = req.body.tableName,
-                tableId = utils.uuid(req.body.tableLeaderId, tableName),
+                tableId = utils.uuid(req.body.ownerId, tableName),
                 seatId = req.body.seatId,
                 inviteId = [inviter, invitee, tableId, seatId].join('-'),
                 inviteeSockets = this.socketsFor(invitee);
 
-            if (invitee === 'myself') {  // TODO: Make this more flexible
-                let socketId = inviteeSockets[0] ? inviteeSockets[0].uuid : null;
-
-                invitee = inviter;
-                invites[inviteId] = {
-                    table: tableId,
-                    seat: seatId,
-                    invitee
-                };
-
-                // no invitation msg, just accept it
-                this._logger.info(`${inviter} is adding self to ${seatId}`);
-                acceptInvitation.call(this,
-                    inviter,
-                    inviteId,
-                    true,
-                    socketId,
-                    (err, project) => {
-                        if (err) {
-                            this._logger.error(err);
-                            return res.status(500).send(err);
-                        }
-                        this._logger.info('success!');
-                        res.status(200).send(project);
-                    }
-                );
-                return;
-            }
             log(`${inviter} is inviting ${invitee} to ${seatId} at ${tableId}`);
-            // Verify that the inviter is the table leader
-            // TODO
 
-            // Verify that the seat is available
-            // TODO
-
-            // Store the invitation in the database
-            // TODO
+            // Record the invitation
             invites[inviteId] = {
                 table: tableId,
                 seat: seatId,
@@ -194,17 +151,19 @@ module.exports = [
             };
 
             // If the user is online, send the invitation via ws to the browser
-            inviteeSockets.forEach(socket => {
-                // Send the invite to the sockets
-                var msg = {
-                    type: 'table-invitation',
-                    id: inviteId,
-                    tableName: tableName,
-                    table: tableId,
-                    inviter,
-                    seat: seatId
-                };
-                socket.send(msg);
+            inviteeSockets
+                .filter(socket => socket.uuid !== req.body.socketId)
+                .forEach(socket => {
+                    // Send the invite to the sockets
+                    var msg = {
+                        type: 'table-invitation',
+                        id: inviteId,
+                        tableName: tableName,
+                        table: tableId,
+                        inviter,
+                        seat: seatId
+                    };
+                    socket.send(msg);
             });
             res.send('ok');
         }
@@ -223,7 +182,17 @@ module.exports = [
             var username = req.session.username,
                 inviteId = req.body.inviteId,
                 response = req.body.response === 'true',
-                socketId = req.body.socketId;
+                invitee = invites[inviteId].invitee,
+                socketId = req.body.socketId,
+                closeInvite = {
+                    type: 'close-invite',
+                    id: inviteId
+                };
+
+            // Notify other clients of response
+            this.socketsFor(invitee)
+                .filter(socket => socket.uuid !== socketId)
+                .forEach(socket => socket.send(closeInvite));
 
             acceptInvitation.call(this,
                 username,
@@ -241,15 +210,15 @@ module.exports = [
     },
     {
         Service: 'deleteSeat',
-        Parameters: 'seatId,leaderId,tableName',
+        Parameters: 'seatId,ownerId,tableName',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             var username = req.session.username,
                 seatId = req.body.seatId,
-                leaderId = req.body.leaderId,
+                ownerId = req.body.ownerId,
                 tableName = req.body.tableName,
-                tableId = Utils.uuid(leaderId, tableName),
+                tableId = Utils.uuid(ownerId, tableName),
                 table = this.tables[tableId];
 
             //  Get the table
@@ -258,19 +227,21 @@ module.exports = [
                 return res.status(404).send('ERROR: Could not find table');
             }
             
-            //  Verify that the username is either the leaderId
+            //  Verify that the username is either the ownerId
             //      or the owner of the seat
-            this._logger.trace(`leaderId is ${table.leader.username} and username is ${username}`);
-            if (table.leader.username !== username && table.seatOwners[seatId] !== username) {
+            this._logger.trace(`ownerId is ${table.owner.username} and username is ${username}`);
+            if (table.owner.username !== username && !!table.seats[seatId] &&
+                table.seats[seatId].username !== username) {
+
                 this._logger.error(`${username} does not have permission to edit ${seatId} at ${tableId}`);
                 return res.status(403).send(`ERROR: You do not have permission to delete ${seatId}`);
             }
 
-            //  Get the socket and join a different table (if not the leader)
-            //  TODO: Check that it isn't the leader
-            //  TODO: Check that the leader doesn't remove the last seat
+            //  Get the socket and join a different table (if not the owner)
+            //  TODO: Check that it isn't the owner
+            //  TODO: Check that the owner doesn't remove the last seat
             // If the seat has an owner...
-            if (table.seatOwners[seatId]) {
+            if (table.seats[seatId]) {
                 this.forkTable({table, seatId});
             }
 
@@ -281,16 +252,16 @@ module.exports = [
     },
     {
         Service: 'moveToSeat',
-        Parameters: 'dstId,seatId,leaderId,tableName',
+        Parameters: 'dstId,seatId,ownerId,tableName',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             var username = req.session.username,
                 seatId = req.body.seatId,
                 dstId = req.body.dstId,
-                leaderId = req.body.leaderId,
+                ownerId = req.body.ownerId,
                 tableName = req.body.tableName,
-                tableId = Utils.uuid(leaderId, tableName),
+                tableId = Utils.uuid(ownerId, tableName),
                 table = this.tables[tableId];
 
             //  Cache the current state in the active table
@@ -309,6 +280,42 @@ module.exports = [
                 }
                 res.send(project);
             });
+        }
+    },
+    {  // Create a new seat and copy this project's blocks to it
+        Service: 'cloneSeat',
+        Parameters: 'seatId,socketId',
+        Method: 'post',
+        Note: '',
+        Handler: function(req, res) {
+            // Check that the requestor is the owner
+            var socket = this.sockets[req.body.socketId],
+                seatId = req.body.seatId,
+                table = socket._table,
+                newSeat;
+
+            if (!socket.isOwner()) {
+                this._logger.error(`${socket.username} tried to clone seat... DENIED`);
+                return res.status(403).send('ERROR: Only owners can clone seats');
+            }
+
+            // Create the new seat
+            var count = 2;
+            while (table.seats.hasOwnProperty(newSeat = `${seatId} (${count++})`));
+            table.createSeat(newSeat);
+
+            // Get the project json
+            if (table.seats[seatId]) {  // Request via ws
+                table.cache(seatId, err => {
+                    if (!err) {
+                        table.cachedProjects[newSeat] = table.cachedProjects[seatId];
+                    }
+                    res.send(encodeURIComponent(newSeat));
+                });
+            } else {  // use the current cached value
+                table.cachedProjects[newSeat] = table.cachedProjects[seatId];
+                res.send(encodeURIComponent(newSeat));
+            }
         }
     }
 ].map(function(api) {

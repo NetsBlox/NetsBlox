@@ -73,14 +73,11 @@ var examples = {};
     // Messaging.xml
 ]
 .forEach(item => {
-    // Add seatOwners
     var seats = Object.keys(item.cachedProjects),
         src;
 
-    item.seatOwners = {};
     item.seats = {};
     for (var i = seats.length; i--;) {
-        item.seatOwners[seats[i]] = null;
         item.seats[seats[i]] = null;
         // TODO: FIXME: the cachedProjects are not the correct format
         src = item.cachedProjects[seats[i]];

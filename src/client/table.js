@@ -4,6 +4,7 @@ TableMorph.prototype.constructor = TableMorph;
 TableMorph.uber = SpriteMorph.prototype;
 
 TableMorph.SIZE = 300;
+TableMorph.DEFAULT_SEAT = 'mySeat';
 
 function TableMorph(ide) {
     // Get the users at the table
@@ -11,6 +12,7 @@ function TableMorph(ide) {
     this.seats = {};
     this.occupied = {};
     this.seatLabels = {};
+    this.invitations = {};  // open invitations
 
     this.tableLabel = null;
     this.init();
@@ -23,12 +25,12 @@ function TableMorph(ide) {
         set: this._onNameChanged.bind(this)
     });
 
-    // Set up the leaderId
-    this.leaderId = null;
+    // Set up the ownerId
+    this.ownerId = null;
     this.nextTable = null;  // next table info
     // The projectName is used for the seatId
     if (!this.ide.projectName) {
-        this.ide.projectName = 'mySeat';
+        this.ide.projectName = TableMorph.DEFAULT_SEAT;
     }
 
     this.silentSetWidth(TableMorph.SIZE);
@@ -39,7 +41,17 @@ function TableMorph(ide) {
 
     // Set up callback(s) for SeatMorphs
     SeatMorph.prototype.editSeat = TableMorph.prototype.editSeat.bind(this);
+    var myself = this;
+    SeatLabelMorph.prototype.mouseClickLeft = function() {
+        if (myself.isEditable()) {
+            myself.editSeatName(this.name);
+        }
+    };
 }
+
+TableMorph.prototype.isEditable = function() {
+    return this.ownerId === SnapCloud.username;
+};
 
 TableMorph.prototype._onNameChanged = function(newName) {
     if (this._name !== newName) {
@@ -51,10 +63,10 @@ TableMorph.prototype._onNameChanged = function(newName) {
     }
 };
 
-TableMorph.prototype.update = function(leaderId, name, seats, occupied) {
+TableMorph.prototype.update = function(ownerId, name, seats, occupied) {
     var username = SnapCloud.username || this.ide.sockets.uuid;
     // Update the seats, etc
-    this.leaderId = leaderId;
+    this.ownerId = ownerId;
     this._name = name;
     this.seats = seats;
     this.occupied = occupied;
@@ -79,7 +91,7 @@ TableMorph.prototype.drawNew = function() {
         y,
         i;
         
-    if (this.leaderId === null) {  // If the table isn't set, trigger an update
+    if (this.ownerId === null) {  // If the table isn't set, trigger an update
         this.triggerUpdate();
         return;
     }
@@ -129,7 +141,9 @@ TableMorph.prototype.renderTableTitle = function(center) {
     this.add(this.titleBox);
     this.titleBox.setExtent(new Point(width, height));
     this.titleBox.setCenter(center);
-    this.titleBox.mouseClickLeft = this.editTableName.bind(this);
+    if (this.isEditable()) {
+        this.titleBox.mouseClickLeft = this.editTableName.bind(this);
+    }
 
     // Add the table name text
     this.tableLabel = new StringMorph(
@@ -152,8 +166,8 @@ TableMorph.prototype.editTableName = function () {
     }, null, 'editTableName');
 };
 
-TableMorph.prototype.join = function (leaderId, name) {
-    this.leaderId = id;
+TableMorph.prototype.join = function (ownerId, name) {
+    this.ownerId = id;
     this._name = name;
 };
 
@@ -200,7 +214,7 @@ TableMorph.prototype.editSeat = function(seat) {
     dialog.setCenter(world.center());
 };
 
-TableMorph.prototype.editSeatName = function() {
+TableMorph.prototype.editSeatName = function(seat) {
     // Ask for a new seat name
     var myself = this;
     this.ide.prompt('New Seat Name', function (seatName) {
@@ -213,8 +227,11 @@ TableMorph.prototype.editSeatName = function() {
                 world
             );
         } else {
-            // TODO: Should we have a confirmation message?
-            myself.setSeatName(seatName);
+            myself.ide.sockets.sendMessage({
+                type: 'rename-seat',
+                seatId: seat,
+                name: seatName
+            });
         }
     }, null, 'editSeatName');
 };
@@ -244,7 +261,7 @@ TableMorph.prototype.moveToSeat = function(dstId) {
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         },
-        [dstId, mySeat, this.leaderId, this.name]
+        [dstId, mySeat, this.ownerId, this.name]
     );
 };
 
@@ -256,7 +273,21 @@ TableMorph.prototype.deleteSeat = function(seat) {
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         },
-        [seat, this.leaderId, this.name]
+        [seat, this.ownerId, this.name]
+    );
+};
+
+TableMorph.prototype.createSeatClone = function(seat) {
+    var myself = this;
+    SnapCloud.cloneSeat(function(response) {
+            var newSeat = Object.keys(response[0])[0];
+            myself.ide.showMessage('cloned ' + seat + ' to ' +
+                newSeat + ' !');
+        },
+        function (err, lbl) {
+            myself.ide.cloudError().call(null, err, lbl);
+        },
+        [seat, myself.ide.sockets.uuid]
     );
 };
 
@@ -266,7 +297,6 @@ TableMorph.prototype.setSeatName = function(seat) {
         seatId: this.ide.projectName,
         name: seat || 'untitled'
     });
-    this.ide.silentSetProjectName(seat);  // seat name and project name are the same
 };
 
 // FIXME: create ide.confirm
@@ -278,7 +308,7 @@ TableMorph.prototype.evictUser = function (user, seat) {
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         },
-        [user, seat, this.leaderId, this.name]
+        [user, seat, this.ownerId, this.name]
     );
 };
 
@@ -290,7 +320,7 @@ TableMorph.prototype.inviteUser = function (seat) {
         friends.push('myself');
         myself._inviteFriendDialog(seat, friends);
     };
-    // TODO: Check if the user is the leader
+    // TODO: Check if the user is the owner
     if (SnapCloud.username) {
         SnapCloud.getFriendList(callback,
             function (err, lbl) {
@@ -341,7 +371,6 @@ TableMorph.prototype._inviteFriendDialog = function (seat, friends) {
     dialog.ok = function () {
         var friend = listField.selected;
         if (friend) {
-            // TODO: Add the friend to the given seat
             // For now, I might just make a new seat on the server
             myself._inviteFriend(friend, seat);
         }
@@ -361,9 +390,12 @@ TableMorph.prototype._inviteFriendDialog = function (seat, friends) {
 };
 
 TableMorph.prototype._inviteFriend = function (friend, seat) {
-    // TODO: Change this to ajax
     // Use inviteToTable service
-    SnapCloud.inviteToTable(friend, this.leaderId, this.name, seat);
+    var socketId = this.ide.sockets.uuid;
+    if (friend === 'myself') {
+        friend = SnapCloud.username;
+    }
+    SnapCloud.inviteToTable(socketId, friend, this.ownerId, this.name, seat);
 };
 
 TableMorph.prototype.promptInvite = function (params) {  // id, table, tableName, seat
@@ -377,11 +409,18 @@ TableMorph.prototype.promptInvite = function (params) {  // id, table, tableName
 
         action = this._invitationResponse.bind(this, id, true, seat),
         dialog = new DialogBoxMorph(null, action),
+        msg;
+
+    if (params.inviter === SnapCloud.username) {
+        msg = 'Would you like to move to "' + tableName + '"?';
+    } else {
         msg = params.inviter + ' has invited you to join\nhim/her at "' + tableName +
             '"\nAccept?';
+    }
 
     dialog.cancel = function() {
         myself._invitationResponse(id, false, seat);
+        delete myself.invitations[id];
         this.destroy();
     };
 
@@ -390,6 +429,7 @@ TableMorph.prototype.promptInvite = function (params) {  // id, table, tableName
         localize(msg),
         this.ide.world()
     );
+    this.invitations[id] = dialog;
 };
 
 TableMorph.prototype._invitationResponse = function (id, response, seat) {
@@ -467,7 +507,8 @@ SeatMorph.prototype.destroy = function() {
 };
 
 SeatMorph.prototype.drawNew = function() {
-    var padding = 4,
+    var myself = this,
+        padding = 4,
         radius = (Math.min(this.width(), this.height())-padding)/2,
         center = padding + radius,
         pos,
@@ -507,7 +548,9 @@ SeatMorph.prototype.drawNew = function() {
 };
 
 SeatMorph.prototype.mouseClickLeft = function() {
-    this.editSeat(this._label);
+    if (this.parent.isEditable()) {
+        this.editSeat(this._label);
+    }
 };
 
 SeatLabelMorph.prototype = new Morph();
@@ -604,18 +647,15 @@ function EditSeatMorph(table, seat, isOccupied) {
     this.createLabel();
     this.addBody(txt);
 
-    if (seat.user) {
-        if (seat.isMine()) {  // Can only edit/delete seats that are your own
-            this.addButton('editSeatName', 'Rename');
-            if (!isOccupied) {
-                this.addButton('moveToSeat', 'Move to');
-                this.addButton('evictUser', 'Disown');
-            }
-        } else {
-            this.addButton('evictUser', 'Evict Owner');
+    // Seat Actions
+    this.addButton('createSeatClone', 'Clone');  // TODO
+
+    if (seat.user) {  // occupied
+        if (!seat.isMine()) {  // Can only edit/delete seats that are your own
+            this.addButton('evictUser', 'Evict User');
         }
-    } else {
-        // FIXME: If only one option, don't ask!
+    } else {  // vacant
+        this.addButton('moveToSeat', 'Move to');
         this.addButton('inviteUser', 'Invite User');
         this.addButton('deleteSeat', 'Delete seat');
     }
@@ -634,7 +674,12 @@ EditSeatMorph.prototype.inviteUser = function() {
 };
 
 EditSeatMorph.prototype.editSeatName = function() {
-    this.table.editSeatName();
+    this.table.editSeatName(this.seat.name);
+    this.destroy();
+};
+
+EditSeatMorph.prototype.createSeatClone = function() {
+    this.table.createSeatClone(this.seat.name);
     this.destroy();
 };
 
@@ -670,9 +715,7 @@ function ProjectsMorph(table, sliderColor) {
 
 ProjectsMorph.prototype.updateTable = function() {
     // Receive updates about the table from the server
-    // TODO
-    var padding = 4,
-        btn;
+    var padding = 4;
 
     this.contents.destroy();
     this.contents = new FrameMorph(this);
@@ -685,12 +728,14 @@ ProjectsMorph.prototype.updateTable = function() {
     this.addContents(this.table);
 
     // Draw the "new seat" button
-    btn = this._addButton({
-        selector: 'createNewSeat',
-        icon: 'plus',
-        hint: 'Add a seat to the table',
-        left: this.table.right() + padding*4
-    });
+    if (this.table.isEditable()) {
+        this._addButton({
+            selector: 'createNewSeat',
+            icon: 'plus',
+            hint: 'Add a seat to the table',
+            left: this.table.right() + padding*4
+        });
+    }
 };
 
 ProjectsMorph.prototype._addButton = function(params) {
@@ -742,7 +787,7 @@ ProjectDialogMorph.prototype.openProject = function () {
         response = JSON.parse(this.ide.getURL('api/Examples/' + proj.name +
             '?sId=' + this.ide.sockets.uuid));
         this.ide.table.nextTable = {
-            leaderId: response.leaderId,
+            ownerId: response.ownerId,
             tableName: response.tableName,
             seatId: response.primarySeat
         };
@@ -798,9 +843,9 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
                     myself.ide.source = 'cloud';
                     myself.ide.droppedText(response[0].SourceCode);
                     myself.ide.table.nextTable = {
-                        leaderId: proj.TableLeader,
-                        tableName: proj.TableName,
-                        seatId: proj.ProjectName
+                        ownerId: SnapCloud.username,
+                        tableName: proj.ProjectName,  // project name from the list
+                        seatId: response[0].ProjectName  // src proj name
                     };
                     if (proj.Public === 'true') {
                         location.hash = '#present:Username=' +
@@ -810,88 +855,10 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
                     }
                 },
                 myself.ide.cloudError(),
-                [proj.ProjectName, proj.TableLeader, proj.TableName]
+                [proj.ProjectName]
             );
         },
         myself.ide.cloudError()
     );
     this.destroy();
-};
-
-ProjectDialogMorph.prototype.installCloudProjectList = function (pl) {
-    var myself = this;
-    this.projectList = pl || [];
-    this.projectList.sort(function (x, y) {
-        return x.ProjectName < y.ProjectName ? -1 : 1;
-    });
-
-    this.listField.destroy();
-    this.listField = new ListMorph(
-        this.projectList,
-        this.projectList.length > 0 ?
-                function (element) {
-                    return element.ProjectName + ' from ' + element.TableName +
-                        ' (' + element.TableLeader + ')';
-                } : null,
-        [ // format: display shared project names bold
-            [
-                'bold',
-                function (proj) {return proj.Public === 'true'; }
-            ]
-        ],
-        function () {myself.ok(); }
-    );
-    this.fixListFieldItemColors();
-    this.listField.fixLayout = nop;
-    this.listField.edge = InputFieldMorph.prototype.edge;
-    this.listField.fontSize = InputFieldMorph.prototype.fontSize;
-    this.listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
-    this.listField.contrast = InputFieldMorph.prototype.contrast;
-    this.listField.drawNew = InputFieldMorph.prototype.drawNew;
-    this.listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
-
-    this.listField.action = function (item) {
-        if (item === undefined) {return; }
-        if (myself.nameField) {
-            myself.nameField.setContents(item.ProjectName || '');
-        }
-        if (myself.task === 'open') {
-            myself.notesText.text = item.Notes || '';
-            myself.notesText.drawNew();
-            myself.notesField.contents.adjustBounds();
-            myself.preview.texture = item.Thumbnail || null;
-            myself.preview.cachedTexture = null;
-            myself.preview.drawNew();
-            (new SpeechBubbleMorph(new TextMorph(
-                localize('last changed') + '\n' + item.Updated,
-                null,
-                null,
-                null,
-                null,
-                'center'
-            ))).popUp(
-                myself.world(),
-                myself.preview.rightCenter().add(new Point(2, 0))
-            );
-        }
-        if (item.Public === 'true') {
-            myself.shareButton.hide();
-            myself.unshareButton.show();
-        } else {
-            myself.unshareButton.hide();
-            myself.shareButton.show();
-        }
-        myself.buttons.fixLayout();
-        myself.fixLayout();
-        myself.edit();
-    };
-    this.body.add(this.listField);
-    this.shareButton.show();
-    this.unshareButton.hide();
-    this.deleteButton.show();
-    this.buttons.fixLayout();
-    this.fixLayout();
-    if (this.task === 'open') {
-        this.clearDetails();
-    }
 };

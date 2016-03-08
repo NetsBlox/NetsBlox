@@ -9,21 +9,20 @@ var R = require('ramda'),
 
 class ActiveTable {
 
-    constructor(logger, name, leader) {
-        var uuid = utils.uuid(leader.username, name);
+    constructor(logger, name, owner) {
+        var uuid = utils.uuid(owner.username, name);
         this.name = name;
         this._logger = logger.fork('ActiveTable:' + uuid);
         this.uuid = uuid;
 
         // Seats
         this.seats = {};  // actual occupants
-        this.seatOwners = {};
         this.cachedProjects = {};  // 
 
         // virtual clients
         this.virtual = {};
 
-        this.leader = leader;
+        this.owner = owner;
 
         // RPC contexts
         this.rpcs = {};
@@ -36,10 +35,9 @@ class ActiveTable {
 
     // This should only be called by the TableManager (otherwise, the table will not be recorded)
     fork (logger, socket) {
-        // Create a copy of the table with the socket as the new leader
+        // Create a copy of the table with the socket as the new owner
         var fork = new ActiveTable(logger, this.name, socket),
             seats = Object.keys(this.seats),
-            currentSeat = socket._seatId,
             data;
 
         // Clone the table storage data
@@ -47,7 +45,6 @@ class ActiveTable {
         fork.setStorage(data);
 
         seats.forEach(seat => fork.silentCreateSeat(seat));
-        fork.seatOwners[currentSeat] = socket.username;
 
         // Copy the data from each project
         fork.cachedProjects = _.cloneDeep(this.cachedProjects);
@@ -65,13 +62,6 @@ class ActiveTable {
 
     add (socket, seat) {
         // FIXME: verify that the seat exists
-        if (this.seatOwners[seat] !== socket.username &&
-                !socket.isVirtualUser()) {  // virtual clients can sit anywhere
-
-            this._logger.warn(`${socket.username} does not own seat ${seat}`);
-            return;
-        }
-
         if (this.seats[seat] && this.seats[seat].isVirtualUser() && this.virtual[seat]) {
             this._logger.log('about to close vc at ' + seat);
             this.virtual[seat].close();
@@ -89,13 +79,9 @@ class ActiveTable {
     silentCreateSeat (seat) {
         this._logger.trace(`Adding seat ${seat}`);
         this.seats[seat] = null;
-        this.seatOwners[seat] = null;
-        this.createVirtualClient(seat);
     }
 
-    updateSeat (seat) {
-        var socket = this.seats[seat];
-        this.seatOwners[seat] = socket.username;
+    updateSeat () {
         this.onSeatsChanged();
     }
 
@@ -103,12 +89,12 @@ class ActiveTable {
         this._logger.trace(`removing seat "${seat}"`);
 
         delete this.seats[seat];
-        delete this.seatOwners[seat];
 
         if (this.virtual[seat]) {
             this.virtual[seat].close();
             delete this.virtual[seat];
         }
+        this.check();
         this.onSeatsChanged();
     }
 
@@ -120,11 +106,11 @@ class ActiveTable {
         }
 
         this.seats[newId] = this.seats[seatId];
-        this.seatOwners[newId] = this.seatOwners[seatId];
+        this.cachedProjects[newId] = this.cachedProjects[seatId];
 
         delete this.seats[seatId];
-        delete this.seatOwners[seatId];
         this.onSeatsChanged();
+        this.check();
     }
 
     getStateMsg () {
@@ -132,15 +118,15 @@ class ActiveTable {
             occupied = {},
             msg;
 
-        Object.keys(this.seatOwners)
+        Object.keys(this.seats)
             .forEach(seat => {
-                owners[seat] = this.seatOwners[seat];
+                owners[seat] = this.seats[seat] ? this.seats[seat].username : null;
                 occupied[seat] = !!this.seats[seat];
             });
 
         msg = {
             type: 'table-seats',
-            leader: this.leader.username,
+            owner: this.owner.username,
             name: this.name,
             owners: owners,
             occupied: occupied
@@ -151,10 +137,9 @@ class ActiveTable {
     onSeatsChanged () {
         // This should be called when the table layout changes
         // Send the table info to the socket
-        var msg = this.getStateMsg(),
-            sockets = R.values(this.seats).filter(socket => !!socket);
+        var msg = this.getStateMsg();
 
-        sockets.forEach(socket => socket.send(msg));
+        this.sockets().forEach(socket => socket.send(msg));
 
         this.save();
     }
@@ -164,14 +149,7 @@ class ActiveTable {
     }
 
     save() {
-        // Save the updated table in the global tables database
-        this._store.saveSeats(err => {
-            if (err) {
-                this._logger.error('Could not save:', err);
-                return;
-            }
-            this._logger.trace('seat metadata saved');
-        });
+        // TODO: Remove this fn
     }
 
     move (params) {
@@ -182,30 +160,25 @@ class ActiveTable {
         this._logger.info(`moving from ${src} to ${dst}`);
         this.seats[src] = null;
         this.add(socket, dst);
+        this.check();
     }
 
-    createVirtualClient (seat) {
-        //this._logger.log('creating virtual client at ' + seat);
-        //var client = new VirtualClient(this._logger, HOST);
-        //client.connect(() => {
-            //// open the correct project
-            //// TODO
-            //console.log('connected!');
-        //});
-        //this.virtual[seat] = client;
-        return null;
-    }
-
-    sendFrom (srcSeat, msg) {
-        Object.keys(this.seats)
-            .filter(seat => seat !== srcSeat)  // Don't send to origin
-            .filter(seat => !!this.seats[seat])  // Make sure it is occupied
-            .forEach(seat => this.seats[seat].send(msg));
+    sendFrom (socket, msg) {
+        this.sockets()
+            .filter(s => s !== socket)  // Don't send to origin
+            .forEach(socket => socket.send(msg));
     }
 
     sockets () {
         return R.values(this.seats)
             .filter(socket => !!socket);
+    }
+
+    ownerCount () {
+        return this.sockets()
+            .map(socket => socket.username)
+            .filter(name => name === this.owner.username)
+            .length;
     }
 
     contains (username) {
@@ -224,7 +197,7 @@ class ActiveTable {
     update (name) {
         var oldUuid = this.uuid;
         this.name = name || this.name;
-        this.uuid = utils.uuid(this.leader.username, this.name);
+        this.uuid = utils.uuid(this.owner.username, this.name);
         this._logger.trace('Updating uuid to ' + this.uuid);
 
         if (this.uuid !== oldUuid) {
@@ -253,6 +226,13 @@ class ActiveTable {
             return callback(err);
         });
     }
+
+    close () {
+        // Remove all sockets from this group
+        var msg = {type: 'project-closed'};
+        this.sockets().forEach(socket => socket.send(msg));
+        this.destroy();
+    }
 }
 
 // Factory method
@@ -263,11 +243,13 @@ ActiveTable.fromStore = function(logger, socket, data) {
     table.setStorage(data);
 
     // Set up the seats
-    table.seatOwners = data.seatOwners;
     table._uuid = data.uuid;  // save over the old uuid even if it changes
                               // this should be reset if the table is forked TODO
     // load cached projects
     table.cachedProjects = data.seats;
+
+    // Add the seats
+    Object.keys(data.seats).forEach(seat => table.seats[seat] = null);
     return table;
 };
 
