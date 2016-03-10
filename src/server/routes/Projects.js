@@ -199,6 +199,7 @@ module.exports = [
                 // For now, just return the project
                 var table = user.tables.find(table => table.name === tableName),
                     project,
+                    activeTable,
                     seat;
 
                 if (!table) {
@@ -206,14 +207,46 @@ module.exports = [
                     return res.status(404).send('ERROR: could not find table');
                 }
 
-                // Pick a seat arbitrarily
-                seat = Object.keys(table.seats)
-                    .map(seat => table.seats[seat])  // values
-                    .filter(project => !!project)[0];  // get the first non-null
+                activeTable = this.tables[Utils.uuid(table.owner, table.name)];
+                if (activeTable) {
+                    let openSeat = Object.keys(activeTable.seats)
+                        .filter(seat => !activeTable.seats[seat])  // not occupied
+                        .shift();
 
-                if (!seat) {
-                    this._logger.warn('Found table with no seats!');
-                    return res.status(500).send('ERROR: project has no seats');
+                    if (openSeat) {  // Send an open seat and add the user
+                        info(`adding ${username} to open seat "${openSeat}" at ` +
+                            `"${tableName}"`);
+
+                        seat = activeTable.cachedProjects[openSeat];
+                    } else {  // If no seats are open, make a new seat
+                        let i = 2,
+                            base;
+                        openSeat = base = 'new seat';
+                        while (activeTable.hasOwnProperty(openSeat)) {
+                            openSeat = `${base} (${i++})`;
+                        }
+
+                        info(`adding ${username} to new seat "${openSeat}" at ` +
+                            `"${tableName}"`);
+
+                        activeTable.createSeat(openSeat);
+                        seat = {
+                            ProjectName: openSeat,
+                            SourceCode: null,
+                            SourceSize: 0
+                        };
+                        activeTable.cachedProjects[openSeat] = seat;
+                    }
+                } else {
+                    // If table is not active, pick a seat arbitrarily
+                    seat = Object.keys(table.seats)
+                        .map(seat => table.seats[seat])[0];  // values
+
+                    console.log('seat', seat);
+                    if (!seat) {
+                        this._logger.warn('Found table with no seats!');
+                        return res.status(500).send('ERROR: project has no seats');
+                    }
                 }
 
                 // Send the project to the user

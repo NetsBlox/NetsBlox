@@ -827,26 +827,38 @@ ProjectDialogMorph.prototype.setSource = function (source) {
             myself.preview.cachedTexture = null;
             myself.preview.drawNew();
             myself.edit();
-        }
+        };
     }
-    // TODO
 };
 
 ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
-    var myself = this;
+    var myself = this,
+        newTable = proj.ProjectName,
+        ide = this.ide;  // project name from the list
+
     SnapCloud.reconnect(
         function () {
             SnapCloud.callService(
                 'getProject',
                 function (response) {
+                    var seatId = response[0].ProjectName;  // src proj name
                     SnapCloud.disconnect();
-                    myself.ide.source = 'cloud';
-                    myself.ide.droppedText(response[0].SourceCode);
-                    myself.ide.table.nextTable = {
-                        ownerId: SnapCloud.username,
-                        tableName: proj.ProjectName,  // project name from the list
-                        seatId: response[0].ProjectName  // src proj name
-                    };
+                    ide.source = 'cloud';
+                    if (response[0].SourceCode) {
+                        ide.droppedText(response[0].SourceCode);
+                        ide.table.nextTable = {
+                            ownerId: SnapCloud.username,
+                            tableName: newTable,
+                            seatId: seatId
+                        };
+                    } else {  // initialize an empty code base
+                        ide.clearProject();
+                        ide.table._name = newTable;  // silent set name
+                        // FIXME: this could cause problems later
+                        ide.table.ownerId = SnapCloud.username;
+                        ide.silentSetProjectName(seatId);
+                        ide.sockets.updateTableInfo();
+                    }
                     if (proj.Public === 'true') {
                         location.hash = '#present:Username=' +
                             encodeURIComponent(SnapCloud.username) +
