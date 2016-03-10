@@ -111,7 +111,7 @@ MessageCreatorMorph.prototype.init = function(target, action) {
         myself.drawNew();
     };
 
-    this.ok = function() {
+    this.accept = function() {
         // Get the info for the message type
         var desc = {
             name: messageBlock.messageName(),
