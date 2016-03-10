@@ -181,6 +181,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (str) {
             ),
             this
         );
+        this.loadNextTable();
     }
     this.stopFastTracking();
 };
