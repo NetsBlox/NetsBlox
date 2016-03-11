@@ -12,6 +12,17 @@ var examples = {};
 
 // Multiplayer examples
 [
+    // Caesar Shift
+    {
+        tableName: 'Caesar Shift',
+        cachedProjects: {
+            eve: example('cs-eve'),
+            alice: example('cs-alice'),
+            bob: example('cs-bob'),
+            'super eve': example('cs-super-eve')
+        },
+        primarySeat: 'alice'
+    },
     // Pong
     {
         tableName: 'Pong',

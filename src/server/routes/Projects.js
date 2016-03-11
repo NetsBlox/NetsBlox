@@ -156,17 +156,14 @@ module.exports = [
 
                                 // Notes
                                 preview.Notes = preview.Notes || seat.Notes;
-                                console.log(seat.Thumbnail);
                                 preview.Thumbnail = preview.Thumbnail ||
                                     seat.Thumbnail;
                             }
                         }
-                        console.log('preview.Thumbnail?', !!preview.Thumbnail);
                         preview.Updated = new Date(preview.Updated);  // to string
                         return preview;
                     });
 
-                    console.log('previews', previews);
                     info('Projects for '+username +' are '+JSON.stringify(
                         R.map(R.partialRight(Utils.getAttribute, 'ProjectName'),
                             previews)
@@ -242,7 +239,6 @@ module.exports = [
                     seat = Object.keys(table.seats)
                         .map(seat => table.seats[seat])[0];  // values
 
-                    console.log('seat', seat);
                     if (!seat) {
                         this._logger.warn('Found table with no seats!');
                         return res.status(500).send('ERROR: project has no seats');
