@@ -73,8 +73,6 @@ MessageFrame.prototype.names = function() {
     return Object.keys(this.msgTypes);
 };
 
-// TODO: Consider making them scoped... They are currently all global
-
 // MessageCreatorMorph ///////////////////////////////////////////
 
 // A MessageCreatorMorph is used to create custom message types.
@@ -90,7 +88,7 @@ function MessageCreatorMorph(target, action) {
 MessageCreatorMorph.prototype.init = function(target, action) {
     var myself = this;
 
-    MessageCreatorMorph.uber.init.call(this, target);  // FIXME
+    MessageCreatorMorph.uber.init.call(this, target);
 
     this.key = 'createNewMsgType';
     this.labelString = 'Create Message Type';

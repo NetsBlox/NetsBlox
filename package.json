@@ -1,8 +1,7 @@
 {
   "name": "netsblox",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Visual programming environment with networking support",
-  "main": "server.js",
   "scripts": {
     "start": "node bin/netsblox.js",
     "dev": "node node_modules/nodemon/bin/nodemon src/server.js",

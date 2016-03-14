@@ -33,11 +33,18 @@ WebSocketManager.MessageHandlers = {
 
     // Update on the current seats at the given table
     'table-seats': function(msg) {
-        this.ide.table.update(msg.leader,
+        this.ide.table.update(msg.owner,
             msg.name,
             msg.owners,
             msg.occupied
         );
+    },
+
+    'close-invite': function(msg) {
+        if (this.ide.table.invitations[msg.id]) {
+            this.ide.table.invitations[msg.id].destroy();
+            delete this.ide.table.invitations[msg.id];
+        }
     },
 
     // Receive an invite to join a table
@@ -45,7 +52,14 @@ WebSocketManager.MessageHandlers = {
         this.ide.table.promptInvite(msg);
     },
 
-    'project-fork': function(msg) {
+    'project-closed': function() {
+        var owner = this.ide.table.ownerId;
+        this.ide.showMessage(owner + ' closed the table. ' +
+            'You can ask to join again once ' + owner + ' opens the project again');
+        this.ide.newProject(TableMorph.DEFAULT_SEAT);
+    },
+
+    'project-fork': function() {
         // I should probably change this... FIXME
         this.ide.showMessage('That other table sucked. You are now the boss.');
     },
@@ -56,6 +70,12 @@ WebSocketManager.MessageHandlers = {
         msg.project = project;
 
         this.sendMessage(msg);
+    },
+
+    'rename-seat': function(msg) {
+        if (msg.seatId === this.ide.projectName) {  // seat name and project name are the same
+            this.ide.silentSetProjectName(msg.name);
+        }
     }
 };
 
@@ -131,7 +151,7 @@ WebSocketManager.prototype._onConnect = function() {
 };
 
 WebSocketManager.prototype.updateTableInfo = function() {
-    var tableLeader = this.ide.table.leaderId,
+    var owner = this.ide.table.ownerId,
         seatId = this.ide.projectName,
         tableName = this.ide.table.name || '__new_project__',
         msg = {
@@ -140,9 +160,9 @@ WebSocketManager.prototype.updateTableInfo = function() {
             seat: seatId
         };
         
-    if (this.ide.table.leaderId) {
+    if (owner) {
         msg.type = 'join-table';
-        msg.leader = tableLeader;
+        msg.owner = owner;
     }
     this.sendMessage(msg);
 };
@@ -154,8 +174,7 @@ WebSocketManager.prototype.updateTableInfo = function() {
  * @return {undefined}
  */
 WebSocketManager.prototype.onMessageReceived = function (message, content, role) {
-    var self = this,
-        hats = [],
+    var hats = [],
         context,
         idle = !this.processes.length,
         stage = this.ide.stage,
@@ -289,7 +308,7 @@ WebSocketManager.prototype.getSerializedProject = function(callBack, errorCall) 
             Media: media,
             SourceSize: pdata.length,
             MediaSize: media ? media.length : 0,
-            TableLeaderId: this.ide.table.leaderId,
+            TableLeaderId: this.ide.table.ownerId,
             TableName: this.ide.table.name
         };
 };

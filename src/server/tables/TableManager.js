@@ -24,6 +24,15 @@ var TableManager = function(logger) {
         self.tables[table.uuid] = table;
         delete self.tables[oldUuid];
     };
+
+    ActiveTable.prototype.destroy = function() {
+        this._logger.trace(`Removing table ${this.uuid}`);
+        delete self.tables[this.uuid];
+    };
+
+    ActiveTable.prototype.check = function() {
+        self.checkTable(this);
+    };
 };
 
 TableManager.prototype.forkTable = function(params) {
@@ -31,7 +40,7 @@ TableManager.prototype.forkTable = function(params) {
         socket = params.socket || table.seats[params.seatId],
         newTable;
 
-    if (socket === table.leader) {
+    if (socket === table.owner) {
         this._logger.error(`${socket.username} tried to fork it's own table: ${table.name}`);
         return;
     }
@@ -45,8 +54,9 @@ TableManager.prototype.forkTable = function(params) {
     socket.join(newTable);
 };
 
-TableManager.prototype.createTable = function(socket, name) {
-    var uuid = utils.uuid(socket.username, name);
+TableManager.prototype.createTable = function(socket, name, ownerId) {
+    ownerId = ownerId || socket.username;
+    var uuid = utils.uuid(ownerId, name);
     if (!!this.tables[uuid]) {
         this._logger.error('table already exists! (' + uuid + ')');
     }
@@ -55,37 +65,39 @@ TableManager.prototype.createTable = function(socket, name) {
     // Create the data element
     var data = this.storage.tables.new(null, this.tables[uuid]);
     this.tables[uuid].setStorage(data);
-    console.log(data.pretty());
 
     return this.tables[uuid];
 };
 
-TableManager.prototype.getTable = function(socket, leaderId, name, callback) {
-    var uuid = utils.uuid(leaderId, name);
+TableManager.prototype.getTable = function(socket, ownerId, name, callback) {
+    var uuid = utils.uuid(ownerId, name);
     if (!this.tables[uuid]) {
-        // If table is not active, try to retrieve it from the db
-        this.storage.tables.get(uuid, (err, table) => {  // global only FIXME!
-            if (err || !table) {
+        this.storage.users.get(ownerId, (err, user) => {
+            // Get the table
+            var table = user && user.tables.find(table => table.name === name);
+            if (!table) {
                 this._logger.error(err || 'No table found for ' + uuid);
                 // If no table is found, create a new table for the user
-                table = table || this.createTable(socket, name);
+                table = table || this.createTable(socket, name, ownerId);
                 this.tables[uuid] = table;
                 return callback(table);
             }
 
-            // Create an active table from the global stored table
             this._logger.trace(`retrieving table ${uuid} from database`);
             var activeTable = ActiveTable.fromStore(this._logger, socket, table);
             this.tables[uuid] = activeTable;
             return callback(activeTable);
         });
-        this._logger.trace('Checking database for table');
+
     } else {
         return callback(this.tables[uuid]);
     }
 };
 
-TableManager.prototype.onCreate = function(id) {
+TableManager.prototype._createTable = function(socket, ownerId, name, callback) {
+};
+
+TableManager.prototype.onCreate = function() {
 };
 
 TableManager.prototype.getActiveMembers = function() {

@@ -17,7 +17,7 @@ Cloud.prototype.login = function (
     this.setRoute(username);
     try {
         request.open(
-            "POST",
+            'POST',
             (this.hasProtocol() ? '' : 'http://') +
                 this.url +
                 '?SESSIONGLUE=' +
@@ -67,6 +67,24 @@ Cloud.prototype.login = function (
     } catch (err) {
         errorCall.call(this, err.toString(), 'Snap!Cloud');
     }
+};
+
+Cloud.prototype.cloneSeat = function(onSuccess, onFail, args) {
+    var myself = this;
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'cloneSeat',
+                onSuccess,
+                onFail,
+                args
+            );
+        },
+        function(err) {
+            myself.ide.showMessage(err, 2);
+        }
+    );
 };
 
 Cloud.prototype.moveToSeat = function(onSuccess, onFail, args) {

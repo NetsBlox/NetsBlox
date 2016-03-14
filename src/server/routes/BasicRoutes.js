@@ -233,18 +233,15 @@ module.exports = [
                 setTimeout(this.checkTable.bind(this, table), 10000);
             } else {
                 table = example;
-                table.leader = socket;
+                table.owner = socket;
             }
             //  + customize and return the table for the socket
             table = _.extend(table, example);
 
-            //  Load the projects into the cache
-            table.seatOwners[seat] = socket.username || socket.uuid;
-
             result = {
                 src: table.cachedProjects[seat],
                 tableName: table.tableName,
-                leaderId: table.leader.username,
+                ownerId: table.owner.username,
                 primarySeat: table.primarySeat
             }
             return res.json(result);
