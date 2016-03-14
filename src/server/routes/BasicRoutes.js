@@ -103,9 +103,7 @@ module.exports = [
         Handler: function(req, res) {
             log('password reset request:', req.query.Username);
             var self = this,
-                username = req.query.Username,
-                email,
-                password;
+                username = req.query.Username;
 
             // Look up the email
             self.storage.users.get(username, function(e, user) {
@@ -117,6 +115,7 @@ module.exports = [
                 if (user) {
                     delete user.hash;  // force tmp password creation
                     user.save();
+                    return res.sendStatus(200);
                 } else {
                     log('Could not find user to reset password (user "'+username+'")');
                     return res.status(400).send('ERROR: could not find user "'+username+'"');
