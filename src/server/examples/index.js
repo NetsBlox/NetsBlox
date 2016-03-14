@@ -32,9 +32,18 @@ var examples = {};
         },
         primarySeat: 'right'
     },
-    // TicTacToe
+    // TicTacToe (no rpcs)
     {
         tableName: 'TicTacToe',
+        cachedProjects: {
+            X: example('TTT-advanced-X'),
+            O: example('TTT-advanced-O')
+        },
+        primarySeat: 'X'
+    },
+    // TicTacToe
+    {
+        tableName: 'Simple TicTacToe',
         cachedProjects: {
             player1: example('TicTacToe-p1'),
             player2: example('TicTacToe-p2')
