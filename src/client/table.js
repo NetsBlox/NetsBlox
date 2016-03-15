@@ -1,7 +1,10 @@
+/* global SnapCloud, StringMorph, DialogBoxMorph, localize, newCanvas, Point, Morph,
+ * Color, nop, InputFieldMorph, ListMorph, AlignmentMorph, IDE_Morph, TurtleIconMorph,
+ * ProjectDialogMorph*/
 /* * * * * * * * * TableMorph * * * * * * * * */
-TableMorph.prototype = new SpriteMorph();
+TableMorph.prototype = new Morph();
 TableMorph.prototype.constructor = TableMorph;
-TableMorph.uber = SpriteMorph.prototype;
+TableMorph.uber = Morph.prototype;
 
 TableMorph.SIZE = 300;
 TableMorph.DEFAULT_SEAT = 'mySeat';
@@ -64,7 +67,6 @@ TableMorph.prototype._onNameChanged = function(newName) {
 };
 
 TableMorph.prototype.update = function(ownerId, name, seats, occupied) {
-    var username = SnapCloud.username || this.ide.sockets.uuid;
     // Update the seats, etc
     this.ownerId = ownerId;
     this._name = name;
@@ -80,15 +82,12 @@ TableMorph.prototype.triggerUpdate = function() {
 };
 
 TableMorph.prototype.drawNew = function() {
-    var cxt,
-        label,
+    var label,
         padding = 4,
         radius = (Math.min(this.width(), this.height())-padding)/2,
         center = padding + radius,
         seats,
         len,
-        x,
-        y,
         i;
         
     if (this.ownerId === null) {  // If the table isn't set, trigger an update
@@ -167,13 +166,15 @@ TableMorph.prototype.editTableName = function () {
 };
 
 TableMorph.prototype.join = function (ownerId, name) {
-    this.ownerId = id;
+    this.ownerId = ownerId;
     this._name = name;
 };
 
 TableMorph.prototype.createNewSeat = function () {
     // Ask for a new seat name
-    var myself = this;
+    var myself = this,
+        world = this.world();
+
     this.ide.prompt('New Seat Name', function (seatName) {
         if (myself.seats.hasOwnProperty(seatName)) {
             // Error! Seat exists
@@ -205,7 +206,8 @@ TableMorph.prototype.editSeat = function(seat) {
     //   + transfer ownership (if occupied)
     //   + evict user (if occupied)
     //   + change seat (if owned by self)
-    var dialog = new EditSeatMorph(this, seat, this.occupied[seat.name]);
+    var dialog = new EditSeatMorph(this, seat, this.occupied[seat.name]),
+        world = this.world();
 
     dialog.fixLayout();
     dialog.drawNew();
@@ -224,7 +226,7 @@ TableMorph.prototype.editSeatName = function(seat) {
                 'Existing Seat Name',
                 'Could not rename seat because\n' +
                 'the provided name already exists.',
-                world
+                myself.world()
             );
         } else {
             myself.ide.sockets.sendMessage({
@@ -267,7 +269,7 @@ TableMorph.prototype.moveToSeat = function(dstId) {
 
 TableMorph.prototype.deleteSeat = function(seat) {
     var myself = this;
-    SnapCloud.deleteSeat(function(err) {
+    SnapCloud.deleteSeat(function() {
             myself.ide.showMessage('deleted ' + seat + '!');
         },
         function (err, lbl) {
@@ -779,9 +781,7 @@ ProjectsMorph.prototype._addButton = function(params) {
 var superOpenProj = ProjectDialogMorph.prototype.openProject;
 ProjectDialogMorph.prototype.openProject = function () {
     var proj = this.listField.selected,
-        projectNameRegex = /name="(.*)" app/,
-        response,
-        src;
+        response;
 
     if (this.source === 'examples') {
         response = JSON.parse(this.ide.getURL('api/Examples/' + proj.name +
