@@ -1,4 +1,4 @@
-SnapSerializer.prototype.app = 'NetsBlox 0.2.0, http://netsblox.org';  // Make this version automatic
+SnapSerializer.prototype.app = 'NetsBlox 0.3.1, http://netsblox.org';  // Make this version automatic
 
 SnapSerializer.prototype.loadMessageType = function (stage, model) {
     var name = model.childNamed('name').contents,
