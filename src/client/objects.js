@@ -959,7 +959,10 @@ StageMorph.prototype.freshPalette = SpriteMorph.prototype.freshPalette;
 StageMorph.prototype._init = StageMorph.prototype.init;
 StageMorph.prototype.init = function (globals) {
     this.messageTypes = new MessageFrame();
-    this.addMessageTypeByName('message');  // Add initial message type
+    this.addMessageType({  // Add initial message type
+        name: 'message',
+        fields: ['msg']
+    });
     this._init(globals);
 };
 
