@@ -12,6 +12,15 @@ var examples = {};
 
 // Multiplayer examples
 [
+    // Dice Game
+    {
+        tableName: 'Dice',
+        cachedProjects: {
+            p1: example('dice'),
+            p2: example('dice')
+        },
+        primarySeat: 'p1'
+    },
     // Caesar Shift
     {
         tableName: 'Caesar Shift',
@@ -111,6 +120,6 @@ var examples = {};
 
     // Add to examples dictionary
     examples[item.tableName] = item;
-})
+});
 
 module.exports = Object.freeze(examples);
