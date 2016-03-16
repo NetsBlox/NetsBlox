@@ -15,6 +15,7 @@ module.exports = R.mapObjIndexed(convertMsgType,
         MoveGoose: ['goose', 'row', 'column'],
         MoveFox: ['row', 'column'],
         Earthquake: ['latitude', 'longitude', 'size', 'time'],
+        Trivia: ['question', 'answer', 'difficulty'],
 
         // basic events
         reset: [],
