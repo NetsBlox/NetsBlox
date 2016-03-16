@@ -9,17 +9,15 @@ var R = require('ramda'),
 module.exports = R.mapObjIndexed(convertMsgType,
     // Message Type List
     {
+        // basic events
+        start: [],
+        reset: [],
+
+        // Special messages
         TicTacToe: ['row', 'column'],
         SimpleMessage: ['sender', 'body'],
-        message: ['msg'],
-        MoveGoose: ['goose', 'row', 'column'],
-        MoveFox: ['row', 'column'],
         Earthquake: ['latitude', 'longitude', 'size', 'time'],
-        Trivia: ['question', 'answer', 'difficulty'],
+        Trivia: ['question', 'answer', 'difficulty']
 
-        // basic events
-        reset: [],
-        join: [],
-        leave: []
     });
 
