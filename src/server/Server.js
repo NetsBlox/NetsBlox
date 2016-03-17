@@ -11,6 +11,7 @@ var express = require('express'),
     Vantage = require('./vantage/Vantage'),
     DEFAULT_OPTIONS = {
         port: 8080,
+        vantagePort: 1234,
         vantage: true
     },
 
@@ -90,13 +91,16 @@ Server.prototype.start = function(done) {
     var self = this;
     done = done || Utils.nop;
     self.storage.connect(function (err) {
+        if (err) {
+            return done(err);
+        }
         self.configureRoutes();
         self._server = self.app.listen(self.opts.port, function() {
             console.log('listening on port ' + self.opts.port);
             SocketManager.prototype.start.call(self, {server: self._server});
             // Enable Vantage
             if (self.opts.vantage) {
-                new Vantage(self).start();
+                new Vantage(self).start(self.opts.vantagePort);
             }
             done();
         });
