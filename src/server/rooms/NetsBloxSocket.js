@@ -4,7 +4,7 @@
 'use strict';
 var counter = 0,
     CONSTANTS = require(__dirname + '/../../common/Constants'),
-    PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'MediaSize', 'TableUuid'],
+    PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'MediaSize', 'RoomUuid'],
     R = require('ramda'),
     parseXml = require('xml2js').parseString;
 
@@ -35,9 +35,8 @@ class NetsBloxSocket {
         this.uuid = '_client_'+id;
         this._logger = logger.fork(this.uuid);
 
-        this._seatId = null;
-        this._tableId = null;
-        this._table = null;
+        this.roleId = null;
+        this._room = null;
         this.loggedIn = false;
 
         this.username = this.uuid;
@@ -51,15 +50,15 @@ class NetsBloxSocket {
     }
 
 
-    hasTable () {
-        if (!this._table) {
-            this._logger.error('user has no table!');
+    hasRoom () {
+        if (!this._room) {
+            this._logger.error('user has no room!');
         }
-        return !!this._table;
+        return !!this._room;
     }
 
     isOwner () {
-        return this._table && this._table.owner.username === this.username;
+        return this._room && this._room.owner.username === this.username;
     }
 
     _initialize () {
@@ -77,7 +76,7 @@ class NetsBloxSocket {
 
         this._socket.on('close', () => {
             this._logger.trace('closed!');
-            if (this._table) {
+            if (this._room) {
                 this.leave();
             }
             this.onClose(this.uuid);
@@ -89,51 +88,51 @@ class NetsBloxSocket {
         this.username = username;
         this.loggedIn = true;
 
-        // Update the user's table name
-        if (this._table) {
-            this._table.update();
-            if (this._table.seats[this._seatId] === this) {
-                this._table.updateSeat(this._seatId);
+        // Update the user's room name
+        if (this._room) {
+            this._room.update();
+            if (this._room.roles[this.roleId] === this) {
+                this._room.updateRole(this.roleId);
             }
         }
     }
 
-    join (table, seat) {
-        seat = seat || this._seatId;
-        this._logger.log(`joining ${table.uuid}/${seat} from ${this._seatId}`);
-        if (this._table === table && seat !== this._seatId) {
-            return this.changeSeats(seat);
+    join (room, role) {
+        role = role || this.roleId;
+        this._logger.log(`joining ${room.uuid}/${role} from ${this.roleId}`);
+        if (this._room === room && role !== this.roleId) {
+            return this.changeSeats(role);
         }
 
-        this._logger.log(`joining ${table.uuid}/${seat} from ${this._seatId}`);
-        if (this._table && this._table.uuid !== table.uuid) {
+        this._logger.log(`joining ${room.uuid}/${role} from ${this.roleId}`);
+        if (this._room && this._room.uuid !== room.uuid) {
             this.leave();
         }
 
-        this._table = table;
-        this._table.add(this, seat);
-        this._seatId = seat;
+        this._room = room;
+        this._room.add(this, role);
+        this.roleId = role;
     }
 
     // This should only be called internally *EXCEPT* when the socket is going to close
     leave () {
-        this._table.seats[this._seatId] = null;
+        this._room.roles[this.roleId] = null;
 
-        if (this.isOwner() && this._table.ownerCount() === 0) {  // last owner socket closing
-            this._table.close();
+        if (this.isOwner() && this._room.ownerCount() === 0) {  // last owner socket closing
+            this._room.close();
         } else {
-            this._table.onSeatsChanged();
-            this.checkTable(this._table);
+            this._room.onRolesChanged();
+            this.checkRoom(this._room);
         }
     }
 
-    changeSeats (seat) {
-        this._logger.log(`changing to seat ${this._table.uuid}/${seat} from ${this._seatId}`);
-        this._table.move({socket: this, dst: seat});
+    changeSeats (role) {
+        this._logger.log(`changing to role ${this._room.uuid}/${role} from ${this.roleId}`);
+        this._room.move({socket: this, dst: role});
     }
 
     sendToEveryone (msg) {
-        this._table.sendFrom(this, msg);
+        this._room.sendFrom(this, msg);
     }
 
     send (msg) {
@@ -189,61 +188,61 @@ NetsBloxSocket.MessageHandlers = {
         });
     },
 
-    'rename-table': function(msg) {
+    'rename-room': function(msg) {
         if (this.isOwner()) {
-            this._table.update(msg.name);
+            this._room.update(msg.name);
         }
     },
 
-    'rename-seat': function(msg) {
+    'rename-role': function(msg) {
         var socket;
-        if (this.isOwner() && msg.seatId !== msg.name) {
-            this._table.renameSeat(msg.seatId, msg.name);
+        if (this.isOwner() && msg.roleId !== msg.name) {
+            this._room.renameRole(msg.roleId, msg.name);
 
-            socket = this._table.seats[msg.name];
+            socket = this._room.roles[msg.name];
             if (socket) {
                 socket.send(msg);
             }
         }
     },
 
-    'request-table-state': function() {
-        if (this.hasTable()) {
-            var msg = this._table.getStateMsg();
+    'request-room-state': function() {
+        if (this.hasRoom()) {
+            var msg = this._room.getStateMsg();
             this.send(msg);
         }
     },
 
-    'create-table': function(msg) {
-        var table = this.createTable(this, msg.table);
-        table.createSeat(msg.seat);
-        this.join(table, msg.seat);
+    'create-room': function(msg) {
+        var room = this.createRoom(this, msg.room);
+        room.createRole(msg.role);
+        this.join(room, msg.role);
     },
 
-    'join-table': function(msg) {
+    'join-room': function(msg) {
         var owner = msg.owner,
-            name = msg.table,
-            seat = msg.seat;
+            name = msg.room,
+            role = msg.role;
 
-        this.getTable(owner, name, (table, a2) => {
-            if (!table) {
-                this._logger.error(`Could not join table ${name}`);
+        this.getRoom(owner, name, (room) => {
+            if (!room) {
+                this._logger.error(`Could not join room ${name}`);
                 return;
             }
-            // create the seat if need be (and if we are the owner)
-            if (!table.seats.hasOwnProperty(seat) && table.owner === this) {
-                this._logger.info(`creating seat ${seat} at ${table.uuid}`);
-                table.createSeat(seat);
+            // create the role if need be (and if we are the owner)
+            if (!room.roles.hasOwnProperty(role) && room.owner === this) {
+                this._logger.info(`creating role ${role} at ${room.uuid}`);
+                room.createRole(role);
             }
-            return this.join(table, seat);
+            return this.join(room, role);
         });
         
     },
 
-    'add-seat': function(msg) {
-        // TODO: make sure this is the table owner
-        if (this.hasTable()) {
-            this._table.createSeat(msg.name);
+    'add-role': function(msg) {
+        // TODO: make sure this is the room owner
+        if (this.hasRoom()) {
+            this._room.createRole(msg.name);
         }
     }
 };

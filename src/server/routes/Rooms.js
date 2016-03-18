@@ -4,9 +4,9 @@ var _ = require('lodash'),
     Utils = _.extend(require('../Utils'), require('../ServerUtils.js')),
 
     debug = require('debug'),
-    log = debug('NetsBlox:API:Tables:log'),
-    warn = debug('NetsBlox:API:Tables:warn'),
-    error = debug('NetsBlox:API:Tables:error'),
+    log = debug('NetsBlox:API:Rooms:log'),
+    warn = debug('NetsBlox:API:Rooms:warn'),
+    error = debug('NetsBlox:API:Rooms:error'),
     utils = require('../ServerUtils'),
     invites = {};
 
@@ -21,31 +21,31 @@ var acceptInvitation = function(username, id, response, socketId, callback) {
     }
 
     log(`${username} ${response ? 'accepted' : 'denied'} ` +
-        `invitation for ${invite.seat} at ${invite.table}`);
+        `invitation for ${invite.role} at ${invite.room}`);
 
     delete invites[id];
 
     if (response) {
-        // Add the seatId to the table (if doesn't exist)
-        let table = this.tables[invite.table],
+        // Add the roleId to the room (if doesn't exist)
+        let room = this.rooms[invite.room],
             project;
 
-        if (!table) {
-            warn(`table no longer exists "${invite.table}`);
+        if (!room) {
+            warn(`room no longer exists "${invite.room}`);
             return callback('ERROR: project is no longer open');
         }
 
-        if (table.seats[invite.seat]) {
-            return callback('ERROR: seat is occupied');
+        if (room.roles[invite.role]) {
+            return callback('ERROR: role is occupied');
         }
 
         if (socket) {
-            socket.join(table, invite.seat);
+            socket.join(room, invite.role);
         } else {
-            table.onSeatsChanged();
+            room.onRolesChanged();
         }
 
-        project = table.cachedProjects[invite.seat] || null;
+        project = room.cachedProjects[invite.role] || null;
         if (project) {
             project = Utils.serializeProject(project);
         }
@@ -64,7 +64,6 @@ module.exports = [
             var username = req.session.username,
                 uuids = Object.keys(this.sockets),
                 socket,
-                table,
                 resp = {};
 
             log(username +' requested friend list');
@@ -84,69 +83,69 @@ module.exports = [
     },
     {
         Service: 'evictUser',
-        Parameters: 'userId,seatId,ownerId,tableName',
+        Parameters: 'userId,roleId,ownerId,roomName',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            var seatId = req.body.seatId,
-                tableName = req.body.tableName,
+            var roleId = req.body.roleId,
+                roomName = req.body.roomName,
                 ownerId = req.body.ownerId,
-                tableId = Utils.uuid(ownerId, tableName),
+                roomId = Utils.uuid(ownerId, roomName),
                 userId = req.body.userId,
                 socket,
-                table = this.tables[tableId];
+                room = this.rooms[roomId];
 
-            // Get the socket at the given table seat
-            log(`tableId is ${tableId}`);
-            log(`seatId is ${seatId}`);
+            // Get the socket at the given room role
+            log(`roomId is ${roomId}`);
+            log(`roleId is ${roleId}`);
             log(`userId is ${userId}`);
-            socket = table.seats[seatId];
+            socket = room.roles[roleId];
             if (!socket) {  // user is not online
-                this._logger.info(`Removing seat ${seatId}`);
-                // Remove the user from the table!
+                this._logger.info(`Removing role ${roleId}`);
+                // Remove the user from the room!
                 // TODO
                 return res.send('user has been evicted!');
             }
 
             if (socket.username === userId) {
-                // Remove the user from the table!
+                // Remove the user from the room!
                 // TODO
-                // Fork the table
-                log(`${userId} is evicted from table ${tableId}`);
-                this.forkTable({table, socket});
-                table.onSeatsChanged();
+                // Fork the room
+                log(`${userId} is evicted from room ${roomId}`);
+                this.forkRoom({room, socket});
+                room.onRolesChanged();
             } else {
-                var err = `${userId} is not at ${seatId} at table ${tableId}`;
+                var err = `${userId} is not at ${roleId} at room ${roomId}`;
                 error(err);
                 return res.status(400).send(err);
             }
         }
     },
     {
-        Service: 'inviteToTable',
-        Parameters: 'socketId,invitee,ownerId,tableName,seatId',
+        Service: 'inviteToRoom',
+        Parameters: 'socketId,invitee,ownerId,roomName,roleId',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             // Require:
             //  inviter
             //  invitee
-            //  tableId
-            //  seatId
+            //  roomId
+            //  roleId
             var inviter = req.session.username,
                 invitee = req.body.invitee,
-                tableName = req.body.tableName,
-                tableId = utils.uuid(req.body.ownerId, tableName),
-                seatId = req.body.seatId,
-                inviteId = [inviter, invitee, tableId, seatId].join('-'),
+                roomName = req.body.roomName,
+                roomId = utils.uuid(req.body.ownerId, roomName),
+                roleId = req.body.roleId,
+                inviteId = [inviter, invitee, roomId, roleId].join('-'),
                 inviteeSockets = this.socketsFor(invitee);
 
-            log(`${inviter} is inviting ${invitee} to ${seatId} at ${tableId}`);
+            log(`${inviter} is inviting ${invitee} to ${roleId} at ${roomId}`);
 
             // Record the invitation
             invites[inviteId] = {
-                table: tableId,
-                seat: seatId,
+                room: roomId,
+                role: roleId,
                 invitee
             };
 
@@ -156,15 +155,16 @@ module.exports = [
                 .forEach(socket => {
                     // Send the invite to the sockets
                     var msg = {
-                        type: 'table-invitation',
+                        type: 'room-invitation',
                         id: inviteId,
-                        tableName: tableName,
-                        table: tableId,
+                        roomName: roomName,
+                        room: roomId,
                         inviter,
-                        seat: seatId
+                        role: roleId
                     };
                     socket.send(msg);
-            });
+                }
+            );
             res.send('ok');
         }
     },
@@ -177,8 +177,8 @@ module.exports = [
             // Require:
             //  inviter
             //  invitee
-            //  tableId
-            //  seatId
+            //  roomId
+            //  roleId
             var username = req.session.username,
                 inviteId = req.body.inviteId,
                 response = req.body.response === 'true',
@@ -209,72 +209,71 @@ module.exports = [
         }
     },
     {
-        Service: 'deleteSeat',
-        Parameters: 'seatId,ownerId,tableName',
+        Service: 'deleteRole',
+        Parameters: 'roleId,ownerId,roomName',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             var username = req.session.username,
-                seatId = req.body.seatId,
+                roleId = req.body.roleId,
                 ownerId = req.body.ownerId,
-                tableName = req.body.tableName,
-                tableId = Utils.uuid(ownerId, tableName),
-                table = this.tables[tableId];
+                roomName = req.body.roomName,
+                roomId = Utils.uuid(ownerId, roomName),
+                room = this.rooms[roomId];
 
-            //  Get the table
-            if (!table) {
-                this._logger.error(`Could not find table ${tableId} for ${username}`);
-                return res.status(404).send('ERROR: Could not find table');
+            //  Get the room
+            if (!room) {
+                this._logger.error(`Could not find room ${roomId} for ${username}`);
+                return res.status(404).send('ERROR: Could not find room');
             }
             
             //  Verify that the username is either the ownerId
-            //      or the owner of the seat
-            this._logger.trace(`ownerId is ${table.owner.username} and username is ${username}`);
-            if (table.owner.username !== username && !!table.seats[seatId] &&
-                table.seats[seatId].username !== username) {
+            //      or the owner of the role
+            this._logger.trace(`ownerId is ${room.owner.username} and username is ${username}`);
+            if (room.owner.username !== username && !!room.roles[roleId] &&
+                room.roles[roleId].username !== username) {
 
-                this._logger.error(`${username} does not have permission to edit ${seatId} at ${tableId}`);
-                return res.status(403).send(`ERROR: You do not have permission to delete ${seatId}`);
+                this._logger.error(`${username} does not have permission to edit ${roleId} at ${roomId}`);
+                return res.status(403).send(`ERROR: You do not have permission to delete ${roleId}`);
             }
 
-            //  Get the socket and join a different table (if not the owner)
+            //  Get the socket and join a different room (if not the owner)
             //  TODO: Check that it isn't the owner
-            //  TODO: Check that the owner doesn't remove the last seat
-            // If the seat has an owner...
-            if (table.seats[seatId]) {
-                this.forkTable({table, seatId});
+            //  TODO: Check that the owner doesn't remove the last role
+            // If the role has an owner...
+            if (room.roles[roleId]) {
+                this.forkRoom({room, roleId});
             }
 
-            //  Remove the given seat
-            table.removeSeat(seatId);
+            //  Remove the given role
+            room.removeRole(roleId);
             res.send('ok');
         }
     },
     {
-        Service: 'moveToSeat',
-        Parameters: 'dstId,seatId,ownerId,tableName',
+        Service: 'moveToRole',
+        Parameters: 'dstId,roleId,ownerId,roomName',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            var username = req.session.username,
-                seatId = req.body.seatId,
+            var roleId = req.body.roleId,
                 dstId = req.body.dstId,
                 ownerId = req.body.ownerId,
-                tableName = req.body.tableName,
-                tableId = Utils.uuid(ownerId, tableName),
-                table = this.tables[tableId];
+                roomName = req.body.roomName,
+                roomId = Utils.uuid(ownerId, roomName),
+                room = this.rooms[roomId];
 
-            //  Cache the current state in the active table
-            table.cache(seatId, err => {
+            //  Cache the current state in the active room
+            room.cache(roleId, err => {
                 if (err) {
                     return res.status(500).send('ERROR: ' + err);
                 }
 
-                // Update the table state
-                table.move({src: seatId, dst: dstId})
+                // Update the room state
+                room.move({src: roleId, dst: dstId});
 
-                // Reply w/ the new seat code
-                var project = table.cachedProjects[dstId] || null;
+                // Reply w/ the new role code
+                var project = room.cachedProjects[dstId] || null;
                 if (project) {
                     project = Utils.serializeProject(project);
                 }
@@ -282,39 +281,39 @@ module.exports = [
             });
         }
     },
-    {  // Create a new seat and copy this project's blocks to it
-        Service: 'cloneSeat',
-        Parameters: 'seatId,socketId',
+    {  // Create a new role and copy this project's blocks to it
+        Service: 'cloneRole',
+        Parameters: 'roleId,socketId',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             // Check that the requestor is the owner
             var socket = this.sockets[req.body.socketId],
-                seatId = req.body.seatId,
-                table = socket._table,
-                newSeat;
+                roleId = req.body.roleId,
+                room = socket._room,
+                newRole;
 
             if (!socket.isOwner()) {
-                this._logger.error(`${socket.username} tried to clone seat... DENIED`);
-                return res.status(403).send('ERROR: Only owners can clone seats');
+                this._logger.error(`${socket.username} tried to clone role... DENIED`);
+                return res.status(403).send('ERROR: Only owners can clone roles');
             }
 
-            // Create the new seat
+            // Create the new role
             var count = 2;
-            while (table.seats.hasOwnProperty(newSeat = `${seatId} (${count++})`));
-            table.createSeat(newSeat);
+            while (room.roles.hasOwnProperty(newRole = `${roleId} (${count++})`));
+            room.createRole(newRole);
 
             // Get the project json
-            if (table.seats[seatId]) {  // Request via ws
-                table.cache(seatId, err => {
+            if (room.roles[roleId]) {  // Request via ws
+                room.cache(roleId, err => {
                     if (!err) {
-                        table.cachedProjects[newSeat] = table.cachedProjects[seatId];
+                        room.cachedProjects[newRole] = room.cachedProjects[roleId];
                     }
-                    res.send(encodeURIComponent(newSeat));
+                    res.send(encodeURIComponent(newRole));
                 });
             } else {  // use the current cached value
-                table.cachedProjects[newSeat] = table.cachedProjects[seatId];
-                res.send(encodeURIComponent(newSeat));
+                room.cachedProjects[newRole] = room.cachedProjects[roleId];
+                res.send(encodeURIComponent(newRole));
             }
         }
     }

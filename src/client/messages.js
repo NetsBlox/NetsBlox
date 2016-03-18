@@ -1,20 +1,14 @@
-/*globals modules*/
+/*globals DialogBoxMorph, HandleMorph, BlockEditorMorph, SpriteMorph,
+  ReporterBlockMorph, modules*/
 // Global settings /////////////////////////////////////////////////////
 
 modules.messages = '2015-October-02';
-
-
-var List;
-var ListWatcherMorph;
 
 // Message /////////////////////////////////////////////////////////////
 /*
    This is a Message object for NetsBlox. It contains a number of 
    predefined fields
  */
-
-var Message;
-var MessageType;
 
 function MessageType(name, fields) {
     this.name = name;

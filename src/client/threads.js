@@ -1,3 +1,4 @@
+/* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph, Message */
 ThreadManager.prototype.startProcess = function (
     block,
     isThreadSafe,
@@ -69,8 +70,8 @@ function NetsProcess(topBlock, onComplete, context) {
 
 NetsProcess.prototype.doSocketMessage = function (name) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
-        targetSeat = arguments[arguments.length-1],
-        mySeat = ide.projectName,  // same as seat name
+        targetRole = arguments[arguments.length-1],
+        myRole = ide.projectName,  // same as seat name
         fields = Array.prototype.slice.call(arguments, 1),
         stage = ide.stage,
         messageType,
@@ -94,8 +95,8 @@ NetsProcess.prototype.doSocketMessage = function (name) {
 
     ide.sockets.sendMessage({
         type: 'message',
-        dstId: targetSeat,
-        srcId: mySeat,
+        dstId: targetRole,
+        srcId: myRole,
         msgType: msg.type.name,
         content: msg.contents
     });
@@ -157,11 +158,9 @@ NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
 };
 
 NetsProcess.prototype.getCostumeFromRPC = function (rpc, params) {
-    var result,
-        image,
+    var image,
         stage = this.homeContext.receiver.parentThatIsA(StageMorph),
-        paramItems = params.length ? params.split('&') : [],
-        canvas;
+        paramItems = params.length ? params.split('&') : [];
         
     // Add the width and height of the stage as default params
     if (params.indexOf('width') === -1) {

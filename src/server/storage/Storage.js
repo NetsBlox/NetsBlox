@@ -1,9 +1,7 @@
 'use strict';
 var MongoClient = require('mongodb').MongoClient,
-    hash = require('../../common/sha512').hex_sha512,
     UserStore = require('./UserStore'),
-    TableStore = require('./TableStore'),
-    CONSTANTS = require(__dirname + '/../../common/Constants');
+    RoomStore = require('./RoomStore');
 
 
 var Storage = function(logger, opts) {
@@ -12,7 +10,7 @@ var Storage = function(logger, opts) {
     this._transporter = opts.transporter;
 
     this.users = null;
-    this.tables = null;
+    this.rooms = null;
 };
 
 Storage.prototype.connect = function(callback) {
@@ -22,7 +20,7 @@ Storage.prototype.connect = function(callback) {
         }
 
         this.users = new UserStore(this._logger, db, this._transporter);
-        this.tables = new TableStore(this._logger, db);
+        this.rooms = new RoomStore(this._logger, db);
         this.onDatabaseConnected();
 
         console.log('Connected to '+this._mongoURI);

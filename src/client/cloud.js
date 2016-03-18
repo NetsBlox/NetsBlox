@@ -1,3 +1,4 @@
+/* global Cloud, localize, nop, IDE_Morph, */
 var SnapCloud = new Cloud('http://'+window.location.host+'/api/');
 
 Cloud.prototype.login = function (
@@ -25,8 +26,8 @@ Cloud.prototype.login = function (
             true
         );
         request.setRequestHeader(
-            "Content-Type",
-            "application/json; charset=utf-8"
+            'Content-Type',
+            'application/json; charset=utf-8'
         );
         // glue this session to a route:
         request.setRequestHeader('SESSIONGLUE', this.route);
@@ -69,13 +70,13 @@ Cloud.prototype.login = function (
     }
 };
 
-Cloud.prototype.cloneSeat = function(onSuccess, onFail, args) {
+Cloud.prototype.cloneRole = function(onSuccess, onFail, args) {
     var myself = this;
 
     this.reconnect(
         function () {
             myself.callService(
-                'cloneSeat',
+                'cloneRole',
                 onSuccess,
                 onFail,
                 args
@@ -87,13 +88,13 @@ Cloud.prototype.cloneSeat = function(onSuccess, onFail, args) {
     );
 };
 
-Cloud.prototype.moveToSeat = function(onSuccess, onFail, args) {
+Cloud.prototype.moveToRole = function(onSuccess, onFail, args) {
     var myself = this;
 
     this.reconnect(
         function () {
             myself.callService(
-                'moveToSeat',
+                'moveToRole',
                 onSuccess,
                 onFail,
                 args
@@ -107,8 +108,7 @@ Cloud.prototype.moveToSeat = function(onSuccess, onFail, args) {
 
 Cloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) {
     var myself = this,
-        args = [id, accepted, this.socketId()],
-        response = accepted ? 'joined table.' : 'invitation denied.';
+        args = [id, accepted, this.socketId()];
 
     this.reconnect(
         function () {
@@ -125,15 +125,14 @@ Cloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) 
     );
 };
 
-Cloud.prototype.inviteToTable = function () {
+Cloud.prototype.inviteToRoom = function () {
     var myself = this,
-        args = arguments,
-        inviter = arguments[0];
+        args = arguments;
 
     this.reconnect(
         function () {
             myself.callService(
-                'inviteToTable',
+                'inviteToRoom',
                 myself.disconnect.bind(myself),
                 nop,
                 args
@@ -161,12 +160,12 @@ Cloud.prototype.getFriendList = function (callBack, errorCall) {
     );
 };
 
-Cloud.prototype.deleteSeat = function(onSuccess, onFail, args) {
+Cloud.prototype.deleteRole = function(onSuccess, onFail, args) {
     var myself = this;
     this.reconnect(
         function () {
             myself.callService(
-                'deleteSeat',
+                'deleteRole',
                 function () {
                     onSuccess.call(null);
                     myself.disconnect();
@@ -198,9 +197,9 @@ Cloud.prototype.evictUser = function(onSuccess, onFail, args) {
 };
 
 Cloud.prototype.socketId = function () {
-    var ide = world.children.find(function(child) {
-        return child instanceof IDE_Morph;
-    });
+    var ide = world.children.find(function(child) {  // FIXME
+            return child instanceof IDE_Morph;
+        });
     return ide.sockets.uuid;
 };
 
@@ -263,8 +262,8 @@ Cloud.prototype.callService = function (
         request.open(service.method, stickyUrl, true);
         request.withCredentials = true;
         request.setRequestHeader(
-            "Content-Type",
-            "application/x-www-form-urlencoded"
+            'Content-Type',
+            'application/x-www-form-urlencoded'
         );
         //request.setRequestHeader('MioCracker', this.session);
         //request.setRequestHeader('SESSIONGLUE', this.route);

@@ -2,16 +2,14 @@
 var R = require('ramda'),
     Utils = require('../ServerUtils.js'),
     UserAPI = require('./Users'),
-    TableAPI = require('./Tables'),
+    RoomAPI = require('./Rooms'),
     ProjectAPI = require('./Projects'),
-    EXTERNAL_API = R.map(R.partial(R.omit,['Handler']), UserAPI.concat(ProjectAPI).concat(TableAPI)),
+    EXTERNAL_API = R.map(R.partial(R.omit,['Handler']), UserAPI.concat(ProjectAPI).concat(RoomAPI)),
     GameTypes = require('../GameTypes'),
 
     debug = require('debug'),
     _ = require('lodash'),
     log = debug('NetsBlox:API:log'),
-    hash = require('../../common/sha512').hex_sha512,
-    randomString = require('just.randomstring'),
     fs = require('fs'),
     path = require('path'),
     EXAMPLES = require('../examples'),
@@ -26,12 +24,12 @@ var R = require('ramda'),
     CLIENT_ROOT = path.join(__dirname, '..', '..', 'client', 'Snap--Build-Your-Own-Blocks');
 
 var createIndexFor = function(name, list) {
-        return list
+    return list
         .filter(item => item.toUpperCase() !== name.toUpperCase())
         .map(function(item) {
             return [item, item, item].join('\t');
         }).join('\n');
-    };
+};
 
 
 // Create the paths
@@ -166,7 +164,7 @@ module.exports = [
                     log('"'+req.session.username+'" has logged in.');
                     // Associate the websocket with the username
                     socket = this.sockets[req.body.__sId];
-                    if (!!socket) {  // websocket has already connected
+                    if (socket) {  // websocket has already connected
                         socket.onLogin(req.body.__u);
                     }
                     return res.send(Utils.serializeArray(EXTERNAL_API));
@@ -191,7 +189,6 @@ module.exports = [
         URL: 'Examples/EXAMPLES',
         Handler: function(req, res) {
             // if no name requested, get index
-            console.log('Object.keys(EXAMPLES)',Object.keys(EXAMPLES));
             var result = Object.keys(EXAMPLES)
                 .map(name => `${name}\t${name}\t  `)
                 .join('\n');
@@ -219,30 +216,30 @@ module.exports = [
             }
 
             // This needs to...
-            //  + create the table for the socket
+            //  + create the room for the socket
             example = _.cloneDeep(EXAMPLES[name]);
             socket = this.sockets[uuid];
-            var seat = example.primarySeat,
-                table,
+            var seat = example.primaryRole,
+                room,
                 result;
 
             if (!isPreview) {
-                table = this.createTable(socket, name);
-                // Check the table in 10 seconds
-                setTimeout(this.checkTable.bind(this, table), 10000);
+                room = this.createRoom(socket, name);
+                // Check the room in 10 seconds
+                setTimeout(this.checkRoom.bind(this, room), 10000);
             } else {
-                table = example;
-                table.owner = socket;
+                room = example;
+                room.owner = socket;
             }
-            //  + customize and return the table for the socket
-            table = _.extend(table, example);
+            //  + customize and return the room for the socket
+            room = _.extend(room, example);
 
             result = {
-                src: table.cachedProjects[seat],
-                tableName: table.tableName,
-                ownerId: table.owner.username,
-                primarySeat: table.primarySeat
-            }
+                src: room.cachedProjects[seat],
+                roomName: room.RoomName,
+                ownerId: room.owner.username,
+                primaryRole: room.primaryRole
+            };
             return res.json(result);
         }
     }

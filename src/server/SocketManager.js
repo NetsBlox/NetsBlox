@@ -2,8 +2,8 @@
 'use strict';
 
 var WebSocketServer = require('ws').Server,
-    TableManager = require('./tables/TableManager'),
-    Socket = require('./tables/NetsBloxSocket'),
+    RoomManager = require('./rooms/RoomManager'),
+    Socket = require('./rooms/NetsBloxSocket'),
     logger;
 
 var SocketManager = function(_logger) {
@@ -13,11 +13,11 @@ var SocketManager = function(_logger) {
 
     // Provide getter for sockets
     var self = this;
-    Socket.prototype.getTable = function(uuid, name, callback) {
-        return self.getTable(this, uuid, name, callback);
+    Socket.prototype.getRoom = function(uuid, name, callback) {
+        return self.getRoom(this, uuid, name, callback);
     };
-    Socket.prototype.createTable = TableManager.prototype.createTable.bind(this);
-    Socket.prototype.checkTable = TableManager.prototype.checkTable.bind(this);
+    Socket.prototype.createRoom = RoomManager.prototype.createRoom.bind(this);
+    Socket.prototype.checkRoom = RoomManager.prototype.checkRoom.bind(this);
     Socket.prototype.onClose = SocketManager.prototype.onClose.bind(this);
 };
 
