@@ -1,5 +1,5 @@
-// This is a wrapper around the storage table. It provides the extra functionality expected
-// of a table that is actively being used
+// This is a wrapper around the storage room. It provides the extra functionality expected
+// of a room that is actively being used
 
 'use strict';
 
@@ -7,20 +7,17 @@ var R = require('ramda'),
     _ = require('lodash'),
     utils = require('../ServerUtils');
 
-class ActiveTable {
+class ActiveRoom {
 
     constructor(logger, name, owner) {
         var uuid = utils.uuid(owner.username, name);
         this.name = name;
-        this._logger = logger.fork('ActiveTable:' + uuid);
+        this._logger = logger.fork('ActiveRoom:' + uuid);
         this.uuid = uuid;
 
         // Seats
-        this.seats = {};  // actual occupants
+        this.roles = {};  // actual occupants
         this.cachedProjects = {};  // 
-
-        // virtual clients
-        this.virtual = {};
 
         this.owner = owner;
 
@@ -33,18 +30,18 @@ class ActiveTable {
         this._logger.log('created!');
     }
 
-    // This should only be called by the TableManager (otherwise, the table will not be recorded)
+    // This should only be called by the RoomManager (otherwise, the room will not be recorded)
     fork (logger, socket) {
-        // Create a copy of the table with the socket as the new owner
-        var fork = new ActiveTable(logger, this.name, socket),
-            seats = Object.keys(this.seats),
+        // Create a copy of the room with the socket as the new owner
+        var fork = new ActiveRoom(logger, this.name, socket),
+            roles = Object.keys(this.roles),
             data;
 
-        // Clone the table storage data
+        // Clone the room storage data
         data = this._store.fork(fork);
         fork.setStorage(data);
 
-        seats.forEach(seat => fork.silentCreateSeat(seat));
+        roles.forEach(seat => fork.silentCreateRole(seat));
 
         // Copy the data from each project
         fork.cachedProjects = _.cloneDeep(this.cachedProjects);
@@ -52,91 +49,79 @@ class ActiveTable {
         // Notify the socket of the fork
         socket.send({
             type: 'project-fork',
-            table: fork.name
+            room: fork.name
         });
-        fork.onSeatsChanged();
-        this.onSeatsChanged();
+        fork.onRolesChanged();
+        this.onRolesChanged();
 
         return fork;
     }
 
     add (socket, seat) {
-        // FIXME: verify that the seat exists
-        if (this.seats[seat] && this.seats[seat].isVirtualUser() && this.virtual[seat]) {
-            this._logger.log('about to close vc at ' + seat);
-            this.virtual[seat].close();
-        }
         this._logger.trace(`adding ${socket.uuid} to ${seat}`);
-        this.seats[seat] = socket;
-        this.onSeatsChanged();  // Update all clients
+        this.roles[seat] = socket;
+        this.onRolesChanged();  // Update all clients
     }
 
-    createSeat (seat) {
-        this.silentCreateSeat(seat);
-        this.onSeatsChanged();
+    createRole (seat) {
+        this.silentCreateRole(seat);
+        this.onRolesChanged();
     }
 
-    silentCreateSeat (seat) {
-        this._logger.trace(`Adding seat ${seat}`);
-        this.seats[seat] = null;
+    silentCreateRole (seat) {
+        this._logger.trace(`Adding role ${seat}`);
+        this.roles[seat] = null;
     }
 
-    updateSeat () {
-        this.onSeatsChanged();
+    updateRole () {
+        this.onRolesChanged();
     }
 
-    removeSeat (seat) {
-        this._logger.trace(`removing seat "${seat}"`);
+    removeRole (id) {
+        this._logger.trace(`removing role "${id}"`);
 
-        delete this.seats[seat];
+        delete this.roles[id];
 
-        if (this.virtual[seat]) {
-            this.virtual[seat].close();
-            delete this.virtual[seat];
-        }
         this.check();
-        this.onSeatsChanged();
+        this.onRolesChanged();
     }
 
-    renameSeat (seatId, newId) {
-        var socket = this.seats[seatId];
+    renameRole (seatId, newId) {
+        var socket = this.roles[seatId];
 
         if (socket) {  // update socket, too!
-            socket._seatId = newId;
+            socket.roleId = newId;
         }
 
-        this.seats[newId] = this.seats[seatId];
+        this.roles[newId] = this.roles[seatId];
         this.cachedProjects[newId] = this.cachedProjects[seatId];
 
-        delete this.seats[seatId];
-        this.onSeatsChanged();
+        delete this.roles[seatId];
+        this.onRolesChanged();
         this.check();
     }
 
     getStateMsg () {
-        var owners = {},
-            occupied = {},
+        var occupants = {},
             msg;
 
-        Object.keys(this.seats)
+        Object.keys(this.roles)
             .forEach(seat => {
-                owners[seat] = this.seats[seat] ? this.seats[seat].username : null;
-                occupied[seat] = !!this.seats[seat];
+                occupants[seat] = this.roles[seat] ? this.roles[seat].username : null;
             });
 
         msg = {
-            type: 'table-seats',
+            type: 'room-roles',
             owner: this.owner.username,
             name: this.name,
-            owners: owners,
-            occupied: occupied
+            occupants: occupants
         };
         return msg;
     }
 
-    onSeatsChanged () {
-        // This should be called when the table layout changes
-        // Send the table info to the socket
+    onRolesChanged () {
+        // This should be called when the room layout changes
+        // Send the room info to the socket
         var msg = this.getStateMsg();
 
         this.sockets().forEach(socket => socket.send(msg));
@@ -153,12 +138,12 @@ class ActiveTable {
     }
 
     move (params) {
-        var src = params.src || params.socket._seatId,
-            socket = this.seats[src],
+        var src = params.src || params.socket.roleId,
+            socket = this.roles[src],
             dst = params.dst;
 
         this._logger.info(`moving from ${src} to ${dst}`);
-        this.seats[src] = null;
+        this.roles[src] = null;
         this.add(socket, dst);
         this.check();
     }
@@ -170,7 +155,7 @@ class ActiveTable {
     }
 
     sockets () {
-        return R.values(this.seats)
+        return R.values(this.roles)
             .filter(socket => !!socket);
     }
 
@@ -182,11 +167,11 @@ class ActiveTable {
     }
 
     contains (username) {
-        var seats = Object.keys(this.seats),
+        var roles = Object.keys(this.roles),
             socket;
 
-        for (var i = seats.length; i--;) {
-            socket = this.seats[seats[i]];
+        for (var i = roles.length; i--;) {
+            socket = this.roles[roles[i]];
             if (socket && socket.username === username) {
                 return true;
             }
@@ -204,12 +189,12 @@ class ActiveTable {
             this.onUuidChange(oldUuid);
         }
         if (name) {
-            this.onSeatsChanged();
+            this.onRolesChanged();
         }
     }
 
     cache (seat, callback) {
-        var socket = this.seats[seat];
+        var socket = this.roles[seat];
 
         if (!socket) {
             let err = 'No socket in ' + seat;
@@ -236,21 +221,21 @@ class ActiveTable {
 }
 
 // Factory method
-ActiveTable.fromStore = function(logger, socket, data) {
-    var table = new ActiveTable(logger, data.name, socket);
+ActiveRoom.fromStore = function(logger, socket, data) {
+    var room = new ActiveRoom(logger, data.name, socket);
 
     // Store the data
-    table.setStorage(data);
+    room.setStorage(data);
 
-    // Set up the seats
-    table._uuid = data.uuid;  // save over the old uuid even if it changes
-                              // this should be reset if the table is forked TODO
+    // Set up the roles
+    room._uuid = data.uuid;  // save over the old uuid even if it changes
+                              // this should be reset if the room is forked TODO
     // load cached projects
-    table.cachedProjects = data.seats;
+    room.cachedProjects = data.roles || data.seats;
 
-    // Add the seats
-    Object.keys(data.seats).forEach(seat => table.seats[seat] = null);
-    return table;
+    // Add the roles
+    Object.keys(room.cachedProjects).forEach(role => room.roles[role] = null);
+    return room;
 };
 
-module.exports = ActiveTable;
+module.exports = ActiveRoom;

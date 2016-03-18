@@ -21,7 +21,7 @@ var RPCManager = function(logger, socketManager) {
     this.router = this.createRouter();
 
     // In this object, they contain the RPC's owned by
-    // the associated active table.
+    // the associated active room.
     this.socketManager = socketManager;
 };
 
@@ -78,17 +78,17 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
     }
 
     // Look up the rpc context
-    // socket -> active table -> rpc contexts
+    // socket -> active room -> rpc contexts
     socket = this.socketManager.sockets[uuid];
-    if (!socket || !socket._table) {
+    if (!socket || !socket._room) {
         return null;
     }
-    rpcs = socket._table.rpcs;
+    rpcs = socket._room.rpcs;
 
     // If the RPC hasn't been created for the given room, create one 
     if (!rpcs[RPC.getPath()]) {
         this._logger.info('Creating new RPC (' + RPC.getPath() +
-            ') for ' + socket._table.uuid);
+            ') for ' + socket._room.uuid);
         rpcs[RPC.getPath()] = new RPC();
     }
     return rpcs[RPC.getPath()];
@@ -110,7 +110,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
             this._logger.log('Could not find group for user "'+req.query.uuid+'"');
             return res.status(401).send('ERROR: user not found. who are you?');
         }
-        console.log('About to call '+RPC.getPath()+'=>'+action);
+        this._logger.log('About to call '+RPC.getPath()+'=>'+action);
 
         // Add the netsblox socket for triggering network messages from an RPC
         req.netsbloxSocket = this.socketManager.sockets[uuid];

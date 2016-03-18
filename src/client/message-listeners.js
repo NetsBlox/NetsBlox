@@ -1,3 +1,6 @@
+/* global MessageInputSlotMorph, InputSlotMorph, TemplateSlotMorph, detect,
+   SpriteMorph, StageMorph, ReporterBlockMorph, BlockInputFragmentMorph
+   */
 // MessageOutputSlotMorph //////////////////////////////////////////////
 // I am a dropdown menu with an associated message type
 // OutputSlotMorph inherits from ArgMorph:
