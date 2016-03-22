@@ -1,3 +1,9 @@
+/* global SpriteMorph, StageMorph, Color, MorphicPreferences, Morph,
+   Point, ScrollFrameMorph, MenuMorph, SyntaxElementMorph, IDE_Morph,
+   localize, BlockEditorMorph, BlockDialogMorph, TextMorph, PushButtonMorph,
+   MessageFrame, BlockMorph, ToggleMorph, MessageCreatorMorph,
+   VariableDialogMorph, SnapCloud, contains, List, CommandBlockMorph,
+   MessageType, isNil, RingMorph*/
 
 SpriteMorph.prototype.categories =
     [
@@ -230,7 +236,7 @@ SpriteMorph.prototype.initBlocks = function () {
     SpriteMorph.prototype.blocks.doSocketMessage = {
         type: 'command',
         category: 'services',
-        spec: 'send msg %msgInput to %seats'
+        spec: 'send msg %msgInput to %roles'
     };
 
     SpriteMorph.prototype.blocks.receiveSocketMessage = {
@@ -243,45 +249,45 @@ SpriteMorph.prototype.initBlocks = function () {
     SpriteMorph.prototype.blocks.getProjectId = {
         type: 'reporter',
         category: 'services',
-        spec: 'seat name'
+        spec: 'role name'
     };
 
     SpriteMorph.prototype.blocks.getProjectIds = {
         type: 'reporter',
         category: 'services',
-        spec: 'all seat names'
+        spec: 'all role names'
     };
 
     // Geo
     SpriteMorph.prototype.blocks.reportLatitude = {
         type: 'reporter',
         category: 'sensing',
-        spec: 'my latitude',
+        spec: 'my latitude'
     };
 
     SpriteMorph.prototype.blocks.reportLongitude = {
         type: 'reporter',
         category: 'sensing',
-        spec: 'my longitude',
+        spec: 'my longitude'
     };
 
     // Stage info
     SpriteMorph.prototype.blocks.reportStageWidth = {
         type: 'reporter',
         category: 'sensing',
-        spec: 'stage width',
+        spec: 'stage width'
     };
 
     SpriteMorph.prototype.blocks.reportStageHeight = {
         type: 'reporter',
         category: 'sensing',
-        spec: 'stage height',
+        spec: 'stage height'
     };
 
     SpriteMorph.prototype.blocks.reportUsername = {
         type: 'reporter',
         category: 'sensing',
-        spec: 'username',
+        spec: 'username'
     };
 
 };
@@ -296,15 +302,15 @@ SpriteMorph.prototype.getProjectId = function () {
 
 SpriteMorph.prototype.getProjectIds = function () {
     var ide = this.parentThatIsA(IDE_Morph),
-        seats = Object.keys(ide.table.seats);
-    return new List(seats);
+        roles = Object.keys(ide.room.roles);
+    return new List(roles);
 };
 
 StageMorph.prototype.getProjectId =
-    SpriteMorph.prototype.getProjectId
+    SpriteMorph.prototype.getProjectId;
 
 StageMorph.prototype.getProjectIds =
-    SpriteMorph.prototype.getProjectIds
+    SpriteMorph.prototype.getProjectIds;
 
 // SpriteMorph non-variable watchers
 
@@ -313,7 +319,7 @@ SpriteMorph.prototype.reportUsername = function () {
 };
 
 StageMorph.prototype.reportUsername =
-    SpriteMorph.prototype.reportUsername
+    SpriteMorph.prototype.reportUsername;
 
 SpriteMorph.prototype._blockForSelector = SpriteMorph.prototype.blockForSelector;  // super
 SpriteMorph.prototype.blockForSelector = function(selector, setDefaults) {
@@ -321,7 +327,7 @@ SpriteMorph.prototype.blockForSelector = function(selector, setDefaults) {
     if (selector === 'receiveSocketMessage') {  // this hat block is executable (it "unpacks" the msg)
         block.blockSequence = CommandBlockMorph.prototype.blockSequence;
     }
-    return block
+    return block;
 };
 
 // Palette

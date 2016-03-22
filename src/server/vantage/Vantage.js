@@ -22,14 +22,14 @@ banner = ['\n'+
     .join('\n');
 
 var NetsBloxVantage = function(server) {
-    this.initTableManagement(server);
+    this.initRoomManagement(server);
 
     // get user info
     vantage
         .command('user <username>', 'Get info about a specific user')
-        .option('-t, --tables', 'Get the user\'s saved tables')
+        .option('-r, --rooms', 'Get the user\'s saved rooms')
         .option('-u, --update', 'Update the user\'s schema')
-        .option('-c, --clear', 'Clear the table info')
+        .option('-c, --clear', 'Clear the room info')
         .alias('u')
         .action( (args, cb) => {
             var username = args.username;
@@ -41,15 +41,15 @@ var NetsBloxVantage = function(server) {
                     console.log('user does not exist!');
                     cb();
                 }
-                if (args.options.tables) {
-                    console.log(user.pretty().tables);
+                if (args.options.rooms) {
+                    console.log(user.pretty().rooms);
                 } else if (args.options.update) {
-                    user.tables = user.tables || [];
+                    user.rooms = user.rooms || user.rooms || [];
                     delete user.projects;
                     user.save();
                     console.log('User updated!');
                 } else if (args.options.clear) {
-                    user.tables = [];
+                    user.rooms = [];
                     user.save();
                     console.log('User updated!');
                 } else {
@@ -57,16 +57,6 @@ var NetsBloxVantage = function(server) {
                 }
                 cb();
             });
-        });
-
-    // get ghost user info
-    vantage
-        .command('ghost', 'Get info about ghost user')
-        .action( (args, cb) => {
-            console.log(`username: ${CONSTANTS.GHOST.USER}\n` +
-                `password: ${CONSTANTS.GHOST.PASSWORD}\n` +
-                `email: ${CONSTANTS.GHOST.EMAIL}`);
-            return cb();
         });
 
     // set DEBUG level FIXME
@@ -88,48 +78,45 @@ var NetsBloxVantage = function(server) {
     global.server = server;
 };
 
-NetsBloxVantage.prototype.initTableManagement = function(server) {
+NetsBloxVantage.prototype.initRoomManagement = function(server) {
     vantage
-        .command('tables', 'List all active tables')
+        .command('rooms', 'List all active rooms')
         .option('-e, --entries', 'List the entries from the manager')
-        .alias('ts')
+        .alias('rs')
         //.option('--with-names', 'Include the group names')
         .action(function(args, cb) {
             // Get all groups
-            var header = '* * * * * * * Tables * * * * * * * \n',
-                tables = R.values(server.tables),
-                text = tables.map(function(table) {
-                    var clients = Object.keys(table.seats)
-                        .map(seat => {
-                            let client = table.seats[seat],
-                                username = NO_USER_LABEL;
+            var header = '* * * * * * * Rooms * * * * * * * \n',
+                rooms = R.values(server.rooms),
+                text = rooms.map(function(room) {
+                    var clients = Object.keys(room.roles)
+                        .map(role => {
+                            let client = room.roles[role],
+                                username = client ? client.username : NO_USER_LABEL;
 
-                            if (client) {
-                                username = client.isVirtualUser() ? '<virtual user>' : client.username;
-                            }
-
-                            return `\t${seat}: ${username}`;
+                            return `\t${role}: ${username}`;
                         });
 
-                    return `${table.uuid}:\n${clients.join('\n')}\n`;
+                    return `${room.uuid}:\n${clients.join('\n')}\n`;
                 }).join('\n');
+
             if (args.options.entries) {
-                text = Object.keys(server.tables).join('\n');
+                text = Object.keys(server.rooms).join('\n');
             }
             console.log(header+text);
             return cb();
         });
 
     vantage
-        .command('table <uuid>', 'Look up table info from global database')
+        .command('room <uuid>', 'Look up room info from global database')
         .alias('t')
         .action((args, cb) => {
-            var table = server.storage.tables.get(args.uuid, (err, table) => {
-                if (err || !table) {
-                    return cb(err || 'Table not found');
+            server.storage.rooms.get(args.uuid, (err, room) => {
+                if (err || !room) {
+                    return cb(err || 'Room not found');
                 }
-                var prettyTable = table.pretty();
-                console.log(prettyTable);
+                var prettyRoom = room.pretty();
+                console.log(prettyRoom);
                 cb();
             });
         });

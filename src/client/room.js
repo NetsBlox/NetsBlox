@@ -1,26 +1,26 @@
 /* global SnapCloud, StringMorph, DialogBoxMorph, localize, newCanvas, Point, Morph,
- * Color, nop, InputFieldMorph, ListMorph, AlignmentMorph, IDE_Morph, TurtleIconMorph,
- * ProjectDialogMorph*/
-/* * * * * * * * * TableMorph * * * * * * * * */
-TableMorph.prototype = new Morph();
-TableMorph.prototype.constructor = TableMorph;
-TableMorph.uber = Morph.prototype;
+ Color, nop, InputFieldMorph, ListMorph, AlignmentMorph, IDE_Morph, TurtleIconMorph,
+ ProjectDialogMorph, TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph,
+ SymbolMorph, PushButtonMorph*/
+/* * * * * * * * * RoomMorph * * * * * * * * */
+RoomMorph.prototype = new Morph();
+RoomMorph.prototype.constructor = RoomMorph;
+RoomMorph.uber = Morph.prototype;
 
-TableMorph.SIZE = 300;
-TableMorph.DEFAULT_SEAT = 'mySeat';
+RoomMorph.SIZE = 300;
+RoomMorph.DEFAULT_ROLE = 'myRole';
 
-function TableMorph(ide) {
-    // Get the users at the table
+function RoomMorph(ide) {
+    // Get the users at the room
     this.ide = ide;
-    this.seats = {};
-    this.occupied = {};
-    this.seatLabels = {};
+    this.roles = {};
+    this.roleLabels = {};
     this.invitations = {};  // open invitations
 
-    this.tableLabel = null;
+    this.roomLabel = null;
     this.init();
-    // Set up the table name
-    this._name = localize('MyTable');
+    // Set up the room name
+    this._name = localize('MyRoom');
     Object.defineProperty(this, 'name', {
         get: function() {
             return this._name;
@@ -30,106 +30,105 @@ function TableMorph(ide) {
 
     // Set up the ownerId
     this.ownerId = null;
-    this.nextTable = null;  // next table info
-    // The projectName is used for the seatId
+    this.nextRoom = null;  // next room info
+    // The projectName is used for the roleId
     if (!this.ide.projectName) {
-        this.ide.projectName = TableMorph.DEFAULT_SEAT;
+        this.ide.projectName = RoomMorph.DEFAULT_ROLE;
     }
 
-    this.silentSetWidth(TableMorph.SIZE);
-    this.silentSetHeight(TableMorph.SIZE);
+    this.silentSetWidth(RoomMorph.SIZE);
+    this.silentSetHeight(RoomMorph.SIZE);
 
     this.isDraggable = false;
     this.drawNew();
 
-    // Set up callback(s) for SeatMorphs
-    SeatMorph.prototype.editSeat = TableMorph.prototype.editSeat.bind(this);
+    // Set up callback(s) for RoleMorphs
+    RoleMorph.prototype.editRole = RoomMorph.prototype.editRole.bind(this);
     var myself = this;
-    SeatLabelMorph.prototype.mouseClickLeft = function() {
-        if (myself.isEditable()) {
-            myself.editSeatName(this.name);
+    RoleLabelMorph.prototype.mouseClickLeft = function() {
+        if (myself.isEdiroom()) {
+            myself.editRoleName(this.name);
         }
     };
 }
 
-TableMorph.prototype.isEditable = function() {
+RoomMorph.prototype.isEdiroom = function() {
     return this.ownerId === SnapCloud.username;
 };
 
-TableMorph.prototype._onNameChanged = function(newName) {
+RoomMorph.prototype._onNameChanged = function(newName) {
     if (this._name !== newName) {
         this._name = newName;
         this.ide.sockets.sendMessage({
-            type: 'rename-table',
+            type: 'rename-room',
             name: newName
         });
     }
 };
 
-TableMorph.prototype.update = function(ownerId, name, seats, occupied) {
-    // Update the seats, etc
+RoomMorph.prototype.update = function(ownerId, name, roles) {
+    // Update the roles, etc
     this.ownerId = ownerId;
     this._name = name;
-    this.seats = seats;
-    this.occupied = occupied;
+    this.roles = roles;
 
     this.version = Date.now();
     this.drawNew();
 };
 
-TableMorph.prototype.triggerUpdate = function() {
+RoomMorph.prototype.triggerUpdate = function() {
     // TODO: Message the server requesting an update
 };
 
-TableMorph.prototype.drawNew = function() {
+RoomMorph.prototype.drawNew = function() {
     var label,
         padding = 4,
         radius = (Math.min(this.width(), this.height())-padding)/2,
         center = padding + radius,
-        seats,
+        roles,
         len,
         i;
         
-    if (this.ownerId === null) {  // If the table isn't set, trigger an update
+    if (this.ownerId === null) {  // If the room isn't set, trigger an update
         this.triggerUpdate();
         return;
     }
 
-    // Remove the old seatLabels
-    seats = Object.keys(this.seatLabels);
-    for (i = seats.length; i--;) {
-        this.seatLabels[seats[i]].destroy();
+    // Remove the old roleLabels
+    roles = Object.keys(this.roleLabels);
+    for (i = roles.length; i--;) {
+        this.roleLabels[roles[i]].destroy();
     }
     
     this.image = newCanvas(this.extent());
 
-    // Draw the seats
-    seats = Object.keys(this.seats);
-    len = seats.length;
+    // Draw the roles
+    roles = Object.keys(this.roles);
+    len = roles.length;
 
-    for (i = 0; i < seats.length; i++) {
+    for (i = 0; i < roles.length; i++) {
         // Create the label
-        label = new SeatMorph(
-            localize(seats[i]),
-            localize(this.seats[seats[i]]),
+        label = new RoleMorph(
+            localize(roles[i]),
+            localize(this.roles[roles[i]]),
             i,
             len
         );
         this.add(label);
         label.setExtent(this.extent());
         label.setCenter(this.center());
-        this.seatLabels[seats[i]] = label;
+        this.roleLabels[roles[i]] = label;
     }
-    // Table name
-    this.renderTableTitle(new Point(center, center).translateBy(this.topLeft()));
+    // Room name
+    this.renderRoomTitle(new Point(center, center).translateBy(this.topLeft()));
 };
 
-TableMorph.prototype.renderTableTitle = function(center) {
+RoomMorph.prototype.renderRoomTitle = function(center) {
     var width = 100,
         height = 25;
 
-    if (this.tableLabel) {
-        this.tableLabel.destroy();
+    if (this.roomLabel) {
+        this.roomLabel.destroy();
         this.titleBox.destroy();
     }
 
@@ -140,73 +139,73 @@ TableMorph.prototype.renderTableTitle = function(center) {
     this.add(this.titleBox);
     this.titleBox.setExtent(new Point(width, height));
     this.titleBox.setCenter(center);
-    if (this.isEditable()) {
-        this.titleBox.mouseClickLeft = this.editTableName.bind(this);
+    if (this.isEdiroom()) {
+        this.titleBox.mouseClickLeft = this.editRoomName.bind(this);
     }
 
-    // Add the table name text
-    this.tableLabel = new StringMorph(
+    // Add the room name text
+    this.roomLabel = new StringMorph(
         this.name,
         15,
         null,
         true,
         false
     );
-    this.titleBox.add(this.tableLabel);
-    this.tableLabel.setCenter(center);
+    this.titleBox.add(this.roomLabel);
+    this.roomLabel.setCenter(center);
 };
 
-TableMorph.prototype.editTableName = function () {
+RoomMorph.prototype.editRoomName = function () {
     var myself = this;
-    this.ide.prompt('New Table Name', function (name) {
+    this.ide.prompt('New Room Name', function (name) {
         if (name) {
             myself.name = name;
         }
-    }, null, 'editTableName');
+    }, null, 'editRoomName');
 };
 
-TableMorph.prototype.join = function (ownerId, name) {
+RoomMorph.prototype.join = function (ownerId, name) {
     this.ownerId = ownerId;
     this._name = name;
 };
 
-TableMorph.prototype.createNewSeat = function () {
-    // Ask for a new seat name
+RoomMorph.prototype.createNewRole = function () {
+    // Ask for a new role name
     var myself = this,
         world = this.world();
 
-    this.ide.prompt('New Seat Name', function (seatName) {
-        if (myself.seats.hasOwnProperty(seatName)) {
-            // Error! Seat exists
+    this.ide.prompt('New Role Name', function (roleName) {
+        if (myself.roles.hasOwnProperty(roleName)) {
+            // Error! Role exists
             new DialogBoxMorph().inform(
-                'Existing Seat Name',
-                'Could not create a new seat because\n' +
+                'Existing Role Name',
+                'Could not create a new role because\n' +
                 'the provided name already exists.',
                 world
             );
         } else {
-            myself._createNewSeat(seatName);
+            myself._createNewRole(roleName);
         }
-    }, null, 'createNewSeat');
+    }, null, 'createNewRole');
 };
 
-TableMorph.prototype._createNewSeat = function (name) {
-    // Create the new seat
+RoomMorph.prototype._createNewRole = function (name) {
+    // Create the new role
     this.ide.sockets.sendMessage({
-        type: 'add-seat',
+        type: 'add-role',
         name: name
     });
 };
 
-TableMorph.prototype.editSeat = function(seat) {
+RoomMorph.prototype.editRole = function(role) {
     // Show a dialog of options
-    //   + rename seat
-    //   + delete seat
+    //   + rename role
+    //   + delete role
     //   + invite user (if unoccupied)
     //   + transfer ownership (if occupied)
     //   + evict user (if occupied)
-    //   + change seat (if owned by self)
-    var dialog = new EditSeatMorph(this, seat, this.occupied[seat.name]),
+    //   + change role (if owned by self)
+    var dialog = new EditRoleMorph(this, role, !!this.roles[role.name]),
         world = this.world();
 
     dialog.fixLayout();
@@ -216,33 +215,33 @@ TableMorph.prototype.editSeat = function(seat) {
     dialog.setCenter(world.center());
 };
 
-TableMorph.prototype.editSeatName = function(seat) {
-    // Ask for a new seat name
+RoomMorph.prototype.editRoleName = function(role) {
+    // Ask for a new role name
     var myself = this;
-    this.ide.prompt('New Seat Name', function (seatName) {
-        if (myself.seats.hasOwnProperty(seatName)) {
-            // Error! Seat exists
+    this.ide.prompt('New Role Name', function (roleName) {
+        if (myself.roles.hasOwnProperty(roleName)) {
+            // Error! Role exists
             new DialogBoxMorph().inform(
-                'Existing Seat Name',
-                'Could not rename seat because\n' +
+                'Existing Role Name',
+                'Could not rename role because\n' +
                 'the provided name already exists.',
                 myself.world()
             );
         } else {
             myself.ide.sockets.sendMessage({
-                type: 'rename-seat',
-                seatId: seat,
-                name: seatName
+                type: 'rename-role',
+                roleId: role,
+                name: roleName
             });
         }
-    }, null, 'editSeatName');
+    }, null, 'editRoleName');
 };
 
-TableMorph.prototype.moveToSeat = function(dstId) {
+RoomMorph.prototype.moveToRole = function(dstId) {
     var myself = this,
-        mySeat = this.ide.projectName;
+        myRole = this.ide.projectName;
 
-    SnapCloud.moveToSeat(function(args) {
+    SnapCloud.moveToRole(function(args) {
             myself.ide.showMessage('moved to ' + dstId + '!');
             myself.ide.projectName = dstId;
             var proj = args[0];
@@ -263,46 +262,46 @@ TableMorph.prototype.moveToSeat = function(dstId) {
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         },
-        [dstId, mySeat, this.ownerId, this.name]
+        [dstId, myRole, this.ownerId, this.name]
     );
 };
 
-TableMorph.prototype.deleteSeat = function(seat) {
+RoomMorph.prototype.deleteRole = function(role) {
     var myself = this;
-    SnapCloud.deleteSeat(function() {
-            myself.ide.showMessage('deleted ' + seat + '!');
+    SnapCloud.deleteRole(function() {
+            myself.ide.showMessage('deleted ' + role + '!');
         },
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         },
-        [seat, this.ownerId, this.name]
+        [role, this.ownerId, this.name]
     );
 };
 
-TableMorph.prototype.createSeatClone = function(seat) {
+RoomMorph.prototype.createRoleClone = function(role) {
     var myself = this;
-    SnapCloud.cloneSeat(function(response) {
-            var newSeat = Object.keys(response[0])[0];
-            myself.ide.showMessage('cloned ' + seat + ' to ' +
-                newSeat + ' !');
+    SnapCloud.cloneRole(function(response) {
+            var newRole = Object.keys(response[0])[0];
+            myself.ide.showMessage('cloned ' + role + ' to ' +
+                newRole + ' !');
         },
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         },
-        [seat, myself.ide.sockets.uuid]
+        [role, myself.ide.sockets.uuid]
     );
 };
 
-TableMorph.prototype.setSeatName = function(seat) {
+RoomMorph.prototype.setRoleName = function(role) {
     this.ide.sockets.sendMessage({
-        type: 'rename-seat',
-        seatId: this.ide.projectName,
-        name: seat || 'untitled'
+        type: 'rename-role',
+        roleId: this.ide.projectName,
+        name: role || 'untitled'
     });
 };
 
 // FIXME: create ide.confirm
-TableMorph.prototype.evictUser = function (user, seat) {
+RoomMorph.prototype.evictUser = function (user, role) {
     var myself = this;
     SnapCloud.evictUser(function(err) {
             myself.ide.showMessage(err || 'evicted ' + user + '!');
@@ -310,17 +309,17 @@ TableMorph.prototype.evictUser = function (user, seat) {
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         },
-        [user, seat, this.ownerId, this.name]
+        [user, role, this.ownerId, this.name]
     );
 };
 
-TableMorph.prototype.inviteUser = function (seat) {
+RoomMorph.prototype.inviteUser = function (role) {
     var myself = this,
         callback;
 
     callback = function(friends) {
         friends.push('myself');
-        myself._inviteFriendDialog(seat, friends);
+        myself._inviteFriendDialog(role, friends);
     };
     // TODO: Check if the user is the owner
     if (SnapCloud.username) {
@@ -334,9 +333,9 @@ TableMorph.prototype.inviteUser = function (seat) {
     }
 };
 
-TableMorph.prototype._inviteFriendDialog = function (seat, friends) {
+RoomMorph.prototype._inviteFriendDialog = function (role, friends) {
     // Create a list of clients to invite (retrieve from server - ajax)
-    // Allow the user to select the person and seat
+    // Allow the user to select the person and role
     var dialog = new DialogBoxMorph().withKey('inviteFriend'),
         frame = new AlignmentMorph('column', 7),
         listField,
@@ -373,13 +372,13 @@ TableMorph.prototype._inviteFriendDialog = function (seat, friends) {
     dialog.ok = function () {
         var friend = listField.selected;
         if (friend) {
-            // For now, I might just make a new seat on the server
-            myself._inviteFriend(friend, seat);
+            // For now, I might just make a new role on the server
+            myself._inviteFriend(friend, role);
         }
         ok.call(this);
     };
 
-    dialog.labelString = 'Invite a Friend to the Table';
+    dialog.labelString = 'Invite a Friend to the Room';
     dialog.createLabel();
     dialog.addBody(frame);
     frame.drawNew();
@@ -391,55 +390,54 @@ TableMorph.prototype._inviteFriendDialog = function (seat, friends) {
     dialog.setCenter(world.center());
 };
 
-TableMorph.prototype._inviteFriend = function (friend, seat) {
-    // Use inviteToTable service
+RoomMorph.prototype._inviteFriend = function (friend, role) {
+    // Use inviteToRoom service
     var socketId = this.ide.sockets.uuid;
     if (friend === 'myself') {
         friend = SnapCloud.username;
     }
-    SnapCloud.inviteToTable(socketId, friend, this.ownerId, this.name, seat);
+    SnapCloud.inviteToRoom(socketId, friend, this.ownerId, this.name, role);
 };
 
-TableMorph.prototype.promptInvite = function (params) {  // id, table, tableName, seat
+RoomMorph.prototype.promptInvite = function (params) {  // id, room, roomName, role
     // Create a confirm dialog about joining the group
     var myself = this,
         // unpack the params
         id = params.id,
-        table = params.table,
-        seat = params.seat,
-        tableName = params.tableName,
+        role = params.role,
+        roomName = params.roomName,
 
-        action = this._invitationResponse.bind(this, id, true, seat),
+        action = this._invitationResponse.bind(this, id, true, role),
         dialog = new DialogBoxMorph(null, action),
         msg;
 
     if (params.inviter === SnapCloud.username) {
-        msg = 'Would you like to move to "' + tableName + '"?';
+        msg = 'Would you like to move to "' + roomName + '"?';
     } else {
-        msg = params.inviter + ' has invited you to join\nhim/her at "' + tableName +
+        msg = params.inviter + ' has invited you to join\nhim/her at "' + roomName +
             '"\nAccept?';
     }
 
     dialog.cancel = function() {
-        myself._invitationResponse(id, false, seat);
+        myself._invitationResponse(id, false, role);
         delete myself.invitations[id];
         this.destroy();
     };
 
     dialog.askYesNo(
-        'Table Invitation',
+        'Room Invitation',
         localize(msg),
         this.ide.world()
     );
     this.invitations[id] = dialog;
 };
 
-TableMorph.prototype._invitationResponse = function (id, response, seat) {
+RoomMorph.prototype._invitationResponse = function (id, response, role) {
     var myself = this;
     SnapCloud.invitationResponse(
         id,
         response,
-        function (args, url) {
+        function (args) {
             if (response) {
                 var proj = args[0];
                 // Load the project or make the project empty
@@ -453,10 +451,10 @@ TableMorph.prototype._invitationResponse = function (id, response, seat) {
                             encodeURIComponent(proj.ProjectName);
                     }
                 } else {  // Empty the project
-                    myself.ide.clearProject(seat);
+                    myself.ide.clearProject(role);
                 }
-                myself.ide.showMessage('you have joined the table!', 2);
-                myself.ide.silentSetProjectName(seat);  // Set the seat name FIXME
+                myself.ide.showMessage('you have joined the room!', 2);
+                myself.ide.silentSetProjectName(role);  // Set the role name FIXME
             }
             SnapCloud.disconnect();
         },
@@ -466,10 +464,10 @@ TableMorph.prototype._invitationResponse = function (id, response, seat) {
     );
 };
 
-SeatMorph.prototype = new Morph();
-SeatMorph.prototype.constructor = SeatMorph;
-SeatMorph.uber = Morph.prototype;
-SeatMorph.COLORS = [
+RoleMorph.prototype = new Morph();
+RoleMorph.prototype.constructor = RoleMorph;
+RoleMorph.uber = Morph.prototype;
+RoleMorph.COLORS = [
     new Color(74, 108, 212),
     new Color(217, 77, 17).lighter(),
     new Color(207, 74, 217),
@@ -484,33 +482,32 @@ SeatMorph.COLORS = [
     return color.darker();
 });
 
-// The seat morph needs to know where to draw itself
-function SeatMorph(name, user, index, total) {
+// The role morph needs to know where to draw itself
+function RoleMorph(name, user, index, total) {
     this.init(name, user, index, total);
 }
 
-SeatMorph.prototype.init = function(name, user, index, total) {
-    SeatMorph.uber.init.call(this, true);
+RoleMorph.prototype.init = function(name, user, index, total) {
+    RoleMorph.uber.init.call(this, true);
     this.name = name;
     this.user = user;
 
-    this._label = new SeatLabelMorph(name, user);
+    this._label = new RoleLabelMorph(name, user);
     this.add(this._label);
     this.index = index;
     this.total = total;
     this.drawNew();
 };
 
-SeatMorph.prototype.destroy = function() {
+RoleMorph.prototype.destroy = function() {
     for (var i = this.children.length; i--;) {
         this.children[i].destroy();
     }
-    SeatMorph.uber.destroy.call(this);
+    RoleMorph.uber.destroy.call(this);
 };
 
-SeatMorph.prototype.drawNew = function() {
-    var myself = this,
-        padding = 4,
+RoleMorph.prototype.drawNew = function() {
+    var padding = 4,
         radius = (Math.min(this.width(), this.height())-padding)/2,
         center = padding + radius,
         pos,
@@ -520,23 +517,23 @@ SeatMorph.prototype.drawNew = function() {
     this.image = newCanvas(this.extent());
     cxt = this.image.getContext('2d');
 
-    // Draw the seats
+    // Draw the roles
     var angleSize = 2*Math.PI/this.total,
         angle = this.index*angleSize,
-        len = SeatMorph.COLORS.length,
+        len = RoleMorph.COLORS.length,
         x,y;
 
     cxt.textAlign = 'center';
 
-    // Draw the seat
-    cxt.fillStyle = SeatMorph.COLORS[this.index%len].toString();
+    // Draw the role
+    cxt.fillStyle = RoleMorph.COLORS[this.index%len].toString();
     cxt.beginPath();
     cxt.moveTo(center, center);
     cxt.arc(center, center, radius, angle, angle+angleSize, false);
     cxt.lineTo(center, center);
     cxt.fill();
 
-    // Write the seat name on the seat
+    // Write the role name on the role
     x = 0.65 * radius * Math.cos(angle + angleSize/2);
     y = 0.65 * radius * Math.sin(angle + angleSize/2);
     pos = new Point(x, y).translateBy(this.center());
@@ -544,35 +541,35 @@ SeatMorph.prototype.drawNew = function() {
     if (this._label) {
         this._label.destroy();
     }
-    this._label = new SeatLabelMorph(this.name, this.user);
+    this._label = new RoleLabelMorph(this.name, this.user);
     this.add(this._label);
     this._label.setCenter(pos);
 };
 
-SeatMorph.prototype.mouseClickLeft = function() {
-    if (this.parent.isEditable()) {
-        this.editSeat(this._label);
+RoleMorph.prototype.mouseClickLeft = function() {
+    if (this.parent.isEdiroom()) {
+        this.editRole(this._label);
     }
 };
 
-SeatLabelMorph.prototype = new Morph();
-SeatLabelMorph.prototype.constructor = SeatLabelMorph;
-SeatLabelMorph.uber = Morph.prototype;
+RoleLabelMorph.prototype = new Morph();
+RoleLabelMorph.prototype.constructor = RoleLabelMorph;
+RoleLabelMorph.uber = Morph.prototype;
 
-// Label containing the seat & user names
-function SeatLabelMorph(name, user) {
+// Label containing the role & user names
+function RoleLabelMorph(name, user) {
     this.name = name;
     this.user = user;
     this.init();
 }
 
-SeatLabelMorph.prototype.init = function() {
+RoleLabelMorph.prototype.init = function() {
     var usrTxt = this.user || '<empty>';
     if (this.isMine()) {
         usrTxt = 'me';
     }
 
-    this._seatLabel = new StringMorph(
+    this._roleLabel = new StringMorph(
         this.name,
         14,
         null,
@@ -587,32 +584,31 @@ SeatLabelMorph.prototype.init = function() {
         true
     );
 
-    SeatLabelMorph.uber.init.call(this);
+    RoleLabelMorph.uber.init.call(this);
 
-    this.add(this._seatLabel);
+    this.add(this._roleLabel);
     this.add(this._userLabel);
     this.drawNew();
 };
 
-SeatLabelMorph.prototype.isMine = function() {
+RoleLabelMorph.prototype.isMine = function() {
     if (!SnapCloud.username) {
         return !!this.user;
     }
     return this.user === SnapCloud.username;
 };
 
-SeatLabelMorph.prototype.drawNew = function() {
+RoleLabelMorph.prototype.drawNew = function() {
     this.image = newCanvas(new Point(1, 1));
     this.fixLayout();
 };
 
-SeatLabelMorph.prototype.fixLayout = function() {
+RoleLabelMorph.prototype.fixLayout = function() {
     var center = this.center(),
-        height,
-        x = center.x;
+        height;
 
-    height = this._seatLabel.height();
-    this._seatLabel.setCenter(new Point(
+    height = this._roleLabel.height();
+    this._roleLabel.setCenter(new Point(
         center.x/2,
         center.y - height/2
     ));
@@ -624,13 +620,13 @@ SeatLabelMorph.prototype.fixLayout = function() {
     ));
 };
 
-EditSeatMorph.prototype = new DialogBoxMorph();
-EditSeatMorph.prototype.constructor = EditSeatMorph;
-EditSeatMorph.uber = DialogBoxMorph.prototype;
-function EditSeatMorph(table, seat, isOccupied) {
+EditRoleMorph.prototype = new DialogBoxMorph();
+EditRoleMorph.prototype.constructor = EditRoleMorph;
+EditRoleMorph.uber = DialogBoxMorph.prototype;
+function EditRoleMorph(room, role) {
     DialogBoxMorph.call(this);
-    this.table = table;
-    this.seat = seat;
+    this.room = room;
+    this.role = role;
 
     var txt = new TextMorph(
         'What would you like to do?',
@@ -645,21 +641,21 @@ function EditSeatMorph(table, seat, isOccupied) {
         new Color(255, 255, 255)
     );
 
-    this.labelString = 'Edit ' + seat.name;
+    this.labelString = 'Edit ' + role.name;
     this.createLabel();
     this.addBody(txt);
 
-    // Seat Actions
-    this.addButton('createSeatClone', 'Clone');  // TODO
+    // Role Actions
+    this.addButton('createRoleClone', 'Clone');  // TODO
 
-    if (seat.user) {  // occupied
-        if (!seat.isMine()) {  // Can only edit/delete seats that are your own
+    if (role.user) {  // occupied
+        if (!role.isMine()) {  // Can only edit/delete roles that are your own
             this.addButton('evictUser', 'Evict User');
         }
     } else {  // vacant
-        this.addButton('moveToSeat', 'Move to');
+        this.addButton('moveToRole', 'Move to');
         this.addButton('inviteUser', 'Invite User');
-        this.addButton('deleteSeat', 'Delete seat');
+        this.addButton('deleteRole', 'Delete role');
     }
     this.addButton('cancel', 'Cancel');
 
@@ -670,33 +666,33 @@ function EditSeatMorph(table, seat, isOccupied) {
     txt.setCenter(center);
 }
 
-EditSeatMorph.prototype.inviteUser = function() {
-    this.table.inviteUser(this.seat.name);
+EditRoleMorph.prototype.inviteUser = function() {
+    this.room.inviteUser(this.role.name);
     this.destroy();
 };
 
-EditSeatMorph.prototype.editSeatName = function() {
-    this.table.editSeatName(this.seat.name);
+EditRoleMorph.prototype.editRoleName = function() {
+    this.room.editRoleName(this.role.name);
     this.destroy();
 };
 
-EditSeatMorph.prototype.createSeatClone = function() {
-    this.table.createSeatClone(this.seat.name);
+EditRoleMorph.prototype.createRoleClone = function() {
+    this.room.createRoleClone(this.role.name);
     this.destroy();
 };
 
-EditSeatMorph.prototype.deleteSeat = function() {
-    this.table.deleteSeat(this.seat.name);
+EditRoleMorph.prototype.deleteRole = function() {
+    this.room.deleteRole(this.role.name);
     this.destroy();
 };
 
-EditSeatMorph.prototype.moveToSeat = function() {
-    this.table.moveToSeat(this.seat.name);
+EditRoleMorph.prototype.moveToRole = function() {
+    this.room.moveToRole(this.role.name);
     this.destroy();
 };
 
-EditSeatMorph.prototype.evictUser = function() {
-    this.table.evictUser(this.seat.user, this.seat.name);
+EditRoleMorph.prototype.evictUser = function() {
+    this.room.evictUser(this.role.user, this.role.name);
     this.destroy();
 };
 
@@ -704,19 +700,19 @@ ProjectsMorph.prototype = new ScrollFrameMorph();
 ProjectsMorph.prototype.constructor = ProjectsMorph;
 ProjectsMorph.uber = ScrollFrameMorph.prototype;
 
-function ProjectsMorph(table, sliderColor) {
-    // TODO: Get the table info and update when websockets do stuff
+function ProjectsMorph(room, sliderColor) {
+    // TODO: Get the room info and update when websockets do stuff
     ProjectsMorph.uber.init.call(this, null, null, sliderColor);
     this.acceptsDrops = false;
-    this.table = table;
-    this.add(table);
+    this.room = room;
+    this.add(room);
     // Reset the position
-    this.table.silentSetPosition(new Point(0,0));
-    this.updateTable();
+    this.room.silentSetPosition(new Point(0,0));
+    this.updateRoom();
 }
 
-ProjectsMorph.prototype.updateTable = function() {
-    // Receive updates about the table from the server
+ProjectsMorph.prototype.updateRoom = function() {
+    // Receive updates about the room from the server
     var padding = 4;
 
     this.contents.destroy();
@@ -724,18 +720,18 @@ ProjectsMorph.prototype.updateTable = function() {
     this.contents.acceptsDrops = false;
     this.addBack(this.contents);
 
-    // Draw the table
-    //this.table.setExtent
-    this.table.drawNew();
-    this.addContents(this.table);
+    // Draw the room
+    //this.room.setExtent
+    this.room.drawNew();
+    this.addContents(this.room);
 
-    // Draw the "new seat" button
-    if (this.table.isEditable()) {
+    // Draw the "new role" button
+    if (this.room.isEdiroom()) {
         this._addButton({
-            selector: 'createNewSeat',
+            selector: 'createNewRole',
             icon: 'plus',
-            hint: 'Add a seat to the table',
-            left: this.table.right() + padding*4
+            hint: 'Add a role to the room',
+            left: this.room.right() + padding*4
         });
     }
 };
@@ -744,12 +740,12 @@ ProjectsMorph.prototype._addButton = function(params) {
     var selector = params.selector,
         icon = params.icon,
         hint = params.hint,
-        left = params.left || this.table.center().x,
-        top = params.top || this.table.center().y,
+        left = params.left || this.room.center().x,
+        top = params.top || this.room.center().y,
         newButton;
 
     newButton = new PushButtonMorph(
-        this.table,
+        this.room,
         selector,
         new SymbolMorph(icon, 12)
     );
@@ -786,15 +782,15 @@ ProjectDialogMorph.prototype.openProject = function () {
     if (this.source === 'examples') {
         response = JSON.parse(this.ide.getURL('api/Examples/' + proj.name +
             '?sId=' + this.ide.sockets.uuid));
-        this.ide.table.nextTable = {
+        this.ide.room.nextRoom = {
             ownerId: response.ownerId,
-            tableName: response.tableName,
-            seatId: response.primarySeat
+            roomName: response.roomName,
+            roleId: response.primaryRole
         };
 
-        // seat name
+        // role name
         this.ide.openProjectString(response.src.SourceCode);
-        this.ide.loadNextTable();
+        this.ide.loadNextRoom();
         this.destroy();
     } else {
         return superOpenProj.call(this);
@@ -833,7 +829,7 @@ ProjectDialogMorph.prototype.setSource = function (source) {
 
 ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
     var myself = this,
-        newTable = proj.ProjectName,
+        newRoom = proj.ProjectName,
         ide = this.ide;  // project name from the list
 
     SnapCloud.reconnect(
@@ -841,23 +837,23 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
             SnapCloud.callService(
                 'getProject',
                 function (response) {
-                    var seatId = response[0].ProjectName;  // src proj name
+                    var roleId = response[0].ProjectName;  // src proj name
                     SnapCloud.disconnect();
                     ide.source = 'cloud';
                     if (response[0].SourceCode) {
                         ide.droppedText(response[0].SourceCode);
-                        ide.table.nextTable = {
+                        ide.room.nextRoom = {
                             ownerId: SnapCloud.username,
-                            tableName: newTable,
-                            seatId: seatId
+                            roomName: newRoom,
+                            roleId: roleId
                         };
                     } else {  // initialize an empty code base
                         ide.clearProject();
-                        ide.table._name = newTable;  // silent set name
+                        ide.room._name = newRoom;  // silent set name
                         // FIXME: this could cause problems later
-                        ide.table.ownerId = SnapCloud.username;
-                        ide.silentSetProjectName(seatId);
-                        ide.sockets.updateTableInfo();
+                        ide.room.ownerId = SnapCloud.username;
+                        ide.silentSetProjectName(roleId);
+                        ide.sockets.updateRoomInfo();
                     }
                     if (proj.Public === 'true') {
                         location.hash = '#present:Username=' +

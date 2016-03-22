@@ -1,3 +1,7 @@
+/* global RoomMorph, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
+   WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
+   Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
+   InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, newCanvas,*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -10,14 +14,14 @@ function NetsBloxMorph(isAutoFill) {
 NetsBloxMorph.prototype.init = function (isAutoFill) {
     // Create the websocket manager
     this.sockets = new WebSocketManager(this);
-    this.table = null;
+    this.room = null;
 
     // initialize inherited properties:
     NetsBloxMorph.uber.init.call(this, isAutoFill);
 };
 
 NetsBloxMorph.prototype.buildPanes = function () {
-    this.createTable();
+    this.createRoom();
     NetsBloxMorph.uber.buildPanes.call(this);
 };
 
@@ -53,38 +57,38 @@ NetsBloxMorph.prototype.clearProject = function () {
 
 
 NetsBloxMorph.prototype.newProject = function (projectName) {
-    var tableName = 'Table ' + (Date.now() % 100);
+    var roomName = 'Room ' + (Date.now() % 100);
     this.clearProject();
 
-    // Get new table name
+    // Get new room name
     this.sockets.sendMessage({
-        type: 'create-table',
-        table: tableName,
-        seat: projectName || TableMorph.DEFAULT_SEAT
+        type: 'create-room',
+        room: roomName,
+        role: projectName || RoomMorph.DEFAULT_ROLE
     });
     if (projectName) {
         this.setProjectName(projectName || '');
     } else {
-        this.silentSetProjectName(TableMorph.DEFAULT_SEAT);
+        this.silentSetProjectName(RoomMorph.DEFAULT_ROLE);
     }
-    this.createTable();
-    this.table.name = tableName;
+    this.createRoom();
+    this.room.name = roomName;
     this.selectSprite(this.stage.children[0]);
     this.controlBar.updateLabel();
 };
 
-NetsBloxMorph.prototype.createTable = function() {
-    this.table = new TableMorph(this);
+NetsBloxMorph.prototype.createRoom = function() {
+    this.room = new RoomMorph(this);
 };
 
-// Creating the 'projects' view for the table
+// Creating the 'projects' view for the room
 NetsBloxMorph.prototype.createSpriteEditor = function() {
-    if (this.currentTab === 'table') {
+    if (this.currentTab === 'room') {
         if (this.spriteEditor) {
             this.spriteEditor.destroy();
         }
 
-        this.spriteEditor = new ProjectsMorph(this.table, this.sliderColor);
+        this.spriteEditor = new ProjectsMorph(this.room, this.sliderColor);
         this.spriteEditor.color = this.groupColor;
         this.add(this.spriteEditor);
     } else {
@@ -93,7 +97,7 @@ NetsBloxMorph.prototype.createSpriteEditor = function() {
 };
 
 NetsBloxMorph.prototype.setProjectName = function (string) {
-    this.table.setSeatName(string);
+    this.room.setSeatName(string);
 };
 
 NetsBloxMorph.prototype.silentSetProjectName = function (string) {
@@ -107,7 +111,7 @@ NetsBloxMorph.prototype.createControlBar = function () {
     NetsBloxMorph.uber.createControlBar.call(this);
 
     this.controlBar.updateLabel = function () {
-        var suffix = ' @ ' + myself.table.name;
+        var suffix = ' @ ' + myself.room.name;
 
         suffix += myself.world().isDevMode ?
                 ' - ' + localize('development mode') : '';
@@ -137,19 +141,19 @@ NetsBloxMorph.prototype.createControlBar = function () {
     };
 };
 
-NetsBloxMorph.prototype.loadNextTable = function () {
-    // Check if the table has diverged and optionally fork
+NetsBloxMorph.prototype.loadNextRoom = function () {
+    // Check if the room has diverged and optionally fork
     // TODO
-    if (this.table.nextTable) {
-        var next = this.table.nextTable;
-        this.table._name = next.tableName;  // silent set
-        this.table.leaderId = next.leaderId;
-        this.silentSetProjectName(next.seatId);
+    if (this.room.nextRoom) {
+        var next = this.room.nextRoom;
+        this.room._name = next.roomName;  // silent set
+        this.room.leaderId = next.leaderId;
+        this.silentSetProjectName(next.roleId);
 
         // Send the message to the server
-        this.sockets.updateTableInfo();
+        this.sockets.updateRoomInfo();
 
-        this.table.nextTable = null;
+        this.room.nextRoom = null;
     }
 };
 
@@ -171,8 +175,8 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (str) {
                 ),
                 this
             );
-            // Join the table
-            this.loadNextTable();
+            // Join the room
+            this.loadNextRoom();
         } catch (err) {
             this.showMessage('Load failed: ' + err);
         }
@@ -186,7 +190,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (str) {
             ),
             this
         );
-        this.loadNextTable();
+        this.loadNextRoom();
     }
     this.stopFastTracking();
 };
@@ -405,10 +409,10 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
     tab = new TabMorph(
         tabColors,
         null, // target
-        function () {tabBar.tabTo('table'); },
-        localize('Table'), // label
+        function () {tabBar.tabTo('room'); },
+        localize('Room'), // label
         function () {  // query
-            return myself.currentTab === 'table';
+            return myself.currentTab === 'room';
         }
     );
     tab.padding = 3;
@@ -469,7 +473,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addLine();
     menu.addItem('New', 'createNewProject');
     menu.addItem('Open...', 'openProjectsBrowser');
-    menu.addItem('Save', "save");
+    menu.addItem('Save', 'save');
     menu.addItem('Save As...', 'saveProjectsBrowser');
     menu.addLine();
     menu.addItem(
@@ -481,17 +485,17 @@ NetsBloxMorph.prototype.projectMenu = function () {
                 myself.filePicker = null;
             }
             inp.type = 'file';
-            inp.style.color = "transparent";
-            inp.style.backgroundColor = "transparent";
-            inp.style.border = "none";
-            inp.style.outline = "none";
-            inp.style.position = "absolute";
-            inp.style.top = "0px";
-            inp.style.left = "0px";
-            inp.style.width = "0px";
-            inp.style.height = "0px";
+            inp.style.color = 'transparent';
+            inp.style.backgroundColor = 'transparent';
+            inp.style.border = 'none';
+            inp.style.outline = 'none';
+            inp.style.position = 'absolute';
+            inp.style.top = '0px';
+            inp.style.left = '0px';
+            inp.style.width = '0px';
+            inp.style.height = '0px';
             inp.addEventListener(
-                "change",
+                'change',
                 function () {
                     document.body.removeChild(inp);
                     myself.filePicker = null;

@@ -4,7 +4,7 @@ var express = require('express'),
     _ = require('lodash'),
     Utils = _.extend(require('./Utils'), require('./ServerUtils.js')),
     SocketManager = require('./SocketManager'),
-    TableManager = require('./tables/TableManager'),
+    RoomManager = require('./rooms/RoomManager'),
     RPCManager = require('./rpc/RPCManager'),
     MobileManager = require('./mobile/MobileManager'),
     Storage = require('./storage/Storage'),
@@ -33,7 +33,7 @@ var express = require('express'),
 
 var BASE_CLASSES = [
     SocketManager,
-    TableManager
+    RoomManager
 ];
 var Server = function(opts) {
     this._logger = new Logger('NetsBlox');

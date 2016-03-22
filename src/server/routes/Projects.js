@@ -1,32 +1,13 @@
 'use strict';
 
-var LIST_FIELDS = [
-        'Notes',
-        'ProjectName',
-        'Public',
-        'Thumbnail',
-        'URL',
-        'Updated',
-        'TableLeader',
-        'TableName'
-    ],
-    R = require('ramda'),
-    parseXml = require('xml2js').parseString,
+var R = require('ramda'),
     _ = require('lodash'),
     Utils = _.extend(require('../Utils'), require('../ServerUtils.js')),
 
     debug = require('debug'),
     log = debug('NetsBlox:API:Projects:log'),
-    warn = debug('NetsBlox:API:Projects:warn'),
     info = debug('NetsBlox:API:Projects:info'),
-    error = debug('NetsBlox:API:Projects:error'),
-    PREVIEW_FIELDS = [
-        'ProjectName',
-        'Notes',
-        'Thumbnail',
-        'Public',
-        'Updated'
-    ];
+    error = debug('NetsBlox:API:Projects:error');
 
 var getProjectIndexFrom = function(name, user) {
     for (var i = user.projects.length; i--;) {
@@ -65,11 +46,11 @@ module.exports = [
             var username = req.session.username,
                 socketId = req.body.socketId;
 
-            info('Initiating table save for ' + username);
+            info('Initiating room save for ' + username);
             this.storage.users.get(username, (e, user) => {
-                var table,
+                var room,
                     socket = this.sockets[socketId],
-                    activeTable;
+                    activeRoom;
 
                 if (e) {
                     return res.serverError(e);
@@ -79,25 +60,25 @@ module.exports = [
                     return res.status(400).send('ERROR: user not found');
                 }
 
-                // Look up the user's table
-                activeTable = socket._table;
-                if (!activeTable) {
-                    return res.status(500).send('ERROR: active table not found');
+                // Look up the user's room
+                activeRoom = socket._room;
+                if (!activeRoom) {
+                    return res.status(500).send('ERROR: active room not found');
                 }
 
-                // Save the entire table
+                // Save the entire room
                 if (socket.isOwner()) {
-                    log(`saving entire table for ${socket.username}`);
-                    table = this.storage.tables.new(user, activeTable);
-                    table.save(function(err) {
+                    log(`saving entire room for ${socket.username}`);
+                    room = this.storage.rooms.new(user, activeRoom);
+                    room.save(function(err) {
                         if (err) {
                             return res.status(500).send('ERROR: ' + err);
                         }
-                        return res.send('table saved!');
+                        return res.send('room saved!');
                     });
                 } else {  // just update the project cache for the given user
                     log(`caching ${socket._seatId} for ${socket.username}`);
-                    activeTable.cache(socket._seatId, err => {
+                    activeRoom.cache(socket._seatId, err => {
                         if (err) {
                             return res.status(500).send('ERROR: ' + err);
                         }
@@ -117,13 +98,13 @@ module.exports = [
             log(username +' requested project list');
             this.storage.users.get(username, (e, user) => {
                 var previews,
-                    tables = user.tables || [];
+                    rooms = user.rooms || user.tables || [];
 
                 if (e) {
                     return res.serverError(e);
                 }
                 if (user) {
-                    // Return the following for each table:
+                    // Return the following for each room:
                     //
                     //  + ProjectName
                     //  + Updated
@@ -134,19 +115,19 @@ module.exports = [
                     // These values are retrieved from whatever seat has notes
                     // or chosen arbitrarily (for now)
 
-                    // Update this to parse the projects from the table list
-                    previews = tables.map(table => {
+                    // Update this to parse the projects from the room list
+                    previews = rooms.map(room => {
                         var preview,
-                            seats = Object.keys(table.seats),
+                            seats = Object.keys(room.seats),
                             seat;
 
                         preview = {
-                            ProjectName: table.name,
-                            Public: !!table.public
+                            ProjectName: room.name,
+                            Public: !!room.public
                         };
 
                         for (var i = seats.length; i--;) {
-                            seat = table.seats[seats[i]];
+                            seat = room.seats[seats[i]];
                             if (seat) {
                                 // Get the most recent time
                                 preview.Updated = Math.max(
@@ -170,7 +151,6 @@ module.exports = [
                         )
                     );
                         
-                    info(`Tables are ${previews.map(project => project.TableUuid)}`);
                     return res.send(Utils.serializeArray(previews));
                 }
                 return res.status(404);
@@ -184,63 +164,63 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             var username = req.session.username,
-                tableName = req.body.ProjectName;
+                roomName = req.body.ProjectName;
 
             log(username + ' requested project ' + req.body.ProjectName);
             this.storage.users.get(username, (e, user) => {
                 if (e) {
                     return res.serverError(e);
                 }
-                this._logger.trace(`looking up table "${tableName}"`);
+                this._logger.trace(`looking up room "${roomName}"`);
 
                 // For now, just return the project
-                var table = user.tables.find(table => table.name === tableName),
+                var room = user.rooms.find(room => room.name === roomName),
                     project,
-                    activeTable,
+                    activeRoom,
                     seat;
 
-                if (!table) {
-                    this._logger.error(`could not find table ${tableName}`);
-                    return res.status(404).send('ERROR: could not find table');
+                if (!room) {
+                    this._logger.error(`could not find room ${roomName}`);
+                    return res.status(404).send('ERROR: could not find room');
                 }
 
-                activeTable = this.tables[Utils.uuid(table.owner, table.name)];
-                if (activeTable) {
-                    let openSeat = Object.keys(activeTable.seats)
-                        .filter(seat => !activeTable.seats[seat])  // not occupied
+                activeRoom = this.rooms[Utils.uuid(room.owner, room.name)];
+                if (activeRoom) {
+                    let openSeat = Object.keys(activeRoom.seats)
+                        .filter(seat => !activeRoom.seats[seat])  // not occupied
                         .shift();
 
                     if (openSeat) {  // Send an open seat and add the user
                         info(`adding ${username} to open seat "${openSeat}" at ` +
-                            `"${tableName}"`);
+                            `"${roomName}"`);
 
-                        seat = activeTable.cachedProjects[openSeat];
+                        seat = activeRoom.cachedProjects[openSeat];
                     } else {  // If no seats are open, make a new seat
                         let i = 2,
                             base;
                         openSeat = base = 'new seat';
-                        while (activeTable.hasOwnProperty(openSeat)) {
+                        while (activeRoom.hasOwnProperty(openSeat)) {
                             openSeat = `${base} (${i++})`;
                         }
 
                         info(`adding ${username} to new seat "${openSeat}" at ` +
-                            `"${tableName}"`);
+                            `"${roomName}"`);
 
-                        activeTable.createSeat(openSeat);
+                        activeRoom.createSeat(openSeat);
                         seat = {
                             ProjectName: openSeat,
                             SourceCode: null,
                             SourceSize: 0
                         };
-                        activeTable.cachedProjects[openSeat] = seat;
+                        activeRoom.cachedProjects[openSeat] = seat;
                     }
                 } else {
-                    // If table is not active, pick a seat arbitrarily
-                    seat = Object.keys(table.seats)
-                        .map(seat => table.seats[seat])[0];  // values
+                    // If room is not active, pick a seat arbitrarily
+                    seat = Object.keys(room.seats)
+                        .map(seat => room.seats[seat])[0];  // values
 
                     if (!seat) {
-                        this._logger.warn('Found table with no seats!');
+                        this._logger.warn('Found room with no seats!');
                         return res.status(500).send('ERROR: project has no seats');
                     }
                 }
@@ -253,7 +233,7 @@ module.exports = [
     },
     {
         Service: 'deleteProject',
-        Parameters: 'ProjectName,TableName',
+        Parameters: 'ProjectName,RoomName',
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
@@ -262,12 +242,12 @@ module.exports = [
 
             log(username +' trying to delete "' + project + '"');
             this.storage.users.get(username, (e, user) => {
-                var table;
+                var room;
 
-                for (var i = user.tables.length; i--;) {
-                    table = user.tables[i];
-                    if (table.name === project) {
-                        user.tables.splice(i, 1);
+                for (var i = user.rooms.length; i--;) {
+                    room = user.rooms[i];
+                    if (room.name === project) {
+                        user.rooms.splice(i, 1);
                         this._logger.trace(`project ${project} deleted`);
                         user.save();
                         return res.send('project deleted!');

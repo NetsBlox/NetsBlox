@@ -1,3 +1,6 @@
+/* global StringMorph, Color, InputSlotMorph, ScriptsMorph, BlockMorph, StageMorph,
+ CommandBlockMorph, SyntaxElementMorph*/
+
 // MessageInputSlotMorph //////////////////////////////////////////////
 // I am a dropdown menu with an associated message type
 // InputSlotMorph inherits from ArgMorph:
@@ -247,7 +250,7 @@ HintInputSlotMorph.prototype.changed = function() {
  * @param noValues
  * @return {undefined}
  */
-CommandBlockMorph.prototype.revertToDefaultInput = function (arg, noValues) {
+CommandBlockMorph.prototype.revertToDefaultInput = function (arg) {
     var messageInput,
         messageInputIndex = -1,
         inputs = this.inputs(),

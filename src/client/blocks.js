@@ -1,3 +1,11 @@
+/* global StringMorph, localize, newCanvas, Point, Morph, InputSlotMorph
+   Color, nop, BlockMorph, StageMorph, MultiArgMorph, SyntaxElementMorph,
+   HintInputSlotMorph, RingMorph, SpriteMorph, ReporterBlockMorph, TextSlotMorph,
+   ArgMorph, MessageInputSlotMorph, MessageOutputSlotMorph, BooleanSlotMorph,
+   CommandSlotMorph, RingCommandSlotMorph, RingReporterSlotMorph, CSlotMorph,
+   ColorSlotMorph, TemplateSlotMorph, FunctionSlotMorph, ReporterSlotMorph,
+   SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume
+   */
 
 InputSlotMorph.prototype.messageTypesMenu = function() {
     var rcvr = this.parentThatIsA(BlockMorph).receiver(),
@@ -432,12 +440,12 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         case '%msgInput':
             part = new MessageInputSlotMorph();
             break;
-        case '%seats':
+        case '%roles':
             // Seat ids
             part = new InputSlotMorph(
                 null,
                 false,
-                'seatNames',
+                'roleNames',
                 true
             );
             break;
@@ -818,14 +826,14 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
     return part;
 };
 
-InputSlotMorph.prototype.seatNames = function () {
+InputSlotMorph.prototype.roleNames = function () {
     var ide = this.parentThatIsA(IDE_Morph),
-        seats = Object.keys(ide.table.seats),
+        roles = Object.keys(ide.room.roles),
         dict = {};
 
-    for (var i = seats.length; i--;) {
-        if (ide.projectName !== seats[i]) {  // project name is seatid
-            dict[seats[i]] = seats[i];
+    for (var i = roles.length; i--;) {
+        if (ide.projectName !== roles[i]) {  // project name is roleid
+            dict[roles[i]] = roles[i];
         }
     }
 
@@ -940,8 +948,7 @@ SymbolMorph.prototype.drawSymbolPlus = function (canvas, color) {
     var ctx = canvas.getContext('2d'),
         w = canvas.width,
         l = Math.max(w / 12, 1),
-        h = canvas.height,
-        arcWidth = h / 4;
+        h = canvas.height;
 
     ctx.lineWidth = l;
     ctx.strokeStyle = color.toString();

@@ -8,7 +8,7 @@ var randomString = require('just.randomstring'),
 
 class UserStore {
     constructor (logger, db, mailer) {
-        this._logger = logger.fork('Tables');
+        this._logger = logger.fork('Users');
         this._users = db.collection('users');
         MAILER = mailer;
     }
@@ -45,7 +45,7 @@ class User extends DataWrapper {
             this._emailTmpPassword(password);
             this.hash = hash(password);
         }
-        this.tables = this.tables || [];
+        this.rooms = this.rooms || this.tables || [];
     }
 
     _emailTmpPassword(password) {

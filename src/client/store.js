@@ -1,3 +1,6 @@
+/* global SnapSerializer, SpriteMorph, sizeOf, List, detect, CustomCommandBlockMorph,
+   CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
+   WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame*/
 SnapSerializer.prototype.app = 'NetsBlox 0.3.1, http://netsblox.org';  // Make this version automatic
 
 SnapSerializer.prototype.loadMessageType = function (stage, model) {

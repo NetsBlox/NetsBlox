@@ -1,4 +1,5 @@
-/*globals nop,SnapCloud,Context,VariableFrame,SpriteMorph,StageMorph*/
+/*globals nop, SnapCloud, Context, SpriteMorph, StageMorph,
+  RoomMorph*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
@@ -31,37 +32,36 @@ WebSocketManager.MessageHandlers = {
         // TODO: pass to debugger
     },
 
-    // Update on the current seats at the given table
-    'table-seats': function(msg) {
-        this.ide.table.update(msg.owner,
+    // Update on the current roles at the given room
+    'room-roles': function(msg) {
+        this.ide.room.update(msg.owner,
             msg.name,
-            msg.owners,
-            msg.occupied
+            msg.occupants
         );
     },
 
     'close-invite': function(msg) {
-        if (this.ide.table.invitations[msg.id]) {
-            this.ide.table.invitations[msg.id].destroy();
-            delete this.ide.table.invitations[msg.id];
+        if (this.ide.room.invitations[msg.id]) {
+            this.ide.room.invitations[msg.id].destroy();
+            delete this.ide.room.invitations[msg.id];
         }
     },
 
-    // Receive an invite to join a table
-    'table-invitation': function(msg) {
-        this.ide.table.promptInvite(msg);
+    // Receive an invite to join a room
+    'room-invitation': function(msg) {
+        this.ide.room.promptInvite(msg);
     },
 
     'project-closed': function() {
-        var owner = this.ide.table.ownerId;
-        this.ide.showMessage(owner + ' closed the table. ' +
+        var owner = this.ide.room.ownerId;
+        this.ide.showMessage(owner + ' closed the room. ' +
             'You can ask to join again once ' + owner + ' opens the project again');
-        this.ide.newProject(TableMorph.DEFAULT_SEAT);
+        this.ide.newProject();
     },
 
     'project-fork': function() {
         // I should probably change this... FIXME
-        this.ide.showMessage('That other table sucked. You are now the boss.');
+        this.ide.showMessage('That other room sucked. You are now the boss.');
     },
 
     'project-request': function(msg) {
@@ -72,8 +72,8 @@ WebSocketManager.MessageHandlers = {
         this.sendMessage(msg);
     },
 
-    'rename-seat': function(msg) {
-        if (msg.seatId === this.ide.projectName) {  // seat name and project name are the same
+    'rename-role': function(msg) {
+        if (msg.roleId === this.ide.projectName) {  // role name and project name are the same
             this.ide.silentSetProjectName(msg.name);
         }
     }
@@ -86,7 +86,6 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
     // Don't connect if the already connected
     if (isReconnectAttempt) {
-        console.log('trying to reconnect ('+this.websocket.readyState+')');
         if (this.websocket.readyState === this.websocket.OPEN) {
             return;
         } else if (this.websocket.readyState === this.websocket.CONNECTING) {
@@ -111,8 +110,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
     // Where should I set this up now?
     this.websocket.onmessage = function(rawMsg) {
         var msg = JSON.parse(rawMsg.data),
-            type = msg.type,
-            content;
+            type = msg.type;
 
         if (WebSocketManager.MessageHandlers[type]) {
             WebSocketManager.MessageHandlers[type].call(self, msg);
@@ -143,25 +141,25 @@ WebSocketManager.prototype.setGameType = function(gameType) {
 
 WebSocketManager.prototype._onConnect = function() {
     if (SnapCloud.username) {  // Reauthenticate if needed
-        var updateTable = this.updateTableInfo.bind(this);
-        SnapCloud.reconnect(updateTable, updateTable);
+        var updateRoom = this.updateRoomInfo.bind(this);
+        SnapCloud.reconnect(updateRoom, updateRoom);
     } else {
-        this.updateTableInfo();
+        this.updateRoomInfo();
     }
 };
 
-WebSocketManager.prototype.updateTableInfo = function() {
-    var owner = this.ide.table.ownerId,
-        seatId = this.ide.projectName,
-        tableName = this.ide.table.name || '__new_project__',
+WebSocketManager.prototype.updateRoomInfo = function() {
+    var owner = this.ide.room.ownerId,
+        roleId = this.ide.projectName,
+        roomName = this.ide.room.name || '__new_project__',
         msg = {
-            type: 'create-table',
-            table: tableName,
-            seat: seatId
+            type: 'create-room',
+            room: roomName,
+            role: roleId
         };
         
     if (owner) {
-        msg.type = 'join-table';
+        msg.type = 'join-room';
         msg.owner = owner;
     }
     this.sendMessage(msg);
@@ -272,9 +270,8 @@ WebSocketManager.prototype.startProcesses = function () {
     }
 };
 
-WebSocketManager.prototype.getSerializedProject = function(callBack, errorCall) {
-    var myself = this,
-        ide = this.ide,
+WebSocketManager.prototype.getSerializedProject = function() {
+    var ide = this.ide,
         pdata,
         media;
 
@@ -308,8 +305,8 @@ WebSocketManager.prototype.getSerializedProject = function(callBack, errorCall) 
             Media: media,
             SourceSize: pdata.length,
             MediaSize: media ? media.length : 0,
-            TableLeaderId: this.ide.table.ownerId,
-            TableName: this.ide.table.name
+            RoomLeaderId: this.ide.room.ownerId,
+            RoomName: this.ide.room.name
         };
 };
 
