@@ -77,8 +77,8 @@ module.exports = [
                         return res.send('room saved!');
                     });
                 } else {  // just update the project cache for the given user
-                    log(`caching ${socket._roleId} for ${socket.username}`);
-                    activeRoom.cache(socket._roleId, err => {
+                    log(`caching ${socket.roleId} for ${socket.username}`);
+                    activeRoom.cache(socket.roleId, err => {
                         if (err) {
                             return res.status(500).send('ERROR: ' + err);
                         }

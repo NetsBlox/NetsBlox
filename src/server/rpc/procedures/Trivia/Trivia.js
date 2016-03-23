@@ -53,7 +53,7 @@ module.exports = {
             for (var i = questions.length; i--;) {
                 msg = {
                     type: 'message',
-                    dstId: socket._seatId,
+                    dstId: socket.roleId,
                     msgType: 'Trivia',
                     content: {
                         question: questions[i].question,
