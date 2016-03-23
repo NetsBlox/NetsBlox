@@ -42,24 +42,24 @@ class Room extends DataWrapper {
             }
 
             // create the room from the projects
-            var seats = Object.keys(this._room.seats),
+            var roles = Object.keys(this._room.roles),
                 socket,
                 k,
                 content = {
                     owner: this._room.owner.username,
                     name: this._room.name,
-                    seats: {}
+                    roles: {}
                 };
 
-            for (var i = seats.length; i--;) {
-                socket = this._room.seats[seats[i]];
+            for (var i = roles.length; i--;) {
+                socket = this._room.roles[roles[i]];
 
                 k = sockets.indexOf(socket);
                 if (k !== -1) {
-                    // seat content
-                    content.seats[seats[i]] = projects[k];
+                    // role content
+                    content.roles[roles[i]] = projects[k];
                 } else {
-                    content.seats[seats[i]] = this._room.cachedProjects[seats[i]] || null;
+                    content.roles[roles[i]] = this._room.cachedProjects[roles[i]] || null;
                 }
             }
             callback(null, content);
@@ -136,10 +136,10 @@ class Room extends DataWrapper {
 
     pretty() {
         var prettyRoom = this._saveable();
-        Object.keys(prettyRoom.seats || {})
-            .forEach(seat => {
-                if (prettyRoom.seats[seat]) {
-                    prettyRoom.seats[seat] = '<project xml>';
+        Object.keys(prettyRoom.roles || {})
+            .forEach(role => {
+                if (prettyRoom.roles[role]) {
+                    prettyRoom.roles[role] = '<project xml>';
                 }
             });
 

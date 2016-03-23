@@ -37,7 +37,7 @@ var RoomManager = function(logger) {
 
 RoomManager.prototype.forkRoom = function(params) {
     var room = params.room,
-        socket = params.socket || room.roles[params.seatId],
+        socket = params.socket || room.roles[params.roleId],
         newRoom;
 
     if (socket === room.owner) {
@@ -45,7 +45,7 @@ RoomManager.prototype.forkRoom = function(params) {
         return;
     }
 
-    this._logger.trace(`${params.seatId} is forking room`);
+    this._logger.trace(`${params.roleId} is forking room`);
     this._logger.trace(`${socket.username} is forking room ${room.uuid}`);
 
     // Create the new room
@@ -104,7 +104,7 @@ RoomManager.prototype.getActiveMembers = function() {
 RoomManager.prototype.checkRoom = function(room) {
     var uuid = room.uuid,
         roles = Object.keys(room.roles)
-            .filter(seat => !!room.roles[seat]);
+            .filter(role => !!room.roles[role]);
 
     this._logger.trace('Checking room ' + uuid + ' (' + roles.length + ')');
     if (roles.length === 0) {

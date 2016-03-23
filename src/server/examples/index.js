@@ -18,8 +18,7 @@ var examples = {};
         cachedProjects: {
             p1: example('dice'),
             p2: example('dice')
-        },
-        primaryRole: 'p1'
+        }
     },
     // Caesar Shift
     {
@@ -29,8 +28,7 @@ var examples = {};
             alice: example('cs-alice'),
             bob: example('cs-bob'),
             'super eve': example('cs-super-eve')
-        },
-        primaryRole: 'alice'
+        }
     },
     // Pong
     {
@@ -38,8 +36,7 @@ var examples = {};
         cachedProjects: {
             left: example('Pong-left'),
             right: example('Pong-right')
-        },
-        primaryRole: 'right'
+        }
     },
     // TicTacToe (no rpcs)
     {
@@ -47,8 +44,7 @@ var examples = {};
         cachedProjects: {
             X: example('TTT-advanced-X'),
             O: example('TTT-advanced-O')
-        },
-        primaryRole: 'X'
+        }
     },
     // TicTacToe
     {
@@ -56,45 +52,39 @@ var examples = {};
         cachedProjects: {
             player1: example('TicTacToe-p1'),
             player2: example('TicTacToe-p2')
-        },
-        primaryRole: 'player1'
+        }
     },
     {
         RoomName: 'MarcoPolo',
         cachedProjects: {
             player1: example('marco'),
             player2: example('polo')
-        },
-        primaryRole: 'player1'
+        }
     },
     // Single user examples (RPC's and stuff)
     {
         RoomName: 'AirQuality',
         cachedProjects: {
             AirQuality: example('Air Quality')
-        },
-        primaryRole: 'AirQuality'
+        }
     },
     {
         RoomName: 'Earthquakes',
         cachedProjects: {
             Earthquakes: example('Earthquakes')
-        },
-        primaryRole: 'Earthquakes'
+        }
     },
     {
         RoomName: 'Weather',
         cachedProjects: {
             Weather: example('Weather')
-        },
-        primaryRole: 'Weather'
+        }
     },
     {
         RoomName: 'SimpleHangman',
         cachedProjects: {
             Hangman: example('SimpleHangman')
-        },
-        primaryRole: 'Hangman'
+        }
     }
     // Add more examples?
     // Fox.xml
