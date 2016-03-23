@@ -1,6 +1,7 @@
 'use strict';
 var R = require('ramda'),
-    Utils = require('../ServerUtils.js'),
+    _ = require('lodash'),
+    Utils = _.extend(require('../Utils'), require('../ServerUtils.js')),
     UserAPI = require('./Users'),
     RoomAPI = require('./Rooms'),
     ProjectAPI = require('./Projects'),
@@ -8,7 +9,6 @@ var R = require('ramda'),
     GameTypes = require('../GameTypes'),
 
     debug = require('debug'),
-    _ = require('lodash'),
     log = debug('NetsBlox:API:log'),
     fs = require('fs'),
     path = require('path'),
@@ -219,27 +219,60 @@ module.exports = [
             //  + create the room for the socket
             example = _.cloneDeep(EXAMPLES[name]);
             socket = this.sockets[uuid];
-            var seat = example.primaryRole,
+            var role,
                 room,
                 result;
 
             if (!isPreview) {
-                room = this.createRoom(socket, name);
-                // Check the room in 10 seconds
-                setTimeout(this.checkRoom.bind(this, room), 10000);
+                // Check if the room already exists
+                room = this.rooms[Utils.uuid(socket.username, name)];
+
+                if (!room) {  // Create the room
+                    room = this.createRoom(socket, name);
+                    room = _.extend(room, example);
+                    // Check the room in 10 seconds
+                    setTimeout(this.checkRoom.bind(this, room), 10000);
+                }
+
+                // Get an open role or create a new one
+                role = Object.keys(room.roles)
+                    .filter(role => !room.roles[role])  // not occupied
+                    .shift();
+
+                if (!role) {  // If no open role, create a new one
+                    let i = 2,
+                        base;
+
+                    role = base = 'new role';
+                    while (room.hasOwnProperty(role)) {
+                        role = `${base} (${i++})`;
+                    }
+
+                    room.createRole(role);
+                    room.cachedProjects[role] = {
+                        ProjectName: role,
+                        SourceCode: null,
+                        SourceSize: 0
+                    };
+                }
+
+                log(`adding ${socket.username} to role "${role}" at ` +
+                    `"${name}"`);
             } else {
                 room = example;
                 room.owner = socket;
+                //  + customize and return the room for the socket
+                room = _.extend(room, example);
+                role = Object.keys(room.roles).shift();
             }
-            //  + customize and return the room for the socket
-            room = _.extend(room, example);
 
             result = {
-                src: room.cachedProjects[seat],
+                src: room.cachedProjects[role],
                 roomName: room.RoomName,
                 ownerId: room.owner.username,
-                primaryRole: room.primaryRole
+                role: role
             };
+
             return res.json(result);
         }
     }
