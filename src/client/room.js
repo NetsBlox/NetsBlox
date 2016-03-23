@@ -785,11 +785,15 @@ ProjectDialogMorph.prototype.openProject = function () {
         this.ide.room.nextRoom = {
             ownerId: response.ownerId,
             roomName: response.roomName,
-            roleId: response.primaryRole
+            roleId: response.role
         };
 
         // role name
-        this.ide.openProjectString(response.src.SourceCode);
+        if (response.src.SourceCode) {
+            this.ide.openProjectString(response.src.SourceCode);
+        } else {
+            this.ide.clearProject();
+        }
         this.ide.loadNextRoom();
         this.destroy();
     } else {

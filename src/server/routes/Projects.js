@@ -77,8 +77,8 @@ module.exports = [
                         return res.send('room saved!');
                     });
                 } else {  // just update the project cache for the given user
-                    log(`caching ${socket._seatId} for ${socket.username}`);
-                    activeRoom.cache(socket._seatId, err => {
+                    log(`caching ${socket._roleId} for ${socket.username}`);
+                    activeRoom.cache(socket._roleId, err => {
                         if (err) {
                             return res.status(500).send('ERROR: ' + err);
                         }
@@ -112,33 +112,35 @@ module.exports = [
                     //  + Thumbnail
                     //  + Public?
                     //
-                    // These values are retrieved from whatever seat has notes
+                    // These values are retrieved from whatever role has notes
                     // or chosen arbitrarily (for now)
 
                     // Update this to parse the projects from the room list
                     previews = rooms.map(room => {
                         var preview,
-                            seats = Object.keys(room.seats),
-                            seat;
+                            roles,
+                            role;
 
+                        room.roles = room.roles || room.seats;
+                        roles = Object.keys(room.roles);
                         preview = {
                             ProjectName: room.name,
                             Public: !!room.public
                         };
 
-                        for (var i = seats.length; i--;) {
-                            seat = room.seats[seats[i]];
-                            if (seat) {
+                        for (var i = roles.length; i--;) {
+                            role = room.roles[roles[i]];
+                            if (role) {
                                 // Get the most recent time
                                 preview.Updated = Math.max(
                                     preview.Updated || 0,
-                                    new Date(seat.Updated).getTime()
+                                    new Date(role.Updated).getTime()
                                 );
 
                                 // Notes
-                                preview.Notes = preview.Notes || seat.Notes;
+                                preview.Notes = preview.Notes || role.Notes;
                                 preview.Thumbnail = preview.Thumbnail ||
-                                    seat.Thumbnail;
+                                    role.Thumbnail;
                             }
                         }
                         preview.Updated = new Date(preview.Updated);  // to string
@@ -177,7 +179,7 @@ module.exports = [
                 var room = user.rooms.find(room => room.name === roomName),
                     project,
                     activeRoom,
-                    seat;
+                    role;
 
                 if (!room) {
                     this._logger.error(`could not find room ${roomName}`);
@@ -186,47 +188,47 @@ module.exports = [
 
                 activeRoom = this.rooms[Utils.uuid(room.owner, room.name)];
                 if (activeRoom) {
-                    let openSeat = Object.keys(activeRoom.seats)
-                        .filter(seat => !activeRoom.seats[seat])  // not occupied
+                    let openRole = Object.keys(activeRoom.roles)
+                        .filter(role => !activeRoom.roles[role])  // not occupied
                         .shift();
 
-                    if (openSeat) {  // Send an open seat and add the user
-                        info(`adding ${username} to open seat "${openSeat}" at ` +
+                    if (openRole) {  // Send an open role and add the user
+                        info(`adding ${username} to open role "${openRole}" at ` +
                             `"${roomName}"`);
 
-                        seat = activeRoom.cachedProjects[openSeat];
-                    } else {  // If no seats are open, make a new seat
+                        role = activeRoom.cachedProjects[openRole];
+                    } else {  // If no roles are open, make a new role
                         let i = 2,
                             base;
-                        openSeat = base = 'new seat';
-                        while (activeRoom.hasOwnProperty(openSeat)) {
-                            openSeat = `${base} (${i++})`;
+                        openRole = base = 'new role';
+                        while (activeRoom.hasOwnProperty(openRole)) {
+                            openRole = `${base} (${i++})`;
                         }
 
-                        info(`adding ${username} to new seat "${openSeat}" at ` +
+                        info(`adding ${username} to new role "${openRole}" at ` +
                             `"${roomName}"`);
 
-                        activeRoom.createSeat(openSeat);
-                        seat = {
-                            ProjectName: openSeat,
+                        activeRoom.createRole(openRole);
+                        role = {
+                            ProjectName: openRole,
                             SourceCode: null,
                             SourceSize: 0
                         };
-                        activeRoom.cachedProjects[openSeat] = seat;
+                        activeRoom.cachedProjects[openRole] = role;
                     }
                 } else {
-                    // If room is not active, pick a seat arbitrarily
-                    seat = Object.keys(room.seats)
-                        .map(seat => room.seats[seat])[0];  // values
+                    // If room is not active, pick a role arbitrarily
+                    role = Object.keys(room.roles)
+                        .map(role => room.roles[role])[0];  // values
 
-                    if (!seat) {
-                        this._logger.warn('Found room with no seats!');
-                        return res.status(500).send('ERROR: project has no seats');
+                    if (!role) {
+                        this._logger.warn('Found room with no roles!');
+                        return res.status(500).send('ERROR: project has no roles');
                     }
                 }
 
                 // Send the project to the user
-                project = Utils.serializeProject(seat);
+                project = Utils.serializeProject(role);
                 return res.send(project);
             });
         }

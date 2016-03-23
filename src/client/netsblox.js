@@ -97,7 +97,7 @@ NetsBloxMorph.prototype.createSpriteEditor = function() {
 };
 
 NetsBloxMorph.prototype.setProjectName = function (string) {
-    this.room.setSeatName(string);
+    this.room.setRoleName(string);
 };
 
 NetsBloxMorph.prototype.silentSetProjectName = function (string) {

@@ -41,7 +41,7 @@ class ActiveRoom {
         data = this._store.fork(fork);
         fork.setStorage(data);
 
-        roles.forEach(seat => fork.silentCreateRole(seat));
+        roles.forEach(role => fork.silentCreateRole(role));
 
         // Copy the data from each project
         fork.cachedProjects = _.cloneDeep(this.cachedProjects);
@@ -57,20 +57,20 @@ class ActiveRoom {
         return fork;
     }
 
-    add (socket, seat) {
-        this._logger.trace(`adding ${socket.uuid} to ${seat}`);
-        this.roles[seat] = socket;
+    add (socket, role) {
+        this._logger.trace(`adding ${socket.uuid} to ${role}`);
+        this.roles[role] = socket;
         this.onRolesChanged();  // Update all clients
     }
 
-    createRole (seat) {
-        this.silentCreateRole(seat);
+    createRole (role) {
+        this.silentCreateRole(role);
         this.onRolesChanged();
     }
 
-    silentCreateRole (seat) {
-        this._logger.trace(`Adding role ${seat}`);
-        this.roles[seat] = null;
+    silentCreateRole (role) {
+        this._logger.trace(`Adding role ${role}`);
+        this.roles[role] = null;
     }
 
     updateRole () {
@@ -86,17 +86,17 @@ class ActiveRoom {
         this.onRolesChanged();
     }
 
-    renameRole (seatId, newId) {
-        var socket = this.roles[seatId];
+    renameRole (roleId, newId) {
+        var socket = this.roles[roleId];
 
         if (socket) {  // update socket, too!
             socket.roleId = newId;
         }
 
-        this.roles[newId] = this.roles[seatId];
-        this.cachedProjects[newId] = this.cachedProjects[seatId];
+        this.roles[newId] = this.roles[roleId];
+        this.cachedProjects[newId] = this.cachedProjects[roleId];
 
-        delete this.roles[seatId];
+        delete this.roles[roleId];
         this.onRolesChanged();
         this.check();
     }
@@ -106,8 +106,8 @@ class ActiveRoom {
             msg;
 
         Object.keys(this.roles)
-            .forEach(seat => {
-                occupants[seat] = this.roles[seat] ? this.roles[seat].username : null;
+            .forEach(role => {
+                occupants[role] = this.roles[role] ? this.roles[role].username : null;
             });
 
         msg = {
@@ -193,21 +193,21 @@ class ActiveRoom {
         }
     }
 
-    cache (seat, callback) {
-        var socket = this.roles[seat];
+    cache (role, callback) {
+        var socket = this.roles[role];
 
         if (!socket) {
-            let err = 'No socket in ' + seat;
+            let err = 'No socket in ' + role;
             this._logger.error(err);
             return callback(err);
         }
-        this._logger.trace('caching ' + seat);
+        this._logger.trace('caching ' + role);
         // Get the project json from the socket
         socket.getProjectJson((err, project) => {
             if (err) {
                 return callback(err);
             }
-            this.cachedProjects[seat] = project;
+            this.cachedProjects[role] = project;
             return callback(err);
         });
     }
