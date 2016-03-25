@@ -449,6 +449,24 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
                 true
             );
             break;
+        case '%rpcNames':
+            // rpc names (used in dev mode)
+            part = new InputSlotMorph(
+                null,
+                false,
+                'rpcNames',
+                true
+            );
+            break;
+        case '%rpcActions':
+            // rpc names (used in dev mode)
+            part = new InputSlotMorph(
+                null,
+                false,
+                'rpcActions',
+                true
+            );
+            break;
         // Netsblox addition (end)
         case '%msg':
             part = new InputSlotMorph(
@@ -838,6 +856,40 @@ InputSlotMorph.prototype.roleNames = function () {
     }
 
     dict['everyone'] = 'everyone';
+    return dict;
+};
+
+InputSlotMorph.prototype.rpcNames = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        rpcs = JSON.parse(ide.getURL('/rpc')).map(name => name.replace('/', '')),
+        dict = {};
+
+    for (var i = rpcs.length; i--;) {
+        dict[rpcs[i]] = rpcs[i];
+    }
+    return dict;
+};
+
+InputSlotMorph.prototype.rpcActions = function () {
+    var ide = this.parentThatIsA(IDE_Morph),
+        fields = this.parent.inputs(),
+        field,
+        actions,
+        rpc,
+        dict = {},
+        i;
+
+    // assume that the rpc is right before this input
+    i = fields.indexOf(this);
+    field = fields[i-1];
+
+    if (field) {
+        rpc = field.evaluate();
+        actions = JSON.parse(ide.getURL('/rpc/' + rpc));
+        for (i = actions.length; i--;) {
+            dict[actions[i]] = actions[i];
+        }
+    }
     return dict;
 };
 
