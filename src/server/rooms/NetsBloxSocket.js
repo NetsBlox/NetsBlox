@@ -46,6 +46,8 @@ class NetsBloxSocket {
 
         // Provide a uuid
         this.send({type: 'uuid', body: this.uuid});
+        this.onclose = [];
+
         this._logger.trace('created');
     }
 
@@ -79,6 +81,7 @@ class NetsBloxSocket {
             if (this._room) {
                 this.leave();
             }
+            this.onclose.forEach(fn => fn.call(this));
             this.onClose(this.uuid);
         });
     }
