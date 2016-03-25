@@ -12,6 +12,14 @@ var examples = {};
 
 // Multiplayer examples
 [
+    // Database example
+    {
+        RoomName: 'Database',
+        cachedProjects: {
+            database: example('database'),
+            client: example('client')
+        }
+    },
     // Dice Game
     {
         RoomName: 'Dice',
@@ -86,10 +94,6 @@ var examples = {};
             Hangman: example('SimpleHangman')
         }
     }
-    // Add more examples?
-    // Fox.xml
-    // Geese.xml
-    // Messaging.xml
 ]
 .forEach(item => {
     var roles = Object.keys(item.cachedProjects),

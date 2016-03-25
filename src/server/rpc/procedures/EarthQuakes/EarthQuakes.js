@@ -73,7 +73,7 @@ module.exports = {
                 // For now, I will send lat, lng, size, date
                 msg = {
                     type: 'message',
-                    dstId: socket._seatId,
+                    dstId: socket.roleId,
                     msgType: 'Earthquake',
                     content: {
                         latitude: earthquakes[i].geometry.coordinates[1],

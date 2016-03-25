@@ -25,7 +25,7 @@ SnapSerializer.prototype.openProject = function (project, ide) {
         return;
     }
     // Only load the projectName if the current name is the default
-    if (ide.projectName === 'mySeat') {
+    if (ide.projectName === 'myRole') {
         ide.setProjectName(project.name);
     }
     ide.projectNotes = project.notes || '';
