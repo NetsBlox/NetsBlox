@@ -225,6 +225,13 @@ SpriteMorph.prototype.initBlocks = function () {
         defaults: ['tictactoe']
     };
 
+    SpriteMorph.prototype.blocks.getJSFromRPCDropdown = {  // primitive JSON response
+        type: 'reporter',
+        category: 'services',
+        spec: 'call %rpcNames / %rpcActions with %s',
+        defaults: ['tictactoe']
+    };
+
     SpriteMorph.prototype.blocks.getCostumeFromRPC = {
         type: 'reporter',
         category: 'services',
@@ -622,7 +629,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
 
         if (this.world().isDevMode) {
-            blocks.push(block('getJSFromRPC'));
+            blocks.push(block('getJSFromRPCDropdown'));
             blocks.push(block('getCostumeFromRPC'));
             blocks.push('-');
         }
@@ -1229,7 +1236,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
 
         if (this.world().isDevMode) {
-            blocks.push(block('getJSFromRPC'));
+            blocks.push(block('getJSFromRPCDropdown'));
             blocks.push(block('getCostumeFromRPC'));
             blocks.push('-');
         }

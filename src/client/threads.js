@@ -157,6 +157,10 @@ NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
     return result;
 };
 
+NetsProcess.prototype.getJSFromRPCDropdown = function (rpc, action, params) {
+    return this.getJSFromRPC(['', rpc, action].join('/'), params);
+};
+
 NetsProcess.prototype.getCostumeFromRPC = function (rpc, params) {
     var image,
         stage = this.homeContext.receiver.parentThatIsA(StageMorph),

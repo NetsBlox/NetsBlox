@@ -449,6 +449,24 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
                 true
             );
             break;
+        case '%rpcNames':
+            // rpc names (used in dev mode)
+            part = new InputSlotMorph(
+                null,
+                false,
+                'rpcNames',
+                true
+            );
+            break;
+        case '%rpcActions':
+            // rpc names (used in dev mode)
+            part = new InputSlotMorph(
+                null,
+                false,
+                'rpcActions',
+                true
+            );
+            break;
         // Netsblox addition (end)
         case '%msg':
             part = new InputSlotMorph(
@@ -838,6 +856,56 @@ InputSlotMorph.prototype.roleNames = function () {
     }
 
     dict['everyone'] = 'everyone';
+    return dict;
+};
+
+// IDE_Morph is not always accessible. quick fix => add getURL to
+// InputSlotMorph
+InputSlotMorph.prototype.getURL = function (url) {
+    try {
+        var request = new XMLHttpRequest();
+        request.open('GET', url, false);
+        request.send();
+        if (request.status === 200) {
+            return request.responseText;
+        }
+        throw new Error('unable to retrieve ' + url);
+    } catch (err) {
+        return '';
+    }
+};
+
+InputSlotMorph.prototype.rpcNames = function () {
+    var rpcs = JSON.parse(this.getURL('/rpc')),
+        dict = {},
+        name;
+
+    for (var i = rpcs.length; i--;) {
+        name = rpcs[i].replace('/', '');
+        dict[name] = name;
+    }
+    return dict;
+};
+
+InputSlotMorph.prototype.rpcActions = function () {
+    var fields = this.parent.inputs(),
+        field,
+        actions,
+        rpc,
+        dict = {},
+        i;
+
+    // assume that the rpc is right before this input
+    i = fields.indexOf(this);
+    field = fields[i-1];
+
+    if (field) {
+        rpc = field.evaluate();
+        actions = JSON.parse(this.getURL('/rpc/' + rpc));
+        for (i = actions.length; i--;) {
+            dict[actions[i]] = actions[i];
+        }
+    }
     return dict;
 };
 

@@ -47,7 +47,13 @@ RPCManager.prototype.createRouter = function() {
     var router = express.Router({mergeParams: true});
 
     // Create the index for the rpcs
-    // TODO
+    router.route('/').get((req, res) => 
+        res.json(this.rpcs.map(rpc => rpc.getPath())));
+
+    this.rpcs
+        .forEach(rpc => router.route(rpc.getPath())
+            .get((req, res) => res.json(rpc.getActions()))
+        );
 
     // For each RPC, create the respective endpoints
     this.rpcs.forEach(this.addRoute.bind(this, router));
