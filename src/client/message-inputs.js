@@ -27,7 +27,7 @@ function MessageInputSlotMorph() {
 
 MessageInputSlotMorph.prototype.setContents = function(messageType, inputs) {
     var self = this,
-        targetSeat = inputs && inputs.pop ? inputs.pop() : '',
+        targetRole = inputs && inputs.pop ? inputs.pop() : '',
         targetDropdown,
         len;
 
@@ -42,10 +42,14 @@ MessageInputSlotMorph.prototype.setContents = function(messageType, inputs) {
     });
 
     // Set the target
-    if (targetSeat) {
+    if (targetRole) {
         len = this.parent.inputs().length;
         targetDropdown = this.parent.inputs()[len-1];
-        targetDropdown.setContents(targetSeat);
+        if (typeof targetRole === 'string') {
+            targetDropdown.setContents(targetRole);
+        } else {
+            this.parent.silentReplaceInput(targetDropdown, targetRole);
+        }
     }
 };
 
