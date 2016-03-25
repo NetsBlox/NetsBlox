@@ -58,8 +58,8 @@ var examples = {};
     {
         RoomName: 'Simple TicTacToe',
         cachedProjects: {
-            player1: example('TicTacToe-p1'),
-            player2: example('TicTacToe-p2')
+            X: example('TicTacToe-x'),
+            O: example('TicTacToe-o')
         }
     },
     {
