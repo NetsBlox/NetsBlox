@@ -69,6 +69,7 @@ module.exports = [
                 // Save the entire room
                 if (socket.isOwner()) {
                     log(`saving entire room for ${socket.username}`);
+                    // Create the room object
                     room = this.storage.rooms.new(user, activeRoom);
                     room.save(function(err) {
                         if (err) {

@@ -13,8 +13,8 @@ class Room extends DataWrapper {
     constructor(params) {
         // Update seats => roles
         if (params && params.data) {
-            params.data.rooms = params.data.rooms || params.data.tables;
-            delete params.data.tables;
+            params.data.roles = params.data.roles || params.data.seats;
+            delete params.data.seats;
         }
         super(params.db, params.data || {});
         this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
@@ -100,38 +100,38 @@ class Room extends DataWrapper {
     _save(callback) {
         var room = this._saveable();
 
-        // Every time a local room is saved, it is saved for the user AND in the global store
-        var originalUuid = room._uuid;
-        delete room._uuid;
-        this._logger.trace(`saving as ${room.name}`);
-        this._db.replaceOne(
-            {uuid: originalUuid || room.uuid},  // search criteria
-            room,  // new value
-            {upsert: true},  // settings
-            (e) => {
-                if (e) {
-                    this._logger.error(e);
-                }
-                this._logger.trace('updated in global room database');
-                this._saveLocal(originalUuid, room, callback);
-            }
-        );
+        // Save the table under the owning user
+        // var originalUuid = room._uuid;
+        // delete room._uuid;
+        // this._logger.trace(`saving as ${room.name}`);
+        // this._db.replaceOne(
+            // {uuid: originalUuid || room.uuid},  // search criteria
+            // room,  // new value
+            // {upsert: true},  // settings
+            // (e) => {
+                // if (e) {
+                    // this._logger.error(e);
+                // }
+                // this._logger.trace('updated in global room database');
+                this._saveLocal(room, callback);
+            // }
+        // );
     }
 
-    _saveLocal(uuid, room, callback) {
+    _saveLocal(room, callback) {
         // Add this project to the user's list of rooms and save the user
-        uuid = uuid || room.uuid;
         var index = this._user.rooms.reduce((i, room, index) => {
             if (i > -1) {
                 return i;
             }
-            return room.owner === this._room.owner.username &&
-                room.name === this._room.name ? index : i;
+            return room.name === this._room.name ? index : i;
         }, -1);
 
         if (index === -1) {
+            this._logger.log(`saving new room "${room.name}" for ${this._user.username}`);
             this._user.rooms.push(room);
         } else {
+            this._logger.log(`overwriting existing room "${room.name}" for ${this._user.username}`);
             this._user.rooms.splice(index, 1, room);
         }
         this._user.save();
