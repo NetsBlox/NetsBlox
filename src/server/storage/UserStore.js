@@ -31,6 +31,12 @@ class User extends DataWrapper {
         // Update tables => rooms
         data.rooms = data.rooms || data.tables;
         delete data.tables;
+        // Update seats => roles
+        data.rooms
+            .forEach(room => {
+                room.roles = room.roles || room.seats;
+                delete room.seats;
+            });
         super(db, data);
         this._logger = logger.fork(data.username);
     }
