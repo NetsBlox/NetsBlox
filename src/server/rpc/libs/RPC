@@ -1,8 +1,8 @@
-map-helpers	Map utilities
-tictactoe	Tic-Tac-Toe helpers
-air-quality	Air quality sensing
-earthquakes	Earthquakes in a region
-simple-hangman	One-player hangman
-trivia	Jeopardy Questions
-weather	Weather API
-pubsub	Weather API
+map-helpers.xml	Map utilities
+tictactoe.xml	Tic-Tac-Toe helpers
+air-quality.xml	Air quality sensing
+earthquakes.xml	Earthquakes by region
+simple-hangman.xml	One-player hangman
+trivia.xml	Jeopardy Questions
+weather.xml	Weather API
+pubsub.xml	PubSub
