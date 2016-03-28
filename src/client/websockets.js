@@ -10,7 +10,10 @@ var WebSocketManager = function (ide) {
     this.processes = [];  // Queued processes to start
     this.url = window.location.origin.replace('http://','ws://');
     this._connectWebSocket();
+    this._heartbeat();
 };
+
+WebSocketManager.HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
 
 WebSocketManager.MessageHandlers = {
     // Receive an assigned uuid
@@ -321,4 +324,12 @@ WebSocketManager.prototype.destroy = function () {
 WebSocketManager.prototype._destroy = function () {
     this.websocket.onclose = nop;
     this.websocket.close();
+};
+
+// Heartbeat
+WebSocketManager.prototype._heartbeat = function () {
+    this.sendMessage({
+        type: 'beat'
+    });
+    setTimeout(this._heartbeat.bind(this), WebSocketManager.HEARTBEAT_INTERVAL);
 };
