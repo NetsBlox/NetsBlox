@@ -74,20 +74,7 @@ var rpcRoute = {
     URL: 'rpc/:filename',
     Handler: function(req, res) {
         var RPC_ROOT = path.join(__dirname, '..', 'rpc', 'libs');
-        if (req.params.filename === 'RPC') {
-            fs.readdir(RPC_ROOT, function(err, resources) {
-                if (err) {
-                    return res.send(err);
-                }
-
-                // Only xml files
-                resources = resources.filter(res => res.indexOf('.xml') > -1);
-                var result = createIndexFor('rpc', resources);
-                return res.send(result);
-            });
-        } else {  // Send RPC file
-            res.sendFile(path.join(RPC_ROOT, req.params.filename));
-        }
+        res.sendFile(path.join(RPC_ROOT, req.params.filename));
     }
 };
 resourcePaths.push(rpcRoute);
