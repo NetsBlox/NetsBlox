@@ -173,6 +173,9 @@ NetsBloxSocket.prototype.CLOSING = 2;
 NetsBloxSocket.prototype.CLOSED = 3;
 
 NetsBloxSocket.MessageHandlers = {
+    'beat': function() {
+    },
+
     'message': function(msg) {
         this.sendToEveryone(msg);
     },
