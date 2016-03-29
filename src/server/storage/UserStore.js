@@ -29,7 +29,7 @@ class User extends DataWrapper {
 
     constructor(logger, db, data) {
         // Update tables => rooms
-        data.rooms = data.rooms || data.tables;
+        data.rooms = data.rooms || data.tables || [];
         delete data.tables;
         // Update seats => roles
         data.rooms
