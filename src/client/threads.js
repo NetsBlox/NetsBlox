@@ -154,6 +154,9 @@ NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
             // nop
         }
     }
+    if (result instanceof Array) {
+        result = new List(result);
+    }
     return result;
 };
 
