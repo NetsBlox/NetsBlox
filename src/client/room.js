@@ -46,13 +46,13 @@ function RoomMorph(ide) {
     RoleMorph.prototype.editRole = RoomMorph.prototype.editRole.bind(this);
     var myself = this;
     RoleLabelMorph.prototype.mouseClickLeft = function() {
-        if (myself.isEdiroom()) {
+        if (myself.isEditable()) {
             myself.editRoleName(this.name);
         }
     };
 }
 
-RoomMorph.prototype.isEdiroom = function() {
+RoomMorph.prototype.isEditable = function() {
     return this.ownerId === SnapCloud.username;
 };
 
@@ -139,7 +139,7 @@ RoomMorph.prototype.renderRoomTitle = function(center) {
     this.add(this.titleBox);
     this.titleBox.setExtent(new Point(width, height));
     this.titleBox.setCenter(center);
-    if (this.isEdiroom()) {
+    if (this.isEditable()) {
         this.titleBox.mouseClickLeft = this.editRoomName.bind(this);
     }
 
@@ -547,7 +547,7 @@ RoleMorph.prototype.drawNew = function() {
 };
 
 RoleMorph.prototype.mouseClickLeft = function() {
-    if (this.parent.isEdiroom()) {
+    if (this.parent.isEditable()) {
         this.editRole(this._label);
     }
 };
@@ -726,7 +726,7 @@ ProjectsMorph.prototype.updateRoom = function() {
     this.addContents(this.room);
 
     // Draw the "new role" button
-    if (this.room.isEdiroom()) {
+    if (this.room.isEditable()) {
         this._addButton({
             selector: 'createNewRole',
             icon: 'plus',

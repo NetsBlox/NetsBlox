@@ -25,6 +25,41 @@ MessageOutputSlotMorph.prototype.evaluate = function() {
     });
 };
 
+MessageOutputSlotMorph.prototype._updateFields = function(values) {
+    // Remove the old message fields (parent's inputs)
+    var children = this.parent.children,
+        myIndex = children.indexOf(this),
+        input,
+        removed = [],
+        scripts = this.parentThatIsA(ScriptsMorph),
+        i;
+
+    // Remove the "i" fields after the current morph
+    // For MessageOutputMorph, I can simply remove the _msgContent
+    for (i = this._msgContent.length; i--;) {
+        input = this._msgContent[i];
+        removed.push(input);
+        this.parent.removeChild(input);
+    }
+
+    if (scripts) {
+        removed
+            .filter(function(arg) {
+                return arg instanceof BlockMorph;
+            })
+            .forEach(scripts.add.bind(scripts));
+    }
+
+    // Create new message fields
+    this._msgContent = [];
+    values = values || [];
+    for (i = 0; i < this.msgFields.length; i++) {
+        this._msgContent.push(this._updateField(this.msgFields[i], values[i]));
+    }
+    this.fixLayout();
+    this.drawNew();
+};
+
 MessageOutputSlotMorph.prototype.setContents = function(messageType, inputs) {
     var self = this;
 
