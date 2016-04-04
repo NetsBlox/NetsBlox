@@ -173,7 +173,7 @@ MessageInputSlotMorph.prototype._updateField = function(field, value) {
     this.parent.children.splice(index, 0, result);
     result.parent = this.parent;
 
-    return value;
+    return result;
 };
 
 MessageInputSlotMorph.prototype._getMsgType = function() {
