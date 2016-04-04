@@ -14,17 +14,42 @@ var debug = require('debug'),
     fs = require('fs'),
     R = require('ramda'),
     geolib = require('geolib'),
-    request = require('request');
+    request = require('request'),
+    baseUrl = 'http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&',
+    remainingMsgs = {};
 
-var baseUrl = 'http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&';
-    //minlatitude=30&maxlatitude=40&minlongitude=-90&maxlongitude=-75';
-
+// Helpers
 var createParams = function(obj) {
     return R.toPairs(obj)
         .map(keyVal => keyVal.join('='))
         .join('&');
 };
 
+var DELAY = 250;
+var sendNext = function(socket) {
+    var msgs = remainingMsgs[socket.uuid];
+    if (msgs) {
+        // send an earthquake message
+        var msg = msgs.shift();
+
+        while (msgs.length && msg.dstId !== socket.roleId) {
+            msg = msgs.shift();
+        }
+
+        // check the roleId
+        if (msg.dstId === socket.roleId) {
+            socket.send(msg);
+        }
+
+        if (msgs.length) {
+            setTimeout(sendNext, DELAY, socket);
+        } else {
+            delete remainingMsgs[socket.uuid];
+        }
+    }
+};
+
+// RPC
 module.exports = {
 
     // This is very important => Otherwise it will try to instantiate this
@@ -36,7 +61,13 @@ module.exports = {
     },
 
     getActions: function() {
-        return ['byRegion'];
+        return ['byRegion', 'stop'];
+    },
+
+    stop: function(req, res) {
+        var uuid = req.netsbloxSocket.uuid;
+        delete remainingMsgs[uuid];
+        res.sendStatus(200);
     },
 
     byRegion: function(req, res) {
@@ -69,6 +100,7 @@ module.exports = {
                 log('Could not parse earthquakes (returning empty array): ' + e);
             }
 
+            var msgs = [];
             for (var i = earthquakes.length; i--;) {
                 // For now, I will send lat, lng, size, date
                 msg = {
@@ -82,8 +114,10 @@ module.exports = {
                         time: earthquakes[i].properties.time
                     }
                 };
-                socket.send(msg);
+                msgs.push(msg);
             }
+            remainingMsgs[socket.uuid] = msgs;
+            sendNext(socket);
         });
     }
 };
