@@ -34,7 +34,6 @@ class Room extends DataWrapper {
         return new Room(params);
     }
 
-    // Override
     collectProjects(callback) {
         // Collect the projects from the websockets
         var sockets = this._room.sockets();

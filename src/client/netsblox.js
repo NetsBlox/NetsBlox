@@ -1,7 +1,8 @@
 /* global RoomMorph, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
-   InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, newCanvas,*/
+   InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, newCanvas,
+   NetsBloxSerializer*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -18,6 +19,7 @@ NetsBloxMorph.prototype.init = function (isAutoFill) {
 
     // initialize inherited properties:
     NetsBloxMorph.uber.init.call(this, isAutoFill);
+    this.serializer = new NetsBloxSerializer();
 };
 
 NetsBloxMorph.prototype.buildPanes = function () {
@@ -512,19 +514,19 @@ NetsBloxMorph.prototype.projectMenu = function () {
 
     if (shiftClicked) {
         menu.addItem(
-            localize('Export project...') + ' ' + localize('(in a new window)'),
+            localize('Export role...'),
             function () {
                 if (myself.projectName) {
-                    myself.exportProject(myself.projectName, shiftClicked);
+                    myself.exportRole(myself.projectName, shiftClicked);
                 } else {
                     myself.prompt('Export Project As...', function (name) {
                         // false - override the shiftClick setting to use XML
                         // true - open XML in a new tab
-                        myself.exportProject(name, false, true);
-                    }, null, 'exportProject');
+                        myself.exportRole(name, false, true);
+                    }, null, 'exportRole');
                 }
             },
-            'show project data as XML\nin a new browser window',
+            'save "' + myself.projectName + '" as XML\nto your downloads folder',
             new Color(100, 0, 0)
         );
     }
@@ -736,3 +738,83 @@ NetsBloxMorph.prototype.requestAndroidApp = function(name) {
     };
     req.send(params);
 };
+
+NetsBloxMorph.prototype.exportRole = NetsBloxMorph.prototype.exportProject;
+
+// Trigger the export
+NetsBloxMorph.prototype.exportProject = function (name) {
+    this.showMessage('Exporting', 3);
+
+    // Trigger server export of all roles
+    this.sockets.sendMessage({
+        type: 'export-room'
+    });
+};
+
+NetsBloxMorph.prototype.exportRoom = function (roles) {
+    var //dataPrefix,
+        name = this.room.name,
+        str;
+
+    try {
+        str = this.serializer.serializeRoom(name, roles);
+        //this.setURL('#open:' + dataPrefix + encodeURIComponent(str));
+        this.saveXMLAs(str, name);
+        this.showMessage('Exported!', 1);
+    } catch (err) {
+        if (Process.prototype.isCatchingErrors) {
+            this.showMessage('Export failed: ' + err);
+        } else {
+            throw err;
+        }
+    }
+};
+
+// Open the room
+NetsBloxMorph.prototype.openRoomString = function (str) {
+    this.showMessage('Opening room...', 3);
+
+    // Get the roomName and a role name from the str
+    var room = this.serializer.load(str),
+        role = Object.keys(room.roles)[0];
+
+    // Create a room with the new name
+    this.newProject(role);
+
+    // Send 'import-room' message
+    this.sockets.sendMessage({
+        type: 'import-room',
+        name: room.name,
+        role: role,
+        roles: room.roles  // FIXME: This just contains the source
+    });
+
+    // load the given project
+    this.openProjectString(room.roles[role].SourceCode);
+};
+
+NetsBloxMorph.prototype.droppedText = function (aString, name) {
+    var lbl = name ? name.split('.')[0] : '';
+    if (aString.indexOf('<room') === 0) {
+        location.hash = '';
+        return this.openRoomString(aString);
+    }
+    if (aString.indexOf('<project') === 0) {
+        location.hash = '';
+        return this.openProjectString(aString);
+    }
+    if (aString.indexOf('<snapdata') === 0) {
+        location.hash = '';
+        return this.openCloudDataString(aString);
+    }
+    if (aString.indexOf('<blocks') === 0) {
+        return this.openBlocksString(aString, lbl, true);
+    }
+    if (aString.indexOf('<sprites') === 0) {
+        return this.openSpritesString(aString);
+    }
+    if (aString.indexOf('<media') === 0) {
+        return this.openMediaString(aString);
+    }
+};
+

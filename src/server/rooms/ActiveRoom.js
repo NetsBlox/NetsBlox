@@ -5,6 +5,7 @@
 
 var R = require('ramda'),
     _ = require('lodash'),
+    async = require('async'),
     utils = require('../ServerUtils');
 
 class ActiveRoom {
@@ -28,6 +29,13 @@ class ActiveRoom {
         this._store = null;
 
         this._logger.log('created!');
+    }
+
+    close () {
+        // Remove all sockets from this group
+        var msg = {type: 'project-closed'};
+        this.sockets().forEach(socket => socket.send(msg));
+        this.destroy();
     }
 
     // This should only be called by the RoomManager (otherwise, the room will not be recorded)
@@ -63,44 +71,6 @@ class ActiveRoom {
         this.onRolesChanged();  // Update all clients
     }
 
-    createRole (role) {
-        this.silentCreateRole(role);
-        this.onRolesChanged();
-    }
-
-    silentCreateRole (role) {
-        this._logger.trace(`Adding role ${role}`);
-        this.roles[role] = null;
-    }
-
-    updateRole () {
-        this.onRolesChanged();
-    }
-
-    removeRole (id) {
-        this._logger.trace(`removing role "${id}"`);
-
-        delete this.roles[id];
-
-        this.check();
-        this.onRolesChanged();
-    }
-
-    renameRole (roleId, newId) {
-        var socket = this.roles[roleId];
-
-        if (socket) {  // update socket, too!
-            socket.roleId = newId;
-        }
-
-        this.roles[newId] = this.roles[roleId];
-        this.cachedProjects[newId] = this.cachedProjects[roleId];
-
-        delete this.roles[roleId];
-        this.onRolesChanged();
-        this.check();
-    }
-
     getStateMsg () {
         var occupants = {},
             msg;
@@ -117,16 +87,6 @@ class ActiveRoom {
             occupants: occupants
         };
         return msg;
-    }
-
-    onRolesChanged () {
-        // This should be called when the room layout changes
-        // Send the room info to the socket
-        var msg = this.getStateMsg();
-
-        this.sockets().forEach(socket => socket.send(msg));
-
-        this.save();
     }
 
     setStorage(store) {
@@ -193,6 +153,62 @@ class ActiveRoom {
         }
     }
 
+    /////////// Role Operations ///////////
+    createRole (role) {
+        this.silentCreateRole(role);
+        this.onRolesChanged();
+    }
+
+    silentCreateRole (role) {
+        this._logger.trace(`Adding role ${role}`);
+        if (!this.roles[role]) {
+            this.roles[role] = null;
+        }
+    }
+
+    updateRole () {
+        this.onRolesChanged();
+    }
+
+    removeRole (id) {
+        this._logger.trace(`removing role "${id}"`);
+
+        delete this.roles[id];
+
+        this.check();
+        this.onRolesChanged();
+    }
+
+    renameRole (roleId, newId) {
+        var socket = this.roles[roleId];
+
+        if (this.roles[newId]) {
+            this._logger.warn(`Cannot rename role: "${newId}" is already taken`);
+            return;
+        }
+        if (socket) {  // update socket, too!
+            socket.roleId = newId;
+        }
+
+        delete this.roles[roleId];
+        this.roles[newId] = socket;
+        this.cachedProjects[newId] = this.cachedProjects[roleId];
+
+        this.onRolesChanged();
+        this.check();
+    }
+
+    onRolesChanged () {
+        // This should be called when the room layout changes
+        // Send the room info to the socket
+        var msg = this.getStateMsg();
+
+        this.sockets().forEach(socket => socket.send(msg));
+
+        this.save();
+    }
+
+    /////////// Caching and Saving ///////////
     cache (role, callback) {
         var socket = this.roles[role];
 
@@ -212,11 +228,37 @@ class ActiveRoom {
         });
     }
 
-    close () {
-        // Remove all sockets from this group
-        var msg = {type: 'project-closed'};
-        this.sockets().forEach(socket => socket.send(msg));
-        this.destroy();
+    // Retrieve a dictionary of role => project content
+    collectProjects(callback) {
+        // Collect the projects from the websockets
+        var sockets = this.sockets();
+        // Add saving the cached projects
+        async.map(sockets, (socket, callback) => {
+            socket.getProjectJson(callback);
+        }, (err, projects) => {
+            if (err) {
+                return callback(err);
+            }
+
+            // create the room from the projects
+            var roles = Object.keys(this.roles),
+                socket,
+                k,
+                content = {
+                };
+
+            for (var i = roles.length; i--;) {
+                socket = this.roles[roles[i]];
+
+                k = sockets.indexOf(socket);
+                if (k !== -1) {
+                    content[roles[i]] = projects[k];
+                } else {  // socket is closed -> use the cache
+                    content[roles[i]] = this.cachedProjects[roles[i]] || null;
+                }
+            }
+            callback(null, content);
+        });
     }
 }
 

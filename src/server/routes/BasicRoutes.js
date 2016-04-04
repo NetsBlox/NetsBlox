@@ -152,7 +152,7 @@ module.exports = [
                     // Associate the websocket with the username
                     socket = this.sockets[req.body.__sId];
                     if (socket) {  // websocket has already connected
-                        socket.onLogin(req.body.__u);
+                        socket.onLogin(user);
                     }
                     return res.send(Utils.serializeArray(EXTERNAL_API));
                 }

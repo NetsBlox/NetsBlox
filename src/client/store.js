@@ -1,9 +1,55 @@
 /* global SnapSerializer, SpriteMorph, sizeOf, List, detect, CustomCommandBlockMorph,
    CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
    WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame*/
-SnapSerializer.prototype.app = 'NetsBlox 0.4.0, http://netsblox.org';  // Make this version automatic
+NetsBloxSerializer.prototype = new SnapSerializer();
+NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
+NetsBloxSerializer.uber = SnapSerializer.prototype;
 
-SnapSerializer.prototype.loadMessageType = function (stage, model) {
+NetsBloxSerializer.prototype.app = 'NetsBlox 0.4.0, http://netsblox.org';  // Make this version automatic
+
+function NetsBloxSerializer() {
+    this.init();
+}
+
+NetsBloxSerializer.prototype.load = function (str) {
+    // Check if it is a netsblox room
+    if (str.indexOf('<room') === 0) {
+        // get the roomName, roles: {r1: xml, r2: xml, ... }
+        var room = this.parse(str),
+            role,
+            result = {
+                name: room.attributes.name,
+                roles: {}
+            };
+
+        for (var i = room.children.length; i--;) {
+            role = room.children[i];
+            result.roles[role.attributes.name] = {
+                SourceCode: role.children[0].toString(),
+                Media: role.children[1].toString()
+            };
+        }
+        return result;
+    } else {  // assume it is a role and use the Snap loader
+        return SnapSerializer.prototype.load.call(this, str);
+    }
+};
+
+NetsBloxSerializer.prototype.serializeRoom = function (name, roles) {
+    var roleNames = Object.keys(roles),
+        body = '',
+        content;
+
+    for (var i = roleNames.length; i--;) {
+        content = roles[roleNames[i]];
+        body += this.format('<role name="@">', roleNames[i]) +
+            content.SourceCode + content.Media + '</role>';
+    }
+    return this.format('<room name="@" app="@">', name, this.app) +
+        body + '</room>';
+};
+
+NetsBloxSerializer.prototype.loadMessageType = function (stage, model) {
     var name = model.childNamed('name').contents,
         fields = model.childNamed('fields')
             .children
@@ -17,7 +63,7 @@ SnapSerializer.prototype.loadMessageType = function (stage, model) {
     });
 };
 
-SnapSerializer.prototype.openProject = function (project, ide) {
+NetsBloxSerializer.prototype.openProject = function (project, ide) {
     var stage = ide.stage,
         sprites = [],
         sprite;
@@ -69,7 +115,7 @@ SnapSerializer.prototype.openProject = function (project, ide) {
 
 // It would be good to refactor the MessageInputMorph so we don't have to modify
 // loadBlock
-SnapSerializer.prototype.loadBlock = function (model, isReporter) {
+NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
     // private
     var block, info, inputs, isGlobal, rm, receiver;
     if (model.tag === 'block') {
@@ -186,7 +232,7 @@ SnapSerializer.prototype.loadBlock = function (model, isReporter) {
     return block;
 };
 
-SnapSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
+NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     // private
     var myself = this,
         project = {sprites: {}},
@@ -440,7 +486,7 @@ SnapSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
 };
 
 StageMorph.prototype.toXML = function (serializer) {
-    var thumbnail = this.thumbnail(SnapSerializer.prototype.thumbnailSize),
+    var thumbnail = this.thumbnail(NetsBloxSerializer.prototype.thumbnailSize),
         thumbdata,
         ide = this.parentThatIsA(IDE_Morph);
 

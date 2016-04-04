@@ -35,6 +35,10 @@ WebSocketManager.MessageHandlers = {
         // TODO: pass to debugger
     },
 
+    'export-room': function(msg) {
+        this.ide.exportRoom(msg.roles);  // Create the xml from this
+    },
+
     // Update on the current roles at the given room
     'room-roles': function(msg) {
         this.ide.room.update(msg.owner,
@@ -308,7 +312,6 @@ WebSocketManager.prototype.getSerializedProject = function() {
             Media: media,
             SourceSize: pdata.length,
             MediaSize: media ? media.length : 0,
-            RoomLeaderId: this.ide.room.ownerId,
             RoomName: this.ide.room.name
         };
 };

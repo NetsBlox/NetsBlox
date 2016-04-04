@@ -6,7 +6,8 @@ var counter = 0,
     CONSTANTS = require(__dirname + '/../../common/Constants'),
     PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'MediaSize', 'RoomUuid'],
     R = require('ramda'),
-    parseXml = require('xml2js').parseString;
+    parseXml = require('xml2js').parseString,
+    CONDENSED_MSGS = ['project-response', 'import-room'];
 
 var createSaveableProject = function(json, callback) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -39,6 +40,7 @@ class NetsBloxSocket {
         this._room = null;
         this.loggedIn = false;
 
+        this.user = null;
         this.username = this.uuid;
         this._socket = socket;
         this._projectRequests = {};  // saving
@@ -68,7 +70,7 @@ class NetsBloxSocket {
             var msg = JSON.parse(data),
                 type = msg.type;
 
-            this._logger.trace(`received "${type === 'project-response' ? type : data}" message`);
+            this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message`);
             if (NetsBloxSocket.MessageHandlers[type]) {
                 NetsBloxSocket.MessageHandlers[type].call(this, msg);
             } else {
@@ -86,9 +88,10 @@ class NetsBloxSocket {
         });
     }
 
-    onLogin (username) {
-        this._logger.log('logged in as ' + username);
-        this.username = username;
+    onLogin (user) {
+        this._logger.log('logged in as ' + user.username);
+        this.username = user.username;
+        this.user = user;
         this.loggedIn = true;
 
         // Update the user's room name
@@ -152,10 +155,6 @@ class NetsBloxSocket {
         return this._socket.readyState;
     }
 
-    isVirtualUser () {
-        return this.username === CONSTANTS.GHOST.USER;
-    }
-
     getProjectJson (callback) {
         var id = ++counter;
         this.send({
@@ -173,8 +172,7 @@ NetsBloxSocket.prototype.CLOSING = 2;
 NetsBloxSocket.prototype.CLOSED = 3;
 
 NetsBloxSocket.MessageHandlers = {
-    'beat': function() {
-    },
+    'beat': function() {},
 
     'message': function(msg) {
         this.sendToEveryone(msg);
@@ -249,6 +247,71 @@ NetsBloxSocket.MessageHandlers = {
         // TODO: make sure this is the room owner
         if (this.hasRoom()) {
             this._room.createRole(msg.name);
+        }
+    },
+
+    ///////////// Import/Export /////////////
+    'import-room': function(msg) {
+        var roles = Object.keys(msg.roles),
+            names = {},
+            name,
+            i = 2;
+
+        if (!this.hasRoom()) {
+            this._logger.error(`${this.username} has no associated room`);
+            return;
+        }
+
+        // change the socket's name to the given name (as long as it isn't colliding)
+        if (this.user) {
+            this.user.rooms.forEach(room => names[room.name] = true);
+        }
+
+        // create unique name, if needed
+        name = msg.name;
+        while (names[name]) {
+            name = msg.name + ' (' + i + ')';
+        }
+
+        this._logger.trace(`changing room name from ${this._room.name} to ${name}`);
+        this._room.update(name);
+
+        // Rename the socket's role
+        this._logger.trace(`changing role name from ${this.roleId} to ${msg.role}`);
+        this._room.renameRole(this.roleId, msg.role);
+
+        // Add all the additional roles
+        this._logger.trace(`adding roles: ${roles.join(',')}`);
+        roles.forEach(role => this._room.silentCreateRole(role));
+
+        // load the roles into the cache
+        roles.forEach(role => this._room.cachedProjects[role] = {
+            SourceCode: msg.roles[role].SourceCode,
+            Media: msg.roles[role].Media,
+            MediaSize: msg.roles[role].Media.length,
+            SourceSize: msg.roles[role].SourceCode.length,
+            RoomName: msg.name
+        });
+
+        this._room.onRolesChanged();
+    },
+
+    // Retrieve the json for each project and respond
+    'export-room': function() {
+        if (this.hasRoom()) {
+            this._room.collectProjects((err, projects) => {
+                if (err) {
+                    this._logger.error(`Could not collect projects from ${this._room.name}`);
+                    return;
+                }
+                this._logger.trace(`Exporting projects for ${this._room.name}` +
+                    ` to ${this.username}`);
+
+                this.send({
+                    type: 'export-room',
+                    roles: projects
+                });
+            });
         }
     }
 };
