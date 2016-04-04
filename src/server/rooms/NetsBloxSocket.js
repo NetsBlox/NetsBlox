@@ -297,7 +297,7 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     // Retrieve the json for each project and respond
-    'export-room': function() {
+    'export-room': function(msg) {
         if (this.hasRoom()) {
             this._room.collectProjects((err, projects) => {
                 if (err) {
@@ -309,7 +309,8 @@ NetsBloxSocket.MessageHandlers = {
 
                 this.send({
                     type: 'export-room',
-                    roles: projects
+                    roles: projects,
+                    action: msg.action
                 });
             });
         }

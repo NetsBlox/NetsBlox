@@ -36,7 +36,11 @@ WebSocketManager.MessageHandlers = {
     },
 
     'export-room': function(msg) {
-        this.ide.exportRoom(msg.roles);  // Create the xml from this
+        if (msg.action === 'export') {
+            this.ide.exportRoom(msg.roles);
+        } else if (msg.action === 'save') {
+            this.ide.saveRoomLocal(msg.roles);
+        }
     },
 
     // Update on the current roles at the given room

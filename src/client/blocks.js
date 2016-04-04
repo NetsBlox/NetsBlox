@@ -418,22 +418,6 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isStatic = true;
             break;
         // Netsblox addition
-        case '%socketMsgHat':
-            part = new InputSlotMorph(
-                null,
-                false,
-                'socketMessagesReceivedMenu',
-                true
-            );
-            break;
-        case '%socketMsg':
-            part = new InputSlotMorph(
-                null,
-                false,
-                'socketMessagesMenu',
-                true
-            );
-            break;
         case '%msgOutput':
             part = new MessageOutputSlotMorph();
             break;

@@ -747,7 +747,8 @@ NetsBloxMorph.prototype.exportProject = function (name) {
 
     // Trigger server export of all roles
     this.sockets.sendMessage({
-        type: 'export-room'
+        type: 'export-room',
+        action: 'export'
     });
 };
 
@@ -815,6 +816,70 @@ NetsBloxMorph.prototype.droppedText = function (aString, name) {
     }
     if (aString.indexOf('<media') === 0) {
         return this.openMediaString(aString);
+    }
+};
+
+// Serialize a project and save to the browser.
+NetsBloxMorph.prototype.rawSaveProject = function (name) {
+    this.showMessage('Saving', 3);
+
+    if (name) {
+        this.room.name = name;
+    }
+
+    // Trigger server export of all roles
+    this.sockets.sendMessage({
+        type: 'export-room',
+        action: 'save'
+    });
+};
+
+NetsBloxMorph.prototype.saveRoomLocal = function (roles) {
+    var str,
+        name = this.room.name;
+
+    if (Process.prototype.isCatchingErrors) {
+        try {
+            localStorage['-snap-project-' + name]
+                = str = this.serializer.serializeRoom(name, roles);
+        
+            this.setURL('#open:' + str);
+            this.showMessage('Saved!', 1);
+        } catch (err) {
+            this.showMessage('Save failed: ' + err);
+        }
+    } else {
+        localStorage['-snap-project-' + name]
+            = str = this.serializer.serializeRoom(name, roles);
+        this.setURL('#open:' + str);
+        this.showMessage('Saved!', 1);
+    }
+};
+
+NetsBloxMorph.prototype.openProject = function (name) {
+    var str;
+    if (name) {
+        this.showMessage('opening project\n' + name);
+        str = localStorage['-snap-project-' + name];
+        this.openRoomString(str);
+        this.setURL('#open:' + str);
+    }
+};
+
+NetsBloxMorph.prototype.save = function () {
+    if (this.source === 'examples') {
+        this.source = 'local'; // cannot save to examples
+    }
+    if (this.projectName) {
+        if (this.source === 'local') { // as well as 'examples'
+            // NetsBlox changes - start
+            this.saveProject(this.room.name);
+            // NetsBlox changes - end
+        } else { // 'cloud'
+            this.saveProjectToCloud(this.projectName);
+        }
+    } else {
+        this.saveProjectsBrowser();
     }
 };
 
