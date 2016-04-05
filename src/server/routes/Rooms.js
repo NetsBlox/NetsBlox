@@ -250,16 +250,21 @@ module.exports = [
     },
     {
         Service: 'moveToRole',
-        Parameters: 'dstId,roleId,ownerId,roomName',
+        Parameters: 'dstId,roleId,ownerId,roomName,socketId',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            var roleId = req.body.roleId,
+            var socket = this.sockets[req.body.socketId],
+                roleId = req.body.roleId,
                 dstId = req.body.dstId,
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName,
                 roomId = Utils.uuid(ownerId, roomName),
                 room = this.rooms[roomId];
+
+            if (!socket.isOwner()) {
+                return res.status(403).send('ERROR: permission denied');
+            }
 
             //  Cache the current state in the active room
             room.cache(roleId, err => {
