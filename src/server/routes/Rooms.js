@@ -71,9 +71,7 @@ module.exports = [
             warn('returning ALL active sockets');
             for (var i = uuids.length; i--;) {
                 socket = this.sockets[uuids[i]];
-                // FIXME: We should be able to invite ourselves somehow...
-                if (socket.username !== username && socket.loggedIn &&
-                    !socket.isVirtualUser()) {
+                if (socket.username !== username && socket.loggedIn) {
                     resp[socket.username] = uuids[i];
                 }
             }
