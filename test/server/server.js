@@ -68,7 +68,8 @@ describe('Server Storage Tests', function() {
             method = route.Method.toLowerCase();
 
         it('should have endpoint '+endpoint, function(done) {
-            // FIXME: :filename is not resolved in express w/ supertest...
+            console.log('method:', method);
+            console.log('endpoint:', endpoint);
             api[method](endpoint)
                 .end(function(err, result) {
                     assert(result.status !== 404);
@@ -78,23 +79,8 @@ describe('Server Storage Tests', function() {
     };
 
     describe('Existence tests', function() {
-        var routes = userRoutes.concat(basicRoutes),
-            conversions = {
-                'rpc/:filename': 'rpc/weather.xml',
-                'Examples/:name': 'Examples/Dice',
-                'Sounds/:filename': 'Sounds/Cat.mp3',
-                'Costumes/:filename': 'Costumes/alonzo.png',
-                'libraries/:filename': 'libraries/cases.xml',
-                'Backgrounds/:filename': 'Backgrounds/pathway.jpg'
-            };
-
-        routes
-            .map(route => {
-                var url = route.URL;
-                route.URL = (conversions[url] || url);
-                return route;
-            })
-            .forEach(verifyExists);
+        var routes = userRoutes.concat(basicRoutes);
+        routes.forEach(verifyExists);
     });
 
     describe('Game Types', function() {

@@ -94,7 +94,7 @@ module.exports = [
             self.storage.users.get(username, function(e, user) {
                 if (e) {
                     log('Server error when looking for user: "'+username+'". Error:', e);
-                    return res.status(500).send('ERROR: ' + e);
+                    return res.serverError(e);
                 }
 
                 if (user) {
@@ -144,7 +144,7 @@ module.exports = [
             this.storage.users.get(req.body.__u, (e, user) => {
                 if (e) {
                     log('Could not find user "'+req.body.__u+'": ' +e);
-                    return res.status(500).send('ERROR: ' + e);
+                    return res.serverError(e);
                 }
                 if (user && user.hash === hash) {  // Sign in 
                     req.session.username = req.body.__u;

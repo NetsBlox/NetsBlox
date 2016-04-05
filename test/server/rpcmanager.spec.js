@@ -7,17 +7,18 @@ var supertest = require('supertest'),
     WebSocket = require('ws'),  // jshint ignore:line
     api = supertest('http://localhost:'+port+'/rpc/tictactoe'),  // https?
     Server = require('../../src/server/Server'),
-    ROOM_NAME = 'ttt-test-room';
+    not = function(checkCode) {
+        return function(v) {
+            assert(checkCode !== +v.statusCode);
+        };
+    };
 
 describe('RPC Manager Tests', function() {
     var uuid,
         server;
 
     before(function(done) {
-        server = new Server({
-            port: port,
-            vantage: false
-        });
+        server = new Server({port: port});
         server.start(done);
     });
 
@@ -43,17 +44,11 @@ describe('RPC Manager Tests', function() {
             socket = new WebSocket(host);
             socket.on('open', function() {
                 socket.on('message', function(msg) {
-                    msg = JSON.parse(msg);
-
-                    if (msg.type === 'uuid') {
-                        uuid = msg.body;
-                        // create a room
-                        var res = {
-                            type: 'create-room',
-                            room: ROOM_NAME,
-                            role: 's1'
-                        };
-                        socket.send(JSON.stringify(res));
+                    var data = msg.split(' '),
+                        type = data.shift();
+                    if (type === 'uuid') {
+                        uuid = data.join(' ');
+                        console.log('WEBSOCKET CONNECTED ('+uuid+')');
                         done();
                     }
                 });
@@ -100,22 +95,10 @@ describe('RPC Manager Tests', function() {
                 newSocket = new WebSocket(host);
                 newSocket.on('open', function() {
                     newSocket.on('message', function(msg) {
-                        msg = JSON.parse(msg);
-
-                        if (msg.type === 'uuid') {
-                            username2 = msg.body;
-
-                            socket.send(JSON.stringify({
-                                type: 'add-role',
-                                name: 's2'
-                            }));
-                            var res = {
-                                type: 'join-room',
-                                room: ROOM_NAME,
-                                owner: uuid,
-                                role: 's2'
-                            };
-                            newSocket.send(JSON.stringify(res));
+                        var data = msg.split(' '),
+                            type = data.shift();
+                        if (type === 'uuid') {
+                            username2 = data.join(' ');
                             done();
                         }
                     });
@@ -138,14 +121,50 @@ describe('RPC Manager Tests', function() {
                     });
             });
 
-            it('should share a game board', function(done) {
+            describe('Sandboxed', function() {
+                it('should have a new, unique game board', function(done) {
+                    var size = [1,2,3],
+                        count = Math.pow(size.length, 2),
+                        positions = size.map(function(row) {
+                            return size.map(function(col) {
+                                return [row, col];
+                            });
+                        });
 
-                api.get('/isOpen?uuid='+uuid+'&row=1&column=1')
-                    .expect(function(res) {
-                        assert.equal(res.statusCode, 200);
-                        assert.equal(res.text, 'false');
-                    })
-                    .end(done);
+                    positions.forEach(function(row) {
+                        row.forEach(function(pos) {
+                            api.get('/isOpen?uuid='+uuid+'&row='+pos[0]+'&column='+pos[1])
+                                .expect(200)
+                                .end(function(res) {
+                                    assert.equal(res, null);
+                                    if (--count === 0) {
+                                        done();
+                                    }
+                                });
+                        });
+                    });
+                });
+            });
+
+            describe('Grouped', function() {
+                before(function() {
+                    socket.send('paradigm basic');
+                    newSocket.send('paradigm basic');
+                });
+
+                it('should share a state with both sockets', function(done) {
+                    api.get('/play?uuid='+uuid+'&row=1&column=1')
+                        .expect(200)
+                        .end(function() {
+                            // Check for the played position
+                            api.get('/getTile?uuid='+username2+'&row=1&column=1')
+                                .expect(function(res) {
+                                    assert.equal(res.text, uuid);
+                                })
+                                .end(done);
+                        });
+                });
+
             });
         });
     });

@@ -85,7 +85,7 @@ module.exports = {
         // trigger socket messages to the given client
         request(url, function(err, response, body) {
             if (err) {
-                res.status(500).send('ERROR: ' + err);
+                res.serverError(err);
             }
             log('Found ' + JSON.parse(body).metadata.count + ' earthquakes');
             res.sendStatus(200);

@@ -19,7 +19,7 @@ var serialize = function(service) {
 var loadJsFiles = function(dir) {
     return fs.readdirSync(dir)
         // Get only js files
-        .filter(name => path.extname(name) === '.js')
+        .filter(R.pipe(path.extname, R.eq.bind(R, '.js')))
         // Require the files
         .map(R.pipe(
             R.nthArg(0),

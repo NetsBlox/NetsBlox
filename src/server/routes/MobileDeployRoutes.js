@@ -39,7 +39,7 @@ module.exports = [
             self.storage.users.get(username, (e, user) => {
                 if (e) {
                     error('Server error when looking for user: "'+username+'". Error:', e);
-                    return res.status(500).send('ERROR: ' + e);
+                    return res.serverError(e);
                 }
 
                 if (user) {
