@@ -53,7 +53,7 @@ module.exports = [
                     activeRoom;
 
                 if (e) {
-                    return res.serverError(e);
+                    return res.status(500).send('ERROR: ' + e);
                 }
 
                 if (!user) {
@@ -102,7 +102,7 @@ module.exports = [
                     rooms = user.rooms || user.tables || [];
 
                 if (e) {
-                    return res.serverError(e);
+                    return res.status(500).send('ERROR: ' + e);
                 }
                 if (user) {
                     // Return the following for each room:
@@ -172,7 +172,7 @@ module.exports = [
             log(username + ' requested project ' + req.body.ProjectName);
             this.storage.users.get(username, (e, user) => {
                 if (e) {
-                    return res.serverError(e);
+                    return res.status(500).send('ERROR: ' + e);
                 }
                 this._logger.trace(`looking up room "${roomName}"`);
 
@@ -273,7 +273,7 @@ module.exports = [
             log(username +' is publishing project '+name);
             this.storage.users.get(username, function(e, user) {
                 if (e) {
-                    res.serverError(e);
+                    res.status(500).send('ERROR: ' + e);
                 }
                 var success = setProjectPublic(name, user, true);
                 user.save();
@@ -296,7 +296,7 @@ module.exports = [
             log(username +' is unpublishing project '+name);
             this.storage.users.get(username, function(e, user) {
                 if (e) {
-                    return res.serverError(e);
+                    return res.status(500).send('ERROR: ' + e);
                 }
                 var success = setProjectPublic(name, user, false);
                 user.save();
