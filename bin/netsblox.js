@@ -16,6 +16,7 @@ app.get('/', function(req, res) {
 var opts = {
         port: port,
         vantagePort: vport,
+        vantage: process.env.ENV !== 'production',
         mongoURI: mongoURI || 'mongodb://localhost:27017'
     };
 
