@@ -1,12 +1,12 @@
 'use strict';
+var path = require('path');
+require('dotenv').load({path: path.join(__dirname, '..', '.env')});
+
 var express = require('express'),
-    path = require('path'),
     app = express(),
     port,
     vport,
     mongoURI;
-
-require('dotenv').load({path: path.join(__dirname, '..', '.env')});
 
 port = process.env.PORT || 8080;
 vport = process.env.VANTAGE_PORT || 1234;
