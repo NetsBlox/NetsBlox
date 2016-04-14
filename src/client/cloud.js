@@ -197,9 +197,13 @@ Cloud.prototype.evictUser = function(onSuccess, onFail, args) {
 };
 
 Cloud.prototype.socketId = function () {
-    var ide = world.children.find(function(child) {  // FIXME
+    var ide;
+    ide = detect(
+        world.children,  // FIXME: Don't depend on the 'world' variable
+        function(child) {
             return child instanceof IDE_Morph;
-        });
+        }
+    );
     return ide.sockets.uuid;
 };
 
