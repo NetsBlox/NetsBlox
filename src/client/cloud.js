@@ -90,6 +90,7 @@ Cloud.prototype.cloneRole = function(onSuccess, onFail, args) {
 
 Cloud.prototype.moveToRole = function(onSuccess, onFail, args) {
     var myself = this;
+    args.push(this.socketId());
 
     this.reconnect(
         function () {

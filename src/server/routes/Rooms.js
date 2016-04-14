@@ -254,13 +254,19 @@ module.exports = [
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            var socket = this.sockets[req.body.socketId],
+            var socketId = req.body.socketId;
+            var socket = this.sockets[socketId],
                 roleId = req.body.roleId,
                 dstId = req.body.dstId,
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName,
                 roomId = Utils.uuid(ownerId, roomName),
                 room = this.rooms[roomId];
+
+            if (!socket) {
+                this._logger.error('Could not find socket for ' + socketId);
+                return res.status(404).send('ERROR: Not fully connected... Please try again or try a different browser (and report this issue to the netsblox maintainers!)');
+            }
 
             if (!socket.isOwner()) {
                 return res.status(403).send('ERROR: permission denied');
