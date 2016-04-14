@@ -99,12 +99,13 @@ module.exports = [
             log(username +' requested project list');
             this.storage.users.get(username, (e, user) => {
                 var previews,
-                    rooms = user.rooms || user.tables || [];
+                    rooms;
 
                 if (e) {
                     return res.status(500).send('ERROR: ' + e);
                 }
                 if (user) {
+                    rooms = user.rooms || user.tables || [];
                     // Return the following for each room:
                     //
                     //  + ProjectName
