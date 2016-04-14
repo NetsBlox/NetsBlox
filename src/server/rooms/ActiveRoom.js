@@ -46,8 +46,12 @@ class ActiveRoom {
             data;
 
         // Clone the room storage data
-        data = this._store.fork(fork);
-        fork.setStorage(data);
+        if (this._store) {
+            data = this._store.fork(fork);
+            fork.setStorage(data);
+        } else {
+            this._logger.error('ERROR: no store defined for room "' + this.name + '"');
+        }
 
         roles.forEach(role => fork.silentCreateRole(role));
 
