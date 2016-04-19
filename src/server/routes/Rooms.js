@@ -122,6 +122,7 @@ module.exports = [
     {
         Service: 'inviteToRoom',
         Parameters: 'socketId,invitee,ownerId,roomName,roleId',
+        middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
@@ -169,6 +170,7 @@ module.exports = [
     {
         Service: 'invitationResponse',
         Parameters: 'inviteId,response,socketId',
+        middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
@@ -251,6 +253,7 @@ module.exports = [
     {
         Service: 'moveToRole',
         Parameters: 'dstId,roleId,ownerId,roomName,socketId',
+        middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
@@ -262,11 +265,6 @@ module.exports = [
                 roomName = req.body.roomName,
                 roomId = Utils.uuid(ownerId, roomName),
                 room = this.rooms[roomId];
-
-            if (!socket) {
-                this._logger.error('Could not find socket for ' + socketId);
-                return res.status(404).send('ERROR: Not fully connected... Please try again or try a different browser (and report this issue to the netsblox maintainers!)');
-            }
 
             if (!socket.isOwner()) {
                 return res.status(403).send('ERROR: permission denied');
@@ -293,6 +291,7 @@ module.exports = [
     {  // Create a new role and copy this project's blocks to it
         Service: 'cloneRole',
         Parameters: 'roleId,socketId',
+        middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {

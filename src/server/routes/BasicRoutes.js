@@ -151,7 +151,7 @@ module.exports = [
                     log('"'+req.session.username+'" has logged in.');
 
                     // Associate the websocket with the username
-                    socket = this.sockets[req.body.__sId];
+                    socket = this.sockets[req.body.socketId];
                     if (socket) {  // websocket has already connected
                         socket.onLogin(user);
                     }
@@ -195,16 +195,13 @@ module.exports = [
     {
         Method: 'get',
         URL: 'Examples/:name',
+        middleware: ['hasSocket'],
         Handler: function(req, res) {
             var name = req.params.name,
-                uuid = req.query.sId,
+                uuid = req.query.socketId,
                 isPreview = req.query.preview,
                 socket,
                 example;
-
-            if (!uuid) {
-                return res.status(400).send('ERROR: No socket id provided');
-            }
 
             if (!EXAMPLES.hasOwnProperty(name)) {
                 this._logger.warn(`ERROR: Could not find example "${name}`);

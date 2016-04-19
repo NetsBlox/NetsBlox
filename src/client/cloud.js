@@ -12,7 +12,7 @@ Cloud.prototype.login = function (
         usr = JSON.stringify({
             '__h': password,
             '__u': username,
-            '__sId': this.socketId()
+            'socketId': this.socketId()
         }),
         myself = this;
     this.setRoute(username);

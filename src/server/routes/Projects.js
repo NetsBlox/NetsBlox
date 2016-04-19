@@ -42,6 +42,7 @@ module.exports = [
         Parameters: 'socketId',
         Method: 'Post',
         Note: '',
+        middleware: ['hasSocket'],
         Handler: function(req, res) {
             var username = req.session.username,
                 socketId = req.body.socketId;
