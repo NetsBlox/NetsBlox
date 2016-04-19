@@ -14,13 +14,7 @@ var supertest = require('supertest'),
     _ = require('lodash'),
     basicRoutes = require('../../src/server/routes/BasicRoutes'),
     userRoutes = require('../../src/server/routes/Users'),
-    DefaultGameTypes = require('../../src/server/GameTypes'),
-
-    not = function(checkCode) {
-        return function(v) {
-            assert(checkCode !== +v.statusCode);
-        };
-    };
+    DefaultGameTypes = require('../../src/server/GameTypes');
 
 // TODO: Add API message
 describe('Server Storage Tests', function() {
@@ -55,7 +49,6 @@ describe('Server Storage Tests', function() {
                 .set('__u', username)
                 .set('__h', hasher.digest('hex'))
                 .expect(function(res) {
-                    console.log('res.text', res.text);
                     assert(res.text.indexOf('Service') === 0);
                 })
                 .end(done);
@@ -67,11 +60,12 @@ describe('Server Storage Tests', function() {
         var endpoint = '/'+route.URL,
             method = route.Method.toLowerCase();
 
-        it('should have endpoint '+endpoint, function(done) {
+        it('should have endpoint ' + endpoint, function(done) {
             // FIXME: :filename is not resolved in express w/ supertest...
             api[method](endpoint)
                 .end(function(err, result) {
-                    assert(result.status !== 404);
+                    // Check that the 404 is due to missing socket - not page
+                    assert.notEqual(result.status, 404, result.text);
                     done();
                 });
         });
@@ -102,7 +96,7 @@ describe('Server Storage Tests', function() {
             it('should return the default game types', function(done) {
                 api.get('/GameTypes')
                     .end(function(err, result) {
-                        assert(result.status !== 404);
+                        assert.notEqual(result.status, 404, result.text);
                         assert(_.matches(result.body, DefaultGameTypes));
                         done();
                     });

@@ -79,6 +79,7 @@ Server.prototype.configureRoutes = function() {
 
     // Add routes
     this.app.use('/rpc', this.rpcManager.router);
+    createRouter.init(this._logger);
     this.app.use('/api', createRouter.call(this));
 
     // Initial page
@@ -95,14 +96,14 @@ Server.prototype.start = function(done) {
             return done(err);
         }
         self.configureRoutes();
-        self._server = self.app.listen(self.opts.port, function() {
+        self._server = self.app.listen(self.opts.port, function(err) {
             console.log('listening on port ' + self.opts.port);
             SocketManager.prototype.start.call(self, {server: self._server});
             // Enable Vantage
             if (self.opts.vantage) {
                 new Vantage(self).start(self.opts.vantagePort);
             }
-            done();
+            done(err);
         });
     });
 };
