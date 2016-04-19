@@ -8,7 +8,7 @@ var WebSocketManager = function (ide) {
     this.websocket = null;
     this.messages = [];
     this.processes = [];  // Queued processes to start
-    this.url = window.location.origin.replace('http://','ws://');
+    this.url = 'ws://' + window.location.host;
     this._connectWebSocket();
     this._heartbeat();
 };
