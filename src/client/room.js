@@ -20,7 +20,7 @@ function RoomMorph(ide) {
     this.roomLabel = null;
     this.init();
     // Set up the room name
-    this._name = localize('MyRoom');
+    this._name = null;
     Object.defineProperty(this, 'name', {
         get: function() {
             return this._name;
@@ -40,7 +40,6 @@ function RoomMorph(ide) {
     this.silentSetHeight(RoomMorph.SIZE);
 
     this.isDraggable = false;
-    this.drawNew();
 
     // Set up callback(s) for RoleMorphs
     RoleMorph.prototype.editRole = RoomMorph.prototype.editRole.bind(this);
@@ -50,10 +49,17 @@ function RoomMorph(ide) {
             myself.editRoleName(this.name);
         }
     };
+
+    // Set the initial values
+    var roles = {};
+    roles[this.ide.projectName] = 'me';
+    this.update(null, localize('MyRoom'), roles);
+
+    this.drawNew();
 }
 
 RoomMorph.prototype.isEditable = function() {
-    return this.ownerId === SnapCloud.username;
+    return this.ownerId && this.ownerId === SnapCloud.username;
 };
 
 RoomMorph.prototype._onNameChanged = function(newName) {
@@ -89,11 +95,6 @@ RoomMorph.prototype.drawNew = function() {
         len,
         i;
         
-    if (this.ownerId === null) {  // If the room isn't set, trigger an update
-        this.triggerUpdate();
-        return;
-    }
-
     // Remove the old roleLabels
     roles = Object.keys(this.roleLabels);
     for (i = roles.length; i--;) {

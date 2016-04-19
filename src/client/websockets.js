@@ -11,6 +11,8 @@ var WebSocketManager = function (ide) {
     this.url = 'ws://' + window.location.host;
     this._connectWebSocket();
     this._heartbeat();
+    this.version = Date.now();
+    this.shownError = false;
 };
 
 WebSocketManager.HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
@@ -110,7 +112,6 @@ WebSocketManager.prototype._connectWebSocket = function() {
     // Set up message firing queue
     this.websocket.onopen = function() {
         console.log('Connection established');  // REMOVE this
-        //self._onConnect();
 
         while (self.messages.length) {
             self.websocket.send(self.messages.shift());
@@ -131,6 +132,14 @@ WebSocketManager.prototype._connectWebSocket = function() {
     };
 
     this.websocket.onclose = function() {
+        if (!self.shownError && Date.now() - self.version > 5000) {  // tried connecting for 5 seconds
+            self.ide.showMessage('Could not fully connect to NetsBlox.\n' +
+                'Please try refreshing your browser or try a different ' + 
+                'browser');
+            self.shownError = true;
+        }
+
+        self.version = Date.now();
         setTimeout(self._connectWebSocket.bind(self), 500);
     };
 };
