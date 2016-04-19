@@ -123,6 +123,19 @@ RoomMorph.prototype.drawNew = function() {
     this.renderRoomTitle(new Point(center, center).translateBy(this.topLeft()));
 };
 
+RoomMorph.prototype.mouseClickLeft = function() {
+    if (!this.isEditable()) {
+        // If logged in, prompt about leaving the room
+        if (SnapCloud.username) {
+            this.ide.confirm(
+                localize('would you like to leave "' + this.name + '"?'),
+                localize('Leave Room'),
+                this.ide.newProject.bind(this.ide)
+            );
+        }
+    }
+};
+
 RoomMorph.prototype.renderRoomTitle = function(center) {
     var width = 100,
         height = 25;
@@ -551,6 +564,8 @@ RoleMorph.prototype.drawNew = function() {
 RoleMorph.prototype.mouseClickLeft = function() {
     if (this.parent.isEditable()) {
         this.editRole(this._label);
+    } else {
+        this.escalateEvent('mouseClickLeft');
     }
 };
 

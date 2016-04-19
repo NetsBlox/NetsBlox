@@ -225,7 +225,7 @@ ProjectDialogMorph.prototype.setSource = function (source) {
                 myself.nameField.setContents(item.name || '');
             }
             src = JSON.parse(myself.ide.getURL(
-                'api/Examples/' + item.name + '?sId=' + myself.ide.sockets.uuid +
+                'api/Examples/' + item.name + '?socketId=' + myself.ide.sockets.uuid +
                 '&preview=true'
             )).src.SourceCode;
 
@@ -264,7 +264,7 @@ ProjectDialogMorph.prototype.openProject = function () {
 
     if (this.source === 'examples') {
         response = JSON.parse(this.ide.getURL('api/Examples/' + proj.name +
-            '?sId=' + this.ide.sockets.uuid));
+            '?socketId=' + this.ide.sockets.uuid));
         this.ide.room.nextRoom = {
             ownerId: response.ownerId,
             roomName: response.roomName,

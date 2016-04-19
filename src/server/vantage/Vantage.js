@@ -28,6 +28,7 @@ var NetsBloxVantage = function(server) {
     vantage
         .command('user <username>', 'Get info about a specific user')
         .option('-r, --rooms', 'Get the user\'s saved rooms')
+        .option('-a, --admin', 'Toggle admin status')
         .option('-u, --update', 'Update the user\'s schema')
         .option('-c, --clear', 'Clear the room info')
         .alias('u')
@@ -44,7 +45,7 @@ var NetsBloxVantage = function(server) {
                 if (args.options.rooms) {
                     console.log(user.pretty().rooms);
                 } else if (args.options.update) {
-                    user.rooms = user.rooms || user.rooms || [];
+                    user.rooms = user.rooms || user.projects || [];
                     delete user.projects;
                     user.save();
                     console.log('User updated!');
@@ -52,6 +53,11 @@ var NetsBloxVantage = function(server) {
                     user.rooms = [];
                     user.save();
                     console.log('User updated!');
+                } else if (args.options.admin) {
+                    user.admin = !user.admin;
+                    user.save();
+                    console.log(`User "${user.username}" ${user.admin ? 'now has' :
+                        'no longer has'} admin priviledges!`);
                 } else {
                     console.log(user.pretty());
                 }

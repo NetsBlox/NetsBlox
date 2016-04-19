@@ -122,6 +122,7 @@ module.exports = [
     {
         Service: 'inviteToRoom',
         Parameters: 'socketId,invitee,ownerId,roomName,roleId',
+        middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
@@ -169,6 +170,7 @@ module.exports = [
     {
         Service: 'invitationResponse',
         Parameters: 'inviteId,response,socketId',
+        middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
@@ -251,6 +253,7 @@ module.exports = [
     {
         Service: 'moveToRole',
         Parameters: 'dstId,roleId,ownerId,roomName,socketId',
+        middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
@@ -293,6 +296,7 @@ module.exports = [
     {  // Create a new role and copy this project's blocks to it
         Service: 'cloneRole',
         Parameters: 'roleId,socketId',
+        middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {

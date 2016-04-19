@@ -149,12 +149,21 @@ module.exports = [
                 if (user && user.hash === hash) {  // Sign in 
                     req.session.username = req.body.__u;
                     log('"'+req.session.username+'" has logged in.');
+
                     // Associate the websocket with the username
-                    socket = this.sockets[req.body.__sId];
+                    socket = this.sockets[req.body.socketId];
                     if (socket) {  // websocket has already connected
                         socket.onLogin(user);
                     }
-                    return res.send(Utils.serializeArray(EXTERNAL_API));
+
+                    if (req.body.return_user) {
+                        return res.status(200).json({
+                            username: req.body.__u,
+                            email: user.email
+                        });
+                    } else {
+                        return res.status(200).send(Utils.serializeArray(EXTERNAL_API));
+                    }
                 }
                 log('Could not find user "'+req.body.__u+'"');
 
@@ -186,16 +195,13 @@ module.exports = [
     {
         Method: 'get',
         URL: 'Examples/:name',
+        middleware: ['hasSocket'],
         Handler: function(req, res) {
             var name = req.params.name,
-                uuid = req.query.sId,
+                uuid = req.query.socketId,
                 isPreview = req.query.preview,
                 socket,
                 example;
-
-            if (!uuid) {
-                return res.status(400).send('ERROR: No socket id provided');
-            }
 
             if (!EXAMPLES.hasOwnProperty(name)) {
                 this._logger.warn(`ERROR: Could not find example "${name}`);
