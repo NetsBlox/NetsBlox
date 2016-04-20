@@ -18,7 +18,8 @@ var R = require('ramda'),
  */
 var TicTacToeRPC = function() {
     this.board = TicTacToeRPC.getNewBoard();
-    this.winner = null;
+    this._winner = null;
+    this.lastMove = null;
 };
 
 /**
@@ -36,62 +37,35 @@ TicTacToeRPC.getPath = function() {
  * @return {Array<String>}
  */
 TicTacToeRPC.getActions = function() {
-    return ['isOpen', // Check if a space is open
-            'getTile', // Get the tile at a location
-            'didIWin',  // Get the winner
+    return ['winner',  // Get the winner
             'clear',  // Clear the board
             'play',  // Play a tile at the given location
             'isGameOver'];  // Check for game over
 };
 
 // Actions
-TicTacToeRPC.prototype.isOpen = function(req, res) {
-    var row = req.query.row-1,
-        column = req.query.column-1,
-        open,
-        isOnBoard = [row, column].every(this.isValidPosition.bind(this));
-
-    if (!isOnBoard) {
-        return res.status(400).send(false);
-    }
-    open = this.board[row][column] === null;
-    return res.send(open);
-};
-
 TicTacToeRPC.prototype.clear = function(req, res) {
-    this.winner = null;
+    var roleId = req.netsbloxSocket.roleId;
+
+    this._winner = null;
+    this.lastMove = null;
     this.board = TicTacToeRPC.getNewBoard();
-    info(req.query.uuid+' is clearing board');
+    info(req.query.roleId+' is clearing board');
     res.status(200).send(true);
 };
 
-TicTacToeRPC.prototype.getTile = function(req, res) {
-    var row = req.query.row-1,
-        column = req.query.column-1,
-        isOnBoard = [row, column].every(this.isValidPosition.bind(this));
-
-    if (isOnBoard) {
-        info('Requesting tile at '+row+', '+column+' ('+this.board[row][column]+') from '+
-            req.query.uuid);
-        res.send(this.board[row][column]);
-    } else {
-        log('Received invalid position in tile request: '+row+', '+column);
-        res.status(400).send(false);
-    }
-};
-
-TicTacToeRPC.prototype.didIWin = function(req, res) {
-    res.send(this.winner === req.query.uuid);
+TicTacToeRPC.prototype.winner = function(req, res) {
+    res.send(this._winner);
 };
 
 TicTacToeRPC.prototype.play = function(req, res) {
-    var uuid = req.query.uuid,
-        row = req.query.row-1,
+    var row = req.query.row-1,
         column = req.query.column-1,
+        roleId = req.netsbloxSocket.roleId,
         open = this.board[row][column] === null,
         isOnBoard = [row, column].every(this.isValidPosition.bind(this));
 
-    trace('"'+uuid+'" is trying to play at '+row+','+column+'. Board is \n'+
+    trace('"'+roleId+'" is trying to play at '+row+','+column+'. Board is \n'+
         this.board.map(function(row) {
             return row.map(t => t || '_').join(' ');
     })
@@ -99,22 +73,42 @@ TicTacToeRPC.prototype.play = function(req, res) {
     // Check that...
 
     // ...the game is still going
-    if (this.winner) {
-        log('"'+uuid+'" is trying to play after the game is over');
+    if (this._winner) {
+        log('"'+roleId+'" is trying to play after the game is over');
         return res.status(400).send(false);
     }
 
     // ...it's a valid position
     if (!isOnBoard) {
-        log('"'+uuid+'" is trying to play in an invalid position ('+row+','+column+')');
+        log('"'+roleId+'" is trying to play in an invalid position ('+row+','+column+')');
+        return res.status(400).send(false);
+    }
+
+    // ...it is the given role's turn
+    if (this.lastMove === roleId) {
+        log('"'+roleId+'" is trying to play twice in a row!');
         return res.status(400).send(false);
     }
 
     // ...it's not occupied
     if (open) {
-        this.board[row][column] = uuid;
-        this.winner = TicTacToeRPC.getWinner(this.board);
-        trace('"'+uuid+'" successfully played at '+row+','+column);
+        this.board[row][column] = roleId;
+        this._winner = TicTacToeRPC.getWinner(this.board);
+        trace('"'+roleId+'" successfully played at '+row+','+column);
+        // Send the play message to everyone!
+        req.netsbloxSocket._room.sockets()
+            .forEach(socket => socket.send({
+                type: 'message',
+                dstId: 'everyone',
+                msgType: 'TicTacToe',
+                content: {
+                    row: row+1,
+                    column: column+1,
+                    role: roleId
+                }
+            }));
+
+        this.lastMove = roleId;
         return res.status(200).send(true);
     }
     return res.status(400).send(false);
@@ -124,12 +118,12 @@ TicTacToeRPC.prototype.isGameOver = function(req, res) {
     var isOver = false;
 
     // Game is over if someone has won
-    isOver = this.winner !== null;
+    isOver = this._winner !== null;
 
     // or all tiles are filled
     isOver = isOver || this.isFullBoard();
 
-    log('isGameOver: ' + isOver + ' (' + this.winner + ')');
+    log('isGameOver: ' + isOver + ' (' + this._winner + ')');
     res.send(isOver);
 };
 
