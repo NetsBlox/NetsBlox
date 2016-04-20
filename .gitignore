@@ -4,4 +4,5 @@
 *.swo
 node_modules/
 coverage/
+src/client/netsblox-build.js
 .env

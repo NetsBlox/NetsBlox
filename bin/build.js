@@ -1,49 +1,33 @@
 'use strict';
 
-var concat = require('concat'),
+var fs = require('fs'),
     path = require('path'),
     srcPath = path.join(__dirname, '..', 'src', 'client'),
     dstPath = path.join(__dirname, '..', 'build');
 
 // Get the given js files
-var jsFiles = [
-    'build-message',
-    'map-shim',
-    'morphic',
-    'locale',
-    'widgets',
-    'blocks',
-    'websockets',
-    'threads',
-    'messages',
-    'netsblox',
-    'objects',
-    'gui',
-    'paint',
-    'lists',
-    'byob',
-    'xml',
-    'store',
-    'cloud',
-    'sha512',
-    'message-inputs',
-    'message-listeners',
-    'table'
-].map(name => path.join(srcPath, name + '.js'));
+var devHtml = fs.readFileSync(path.join(srcPath, 'netsblox-dev.html'), 'utf8'),
+    re = /text\/javascript" src="(.*)">/,
+    match = devHtml.match(re),
+    srcFiles = [];
 
-// TODO: Add uglify, etc
-concat(jsFiles, path.join(srcPath, 'build.js'), function(err) {
-    if (err) {
-        return console.log('Error!', err);
-    }
-    console.log('Finished building build.js');
-});
+while (match) {
+    srcFiles.push(match[1]);
+    devHtml = devHtml.substring(match.index + match[0].length);
+    match = devHtml.match(re);
+}
+console.log('concatting and minifying:', srcFiles);
+srcFiles = srcFiles.map(file => path.join(srcPath, file));
+var src = srcFiles
+    .map(file => fs.readFileSync(file, 'utf8'))
+    .join('\n');
 
-var devFiles = [
-    path.join(__dirname, '..', 'src', 'virtual-client', 'virtual-helpers.js'),
-    path.join(__dirname, '..', 'src', 'virtual-client', 'phantomjs-shim.js')
-];
+var ugly = require("uglify-js");
 
-concat(devFiles.concat(jsFiles), path.join(srcPath, 'build-dev.js'), function(err) {
-    console.log('Finished building build-dev.js');
-});
+console.log('dev src length:', src.length);
+var final_code = ugly.minify(srcFiles, {outSourceMap: path.join(srcPath, 'netsblox-build.js.map')});
+
+console.log('output length:', final_code.code.length);
+console.log('compression ratio:', 1-(final_code.code.length/src.length));
+
+fs.writeFileSync(path.join(srcPath, 'netsblox-build.js'), final_code.code);
