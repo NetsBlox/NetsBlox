@@ -30,7 +30,7 @@ describe('TicTacToe Tests', function() {
 
         it('should not play if winner is found', function() {
             var code;
-            tictactoe._rpc.winner = 'cat';
+            tictactoe._rpc._winner = 'cat';
             code = tictactoe.play({uuid: 'p1', row: 3, column: -1}).code;
             assert.equal(code, 400);
         });
@@ -69,23 +69,6 @@ describe('TicTacToe Tests', function() {
         });
     });
 
-    describe('getTile', function() {
-        beforeEach(function() {
-            tictactoe.clear();
-        });
-
-        it('should return 400 if bad position', function() {
-            var code = tictactoe.getTile({uuid: 'p1', row: 5, column: 3}).code;
-            assert.equal(code, 400);
-        });
-
-        it('should return the player\'s uuid', function() {
-            var uuid = 'p2';
-            tictactoe.play({uuid: uuid, row: 1, column: 2});
-            assert.equal(tictactoe.getTile({row: 1, column: 2}).response, uuid);
-        });
-    });
-
     describe('getWinner', function() {
         beforeEach(function() {
             tictactoe.clear();
@@ -97,9 +80,10 @@ describe('TicTacToe Tests', function() {
                 row = 3;
 
             columns.forEach(function(col) {
+                tictactoe._rpc.lastMove = null;  // reset turns
                 tictactoe.play({uuid: uuid, row: row, column: col});
             });
-            assert(tictactoe.didIWin({uuid: uuid}).response);
+            assert(tictactoe.winner({uuid: uuid}).response);
         });
 
         it('should detect vertical victory', function() {
@@ -108,9 +92,10 @@ describe('TicTacToe Tests', function() {
                 col = 2;
 
             rows.forEach(function(row) {
+                tictactoe._rpc.lastMove = null;  // reset turns
                 tictactoe.play({uuid: uuid, row: row, column: col});
             });
-            assert(tictactoe.didIWin({uuid: uuid}).response);
+            assert(tictactoe.winner({uuid: uuid}).response);
         });
 
         it('should detect diagonal victory', function() {
@@ -118,9 +103,10 @@ describe('TicTacToe Tests', function() {
                 positions = [[1,3],[2,2],[3,1]];
 
             positions.forEach(function(pos) {
+                tictactoe._rpc.lastMove = null;  // reset turns
                 tictactoe.play({uuid: uuid, row: pos[0], column: pos[1]});
             });
-            assert(tictactoe.didIWin({uuid: uuid}).response);
+            assert(tictactoe.winner({uuid: uuid}).response);
         });
     });
 

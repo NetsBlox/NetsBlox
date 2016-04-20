@@ -132,19 +132,19 @@ describe('Server Tests', function() {
             api;
 
         before(function() {
-            api = supertest('http://localhost:'+port+'/rpc/tictactoe');
+            api = supertest('http://localhost:'+port+'/rpc/simplehangman');
         });
 
         // Testing an example RPC
         describe('Basic tests', function() {
             it('should exist', function(done) {
-                api.get('/isGameOver?uuid='+uuid)
+                api.get('/guess?uuid='+uuid)
                     .expect(401)
                     .end(done);
             });
         });
 
-        describe('TicTacToe tests', function() {
+        describe('RPC tests', function() {
             var socket,
                 host = 'ws://localhost:'+port;
 
@@ -171,7 +171,7 @@ describe('Server Tests', function() {
             });
 
             afterEach(function(done) {
-                api.get('/clear?uuid='+uuid)
+                api.get('/restart?uuid='+uuid)
                     .expect(200)
                     .end(done);
             });
@@ -183,20 +183,20 @@ describe('Server Tests', function() {
             });
 
             it('should respond to queries', function(done) {
-                api.get('/isGameOver?uuid='+uuid)
+                api.get('/getWrongCount?uuid='+uuid)
                     .expect(function(res) {
-                        assert.equal(res.body, false);
+                        assert(+res.text > -1, res.text + ' is not > -1');
                     })
                     .end(done);
             });
 
             it('should maintain state', function(done) {
-                var play = api.get('/play?uuid='+uuid+'&row=1&column=1')
+                var play = api.get('/guess?uuid='+uuid+'&letter=_')
                     .expect(200)
                     .end(function() {
-                        api.get('/getTile?uuid='+uuid+'&row=1&column=1')
+                        api.get('/getWrongCount?uuid='+uuid)
                             .expect(function(res) {
-                                assert.equal(res.text, uuid);
+                                assert.equal(+res.text, 1);
                             })
                             .end(done);
                     });
@@ -233,16 +233,16 @@ describe('Server Tests', function() {
                 });
 
                 beforeEach(function(done) {
-                    api.get('/play?uuid='+uuid+'&row=1&column=1')
+                    api.get('/guess?uuid='+uuid+'&letter=_')
                         .expect(200)
                         .end(done);
                 });
 
                 afterEach(function(done) {
-                    api.get('/clear?uuid='+uuid)
+                    api.get('/restart?uuid='+uuid)
                         .expect(200)
                         .end(function() {
-                            api.get('/clear?uuid='+username2)
+                            api.get('/restart?uuid='+username2)
                                 .expect(200)
                                 .end(done);
                         });
@@ -250,10 +250,10 @@ describe('Server Tests', function() {
 
                 it('should share a game board', function(done) {
 
-                    api.get('/isOpen?uuid='+uuid+'&row=1&column=1')
+                    api.get('/getWrongCount?uuid='+uuid)
                         .expect(function(res) {
                             assert.equal(res.statusCode, 200);
-                            assert.equal(res.text, 'false');
+                            assert.equal(+res.text, 1);
                         })
                         .end(done);
                 });
