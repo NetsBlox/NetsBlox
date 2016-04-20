@@ -20,7 +20,7 @@ function RoomMorph(ide) {
     this.roomLabel = null;
     this.init();
     // Set up the room name
-    this._name = null;
+    this._name = localize('MyRoom');
     Object.defineProperty(this, 'name', {
         get: function() {
             return this._name;
@@ -53,7 +53,7 @@ function RoomMorph(ide) {
     // Set the initial values
     var roles = {};
     roles[this.ide.projectName] = 'me';
-    this.update(null, localize('MyRoom'), roles);
+    this.update(null, this.name, roles);
 
     this.drawNew();
 }
@@ -63,8 +63,7 @@ RoomMorph.prototype.isEditable = function() {
 };
 
 RoomMorph.prototype._onNameChanged = function(newName) {
-    if (this._name !== newName) {
-        this._name = newName;
+    if (this.name !== newName) {
         this.ide.sockets.sendMessage({
             type: 'rename-room',
             name: newName
@@ -75,8 +74,12 @@ RoomMorph.prototype._onNameChanged = function(newName) {
 RoomMorph.prototype.update = function(ownerId, name, roles) {
     // Update the roles, etc
     this.ownerId = ownerId;
-    this._name = name;
     this.roles = roles;
+
+    if (this.name !== name) {
+        this._name = name;
+        this.ide.controlBar.updateLabel();
+    }
 
     this.version = Date.now();
     this.drawNew();
