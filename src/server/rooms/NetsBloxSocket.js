@@ -271,6 +271,7 @@ NetsBloxSocket.MessageHandlers = {
         name = msg.name;
         while (names[name]) {
             name = msg.name + ' (' + i + ')';
+            i++;
         }
 
         this._logger.trace(`changing room name from ${this._room.name} to ${name}`);
