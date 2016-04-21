@@ -311,6 +311,10 @@ RoomMorph.prototype.createRoleClone = function(role) {
     );
 };
 
+RoomMorph.prototype.role = function() {
+    return this.ide.projectName;
+};
+
 RoomMorph.prototype.setRoleName = function(role) {
     this.ide.sockets.sendMessage({
         type: 'rename-role',
@@ -667,10 +671,11 @@ function EditRoleMorph(room, role) {
     this.addBody(txt);
 
     // Role Actions
-    this.addButton('createRoleClone', 'Clone');  // TODO
+    this.addButton('createRoleClone', 'Clone');
 
     if (role.user) {  // occupied
-        if (!role.isMine()) {  // Can only edit/delete roles that are your own
+        // Check that the role name isn't the currently occupied role name
+        if (role.name !== this.room.role()) {
             this.addButton('evictUser', 'Evict User');
         }
     } else {  // vacant

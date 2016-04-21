@@ -119,7 +119,7 @@ class ActiveRoom {
 
                 if (this.roles[src]) {  // notify the socket of it's removal!
                     var currSocket = this.roles[src];
-                    currSocket.newRoom({role: 'myRole'});
+                    currSocket.newRoom();
                     this._logger.error(`Moved ${this.roles[src].username} from ${this.name} (${src})` +
                         ` to ${currSocket._room.name} (${currSocket.roleId})`);
 

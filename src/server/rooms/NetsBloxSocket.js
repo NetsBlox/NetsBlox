@@ -142,9 +142,11 @@ class NetsBloxSocket {
     }
 
     newRoom (opts) {
-        var name = opts.room || opts.name || this.getNewName(),
+        var name,
             room;
 
+        opts = opts || {role: 'myRole'};
+        name = opts.room || opts.name || this.getNewName();
         this._logger.info(`"${this.username}" is making a new room "${name}"`);
 
         room = this.createRoom(this, name);

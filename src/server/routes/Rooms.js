@@ -107,10 +107,12 @@ module.exports = [
 
             if (socket.username === userId) {
                 // Remove the user from the room!
-                // TODO
-                // Fork the room
                 log(`${userId} is evicted from room ${roomId}`);
-                this.forkRoom({room, socket});
+                if (userId === ownerId) {  // removing another instance of self
+                    socket.newRoom();
+                } else {  // Fork the room
+                    this.forkRoom({room, socket});
+                }
                 room.onRolesChanged();
             } else {
                 var err = `${userId} is not at ${roleId} at room ${roomId}`;
