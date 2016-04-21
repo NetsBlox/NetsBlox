@@ -98,10 +98,9 @@ module.exports = [
             log(`roleId is ${roleId}`);
             log(`userId is ${userId}`);
             socket = room.roles[roleId];
+
             if (!socket) {  // user is not online
-                this._logger.info(`Removing role ${roleId}`);
-                // Remove the user from the room!
-                // TODO
+                this._logger.warn(`Cannot remove role ${roleId} - no associated socket!`);
                 return res.send('user has been evicted!');
             }
 
