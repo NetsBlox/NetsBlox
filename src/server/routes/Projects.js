@@ -55,16 +55,19 @@ module.exports = [
                     activeRoom;
 
                 if (e) {
+                    error(`Could not retrieve user "${username}"`);
                     return res.status(500).send('ERROR: ' + e);
                 }
 
                 if (!user) {
+                    error(`user not found: "${username}" - cannot save!`);
                     return res.status(400).send('ERROR: user not found');
                 }
 
                 // Look up the user's room
                 activeRoom = socket._room;
                 if (!activeRoom) {
+                    error(`Could not find active room for "${username}" - cannot save!`);
                     return res.status(500).send('ERROR: active room not found');
                 }
 
@@ -75,16 +78,20 @@ module.exports = [
                     room = this.storage.rooms.new(user, activeRoom);
                     room.save(function(err) {
                         if (err) {
+                            error(`room save failed for room "${room.name}" initiated by "${username}"`);
                             return res.status(500).send('ERROR: ' + err);
                         }
+                        log(`room save successful for room "${room.name}" initiated by "${username}"`);
                         return res.send('room saved!');
                     });
                 } else {  // just update the project cache for the given user
-                    log(`caching ${socket._roleId} for ${socket.username}`);
-                    activeRoom.cache(socket._roleId, err => {
+                    log(`caching ${socket.roleId} for ${socket.username}`);
+                    activeRoom.cache(socket.roleId, err => {
                         if (err) {
+                            error(`Could not cache the ${socket.roleId} for non-owner "${username}"`);
                             return res.status(500).send('ERROR: ' + err);
                         }
+                        log(`cache of ${socket.roleId} successful for for non-owner "${username}"`);
                         return res.send('code saved!');
                     });
                 }
@@ -151,10 +158,9 @@ module.exports = [
                         return preview;
                     });
 
-                    info('Projects for '+username +' are '+JSON.stringify(
-                        R.map(R.partialRight(Utils.getAttribute, 'ProjectName'),
-                            previews)
-                        )
+                    info(`Projects for ${username} are ${JSON.stringify(
+                        previews.map(preview => preview.name)
+                        )}`
                     );
                         
                     return res.send(Utils.serializeArray(previews));
