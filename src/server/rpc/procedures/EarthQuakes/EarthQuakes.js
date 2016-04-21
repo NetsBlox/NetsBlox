@@ -86,6 +86,7 @@ module.exports = {
         request(url, function(err, response, body) {
             if (err) {
                 res.status(500).send('ERROR: ' + err);
+                return;
             }
 
             try {
