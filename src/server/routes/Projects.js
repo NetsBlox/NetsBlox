@@ -7,6 +7,7 @@ var R = require('ramda'),
     debug = require('debug'),
     log = debug('NetsBlox:API:Projects:log'),
     info = debug('NetsBlox:API:Projects:info'),
+    warn = debug('NetsBlox:API:Projects:warn'),
     error = debug('NetsBlox:API:Projects:error');
 
 var getProjectIndexFrom = function(name, user) {
@@ -42,6 +43,7 @@ module.exports = [
         Parameters: 'socketId',
         Method: 'Post',
         Note: '',
+        middleware: ['hasSocket'],
         Handler: function(req, res) {
             var username = req.session.username,
                 socketId = req.body.socketId;
@@ -194,17 +196,23 @@ module.exports = [
                         .filter(role => !activeRoom.roles[role])  // not occupied
                         .shift();
 
-                    if (openRole) {  // Send an open role and add the user
+                    if (openRole && activeRoom.cachedProjects[openRole]) {  // Send an open role and add the user
                         info(`adding ${username} to open role "${openRole}" at ` +
                             `"${roomName}"`);
 
                         role = activeRoom.cachedProjects[openRole];
-                    } else {  // If no roles are open, make a new role
+                    } else {  // If no open role w/ cache -> make a new role
                         let i = 2,
                             base;
-                        openRole = base = 'new role';
-                        while (activeRoom.hasOwnProperty(openRole)) {
-                            openRole = `${base} (${i++})`;
+
+                        if (!openRole) {
+                            openRole = base = 'new role';
+                            while (activeRoom.hasOwnProperty(openRole)) {
+                                openRole = `${base} (${i++})`;
+                            }
+                        } else {
+                            // TODO: This is bad. User could be losing data!
+                            error(`Found open role "${openRole}" but it is not cached!`);
                         }
 
                         info(`adding ${username} to new role "${openRole}" at ` +

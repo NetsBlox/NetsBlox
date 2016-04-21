@@ -14,7 +14,7 @@ module.exports = R.mapObjIndexed(convertMsgType,
         reset: [],
 
         // Special messages
-        TicTacToe: ['row', 'column'],
+        TicTacToe: ['role', 'row', 'column'],
         SimpleMessage: ['sender', 'body'],
         Earthquake: ['latitude', 'longitude', 'size', 'time'],
         Trivia: ['question', 'answer', 'difficulty']

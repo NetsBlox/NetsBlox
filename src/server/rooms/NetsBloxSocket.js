@@ -3,6 +3,7 @@
  */
 'use strict';
 var counter = 0,
+    generate = require('project-name-generator'),
     CONSTANTS = require(__dirname + '/../../common/Constants'),
     PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'MediaSize', 'RoomUuid'],
     R = require('ramda'),
@@ -120,6 +121,37 @@ class NetsBloxSocket {
         this.roleId = role;
     }
 
+    getNewName () {
+        var name;
+        if (this.user) {
+            var nameExists = {};
+
+            this.user.rooms.forEach(room => nameExists[room.name] = true);
+
+            // Create base name
+            do {
+                name = generate().spaced;
+            } while (nameExists[name]);
+
+        } else {
+            name = 'New Room ' + (Date.now() % 100);
+        }
+
+        this._logger.info(`generated unique name for ${this.username}`);
+        return name;
+    }
+
+    newRoom (opts) {
+        var name = opts.room || opts.name || this.getNewName(),
+            room;
+
+        this._logger.info(`"${this.username}" is making a new room "${name}"`);
+
+        room = this.createRoom(this, name);
+        room.createRole(opts.role);
+        this.join(room, opts.role);
+    }
+
     // This should only be called internally *EXCEPT* when the socket is going to close
     leave () {
         this._room.roles[this.roleId] = null;
@@ -218,9 +250,7 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'create-room': function(msg) {
-        var room = this.createRoom(this, msg.room);
-        room.createRole(msg.role);
-        this.join(room, msg.role);
+        this.newRoom(msg);
     },
 
     'join-room': function(msg) {
@@ -271,6 +301,7 @@ NetsBloxSocket.MessageHandlers = {
         name = msg.name;
         while (names[name]) {
             name = msg.name + ' (' + i + ')';
+            i++;
         }
 
         this._logger.trace(`changing room name from ${this._room.name} to ${name}`);

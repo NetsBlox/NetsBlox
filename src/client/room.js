@@ -40,7 +40,6 @@ function RoomMorph(ide) {
     this.silentSetHeight(RoomMorph.SIZE);
 
     this.isDraggable = false;
-    this.drawNew();
 
     // Set up callback(s) for RoleMorphs
     RoleMorph.prototype.editRole = RoomMorph.prototype.editRole.bind(this);
@@ -50,15 +49,21 @@ function RoomMorph(ide) {
             myself.editRoleName(this.name);
         }
     };
+
+    // Set the initial values
+    var roles = {};
+    roles[this.ide.projectName] = 'me';
+    this.update(null, this.name, roles);
+
+    this.drawNew();
 }
 
 RoomMorph.prototype.isEditable = function() {
-    return this.ownerId === SnapCloud.username;
+    return this.ownerId && this.ownerId === SnapCloud.username;
 };
 
 RoomMorph.prototype._onNameChanged = function(newName) {
-    if (this._name !== newName) {
-        this._name = newName;
+    if (this.name !== newName) {
         this.ide.sockets.sendMessage({
             type: 'rename-room',
             name: newName
@@ -69,8 +74,12 @@ RoomMorph.prototype._onNameChanged = function(newName) {
 RoomMorph.prototype.update = function(ownerId, name, roles) {
     // Update the roles, etc
     this.ownerId = ownerId;
-    this._name = name;
     this.roles = roles;
+
+    if (this.name !== name) {
+        this._name = name;
+        this.ide.controlBar.updateLabel();
+    }
 
     this.version = Date.now();
     this.drawNew();
@@ -89,11 +98,6 @@ RoomMorph.prototype.drawNew = function() {
         len,
         i;
         
-    if (this.ownerId === null) {  // If the room isn't set, trigger an update
-        this.triggerUpdate();
-        return;
-    }
-
     // Remove the old roleLabels
     roles = Object.keys(this.roleLabels);
     for (i = roles.length; i--;) {
@@ -121,6 +125,19 @@ RoomMorph.prototype.drawNew = function() {
     }
     // Room name
     this.renderRoomTitle(new Point(center, center).translateBy(this.topLeft()));
+};
+
+RoomMorph.prototype.mouseClickLeft = function() {
+    if (!this.isEditable()) {
+        // If logged in, prompt about leaving the room
+        if (SnapCloud.username) {
+            this.ide.confirm(
+                localize('would you like to leave "' + this.name + '"?'),
+                localize('Leave Room'),
+                this.ide.newProject.bind(this.ide)
+            );
+        }
+    }
 };
 
 RoomMorph.prototype.renderRoomTitle = function(center) {
@@ -551,6 +568,8 @@ RoleMorph.prototype.drawNew = function() {
 RoleMorph.prototype.mouseClickLeft = function() {
     if (this.parent.isEditable()) {
         this.editRole(this._label);
+    } else {
+        this.escalateEvent('mouseClickLeft');
     }
 };
 

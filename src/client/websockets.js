@@ -8,9 +8,14 @@ var WebSocketManager = function (ide) {
     this.websocket = null;
     this.messages = [];
     this.processes = [];  // Queued processes to start
-    this.url = window.location.origin.replace('http://','ws://');
+    this.url = 'ws://' + window.location.host;
     this._connectWebSocket();
     this._heartbeat();
+    this.version = Date.now();
+
+    this.errored = false;
+    this.hasConnected = false;
+    this.connected = false;
 };
 
 WebSocketManager.HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
@@ -87,6 +92,10 @@ WebSocketManager.MessageHandlers = {
         if (msg.roleId === this.ide.projectName) {  // role name and project name are the same
             this.ide.silentSetProjectName(msg.name);
         }
+    },
+
+    'notification': function(msg) {
+        this.ide.showMessage(msg.message);
     }
 };
 
@@ -110,7 +119,12 @@ WebSocketManager.prototype._connectWebSocket = function() {
     // Set up message firing queue
     this.websocket.onopen = function() {
         console.log('Connection established');  // REMOVE this
-        //self._onConnect();
+        if (self.errored === true) {
+            self.ide.showMessage((self.hasConnected ? 're' : '') + 'connected!', 2);
+            self.errored = false;
+        }
+        self.hasConnected = true;
+        self.connected = true;
 
         while (self.messages.length) {
             self.websocket.send(self.messages.shift());
@@ -131,6 +145,25 @@ WebSocketManager.prototype._connectWebSocket = function() {
     };
 
     this.websocket.onclose = function() {
+        var errMsg;
+
+        if (self.connected) {
+            self.version = Date.now();
+            self.connected = false;
+        }
+
+        if (!self.errored && Date.now() - self.version > 5000) {  // tried connecting for 5 seconds
+            errMsg = self.hasConnected ? 
+                'Temporarily disconnected.\nSome network functionality may be ' +
+                'nonfunctional.\nTrying to reconnect...' :
+
+                'Could not fully connect to NetsBlox.\nPlease try refreshing ' +
+                'your browser or try a different browser';
+
+            self.ide.showMessage(errMsg);
+            self.errored = true;
+        }
+
         setTimeout(self._connectWebSocket.bind(self), 500);
     };
 };
