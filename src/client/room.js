@@ -72,6 +72,7 @@ RoomMorph.prototype._onNameChanged = function(newName) {
 };
 
 RoomMorph.prototype.update = function(ownerId, name, roles) {
+    var wasEditable = this.isEditable();
     // Update the roles, etc
     this.ownerId = ownerId;
     this.roles = roles;
@@ -81,12 +82,12 @@ RoomMorph.prototype.update = function(ownerId, name, roles) {
         this.ide.controlBar.updateLabel();
     }
 
+    if (wasEditable !== this.isEditable()) {
+        this.changed();
+    }
+
     this.version = Date.now();
     this.drawNew();
-};
-
-RoomMorph.prototype.triggerUpdate = function() {
-    // TODO: Message the server requesting an update
 };
 
 RoomMorph.prototype.drawNew = function() {
