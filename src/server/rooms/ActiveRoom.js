@@ -103,9 +103,37 @@ class ActiveRoom {
 
     move (params) {
         var src = params.src || params.socket.roleId,
-            socket = this.roles[src],
+            socket = params.socket,
             dst = params.dst;
 
+        if (socket) {
+            // socket should equal this.roles[src]!
+            if (socket !== this.roles[src]) {
+                var rolesList = Object.keys(this.roles)
+                    .map(role => `${role}: ${this.roles[role] && this.roles[role].username}`)
+                    .join('\n');
+
+                this._logger.error(`room "${this.name}" is out of sync! ${src} should have ` +
+                    `${socket.username} but has ${this.roles[src] && this.roles[src].username}` +
+                    `.\nDumping all roles: ${rolesList}`);
+
+                if (this.roles[src]) {  // notify the socket of it's removal!
+                    var currSocket = this.roles[src];
+                    currSocket.newRoom({role: 'myRole'});
+                    this._logger.error(`Moved ${this.roles[src].username} from ${this.name} (${src})` +
+                        ` to ${currSocket._room.name} (${currSocket.roleId})`);
+
+                    // Send message to currSocket to explain the move
+                    currSocket.send({
+                        type: 'notification',
+                        message: `${socket.username} has taken your spot.\nYou have been moved ` +
+                            ` to a new project.`
+                    });
+                }
+            }
+        }
+
+        socket = socket || this.roles[src];
         this._logger.info(`moving from ${src} to ${dst}`);
         this.roles[src] = null;
         this.add(socket, dst);

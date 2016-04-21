@@ -92,6 +92,10 @@ WebSocketManager.MessageHandlers = {
         if (msg.roleId === this.ide.projectName) {  // role name and project name are the same
             this.ide.silentSetProjectName(msg.name);
         }
+    },
+
+    'notification': function(msg) {
+        this.ide.showMessage(msg.message);
     }
 };
 
