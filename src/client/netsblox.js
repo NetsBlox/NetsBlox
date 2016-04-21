@@ -59,24 +59,17 @@ NetsBloxMorph.prototype.clearProject = function () {
 
 
 NetsBloxMorph.prototype.newProject = function (projectName) {
-    var roomName = 'Room ' + (Date.now() % 100);
     this.clearProject();
 
     // Get new room name
     this.sockets.sendMessage({
         type: 'create-room',
-        room: roomName,
         role: projectName || RoomMorph.DEFAULT_ROLE
     });
-    if (projectName) {
-        this.setProjectName(projectName || '');
-    } else {
-        this.silentSetProjectName(RoomMorph.DEFAULT_ROLE);
-    }
+
+    this.silentSetProjectName(projectName || RoomMorph.DEFAULT_ROLE);
     this.createRoom();
-    this.room.name = roomName;
     this.selectSprite(this.stage.children[0]);
-    this.controlBar.updateLabel();
 };
 
 NetsBloxMorph.prototype.createRoom = function() {
