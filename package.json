@@ -43,6 +43,7 @@
     "nodemailer": "^2.3.0",
     "nodemailer-markdown": "^1.0.0",
     "nop": "^1.0.0",
+    "project-name-generator": "^2.1.2",
     "ramda": "^0.20.1",
     "request": "^2.63.0",
     "rimraf": "^2.4.3",
