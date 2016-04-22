@@ -895,3 +895,8 @@ NetsBloxMorph.prototype.getURL = function (url) {
     }
 };
 
+NetsBloxMorph.prototype.logout = function () {
+    NetsBloxMorph.uber.logout.call(this);
+    this.room.update();
+};
+

@@ -31,6 +31,7 @@ function RoomMorph(ide) {
     // Set up the ownerId
     this.ownerId = null;
     this.nextRoom = null;  // next room info
+    this.editable = false;
     // The projectName is used for the roleId
     if (!this.ide.projectName) {
         this.ide.projectName = RoomMorph.DEFAULT_ROLE;
@@ -45,7 +46,7 @@ function RoomMorph(ide) {
     RoleMorph.prototype.editRole = RoomMorph.prototype.editRole.bind(this);
     var myself = this;
     RoleLabelMorph.prototype.mouseClickLeft = function() {
-        if (myself.isEditable()) {
+        if (myself.editable) {
             myself.editRoleName(this.name);
         }
     };
@@ -58,10 +59,6 @@ function RoomMorph(ide) {
     this.drawNew();
 }
 
-RoomMorph.prototype.isEditable = function() {
-    return this.ownerId && this.ownerId === SnapCloud.username;
-};
-
 RoomMorph.prototype._onNameChanged = function(newName) {
     if (this.name !== newName) {
         this.ide.sockets.sendMessage({
@@ -72,22 +69,36 @@ RoomMorph.prototype._onNameChanged = function(newName) {
 };
 
 RoomMorph.prototype.update = function(ownerId, name, roles) {
-    var wasEditable = this.isEditable();
-    // Update the roles, etc
-    this.ownerId = ownerId;
-    this.roles = roles;
+    var myself = this,
+        wasEditable = this.editable,
+        oldRoles = this.roles,
+        oldNames = Object.keys(oldRoles),
+        names,
+        changed;
 
-    if (this.name !== name) {
+    // Update the roles, etc
+    this.ownerId = ownerId || this.ownerId;
+    this.roles = roles || this.roles;
+    this.editable = this.ownerId && this.ownerId === SnapCloud.username;
+
+    if (name && this.name !== name) {
         this._name = name;
         this.ide.controlBar.updateLabel();
     }
 
-    if (wasEditable !== this.isEditable()) {
+    // Check if it has changed in a meaningful way
+    names = Object.keys(this.roles);
+    changed = wasEditable !== this.editable || 
+        oldNames.length !== names.length || names.reduce(function(prev, name) {
+            return prev || oldRoles[name] !== myself.roles[name];
+        }, false);
+
+
+    if (changed) {
+        this.version = Date.now();
+        this.drawNew();
         this.changed();
     }
-
-    this.version = Date.now();
-    this.drawNew();
 };
 
 RoomMorph.prototype.drawNew = function() {
@@ -129,7 +140,7 @@ RoomMorph.prototype.drawNew = function() {
 };
 
 RoomMorph.prototype.mouseClickLeft = function() {
-    if (!this.isEditable()) {
+    if (!this.editable) {
         // If logged in, prompt about leaving the room
         if (SnapCloud.username) {
             this.ide.confirm(
@@ -157,7 +168,7 @@ RoomMorph.prototype.renderRoomTitle = function(center) {
     this.add(this.titleBox);
     this.titleBox.setExtent(new Point(width, height));
     this.titleBox.setCenter(center);
-    if (this.isEditable()) {
+    if (this.editable) {
         this.titleBox.mouseClickLeft = this.editRoomName.bind(this);
     }
 
@@ -180,11 +191,6 @@ RoomMorph.prototype.editRoomName = function () {
             myself.name = name;
         }
     }, null, 'editRoomName');
-};
-
-RoomMorph.prototype.join = function (ownerId, name) {
-    this.ownerId = ownerId;
-    this._name = name;
 };
 
 RoomMorph.prototype.createNewRole = function () {
@@ -571,7 +577,7 @@ RoleMorph.prototype.drawNew = function() {
 };
 
 RoleMorph.prototype.mouseClickLeft = function() {
-    if (this.parent.isEditable()) {
+    if (this.parent.editable) {
         this.editRole(this._label);
     } else {
         this.escalateEvent('mouseClickLeft');
@@ -728,6 +734,8 @@ ProjectsMorph.prototype.constructor = ProjectsMorph;
 ProjectsMorph.uber = ScrollFrameMorph.prototype;
 
 function ProjectsMorph(room, sliderColor) {
+    var myself = this;
+
     // TODO: Get the room info and update when websockets do stuff
     ProjectsMorph.uber.init.call(this, null, null, sliderColor);
     this.acceptsDrops = false;
@@ -735,6 +743,11 @@ function ProjectsMorph(room, sliderColor) {
     this.add(room);
     // Reset the position
     this.room.silentSetPosition(new Point(0,0));
+
+    // Update the ProjectsMorph when the room changes
+    this.room.changed = function() {
+        myself.updateRoom();
+    };
     this.updateRoom();
 }
 
@@ -753,7 +766,7 @@ ProjectsMorph.prototype.updateRoom = function() {
     this.addContents(this.room);
 
     // Draw the "new role" button
-    if (this.room.isEditable()) {
+    if (this.room.editable) {
         this._addButton({
             selector: 'createNewRole',
             icon: 'plus',
@@ -761,6 +774,11 @@ ProjectsMorph.prototype.updateRoom = function() {
             left: this.room.right() + padding*4
         });
     }
+};
+
+ProjectsMorph.prototype.destroy = function() {
+    this.room.changed = nop;
+    ProjectsMorph.uber.destroy.call(this);
 };
 
 ProjectsMorph.prototype._addButton = function(params) {
