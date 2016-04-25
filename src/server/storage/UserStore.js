@@ -20,6 +20,12 @@ class UserStore {
         });
     }
 
+    names () {
+        return this._users.find().toArray()
+            .then(users => users.map(user => user.username))
+            .catch(e => this._logger.error('Could not get the user names!'));
+    }
+
     new(username, email) {
         return new User(this._logger, this._users, {username, email});
     }

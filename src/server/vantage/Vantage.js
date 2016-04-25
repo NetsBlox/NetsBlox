@@ -26,43 +26,63 @@ var NetsBloxVantage = function(server) {
 
     // get user info
     vantage
-        .command('user <username>', 'Get info about a specific user')
+        .command('user [username]', 'Get info about a specific user')
         .option('-r, --rooms', 'Get the user\'s saved rooms')
         .option('-a, --admin', 'Toggle admin status')
         .option('-u, --update', 'Update the user\'s schema')
         .option('-c, --clear', 'Clear the room info')
         .alias('u')
-        .action( (args, cb) => {
+        .action((args, cb) => {
             var username = args.username;
-            server.storage.users.get(username, function(err, user) {
-                if (err) {
-                    return cb(err);
-                }
-                if (!user) {
-                    console.log('user does not exist!');
+
+            if (!username) {  // print all usernames
+                console.log('All known users:');
+                server.storage.users.names()
+                    .then(names => console.log(names.sort()
+                        // Should not have multiple counts for a user!
+                        .reduce((counts, name) => {
+                            var pair = counts[0];
+                            if (pair && pair[0] === name) {
+                                pair[1]++;
+                            } else {
+                                counts.unshift([name, 1]);
+                            }
+                            return counts;
+                        }, [])
+                        .map(pair => pair[0] + (pair[1] > 1 ? ` (${pair[1]})` : ''))
+                        .join('\n')))
+                    .then(cb);
+            } else {
+                server.storage.users.get(username, function(err, user) {
+                    if (err) {
+                        return cb(err);
+                    }
+                    if (!user) {
+                        console.log('user does not exist!');
+                        cb();
+                    }
+                    if (args.options.rooms) {
+                        console.log(user.pretty().rooms);
+                    } else if (args.options.update) {
+                        user.rooms = user.rooms || user.projects || [];
+                        delete user.projects;
+                        user.save();
+                        console.log('User updated!');
+                    } else if (args.options.clear) {
+                        user.rooms = [];
+                        user.save();
+                        console.log('User updated!');
+                    } else if (args.options.admin) {
+                        user.admin = !user.admin;
+                        user.save();
+                        console.log(`User "${user.username}" ${user.admin ? 'now has' :
+                            'no longer has'} admin priviledges!`);
+                    } else {
+                        console.log(user.pretty());
+                    }
                     cb();
-                }
-                if (args.options.rooms) {
-                    console.log(user.pretty().rooms);
-                } else if (args.options.update) {
-                    user.rooms = user.rooms || user.projects || [];
-                    delete user.projects;
-                    user.save();
-                    console.log('User updated!');
-                } else if (args.options.clear) {
-                    user.rooms = [];
-                    user.save();
-                    console.log('User updated!');
-                } else if (args.options.admin) {
-                    user.admin = !user.admin;
-                    user.save();
-                    console.log(`User "${user.username}" ${user.admin ? 'now has' :
-                        'no longer has'} admin priviledges!`);
-                } else {
-                    console.log(user.pretty());
-                }
-                cb();
-            });
+                });
+            }
         });
 
     // set DEBUG level FIXME
