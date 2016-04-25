@@ -59,7 +59,7 @@ var NetsBloxVantage = function(server) {
                     }
                     if (!user) {
                         console.log('user does not exist!');
-                        cb();
+                        return cb();
                     }
                     if (args.options.rooms) {
                         console.log(user.pretty().rooms);
