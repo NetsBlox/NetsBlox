@@ -17,7 +17,7 @@ var fs = require('fs'),
  */
 var RPCManager = function(logger, socketManager) {
     this._logger = logger.fork('RPCManager');
-    this.rpcs = RPCManager.loadRPCs();
+    this.rpcs = this.loadRPCs();
     this.router = this.createRouter();
 
     // In this object, they contain the RPC's owned by
@@ -30,15 +30,16 @@ var RPCManager = function(logger, socketManager) {
  *
  * @return {Array<ProcedureConstructor>}
  */
-RPCManager.loadRPCs = function() {
+RPCManager.prototype.loadRPCs = function() {
     // Load the rpcs from the __dirname+'/procedures' directory
     return fs.readdirSync(PROCEDURES_DIR)
-        .map(function(name) {
-            return path.join(PROCEDURES_DIR, name, name+'.js');
-        })
+        .map(name => path.join(PROCEDURES_DIR, name, name+'.js'))
         .filter(fs.existsSync.bind(fs))
-        .map(function(fullPath) {
+        .map(fullPath => {
             var RPCConstructor = require(fullPath);
+            if (RPCConstructor.init) {
+                RPCConstructor.init(this._logger);
+            }
             return RPCConstructor;
         });
 };
