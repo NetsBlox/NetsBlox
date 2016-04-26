@@ -81,14 +81,16 @@ RoomMorph.prototype.update = function(ownerId, name, roles) {
     this.roles = roles || this.roles;
     this.editable = this.ownerId && this.ownerId === SnapCloud.username;
 
-    if (name && this.name !== name) {
+    changed = name && this.name !== name;
+    if (changed) {
         this._name = name;
         this.ide.controlBar.updateLabel();
     }
 
     // Check if it has changed in a meaningful way
     names = Object.keys(this.roles);
-    changed = wasEditable !== this.editable || 
+    changed = changed ||
+        wasEditable !== this.editable ||
         oldNames.length !== names.length || names.reduce(function(prev, name) {
             return prev || oldRoles[name] !== myself.roles[name];
         }, false);
