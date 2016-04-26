@@ -780,11 +780,15 @@ NetsBloxMorph.prototype.openRoomString = function (str) {
         type: 'import-room',
         name: room.name,
         role: role,
-        roles: room.roles  // FIXME: This just contains the source
+        roles: room.roles
     });
 
     // load the given project
-    this.openProjectString(room.roles[role].SourceCode);
+    var roleStr = '<role name="' + role + '">' +
+        room.roles[role].SourceCode +
+        room.roles[role].Media + '</role>';
+
+    this.openCloudDataString(roleStr);
 };
 
 NetsBloxMorph.prototype.droppedText = function (aString, name) {
