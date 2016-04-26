@@ -7,6 +7,53 @@
    SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume
    */
 
+BlockMorph.prototype.setSpec = function (spec, silently) {
+    var myself = this,
+        part,
+        inputIdx = -1;
+
+    if (!spec) {return; }
+    this.parts().forEach(function (part) {
+        part.destroy();
+    });
+    if (this.isPrototype) {
+        this.add(this.placeHolder());
+    }
+    this.parseSpec(spec).forEach(function (word) {
+        if (word[0] === '%') {
+            inputIdx += 1;
+        }
+        part = myself.labelPart(word);
+        myself.add(part);
+        if (!(part instanceof CommandSlotMorph ||
+                part instanceof StringMorph)) {
+            part.drawNew();
+        }
+        if (part instanceof RingMorph) {
+            part.fixBlockColor();
+        }
+        if (part instanceof MultiArgMorph ||
+                part.constructor === CommandSlotMorph ||
+                part.constructor === RingCommandSlotMorph) {
+            part.fixLayout();
+        }
+        if (myself.isPrototype) {
+            myself.add(myself.placeHolder());
+        }
+        // NetsBlox addition: start
+        if (part instanceof InputSlotMorph && !part.choices && myself.definition) {
+        // NetsBlox addition: end
+            part.setChoices.apply(
+                part,
+                myself.definition.inputOptionsOfIdx(inputIdx)
+            );
+        }
+    });
+    this.blockSpec = spec;
+    this.fixLayout(silently);
+    this.cachedInputs = null;
+};
+
 InputSlotMorph.prototype.messageTypesMenu = function() {
     var rcvr = this.parentThatIsA(BlockMorph).receiver(),
         stage = rcvr.parentThatIsA(StageMorph),
@@ -418,6 +465,14 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isStatic = true;
             break;
         // Netsblox addition
+        case '%msgType':
+            part = new InputSlotMorph(
+                null,
+                false,
+                'messageTypes',
+                true
+            );
+            break;
         case '%msgOutput':
             part = new MessageOutputSlotMorph();
             break;
@@ -826,6 +881,18 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         );
     }
     return part;
+};
+
+InputSlotMorph.prototype.messageTypes = function () {
+    var stage = this.parentThatIsA(IDE_Morph).stage,  // FIXME
+        msgTypes = stage.messageTypes.names();
+        dict = {};
+
+    for (var i = msgTypes.length; i--;) {
+        dict[msgTypes[i]] = msgTypes[i];
+    }
+
+    return dict;
 };
 
 InputSlotMorph.prototype.roleNames = function () {
