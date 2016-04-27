@@ -904,3 +904,53 @@ NetsBloxMorph.prototype.logout = function () {
     this.room.update();
 };
 
+// RPC import support (both custom blocks and message types)
+NetsBloxMorph.prototype.droppedText = function (aString, name) {
+    if (aString.indexOf('<rpc') === 0) {
+        return this.openBlocksMsgTypeString(aString);
+    } else {
+        return IDE_Morph.prototype.droppedText.call(this, aString, name);
+    }
+};
+
+NetsBloxMorph.prototype.openBlocksMsgTypeString = function (aString) {
+    var msg,
+        myself = this;
+
+    this.nextSteps([
+        function () {
+            msg = myself.showMessage('Opening...');
+        },
+        function () {nop(); }, // yield (bug in Chrome)
+        function () {
+            if (Process.prototype.isCatchingErrors) {
+                try {
+                    myself.rawOpenBlocksMsgTypeString(aString);
+                } catch (err) {
+                    myself.showMessage('Load failed: ' + err);
+                }
+            } else {
+                myself.rawOpenBlocksMsgTypeString(aString);
+            }
+        },
+        function () {
+            msg.destroy();
+        }
+    ]);
+};
+
+NetsBloxMorph.prototype.rawOpenBlocksMsgTypeString = function (aString) {
+    // load messageTypes
+    var content = this.serializer.parse(aString),
+        messageTypes = content.childNamed('messageTypes'),
+        blocksStr = content.childNamed('blocks').toString(),
+        types;
+
+    if (messageTypes) {
+        types = messageTypes.children;
+        types.forEach(this.serializer.loadMessageType.bind(this, this.stage));
+    }
+
+    // load blocks
+    this.rawOpenBlocksString(blocksStr, '', true)
+};
