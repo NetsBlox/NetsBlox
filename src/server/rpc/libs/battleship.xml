@@ -1,0 +1,35 @@
+<rpc app="NetsBlox 0.5.3, http://netsblox.org" version="1" name="battleship">
+<blocks app="NetsBlox 0.5.3, http://netsblox.org" version="1"><block-definition s="fire at %&apos;row,&apos; %&apos;column&apos;" type="predicate" category="services"><header></header><code></code><inputs><input type="%s"></input><input type="%s"></input></inputs><script><block s="doReport"><block s="getJSFromRPCDropdown"><l>battleship</l><l>fire</l><block s="reportJoinWords"><list><l>row=</l><block var="row,"/><l>&amp;column=</l><block var="column"/></list></block></block></block></script></block-definition><block-definition s="place %&apos;ship&apos; at %&apos;row&apos; %&apos;col&apos; facing %&apos;dir&apos;" type="predicate" category="services"><header></header><code></code><inputs><input type="%s"><options>aircraft carrier
+battleship
+submarine
+destroyer
+patrol boat</options></input><input type="%s"></input><input type="%s"></input><input type="%s"><options>north
+south
+east
+west</options></input></inputs><script><block s="doReport"><block s="getJSFromRPCDropdown"><l>battleship</l><l>placeShip</l><block s="reportJoinWords"><list><l>row=</l><block var="row"/><l>&amp;column=</l><block var="col"/><l>&amp;ship=</l><block var="ship"/><l>&amp;facing=</l><block var="dir"/></list></block></block></block></script></block-definition><block-definition s="active ships for %&apos;role&apos;" type="reporter" category="services"><header></header><code></code><inputs><input type="%s"></input></inputs><script><block s="doIf"><block s="reportEquals"><l></l><block var="role"/></block><script><block s="doSetVar"><l>role</l><block s="getProjectId"></block></block></script></block><block s="doReport"><block s="getJSFromRPCDropdown"><l>battleship</l><l>remainingShips</l><block s="reportJoinWords"><list><l>role=</l><block var="role"/></list></block></block></block></script></block-definition><block-definition s="start game" type="reporter" category="services"><header></header><code></code><inputs></inputs><script><block s="doReport"><block s="getJSFromRPCDropdown"><l>battleship</l><l>start</l><l></l></block></block></script></block-definition><block-definition s="all ships" type="reporter" category="services"><header></header><code></code><inputs></inputs><script><block s="doReport"><block s="getJSFromRPCDropdown"><l>battleship</l><l>allShips</l><l></l></block></block></script></block-definition><block-definition s="ship length %&apos;ship&apos;" type="reporter" category="services"><header></header><code></code><inputs><input type="%s"><options>aircraft carrier
+battleship
+submarine
+destroyer
+patrol boat</options></input></inputs><script><block s="doReport"><block s="getJSFromRPCDropdown"><l>battleship</l><l>shipLength</l><block s="reportJoinWords"><list><l>ship=</l><block var="ship"/></list></block></block></block></script></block-definition><block-definition s="restart game" type="command" category="services"><header></header><code></code><inputs></inputs><script><block s="doReport"><block s="getJSFromRPCDropdown"><l>battleship</l><l>reset</l><l></l></block></block></script></block-definition></blocks>
+<messageTypes>
+    <messageType><name>start</name><fields></fields></messageType>
+    <messageType>
+        <name>miss</name>
+        <fields>
+            <field>row</field>
+            <field>column</field>
+            <field>role</field>
+        </fields>
+    </messageType>
+    <messageType>
+        <name>hit</name>
+        <fields>
+            <field>row</field>
+            <field>column</field>
+            <field>ship</field>
+            <field>sunk</field>
+            <field>role</field>
+        </fields>
+    </messageType>
+</messageTypes>
+</rpc>

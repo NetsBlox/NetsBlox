@@ -8,7 +8,6 @@ var MockRPC = function(RPC) {
 
 MockRPC.prototype.createMethods = function(RPC) {
     RPC.getActions().forEach(method => {
-        console.log('adding method:', method);
         this.addMethod(method);
     });
 };
@@ -18,7 +17,6 @@ MockRPC.prototype.addMethod = function(name) {
         var req = new MockRequest(args),
             res = new MockResponse();
 
-        console.log('calling ' + name);
         this._rpc[name](req, res);
         return res;
     };
@@ -56,5 +54,7 @@ MockResponse.prototype.send = function(text) {
     this.response = text;
     return this;
 };
+
+MockResponse.prototype.json = MockResponse.prototype.send;
 
 module.exports = MockRPC;
