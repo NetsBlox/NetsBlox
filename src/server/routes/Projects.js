@@ -246,7 +246,7 @@ module.exports = [
                         this._logger.error('Found room with no roles!');
                         return res.status(500).send('ERROR: project has no roles');
                     }
-                    this._logger.trace(`room is not active. Selected role "${openRole}" ` +
+                    this._logger.trace(`room is not active. Selected role "${role}" ` +
                         `arbitrarily`);
                 }
 
