@@ -159,7 +159,7 @@ module.exports = [
                     });
 
                     info(`Projects for ${username} are ${JSON.stringify(
-                        previews.map(preview => preview.name)
+                        previews.map(preview => preview.ProjectName)
                         )}`
                     );
                         
@@ -181,6 +181,7 @@ module.exports = [
             log(username + ' requested project ' + req.body.ProjectName);
             this.storage.users.get(username, (e, user) => {
                 if (e) {
+                    this._logger.error(`Could not find user ${username}: ${e}`);
                     return res.status(500).send('ERROR: ' + e);
                 }
                 this._logger.trace(`looking up room "${roomName}"`);
@@ -195,6 +196,7 @@ module.exports = [
                     this._logger.error(`could not find room ${roomName}`);
                     return res.status(404).send('ERROR: could not find room');
                 }
+                this._logger.trace(`found room ${roomName} for ${username}`);
 
                 activeRoom = this.rooms[Utils.uuid(room.owner, room.name)];
                 if (activeRoom) {
@@ -202,8 +204,9 @@ module.exports = [
                         .filter(role => !activeRoom.roles[role])  // not occupied
                         .shift();
 
+                    this._logger.trace(`room "${roomName}" is already active`);
                     if (openRole && activeRoom.cachedProjects[openRole]) {  // Send an open role and add the user
-                        info(`adding ${username} to open role "${openRole}" at ` +
+                        this._logger.trace(`adding ${username} to open role "${openRole}" at ` +
                             `"${roomName}"`);
 
                         role = activeRoom.cachedProjects[openRole];
@@ -216,6 +219,8 @@ module.exports = [
                             while (activeRoom.hasOwnProperty(openRole)) {
                                 openRole = `${base} (${i++})`;
                             }
+                            this._logger.trace(`creating new role "${openRole}" ` +
+                                `at "${roomName}" for ${username}`);
                         } else {
                             // TODO: This is bad. User could be losing data!
                             error(`Found open role "${openRole}" but it is not cached!`);
@@ -238,9 +243,11 @@ module.exports = [
                         .map(role => room.roles[role])[0];  // values
 
                     if (!role) {
-                        this._logger.warn('Found room with no roles!');
+                        this._logger.error('Found room with no roles!');
                         return res.status(500).send('ERROR: project has no roles');
                     }
+                    this._logger.trace(`room is not active. Selected role "${openRole}" ` +
+                        `arbitrarily`);
                 }
 
                 // Send the project to the user
