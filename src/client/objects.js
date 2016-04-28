@@ -235,8 +235,8 @@ SpriteMorph.prototype.initBlocks = function () {
     SpriteMorph.prototype.blocks.getCostumeFromRPC = {
         type: 'reporter',
         category: 'services',
-        spec: 'costume from %s with %s',
-        defaults: ['staticmap/getMap']
+        spec: 'costume from %rpcNames / %rpcActions with %s',
+        defaults: ['staticmap', 'getMap']
     };
 
     // Network Messages

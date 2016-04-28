@@ -164,11 +164,12 @@ NetsProcess.prototype.getJSFromRPCDropdown = function (rpc, action, params) {
     return this.getJSFromRPC(['', rpc, action].join('/'), params);
 };
 
-NetsProcess.prototype.getCostumeFromRPC = function (rpc, params) {
+NetsProcess.prototype.getCostumeFromRPC = function (rpc, action, params) {
     var image,
         stage = this.homeContext.receiver.parentThatIsA(StageMorph),
         paramItems = params.length ? params.split('&') : [];
         
+    rpc = ['', rpc, action].join('/');
     // Add the width and height of the stage as default params
     if (params.indexOf('width') === -1) {
         paramItems.push('width=' + stage.width());
