@@ -8,6 +8,7 @@ var counter = 0,
     PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'MediaSize', 'RoomUuid'],
     R = require('ramda'),
     parseXml = require('xml2js').parseString,
+    assert = require('assert'),
     CONDENSED_MSGS = ['project-response', 'import-room'];
 
 var createSaveableProject = function(json, callback) {
@@ -118,6 +119,7 @@ class NetsBloxSocket {
 
         this._room = room;
         this._room.add(this, role);
+        this._logger.trace(`${this.username} joined ${room.uuid} at ${role}`);
         this.roleId = role;
     }
 
@@ -169,6 +171,7 @@ class NetsBloxSocket {
     changeSeats (role) {
         this._logger.log(`changing to role ${this._room.uuid}/${role} from ${this.roleId}`);
         this._room.move({socket: this, dst: role});
+        assert.equal(this.roleId, role);
     }
 
     sendToEveryone (msg) {
@@ -262,9 +265,16 @@ NetsBloxSocket.MessageHandlers = {
 
         this.getRoom(owner, name, (room) => {
             if (!room) {
-                this._logger.error(`Could not join room ${name}`);
+                this._logger.error(`Could not join room ${name} - doesn't exist!`);
                 return;
             }
+            // Check if the user is already at the room
+            if (this._room === room) {
+                this._logger.warn(`${this.username} is already in ${name}! ` +
+                    ` Switching roles instead of "join-room" for ${room.uuid}`);
+                return this.changeSeats(role);
+            }
+
             // create the role if need be (and if we are the owner)
             if (!room.roles.hasOwnProperty(role) && room.owner === this) {
                 this._logger.info(`creating role ${role} at ${room.uuid}`);

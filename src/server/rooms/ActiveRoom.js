@@ -72,6 +72,7 @@ class ActiveRoom {
     add (socket, role) {
         this._logger.trace(`adding ${socket.uuid} to ${role}`);
         this.roles[role] = socket;
+        socket.roleId = role;
         this.onRolesChanged();  // Update all clients
     }
 
@@ -115,7 +116,7 @@ class ActiveRoom {
 
                 this._logger.error(`room "${this.name}" is out of sync! ${src} should have ` +
                     `${socket.username} but has ${this.roles[src] && this.roles[src].username}` +
-                    `.\nDumping all roles: ${rolesList}`);
+                    `.\nPrinting all roles: ${rolesList}`);
 
                 if (this.roles[src]) {  // notify the socket of it's removal!
                     var currSocket = this.roles[src];
