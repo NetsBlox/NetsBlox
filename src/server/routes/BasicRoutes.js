@@ -159,6 +159,7 @@ module.exports = [
                     if (req.body.return_user) {
                         return res.status(200).json({
                             username: req.body.__u,
+                            admin: user.admin,
                             email: user.email
                         });
                     } else {
