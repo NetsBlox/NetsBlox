@@ -1,6 +1,6 @@
 {
   "name": "netsblox",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Visual programming environment with networking support",
   "scripts": {
     "start": "node bin/netsblox.js",
