@@ -791,31 +791,6 @@ NetsBloxMorph.prototype.openRoomString = function (str) {
     this.openCloudDataString(roleStr);
 };
 
-NetsBloxMorph.prototype.droppedText = function (aString, name) {
-    var lbl = name ? name.split('.')[0] : '';
-    if (aString.indexOf('<room') === 0) {
-        location.hash = '';
-        return this.openRoomString(aString);
-    }
-    if (aString.indexOf('<project') === 0) {
-        location.hash = '';
-        return this.openProjectString(aString);
-    }
-    if (aString.indexOf('<snapdata') === 0) {
-        location.hash = '';
-        return this.openCloudDataString(aString);
-    }
-    if (aString.indexOf('<blocks') === 0) {
-        return this.openBlocksString(aString, lbl, true);
-    }
-    if (aString.indexOf('<sprites') === 0) {
-        return this.openSpritesString(aString);
-    }
-    if (aString.indexOf('<media') === 0) {
-        return this.openMediaString(aString);
-    }
-};
-
 // Serialize a project and save to the browser.
 NetsBloxMorph.prototype.rawSaveProject = function (name) {
     this.showMessage('Saving', 3);
@@ -908,6 +883,9 @@ NetsBloxMorph.prototype.logout = function () {
 NetsBloxMorph.prototype.droppedText = function (aString, name) {
     if (aString.indexOf('<rpc') === 0) {
         return this.openBlocksMsgTypeString(aString);
+    } else if (aString.indexOf('<room') === 0) {
+        location.hash = '';
+        return this.openRoomString(aString);
     } else {
         return IDE_Morph.prototype.droppedText.call(this, aString, name);
     }
