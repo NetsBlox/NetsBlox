@@ -219,7 +219,7 @@ module.exports = [
                 roleId = req.body.roleId,
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName,
-                roomId = Utils.uuid(ownerId, roomName),
+                roomId = utils.uuid(ownerId, roomName),
                 room = this.rooms[roomId];
 
             //  Get the room

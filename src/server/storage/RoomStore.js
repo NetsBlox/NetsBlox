@@ -52,6 +52,7 @@ class Room extends DataWrapper {
                 content = {
                     owner: this._room.owner.username,
                     name: this._room.name,
+                    originTime: this._room.originTime || Date.now(),
                     roles: {}
                 };
 
@@ -73,9 +74,8 @@ class Room extends DataWrapper {
     // Override
     save(callback) {
         if (!this._user) {
-            this._logger.trace('saving globally only');
-            DataWrapper.prototype.save.call(this);
-            return callback(null);
+            this._logger.error(`Cannot save room "${this.name}" - no user`);
+            return callback('Can\'t save table w/o user');
         }
         this.collectProjects((err, content) => {
             if (err) {
@@ -98,6 +98,14 @@ class Room extends DataWrapper {
 
     _save(callback) {
         var room = this._saveable();
+
+        // Update the cache for each role
+        this._logger.trace(`Updating the role cache for ${this._room.name} `+
+            `(${Object.keys(room.roles).join(', ')})`);
+
+        Object.keys(room.roles).forEach(role => 
+            this._room.cachedProjects[role] = room.roles[role]
+        );
 
         // Save the table under the owning user
         // var originalUuid = room._uuid;

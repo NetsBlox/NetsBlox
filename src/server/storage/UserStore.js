@@ -43,6 +43,7 @@ class User extends DataWrapper {
                 room.roles = room.roles || room.seats;
                 delete room.seats;
             });
+
         super(db, data);
         this._logger = logger.fork(data.username);
     }

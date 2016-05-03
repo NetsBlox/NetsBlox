@@ -123,23 +123,31 @@ class NetsBloxSocket {
         this.roleId = role;
     }
 
-    getNewName () {
-        var name;
+    getNewName (name) {
         if (this.user) {
             var nameExists = {};
-
             this.user.rooms.forEach(room => nameExists[room.name] = true);
 
-            // Create base name
-            do {
-                name = generate().spaced;
-            } while (nameExists[name]);
+            if (name) {
+                var i = 2,
+                    basename = name;
+
+                do {
+                    name = `${basename} (${i++})`;
+                } while (nameExists[name]);
+
+            } else {
+                // Create base name
+                do {
+                    name = generate().spaced;
+                } while (nameExists[name]);
+            }
 
         } else {
             name = 'New Room ' + (Date.now() % 100);
         }
 
-        this._logger.info(`generated unique name for ${this.username}`);
+        this._logger.info(`generated unique name for ${this.username} - ${name}`);
         return name;
     }
 
