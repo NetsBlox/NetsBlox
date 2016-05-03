@@ -51,6 +51,9 @@ function RoomMorph(ide) {
         }
     };
 
+    // update on login
+    SnapCloud.onLogin = this.update.bind(this);
+
     // Set the initial values
     var roles = {};
     roles[this.ide.projectName] = 'me';
