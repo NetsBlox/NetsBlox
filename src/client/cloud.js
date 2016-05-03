@@ -1,7 +1,12 @@
-/* global Cloud, localize, nop, IDE_Morph, */
-var SnapCloud = new Cloud('http://'+window.location.host+'/api/');
+/* global localize, nop, IDE_Morph, */
+NetCloud.prototype = new Cloud();
 
-Cloud.prototype.login = function (
+function NetCloud(url) {
+    Cloud.call(this, url);
+    this.onLogin = nop;
+}
+
+NetCloud.prototype.login = function (
     username,
     password,
     callBack,
@@ -41,7 +46,8 @@ Cloud.prototype.login = function (
                     if (myself.api.logout) {
                         myself.username = username;
                         myself.password = password;
-                        callBack.call(null, myself.api, 'Snap!Cloud');
+                        myself.onLogin();
+                        callBack.call(null, myself.api, 'NetsBlox Cloud');
                     } else {
                         errorCall.call(
                             null,
@@ -66,11 +72,11 @@ Cloud.prototype.login = function (
         };
         request.send(usr);
     } catch (err) {
-        errorCall.call(this, err.toString(), 'Snap!Cloud');
+        errorCall.call(this, err.toString(), 'NetsBlox Cloud');
     }
 };
 
-Cloud.prototype.cloneRole = function(onSuccess, onFail, args) {
+NetCloud.prototype.cloneRole = function(onSuccess, onFail, args) {
     var myself = this;
 
     this.reconnect(
@@ -88,7 +94,7 @@ Cloud.prototype.cloneRole = function(onSuccess, onFail, args) {
     );
 };
 
-Cloud.prototype.moveToRole = function(onSuccess, onFail, args) {
+NetCloud.prototype.moveToRole = function(onSuccess, onFail, args) {
     var myself = this;
     args.push(this.socketId());
 
@@ -107,7 +113,7 @@ Cloud.prototype.moveToRole = function(onSuccess, onFail, args) {
     );
 };
 
-Cloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) {
+NetCloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) {
     var myself = this,
         args = [id, accepted, this.socketId()];
 
@@ -126,7 +132,7 @@ Cloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFail) 
     );
 };
 
-Cloud.prototype.inviteToRoom = function () {
+NetCloud.prototype.inviteToRoom = function () {
     var myself = this,
         args = arguments;
 
@@ -143,7 +149,7 @@ Cloud.prototype.inviteToRoom = function () {
     );
 };
 
-Cloud.prototype.getFriendList = function (callBack, errorCall) {
+NetCloud.prototype.getFriendList = function (callBack, errorCall) {
     var myself = this;
     this.reconnect(
         function () {
@@ -161,7 +167,7 @@ Cloud.prototype.getFriendList = function (callBack, errorCall) {
     );
 };
 
-Cloud.prototype.deleteRole = function(onSuccess, onFail, args) {
+NetCloud.prototype.deleteRole = function(onSuccess, onFail, args) {
     var myself = this;
     this.reconnect(
         function () {
@@ -179,7 +185,7 @@ Cloud.prototype.deleteRole = function(onSuccess, onFail, args) {
     );
 };
 
-Cloud.prototype.evictUser = function(onSuccess, onFail, args) {
+NetCloud.prototype.evictUser = function(onSuccess, onFail, args) {
     var myself = this;
     this.reconnect(
         function () {
@@ -197,7 +203,7 @@ Cloud.prototype.evictUser = function(onSuccess, onFail, args) {
     );
 };
 
-Cloud.prototype.socketId = function () {
+NetCloud.prototype.socketId = function () {
     var ide;
     ide = detect(
         world.children,  // FIXME: Don't depend on the 'world' variable
@@ -209,7 +215,7 @@ Cloud.prototype.socketId = function () {
 };
 
 // Override
-Cloud.prototype.saveProject = function (ide, callBack, errorCall) {
+NetCloud.prototype.saveProject = function (ide, callBack, errorCall) {
     var myself = this;
     myself.reconnect(
         function () {
@@ -230,7 +236,7 @@ Cloud.prototype.saveProject = function (ide, callBack, errorCall) {
 };
 
 // FIXME: I shouldn't have to override this...
-Cloud.prototype.callService = function (
+NetCloud.prototype.callService = function (
     serviceName,
     callBack,
     errorCall,
@@ -300,3 +306,4 @@ Cloud.prototype.callService = function (
     }
 };
 
+var SnapCloud = new NetCloud('http://'+window.location.host+'/api/');
