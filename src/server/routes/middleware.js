@@ -1,5 +1,10 @@
 // Dictionary of all middleware functions for netsblox routes.
 var server,
+    sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
+    MAX_AGE = 60*1000*60*24,  // one day
+    COOKIE_ID = 'netsblox-cookie',
+    jwt = require('jsonwebtoken'),
+    nop = function(){},
     logger;
 
 var hasSocket = function(req, res, next) {
@@ -24,11 +29,92 @@ var noCache = function(req, res, next) {
     return next();
 };
 
+// Access control and auth
+var tryLogIn = function(req, res, cb, skipRefresh) {
+    var cookie = req.cookies[COOKIE_ID];
+
+    req.session = req.session || new Session(res);
+    if (cookie) {
+        // verify the cookie is valid
+        logger.trace(`validating cookie`);
+        jwt.verify(cookie, sessionSecret, (err, token) => {
+            if (err) {
+                logger.error(`Error verifying jwt: ${err}`);
+                return cb(err);
+            }
+
+            req.session.username = token.username;
+            if (!skipRefresh) {
+                refreshCookie(res, token);
+            }
+            return cb(null, true);
+        });
+    } else {
+        logger.error(`User is not logged in! (${req.get('User-Agent')})`);
+        return cb(null, false);
+    }
+};
+
+var isLoggedIn = function(req, res, next) {
+    logger.trace(`checking if logged in ${Object.keys(req.cookies)}`);
+    tryLogIn(req, res, (err, success) => {
+        if (err) {
+            return next(err);
+        }
+
+        if (success) {
+            return next();
+        } else {
+            logger.error(`User is not logged in! (${req.get('User-Agent')})`);
+            return res.status(400)
+                .send('ERROR: You must be logged in to use this feature');
+        }
+    });
+};
+
+var saveLogin = function(res, user) {
+    var cookie = {  // TODO: Add an id
+        id: user.id || user._id,
+        username: user.username,
+        email: user.email
+    };
+	refreshCookie(res, cookie);
+};
+
+var refreshCookie = function(res, cookie) {
+    var token = jwt.sign(cookie, sessionSecret),
+        date = new Date();
+
+    logger.trace(`Saving cookie ${JSON.stringify(cookie)}`);
+
+    date.setDate(date.getDate() + 14);  // valid for 2 weeks
+	logger.trace(`cookie expires: ${date}`);
+	res.cookie(COOKIE_ID, token, {
+		expires: date,
+		httpOnly: true
+	});
+};
+
+var Session = function(res) {
+    this._res = res;
+};
+
+Session.prototype.destroy = function() {
+    // TODO: Change this to a blacklist
+    this._res.clearCookie(COOKIE_ID);
+};
+
 module.exports = {
     hasSocket,
     noCache,
+    isLoggedIn,
+    tryLogIn,
+    saveLogin,
+
+    // additional
     init: _server => {
         server = _server;
         logger = server._logger.fork('middleware');
-    }
+    },
+    COOKIE_ID
 };

@@ -43,7 +43,7 @@ module.exports = [
         Parameters: 'socketId',
         Method: 'Post',
         Note: '',
-        middleware: ['hasSocket'],
+        middleware: ['hasSocket', 'isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
                 socketId = req.body.socketId;
@@ -103,15 +103,17 @@ module.exports = [
         Parameters: '',
         Method: 'Get',
         Note: '',
-        middleware: ['noCache'],
+        middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
             var username = req.session.username;
             log(username +' requested project list');
+
             this.storage.users.get(username, (e, user) => {
                 var previews,
                     rooms;
 
                 if (e) {
+                    this._logger.error(`Could not find user ${username}: ${e}`);
                     return res.status(500).send('ERROR: ' + e);
                 }
                 if (user) {
@@ -167,7 +169,11 @@ module.exports = [
                         )}`
                     );
                         
-                    return res.send(Utils.serializeArray(previews));
+                    if (req.query.format === 'json') {
+                        return res.json(previews);
+                    } else {
+                        return res.send(Utils.serializeArray(previews));
+                    }
                 }
                 return res.status(404);
             });
@@ -176,9 +182,9 @@ module.exports = [
     {
         Service: 'getProject',
         Parameters: 'ProjectName',
-        Method: 'Post',
+        Method: 'post',
         Note: '',
-        middleware: ['noCache'],
+        middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
             var username = req.session.username,
                 roomName = req.body.ProjectName;
@@ -276,6 +282,7 @@ module.exports = [
         Parameters: 'ProjectName,RoomName',
         Method: 'Post',
         Note: '',
+        middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
                 project = req.body.ProjectName;
@@ -303,6 +310,7 @@ module.exports = [
         Parameters: 'ProjectName',
         Method: 'Post',
         Note: '',
+        middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
                 name = req.body.ProjectName;
@@ -326,6 +334,7 @@ module.exports = [
         Parameters: 'ProjectName',
         Method: 'Post',
         Note: '',
+        middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
                 name = req.body.ProjectName;

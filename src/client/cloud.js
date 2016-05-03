@@ -140,7 +140,7 @@ NetCloud.prototype.inviteToRoom = function () {
         function () {
             myself.callService(
                 'inviteToRoom',
-                myself.disconnect.bind(myself),
+                nop,
                 nop,
                 args
             );
@@ -158,7 +158,6 @@ NetCloud.prototype.getFriendList = function (callBack, errorCall) {
                 function (response, url) {
                     var ids = Object.keys(response[0] || {});
                     callBack.call(null, ids, url);
-                    myself.disconnect();
                 },
                 errorCall
             );
@@ -175,7 +174,6 @@ NetCloud.prototype.deleteRole = function(onSuccess, onFail, args) {
                 'deleteRole',
                 function () {
                     onSuccess.call(null);
-                    myself.disconnect();
                 },
                 onFail,
                 args
@@ -191,10 +189,7 @@ NetCloud.prototype.evictUser = function(onSuccess, onFail, args) {
         function () {
             myself.callService(
                 'evictUser',
-                function () {
-                    onSuccess.call(null);
-                    myself.disconnect();
-                },
+                onSuccess.bind(null),
                 onFail,
                 args
             );
@@ -223,7 +218,6 @@ NetCloud.prototype.saveProject = function (ide, callBack, errorCall) {
                 'saveProject',
                 function (response, url) {
                     callBack.call(null, response, url);
-                    myself.disconnect();
                 },
                 errorCall,
                 [
@@ -304,6 +298,68 @@ NetCloud.prototype.callService = function (
     } catch (err) {
         errorCall.call(this, err.toString(), service.url);
     }
+};
+
+NetCloud.prototype.passiveLogin = function () {
+    // Try to login w/ cookie only
+    var request = new XMLHttpRequest(),
+        socketId = this.socketId(),
+        usr = JSON.stringify({
+            return_user: true,
+            api: true,
+            socketId: socketId
+        }),
+        myself = this,
+        response;
+
+    try {
+        request.open(
+            'POST',
+            (this.hasProtocol() ? '' : 'http://') +
+                this.url,
+            true
+        );
+        request.setRequestHeader(
+            'Content-Type',
+            'application/json; charset=utf-8'
+        );
+        // glue this session to a route:
+        request.withCredentials = true;
+        request.onreadystatechange = function () {
+            if (request.readyState === 4) {
+                if (request.status === 200) {
+                    response = JSON.parse(request.responseText);
+                    myself.api = myself.parseAPI(response.api);
+                    myself.username = response.username;
+                    myself.session = true;
+                    myself.password = true;
+                }
+            }
+        };
+        request.send(usr);
+    } catch (err) {
+        console.error(err.toString());
+    }
+    
+};
+
+NetCloud.prototype.reconnect = function (success) {
+    if (this.password === true) {  // if using session cookie, don't login then back out
+        success(null);
+    } else {
+        return Cloud.prototype.reconnect.apply(this, arguments);
+    }
+};
+
+NetCloud.prototype.disconnect = nop;
+
+NetCloud.prototype.logout = function (callBack, errorCall) {
+    this.callService(
+        'logout',
+        callBack,
+        errorCall
+    );
+    this.clear();
 };
 
 var SnapCloud = new NetCloud('http://'+window.location.host+'/api/');
