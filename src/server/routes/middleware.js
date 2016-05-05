@@ -19,8 +19,14 @@ var hasSocket = function(req, res, next) {
     res.status(400).send('ERROR: Bad Request: missing socket id');  // FIXME: better error message
 };
 
+var noCache = function(req, res, next) {
+    res.set('Cache-Control', 'no-cache')
+    return next();
+};
+
 module.exports = {
     hasSocket,
+    noCache,
     init: _server => {
         server = _server;
         logger = server._logger.fork('middleware');

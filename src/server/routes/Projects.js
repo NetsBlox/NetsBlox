@@ -103,6 +103,7 @@ module.exports = [
         Parameters: '',
         Method: 'Get',
         Note: '',
+        middleware: ['noCache'],
         Handler: function(req, res) {
             var username = req.session.username;
             log(username +' requested project list');
@@ -177,6 +178,7 @@ module.exports = [
         Parameters: 'ProjectName',
         Method: 'Post',
         Note: '',
+        middleware: ['noCache'],
         Handler: function(req, res) {
             var username = req.session.username,
                 roomName = req.body.ProjectName;
