@@ -346,12 +346,12 @@ ProjectDialogMorph.prototype.saveProject = function () {
                     ) + '\n"' + name + '"?',
                     'Replace Project',
                     function () {
-                        myself.ide.setProjectName(name);
+                        myself.ide.room.name = name;
                         myself.saveCloudProject();
                     }
                 );
             } else {
-                this.ide.setProjectName(name);
+                myself.ide.room.name = name;
                 myself.saveCloudProject();
             }
         } else { // 'local'
