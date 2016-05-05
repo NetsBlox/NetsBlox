@@ -146,29 +146,33 @@ module.exports = [
                     log('Could not find user "'+req.body.__u+'": ' +e);
                     return res.status(500).send('ERROR: ' + e);
                 }
-                if (user && user.hash === hash) {  // Sign in 
-                    req.session.username = req.body.__u;
-                    log('"'+req.session.username+'" has logged in.');
+                if (user) {
+                    if (user.hash === hash) {  // Sign in 
+                        req.session.username = req.body.__u;
+                        log('"'+req.session.username+'" has logged in.');
 
-                    // Associate the websocket with the username
-                    socket = this.sockets[req.body.socketId];
-                    if (socket) {  // websocket has already connected
-                        socket.onLogin(user);
-                    }
+                        // Associate the websocket with the username
+                        socket = this.sockets[req.body.socketId];
+                        if (socket) {  // websocket has already connected
+                            socket.onLogin(user);
+                        }
 
-                    if (req.body.return_user) {
-                        return res.status(200).json({
-                            username: req.body.__u,
-                            admin: user.admin,
-                            email: user.email
-                        });
+                        if (req.body.return_user) {
+                            return res.status(200).json({
+                                username: req.body.__u,
+                                admin: user.admin,
+                                email: user.email
+                            });
+                        } else {
+                            return res.status(200).send(Utils.serializeArray(EXTERNAL_API));
+                        }
                     } else {
-                        return res.status(200).send(Utils.serializeArray(EXTERNAL_API));
+                        log(`Incorrect password attempt for ${user.username}`);
+                        return res.status(403).send(`Incorrect password`);
                     }
                 }
-                log('Could not find user "'+req.body.__u+'"');
-
-                return res.sendStatus(403);
+                log(`Could not find user "${req.body.__u}"`);
+                return res.status(403).send(`Could not find user "${req.body.__u}"`);
             });
         }
     },

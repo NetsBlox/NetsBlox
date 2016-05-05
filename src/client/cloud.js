@@ -59,7 +59,7 @@ NetCloud.prototype.login = function (
                     errorCall.call(
                         null,
                         '',
-                        localize('wrong username or password')
+                        localize(request.responseText || 'wrong username or password')
                     );
                 } else {
                     errorCall.call(
