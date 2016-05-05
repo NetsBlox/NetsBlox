@@ -139,14 +139,17 @@ NetsProcess.prototype.createRPCUrl = function (rpc, params) {
     return window.location.origin + '/rpc/'+rpc+'?uuid='+uuid+'&'+params;
 };
 
-NetsProcess.prototype.callRPC = function (rpc, params) {
+NetsProcess.prototype.callRPC = function (rpc, params, noCache) {
     var url = this.createRPCUrl(rpc, params).replace(/http[s]?:\/\//, '');
+    if (noCache) {
+        url += '&t=' + Date.now();
+    }
     return this.reportURL(url);
 };
 
 // TODO: Consider moving these next two functions to the Stage
 NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
-    var result = this.callRPC(rpc, params);
+    var result = this.callRPC(rpc, params, true);
     if (result) {
         try {  // Try to convert it to JSON
             result = JSON.parse(result);
