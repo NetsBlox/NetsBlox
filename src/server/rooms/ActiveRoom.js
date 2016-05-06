@@ -11,10 +11,8 @@ var R = require('ramda'),
 class ActiveRoom {
 
     constructor(logger, name, owner) {
-        var uuid = utils.uuid(owner.username, name);
         this.name = name;
-        this._logger = logger.fork('ActiveRoom:' + uuid);
-        this.uuid = uuid;
+        this.originTime = Date.now();
 
         // Seats
         this.roles = {};  // actual occupants
@@ -28,6 +26,8 @@ class ActiveRoom {
         // Saving
         this._store = null;
 
+        this.uuid = utils.uuid(owner.username, name);
+        this._logger = logger.fork('ActiveRoom:' + this.uuid);
         this._logger.log('created!');
     }
 
@@ -96,6 +96,15 @@ class ActiveRoom {
 
     setStorage(store) {
         this._store = store;
+    }
+
+    changeName(name) {
+        if (!name) {
+            // Get name unique to the owner
+            name = this.owner.getNewName(this.name);
+        }
+        this.update(name);
+        return name;
     }
 
     save() {
@@ -176,9 +185,9 @@ class ActiveRoom {
         var oldUuid = this.uuid;
         this.name = name || this.name;
         this.uuid = utils.uuid(this.owner.username, this.name);
-        this._logger.trace('Updating uuid to ' + this.uuid);
 
         if (this.uuid !== oldUuid) {
+            this._logger.trace('Updating uuid to ' + this.uuid);
             this.onUuidChange(oldUuid);
         }
         if (name) {
@@ -293,6 +302,7 @@ class ActiveRoom {
             callback(null, content);
         });
     }
+
 }
 
 // Factory method
@@ -301,6 +311,7 @@ ActiveRoom.fromStore = function(logger, socket, data) {
 
     // Store the data
     room.setStorage(data);
+    room.originTime = data.originTime;
 
     // Set up the roles
     room._uuid = data.uuid;  // save over the old uuid even if it changes

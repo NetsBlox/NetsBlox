@@ -195,6 +195,7 @@ module.exports = [
                 var room = user.rooms.find(room => room.name === roomName),
                     project,
                     activeRoom,
+                    openRole,
                     role;
 
                 if (!room) {
@@ -204,8 +205,10 @@ module.exports = [
                 trace(`found room ${roomName} for ${username}`);
 
                 activeRoom = this.rooms[Utils.uuid(room.owner, room.name)];
-                if (activeRoom) {
-                    let openRole = Object.keys(activeRoom.roles)
+
+                // Check if it is actually the same - do the originTime's match?
+                if (activeRoom && activeRoom.originTime === room.originTime) {
+                    openRole = Object.keys(activeRoom.roles)
                         .filter(role => !activeRoom.roles[role])  // not occupied
                         .shift();
 
@@ -243,15 +246,22 @@ module.exports = [
                         activeRoom.cachedProjects[openRole] = role;
                     }
                 } else {
+
+                    if (activeRoom) {
+                        trace(`found active room but times don't match! (${roomName})`);
+                        activeRoom.changeName();
+                        activeRoom = null;
+                    }
+
                     // If room is not active, pick a role arbitrarily
-                    role = Object.keys(room.roles)
-                        .map(role => room.roles[role])[0];  // values
+                    openRole = Object.keys(room.roles)[0];
+                    role = room.roles[openRole];
 
                     if (!role) {
                         error('Found room with no roles!');
                         return res.status(500).send('ERROR: project has no roles');
                     }
-                    trace(`room is not active. Selected role "${role}" ` +
+                    trace(`room is not active. Selected role "${openRole}" ` +
                         `arbitrarily`);
                 }
 
