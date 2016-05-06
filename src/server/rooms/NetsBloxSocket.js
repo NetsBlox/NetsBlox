@@ -5,7 +5,14 @@
 var counter = 0,
     generate = require('project-name-generator'),
     CONSTANTS = require(__dirname + '/../../common/Constants'),
-    PROJECT_FIELDS = ['ProjectName', 'SourceCode', 'Media', 'SourceSize', 'MediaSize', 'RoomUuid'],
+    PROJECT_FIELDS = [
+        'ProjectName',
+        'SourceCode',
+        'Media',
+        'SourceSize',
+        'MediaSize',
+        'RoomUuid'
+    ],
     R = require('ramda'),
     parseXml = require('xml2js').parseString,
     assert = require('assert'),
@@ -24,8 +31,9 @@ var createSaveableProject = function(json, callback) {
         if (err) {
             return callback(err);
         }
+
         inProjectSource.forEach(field => {
-            project[field] = jsonSrc[field.toLowerCase()];
+            project[field] = jsonSrc.project[field.toLowerCase()];
         });
         callback(null, project);
     });
