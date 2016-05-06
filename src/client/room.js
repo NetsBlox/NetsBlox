@@ -377,6 +377,9 @@ RoomMorph.prototype._inviteFriendDialog = function (role, friends) {
         ok = dialog.ok,
         myself = this,
         size = 200,
+        minHeight = 50,
+        maxHeight = 250,
+        heightEstimate = friends.length*15,
         world = this.world();
 
     frame.padding = 6;
@@ -392,11 +395,10 @@ RoomMorph.prototype._inviteFriendDialog = function (role, friends) {
     listField.drawNew = InputFieldMorph.prototype.drawNew;
     listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
     listField.setWidth(size-2*frame.padding);
+    listField.setHeight(Math.max(Math.min(maxHeight, heightEstimate), minHeight));
 
     frame.add(listField);
 
-    frame.setHeight(size-100);
-    frame.fixLayout = nop;
     frame.edge = InputFieldMorph.prototype.edge;
     frame.fontSize = InputFieldMorph.prototype.fontSize;
     frame.typeInPadding = InputFieldMorph.prototype.typeInPadding;
