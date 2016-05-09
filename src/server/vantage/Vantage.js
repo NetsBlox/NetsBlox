@@ -5,6 +5,7 @@ var vantage = require('vantage')(),
     chalk = require('chalk'),
     repl = require('vantage-repl'),
     R = require('ramda'),
+    fs = require('fs'),
     banner,
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
@@ -31,6 +32,7 @@ var NetsBloxVantage = function(server) {
         .option('-a, --admin', 'Toggle admin status')
         .option('-u, --update', 'Update the user\'s schema')
         .option('-c, --clear', 'Clear the room info')
+        .option('-e [project]', 'Save user project to file')
         .alias('u')
         .action((args, cb) => {
             var username = args.username;
@@ -63,6 +65,33 @@ var NetsBloxVantage = function(server) {
                     }
                     if (args.options.rooms) {
                         console.log(user.pretty().rooms);
+                    } else if (args.options.e) {
+                        var name = args.options.e,
+                            room = user.rooms.find(room => room.name === name),
+                            saveable;
+
+                        if (room) {
+                            saveable = `<room name="${name}">` +
+                                // Create role/project info
+                                Object.keys(room.roles).map(role => [
+                                    `<role name="${role}">`,
+                                    room.roles[role].SourceCode || '',
+                                    room.roles[role].Media || '',
+                                    `</role>`
+                                ].join('\n')) +
+                                `</room>`;
+
+                            fs.writeFile(name + '.xml', saveable, err => {
+                                if (err) {
+                                    return cb(err);
+                                }
+                                console.log(`saved ${name} to ${name}.xml`);
+                                cb();
+                            });
+                        } else {
+                            console.log(`Could not find room "${name}"`);
+                        }
+
                     } else if (args.options.update) {
                         user.rooms = user.rooms || user.projects || [];
                         delete user.projects;
