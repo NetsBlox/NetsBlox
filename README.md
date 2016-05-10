@@ -30,5 +30,3 @@ Next, install and run [mongodb](https://www.mongodb.com/) locally (or set `MONGO
 
 ## Examples
 After opening the browser, click the `file` button in the top left and click on `Examples` to check out some example networked apps!
-
-Next, open a new browser window and open the project. Using the arrow keys and spacebar, you should be able to shoot at your opponent!
