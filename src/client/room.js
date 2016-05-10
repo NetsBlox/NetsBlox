@@ -153,6 +153,8 @@ RoomMorph.prototype.mouseClickLeft = function() {
                 localize('Leave Room'),
                 this.ide.newProject.bind(this.ide)
             );
+        } else {
+            this.ide.showMessage(localize('Please login before editing the room'));
         }
     }
 };
