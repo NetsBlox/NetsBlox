@@ -5,7 +5,13 @@ var R = require('ramda'),
     UserAPI = require('./Users'),
     RoomAPI = require('./Rooms'),
     ProjectAPI = require('./Projects'),
-    EXTERNAL_API = R.map(R.partial(R.omit,['Handler']), UserAPI.concat(ProjectAPI).concat(RoomAPI)),
+    EXTERNAL_API = R.map(
+        R.pipe(
+            R.partial(R.omit,['Handler']),
+            R.partial(R.omit,['middleware'])
+        ),
+        UserAPI.concat(ProjectAPI).concat(RoomAPI)
+    ),
     GameTypes = require('../GameTypes'),
 
     debug = require('debug'),
@@ -13,6 +19,8 @@ var R = require('ramda'),
     fs = require('fs'),
     path = require('path'),
     EXAMPLES = require('../examples'),
+    middleware = require('./middleware'),
+    saveLogin = middleware.saveLogin,
 
     // PATHS
     PATHS = [
@@ -141,15 +149,32 @@ module.exports = [
             var hash = req.body.__h,
                 socket;
 
-            this.storage.users.get(req.body.__u, (e, user) => {
-                if (e) {
-                    log('Could not find user "'+req.body.__u+'": ' +e);
-                    return res.status(500).send('ERROR: ' + e);
+            // Should check if the user has a valid cookie. If so, log them in with it!
+            middleware.tryLogIn(req, res, (err, loggedIn) => {
+                let username = req.session.username || req.body.__u;
+                if (err) {
+                    return res.status(500).send(err);
                 }
-                if (user) {
-                    if (user.hash === hash) {  // Sign in 
-                        req.session.username = req.body.__u;
-                        log('"'+req.session.username+'" has logged in.');
+
+                if (!username) {
+                    log(`"passive" login failed - no session found!`);
+                    return res.sendStatus(403);
+                }
+
+                // Explicit login
+                log(`Logging in as ${username}`);
+                this.storage.users.get(username, (e, user) => {
+                    if (e) {
+                        log(`Could not find user "${username}": ${e}`);
+                        return res.status(500).send('ERROR: ' + e);
+                    }
+
+                    if (user && (loggedIn || user.hash === hash)) {  // Sign in 
+                        if (!loggedIn) {
+                            saveLogin(res, user);
+                        }
+
+                        log(`"${user.username}" has logged in.`);
 
                         // Associate the websocket with the username
                         socket = this.sockets[req.body.socketId];
@@ -159,20 +184,23 @@ module.exports = [
 
                         if (req.body.return_user) {
                             return res.status(200).json({
-                                username: req.body.__u,
+                                username: username,
                                 admin: user.admin,
-                                email: user.email
+                                email: user.email,
+                                api: req.body.api ? Utils.serializeArray(EXTERNAL_API) : null
                             });
                         } else {
                             return res.status(200).send(Utils.serializeArray(EXTERNAL_API));
                         }
                     } else {
-                        log(`Incorrect password attempt for ${user.username}`);
-                        return res.status(403).send(`Incorrect password`);
+                        if (user) {
+                            log(`Incorrect password attempt for ${user.username}`);
+                            return res.status(403).send(`Incorrect password`);
+                        }
+                        log(`Could not find user "${username}"`);
+                        return res.status(403).send(`Could not find user "${username}"`);
                     }
-                }
-                log(`Could not find user "${req.body.__u}"`);
-                return res.status(403).send(`Could not find user "${req.body.__u}"`);
+                });
             });
         }
     },

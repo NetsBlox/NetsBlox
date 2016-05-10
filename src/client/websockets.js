@@ -188,6 +188,7 @@ WebSocketManager.prototype._onConnect = function() {
         var updateRoom = this.updateRoomInfo.bind(this);
         SnapCloud.reconnect(updateRoom, updateRoom);
     } else {
+        SnapCloud.passiveLogin();
         this.updateRoomInfo();
     }
 };

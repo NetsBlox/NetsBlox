@@ -295,7 +295,6 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
                 'getProject',
                 function (response) {
                     var roleId = response[0].ProjectName;  // src proj name
-                    SnapCloud.disconnect();
                     ide.source = 'cloud';
                     if (response[0].SourceCode) {
                         ide.droppedText(response[0].SourceCode);

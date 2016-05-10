@@ -2,7 +2,8 @@
 // to create the endpoints and by the client to discover the endpoint urls
 'use strict';
 
-var debug = require('debug'),
+var middleware = require('./middleware'),
+    debug = require('debug'),
     log = debug('NetsBlox:API:Users:log'),
     info = debug('NetsBlox:API:Users:info');
 
@@ -12,6 +13,7 @@ module.exports = [
         Parameters: '',
         Method: 'Post',
         Note: 'Cancel the user account.',
+        middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username;
             log('Deleting user "'+username+'"');
@@ -31,16 +33,24 @@ module.exports = [
         Method: 'Get',
         Note: '',
         Handler: function(req, res) {
-            log(req.session.username+' has logged out');
-            req.session.destroy();
-            return res.status(200).send('you have been logged out');
+            log(`received logout request!`);
+            middleware.tryLogIn(req, res, err => {
+                if (err) {
+                    return res.status(400).send(err);
+                }
+
+                log(req.session.username+' has logged out');
+                // Delete the cookie
+                req.session.destroy();
+                return res.status(200).send('you have been logged out');
+            }, true);  // Don't refresh the cookie!
         }
     },
     {
         Service: 'changePassword',
         Parameters: 'OldPassword,NewPassword',
         Method: 'Post',
-        Note: '',
+        middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var oldPassword = req.body.OldPassword,
                 username = req.session.username,
