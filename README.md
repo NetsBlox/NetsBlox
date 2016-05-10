@@ -26,8 +26,7 @@ git clone https://github.com/NetsBlox/NetsBlox.git
 cd NetsBlox
 npm install
 ```
-
-Next, start the server with `npm start` and navigate to `localhost:8080` in a web browser to try it out!
+Next, install and run [mongodb](https://www.mongodb.com/) locally (or set `MONGO_URI` to the mongo instance URI to connect to). Finally, start the server with `npm start` and navigate to `localhost:8080` in a web browser to try it out!
 
 ## Examples
 After opening the browser, click the `file` button in the top left and click on `Examples` to check out some example networked apps!
