@@ -174,11 +174,12 @@ module.exports = [
         URL: '',  // login/SignUp method
         Handler: function(req, res) {
             var hash = req.body.__h,
+                isUsingCookie = !req.body.__u,
                 socket;
 
             // Should check if the user has a valid cookie. If so, log them in with it!
             middleware.tryLogIn(req, res, (err, loggedIn) => {
-                let username = req.session.username || req.body.__u;
+                let username = req.body.__u || req.session.username;
                 if (err) {
                     return res.status(500).send(err);
                 }
@@ -197,7 +198,7 @@ module.exports = [
                     }
 
                     if (user && (loggedIn || user.hash === hash)) {  // Sign in 
-                        if (!loggedIn) {
+                        if (!isUsingCookie) {
                             saveLogin(res, user);
                         }
 
