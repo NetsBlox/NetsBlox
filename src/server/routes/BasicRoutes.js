@@ -145,6 +145,31 @@ module.exports = [
         }
     },
     { 
+        Method: 'post',
+        URL: 'SignUp/validate',
+        Handler: function(req, res) {
+            log('Signup/validate request:', req.body.Username, req.body.Email);
+            var self = this,
+                uname = req.body.Username,
+                password = req.body.Password,
+                email = req.body.Email;
+
+            // Must have an email and username
+            if (!email || !uname) {
+                log('Invalid request to /SignUp/validate');
+                return res.status(400).send('ERROR: need both username and email!');
+            }
+
+            self.storage.users.get(uname, function(e, user) {
+                if (!user) {
+                    return res.send('Valid User Signup Request!');
+                }
+                log('User "'+uname+'" already exists.');
+                return res.status(401).send('ERROR: user exists');
+            });
+        }
+    },
+    { 
         Method: 'post', 
         URL: '',  // login/SignUp method
         Handler: function(req, res) {
