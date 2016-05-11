@@ -60,6 +60,7 @@ module.exports = [
         Parameters: '',
         Method: 'Get',
         Note: '',
+        middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
                 uuids = Object.keys(this.sockets),
@@ -123,7 +124,7 @@ module.exports = [
     {
         Service: 'inviteToRoom',
         Parameters: 'socketId,invitee,ownerId,roomName,roleId',
-        middleware: ['hasSocket'],
+        middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
@@ -171,7 +172,7 @@ module.exports = [
     {
         Service: 'invitationResponse',
         Parameters: 'inviteId,response,socketId',
-        middleware: ['hasSocket'],
+        middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
@@ -214,6 +215,7 @@ module.exports = [
         Parameters: 'roleId,ownerId,roomName',
         Method: 'post',
         Note: '',
+        middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
                 roleId = req.body.roleId,
