@@ -31,5 +31,9 @@ patrol boat</options></input></inputs><script><block s="doReport"><block s="getJ
             <field>role</field>
         </fields>
     </messageType>
+    <messageType>
+        <name>your turn</name>
+        <fields></fields>
+    </messageType>
 </messageTypes>
 </rpc>
