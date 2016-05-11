@@ -362,4 +362,58 @@ NetCloud.prototype.logout = function (callBack, errorCall) {
     this.clear();
 };
 
+NetCloud.prototype.signup = function (
+    username,
+    email,
+    callBack,
+    errorCall
+) {
+    // both callBack and errorCall are two-argument functions
+    var request = new XMLHttpRequest(),
+        myself = this,
+        data = 'Username=' + encodeURIComponent(username) + '&Email=' +
+            encodeURIComponent(email);
+    try {
+        request.open(
+            'POST',
+            (this.hasProtocol() ? '' : 'http://')
+                + this.url + 'SignUp',
+            true
+        );
+        request.setRequestHeader(
+            "Content-Type",
+            "application/x-www-form-urlencoded"
+        );
+        request.withCredentials = true;
+        request.onreadystatechange = function () {
+            if (request.readyState === 4) {
+                if (request.responseText) {
+                    if (request.responseText.indexOf('ERROR') === 0) {
+                        errorCall.call(
+                            this,
+                            request.responseText,
+                            'Signup'
+                        );
+                    } else {
+                        callBack.call(
+                            null,
+                            request.responseText,
+                            'Signup'
+                        );
+                    }
+                } else {
+                    errorCall.call(
+                        null,
+                        myself.url + 'SignUp',
+                        localize('could not connect to:')
+                    );
+                }
+            }
+        };
+        request.send(data);
+    } catch (err) {
+        errorCall.call(this, err.toString(), 'NetsBlox Cloud');
+    }
+};
+
 var SnapCloud = new NetCloud('http://'+window.location.host+'/api/');
