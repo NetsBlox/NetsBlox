@@ -117,13 +117,14 @@ module.exports = [
         }
     },
     { 
-        Method: 'get', 
+        Method: 'post',  // post would make more sense...
         URL: 'SignUp',
         Handler: function(req, res) {
-            log('Sign up request:', req.query.Username, req.query.Email);
+            log('Sign up request:', req.body.Username, req.body.Email);
             var self = this,
-                uname = req.query.Username,
-                email = req.query.Email;
+                uname = req.body.Username,
+                password = req.body.Password,
+                email = req.body.Email;
 
             // Must have an email and username
             if (!email || !uname) {
@@ -134,6 +135,7 @@ module.exports = [
             self.storage.users.get(uname, function(e, user) {
                 if (!user) {
                     var newUser = self.storage.users.new(uname, email);
+                    newUser.hash = password || null;
                     newUser.save();
                     return res.send('User Created!');
                 }
