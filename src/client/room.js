@@ -250,6 +250,10 @@ RoomMorph.prototype.editRoleName = function(role) {
     // Ask for a new role name
     var myself = this;
     this.ide.prompt('New Role Name', function (roleName) {
+        if (/^\s*$/.test(roleName)) {  // empty role name = cancel
+            return;
+        }
+
         if (myself.roles.hasOwnProperty(roleName)) {
             // Error! Role exists
             new DialogBoxMorph().inform(
