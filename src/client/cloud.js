@@ -350,11 +350,21 @@ NetCloud.prototype.passiveLogin = function (ide, callback) {
     
 };
 
-NetCloud.prototype.reconnect = function (success) {
+NetCloud.prototype.reconnect = function (callback, errorCall) {
     if (this.password === true) {  // if using session cookie, don't login then back out
-        this.passiveLogin(null, success);
+        this.passiveLogin(null, callback);
     } else {
-        return Cloud.prototype.reconnect.apply(this, arguments);
+        if (!(this.username && this.password)) {
+            this.message('You are not logged in');
+            return;
+        }
+        this.login(
+            this.username,
+            this.password,
+            undefined,
+            callback,
+            errorCall
+        );
     }
 };
 
