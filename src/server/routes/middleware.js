@@ -76,8 +76,10 @@ var saveLogin = function(res, user, remember) {
         id: user.id || user._id,
         username: user.username,
         email: user.email,
-        remember: remember
     };
+    if (typeof remember === 'boolean') {
+        cookie.remember = remember;
+    }
 	refreshCookie(res, cookie);
 };
 
