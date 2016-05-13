@@ -5,13 +5,12 @@ var R = require('ramda'),
     UserAPI = require('./Users'),
     RoomAPI = require('./Rooms'),
     ProjectAPI = require('./Projects'),
-    EXTERNAL_API = R.map(
-        R.pipe(
-            R.partial(R.omit,['Handler']),
-            R.partial(R.omit,['middleware'])
-        ),
-        UserAPI.concat(ProjectAPI).concat(RoomAPI)
-    ),
+    EXTERNAL_API = UserAPI
+        .concat(ProjectAPI)
+        .concat(RoomAPI)
+        .filter(api => api.Service)
+        .map(R.omit.bind(R, 'Handler'))
+        .map(R.omit.bind(R, 'middleware')),
     GameTypes = require('../GameTypes'),
 
     debug = require('debug'),
