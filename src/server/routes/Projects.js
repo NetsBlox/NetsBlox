@@ -67,6 +67,7 @@ var getPreview = function(project) {
         }
     }
     preview.Updated = new Date(preview.Updated);  // to string
+    preview.Public = project.Public;
     return preview;
 };
 
