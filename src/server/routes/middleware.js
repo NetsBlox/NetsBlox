@@ -104,12 +104,38 @@ Session.prototype.destroy = function() {
     this._res.clearCookie(COOKIE_ID);
 };
 
+// Helpers
+var loadUser = function(username, res, next) {
+    // Load the user and handle errors
+    server.storage.users.get(username, function(e, user) {
+        if (e) {
+            logger.error(`Could not retrieve "${username}": ${e}`);
+            return res.status(500).send('ERROR: ' + e);
+        }
+
+        if (!user) {
+            logger.error(`user not found: "${username}"`);
+            return res.status(400).send('ERROR: user not found');
+        }
+        next(user);
+    });
+};
+
+var setUser = function(req, res, next) {
+    loadUser(req.session.username, res, user => {
+        req.session.user = user;
+        next();
+    });
+};
+
 module.exports = {
     hasSocket,
     noCache,
     isLoggedIn,
     tryLogIn,
     saveLogin,
+    loadUser,
+    setUser,
 
     // additional
     init: _server => {
