@@ -300,7 +300,7 @@ NetCloud.prototype.callService = function (
     }
 };
 
-NetCloud.prototype.passiveLogin = function () {
+NetCloud.prototype.passiveLogin = function (ide) {
     // Try to login w/ cookie only
     var request = new XMLHttpRequest(),
         socketId = this.socketId(),
@@ -333,6 +333,7 @@ NetCloud.prototype.passiveLogin = function () {
                     myself.username = response.username;
                     myself.session = true;
                     myself.password = true;
+                    ide.source = 'cloud';
                 }
             }
         };
