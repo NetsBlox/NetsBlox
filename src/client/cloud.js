@@ -9,15 +9,17 @@ function NetCloud(url) {
 NetCloud.prototype.login = function (
     username,
     password,
+    remember,
     callBack,
     errorCall
 ) {
     // both callBack and errorCall are two-argument functions
     var request = new XMLHttpRequest(),
         usr = JSON.stringify({
-            '__h': password,
-            '__u': username,
-            'socketId': this.socketId()
+            __h: password,
+            __u: username,
+            remember: remember,
+            socketId: this.socketId()
         }),
         myself = this;
     this.setRoute(username);

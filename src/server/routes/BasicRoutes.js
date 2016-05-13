@@ -198,7 +198,7 @@ module.exports = [
 
                     if (user && (loggedIn || user.hash === hash)) {  // Sign in 
                         if (!isUsingCookie) {
-                            saveLogin(res, user);
+                            saveLogin(res, user, req.body.remember);
                         }
 
                         log(`"${user.username}" has logged in.`);
