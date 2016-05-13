@@ -11,30 +11,6 @@ function NetsBloxSerializer() {
     this.init();
 }
 
-NetsBloxSerializer.prototype.load = function (str) {
-    // Check if it is a netsblox room
-    if (str.indexOf('<room') === 0) {
-        // get the roomName, roles: {r1: xml, r2: xml, ... }
-        var room = this.parse(str),
-            role,
-            result = {
-                name: room.attributes.name,
-                roles: {}
-            };
-
-        for (var i = room.children.length; i--;) {
-            role = room.children[i];
-            result.roles[role.attributes.name] = {
-                SourceCode: role.children[0].toString(),
-                Media: role.children[1].toString()
-            };
-        }
-        return result;
-    } else {  // assume it is a role and use the Snap loader
-        return SnapSerializer.prototype.load.call(this, str);
-    }
-};
-
 NetsBloxSerializer.prototype.serializeRoom = function (name, roles) {
     var roleNames = Object.keys(roles),
         body = '',
