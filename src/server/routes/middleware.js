@@ -1,7 +1,6 @@
 // Dictionary of all middleware functions for netsblox routes.
 var server,
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
-    MAX_AGE = 60*1000*60*24,  // one day
     COOKIE_ID = 'netsblox-cookie',
     jwt = require('jsonwebtoken'),
     nop = function(){},
@@ -72,27 +71,32 @@ var isLoggedIn = function(req, res, next) {
     });
 };
 
-var saveLogin = function(res, user) {
+var saveLogin = function(res, user, remember) {
     var cookie = {  // TODO: Add an id
         id: user.id || user._id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        remember: remember
     };
 	refreshCookie(res, cookie);
 };
 
 var refreshCookie = function(res, cookie) {
     var token = jwt.sign(cookie, sessionSecret),
+        options = {
+            httpOnly: true
+        },
+        date;
+
+    if (cookie.remember) {
         date = new Date();
+        date.setDate(date.getDate() + 14);  // valid for 2 weeks
+        logger.trace(`cookie expires: ${date}`);
+        options.expires = date;
+    }
 
     logger.trace(`Saving cookie ${JSON.stringify(cookie)}`);
-
-    date.setDate(date.getDate() + 14);  // valid for 2 weeks
-	logger.trace(`cookie expires: ${date}`);
-	res.cookie(COOKIE_ID, token, {
-		expires: date,
-		httpOnly: true
-	});
+	res.cookie(COOKIE_ID, token, options);
 };
 
 var Session = function(res) {

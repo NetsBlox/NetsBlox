@@ -958,3 +958,46 @@ NetsBloxMorph.prototype.rawOpenBlocksMsgTypeString = function (aString) {
     // load blocks
     this.rawOpenBlocksString(blocksStr, '', true)
 };
+
+NetsBloxMorph.prototype.initializeCloud = function () {
+    var myself = this,
+        world = this.world();
+    new DialogBoxMorph(
+        null,
+        function (user) {
+            var pwh = hex_sha512(user.password),
+                str;
+            SnapCloud.login(
+                user.username,
+                pwh,
+                user.choice,
+                function () {
+                    if (user.choice) {
+                        str = SnapCloud.encodeDict(
+                            {
+                                username: user.username,
+                                password: pwh
+                            }
+                        );
+                        localStorage['-snap-user'] = str;
+                    }
+                    myself.source = 'cloud';
+                    myself.showMessage('now connected.', 2);
+                },
+                myself.cloudError()
+            );
+        }
+    ).withKey('cloudlogin').promptCredentials(
+        'Sign in',
+        'login',
+        null,
+        null,
+        null,
+        null,
+        'stay signed in on this computer\nuntil logging out',
+        world,
+        myself.cloudIcon(),
+        myself.cloudMsg
+    );
+};
+
