@@ -152,8 +152,7 @@ NetsBloxMorph.prototype.loadNextRoom = function () {
     }
 };
 
-NetsBloxMorph.prototype.rawOpenCloudDataString = function (str) {
-    var model;
+NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
     StageMorph.prototype.hiddenPrimitives = {};
     StageMorph.prototype.codeMappings = {};
     StageMorph.prototype.codeHeaders = {};
@@ -161,7 +160,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (str) {
     StageMorph.prototype.enableInheritance = false;
     if (Process.prototype.isCatchingErrors) {
         try {
-            model = this.serializer.parse(str);
+            model = parsed ? model : this.serializer.parse(model);
             this.serializer.loadMediaModel(model.childNamed('media'));
             this.serializer.openProject(
                 this.serializer.loadProjectModel(
@@ -176,7 +175,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (str) {
             this.showMessage('Load failed: ' + err);
         }
     } else {
-        model = this.serializer.parse(str);
+        model = parsed ? model : this.serializer.parse(model);
         this.serializer.loadMediaModel(model.childNamed('media'));
         this.serializer.openProject(
             this.serializer.loadProjectModel(
@@ -766,29 +765,56 @@ NetsBloxMorph.prototype.exportRoom = function (roles) {
 
 // Open the room
 NetsBloxMorph.prototype.openRoomString = function (str) {
+    var room = this.serializer.parse(str),
+        roles = {},
+        role;
+
+    if (!room.children[0]) {
+        this.showMessage('Malformed room - No roles found.');
+        return;
+    }
+
+    room.children.forEach(function(role) {
+        roles[role.attributes.name] = {
+            SourceCode: role.children[0].toString(),
+            Media: role.children[1].toString()
+        };
+    });
+    role = room.children[0].attributes.name;
+
     this.showMessage('Opening room...', 3);
-
-    // Get the roomName and a role name from the str
-    var room = this.serializer.load(str),
-        role = Object.keys(room.roles)[0];
-
     // Create a room with the new name
     this.newProject(role);
 
     // Send 'import-room' message
     this.sockets.sendMessage({
         type: 'import-room',
-        name: room.name,
+        name: room.attributes.name,
         role: role,
-        roles: room.roles
+        roles: roles
     });
 
     // load the given project
-    var roleStr = '<role name="' + role + '">' +
-        room.roles[role].SourceCode +
-        room.roles[role].Media + '</role>';
+    this.openCloudDataString(room.children[0], true);
+};
 
-    this.openCloudDataString(roleStr);
+NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
+    var msg,
+        myself = this,
+        str = parsed ? model : model.toString(),
+        size = Math.round(str.length / 1024);
+    this.nextSteps([
+        function () {
+            msg = myself.showMessage('Opening project\n' + size + ' KB...');
+        },
+        function () {nop(); }, // yield (bug in Chrome)
+        function () {
+            myself.rawOpenCloudDataString(model, parsed);
+        },
+        function () {
+            msg.destroy();
+        }
+    ]);
 };
 
 // Serialize a project and save to the browser.
