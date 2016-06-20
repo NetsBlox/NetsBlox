@@ -1,3 +1,6 @@
+// This will use the Bing traffic API to retrieve a list of traffic incidents and populate
+// an array to return to the user (latitude, longitude, type)
+
 'use strict';
 
 var debug = require('debug'),
@@ -10,10 +13,8 @@ var debug = require('debug'),
 
 module.exports = {
 
-    // This is very important => Otherwise it will try to instantiate this
     isStateless: true,
 
-    // These next two functions are the same from the stateful RPC's
     getPath: function() {
         return '/traffic';
     },
@@ -23,21 +24,54 @@ module.exports = {
     },
 
     search: function(req, res) {
-        var southlat = req.query.southlat,
-            westlng = req.query.westlng,
-            northlat = req.query.northlat,
-            eastlng = req.query.eastlng,
+    		// for bounding box
+        var southLat = req.query.southLat,
+            westLng = req.query.westLng,
+            northLat = req.query.northLat,
+            eastLng = req.query.eastLng,
+         
+            minSeverity = 0,
             incidents = [],
-            url = baseUrl + southlat + ',' + westlng + ',' + northlat + ',' + eastlng + '?key=' + API_KEY;
+            url = baseUrl + southLat + ',' + westLng + ',' + northLat + ',' + eastLng + '?key=' + API_KEY;
+
+            // default behavior is no restriction on severity...
+            try {
+            	minSeverity = req.query.minSeverity;
+            } catch(e) {
+            	trace("No minimum severity requested");
+            }
 
     	request(url, function(err, response, body) {
-    		body = JSON.parse(body);
-            for (var i = 0; i < body.resourceSets[0].resources.length; i++) {
-                incidents.push(body.resourceSets[0].resources[i].point.coordinates[0]);
-                incidents.push(body.resourceSets[0].resources[i].point.coordinates[1]);
-                incidents.push(body.resourceSets[0].resources[i].type);
-            }
+    		
+    		if (err) {
+    			trace("Error:" + err);
+    			return;
+    		}
+
+    		try {
+    			body = JSON.parse(body);
+    		} catch(e) {
+    			trace("Non-JSON data...");
+    			return;
+    		}
+
+    		if (body.statusCode == 400) {
+    			trace("Invalid parameters...");
+    			return;
+    		}
+
+    		if (body.resourceSets[0].estimatedTotal != 0) {
+            	for (var i = 0; i < body.resourceSets[0].resources.length; i++) {
+            		if (body.resourceSets[0].resources[i].severity >= minSeverity) {
+                		incidents.push(body.resourceSets[0].resources[i].point.coordinates[0]);
+                		incidents.push(body.resourceSets[0].resources[i].point.coordinates[1]);
+                		incidents.push(body.resourceSets[0].resources[i].type);
+            		}
+            	}
+        	}
+
             return res.json(incidents);
+
     	});
     }
 };
