@@ -14,15 +14,13 @@ var debug = require('debug'),
 module.exports = {
 
     isStateless: true,
+    getPath: () => '/traffic',
+    getActions: () => ['search'], // function available to client
 
-    getPath: function() {
-        return '/traffic';
-    },
-
-    getActions: function() {
-        return ['search'];
-    },
-
+    // returns a list of traffic incidents as an array of 3 elements
+    // 1: latitude
+    // 2: longitude
+    // 3: type (see Bing documentation for descriptions)
     search: function(req, res) {
     		// for bounding box
         var southLat = req.query.southLat,
@@ -60,6 +58,7 @@ module.exports = {
     			return;
     		}
 
+            // populate the array as necessary
     		if (body.resourceSets[0].estimatedTotal != 0) {
             	for (var i = 0; i < body.resourceSets[0].resources.length; i++) {
             		if (body.resourceSets[0].resources[i].severity >= minSeverity) {
