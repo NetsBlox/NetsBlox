@@ -58,13 +58,18 @@ module.exports = {
 		}
 
 		// split the guess
+		var correct = false;
 		var attempt = req.query.guess.toLowerCase().split(/[\s\?]+/);
-		attempt = attempt[attempt.length-2];
+		for (var i = 0; i < attempt.length && !correct; i++) {
+			if (attempt[i] == correctAnswer) {
+				correct = true;
+			}
+		}
 
 		guessCount++;
 		
 		// incorrect guess
-		if (attempt != correctAnswer) {
+		if (!correct) {
 			// guesses are up! guesser loses...
 			if (guessCount == 20) {
 				req.netsbloxSocket._room.sockets()
