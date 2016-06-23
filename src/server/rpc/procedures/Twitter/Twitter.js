@@ -60,7 +60,7 @@ module.exports = {
 	Followers: function(req, res) {
 
 		// gather parameters
-		options.url = baseURL + 'users/lookup.json?';
+		options.url = baseURL + 'users/show.json?';
 		var screenName = req.query.screenName;
 
 		// ensure valid paramters
@@ -73,7 +73,7 @@ module.exports = {
 
 		request(options, function(err, response, body) {
 			body = JSON.parse(body);
-			return res.json(body[0].followers_count);
+			return res.json(body.followers_count);
 		});
 	},
 
@@ -81,7 +81,7 @@ module.exports = {
 	Tweets: function(req, res) {
 
 		// gather parameters
-		options.url = baseURL + 'users/lookup.json?';
+		options.url = baseURL + 'users/show.json?';
 		var screenName = req.query.screenName;
 
 		// ensure valid paramters
@@ -94,7 +94,7 @@ module.exports = {
 
 		request(options, function(err, response, body) {
 			body = JSON.parse(body);
-			return res.json(body[0].statuses_count);
+			return res.json(body.statuses_count);
 		});
 	}
 
