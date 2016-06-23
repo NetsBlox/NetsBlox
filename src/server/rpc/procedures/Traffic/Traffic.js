@@ -28,15 +28,12 @@ module.exports = {
             northLat = req.query.northLat,
             eastLng = req.query.eastLng,
          
-            minSeverity = 0,
+            minSeverity = req.query.minSeverity,
             incidents = [],
             url = baseUrl + southLat + ',' + westLng + ',' + northLat + ',' + eastLng + '?key=' + API_KEY;
 
-            // default behavior is no restriction on severity...
-            try {
-            	minSeverity = req.query.minSeverity;
-            } catch(e) {
-            	trace("No minimum severity requested");
+            if (minSeverity == undefined) {
+                minSeverity = 0;
             }
 
     	request(url, function(err, response, body) {
