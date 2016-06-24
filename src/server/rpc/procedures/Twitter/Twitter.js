@@ -1,5 +1,6 @@
 // This will use the Twitter API to allow the client to execute certain Twitter functions
 // within NetsBlox
+// (xAuth for authentication?)
 
 'use strict';
 
@@ -108,7 +109,7 @@ module.exports = {
 		var count = req.query.count;
 
 		// ensure valid paramters
-		if (screenName == '' || screenName == undefined || count == '' || count == undefined) {
+		if (keyword == '' || keyword == undefined || count == '' || count == undefined) {
 			trace('Enter valid parameters...');
 			return res.send(false);
 		}
@@ -121,7 +122,7 @@ module.exports = {
 		keyword = encodeURI(keyword);
 
 		options.url = options.url + keyword + '&count=' + count;
-		trace(options.url);
+		
 		request(options, function(err, response, body) {
 			body = JSON.parse(body);
 			for (var i = 0; i < body.statuses.length; i++) {
