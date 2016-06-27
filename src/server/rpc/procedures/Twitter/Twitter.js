@@ -24,7 +24,7 @@ module.exports = {
 
 	isStateless: true,
 	getPath: () => '/Twitter',
-	getActions: () => ['RecentTweets', 'Followers', 'Tweets', 'Search', 'TweetsPerDay'], // list of available functions for client to use
+	getActions: () => ['RecentTweets', 'Followers', 'Tweets', 'Search', 'TweetsPerDay', 'Favorites'], // list of available functions for client to use
 
 	// returns a list of a user's recent tweets
 	RecentTweets: function(req, res) {
@@ -41,10 +41,6 @@ module.exports = {
 			return res.send(false);
 		}
 
-		if (count > 100) {
-			count = 100;
-		}
-
 		options.url = options.url + 'screen_name=' + screenName + '&count=' + count;
 
 		request(options, function(err, response, body) {
@@ -54,7 +50,6 @@ module.exports = {
 			}
 			return res.json(results);
 		});
-
 	},
 
 	// returns amount of followers a user has
@@ -64,7 +59,7 @@ module.exports = {
 		options.url = baseURL + 'users/show.json?';
 		var screenName = req.query.screenName;
 
-		// ensure valid paramters
+		// ensure valid parameters
 		if (screenName == '' || screenName == undefined) {
 			trace('Enter a valid screen name...');
 			return res.send(false);
@@ -85,7 +80,7 @@ module.exports = {
 		options.url = baseURL + 'users/show.json?';
 		var screenName = req.query.screenName;
 
-		// ensure valid paramters
+		// ensure valid parameters
 		if (screenName == '' || screenName == undefined) {
 			trace('Enter a valid screen name...');
 			return res.send(false);
@@ -108,14 +103,10 @@ module.exports = {
 		var keyword = req.query.keyword;
 		var count = req.query.count;
 
-		// ensure valid paramters
+		// ensure valid parameters
 		if (keyword == '' || keyword == undefined || count == '' || count == undefined) {
 			trace('Enter valid parameters...');
 			return res.send(false);
-		}
-
-		if (count > 100) {
-			count = 100;
 		}
 
 		// URL encode
@@ -126,7 +117,7 @@ module.exports = {
 		request(options, function(err, response, body) {
 			body = JSON.parse(body);
 			for (var i = 0; i < body.statuses.length; i++) {
-				results.push(body.statuses[i].text);
+				results.push('@' + body.statuses[i].user.screen_name + ": " + body.statuses[i].text);
 			}
 			return res.json(results);
 		});
@@ -160,6 +151,31 @@ module.exports = {
 				return res.json(0);
 			}
 		});
+	},
+
+	// returns the most recent tweets that a user has favorited
+	Favorites: function(req, res) {
+
+		var results = [];
+		// gather parameter
+		options.url = baseURL + 'favorites/list.json?';
+		var screenName = req.query.screenName;
+
+		// ensure valid parameters
+		if (screenName == '' || screenName == undefined) {
+			trace('Enter valid parameters...');
+			return res.send(false);
+		}
+
+		options.url = options.url + 'screen_name=' + screenName + '&count=200';
+
+		request(options, function(err, response, body) {
+			body = JSON.parse(body);
+			for (var i = 0; i < body.length; i++) {
+				results.push('@' + body[i].user.screen_name + ": " + body[i].text);
+			}
+			return res.json(results);
+		})
 	}
 
 };
