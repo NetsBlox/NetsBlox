@@ -24,7 +24,7 @@ module.exports = {
 
 	isStateless: true,
 	getPath: () => '/Twitter',
-	getActions: () => ['RecentTweets', 'Followers', 'Tweets', 'Search', 'TweetsPerDay', 'Favorites'], // list of available functions for client to use
+	getActions: () => ['RecentTweets', 'Followers', 'Tweets', 'Search', 'TweetsPerDay', 'Favorites', 'FavoritesCount'], // list of available functions for client to use
 
 	// returns a list of a user's recent tweets
 	RecentTweets: function(req, res) {
@@ -59,7 +59,7 @@ module.exports = {
 		options.url = baseURL + 'users/show.json?';
 		var screenName = req.query.screenName;
 
-		// ensure valid parameters
+		// ensure valid parameter
 		if (screenName == '' || screenName == undefined) {
 			trace('Enter a valid screen name...');
 			return res.send(false);
@@ -80,7 +80,7 @@ module.exports = {
 		options.url = baseURL + 'users/show.json?';
 		var screenName = req.query.screenName;
 
-		// ensure valid parameters
+		// ensure valid parameter
 		if (screenName == '' || screenName == undefined) {
 			trace('Enter a valid screen name...');
 			return res.send(false);
@@ -132,7 +132,7 @@ module.exports = {
 		var oneDay = 24*60*60*1000; // hours*minutes*seconds*milliseconds
 		var dateToday = new Date();
 
-		// ensure valid parameters
+		// ensure valid parameter
 		if (screenName == '' || screenName == undefined) {
 			trace('Enter valid parameters...');
 			return res.send(false);
@@ -161,7 +161,7 @@ module.exports = {
 		options.url = baseURL + 'favorites/list.json?';
 		var screenName = req.query.screenName;
 
-		// ensure valid parameters
+		// ensure valid parameter
 		if (screenName == '' || screenName == undefined) {
 			trace('Enter valid parameters...');
 			return res.send(false);
@@ -176,6 +176,27 @@ module.exports = {
 			}
 			return res.json(results);
 		})
+	},
+
+	// returns the amount of favorites that a user has
+	FavoritesCount: function(req, res) {
+
+		// gather parameter
+		options.url = baseURL + 'users/show.json?';
+		var screenName = req.query.screenName;
+
+		// ensure valid parameter
+		if (screenName == '' || screenName == undefined) {
+			trace('Enter valid parameters...');
+			return res.send(false);
+		}
+
+		options.url = options.url + 'screen_name=' + screenName;
+
+		request(options, function(err, response, body) {
+			body = JSON.parse(body);
+			return res.json(body.favourites_count);
+		});
 	}
 
 };
