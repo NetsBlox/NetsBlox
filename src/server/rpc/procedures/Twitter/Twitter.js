@@ -1,6 +1,7 @@
 // This will use the Twitter API to allow the client to execute certain Twitter functions
 // within NetsBlox
 // (xAuth for authentication?)
+// utilize promises for asynchronous requesting?
 
 'use strict';
 
@@ -18,6 +19,7 @@ var options = {
 		'Authorization': KEY,
 		'gzip': true
 		},
+	json: true
 };
 
 module.exports = {
@@ -36,20 +38,31 @@ module.exports = {
 		var count = req.query.count;
 
 		// ensure valid parameters
-		if (screenName == '' || screenName == undefined || count == 0 || count == undefined) {
+		if (screenName == '' || screenName == undefined || count == '' || count == undefined || count < 0) {
 			trace('Enter valid parameters...');
 			return res.send(false);
 		}
 
 		options.url = options.url + 'screen_name=' + screenName + '&count=' + count;
 
-		request(options, function(err, response, body) {
-			body = JSON.parse(body);
-			for (var i = 0; i < body.length; i++) {
-				results.push(body[i].text);
-			}
-			return res.json(results);
-		});
+		// populate array of tweets
+		getTweets();
+
+		// repeat as many times as necessary
+		function getTweets() {
+			request(options, function(err, response, body) {
+				for (var i = 0; i < body.length; i++) {
+					results.push(body[i].text);
+				}
+				count -= body.length;
+				options.url = baseURL + 'statuses/user_timeline.json?screen_name=' + screenName + '&count=' + count + '&max_id=' + body[body.length-1].id;
+				if (count) {
+					getTweets();
+				} else {
+					return res.json(results);
+				}
+			});
+		}
 	},
 
 	// returns amount of followers a user has
@@ -68,7 +81,6 @@ module.exports = {
 		options.url = options.url + 'screen_name=' + screenName;
 
 		request(options, function(err, response, body) {
-			body = JSON.parse(body);
 			return res.json(body.followers_count);
 		});
 	},
@@ -89,7 +101,6 @@ module.exports = {
 		options.url = options.url + 'screen_name=' + screenName;
 
 		request(options, function(err, response, body) {
-			body = JSON.parse(body);
 			return res.json(body.statuses_count);
 		});
 	},
@@ -104,7 +115,7 @@ module.exports = {
 		var count = req.query.count;
 
 		// ensure valid parameters
-		if (keyword == '' || keyword == undefined || count == '' || count == undefined) {
+		if (keyword == '' || keyword == undefined || count == '' || count == undefined || count < 0) {
 			trace('Enter valid parameters...');
 			return res.send(false);
 		}
@@ -114,13 +125,24 @@ module.exports = {
 
 		options.url = options.url + keyword + '&count=' + count;
 		
-		request(options, function(err, response, body) {
-			body = JSON.parse(body);
-			for (var i = 0; i < body.statuses.length; i++) {
-				results.push('@' + body.statuses[i].user.screen_name + ": " + body.statuses[i].text);
-			}
-			return res.json(results);
-		});
+		// populate array of tweets
+		getTweets();
+
+		// repeat as many times as necessary
+		function getTweets() {
+			request(options, function(err, response, body) {
+				for (var i = 0; i < body.statuses.length; i++) {
+					results.push('@' + body.statuses[i].user.screen_name + ": " + body.statuses[i].text);
+				}
+				count -= body.statuses.length;
+				options.url = baseURL + 'search/tweets.json?q=' + keyword + '&count=' + count + '&max_id=' + body.statuses[body.statuses.length-1].id;
+				if (count) {
+					getTweets();
+				} else {
+					return res.json(results);
+				}
+			});
+		}
 	},
 
 	// returns how many tweets per day the user averages (most recent 200)
@@ -141,7 +163,6 @@ module.exports = {
 		options.url = options.url + 'screen_name=' + screenName + '&count=200';
 
 		request(options, function(err, response, body) {
-			body = JSON.parse(body);
 			try {
 				var oldestDate = new Date(body[body.length-1].created_at); 
 				var diffDays = Math.round(Math.abs((oldestDate.getTime() - dateToday.getTime())/(oneDay)));
@@ -160,22 +181,34 @@ module.exports = {
 		// gather parameter
 		options.url = baseURL + 'favorites/list.json?';
 		var screenName = req.query.screenName;
+		var count = req.query.count;
 
 		// ensure valid parameter
-		if (screenName == '' || screenName == undefined) {
+		if (screenName == '' || screenName == undefined || count == '' || count == undefined || count < 0) {
 			trace('Enter valid parameters...');
 			return res.send(false);
 		}
 
-		options.url = options.url + 'screen_name=' + screenName + '&count=200';
+		options.url = options.url + 'screen_name=' + screenName + '&count=' + count;
 
-		request(options, function(err, response, body) {
-			body = JSON.parse(body);
-			for (var i = 0; i < body.length; i++) {
-				results.push('@' + body[i].user.screen_name + ": " + body[i].text);
-			}
-			return res.json(results);
-		})
+		// populate array of tweets
+		getTweets();
+
+		// repeat as many times as necessary
+		function getTweets() {
+			request(options, function(err, response, body) {
+				for (var i = 0; i < body.length; i++) {
+					results.push('@' + body[i].user.screen_name + ": " + body[i].text);
+				}
+				count -= body.length;
+				options.url = baseURL + 'favorites/list.json?screen_name=' + screenName + '&count=' + count + '&max_id=' + body[body.length-1].id;
+				if (count) {
+					getTweets();
+				} else {
+					return res.json(results);
+				}
+			});
+		}
 	},
 
 	// returns the amount of favorites that a user has
@@ -194,7 +227,6 @@ module.exports = {
 		options.url = options.url + 'screen_name=' + screenName;
 
 		request(options, function(err, response, body) {
-			body = JSON.parse(body);
 			return res.json(body.favourites_count);
 		});
 	}
