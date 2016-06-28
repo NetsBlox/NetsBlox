@@ -7,17 +7,19 @@ var debug = require('debug'),
 	error = debug('NetsBlox:RPCManager:NASA:error'),
 	trace = debug('NetsBlox:RPCManager:NASA:trace'),
 	request = require('request'),
-	API_KEY = process.env.NASA_KEY,
-	APOD_URL = 'https://api.nasa.gov/planetary/apod?api_key=' + API_KEY,
+	KEY = process.env.NASA_KEY,
+	APOD_URL = 'https://api.nasa.gov/planetary/apod?api_key=' + KEY,
 	MARS_URL = 'http://marsweather.ingenology.com/v1/latest/';
 
 module.exports = {
 
 	isStateless: true,
 	getPath: () => '/NASA',
-	getActions: () => ['APOD', 'LatestMarsWeather'],
+	getActions: () => ['APOD', 'LatestMarsWeather'], // list of available functions for client to use
 
+	// NASA's 'Astronomy Picture of the Day'
 	APOD: function(req, res) {
+		// to return
 		var results = [];
 
 		request(APOD_URL, function(err, response, body) {
@@ -34,7 +36,9 @@ module.exports = {
 		});
 	},
 
+	// latest weather on Mars according to the MAAS API
 	LatestMarsWeather: function(req, res) {
+		// to return
 		var results = [];
 
 		request(MARS_URL, function(err, response, body) {
