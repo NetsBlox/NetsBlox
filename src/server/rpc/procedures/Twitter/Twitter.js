@@ -10,7 +10,6 @@ var debug = require('debug'),
     error = debug('NetsBlox:RPCManager:Twitter:error'),
     trace = debug('NetsBlox:RPCManager:Twitter:trace'),
     request = require('request'),
-    rp = require('request-promise'),
     baseURL = 'https://api.twitter.com/1.1/',
     KEY = process.env.TWITTER_BEARER_TOKEN;
 
