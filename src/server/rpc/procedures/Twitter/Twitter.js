@@ -57,7 +57,7 @@ module.exports = {
 		getTweets();
 
 		// repeat as many times as necessary
-		function getTweets() {
+		function getTweets() { 
 			request(options, function(err, response, body) {
 				if (rateCheck(response, res)) {
 					return;
@@ -228,7 +228,8 @@ module.exports = {
 				}
 				count -= body.length;
 				if (count > 0) {
-				options.url = baseURL + 'favorites/list.json?screen_name=' + screenName + '&count=' + count + '&max_id=' + body[body.length-1].id;
+				options.url = baseURL + 'favorites/list.json?screen_name=' + screenName + '&count=' + count + '&max_id=' + body[body.length-1].id
+				getTweets();
 				} else {
 					return res.json(results);
 				}
