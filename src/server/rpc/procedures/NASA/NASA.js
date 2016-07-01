@@ -41,9 +41,8 @@ module.exports = {
 
 		request(APOD_URL, function(err, response, body) {
 			body = JSON.parse(body);
-			trace(body.url);
-			request.get('http://apod.nasa.gov/apod/image/1607/PIA20701_fig1JupiterJuno.jpg').pipe(res);
-		})
+			request.get(body.url).pipe(res);
+		});
 
 	},
 

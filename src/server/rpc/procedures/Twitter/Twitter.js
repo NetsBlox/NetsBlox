@@ -63,7 +63,7 @@ module.exports = {
 					return;
 				}
 				for (var i = 0; i < body.length; i++) {
-					results.push('( ' + body[i].retweet_count + ' RTs, ' + body[i].favourites_count + ' Favs)' + body[i].text);
+					results.push('( ' + body[i].retweet_count + ' RTs, ' + body[i].favorite_count + ' Favs) ' + body[i].text);
 				}
 				count -= body.length;
 				if (count > 0) {
@@ -152,7 +152,7 @@ module.exports = {
 					return;
 				}
 				for (var i = 0; i < body.statuses.length; i++) {
-					results.push('(' + body.statuses[i].retweet_count + ' RTs, ' + body.statuses[i].favourites_count + ' Favs) @' + body.statuses[i].user.screen_name + ': ' + body.statuses[i].text);
+					results.push('(' + body.statuses[i].retweet_count + ' RTs, ' + body.statuses[i].favorite_count + ' Favs) @' + body.statuses[i].user.screen_name + ': ' + body.statuses[i].text);
 				}
 				count -= body.statuses.length;
 				if (count > 0) {
