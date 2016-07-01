@@ -34,10 +34,10 @@ module.exports = {
 
 	isStateless: true,
 	getPath: () => '/Twitter',
-	getActions: () => ['RecentTweets', 'Followers', 'Tweets', 'Search', 'TweetsPerDay', 'Favorites', 'FavoritesCount'], // list of available functions for client to use
+	getActions: () => ['recentTweets', 'followers', 'tweets', 'search', 'tweetsPerDay', 'favorites', 'favoritesCount'], // list of available functions for client to use
 
 	// returns a list of a user's recent tweets
-	RecentTweets: function(req, res) {
+	recentTweets: function(req, res) {
 
 		var results = [];
 		// gather parameters
@@ -77,7 +77,7 @@ module.exports = {
 	},
 
 	// returns amount of followers a user has
-	Followers: function(req, res) {
+	followers: function(req, res) {
 
 		// gather parameter
 		options.url = baseURL + 'users/show.json?';
@@ -100,7 +100,7 @@ module.exports = {
 	},
 
 	// returns amount of tweets a user has
-	Tweets: function(req, res) {
+	tweets: function(req, res) {
 
 		// gather parameter
 		options.url = baseURL + 'users/show.json?';
@@ -123,7 +123,7 @@ module.exports = {
 	},
 
 	// searches the most recent tweets
-	Search: function(req, res) {
+	search: function(req, res) {
 
 		var results = [];
 		// gather parameter
@@ -166,7 +166,7 @@ module.exports = {
 	},
 
 	// returns how many tweets per day the user averages (most recent 200)
-	TweetsPerDay: function(req, res) {
+	tweetsPerDay: function(req, res) {
 
 		// gather parameter
 		options.url = baseURL + 'statuses/user_timeline.json?';
@@ -198,7 +198,7 @@ module.exports = {
 	},
 
 	// returns the most recent tweets that a user has favorited
-	Favorites: function(req, res) {
+	favorites: function(req, res) {
 
 		var results = [];
 		// gather parameter
@@ -238,7 +238,7 @@ module.exports = {
 	},
 
 	// returns the amount of favorites that a user has
-	FavoritesCount: function(req, res) {
+	favoritesCount: function(req, res) {
 
 		// gather parameter
 		options.url = baseURL + 'users/show.json?';

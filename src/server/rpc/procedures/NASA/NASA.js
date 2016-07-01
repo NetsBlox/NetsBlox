@@ -15,10 +15,10 @@ module.exports = {
 
 	isStateless: true,
 	getPath: () => '/NASA',
-	getActions: () => ['APOD', 'LatestMarsWeather'], // list of available functions for client to use
+	getActions: () => ['apod', 'apodMedia', 'latestMarsWeather'], // list of available functions for client to use
 
 	// NASA's 'Astronomy Picture of the Day'
-	APOD: function(req, res) {
+	apod: function(req, res) {
 		// to return
 		var results = [];
 
@@ -36,8 +36,19 @@ module.exports = {
 		});
 	},
 
+	// NASA's 'Astronomy Picture of the Day' media
+	apodMedia: function(req, res) {
+
+		request(APOD_URL, function(err, response, body) {
+			body = JSON.parse(body);
+			trace(body.url);
+			request.get('http://apod.nasa.gov/apod/image/1607/PIA20701_fig1JupiterJuno.jpg').pipe(res);
+		})
+
+	},
+
 	// latest weather on Mars according to the MAAS API
-	LatestMarsWeather: function(req, res) {
+	latestMarsWeather: function(req, res) {
 		// to return
 		var results = [];
 
