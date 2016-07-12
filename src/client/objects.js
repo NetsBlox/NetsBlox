@@ -1007,6 +1007,7 @@ StageMorph.prototype.addMessageType = function (messageType) {
     name = messageType.name;
     fields = messageType.fields;
     msgType = new MessageType(name, fields);
+    
     this.messageTypes.addMsgType(msgType);
 };
 

@@ -96,7 +96,76 @@ WebSocketManager.MessageHandlers = {
 
     'notification': function(msg) {
         this.ide.showMessage(msg.message);
+    },
+
+    'share-msg-type': function(msg) {
+
+        // only share with intended role
+        if (this.ide.projectName === msg.roleId) {
+            // Prepare dialog & prompt user
+            var dialog = new DialogBoxMorph(),
+                request = new TextMorph(
+                msg.from + ' requested to send you a message type:\n\'' +
+                msg.name + '\' with ' + 
+                msg.fields.length + 
+                (msg.fields.length !== 1 ? ' fields.' : ' field.') + '\n' +
+                'Would you like to accept?'
+                ),
+                myself = this;
+
+            // ... build the frame interface
+            frame = new AlignmentMorph('column', 1);
+            frame.padding = 2;
+            frame.setWidth(250);
+            frame.acceptsDrops = false;
+            frame.add(request);
+            frame.edge = InputFieldMorph.prototype.edge;
+            frame.fontSize = InputFieldMorph.prototype.fontSize;
+            frame.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+            frame.contrast = InputFieldMorph.prototype.contrast;
+            frame.drawNew = InputFieldMorph.prototype.drawNew;
+            frame.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+
+            // ... build the dialog interface
+            dialog.labelString = 'Message Share Request';
+            dialog.createLabel();
+            dialog.addBody(frame);
+            dialog.drawNew();
+            dialog.addButton('ok', 'Yes');
+            dialog.addButton('cancel', 'No');
+            dialog.fixLayout();
+            dialog.drawNew();
+            dialog.popUp(this.ide.root());
+            dialog.setCenter(world.center());
+            
+            // Accept the request
+            dialog.ok = function() {
+                var ide = myself.ide.root().children[0].parentThatIsA(IDE_Morph);
+                myself.ide.stage.addMessageType({name: msg.name, fields: msg.fields});
+                ide.flushBlocksCache('services'); // b/c of inheritance
+                ide.refreshPalette();
+                // format fields
+                var fields = [];
+                for (var i = 0; i < msg.fields.length; i++) {
+                    fields.push(' ' + '\'' + msg.fields[i] + '\'');
+                }
+
+                // format notification
+                var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length + 
+                    (msg.fields.length === 0 ? ' fields.' : (msg.fields.length === 1 ? ' field:' + msg.fields : ' fields:' + msg.fields));
+
+                // notify
+                myself.ide.showMessage(notification, 1);
+                this.destroy();
+            };
+
+            // Refuse the request
+            dialog.cancel = function() {
+                this.destroy();
+            };
+        }
     }
+
 };
 
 WebSocketManager.prototype._connectWebSocket = function() {
