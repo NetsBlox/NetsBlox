@@ -59,12 +59,7 @@ function RoomMorph(ide) {
     roles[this.ide.projectName] = 'me';
     this.update(null, this.name, roles);
     // Shared messages array for when messages are sent to unoccupied roles
-    Object.defineProperty(this, 'sharedMsgs', {
-        value: [],
-        writable: true,
-        enumerable: true,
-        configurable: true
-    });
+    this.sharedMsgs = [];
 
     this.drawNew();
 }
@@ -152,12 +147,27 @@ RoomMorph.prototype.drawNew = function() {
     // Room name
     this.renderRoomTitle(new Point(center, center).translateBy(this.topLeft()));
 
-    // Owner label & indication
-    this.showOwnerLabel();
+    // Owner name
+    this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(1.25 * radius, -.25 * radius)));
 };
 
-RoomMorph.prototype.showOwnerLabel = function() {
-   
+RoomMorph.prototype.showOwnerName = function(center) {
+    if (this.ownerLabel) {
+        this.ownerLabel.destroy();
+        this.ownerIdLabel.destroy();
+    }
+
+    if (this.ownerId && !this.ownerId.startsWith('_')) {
+        this.ownerLabel = new StringMorph('Owner', false, false, true);
+        this.ownerIdLabel = new StringMorph(this.ownerId, false, false, true);
+
+        this.ownerLabel.setCenter(center);
+        this.ownerIdLabel.setCenter(new Point(center.x, center.y + 12));
+
+        this.add(this.ownerLabel);
+        this.add(this.ownerIdLabel);
+        this.owner = false;
+    }
 }
 
 RoomMorph.prototype.mouseClickLeft = function() {
@@ -706,9 +716,22 @@ RoleMorph.prototype.drawNew = function() {
     if (this._label) {
         this._label.destroy();
     }
+
+    if (this.ownerLabel) {
+        this.ownerLabel.destroy();
+    }
+
     this._label = new RoleLabelMorph(this.name, this.user);
     this.add(this._label);
     this._label.setCenter(pos);
+
+    // Visual indicator of ownership
+    if (this.parent && this.user === this.parent.ownerId && !this.parent.owner) {
+        this.ownerLabel = new StringMorph('[OWNER]', false, false, true, true);
+        this.add(this.ownerLabel);
+        this.ownerLabel.setCenter(new Point(pos.x, pos.y - 30));
+        this.parent.owner = true; // don't assign ownership to myself more than once
+    }
 };
 
 RoleMorph.prototype.mouseClickLeft = function() {
