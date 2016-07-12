@@ -906,7 +906,8 @@ InputSlotMorph.prototype.roleNames = function () {
         }
     }
 
-    dict['everyone'] = 'everyone';
+    dict['others in room'] = 'others in room';
+    dict['everyone in room'] = 'everyone in room';
     return dict;
 };
 

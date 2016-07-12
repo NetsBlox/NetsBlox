@@ -148,9 +148,17 @@ RoomMorph.prototype.drawNew = function() {
         label.setCenter(this.center());
         this.roleLabels[roles[i]] = label;
     }
+
     // Room name
     this.renderRoomTitle(new Point(center, center).translateBy(this.topLeft()));
+
+    // Owner label & indication
+    this.showOwnerLabel();
 };
+
+RoomMorph.prototype.showOwnerLabel = function() {
+   
+}
 
 RoomMorph.prototype.mouseClickLeft = function() {
     if (!this.editable) {

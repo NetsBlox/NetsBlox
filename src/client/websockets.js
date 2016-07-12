@@ -34,7 +34,7 @@ WebSocketManager.MessageHandlers = {
             content = msg.content;
 
         // filter for gameplay
-        if (dstId === this.ide.projectName || dstId === 'everyone') {
+        if (dstId === this.ide.projectName || dstId === 'others in room' || dstId === 'everyone in room') {
             this.onMessageReceived(messageType, content, 'role');
         }
         // TODO: pass to debugger
