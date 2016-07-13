@@ -109,7 +109,6 @@ MessageCreatorMorph.prototype.init = function(target, action) {
             name: messageBlock.messageName(),
             fields: messageBlock.fields()
         };
-
         if (desc.name) {
             action(desc);
         }

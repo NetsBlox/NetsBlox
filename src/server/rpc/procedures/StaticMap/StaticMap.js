@@ -116,7 +116,6 @@ StaticMap.prototype.getMap = function(req, res) {
         res.set('content-type', 'image/png');
         res.set('content-length', imageBuffer.length);
         res.set('connection', 'close');
-
         res.status(200).send(imageBuffer);
         trace('Sent the response!');
     });
