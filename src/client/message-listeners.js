@@ -35,7 +35,7 @@ MessageOutputSlotMorph.prototype._updateFields = function(values) {
         i;
 
     // Remove the "i" fields after the current morph
-    for (var i = 0; i < this.parent.children.length; i++) {
+    for (i = 0; i < this.parent.children.length; i++) {
         if (this.parent.children[i] instanceof ReadOnlyTemplateSlotMorph) {
             input = this.parent.children[i];
             removed.push(input);
