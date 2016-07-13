@@ -157,7 +157,7 @@ RoomMorph.prototype.showOwnerName = function(center) {
         this.ownerIdLabel.destroy();
     }
 
-    if (this.ownerId && !this.ownerId.startsWith('_')) {
+    if (this.ownerId && !this.ownerId.startsWith('_client_')) {
         this.ownerLabel = new StringMorph('Owner', false, false, true);
         this.ownerIdLabel = new StringMorph(this.ownerId, false, false, true);
 
@@ -471,7 +471,7 @@ RoomMorph.prototype.shareMsg = function(role, roleUser) {
                 fields: msgType.fields
             });
         } else { // not occupied, store in sharedMsgs array
-            myself.sharedMsgs.push({roleId: role, msg: msgType, sent: false});
+            myself.sharedMsgs.push({roleId: role, msg: msgType});
         }
         this.destroy();
     };
@@ -612,31 +612,20 @@ RoomMorph.prototype._invitationResponse = function (id, response, role) {
 };
 
 RoomMorph.prototype.checkForSharedMsgs = function(role) {
-
-    var socketManager = this.ide.sockets,
-        newArray = [];
-
     // send queried messages
     for (var i = 0 ; i < this.sharedMsgs.length; i++) {
         if (this.sharedMsgs[i].roleId === role) {
-            socketManager.sendMessage({
+            this.ide.sockets.sendMessage({
                 type: 'share-msg-type', 
                 name: this.sharedMsgs[i].msg.name,
                 fields: this.sharedMsgs[i].msg.fields, 
                 from: this.ide.projectName,
                 roleId: role
             });
-            this.sharedMsgs[i].sent = true;
+            this.sharedMsgs.splice(i, 1);
+            i--;
         }
     }
-    // refresh queried messages
-    for (var i = 0; i < this.sharedMsgs.length; i++) {
-        if (!this.sharedMsgs[i].sent) {
-            newArray.push(this.sharedMsgs[i]);
-        }
-    }
-    this.sharedMsgs = newArray;
-
 };
 
 RoleMorph.prototype = new Morph();

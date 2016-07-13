@@ -152,7 +152,7 @@ WebSocketManager.MessageHandlers = {
 
                 // format notification
                 var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length + 
-                    (msg.fields.length === 0 ? ' fields.' : (msg.fields.length === 1 ? ' field:' + msg.fields : ' fields:' + msg.fields));
+                    (msg.fields.length === 0 ? ' fields.' : (msg.fields.length === 1 ? ' field: ' + msg.fields : ' fields: ' + msg.fields));
 
                 // notify
                 myself.ide.showMessage(notification, 1);
