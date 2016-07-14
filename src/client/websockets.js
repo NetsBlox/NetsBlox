@@ -99,7 +99,6 @@ WebSocketManager.MessageHandlers = {
     },
 
     'share-msg-type': function(msg) {
-
         // only share with intended role
         if (this.ide.projectName === msg.roleId) {
             // Prepare dialog & prompt user

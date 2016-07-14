@@ -475,7 +475,6 @@ RoomMorph.prototype.shareMsg = function(role, roleUser) {
         }
         this.destroy();
     };
-
 }
 
 RoomMorph.prototype._inviteFriendDialog = function (role, friends) {
