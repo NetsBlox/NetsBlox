@@ -471,7 +471,7 @@ RoomMorph.prototype.shareMsg = function(role, roleUser) {
                 fields: msgType.fields
             });
         } else { // not occupied, store in sharedMsgs array
-            myself.sharedMsgs.push({roleId: role, msg: msgType});
+            myself.sharedMsgs.push({roleId: role, msg: msgType, from: myself.ide.projectName});
         }
         this.destroy();
     };
@@ -618,7 +618,7 @@ RoomMorph.prototype.checkForSharedMsgs = function(role) {
                 type: 'share-msg-type', 
                 name: this.sharedMsgs[i].msg.name,
                 fields: this.sharedMsgs[i].msg.fields, 
-                from: this.ide.projectName,
+                from: this.sharedMsgs[i].from,
                 roleId: role
             });
             this.sharedMsgs.splice(i, 1);
