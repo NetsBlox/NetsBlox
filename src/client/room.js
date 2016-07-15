@@ -712,6 +712,7 @@ RoleMorph.prototype.drawNew = function() {
     this._label = new RoleLabelMorph(this.name, this.user);
     this.add(this._label);
     this._label.setCenter(pos);
+    this.acceptsDrops = true;
 
     // Visual indicator of ownership
     if (this.parent && this.user === this.parent.ownerId && !this.parent.owner) {
@@ -728,6 +729,37 @@ RoleMorph.prototype.mouseClickLeft = function() {
     } else {
         this.escalateEvent('mouseClickLeft');
     }
+};
+
+RoleMorph.prototype.reactToDropOf = function(drop) {
+    if (drop.selector === 'receiveSocketMessage' || drop.selector === 'doSocketMessage') {
+        // find message morph
+        var msgMorph;
+        for (var i = 0; i < drop.children.length; i++) {
+            if (drop.children[i] instanceof MessageOutputSlotMorph || drop.children[i] instanceof MessageInputSlotMorph) {
+                msgMorph = drop.children[i];
+                break;
+            }
+        }
+        
+        if (msgMorph.children[0].text !== '') { // make sure there is a message type to send...
+            if (this.user && this.parent.ide.projectName !== this.name) { // occupied & not myself
+                this.parent.ide.sockets.sendMessage({
+                    type: 'share-msg-type',
+                    roleId: this.name,
+                    from: this.parent.ide.projectName,
+                    name: msgMorph.children[0].text,
+                    fields: msgMorph.msgFields
+                });
+            } else { // not occupied, store in sharedMsgs array
+                this.parent.sharedMsgs.push({
+                    roleId: this.name, 
+                    msg: {name: msgMorph.children[0].text, fields: msgMorph.msgFields}, 
+                    from: this.parent.ide.projectName});
+            }
+        }
+    }
+    this.parent.drawNew();
 };
 
 RoleLabelMorph.prototype = new Morph();
