@@ -414,7 +414,7 @@ RoomMorph.prototype.shareMsg = function(role, roleUser) {
         maxHeight = 150,
         msgsLength = stage.messageTypes.names().length,
         heightEstimate = msgsLength * 10;
-    
+
     // Get available list of messages that can be shared
     // TODO?: compare messages and only show ones that the other role doesn't have?
     for (var i = 0; i < msgsLength; i++) {
@@ -475,6 +475,45 @@ RoomMorph.prototype.shareMsg = function(role, roleUser) {
         }
         this.destroy();
     };
+}
+
+// Accessed from right-clicking the TextMorph
+RoomMorph.prototype.promptShare = function(name) {
+    var roles = Object.keys(this.roles),
+        choices = {},
+        myself = this;
+
+    roles.splice(roles.indexOf(this.ide.projectName), 1); // exclude myself
+    for (var i = 0; i < roles.length; i++) {
+        choices[roles[i]] = roles[i];
+    }
+
+    // any roles available?
+    if (Object.keys(roles).length) {
+        // show user available roles
+        var dialog = new DialogBoxMorph();
+        dialog.prompt('Send to...', '', world, false, choices);
+        dialog.accept = function() {
+            var choice = dialog.getInput();
+            if (myself.roles[choice]) { // occupied
+                myself.ide.sockets.sendMessage({
+                    type: 'share-msg-type',
+                    roleId: choice,
+                    from: myself.ide.projectName,
+                    name: name,
+                    fields: myself.ide.stage.messageTypes.getMsgType(name).fields
+                });
+            } else { // not occupied, store in sharedMsgs array
+                myself.sharedMsgs.push({
+                    roleId: choice, 
+                    msg: {name: name, fields: myself.ide.stage.messageTypes.getMsgType(name).fields}, 
+                    from: myself.ide.projectName});
+            }
+            this.destroy();
+        }
+    } else { // notify user no available recipients
+        new DialogBoxMorph().inform('No Available Recipients', 'There are no other roles in the room!', world);
+    }
 }
 
 RoomMorph.prototype._inviteFriendDialog = function (role, friends) {
@@ -732,6 +771,12 @@ RoleMorph.prototype.mouseClickLeft = function() {
 };
 
 RoleMorph.prototype.reactToDropOf = function(drop) {
+    // text drag-and-drop
+    if (drop instanceof TextMorph && drop.forMsg) {
+        shareMsgType(this, drop.text, this.parent.ide.stage.messageTypes.getMsgType(drop.text).fields);
+    }
+
+    // block drag-and-drop
     if (drop.selector === 'receiveSocketMessage' || drop.selector === 'doSocketMessage') {
         // find message morph
         var msgMorph;
@@ -743,22 +788,28 @@ RoleMorph.prototype.reactToDropOf = function(drop) {
         }
         
         if (msgMorph.children[0].text !== '') { // make sure there is a message type to send...
-            if (this.user && this.parent.ide.projectName !== this.name) { // occupied & not myself
-                this.parent.ide.sockets.sendMessage({
-                    type: 'share-msg-type',
-                    roleId: this.name,
-                    from: this.parent.ide.projectName,
-                    name: msgMorph.children[0].text,
-                    fields: msgMorph.msgFields
-                });
-            } else { // not occupied, store in sharedMsgs array
-                this.parent.sharedMsgs.push({
-                    roleId: this.name, 
-                    msg: {name: msgMorph.children[0].text, fields: msgMorph.msgFields}, 
-                    from: this.parent.ide.projectName});
-            }
+            shareMsgType(this, msgMorph.children[0].text, msgMorph.msgFields);
         }
     }
+
+    // share the intended message type
+    function shareMsgType(myself, name, fields) {
+        if (myself.user && myself.parent.ide.projectName !== myself.name) { // occupied & not myself
+            myself.parent.ide.sockets.sendMessage({
+                type: 'share-msg-type',
+                roleId: myself.name,
+                from: myself.parent.ide.projectName,
+                name: name,
+                fields: fields
+            });
+        } else { // not occupied, store in sharedMsgs array
+            myself.parent.sharedMsgs.push({
+                roleId: myself.name, 
+                msg: {name: name, fields: fields}, 
+                from: myself.parent.ide.projectName});
+        }
+    }
+
     this.parent.drawNew();
 };
 

@@ -671,6 +671,22 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             blocks.push(button);
         }
 
+        // display all message types and enable sending by dragging
+        blocks.push('-');
+        for (var i = 0; i < this.deletableMessageNames().length; i++) {
+            var txt = new TextMorph(this.deletableMessageNames()[i], false, false, false, true);
+            txt.setColor(new Color(255, 255, 255));
+            txt.forMsg = true;
+            txt.isTemplate = true;
+
+            // custom menu
+            var menu = new MenuMorph(this, null);
+            menu.addItem('Send to...', function() {this.parentThatIsA(NetsBloxMorph).room.promptShare(txt.text)});
+            txt.customContextMenu = menu;
+
+            blocks.push(txt);
+        }
+
     } else if (cat === 'sensing') {
 
         blocks.push(block('reportTouchingObject'));
@@ -1275,6 +1291,22 @@ StageMorph.prototype.blockTemplates = function (category) {
             button.selector = 'deleteMessageType';
             button.showHelp = BlockMorph.prototype.showHelp;
             blocks.push(button);
+        }
+
+        // display all message types and enable sending by dragging
+        blocks.push('-');
+        for (var i = 0; i < this.deletableMessageNames().length; i++) {
+            var txt = new TextMorph(this.deletableMessageNames()[i], false, false, false, true);
+            txt.setColor(new Color(255, 255, 255));
+            txt.forMsg = true;
+            txt.isTemplate = true;
+
+            // custom menu
+            var menu = new MenuMorph(this, null);
+            menu.addItem('Send to...', function() {this.parentThatIsA(NetsBloxMorph).room.promptShare(txt.text)});
+            txt.customContextMenu = menu;
+
+            blocks.push(txt);
         }
 
     } else if (cat === 'control') {
