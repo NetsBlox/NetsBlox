@@ -495,19 +495,21 @@ RoomMorph.prototype.promptShare = function(name) {
         dialog.prompt('Send to...', '', world, false, choices);
         dialog.accept = function() {
             var choice = dialog.getInput();
-            if (myself.roles[choice]) { // occupied
-                myself.ide.sockets.sendMessage({
-                    type: 'share-msg-type',
-                    roleId: choice,
-                    from: myself.ide.projectName,
-                    name: name,
-                    fields: myself.ide.stage.messageTypes.getMsgType(name).fields
-                });
-            } else { // not occupied, store in sharedMsgs array
-                myself.sharedMsgs.push({
-                    roleId: choice, 
-                    msg: {name: name, fields: myself.ide.stage.messageTypes.getMsgType(name).fields}, 
-                    from: myself.ide.projectName});
+            if (roles.indexOf(choice) !== -1) {
+                if (myself.roles[choice]) { // occupied
+                    myself.ide.sockets.sendMessage({
+                        type: 'share-msg-type',
+                        roleId: choice,
+                        from: myself.ide.projectName,
+                        name: name,
+                        fields: myself.ide.stage.messageTypes.getMsgType(name).fields
+                    });
+                } else { // not occupied, store in sharedMsgs array
+                    myself.sharedMsgs.push({
+                        roleId: choice, 
+                        msg: {name: name, fields: myself.ide.stage.messageTypes.getMsgType(name).fields}, 
+                        from: myself.ide.projectName});
+                }
             }
             this.destroy();
         }
