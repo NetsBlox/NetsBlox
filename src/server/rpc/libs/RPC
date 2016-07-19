@@ -8,3 +8,7 @@ weather.xml	Weather API
 pubsub.xml	PubSub
 kvstore.xml	Key-Value Store
 battleship.xml	Battleship
+traffic.xml	Traffic
+twentyquestions.xml	Twenty Questions
+twitter.xml	Twitter
+nasa.xml	Nasa

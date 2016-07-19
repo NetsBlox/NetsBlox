@@ -194,6 +194,10 @@ class NetsBloxSocket {
         this._room.sendFrom(this, msg);
     }
 
+    sendToRoom (msg) {
+        this._room.sendToRoom(this, msg);
+    }
+
     send (msg) {
         msg = JSON.stringify(msg);
         this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
@@ -228,7 +232,7 @@ NetsBloxSocket.MessageHandlers = {
     'beat': function() {},
 
     'message': function(msg) {
-        this.sendToEveryone(msg);
+        msg.dstId === 'others in room' ? this.sendToEveryone(msg) : this.sendToRoom(msg);
     },
 
     'project-response': function(msg) {
@@ -373,6 +377,10 @@ NetsBloxSocket.MessageHandlers = {
                 });
             });
         }
+    },
+    
+    'share-msg-type': function(msg) {
+        this.sendToRoom(msg);
     }
 };
 
