@@ -373,7 +373,13 @@ NetsBloxSocket.MessageHandlers = {
                 });
             });
         }
-    }
+    },
+     
+     'share-msg-type': function(msg) {
+        // or simply this.sendToRoom()
+         this.send(msg);
+         this.sendToEveryone(msg);
+     }
 };
 
 module.exports = NetsBloxSocket;

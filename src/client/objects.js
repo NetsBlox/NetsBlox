@@ -958,6 +958,23 @@ SpriteMorph.prototype.deleteMessageType = function(name) {
 
     stage.messageTypes.deleteMsgType(name);
 
+
+    // Refresh message palette if possible in case the user is already on the 'Room' tab
+    try {
+        this.parentThatIsA(NetsBloxMorph).room.parentThatIsA(ProjectsMorph).updateRoom();
+        // We need to force-update & refresh to fix the layout after drawing the message palette
+        // We can do this by "clicking" the room tab
+        // FIXME: find a better way to refresh...
+        for (var i = 0; i < this.parentThatIsA(NetsBloxMorph).children.length; i++) {
+            if (this.parentThatIsA(NetsBloxMorph).children[i] instanceof Morph) {
+                if (this.parentThatIsA(NetsBloxMorph).children[i].tabBar) {  // found the tab morph
+                    this.parentThatIsA(NetsBloxMorph).children[i].tabBar.children[3].mouseClickLeft();  // simulate clicking the room tab
+                    return;
+                }
+            }
+        }
+    } catch(e) {}
+
     ide.flushBlocksCache(cat); // b/c of inheritance
     ide.refreshPalette();
 };
@@ -1008,6 +1025,22 @@ StageMorph.prototype.addMessageType = function (messageType) {
     fields = messageType.fields;
     msgType = new MessageType(name, fields);
     this.messageTypes.addMsgType(msgType);
+
+    // Refresh message palette if possible in case the user is already on the 'Room' tab
+    try {
+        this.parent.room.parentThatIsA(ProjectsMorph).updateRoom();
+        // We need to force-update & refresh to fix the layout after drawing the message palette
+        // We can do this by "clicking" the room tab
+        // FIXME: find a better way to refresh...
+        for (var i = 0; i < this.parent.children.length; i++) {
+            if (this.parent.children[i] instanceof Morph) {
+                if (this.parent.children[i].tabBar) {  // found the tab morph
+                    this.parent.children[i].tabBar.children[3].mouseClickLeft();  // simulate clicking the room tab
+                    return;
+                }
+            }
+        }
+    } catch(e) {}
 };
 
 StageMorph.prototype.processKeyEvent = function (event, action) {

@@ -96,6 +96,65 @@ WebSocketManager.MessageHandlers = {
 
     'notification': function(msg) {
         this.ide.showMessage(msg.message);
+    },
+
+    'share-msg-type': function(msg) {
+        // only share with intended role
+        if (this.ide.projectName === msg.roleId) {
+            var myself = this,
+                dialog = new DialogBoxMorph();
+            // reject duplicates
+            if (this.ide.stage.messageTypes.msgTypes[msg.name]) {
+                dialog.inform('Duplicate Message Type', msg.from + ' tried sending you message type \'' + msg.name + '\' when you already have it!', myself.ide.root());
+            } else {
+                // Prepare dialog & prompt user
+                var request = 
+                    msg.from + ' requested to send you a message type:\n\'' +
+                    msg.name + '\' with ' + 
+                    msg.fields.length + 
+                    (msg.fields.length !== 1 ? ' fields.' : ' field.') + '\n' +
+                    'Would you like to accept?';
+
+                dialog.askYesNo('Message Share Request', request, myself.ide.root());
+                
+                // Accept the request
+                dialog.ok = function() {
+                    var ide = myself.ide.root().children[0].parentThatIsA(IDE_Morph);
+                    myself.ide.stage.addMessageType({name: msg.name, fields: msg.fields});
+                    ide.flushBlocksCache('services');  //  b/c of inheritance
+                    ide.refreshPalette();
+
+                    // format fields
+                    var fields = [];
+                    for (var i = 0; i < msg.fields.length; i++) {
+                        fields.push(' ' + '\'' + msg.fields[i] + '\'');
+                    }
+
+                    // format notification
+                    var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length + 
+                        (msg.fields.length === 0 ? ' fields.' : (msg.fields.length === 1 ? ' field: ' + msg.fields : ' fields: ' + msg.fields));
+
+                    // notify
+                    this.destroy();
+                    var acceptDialog = new DialogBoxMorph();
+                    acceptDialog.inform('Accepted', notification, myself.ide.root());
+
+                    // refresh message palette
+                    myself.ide.room.parentThatIsA(ProjectsMorph).updateRoom();
+                    // We need to force-update & refresh to fix the layout after drawing the message palette
+                    // We can do this by "clicking" the room tab
+                    // FIXME: find a better way to refresh...
+                    for (var i = 0; i < myself.ide.children.length; i++) {
+                        if (myself.ide.children[i] instanceof Morph) {
+                            if (myself.ide.children[i].tabBar) {  // found the tab morph
+                                myself.ide.children[i].tabBar.children[3].mouseClickLeft();  // simulate clicking the room tab
+                                return;
+                            }
+                        }
+                    }
+                };
+            }
+        }
     }
 };
 
