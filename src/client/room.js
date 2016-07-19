@@ -148,7 +148,7 @@ RoomMorph.prototype.drawNew = function() {
     this.renderRoomTitle(new Point(center, center).translateBy(this.topLeft()));
 
     // Owner name
-    this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(1.25 * radius, -.25 * radius)));
+    this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.15 * radius)));
 };
 
 RoomMorph.prototype.showOwnerName = function(center) {
@@ -757,9 +757,9 @@ RoleMorph.prototype.drawNew = function() {
 
     // Visual indicator of ownership
     if (this.parent && this.user === this.parent.ownerId && !this.parent.owner) {
-        this.ownerLabel = new StringMorph('[OWNER]', false, false, true, true);
+        this.ownerLabel = new StringMorph('[OWNER]', 11, false, true, true);
         this.add(this.ownerLabel);
-        this.ownerLabel.setCenter(new Point(pos.x, pos.y - 30));
+        this.ownerLabel.setCenter(new Point(pos.x - 12.5, pos.y + 25));
         this.parent.owner = true; // don't assign ownership to myself more than once
     }
 };
