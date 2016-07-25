@@ -538,11 +538,11 @@ NetsBloxMorph.prototype.projectMenu = function () {
         shiftClicked ? new Color(100, 0, 0) : null
     );
 
-    if (this.stage.globalBlocks.length) {
+    if (this.stage.globalBlocks.length || this.stage.deletableMessageNames().length) {
         menu.addItem(
-            'Export blocks...',
+            'Export blocks/msgs...',
             function () {myself.exportGlobalBlocks(); },
-            'show global custom block definitions as XML' +
+            'show global custom block definitions/message types as XML' +
                 '\nin a new browser window'
         );
         menu.addItem(
