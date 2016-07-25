@@ -51,8 +51,20 @@ function RoomMorph(ide) {
         }
     };
 
-    // update on login
-    SnapCloud.onLogin = this.update.bind(this);
+    // update on login (changing room name if default)
+    SnapCloud.onLogin = function() {
+        myself.update();
+        if (myself._name === localize('MyRoom')) {
+            myself.ide.sockets.sendMessage({type: 'request-new-name'});
+        }
+    }
+
+    // change room name if default on passive login
+    SnapCloud.onPassiveLogin = function() {
+        if (myself._name === localize('MyRoom')) {
+            myself.ide.sockets.sendMessage({type: 'request-new-name'});
+        }
+    }
 
     // Set the initial values
     var roles = {};

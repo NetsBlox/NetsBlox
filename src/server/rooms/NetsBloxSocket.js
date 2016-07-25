@@ -373,6 +373,12 @@ NetsBloxSocket.MessageHandlers = {
                 });
             });
         }
+    },
+
+    'request-new-name': function() {
+        // get unique base name
+        this._room.name = false;
+        this._room.changeName();
     }
 };
 
