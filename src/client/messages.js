@@ -97,6 +97,7 @@ MessageCreatorMorph.prototype.init = function(target, action) {
     this.addBody(messageBlock);
     var fixLayout = messageBlock.fixLayout;
     messageBlock.fixLayout = function() {
+        this.parent.drawNew();
         fixLayout.call(this);
         myself.fixLayout();
         myself.handle.drawNew();  // Should this be automatic?
