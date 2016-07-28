@@ -424,6 +424,8 @@ RoomMorph.prototype.promptShare = function(name) {
                         });
                     new DialogBoxMorph().inform('Sent', 'The role will receive this message type on next occupation.', myself.world());
                     }
+            } else {
+                new DialogBoxMorph().inform('Unable to Send', 'There is no role by the name of \'' + choice + '\'!', myself.world());
             }
             this.destroy();
         }
@@ -903,7 +905,6 @@ ProjectsMorph.prototype.updateRoom = function() {
     this.addBack(this.contents);
 
     // Draw the room
-    // this.room.setExtent
     this.room.drawNew();
     this.addContents(this.room);
     this.drawMsgPalette();  // Draw the message palette
@@ -920,15 +921,14 @@ ProjectsMorph.prototype.updateRoom = function() {
 };
 
 ProjectsMorph.prototype.drawMsgPalette = function() {
-    var width = 110,
+    var width = 0,  // default width
         myself = this,
         stage = this.room.ide.stage;
 
     // Create and style the message palette
     var palette = new ScrollFrameMorph();
     palette.owner = this;
-    palette.scrollBarSize = width;
-    palette.setColor(new Color(40, 40, 40));
+    palette.setColor(new Color(71, 71, 71, 1));
     palette.setWidth(width);
     palette.setHeight(this.room.center().y * 2);
     palette.bounds = palette.bounds.insetBy(10);
@@ -969,8 +969,15 @@ ProjectsMorph.prototype.drawMsgPalette = function() {
         palette.addContents(msg);
     }
 
-    // Display message palette
+    // After adding all the sharable message types, resize the container if necessary
+    if (palette.contents.width() > palette.width()) {
+        palette.setWidth(palette.contents.width());
+        this.room.setPosition(new Point(palette.width() + 15, 0));  // Shift the room accordingly
+    }
+
+    // Display message palette with no scroll bar until it overflows
     this.addContents(palette);
+    this.vBar.hide();
 }
 
 ProjectsMorph.prototype.destroy = function() {

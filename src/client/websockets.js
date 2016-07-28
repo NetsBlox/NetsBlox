@@ -140,17 +140,9 @@ WebSocketManager.MessageHandlers = {
                     acceptDialog.inform('Accepted', notification, myself.ide.root());
 
                     // refresh message palette
-                    myself.ide.room.parentThatIsA(ProjectsMorph).updateRoom();
-                    // We need to force-update & refresh to fix the layout after drawing the message palette
-                    // We can do this by "clicking" the room tab
-                    // FIXME: find a better way to refresh...
-                    for (var i = 0; i < myself.ide.children.length; i++) {
-                        if (myself.ide.children[i] instanceof Morph) {
-                            if (myself.ide.children[i].tabBar) {  // found the tab morph
-                                myself.ide.children[i].tabBar.children[3].mouseClickLeft();  // simulate clicking the room tab
-                                return;
-                            }
-                        }
+                    ide.room.parentThatIsA(ProjectsMorph).updateRoom();
+                    if (ide && ide.currentTab === 'room') {
+                        ide.spriteBar.tabBar.tabTo('room');
                     }
                 };
             }
