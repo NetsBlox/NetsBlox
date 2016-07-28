@@ -384,3 +384,58 @@ ProjectDialogMorph.prototype.saveProject = function () {
     }
 };
 
+////////////////////////////////////////////////////
+// Override submodule for exporting of message types
+////////////////////////////////////////////////////
+
+IDE_Morph.prototype.exportGlobalBlocks = function () {
+    if (this.stage.globalBlocks.length > 0 || this.stage.deletableMessageNames().length) {
+        new BlockExportDialogMorph(
+            this.serializer,
+            this.stage.globalBlocks,
+            this.stage
+        ).popUp(this.world());
+    } else {
+        this.inform(
+            'Export blocks/msg types',
+            'this project doesn\'t have any\n'
+                + 'custom global blocks or message types yet'
+        );
+    }
+};
+
+IDE_Morph.prototype.rawOpenBlocksString = function (str, name, silently) {
+    // name is optional (string), so is silently (bool)
+    var blocks,
+        myself = this;
+    if (Process.prototype.isCatchingErrors) {
+        try {
+            blocks = this.serializer.loadBlocks(str, myself.stage);
+        } catch (err) {
+            this.showMessage('Load failed: ' + err);
+        }
+    } else {
+        blocks = this.serializer.loadBlocks(str, myself.stage);
+    }
+    if (silently) {
+        blocks.forEach(function (def) {
+            // Message type import
+            if (def.category === 'msg') {
+                myself.stage.addMessageType(JSON.parse(def.spec));
+            } else {  // Block import
+                def.receiver = myself.stage;
+                myself.stage.globalBlocks.push(def);
+                myself.stage.replaceDoubleDefinitionsFor(def);
+            }
+        });
+        this.flushBlocksCache();
+        this.flushPaletteCache();
+        this.refreshPalette();
+        this.showMessage(
+            'Imported Blocks / Message Types Module' + (name ? ': ' + name : '') + '.',
+            2
+        );
+    } else {
+        new BlockImportDialogMorph(blocks, this.stage, name).popUp();
+    }
+};
