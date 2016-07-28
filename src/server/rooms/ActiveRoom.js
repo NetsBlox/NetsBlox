@@ -157,7 +157,7 @@ class ActiveRoom {
     }
 
     // Send to everyone, including the origin socket
-    sendToRoom (socket, msg) {
+    sendToEveryone (socket, msg) {
          this.sockets().forEach(socket => socket.send(msg));
      }
  
