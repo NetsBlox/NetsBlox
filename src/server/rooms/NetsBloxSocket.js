@@ -190,8 +190,12 @@ class NetsBloxSocket {
         assert.equal(this.roleId, role);
     }
 
-    sendToEveryone (msg) {
+    sendToOthers (msg) {
         this._room.sendFrom(this, msg);
+    }
+
+    sendToEveryone (msg) {
+        this._room.sendToEveryone(this, msg);
     }
 
     send (msg) {
@@ -228,7 +232,7 @@ NetsBloxSocket.MessageHandlers = {
     'beat': function() {},
 
     'message': function(msg) {
-        this.sendToEveryone(msg);
+        msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
     },
 
     'project-response': function(msg) {

@@ -156,6 +156,11 @@ class ActiveRoom {
             .forEach(socket => socket.send(msg));
     }
 
+    // Send to everyone, including the origin socket
+    sendToEveryone (socket, msg) {
+         this.sockets().forEach(socket => socket.send(msg));
+     }
+ 
     sockets () {
         return R.values(this.roles)
             .filter(socket => !!socket);
