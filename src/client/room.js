@@ -154,7 +154,27 @@ RoomMorph.prototype.drawNew = function() {
     }
     // Room name
     this.renderRoomTitle(new Point(center, center).translateBy(this.topLeft()));
+
+    // Owner name
+    this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.15 * radius)));
 };
+
+RoomMorph.prototype.showOwnerName = function(center) {
+     if (this.ownerLabel) {
+         this.ownerLabel.destroy();
+     }
+    
+     if (this.ownerId && !this.ownerId.startsWith('_client_')) {
+         this.ownerLabel = new StringMorph('Owner: ' + this.ownerId, false, false, true);
+ 
+         this.ownerLabel.setCenter(center);
+ 
+         this.add(this.ownerLabel);
+        // For rooms with one user occupying many roles--make sure only one owner is assigned
+         this.owner = false;
+     }
+ }
+
 
 RoomMorph.prototype.mouseClickLeft = function() {
     if (!this.editable) {
@@ -596,9 +616,22 @@ RoleMorph.prototype.drawNew = function() {
     if (this._label) {
         this._label.destroy();
     }
+
+    if (this.ownerLabel) {
+        this.ownerLabel.destroy();
+    }
+
     this._label = new RoleLabelMorph(this.name, this.user);
     this.add(this._label);
     this._label.setCenter(pos);
+
+    // Visual indicator of ownership
+    if (this.parent && this.user === this.parent.ownerId && !this.parent.owner) {
+        this.ownerLabel = new StringMorph('[OWNER]', 11, false, true, true);
+        this.add(this.ownerLabel);
+        this.ownerLabel.setCenter(new Point(pos.x - 12.5, pos.y + 25));
+        this.parent.owner = true;  // Don't assign ownership to myself more than once
+    }
 };
 
 RoleMorph.prototype.mouseClickLeft = function() {
