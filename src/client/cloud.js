@@ -339,6 +339,7 @@ NetCloud.prototype.passiveLogin = function (ide, callback) {
                     if (ide) {
                         ide.source = 'cloud';
                     }
+                    myself.onPassiveLogin();
                     callback();
                 }
             }
