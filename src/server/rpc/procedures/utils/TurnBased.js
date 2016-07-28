@@ -14,7 +14,7 @@ class TurnBased {
 
             // Filter
             if (this._lastRoleToAct === socket.roleId) {
-                return res.status(403).send(`It's not your turn!`);
+                return res.status(403).send('It\'s not your turn!');
             }
 
             // Call
