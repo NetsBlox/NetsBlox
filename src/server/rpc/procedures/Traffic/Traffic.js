@@ -65,7 +65,7 @@ module.exports = {
 
     		if (body.statusCode == 400) {
     			trace("Invalid parameters...");
-    			return;
+                return res.send('The area is too big! Try zooming in more.');
     		}
 
             var type = ['Accident', 'Congestion', 'Disabled Vehicle', 'Mass Transit', 'Miscellaneous', 
