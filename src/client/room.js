@@ -422,15 +422,15 @@ RoomMorph.prototype.promptShare = function(name) {
                         msg: {name: name, fields: myself.ide.stage.messageTypes.getMsgType(name).fields}, 
                         from: myself.ide.projectName
                         });
-                    new DialogBoxMorph().inform('Sent', 'The role will receive this message type on next occupation.', myself.world());
+                    myself.ide.showMessage('The role will receive this message type on next occupation.', 2);
                     }
             } else {
-                new DialogBoxMorph().inform('Unable to Send', 'There is no role by the name of \'' + choice + '\'!', myself.world());
+                myself.ide.showMessage('There is no role by the name of \'' + choice + '\'!', 2);
             }
             this.destroy();
         }
     } else {  // notify user no available recipients
-        new DialogBoxMorph().inform('No Available Recipients', 'There are no other roles in the room!', world);
+        myself.ide.showMessage('There are no other roles in the room!', 2);
     }
 };
 
@@ -700,7 +700,7 @@ RoleMorph.prototype.reactToDropOf = function(drop) {
     // Share the intended message type
     function shareMsgType(myself, name, fields) {
         if (myself.user && myself.parent.ide.projectName === myself.name) {  // occupied & myself
-            new DialogBoxMorph().inform('Failed to Send', 'Can\'t send a message type to yourself!', myself.world());
+            myself.parent.ide.showMessage('Can\'t send a message type to yourself!', 2);
             return;
         }
         if (myself.user && myself.parent.ide.projectName !== myself.name) {  // occupied & not myself
@@ -718,7 +718,7 @@ RoleMorph.prototype.reactToDropOf = function(drop) {
                 msg: {name: name, fields: fields}, 
                 from: myself.parent.ide.projectName
             });
-            new DialogBoxMorph().inform('Sent', 'The role will receive this message type on next occupation.', myself.world());
+            myself.parent.ide.showMessage('The role will receive this message type on next occupation.', 2);
         }
     }
     drop.destroy();

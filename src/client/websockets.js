@@ -105,7 +105,7 @@ WebSocketManager.MessageHandlers = {
                 dialog = new DialogBoxMorph();
             // reject duplicates
             if (this.ide.stage.messageTypes.msgTypes[msg.name]) {
-                dialog.inform('Duplicate Message Type', msg.from + ' tried sending you message type \'' + msg.name + '\' when you already have it!', myself.ide.root());
+                this.ide.showMessage(msg.from + ' tried sending you message type \'' + msg.name + '\' when you already have it!', 2);
             } else {
                 // Prepare dialog & prompt user
                 var request = 
