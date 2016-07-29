@@ -46,13 +46,8 @@ module.exports = {
             northLat = req.query.northLat,
             eastLng = req.query.eastLng,
          
-            minSeverity = req.query.minSeverity,
             incidents = [],
             url = baseUrl + southLat + ',' + westLng + ',' + northLat + ',' + eastLng + '?key=' + API_KEY;
-
-            if (minSeverity == undefined) {  // by default, let minSeverity be 0
-                minSeverity = 0;
-            }
 
     	request(url, function(err, response, body) {
     		
@@ -73,6 +68,9 @@ module.exports = {
     			return;
     		}
 
+            var type = ['Accident', 'Congestion', 'Disabled Vehicle', 'Mass Transit', 'Miscellaneous', 
+                        'Other', 'Planned Event', 'Road Hazard', 'Construction', 'Alert', 'Weather'];
+
             // build the list of traffic incidents
             if (body.resourceSets[0].estimatedTotal != 0) {
                 for (var i = 0; i < body.resourceSets[0].resources.length; i++) {
@@ -83,7 +81,7 @@ module.exports = {
                         content: {
                             latitude: body.resourceSets[0].resources[i].point.coordinates[0],
                             longitude: body.resourceSets[0].resources[i].point.coordinates[1],
-                            type: body.resourceSets[0].resources[i].type
+                            type: type[body.resourceSets[0].resources[i].type-1]
                         }
                     };
                     msgs.push(msg);
