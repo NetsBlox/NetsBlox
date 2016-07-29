@@ -958,6 +958,14 @@ SpriteMorph.prototype.deleteMessageType = function(name) {
 
     stage.messageTypes.deleteMsgType(name);
 
+    // Refresh message palette if possible in case the user is already on the 'Room' tab
+    try {
+        ide.room.parentThatIsA(ProjectsMorph).updateRoom();
+        if (ide && ide.currentTab === 'room') {
+            ide.spriteBar.tabBar.tabTo('room');
+        }
+    } catch(e) {}
+
     ide.flushBlocksCache(cat); // b/c of inheritance
     ide.refreshPalette();
 };
@@ -1008,6 +1016,15 @@ StageMorph.prototype.addMessageType = function (messageType) {
     fields = messageType.fields;
     msgType = new MessageType(name, fields);
     this.messageTypes.addMsgType(msgType);
+
+    // Refresh message palette if possible in case the user is already on the 'Room' tab
+    try {
+        var ide = this.parentThatIsA(NetsBloxMorph);
+        ide.room.parentThatIsA(ProjectsMorph).updateRoom();
+        if (ide && ide.currentTab === 'room') {
+            ide.spriteBar.tabBar.tabTo('room');
+        }
+    } catch(e) {}
 };
 
 StageMorph.prototype.processKeyEvent = function (event, action) {

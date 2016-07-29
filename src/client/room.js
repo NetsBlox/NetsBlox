@@ -70,6 +70,8 @@ function RoomMorph(ide) {
     var roles = {};
     roles[this.ide.projectName] = 'me';
     this.update(null, this.name, roles);
+    // Shared messages array for when messages are sent to unoccupied roles
+    this.sharedMsgs = [];
 
     this.drawNew();
 }
@@ -115,6 +117,17 @@ RoomMorph.prototype.update = function(ownerId, name, roles) {
         this.version = Date.now();
         this.drawNew();
         this.changed();
+        // We need to force-update & refresh to fix the layout after drawing the message palette
+        // We can do this by "clicking" the room tab
+        // FIXME: find a better way to refresh...
+        for (var i = 0; i < this.ide.children.length; i++) {
+            if (this.ide.children[i] instanceof Morph) {
+                if (this.ide.children[i].tabBar) {  // found the tab morph
+                    this.ide.children[i].tabBar.children[3].mouseClickLeft();  // simulate clicking the room tab
+                    return;
+                }
+            }
+        }
     }
 };
 
@@ -126,13 +139,14 @@ RoomMorph.prototype.drawNew = function() {
         roles,
         len,
         i;
-        
+
     // Remove the old roleLabels
     roles = Object.keys(this.roleLabels);
     for (i = roles.length; i--;) {
         this.roleLabels[roles[i]].destroy();
     }
     
+    this.setPosition(new Point(115, 0));  // Shift the room to the right
     this.image = newCanvas(this.extent());
 
     // Draw the roles
@@ -406,6 +420,52 @@ RoomMorph.prototype.inviteUser = function (role) {
     }
 };
 
+// Accessed from right-clicking the TextMorph
+RoomMorph.prototype.promptShare = function(name) {
+    var roles = Object.keys(this.roles),
+        choices = {},
+        myself = this;
+
+    roles.splice(roles.indexOf(this.ide.projectName), 1);  // exclude myself
+    for (var i = 0; i < roles.length; i++) {
+        choices[roles[i]] = roles[i];
+    }
+
+    // any roles available?
+    if (Object.keys(roles).length) {
+        // show user available roles
+        var dialog = new DialogBoxMorph();
+        dialog.prompt('Send to...', '', world, false, choices);
+        dialog.accept = function() {
+            var choice = dialog.getInput();
+            if (roles.indexOf(choice) !== -1) {
+                if (myself.roles[choice]) {  // occupied
+                    myself.ide.sockets.sendMessage({
+                        type: 'share-msg-type',
+                        roleId: choice,
+                        from: myself.ide.projectName,
+                        name: name,
+                        fields: myself.ide.stage.messageTypes.getMsgType(name).fields
+                    });
+                    myself.ide.showMessage('Successfully sent!', 2);
+                } else {  // not occupied, store in sharedMsgs array
+                    myself.sharedMsgs.push({
+                        roleId: choice, 
+                        msg: {name: name, fields: myself.ide.stage.messageTypes.getMsgType(name).fields}, 
+                        from: myself.ide.projectName
+                        });
+                    myself.ide.showMessage('The role will receive this message type on next occupation.', 2);
+                    }
+            } else {
+                myself.ide.showMessage('There is no role by the name of \'' + choice + '\'!', 2);
+            }
+            this.destroy();
+        }
+    } else {  // notify user no available recipients
+        myself.ide.showMessage('There are no other roles in the room!', 2);
+    }
+};
+
 RoomMorph.prototype._inviteFriendDialog = function (role, friends) {
     // Create a list of clients to invite (retrieve from server - ajax)
     // Allow the user to select the person and role
@@ -539,6 +599,23 @@ RoomMorph.prototype._invitationResponse = function (id, response, role) {
     );
 };
 
+RoomMorph.prototype.checkForSharedMsgs = function(role) {
+     // Send queried messages if possible
+     for (var i = 0 ; i < this.sharedMsgs.length; i++) {
+         if (this.sharedMsgs[i].roleId === role) {
+             this.ide.sockets.sendMessage({
+                 type: 'share-msg-type', 
+                 name: this.sharedMsgs[i].msg.name,
+                 fields: this.sharedMsgs[i].msg.fields, 
+                 from: this.sharedMsgs[i].from,
+                 roleId: role
+             });
+             this.sharedMsgs.splice(i, 1);
+             i--;
+         }
+     }
+ };
+
 RoleMorph.prototype = new Morph();
 RoleMorph.prototype.constructor = RoleMorph;
 RoleMorph.uber = Morph.prototype;
@@ -613,6 +690,7 @@ RoleMorph.prototype.drawNew = function() {
     y = 0.65 * radius * Math.sin(angle + angleSize/2);
     pos = new Point(x, y).translateBy(this.center());
 
+    this.acceptsDrops = true;
     if (this._label) {
         this._label.destroy();
     }
@@ -641,6 +719,56 @@ RoleMorph.prototype.mouseClickLeft = function() {
         this.escalateEvent('mouseClickLeft');
     }
 };
+
+RoleMorph.prototype.reactToDropOf = function(drop) {
+    // Message palette drag-and-drop
+    if (drop instanceof ReporterBlockMorph && drop.forMsg) {
+        shareMsgType(this, drop.blockSpec, this.parent.ide.stage.messageTypes.getMsgType(drop.blockSpec).fields);
+    }
+
+    // Block drag-and-drop (hat/command message blocks)
+    if (drop.selector === 'receiveSocketMessage' || drop.selector === 'doSocketMessage') {
+        // find message morph
+        var msgMorph;
+        for (var i = 0; i < drop.children.length; i++) {
+            if (drop.children[i] instanceof MessageOutputSlotMorph || drop.children[i] instanceof MessageInputSlotMorph) {
+                msgMorph = drop.children[i];
+                break;
+            }
+        }
+        
+        if (msgMorph.children[0].text !== '') {  // make sure there is a message type to send...
+            shareMsgType(this, msgMorph.children[0].text, msgMorph.msgFields);
+        }
+    }
+
+    // Share the intended message type
+    function shareMsgType(myself, name, fields) {
+        if (myself.user && myself.parent.ide.projectName === myself.name) {  // occupied & myself
+            myself.parent.ide.showMessage('Can\'t send a message type to yourself!', 2);
+            return;
+        }
+        if (myself.user && myself.parent.ide.projectName !== myself.name) {  // occupied & not myself
+            myself.parent.ide.sockets.sendMessage({
+                type: 'share-msg-type',
+                roleId: myself.name,
+                from: myself.parent.ide.projectName,
+                name: name,
+                fields: fields
+            });
+            myself.parent.ide.showMessage('Successfully sent!', 2);
+        } else {  // not occupied, store in sharedMsgs array
+            myself.parent.sharedMsgs.push({
+                roleId: myself.name, 
+                msg: {name: name, fields: fields}, 
+                from: myself.parent.ide.projectName
+            });
+            myself.parent.ide.showMessage('The role will receive this message type on next occupation.', 2);
+        }
+    }
+    drop.destroy();
+};
+
 
 RoleLabelMorph.prototype = new Morph();
 RoleLabelMorph.prototype.constructor = RoleLabelMorph;
@@ -807,6 +935,9 @@ function ProjectsMorph(room, sliderColor) {
         myself.updateRoom();
     };
     this.updateRoom();
+    
+    // Check for queried shared messages
+    this.room.checkForSharedMsgs(this.room.ide.projectName);
 }
 
 ProjectsMorph.prototype.updateRoom = function() {
@@ -819,9 +950,9 @@ ProjectsMorph.prototype.updateRoom = function() {
     this.addBack(this.contents);
 
     // Draw the room
-    //this.room.setExtent
     this.room.drawNew();
     this.addContents(this.room);
+    this.drawMsgPalette();  // Draw the message palette
 
     // Draw the "new role" button
     if (this.room.editable) {
@@ -833,6 +964,66 @@ ProjectsMorph.prototype.updateRoom = function() {
         });
     }
 };
+
+ProjectsMorph.prototype.drawMsgPalette = function() {
+    var width = 0,  // default width
+        myself = this,
+        stage = this.room.ide.stage;
+
+    // Create and style the message palette
+    var palette = new ScrollFrameMorph();
+    palette.owner = this;
+    palette.setColor(new Color(71, 71, 71, 1));
+    palette.setWidth(width);
+    palette.setHeight(this.room.center().y * 2);
+    palette.bounds = palette.bounds.insetBy(10);
+    palette.padding = 12;
+
+    // Build list of sharable message types
+    for (var i = 0; i < stage.deletableMessageNames().length; i++) {
+        // Build block morph
+        var msg = new ReporterBlockMorph();
+        msg.blockSpec = stage.deletableMessageNames()[i];
+        msg.setSpec(stage.deletableMessageNames()[i]);
+        msg.setWidth(.75 * width);
+        msg.setHeight(50);
+        msg.forMsg = true;
+        msg.isTemplate = true;
+        msg.setColor(new Color(217,77,17));
+        msg.setPosition(new Point(palette.bounds.origin.x + 10, palette.bounds.origin.y + 24 * i + 6));
+        msg.category = 'services';
+        msg.hint = new StringMorph('test');
+        // Don't allow multiple instances of the block to exist at once
+        msg.justDropped = function() {
+            this.destroy();
+        };
+        // Display fields of the message type when clicked
+        msg.mouseClickLeft = function() {
+            var fields = stage.messageTypes.msgTypes[this.blockSpec].fields.length === 0 ? 
+                'This message type has no fields.' :
+                stage.messageTypes.msgTypes[this.blockSpec].fields;
+            new SpeechBubbleMorph(fields, null, null, 2).popUp(this.world(), new Point(0, 0).add(this.bounds.corner));
+        };
+
+        // Custom menu
+        var menu = new MenuMorph(this, null);
+        menu.addItem('Send to...', function() {this.room.promptShare(msg.blockSpec)});
+        msg.children[0].customContextMenu = menu;
+        msg.customContextMenu = menu;
+
+        palette.addContents(msg);
+    }
+
+    // After adding all the sharable message types, resize the container if necessary
+    if (palette.contents.width() > palette.width()) {
+        palette.setWidth(palette.contents.width());
+        this.room.setPosition(new Point(palette.width() + 15, 0));  // Shift the room accordingly
+    }
+
+    // Display message palette with no scroll bar until it overflows
+    this.addContents(palette);
+    this.vBar.hide();
+}
 
 ProjectsMorph.prototype.destroy = function() {
     this.room.changed = nop;

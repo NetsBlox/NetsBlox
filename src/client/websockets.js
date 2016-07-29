@@ -96,6 +96,57 @@ WebSocketManager.MessageHandlers = {
 
     'notification': function(msg) {
         this.ide.showMessage(msg.message);
+    },
+
+    'share-msg-type': function(msg) {
+        // only share with intended role
+        if (this.ide.projectName === msg.roleId) {
+            var myself = this,
+                dialog = new DialogBoxMorph();
+            // reject duplicates
+            if (this.ide.stage.messageTypes.msgTypes[msg.name]) {
+                this.ide.showMessage(msg.from + ' tried sending you message type \'' + msg.name + '\' when you already have it!', 2);
+            } else {
+                // Prepare dialog & prompt user
+                var request = 
+                    msg.from + ' requested to send you a message type:\n\'' +
+                    msg.name + '\' with ' + 
+                    msg.fields.length + 
+                    (msg.fields.length !== 1 ? ' fields.' : ' field.') + '\n' +
+                    'Would you like to accept?';
+
+                dialog.askYesNo('Message Share Request', request, myself.ide.root());
+                
+                // Accept the request
+                dialog.ok = function() {
+                    var ide = myself.ide.root().children[0].parentThatIsA(IDE_Morph);
+                    myself.ide.stage.addMessageType({name: msg.name, fields: msg.fields});
+                    ide.flushBlocksCache('services');  //  b/c of inheritance
+                    ide.refreshPalette();
+
+                    // format fields
+                    var fields = [];
+                    for (var i = 0; i < msg.fields.length; i++) {
+                        fields.push(' ' + '\'' + msg.fields[i] + '\'');
+                    }
+
+                    // format notification
+                    var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length + 
+                        (msg.fields.length === 0 ? ' fields.' : (msg.fields.length === 1 ? ' field: ' + msg.fields : ' fields: ' + msg.fields));
+
+                    // notify
+                    this.destroy();
+                    var acceptDialog = new DialogBoxMorph();
+                    myself.ide.showMessage(notification, 2);
+
+                    // refresh message palette
+                    ide.room.parentThatIsA(ProjectsMorph).updateRoom();
+                    if (ide && ide.currentTab === 'room') {
+                        ide.spriteBar.tabBar.tabTo('room');
+                    }
+                };
+            }
+        }
     }
 };
 

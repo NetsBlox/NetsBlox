@@ -383,6 +383,10 @@ NetsBloxSocket.MessageHandlers = {
         // get unique base name
         this._room.name = false;
         this._room.changeName();
+    },
+     
+    'share-msg-type': function(msg) {
+        this.sendToEveryone(msg);
     }
 };
 
