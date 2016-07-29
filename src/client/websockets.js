@@ -137,7 +137,7 @@ WebSocketManager.MessageHandlers = {
                     // notify
                     this.destroy();
                     var acceptDialog = new DialogBoxMorph();
-                    acceptDialog.inform('Accepted', notification, myself.ide.root());
+                    myself.ide.showMessage(notification, 2);
 
                     // refresh message palette
                     ide.room.parentThatIsA(ProjectsMorph).updateRoom();

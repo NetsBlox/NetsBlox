@@ -415,7 +415,7 @@ RoomMorph.prototype.promptShare = function(name) {
                         name: name,
                         fields: myself.ide.stage.messageTypes.getMsgType(name).fields
                     });
-                    new DialogBoxMorph().inform('Sent', 'Successfully sent!', myself.world());
+                    myself.ide.showMessage('Successfully sent!', 2);
                 } else {  // not occupied, store in sharedMsgs array
                     myself.sharedMsgs.push({
                         roleId: choice, 
@@ -711,7 +711,7 @@ RoleMorph.prototype.reactToDropOf = function(drop) {
                 name: name,
                 fields: fields
             });
-            new DialogBoxMorph().inform('Sent', 'Successfully sent!', myself.world());
+            myself.parent.ide.showMessage('Successfully sent!', 2);
         } else {  // not occupied, store in sharedMsgs array
             myself.parent.sharedMsgs.push({
                 roleId: myself.name, 
