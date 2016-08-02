@@ -19,14 +19,35 @@ This results in the stage costume changing:
 
 ![Google map costume on the stage](./map-example.png)
 
-## Quick Start
+## Installation
+Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= v4.0.0) and a [MongoDB](https://www.mongodb.com/download-center?jmp=nav#community) database. By default, NetsBlox will expect MongoDB to be running locally (this can be changed by setting the `MONGO_URI` environment variable).
+
 First clone the repository and install the dependencies.
 ```
 git clone https://github.com/NetsBlox/NetsBlox.git
 cd NetsBlox
 npm install
 ```
-Next, install and run [mongodb](https://www.mongodb.com/) locally (or set `MONGO_URI` to the mongo instance URI to connect to). Finally, start the server with `npm start` and navigate to `localhost:8080` in a web browser to try it out!
+Finally, start the server with `npm start` and navigate to `localhost:8080` in a web browser to try it out!
+
+## RPC Support
+RPCs that are using 3rd party API's often require getting an API key from the given 3rd party API. After obtaining a key, the appropriate environment variable should be set to given key value:
+
+### Required Environment Variables for RPCs
+- Maps
+  - `GOOGLE_MAPS_KEY` should be set to an API key from the [Google Static Maps](https://developers.google.com/maps/documentation/static-maps/)
+- Air Quality
+  - `AIR_NOW_KEY` should be set to an API key from [AirNow](https://airnow.gov/)
+- Weather
+  - `OPEN_WEATHER_MAP_KEY` should be set to an API key from [OpenWeatherMap](http://openweathermap.org/api)
+- NASA
+  - `NASA_KEY` should be set to an API key from [NASA](https://api.nasa.gov/)
+- Traffic
+  - `BING_TRAFFIC_KEY` should be set to an API key from [Bing Traffic](https://msdn.microsoft.com/en-us/library/hh441725.aspx)
+- Twitter
+  - `TWITTER_BEARER_TOKEN` should be set to an API key from Twitter
+
+To simplify this process (and to keep your `~/.bashrc` clean), these values can be stored in a `.env` file in the project root directory and they will be loaded into the environment on starting NetsBlox.
 
 ## Examples
 After opening the browser, click the `file` button in the top left and click on `Examples` to check out some example networked apps!
