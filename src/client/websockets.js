@@ -1,5 +1,4 @@
-/*globals nop, SnapCloud, Context, SpriteMorph, StageMorph,
-  RoomMorph*/
+/*globals nop, SnapCloud, Context, SpriteMorph, StageMorph*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
@@ -8,7 +7,9 @@ var WebSocketManager = function (ide) {
     this.websocket = null;
     this.messages = [];
     this.processes = [];  // Queued processes to start
-    this.url = 'ws://' + window.location.host;
+    this._protocol = window.location.protocol === 'https:' ?
+        'wss:' : 'ws:';
+    this.url = this._protocol + '//' + window.location.host;
     this._connectWebSocket();
     this._heartbeat();
     this.version = Date.now();
