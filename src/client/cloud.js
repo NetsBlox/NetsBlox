@@ -434,4 +434,4 @@ NetCloud.prototype.signup = function (
     }
 };
 
-var SnapCloud = new NetCloud('http://'+window.location.host+'/api/');
+var SnapCloud = new NetCloud(window.location.protocol + '//' + window.location.host+'/api/');
