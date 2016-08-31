@@ -16,6 +16,7 @@ var debug = require('debug'),
     geolib = require('geolib'),
     request = require('request'),
     baseUrl = 'http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&',
+    Constants = require('../../../../common/Constants'),
     remainingMsgs = {};
 
 // Helpers

@@ -5,7 +5,8 @@
 var debug = require('debug'),
     log = debug('NetsBlox:RPCManager:TwentyQuestions:log'),
     error = debug('NetsBlox:RPCManager:TwentyQuestions:error'),
-    trace = debug('NetsBlox:RPCManager:TwentyQuestions:trace');
+    trace = debug('NetsBlox:RPCManager:TwentyQuestions:trace'),
+    Constants = require('../../../../common/Constants');
 
 var correctAnswer, // hold the answer
 	guessCount, // keep track of amount of guesses made so far
@@ -36,7 +37,7 @@ module.exports = {
 		req.netsbloxSocket._room.sockets()
             	.forEach(socket => socket.send({
                 	type: 'message',
-                	dstId: 'everyone',
+                	dstId: Constants.EVERYONE,
                 	msgType: 'start',
                 	content: {}
             	}));
@@ -75,7 +76,7 @@ module.exports = {
 				req.netsbloxSocket._room.sockets()
             	.forEach(socket => socket.send({
                 	type: 'message',
-                	dstId: 'everyone',
+                	dstId: Constants.EVERYONE,
                 	msgType: 'EndGame',
                 	content: {
                    	    turn: guessCount,
@@ -87,7 +88,7 @@ module.exports = {
 				req.netsbloxSocket._room.sockets()
             	.forEach(socket => socket.send({
                 	type: 'message',
-                	dstId: 'everyone',
+                	dstId: Constants.EVERYONE,
                 	msgType: 'EndGuesserTurn',
                 	content: {
                    	 	turn: guessCount,
@@ -101,7 +102,7 @@ module.exports = {
 		req.netsbloxSocket._room.sockets()
            .forEach(socket => socket.send({
                type: 'message',
-                dstId: 'everyone',
+                dstId: Constants.EVERYONE,
                 msgType: 'EndGame',
                 content: {
                     turn: guessCount,
@@ -128,7 +129,7 @@ module.exports = {
 		req.netsbloxSocket._room.sockets()
             .forEach(socket => socket.send({
                 type: 'message',
-                dstId: 'everyone',
+                dstId: Constants.EVERYONE,
                 msgType: 'EndAnswererTurn',
                 content: {
                     turn: guessCount,
