@@ -19,6 +19,5 @@ module.exports = {
     // Game state
     PLACING: 'placing',
     SHOOTING: 'shooting'
-
 };
 

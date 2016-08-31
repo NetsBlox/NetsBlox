@@ -5,10 +5,11 @@ var debug = require('debug'),
     trace = debug('NetsBlox:RPCManager:Battleship:trace'),
     Board = require('./Board'),
     TurnBased = require('../utils/TurnBased'),
-    Constants = require('./Constants'),
-    BOARD_SIZE = Constants.BOARD_SIZE,
-    SHIPS = Constants.SHIPS,
-    DIRS = Constants.DIRS;
+    BattleshipConstants = require('./Constants'),
+    Constants = require('../../../../common/Constants'),
+    BOARD_SIZE = BattleshipConstants.BOARD_SIZE,
+    SHIPS = BattleshipConstants.SHIPS,
+    DIRS = BattleshipConstants.DIRS;
     
 var isHorizontal = dir => dir === 'east' || dir === 'west';
 
@@ -16,7 +17,7 @@ class Battleship extends TurnBased {
     constructor () {
         super('fire', 'reset');
         this._boards = {};
-        this._STATE = Constants.PLACING;
+        this._STATE = BattleshipConstants.PLACING;
     }
 };
 
@@ -36,7 +37,7 @@ var isValidDim = dim => 0 <= dim && dim <= BOARD_SIZE;
 var checkRowCol = (row, col) => isValidDim(row) && isValidDim(col);
 
 Battleship.prototype.reset = function(req, res) {
-    this._STATE = Constants.PLACING;
+    this._STATE = BattleshipConstants.PLACING;
     this._boards = {};
     res.send(true);
     return true;
@@ -49,7 +50,7 @@ Battleship.prototype.start = function(req, res) {
         shipsLeft,
         board;
 
-    if (this._STATE !== Constants.PLACING) {
+    if (this._STATE !== BattleshipConstants.PLACING) {
         return res.send(`Game has already started!`);
     }
 
@@ -69,10 +70,10 @@ Battleship.prototype.start = function(req, res) {
     sockets.forEach(s => s.send({
         type: 'message',
         msgType: 'start',
-        dstId: 'everyone'
+        dstId: Constants.EVERYONE
     }));
 
-    this._STATE = Constants.SHOOTING;
+    this._STATE = BattleshipConstants.SHOOTING;
     res.send(true);
 };
 
@@ -84,7 +85,7 @@ Battleship.prototype.placeShip = function(req, res) {
         len = SHIPS[ship],
         facing = req.query.facing;
 
-    if (this._STATE !== Constants.PLACING) {
+    if (this._STATE !== BattleshipConstants.PLACING) {
         return res.status(400).send(`Cannot move ships after game has started`);
     }
 
@@ -126,7 +127,7 @@ Battleship.prototype.fire = function(req, res) {
         roles,
         target = req.query.target;
 
-    if (this._STATE === Constants.PLACING) {
+    if (this._STATE === BattleshipConstants.PLACING) {
         res.send(`Cannot fire until game has officially started`);
         return false;
     }
@@ -164,8 +165,8 @@ Battleship.prototype.fire = function(req, res) {
     if (result) {
         msg = {
             type: 'message',
-            dstId: 'everyone',
-            msgType: result.HIT ? Constants.HIT : Constants.MISS,
+            dstId: Constants.EVERYONE,
+            msgType: result.HIT ? BattleshipConstants.HIT : BattleshipConstants.MISS,
             content: {
                 role: target,
                 row: row+1,

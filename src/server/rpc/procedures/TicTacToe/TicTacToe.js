@@ -7,6 +7,7 @@ var R = require('ramda'),
     debug = require('debug'),
     log = debug('NetsBlox:RPCManager:TicTacToe:log'),
     trace = debug('NetsBlox:RPCManager:TicTacToe:trace'),
+    Constants = require('../../../../common/Constants'),
     info = debug('NetsBlox:RPCManager:TicTacToe:info');
 
 /**
@@ -115,7 +116,7 @@ TicTacToeRPC.prototype.play = function(req, res) {
         req.netsbloxSocket._room.sockets()
             .forEach(socket => socket.send({
                 type: 'message',
-                dstId: 'everyone',
+                dstId: Constants.EVERYONE,
                 msgType: 'TicTacToe',
                 content: {
                     row: row+1,

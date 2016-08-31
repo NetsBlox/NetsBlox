@@ -6,5 +6,6 @@ module.exports = {
         USER: '__ghosty__',
         EMAIL: 'brian.d.broll@vanderbilt.edu',
         PASSWORD: 'tmp' || randomString(20)
-    }
+    },
+    EVERYONE: 'everyone in room'
 };

@@ -48,6 +48,7 @@ function NetsProcess(topBlock, onComplete, context) {
     this.isAtomic = false;
     this.prompter = null;
     this.httpRequest = null;
+    this.rpcRequest = null;
     this.isPaused = false;
     this.pauseOffset = null;
     this.frameCount = 0;
@@ -140,11 +141,24 @@ NetsProcess.prototype.createRPCUrl = function (rpc, params) {
 };
 
 NetsProcess.prototype.callRPC = function (rpc, params, noCache) {
-    var url = this.createRPCUrl(rpc, params).replace(/http[s]?:\/\//, '');
+    var url = this.createRPCUrl(rpc, params),
+        response;
+
     if (noCache) {
         url += '&t=' + Date.now();
     }
-    return this.reportURL(url);
+
+    if (!this.rpcRequest) {
+        this.rpcRequest = new XMLHttpRequest();
+        this.rpcRequest.open('GET', url, true);
+        this.rpcRequest.send(null);
+    } else if (this.rpcRequest.readyState === 4) {
+        response = this.rpcRequest.responseText;
+        this.rpcRequest = null;
+        return response;
+    }
+    this.pushContext('doYield');
+    this.pushContext();
 };
 
 // TODO: Consider moving these next two functions to the Stage
