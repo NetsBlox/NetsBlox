@@ -110,6 +110,7 @@ module.exports = [
                     log(`saving entire room for ${socket.username}`);
                     // Create the room object
                     room = this.storage.rooms.new(user, activeRoom);
+                    room.setActiveRole(socket.roleId);
                     room.save(function(err) {
                         if (err) {
                             error(`room save failed for room "${activeRoom.name}" initiated by "${username}"`);
@@ -260,15 +261,14 @@ module.exports = [
                 }
 
                 // If room is not active, pick a role arbitrarily
-                openRole = Object.keys(room.roles)[0];
+                openRole = room.activeRole || Object.keys(room.roles)[0];
                 role = room.roles[openRole];
 
                 if (!role) {
                     error('Found room with no roles!');
                     return res.status(500).send('ERROR: project has no roles');
                 }
-                trace(`room is not active. Selected role "${openRole}" ` +
-                    `arbitrarily`);
+                trace(`room is not active. Selected role "${openRole}"`);
             }
 
             // Send the project to the user
