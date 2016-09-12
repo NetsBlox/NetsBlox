@@ -14,8 +14,7 @@ class Data {
     }
 
     save() {
-        var data,
-            result;
+        var data;
 
         this.prepare();
         data = this._saveable();
@@ -37,7 +36,6 @@ class Data {
                 .filter(key => this.IGNORE_KEYS.indexOf(key) === -1);
         keys.forEach(key => result[key] = this[key]);
 
-        // TODO: Do I need to do something special with ObjectId?
         return result;
     }
 

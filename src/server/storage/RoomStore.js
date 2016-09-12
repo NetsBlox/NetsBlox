@@ -83,9 +83,16 @@ class Room extends DataWrapper {
                 return callback(err);
             }
             this._logger.trace('collected projects for ' + this._user.username);
+            if (this.activeRole) {
+                content.activeRole = this.activeRole;
+            }
             this._content = content;
             this._save(callback);
         });
+    }
+
+    setActiveRole(role) {
+        this.activeRole = role;
     }
 
     // Override
