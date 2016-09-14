@@ -5,6 +5,7 @@ ThreadManager.prototype.startProcess = function (
     exportResult,
     callback,
     isClicked,
+    rightAway,
     context
 ) {
     var active = this.findProcess(block),
@@ -17,13 +18,16 @@ ThreadManager.prototype.startProcess = function (
         active.stop();
         this.removeTerminatedProcesses();
     }
-    newProc = new NetsProcess(block.topBlock(), callback, context);
+    newProc = new NetsProcess(block.topBlock(), callback, rightAway, context);
     newProc.exportResult = exportResult;
     newProc.isClicked = isClicked || false;
     if (!newProc.homeContext.receiver.isClone) {
         top.addHighlight();
     }
     this.processes.push(newProc);
+    if (rightAway) {
+        newProc.runStep();
+    }
     return newProc;
 };
 
@@ -33,7 +37,7 @@ NetsProcess.prototype.constructor = NetsProcess;
 NetsProcess.prototype.timeout = 500; // msecs after which to force yield
 NetsProcess.prototype.isCatchingErrors = true;
 
-function NetsProcess(topBlock, onComplete, context) {
+function NetsProcess(topBlock, onComplete, rightAway, context) {
     this.topBlock = topBlock || null;
 
     this.readyToYield = false;
@@ -45,6 +49,7 @@ function NetsProcess(topBlock, onComplete, context) {
     this.context = null;
     this.homeContext = context || new Context();
     this.lastYield = Date.now();
+    this.isFirstStep = true;
     this.isAtomic = false;
     this.prompter = null;
     this.httpRequest = null;
@@ -65,7 +70,9 @@ function NetsProcess(topBlock, onComplete, context) {
             topBlock.blockSequence(),
             this.homeContext
         );
-        this.pushContext('doYield'); // highlight top block
+        if (!rightAway) {
+            this.pushContext('doYield'); // highlight top block
+        }
     }
 }
 
