@@ -4,7 +4,8 @@
    ArgMorph, MessageInputSlotMorph, MessageOutputSlotMorph, BooleanSlotMorph,
    CommandSlotMorph, RingCommandSlotMorph, RingReporterSlotMorph, CSlotMorph,
    ColorSlotMorph, TemplateSlotMorph, FunctionSlotMorph, ReporterSlotMorph,
-   SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume
+   SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume, ScriptsMorph,
+   MessageDefinitionBlock
    */
 
 BlockMorph.prototype.setSpec = function (spec, silently) {
