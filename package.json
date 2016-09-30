@@ -43,7 +43,7 @@
     "just.randomstring": "^0.1.1",
     "lodash": "^4.8.2",
     "mongodb": "^2.0.33",
-    "nodemailer": "^2.3.0",
+    "nodemailer": "=2.6.4",
     "nodemailer-markdown": "^1.0.0",
     "nop": "^1.0.0",
     "project-name-generator": "^2.1.2",
