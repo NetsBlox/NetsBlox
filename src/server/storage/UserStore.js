@@ -57,10 +57,12 @@ class User extends DataWrapper {
     prepare() {
         // If no password, assign tmp
         if (!this.hash) {
-            let password = randomString(8);
+            let password = this.password || randomString(8);
+
             this._emailTmpPassword(password);
             this.hash = hash(password);
         }
+        delete this.password;
         this.rooms = this.rooms || this.tables || [];
     }
 
