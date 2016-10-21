@@ -28,7 +28,11 @@ var R = require('ramda'),
         'libraries',
         'Backgrounds'
     ],
-    CLIENT_ROOT = path.join(__dirname, '..', '..', 'client', 'Snap--Build-Your-Own-Blocks');
+    CLIENT_ROOT = path.join(__dirname, '..', '..', 'client', 'Snap--Build-Your-Own-Blocks'),
+    PUBLIC_FILES = [
+        'snap_logo_sm.png',
+        'tools.xml'
+    ];
 
 var createIndexFor = function(name, list) {
     return list
@@ -64,16 +68,16 @@ var resourcePaths = PATHS.map(function(name) {
     };
 });
 
-// Add importing tools to the resource paths
-var toolRoute = { 
-    Method: 'get', 
-    URL: 'tools.xml',
-    Handler: function(req, res) {
-        // Load the costumes and create rough HTML content...
-        res.sendFile(path.join(CLIENT_ROOT, 'tools.xml'));
-    }
-};
-resourcePaths.push(toolRoute);
+// Add importing tools, logo to the resource paths
+resourcePaths = resourcePaths.concat(PUBLIC_FILES.map(file => {
+    return {
+        Method: 'get', 
+        URL: file,
+        Handler: function(req, res) {
+            res.sendFile(path.join(CLIENT_ROOT, file));
+        }
+    };
+}));
 
 // Add importing rpcs to the resource paths
 var rpcRoute = { 

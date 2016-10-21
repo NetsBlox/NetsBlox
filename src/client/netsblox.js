@@ -27,8 +27,8 @@ NetsBloxMorph.prototype.buildPanes = function () {
     NetsBloxMorph.uber.buildPanes.call(this);
 };
 
-NetsBloxMorph.prototype.resourceURL = function (folder, file) {
-    return 'api/' + folder + '/' + file;
+NetsBloxMorph.prototype.resourceURL = function () {
+    return 'api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
 };
 
 NetsBloxMorph.prototype.clearProject = function () {
