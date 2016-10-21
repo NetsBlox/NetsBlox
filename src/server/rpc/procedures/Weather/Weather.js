@@ -8,7 +8,7 @@ var debug = require('debug'),
     trace = debug('NetsBlox:RPCManager:Weather:trace'),
     tuc = require('temp-units-conv'),
     API_KEY = process.env.OPEN_WEATHER_MAP_KEY,
-    MAX_DISTANCE = 100,  // miles
+    MAX_DISTANCE = +process.env.WEATHER_MAX_DISTANCE || Infinity,  // miles
     geolib = require('geolib'),
     request = require('request');
 
@@ -22,7 +22,7 @@ var isWithinMaxDistance = function(result, lat, lng) {
     );
     distance *= 0.000621371;
     trace(`closest measurement is ${distance} miles from request`);
-    if (!(distance < MAX_DISTANCE)) {
+    if (distance > MAX_DISTANCE) {
         error(`No temperature within ${MAX_DISTANCE} miles of ${lat}, ${lng}`);
     }
     return distance < MAX_DISTANCE;
