@@ -48,8 +48,8 @@ ConnectNRPC.getActions = function() {
 // Actions
 ConnectNRPC.prototype.newGame = function(req, res) {
     var roleId = req.netsbloxSocket.roleId;
-    this.numRow = req.query.row;
-    this.numCol = req.query.column;
+    this.numRow = req.query.row || 3;
+    this.numCol = req.query.column || 3;
     this.numDotsToConnect = req.query.numDotsToConnect;
     this._winner = null;
     this.lastMove = null;
