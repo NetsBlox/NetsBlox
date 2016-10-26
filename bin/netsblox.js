@@ -1,6 +1,9 @@
 'use strict';
 var path = require('path');
-require('dotenv').load({path: path.join(__dirname, '..', '.env')});
+require('dotenv').load({
+    path: path.join(__dirname, '..', '.env'),
+    silent: true
+});
 
 var express = require('express'),
     app = express(),

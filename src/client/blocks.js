@@ -4,7 +4,8 @@
    ArgMorph, MessageInputSlotMorph, MessageOutputSlotMorph, BooleanSlotMorph,
    CommandSlotMorph, RingCommandSlotMorph, RingReporterSlotMorph, CSlotMorph,
    ColorSlotMorph, TemplateSlotMorph, FunctionSlotMorph, ReporterSlotMorph,
-   SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume
+   SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume, ScriptsMorph,
+   MessageDefinitionBlock
    */
 
 BlockMorph.prototype.setSpec = function (spec, silently) {
@@ -64,6 +65,41 @@ InputSlotMorph.prototype.messageTypesMenu = function() {
         dict[names[i]] = names[i];
     }
     return dict;
+};
+
+MultiArgMorph.prototype.mouseClickLeft = function (pos) {
+    // prevent expansion in the palette
+    // (because it can be hard or impossible to collapse again)
+    // NetsBlox addition: start
+    if (!this.parentThatIsA(ScriptsMorph) && !this.parentThatIsA(MessageDefinitionBlock)) {
+    // NetsBlox addition: end
+        this.escalateEvent('mouseClickLeft', pos);
+        return;
+    }
+    // if the <shift> key is pressed, repeat action 5 times
+    var arrows = this.arrows(),
+        leftArrow = arrows.children[0],
+        rightArrow = arrows.children[1],
+        repetition = this.world().currentKey === 16 ? 3 : 1,
+        i;
+
+    this.startLayout();
+    if (rightArrow.bounds.containsPoint(pos)) {
+        for (i = 0; i < repetition; i += 1) {
+            if (rightArrow.isVisible) {
+                this.addInput();
+            }
+        }
+    } else if (leftArrow.bounds.containsPoint(pos)) {
+        for (i = 0; i < repetition; i += 1) {
+            if (leftArrow.isVisible) {
+                this.removeInput();
+            }
+        }
+    } else {
+        this.escalateEvent('mouseClickLeft', pos);
+    }
+    this.endLayout();
 };
 
 MultiArgMorph.prototype.addHintInput = function (text) {

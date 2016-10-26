@@ -380,9 +380,12 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'request-new-name': function() {
-        // get unique base name
-        this._room.name = false;
-        this._room.changeName();
+        if (this.hasRoom()) {
+            this._room.name = null;
+            this._room.changeName();  // get unique base name
+        } else {
+            this._logger.warn(`Cannot req new name w/o a room! (${this.username})`);
+        }
     },
      
     'share-msg-type': function(msg) {

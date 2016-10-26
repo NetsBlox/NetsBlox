@@ -33,6 +33,7 @@ var NetsBloxVantage = function(server) {
         .option('-u, --update', 'Update the user\'s schema')
         .option('-c, --clear', 'Clear the room info')
         .option('-e [project]', 'Save user project to file')
+        .option('-p, --password <password>', 'Set the user password')
         .alias('u')
         .action((args, cb) => {
             var username = args.username;
@@ -106,6 +107,11 @@ var NetsBloxVantage = function(server) {
                         user.save();
                         console.log(`User "${user.username}" ${user.admin ? 'now has' :
                             'no longer has'} admin priviledges!`);
+                    } else if (args.options.password) {
+                        delete user.hash;
+                        user.password = args.options.password;
+                        user.save();
+                        console.log(`Set password to "${args.options.password}"`);
                     } else {
                         console.log(user.pretty());
                     }
