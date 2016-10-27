@@ -10,14 +10,14 @@ var debug = require('debug'),
     info = debug('NetsBlox:RPCManager:ConnectN:info');
 
 /**
- * ConnectNRPC - This constructor is called on the first request to an RPC
+ * ConnectN - This constructor is called on the first request to an RPC
  * from a given room
  *
  * @constructor
  * @return {undefined}
  */
-var ConnectNRPC = function() {
-    this.board = ConnectNRPC.getNewBoard();
+var ConnectN = function() {
+    this.board = ConnectN.getNewBoard();
     this._winner = null;
     this.lastMove = null;
 };
@@ -27,7 +27,7 @@ var ConnectNRPC = function() {
  *
  * @return {String}
  */
-ConnectNRPC.getPath = function() {
+ConnectN.getPath = function() {
     return '/connectn';
 };
 
@@ -36,7 +36,7 @@ ConnectNRPC.getPath = function() {
  *
  * @return {Array<String>}
  */
-ConnectNRPC.getActions = function() {
+ConnectN.getActions = function() {
     return [
             'newGame',  // Clear the board
             'play'  // Play a tile at the given location
@@ -44,13 +44,13 @@ ConnectNRPC.getActions = function() {
 };
 
 // Actions
-ConnectNRPC.prototype.newGame = function(req, res) {
+ConnectN.prototype.newGame = function(req, res) {
     this.numRow = req.query.row || 3;
     this.numCol = req.query.column || 3;
     this.numDotsToConnect = req.query.numDotsToConnect;
     this._winner = null;
     this.lastMove = null;
-    this.board = ConnectNRPC.getNewBoard(this.numRow, this.numCol);
+    this.board = ConnectN.getNewBoard(this.numRow, this.numCol);
     info(req.query.roleId+' is clearing board and creating a new one with size: ', this.numRow, ", ", this.numCol);
     //console.log("ConnectN inside Clear, print of req.query: ", req.query, " numDotsToConnect", this.numDotsToConnect);
     //console.log("new board print out: ",  this.board);
@@ -74,7 +74,7 @@ ConnectNRPC.prototype.newGame = function(req, res) {
 };
 
 
-ConnectNRPC.prototype.isOpen = function(req, res) {
+ConnectN.prototype.isOpen = function(req, res) {
     var row = req.query.row-1,
         column = req.query.column-1,
         isValid = [row, column].map(n => n > -1 && n < 3),
@@ -89,7 +89,7 @@ ConnectNRPC.prototype.isOpen = function(req, res) {
     return res.status(400).send('bad position');
 };
 
-ConnectNRPC.prototype.play = function(req, res) {
+ConnectN.prototype.play = function(req, res) {
     //console.log("ConnectN inside play, req.query: ", req.query)
     var row = req.query.row,
         column = req.query.column,
@@ -126,7 +126,7 @@ ConnectNRPC.prototype.play = function(req, res) {
     // ...it's not occupied
     if (open) {
         this.board[row][column] = roleId;
-        this._winner = ConnectNRPC.getWinner(this.board, this.numDotsToConnect);
+        this._winner = ConnectN.getWinner(this.board, this.numDotsToConnect);
         trace('"'+roleId+'" successfully played at '+row+','+column);
         // Send the play message to everyone!
         req.netsbloxSocket._room.sockets()
@@ -169,7 +169,7 @@ ConnectNRPC.prototype.play = function(req, res) {
     return res.status(400).send(false);
 };
 
-ConnectNRPC.prototype.isGameOver = function() {
+ConnectN.prototype.isGameOver = function() {
     var isOver = false;
 
     // Game is over if someone has won
@@ -189,16 +189,16 @@ ConnectNRPC.prototype.isGameOver = function() {
  * @param board
  * @return {String} winner
  */
-ConnectNRPC.getWinner = function(board, numDotsToConnect) {
+ConnectN.getWinner = function(board, numDotsToConnect) {
     var possibleWinners = [];
     // Check for horizontal wins
     //console.log("checking for horizontal");
-    possibleWinners.push(ConnectNRPC.getHorizontalWinner(board, numDotsToConnect));
+    possibleWinners.push(ConnectN.getHorizontalWinner(board, numDotsToConnect));
 
     // Check vertical
     //console.log("checking for vertical");
-    var rotatedBoard = ConnectNRPC.rotateBoard(board);
-    possibleWinners.push(ConnectNRPC.getHorizontalWinner(rotatedBoard, numDotsToConnect));
+    var rotatedBoard = ConnectN.rotateBoard(board);
+    possibleWinners.push(ConnectN.getHorizontalWinner(rotatedBoard, numDotsToConnect));
 
 
     // Check diagonals
@@ -206,8 +206,8 @@ ConnectNRPC.getWinner = function(board, numDotsToConnect) {
     var flippedBoard = board.map(function(row) {
         return row.slice().reverse();
     });
-    possibleWinners.push(ConnectNRPC.getDiagonalWinner(board, numDotsToConnect) ||
-        ConnectNRPC.getDiagonalWinner(flippedBoard, numDotsToConnect));
+    possibleWinners.push(ConnectN.getDiagonalWinner(board, numDotsToConnect) ||
+        ConnectN.getDiagonalWinner(flippedBoard, numDotsToConnect));
 
 
 
@@ -216,7 +216,7 @@ ConnectNRPC.getWinner = function(board, numDotsToConnect) {
     }, null);
 };
 
-ConnectNRPC.getNewBoard = function(row, col) {
+ConnectN.getNewBoard = function(row, col) {
     //console.log("ConnectN: Getting new Board");
     var board = [];
     for(var x = 0; x < row; x++){
@@ -228,8 +228,8 @@ ConnectNRPC.getNewBoard = function(row, col) {
     return board;
 };
 
-ConnectNRPC.rotateBoard = function(board) {
-    var rotatedBoard = ConnectNRPC.getNewBoard(board.length, board[0].length);
+ConnectN.rotateBoard = function(board) {
+    var rotatedBoard = ConnectN.getNewBoard(board.length, board[0].length);
     for (var row = 0; row < board.length; row++) {
         for (var col = 0; col < board[row].length; col++) {
             rotatedBoard[col][row] = board[row][col];
@@ -238,7 +238,7 @@ ConnectNRPC.rotateBoard = function(board) {
     return rotatedBoard;
 };
 
-ConnectNRPC.prototype.isFullBoard = function() {
+ConnectN.prototype.isFullBoard = function() {
     for (var i = this.board.length; i--;) {
         for (var j = this.board[i].length; j--;) {
             if (this.board[i][j] === null) {
@@ -249,19 +249,19 @@ ConnectNRPC.prototype.isFullBoard = function() {
     return true;
 };
 
-ConnectNRPC.getDiagonalWinner = function(board, numDotsToConnect) {
+ConnectN.getDiagonalWinner = function(board, numDotsToConnect) {
     var row = board.length;
     var col = board[0].length;
     var j = 0;
     var i = 0;
     var res;
     for(j = 0, i = 0; j < col; j++){
-        res = ConnectNRPC.getDiagonalWinnerFromStartPoint(board, numDotsToConnect, i, j);
+        res = ConnectN.getDiagonalWinnerFromStartPoint(board, numDotsToConnect, i, j);
         if(res !== null)
             return res;
     }
     for(j = 0, i = 1; i < row; i++){
-        res = ConnectNRPC.getDiagonalWinnerFromStartPoint(board, numDotsToConnect, i, j);
+        res = ConnectN.getDiagonalWinnerFromStartPoint(board, numDotsToConnect, i, j);
         if(res !== null)
             return res;
     }
@@ -269,7 +269,7 @@ ConnectNRPC.getDiagonalWinner = function(board, numDotsToConnect) {
 };
 
 
-ConnectNRPC.getDiagonalWinnerFromStartPoint = function(board, numDotsToConnect, i, j) {
+ConnectN.getDiagonalWinnerFromStartPoint = function(board, numDotsToConnect, i, j) {
 
     var listDots = [];
     var row = board.length;
@@ -282,23 +282,23 @@ ConnectNRPC.getDiagonalWinnerFromStartPoint = function(board, numDotsToConnect, 
 
     if (listDots.length >= numDotsToConnect) {
         //console.log("checking for diagonal row: ", listDots);
-        return ConnectNRPC.getRowWinner(listDots, numDotsToConnect);
+        return ConnectN.getRowWinner(listDots, numDotsToConnect);
     }
 
     return null;
 };
 
-ConnectNRPC.getHorizontalWinner = function(board, numDotsToConnect) {
+ConnectN.getHorizontalWinner = function(board, numDotsToConnect) {
     for (var i = 0; i < board.length; i++) {
         //console.log("checking for row: ", i, " board: ", board[i]);
-        var res = ConnectNRPC.getRowWinner(board[i], numDotsToConnect);
+        var res = ConnectN.getRowWinner(board[i], numDotsToConnect);
         if (res !== null)
             return res;
     }
     return null;
 };
 
-ConnectNRPC.getRowWinner = function(row, numDotsToConnect){
+ConnectN.getRowWinner = function(row, numDotsToConnect){
 
     var symbol1 = null;
     var si = 0;
@@ -321,12 +321,12 @@ ConnectNRPC.getRowWinner = function(row, numDotsToConnect){
     }
     //console.log("symbol 1: ", symbol1, " symbol 2: ", symbol2);
     if (symbol1 != null) {
-        if (ConnectNRPC.areEqualNonNull(row, symbol1, numDotsToConnect)) {
+        if (ConnectN.areEqualNonNull(row, symbol1, numDotsToConnect)) {
             return symbol1;
         }
     }
     if(symbol2 !== null){
-        if (ConnectNRPC.areEqualNonNull(row, symbol2, numDotsToConnect)) {
+        if (ConnectN.areEqualNonNull(row, symbol2, numDotsToConnect)) {
             return symbol2;
         }
     }
@@ -339,11 +339,11 @@ ConnectNRPC.getRowWinner = function(row, numDotsToConnect){
  * @param {Number} pos
  * @return {Boolean}
  */
-ConnectNRPC.prototype.isValidPosition = function(pos) {
+ConnectN.prototype.isValidPosition = function(pos) {
     return !isNaN(pos) && 0 <= pos && pos < this.board.length;
 };
 
-ConnectNRPC.areEqualNonNull = function (row, symbol, numDotsToConnect) {
+ConnectN.areEqualNonNull = function (row, symbol, numDotsToConnect) {
     var n = numDotsToConnect;
     //console.log("numDotsToConnect ", n, " Check up to: ", (row.length - n + 1));
     for (var s = 0; s < row.length - n + 1; s++) {
@@ -362,4 +362,4 @@ ConnectNRPC.areEqualNonNull = function (row, symbol, numDotsToConnect) {
     return false;
 };
 
-module.exports = ConnectNRPC;
+module.exports = ConnectN;
