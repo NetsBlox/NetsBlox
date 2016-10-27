@@ -53,6 +53,13 @@ ConnectN.prototype.newGame = function(req, res) {
     this.board = ConnectN.getNewBoard(this.numRow, this.numCol);
     info(req.query.roleId+' is clearing board and creating a new one with size: ', this.numRow, ", ", this.numCol);
 
+    if(this.numRow < 1)
+        this.numRow = 3;
+    if(this.numCol < 1)
+        this.numCol = 3;
+
+    this.numDotsToConnect = Math.min(Math.max(this.numRow, this.numCol), this.numDotsToConnect);
+
       req.netsbloxSocket._room.sockets()
           .filter(s => s !== req.netsbloxSocket)
           .forEach(socket => socket.send({
@@ -67,7 +74,7 @@ ConnectN.prototype.newGame = function(req, res) {
               }));
 
 
-    res.status(200).send(true);
+    res.status(200).send("Board: " + this.numRow + "x" + this.numCol + " Total dots to connect: " + this.numDotsToConnect);
 };
 
 
