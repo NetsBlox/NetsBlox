@@ -159,12 +159,12 @@ class ActiveRoom {
 
     // Send to everyone, including the origin socket
     sendToEveryone (msg) {
-         // TODO: Set the dstId to CONSTANTS.EVERYONE if not already set
-         if (!msg.dstId) {
-            msg.dstId = Constants.EVERYONE;
-         }
-         this.sockets().forEach(socket => socket.send(msg));
-     }
+        // TODO: Set the dstId to CONSTANTS.EVERYONE if not already set
+        if (!msg.dstId) {
+           msg.dstId = Constants.EVERYONE;
+        }
+        this.sockets().forEach(socket => socket.send(msg));
+    }
  
     sockets () {
         return R.values(this.roles)
