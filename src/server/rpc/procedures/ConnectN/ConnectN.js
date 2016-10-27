@@ -74,56 +74,49 @@ ConnectN.prototype.newGame = function(req, res) {
 };
 
 
-ConnectN.prototype.isOpen = function(req, res) {
-    var row = req.query.row-1,
-        column = req.query.column-1,
-        isValid = [row, column].map(n => n > -1 && n < 3),
-        open;
-
-    isValid = [row, column].map(n => n > -1 && n < 3);
-    if (isValid[0] && isValid[1]) {
-        open = this.board[row][column] === null;
-        return res.send(open);
-    }
-
-    return res.status(400).send('bad position');
-};
 
 ConnectN.prototype.play = function(req, res) {
+    // ...the game is still going
+    if (this._winner) {
+        log('"'+roleId+'" is trying to play after the game is over');
+        return res.status(400).send("The game is over!");
+    }
+
     //console.log("ConnectN inside play, req.query: ", req.query)
     var row = req.query.row,
         column = req.query.column,
         roleId = req.netsbloxSocket.roleId,
-        open = this.board[row][column] === null,
-        isOnBoard = [row, column].every(this.isValidPosition.bind(this));
+        open = false,
+        isOnBoard = false;
+
+    // ...it is the given role's turn
+    if (this.lastMove === roleId) {
+        log('"'+roleId+'" is trying to play twice in a row!');
+        return res.status(400).send("Trying to play twice in a row!");
+    }
+
+
+    // ...check played on board
+    if(row < this.board.length && row >= 0)
+        if( column < this.board[0].length && column >= 0)
+            isOnBoard = true;
+
+
+    // ...it's a valid position
+    if (!isOnBoard) {
+        log('"'+roleId+'" is trying to play in an invalid position ('+row+','+column+')');
+        return res.status(400).send("Trying to play at invalid position!");
+    }
 
 
     trace('"'+roleId+'" is trying to play at '+row+','+column+'. Board is \n'+
         this.board.map(function(row) {
             return row.map(t => t || '_').join(' ');
-    })
-    .join('\n'));
-    // Check that...
-
-    // ...the game is still going
-    if (this._winner) {
-        log('"'+roleId+'" is trying to play after the game is over');
-        return res.status(400).send(false);
-    }
-
-    // ...it's a valid position
-    if (!isOnBoard) {
-        log('"'+roleId+'" is trying to play in an invalid position ('+row+','+column+')');
-        return res.status(400).send(false);
-    }
-
-    // ...it is the given role's turn
-    if (this.lastMove === roleId) {
-        log('"'+roleId+'" is trying to play twice in a row!');
-        return res.status(400).send(false);
-    }
+        })
+            .join('\n'));
 
     // ...it's not occupied
+    open = this.board[row][column] === null;
     if (open) {
         this.board[row][column] = roleId;
         this._winner = ConnectN.getWinner(this.board, this.numDotsToConnect);
@@ -164,9 +157,9 @@ ConnectN.prototype.play = function(req, res) {
             }));
         }
 
-        return res.status(200).send(true);
+        return res.status(200).send("");
     }
-    return res.status(400).send(false);
+    return res.status(400).send("Play was not successful!");
 };
 
 ConnectN.prototype.isGameOver = function() {
@@ -332,16 +325,6 @@ ConnectN.getRowWinner = function(row, numDotsToConnect){
     }
     return null;
 }
-
-/**
- * Check if it is in the range of the board and a number
- *
- * @param {Number} pos
- * @return {Boolean}
- */
-ConnectN.prototype.isValidPosition = function(pos) {
-    return !isNaN(pos) && 0 <= pos && pos < this.board.length;
-};
 
 ConnectN.areEqualNonNull = function (row, symbol, numDotsToConnect) {
     var n = numDotsToConnect;
