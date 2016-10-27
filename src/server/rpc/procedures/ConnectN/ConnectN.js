@@ -52,9 +52,6 @@ ConnectN.prototype.newGame = function(req, res) {
     this.lastMove = null;
     this.board = ConnectN.getNewBoard(this.numRow, this.numCol);
     info(req.query.roleId+' is clearing board and creating a new one with size: ', this.numRow, ", ", this.numCol);
-    //console.log("ConnectN inside Clear, print of req.query: ", req.query, " numDotsToConnect", this.numDotsToConnect);
-    //console.log("new board print out: ",  this.board);
-
 
       req.netsbloxSocket._room.sockets()
           .filter(s => s !== req.netsbloxSocket)
@@ -82,7 +79,6 @@ ConnectN.prototype.play = function(req, res) {
         return res.status(400).send("The game is over!");
     }
 
-    //console.log("ConnectN inside play, req.query: ", req.query)
     var row = req.query.row,
         column = req.query.column,
         roleId = req.netsbloxSocket.roleId,
@@ -185,17 +181,14 @@ ConnectN.prototype.isGameOver = function() {
 ConnectN.getWinner = function(board, numDotsToConnect) {
     var possibleWinners = [];
     // Check for horizontal wins
-    //console.log("checking for horizontal");
     possibleWinners.push(ConnectN.getHorizontalWinner(board, numDotsToConnect));
 
     // Check vertical
-    //console.log("checking for vertical");
     var rotatedBoard = ConnectN.rotateBoard(board);
     possibleWinners.push(ConnectN.getHorizontalWinner(rotatedBoard, numDotsToConnect));
 
 
     // Check diagonals
-    //console.log("checking for diagonals");
     var flippedBoard = board.map(function(row) {
         return row.slice().reverse();
     });
@@ -210,7 +203,6 @@ ConnectN.getWinner = function(board, numDotsToConnect) {
 };
 
 ConnectN.getNewBoard = function(row, col) {
-    //console.log("ConnectN: Getting new Board");
     var board = [];
     for(var x = 0; x < row; x++){
         board[x] = [];
@@ -267,14 +259,11 @@ ConnectN.getDiagonalWinnerFromStartPoint = function(board, numDotsToConnect, i, 
     var listDots = [];
     var row = board.length;
     var col = board[0].length;
-    //console.log("checking for diagonal startIndex: ", i,", ",j," row, col:",  row,", ",col);
     for (; i < row && j < col; i++, j++) {
-        //console.log("pushing to list: ", i,", ",j);
         listDots.push(board[i][j]);
     }
 
     if (listDots.length >= numDotsToConnect) {
-        //console.log("checking for diagonal row: ", listDots);
         return ConnectN.getRowWinner(listDots, numDotsToConnect);
     }
 
@@ -283,7 +272,6 @@ ConnectN.getDiagonalWinnerFromStartPoint = function(board, numDotsToConnect, i, 
 
 ConnectN.getHorizontalWinner = function(board, numDotsToConnect) {
     for (var i = 0; i < board.length; i++) {
-        //console.log("checking for row: ", i, " board: ", board[i]);
         var res = ConnectN.getRowWinner(board[i], numDotsToConnect);
         if (res !== null)
             return res;
@@ -312,7 +300,7 @@ ConnectN.getRowWinner = function(row, numDotsToConnect){
             break;
         }
     }
-    //console.log("symbol 1: ", symbol1, " symbol 2: ", symbol2);
+
     if (symbol1 != null) {
         if (ConnectN.areEqualNonNull(row, symbol1, numDotsToConnect)) {
             return symbol1;
@@ -328,7 +316,6 @@ ConnectN.getRowWinner = function(row, numDotsToConnect){
 
 ConnectN.areEqualNonNull = function (row, symbol, numDotsToConnect) {
     var n = numDotsToConnect;
-    //console.log("numDotsToConnect ", n, " Check up to: ", (row.length - n + 1));
     for (var s = 0; s < row.length - n + 1; s++) {
         var consecutiveDots = 0;
         for (var i = s; i < row.length; i++) {
@@ -340,7 +327,6 @@ ConnectN.areEqualNonNull = function (row, symbol, numDotsToConnect) {
             else
                 break;
         }
-        //console.log(n, " checking for symbol ", symbol, " from starting position: ", s, " dots found: ", consecutiveDots);
     }
     return false;
 };
