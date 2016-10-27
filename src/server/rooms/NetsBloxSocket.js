@@ -4,7 +4,7 @@
 'use strict';
 var counter = 0,
     generate = require('project-name-generator'),
-    CONSTANTS = require(__dirname + '/../../common/Constants'),
+    Constants = require(__dirname + '/../../common/Constants'),
     PROJECT_FIELDS = [
         'ProjectName',
         'SourceCode',
@@ -195,10 +195,16 @@ class NetsBloxSocket {
     }
 
     sendToEveryone (msg) {
-        this._room.sendToEveryone(this, msg);
+        this._room.sendToEveryone(msg);
     }
 
     send (msg) {
+        // Set the defaults
+        msg.type = msg.type || 'message';
+        if (msg.type === 'message') {
+            msg.dstId = msg.dstId || Constants.EVERYONE;
+        }
+
         msg = JSON.stringify(msg);
         this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
         if (this._socket.readyState === this.OPEN) {

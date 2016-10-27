@@ -6,7 +6,8 @@
 var R = require('ramda'),
     _ = require('lodash'),
     async = require('async'),
-    utils = require('../ServerUtils');
+    utils = require('../ServerUtils'),
+    Constants = require('../../common/Constants');
 
 class ActiveRoom {
 
@@ -157,9 +158,13 @@ class ActiveRoom {
     }
 
     // Send to everyone, including the origin socket
-    sendToEveryone (socket, msg) {
-         this.sockets().forEach(socket => socket.send(msg));
-     }
+    sendToEveryone (msg) {
+        // Set the dstId to CONSTANTS.EVERYONE if not already set
+        if (!msg.dstId) {
+            msg.dstId = Constants.EVERYONE;
+        }
+        this.sockets().forEach(socket => socket.send(msg));
+    }
  
     sockets () {
         return R.values(this.roles)
