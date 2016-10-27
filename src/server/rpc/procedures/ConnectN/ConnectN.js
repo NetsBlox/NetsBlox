@@ -302,15 +302,16 @@ ConnectNRPC.getRowWinner = function(row, numDotsToConnect){
 
     var symbol1 = null;
     var si = 0;
+    var s;
     for (; si < row.length; si++){
-        var s = row[si];
+        s = row[si];
         if( s !== null){
             symbol1 = s;
             break;
         }
     }
     var symbol2 = null;
-    var s;
+
     for (; si < row.length; si++) {
         s = row[si];
         if (s !== null && s !== symbol1) {
