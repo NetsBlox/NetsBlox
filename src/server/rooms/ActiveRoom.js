@@ -157,7 +157,8 @@ class ActiveRoom {
     }
 
     // Send to everyone, including the origin socket
-    sendToEveryone (socket, msg) {
+    sendToEveryone (msg) {
+         // TODO: Set the dstId to CONSTANTS.EVERYONE if not already set
          this.sockets().forEach(socket => socket.send(msg));
      }
  

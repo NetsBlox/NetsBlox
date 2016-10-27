@@ -195,7 +195,7 @@ class NetsBloxSocket {
     }
 
     sendToEveryone (msg) {
-        this._room.sendToEveryone(this, msg);
+        this._room.sendToEveryone(msg);
     }
 
     send (msg) {
