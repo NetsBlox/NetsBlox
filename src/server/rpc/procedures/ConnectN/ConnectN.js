@@ -3,8 +3,7 @@
 
 'use strict';
 
-var R = require('ramda'),
-    debug = require('debug'),
+var debug = require('debug'),
     log = debug('NetsBlox:RPCManager:ConnectN:log'),
     trace = debug('NetsBlox:RPCManager:ConnectN:trace'),
     Constants = require('../../../../common/Constants'),
@@ -40,14 +39,12 @@ ConnectNRPC.getPath = function() {
 ConnectNRPC.getActions = function() {
     return [
             'newGame',  // Clear the board
-            'play',  // Play a tile at the given location
-            'isOpen',  // for testing
+            'play'  // Play a tile at the given location
             ];
 };
 
 // Actions
 ConnectNRPC.prototype.newGame = function(req, res) {
-    var roleId = req.netsbloxSocket.roleId;
     this.numRow = req.query.row || 3;
     this.numCol = req.query.column || 3;
     this.numDotsToConnect = req.query.numDotsToConnect;
@@ -257,13 +254,14 @@ ConnectNRPC.getDiagonalWinner = function(board, numDotsToConnect) {
     var col = board[0].length;
     var j = 0;
     var i = 0;
+    var res;
     for(j = 0, i = 0; j < col; j++){
-        var res = ConnectNRPC.getDiagonalWinnerFromStartPoint(board, numDotsToConnect, i, j);
+        res = ConnectNRPC.getDiagonalWinnerFromStartPoint(board, numDotsToConnect, i, j);
         if(res !== null)
             return res;
     }
     for(j = 0, i = 1; i < row; i++){
-        var res = ConnectNRPC.getDiagonalWinnerFromStartPoint(board, numDotsToConnect, i, j);
+        res = ConnectNRPC.getDiagonalWinnerFromStartPoint(board, numDotsToConnect, i, j);
         if(res !== null)
             return res;
     }
@@ -312,8 +310,9 @@ ConnectNRPC.getRowWinner = function(row, numDotsToConnect){
         }
     }
     var symbol2 = null;
+    var s;
     for (; si < row.length; si++) {
-        var s = row[si];
+        s = row[si];
         if (s !== null && s !== symbol1) {
             symbol2 = s;
             break;
