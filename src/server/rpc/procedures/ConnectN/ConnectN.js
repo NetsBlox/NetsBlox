@@ -61,7 +61,7 @@ ConnectN.prototype.newGame = function(req, res) {
     this.numDotsToConnect = Math.min(Math.max(this.numRow, this.numCol), this.numDotsToConnect);
 
     req.netsbloxSocket._room.sockets()
-        .forEach(socket = > socket.send({
+        .forEach(socket => socket.send({
         type: 'message',
         msgType: 'start',
         dstId: Constants.EVERYONE,
