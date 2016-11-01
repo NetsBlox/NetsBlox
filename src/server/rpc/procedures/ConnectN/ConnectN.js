@@ -62,15 +62,15 @@ ConnectN.prototype.newGame = function(req, res) {
 
     req.netsbloxSocket._room.sockets()
         .forEach(socket => socket.send({
-        type: 'message',
-        msgType: 'start',
-        dstId: Constants.EVERYONE,
-        content: {
-            row: this.numRow,
-            column: this.numCol,
-            numDotsToConnect: this.numDotsToConnect
-        }
-    }));
+            type: 'message',
+            msgType: 'start',
+            dstId: Constants.EVERYONE,
+            content: {
+                row: this.numRow,
+                column: this.numCol,
+                numDotsToConnect: this.numDotsToConnect
+            }
+        }));
 
     res.status(200).send('Board: ' + this.numRow + 'x' + this.numCol + ' Total dots to connect: ' + this.numDotsToConnect);
 };
@@ -155,7 +155,7 @@ ConnectN.prototype.play = function(req, res) {
                     content: {
                         winner: this._winner
                     }
-            }));
+                }));
         }
 
         return res.status(200).send('');
@@ -319,7 +319,7 @@ ConnectN.getRowWinner = function(row, numDotsToConnect){
         }
     }
     return null;
-}
+};
 
 ConnectN.areEqualNonNull = function (row, symbol, numDotsToConnect) {
     var n = numDotsToConnect;
