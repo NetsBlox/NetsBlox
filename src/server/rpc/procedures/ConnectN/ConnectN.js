@@ -53,15 +53,14 @@ ConnectN.prototype.newGame = function(req, res) {
     this.board = ConnectN.getNewBoard(this.numRow, this.numCol);
     info(req.query.roleId+' is clearing board and creating a new one with size: ', this.numRow, ", ", this.numCol);
 
-    if(this.numRow < 1)
+    if(this.numRow < 3)
         this.numRow = 3;
-    if(this.numCol < 1)
+    if(this.numCol < 3)
         this.numCol = 3;
 
     this.numDotsToConnect = Math.min(Math.max(this.numRow, this.numCol), this.numDotsToConnect);
 
       req.netsbloxSocket._room.sockets()
-          .filter(s => s !== req.netsbloxSocket)
           .forEach(socket => socket.send({
                   type: 'message',
                   msgType: 'start',
@@ -172,8 +171,10 @@ ConnectN.prototype.isGameOver = function() {
     isOver = this._winner !== null;
 
     // or all tiles are filled
-    isOver = isOver || this.isFullBoard();
-
+    var isDraw = this.isFullBoard();
+    isOver = isOver || isDraw;
+    if(isDraw)
+        this._winner = "DRAW";
     log('isGameOver: ' + isOver + ' (' + this._winner + ')');
     return isOver;
 };
