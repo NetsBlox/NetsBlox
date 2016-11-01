@@ -50,8 +50,6 @@ ConnectN.prototype.newGame = function(req, res) {
     this.numDotsToConnect = req.query.numDotsToConnect;
     this._winner = null;
     this.lastMove = null;
-    this.board = ConnectN.getNewBoard(this.numRow, this.numCol);
-    info(req.query.roleId+' is clearing board and creating a new one with size: ', this.numRow, ', ', this.numCol);
 
     if(this.numRow < 3)
         this.numRow = 3;
@@ -59,6 +57,9 @@ ConnectN.prototype.newGame = function(req, res) {
         this.numCol = 3;
 
     this.numDotsToConnect = Math.min(Math.max(this.numRow, this.numCol), this.numDotsToConnect);
+
+    info(req.query.roleId+' is clearing board and creating a new one with size: ', this.numRow, ', ', this.numCol);
+    this.board = ConnectN.getNewBoard(this.numRow, this.numCol);
 
     req.netsbloxSocket._room.sockets()
         .forEach(socket => socket.send({
