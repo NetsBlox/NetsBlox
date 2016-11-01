@@ -38,9 +38,9 @@ ConnectN.getPath = function() {
  */
 ConnectN.getActions = function() {
     return [
-            'newGame',  // Clear the board
-            'play'  // Play a tile at the given location
-            ];
+        'newGame',  // Clear the board
+        'play'  // Play a tile at the given location
+    ];
 };
 
 // Actions
@@ -51,7 +51,7 @@ ConnectN.prototype.newGame = function(req, res) {
     this._winner = null;
     this.lastMove = null;
     this.board = ConnectN.getNewBoard(this.numRow, this.numCol);
-    info(req.query.roleId+' is clearing board and creating a new one with size: ', this.numRow, ", ", this.numCol);
+    info(req.query.roleId+' is clearing board and creating a new one with size: ', this.numRow, ', ', this.numCol);
 
     if(this.numRow < 3)
         this.numRow = 3;
@@ -60,20 +60,19 @@ ConnectN.prototype.newGame = function(req, res) {
 
     this.numDotsToConnect = Math.min(Math.max(this.numRow, this.numCol), this.numDotsToConnect);
 
-      req.netsbloxSocket._room.sockets()
-          .forEach(socket => socket.send({
-                  type: 'message',
-                  msgType: 'start',
-                  dstId: Constants.EVERYONE,
-                  content: {
-                      row: this.numRow,
-                      column: this.numCol,
-                      numDotsToConnect: this.numDotsToConnect
-                  }
-              }));
+    req.netsbloxSocket._room.sockets()
+        .forEach(socket = > socket.send({
+        type: 'message',
+        msgType: 'start',
+        dstId: Constants.EVERYONE,
+        content: {
+            row: this.numRow,
+            column: this.numCol,
+            numDotsToConnect: this.numDotsToConnect
+        }
+    }));
 
-
-    res.status(200).send("Board: " + this.numRow + "x" + this.numCol + " Total dots to connect: " + this.numDotsToConnect);
+    res.status(200).send('Board: ' + this.numRow + 'x' + this.numCol + ' Total dots to connect: ' + this.numDotsToConnect);
 };
 
 
@@ -82,7 +81,7 @@ ConnectN.prototype.play = function(req, res) {
     // ...the game is still going
     if (this._winner) {
         log('"'+roleId+'" is trying to play after the game is over');
-        return res.status(400).send("The game is over!");
+        return res.status(400).send('The game is over!');
     }
 
     var row = req.query.row,
@@ -94,7 +93,7 @@ ConnectN.prototype.play = function(req, res) {
     // ...it is the given role's turn
     if (this.lastMove === roleId) {
         log('"'+roleId+'" is trying to play twice in a row!');
-        return res.status(400).send("Trying to play twice in a row!");
+        return res.status(400).send('Trying to play twice in a row!');
     }
 
 
@@ -107,7 +106,7 @@ ConnectN.prototype.play = function(req, res) {
     // ...it's a valid position
     if (!isOnBoard) {
         log('"'+roleId+'" is trying to play in an invalid position ('+row+','+column+')');
-        return res.status(400).send("Trying to play at invalid position!");
+        return res.status(400).send('Trying to play at invalid position!');
     }
 
 
@@ -150,18 +149,18 @@ ConnectN.prototype.play = function(req, res) {
         {
             req.netsbloxSocket._room.sockets()
                 .forEach(socket => socket.send({
-                type: 'message',
-                dstId: Constants.EVERYONE,
-                msgType: 'gameOver',
-                content: {
-                    winner: this._winner
-                }
+                    type: 'message',
+                    dstId: Constants.EVERYONE,
+                    msgType: 'gameOver',
+                    content: {
+                        winner: this._winner
+                    }
             }));
         }
 
-        return res.status(200).send("");
+        return res.status(200).send('');
     }
-    return res.status(400).send("Play was not successful!");
+    return res.status(400).send('Play was not successful!');
 };
 
 ConnectN.prototype.isGameOver = function() {
@@ -174,7 +173,7 @@ ConnectN.prototype.isGameOver = function() {
     var isDraw = this.isFullBoard();
     isOver = isOver || isDraw;
     if(isDraw)
-        this._winner = "DRAW";
+        this._winner = 'DRAW';
     log('isGameOver: ' + isOver + ' (' + this._winner + ')');
     return isOver;
 };
