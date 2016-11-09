@@ -26,6 +26,7 @@ var R = require('ramda'),
         'Costumes',
         'Sounds',
         'libraries',
+        'help',
         'Backgrounds'
     ],
     CLIENT_ROOT = path.join(__dirname, '..', '..', 'client', 'Snap--Build-Your-Own-Blocks'),
