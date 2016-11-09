@@ -65,7 +65,7 @@ NPlayer.prototype.start = function(req, res) {
     this.players.forEach(player => player.socket.send({
         type: 'message',
         dstId: player.role,
-        msgType: 'NPlayerStart',
+        msgType: 'start game',
         content: {
         }
     }));
@@ -137,7 +137,7 @@ NPlayer.prototype.endTurn = function(req, res) {
         this.players[this.active].socket.send({
             type: 'message',
             dstId: this.players[this.active].role,
-            msgType: 'NPlayerPlay',
+            msgType: 'start turn',
             content: {
             }
         });
