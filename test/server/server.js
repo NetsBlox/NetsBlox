@@ -80,6 +80,7 @@ describe('Server Tests', function() {
                 'Sounds/:filename': 'Sounds/Cat.mp3',
                 'Costumes/:filename': 'Costumes/alonzo.png',
                 'libraries/:filename': 'libraries/cases.xml',
+                'help/:filename': 'help/hide.png',
                 'Backgrounds/:filename': 'Backgrounds/pathway.jpg'
             };
 
