@@ -121,30 +121,29 @@ WebSocketManager.MessageHandlers = {
                 // Accept the request
                 dialog.ok = function() {
                     var ide = myself.ide.root().children[0].parentThatIsA(IDE_Morph);
-                    myself.ide.stage.addMessageType({name: msg.name, fields: msg.fields});
-                    ide.flushBlocksCache('services');  //  b/c of inheritance
-                    ide.refreshPalette();
+                    SnapActions.addMessageType(msg.name, msg.fields)
+                        .accept(function() {
+                            // format fields
+                            var fields = [];
+                            for (var i = 0; i < msg.fields.length; i++) {
+                                fields.push(' ' + '\'' + msg.fields[i] + '\'');
+                            }
 
-                    // format fields
-                    var fields = [];
-                    for (var i = 0; i < msg.fields.length; i++) {
-                        fields.push(' ' + '\'' + msg.fields[i] + '\'');
-                    }
+                            // format notification
+                            var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length + 
+                                (msg.fields.length === 0 ? ' fields.' : (msg.fields.length === 1 ? ' field: ' + msg.fields : ' fields: ' + msg.fields));
 
-                    // format notification
-                    var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length + 
-                        (msg.fields.length === 0 ? ' fields.' : (msg.fields.length === 1 ? ' field: ' + msg.fields : ' fields: ' + msg.fields));
+                            // notify
+                            this.destroy();
+                            var acceptDialog = new DialogBoxMorph();
+                            myself.ide.showMessage(notification, 2);
 
-                    // notify
-                    this.destroy();
-                    var acceptDialog = new DialogBoxMorph();
-                    myself.ide.showMessage(notification, 2);
-
-                    // refresh message palette
-                    ide.room.parentThatIsA(ProjectsMorph).updateRoom();
-                    if (ide && ide.currentTab === 'room') {
-                        ide.spriteBar.tabBar.tabTo('room');
-                    }
+                            // refresh message palette
+                            ide.room.parentThatIsA(ProjectsMorph).updateRoom();
+                            if (ide && ide.currentTab === 'room') {
+                                ide.spriteBar.tabBar.tabTo('room');
+                            }
+                        });
                 };
             }
         }
