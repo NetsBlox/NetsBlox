@@ -6,23 +6,29 @@ SnapActions.addActions(
 
 // TODO: Add actions for importing message types
 ActionManager.prototype._deleteMessageType = function(name) {
-    var fields = this.ide().stage.getMsgType(name).fields;
+    var fields = this.ide().stage.messageTypes.getMsgType(name).fields;
     return [name, fields];
 };
 
 ActionManager.prototype.onAddMessageType = function(name, fields) {
-    this.ide().stage.addMessageType(msgType);
+    var ide = this.ide();
+    ide.stage.addMessageType({
+        name: name,
+        fields: fields
+    });
+    ide.flushBlocksCache('services');  //  b/c of inheritance
+    ide.refreshPalette();
 };
 
 ActionManager.prototype.onDeleteMessageType = function(name) {
-    this.ide().stage.deleteMessageType(msgType);
+    var ide = this.ide()
+    ide.stage.deleteMessageType(name);
+    ide.flushBlocksCache('services');  //  b/c of inheritance
+    ide.refreshPalette();
 };
 
 UndoManager.Invert.addMessageType = function(args) {
-    return {
-        type: 'deleteMessageType',
-        args: [args[0].name]
-    };
+    return 'deleteMessageType';
 };
 
 UndoManager.Invert.deleteMessageType = function(args) {

@@ -435,10 +435,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         if (stage.messageTypes.getMsgType(desc.name)) {
             myself.inform('that name is already in use');
         } else {
-            stage.addMessageType(desc);
-            ide = myself.parentThatIsA(IDE_Morph);
-            ide.flushBlocksCache(cat); // b/c of inheritance
-            ide.refreshPalette();
+            SnapActions.addMessageType(desc.name, desc.fields);
         }
     }
 
@@ -654,9 +651,10 @@ SpriteMorph.prototype.blockTemplates = function (category) {
                 null,
                 function () {
                     var menu = new MenuMorph(
-                        myself.deleteMessageType,
-                        null,
-                        myself
+                        function(name) {
+                            SnapActions.deleteMessageType(name);
+                        },
+                        null
                     );
                     myself.deletableMessageNames().forEach(function (name) {
                         menu.addItem(name, name);
@@ -980,6 +978,7 @@ StageMorph.prototype.freshPalette = SpriteMorph.prototype.freshPalette;
 StageMorph.prototype._init = StageMorph.prototype.init;
 StageMorph.prototype.init = function (globals) {
     this.messageTypes = new MessageFrame();
+
     this.addMessageType({  // Add initial message type
         name: 'message',
         fields: ['msg']
@@ -1004,7 +1003,7 @@ StageMorph.prototype.addMessageTypeByName = function (name) {
     }
 
     msgType = JSON.parse(request.responseText);
-    this.addMessageType(msgType);
+    SnapActions.addMessageType(msgType.name, msgType.fields);
 };
 
 StageMorph.prototype.addMessageType = function (messageType) {
@@ -1160,10 +1159,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         if (stage.messageTypes.getMsgType(desc.name)) {
             myself.inform('that name is already in use');
         } else {
-            stage.addMessageType(desc);
-            ide = myself.parentThatIsA(IDE_Morph);
-            ide.flushBlocksCache(cat); // b/c of inheritance
-            ide.refreshPalette();
+            SnapActions.addMessageType(desc.name, desc.fields);
         }
     }
 
@@ -1277,9 +1273,10 @@ StageMorph.prototype.blockTemplates = function (category) {
                 null,
                 function () {
                     var menu = new MenuMorph(
-                        myself.deleteMessageType,
-                        null,
-                        myself
+                        function(name) {
+                            SnapActions.deleteMessageType(name);
+                        },
+                        null
                     );
                     myself.deletableMessageNames().forEach(function (name) {
                         menu.addItem(name, name);
