@@ -35,3 +35,4 @@ UndoManager.Invert.deleteMessageType = function(args) {
     return 'addMessageType';
 };
 
+SnapActions._ws.close();  // FIXME: Enable collaboration
