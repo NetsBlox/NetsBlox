@@ -412,7 +412,6 @@ module.exports = [
                 }
                 var project = user.rooms.find(room => room.name === projectName);
                 if (project && project.Public) {
-                    // What if the user already has this one?
                     var openRole = project.activeRole || Object.keys(project.roles)[0],
                         role = project.roles[openRole];
 
