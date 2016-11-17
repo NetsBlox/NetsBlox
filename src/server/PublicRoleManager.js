@@ -11,6 +11,11 @@ var PublicRoleManager = function() {
     this.socketToId = new Map();
 };
 
+PublicRoleManager.prototype.reset = function() {
+    this.publicIds = {};
+    this.socketToId = new Map();
+};
+
 PublicRoleManager.prototype._situation = function(socket) {
     if (!socket.hasRoom()) {
         error(`Socket does not have a room! ${socket.uuid}`);
