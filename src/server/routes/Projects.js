@@ -391,10 +391,36 @@ module.exports = [
                 this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
 
                 // send the image
-                res.contentType('image/png')
+                res.contentType('image/png');
                 res.end(buffer, 'binary');
             });
             
+        }
+    },
+    {
+        Method: 'get',
+        URL: 'RawPublic',
+        Handler: function(req, res) {
+            var username = req.query.Username,
+                projectName = req.query.ProjectName;
+
+            this._logger.trace(`Retrieving the public project: ${projectName} from ${username}`);
+            this.storage.users.get(username, function(e, user) {
+                if (e || !user) {
+                    log(`Could not find user ${username}`);
+                    return res.status(400).send('ERROR: User not found');
+                }
+                var project = user.rooms.find(room => room.name === projectName);
+                if (project && project.Public) {
+                    // What if the user already has this one?
+                    var openRole = project.activeRole || Object.keys(project.roles)[0],
+                        role = project.roles[openRole];
+
+                    return res.send(role.SourceCode);
+                } else {
+                    return res.status(400).send('ERROR: Project not available');
+                }
+            });
         }
     }
 
