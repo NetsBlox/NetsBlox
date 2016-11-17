@@ -1,4 +1,3 @@
-'use strict';
 var express = require('express'),
     bodyParser = require('body-parser'),
     _ = require('lodash'),
