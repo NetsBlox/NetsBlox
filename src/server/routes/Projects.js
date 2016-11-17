@@ -1,7 +1,6 @@
 'use strict';
 
-var R = require('ramda'),
-    _ = require('lodash'),
+var _ = require('lodash'),
     Utils = _.extend(require('../Utils'), require('../ServerUtils.js')),
 
     middleware = require('./middleware'),
@@ -35,7 +34,6 @@ var setProjectPublic = function(name, user, value) {
     }
     user.rooms[index].Public = value;
     user.save();
-    // TODO: Do something meaningful to either make it publicly accessible or private
     return true;
 };
 
