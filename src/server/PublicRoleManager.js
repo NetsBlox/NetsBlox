@@ -43,10 +43,10 @@ PublicRoleManager.prototype.unregister = function(socket) {
 
 PublicRoleManager.prototype.register = function(socket) {
     var len = ID_LENGTH,
-        id = Math.floor(Math.random()*Math.pow(10, len));
+        id = Math.floor(Math.random()*Math.pow(10, len)).toString();
 
     while (this.publicIds[id]) {
-        id = Math.floor(Math.random()*Math.pow(10, len));
+        id = Math.floor(Math.random()*Math.pow(10, len)).toString();
         len++;
     }
     this.unregister(socket);  // only one id per user
