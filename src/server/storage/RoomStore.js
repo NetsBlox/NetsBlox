@@ -134,19 +134,21 @@ class Room extends DataWrapper {
 
     _saveLocal(room, callback) {
         // Add this project to the user's list of rooms and save the user
-        var index = this._user.rooms.reduce((i, room, index) => {
-            if (i > -1) {
-                return i;
-            }
-            return room.name === this._room.name ? index : i;
-        }, -1);
+        var oldRoom,
+            index = this._user.rooms.reduce((i, room, index) => {
+                if (i > -1) {
+                    return i;
+                }
+                return room.name === this._room.name ? index : i;
+            }, -1);
 
         if (index === -1) {
             this._logger.log(`saving new room "${room.name}" for ${this._user.username}`);
             this._user.rooms.push(room);
         } else {
             this._logger.log(`overwriting existing room "${room.name}" for ${this._user.username}`);
-            this._user.rooms.splice(index, 1, room);
+            oldRoom = this._user.rooms.splice(index, 1, room)[0];
+            room.Public = oldRoom.Public;
         }
         this._user.save();
         this._logger.log(`saved room "${room.name}" for ${this._user.username}`);
