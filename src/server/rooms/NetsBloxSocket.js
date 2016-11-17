@@ -5,6 +5,7 @@
 var counter = 0,
     generate = require('project-name-generator'),
     Constants = require(__dirname + '/../../common/Constants'),
+    publicRoleManager = require(__dirname + '/../PublicRoleManager'),
     PROJECT_FIELDS = [
         'ProjectName',
         'SourceCode',
@@ -238,7 +239,22 @@ NetsBloxSocket.MessageHandlers = {
     'beat': function() {},
 
     'message': function(msg) {
-        msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
+        if (!this.hasRoom()) {
+            error(`Cannot send a message when not in a room! ${this.username} (${this.uuid})`);
+            return;
+        }
+
+        if (msg.dstId === 'others in room' || msg.dstId === Constants.EVERYONE ||
+            this._room.roles.hasOwnProperty(msg.dstId)) {  // local message
+
+            msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
+        } else {  // inter-room message
+            var socket = publicRoleManager.lookUp(msg.dstId);
+            if (socket) {
+                msg.dstId = Constants.EVERYONE;
+                socket.send(msg);
+            }
+        }
     },
 
     'project-response': function(msg) {
