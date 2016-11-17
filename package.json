@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/NetsBlox/NetsBlox",
   "dependencies": {
+    "moviedb": "^0.2.7",
     "async": "^2.0.0-rc.2",
     "body-parser": "^1.12.4",
     "cache-manager": "^2.0.0",
