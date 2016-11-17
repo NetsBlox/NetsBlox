@@ -1,0 +1,1 @@
+<blocks app="NetsBlox 0.8.0, http://netsblox.org" version="1"><block-definition s="request public role id" type="reporter" category="services"><header></header><code></code><inputs></inputs><script><block s="doReport"><block s="getJSFromRPCDropdown"><l>publicRoles</l><l>requestPublicRoleId</l><l></l></block></block></script></block-definition></blocks>
