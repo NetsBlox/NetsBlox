@@ -240,7 +240,7 @@ NetsBloxSocket.MessageHandlers = {
 
     'message': function(msg) {
         if (!this.hasRoom()) {
-            error(`Cannot send a message when not in a room! ${this.username} (${this.uuid})`);
+            this._logger.error(`Cannot send a message when not in a room! ${this.username} (${this.uuid})`);
             return;
         }
 

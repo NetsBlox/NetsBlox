@@ -64,8 +64,7 @@ PublicRoleManager.prototype.register = function(socket) {
 };
 
 PublicRoleManager.prototype.lookUp = function(id) {
-    var entry = this.publicIds[id],
-        publicRole;
+    var entry = this.publicIds[id];
 
     if (entry) {
         // Check that the socket is still in the room that it registered in

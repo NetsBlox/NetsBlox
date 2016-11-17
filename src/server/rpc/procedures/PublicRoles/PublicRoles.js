@@ -2,21 +2,8 @@
 'use strict';
 
 var debug = require('debug'),
-    log = debug('NetsBlox:RPCManager:PublicRoles:log'),
     trace = debug('NetsBlox:RPCManager:PublicRoles:trace'),
     publicRoleManager = require('../../../PublicRoleManager');
-
-var publicIds = {},
-    socketToId = new Map();
-
-var removeId = function(socket) {
-    var id = socketToId.get(socket);
-
-    socketToId.delete(socket);
-    if (id) {
-        delete publicIds[id];
-    }
-};
 
 module.exports = {
 
