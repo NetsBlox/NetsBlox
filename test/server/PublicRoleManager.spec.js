@@ -25,7 +25,7 @@ describe('PublicRoleManager', function() {
         var socket = getMockSocket('room', 'brian', 'somerole'),
             pubId = publicRoleManager.register(socket);
 
-        assert.equal(typeof pubId, 'number');
+        assert(/\d+/.test(pubId));
     });
 
     it('should not retrieve socket if socket closes', function() {
