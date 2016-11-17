@@ -3,7 +3,6 @@ var debug = require('debug'),
     log = debug('NetsBlox:PublicRoleManager:log'),
     trace = debug('NetsBlox:PublicRoleManager:trace'),
     error = debug('NetsBlox:PublicRoleManager:error'),
-    randomId = require('just.randomstring'),
     ID_LENGTH = 5;
 
 var PublicRoleManager = function() {
@@ -44,10 +43,10 @@ PublicRoleManager.prototype.unregister = function(socket) {
 
 PublicRoleManager.prototype.register = function(socket) {
     var len = ID_LENGTH,
-        id = randomId(len);
+        id = Math.floor(Math.random()*Math.pow(10, len));
 
     while (this.publicIds[id]) {
-        id = randomId(len);
+        id = Math.floor(Math.random()*Math.pow(10, len));
         len++;
     }
     this.unregister(socket);  // only one id per user

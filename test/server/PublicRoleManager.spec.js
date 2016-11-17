@@ -21,6 +21,13 @@ describe('PublicRoleManager', function() {
         assert.equal(publicRoleManager.lookUp(pubId), null);
     });
 
+    it('should use number for the public role id', function() {
+        var socket = getMockSocket('room', 'brian', 'somerole'),
+            pubId = publicRoleManager.register(socket);
+
+        assert.equal(typeof pubId, 'number');
+    });
+
     it('should not retrieve socket if socket closes', function() {
         var socket = getMockSocket('room', 'brian', 'somerole'),
             pubId = publicRoleManager.register(socket);
