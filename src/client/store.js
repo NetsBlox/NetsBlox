@@ -1,6 +1,7 @@
 /* global SnapSerializer, SpriteMorph, sizeOf, List, detect, CustomCommandBlockMorph,
    CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
-   WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame*/
+   WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame,
+   MessageInputSlotMorph*/
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
@@ -381,7 +382,6 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     }
 
     // Add message types
-    // FIXME: Change this to work more like custom blocks
     model.messageTypes = model.stage.childNamed('messageTypes');
     if (model.messageTypes) {
         var messageTypes = model.messageTypes.children;
