@@ -1,5 +1,6 @@
 /* global MessageInputSlotMorph, InputSlotMorph, TemplateSlotMorph, detect,
-   SpriteMorph, StageMorph, ReporterBlockMorph, BlockInputFragmentMorph
+   SpriteMorph, StageMorph, ReporterBlockMorph, BlockInputFragmentMorph,
+   BlockMorph
    */
 // MessageOutputSlotMorph //////////////////////////////////////////////
 // I am a dropdown menu with an associated message type
@@ -62,14 +63,12 @@ MessageOutputSlotMorph.prototype._updateFields = function(values) {
     this.parent.changed();
 };
 
-MessageOutputSlotMorph.prototype.setContents = function(msgTypeName, inputs) {
-    var messageType;
-
+MessageOutputSlotMorph.prototype.setContents = function(msgTypeName, inputs, messageType) {
     // Set the value for the dropdown
-    InputSlotMorph.prototype.setContents.call(this, messageType);
+    InputSlotMorph.prototype.setContents.call(this, msgTypeName);
 
     // Create the message fields
-    messageType = this._getMsgType();
+    messageType = messageType || this._getMsgType();
     this.msgFields = messageType ? messageType.fields : [];
     if (this.parent) {
         this._updateFields(inputs);
