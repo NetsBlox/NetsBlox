@@ -359,8 +359,7 @@ module.exports = [
         URL: 'projects/:owner/:project/thumbnail',
         middleware: ['setUsername'],
         Handler: function(req, res) {
-            var publicOnly = req.params.owner !== req.session.username,
-                name = req.params.project;
+            var name = req.params.project;
 
             // return the names of all projects owned by :owner
             middleware.loadUser(req.params.owner, res, user => {
@@ -413,7 +412,8 @@ module.exports = [
                     var openRole = project.activeRole || Object.keys(project.roles)[0],
                         role = project.roles[openRole];
 
-                    return res.send(role.SourceCode);
+
+                    return res.send(`<snapdata>${role.SourceCode + role.Media}</snapdata>`);
                 } else {
                     return res.status(400).send('ERROR: Project not available');
                 }
