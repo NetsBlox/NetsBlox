@@ -1,6 +1,7 @@
 /* global SnapSerializer, SpriteMorph, sizeOf, List, detect, CustomCommandBlockMorph,
    CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
-   WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame*/
+   WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame,
+   MessageInputSlotMorph*/
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
@@ -157,7 +158,6 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
     inputs = block.inputs();
     // Try to batch children for the inputs if appropriate. This is
     // used with MessageInputSlotMorph and MessageOutputSlotMorph
-    // FIXME
     if (inputs.length < model.children.length) {
         var batch = [],
             skipTypes = ['comment', 'receiver'];
@@ -189,7 +189,8 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
                 input = inputs[++i];
 
             if (input.setContents) {
-                input.setContents(vals[0], vals.slice(1));
+                var msgType = this.project.stage.messageTypes.getMsgType(vals[0]);
+                input.setContents(vals[0], vals.slice(1), msgType);
             }
         }
     }
@@ -206,6 +207,55 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
     }, this);
     block.cachedInputs = null;
     return block;
+};
+
+NetsBloxSerializer.prototype.loadInput = function (model, input, block) {
+    // private
+    var inp, val, myself = this;
+    if (model.tag === 'script') {
+        inp = this.loadScript(model);
+        if (inp) {
+            input.add(inp);
+            input.fixLayout();
+        }
+    } else if (model.tag === 'autolambda' && model.children[0]) {
+        inp = this.loadBlock(model.children[0], true);
+        if (inp) {
+            input.silentReplaceInput(input.children[0], inp);
+            input.fixLayout();
+        }
+    } else if (model.tag === 'list') {
+        while (input.inputs().length > 0) {
+            input.removeInput();
+        }
+        model.children.forEach(function (item) {
+            input.addInput();
+            myself.loadInput(
+                item,
+                input.children[input.children.length - 2],
+                input
+            );
+        });
+        input.fixLayout();
+    } else if (model.tag === 'block' || model.tag === 'custom-block') {
+        block.silentReplaceInput(input, this.loadBlock(model, true));
+    } else if (model.tag === 'color') {
+        input.setColor(this.loadColor(model.contents));
+    } else {
+        val = this.loadValue(model);
+        if (!isNil(val) && input.setContents) {
+            // NetsBlox addition: start
+            if (input instanceof MessageInputSlotMorph) {
+                var typeName = this.loadValue(model),
+                    messageType = this.project.stage.messageTypes.getMsgType(typeName);
+
+                input.setContents(typeName, null, messageType);
+            } else {
+                input.setContents(this.loadValue(model));
+            }
+            // NetsBlox addition: end
+        }
+    }
 };
 
 NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
