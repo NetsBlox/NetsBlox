@@ -352,7 +352,7 @@ WebSocketManager.prototype.startProcesses = function () {
                 null,
                 null,
                 null,
-                false,
+                true,
                 process.context
             );
             if (!this.processes[i].length) {
