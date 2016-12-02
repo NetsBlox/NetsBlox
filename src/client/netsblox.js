@@ -1007,7 +1007,7 @@ NetsBloxMorph.prototype.initializeCloud = function () {
 
 NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
     var newRoom = project.RoomName,
-        isNewRole = project.NewRole,
+        isNewRole = project.NewRole === 'true',
         roleId = project.ProjectName;  // src proj name
 
     this.source = 'cloud';
