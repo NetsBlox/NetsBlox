@@ -2,7 +2,7 @@
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, newCanvas,
-   NetsBloxSerializer*/
+   NetsBloxSerializer, nop*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -769,6 +769,10 @@ NetsBloxMorph.prototype.openRoomString = function (str) {
         roles = {},
         role;
 
+    // remove empty (malformed) roles
+    room.children = room.children.filter(function(role) {
+        return role.children.length;
+    });
     if (!room.children[0]) {
         this.showMessage('Malformed room - No roles found.');
         return;
