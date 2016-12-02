@@ -769,6 +769,8 @@ NetsBloxMorph.prototype.openRoomString = function (str) {
         roles = {},
         role;
 
+    // remove empty (malformed) roles
+    room.children = room.children.filter(role => role.children.length);
     if (!room.children[0]) {
         this.showMessage('Malformed room - No roles found.');
         return;
