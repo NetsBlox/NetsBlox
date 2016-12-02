@@ -121,7 +121,6 @@ var joinActiveProject = function(user, room, res) {
         openRole,
         role;
 
-    // TODO: Send message to the client
     openRole = Object.keys(room.roles)
         .filter(role => !room.roles[role])  // not occupied
         .shift();
