@@ -1001,3 +1001,31 @@ NetsBloxMorph.prototype.initializeCloud = function () {
     );
 };
 
+NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
+    var newRoom = project.RoomName,
+        roleId = project.ProjectName;  // src proj name
+
+    this.source = 'cloud';
+    if (project.SourceCode) {
+        this.droppedText(project.SourceCode);
+        this.room.nextRoom = {
+            ownerId: SnapCloud.username,
+            roomName: newRoom,
+            roleId: roleId
+        };
+    } else {  // initialize an empty code base
+        this.clearProject();
+        this.room._name = newRoom;  // silent set name
+        // FIXME: this could cause problems later
+        this.room.ownerId = SnapCloud.username;
+        this.silentSetProjectName(roleId);
+        this.sockets.updateRoomInfo();
+    }
+    if (isPublic === 'true') {
+        location.hash = '#present:Username=' +
+            encodeURIComponent(SnapCloud.username) +
+            '&ProjectName=' +
+            encodeURIComponent(newRoom);
+    }
+};
+

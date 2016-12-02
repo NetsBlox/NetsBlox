@@ -1,3 +1,8 @@
+/* globals ProjectDialogMorph, Morph, AlignmentMorph, InputFieldMorph, localize,
+   Point, TextMorph, Color, nop, ListMorph, IDE_Morph, Process, BlockImportDialogMorph,
+   BlockExportDialogMorph, detect, SnapCloud, SnapSerializer, ScrollFrameMorph,
+   DialogBoxMorph
+   */
 ProjectDialogMorph.prototype.buildContents = function () {
     var thumbnail, notification;
 
@@ -284,39 +289,70 @@ ProjectDialogMorph.prototype.openProject = function () {
     }
 };
 
-ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
+ProjectDialogMorph.prototype.openCloudProject = function (project) {
     var myself = this,
-        newRoom = proj.ProjectName,
-        ide = this.ide;  // project name from the list
+        msg;
+
+    myself.ide.nextSteps([
+        function () {
+            msg = myself.ide.showMessage('Fetching project\nfrom the cloud...');
+        },
+        function () {
+            SnapCloud.reconnect(function() {
+                SnapCloud.callService(
+                    'isProjectActive',
+                    function(response) {
+                        var isActive = response[0].active === 'true',
+                            choices,
+                            dialog;
+
+                        if (isActive) {
+                            // Prompt if we should join the project or open new
+                            dialog = new DialogBoxMorph(null, nop);
+                            choices = {};
+                            choices['Join Existing'] = function() {
+                                SnapCloud.callService('joinActiveProject', function(response) {
+                                    myself.ide.rawLoadCloudProject(response[0], project.Public);
+                                }, myself.ide.cloudError(), [project.ProjectName]);
+                                dialog.destroy();
+                                myself.destroy();
+                            };
+                            choices['Create Copy'] = function() {
+                                myself.rawOpenCloudProject(project);
+                                dialog.destroy();
+                            };
+                            dialog.ask(
+                                localize('Join Existing Project'),
+                                localize('This project is already open. Would you like to join\n' +
+                                    'the active one or create a new copy?'),
+                                myself.world(),
+                                choices
+                            );
+                        } else {
+                            myself.rawOpenCloudProject(project);
+                        }
+                    },
+                    myself.ide.cloudError(),
+                    [project.ProjectName]
+                );
+            }, myself.ide.cloudError());
+
+        },
+        function() {
+            msg.destroy();
+        }
+    ]);
+};
+
+ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
+    var myself = this;
 
     SnapCloud.reconnect(
         function () {
             SnapCloud.callService(
                 'getProject',
                 function (response) {
-                    var roleId = response[0].ProjectName;  // src proj name
-                    ide.source = 'cloud';
-                    if (response[0].SourceCode) {
-                        ide.droppedText(response[0].SourceCode);
-                        ide.room.nextRoom = {
-                            ownerId: SnapCloud.username,
-                            roomName: newRoom,
-                            roleId: roleId
-                        };
-                    } else {  // initialize an empty code base
-                        ide.clearProject();
-                        ide.room._name = newRoom;  // silent set name
-                        // FIXME: this could cause problems later
-                        ide.room.ownerId = SnapCloud.username;
-                        ide.silentSetProjectName(roleId);
-                        ide.sockets.updateRoomInfo();
-                    }
-                    if (proj.Public === 'true') {
-                        location.hash = '#present:Username=' +
-                            encodeURIComponent(SnapCloud.username) +
-                            '&ProjectName=' +
-                            encodeURIComponent(proj.ProjectName);
-                    }
+                    myself.ide.rawLoadCloudProject(response[0], proj.Public);
                 },
                 myself.ide.cloudError(),
                 [proj.ProjectName]

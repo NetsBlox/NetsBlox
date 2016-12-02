@@ -3,7 +3,6 @@
  */
 'use strict';
 var counter = 0,
-    generate = require('project-name-generator'),
     Constants = require(__dirname + '/../../common/Constants'),
     publicRoleManager = require(__dirname + '/../PublicRoleManager'),
     PROJECT_FIELDS = [
@@ -134,24 +133,7 @@ class NetsBloxSocket {
 
     getNewName (name) {
         if (this.user) {
-            var nameExists = {};
-            this.user.rooms.forEach(room => nameExists[room.name] = true);
-
-            if (name) {
-                var i = 2,
-                    basename = name;
-
-                do {
-                    name = `${basename} (${i++})`;
-                } while (nameExists[name]);
-
-            } else {
-                // Create base name
-                do {
-                    name = generate().spaced;
-                } while (nameExists[name]);
-            }
-
+            name = this.user.getNewName(name);
         } else {
             name = 'New Room ' + (Date.now() % 100);
         }
