@@ -287,7 +287,6 @@ module.exports = [
                 rooms = getRoomsNamed.call(this, roomName, user);
 
             log(`${user.username} is checking if project "${req.body.ProjectName}" is active`);
-            console.log('response:', rooms.areSame);
             // Check if it is actually the same - do the originTime's match?
             return res.send(`active=${rooms.areSame}`);
         }
