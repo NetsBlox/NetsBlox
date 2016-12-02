@@ -1007,6 +1007,7 @@ NetsBloxMorph.prototype.initializeCloud = function () {
 
 NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
     var newRoom = project.RoomName,
+        isNewRole = project.NewRole === 'true',
         roleId = project.ProjectName;  // src proj name
 
     this.source = 'cloud';
@@ -1024,6 +1025,9 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
         this.room.ownerId = SnapCloud.username;
         this.silentSetProjectName(roleId);
         this.sockets.updateRoomInfo();
+        if (isNewRole) {
+            this.showMessage(localize('A new role has been created for you at ' + newRoom));
+        }
     }
     if (isPublic === 'true') {
         location.hash = '#present:Username=' +

@@ -119,6 +119,7 @@ var createCopyFrom = function(user, project) {
 var joinActiveProject = function(user, room, res) {
     var serialized,
         openRole,
+        createdNewRole = false,
         role;
 
     openRole = Object.keys(room.roles)
@@ -149,6 +150,7 @@ var joinActiveProject = function(user, room, res) {
             `"${room.name}"`);
 
         room.createRole(openRole);
+        createdNewRole = true;
         role = {
             ProjectName: openRole,
             SourceCode: null,
@@ -157,7 +159,7 @@ var joinActiveProject = function(user, room, res) {
         room.cachedProjects[openRole] = role;
     }
     serialized = Utils.serializeRole(role, room.name);
-    return res.send(serialized);
+    return res.send(`NewRole=${createdNewRole}&${serialized}`);
 };
 
 module.exports = [
