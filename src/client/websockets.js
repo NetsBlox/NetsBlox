@@ -1,4 +1,4 @@
-/*globals nop, SnapCloud, Context, SpriteMorph, StageMorph*/
+/*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
