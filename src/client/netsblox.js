@@ -2,7 +2,7 @@
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, newCanvas,
-   NetsBloxSerializer, nop*/
+   NetsBloxSerializer, nop, SnapActions*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
