@@ -1,3 +1,4 @@
+/* globals UndoManager, ActionManager, SnapActions */
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
@@ -21,18 +22,18 @@ ActionManager.prototype.onAddMessageType = function(name, fields) {
 };
 
 ActionManager.prototype.onDeleteMessageType = function(name) {
-    var ide = this.ide()
+    var ide = this.ide();
     ide.stage.deleteMessageType(name);
     ide.flushBlocksCache('services');  //  b/c of inheritance
     ide.refreshPalette();
 };
 
-UndoManager.Invert.addMessageType = function(args) {
+UndoManager.Invert.addMessageType = function() {
     return 'deleteMessageType';
 };
 
-UndoManager.Invert.deleteMessageType = function(args) {
+UndoManager.Invert.deleteMessageType = function() {
     return 'addMessageType';
 };
 
-SnapActions._ws.close();  // FIXME: Enable collaboration
+SnapActions.supportsCollaboration = false;
