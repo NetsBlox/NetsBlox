@@ -3,7 +3,7 @@
    localize, BlockEditorMorph, BlockDialogMorph, TextMorph, PushButtonMorph,
    MessageFrame, BlockMorph, ToggleMorph, MessageCreatorMorph,
    VariableDialogMorph, SnapCloud, contains, List, CommandBlockMorph,
-   MessageType, isNil, RingMorph*/
+   MessageType, isNil, RingMorph, SnapActions*/
 
 SpriteMorph.prototype.categories =
     [
@@ -407,25 +407,21 @@ SpriteMorph.prototype.blockTemplates = function (category) {
     }
 
     function addVar(pair) {
-        var ide;
         if (pair) {
             if (myself.isVariableNameInUse(pair[0], pair[1])) {
                 myself.inform('that name is already in use');
             } else {
-                ide = myself.parentThatIsA(IDE_Morph);
-                myself.addVariable(pair[0], pair[1]);
-                if (!myself.showingVariableWatcher(pair[0])) {
-                    myself.toggleVariableWatcher(pair[0], pair[1]);
-                }
-                ide.flushBlocksCache('variables'); // b/c of inheritance
-                ide.refreshPalette();
+                SnapActions.addVariable(pair[0], pair[1] || myself.id);
             }
         }
     }
 
+    function deleteVar(name) {
+        SnapActions.deleteVariable(name, myself.id);
+    }
+
     function addMessageType(desc) {
-        var stage = myself.parentThatIsA(StageMorph),
-            ide;
+        var stage = myself.parentThatIsA(StageMorph);
 
         desc.fields = desc.fields.filter(function(field) {
             return !!field;
@@ -435,10 +431,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         if (stage.messageTypes.getMsgType(desc.name)) {
             myself.inform('that name is already in use');
         } else {
-            stage.addMessageType(desc);
-            ide = myself.parentThatIsA(IDE_Morph);
-            ide.flushBlocksCache(cat); // b/c of inheritance
-            ide.refreshPalette();
+            SnapActions.addMessageType(desc.name, desc.fields);
         }
     }
 
@@ -654,9 +647,10 @@ SpriteMorph.prototype.blockTemplates = function (category) {
                 null,
                 function () {
                     var menu = new MenuMorph(
-                        myself.deleteMessageType,
-                        null,
-                        myself
+                        function(name) {
+                            SnapActions.deleteMessageType(name);
+                        },
+                        null
                     );
                     myself.deletableMessageNames().forEach(function (name) {
                         menu.addItem(name, name);
@@ -815,7 +809,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
                 null,
                 function () {
                     var menu = new MenuMorph(
-                        myself.deleteVariable,
+                        deleteVar,
                         null,
                         myself
                     );
@@ -888,6 +882,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('reportMap'));
             blocks.push('-');
             blocks.push(block('doForEach'));
+            blocks.push(block('doShowTable'));
         }
 
     /////////////////////////////////
@@ -903,6 +898,33 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             blocks.push('=');
         }
 
+        button = new PushButtonMorph(
+            null,
+            function () {
+                new BlockDialogMorph(
+                    null,
+                    function (definition) {
+                        if (definition.spec !== '') {
+                            SnapActions.addCustomBlock(definition, myself)
+                                .accept(function(def) {
+                                    var editor = new BlockEditorMorph(def, myself);
+                                    editor.popUp();
+                                });
+                        }
+                    },
+                    myself
+                ).prompt(
+                    'Make a block',
+                    null,
+                    myself.world()
+                );
+            },
+            'Make a block'
+        );
+        button.userMenu = helpMenu;
+        button.selector = 'addCustomBlock';
+        button.showHelp = BlockMorph.prototype.showHelp;
+        blocks.push(button);
     } else if (cat === 'custom') {
         button = new PushButtonMorph(
             null,
@@ -980,6 +1002,7 @@ StageMorph.prototype.freshPalette = SpriteMorph.prototype.freshPalette;
 StageMorph.prototype._init = StageMorph.prototype.init;
 StageMorph.prototype.init = function (globals) {
     this.messageTypes = new MessageFrame();
+
     this.addMessageType({  // Add initial message type
         name: 'message',
         fields: ['msg']
@@ -1004,7 +1027,7 @@ StageMorph.prototype.addMessageTypeByName = function (name) {
     }
 
     msgType = JSON.parse(request.responseText);
-    this.addMessageType(msgType);
+    SnapActions.addMessageType(msgType.name, msgType.fields);
 };
 
 StageMorph.prototype.addMessageType = function (messageType) {
@@ -1139,18 +1162,17 @@ StageMorph.prototype.blockTemplates = function (category) {
             if (myself.isVariableNameInUse(pair[0])) {
                 myself.inform('that name is already in use');
             } else {
-                myself.addVariable(pair[0], pair[1]);
-                myself.toggleVariableWatcher(pair[0], pair[1]);
-                myself.blocksCache[cat] = null;
-                myself.paletteCache[cat] = null;
-                myself.parentThatIsA(IDE_Morph).refreshPalette();
+                SnapActions.addVariable(pair[0], pair[1] || myself.id);
             }
         }
     }
 
+    function deleteVar(name) {
+        SnapActions.deleteVariable(name, myself.id);
+    }
+
     function addMessageType(desc) {
-        var stage = myself.parentThatIsA(StageMorph),
-            ide;
+        var stage = myself.parentThatIsA(StageMorph);
 
         desc.fields = desc.fields.filter(function(field) {
             return !!field;
@@ -1160,10 +1182,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         if (stage.messageTypes.getMsgType(desc.name)) {
             myself.inform('that name is already in use');
         } else {
-            stage.addMessageType(desc);
-            ide = myself.parentThatIsA(IDE_Morph);
-            ide.flushBlocksCache(cat); // b/c of inheritance
-            ide.refreshPalette();
+            SnapActions.addMessageType(desc.name, desc.fields);
         }
     }
 
@@ -1277,9 +1296,10 @@ StageMorph.prototype.blockTemplates = function (category) {
                 null,
                 function () {
                     var menu = new MenuMorph(
-                        myself.deleteMessageType,
-                        null,
-                        myself
+                        function(name) {
+                            SnapActions.deleteMessageType(name);
+                        },
+                        null
                     );
                     myself.deletableMessageNames().forEach(function (name) {
                         menu.addItem(name, name);
@@ -1483,7 +1503,7 @@ StageMorph.prototype.blockTemplates = function (category) {
                 null,
                 function () {
                     var menu = new MenuMorph(
-                        myself.deleteVariable,
+                        deleteVar,
                         null,
                         myself
                     );
@@ -1542,6 +1562,7 @@ StageMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('reportMap'));
             blocks.push('-');
             blocks.push(block('doForEach'));
+            blocks.push(block('doShowTable'));
         }
 
     /////////////////////////////////
@@ -1557,6 +1578,30 @@ StageMorph.prototype.blockTemplates = function (category) {
             blocks.push('=');
         }
 
+        button = new PushButtonMorph(
+            null,
+            function () {
+                new BlockDialogMorph(
+                    null,
+                    function (definition) {
+                        if (definition.spec !== '') {
+                            SnapActions.addCustomBlock(definition, myself)
+                                .accept(function(def) {
+                                    var editor = new BlockEditorMorph(def, myself);
+                                    editor.popUp();
+                                });
+                        }
+                    },
+                    myself
+                ).prompt(
+                    'Make a block',
+                    null,
+                    myself.world()
+                );
+            },
+            'Make a block'
+        );
+        blocks.push(button);
     } else if (cat === 'custom') {
         button = new PushButtonMorph(
             null,
