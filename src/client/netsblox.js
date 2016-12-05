@@ -221,14 +221,8 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
             myself, // the IDE is the target
             function () {
                 if (myself.currentSprite instanceof SpriteMorph) {
-                    myself.currentSprite.rotationStyle = rotationStyle;
-                    myself.currentSprite.changed();
-                    myself.currentSprite.drawNew();
-                    myself.currentSprite.changed();
+                    SnapActions.setRotationStyle(myself.currentSprite, rotationStyle);
                 }
-                rotationStyleButtons.forEach(function (each) {
-                    each.refresh();
-                });
             },
             symbols[rotationStyle], // label
             function () {  // query
@@ -289,12 +283,15 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
     this.spriteBar.add(nameField);
     nameField.drawNew();
     nameField.accept = function () {
-        var newName = nameField.getValue();
-        myself.currentSprite.setName(
-            myself.newSpriteName(newName, myself.currentSprite)
-        );
-        nameField.setContents(myself.currentSprite.name);
+        var newName = nameField.getValue(),
+            currentName = myself.currentSprite.name,
+            safeName = myself.newSpriteName(newName, myself.currentSprite);
+
+        if (safeName !== currentName) {
+            SnapActions.renameSprite(myself.currentSprite, safeName);
+        }
     };
+    this.spriteBar.nameField = nameField;
     this.spriteBar.reactToEdit = nameField.accept;
 
     // padlock
@@ -302,8 +299,7 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
         'checkbox',
         null,
         function () {
-            myself.currentSprite.isDraggable =
-                !myself.currentSprite.isDraggable;
+            SnapActions.toggleDraggable(myself.currentSprite, !myself.currentSprite.isDraggable);
         },
         localize('draggable'),
         function () {
@@ -326,6 +322,7 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
     padlock.setPosition(nameField.bottomLeft().add(2));
     padlock.drawNew();
     this.spriteBar.add(padlock);
+    this.spriteBar.padlock = padlock;
     if (this.currentSprite instanceof StageMorph) {
         padlock.hide();
     }
@@ -400,6 +397,7 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
     tab.fixLayout();
     tabBar.add(tab);
 
+    // NetsBlox addition: start
     tab = new TabMorph(
         tabColors,
         null, // target
@@ -418,6 +416,7 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
     tab.drawNew();
     tab.fixLayout();
     tabBar.add(tab);
+    // NetsBlox addition: end
 
     tabBar.fixLayout();
     tabBar.children.forEach(function (each) {
