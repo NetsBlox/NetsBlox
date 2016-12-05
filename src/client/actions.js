@@ -5,7 +5,6 @@ SnapActions.addActions(
     'deleteMessageType'
 );
 
-// TODO: Add actions for importing message types
 ActionManager.prototype._deleteMessageType = function(name) {
     var fields = this.ide().stage.messageTypes.getMsgType(name).fields;
     return [name, fields];

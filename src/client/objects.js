@@ -3,7 +3,7 @@
    localize, BlockEditorMorph, BlockDialogMorph, TextMorph, PushButtonMorph,
    MessageFrame, BlockMorph, ToggleMorph, MessageCreatorMorph,
    VariableDialogMorph, SnapCloud, contains, List, CommandBlockMorph,
-   MessageType, isNil, RingMorph*/
+   MessageType, isNil, RingMorph, SnapActions*/
 
 SpriteMorph.prototype.categories =
     [
@@ -424,8 +424,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
     }
 
     function addMessageType(desc) {
-        var stage = myself.parentThatIsA(StageMorph),
-            ide;
+        var stage = myself.parentThatIsA(StageMorph);
 
         desc.fields = desc.fields.filter(function(field) {
             return !!field;
