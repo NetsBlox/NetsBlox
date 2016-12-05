@@ -77,8 +77,7 @@ WebSocketManager.MessageHandlers = {
     },
 
     'project-fork': function() {
-        // I should probably change this... FIXME
-        this.ide.showMessage('That other room sucked. You are now the boss.');
+        this.ide.showMessage('You have been evicted from the room.\nYou are now the owner.');
     },
 
     'project-request': function(msg) {
@@ -352,7 +351,7 @@ WebSocketManager.prototype.startProcesses = function () {
                 null,
                 null,
                 null,
-                false,
+                true,
                 process.context
             );
             if (!this.processes[i].length) {

@@ -51,6 +51,15 @@ describe('ConnectN Tests', function() {
             code = connectn.play({uuid: 'p1', row: 3, column: -1}).code;
             assert.equal(code, 400);
         });
+
+        it('should support non-square board', function() {
+            var code;
+
+            connectn.newGame({row: 3, column: 5});
+            code = connectn.play({uuid: 'p1', row: 1, column: 1}).code;
+
+            assert.equal(code, 200);
+        });
     });
 
 

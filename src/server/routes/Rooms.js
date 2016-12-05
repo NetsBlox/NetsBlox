@@ -47,7 +47,7 @@ var acceptInvitation = function(username, id, response, socketId, callback) {
 
         project = room.cachedProjects[invite.role] || null;
         if (project) {
-            project = Utils.serializeProject(project);
+            project = Utils.serializeRole(project, room.name);
         }
         callback(null, project);
     }
@@ -290,7 +290,7 @@ module.exports = [
                 // Reply w/ the new role code
                 var project = room.cachedProjects[dstId] || null;
                 if (project) {
-                    project = Utils.serializeProject(project);
+                    project = Utils.serializeRole(project, room.name);
                 }
                 res.send(project);
             });

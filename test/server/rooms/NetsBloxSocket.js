@@ -18,18 +18,6 @@ describe('NetsBloxSocket', function() {
             var name = socket.getNewName();
             assert(name);
         });
-
-        it('should generate not collide w/ existing names', function() {
-            var names = ['myRoom', 'TicTacToe', 'Example2'],
-                name;
-
-            socket.user = {};
-            socket.user.rooms = names.map(n => {
-                return {name: n}
-            });
-            name = socket.getNewName();
-            assert.equal(names.indexOf(name), -1);
-        });
     });
 
     describe('send', function() {

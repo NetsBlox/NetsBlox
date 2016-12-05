@@ -222,7 +222,7 @@ ConnectN.getNewBoard = function(row, col) {
 };
 
 ConnectN.rotateBoard = function(board) {
-    var rotatedBoard = ConnectN.getNewBoard(board.length, board[0].length);
+    var rotatedBoard = ConnectN.getNewBoard(board[0].length, board.length);
     for (var row = 0; row < board.length; row++) {
         for (var col = 0; col < board[row].length; col++) {
             rotatedBoard[col][row] = board[row][col];

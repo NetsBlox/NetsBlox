@@ -25,21 +25,20 @@ function MessageInputSlotMorph() {
     this.isStatic = true;
 }
 
-MessageInputSlotMorph.prototype.setContents = function(messageType, inputs) {
-    var self = this,
-        targetRole = inputs && inputs.pop ? inputs.pop() : '',
+MessageInputSlotMorph.prototype.setContents = function(msgTypeName, inputs, messageType) {
+    var targetRole = inputs && inputs.pop ? inputs.pop() : '',
         targetDropdown,
         len;
 
     // Set the value for the dropdown
-    InputSlotMorph.prototype.setContents.call(this, messageType);
+    InputSlotMorph.prototype.setContents.call(this, msgTypeName);
 
     // Create the message fields
-    this._updateMessage(messageType, function() {
-        if (self.parent) {
-            self._updateFields(inputs);
-        }
-    });
+    messageType = messageType || this._getMsgType();
+    this.msgFields = messageType ? messageType.fields : [];
+    if (this.parent) {
+        this._updateFields(inputs);
+    }
 
     // Set the target
     if (targetRole) {
@@ -51,20 +50,6 @@ MessageInputSlotMorph.prototype.setContents = function(messageType, inputs) {
             this.parent.silentReplaceInput(targetDropdown, targetRole);
         }
     }
-};
-
-MessageInputSlotMorph.prototype._updateMessage = function(name, cb) {
-    // Get the message type
-    var messageType = this._getMsgType();
-
-    this.msgFields = [];
-    if (name) {
-        if (!messageType) {  // the message types are being retrieved from the server... waiting
-            return setTimeout(this._updateMessage.bind(this, name, cb), 100);
-        }
-        this.msgFields = messageType.fields;
-    }
-    cb();
 };
 
 MessageInputSlotMorph.prototype._updateFields = function(values) {
@@ -99,6 +84,8 @@ MessageInputSlotMorph.prototype._updateFields = function(values) {
     }
     this.fixLayout();
     this.drawNew();
+    this.parent.fixLayout();
+    this.parent.changed();
 };
 
 MessageInputSlotMorph.prototype.setDefaultFieldArg = function(index) {

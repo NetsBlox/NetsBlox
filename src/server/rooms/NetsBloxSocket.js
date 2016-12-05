@@ -3,8 +3,8 @@
  */
 'use strict';
 var counter = 0,
-    generate = require('project-name-generator'),
     Constants = require(__dirname + '/../../common/Constants'),
+    publicRoleManager = require(__dirname + '/../PublicRoleManager'),
     PROJECT_FIELDS = [
         'ProjectName',
         'SourceCode',
@@ -133,24 +133,7 @@ class NetsBloxSocket {
 
     getNewName (name) {
         if (this.user) {
-            var nameExists = {};
-            this.user.rooms.forEach(room => nameExists[room.name] = true);
-
-            if (name) {
-                var i = 2,
-                    basename = name;
-
-                do {
-                    name = `${basename} (${i++})`;
-                } while (nameExists[name]);
-
-            } else {
-                // Create base name
-                do {
-                    name = generate().spaced;
-                } while (nameExists[name]);
-            }
-
+            name = this.user.getNewName(name);
         } else {
             name = 'New Room ' + (Date.now() % 100);
         }
@@ -238,7 +221,22 @@ NetsBloxSocket.MessageHandlers = {
     'beat': function() {},
 
     'message': function(msg) {
-        msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
+        if (!this.hasRoom()) {
+            this._logger.error(`Cannot send a message when not in a room! ${this.username} (${this.uuid})`);
+            return;
+        }
+
+        if (msg.dstId === 'others in room' || msg.dstId === Constants.EVERYONE ||
+            this._room.roles.hasOwnProperty(msg.dstId)) {  // local message
+
+            msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
+        } else {  // inter-room message
+            var socket = publicRoleManager.lookUp(msg.dstId);
+            if (socket) {
+                msg.dstId = Constants.EVERYONE;
+                socket.send(msg);
+            }
+        }
     },
 
     'project-response': function(msg) {

@@ -2,7 +2,7 @@
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, newCanvas,
-   NetsBloxSerializer*/
+   NetsBloxSerializer, nop*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -769,6 +769,10 @@ NetsBloxMorph.prototype.openRoomString = function (str) {
         roles = {},
         role;
 
+    // remove empty (malformed) roles
+    room.children = room.children.filter(function(role) {
+        return role.children.length;
+    });
     if (!room.children[0]) {
         this.showMessage('Malformed room - No roles found.');
         return;
@@ -999,5 +1003,37 @@ NetsBloxMorph.prototype.initializeCloud = function () {
         myself.cloudIcon(),
         myself.cloudMsg
     );
+};
+
+NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
+    var newRoom = project.RoomName,
+        isNewRole = project.NewRole === 'true',
+        roleId = project.ProjectName;  // src proj name
+
+    this.source = 'cloud';
+    if (project.SourceCode) {
+        this.droppedText(project.SourceCode);
+        this.room.nextRoom = {
+            ownerId: SnapCloud.username,
+            roomName: newRoom,
+            roleId: roleId
+        };
+    } else {  // initialize an empty code base
+        this.clearProject();
+        this.room._name = newRoom;  // silent set name
+        // FIXME: this could cause problems later
+        this.room.ownerId = SnapCloud.username;
+        this.silentSetProjectName(roleId);
+        this.sockets.updateRoomInfo();
+        if (isNewRole) {
+            this.showMessage(localize('A new role has been created for you at ' + newRoom));
+        }
+    }
+    if (isPublic === 'true') {
+        location.hash = '#present:Username=' +
+            encodeURIComponent(SnapCloud.username) +
+            '&ProjectName=' +
+            encodeURIComponent(newRoom);
+    }
 };
 

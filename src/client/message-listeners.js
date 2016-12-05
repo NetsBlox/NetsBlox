@@ -1,11 +1,12 @@
 /* global MessageInputSlotMorph, InputSlotMorph, TemplateSlotMorph, detect,
-   SpriteMorph, StageMorph, ReporterBlockMorph, BlockInputFragmentMorph
+   SpriteMorph, StageMorph, ReporterBlockMorph, BlockInputFragmentMorph,
+   BlockMorph
    */
 // MessageOutputSlotMorph //////////////////////////////////////////////
 // I am a dropdown menu with an associated message type
 // OutputSlotMorph inherits from ArgMorph:
 
-MessageOutputSlotMorph.prototype = new MessageInputSlotMorph();
+MessageOutputSlotMorph.prototype = Object.create(MessageInputSlotMorph.prototype);
 MessageOutputSlotMorph.prototype.constructor = MessageOutputSlotMorph;
 MessageOutputSlotMorph.uber = MessageInputSlotMorph.prototype;
 
@@ -27,22 +28,20 @@ MessageOutputSlotMorph.prototype.evaluate = function() {
 
 MessageOutputSlotMorph.prototype._updateFields = function(values) {
     // Remove the old message fields (parent's inputs)
-    var children = this.parent.children,
-        myIndex = children.indexOf(this),
-        input,
+    var input,
         removed = [],
         scripts = this.parentThatIsA(ScriptsMorph),
         i;
 
     // Remove the "i" fields after the current morph
-    for (var i = 0; i < this.parent.children.length; i++) {
-         if (this.parent.children[i] instanceof ReadOnlyTemplateSlotMorph) {
-             input = this.parent.children[i];
-             removed.push(input);
-             this.parent.removeChild(input);
-             i--;
-         }
-      }
+    for (i = 0; i < this.parent.children.length; i++) {
+        if (this.parent.children[i] instanceof ReadOnlyTemplateSlotMorph) {
+            input = this.parent.children[i];
+            removed.push(input);
+            this.parent.removeChild(input);
+            i--;
+        }
+    }
 
     if (scripts) {
         removed
@@ -60,26 +59,26 @@ MessageOutputSlotMorph.prototype._updateFields = function(values) {
     }
     this.fixLayout();
     this.drawNew();
+    this.parent.fixLayout();
+    this.parent.changed();
 };
 
-MessageOutputSlotMorph.prototype.setContents = function(messageType, inputs) {
-    var self = this;
-
+MessageOutputSlotMorph.prototype.setContents = function(msgTypeName, inputs, messageType) {
     // Set the value for the dropdown
-    InputSlotMorph.prototype.setContents.call(this, messageType);
+    InputSlotMorph.prototype.setContents.call(this, msgTypeName);
 
     // Create the message fields
-    this._updateMessage(messageType, function() {
-        if (self.parent) {
-            self._updateFields(inputs);
-        }
-    });
+    messageType = messageType || this._getMsgType();
+    this.msgFields = messageType ? messageType.fields : [];
+    if (this.parent) {
+        this._updateFields(inputs);
+    }
 };
 
 MessageOutputSlotMorph.prototype._updateField = function(field) {
     var result = new ReadOnlyTemplateSlotMorph(field);
     this.parent.add(result);
-    result.fixLayout();
+    //result.fixLayout();
     result.drawNew();
     return result;
 };

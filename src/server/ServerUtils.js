@@ -32,18 +32,20 @@ var uuid = function(owner, name) {
     return owner + '/' + name;
 };
 
-var serializeProject = (project) => {
-    var src = project.SourceCode ? 
+var serializeRole = (project, roomName) => {
+    var src;
+    src = project.SourceCode ? 
         `<snapdata>+${encodeURIComponent(project.SourceCode + project.Media)}</snapdata>` :
         '';
-    return serialize(R.omit(['SourceCode', 'Media'], project)) + `&SourceCode=${src}`;
+    return `RoomName=${encodeURIComponent(roomName)}&${serialize(R.omit(['SourceCode', 'Media'],
+        project))}&SourceCode=${src}`;
 };
 
 module.exports = {
     serialize: serialize,
     loadJsFiles: loadJsFiles,
     serializeArray: serializeArray,
-    serializeProject: serializeProject,
+    serializeRole: serializeRole,
     uuid: uuid
 
 };
