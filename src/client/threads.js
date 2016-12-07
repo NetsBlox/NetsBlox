@@ -1,4 +1,5 @@
-/* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph, Message */
+/* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
+   Message, List */
 ThreadManager.prototype.startProcess = function (
     block,
     isThreadSafe,
@@ -178,8 +179,14 @@ NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
             // nop
         }
     }
+
+    result = this.parseRPCResult(result);
+    return result;
+};
+
+NetsProcess.prototype.parseRPCResult = function (result) {
     if (result instanceof Array) {
-        result = new List(result);
+        return new List(result.map(this.parseRPCResult.bind(this)));
     }
     return result;
 };
