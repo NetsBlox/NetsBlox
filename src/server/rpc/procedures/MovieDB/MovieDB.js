@@ -46,6 +46,11 @@ MovieDB.getActions = function() {
     return [
         'searchMovie',  // search movie by title
         'movieInfo', // get information about a movie based on ID
+        'movieCredits', // get the cast (person IDs) of a movie based on movie ID
+        'personInfo', // get information about a person based on ID
+        'personRoles', // get the movies of a person (movie IDs) based on person ID
+        'personImages', // get photo paths by person ID
+        'personCredits', // get the movies (movie IDs) by person ID
         'getImage' // get an image from a server
     ];
 };
@@ -83,7 +88,132 @@ MovieDB.prototype.movieInfo = function(req, rsp) {
     mdb.movieInfo(req.query, (err,res) => {
         if(!err) {
             if(res[req.query.field]) {
-                rsp.status(200).send(""+res[req.query.field]);
+                // treat genres in a special way
+                if(req.query.field == "genres") {
+                    rsp.status(200).send(res[req.query.field].map(g => g.name));
+                } else {
+                    rsp.status(200).send(""+res[req.query.field]);
+                }
+            } else {
+                rsp.status(400).send("Requested field name does not exist");
+            }
+        }
+        else {
+            rsp.status(400).send("");
+        }
+    });
+};
+
+
+MovieDB.prototype.personInfo = function(req, rsp) {
+
+    if(!req.query.field) {
+        rsp.status(400).send("Requested field name not specified");        
+        return;
+    }
+
+    if(!req.query.id) {
+        rsp.status(400).send("Person ID not specified");        
+        return;
+    }
+
+    req.query.id = +req.query.id;
+    info(req.query);
+
+    mdb.personInfo(req.query, (err,res) => {
+        if(!err) {
+            if(res[req.query.field]) {
+                rsp.status(200).send(res[req.query.field]);
+            } else {
+                rsp.status(400).send("Requested field name does not exist");
+            }
+        }
+        else {
+            rsp.status(400).send("");
+        }
+    });
+};
+
+
+MovieDB.prototype.movieCredits = function(req, rsp) {
+
+    if(!req.query.id) {
+        rsp.status(400).send("Movie ID not specified");        
+        return;
+    }
+
+    req.query.id = +req.query.id;
+    info(req.query);
+
+    mdb.movieCredits(req.query, (err,res) => {
+        if(!err) {
+            if(res[req.query.field]) {
+                // treat cast in a special way
+                if(req.query.field == "cast") {
+                    rsp.status(200).send(res[req.query.field].map(obj => obj.id));
+                } else {
+                    rsp.status(200).send(""+res[req.query.field]);
+                }
+            } else {
+                rsp.status(400).send("Requested field name does not exist");
+            }
+        }
+        else {
+            rsp.status(400).send("");
+        }
+    });
+};
+
+MovieDB.prototype.personImages = function(req, rsp) {
+
+    if(!req.query.id) {
+        rsp.status(400).send("Person ID not specified");        
+        return;
+    }
+
+    req.query.id = +req.query.id;
+    info(req.query);
+
+    mdb.personImages(req.query, (err,res) => {
+        if(!err) {
+
+            info(res);
+
+            if(res[req.query.field]) {
+                // treat profiles in a special way
+                if(req.query.field == "profiles") {
+                    rsp.status(200).send(res[req.query.field].map(obj => obj.file_path));
+                } else {
+                    rsp.status(200).send(""+res[req.query.field]);
+                }
+            } else {
+                rsp.status(400).send("Requested field name does not exist");
+            }
+        }
+        else {
+            rsp.status(400).send("");
+        }
+    });
+};
+
+MovieDB.prototype.personCredits = function(req, rsp) {
+
+    if(!req.query.id) {
+        rsp.status(400).send("Person ID not specified");        
+        return;
+    }
+
+    req.query.id = +req.query.id;
+
+    mdb.personMovieCredits(req.query, (err,res) => {
+        if(!err) {
+            if(res[req.query.field]) {
+                // treat cast in a special way
+                if(req.query.field == "cast") {
+                    rsp.status(200).send(res[req.query.field].map(obj => obj.id));
+                } else {
+                    rsp.status(200).send(""+res[req.query.field]);
+                }
             } else {
                 rsp.status(400).send("Requested field name does not exist");
             }
