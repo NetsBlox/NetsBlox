@@ -5,6 +5,7 @@ SnapActions.addActions(
     'deleteMessageType'
 );
 
+ActionManager.URL = 'ws://' + window.location.host + '/collaboration';
 ActionManager.prototype._deleteMessageType = function(name) {
     var fields = this.ide().stage.messageTypes.getMsgType(name).fields;
     return [name, fields];
@@ -34,5 +35,3 @@ UndoManager.Invert.addMessageType = function() {
 UndoManager.Invert.deleteMessageType = function() {
     return 'addMessageType';
 };
-
-SnapActions.supportsCollaboration = false;
