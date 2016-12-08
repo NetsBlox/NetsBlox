@@ -442,12 +442,14 @@ NetsBloxMorph.prototype.projectMenu = function () {
 
     // Utility for creating Costumes, etc menus.
     // loadFunction takes in two parameters: a file URL, and a canonical name
-    function createMediaMenu(mediaType, loadFunction) {
+    function createMediaMenu(mediaType, loadFunction, header) {
         return function () {
             var names = this.getMediaList(mediaType),
+                headerText = header ? localize(header) :
+                    localize('Import') + ' ' + localize(mediaType),
                 mediaMenu = new MenuMorph(
                     myself,
-                    localize('Import') + ' ' + localize(mediaType)
+                    headerText
                 );
 
             names.forEach(function (item) {
@@ -618,52 +620,16 @@ NetsBloxMorph.prototype.projectMenu = function () {
     );
 
     menu.addItem(
-        'Remote Calls...',
+        'Services...',
         createMediaMenu(
             'rpc',
             function loadLib(file, name) {
                 var url = myself.resourceURL('rpc', file);
                 myself.droppedText(myself.getURL(url), name);
-            }
+            },
+            localize('Import') + ' ' + localize('Service')
         ),
-        'Select remote procedure calls to add to this project.'
-    );
-
-    menu.addItem(
-        'Message Types...',
-        function () {
-            // read a list of libraries from an external file,
-            var MsgTypeMenu = new MenuMorph(this, 'Import Network Message Type'),
-                msgTypeUrl = '/api/MessageTypes/index';
-
-            function loadMessageType(name) {
-                var url = '/api/MessageTypes/' + name;
-                try {
-                    var msgType = JSON.parse(myself.getURL(url));
-                    myself.stage.addMessageType(msgType);
-                } catch (e) {
-                    console.error('could not load the message type "' + name + '"');
-                }
-            }
-
-            var msgTypes = [];
-
-            try {
-                msgTypes = JSON.parse(myself.getURL(msgTypeUrl));
-            } catch(e) {
-                console.error('could not load the message types');
-            }
-
-            msgTypes.forEach(function (name) {
-                MsgTypeMenu.addItem(
-                    name,
-                    loadMessageType.bind(null, name)
-                );
-            });
-
-            MsgTypeMenu.popup(world, pos);
-        },
-        'Add new types of messages to your project!'
+        'Select services to include in this project.'
     );
 
     menu.addItem(
