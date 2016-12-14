@@ -611,7 +611,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doPauseAll'));
 
     } else if (cat === 'services') {
-        //blocks.push(block('receiveSocketMessage'));
+        blocks.push(block('receiveSocketMessage'));
         blocks.push(block('doSocketMessage'));
         blocks.push('-');
         blocks.push(block('getProjectId'));
@@ -1239,7 +1239,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('clear'));
 
     } else if (cat === 'services') {
-        //blocks.push(block('receiveSocketMessage'));
+        blocks.push(block('receiveSocketMessage'));
         blocks.push(block('doSocketMessage'));
         blocks.push('-');
         blocks.push(block('getProjectId'));
