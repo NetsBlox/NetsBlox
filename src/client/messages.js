@@ -28,7 +28,6 @@ Message.prototype.init = function() {
 };
 
 Message.prototype.set = function(field, value) {
-    // Should I verify that field is a valid type? FIXME
     this.contents[field] = value;
 };
 
@@ -90,9 +89,6 @@ MessageCreatorMorph.prototype.init = function(target, action) {
 
     // Create message definition area
     var messageBlock = new MessageDefinitionBlock();
-
-    // When the block is edited, resize the container
-    // TODO
 
     this.addBody(messageBlock);
     var fixLayout = messageBlock.fixLayout;

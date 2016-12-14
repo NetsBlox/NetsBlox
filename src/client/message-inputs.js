@@ -1,101 +1,96 @@
 /* global StringMorph, Color, InputSlotMorph, ScriptsMorph, BlockMorph, StageMorph,
- CommandBlockMorph, SyntaxElementMorph*/
+ CommandBlockMorph, SyntaxElementMorph, nop*/
 
-// MessageInputSlotMorph //////////////////////////////////////////////
-// I am a dropdown menu with an associated message type
-// InputSlotMorph inherits from ArgMorph:
+// I should refactor the MessageInputSlotMorph to a generic base class. This
+// base class should be a dropdown which dynamically inserts input fields (w/
+// hint text) after itself
+StructInputSlotMorph.prototype = new InputSlotMorph();
+StructInputSlotMorph.prototype.constructor = StructInputSlotMorph;
+StructInputSlotMorph.uber = InputSlotMorph.prototype;
 
-MessageInputSlotMorph.prototype = new InputSlotMorph();
-MessageInputSlotMorph.prototype.constructor = MessageInputSlotMorph;
-MessageInputSlotMorph.uber = InputSlotMorph.prototype;
+// StructInputSlotMorph preferences settings:
 
-// MessageInputSlotMorph preferences settings:
+StructInputSlotMorph.prototype.executeOnSliderEdit = false;
 
-MessageInputSlotMorph.prototype.executeOnSliderEdit = false;
+// This should be converted into a container for an inputslotmorph and the inputfields
+// (not reaching through the parent to edit things)
+// TODO
+function StructInputSlotMorph(
+    value,
+    isNumeric,
+    choiceDict,
+    fieldValues,
+    isReadOnly
+) {
+    this.fields = [];
+    this.fieldContent = [];
+    this.getFieldNames = typeof fieldValues === 'string' ? this[fieldValues] : fieldValues || nop;
 
-// MessageInputSlotMorph instance creation:
-
-function MessageInputSlotMorph() {
-    // When dropdown changes, the input morph should be updated
-    this.msgFields = [];
-    this._msgContent = [];
-
-    // Create the dropdown menu
-    InputSlotMorph.call(this, null, false, 'messageTypesMenu', true);
+    // TODO: Add the method used to populate the input fields
+    InputSlotMorph.call(this, value, isNumeric, choiceDict, isReadOnly);
     this.isStatic = true;
 }
 
-MessageInputSlotMorph.prototype.setContents = function(msgTypeName, inputs, messageType) {
-    var targetRole = inputs && inputs.pop ? inputs.pop() : '',
-        targetDropdown,
-        len;
-
+StructInputSlotMorph.prototype.setContents = function(name, values) {
     // Set the value for the dropdown
-    InputSlotMorph.prototype.setContents.call(this, msgTypeName);
+    InputSlotMorph.prototype.setContents.call(this, name);
 
-    // Create the message fields
-    messageType = messageType || this._getMsgType();
-    this.msgFields = messageType ? messageType.fields : [];
-    if (this.parent) {
-        this._updateFields(inputs);
-    }
+    if (this.parent) {  // update fields
+        var children = this.parent.children,
+            myIndex = children.indexOf(this),
+            currentFields = this.fields,
+            i = currentFields.length + myIndex + 1,
+            input = children[--i],
+            removed = [],
+            scripts = this.parentThatIsA(ScriptsMorph);
 
-    // Set the target
-    if (targetRole) {
-        len = this.parent.inputs().length;
-        targetDropdown = this.parent.inputs()[len-1];
-        if (typeof targetRole === 'string') {
-            targetDropdown.setContents(targetRole);
-        } else {
-            this.parent.silentReplaceInput(targetDropdown, targetRole);
+        // Remove the "i" fields after the current morph
+        while (i-- > myIndex) {
+            removed.push(input);
+            this.parent.removeChild(input);
+            input = children[i];
         }
+        this.fields = this.getFieldNames(name);
+
+        if (scripts) {
+            removed
+                .filter(function(arg) {
+                    return arg instanceof BlockMorph;
+                })
+                .forEach(scripts.add.bind(scripts));
+        }
+
+        // Create new struct fields
+        values = values || [];
+        this.fieldContent = [];
+        for (i = 0; i < this.fields.length; i++) {
+            this.fieldContent.push(this.updateField(this.fields[i], values[i]));
+        }
+        this.fixLayout();
+        this.drawNew();
+        this.parent.fixLayout();
+        this.parent.changed();
     }
 };
 
-MessageInputSlotMorph.prototype._updateFields = function(values) {
-    // Remove the old message fields (parent's inputs)
-    var children = this.parent.children,
-        myIndex = children.indexOf(this),
-        i = this._msgContent.length + myIndex + 1,
-        input = children[--i],
-        removed = [],
-        scripts = this.parentThatIsA(ScriptsMorph);
-
-    // Remove the "i" fields after the current morph
-    while (i-- > myIndex) {
-        removed.push(input);
-        this.parent.removeChild(input);
-        input = children[i];
+StructInputSlotMorph.prototype.getFieldValue = function(fieldname, value) {
+    // Input slot is empty or has a string
+    if (!value || typeof value === 'string') {
+        var result = new HintInputSlotMorph(value || '', fieldname);
+        return result;
     }
 
-    if (scripts) {
-        removed
-            .filter(function(arg) {
-                return arg instanceof BlockMorph;
-            })
-            .forEach(scripts.add.bind(scripts));
-    }
-
-    // Create new message fields
-    this._msgContent = [];
-    values = values || [];
-    for (i = 0; i < this.msgFields.length; i++) {
-        this._msgContent.push(this._updateField(this.msgFields[i], values[i]));
-    }
-    this.fixLayout();
-    this.drawNew();
-    this.parent.fixLayout();
-    this.parent.changed();
+    return value;  // The input slot is occupied by another block
 };
 
-MessageInputSlotMorph.prototype.setDefaultFieldArg = function(index) {
+StructInputSlotMorph.prototype.setDefaultFieldArg = function(index) {
     // Reset the field and return it
-    var isMessageField = index < this.msgFields.length,
+    var isStructField = index < this.fields.length,
         oldArg,
         arg;
 
-    if (isMessageField) {
-        arg = this._msgContent[index] = this._getFieldValue(this.msgFields[index]);
+    if (isStructField) {
+        arg = this.fieldContent[index] = this.getFieldValue(this.fields[index]);
 
         index++;
         oldArg = this.parent.inputs()[index];
@@ -108,7 +103,7 @@ MessageInputSlotMorph.prototype.setDefaultFieldArg = function(index) {
             spec;
 
         index++;
-        specIndex = index - this.msgFields.length;
+        specIndex = index - this.fields.length;
         spec = this.parent.blockSpec.split(' ')
             .filter(function(spec) {
                 return spec[0] === '%';
@@ -133,17 +128,8 @@ MessageInputSlotMorph.prototype.setDefaultFieldArg = function(index) {
     return arg;
 };
 
-MessageInputSlotMorph.prototype._getFieldValue = function(field, value) {
-    // Input slot is empty or has a string
-    if (!value || typeof value === 'string') {
-        var result = new HintInputSlotMorph(value || '', field);
-        return result;
-    }
 
-    return value;  // The input slot is occupied by another block
-};
-
-MessageInputSlotMorph.prototype._updateField = function(field, value) {
+StructInputSlotMorph.prototype.updateField = function(field, value) {
     // Create the input slot w/ greyed out text
     // Value is either:
     // + scripts
@@ -154,8 +140,8 @@ MessageInputSlotMorph.prototype._updateField = function(field, value) {
     // + string
 
     // Add the fields at the correct place wrt the current morph
-    var index = this.parent.children.indexOf(this) + this.msgFields.indexOf(field) + 1,
-        result = this._getFieldValue(field, value);
+    var index = this.parent.children.indexOf(this) + this.fields.indexOf(field) + 1,
+        result = this.getFieldValue(field, value);
 
     this.parent.children.splice(index, 0, result);
     result.parent = this.parent;
@@ -163,17 +149,44 @@ MessageInputSlotMorph.prototype._updateField = function(field, value) {
     return result;
 };
 
-MessageInputSlotMorph.prototype._getMsgType = function() {
-    var name = this.contents().text || null,
-        block = this.parentThatIsA(BlockMorph),
+
+// MessageInputSlotMorph //////////////////////////////////////////////
+// I am a dropdown menu with an associated message type
+// InputSlotMorph inherits from ArgMorph:
+
+MessageInputSlotMorph.prototype = new StructInputSlotMorph();
+MessageInputSlotMorph.prototype.constructor = MessageInputSlotMorph;
+MessageInputSlotMorph.uber = StructInputSlotMorph.prototype;
+
+// MessageInputSlotMorph instance creation:
+function MessageInputSlotMorph() {
+    StructInputSlotMorph.call(this, null, false, 'messageTypesMenu', 'getMsgFields', true);
+}
+
+MessageInputSlotMorph.prototype.setContents = function(name, values, msgType) {
+    if (msgType) {
+        this.cachedMsgType = msgType;
+    } else {
+        this.cachedMsgType = null;
+    }
+    MessageInputSlotMorph.uber.setContents.call(this, name, values);
+};
+
+MessageInputSlotMorph.prototype.getMsgFields = function(name) {
+    var block = this.parentThatIsA(BlockMorph),
+        messageType = null,
         stage,
-        messageType = null;
+        fields;
 
     if (block && block.receiver()) {
         stage = block.receiver().parentThatIsA(StageMorph);
         messageType = stage.messageTypes.getMsgType(name);
+        fields = messageType && messageType.fields;
+    } else {
+        fields = this.cachedMsgType && this.cachedMsgType.fields;
     }
-    return messageType;
+
+    return fields || [];
 };
 
 // HintInputSlotMorph //////////////////////////////////////////////
@@ -240,7 +253,6 @@ HintInputSlotMorph.prototype.changed = function() {
  *
  * @override 
  * @param arg
- * @param noValues
  * @return {undefined}
  */
 CommandBlockMorph.prototype.revertToDefaultInput = function (arg) {
@@ -258,6 +270,7 @@ CommandBlockMorph.prototype.revertToDefaultInput = function (arg) {
         }
     }
 
+    // TODO: Check the length :(
     if (messageInput && messageInputIndex < inputIndex) {
         relIndex = inputIndex - messageInputIndex - 1;
         var defaultArg = messageInput.setDefaultFieldArg(relIndex);
