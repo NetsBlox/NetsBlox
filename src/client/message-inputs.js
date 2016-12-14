@@ -68,6 +68,7 @@ StructInputSlotMorph.prototype.setContents = function(name, values) {
         }
         this.fixLayout();
         this.drawNew();
+        this.parent.cachedInputs = null;
         this.parent.fixLayout();
         this.parent.changed();
     }
