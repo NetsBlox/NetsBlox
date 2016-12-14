@@ -628,3 +628,10 @@ MessageType.prototype.toXML = function (serializer) {
         fields
     );
 };
+
+HintInputSlotMorph.prototype.toXML = function(serializer) {
+    if (this.empty) {
+        return serializer.format('<l>$</l>', '');
+    }
+    return InputSlotMorph.prototype.toXML.call(this, serializer);
+};
