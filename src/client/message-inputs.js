@@ -26,7 +26,6 @@ function StructInputSlotMorph(
     this.fieldContent = [];
     this.getFieldNames = typeof fieldValues === 'string' ? this[fieldValues] : fieldValues || nop;
 
-    // TODO: Add the method used to populate the input fields
     InputSlotMorph.call(this, value, isNumeric, choiceDict, isReadOnly);
     this.isStatic = true;
 }
