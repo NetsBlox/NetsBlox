@@ -1,4 +1,4 @@
-/* globals UndoManager, ActionManager, SnapActions */
+/* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer */
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
@@ -36,3 +36,5 @@ UndoManager.Invert.deleteMessageType = function() {
 };
 
 SnapActions.supportsCollaboration = false;
+
+SnapActions.serializer = new NetsBloxSerializer();
