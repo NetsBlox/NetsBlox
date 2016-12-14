@@ -3,7 +3,7 @@
    localize, BlockEditorMorph, BlockDialogMorph, TextMorph, PushButtonMorph,
    MessageFrame, BlockMorph, ToggleMorph, MessageCreatorMorph,
    VariableDialogMorph, SnapCloud, contains, List, CommandBlockMorph,
-   MessageType, isNil, RingMorph, SnapActions*/
+   MessageType, isNil, RingMorph, SnapActions, ProjectsMorph*/
 
 SpriteMorph.prototype.categories =
     [
@@ -199,9 +199,6 @@ SpriteMorph.prototype.freshPalette = function (category) {
             x = 0;
             y += block.height();
         });
-
-        // Make a block
-        // TODO
     }
 
     //layout
@@ -997,8 +994,6 @@ StageMorph.prototype.deleteMessageType =
 
 // StageMorph Overrides
 StageMorph.prototype.freshPalette = SpriteMorph.prototype.freshPalette;
-//Add loading of "message" type
-// FIXME: Subclass stagemorph?
 StageMorph.prototype._init = StageMorph.prototype.init;
 StageMorph.prototype.init = function (globals) {
     this.messageTypes = new MessageFrame();
@@ -1008,26 +1003,6 @@ StageMorph.prototype.init = function (globals) {
         fields: ['msg']
     });
     this._init(globals);
-};
-
-StageMorph.prototype.addMessageTypeByName = function (name) {
-    var url = 'api/MessageTypes/' + name,
-        request = new XMLHttpRequest(),
-        msgType;
-
-    try {
-        request.open('GET', url, false);
-        request.send();
-        if (!request.status === 200) {
-            throw new Error('unable to retrieve ' + url);
-        }
-    } catch (err) {
-        console.error('could not retrieve message "' + name + '": ' + err);
-        return;
-    }
-
-    msgType = JSON.parse(request.responseText);
-    SnapActions.addMessageType(msgType.name, msgType.fields);
 };
 
 StageMorph.prototype.addMessageType = function (messageType) {

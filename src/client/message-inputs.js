@@ -184,7 +184,9 @@ HintInputSlotMorph.prototype.constructor = HintInputSlotMorph;
 HintInputSlotMorph.uber = InputSlotMorph.prototype;
 
 function HintInputSlotMorph(text, hint, isNumeric) {
-    var self = this; this.hintText = hint;
+    var self = this;
+
+    this.hintText = hint;
     this.empty = true;
     InputSlotMorph.call(this, text, isNumeric);
 
