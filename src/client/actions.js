@@ -1,4 +1,4 @@
-/* globals UndoManager, ActionManager, SnapActions */
+/* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer */
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
