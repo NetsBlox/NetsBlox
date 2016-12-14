@@ -1,7 +1,7 @@
 /* global SnapSerializer, SpriteMorph, sizeOf, List, detect, CustomCommandBlockMorph,
    CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
    WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame,
-   MessageInputSlotMorph*/
+   MessageInputSlotMorph, HintInputSlotMorph, InputSlotMorph*/
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
@@ -627,4 +627,11 @@ MessageType.prototype.toXML = function (serializer) {
         serializer.escape(this.name),
         fields
     );
+};
+
+HintInputSlotMorph.prototype.toXML = function(serializer) {
+    if (this.empty) {
+        return serializer.format('<l>$</l>', '');
+    }
+    return InputSlotMorph.prototype.toXML.call(this, serializer);
 };
