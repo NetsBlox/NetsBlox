@@ -65,6 +65,11 @@ StructInputSlotMorph.prototype.setContents = function(name, values) {
         for (i = 0; i < this.fields.length; i++) {
             this.fieldContent.push(this.updateField(this.fields[i], values[i]));
         }
+
+        var inputs = this.parent.inputs();
+        for (i = this.fields.length; i < values.length && i < inputs.length; i++) {
+            inputs[i].setContents(values[i]);
+        }
         this.fixLayout();
         this.drawNew();
         this.parent.cachedInputs = null;
@@ -256,24 +261,25 @@ HintInputSlotMorph.prototype.changed = function() {
  * @return {undefined}
  */
 CommandBlockMorph.prototype.revertToDefaultInput = function (arg) {
-    var messageInput,
-        messageInputIndex = -1,
+    var structInput,
+        structInputIndex = -1,
         inputs = this.inputs(),
         inputIndex = inputs.indexOf(arg),
         relIndex;
 
     // Check if 'arg' follows a MessageInputSlotMorph (these are a special case)
     for (var i = inputs.length; i--;) {
-        if (inputs[i] instanceof MessageInputSlotMorph) {
-            messageInputIndex = i;
-            messageInput = inputs[i];
+        if (inputs[i] instanceof StructInputSlotMorph) {
+            structInputIndex = i;
+            structInput = inputs[i];
         }
     }
 
-    // TODO: Check the length :(
-    if (messageInput && messageInputIndex < inputIndex) {
-        relIndex = inputIndex - messageInputIndex - 1;
-        var defaultArg = messageInput.setDefaultFieldArg(relIndex);
+    if (structInput && structInputIndex < inputIndex &&
+        structInput.fields.length > inputIndex - structInputIndex) {
+
+        relIndex = inputIndex - structInputIndex - 1;
+        var defaultArg = structInput.setDefaultFieldArg(relIndex);
         this.silentReplaceInput(arg, defaultArg);
         this.cachedInputs = null;
     } else {
