@@ -1016,7 +1016,6 @@ InputSlotMorph.prototype.rpcActions = function () {
     return dict;
 };
 
-// TODO: Refactor the switch case
 SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     // private
     if (this.name instanceof Costume) {
@@ -1026,12 +1025,16 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     var canvas = newCanvas(new Point(this.symbolWidth(), this.size));
 
     switch (this.name) {
+    // NetsBlox addition: start
     case 'plus':  // TODO: Make this a smaller changeset (only added 2 lines)
         return this.drawSymbolPlus(canvas, aColor);
+    // NetsBlox addition: end
     case 'square':
         return this.drawSymbolStop(canvas, aColor);
     case 'pointRight':
         return this.drawSymbolPointRight(canvas, aColor);
+    case 'stepForward':
+        return this.drawSymbolStepForward(canvas, aColor);
     case 'gears':
         return this.drawSymbolGears(canvas, aColor);
     case 'file':
@@ -1096,6 +1099,10 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
         return this.drawSymbolSpeechBubble(canvas, aColor);
     case 'speechBubbleOutline':
         return this.drawSymbolSpeechBubbleOutline(canvas, aColor);
+    case 'turnBack':
+        return this.drawSymbolTurnBack(canvas, aColor);
+    case 'turnForward':
+        return this.drawSymbolTurnForward(canvas, aColor);
     case 'arrowUp':
         return this.drawSymbolArrowUp(canvas, aColor);
     case 'arrowUpOutline':
@@ -1114,6 +1121,8 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
         return this.drawSymbolArrowRightOutline(canvas, aColor);
     case 'robot':
         return this.drawSymbolRobot(canvas, aColor);
+    case 'magnifiyingGlass':
+        return this.drawSymbolMagnifyingGlass(canvas, aColor);
     default:
         return canvas;
     }
