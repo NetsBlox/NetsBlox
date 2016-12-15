@@ -100,11 +100,14 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
                 model.attributes,
                 'var'
             )) {
-            return SpriteMorph.prototype.variableBlock(
+            block = SpriteMorph.prototype.variableBlock(
                 model.attributes['var']
             );
+            block.id = model.attributes.collabId;
+            return block;
         }
         block = SpriteMorph.prototype.blockForSelector(model.attributes.s);
+        block.id = model.attributes.collabId;
     } else if (model.tag === 'custom-block') {
         isGlobal = model.attributes.scope ? false : true;
         receiver = isGlobal ? this.project.stage
@@ -119,7 +122,9 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
             if (!isGlobal) {
                 receiver = this.project.stage;
             } else {
-                return this.obsoleteBlock(isReporter);
+                block = this.obsoleteBlock(isReporter);
+                block.id = model.attributes.collabId;
+                return block;
             }
         }
         if (isGlobal) {
@@ -140,7 +145,9 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
             });
         }
         if (!info) {
-            return this.obsoleteBlock(isReporter);
+            block = this.obsoleteBlock(isReporter);
+            block.id = model.attributes.collabId;
+            return block;
         }
         block = info.type === 'command' ? new CustomCommandBlockMorph(
             info,
@@ -155,7 +162,10 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
         block = this.obsoleteBlock(isReporter);
     }
     block.isDraggable = true;
+    block.id = model.attributes.collabId;
     inputs = block.inputs();
+
+    // NetsBlox addition: start
     // Try to batch children for the inputs if appropriate. This is
     // used with MessageInputSlotMorph and MessageOutputSlotMorph
     if (inputs.length < model.children.length) {
@@ -194,9 +204,12 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
             }
         }
     }
+    // NetsBlox addition: end
 
     model.children.forEach(function (child, i) {
-        if (child.tag === 'comment') {
+        if (child.tag === 'variables') {
+            this.loadVariables(block.variables, child);
+        } else if (child.tag === 'comment') {
             block.comment = this.loadComment(child);
             block.comment.block = block;
         } else if (child.tag === 'receiver') {
