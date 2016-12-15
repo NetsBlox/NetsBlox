@@ -225,7 +225,14 @@ SpriteMorph.prototype.initBlocks = function () {
     SpriteMorph.prototype.blocks.getJSFromRPCDropdown = {  // primitive JSON response
         type: 'reporter',
         category: 'services',
-        spec: 'call %rpcNames / %rpcActions',
+        spec: 'call %rpcNames / %rpcActions with %s',
+        defaults: ['weather']
+    };
+
+    SpriteMorph.prototype.blocks.getJSFromRPCStruct = {  // primitive JSON response
+        type: 'reporter',
+        category: 'services',
+        spec: 'call %rpcNames / %rpcMethod',
         defaults: ['weather']
     };
 
@@ -618,7 +625,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getProjectIds'));
         blocks.push('-');
 
-        blocks.push(block('getJSFromRPCDropdown'));
+        blocks.push(block('getJSFromRPCStruct'));
         blocks.push(block('getCostumeFromRPC'));
         blocks.push('-');
 
@@ -1243,7 +1250,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getProjectIds'));
         blocks.push('-');
 
-        blocks.push(block('getJSFromRPCDropdown'));
+        blocks.push(block('getJSFromRPCStruct'));
         blocks.push(block('getCostumeFromRPC'));
         blocks.push('-');
 

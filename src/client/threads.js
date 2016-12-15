@@ -191,7 +191,19 @@ NetsProcess.prototype.parseRPCResult = function (result) {
     return result;
 };
 
+NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
+    var action = methodSignature[0],
+        argNameAndValue = methodSignature[1],
+        params;
+
+    params = argNameAndValue.map(function(pair) {
+        return pair[0] + '=' + pair[1];
+    }).join('&');
+    return this.getJSFromRPCDropdown(rpc, action, params);
+};
+
 NetsProcess.prototype.getJSFromRPCDropdown = function (rpc, action, params) {
+    // TODO: Make sure I still support the old method...
     return this.getJSFromRPC(['', rpc, action].join('/'), params);
 };
 
