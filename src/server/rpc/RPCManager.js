@@ -174,7 +174,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         args = supportedActions[action].map(argName => req.query[argName]);
         result = rpc[action].apply(rpc, args);
 
-        if (!res.headerSent) {  // send the return value
+        if (!res.headerSent && result !== null) {  // send the return value
             if (typeof result === 'object') {
                 res.json(result);
             } else {
