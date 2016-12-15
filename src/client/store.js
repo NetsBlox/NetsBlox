@@ -1,7 +1,8 @@
 /* global SnapSerializer, SpriteMorph, sizeOf, List, detect, CustomCommandBlockMorph,
    CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
    WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame,
-   MessageInputSlotMorph, HintInputSlotMorph, InputSlotMorph*/
+   MessageInputSlotMorph, HintInputSlotMorph, InputSlotMorph, SnapActions,
+   normalizeCanvas */
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
@@ -47,10 +48,12 @@ NetsBloxSerializer.prototype.openProject = function (project, ide) {
     if (!project || !project.stage) {
         return;
     }
+    // NetsBlox addition: start
     // Only load the projectName if the current name is the default
     if (ide.projectName === 'myRole') {
         ide.setProjectName(project.name);
     }
+    // NetsBlox addition: end
     ide.projectNotes = project.notes || '';
     if (ide.globalVariables) {
         ide.globalVariables = project.globalVariables;
@@ -86,6 +89,8 @@ NetsBloxSerializer.prototype.openProject = function (project, ide) {
     //  watcher.onNextStep = function () {this.currentValue = null;};
     //})
 
+    // Update the collaborator
+    SnapActions.loadProject(ide, project.collabStartIndex);
     ide.world().keyboardReceiver = project.stage;
 };
 
@@ -525,7 +530,10 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
 };
 
 StageMorph.prototype.toXML = function (serializer) {
-    var thumbnail = this.thumbnail(NetsBloxSerializer.prototype.thumbnailSize),
+    var thumbnail = normalizeCanvas(
+            this.thumbnail(SnapSerializer.prototype.thumbnailSize),
+            true
+        ),
         thumbdata,
         ide = this.parentThatIsA(IDE_Morph);
 
@@ -554,21 +562,24 @@ StageMorph.prototype.toXML = function (serializer) {
 
     this.removeAllClones();
     return serializer.format(
-        '<project name="@" app="@" version="@">' +
+        '<project collabStartIndex="@" name="@" app="@" version="@">' +
             '<notes>$</notes>' +
             '<thumbnail>$</thumbnail>' +
-            '<stage name="@" width="@" height="@" ' +
+            '<stage name="@" width="@" height="@" collabId="@" ' +
             'costume="@" tempo="@" threadsafe="@" ' +
             'lines="@" ' +
             'codify="@" ' +
             'inheritance="@" ' +
+            'sublistIDs="@" ' +
             'scheduled="@" ~>' +
             '<pentrails>$</pentrails>' +
             '<costumes>%</costumes>' +
             '<sounds>%</sounds>' +
             '<variables>%</variables>' +
             '<blocks>%</blocks>' +
+            // NetsBlox addition: start
             '<messageTypes>%</messageTypes>' +
+            // NetsBlox addition: end
             '<scripts>%</scripts><sprites>%</sprites>' +
             '</stage>' +
             '<hidden>$</hidden>' +
@@ -577,6 +588,7 @@ StageMorph.prototype.toXML = function (serializer) {
             '<blocks>%</blocks>' +
             '<variables>%</variables>' +
             '</project>',
+        SnapActions.lastSeen,
         (ide && ide.projectName) ? ide.projectName : localize('Untitled'),
         serializer.app,
         serializer.version,
@@ -585,19 +597,23 @@ StageMorph.prototype.toXML = function (serializer) {
         this.name,
         StageMorph.prototype.dimensions.x,
         StageMorph.prototype.dimensions.y,
+        this.id,
         this.getCostumeIdx(),
         this.getTempo(),
         this.isThreadSafe,
         SpriteMorph.prototype.useFlatLineEnds ? 'flat' : 'round',
         this.enableCodeMapping,
         this.enableInheritance,
+        this.enableSublistIDs,
         StageMorph.prototype.frameRate !== 0,
-        this.trailsCanvas.toDataURL('image/png'),
+        normalizeCanvas(this.trailsCanvas, true).toDataURL('image/png'),
         serializer.store(this.costumes, this.name + '_cst'),
         serializer.store(this.sounds, this.name + '_snd'),
         serializer.store(this.variables),
         serializer.store(this.customBlocks),
+        // NetsBlox addition: start
         serializer.store(this.messageTypes),
+        // NetsBlox addition: end
         serializer.store(this.scripts),
         serializer.store(this.children),
         Object.keys(StageMorph.prototype.hiddenPrimitives).reduce(
