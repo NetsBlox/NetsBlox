@@ -167,7 +167,7 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
 
     // NetsBlox addition: start
     // Try to batch children for the inputs if appropriate. This is
-    // used with MessageInputSlotMorph and MessageOutputSlotMorph
+    // used with StructInputSlotMorphs
     if (inputs.length < model.children.length) {
         var batch = [],
             skipTypes = ['comment', 'receiver'];

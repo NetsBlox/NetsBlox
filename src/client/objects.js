@@ -219,20 +219,20 @@ SpriteMorph.prototype.initBlocks = function () {
         type: 'reporter',
         category: 'services',
         spec: 'call %s with %s',
-        defaults: ['tictactoe']
+        defaults: ['weather']
     };
 
     SpriteMorph.prototype.blocks.getJSFromRPCDropdown = {  // primitive JSON response
         type: 'reporter',
         category: 'services',
-        spec: 'call %rpcNames / %rpcActions with %s',
-        defaults: ['tictactoe']
+        spec: 'call %rpcNames / %rpcActions',
+        defaults: ['weather']
     };
 
     SpriteMorph.prototype.blocks.getCostumeFromRPC = {
         type: 'reporter',
         category: 'services',
-        spec: 'costume from %rpcNames / %rpcActions with %s',
+        spec: 'costume from %rpcNames / %rpcActions',
         defaults: ['staticmap', 'getMap']
     };
 
@@ -618,11 +618,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getProjectIds'));
         blocks.push('-');
 
-        if (this.world().isDevMode) {
-            blocks.push(block('getJSFromRPCDropdown'));
-            blocks.push(block('getCostumeFromRPC'));
-            blocks.push('-');
-        }
+        blocks.push(block('getJSFromRPCDropdown'));
+        blocks.push(block('getCostumeFromRPC'));
         blocks.push('-');
 
         // Add custom message types
@@ -1246,11 +1243,9 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getProjectIds'));
         blocks.push('-');
 
-        if (this.world().isDevMode) {
-            blocks.push(block('getJSFromRPCDropdown'));
-            blocks.push(block('getCostumeFromRPC'));
-            blocks.push('-');
-        }
+        blocks.push(block('getJSFromRPCDropdown'));
+        blocks.push(block('getCostumeFromRPC'));
+        blocks.push('-');
 
         // Add custom message types
         button = new PushButtonMorph(

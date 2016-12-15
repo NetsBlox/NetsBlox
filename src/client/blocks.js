@@ -555,10 +555,19 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             break;
         case '%rpcActions':
             // rpc names (used in dev mode)
-            part = new InputSlotMorph(
+            part = new StructInputSlotMorph(
                 null,
                 false,
                 'rpcActions',
+                function(rpcMethod) {
+                    var rpcName = this.parent.inputs()[0].evaluate();
+                        // TODO: request the args from the RPC:
+                        //args = JSON.parse(this.getURL('/rpc/' + rpc));
+                    if (this.fieldsFor) {
+                        return this.fieldsFor[rpcMethod] || [];
+                    }
+                    return [];
+                },
                 true
             );
             break;
@@ -994,12 +1003,9 @@ InputSlotMorph.prototype.rpcNames = function () {
     return dict;
 };
 
-InputSlotMorph.prototype.rpcActions = function () {
+InputSlotMorph.prototype.getPriorInputValue = function () {
     var fields = this.parent.inputs(),
         field,
-        actions,
-        rpc,
-        dict = {},
         i;
 
     // assume that the rpc is right before this input
@@ -1007,9 +1013,22 @@ InputSlotMorph.prototype.rpcActions = function () {
     field = fields[i-1];
 
     if (field) {
-        rpc = field.evaluate();
-        actions = JSON.parse(this.getURL('/rpc/' + rpc));
-        for (i = actions.length; i--;) {
+        return field.evaluate();
+    }
+    return null;
+};
+
+InputSlotMorph.prototype.rpcActions = function () {
+    var actions,
+        rpc,
+        dict = {};
+
+    rpc = this.getPriorInputValue();
+    if (rpc) {
+        // TODO: this should be a StructInputSlotMorph
+        this.fieldsFor = JSON.parse(this.getURL('/rpc/' + rpc));
+        actions = Object.keys(this.fieldsFor);
+        for (var i = actions.length; i--;) {
             dict[actions[i]] = actions[i];
         }
     }
