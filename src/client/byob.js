@@ -414,7 +414,9 @@ BlockExportDialogMorph.prototype.exportBlocks = function (stage) {
 
     // Use JSON to serialize message types
     for (var i = 0; i < this.msgs.length; i++) {
-        msgs = msgs + '<block-definition s=\'' + JSON.stringify((stage.messageTypes.getMsgType(this.msgs[i].blockSpec))) + '\' category=\'msg\'/>' ;
+        msgs += '<messageType>' +
+            stage.messageTypes.getMsgType(this.msgs[i].blockSpec).toXML(this.serializer) +
+            '</messageType>';
     }
 
     if (this.blocks.length > 0 || this.msgs.length > 0) {
