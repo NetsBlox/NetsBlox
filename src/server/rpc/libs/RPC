@@ -4,7 +4,6 @@ earthquakes.xml	Earthquakes by region
 simple-hangman.xml	One-player hangman
 trivia.xml	Jeopardy Questions
 weather.xml	Weather API
-pubsub.xml	PubSub
 kvstore.xml	Key-Value Store
 battleship.xml	Battleship
 nasa.xml	NASA
