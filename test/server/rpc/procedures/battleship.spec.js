@@ -1,4 +1,4 @@
-describe.only('Battleship Tests', function() {
+describe('Battleship Tests', function() {
     var Battleship = require('../../../../src/server/rpc/procedures/Battleship/Battleship.js'),
         RPCMock = require('../../../assets/MockRPC'),
         battleship,

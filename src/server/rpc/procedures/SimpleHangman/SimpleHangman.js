@@ -22,9 +22,7 @@ var words = ['accurate','address', 'afford','alert','analyze','ancestor',
 'tradition','tragic','typical','vacant','valiant','variety','vast','venture','weary',];
 
 var debug = require('debug'),
-    log = debug('NetsBlox:RPCManager:SimpleHangman:log'),
-    trace = debug('NetsBlox:RPCManager:SimpleHangman:trace'),
-    info = debug('NetsBlox:RPCManager:SimpleHangman:info');
+    trace = debug('NetsBlox:RPCManager:SimpleHangman:trace');
 
 var SimpleHangman = function() {
     this.word = null;
@@ -38,55 +36,45 @@ SimpleHangman.getPath = function() {
     return '/simplehangman';
 };
 
-SimpleHangman.getActions = function() {
-    return ['guess', 
-            'restart',
-            'getWrongCount',
-            'getCurrentlyKnownWord',
-            'isWordGuessed'];
-};
-
 // Actions
-SimpleHangman.prototype.restart = function(req, res) {
+SimpleHangman.prototype.restart = function() {
     this._restart();
-    res.sendStatus(200);
+    return true;
 };
 
-SimpleHangman.prototype.getCurrentlyKnownWord = function(req, res) {
-    var letters = this.word.split('').map(function() { 
-        return '_'; 
-    });
+SimpleHangman.prototype.getCurrentlyKnownWord = function() {
+    var letters = this.word.split('').map(() => '_');
 
     this.knownIndices.forEach(function(index) {
         letters[index] = this.word[index];
     }, this);
     trace('Currently known word is "'+letters.join(' ')+'"');
     trace('word is '+this.word);
-    return res.status(200).send(letters.join(' '));
+    return letters.join(' ');
 };
 
-SimpleHangman.prototype.guess = function(req, res) {
-    var letter = req.query.letter[0],
-        indices,
+SimpleHangman.prototype.guess = function(letter) {
+    var indices,
         added;
 
+    letter = letter[0];
     trace('Guessing letter: '+letter);
     indices = SimpleHangman.getAllIndices(this.word, letter);
     added = SimpleHangman.merge(this.knownIndices, indices);
     if (added === 0) {
         this.wrongGuesses++;
     }
-    return res.status(200).send(indices);
+    return indices;
 };
 
 SimpleHangman.prototype.isWordGuessed = function(req, res) {
     var isComplete = this.word.length === this.knownIndices.length;
-    res.status(200).send(isComplete);
+    return isComplete;
 };
 
-SimpleHangman.prototype.getWrongCount = function(req, res) {
+SimpleHangman.prototype.getWrongCount = function() {
     trace('wrong count is '+this.wrongGuesses);
-    res.status(200).send(this.wrongGuesses+'');
+    return this.wrongGuesses;
 };
 
 // Private
