@@ -939,8 +939,8 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
 };
 
 InputSlotMorph.prototype.messageTypes = function () {
-    var stage = this.parentThatIsA(IDE_Morph).stage,  // FIXME
-        msgTypes = stage.messageTypes.names();
+    var stage = this.parentThatIsA(IDE_Morph).stage,
+        msgTypes = stage.messageTypes.names(),
         dict = {};
 
     for (var i = msgTypes.length; i--;) {

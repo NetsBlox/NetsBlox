@@ -2,7 +2,7 @@
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, newCanvas,
-   NetsBloxSerializer, nop, SnapActions*/
+   NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -699,8 +699,8 @@ NetsBloxMorph.prototype.requestAndroidApp = function(name) {
 NetsBloxMorph.prototype.exportRole = NetsBloxMorph.prototype.exportProject;
 
 // Trigger the export
-NetsBloxMorph.prototype.exportProject = function (name) {
-    this.showMessage('Exporting', 3);
+NetsBloxMorph.prototype.exportProject = function () {
+    this.showMessage('Exporting...', 3);
 
     // Trigger server export of all roles
     this.sockets.sendMessage({
@@ -925,12 +925,13 @@ NetsBloxMorph.prototype.rawOpenBlocksMsgTypeString = function (aString) {
     }
 
     // load blocks
-    this.rawOpenBlocksString(blocksStr, '', true)
+    this.rawOpenBlocksString(blocksStr, '', true);
 };
 
 NetsBloxMorph.prototype.initializeCloud = function () {
     var myself = this,
         world = this.world();
+
     new DialogBoxMorph(
         null,
         function (user) {

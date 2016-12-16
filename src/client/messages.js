@@ -28,7 +28,6 @@ Message.prototype.init = function() {
 };
 
 Message.prototype.set = function(field, value) {
-    // Should I verify that field is a valid type? FIXME
     this.contents[field] = value;
 };
 

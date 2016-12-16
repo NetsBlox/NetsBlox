@@ -1,4 +1,5 @@
-/*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions*/
+/*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions,
+  DialogBoxMorph, IDE_Morph, ProjectsMorph*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
@@ -134,7 +135,6 @@ WebSocketManager.MessageHandlers = {
 
                             // notify
                             this.destroy();
-                            var acceptDialog = new DialogBoxMorph();
                             myself.ide.showMessage(notification, 2);
 
                             // refresh message palette
@@ -168,7 +168,6 @@ WebSocketManager.prototype._connectWebSocket = function() {
     this.websocket = new WebSocket(this.url);
     // Set up message firing queue
     this.websocket.onopen = function() {
-        console.log('Connection established');  // REMOVE this
         if (self.errored === true) {
             self.ide.showMessage((self.hasConnected ? 're' : '') + 'connected!', 2);
             self.errored = false;
@@ -396,13 +395,13 @@ WebSocketManager.prototype.getSerializedProject = function() {
     ide.serializer.flushMedia();
 
     return {
-            ProjectName: ide.projectName,
-            SourceCode: pdata,
-            Media: media,
-            SourceSize: pdata.length,
-            MediaSize: media ? media.length : 0,
-            RoomName: this.ide.room.name
-        };
+        ProjectName: ide.projectName,
+        SourceCode: pdata,
+        Media: media,
+        SourceSize: pdata.length,
+        MediaSize: media ? media.length : 0,
+        RoomName: this.ide.room.name
+    };
 };
 
 WebSocketManager.prototype.destroy = function () {

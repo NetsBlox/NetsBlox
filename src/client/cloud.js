@@ -1,4 +1,4 @@
-/* global localize, nop, IDE_Morph, */
+/* global localize, nop, IDE_Morph, Cloud, detect*/
 NetCloud.prototype = new Cloud();
 
 function NetCloud(url) {
@@ -399,8 +399,8 @@ NetCloud.prototype.signup = function (
             true
         );
         request.setRequestHeader(
-            "Content-Type",
-            "application/x-www-form-urlencoded"
+            'Content-Type',
+            'application/x-www-form-urlencoded'
         );
         request.withCredentials = true;
         request.onreadystatechange = function () {
