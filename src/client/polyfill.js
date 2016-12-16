@@ -24,7 +24,7 @@ if (typeof Map === 'undefined') {
 }
 
 if (!Date.now) {
-  Date.now = function now() {
-    return new Date().getTime();
-  };
+    Date.now = function now() {
+        return new Date().getTime();
+    };
 }

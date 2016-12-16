@@ -1,6 +1,6 @@
 /* global MessageInputSlotMorph, InputSlotMorph, TemplateSlotMorph, detect,
    SpriteMorph, StageMorph, ReporterBlockMorph, BlockInputFragmentMorph,
-   BlockMorph
+   BlockMorph, ScriptsMorph
    */
 // MessageOutputSlotMorph //////////////////////////////////////////////
 // I am a dropdown menu with an associated message type

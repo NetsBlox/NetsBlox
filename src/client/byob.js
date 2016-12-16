@@ -1,3 +1,8 @@
+/* global Point, InputSlotDialogMorph, localize, SyntaxElementMorph,
+   fontHeight, AlignmentMorph, BlockDialogMorph, BlockLabelFragment,
+   BoxMorph, Color, IDE_Morph, BlockEditorMorph, DialogBoxMorph,
+   BlockImportDialogMorph, ToggleMorph, ReporterBlockMorph, Morph,
+   contains, InputFieldMorph, ScrollFrameMorph, SpriteMorph, StringMorph*/
 InputSlotDialogMorph.prototype.init = function (
     fragment,
     target,
@@ -194,7 +199,7 @@ InputSlotDialogMorph.prototype.createSlotTypeButtons = function () {
     // NetsBlox addition: start
     this.addSlotArityButton(
         function () { myself.setSlotArity('message');},
-        "Message Type",
+        'Message Type',
         function () {
             return myself.fragment.type === '%msgType';
         }
@@ -371,11 +376,11 @@ BlockExportDialogMorph.prototype.buildContents = function (stage) {
             'checkbox',
             this,
             function() {
-               if (this.msgs.includes(msg)) {
+                if (this.msgs.includes(msg)) {
                     this.msgs.splice(this.msgs.indexOf(msg), 1);
-               } else {
+                } else {
                     this.msgs.push(msg);
-               }
+                }
             },
             null,
             function() {
@@ -451,6 +456,7 @@ BlockExportDialogMorph.prototype.fixLayout
 BlockImportDialogMorph.prototype.importBlocks = function (name) {
     var ide = this.target.parentThatIsA(IDE_Morph);
     if (!ide) {return; }
+
     if (this.blocks.length > 0) {
         this.blocks.forEach(function (def) {
             // Message type import

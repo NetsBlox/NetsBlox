@@ -1,7 +1,8 @@
 /* global SnapCloud, StringMorph, DialogBoxMorph, localize, newCanvas, Point, Morph,
  Color, nop, InputFieldMorph, ListMorph, AlignmentMorph, IDE_Morph, TurtleIconMorph,
- ProjectDialogMorph, TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph,
- SymbolMorph, PushButtonMorph*/
+ TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph, ReporterBlockMorph 
+ MessageOutputSlotMorph, MessageInputSlotMorph, SymbolMorph, PushButtonMorph, MenuMorph,
+ SpeechBubbleMorph*/
 /* * * * * * * * * RoomMorph * * * * * * * * */
 RoomMorph.prototype = new Morph();
 RoomMorph.prototype.constructor = RoomMorph;
@@ -57,14 +58,14 @@ function RoomMorph(ide) {
         if (myself._name === localize('MyRoom')) {
             myself.ide.sockets.sendMessage({type: 'request-new-name'});
         }
-    }
+    };
 
     // change room name if default on passive login
     SnapCloud.onPassiveLogin = function() {
         if (myself._name === localize('MyRoom')) {
             myself.ide.sockets.sendMessage({type: 'request-new-name'});
         }
-    }
+    };
 
     // Set the initial values
     var roles = {};
@@ -174,20 +175,20 @@ RoomMorph.prototype.drawNew = function() {
 };
 
 RoomMorph.prototype.showOwnerName = function(center) {
-     if (this.ownerLabel) {
-         this.ownerLabel.destroy();
-     }
-    
-     if (this.ownerId && !this.ownerId.startsWith('_client_')) {
-         this.ownerLabel = new StringMorph('Owner: ' + this.ownerId, false, false, true);
- 
-         this.ownerLabel.setCenter(center);
- 
-         this.add(this.ownerLabel);
+    if (this.ownerLabel) {
+        this.ownerLabel.destroy();
+    }
+
+    if (this.ownerId && !this.ownerId.startsWith('_client_')) {
+        this.ownerLabel = new StringMorph('Owner: ' + this.ownerId, false, false, true);
+
+        this.ownerLabel.setCenter(center);
+
+        this.add(this.ownerLabel);
         // For rooms with one user occupying many roles--make sure only one owner is assigned
-         this.owner = false;
-     }
- }
+        this.owner = false;
+    }
+};
 
 
 RoomMorph.prototype.mouseClickLeft = function() {
@@ -363,7 +364,8 @@ RoomMorph.prototype.deleteRole = function(role) {
 
 RoomMorph.prototype.createRoleClone = function(role) {
     var myself = this;
-    SnapCloud.cloneRole(function(response) {
+    SnapCloud.cloneRole(
+        function(response) {
             var newRole = Object.keys(response[0])[0];
             myself.ide.showMessage('cloned ' + role + ' to ' +
                 newRole + ' !');
@@ -390,7 +392,8 @@ RoomMorph.prototype.setRoleName = function(role) {
 // FIXME: create ide.confirm
 RoomMorph.prototype.evictUser = function (user, role) {
     var myself = this;
-    SnapCloud.evictUser(function(err) {
+    SnapCloud.evictUser(
+        function(err) {
             myself.ide.showMessage(err || 'evicted ' + user + '!');
         },
         function (err, lbl) {
@@ -424,6 +427,7 @@ RoomMorph.prototype.inviteUser = function (role) {
 RoomMorph.prototype.promptShare = function(name) {
     var roles = Object.keys(this.roles),
         choices = {},
+        world = this.world(),
         myself = this;
 
     roles.splice(roles.indexOf(this.ide.projectName), 1);  // exclude myself
@@ -453,14 +457,14 @@ RoomMorph.prototype.promptShare = function(name) {
                         roleId: choice, 
                         msg: {name: name, fields: myself.ide.stage.messageTypes.getMsgType(name).fields}, 
                         from: myself.ide.projectName
-                        });
+                    });
                     myself.ide.showMessage('The role will receive this message type on next occupation.', 2);
-                    }
+                }
             } else {
                 myself.ide.showMessage('There is no role by the name of \'' + choice + '\'!', 2);
             }
             this.destroy();
-        }
+        };
     } else {  // notify user no available recipients
         myself.ide.showMessage('There are no other roles in the room!', 2);
     }
@@ -600,21 +604,21 @@ RoomMorph.prototype._invitationResponse = function (id, response, role) {
 };
 
 RoomMorph.prototype.checkForSharedMsgs = function(role) {
-     // Send queried messages if possible
-     for (var i = 0 ; i < this.sharedMsgs.length; i++) {
-         if (this.sharedMsgs[i].roleId === role) {
-             this.ide.sockets.sendMessage({
-                 type: 'share-msg-type', 
-                 name: this.sharedMsgs[i].msg.name,
-                 fields: this.sharedMsgs[i].msg.fields, 
-                 from: this.sharedMsgs[i].from,
-                 roleId: role
-             });
-             this.sharedMsgs.splice(i, 1);
-             i--;
-         }
-     }
- };
+    // Send queried messages if possible
+    for (var i = 0 ; i < this.sharedMsgs.length; i++) {
+        if (this.sharedMsgs[i].roleId === role) {
+            this.ide.sockets.sendMessage({
+                type: 'share-msg-type', 
+                name: this.sharedMsgs[i].msg.name,
+                fields: this.sharedMsgs[i].msg.fields, 
+                from: this.sharedMsgs[i].from,
+                roleId: role
+            });
+            this.sharedMsgs.splice(i, 1);
+            i--;
+        }
+    }
+};
 
 RoleMorph.prototype = new Morph();
 RoleMorph.prototype.constructor = RoleMorph;
@@ -967,7 +971,6 @@ ProjectsMorph.prototype.updateRoom = function() {
 
 ProjectsMorph.prototype.drawMsgPalette = function() {
     var width = 0,  // default width
-        myself = this,
         stage = this.room.ide.stage;
 
     // Create and style the message palette
@@ -1007,7 +1010,7 @@ ProjectsMorph.prototype.drawMsgPalette = function() {
 
         // Custom menu
         var menu = new MenuMorph(this, null);
-        menu.addItem('Send to...', function() {this.room.promptShare(msg.blockSpec)});
+        menu.addItem('Send to...', function() {this.room.promptShare(msg.blockSpec);});
         msg.children[0].customContextMenu = menu;
         msg.customContextMenu = menu;
 
@@ -1023,7 +1026,7 @@ ProjectsMorph.prototype.drawMsgPalette = function() {
     // Display message palette with no scroll bar until it overflows
     this.addContents(palette);
     this.vBar.hide();
-}
+};
 
 ProjectsMorph.prototype.destroy = function() {
     this.room.changed = nop;
