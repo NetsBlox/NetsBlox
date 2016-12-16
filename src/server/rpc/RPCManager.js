@@ -15,11 +15,7 @@ var fs = require('fs'),
     FN_ARG_SPLIT = /,/,
     STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg,
 
-    RESERVED_FN_NAMES = [
-        'init',
-        'getPath',
-        'isStateless'
-    ];
+    RESERVED_FN_NAMES = require('../../common/Constants').RPC.RESERVED_FN_NAMES;
 
 /**
  * RPCManager
