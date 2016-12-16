@@ -1,5 +1,5 @@
 /*globals Client*/
-describe.only('rpc libs', function() {
+describe('rpc libs', function() {
     var fs = require('fs'),
         path = require('path'),
         assert = require('assert'),
