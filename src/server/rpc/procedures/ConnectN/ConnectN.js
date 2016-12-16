@@ -31,23 +31,11 @@ ConnectN.getPath = function() {
     return '/connectn';
 };
 
-/**
- * This function is used to expose the public API for RPC calls
- *
- * @return {Array<String>}
- */
-ConnectN.getActions = function() {
-    return [
-        'newGame',  // Clear the board
-        'play'  // Play a tile at the given location
-    ];
-};
-
 // Actions
-ConnectN.prototype.newGame = function(req, res) {
-    this.numRow = req.query.row || 3;
-    this.numCol = req.query.column || 3;
-    this.numDotsToConnect = req.query.numDotsToConnect;
+ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
+    this.numRow = row || 3;
+    this.numCol = column || 3;
+    this.numDotsToConnect = numDotsToConnect;
     this._winner = null;
     this.lastMove = null;
 
@@ -58,10 +46,10 @@ ConnectN.prototype.newGame = function(req, res) {
 
     this.numDotsToConnect = Math.min(Math.max(this.numRow, this.numCol), this.numDotsToConnect);
 
-    info(req.query.roleId+' is clearing board and creating a new one with size: ', this.numRow, ', ', this.numCol);
+    info(this.socket.roleId+' is clearing board and creating a new one with size: ', this.numRow, ', ', this.numCol);
     this.board = ConnectN.getNewBoard(this.numRow, this.numCol);
 
-    req.netsbloxSocket._room.sockets()
+    this.socket._room.sockets()
         .forEach(socket => socket.send({
             type: 'message',
             msgType: 'start',
@@ -73,28 +61,26 @@ ConnectN.prototype.newGame = function(req, res) {
             }
         }));
 
-    res.status(200).send('Board: ' + this.numRow + 'x' + this.numCol + ' Total dots to connect: ' + this.numDotsToConnect);
+    return `Board: ${this.numRow}x${this.numCol} Total dots to connect: ${this.numDotsToConnect}`;
 };
 
 
 
-ConnectN.prototype.play = function(req, res) {
+ConnectN.prototype.play = function(row, column) {
     // ...the game is still going
     if (this._winner) {
         log('"'+roleId+'" is trying to play after the game is over');
-        return res.status(400).send('The game is over!');
+        return 'The game is over!';
     }
 
-    var row = req.query.row,
-        column = req.query.column,
-        roleId = req.netsbloxSocket.roleId,
+    var roleId = this.socket.roleId,
         open = false,
         isOnBoard = false;
 
     // ...it is the given role's turn
     if (this.lastMove === roleId) {
         log('"'+roleId+'" is trying to play twice in a row!');
-        return res.status(400).send('Trying to play twice in a row!');
+        return 'Trying to play twice in a row!';
     }
 
 
@@ -107,7 +93,7 @@ ConnectN.prototype.play = function(req, res) {
     // ...it's a valid position
     if (!isOnBoard) {
         log('"'+roleId+'" is trying to play in an invalid position ('+row+','+column+')');
-        return res.status(400).send('Trying to play at invalid position!');
+        return 'Trying to play at invalid position!';
     }
 
 
@@ -124,7 +110,7 @@ ConnectN.prototype.play = function(req, res) {
         this._winner = ConnectN.getWinner(this.board, this.numDotsToConnect);
         trace('"'+roleId+'" successfully played at '+row+','+column);
         // Send the play message to everyone!
-        req.netsbloxSocket._room.sockets()
+        this.socket._room.sockets()
             .forEach(socket => socket.send({
                 type: 'message',
                 dstId: Constants.EVERYONE,
@@ -148,7 +134,7 @@ ConnectN.prototype.play = function(req, res) {
 
         if(this.isGameOver())
         {
-            req.netsbloxSocket._room.sockets()
+            this.socket._room.sockets()
                 .forEach(socket => socket.send({
                     type: 'message',
                     dstId: Constants.EVERYONE,
@@ -159,9 +145,9 @@ ConnectN.prototype.play = function(req, res) {
                 }));
         }
 
-        return res.status(200).send('');
+        return '';
     }
-    return res.status(400).send('Play was not successful!');
+    return 'Play was not successful!';
 };
 
 ConnectN.prototype.isGameOver = function() {
