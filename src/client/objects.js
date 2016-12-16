@@ -3,7 +3,7 @@
    localize, BlockEditorMorph, BlockDialogMorph, TextMorph, PushButtonMorph,
    MessageFrame, BlockMorph, ToggleMorph, MessageCreatorMorph,
    VariableDialogMorph, SnapCloud, contains, List, CommandBlockMorph,
-   MessageType, isNil, RingMorph, SnapActions, ProjectsMorph*/
+   MessageType, isNil, RingMorph, SnapActions, ProjectsMorph, NetsBloxMorph*/
 
 SpriteMorph.prototype.categories =
     [

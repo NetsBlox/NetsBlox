@@ -444,26 +444,37 @@ IDE_Morph.prototype.exportGlobalBlocks = function () {
 IDE_Morph.prototype.rawOpenBlocksString = function (str, name, silently) {
     // name is optional (string), so is silently (bool)
     var blocks,
-        myself = this;
+        myself = this,
+        msgTypes;
+
     if (Process.prototype.isCatchingErrors) {
         try {
             blocks = this.serializer.loadBlocks(str, myself.stage);
+            msgTypes = this.serializer.parse(str).childrenNamed('messageType');
         } catch (err) {
             this.showMessage('Load failed: ' + err);
         }
     } else {
         blocks = this.serializer.loadBlocks(str, myself.stage);
+        msgTypes = this.serializer.parse(str).childrenNamed('messageType');
     }
     if (silently) {
+        msgTypes.forEach(function(msgType) {
+            var name = msgType.childNamed('name').contents,
+                fields = msgType.childNamed('fields').children.map(function(field) {
+                    return field.contents;
+                });
+
+            myself.stage.addMessageType({
+                name: name,
+                fields: fields
+            });
+        });
+
         blocks.forEach(function (def) {
-            // Message type import
-            if (def.category === 'msg') {
-                myself.stage.addMessageType(JSON.parse(def.spec));
-            } else {  // Block import
-                def.receiver = myself.stage;
-                myself.stage.globalBlocks.push(def);
-                myself.stage.replaceDoubleDefinitionsFor(def);
-            }
+            def.receiver = myself.stage;
+            myself.stage.globalBlocks.push(def);
+            myself.stage.replaceDoubleDefinitionsFor(def);
         });
         this.flushBlocksCache();
         this.flushPaletteCache();
