@@ -1,29 +1,38 @@
 // I should probably rename this. This is a wrapper for testing the RPC's
 'use strict';
 
+// RPCs now contain the methods 
+var Constants = require('../../src/common/Constants');
+
 var MockRPC = function(RPC) {
     this._rpc = new RPC();
+
+    this.socket = new MockSocket();
+    this.response = new MockResponse();
+    this._rpc.socket = this.socket;
+    this._rpc.response = this.response;
+
     this.createMethods(RPC);
 };
 
 MockRPC.prototype.createMethods = function(RPC) {
-    RPC.getActions().forEach(method => {
+    var publicFns = Object.keys(RPC.prototype)
+        .filter(name => name[0] !== '_')
+        .filter(name => !Constants.RPC.RESERVED_FN_NAMES.includes(name));
+
+    publicFns.forEach(method => {
         this.addMethod(method);
     });
 };
 
 MockRPC.prototype.addMethod = function(name) {
-    this[name] = function(args) {
-        var req = new MockRequest(args),
-            res = new MockResponse();
-
-        this._rpc[name](req, res);
-        return res;
+    this[name] = function() {
+        return this._rpc[name].apply(this._rpc, arguments);
     };
 };
 
 var MockSocket = function(args) {
-    this.roleId = args.roleId || 'newRole';
+    this.roleId = 'newRole';
 
     this._room = {
         sockets: () => []
