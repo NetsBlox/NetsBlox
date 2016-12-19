@@ -38,52 +38,52 @@ module.exports = {
         return '/weather';
     },
 
-    temp: function(req, res) {
-        var lat = req.query.lat,
-            lng = req.query.lng,
-            url = baseUrl + '&lat=' + lat + '&lon=' + lng;
+    temp: function(latitude, longitude) {
+        var url = baseUrl + '&lat=' + latitude + '&lon=' + longitude;
 
-        trace('Request for ' + lat + ', ' + lng);
-        request(url, function(err, response, body) {
+        trace('temp request for ' + latitude + ', ' + longitude);
+        request(url, (err, response, body) => {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
-                return res.status(500).send('ERROR: '+(err || body));
+                return this.response.send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
 
             var temp = 'unknown';
-            if (body.main && isWithinMaxDistance(body, lat, lng)) {
+            if (body.main && isWithinMaxDistance(body, latitude, longitude)) {
                 temp = body.main.temp;
                 trace('Kelvin temp is '+temp+' fahrenheit is '+tuc.k2f(temp));
                 temp = Math.round(tuc.k2f(temp));
             }
-            return res.json(temp);
+            return this.response.json(temp);
         });
+
+        return null;
     },
 
-    humidity: function(req, res) {
-        var lat = req.query.lat,
-            lng = req.query.lng,
-            url = baseUrl + '&lat=' + lat + '&lon=' + lng;
+    humidity: function(latitude, longitude) {
+        var url = baseUrl + '&lat=' + latitude + '&lon=' + longitude;
 
-        request(url, function(err, response, body) {
+        request(url, (err, response, body) => {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
-                return res.status(500).send('ERROR: '+(err || body));
+                return this.response.send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             var humidity = 'unknown';
-            if (isWithinMaxDistance(body, lat, lng)) {
+            if (isWithinMaxDistance(body, latitude, longitude)) {
                 humidity = body.main.humidity;
             }
-            return res.json(humidity);
+            return this.response.json(humidity);
         });
+
+        return null;
     },
 
     description: function(latitude, longitude) {
         var url = baseUrl + '&lat=' + latitude + '&lon=' + longitude;
 
-        request(url, function(err, response, body) {
+        request(url, (err, response, body) => {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
                 return this.response.status(500).send('ERROR: '+(err || body));
@@ -102,7 +102,7 @@ module.exports = {
     icon: function(latitude, longitude) {
         var url = baseUrl + '&lat=' + latitude + '&lon=' + longitude;
 
-        request(url, function(err, response, body) {
+        request(url, (err, response, body) => {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
                 return this.response.status(500).send('ERROR: '+(err || body));
@@ -140,7 +140,7 @@ module.exports = {
     windAngle: function(latitude, longitude) {
         var url = baseUrl + '&lat=' + latitude + '&lon=' + longitude;
 
-        request(url, function(err, response, body) {
+        request(url, (err, response, body) => {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
                 return this.response.status(500).send('ERROR: '+(err || body));
