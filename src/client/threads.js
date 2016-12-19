@@ -77,11 +77,12 @@ function NetsProcess(topBlock, onComplete, rightAway, context) {
     }
 }
 
-NetsProcess.prototype.doSocketMessage = function (name) {
+NetsProcess.prototype.doSocketMessage = function (msgInfo) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
         targetRole = arguments[arguments.length-1],
         myRole = ide.projectName,  // same as seat name
-        fields = Array.prototype.slice.call(arguments, 1),
+        name = msgInfo[0],
+        fields = msgInfo[1],
         stage = ide.stage,
         messageType,
         fieldNames,
