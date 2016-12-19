@@ -471,18 +471,7 @@ IDE_Morph.prototype.rawOpenBlocksString = function (str, name, silently) {
             });
         });
 
-        blocks.forEach(function (def) {
-            def.receiver = myself.stage;
-            myself.stage.globalBlocks.push(def);
-            myself.stage.replaceDoubleDefinitionsFor(def);
-        });
-        this.flushBlocksCache();
-        this.flushPaletteCache();
-        this.refreshPalette();
-        this.showMessage(
-            'Imported Blocks / Message Types Module' + (name ? ': ' + name : '') + '.',
-            2
-        );
+        this.importCustomBlocks(blocks);
     } else {
         new BlockImportDialogMorph(blocks, this.stage, name).popUp();
     }
