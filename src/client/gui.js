@@ -1,7 +1,7 @@
 /* globals ProjectDialogMorph, Morph, AlignmentMorph, InputFieldMorph, localize,
    Point, TextMorph, Color, nop, ListMorph, IDE_Morph, Process, BlockImportDialogMorph,
    BlockExportDialogMorph, detect, SnapCloud, SnapSerializer, ScrollFrameMorph,
-   DialogBoxMorph
+   DialogBoxMorph, SnapActions
    */
 ProjectDialogMorph.prototype.buildContents = function () {
     var thumbnail, notification;
@@ -483,6 +483,7 @@ IDE_Morph.prototype.rawOpenBlocksString = function (str, name, silently) {
             'Imported Blocks / Message Types Module' + (name ? ': ' + name : '') + '.',
             2
         );
+        SnapActions.loadCustomBlocks(blocks);
     } else {
         new BlockImportDialogMorph(blocks, this.stage, name).popUp();
     }
