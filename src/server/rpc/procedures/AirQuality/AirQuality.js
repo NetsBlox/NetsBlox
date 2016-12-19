@@ -58,60 +58,22 @@ module.exports = {
         return '/air';
     },
 
-    getActions: function() {
-        return ['quality',
-                'aqi'];
-    },
-
-    quality: function(req, res) {
-        var category = (req.query.format || '').toLowerCase() === 'text' ? 
-                'Name' : 'Number',
-            nearest,
-            url;
-
-        if (!req.query.lat || !req.query.lng) {
-            return res.status(400).send('ERROR: missing latitude or longitude');
-        }
-
-        nearest = getClosestReportingLocation(req.query.lat, req.query.lng);
-        url = baseUrl + '&zipCode=' + nearest;
-
-        trace('Requesting air quality ('+category+') at '+ nearest);
-        
-        request(url, function(err, response, body) {
-            if (err) {
-                return res.status(500).send('ERROR: '+err);
-            }
-            var name = 'unknown';
-            try {
-                body = JSON.parse(body).shift();
-                if (body && body.Category) {
-                    name = body.Category[category];
-                }
-            } catch (e) {
-                error('Could not get air quality: ', e);
-            }
-
-            res.json(name);
-        });
-    },
-
     // air quality index
     // Return -1 if unknown
-    aqi: function(req, res) {
+    qualityIndex: function(latitude, longitude) {
         var nearest,
             url;
 
-        if (!req.query.lat || !req.query.lng) {
-            return res.status(400).send('ERROR: missing latitude or longitude');
+        if (!latitude || !longitude) {
+            return this.response.status(400).send('ERROR: missing latitude or longitude');
         }
 
-        nearest = getClosestReportingLocation(req.query.lat, req.query.lng);
+        nearest = getClosestReportingLocation(latitude, longitude);
         url = baseUrl + '&zipCode=' + nearest;
 
         trace('Requesting air quality at '+ nearest);
         
-        request(url, function(err, response, body) {
+        request(url, (err, response, body) => {
             var aqi = -1,
                 code = err ? 500 : response.statusCode;
             try {
@@ -125,7 +87,9 @@ module.exports = {
                 error('Could not get air quality index: ', e);
             }
 
-            res.status(code).json(aqi);
+            this.response.status(code).json(aqi);
         });
+
+        return null;
     }
 };
