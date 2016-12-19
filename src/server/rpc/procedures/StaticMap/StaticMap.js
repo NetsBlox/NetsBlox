@@ -230,4 +230,18 @@ StaticMap.prototype.minLatitude = function() {
     return map.min.lat;
 };
 
+// Map of argument name to old field name
+StaticMap.COMPATIBILITY = {
+    getMap: {
+        latitude: 'lat',
+        longitude: 'lon'
+    },
+    getXFromLongitude: {
+        longitude: 'lng'
+    },
+    getYFromLatitude: {
+        latitude: 'lat'
+    }
+};
+
 module.exports = StaticMap;
