@@ -18,12 +18,15 @@ module.exports = {
 
     // NASA's 'Astronomy Picture of the Day'
     apod: function() {
-        request(APOD_URL, function(err, response, body) {
+        var response = this.response,
+            socket = this.socket;
+
+        request(APOD_URL, function(err, res, body) {
             body = JSON.parse(body);
             var msg = {
                 type: 'message',
                 msgType: 'Astronomy Pic of the Day',
-                dstId: this.socket.roleId,
+                dstId: socket.roleId,
                 content: {
                     date: body.date,
                     title: body.title,
@@ -31,42 +34,50 @@ module.exports = {
                     description: body.explanation
                 }
             };
-            this.socket.send(msg);
-            return this.response.json(true);
+            socket.send(msg);
+            return response.json(true);
         });
         return null;
     },
 
     // NASA's 'Astronomy Picture of the Day' media
     apodMedia: function() {
-        request(APOD_URL, function(err, response, body) {
+        var response = this.response;
+
+        request(APOD_URL, function(err, res, body) {
             body = JSON.parse(body);
-            request.get(body.url).pipe(this.response);
+            request.get(body.url).pipe(response);
         });
         return null;
     },
 
     // Latest Mars data according to MAAS
     marsHighTemp: function() {
-        request(MARS_URL, function(err, response, body) {
+        var response = this.response;
+
+        request(MARS_URL, function(err, res, body) {
             body = JSON.parse(body);
-            return this.response.json(body.report.max_temp_fahrenheit);
+            return response.json(body.report.max_temp_fahrenheit);
         });
         return null;
     },
 
     marsLowTemp: function() {
-        request(MARS_URL, function(err, response, body) {
+        var response = this.response;
+
+        request(MARS_URL, function(err, res, body) {
             body = JSON.parse(body);
-            return this.response.json(body.report.min_temp_fahrenheit);
+            return response.json(body.report.min_temp_fahrenheit);
         });
         return null;
     },
 
     marsWeather: function() {
-        request(MARS_URL, function(err, response, body) {
+        var response = this.response;
+
+        request(MARS_URL, function(err, res, body) {
             body = JSON.parse(body);
-            return this.response.json(body.report.atmo_opacity);
+            return response.json(body.report.atmo_opacity);
         });
         return null;
     }
