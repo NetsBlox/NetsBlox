@@ -25,20 +25,9 @@ var StaticMap = function() {
     this.userMaps = {};  // Store the state of the map for each user
 };
 
+// TODO: Refactor this
 StaticMap.getPath = function() {
     return '/staticmap';
-};
-
-StaticMap.getActions = function() {
-    return ['getMap',
-            'getLatitude',
-            'getLongitude',
-            'minLongitude',
-            'minLatitude',
-            'maxLongitude',
-            'maxLatitude',
-            'getYFromLatitude',
-            'getXFromLongitude'];
 };
 
 StaticMap.prototype._getGoogleParams = function(options) {

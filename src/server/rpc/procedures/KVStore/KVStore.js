@@ -2,7 +2,6 @@
 'use strict';
 
 var debug = require('debug'),
-    store = {},  // single, global key-value store
     Storage = require('../../storage'),
     NAME = 'KeyValueStore',
     SEP = '/',
@@ -30,19 +29,8 @@ var KeyValueStore = {
         return '/kv-store';
     },
 
-    getActions: function() {
-        return [
-            'get',
-            'put',
-            'delete',
-            'parent',
-            'child'
-        ];
-    },
-
-    get: function(req, res) {
-        var key = req.query.key,
-            keys = getKeys(key),
+    get: function(key) {
+        var keys = getKeys(key),
             i = 0;
 
         logger.trace(`getting key "${key}"`);
@@ -52,32 +40,31 @@ var KeyValueStore = {
                     result = result[keys[i]];
                     if (!result) {
                         logger.warn(`invalid key: ${key} (get)`);
-                        return res.json(false);
+                        return this.response.json(false);
                     }
                     i++;
                 }
 
                 if (typeof result === 'object') {
                     logger.warn(`invalid key: ${key} (get) -> key is an object`);
-                    return res.json(false);
+                    return this.response.json(false);
                 }
 
                 logger.trace(`retrieved value: ${key} -> ${result}`);
-                return res.json(result);
+                return this.response.json(result);
             })
             .catch(err => {
                 logger.error(`Could not retrieve key ${keys[0]}: ${err}`);
-                return res.json(false);
+                return this.response.json(false);
             });
 
+        return null;
     },
 
-    put: (req, res) => {
-        var key = req.query.key,
-            value = req.query.value,
-            keys = getKeys(key);
+    put: (key, value) => {
+        var keys = getKeys(key);
 
-        logger.trace(`Looking up key "${key}"`)
+        logger.trace(`Looking up key "${key}"`);
         getStore()
             .then(store => {
                 var result = store,
@@ -98,17 +85,18 @@ var KeyValueStore = {
             })
             .then(result => {
                 logger.trace(`set "${key}" to "${value}"`);
-                return res.json(result);
+                return this.response.json(result);
             })
             .catch(err => {
                 logger.error(`Could not save key "${key}": ${err}`);
-                return res.json(false);
+                return this.response.json(false);
             });
+
+        return null;
     },
 
-    delete: function(req, res) {
-        var key = req.query.key,
-            keys = getKeys(key),
+    delete: function(key) {
+        var keys = getKeys(key),
             i = 0;
 
         getStore()
@@ -117,39 +105,38 @@ var KeyValueStore = {
                     result = result[keys[i]];
                     if (!result) {
                         logger.warn(`invalid key: ${key} (delete)`);
-                        return res.json(false);
+                        return this.response.json(false);
                     }
                     i++;
                 }
 
                 if (typeof result !== 'object') {
                     logger.warn(`invalid key: ${key} (delete)`);
-                    return res.json(false);
+                    return this.response.json(false);
                 }
 
                 delete result[keys[i]];
                 logger.trace(`successfully removed key ${key}`);
                 return saveStore(result);
             })
-            .then(() => res.json(true))
+            .then(() => this.response.json(true))
             .catch(e => logger.error(`deleting ${key} failed: ${e}`));
+
+        return null;
     },
 
-    parent: function(req, res) {
-        var key = req.query.key,
-            keys = getKeys(key);
+    parent: function(key) {
+        var keys = getKeys(key);
 
         if (keys.length) {
             keys.pop();
         }
         
-        return res.json('/' + keys.join(SEP));
+        return '/' + keys.join(SEP);
     },
 
-    child: function(req, res) {
-        var key = req.query.key,
-            keys = getKeys(key),
-            result = store,
+    child: function(key) {
+        var keys = getKeys(key),
             i = 0;
 
         getStore()
@@ -158,17 +145,19 @@ var KeyValueStore = {
                     result = result[keys[i]];
                     if (typeof result !== 'object') {
                         logger.warn(`invalid key: "${key}" (child)`);
-                        return res.json([]);
+                        return this.response.json([]);
                     }
                     i++;
                 }
-                return res.json(
+                return this.response.json(
                     Object.keys(result)
                         .sort()
                         .map(k => key + '/' + k)
                 );
             })
             .catch(e => logger.error(`getting children failed: ${e}`));
+
+        return null;
     }
 
     // dump/load data?

@@ -38,14 +38,6 @@ module.exports = {
         return '/weather';
     },
 
-    getActions: function() {
-        return ['temp',
-                'humidity',
-                'icon',
-                'name',
-                'description'];
-    },
-
     temp: function(req, res) {
         var lat = req.query.lat,
             lng = req.query.lng,
@@ -88,31 +80,32 @@ module.exports = {
         });
     },
 
-    description: function(req, res) {
-        var lat = req.query.lat,
-            lng = req.query.lng,
-            url = baseUrl + '&lat=' + lat + '&lon=' + lng;
+    description: function(latitude, longitude) {
+        var url = baseUrl + '&lat=' + latitude + '&lon=' + longitude;
 
         request(url, function(err, response, body) {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
-                return res.status(500).send('ERROR: '+(err || body));
+                return this.response.status(500).send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             var description = 'unknown';
-            if (isWithinMaxDistance(body, lat, lng)) {
+            if (isWithinMaxDistance(body, latitude, longitude)) {
                 description = body.weather[0].description;
             }
-            return res.json(description);
+            return this.response.json(description);
         });
+
+        return null;
     },
 
-    icon: function(req, res) {
-        var url = baseUrl + '&lat=' + req.query.lat + '&lon=' + req.query.lng;
+    icon: function(latitude, longitude) {
+        var url = baseUrl + '&lat=' + latitude + '&lon=' + longitude;
+
         request(url, function(err, response, body) {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
-                return res.status(500).send('ERROR: '+(err || body));
+                return this.response.status(500).send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             // Return sunny if unknown
@@ -120,65 +113,66 @@ module.exports = {
             if (body.weather && body.weather[0]) {
                 iconName = body.weather[0].icon+'.png';
             }
-            request.get(baseIconUrl+iconName).pipe(res);
+            request.get(baseIconUrl+iconName).pipe(this.response);
         });
+        return null;
     },
 
-    windSpeed: function(req, res) {
-        var lat = req.query.lat,
-            lng = req.query.lng,
-            url = baseUrl + '&lat=' + lat + '&lon=' + lng;
+    windSpeed: function(latitude, longitude) {
+        var url = baseUrl + '&lat=' + latitude + '&lon=' + longitude;
 
-        request(url, function(err, response, body) {
+        request(url, (err, response, body) => {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
-                return res.status(500).send('ERROR: '+(err || body));
+                return this.response.status(500).send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             var name = 'unknown';
-            if (isWithinMaxDistance(body, lat, lng)) {
+            if (isWithinMaxDistance(body, latitude, longitude)) {
                 name = body.wind.speed || 'unknown';
             }
-            res.json(name);
+            this.response.json(name);
         });
+
+        return null;
     },
 
-    windAngle: function(req, res) {
-        var lat = req.query.lat,
-            lng = req.query.lng,
-            url = baseUrl + '&lat=' + lat + '&lon=' + lng;
+    windAngle: function(latitude, longitude) {
+        var url = baseUrl + '&lat=' + latitude + '&lon=' + longitude;
 
         request(url, function(err, response, body) {
             if (err || response.statusCode < 200 || response.statusCode > 299) {
                 log('ERROR: ', (err || body));
-                return res.status(500).send('ERROR: '+(err || body));
+                return this.response.status(500).send('ERROR: '+(err || body));
             }
             body = JSON.parse(body);
             var name = 'unknown';
-            if (isWithinMaxDistance(body, lat, lng)) {
+            if (isWithinMaxDistance(body, latitude, longitude)) {
                 name = body.wind.deg || 'unknown';
             }
-            res.json(name);
+            this.response.json(name);
         });
+
+        return null;
     },
 
     // Consider moving this to a map utils rpc FIXME
-    name: function(req, res) {
-        var lat = req.query.lat,
-            lng = req.query.lng,
-            url = baseUrl + '&lat=' + lat + '&lon=' + lng;
+    //name: function(req, res) {
+        //var lat = req.query.lat,
+            //lng = req.query.lng,
+            //url = baseUrl + '&lat=' + lat + '&lon=' + lng;
 
-        request(url, function(err, response, body) {
-            if (err || response.statusCode < 200 || response.statusCode > 299) {
-                log('ERROR: ', (err || body));
-                return res.status(500).send('ERROR: '+(err || body));
-            }
-            body = JSON.parse(body);
-            var name = 'unknown';
-            if (isWithinMaxDistance(body, lat, lng)) {
-                name = body.name || 'unknown';
-            }
-            res.json(name);
-        });
-    }
+        //request(url, function(err, response, body) {
+            //if (err || response.statusCode < 200 || response.statusCode > 299) {
+                //log('ERROR: ', (err || body));
+                //return res.status(500).send('ERROR: '+(err || body));
+            //}
+            //body = JSON.parse(body);
+            //var name = 'unknown';
+            //if (isWithinMaxDistance(body, lat, lng)) {
+                //name = body.name || 'unknown';
+            //}
+            //res.json(name);
+        //});
+    //}
 };
