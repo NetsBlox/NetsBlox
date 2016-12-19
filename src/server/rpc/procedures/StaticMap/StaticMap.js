@@ -86,7 +86,7 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
 
     this._recordUserMap(this.socket, options);
     // Check the cache
-    cache.wrap(url, function(cacheCallback) {
+    cache.wrap(url, cacheCallback => {
         // Get the image -> not in cache!
         trace('request params:', options);
         trace('url is '+url);
@@ -102,7 +102,7 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
         response.on('end', function() {
             return cacheCallback(null, result);
         });
-    }, function(err, imageBuffer) {
+    }, (err, imageBuffer) => {
         // Send the response to the user
         trace('Sending the response!');
         // Set the headers
