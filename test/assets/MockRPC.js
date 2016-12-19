@@ -45,6 +45,7 @@ MockRPC.prototype.addMethod = function(name) {
 
 var MockSocket = function() {
     this.roleId = 'newRole';
+    this.uuid = 'someSocketUuid';
 
     this._room = {
         sockets: () => []
