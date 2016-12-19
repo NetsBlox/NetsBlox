@@ -6,7 +6,8 @@ module.exports = {
         RESERVED_FN_NAMES: [
             'init',
             'getPath',
-            'isStateless'
+            'isStateless',
+            'COMPATIBILITY'
         ]
     }
 };
