@@ -2,27 +2,39 @@
 'use strict';
 
 // RPCs now contain the methods 
-var Constants = require('../../src/common/Constants');
+var Constants = require('../../src/common/Constants'),
+    getArgsFor = require('../../src/server/rpc/RPCManager').prototype.getArgumentsFor,
+    _ = require('lodash');
 
 var MockRPC = function(RPC) {
-    this._rpc = new RPC();
+    this._methods = [];
+    this._rpc = typeof RPC === 'function' ? new RPC() : _.cloneDeep(RPC);
+    this.createMethods(RPC);
 
     this.socket = new MockSocket();
     this.response = new MockResponse();
     this._rpc.socket = this.socket;
     this._rpc.response = this.response;
 
-    this.createMethods(RPC);
 };
 
 MockRPC.prototype.createMethods = function(RPC) {
-    var publicFns = Object.keys(RPC.prototype)
-        .filter(name => name[0] !== '_')
-        .filter(name => !Constants.RPC.RESERVED_FN_NAMES.includes(name));
+    var fnObj = typeof RPC === 'function' ? RPC.prototype : RPC,
+        publicFns = Object.keys(fnObj)
+            .filter(name => name[0] !== '_')
+            .filter(name => !Constants.RPC.RESERVED_FN_NAMES.includes(name));
 
     publicFns.forEach(method => {
+        this._methods.push(method);
         this.addMethod(method);
     });
+};
+
+MockRPC.prototype.getArgumentsFor = function(fnName) {
+    if (this._methods.includes(fnName)) {
+        return getArgsFor(this._rpc[fnName]);
+    }
+    throw new Error(`${fnName} is not supported by the RPC!`);
 };
 
 MockRPC.prototype.addMethod = function(name) {
@@ -31,22 +43,12 @@ MockRPC.prototype.addMethod = function(name) {
     };
 };
 
-var MockSocket = function(args) {
+var MockSocket = function() {
     this.roleId = 'newRole';
 
     this._room = {
         sockets: () => []
     };
-};
-
-var MockRequest = function(args) {
-    args = args || {};
-    this.query = {};
-    for (var key in args) {
-        this.query[key] = args[key];
-    }
-
-    this.netsbloxSocket = new MockSocket(args);
 };
 
 var MockResponse = function() {
