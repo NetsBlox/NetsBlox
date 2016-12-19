@@ -11,250 +11,251 @@ var debug = require('debug'),
     KEY = process.env.TWITTER_BEARER_TOKEN;
 
 var options = {
-	url: baseURL,
-	headers: { 
-		'Authorization': KEY,
-		'gzip': true
-		},
-	json: true
+    url: baseURL,
+    headers: { 
+        'Authorization': KEY,
+        'gzip': true
+    },
+    json: true
 };
 
 function rateCheck(response, res) {
-	if (response.statusCode == 429) {
-		res.send('Rate limit exceeded--wait before trying again');
-		return true;
-	}
-	return false;
+    if (response.statusCode == 429) {
+        res.send('Rate limit exceeded--wait before trying again');
+        return true;
+    }
+    return false;
 }
 
 module.exports = {
 
-	isStateless: true,
-	getPath: () => '/Twitter',
-	getActions: () => ['recentTweets', 'followers', 'tweets', 'search', 'tweetsPerDay', 'favorites', 'favoritesCount'], // list of available functions for client to use
+    isStateless: true,
+    getPath: () => '/Twitter',
 
-	// returns a list of a user's recent tweets
-	recentTweets: function(req, res) {
+    // returns a list of a user's recent tweets
+    recentTweets: function(screenName, count) {
 
-		var results = [];
-		// gather parameters
-		options.url = baseURL + 'statuses/user_timeline.json?';
-		var screenName = req.query.screenName;
-		var count = req.query.count;
+        var results = [];
+        // gather parameters
+        options.url = baseURL + 'statuses/user_timeline.json?';
 
-		// ensure valid parameters
-		if (screenName == '' || screenName == undefined || count == '' || count == undefined || count <= 0) {
-			trace('Enter valid parameters...');
-			return res.send('Error');
-		}
+        // ensure valid parameters
+        if (screenName == '' || screenName == undefined || count == '' || count == undefined || count <= 0) {
+            trace('Enter valid parameters...');
+            return 'Missing screenName or count';
+        }
 
-		options.url = options.url + 'screen_name=' + screenName + '&count=' + count;
+        options.url = options.url + 'screen_name=' + screenName + '&count=' + count;
 
-		// populate array of tweets
-		getTweets();
+        // repeat as many times as necessary
+        var getTweets = () => { 
+            request(options, (err, response, body) => {
+                if (rateCheck(response, this.response)) {
+                    return;
+                }
+                for (var i = 0; i < body.length; i++) {
+                    results.push('( ' + body[i].retweet_count + ' RTs, ' + body[i].favorite_count + ' Favs) ' + body[i].text);
+                }
+                count -= body.length;
+                if (count > 0) {
+                    options.url = baseURL + 'statuses/user_timeline.json?screen_name=' + screenName + '&count=' + count + '&max_id=' + body[body.length-1].id;
+                    getTweets();
+                } else {
+                    return this.response.json(results);
+                }
+            });
+        };
 
-		// repeat as many times as necessary
-		function getTweets() { 
-			request(options, function(err, response, body) {
-				if (rateCheck(response, res)) {
-					return;
-				}
-				for (var i = 0; i < body.length; i++) {
-					results.push('( ' + body[i].retweet_count + ' RTs, ' + body[i].favorite_count + ' Favs) ' + body[i].text);
-				}
-				count -= body.length;
-				if (count > 0) {
-					options.url = baseURL + 'statuses/user_timeline.json?screen_name=' + screenName + '&count=' + count + '&max_id=' + body[body.length-1].id;
-					getTweets();
-				} else {
-					return res.json(results);
-				}
-			});
-		}
-	},
+        // populate array of tweets
+        getTweets();
 
-	// returns amount of followers a user has
-	followers: function(req, res) {
+        return null;
+    },
 
-		// gather parameter
-		options.url = baseURL + 'users/show.json?';
-		var screenName = req.query.screenName;
+    // returns amount of followers a user has
+    followers: function(screenName) {
 
-		// ensure valid parameter
-		if (screenName == '' || screenName == undefined) {
-			trace('Enter a valid screen name...');
-			return res.send('Error');
-		}
+        // gather parameter
+        options.url = baseURL + 'users/show.json?';
 
-		options.url = options.url + 'screen_name=' + screenName;
+        // ensure valid parameter
+        if (screenName == '' || screenName == undefined) {
+            trace('Enter a valid screen name...');
+            return 'Missing screenName';
+        }
 
-		request(options, function(err, response, body) {
-			if (rateCheck(response, res)) {
-				return;
-			}
-			return res.json(body.followers_count);
-		});
-	},
+        options.url = options.url + 'screen_name=' + screenName;
 
-	// returns amount of tweets a user has
-	tweets: function(req, res) {
+        request(options, (err, response, body) => {
+            if (rateCheck(response, this.response)) {
+                return;
+            }
+            return this.response.json(body.followers_count);
+        });
 
-		// gather parameter
-		options.url = baseURL + 'users/show.json?';
-		var screenName = req.query.screenName;
+        return null;
+    },
 
-		// ensure valid parameter
-		if (screenName == '' || screenName == undefined) {
-			trace('Enter a valid screen name...');
-			return res.send('Error');
-		}
+    // returns amount of tweets a user has
+    tweets: function(screenName) {
 
-		options.url = options.url + 'screen_name=' + screenName;
+        // gather parameter
+        options.url = baseURL + 'users/show.json?';
 
-		request(options, function(err, response, body) {
-			if (rateCheck(response, res)) {
-				return;
-			}
-			return res.json(body.statuses_count);
-		});
-	},
+        // ensure valid parameter
+        if (screenName == '' || screenName == undefined) {
+            trace('Enter a valid screen name...');
+            return 'Missing screenName';
+        }
 
-	// searches the most recent tweets
-	search: function(req, res) {
+        options.url = options.url + 'screen_name=' + screenName;
 
-		var results = [];
-		// gather parameter
-		options.url = baseURL + 'search/tweets.json?q=';
-		var keyword = req.query.keyword;
-		var count = req.query.count;
+        request(options, (err, response, body) => {
+            if (rateCheck(response, this.response)) {
+                return;
+            }
+            return this.response.json(body.statuses_count);
+        });
+        return null;
+    },
 
-		// ensure valid parameters
-		if (keyword == '' || keyword == undefined || count == '' || count == undefined || count <= 0) {
-			trace('Enter valid parameters...');
-			return res.send('Error');
-		}
+    // searches the most recent tweets
+    search: function(keyword, count) {
 
-		// URL encode
-		keyword = encodeURI(keyword);
+        var results = [];
+        // gather parameter
+        options.url = baseURL + 'search/tweets.json?q=';
 
-		options.url = options.url + keyword + '&count=' + count;
-		
-		// populate array of tweets
-		getTweets();
+        // ensure valid parameters
+        if (keyword == '' || keyword == undefined || count == '' || count == undefined || count <= 0) {
+            trace('Enter valid parameters...');
+            return 'KEYWORD and COUNT required';
+        }
 
-		// repeat as many times as necessary
-		function getTweets() {
-			request(options, function(err, response, body) {
-				if (rateCheck(response, res)) {
-					return;
-				}
-				for (var i = 0; i < body.statuses.length; i++) {
-					results.push('(' + body.statuses[i].retweet_count + ' RTs, ' + body.statuses[i].favorite_count + ' Favs) @' + body.statuses[i].user.screen_name + ': ' + body.statuses[i].text);
-				}
-				count -= body.statuses.length;
-				if (count > 0) {
-					options.url = baseURL + 'search/tweets.json?q=' + keyword + '&count=' + count + '&max_id=' + body.statuses[body.statuses.length-1].id;
-					getTweets();
-				} else {
-					return res.json(results);
-				}
-			});
-		}
-	},
+        // URL encode
+        keyword = encodeURI(keyword);
 
-	// returns how many tweets per day the user averages (most recent 200)
-	tweetsPerDay: function(req, res) {
+        options.url = options.url + keyword + '&count=' + count;
+        
+        // repeat as many times as necessary
+        var getTweets = () => {
+            request(options, (err, response, body) => {
+                if (rateCheck(response, this.response)) {
+                    return;
+                }
+                for (var i = 0; i < body.statuses.length; i++) {
+                    results.push('(' + body.statuses[i].retweet_count + ' RTs, ' + body.statuses[i].favorite_count + ' Favs) @' + body.statuses[i].user.screen_name + ': ' + body.statuses[i].text);
+                }
+                count -= body.statuses.length;
+                if (count > 0) {
+                    options.url = baseURL + 'search/tweets.json?q=' + keyword + '&count=' + count + '&max_id=' + body.statuses[body.statuses.length-1].id;
+                    getTweets();
+                } else {
+                    return this.response.json(results);
+                }
+            });
+        };
 
-		// gather parameter
-		options.url = baseURL + 'statuses/user_timeline.json?';
-		var screenName = req.query.screenName;
-		var oneDay = 24*60*60*1000; // hours*minutes*seconds*milliseconds
-		var dateToday = new Date();
+        // populate array of tweets
+        getTweets();
 
-		// ensure valid parameter
-		if (screenName == '' || screenName == undefined) {
-			trace('Enter valid parameters...');
-			return res.send('Error');
-		}
+        return null;
+    },
 
-		options.url = options.url + 'screen_name=' + screenName + '&count=200';
+    // returns how many tweets per day the user averages (most recent 200)
+    tweetsPerDay: function(screenName) {
 
-		request(options, function(err, response, body) {
-			try {
-				if (rateCheck(response, res)) {
-					return;
-				}
-				var oldestDate = new Date(body[body.length-1].created_at); 
-				var diffDays = Math.round(Math.abs((oldestDate.getTime() - dateToday.getTime())/(oneDay)));
-				return res.json(body.length / diffDays);
-			} catch (err) {
-				trace(err);
-				return res.json(0);
-			}
-		});
-	},
+        // gather parameter
+        options.url = baseURL + 'statuses/user_timeline.json?';
+        var oneDay = 24*60*60*1000; // hours*minutes*seconds*milliseconds
+        var dateToday = new Date();
 
-	// returns the most recent tweets that a user has favorited
-	favorites: function(req, res) {
+        // ensure valid parameter
+        if (screenName == '' || screenName == undefined) {
+            trace('Enter valid parameters...');
+            return 'Missing screenName';
+        }
 
-		var results = [];
-		// gather parameter
-		options.url = baseURL + 'favorites/list.json?';
-		var screenName = req.query.screenName;
-		var count = req.query.count;
+        options.url = options.url + 'screen_name=' + screenName + '&count=200';
 
-		// ensure valid parameters
-		if (screenName == '' || screenName == undefined || count == '' || count == undefined || count <= 0) {
-			trace('Enter valid parameters...');
-			return res.send('Error');
-		}
-	
-		options.url = options.url + 'screen_name=' + screenName + '&count=' + count;
+        request(options, (err, response, body) => {
+            try {
+                if (rateCheck(response, this.response)) {
+                    return;
+                }
+                var oldestDate = new Date(body[body.length-1].created_at); 
+                var diffDays = Math.round(Math.abs((oldestDate.getTime() - dateToday.getTime())/(oneDay)));
+                return this.response.json(body.length / diffDays);
+            } catch (err) {
+                trace(err);
+                return this.response.send('Could not retrieve the average number of daily tweets');
+            }
+        });
+        return null;
+    },
 
-		// populate array of tweets
-		getTweets();
+    // returns the most recent tweets that a user has favorited
+    favorites: function(screenName, count) {
 
-		// repeat as many times as necessary
-		function getTweets() {
-			request(options, function(err, response, body) {
-				if (rateCheck(response, res)) {
-					return;
-				}
-				for (var i = 0; i < body.length; i++) {
-					results.push('@' + body[i].user.screen_name + ": " + body[i].text);
-				}
-				count -= body.length;
-				if (count > 0) {
-				options.url = baseURL + 'favorites/list.json?screen_name=' + screenName + '&count=' + count + '&max_id=' + body[body.length-1].id
-				getTweets();
-				} else {
-					return res.json(results);
-				}
-			});
-		}
-	},
+        var results = [];
+        // gather parameter
+        options.url = baseURL + 'favorites/list.json?';
 
-	// returns the amount of favorites that a user has
-	favoritesCount: function(req, res) {
+        // ensure valid parameters
+        if (screenName == '' || screenName == undefined || count == '' || count == undefined || count <= 0) {
+            trace('Enter valid parameters...');
+            return 'screenName and count are required';
+        }
+    
+        options.url = options.url + 'screen_name=' + screenName + '&count=' + count;
 
-		// gather parameter
-		options.url = baseURL + 'users/show.json?';
-		var screenName = req.query.screenName;
+        // populate array of tweets
+        // repeat as many times as necessary
+        var getTweets = () => {
+            request(options, (err, response, body) => {
+                if (rateCheck(response, this.response)) {
+                    return;
+                }
+                for (var i = 0; i < body.length; i++) {
+                    results.push('@' + body[i].user.screen_name + ': ' + body[i].text);
+                }
+                count -= body.length;
+                if (count > 0) {
+                    options.url = baseURL + 'favorites/list.json?screen_name=' + screenName + '&count=' + count + '&max_id=' + body[body.length-1].id;
+                    getTweets();
+                } else {
+                    return this.response.json(results);
+                }
+            });
+        };
 
-		// ensure valid parameter
-		if (screenName == '' || screenName == undefined) {
-			trace('Enter valid parameters...');
-			return res.send('Error');
-		}
+        getTweets();
 
-		options.url = options.url + 'screen_name=' + screenName;
+        return null;
+    },
 
-		request(options, function(err, response, body) {
-			if (rateCheck(response, res)) {
-				return;
-			}
-			return res.json(body.favourites_count);
-		});
-	}
+    // returns the amount of favorites that a user has
+    favoritesCount: function(screenName) {
+
+        // gather parameter
+        options.url = baseURL + 'users/show.json?';
+
+        // ensure valid parameter
+        if (screenName == '' || screenName == undefined) {
+            trace('Enter valid parameters...');
+            return 'Missing screenName';
+        }
+
+        options.url = options.url + 'screen_name=' + screenName;
+
+        request(options, (err, response, body) => {
+            if (rateCheck(response, this.response)) {
+                return;
+            }
+            return this.response.json(body.favourites_count);
+        });
+
+        return null;
+    }
 
 };
