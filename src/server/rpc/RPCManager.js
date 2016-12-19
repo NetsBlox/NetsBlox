@@ -146,6 +146,8 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     var action,
         uuid = req.query.uuid,
         supportedActions = this.rpcRegistry[RPC.getPath()],
+        compatDict = RPC.COMPATIBILITY || {},
+        oldFieldNameFor,
         result,
         args,
         rpc;
@@ -167,7 +169,11 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         rpc.response = res;
 
         // Get the arguments
-        args = supportedActions[action].map(argName => req.query[argName]);
+        oldFieldNameFor = compatDict[action] || {};
+        args = supportedActions[action].map(argName => {
+            var oldName = oldFieldNameFor[argName];
+            return req.query[argName] || req.query[oldName];
+        });
         result = rpc[action].apply(rpc, args);
 
         if (!res.headerSent && result !== null) {  // send the return value
