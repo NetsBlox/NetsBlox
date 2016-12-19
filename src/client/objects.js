@@ -929,20 +929,15 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         button = new PushButtonMorph(
             null,
             function () {
-                var ide = myself.parentThatIsA(IDE_Morph),
-                    stage = myself.parentThatIsA(StageMorph);
                 new BlockDialogMorph(
                     null,
                     function (definition) {
                         if (definition.spec !== '') {
-                            if (definition.isGlobal) {
-                                stage.globalBlocks.push(definition);
-                            } else {
-                                myself.customBlocks.push(definition);
-                            }
-                            ide.flushPaletteCache();
-                            ide.refreshPalette();
-                            new BlockEditorMorph(definition, myself).popUp();
+                            SnapActions.addCustomBlock(definition, myself)
+                                .accept(function(def) {
+                                    var editor = new BlockEditorMorph(def, myself);
+                                    editor.popUp();
+                                });
                         }
                     },
                     myself
@@ -1606,19 +1601,15 @@ StageMorph.prototype.blockTemplates = function (category) {
         button = new PushButtonMorph(
             null,
             function () {
-                var ide = myself.parentThatIsA(IDE_Morph);
                 new BlockDialogMorph(
                     null,
                     function (definition) {
                         if (definition.spec !== '') {
-                            if (definition.isGlobal) {
-                                myself.globalBlocks.push(definition);
-                            } else {
-                                myself.customBlocks.push(definition);
-                            }
-                            ide.flushPaletteCache();
-                            ide.refreshPalette();
-                            new BlockEditorMorph(definition, myself).popUp();
+                            SnapActions.addCustomBlock(definition, myself)
+                                .accept(function(def) {
+                                    var editor = new BlockEditorMorph(def, myself);
+                                    editor.popUp();
+                                });
                         }
                     },
                     myself
