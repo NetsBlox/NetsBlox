@@ -31,6 +31,7 @@ var KeyValueStore = {
 
     get: function(key) {
         var keys = getKeys(key),
+            response = this.response,
             i = 0;
 
         logger.trace(`getting key "${key}"`);
@@ -40,29 +41,30 @@ var KeyValueStore = {
                     result = result[keys[i]];
                     if (!result) {
                         logger.warn(`invalid key: ${key} (get)`);
-                        return this.response.json(false);
+                        return response.json(false);
                     }
                     i++;
                 }
 
                 if (typeof result === 'object') {
                     logger.warn(`invalid key: ${key} (get) -> key is an object`);
-                    return this.response.json(false);
+                    return response.json(false);
                 }
 
                 logger.trace(`retrieved value: ${key} -> ${result}`);
-                return this.response.json(result);
+                return response.json(result);
             })
             .catch(err => {
                 logger.error(`Could not retrieve key ${keys[0]}: ${err}`);
-                return this.response.json(false);
+                return response.json(false);
             });
 
         return null;
     },
 
-    put: (key, value) => {
-        var keys = getKeys(key);
+    put: function(key, value) {
+        var keys = getKeys(key),
+            response = this.response;
 
         logger.trace(`Looking up key "${key}"`);
         getStore()
@@ -85,11 +87,11 @@ var KeyValueStore = {
             })
             .then(result => {
                 logger.trace(`set "${key}" to "${value}"`);
-                return this.response.json(result);
+                return response.json(result);
             })
             .catch(err => {
                 logger.error(`Could not save key "${key}": ${err}`);
-                return this.response.json(false);
+                return response.json(false);
             });
 
         return null;
@@ -97,6 +99,7 @@ var KeyValueStore = {
 
     delete: function(key) {
         var keys = getKeys(key),
+            response = this.response,
             i = 0;
 
         getStore()
@@ -105,21 +108,21 @@ var KeyValueStore = {
                     result = result[keys[i]];
                     if (!result) {
                         logger.warn(`invalid key: ${key} (delete)`);
-                        return this.response.json(false);
+                        return response.json(false);
                     }
                     i++;
                 }
 
                 if (typeof result !== 'object') {
                     logger.warn(`invalid key: ${key} (delete)`);
-                    return this.response.json(false);
+                    return response.json(false);
                 }
 
                 delete result[keys[i]];
                 logger.trace(`successfully removed key ${key}`);
                 return saveStore(result);
             })
-            .then(() => this.response.json(true))
+            .then(() => response.json(true))
             .catch(e => logger.error(`deleting ${key} failed: ${e}`));
 
         return null;
@@ -137,6 +140,7 @@ var KeyValueStore = {
 
     child: function(key) {
         var keys = getKeys(key),
+            response = this.response,
             i = 0;
 
         getStore()
@@ -145,11 +149,11 @@ var KeyValueStore = {
                     result = result[keys[i]];
                     if (typeof result !== 'object') {
                         logger.warn(`invalid key: "${key}" (child)`);
-                        return this.response.json([]);
+                        return response.json([]);
                     }
                     i++;
                 }
-                return this.response.json(
+                return response.json(
                     Object.keys(result)
                         .sort()
                         .map(k => key + '/' + k)
