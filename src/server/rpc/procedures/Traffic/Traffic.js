@@ -36,40 +36,34 @@ module.exports = {
 
     isStateless: true,
     getPath: () => '/traffic',
-    getActions: () => ['search', 'stop'],  // function available to client
 
-    search: function(req, res) {
+    search: function(westLongitude, northLatitude, eastLongitude, southLatitude) {
 
-    	// for bounding box
-        var southLat = req.query.southLat,
-            westLng = req.query.westLng,
-            northLat = req.query.northLat,
-            eastLng = req.query.eastLng,
-         
-            incidents = [],
-            url = baseUrl + southLat + ',' + westLng + ',' + northLat + ',' + eastLng + '?key=' + API_KEY;
+        // for bounding box
+        var url = baseUrl + southLatitude + ',' + westLongitude + ',' + northLatitude +
+                ',' + eastLongitude + '?key=' + API_KEY;
 
-    	request(url, function(err, response, body) {
-    		
-    		if (err) {
-    			trace("Error:" + err);
-    			return;
-    		}
+        request(url, function(err, response, body) {
+            
+            if (err) {
+                trace('Error:' + err);
+                return;
+            }
 
-    		try {
-    			body = JSON.parse(body);
-    		} catch(e) {
-    			trace("Non-JSON data...");
-    			return;
-    		}
+            try {
+                body = JSON.parse(body);
+            } catch(e) {
+                trace('Non-JSON data...');
+                return;
+            }
 
-    		if (body.statusCode == 400) {
-    			trace("Invalid parameters...");
-                return res.send('The area is too big! Try zooming in more.');
-    		}
+            if (body.statusCode == 400) {
+                trace('Invalid parameters...');
+                return this.response.send('The area is too big! Try zooming in more.');
+            }
 
             var type = ['Accident', 'Congestion', 'Disabled Vehicle', 'Mass Transit', 'Miscellaneous', 
-                        'Other', 'Planned Event', 'Road Hazard', 'Construction', 'Alert', 'Weather'];
+                'Other', 'Planned Event', 'Road Hazard', 'Construction', 'Alert', 'Weather'];
 
             // build the list of traffic incidents
             if (body.resourceSets[0].estimatedTotal != 0) {
@@ -77,7 +71,7 @@ module.exports = {
                     var msg = {
                         type: 'message',
                         msgType: 'Traffic',
-                        dstId: req.netsbloxSocket.roleId,
+                        dstId: this.socket.roleId,
                         content: {
                             latitude: body.resourceSets[0].resources[i].point.coordinates[0],
                             longitude: body.resourceSets[0].resources[i].point.coordinates[1],
@@ -87,13 +81,14 @@ module.exports = {
                     msgs.push(msg);
                 }
             }
-            sendNext(req.netsbloxSocket);
-            res.sendStatus(200);
-    	});
+            sendNext(this.socket);
+            this.response.sendStatus(200);
+        });
+        return null;
     },
 
-    stop: function(req, res) {
+    stop: function() {
         msgs = [];
-        res.sendStatus(200);
+        return 'stopped';
     }
 };

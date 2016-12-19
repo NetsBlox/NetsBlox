@@ -7,7 +7,6 @@
 var debug = require('debug'),
     log = debug('NetsBlox:RPCManager:StaticMap:log'),
     trace = debug('NetsBlox:RPCManager:StaticMap:trace'),
-    info = debug('NetsBlox:RPCManager:StaticMap:info'),
     request = require('request'),
     MercatorProjection = require('./MercatorProjection'),
     CacheManager = require('cache-manager'),
