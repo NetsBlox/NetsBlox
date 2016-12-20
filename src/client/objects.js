@@ -626,7 +626,9 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
 
         blocks.push(block('getJSFromRPCStruct'));
-        blocks.push(block('getCostumeFromRPC'));
+        if (this.world().isDevMode) {
+            blocks.push(block('getCostumeFromRPC'));
+        }
         blocks.push('-');
 
         // Add custom message types
@@ -1251,7 +1253,9 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
 
         blocks.push(block('getJSFromRPCStruct'));
-        blocks.push(block('getCostumeFromRPC'));
+        if (this.world().isDevMode) {
+            blocks.push(block('getCostumeFromRPC'));
+        }
         blocks.push('-');
 
         // Add custom message types
