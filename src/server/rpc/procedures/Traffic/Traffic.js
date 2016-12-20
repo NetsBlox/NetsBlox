@@ -40,26 +40,29 @@ module.exports = {
     search: function(westLongitude, northLatitude, eastLongitude, southLatitude) {
 
         // for bounding box
-        var url = baseUrl + southLatitude + ',' + westLongitude + ',' + northLatitude +
+        var response = this.response,
+            socket = this.socket,
+            url = baseUrl + southLatitude + ',' + westLongitude + ',' + northLatitude +
                 ',' + eastLongitude + '?key=' + API_KEY;
 
-        request(url, function(err, response, body) {
+        trace(`Requesting traffic accidents in ${westLongitude},${northLatitude},${eastLongitude},${southLatitude}`);
+        request(url, (err, res, body) => {
             
             if (err) {
                 trace('Error:' + err);
-                return;
+                return response.send('Could not access 3rd party API');
             }
 
             try {
                 body = JSON.parse(body);
             } catch(e) {
                 trace('Non-JSON data...');
-                return;
+                return response.send('Bad API Result: ' + body);
             }
 
             if (body.statusCode == 400) {
                 trace('Invalid parameters...');
-                return this.response.send('The area is too big! Try zooming in more.');
+                return response.send('The area is too big! Try zooming in more.');
             }
 
             var type = ['Accident', 'Congestion', 'Disabled Vehicle', 'Mass Transit', 'Miscellaneous', 
@@ -71,7 +74,7 @@ module.exports = {
                     var msg = {
                         type: 'message',
                         msgType: 'Traffic',
-                        dstId: this.socket.roleId,
+                        dstId: socket.roleId,
                         content: {
                             latitude: body.resourceSets[0].resources[i].point.coordinates[0],
                             longitude: body.resourceSets[0].resources[i].point.coordinates[1],
@@ -81,8 +84,8 @@ module.exports = {
                     msgs.push(msg);
                 }
             }
-            sendNext(this.socket);
-            this.response.sendStatus(200);
+            sendNext(socket);
+            response.sendStatus(200);
         });
         return null;
     },
@@ -90,5 +93,13 @@ module.exports = {
     stop: function() {
         msgs = [];
         return 'stopped';
+    },
+    COMPATIBILITY: {
+        search: {
+            southLatitude: 'southLat',
+            northLatitude: 'northLat',
+            eastLongitude: 'eastLng',
+            westLongitude: 'westLng'
+        }
     }
 };
