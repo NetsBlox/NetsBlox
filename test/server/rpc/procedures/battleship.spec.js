@@ -1,23 +1,25 @@
-var Battleship = require('../../../src/server/rpc/procedures/Battleship/Battleship.js'),
-    RPCMock = require('../../assets/MockRPC'),
-    battleship = new RPCMock(Battleship),
-    assert = require('assert');
-
-// Quick mocks for express req, res objects
-
 describe('Battleship Tests', function() {
+    var Battleship = require('../../../../src/server/rpc/procedures/Battleship/Battleship.js'),
+        RPCMock = require('../../../assets/MockRPC'),
+        battleship,
+        assert = require('assert');
+
+    before(function() {
+        battleship = new RPCMock(Battleship);
+    });
+
     describe('basic commands', function() {
         it('should be able to call reset', function() {
             battleship.reset();
         });
 
         it('should be able to query ship sizes', function() {
-            var len = battleship.shipLength({ship: 'Battleship'}).response;
+            var len = battleship.shipLength('Battleship');
             assert.equal(len, 4);
         });
         
         it('should be able to query ship names', function() {
-            var ships = battleship.allShips().response;
+            var ships = battleship.allShips();
             assert.equal(ships.length, 5);
             assert.equal(ships.sort()[0], 'aircraft carrier');
         });
@@ -30,49 +32,28 @@ describe('Battleship Tests', function() {
 
         describe('errors', function() {
             it('should return false for invalid/missing dir', function() {
-                var result = battleship.placeShip().response;
+                var result = battleship.placeShip();
                 assert.notEqual(result.indexOf('Invalid direction'), -1, result);
             });
 
             it('should return false for invalid ship names', function() {
-                var opts,
-                    result;
+                var result;
 
-                opts = {
-                    facing: 'north',
-                    ship: 'asdf'
-                };
-
-                result = battleship.placeShip(opts).response;
+                result = battleship.placeShip('asdf', 2, 2, 'north');
                 assert.notEqual(result.indexOf('Invalid ship'), -1, result);
             });
 
             it('should error for bad row/col', function() {
-                var opts,
-                    result;
+                var result;
 
-                opts = {
-                    row: 1,  // missing col
-                    facing: 'north',
-                    ship: 'asdf'
-                };
-
-                result = battleship.placeShip(opts).response;
+                result = battleship.placeShip('ashd', 2, 2, 'north');
                 assert.notEqual(result.indexOf('Invalid ship'), -1, result);
             });
 
             it('should be 1 indexed', function() {
-                var opts,
-                    result;
+                var result;
 
-                opts = {
-                    facing: 'north',
-                    row: 0,
-                    column: 2,
-                    ship: 'destroyer'
-                };
-
-                result = battleship.placeShip(opts).response;
+                result = battleship.placeShip('destroyer', 0, 2, 'north');
                 assert.notEqual(result.indexOf('Invalid position'), -1, result);
             });
         });
@@ -83,19 +64,8 @@ describe('Battleship Tests', function() {
                 col = 2;
 
             beforeEach(function() {
-                var opts,
-                    result;
-
-                opts = {
-                    roleId: 'test',
-                    facing: 'north',
-                    row,
-                    column: col,
-                    ship: 'destroyer'
-                };
-
-                result = battleship.placeShip(opts).response;
-                console.log('result:', result);
+                battleship.socket.roleId = 'test';
+                battleship.placeShip('destroyer', row, col, 'north');
                 // Check the spots!
                 board = battleship._rpc._boards.test;
             });
@@ -113,34 +83,16 @@ describe('Battleship Tests', function() {
             });
 
             it('should fail if overlapping boats', function() {
-                var opts, result;
+                var result;
 
-                opts = {
-                    roleId: 'test',
-                    facing: 'north',
-                    row: row+1,
-                    column: col,
-                    ship: 'battleship'
-                };
-
-                result = battleship.placeShip(opts).response;
+                result = battleship.placeShip('battleship', row+1, col, 'north');
                 assert.notEqual(result.indexOf('colliding with another'), -1);
             });
 
             it('should move boat if placing same boat twice', function() {
-                var opts,
-                    result,
-                    oldPosition;
+                var oldPosition;
 
-                opts = {
-                    roleId: 'test',
-                    facing: 'west',
-                    row: row,
-                    column: col+1,
-                    ship: 'destroyer'
-                };
-
-                result = battleship.placeShip(opts).response;
+                battleship.placeShip('destroyer', row, col+1, 'west');
                 oldPosition = board._ships[row-1][col-1];  // correcting for 1 indexing
                 assert.notEqual(oldPosition, 'destroyer');
             });

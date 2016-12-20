@@ -10,13 +10,9 @@ var debug = require('debug'),
     log = debug('NetsBlox:RPCManager:Earthquakes:log'),
     error = debug('NetsBlox:RPCManager:Earthquakes:error'),
     trace = debug('NetsBlox:RPCManager:Earthquakes:trace'),
-    path = require('path'),
-    fs = require('fs'),
     R = require('ramda'),
-    geolib = require('geolib'),
     request = require('request'),
     baseUrl = 'http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&',
-    Constants = require('../../../../common/Constants'),
     remainingMsgs = {};
 
 // Helpers
@@ -52,6 +48,7 @@ var sendNext = function(socket) {
 
 // RPC
 module.exports = {
+    _getRemainingMsgs: () => remainingMsgs,  // for testing
 
     // This is very important => Otherwise it will try to instantiate this
     isStateless: true,
@@ -61,22 +58,20 @@ module.exports = {
         return '/earthquakes';
     },
 
-    getActions: function() {
-        return ['byRegion', 'stop'];
-    },
-
-    stop: function(req, res) {
-        var uuid = req.netsbloxSocket.uuid;
+    stop: function() {
+        var uuid = this.socket.uuid;
         delete remainingMsgs[uuid];
-        res.sendStatus(200);
+        return '';
     },
 
-    byRegion: function(req, res) {
-        var params = createParams({
-                minlatitude: +req.query.minlat || 0,
-                minlongitude: +req.query.minlng || 0,
-                maxlatitude: +req.query.maxlat || 0,
-                maxlongitude: +req.query.maxlng || 0
+    byRegion: function(minLatitude, maxLatitude, minLongitude, maxLongitude) {
+        var socket = this.socket,
+            response = this.response,
+            params = createParams({
+                minlatitude: +minLatitude || 0,
+                minlongitude: +minLongitude || 0,
+                maxlatitude: +maxLatitude || 0,
+                maxlongitude: +maxLongitude || 0
             }),
             url = baseUrl + params;
 
@@ -84,9 +79,9 @@ module.exports = {
 
         // This method will not respond with anything... It will simply
         // trigger socket messages to the given client
-        request(url, function(err, response, body) {
+        request(url, function(err, res, body) {
             if (err) {
-                res.status(500).send('ERROR: ' + err);
+                response.status(500).send('ERROR: ' + err);
                 return;
             }
 
@@ -94,14 +89,13 @@ module.exports = {
                 body = JSON.parse(body);
             } catch (e) {
                 error('Received non-json: ' + body);
-                return res.status(500).send('ERROR: could not retrieve earthquakes');
+                return response.status(500).send('ERROR: could not retrieve earthquakes');
             }
 
             log('Found ' + body.metadata.count + ' earthquakes');
-            res.sendStatus(200);
+            response.sendStatus(200);
 
             var earthquakes = [],
-                socket = req.netsbloxSocket,  // Get the websocket for network messages
                 msg;
 
             try {
@@ -129,5 +123,6 @@ module.exports = {
             remainingMsgs[socket.uuid] = msgs;
             sendNext(socket);
         });
+        return null;
     }
 };

@@ -15,16 +15,11 @@ module.exports = {
         return '/publicRoles';
     },
 
-    getActions: function() {
-        return ['requestPublicRoleId'];
-    },
+    requestPublicRoleId: function() {
+        var id = publicRoleManager.register(this.socket);
 
-    requestPublicRoleId: function(req, res) {
-        var socket = req.netsbloxSocket,
-            id = publicRoleManager.register(socket);
+        trace(`${this.socket.username} has requested public id ${id}`);
 
-        trace(`${socket.username} has requested public id ${id}`);
-
-        res.status(200).send(id);
+        return id;
     }
 };

@@ -77,11 +77,12 @@ function NetsProcess(topBlock, onComplete, rightAway, context) {
     }
 }
 
-NetsProcess.prototype.doSocketMessage = function (name) {
+NetsProcess.prototype.doSocketMessage = function (msgInfo) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
         targetRole = arguments[arguments.length-1],
         myRole = ide.projectName,  // same as seat name
-        fields = Array.prototype.slice.call(arguments, 1),
+        name = msgInfo[0],
+        fields = msgInfo[1],
         stage = ide.stage,
         messageType,
         fieldNames,
@@ -169,7 +170,6 @@ NetsProcess.prototype.callRPC = function (rpc, params, noCache) {
     this.pushContext();
 };
 
-// TODO: Consider moving these next two functions to the Stage
 NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
     var result = this.callRPC(rpc, params, true);
     if (result) {
@@ -189,6 +189,17 @@ NetsProcess.prototype.parseRPCResult = function (result) {
         return new List(result.map(this.parseRPCResult.bind(this)));
     }
     return result;
+};
+
+NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
+    var action = methodSignature[0],
+        argNameAndValue = methodSignature[1],
+        params;
+
+    params = argNameAndValue.map(function(pair) {
+        return pair[0] + '=' + pair[1];
+    }).join('&');
+    return this.getJSFromRPCDropdown(rpc, action, params);
 };
 
 NetsProcess.prototype.getJSFromRPCDropdown = function (rpc, action, params) {

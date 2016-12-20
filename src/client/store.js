@@ -2,7 +2,7 @@
    CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
    WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame,
    MessageInputSlotMorph, HintInputSlotMorph, InputSlotMorph, SnapActions,
-   normalizeCanvas */
+   normalizeCanvas, StructInputSlotMorph */
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
@@ -172,41 +172,36 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
 
     // NetsBlox addition: start
     // Try to batch children for the inputs if appropriate. This is
-    // used with MessageInputSlotMorph and MessageOutputSlotMorph
+    // used with StructInputSlotMorphs
     if (inputs.length < model.children.length) {
-        var batch = [],
-            skipTypes = ['comment', 'receiver'];
+        var struct = detect(inputs, function(input) {
+                return input instanceof StructInputSlotMorph;
+            }),
+            structIndex = inputs.indexOf(struct);
 
-        // While the tag is not 'comment' or 'receiver', group the children
-        // into an array.
-        for (var i = model.children.length; i--;) {
-            if (skipTypes.indexOf(model.children[i].tag) !== -1) {
-                break;
-            }
-            batch = model.children.splice(i,1).concat(batch);
-        }
-
-        if (batch.length) {
+        // Find the StructInputSlotMorph and batch the given value and the extras
+        // together
+        if (structIndex !== -1) {
             // Set the contents for the entire batch
             var self = this,
-                vals = batch.map(function(value) {
-                    if (value.tag === 'block' || value.tag === 'custom-block') {
-                        return self.loadBlock(value);
-                    }
-                    if (value.tag === 'script') {
-                        return self.loadScript(value);
-                    }
-                    if (value.tag === 'color') {
-                        return self.loadColor(value);
-                    }
-                    return self.loadValue(value) || '';
-                }),
-                input = inputs[++i];
+                batch,
+                batchLength = model.children.length - inputs.length,
+                structVals;
 
-            if (input.setContents) {
-                var msgType = this.project.stage.messageTypes.getMsgType(vals[0]);
-                input.setContents(vals[0], vals.slice(1), msgType);
-            }
+            inputs.splice(structIndex, 1);
+            batch = model.children.splice(structIndex, structIndex + batchLength + 1);
+            structVals = batch.map(function(value) {
+                if (value.tag === 'block' || value.tag === 'custom-block') {
+                    return self.loadBlock(value);
+                }
+                if (value.tag === 'script') {
+                    return self.loadScript(value);
+                }
+                if (value.tag === 'color') {
+                    return self.loadColor(value);
+                }
+                return self.loadValue(value) || '';
+            });
         }
     }
     // NetsBlox addition: end
@@ -224,6 +219,18 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
         }
     }, this);
     block.cachedInputs = null;
+
+    // NetsBlox addition: start
+    if (struct && structVals) {
+        if (struct instanceof MessageInputSlotMorph) {
+            var msgType = this.project.stage.messageTypes.getMsgType(structVals[0]);
+
+            struct.setContents(structVals[0], structVals.slice(1), msgType);
+        } else {
+            struct.setContents(structVals[0], structVals.slice(1));
+        }
+    }
+    // NetsBlox addition: end
     return block;
 };
 

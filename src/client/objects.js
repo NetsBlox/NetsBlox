@@ -199,9 +199,6 @@ SpriteMorph.prototype.freshPalette = function (category) {
             x = 0;
             y += block.height();
         });
-
-        // Make a block
-        // TODO
     }
 
     //layout
@@ -222,14 +219,21 @@ SpriteMorph.prototype.initBlocks = function () {
         type: 'reporter',
         category: 'services',
         spec: 'call %s with %s',
-        defaults: ['tictactoe']
+        defaults: ['weather']
     };
 
     SpriteMorph.prototype.blocks.getJSFromRPCDropdown = {  // primitive JSON response
         type: 'reporter',
         category: 'services',
         spec: 'call %rpcNames / %rpcActions with %s',
-        defaults: ['tictactoe']
+        defaults: ['weather']
+    };
+
+    SpriteMorph.prototype.blocks.getJSFromRPCStruct = {  // primitive JSON response
+        type: 'reporter',
+        category: 'services',
+        spec: 'call %rpcNames / %rpcMethod',
+        defaults: ['weather']
     };
 
     SpriteMorph.prototype.blocks.getCostumeFromRPC = {
@@ -621,10 +625,9 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getProjectIds'));
         blocks.push('-');
 
+        blocks.push(block('getJSFromRPCStruct'));
         if (this.world().isDevMode) {
-            blocks.push(block('getJSFromRPCDropdown'));
             blocks.push(block('getCostumeFromRPC'));
-            blocks.push('-');
         }
         blocks.push('-');
 
@@ -992,8 +995,6 @@ StageMorph.prototype.deleteMessageType =
 
 // StageMorph Overrides
 StageMorph.prototype.freshPalette = SpriteMorph.prototype.freshPalette;
-//Add loading of "message" type
-// FIXME: Subclass stagemorph?
 StageMorph.prototype._init = StageMorph.prototype.init;
 StageMorph.prototype.init = function (globals) {
     this.messageTypes = new MessageFrame();
@@ -1003,26 +1004,6 @@ StageMorph.prototype.init = function (globals) {
         fields: ['msg']
     });
     this._init(globals);
-};
-
-StageMorph.prototype.addMessageTypeByName = function (name) {
-    var url = 'api/MessageTypes/' + name,
-        request = new XMLHttpRequest(),
-        msgType;
-
-    try {
-        request.open('GET', url, false);
-        request.send();
-        if (!request.status === 200) {
-            throw new Error('unable to retrieve ' + url);
-        }
-    } catch (err) {
-        console.error('could not retrieve message "' + name + '": ' + err);
-        return;
-    }
-
-    msgType = JSON.parse(request.responseText);
-    SnapActions.addMessageType(msgType.name, msgType.fields);
 };
 
 StageMorph.prototype.addMessageType = function (messageType) {
@@ -1266,11 +1247,11 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getProjectIds'));
         blocks.push('-');
 
+        blocks.push(block('getJSFromRPCStruct'));
         if (this.world().isDevMode) {
-            blocks.push(block('getJSFromRPCDropdown'));
             blocks.push(block('getCostumeFromRPC'));
-            blocks.push('-');
         }
+        blocks.push('-');
 
         // Add custom message types
         button = new PushButtonMorph(

@@ -21,26 +21,23 @@ module.exports = {
         return '/trivia';
     },
 
-    getActions: function() {
-        return ['random'];
-    },
-
-    random: function(req, res) {
-        var url = baseUrl + '/random';
+    random: function() {
+        var url = baseUrl + '/random',
+            response = this.response,
+            socket = this.socket;
 
         trace('Requesting random trivia');
 
         // This method will not respond with anything... It will simply
         // trigger socket messages to the given client
-        request(url, function(err, response, body) {
+        request(url, (err, res, body) => {
             if (err) {
-                res.status(500).send('ERROR: ' + err);
+                return response.status(500).send('ERROR: ' + err);
             }
-            res.sendStatus(200);
+            response.send('trivia message sent!');
 
             // Trigger the ws messages
             var questions = [],
-                socket = req.netsbloxSocket,  // Get the websocket for network messages
                 msg;
 
             try {
@@ -64,5 +61,6 @@ module.exports = {
                 socket.send(msg);
             }
         });
+        return null;
     }
 };

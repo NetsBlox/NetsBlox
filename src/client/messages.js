@@ -90,9 +90,6 @@ MessageCreatorMorph.prototype.init = function(target, action) {
     // Create message definition area
     var messageBlock = new MessageDefinitionBlock();
 
-    // When the block is edited, resize the container
-    // TODO
-
     this.addBody(messageBlock);
     var fixLayout = messageBlock.fixLayout;
     messageBlock.fixLayout = function() {

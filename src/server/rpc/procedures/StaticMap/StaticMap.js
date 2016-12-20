@@ -7,7 +7,6 @@
 var debug = require('debug'),
     log = debug('NetsBlox:RPCManager:StaticMap:log'),
     trace = debug('NetsBlox:RPCManager:StaticMap:trace'),
-    info = debug('NetsBlox:RPCManager:StaticMap:info'),
     request = require('request'),
     MercatorProjection = require('./MercatorProjection'),
     CacheManager = require('cache-manager'),
@@ -27,18 +26,6 @@ var StaticMap = function() {
 
 StaticMap.getPath = function() {
     return '/staticmap';
-};
-
-StaticMap.getActions = function() {
-    return ['getMap',
-            'getLatitude',
-            'getLongitude',
-            'minLongitude',
-            'minLatitude',
-            'maxLongitude',
-            'maxLatitude',
-            'getYFromLatitude',
-            'getXFromLongitude'];
 };
 
 StaticMap.prototype._getGoogleParams = function(options) {
@@ -86,15 +73,23 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
     trace('Stored map for ' + socket.uuid + ': ' + JSON.stringify(map));
 };
 
-StaticMap.prototype.getMap = function(req, res) {
-    var params = this._getGoogleParams(req.query),
+StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) {
+    var response = this.response,
+        options = {
+            lat: latitude,
+            lon: longitude,
+            width: width,
+            height: height,
+            zoom: zoom
+        },
+        params = this._getGoogleParams(options),
         url = baseUrl+'?'+params;
 
-    this._recordUserMap(req.netsbloxSocket, req.query);
+    this._recordUserMap(this.socket, options);
     // Check the cache
-    cache.wrap(url, function(cacheCallback) {
+    cache.wrap(url, cacheCallback => {
         // Get the image -> not in cache!
-        trace('request params:', req.query);
+        trace('request params:', options);
         trace('url is '+url);
         trace('Requesting new image from google!');
         var response = request.get(url);
@@ -108,36 +103,37 @@ StaticMap.prototype.getMap = function(req, res) {
         response.on('end', function() {
             return cacheCallback(null, result);
         });
-    }, function(err, imageBuffer) {
+    }, (err, imageBuffer) => {
         // Send the response to the user
         trace('Sending the response!');
         // Set the headers
-        res.set('cache-control', 'private, no-store, max-age=0');
-        res.set('content-type', 'image/png');
-        res.set('content-length', imageBuffer.length);
-        res.set('connection', 'close');
+        response.set('cache-control', 'private, no-store, max-age=0');
+        response.set('content-type', 'image/png');
+        response.set('content-length', imageBuffer.length);
+        response.set('connection', 'close');
 
-        res.status(200).send(imageBuffer);
+        response.status(200).send(imageBuffer);
         trace('Sent the response!');
     });
+    return null;
 };
 
-StaticMap.prototype.getLongitude = function(req, res) {
+StaticMap.prototype.getLongitude = function(x) {
     // Need lat, lng, width, zoom and x
-    var map = this.userMaps[req.netsbloxSocket.uuid] || {},
-        center = map.center || {lat: req.query.lat, lng: req.query.lng},
-        zoom = map.zoom || req.query.zoom,
-        width = map.width || req.query.width,
-        x = +req.query.x + (width/2),  // translate x from center to edge
+    var map = this.userMaps[this.socket.uuid] || {},
+        center = map.center,
+        zoom = map.zoom,
+        width = map.width,
         lngs = map ? [map.min.lng, map.max.lng] :
             mercator.getLongitudes(center, zoom, width, 1),
         lngWidth,
         myLng;
 
-    if (!this.userMaps[req.netsbloxSocket.uuid]) {
-        log('Map requested before creation from ' + req.netsbloxSocket.uuid);
+    x = +x + (width/2);  // translate x from center to edge
+    if (!this.userMaps[this.socket.uuid]) {
+        log('Map requested before creation from ' + this.socket.uuid);
     } else {
-        trace('Map found for ' + req.netsbloxSocket.uuid + ': ' + JSON.stringify(map));
+        trace('Map found for ' + this.socket.uuid + ': ' + JSON.stringify(map));
     }
 
     // Just approximate here
@@ -147,25 +143,25 @@ StaticMap.prototype.getLongitude = function(req, res) {
     trace('width:', lngWidth);
     myLng = lngs[0] + (x/width)*lngWidth;
     trace('longitude:', myLng);
-    return res.json(myLng);  // This may need to be made a little more accurate...
+    return myLng;  // This may need to be made a little more accurate...
 };
 
-StaticMap.prototype.getLatitude = function(req, res) {
+StaticMap.prototype.getLatitude = function(y) {
     // Need lat, lng, height, zoom and x
-    var map = this.userMaps[req.netsbloxSocket.uuid] || {},
-        center = map.center || {lat: req.query.lat, lng: req.query.lng},
-        zoom = map.zoom || req.query.zoom,
-        height = map.height || req.query.height,
-        y = +req.query.y + (height/2),  // translate y from center to edge
+    var map = this.userMaps[this.socket.uuid] || {},
+        center = map.center,
+        zoom = map.zoom,
+        height = map.height,
         lats = map ? [map.min.lat, map.max.lat] :
             mercator.getLatitudes(center, zoom, 1, height),
         latWidth,
         myLat;
 
-    if (!this.userMaps[req.netsbloxSocket.uuid]) {
-        log('Map requested before creation from ' + req.netsbloxSocket.uuid);
+    y = +y + (height/2);  // translate y from center to edge
+    if (!this.userMaps[this.socket.uuid]) {
+        log('Map requested before creation from ' + this.socket.uuid);
     } else {
-        trace('Map found for ' + req.netsbloxSocket.uuid + ': ' + JSON.stringify(map));
+        trace('Map found for ' + this.socket.uuid + ': ' + JSON.stringify(map));
     }
 
     // Just approximate here
@@ -175,64 +171,78 @@ StaticMap.prototype.getLatitude = function(req, res) {
     trace('window width is', latWidth);
     myLat = lats[0] + (y/height)*latWidth;
     trace('latitude:', myLat);
-    return res.json(myLat);  // This may need to be made a little more accurate...
+    return myLat;  // This may need to be made a little more accurate...
 };
 
-StaticMap.prototype.getXFromLongitude = function(req, res) {
-    var map = this.userMaps[req.netsbloxSocket.uuid],
+StaticMap.prototype.getXFromLongitude = function(longitude) {
+    var map = this.userMaps[this.socket.uuid],
         lng,
         proportion,
         x;
 
     if (!map) {
-        log('Map requested before creation from ' + req.netsbloxSocket.uuid);
+        log('Map requested before creation from ' + this.socket.uuid);
     }
 
-    lng = req.query.lng;
+    lng = +longitude;
     proportion = (lng - map.min.lng)/(map.max.lng - map.min.lng);
-    x = proportion*map.width - (map.width/2);
+    x = proportion*map.width - (map.width/2);  // Translate y to account for 0 in center
 
     trace('x value is ' + x);
-    return res.json(x);  // Translate y to account for 0 in center
+    return x;
 };
 
-StaticMap.prototype.getYFromLatitude = function(req, res) {
-    var map = this.userMaps[req.netsbloxSocket.uuid],
+StaticMap.prototype.getYFromLatitude = function(latitude) {
+    var map = this.userMaps[this.socket.uuid],
         lat,
         proportion,
         y;
 
     if (!map) {
-        log('Map requested before creation from ' + req.netsbloxSocket.uuid);
+        log('Map requested before creation from ' + this.socket.uuid);
     }
 
-    lat = req.query.lat;
+    lat = +latitude;
     proportion = (lat - map.min.lat)/(map.max.lat - map.min.lat);
-    y = proportion*map.height - (map.height/2);
+    y = proportion*map.height - (map.height/2);  // Translate y to account for 0 in center
 
     trace('y value is ' + y);
-    return res.json(y);  // Translate y to account for 0 in center
+    return y;
 };
 
 // Getting current map settings
-StaticMap.prototype.maxLongitude = function(req, res) {
-    var map = this.userMaps[req.netsbloxSocket.uuid];
-    return res.json(map.max.lng);
+StaticMap.prototype.maxLongitude = function() {
+    var map = this.userMaps[this.socket.uuid];
+    return map.max.lng;
 };
 
-StaticMap.prototype.maxLatitude = function(req, res) {
-    var map = this.userMaps[req.netsbloxSocket.uuid];
-    return res.json(map.max.lat);
+StaticMap.prototype.maxLatitude = function() {
+    var map = this.userMaps[this.socket.uuid];
+    return map.max.lat;
 };
 
-StaticMap.prototype.minLongitude = function(req, res) {
-    var map = this.userMaps[req.netsbloxSocket.uuid];
-    return res.json(map.min.lng);
+StaticMap.prototype.minLongitude = function() {
+    var map = this.userMaps[this.socket.uuid];
+    return map.min.lng;
 };
 
-StaticMap.prototype.minLatitude = function(req, res) {
-    var map = this.userMaps[req.netsbloxSocket.uuid];
-    return res.json(map.min.lat);
+StaticMap.prototype.minLatitude = function() {
+    var map = this.userMaps[this.socket.uuid];
+    return map.min.lat;
+};
+
+// Map of argument name to old field name
+StaticMap.COMPATIBILITY = {
+    getMap: {
+        latitude: 'lat',
+        longitude: 'lon'
+    },
+    getXFromLongitude: {
+        longitude: 'lng'
+    },
+    getYFromLatitude: {
+        latitude: 'lat'
+    }
 };
 
 module.exports = StaticMap;

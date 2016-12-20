@@ -7,7 +7,6 @@
 'use strict';
 
 var debug = require('debug'),
-    log = debug('NetsBlox:RPCManager:AirQuality:log'),
     error = debug('NetsBlox:RPCManager:AirQuality:error'),
     trace = debug('NetsBlox:RPCManager:AirQuality:trace'),
     API_KEY = process.env.AIR_NOW_KEY,
@@ -48,84 +47,59 @@ var getClosestReportingLocation = function(lat, lng) {
     return zipcode;
 };
 
+var qualityIndex = function(latitude, longitude) {
+    var response = this.response,
+        nearest,
+        url;
+
+    trace(`Requesting air quality at ${latitude}, ${longitude}`);
+    if (!latitude || !longitude) {
+        return response.status(400).send('ERROR: missing latitude or longitude');
+    }
+
+    nearest = getClosestReportingLocation(latitude, longitude);
+    url = baseUrl + '&zipCode=' + nearest;
+
+    trace('Requesting air quality at '+ nearest);
+    
+    request(url, (err, res, body) => {
+        var aqi = -1,
+            code = err ? 500 : res.statusCode;
+        try {
+            body = JSON.parse(body).shift();
+            if (body && body.AQI) {
+                aqi = +body.AQI;
+                trace('Air quality at '+ nearest + ' is ' + aqi);
+            }
+        } catch (e) {
+            // Just send -1 if anything bad happens
+            error('Could not get air quality index: ', e);
+        }
+
+        response.status(code).json(aqi);
+    });
+
+    return null;
+};
+
 module.exports = {
 
     // This is very important => Otherwise it will try to instantiate this
     isStateless: true,
+    COMPATIBILITY: {
+        aqi: {
+            latitude: 'lat',
+            longitude: 'lng'
+        }
+    },
 
     // These next two functions are the same from the stateful RPC's
     getPath: function() {
         return '/air';
     },
 
-    getActions: function() {
-        return ['quality',
-                'aqi'];
-    },
-
-    quality: function(req, res) {
-        var category = (req.query.format || '').toLowerCase() === 'text' ? 
-                'Name' : 'Number',
-            nearest,
-            url;
-
-        if (!req.query.lat || !req.query.lng) {
-            return res.status(400).send('ERROR: missing latitude or longitude');
-        }
-
-        nearest = getClosestReportingLocation(req.query.lat, req.query.lng);
-        url = baseUrl + '&zipCode=' + nearest;
-
-        trace('Requesting air quality ('+category+') at '+ nearest);
-        
-        request(url, function(err, response, body) {
-            if (err) {
-                return res.status(500).send('ERROR: '+err);
-            }
-            var name = 'unknown';
-            try {
-                body = JSON.parse(body).shift();
-                if (body && body.Category) {
-                    name = body.Category[category];
-                }
-            } catch (e) {
-                error('Could not get air quality: ', e);
-            }
-
-            res.json(name);
-        });
-    },
-
     // air quality index
     // Return -1 if unknown
-    aqi: function(req, res) {
-        var nearest,
-            url;
-
-        if (!req.query.lat || !req.query.lng) {
-            return res.status(400).send('ERROR: missing latitude or longitude');
-        }
-
-        nearest = getClosestReportingLocation(req.query.lat, req.query.lng);
-        url = baseUrl + '&zipCode=' + nearest;
-
-        trace('Requesting air quality at '+ nearest);
-        
-        request(url, function(err, response, body) {
-            var aqi = -1,
-                code = err ? 500 : response.statusCode;
-            try {
-                body = JSON.parse(body).shift();
-                if (body && body.AQI) {
-                    aqi = +body.AQI;
-                    trace('Air quality at '+ nearest + ' is ' + aqi);
-                }
-            } catch (e) {
-                // Just send -1 if anything bad happens
-                error('Could not get air quality index: ', e);
-            }
-
-            res.status(code).json(aqi);
-        });
-    }
+    aqi: qualityIndex,
+    qualityIndex: qualityIndex
 };

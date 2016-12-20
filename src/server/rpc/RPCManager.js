@@ -8,7 +8,14 @@
 var fs = require('fs'),
     path = require('path'),
     express = require('express'),
-    PROCEDURES_DIR = path.join(__dirname,'procedures');
+    PROCEDURES_DIR = path.join(__dirname,'procedures'),
+
+    // RegEx for determining named fn args
+    FN_ARGS = /^(function)?\s*[^\(]*\(\s*([^\)]*)\)/m,
+    FN_ARG_SPLIT = /,/,
+    STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg,
+
+    RESERVED_FN_NAMES = require('../../common/Constants').RPC.RESERVED_FN_NAMES;
 
 /**
  * RPCManager
@@ -17,6 +24,7 @@ var fs = require('fs'),
  */
 var RPCManager = function(logger, socketManager) {
     this._logger = logger.fork('RPCManager');
+    this.rpcRegistry = {};
     this.rpcs = this.loadRPCs();
     this.router = this.createRouter();
 
@@ -40,8 +48,40 @@ RPCManager.prototype.loadRPCs = function() {
             if (RPCConstructor.init) {
                 RPCConstructor.init(this._logger);
             }
+
+            // Register the rpc actions, method signatures
+            this.registerRPC(RPCConstructor);
+
             return RPCConstructor;
         });
+};
+
+RPCManager.prototype.registerRPC = function(rpc) {
+    var fnObj = rpc,
+        rpcName = rpc.getPath(),
+        fnNames;
+
+    this.rpcRegistry[rpcName] = {};
+    if (typeof rpc === 'function') {
+        fnObj = rpc.prototype;
+    }
+
+    fnNames = Object.keys(fnObj)
+        .filter(name => name[0] !== '_')
+        .filter(name => !RESERVED_FN_NAMES.includes(name));
+
+    for (var i = fnNames.length; i--;) {
+        this.rpcRegistry[rpcName][fnNames[i]] = this.getArgumentsFor(fnObj[fnNames[i]]);
+    }
+};
+
+RPCManager.prototype.getArgumentsFor = function(fn) {
+    var fnText = fn.toString().replace(STRIP_COMMENTS, ''),
+        args = fnText.match(FN_ARGS)[2].split(FN_ARG_SPLIT);
+
+    return args
+        .map(arg => arg.replace(/\s+/g, ''))
+        .filter(arg => !!arg);
 };
 
 RPCManager.prototype.createRouter = function() {
@@ -53,7 +93,7 @@ RPCManager.prototype.createRouter = function() {
 
     this.rpcs
         .forEach(rpc => router.route(rpc.getPath())
-            .get((req, res) => res.json(rpc.getActions()))
+            .get((req, res) => res.json(this.rpcRegistry[rpc.getPath()]))
         );
 
     // For each RPC, create the respective endpoints
@@ -105,24 +145,46 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
 RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     var action,
         uuid = req.query.uuid,
+        supportedActions = this.rpcRegistry[RPC.getPath()],
+        compatDict = RPC.COMPATIBILITY || {},
+        oldFieldNameFor,
+        result,
+        args,
         rpc;
 
     action = req.params.action;
     this._logger.info('Received request to '+RPC.getPath()+' for '+action+' (from '+uuid+')');
 
     // Then pass the call through
-    if (RPC.getActions().indexOf(action) !== -1) {
+    if (supportedActions[action]) {
         rpc = this.getRPCInstance(RPC, uuid);
         if (rpc === null) {  // Could not create/find rpc (rpc is stateful and group is unknown)
             this._logger.log('Could not find group for user "'+req.query.uuid+'"');
             return res.status(401).send('ERROR: user not found. who are you?');
         }
-        this._logger.log('About to call '+RPC.getPath()+'=>'+action);
+        this._logger.log(`About to call ${RPC.getPath()}=>${action}`);
 
         // Add the netsblox socket for triggering network messages from an RPC
-        req.netsbloxSocket = this.socketManager.sockets[uuid];
+        rpc.socket = this.socketManager.sockets[uuid];
+        rpc.response = res;
 
-        return rpc[action](req, res);
+        // Get the arguments
+        oldFieldNameFor = compatDict[action] || {};
+        args = supportedActions[action].map(argName => {
+            var oldName = oldFieldNameFor[argName];
+            return req.query[argName] || req.query[oldName];
+        });
+        result = rpc[action].apply(rpc, args);
+
+        if (!res.headerSent && result !== null) {  // send the return value
+            if (typeof result === 'object') {
+                res.json(result);
+            } else if (result !== undefined) {
+                res.send(result.toString());
+            } else {
+                res.sendStatus(200);
+            }
+        }
     } else {
         this._logger.log('Invalid action requested for '+RPC.getPath()+': '+action);
         return res.status(400).send('unrecognized action');

@@ -2,7 +2,6 @@
 'use strict';
 
 var debug = require('debug'),
-    log = debug('NetsBlox:RPCManager:Hangman:log'),
     trace = debug('NetsBlox:RPCManager:Hangman:trace'),
     info = debug('NetsBlox:RPCManager:Hangman:info');
 
@@ -16,25 +15,16 @@ Hangman.getPath = function() {
     return '/hangman';
 };
 
-Hangman.getActions = function() {
-    return ['guess', 
-            'setWord',
-            'getWrongCount',
-            'getCurrentlyKnownWord',
-            'isWordGuessed'];
-};
-
 // Actions
-Hangman.prototype.setWord = function(req, res) {
+Hangman.prototype.setWord = function(word) {
     // TODO: Make sure the chooser is the only one calling this
-    this.word = req.query.word;
+    this.word = word;
     this.wrongGuesses = 0;
     this.knownIndices = [];
     info('Setting word to "'+this.word+'"');
-    res.sendStatus(200);
 };
 
-Hangman.prototype.getCurrentlyKnownWord = function(req, res) {
+Hangman.prototype.getCurrentlyKnownWord = function() {
     var letters = this.word.split('').map(function() { 
         return '_'; 
     });
@@ -44,31 +34,35 @@ Hangman.prototype.getCurrentlyKnownWord = function(req, res) {
     }, this);
     trace('Currently known word is "'+letters.join(' ')+'"');
     trace('word is '+this.word);
-    return res.status(200).send(letters.join(' '));
+    return letters.join(' ');
 };
 
-Hangman.prototype.guess = function(req, res) {
-    var letter = req.query.letter[0],
-        indices,
+Hangman.prototype.guess = function(letter) {
+    var indices,
         added;
 
+    if (!letter) {
+        return 'ERROR: no letter provided';
+    }
+
+    letter = letter[0];
     trace('Guessing letter: '+letter);
     indices = Hangman.getAllIndices(this.word, letter);
     added = Hangman.merge(this.knownIndices, indices);
     if (added === 0) {
         this.wrongGuesses++;
     }
-    return res.status(200).send(indices);
+    return indices.map(index => index + 1);
 };
 
-Hangman.prototype.isWordGuessed = function(req, res) {
-    var isComplete = this.word.length === this.knownIndices.length;
-    res.status(200).send(isComplete);
+Hangman.prototype.isWordGuessed = function() {
+    var isComplete = !!this.word && this.word.length === this.knownIndices.length;
+    return isComplete;
 };
 
-Hangman.prototype.getWrongCount = function(req, res) {
+Hangman.prototype.getWrongCount = function() {
     trace('wrong count is '+this.wrongGuesses);
-    res.status(200).send(this.wrongGuesses+'');
+    return this.wrongGuesses;
 };
 
 // Private

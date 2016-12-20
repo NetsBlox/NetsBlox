@@ -19,34 +19,23 @@ class Battleship extends TurnBased {
         this._boards = {};
         this._STATE = BattleshipConstants.PLACING;
     }
-};
+}
 
 Battleship.getPath = () => '/battleship';
-Battleship.getActions = () => [
-    'reset',
-    'start',
-    'placeShip',
-    'fire',
-
-    'allShips',
-    'remainingShips',
-    'shipLength'
-];
 
 var isValidDim = dim => 0 <= dim && dim <= BOARD_SIZE;
 var checkRowCol = (row, col) => isValidDim(row) && isValidDim(col);
 
-Battleship.prototype.reset = function(req, res) {
+Battleship.prototype.reset = function() {
     this._STATE = BattleshipConstants.PLACING;
     this._boards = {};
-    res.send(true);
     return true;
 };
 
 Battleship.prototype.start = function(req, res) {
     // Check that all boards are ready
     var roles = Object.keys(this._boards),
-        sockets = req.netsbloxSocket._room.sockets(),
+        sockets = this.socket._room.sockets(),
         shipsLeft,
         board;
 
@@ -77,35 +66,33 @@ Battleship.prototype.start = function(req, res) {
     res.send(true);
 };
 
-Battleship.prototype.placeShip = function(req, res) {
-    var row = req.query.row-1,
-        col = req.query.column-1,
-        ship = req.query.ship,
-        role = req.netsbloxSocket.roleId,
-        len = SHIPS[ship],
-        facing = req.query.facing;
+Battleship.prototype.placeShip = function(ship, row, column, facing) {
+    var role = this.socket.roleId,
+        len = SHIPS[ship];
+
+    row--;
+    column--;
 
     if (this._STATE !== BattleshipConstants.PLACING) {
-        return res.status(400).send(`Cannot move ships after game has started`);
+        return `Cannot move ships after game has started`;
     }
 
     if (!DIRS[facing]) {
-        return res.status(400).send(`Invalid direction "${facing}"`);
+        return `Invalid direction "${facing}"`;
     }
 
     if (!len) {  // no ship found
-        return res.status(400).send(`Invalid ship "${ship}"`);
+        return `Invalid ship "${ship}"`;
     }
 
     // correct for 1 indexing
     var dr = isHorizontal(facing) ? 0 : DIRS[facing]*len-1,
         dc = !isHorizontal(facing) ? 0 : DIRS[facing]*len-1,
         endRow = row + dr,
-        endCol = col + dc;
+        endCol = column + dc;
 
-    if (!checkRowCol(row, col) || !checkRowCol(endRow, endCol)) {
-        return res.status(400).send(`Invalid position (${row}, ${col}) to (${endRow},` +
-            `${endCol})`);
+    if (!checkRowCol(row, column) || !checkRowCol(endRow, endCol)) {
+        return `Invalid position (${row}, ${column}) to (${endRow},${endCol})`;
     }
 
     // Create a board if none exists
@@ -115,8 +102,8 @@ Battleship.prototype.placeShip = function(req, res) {
     }
 
     // Place the ship
-    var result = this._boards[role].placeShip(ship, row, col, endRow, endCol);
-    return res.send(result || `Could not place ship - colliding with another ship!`);
+    var result = this._boards[role].placeShip(ship, row, column, endRow, endCol);
+    return result || `Could not place ship - colliding with another ship!`;
 };
 
 Battleship.prototype.fire = function(req, res) {
@@ -194,18 +181,18 @@ Battleship.prototype.remainingShips = function(req, res) {
     return res.send(this._boards[role].remaining());
 };
 
-Battleship.prototype.allShips = function(req, res) {
-    res.send(Object.keys(SHIPS));
+Battleship.prototype.allShips = function() {
+    return Object.keys(SHIPS);
 };
 
-Battleship.prototype.shipLength = function(req, res) {
-    var ship = (req.query.ship || '').toLowerCase();
+Battleship.prototype.shipLength = function(ship) {
+    ship = (ship || '').toLowerCase();
 
     if (!SHIPS[ship]) {
-        return res.status(400).send(`Ship "${ship}" not found!`);
+        return `Ship "${ship}" not found!`;
     }
     trace(`request for length of ${ship} (${SHIPS[ship]})`);
-    return res.status(200).json(SHIPS[ship]);
+    return SHIPS[ship];
 };
 
 module.exports = Battleship;

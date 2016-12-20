@@ -5,7 +5,7 @@
    CommandSlotMorph, RingCommandSlotMorph, RingReporterSlotMorph, CSlotMorph,
    ColorSlotMorph, TemplateSlotMorph, FunctionSlotMorph, ReporterSlotMorph,
    SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume, ScriptsMorph,
-   MessageDefinitionBlock
+   MessageDefinitionBlock, RPCInputSlotMorph
    */
 
 BlockMorph.prototype.setSpec = function (spec, silently) {
@@ -545,7 +545,6 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             );
             break;
         case '%rpcNames':
-            // rpc names (used in dev mode)
             part = new InputSlotMorph(
                 null,
                 false,
@@ -554,13 +553,15 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             );
             break;
         case '%rpcActions':
-            // rpc names (used in dev mode)
             part = new InputSlotMorph(
                 null,
                 false,
                 'rpcActions',
                 true
             );
+            break;
+        case '%rpcMethod':
+            part = new RPCInputSlotMorph();
             break;
         // Netsblox addition (end)
         case '%msg':
@@ -966,56 +967,6 @@ InputSlotMorph.prototype.roleNames = function () {
     return dict;
 };
 
-// IDE_Morph is not always accessible. quick fix => add getURL to
-// InputSlotMorph
-InputSlotMorph.prototype.getURL = function (url) {
-    try {
-        var request = new XMLHttpRequest();
-        request.open('GET', url, false);
-        request.send();
-        if (request.status === 200) {
-            return request.responseText;
-        }
-        throw new Error('unable to retrieve ' + url);
-    } catch (err) {
-        return '';
-    }
-};
-
-InputSlotMorph.prototype.rpcNames = function () {
-    var rpcs = JSON.parse(this.getURL('/rpc')),
-        dict = {},
-        name;
-
-    for (var i = rpcs.length; i--;) {
-        name = rpcs[i].replace('/', '');
-        dict[name] = name;
-    }
-    return dict;
-};
-
-InputSlotMorph.prototype.rpcActions = function () {
-    var fields = this.parent.inputs(),
-        field,
-        actions,
-        rpc,
-        dict = {},
-        i;
-
-    // assume that the rpc is right before this input
-    i = fields.indexOf(this);
-    field = fields[i-1];
-
-    if (field) {
-        rpc = field.evaluate();
-        actions = JSON.parse(this.getURL('/rpc/' + rpc));
-        for (i = actions.length; i--;) {
-            dict[actions[i]] = actions[i];
-        }
-    }
-    return dict;
-};
-
 SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     // private
     if (this.name instanceof Costume) {
@@ -1145,5 +1096,54 @@ SymbolMorph.prototype.drawSymbolPlus = function (canvas, color) {
     ctx.stroke();
 
     return canvas;
+};
+
+// IDE_Morph is not always accessible. quick fix => add getURL to
+// InputSlotMorph
+InputSlotMorph.prototype.getURL = function (url) {
+    try {
+        var request = new XMLHttpRequest();
+        request.open('GET', url, false);
+        request.send();
+        if (request.status === 200) {
+            return request.responseText;
+        }
+        throw new Error('unable to retrieve ' + url);
+    } catch (err) {
+        return '';
+    }
+};
+
+InputSlotMorph.prototype.rpcNames = function () {
+    var rpcs = JSON.parse(this.getURL('/rpc')),
+        dict = {},
+        name;
+
+    for (var i = rpcs.length; i--;) {
+        name = rpcs[i].replace('/', '');
+        dict[name] = name;
+    }
+    return dict;
+};
+
+InputSlotMorph.prototype.rpcActions = function () {
+    var field = this.parent.inputs()[0],
+        dict = {},
+        actions,
+        rpc;
+
+    // assume that the rpc name is the first field
+    if (field) {
+        rpc = field.evaluate();
+    }
+
+    if (rpc) {
+        actions = Object.keys(JSON.parse(this.getURL('/rpc/' + rpc)));
+        for (var i = actions.length; i--;) {
+            dict[actions[i]] = actions[i];
+        }
+    }
+
+    return dict;
 };
 
