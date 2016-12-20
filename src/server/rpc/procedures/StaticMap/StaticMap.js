@@ -74,7 +74,8 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
 };
 
 StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) {
-    var options = {
+    var response = this.response,
+        options = {
             lat: latitude,
             lon: longitude,
             width: width,
@@ -106,12 +107,12 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
         // Send the response to the user
         trace('Sending the response!');
         // Set the headers
-        this.response.set('cache-control', 'private, no-store, max-age=0');
-        this.response.set('content-type', 'image/png');
-        this.response.set('content-length', imageBuffer.length);
-        this.response.set('connection', 'close');
+        response.set('cache-control', 'private, no-store, max-age=0');
+        response.set('content-type', 'image/png');
+        response.set('content-length', imageBuffer.length);
+        response.set('connection', 'close');
 
-        this.response.status(200).send(imageBuffer);
+        response.status(200).send(imageBuffer);
         trace('Sent the response!');
     });
     return null;

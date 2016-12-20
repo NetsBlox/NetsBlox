@@ -22,21 +22,22 @@ module.exports = {
     },
 
     random: function() {
-        var url = baseUrl + '/random';
+        var url = baseUrl + '/random',
+            response = this.response,
+            socket = this.socket;
 
         trace('Requesting random trivia');
 
         // This method will not respond with anything... It will simply
         // trigger socket messages to the given client
-        request(url, (err, response, body) => {
+        request(url, (err, res, body) => {
             if (err) {
-                return this.response.status(500).send('ERROR: ' + err);
+                return response.status(500).send('ERROR: ' + err);
             }
-            this.response.send('trivia message sent!');
+            response.send('trivia message sent!');
 
             // Trigger the ws messages
             var questions = [],
-                socket = this.socket,  // Get the websocket for network messages
                 msg;
 
             try {

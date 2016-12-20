@@ -29,7 +29,6 @@ var checkRowCol = (row, col) => isValidDim(row) && isValidDim(col);
 Battleship.prototype.reset = function() {
     this._STATE = BattleshipConstants.PLACING;
     this._boards = {};
-    this.response.send(true);
     return true;
 };
 

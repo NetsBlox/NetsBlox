@@ -48,12 +48,13 @@ var getClosestReportingLocation = function(lat, lng) {
 };
 
 var qualityIndex = function(latitude, longitude) {
-    var nearest,
+    var response = this.response,
+        nearest,
         url;
 
     trace(`Requesting air quality at ${latitude}, ${longitude}`);
     if (!latitude || !longitude) {
-        return this.response.status(400).send('ERROR: missing latitude or longitude');
+        return response.status(400).send('ERROR: missing latitude or longitude');
     }
 
     nearest = getClosestReportingLocation(latitude, longitude);
@@ -61,9 +62,9 @@ var qualityIndex = function(latitude, longitude) {
 
     trace('Requesting air quality at '+ nearest);
     
-    request(url, (err, response, body) => {
+    request(url, (err, res, body) => {
         var aqi = -1,
-            code = err ? 500 : response.statusCode;
+            code = err ? 500 : res.statusCode;
         try {
             body = JSON.parse(body).shift();
             if (body && body.AQI) {
@@ -75,7 +76,7 @@ var qualityIndex = function(latitude, longitude) {
             error('Could not get air quality index: ', e);
         }
 
-        this.response.status(code).json(aqi);
+        response.status(code).json(aqi);
     });
 
     return null;

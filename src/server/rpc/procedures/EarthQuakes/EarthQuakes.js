@@ -65,7 +65,9 @@ module.exports = {
     },
 
     byRegion: function(minLatitude, maxLatitude, minLongitude, maxLongitude) {
-        var params = createParams({
+        var socket = this.socket,
+            response = this.response,
+            params = createParams({
                 minlatitude: +minLatitude || 0,
                 minlongitude: +minLongitude || 0,
                 maxlatitude: +maxLatitude || 0,
@@ -77,9 +79,9 @@ module.exports = {
 
         // This method will not respond with anything... It will simply
         // trigger socket messages to the given client
-        request(url, function(err, response, body) {
+        request(url, function(err, res, body) {
             if (err) {
-                this.response.status(500).send('ERROR: ' + err);
+                response.status(500).send('ERROR: ' + err);
                 return;
             }
 
@@ -87,11 +89,11 @@ module.exports = {
                 body = JSON.parse(body);
             } catch (e) {
                 error('Received non-json: ' + body);
-                return this.response.status(500).send('ERROR: could not retrieve earthquakes');
+                return response.status(500).send('ERROR: could not retrieve earthquakes');
             }
 
             log('Found ' + body.metadata.count + ' earthquakes');
-            this.response.sendStatus(200);
+            response.sendStatus(200);
 
             var earthquakes = [],
                 msg;
@@ -107,7 +109,7 @@ module.exports = {
                 // For now, I will send lat, lng, size, date
                 msg = {
                     type: 'message',
-                    dstId: this.socket.roleId,
+                    dstId: socket.roleId,
                     msgType: 'Earthquake',
                     content: {
                         latitude: earthquakes[i].geometry.coordinates[1],
@@ -118,8 +120,8 @@ module.exports = {
                 };
                 msgs.push(msg);
             }
-            remainingMsgs[this.socket.uuid] = msgs;
-            sendNext(this.socket);
+            remainingMsgs[socket.uuid] = msgs;
+            sendNext(socket);
         });
         return null;
     }
