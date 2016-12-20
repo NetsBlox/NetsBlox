@@ -179,8 +179,10 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         if (!res.headerSent && result !== null) {  // send the return value
             if (typeof result === 'object') {
                 res.json(result);
-            } else {
+            } else if (result !== undefined) {
                 res.send(result.toString());
+            } else {
+                res.sendStatus(200);
             }
         }
     } else {
