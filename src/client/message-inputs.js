@@ -58,7 +58,7 @@ var addStructReplaceSupport = function(fn) {
         }
 
         if (structInput && structInputIndex < inputIndex &&
-            structInput.fields.length > inputIndex - structInputIndex) {
+            structInput.fields.length >= inputIndex - structInputIndex) {
 
             relIndex = inputIndex - structInputIndex - 1;
             var defaultArg = structInput.setDefaultFieldArg(relIndex);

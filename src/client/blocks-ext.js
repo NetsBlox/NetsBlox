@@ -98,32 +98,15 @@ StructInputSlotMorph.prototype.getFieldValue = function(fieldname, value) {
 StructInputSlotMorph.prototype.setDefaultFieldArg = function(index) {
     // Reset the field and return it
     var isStructField = index < this.fields.length,
-        oldArg,
+        parentIndex,
         arg;
 
     if (isStructField) {
 
-        oldArg = this.fieldContent[index];
+        parentIndex = this.parent.children.indexOf(this) + index + 1;
+
         arg = this.fieldContent[index] = this.getFieldValue(this.fields[index]);
-        index = this.parent.children.indexOf(oldArg);
-        this.parent.children.splice(index, 1, arg);
-        arg.parent = this.parent;
-    } else {  // recipient field
-        var specIndex,
-            spec;
-
-        index++;
-        specIndex = index - this.fields.length;
-        spec = this.parent.blockSpec.split(' ')
-            .filter(function(spec) {
-                return spec[0] === '%';
-            })[specIndex];
-        arg = this.labelPart(spec);
-
-        oldArg = this.parent.inputs()[index];
-
-        index = this.parent.children.indexOf(oldArg);
-        this.parent.children.splice(index, 1, arg);
+        this.parent.children.splice(parentIndex, 1, arg);
         arg.parent = this.parent;
     }
 
