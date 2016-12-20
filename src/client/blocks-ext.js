@@ -172,10 +172,10 @@ function RPCInputSlotMorph() {
         false,
         'methodSignature',
         function(rpcMethod) {
-            if (this.fieldsFor) {
-                return this.fieldsFor[rpcMethod] || [];
+            if (!this.fieldsFor) {
+                this.methodSignature();
             }
-            return [];
+            return this.fieldsFor[rpcMethod] || [];
         },
         true
     );
