@@ -1,4 +1,6 @@
-/* global nop, ScriptsMorph, BlockMorph, InputSlotMorph, StringMorph, Color */
+/* global nop, ScriptsMorph, BlockMorph, InputSlotMorph, StringMorph, Color
+   ReporterBlockMorph, CommandBlockMorph, MultiArgMorph, SnapActions, isNil,
+   ReporterSlotMorph, RingMorph, SyntaxElementMorph*/
 // Extensions to the Snap blocks
 
 // I should refactor the MessageInputSlotMorph to a generic base class. This
@@ -98,34 +100,15 @@ StructInputSlotMorph.prototype.getFieldValue = function(fieldname, value) {
 StructInputSlotMorph.prototype.setDefaultFieldArg = function(index) {
     // Reset the field and return it
     var isStructField = index < this.fields.length,
-        oldArg,
+        parentIndex,
         arg;
 
     if (isStructField) {
+
+        parentIndex = this.parent.children.indexOf(this) + index + 1;
+
         arg = this.fieldContent[index] = this.getFieldValue(this.fields[index]);
-
-        index++;
-        oldArg = this.parent.inputs()[index];
-
-        index = this.parent.children.indexOf(oldArg);
-        this.parent.children.splice(index, 1, arg);
-        arg.parent = this.parent;
-    } else {  // recipient field
-        var specIndex,
-            spec;
-
-        index++;
-        specIndex = index - this.fields.length;
-        spec = this.parent.blockSpec.split(' ')
-            .filter(function(spec) {
-                return spec[0] === '%';
-            })[specIndex];
-        arg = this.labelPart(spec);
-
-        oldArg = this.parent.inputs()[index];
-
-        index = this.parent.children.indexOf(oldArg);
-        this.parent.children.splice(index, 1, arg);
+        this.parent.children.splice(parentIndex, 1, arg);
         arg.parent = this.parent;
     }
 
@@ -269,4 +252,97 @@ HintInputSlotMorph.prototype.changed = function() {
     return InputSlotMorph.prototype.changed.call(this);
 };
 
+// Adding struct support to replacing default inputs
+SyntaxElementMorph.prototype.revertToDefaultInput = function (arg, noValues) {
+    var idx = this.parts().indexOf(arg),
+        inp = this.inputs().indexOf(arg),
+        deflt = new InputSlotMorph();
 
+    // Netsblox addition: start
+    // Update idx for struct support
+    var structs = this.parts().filter(function(part) {
+            return part instanceof StructInputSlotMorph;
+        }),
+        specOffset = structs.reduce(function(offset, struct) {
+            return offset + struct.fields.length;
+        }, 0);
+
+    idx -= specOffset;
+    // Netsblox addition: end
+    if (idx !== -1) {
+        if (this instanceof BlockMorph) {
+            deflt = this.labelPart(this.parseSpec(this.blockSpec)[idx]);
+            if (deflt instanceof InputSlotMorph && this.definition) {
+                deflt.setChoices.apply(
+                    deflt,
+                    this.definition.inputOptionsOfIdx(inp)
+                );
+                deflt.setContents(
+                    this.definition.defaultValueOfInputIdx(inp)
+                );
+            }
+        } else if (this instanceof MultiArgMorph) {
+            deflt = this.labelPart(this.slotSpec);
+        } else if (this instanceof ReporterSlotMorph) {
+            deflt = this.emptySlot();
+        }
+    }
+
+    // Try to set to the old value, first. If there is no old value,
+    // then (potentially) try to set the default value
+    var lastValue = SnapActions.getFieldValue(this, inp);
+    if (lastValue !== undefined) {
+        deflt.setContents(lastValue);
+    } else if (!noValues) {  // set default value
+        if (inp !== -1) {
+            if (deflt instanceof MultiArgMorph) {
+                deflt.setContents(this.defaults);
+                deflt.defaults = this.defaults;
+            } else if (!isNil(this.defaults[inp])) {
+                deflt.setContents(this.defaults[inp]);
+            }
+        }
+    }
+    this.silentReplaceInput(arg, deflt);
+    if (deflt instanceof MultiArgMorph) {
+        deflt.refresh();
+    } else if (deflt instanceof RingMorph) {
+        deflt.fixBlockColor();
+    }
+    this.cachedInputs = null;
+};
+
+var addStructReplaceSupport = function(fn) {
+    return function(arg) {
+        var structInput,
+            structInputIndex = -1,
+            inputs = this.inputs(),
+            inputIndex = inputs.indexOf(arg),
+            relIndex;
+
+        // Check if 'arg' follows a MessageInputSlotMorph (these are a special case)
+        for (var i = inputs.length; i--;) {
+            if (inputs[i] instanceof StructInputSlotMorph) {
+                structInputIndex = i;
+                structInput = inputs[i];
+            }
+        }
+
+        if (structInput && structInputIndex < inputIndex &&
+            structInput.fields.length >= inputIndex - structInputIndex) {
+
+            relIndex = inputIndex - structInputIndex - 1;
+            var defaultArg = structInput.setDefaultFieldArg(relIndex);
+            this.silentReplaceInput(arg, defaultArg);
+            this.cachedInputs = null;
+        } else {
+            fn.apply(this, arguments);
+        }
+    };
+};
+
+ReporterBlockMorph.prototype.revertToDefaultInput =
+    addStructReplaceSupport(ReporterBlockMorph.prototype.revertToDefaultInput);
+
+CommandBlockMorph.prototype.revertToDefaultInput =
+    addStructReplaceSupport(CommandBlockMorph.prototype.revertToDefaultInput);
