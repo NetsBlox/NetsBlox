@@ -41,6 +41,10 @@ Hangman.prototype.guess = function(letter) {
     var indices,
         added;
 
+    if (!letter) {
+        return 'ERROR: no letter provided';
+    }
+
     letter = letter[0];
     trace('Guessing letter: '+letter);
     indices = Hangman.getAllIndices(this.word, letter);
@@ -48,11 +52,11 @@ Hangman.prototype.guess = function(letter) {
     if (added === 0) {
         this.wrongGuesses++;
     }
-    return indices;
+    return indices.map(index => index + 1);
 };
 
 Hangman.prototype.isWordGuessed = function() {
-    var isComplete = this.word.length === this.knownIndices.length;
+    var isComplete = !!this.word && this.word.length === this.knownIndices.length;
     return isComplete;
 };
 
