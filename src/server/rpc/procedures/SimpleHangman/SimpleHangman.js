@@ -19,7 +19,7 @@ var words = ['accurate','address', 'afford','alert','analyze','ancestor',
 'practice','precious','prefer','prepare','proceed','queasy','recent','recognize','reduce',
 'release','represent','request','resist','response','reveal','routine','severe','shabby',
 'shallow','sole','source','sturdy','surface','survive','terror','threat','tidy','tour',
-'tradition','tragic','typical','vacant','valiant','variety','vast','venture','weary',];
+'tradition','tragic','typical','vacant','valiant','variety','vast','venture','weary'];
 
 var debug = require('debug'),
     trace = debug('NetsBlox:RPCManager:SimpleHangman:trace');
@@ -67,7 +67,7 @@ SimpleHangman.prototype.guess = function(letter) {
     return indices;
 };
 
-SimpleHangman.prototype.isWordGuessed = function(req, res) {
+SimpleHangman.prototype.isWordGuessed = function() {
     var isComplete = this.word.length === this.knownIndices.length;
     return isComplete;
 };

@@ -1,13 +1,22 @@
 describe('simple hangman', function() {
     var SimpleHangman = require('../../../../src/server/rpc/procedures/SimpleHangman/SimpleHangman.js'),
         RPCMock = require('../../../assets/MockRPC'),
-        hangman,
+        utils = require('../../../assets/utils'),
+        hangman = new RPCMock(SimpleHangman),
         assert = require('assert');
 
     beforeEach(function() {
         hangman = new RPCMock(SimpleHangman);
         hangman._rpc.word = 'battleship';
     });
+
+    utils.verifyRPCInterfaces(hangman, [
+        ['restart'],
+        ['getCurrentlyKnownWord'],
+        ['guess', ['letter']],
+        ['isWordGuessed'],
+        ['getWrongCount']
+    ]);
 
     describe('restart', function() {
         it('should return true', function() {
