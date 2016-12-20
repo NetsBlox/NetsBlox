@@ -1,4 +1,4 @@
-/* global BlockMorph, StageMorph,
+/* global BlockMorph, StageMorph, ReporterBlockMorph
  CommandBlockMorph, SyntaxElementMorph, StructInputSlotMorph */
 
 
@@ -41,41 +41,37 @@ MessageInputSlotMorph.prototype.getMsgFields = function(name) {
     return fields || [];
 };
 
-/**
- * Overrides the SyntaxElementMorph implementation to check if the 
- * block contains a MessageInputSlotMorph. If so, the default block
- * is retrieved from the MessageInputSlotMorph. Otherwise, it simply
- * calls the original implementation (chain of responsibility pattern).
- *
- * @override 
- * @param arg
- * @return {undefined}
- */
-CommandBlockMorph.prototype.revertToDefaultInput = function (arg) {
-    var structInput,
-        structInputIndex = -1,
-        inputs = this.inputs(),
-        inputIndex = inputs.indexOf(arg),
-        relIndex;
+var addStructReplaceSupport = function(fn) {
+    return function(arg) {
+        var structInput,
+            structInputIndex = -1,
+            inputs = this.inputs(),
+            inputIndex = inputs.indexOf(arg),
+            relIndex;
 
-    // Check if 'arg' follows a MessageInputSlotMorph (these are a special case)
-    for (var i = inputs.length; i--;) {
-        if (inputs[i] instanceof StructInputSlotMorph) {
-            structInputIndex = i;
-            structInput = inputs[i];
+        // Check if 'arg' follows a MessageInputSlotMorph (these are a special case)
+        for (var i = inputs.length; i--;) {
+            if (inputs[i] instanceof StructInputSlotMorph) {
+                structInputIndex = i;
+                structInput = inputs[i];
+            }
         }
-    }
 
-    if (structInput && structInputIndex < inputIndex &&
-        structInput.fields.length > inputIndex - structInputIndex) {
+        if (structInput && structInputIndex < inputIndex &&
+            structInput.fields.length > inputIndex - structInputIndex) {
 
-        relIndex = inputIndex - structInputIndex - 1;
-        var defaultArg = structInput.setDefaultFieldArg(relIndex);
-        this.silentReplaceInput(arg, defaultArg);
-        this.cachedInputs = null;
-    } else {
-        // Else, call SyntaxElementMorph.prototype.revertToDefaultInput
-        SyntaxElementMorph.prototype.revertToDefaultInput.apply(this, arguments);
-    }
+            relIndex = inputIndex - structInputIndex - 1;
+            var defaultArg = structInput.setDefaultFieldArg(relIndex);
+            this.silentReplaceInput(arg, defaultArg);
+            this.cachedInputs = null;
+        } else {
+            fn.apply(this, arguments);
+        }
+    };
 };
 
+ReporterBlockMorph.prototype.revertToDefaultInput =
+    addStructReplaceSupport(ReporterBlockMorph.prototype.revertToDefaultInput);
+
+CommandBlockMorph.prototype.revertToDefaultInput =
+    addStructReplaceSupport(CommandBlockMorph.prototype.revertToDefaultInput);

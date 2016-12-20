@@ -102,11 +102,9 @@ StructInputSlotMorph.prototype.setDefaultFieldArg = function(index) {
         arg;
 
     if (isStructField) {
+
+        oldArg = this.fieldContent[index];
         arg = this.fieldContent[index] = this.getFieldValue(this.fields[index]);
-
-        index++;
-        oldArg = this.parent.inputs()[index];
-
         index = this.parent.children.indexOf(oldArg);
         this.parent.children.splice(index, 1, arg);
         arg.parent = this.parent;
