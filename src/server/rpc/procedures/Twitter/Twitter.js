@@ -34,8 +34,9 @@ module.exports = {
 
     // returns a list of a user's recent tweets
     recentTweets: function(screenName, count) {
+        var results = [],
+            response = this.response;
 
-        var results = [];
         // gather parameters
         options.url = baseURL + 'statuses/user_timeline.json?';
 
@@ -49,8 +50,8 @@ module.exports = {
 
         // repeat as many times as necessary
         var getTweets = () => { 
-            request(options, (err, response, body) => {
-                if (rateCheck(response, this.response)) {
+            request(options, (err, res, body) => {
+                if (rateCheck(res, response)) {
                     return;
                 }
                 for (var i = 0; i < body.length; i++) {
@@ -61,7 +62,7 @@ module.exports = {
                     options.url = baseURL + 'statuses/user_timeline.json?screen_name=' + screenName + '&count=' + count + '&max_id=' + body[body.length-1].id;
                     getTweets();
                 } else {
-                    return this.response.json(results);
+                    return response.json(results);
                 }
             });
         };
@@ -74,6 +75,7 @@ module.exports = {
 
     // returns amount of followers a user has
     followers: function(screenName) {
+        var response = this.response;
 
         // gather parameter
         options.url = baseURL + 'users/show.json?';
@@ -86,11 +88,11 @@ module.exports = {
 
         options.url = options.url + 'screen_name=' + screenName;
 
-        request(options, (err, response, body) => {
-            if (rateCheck(response, this.response)) {
+        request(options, (err, res, body) => {
+            if (rateCheck(res, response)) {
                 return;
             }
-            return this.response.json(body.followers_count);
+            return response.json(body.followers_count);
         });
 
         return null;
@@ -98,6 +100,7 @@ module.exports = {
 
     // returns amount of tweets a user has
     tweets: function(screenName) {
+        var response = this.response;
 
         // gather parameter
         options.url = baseURL + 'users/show.json?';
@@ -110,19 +113,20 @@ module.exports = {
 
         options.url = options.url + 'screen_name=' + screenName;
 
-        request(options, (err, response, body) => {
-            if (rateCheck(response, this.response)) {
+        request(options, (err, res, body) => {
+            if (rateCheck(res, response)) {
                 return;
             }
-            return this.response.json(body.statuses_count);
+            return response.json(body.statuses_count);
         });
         return null;
     },
 
     // searches the most recent tweets
     search: function(keyword, count) {
+        var response = this.response,
+            results = [];
 
-        var results = [];
         // gather parameter
         options.url = baseURL + 'search/tweets.json?q=';
 
@@ -139,8 +143,8 @@ module.exports = {
         
         // repeat as many times as necessary
         var getTweets = () => {
-            request(options, (err, response, body) => {
-                if (rateCheck(response, this.response)) {
+            request(options, (err, res, body) => {
+                if (rateCheck(res, response)) {
                     return;
                 }
                 for (var i = 0; i < body.statuses.length; i++) {
@@ -151,7 +155,7 @@ module.exports = {
                     options.url = baseURL + 'search/tweets.json?q=' + keyword + '&count=' + count + '&max_id=' + body.statuses[body.statuses.length-1].id;
                     getTweets();
                 } else {
-                    return this.response.json(results);
+                    return response.json(results);
                 }
             });
         };
@@ -164,13 +168,15 @@ module.exports = {
 
     // returns how many tweets per day the user averages (most recent 200)
     tweetsPerDay: function(screenName) {
+        var oneDay = 24*60*60*1000, // hours*minutes*seconds*milliseconds
+            dateToday = new Date(),
+            response = this.response;
 
         // gather parameter
         options.url = baseURL + 'statuses/user_timeline.json?';
-        var oneDay = 24*60*60*1000; // hours*minutes*seconds*milliseconds
-        var dateToday = new Date();
 
         // ensure valid parameter
+        trace(`getting the average number of daily tweets for ${screenName}`);
         if (screenName == '' || screenName == undefined) {
             trace('Enter valid parameters...');
             return 'Missing screenName';
@@ -178,17 +184,17 @@ module.exports = {
 
         options.url = options.url + 'screen_name=' + screenName + '&count=200';
 
-        request(options, (err, response, body) => {
+        request(options, (err, res, body) => {
             try {
-                if (rateCheck(response, this.response)) {
+                if (rateCheck(res, response)) {
                     return;
                 }
                 var oldestDate = new Date(body[body.length-1].created_at); 
                 var diffDays = Math.round(Math.abs((oldestDate.getTime() - dateToday.getTime())/(oneDay)));
-                return this.response.json(body.length / diffDays);
+                return response.json(body.length / diffDays);
             } catch (err) {
-                trace(err);
-                return this.response.send('Could not retrieve the average number of daily tweets');
+                error(err);
+                return response.send('Could not retrieve the average number of daily tweets');
             }
         });
         return null;
@@ -196,8 +202,9 @@ module.exports = {
 
     // returns the most recent tweets that a user has favorited
     favorites: function(screenName, count) {
+        var response = this.response,
+            results = [];
 
-        var results = [];
         // gather parameter
         options.url = baseURL + 'favorites/list.json?';
 
@@ -212,8 +219,8 @@ module.exports = {
         // populate array of tweets
         // repeat as many times as necessary
         var getTweets = () => {
-            request(options, (err, response, body) => {
-                if (rateCheck(response, this.response)) {
+            request(options, (err, res, body) => {
+                if (rateCheck(res, response)) {
                     return;
                 }
                 for (var i = 0; i < body.length; i++) {
@@ -224,7 +231,7 @@ module.exports = {
                     options.url = baseURL + 'favorites/list.json?screen_name=' + screenName + '&count=' + count + '&max_id=' + body[body.length-1].id;
                     getTweets();
                 } else {
-                    return this.response.json(results);
+                    return response.json(results);
                 }
             });
         };
@@ -236,6 +243,7 @@ module.exports = {
 
     // returns the amount of favorites that a user has
     favoritesCount: function(screenName) {
+        var response = this.response;
 
         // gather parameter
         options.url = baseURL + 'users/show.json?';
@@ -248,11 +256,11 @@ module.exports = {
 
         options.url = options.url + 'screen_name=' + screenName;
 
-        request(options, (err, response, body) => {
-            if (rateCheck(response, this.response)) {
+        request(options, (err, res, body) => {
+            if (rateCheck(res, response)) {
                 return;
             }
-            return this.response.json(body.favourites_count);
+            return response.json(body.favourites_count);
         });
 
         return null;
