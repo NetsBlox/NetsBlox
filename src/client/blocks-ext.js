@@ -1,4 +1,4 @@
-/* global nop, ScriptsMorph, BlockMorph, InputSlotMorph */
+/* global nop, ScriptsMorph, BlockMorph, InputSlotMorph, StringMorph, Color */
 // Extensions to the Snap blocks
 
 // I should refactor the MessageInputSlotMorph to a generic base class. This

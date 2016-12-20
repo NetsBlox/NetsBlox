@@ -170,7 +170,6 @@ NetsProcess.prototype.callRPC = function (rpc, params, noCache) {
     this.pushContext();
 };
 
-// TODO: Consider moving these next two functions to the Stage
 NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
     var result = this.callRPC(rpc, params, true);
     if (result) {
@@ -204,7 +203,6 @@ NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
 };
 
 NetsProcess.prototype.getJSFromRPCDropdown = function (rpc, action, params) {
-    // TODO: Make sure I still support the old method...
     return this.getJSFromRPC(['', rpc, action].join('/'), params);
 };
 

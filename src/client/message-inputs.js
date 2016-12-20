@@ -1,4 +1,4 @@
-/* global StringMorph, Color, InputSlotMorph, BlockMorph, StageMorph,
+/* global BlockMorph, StageMorph,
  CommandBlockMorph, SyntaxElementMorph, StructInputSlotMorph */
 
 
