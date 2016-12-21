@@ -82,7 +82,7 @@ NetsProcess.prototype.doSocketMessage = function (msgInfo) {
         targetRole = arguments[arguments.length-1],
         myRole = ide.projectName,  // same as seat name
         name = msgInfo[0],
-        fields = msgInfo[1],
+        fields = msgInfo[1].map(function(tuple) {return tuple[1];}),
         stage = ide.stage,
         messageType,
         fieldNames,
