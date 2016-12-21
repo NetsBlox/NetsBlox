@@ -37,11 +37,9 @@ MovieDB.prototype.searchMovie = function(title) {
     var rsp = this.response;
 
     if(!title) {
-        rsp.status(400).send(`Error: title is not defined`);        
+        rsp.status(400).send('Error: title is not defined');        
     } else {
         mdb.searchMovie({ query: title }, (err,res) => {
-            console.log('err', err)
-            console.log('res', res)
             if(!err) {
                 rsp.send(res.results.map(e=>e.id));
             } else {
@@ -56,7 +54,7 @@ MovieDB.prototype.searchPerson = function(name) {
     var rsp = this.response;
 
     if(!name) {
-        rsp.status(400).send(`Error: name is not defined`);        
+        rsp.status(400).send('Error: name is not defined');        
     } else {
         mdb.searchPerson({ query: name }, (err,res) => {
             if(!err) {
@@ -71,25 +69,25 @@ MovieDB.prototype.searchPerson = function(name) {
 };
 
 
-MovieDB.prototype.movieTitle = function(id) { return this.movieInfo(id, 'title'); }
-MovieDB.prototype.movieBackdropPath = function(id) { return this.movieInfo(id, 'backdrop_path'); }
-MovieDB.prototype.movieBudget = function(id) { return this.movieInfo(id, 'budget'); }
-MovieDB.prototype.movieGenres = function(id) { return this.movieInfo(id, 'genres'); }
-MovieDB.prototype.movieOriginalLanguage = function(id) { return this.movieInfo(id, 'original_language'); }
-MovieDB.prototype.movieOriginalTitle = function(id) { return this.movieInfo(id, 'original_title'); }
-MovieDB.prototype.movieOverview = function(id) { return this.movieInfo(id, 'overview'); }
-MovieDB.prototype.moviePopularity = function(id) { return this.movieInfo(id, 'popularity'); }
-MovieDB.prototype.moviePosterPath = function(id) { return this.movieInfo(id, 'poster_path'); }
-MovieDB.prototype.movieProductionCompanies = function(id) { return this.movieInfo(id, 'production_companies'); }
-MovieDB.prototype.movieProductionCountries = function(id) { return this.movieInfo(id, 'production_countries'); }
-MovieDB.prototype.movieReleaseDate = function(id) { return this.movieInfo(id, 'release_date'); }
-MovieDB.prototype.movieRevenue = function(id) { return this.movieInfo(id, 'revenue'); }
-MovieDB.prototype.movieRuntime = function(id) { return this.movieInfo(id, 'runtime'); }
-MovieDB.prototype.movieSpokenLanguages = function(id) { return this.movieInfo(id, 'spoken_languages'); }
-MovieDB.prototype.movieTagline = function(id) { return this.movieInfo(id, 'tagline'); }
-MovieDB.prototype.movieTitle = function(id) { return this.movieInfo(id, 'title'); }
-MovieDB.prototype.movieVoteAverage = function(id) { return this.movieInfo(id, 'vote_average'); }
-MovieDB.prototype.movieVoteCount = function(id) { return this.movieInfo(id, 'vote_count'); }
+MovieDB.prototype.movieTitle = function(id) { return this.movieInfo(id, 'title'); };
+MovieDB.prototype.movieBackdropPath = function(id) { return this.movieInfo(id, 'backdrop_path'); };
+MovieDB.prototype.movieBudget = function(id) { return this.movieInfo(id, 'budget'); };
+MovieDB.prototype.movieGenres = function(id) { return this.movieInfo(id, 'genres'); };
+MovieDB.prototype.movieOriginalLanguage = function(id) { return this.movieInfo(id, 'original_language'); };
+MovieDB.prototype.movieOriginalTitle = function(id) { return this.movieInfo(id, 'original_title'); };
+MovieDB.prototype.movieOverview = function(id) { return this.movieInfo(id, 'overview'); };
+MovieDB.prototype.moviePopularity = function(id) { return this.movieInfo(id, 'popularity'); };
+MovieDB.prototype.moviePosterPath = function(id) { return this.movieInfo(id, 'poster_path'); };
+MovieDB.prototype.movieProductionCompanies = function(id) { return this.movieInfo(id, 'production_companies'); };
+MovieDB.prototype.movieProductionCountries = function(id) { return this.movieInfo(id, 'production_countries'); };
+MovieDB.prototype.movieReleaseDate = function(id) { return this.movieInfo(id, 'release_date'); };
+MovieDB.prototype.movieRevenue = function(id) { return this.movieInfo(id, 'revenue'); };
+MovieDB.prototype.movieRuntime = function(id) { return this.movieInfo(id, 'runtime'); };
+MovieDB.prototype.movieSpokenLanguages = function(id) { return this.movieInfo(id, 'spoken_languages'); };
+MovieDB.prototype.movieTagline = function(id) { return this.movieInfo(id, 'tagline'); };
+MovieDB.prototype.movieTitle = function(id) { return this.movieInfo(id, 'title'); };
+MovieDB.prototype.movieVoteAverage = function(id) { return this.movieInfo(id, 'vote_average'); };
+MovieDB.prototype.movieVoteCount = function(id) { return this.movieInfo(id, 'vote_count'); };
 
 MovieDB.prototype.movieInfo = function(id, field) {
     var rsp = this.response;
@@ -125,14 +123,14 @@ MovieDB.prototype.movieInfo = function(id, field) {
 };
 
 
-MovieDB.prototype.personBiography = function(id) { return this.personInfo(id, 'biography'); }
-MovieDB.prototype.personBirthday = function(id) { return this.personInfo(id, 'birthday'); }
-MovieDB.prototype.personDeathday = function(id) { return this.personInfo(id, 'deathday'); }
-MovieDB.prototype.personGender = function(id) { return this.personInfo(id, 'gender'); }
-MovieDB.prototype.personName = function(id) { return this.personInfo(id, 'name'); }
-MovieDB.prototype.personPlaceOfBirth = function(id) { return this.personInfo(id, 'place_of_birth'); }
-MovieDB.prototype.personPopularity = function(id) { return this.personInfo(id, 'popularity'); }
-MovieDB.prototype.personProfilePath = function(id) { return this.personInfo(id, 'profile_path'); }
+MovieDB.prototype.personBiography = function(id) { return this.personInfo(id, 'biography'); };
+MovieDB.prototype.personBirthday = function(id) { return this.personInfo(id, 'birthday'); };
+MovieDB.prototype.personDeathday = function(id) { return this.personInfo(id, 'deathday'); };
+MovieDB.prototype.personGender = function(id) { return this.personInfo(id, 'gender'); };
+MovieDB.prototype.personName = function(id) { return this.personInfo(id, 'name'); };
+MovieDB.prototype.personPlaceOfBirth = function(id) { return this.personInfo(id, 'place_of_birth'); };
+MovieDB.prototype.personPopularity = function(id) { return this.personInfo(id, 'popularity'); };
+MovieDB.prototype.personProfilePath = function(id) { return this.personInfo(id, 'profile_path'); };
 
 MovieDB.prototype.personInfo = function(id, field) {
     var rsp = this.response;
@@ -160,13 +158,13 @@ MovieDB.prototype.personInfo = function(id, field) {
     return null;
 };
 
-MovieDB.prototype.movieCastCharacters = function(id) { return this.movieCredits(id, 'cast', 'character'); }
-MovieDB.prototype.movieCastNames = function(id) { return this.movieCredits(id, 'cast', 'name'); }
-MovieDB.prototype.movieCastPersonIDs = function(id) { return this.movieCredits(id, 'cast', 'id'); }
-MovieDB.prototype.movieCastProfilePaths = function(id) { return this.movieCredits(id, 'cast', 'profile_path'); }
-MovieDB.prototype.movieCrewNames = function(id) { return this.movieCredits(id, 'crew', 'name'); }
-MovieDB.prototype.movieCrewJobs = function(id) { return this.movieCredits(id, 'crew', 'job'); }
-MovieDB.prototype.movieCrewProfilePaths = function(id) { return this.movieCredits(id, 'crew', 'profile_path'); }
+MovieDB.prototype.movieCastCharacters = function(id) { return this.movieCredits(id, 'cast', 'character'); };
+MovieDB.prototype.movieCastNames = function(id) { return this.movieCredits(id, 'cast', 'name'); };
+MovieDB.prototype.movieCastPersonIDs = function(id) { return this.movieCredits(id, 'cast', 'id'); };
+MovieDB.prototype.movieCastProfilePaths = function(id) { return this.movieCredits(id, 'cast', 'profile_path'); };
+MovieDB.prototype.movieCrewNames = function(id) { return this.movieCredits(id, 'crew', 'name'); };
+MovieDB.prototype.movieCrewJobs = function(id) { return this.movieCredits(id, 'crew', 'job'); };
+MovieDB.prototype.movieCrewProfilePaths = function(id) { return this.movieCredits(id, 'crew', 'profile_path'); };
 
 MovieDB.prototype.movieCredits = function(id, field, subfield) {
     var rsp = this.response;
@@ -195,8 +193,8 @@ MovieDB.prototype.movieCredits = function(id, field, subfield) {
                             }
                         }
                     } else {
-                       rsp.status(200).send(''+res[field]);
-                   }
+                        rsp.status(200).send(''+res[field]);
+                    }
                 } else {
                     rsp.status(400).send('Error: requested field name does not exist');
                 }
@@ -209,11 +207,11 @@ MovieDB.prototype.movieCredits = function(id, field, subfield) {
     return null;
 };
 
-MovieDB.prototype.personImageFilePaths = function(id) { return this.personImages(id, 'profiles', 'file_path'); }
-MovieDB.prototype.personImageAspectRatios = function(id) { return this.personImages(id, 'profiles', 'aspect_ratio'); }
-MovieDB.prototype.personImageHeights = function(id) { return this.personImages(id, 'profiles', 'height'); }
-MovieDB.prototype.personImageWidths = function(id) { return this.personImages(id, 'profiles', 'width'); }
-MovieDB.prototype.personImageVoteCounts = function(id) { return this.personImages(id, 'profiles', 'vote_count'); }
+MovieDB.prototype.personImageFilePaths = function(id) { return this.personImages(id, 'profiles', 'file_path'); };
+MovieDB.prototype.personImageAspectRatios = function(id) { return this.personImages(id, 'profiles', 'aspect_ratio'); };
+MovieDB.prototype.personImageHeights = function(id) { return this.personImages(id, 'profiles', 'height'); };
+MovieDB.prototype.personImageWidths = function(id) { return this.personImages(id, 'profiles', 'width'); };
+MovieDB.prototype.personImageVoteCounts = function(id) { return this.personImages(id, 'profiles', 'vote_count'); };
 
 MovieDB.prototype.personImages = function(id, field, subfield) {
     var rsp = this.response;
@@ -242,8 +240,8 @@ MovieDB.prototype.personImages = function(id, field, subfield) {
                             }
                         }
                     } else {
-                       rsp.status(200).send(''+res[field]);
-                   }
+                        rsp.status(200).send(''+res[field]);
+                    }
                 } else {
                     rsp.status(400).send('Error: requested field name does not exist');
                 }
@@ -257,18 +255,18 @@ MovieDB.prototype.personImages = function(id, field, subfield) {
 };
 
 
-MovieDB.prototype.personCastCharacters = function(id) { return this.personCredits(id, 'cast', 'character'); }
-MovieDB.prototype.personCastMovieIDs = function(id) { return this.personCredits(id, 'cast', 'id'); }
-MovieDB.prototype.personCastOriginalTitles = function(id) { return this.personCredits(id, 'cast', 'original_title'); }
-MovieDB.prototype.personCastPosterPaths = function(id) { return this.personCredits(id, 'cast', 'poster_path'); }
-MovieDB.prototype.personCastReleaseDates = function(id) { return this.personCredits(id, 'cast', 'release_date'); }
-MovieDB.prototype.personCastTitles = function(id) { return this.personCredits(id, 'cast', 'title'); }
-MovieDB.prototype.personCrewMovieIDs = function(id) { return this.personCredits(id, 'crew', 'id'); }
-MovieDB.prototype.personCrewJobs = function(id) { return this.personCredits(id, 'crew', 'job'); }
-MovieDB.prototype.personCrewOriginalTitles = function(id) { return this.personCredits(id, 'crew', 'original_title'); }
-MovieDB.prototype.personCrewPosterPaths = function(id) { return this.personCredits(id, 'crew', 'poster_path'); }
-MovieDB.prototype.personCrewReleaseDates = function(id) { return this.personCredits(id, 'crew', 'release_date'); }
-MovieDB.prototype.personCrewTitles = function(id) { return this.personCredits(id, 'crew', 'title'); }
+MovieDB.prototype.personCastCharacters = function(id) { return this.personCredits(id, 'cast', 'character'); };
+MovieDB.prototype.personCastMovieIDs = function(id) { return this.personCredits(id, 'cast', 'id'); };
+MovieDB.prototype.personCastOriginalTitles = function(id) { return this.personCredits(id, 'cast', 'original_title'); };
+MovieDB.prototype.personCastPosterPaths = function(id) { return this.personCredits(id, 'cast', 'poster_path'); };
+MovieDB.prototype.personCastReleaseDates = function(id) { return this.personCredits(id, 'cast', 'release_date'); };
+MovieDB.prototype.personCastTitles = function(id) { return this.personCredits(id, 'cast', 'title'); };
+MovieDB.prototype.personCrewMovieIDs = function(id) { return this.personCredits(id, 'crew', 'id'); };
+MovieDB.prototype.personCrewJobs = function(id) { return this.personCredits(id, 'crew', 'job'); };
+MovieDB.prototype.personCrewOriginalTitles = function(id) { return this.personCredits(id, 'crew', 'original_title'); };
+MovieDB.prototype.personCrewPosterPaths = function(id) { return this.personCredits(id, 'crew', 'poster_path'); };
+MovieDB.prototype.personCrewReleaseDates = function(id) { return this.personCredits(id, 'crew', 'release_date'); };
+MovieDB.prototype.personCrewTitles = function(id) { return this.personCredits(id, 'crew', 'title'); };
 
 MovieDB.prototype.personCredits = function(id, field, subfield) {
     var rsp = this.response;
@@ -297,8 +295,8 @@ MovieDB.prototype.personCredits = function(id, field, subfield) {
                             }
                         }
                     } else {
-                       rsp.status(200).send(''+res[field]);
-                   }
+                        rsp.status(200).send(''+res[field]);
+                    }
                 } else {
                     rsp.status(400).send('Error: requested field name does not exist');
                 }
@@ -315,10 +313,13 @@ MovieDB.prototype.getImage = function(path) {
     var rsp = this.response;
     var url;
 
+
     if(!path) {
         rsp.status(400).send('Error: path not specified');        
     } else {
         url = baseUrl+path;
+        
+        info(`Getting image from URL ${url}`);
 
         // Check the cache
         cache.wrap(url, function(cacheCallback) {
@@ -337,7 +338,7 @@ MovieDB.prototype.getImage = function(path) {
             });
         }, function(err, imageBuffer) {
             // Send the response to the user
-            trace('Sending the response!');
+            info('Sending the response!');
             // Set the headers
             rsp.set('cache-control', 'private, no-store, max-age=0');
             rsp.set('content-type', 'image/jpeg');
@@ -345,7 +346,7 @@ MovieDB.prototype.getImage = function(path) {
             rsp.set('connection', 'close');
 
             rsp.status(200).send(imageBuffer);
-            trace('Sent the response!');
+            info('Sent the response!');
         });
     }
 
