@@ -2,14 +2,16 @@
 
 'use strict';
 
-var R = require('ramda'),
-    mdb = require('moviedb')('a9782eaca0e879266fb880b7dcb4cef4'),
+var mdb = require('moviedb')('a9782eaca0e879266fb880b7dcb4cef4'),
     debug = require('debug'),
     request = require('request'),    
     CacheManager = require('cache-manager'),   
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity}),
-    trace = debug('NetsBlox:RPCManager:MovieDB:trace'),
-    info = debug('NetsBlox:RPCManager:MovieDB:info');
+    trace = debug('NetsBlox:RPCManager:MovieDB:trace');
+
+
+// Retrieving static images
+var baseUrl = 'https://image.tmdb.org/t/p/w500';
 
 /**
  * MovieDB - This constructor is called on the first request to an RPC
@@ -18,15 +20,7 @@ var R = require('ramda'),
  * @constructor
  * @return {undefined}
  */
-var MovieDB = function() {
-    this.active = null;
-    this.previous = null;
-    this.players = [];
-};
-
-// Retrieving static images
-var baseUrl = 'https://image.tmdb.org/t/p/w500';
-
+var MovieDB = function() {};
 
 /**
  * Return the path to the given RPC
@@ -37,30 +31,22 @@ MovieDB.getPath = function() {
     return '/MovieDB';
 };
 
-/**
- * This function is used to expose the public API for RPC calls
- *
- * @return {Array<String>}
- */
-MovieDB.getActions = function() {
-    return [
-        'searchMovie',  // search movie by title
-        'movieInfo', // get information about a movie based on ID
-        'movieCredits', // get the cast (person IDs) of a movie based on movie ID
-        'personInfo', // get information about a person based on ID
-        'personRoles', // get the movies of a person (movie IDs) based on person ID
-        'personImages', // get photo paths by person ID
-        'personCredits', // get the movies (movie IDs) by person ID
-        'getImage' // get an image from a server
-    ];
-};
 
 // Actions
-
-// search a movie by providing a string query and a page number
-// returns a list of movie IDs
-MovieDB.prototype.searchMovie = function(req, rsp) {
-    mdb.searchMovie(req.query, (err,res) => {
+MovieDB.prototype.searchMovie = function(query) {
+    debug('called searchMovie with query='+query);
+    mdb.searchMovie(query, (err,res) => {
+        if(!err) {
+            return results.map(e=>e.id);
+        }
+        else {
+            return err;
+        }
+    });
+};
+/*
+MovieDB.prototype.searchPerson = function(req, rsp) {
+    mdb.searchPerson(req.query, (err,res) => {
         if(!err) {
             rsp.status(200).send(res.results.map(e=>e.id));
         }
@@ -73,33 +59,32 @@ MovieDB.prototype.searchMovie = function(req, rsp) {
 MovieDB.prototype.movieInfo = function(req, rsp) {
 
     if(!req.query.field) {
-        rsp.status(400).send("Requested field name not specified");        
+        rsp.status(400).send('Requested field name not specified');        
         return;
     }
 
     if(!req.query.id) {
-        rsp.status(400).send("Movie ID not specified");        
+        rsp.status(400).send('Movie ID not specified');        
         return;
     }
 
     req.query.id = +req.query.id;
-    info(req.query);
 
     mdb.movieInfo(req.query, (err,res) => {
         if(!err) {
             if(res[req.query.field]) {
                 // treat genres in a special way
-                if(req.query.field == "genres") {
+                if(req.query.field == 'genres') {
                     rsp.status(200).send(res[req.query.field].map(g => g.name));
                 } else {
-                    rsp.status(200).send(""+res[req.query.field]);
+                    rsp.status(200).send(''+res[req.query.field]);
                 }
             } else {
-                rsp.status(400).send("Requested field name does not exist");
+                rsp.status(400).send('Requested field name does not exist');
             }
         }
         else {
-            rsp.status(400).send("");
+            rsp.status(400).send('');
         }
     });
 };
@@ -108,28 +93,27 @@ MovieDB.prototype.movieInfo = function(req, rsp) {
 MovieDB.prototype.personInfo = function(req, rsp) {
 
     if(!req.query.field) {
-        rsp.status(400).send("Requested field name not specified");        
+        rsp.status(400).send('Requested field name not specified');        
         return;
     }
 
     if(!req.query.id) {
-        rsp.status(400).send("Person ID not specified");        
+        rsp.status(400).send('Person ID not specified');        
         return;
     }
 
     req.query.id = +req.query.id;
-    info(req.query);
 
     mdb.personInfo(req.query, (err,res) => {
         if(!err) {
             if(res[req.query.field]) {
                 rsp.status(200).send(res[req.query.field]);
             } else {
-                rsp.status(400).send("Requested field name does not exist");
+                rsp.status(400).send('Requested field name does not exist');
             }
         }
         else {
-            rsp.status(400).send("");
+            rsp.status(400).send('');
         }
     });
 };
@@ -138,28 +122,27 @@ MovieDB.prototype.personInfo = function(req, rsp) {
 MovieDB.prototype.movieCredits = function(req, rsp) {
 
     if(!req.query.id) {
-        rsp.status(400).send("Movie ID not specified");        
+        rsp.status(400).send('Movie ID not specified');        
         return;
     }
 
     req.query.id = +req.query.id;
-    info(req.query);
 
     mdb.movieCredits(req.query, (err,res) => {
         if(!err) {
             if(res[req.query.field]) {
                 // treat cast in a special way
-                if(req.query.field == "cast") {
+                if(req.query.field == 'cast') {
                     rsp.status(200).send(res[req.query.field].map(obj => obj.id));
                 } else {
-                    rsp.status(200).send(""+res[req.query.field]);
+                    rsp.status(200).send(''+res[req.query.field]);
                 }
             } else {
-                rsp.status(400).send("Requested field name does not exist");
+                rsp.status(400).send('Requested field name does not exist');
             }
         }
         else {
-            rsp.status(400).send("");
+            rsp.status(400).send('');
         }
     });
 };
@@ -167,31 +150,27 @@ MovieDB.prototype.movieCredits = function(req, rsp) {
 MovieDB.prototype.personImages = function(req, rsp) {
 
     if(!req.query.id) {
-        rsp.status(400).send("Person ID not specified");        
+        rsp.status(400).send('Person ID not specified');        
         return;
     }
 
     req.query.id = +req.query.id;
-    info(req.query);
 
     mdb.personImages(req.query, (err,res) => {
         if(!err) {
-
-            info(res);
-
             if(res[req.query.field]) {
                 // treat profiles in a special way
-                if(req.query.field == "profiles") {
+                if(req.query.field == 'profiles') {
                     rsp.status(200).send(res[req.query.field].map(obj => obj.file_path));
                 } else {
-                    rsp.status(200).send(""+res[req.query.field]);
+                    rsp.status(200).send(''+res[req.query.field]);
                 }
             } else {
-                rsp.status(400).send("Requested field name does not exist");
+                rsp.status(400).send('Requested field name does not exist');
             }
         }
         else {
-            rsp.status(400).send("");
+            rsp.status(400).send('');
         }
     });
 };
@@ -199,7 +178,7 @@ MovieDB.prototype.personImages = function(req, rsp) {
 MovieDB.prototype.personCredits = function(req, rsp) {
 
     if(!req.query.id) {
-        rsp.status(400).send("Person ID not specified");        
+        rsp.status(400).send('Person ID not specified');        
         return;
     }
 
@@ -209,37 +188,30 @@ MovieDB.prototype.personCredits = function(req, rsp) {
         if(!err) {
             if(res[req.query.field]) {
                 // treat cast in a special way
-                if(req.query.field == "cast") {
+                if(req.query.field == 'cast') {
                     rsp.status(200).send(res[req.query.field].map(obj => obj.id));
                 } else {
-                    rsp.status(200).send(""+res[req.query.field]);
+                    rsp.status(200).send(''+res[req.query.field]);
                 }
             } else {
-                rsp.status(400).send("Requested field name does not exist");
+                rsp.status(400).send('Requested field name does not exist');
             }
         }
         else {
-            rsp.status(400).send("");
+            rsp.status(400).send('');
         }
     });
 };
 
-
 MovieDB.prototype.getImage = function(req, rsp) {
     var url;
 
-    info("getImage called");
-
-
     if(!req.query.path) {
-        rsp.status(400).send("Path not specified");        
-        info("Path not specified");
+        rsp.status(400).send('Path not specified');        
         return;
     }
 
     url = baseUrl+req.query.path;
-
-    info("Getting image from " + url);
 
     // Check the cache
     cache.wrap(url, function(cacheCallback) {
@@ -271,7 +243,5 @@ MovieDB.prototype.getImage = function(req, rsp) {
         trace('Sent the response!');
     });
 };
-
-
-
+*/
 module.exports = MovieDB;
