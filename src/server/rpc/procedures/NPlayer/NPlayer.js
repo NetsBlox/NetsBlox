@@ -126,5 +126,3 @@ NPlayer.prototype.endTurn = function(next) {
         return true;
     }
 };
-
-module.exports = NPlayer;
