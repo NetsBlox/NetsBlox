@@ -1,5 +1,5 @@
 /* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
-   Message, List */
+   List */
 ThreadManager.prototype.startProcess = function (
     block,
     isThreadSafe,
@@ -82,33 +82,28 @@ NetsProcess.prototype.doSocketMessage = function (msgInfo) {
         targetRole = arguments[arguments.length-1],
         myRole = ide.projectName,  // same as seat name
         name = msgInfo[0],
-        fields = msgInfo[1].map(function(tuple) {return tuple[1];}),
-        stage = ide.stage,
-        messageType,
-        fieldNames,
-        msg;
+        fieldNames = msgInfo[1],
+        fieldValues = Array.prototype.slice.call(arguments, 1, fieldNames.length + 1),
+        contents;
 
     // If there is no name, return
     if (!name) {
         return;
     }
 
-    messageType = stage.messageTypes.getMsgType(name);
-    fieldNames = messageType.fields;
-
     // Create the message
-    msg = new Message(messageType);
+    contents = {};
     // Set the fields
     for (var i = fieldNames.length; i--;) {
-        msg.set(fieldNames[i], fields[i] || '');
+        contents[fieldNames[i]] = fieldValues[i] || '';
     }
 
     ide.sockets.sendMessage({
         type: 'message',
         dstId: targetRole,
         srcId: myRole,
-        msgType: msg.type.name,
-        content: msg.contents
+        msgType: name,
+        content: contents
     });
 };
 
@@ -193,11 +188,12 @@ NetsProcess.prototype.parseRPCResult = function (result) {
 
 NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
     var action = methodSignature[0],
-        argNameAndValue = methodSignature[1],
+        argNames = methodSignature[1],
+        values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
         params;
 
-    params = argNameAndValue.map(function(pair) {
-        return pair[0] + '=' + pair[1];
+    params = argNames.map(function(name, index) {
+        return name + '=' + values[index];
     }).join('&');
     return this.getJSFromRPCDropdown(rpc, action, params);
 };
