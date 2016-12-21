@@ -28,84 +28,102 @@ NPlayer.getPath = function() {
     return '/NPlayer';
 };
 
+/**
+ * This function is used to expose the public API for RPC calls
+ *
+ * @return {Array<String>}
+ */
+NPlayer.getActions = function() {
+    return [
+        'start',  // start (or restart) the game
+        'getN',  // Get N
+        'getActive',  // get the active Player's role id
+        'getNext',  // get the next Player's role id
+        'getPrevious',  // get the previous Player's role id
+        'endTurn'];  // Signal end of turn
+};
+
+// Actions
+
 // start the game
-NPlayer.prototype.start = function() {
+NPlayer.prototype.start = function(req, res) {
 
     // populate the players list
     this.players = [];
     
-    this.players = this.socket._room.sockets().map(socket => {
+    this.players = req.netsbloxSocket._room.sockets().map(socket => {
         return {role: socket.roleId, socket: socket};
     });
 
     // set the active player to the current one
-    this.active = R.findIndex(R.propEq('role', this.socket.roleId))(this.players);
+    this.active = R.findIndex(R.propEq('role', req.netsbloxSocket.roleId))(this.players);
 
-    info(`Player #${this.active} (${this.players[this.active].role}) is (re)starting a ${this.players.length} player game`);
+    // info('Player #' +this.active+' ('+ this.players[this.active] +') is (re)starting a ' +R.length(this.players)+' player game');
+    info('Player #' +this.active+' ('+ this.players[this.active].role +') is (re)starting a ' +R.length(this.players)+' player game');
 
     // Send the start message to everyone
     this.players.forEach(player => player.socket.send({
         type: 'message',
         dstId: player.role,
         msgType: 'start game',
-        content: {}
+        content: {
+        }
     }));
-
-    return true;
+    res.status(200).send(true);
 };
 
 // get the number of players
-NPlayer.prototype.getN = function() {    
-    return this.players.length;
+NPlayer.prototype.getN = function(req, res) {    
+    res.send(this.players.length.toString());
 };
 
 // get the active role
-NPlayer.prototype.getActive = function() {
-    if(this.players.length === 0) {
-        return '';
+NPlayer.prototype.getActive = function(req, res) {
+    if(this.players.length == 0) {
+        res.send('');
     } else {
-        return this.players[this.active].role;
+        res.send(this.players[this.active].role);
     }
 };
 
 // get the previous role
-NPlayer.prototype.getPrevious = function() {
+NPlayer.prototype.getPrevious = function(req, res) {
     if(this.previous == null || this.players.length == 0) {
-        return '';
+        res.send('');
     } else {
-        return this.players[this.previous].role;
+        res.send(this.players[this.previous].role);
     }
 };
 
 // get the next role
-NPlayer.prototype.getNext = function() {
+NPlayer.prototype.getNext = function(req, res) {
     if(this.players.length == 0) {
-        return '';
+        res.send('');
     } else {
-        var index = (this.active + 1) % this.players.length;
-        return this.players[index].role;
+        res.send(this.players[(this.active + 1) % R.length(this.players)].role);
     }
 };
 
 
 // signal end of turn
-NPlayer.prototype.endTurn = function(next) {
+NPlayer.prototype.endTurn = function(req, res) {
 
-    if(this.active === null || this.socket.roleId != this.players[this.active].role ) {
+    if(this.active === null || req.netsbloxSocket.roleId != this.players[this.active].role ) {
         // bail out if there's no game yet, or if it's somebody else's turn
-        return false;
+        res.status(200).send(false);
     } else {
 
-        info(`Player #${this.active} (${this.players[this.active].role}) called endTurn`);
+        info('Player #' +this.active+' ('+ this.players[this.active].role +') called endTurn');
 
         var nextIndex;
-        if(next == '') {
+        if(req.query.next == '') {
             nextIndex = (this.active + 1) % this.players.length;
         } else {
-            nextIndex = R.findIndex(R.propEq('role', next), this.players);
-            if(nextIndex === -1) {
-                info('Role ' +next+ ' is not part of the game');
-                return false;
+            nextIndex = R.findIndex(R.propEq('role', req.query.next))(this.players);
+            if(nextIndex == -1) {
+                info('Role ' +req.query.next+ ' is not part of the game');              
+                res.status(200).send(false);        
+                return;
             }                       
         }
 
@@ -123,7 +141,7 @@ NPlayer.prototype.endTurn = function(next) {
             content: {
             }
         });
-        return true;
+        res.status(200).send(true);
     }
 };
 
