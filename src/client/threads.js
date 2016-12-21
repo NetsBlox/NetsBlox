@@ -1,5 +1,5 @@
 /* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
-   Message, List */
+   List */
 ThreadManager.prototype.startProcess = function (
     block,
     isThreadSafe,
