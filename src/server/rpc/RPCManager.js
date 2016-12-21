@@ -172,7 +172,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         oldFieldNameFor = compatDict[action] || {};
         args = supportedActions[action].map(argName => {
             var oldName = oldFieldNameFor[argName];
-            return req.query[argName] || req.query[oldName];
+            return req.query[argName] !== undefined ? req.query[argName] : req.query[oldName];
         });
         result = rpc[action].apply(rpc, args);
 
