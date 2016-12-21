@@ -2,7 +2,7 @@
 
 'use strict';
 
-var mdb = require('moviedb')('a9782eaca0e879266fb880b7dcb4cef4'),
+var mdb = require('moviedb')(process.env['TMDB_API_KEY']),
     debug = require('debug'),
     request = require('request'),    
     CacheManager = require('cache-manager'),   
@@ -318,7 +318,7 @@ MovieDB.prototype.getImage = function(path) {
         rsp.status(400).send('Error: path not specified');        
     } else {
         url = baseUrl+path;
-        
+
         info(`Getting image from URL ${url}`);
 
         // Check the cache
