@@ -20,9 +20,7 @@ function MessageOutputSlotMorph() {
 }
 
 MessageOutputSlotMorph.prototype.evaluate = function() {
-    return this.fieldContent.map(function(c) {
-        return c.evaluate();
-    });
+    return this.fields;
 };
 
 MessageOutputSlotMorph.prototype.updateField = function(field) {

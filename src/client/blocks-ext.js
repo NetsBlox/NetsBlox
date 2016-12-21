@@ -33,9 +33,7 @@ StructInputSlotMorph.prototype.evaluate = function() {
     var myself = this;
     return [
         StructInputSlotMorph.uber.evaluate.call(myself),
-        myself.fields.map(function(name, index) {
-            return [name, myself.fieldContent[index].evaluate() || ''];
-        })
+        myself.fields
     ];
 };
 
