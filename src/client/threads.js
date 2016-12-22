@@ -146,7 +146,8 @@ NetsProcess.prototype.createRPCUrl = function (rpc, params) {
 
 NetsProcess.prototype.callRPC = function (rpc, params, noCache) {
     var url = this.createRPCUrl(rpc, params),
-        response;
+        response,
+        image;
 
     if (noCache) {
         url += '&t=' + Date.now();
@@ -157,9 +158,56 @@ NetsProcess.prototype.callRPC = function (rpc, params, noCache) {
         this.rpcRequest.open('GET', url, true);
         this.rpcRequest.send(null);
     } else if (this.rpcRequest.readyState === 4) {
-        response = this.rpcRequest.responseText;
-        this.rpcRequest = null;
-        return response;
+        if (this.rpcRequest.getResponseHeader('content-type').indexOf('image') === 0) {
+            image = this.getCostumeFromRPC(rpc, params);
+            if (image) {
+                this.rpcRequest = null;
+            }
+            return image;
+        } else {
+            response = this.rpcRequest.responseText;
+            this.rpcRequest = null;
+            return response;
+        }
+    }
+    this.pushContext('doYield');
+    this.pushContext();
+};
+
+NetsProcess.prototype.getCostumeFromRPC = function (rpc, action, params) {
+    var image,
+        stage = this.homeContext.receiver.parentThatIsA(StageMorph),
+        paramItems;
+
+    if (arguments.length === 2) {
+        params = action;
+    } else {
+        rpc = ['', rpc, action].join('/');
+        paramItems = params.length ? params.split('&') : [];
+
+        // Add the width and height of the stage as default params
+        if (params.indexOf('width') === -1) {
+            paramItems.push('width=' + stage.width());
+        }
+
+        if (params.indexOf('height') === -1) {
+            paramItems.push('height=' + stage.height());
+        }
+
+        params = paramItems.join('&');
+    }
+
+    // Create the costume (analogous to reportURL)
+    if (!this.requestedImage) {
+        // Create new request
+        this.requestedImage = new Image();
+        this.requestedImage.crossOrigin = 'Anonymous';
+        this.requestedImage.src = this.createRPCUrl(rpc, params);
+    } else if (this.requestedImage.complete && this.requestedImage.naturalWidth) {
+        // Clear request
+        image = this.requestedImage;
+        this.requestedImage = null;
+        return new Costume(image, rpc);
     }
     this.pushContext('doYield');
     this.pushContext();
@@ -200,39 +248,6 @@ NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
 
 NetsProcess.prototype.getJSFromRPCDropdown = function (rpc, action, params) {
     return this.getJSFromRPC(['', rpc, action].join('/'), params);
-};
-
-NetsProcess.prototype.getCostumeFromRPC = function (rpc, action, params) {
-    var image,
-        stage = this.homeContext.receiver.parentThatIsA(StageMorph),
-        paramItems = params.length ? params.split('&') : [];
-        
-    rpc = ['', rpc, action].join('/');
-    // Add the width and height of the stage as default params
-    if (params.indexOf('width') === -1) {
-        paramItems.push('width=' + stage.width());
-    }
-
-    if (params.indexOf('height') === -1) {
-        paramItems.push('height=' + stage.height());
-    }
-
-    params = paramItems.join('&');
-
-    // Create the costume (analogous to reportURL)
-    if (!this.requestedImage) {
-        // Create new request
-        this.requestedImage = new Image();
-        this.requestedImage.crossOrigin = 'Anonymous';
-        this.requestedImage.src = this.createRPCUrl(rpc, params);
-    } else if (this.requestedImage.complete && this.requestedImage.naturalWidth) {
-        // Clear request
-        image = this.requestedImage;
-        this.requestedImage = null;
-        return new Costume(image, rpc);
-    }
-    this.pushContext('doYield');
-    this.pushContext();
 };
 
 // Process Geo
