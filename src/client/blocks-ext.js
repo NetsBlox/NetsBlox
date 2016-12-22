@@ -265,7 +265,7 @@ SyntaxElementMorph.prototype.revertToDefaultInput = function (arg, noValues) {
             return offset + struct.fields.length;
         }, 0);
 
-    idx -= specOffset;
+    idx = idx !== -1 ? idx - specOffset : idx;
     // Netsblox addition: end
     if (idx !== -1) {
         if (this instanceof BlockMorph) {
