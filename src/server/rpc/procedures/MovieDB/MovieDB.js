@@ -164,6 +164,7 @@ MovieDB.prototype.movieCastPersonIDs = function(id) { return this.movieCredits(i
 MovieDB.prototype.movieCastProfilePaths = function(id) { return this.movieCredits(id, 'cast', 'profile_path'); };
 MovieDB.prototype.movieCrewNames = function(id) { return this.movieCredits(id, 'crew', 'name'); };
 MovieDB.prototype.movieCrewJobs = function(id) { return this.movieCredits(id, 'crew', 'job'); };
+MovieDB.prototype.movieCrewPersonIDs = function(id) { return this.movieCredits(id, 'crew', 'id'); };
 MovieDB.prototype.movieCrewProfilePaths = function(id) { return this.movieCredits(id, 'crew', 'profile_path'); };
 
 MovieDB.prototype.movieCredits = function(id, field, subfield) {
