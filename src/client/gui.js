@@ -230,6 +230,7 @@ ProjectDialogMorph.prototype.setSource = function (source) {
             if (myself.nameField) {
                 myself.nameField.setContents(item.name || '');
             }
+            // TODO: Update to xml...?
             src = JSON.parse(myself.ide.getURL(
                 'api/Examples/' + item.name + '?socketId=' + myself.ide.sockets.uuid +
                 '&preview=true'
@@ -269,17 +270,18 @@ ProjectDialogMorph.prototype.openProject = function () {
         response;
 
     if (this.source === 'examples') {
-        response = JSON.parse(this.ide.getURL('api/Examples/' + proj.name +
+        response = SnapCloud.parseDict(this.ide.getURL('api/Examples/' + proj.name +
             '?socketId=' + this.ide.sockets.uuid));
+
         this.ide.room.nextRoom = {
-            ownerId: response.ownerId,
-            roomName: response.roomName,
-            roleId: response.role
+            ownerId: response.OwnerId,
+            roomName: response.RoomName,
+            roleId: response.ProjectName
         };
 
         // role name
-        if (response.src.SourceCode) {
-            this.ide.openProjectString(response.src.SourceCode);
+        if (response.SourceCode) {
+            this.ide.openProjectString(response.SourceCode);
         } else {
             this.ide.clearProject();
         }

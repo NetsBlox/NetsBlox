@@ -292,30 +292,9 @@ module.exports = [
                     setTimeout(this.checkRoom.bind(this, room), 10000);
                 }
 
-                // Get an open role or create a new one
-                role = Object.keys(room.roles)
-                    .filter(role => !room.roles[role])  // not occupied
-                    .shift();
+                // Add the user to the given room
+                return Utils.joinActiveProject(uuid, room, res);
 
-                if (!role) {  // If no open role, create a new one
-                    let i = 2,
-                        base;
-
-                    role = base = 'new role';
-                    while (room.hasOwnProperty(role)) {
-                        role = `${base} (${i++})`;
-                    }
-
-                    room.createRole(role);
-                    room.cachedProjects[role] = {
-                        ProjectName: role,
-                        SourceCode: null,
-                        SourceSize: 0
-                    };
-                }
-
-                log(`adding ${socket.username} to role "${role}" at ` +
-                    `"${name}"`);
             } else {
                 room = example;
                 room.owner = socket;
