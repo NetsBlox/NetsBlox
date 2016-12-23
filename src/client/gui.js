@@ -230,11 +230,10 @@ ProjectDialogMorph.prototype.setSource = function (source) {
             if (myself.nameField) {
                 myself.nameField.setContents(item.name || '');
             }
-            // TODO: Update to xml...?
-            src = JSON.parse(myself.ide.getURL(
+            src = myself.ide.getURL(
                 'api/Examples/' + item.name + '?socketId=' + myself.ide.sockets.uuid +
                 '&preview=true'
-            )).src.SourceCode;
+            );
 
             xml = myself.ide.serializer.parse(src);
             myself.notesText.text = xml.childNamed('notes').contents

@@ -303,14 +303,7 @@ module.exports = [
                 role = Object.keys(room.roles).shift();
             }
 
-            result = {
-                src: room.cachedProjects[role],
-                roomName: room.RoomName,
-                ownerId: room.owner.username,
-                role: role
-            };
-
-            return res.json(result);
+            return res.send(room.cachedProjects[role].SourceCode);
         }
     }
 ].concat(resourcePaths);
