@@ -18,6 +18,7 @@ var WebSocketManager = function (ide) {
     this.errored = false;
     this.hasConnected = false;
     this.connected = false;
+    this.serializer = new SnapSerializer();
 };
 
 WebSocketManager.HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
@@ -37,7 +38,7 @@ WebSocketManager.MessageHandlers = {
 
         // filter for gameplay
         if (dstId === this.ide.projectName || dstId === 'others in room' || dstId === 'everyone in room') {
-            content = this.deserializeMessage(content);
+            content = this.deserializeMessage(msg);
             this.onMessageReceived(messageType, content, 'role');
         }
     },
@@ -229,30 +230,87 @@ WebSocketManager.prototype.sendMessage = function(message) {
 
 WebSocketManager.prototype.serializeMessage = function(message) {
     if (message.content) {
-        var fields = Object.keys(message.content),
+        var myself = this,
+            fields = Object.keys(message.content),
+            definitions = [],
             content;
 
+        // TODO: Include any block definitions that we are depending on
+        // I can't just resolve the block definitions since this will break w/
+        // recursion
+        // Use SnapActions.addCustomBlock? This could be really bad...
         for (var i = fields.length; i--;) {
             content = message.content[fields[i]];
             if (isObject(content)) {
-                message.content[fields[i]] = this.ide.serializer.serialize(content);
+                if (content instanceof Context) {
+                    definitions = definitions.concat(this.getRequiredDefinitions(content.expression));
+                }
+                message.content[fields[i]] = this.serializer.serialize(content);
             }
         }
+
+        // Attach the necessary definitions
+        message.definitions = definitions.map(function(definition) {
+            return myself.serializer.serialize(definition);
+        }).reverse();
     }
 
     return JSON.stringify(message);
 };
 
-WebSocketManager.prototype.deserializeMessage = function(content) {
-    var fields = Object.keys(content),
-        ser = this.ide.serializer,
+WebSocketManager.prototype.getRequiredDefinitions = function(block) {
+    var myself = this,
+        allDefinitions;
+
+    if (!(block instanceof BlockMorph)) {
+        return [];
+    }
+
+    allDefinitions = block.inputs().map(function(input) {
+        return myself.getRequiredDefinitions(input);
+    }).reduce(function(l1, l2) {
+        return l1.concat(l2);
+    }, []);
+
+    if (block.definition) {
+        allDefinitions.push(block.definition);
+        allDefinitions = allDefinitions.concat(
+            this.getRequiredDefinitions(block.definition.body.expression));
+    }
+
+    if (block.nextBlock && block.nextBlock()) {
+        allDefinitions = allDefinitions.concat(this.getRequiredDefinitions(block.nextBlock()));
+    }
+
+    return allDefinitions;
+};
+
+WebSocketManager.prototype.deserializeMessage = function(message) {
+    var myself = this,
+        content = message.content,
+        fields = Object.keys(content),
+        definitions = message.definitions,
         value;
+
+    // Load any provided block definitions first
+    if (definitions) {
+        definitions = definitions.map(function(definition) {
+            return myself.serializer.loadCustomBlock(
+                myself.serializer.parse(definition),
+                true
+            );
+        });
+        this.serializer.init();
+        this.serializer.project.stage = {
+            globalBlocks: definitions
+        };
+    }
 
     for (var i = fields.length; i--;) {
         value = content[fields[i]];
         if (value[0] === '<') {
             try {
-                content[fields[i]] = ser.loadValue(ser.parse(value));
+                content[fields[i]] = this.serializer.loadValue(this.serializer.parse(value));
             } catch(e) {}  // must not have been XML
         }
     }
