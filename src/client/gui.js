@@ -280,7 +280,7 @@ ProjectDialogMorph.prototype.openProject = function () {
 
         // role name
         if (response.SourceCode) {
-            this.ide.openProjectString(response.SourceCode);
+            this.ide.droppedText(response.SourceCode);
         } else {
             this.ide.clearProject();
         }
