@@ -1,5 +1,5 @@
 /*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions,
-  DialogBoxMorph, IDE_Morph, ProjectsMorph*/
+  DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
@@ -37,9 +37,9 @@ WebSocketManager.MessageHandlers = {
 
         // filter for gameplay
         if (dstId === this.ide.projectName || dstId === 'others in room' || dstId === 'everyone in room') {
+            content = this.deserializeMessage(content);
             this.onMessageReceived(messageType, content, 'role');
         }
-        // TODO: pass to debugger
     },
 
     'export-room': function(msg) {
@@ -219,12 +219,44 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
 WebSocketManager.prototype.sendMessage = function(message) {
     var state = this.websocket.readyState;
-    message = JSON.stringify(message);
+    message = this.serializeMessage(message);
     if (state === this.websocket.OPEN) {
         this.websocket.send(message);
     } else {
         this.messages.push(message);
     }
+};
+
+WebSocketManager.prototype.serializeMessage = function(message) {
+    if (message.content) {
+        var fields = Object.keys(message.content),
+            content;
+
+        for (var i = fields.length; i--;) {
+            content = message.content[fields[i]];
+            if (isObject(content)) {
+                message.content[fields[i]] = this.ide.serializer.serialize(content);
+            }
+        }
+    }
+
+    return JSON.stringify(message);
+};
+
+WebSocketManager.prototype.deserializeMessage = function(content) {
+    var fields = Object.keys(content),
+        ser = this.ide.serializer,
+        value;
+
+    for (var i = fields.length; i--;) {
+        value = content[fields[i]];
+        if (value[0] === '<') {
+            try {
+                content[fields[i]] = ser.loadValue(ser.parse(value));
+            } catch(e) {}  // must not have been XML
+        }
+    }
+    return content;
 };
 
 WebSocketManager.prototype.setGameType = function(gameType) {
