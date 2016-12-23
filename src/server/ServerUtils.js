@@ -72,8 +72,7 @@ var joinActiveProject = function(userId, room, res) {
             trace(`creating new role "${openRole}" at "${room.name}" ` +
                 `for ${userId}`);
         } else {
-            // TODO: This is bad. User could be losing data!
-            error(`Found open role "${openRole}" but it is not cached!`);
+            error(`Found open role "${openRole}" but it is not cached! May have lost data!!!`);
         }
 
         info(`adding ${userId} to new role "${openRole}" at ` +
