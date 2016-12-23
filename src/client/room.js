@@ -2,7 +2,7 @@
  Color, nop, InputFieldMorph, ListMorph, AlignmentMorph, IDE_Morph, TurtleIconMorph,
  TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph, ReporterBlockMorph 
  MessageOutputSlotMorph, MessageInputSlotMorph, SymbolMorph, PushButtonMorph, MenuMorph,
- SpeechBubbleMorph*/
+ SpeechBubbleMorph, ProjectDialogMorph, HandleMorph*/
 /* * * * * * * * * RoomMorph * * * * * * * * */
 RoomMorph.prototype = new Morph();
 RoomMorph.prototype.constructor = RoomMorph;
@@ -471,65 +471,14 @@ RoomMorph.prototype.promptShare = function(name) {
 };
 
 RoomMorph.prototype._inviteFriendDialog = function (role, friends) {
-    // Create a list of clients to invite (retrieve from server - ajax)
-    // Allow the user to select the person and role
-    var dialog = new DialogBoxMorph().withKey('inviteFriend'),
-        frame = new AlignmentMorph('column', 7),
-        listField,
-        ok = dialog.ok,
-        myself = this,
-        size = 200,
-        minHeight = 50,
-        maxHeight = 250,
-        heightEstimate = friends.length*15,
-        world = this.world();
-
-    frame.padding = 6;
-    frame.setWidth(size);
-    frame.acceptsDrops = false;
-
-    listField = new ListMorph(friends);
-    listField.fixLayout = nop;
-    listField.edge = InputFieldMorph.prototype.edge;
-    listField.fontSize = InputFieldMorph.prototype.fontSize;
-    listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
-    listField.contrast = InputFieldMorph.prototype.contrast;
-    listField.drawNew = InputFieldMorph.prototype.drawNew;
-    listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
-    listField.setWidth(size-2*frame.padding);
-    listField.setHeight(Math.max(Math.min(maxHeight, heightEstimate), minHeight));
-
-    frame.add(listField);
-
-    frame.edge = InputFieldMorph.prototype.edge;
-    frame.fontSize = InputFieldMorph.prototype.fontSize;
-    frame.typeInPadding = InputFieldMorph.prototype.typeInPadding;
-    frame.contrast = InputFieldMorph.prototype.contrast;
-    frame.drawNew = InputFieldMorph.prototype.drawNew;
-    frame.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
-
-    dialog.ok = function () {
-        var friend = listField.selected;
-        if (friend) {
-            // For now, I might just make a new role on the server
-            myself._inviteFriend(friend, role);
+    new UserDialogMorph(this, function(user) {
+        if (user) {
+            this.inviteFriend(user, role);
         }
-        ok.call(this);
-    };
-
-    dialog.labelString = 'Invite a Friend to the Room';
-    dialog.createLabel();
-    dialog.addBody(frame);
-    frame.drawNew();
-    dialog.addButton('ok', 'OK');
-    dialog.addButton('cancel', 'Cancel');
-    dialog.fixLayout();
-    dialog.drawNew();
-    dialog.popUp(world);
-    dialog.setCenter(world.center());
+    }, friends).popUp();
 };
 
-RoomMorph.prototype._inviteFriend = function (friend, role) {
+RoomMorph.prototype.inviteFriend = function (friend, role) {
     // Use inviteToRoom service
     var socketId = this.ide.sockets.uuid;
     if (friend === 'myself') {
@@ -1068,4 +1017,93 @@ ProjectsMorph.prototype._addButton = function(params) {
 
     this.addContents(newButton);
     return newButton;
+};
+
+// UserDialogMorph ////////////////////////////////////////////////////
+
+// UserDialogMorph inherits from DialogBoxMorph:
+
+UserDialogMorph.prototype = new DialogBoxMorph();
+UserDialogMorph.prototype.constructor = UserDialogMorph;
+UserDialogMorph.uber = DialogBoxMorph.prototype;
+
+// UserDialogMorph instance creation:
+
+function UserDialogMorph(target, action, users) {
+    this.init(target, action, users);
+}
+
+UserDialogMorph.prototype.init = function(target, action, users) {
+    this.key = 'inviteFriend';
+    this.userList = users;
+    UserDialogMorph.uber.init.call(
+        this,
+        target, // target
+        action, // function
+        null // environment
+    );
+    this.buildContents();
+};
+
+UserDialogMorph.prototype.buildContents = function() {
+    // Create a list of clients to invite (retrieve from server - ajax)
+    // Allow the user to select the person and role
+    var frame = new AlignmentMorph('column', 7),
+        listField,
+        //myself = this,
+        size = 200,
+        minHeight = 50,
+        maxHeight = 250,
+        heightEstimate = this.userList.length*15;
+
+    frame.padding = 6;
+    frame.setWidth(size);
+    frame.acceptsDrops = false;
+
+    listField = new ListMorph(this.userList);
+    listField.fixLayout = nop;
+    listField.edge = InputFieldMorph.prototype.edge;
+    listField.fontSize = InputFieldMorph.prototype.fontSize;
+    listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    listField.contrast = InputFieldMorph.prototype.contrast;
+    listField.drawNew = InputFieldMorph.prototype.drawNew;
+    listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+    listField.setWidth(size-2*frame.padding);
+    listField.setHeight(Math.max(Math.min(maxHeight, heightEstimate), minHeight));
+
+    frame.add(listField);
+
+    frame.edge = InputFieldMorph.prototype.edge;
+    frame.fontSize = InputFieldMorph.prototype.fontSize;
+    frame.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    frame.contrast = InputFieldMorph.prototype.contrast;
+    frame.drawNew = InputFieldMorph.prototype.drawNew;
+    frame.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+
+    this.getInput = function() {
+        return listField.selected;
+    };
+
+    this.labelString = 'Invite a Friend to the Room';
+    this.createLabel();
+    this.addBody(frame);
+    frame.drawNew();
+    this.addButton('ok', 'OK');
+    this.addButton('cancel', 'Cancel');
+    this.fixLayout();
+    this.drawNew();
+};
+
+UserDialogMorph.prototype.popUp = function(wrrld) {
+    var world = wrrld || this.target.world();
+    if (world) {
+        ProjectDialogMorph.uber.popUp.call(this, world);
+        this.handle = new HandleMorph(
+            this,
+            200,
+            100,
+            this.corner,
+            this.corner
+        );
+    }
 };
