@@ -1189,5 +1189,6 @@ UserDialogMorph.prototype.popUp = function(wrrld) {
             this.corner,
             this.corner
         );
+        this.filterField.edit();
     }
 };
