@@ -278,8 +278,7 @@ module.exports = [
             example = _.cloneDeep(EXAMPLES[name]);
             socket = this.sockets[uuid];
             var role,
-                room,
-                result;
+                room;
 
             if (!isPreview) {
                 // Check if the room already exists
