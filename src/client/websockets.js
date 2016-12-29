@@ -236,13 +236,12 @@ WebSocketManager.prototype.serializeMessage = function(message) {
             content;
 
         // TODO: Include any block definitions that we are depending on
-        // I can't just resolve the block definitions since this will break w/
-        // recursion
-        // Use SnapActions.addCustomBlock? This could be really bad...
         for (var i = fields.length; i--;) {
             content = message.content[fields[i]];
             if (isObject(content)) {
                 if (content instanceof Context) {
+                    content.receiver = null;
+                    content.outerContext = null;
                     definitions = definitions.concat(this.getRequiredDefinitions(content.expression));
                 }
                 message.content[fields[i]] = this.serializer.serialize(content);
