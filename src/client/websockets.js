@@ -1,5 +1,6 @@
 /*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions,
-  DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject, NetsBloxSerializer*/
+  DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject, NetsBloxSerializer,
+  BlockMorph*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
