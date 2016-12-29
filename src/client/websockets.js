@@ -301,9 +301,9 @@ WebSocketManager.prototype.deserializeMessage = function(message) {
             );
         });
         this.serializer.init();
-        this.serializer.project.stage = {
-            globalBlocks: definitions
-        };
+        this.serializer.project.stage = new StageMorph();
+        this.serializer.project.sprites = {};
+        this.serializer.project.stage.globalBlocks = definitions;
     }
 
     for (var i = fields.length; i--;) {
@@ -311,7 +311,9 @@ WebSocketManager.prototype.deserializeMessage = function(message) {
         if (value[0] === '<') {
             try {
                 content[fields[i]] = this.serializer.loadValue(this.serializer.parse(value));
-            } catch(e) {}  // must not have been XML
+            } catch(e) {  // must not have been XML
+                console.error('Could not deserialize!', e);
+            }
         }
     }
     return content;
