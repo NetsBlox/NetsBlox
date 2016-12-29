@@ -1,5 +1,5 @@
 /*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions,
-  DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject*/
+  DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject, NetsBloxSerializer*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
@@ -18,7 +18,7 @@ var WebSocketManager = function (ide) {
     this.errored = false;
     this.hasConnected = false;
     this.connected = false;
-    this.serializer = new SnapSerializer();
+    this.serializer = new NetsBloxSerializer();
 };
 
 WebSocketManager.HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
@@ -235,7 +235,6 @@ WebSocketManager.prototype.serializeMessage = function(message) {
             definitions = [],
             content;
 
-        // TODO: Include any block definitions that we are depending on
         for (var i = fields.length; i--;) {
             content = message.content[fields[i]];
             if (isObject(content)) {
