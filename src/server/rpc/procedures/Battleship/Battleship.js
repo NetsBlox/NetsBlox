@@ -32,7 +32,7 @@ Battleship.prototype.reset = function() {
     return true;
 };
 
-Battleship.prototype.start = function(req, res) {
+Battleship.prototype.start = function() {
     // Check that all boards are ready
     var roles = Object.keys(this._boards),
         sockets = this.socket._room.sockets(),
@@ -40,18 +40,18 @@ Battleship.prototype.start = function(req, res) {
         board;
 
     if (this._STATE !== BattleshipConstants.PLACING) {
-        return res.send(`Game has already started!`);
+        return `Game has already started!`;
     }
 
     if (!roles.length) {
-        return res.send(`Waiting on everyone! Place some ships!`);
+        return `Waiting on everyone! Place some ships!`;
     }
 
     for (var i = roles.length; i--;) {
         board = this._boards[roles[i]];
         shipsLeft = board.shipsLeftToPlace();
         if (shipsLeft !== 0) {
-            return res.send(`${roles[i]} still needs to place ${shipsLeft} ships`);
+            return `${roles[i]} still needs to place ${shipsLeft} ships`;
         }
     }
 
@@ -63,7 +63,7 @@ Battleship.prototype.start = function(req, res) {
     }));
 
     this._STATE = BattleshipConstants.SHOOTING;
-    res.send(true);
+    return true;
 };
 
 Battleship.prototype.placeShip = function(ship, row, column, facing) {
@@ -103,26 +103,26 @@ Battleship.prototype.placeShip = function(ship, row, column, facing) {
 
     // Place the ship
     var result = this._boards[role].placeShip(ship, row, column, endRow, endCol);
-    return result || `Could not place ship - colliding with another ship!`;
+    return result || 'Could not place ship - colliding with another ship!';
 };
 
-Battleship.prototype.fire = function(req, res) {
-    var row = req.query.row-1,
-        col = req.query.column-1,
-        socket = req.netsbloxSocket,
+Battleship.prototype.fire = function(row, column) {
+    var socket = this.socket,
         role = socket.roleId,
         roles,
-        target = req.query.target;
+        target = null;  // could be used to set the target role
 
+    row = row-1;
+    column = column-1;
     if (this._STATE === BattleshipConstants.PLACING) {
-        res.send(`Cannot fire until game has officially started`);
+        this.response.send('Cannot fire until game has officially started');
         return false;
     }
 
     // If target is not provided, try to get another role with a board.
     // If none exists, just try to get another role in the room
     if (!target) {
-        trace(`trying to infer a target`);
+        trace('trying to infer a target');
         roles = Object.keys(this._boards);
         if (!roles.length) {
             roles = Object.keys(socket._room.roles);
@@ -132,9 +132,9 @@ Battleship.prototype.fire = function(req, res) {
         target = roles.filter(r => r !== role).shift();
     }
 
-    trace(`${role} is firing at ${target} (${row}, ${col})`);
-    if (!checkRowCol(row, col)) {
-        res.status(400).send(`Invalid position (${row}, ${col})`);
+    trace(`${role} is firing at ${target} (${row}, ${column})`);
+    if (!checkRowCol(row, column)) {
+        this.response.status(400).send(`Invalid position (${row}, ${column})`);
         return false;
     }
 
@@ -146,7 +146,7 @@ Battleship.prototype.fire = function(req, res) {
         this._boards[target] = new Board(BOARD_SIZE);
     }
 
-    var result = this._boards[target].fire(row, col),
+    var result = this._boards[target].fire(row, column),
         msg;
 
     if (result) {
@@ -157,7 +157,7 @@ Battleship.prototype.fire = function(req, res) {
             content: {
                 role: target,
                 row: row+1,
-                column: col+1,
+                column: column+1,
                 ship: result.SHIP,
                 sunk: result.SUNK
             }
@@ -166,19 +166,19 @@ Battleship.prototype.fire = function(req, res) {
         socket._room.sockets().forEach(s => s.send(msg));
     }
 
-    res.send(!!result);
+    this.socket.send(!!result);
     return !!result;
 };
 
-Battleship.prototype.remainingShips = function(req, res) {
-    var role = req.query.roleId || req.netsbloxSocket.roleId;
+Battleship.prototype.remainingShips = function(roleId) {
+    var role = roleId || this.socket.roleId;
 
     if (!this._boards[role]) {
         error(`board doesn't exist for "${role}"`);
         this._boards[role] = new Board(BOARD_SIZE);
     }
 
-    return res.send(this._boards[role].remaining());
+    return this.response.send(this._boards[role].remaining());
 };
 
 Battleship.prototype.allShips = function() {

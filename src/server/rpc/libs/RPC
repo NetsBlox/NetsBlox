@@ -1,16 +1,16 @@
-map-helpers.xml	Map utilities
-air-quality.xml	Air quality sensing
-earthquakes.xml	Earthquakes by region
-simple-hangman.xml	One-player hangman
-trivia.xml	Jeopardy Questions
-weather.xml	Weather API
+map-helpers.xml	Map utilities	staticmap
+air-quality.xml	Air quality sensing	air
+earthquakes.xml	Earthquakes by region	earthquakes
+simple-hangman.xml	One-player
+trivia.xml	Jeopardy Questions	trivia
+weather.xml	Weather API	weather
 kvstore.xml	Key-Value Store
 battleship.xml	Battleship
-nasa.xml	NASA
+nasa.xml	NASA	NASA
 twentyquestions.xml	Twenty Questions
-twitter.xml	Twitter
-traffic.xml	Traffic
+twitter.xml	Twitter	Twitter
+traffic.xml	Traffic	traffic
 nplayer.xml	Multiplayer turn helpers
 connectn.xml	ConnectN helpers
 public-roles.xml	Public Roles
-moviedb.xml	Movie database
+moviedb.xml	Movie database	MovieDB

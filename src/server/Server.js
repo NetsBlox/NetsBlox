@@ -46,7 +46,9 @@ var Server = function(opts) {
     this._server = null;
 
     // Group and RPC Managers
-    this.rpcManager = new RPCManager(this._logger, this);
+    this.rpcManager = RPCManager;
+    RPCManager.init(this);
+
     this.mobileManager = new MobileManager(transporter);
 
     BASE_CLASSES.forEach(BASE => BASE.call(this, this._logger));
