@@ -7,7 +7,9 @@
 
 var fs = require('fs'),
     path = require('path'),
+    _ = require('lodash'),
     express = require('express'),
+    Logger = require('../logger'),
     PROCEDURES_DIR = path.join(__dirname,'procedures'),
 
     // RegEx for determining named fn args
@@ -22,15 +24,12 @@ var fs = require('fs'),
  *
  * @constructor
  */
-var RPCManager = function(logger, socketManager) {
-    this._logger = logger.fork('RPCManager');
+var RPCManager = function() {
+    this._logger = new Logger('NetsBlox:RPCManager');
     this.rpcRegistry = {};
     this.rpcs = this.loadRPCs();
     this.router = this.createRouter();
 
-    // In this object, they contain the RPC's owned by
-    // the associated active room.
-    this.socketManager = socketManager;
 };
 
 /**
@@ -43,8 +42,9 @@ RPCManager.prototype.loadRPCs = function() {
     return fs.readdirSync(PROCEDURES_DIR)
         .map(name => path.join(PROCEDURES_DIR, name, name+'.js'))
         .filter(fs.existsSync.bind(fs))
-        .map(fullPath => {
-            var RPCConstructor = require(fullPath);
+        .map(fullPath => require(fullPath))
+        .filter(rpc => !!rpc && !_.isEmpty(rpc))
+        .map(RPCConstructor => {
             if (RPCConstructor.init) {
                 RPCConstructor.init(this._logger);
             }
@@ -54,6 +54,12 @@ RPCManager.prototype.loadRPCs = function() {
 
             return RPCConstructor;
         });
+};
+
+RPCManager.prototype.init = function(socketManager) {
+    // In this object, they contain the RPC's owned by
+    // the associated active room.
+    this.socketManager = socketManager;
 };
 
 RPCManager.prototype.registerRPC = function(rpc) {
@@ -197,4 +203,8 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     }
 };
 
-module.exports = RPCManager;
+RPCManager.prototype.isRPCLoaded = function(rpcPath) {
+    return !!this.rpcRegistry[rpcPath] || this.rpcRegistry['/' + rpcPath];
+};
+
+module.exports = new RPCManager();
