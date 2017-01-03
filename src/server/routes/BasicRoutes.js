@@ -93,6 +93,7 @@ var rpcManager = require('../rpc/RPCManager'),
             // Check if we have loaded the dependent rpcs
             for (var i = deps.length; i--;) {
                 if (!rpcManager.isRPCLoaded(deps[i])) {
+                    // eslint-disable-next-line no-console
                     console.log(`Service ${displayName} not available because ${deps[i]} is not loaded`);
                     return false;
                 }
