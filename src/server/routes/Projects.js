@@ -116,52 +116,6 @@ var createCopyFrom = function(user, project) {
     return copy;
 };
 
-var joinActiveProject = function(user, room, res) {
-    var serialized,
-        openRole,
-        createdNewRole = false,
-        role;
-
-    openRole = Object.keys(room.roles)
-        .filter(role => !room.roles[role])  // not occupied
-        .shift();
-
-    trace(`room "${room.name}" is already active`);
-    if (openRole && room.cachedProjects[openRole]) {  // Send an open role and add the user
-        trace(`adding ${user.username} to open role "${openRole}" at "${room.name}"`);
-        role = room.cachedProjects[openRole];
-    } else {  // If no open role w/ cache -> make a new role
-        let i = 2,
-            base;
-
-        if (!openRole) {
-            openRole = base = 'new role';
-            while (room.hasOwnProperty(openRole)) {
-                openRole = `${base} (${i++})`;
-            }
-            trace(`creating new role "${openRole}" at "${room.name}" ` +
-                `for ${user.username}`);
-        } else {
-            // TODO: This is bad. User could be losing data!
-            error(`Found open role "${openRole}" but it is not cached!`);
-        }
-
-        info(`adding ${user.username} to new role "${openRole}" at ` +
-            `"${room.name}"`);
-
-        room.createRole(openRole);
-        createdNewRole = true;
-        role = {
-            ProjectName: openRole,
-            SourceCode: null,
-            SourceSize: 0
-        };
-        room.cachedProjects[openRole] = role;
-    }
-    serialized = Utils.serializeRole(role, room.name);
-    return res.send(`NewRole=${createdNewRole}&${serialized}`);
-};
-
 module.exports = [
     {
         Service: 'saveProject',
@@ -306,7 +260,7 @@ module.exports = [
             // Get the active project and join it
             if (rooms.active) {
                 // Join the project
-                joinActiveProject(user, rooms.active, res);
+                Utils.joinActiveProject(user.username, rooms.active, res);
             } else if (rooms.stored) {  // else, getProject w/ the stored version
                 sendProjectTo(rooms.stored, res);
             } else {  // if there is no stored version, ERROR!

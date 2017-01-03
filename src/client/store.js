@@ -112,7 +112,6 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
             return block;
         }
         block = SpriteMorph.prototype.blockForSelector(model.attributes.s);
-        block.id = model.attributes.collabId;
     } else if (model.tag === 'custom-block') {
         isGlobal = model.attributes.scope ? false : true;
         receiver = isGlobal ? this.project.stage
