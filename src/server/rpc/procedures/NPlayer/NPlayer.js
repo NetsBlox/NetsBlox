@@ -99,7 +99,7 @@ NPlayer.prototype.endTurn = function(next) {
         info(`Player #${this.active} (${this.players[this.active].role}) called endTurn`);
 
         var nextIndex;
-        if(next == '') {
+        if(next == undefined || next == '') {
             nextIndex = (this.active + 1) % this.players.length;
         } else {
             nextIndex = R.findIndex(R.propEq('role', next), this.players);

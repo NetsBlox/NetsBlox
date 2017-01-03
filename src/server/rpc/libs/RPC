@@ -13,3 +13,4 @@ traffic.xml	Traffic	traffic
 nplayer.xml	Multiplayer turn helpers
 connectn.xml	ConnectN helpers
 public-roles.xml	Public Roles
+moviedb.xml	Movie database
