@@ -1,6 +1,6 @@
 // A turn based base class to add turn based behavior to an RPC
 'use strict';
-var getArgs = require('../../RPCManager').prototype.getArgumentsFor;
+var getArgs = require('../../../ServerUtils').getArgumentsFor;
 
 class TurnBased {
 

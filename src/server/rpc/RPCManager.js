@@ -11,11 +11,7 @@ var fs = require('fs'),
     express = require('express'),
     Logger = require('../logger'),
     PROCEDURES_DIR = path.join(__dirname,'procedures'),
-
-    // RegEx for determining named fn args
-    FN_ARGS = /^(function)?\s*[^\(]*\(\s*([^\)]*)\)/m,
-    FN_ARG_SPLIT = /,/,
-    STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg,
+    utils = require('../ServerUtils'),
 
     RESERVED_FN_NAMES = require('../../common/Constants').RPC.RESERVED_FN_NAMES;
 
@@ -77,23 +73,8 @@ RPCManager.prototype.registerRPC = function(rpc) {
         .filter(name => !RESERVED_FN_NAMES.includes(name));
 
     for (var i = fnNames.length; i--;) {
-        this.rpcRegistry[rpcName][fnNames[i]] = this.getArgumentsFor(fnObj[fnNames[i]]);
+        this.rpcRegistry[rpcName][fnNames[i]] = utils.getArgumentsFor(fnObj[fnNames[i]]);
     }
-};
-
-RPCManager.prototype.getArgumentsFor = function(fn) {
-    var fnText,
-        args;
-
-    if (fn.args) {
-        return fn.args;
-    }
-
-    fnText = fn.toString().replace(STRIP_COMMENTS, '');
-    args = fnText.match(FN_ARGS)[2].split(FN_ARG_SPLIT);
-    return args
-        .map(arg => arg.replace(/\s+/g, ''))
-        .filter(arg => !!arg);
 };
 
 RPCManager.prototype.createRouter = function() {
