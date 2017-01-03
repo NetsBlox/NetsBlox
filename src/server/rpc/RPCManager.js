@@ -197,4 +197,8 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     }
 };
 
-module.exports = RPCManager;
+RPCManager.prototype.isRPCLoaded = function(rpcPath) {
+    return !!this.rpcRegistry[rpcPath] || this.rpcRegistry['/' + rpcPath];
+};
+
+module.exports = new RPCManager();
