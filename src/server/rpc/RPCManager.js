@@ -43,8 +43,9 @@ RPCManager.prototype.loadRPCs = function() {
     return fs.readdirSync(PROCEDURES_DIR)
         .map(name => path.join(PROCEDURES_DIR, name, name+'.js'))
         .filter(fs.existsSync.bind(fs))
-        .map(fullPath => {
-            var RPCConstructor = require(fullPath);
+        .map(fullPath => require(fullPath))
+        .filter(rpc => !!rpc)
+        .map(RPCConstructor => {
             if (RPCConstructor.init) {
                 RPCConstructor.init(this._logger);
             }
