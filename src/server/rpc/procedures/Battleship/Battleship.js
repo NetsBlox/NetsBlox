@@ -110,7 +110,7 @@ Battleship.prototype.fire = function(row, column) {
     var socket = this.socket,
         role = socket.roleId,
         roles,
-        target = req.query.target;
+        target = null;  // could be used to set the target role
 
     row = row-1;
     column = column-1;
