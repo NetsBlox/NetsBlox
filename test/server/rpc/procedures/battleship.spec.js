@@ -1,12 +1,23 @@
 describe('Battleship Tests', function() {
     var Battleship = require('../../../../src/server/rpc/procedures/Battleship/Battleship.js'),
         RPCMock = require('../../../assets/MockRPC'),
-        battleship,
+        battleship = new RPCMock(Battleship),
+        utils = require('../../../assets/utils'),
         assert = require('assert');
 
     before(function() {
         battleship = new RPCMock(Battleship);
     });
+
+    utils.verifyRPCInterfaces(battleship, [
+        ['start'],
+        ['reset'],
+        ['allShips'],
+        ['shipLength', ['ship']],
+        ['placeShip', ['ship', 'row', 'column', 'facing']],
+        ['fire', ['row', 'column']],
+        ['remainingShips', ['roleId']]
+    ]);
 
     describe('basic commands', function() {
         it('should be able to call reset', function() {
