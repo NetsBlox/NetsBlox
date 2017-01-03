@@ -251,7 +251,6 @@ if(!process.env.TMDB_API_KEY) {
             return null;
         },
 
-        movieTitle: function(id) { return movieInfo.call(this, id, 'title'); },
         movieBackdropPath: function(id) { return movieInfo.call(this, id, 'backdrop_path'); },
         movieBudget: function(id) { return movieInfo.call(this, id, 'budget'); },
         movieGenres: function(id) { return movieInfo.call(this, id, 'genres'); },
