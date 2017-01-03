@@ -76,9 +76,15 @@ RPCManager.prototype.registerRPC = function(rpc) {
 };
 
 RPCManager.prototype.getArgumentsFor = function(fn) {
-    var fnText = fn.toString().replace(STRIP_COMMENTS, ''),
-        args = fnText.match(FN_ARGS)[2].split(FN_ARG_SPLIT);
+    var fnText,
+        args;
 
+    if (fn.args) {
+        return fn.args;
+    }
+
+    fnText = fn.toString().replace(STRIP_COMMENTS, '');
+    args = fnText.match(FN_ARGS)[2].split(FN_ARG_SPLIT);
     return args
         .map(arg => arg.replace(/\s+/g, ''))
         .filter(arg => !!arg);
