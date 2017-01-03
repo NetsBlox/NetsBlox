@@ -3,7 +3,7 @@
 'use strict';
 
 if(!process.env.TMDB_API_KEY) {
-    console.log("Warning: environment variable TMDB_API_KEY not defined, MovieDB RPC will not work.");
+    console.log('Warning: environment variable TMDB_API_KEY not defined, MovieDB RPC will not work.');
 } else {
 
     var mdb = require('moviedb')(process.env['TMDB_API_KEY']),
