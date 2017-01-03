@@ -91,12 +91,34 @@ var joinActiveProject = function(userId, room, res) {
     return res.send(`OwnerId=${room.owner.username}&NewRole=${createdNewRole}&${serialized}`);
 };
 
+// Function helpers
+var FN_ARGS = /^(function)?\s*[^\(]*\(\s*([^\)]*)\)/m,
+    FN_ARG_SPLIT = /,/,
+    STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+
+var getArgumentsFor = function(fn) {
+    var fnText,
+        args;
+
+    if (fn.args) {
+        return fn.args;
+    }
+
+    fnText = fn.toString().replace(STRIP_COMMENTS, '');
+    args = fnText.match(FN_ARGS)[2].split(FN_ARG_SPLIT);
+    return args
+        .map(arg => arg.replace(/\s+/g, ''))
+        .filter(arg => !!arg);
+};
+
 module.exports = {
     serialize: serialize,
     loadJsFiles: loadJsFiles,
     serializeArray: serializeArray,
     serializeRole: serializeRole,
     joinActiveProject: joinActiveProject,
-    uuid: uuid
+    uuid: uuid,
+
+    getArgumentsFor: getArgumentsFor
 
 };
