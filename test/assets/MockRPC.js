@@ -3,7 +3,7 @@
 
 // RPCs now contain the methods 
 var Constants = require('../../src/common/Constants'),
-    getArgsFor = require('../../src/server/rpc/RPCManager').prototype.getArgumentsFor,
+    getArgsFor = require('../../src/server/rpc/RPCManager').getArgumentsFor,
     _ = require('lodash');
 
 var MockRPC = function(RPC) {
