@@ -1,4 +1,5 @@
-/* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer */
+/* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer,
+   HintInputSlotMorph */
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
@@ -36,5 +37,21 @@ UndoManager.Invert.deleteMessageType = function() {
 };
 
 SnapActions.supportsCollaboration = false;
+
+// HintInputSlotMorph support
+ActionManager.prototype._setField = function(field, value) {
+    var fieldId = this.getId(field),
+        oldValue = field.contents().text;
+
+    if (field instanceof HintInputSlotMorph && field.empty) {
+        oldValue = '';
+    }
+
+    return [
+        fieldId,
+        value,
+        oldValue
+    ];
+};
 
 SnapActions.serializer = new NetsBloxSerializer();
