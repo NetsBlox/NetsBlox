@@ -914,29 +914,37 @@ NetsBloxMorph.prototype.save = function () {
 
 NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     var myself = this,
-        overwriteExisting = function() {
+        overwriteExisting = function(overwrite) {
             if (name) {
                 myself.showMessage('Saving project\nto the cloud...');
                 myself.setProjectName(name);
                 SnapCloud.saveProject(
                     myself,
-                    function () {myself.showMessage('saved.', 2); },
+                    function () {
+                        if (overwrite) {
+                            myself.showMessage('saved.', 2);
+                        } else {
+                            myself.showMessage('saved as ' + myself.room.name, 2);
+                        }
+                    },
                     myself.cloudError(),
-                    true
+                    overwrite
                 );
             }
         };
 
     // Check if it will overwrite the current one
-    SnapCloud.isProjectActive(name,
+    SnapCloud.isProjectActive(this.room.name,
         function(isActive) {
             if (isActive) {
                 return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
             } else {  // doesn't match the stored version!
-                var dialog = new DialogBoxMorph(null, overwriteExisting);
+                var dialog = new DialogBoxMorph(null, function() {
+                    overwriteExisting(true);
+                });
 
                 dialog.cancel = function() {  // don't overwrite
-                    IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
+                    overwriteExisting();
                     dialog.destroy();
                 };
                 dialog.askYesNo(

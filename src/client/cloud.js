@@ -448,7 +448,8 @@ NetCloud.prototype.isProjectActive = function (name, callBack, errorCall) {
 
                     return callBack(isActive);
                 },
-                errorCall
+                errorCall,
+                [name]
             );
         },
         errorCall

@@ -302,6 +302,7 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
         function () {
             SnapCloud.reconnect(function() {
                 SnapCloud.isProjectActive(
+                    project.ProjectName,
                     function(isActive) {
                         var choices,
                             dialog;
@@ -332,8 +333,7 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
                             myself.rawOpenCloudProject(project);
                         }
                     },
-                    myself.ide.cloudError(),
-                    [project.ProjectName]
+                    myself.ide.cloudError()
                 );
             }, myself.ide.cloudError());
 
