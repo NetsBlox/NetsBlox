@@ -212,7 +212,7 @@ NetCloud.prototype.socketId = function () {
 };
 
 // Override
-NetCloud.prototype.saveProject = function (ide, callBack, errorCall) {
+NetCloud.prototype.saveProject = function (ide, callBack, errorCall, overwrite) {
     var myself = this;
     myself.reconnect(
         function () {
@@ -223,7 +223,8 @@ NetCloud.prototype.saveProject = function (ide, callBack, errorCall) {
                 },
                 errorCall,
                 [
-                    myself.socketId()
+                    myself.socketId(),
+                    overwrite === true
                 ]
             );
         },
@@ -433,6 +434,26 @@ NetCloud.prototype.signup = function (
     } catch (err) {
         errorCall.call(this, err.toString(), 'NetsBlox Cloud');
     }
+};
+
+NetCloud.prototype.isProjectActive = function (name, callBack, errorCall) {
+    var myself = this;
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'isProjectActive',
+                function(response) {
+                    var isActive = response[0].active === 'true';
+
+                    return callBack(isActive);
+                },
+                errorCall,
+                [name]
+            );
+        },
+        errorCall
+    );
 };
 
 var SnapCloud = new NetCloud(window.location.protocol + '//' + window.location.host+'/api/');

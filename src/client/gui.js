@@ -301,11 +301,10 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
         },
         function () {
             SnapCloud.reconnect(function() {
-                SnapCloud.callService(
-                    'isProjectActive',
-                    function(response) {
-                        var isActive = response[0].active === 'true',
-                            choices,
+                SnapCloud.isProjectActive(
+                    project.ProjectName,
+                    function(isActive) {
+                        var choices,
                             dialog;
 
                         if (isActive) {
@@ -334,8 +333,7 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
                             myself.rawOpenCloudProject(project);
                         }
                     },
-                    myself.ide.cloudError(),
-                    [project.ProjectName]
+                    myself.ide.cloudError()
                 );
             }, myself.ide.cloudError());
 

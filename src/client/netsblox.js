@@ -912,6 +912,53 @@ NetsBloxMorph.prototype.save = function () {
     }
 };
 
+NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
+    var myself = this,
+        overwriteExisting = function(overwrite) {
+            if (name) {
+                myself.showMessage('Saving project\nto the cloud...');
+                myself.setProjectName(name);
+                SnapCloud.saveProject(
+                    myself,
+                    function () {
+                        if (overwrite) {
+                            myself.showMessage('saved.', 2);
+                        } else {
+                            myself.showMessage('saved as ' + myself.room.name, 2);
+                        }
+                    },
+                    myself.cloudError(),
+                    overwrite
+                );
+            }
+        };
+
+    // Check if it will overwrite the current one
+    SnapCloud.isProjectActive(this.room.name,
+        function(isActive) {
+            if (isActive) {
+                return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
+            } else {  // doesn't match the stored version!
+                var dialog = new DialogBoxMorph(null, function() {
+                    overwriteExisting(true);
+                });
+
+                dialog.cancel = function() {  // don't overwrite
+                    overwriteExisting();
+                    dialog.destroy();
+                };
+                dialog.askYesNo(
+                    localize('Overwrite Existing Project'),
+                    localize('A project with the given name already exists.\n' +
+                        'Would you like to overwrite it?'),
+                    myself.world()
+                );
+            }
+        },
+        myself.cloudError()
+    );
+};
+
 NetsBloxMorph.prototype.getURL = function (url) {
     var request = new XMLHttpRequest(),
         myself = this;
