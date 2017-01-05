@@ -66,23 +66,16 @@ class User extends DataWrapper {
     }
 
     getNewName(name) {
-        var nameExists = {};
+        var nameExists = {},
+            i = 2,
+            basename = name || 'project';
+
         this.rooms.forEach(room => nameExists[room.name] = true);
 
-        if (name) {
-            var i = 2,
-                basename = name;
+        do {
+            name = `${basename} (${i++})`;
+        } while (nameExists[name]);
 
-            do {
-                name = `${basename} (${i++})`;
-            } while (nameExists[name]);
-
-        } else {
-            // Create base name
-            do {
-                name = generate().spaced;
-            } while (nameExists[name]);
-        }
         return name;
     }
 
