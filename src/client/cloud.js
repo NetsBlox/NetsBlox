@@ -309,6 +309,7 @@ NetCloud.prototype.passiveLogin = function (ide, callback) {
         usr = JSON.stringify({
             return_user: true,
             api: true,
+            silent: true,
             socketId: socketId
         }),
         myself = this,
