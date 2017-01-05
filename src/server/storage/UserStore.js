@@ -2,7 +2,6 @@
 
 var randomString = require('just.randomstring'),
     hash = require('../../common/sha512').hex_sha512,
-    generate = require('project-name-generator'),
     DataWrapper = require('./Data'),
     mailer = require('../mailer');
 
