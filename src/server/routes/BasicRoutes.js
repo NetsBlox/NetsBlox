@@ -217,7 +217,11 @@ module.exports = [
 
                 if (!username) {
                     log(`"passive" login failed - no session found!`);
-                    return res.sendStatus(403);
+                    if (req.body.silent) {
+                        return res.sendStatus(204);
+                    } else {
+                        return res.sendStatus(403);
+                    }
                 }
 
                 // Explicit login
