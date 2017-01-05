@@ -2,7 +2,8 @@
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, newCanvas,
-   NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo*/
+   NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo,
+   ScrollFrameMorph, TextMorph*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -1064,3 +1065,152 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
     }
 };
 
+// Bug reporting assistance
+NetsBloxMorph.prototype.snapMenu = function () {
+    var menu,
+        myself = this,
+        world = this.world();
+
+    menu = new MenuMorph(this);
+    menu.addItem('About...', 'aboutSnap');
+    menu.addLine();
+    menu.addItem(
+        'Reference manual',
+        function () {
+            var url = myself.resourceURL('help', 'SnapManual.pdf');
+            window.open(url, 'SnapReferenceManual');
+        }
+    );
+    menu.addItem(
+        'Snap! website',
+        function () {
+            window.open('http://snap.berkeley.edu/', 'SnapWebsite');
+        }
+    );
+    menu.addItem(
+        'Download source',
+        function () {
+            window.open(
+                'http://snap.berkeley.edu/snapsource/snap.zip',
+                'SnapSource'
+            );
+        }
+    );
+    // Netsblox addition: start
+    menu.addLine();
+    menu.addItem(
+        'Report a bug',
+        'reportBug'
+    );
+    // Netsblox addition: end
+    if (world.isDevMode) {
+        menu.addLine();
+        menu.addItem(
+            'Switch back to user mode',
+            'switchToUserMode',
+            'disable deep-Morphic\ncontext menus'
+                + '\nand show user-friendly ones',
+            new Color(0, 100, 0)
+        );
+    } else if (world.currentKey === 16) { // shift-click
+        menu.addLine();
+        menu.addItem(
+            'Switch to dev mode',
+            'switchToDevMode',
+            'enable Morphic\ncontext menus\nand inspectors,'
+                + '\nnot user-friendly!',
+            new Color(100, 0, 0)
+        );
+    }
+    menu.popup(world, this.logo.bottomLeft());
+};
+
+NetsBloxMorph.prototype.reportBug = function () {
+    // Prompt for a description of the bug
+    var dialog = new DialogBoxMorph().withKey('bugReport'),
+        frame = new ScrollFrameMorph(),
+        text = new TextMorph(''),
+        ok = dialog.ok,
+        myself = this,
+        size = 250,
+        world = this.world();
+
+    frame.padding = 6;
+    frame.setWidth(size);
+    frame.acceptsDrops = false;
+    frame.contents.acceptsDrops = false;
+
+    text.setWidth(size - frame.padding * 2);
+    text.setPosition(frame.topLeft().add(frame.padding));
+    text.enableSelecting();
+    text.isEditable = true;
+
+    frame.setHeight(size);
+    frame.fixLayout = nop;
+    frame.edge = InputFieldMorph.prototype.edge;
+    frame.fontSize = InputFieldMorph.prototype.fontSize;
+    frame.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    frame.contrast = InputFieldMorph.prototype.contrast;
+    frame.drawNew = InputFieldMorph.prototype.drawNew;
+    frame.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+
+    frame.addContents(text);
+    text.drawNew();
+
+    dialog.ok = function () {
+        myself.submitBugReport(text.text);
+        ok.call(this);
+    };
+
+    dialog.justDropped = function () {
+        text.edit();
+    };
+
+    dialog.labelString = localize('What went wrong?');
+    dialog.createLabel();
+    dialog.addBody(frame);
+    frame.drawNew();
+    dialog.addButton('ok', 'OK');
+    dialog.addButton('cancel', 'Cancel');
+    dialog.fixLayout();
+    dialog.drawNew();
+    dialog.popUp(world);
+    dialog.setCenter(world.center());
+    text.edit();
+};
+
+NetsBloxMorph.prototype.submitBugReport = function (desc) {
+    var myself = this,
+        report = {};
+
+    // Add the description
+    report.description = desc;
+
+    // Add screenshot
+    report.screenshot = this.world().image.toDataURL();
+
+    // Add project state
+    report.project = this.serializer.serialize(this.stage);
+    report.undoState = JSON.stringify(SnapUndo);
+
+    // Add username (if logged in)
+    report.user = SnapCloud.username;
+
+    // Report to the server
+    var request = new XMLHttpRequest(),
+        url = SnapCloud.url + '/BugReport';
+
+    request.open('post', url);
+    request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+    request.onreadystatechange = function () {
+        if (request.readyState === 4) {
+            if (request.status > 199 && request.status < 400) {  // success
+                myself.showMessage(localize('Bug has been reported!'), 2);
+            } else {  // failed...
+                myself.cloudError()(url, localize('bug could not be reported:') +
+                    request.responseText);
+            }
+        }
+    };
+    request.send(JSON.stringify(report));
+};

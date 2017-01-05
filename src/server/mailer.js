@@ -1,6 +1,6 @@
 var nodemailer = require('nodemailer'),
     markdown = require('nodemailer-markdown').markdown,
-    transporter = nodemailer.createTransport();  // TODO: Change to smtp
+    transporter = nodemailer.createTransport();
 
 transporter.use('compile', markdown());
 

@@ -65,10 +65,10 @@ Server.prototype.configureRoutes = function() {
             validOrigins = /^(https?:\/\/(?:.+\.)?netsblox\.org(?::\d{1,5})?)$/;
 
         if (validOrigins.test(origin) || process.env.ENV === 'local-dev') {
-            res.header("Access-Control-Allow-Origin", origin);
+            res.header('Access-Control-Allow-Origin', origin);
             res.header('Access-Control-Allow-Credentials', true);
         }
-        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
         next();
     });
 
