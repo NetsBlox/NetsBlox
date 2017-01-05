@@ -1102,6 +1102,14 @@ NetsBloxMorph.prototype.snapMenu = function () {
         'Report a bug',
         'reportBug'
     );
+    if (world.currentKey === 16) {
+        menu.addItem(
+            'Load reported bug',
+            'loadBugReport',
+            undefined,
+            new Color(100, 0, 0)
+        );
+    }
     // Netsblox addition: end
     if (world.isDevMode) {
         menu.addLine();
@@ -1187,13 +1195,14 @@ NetsBloxMorph.prototype.submitBugReport = function (desc) {
     report.description = desc;
     report.timestamp = Date.now();
     report.userAgent = navigator.userAgent;
+    report.version = NetsBloxSerializer.prototype.app;
 
     // Add screenshot
     report.screenshot = this.world().image.toDataURL();
 
     // Add project state
     report.project = this.serializer.serialize(this.stage);
-    report.undoState = JSON.stringify(SnapUndo);
+    report.undoState = SnapUndo;
 
     // Add username (if logged in)
     report.user = SnapCloud.username;
@@ -1215,4 +1224,56 @@ NetsBloxMorph.prototype.submitBugReport = function (desc) {
         }
     };
     request.send(JSON.stringify(report));
+};
+
+NetsBloxMorph.prototype.loadBugReport = function () {
+    var myself = this,
+        inp = document.createElement('input');
+
+    if (myself.filePicker) {
+        document.body.removeChild(myself.filePicker);
+        myself.filePicker = null;
+    }
+    inp.type = 'file';
+    inp.style.color = 'transparent';
+    inp.style.backgroundColor = 'transparent';
+    inp.style.border = 'none';
+    inp.style.outline = 'none';
+    inp.style.position = 'absolute';
+    inp.style.top = '0px';
+    inp.style.left = '0px';
+    inp.style.width = '0px';
+    inp.style.height = '0px';
+    inp.addEventListener(
+        'change',
+        function () {
+            var reader = new FileReader();
+            document.body.removeChild(inp);
+            myself.filePicker = null;
+
+            reader.onloadend = function(result) {
+                var report = JSON.parse(result.target.result);
+
+                // Open the project
+                myself.droppedText(report.project);
+
+                // Update the undo state
+                setTimeout(function() {
+                    var keys = Object.keys(report.undoState);
+                    for (var i = keys.length; i--;) {
+                        SnapUndo[keys[i]] = report.undoState[keys[i]];
+                    }
+                    myself.showMessage('Loaded bug report:\n' + report.description);
+
+                }, 10);
+
+                return;
+            };
+            reader.readAsText(inp.files[0]);
+        },
+        false
+    );
+    document.body.appendChild(inp);
+    myself.filePicker = inp;
+    inp.click();
 };
