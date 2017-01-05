@@ -1185,6 +1185,8 @@ NetsBloxMorph.prototype.submitBugReport = function (desc) {
 
     // Add the description
     report.description = desc;
+    report.timestamp = Date.now();
+    report.userAgent = navigator.userAgent;
 
     // Add screenshot
     report.screenshot = this.world().image.toDataURL();
