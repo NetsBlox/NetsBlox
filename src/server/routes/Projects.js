@@ -116,66 +116,70 @@ var createCopyFrom = function(user, project) {
     return copy;
 };
 
+var saveRoom = function (activeRoom, socket, user, res) {
+    log(`saving entire room for ${socket.username}`);
+    // Create the room object
+    var room = this.storage.rooms.new(user, activeRoom);
+    room.setActiveRole(socket.roleId);
+    room.save(function(err) {
+        if (err) {
+            error(`room save failed for room "${activeRoom.name}" initiated by "${user.username}"`);
+            return res.status(500).send('ERROR: ' + err);
+        }
+        log(`room save successful for room "${activeRoom.name}" initiated by "${user.username}"`);
+
+        activeRoom.originTime = room._content.originTime;
+        trace('setting active room origin time to', activeRoom.originTime);
+        return res.send('room saved!');
+    });
+};
+
 module.exports = [
     {
         Service: 'saveProject',
-        Parameters: 'socketId',
+        Parameters: 'socketId,overwrite',
         Method: 'Post',
         Note: '',
-        middleware: ['hasSocket', 'isLoggedIn'],
+        middleware: ['hasSocket', 'isLoggedIn', 'setUser'],
         Handler: function(req, res) {
             var username = req.session.username,
-                socketId = req.body.socketId;
+                socketId = req.body.socketId,
+                socket = this.sockets[socketId],
 
-            info('Initiating room save for ' + username);
-            this.storage.users.get(username, (e, user) => {
-                var room,
-                    socket = this.sockets[socketId],
-                    activeRoom;
+                activeRoom = socket._room,
+                user = req.session.user,
+                roomName,
+                rooms;
 
-                if (e) {
-                    error(`Could not retrieve user "${username}"`);
-                    return res.status(500).send('ERROR: ' + e);
+            if (!activeRoom) {
+                error(`Could not find active room for "${username}" - cannot save!`);
+                return res.status(500).send('ERROR: active room not found');
+            }
+
+            roomName = activeRoom.name;
+            rooms = getRoomsNamed.call(this, roomName, user);
+
+            if (socket.isOwner()) {
+                info('Initiating room save for ' + username);
+                if (rooms.areSame) {  // overwrite
+                    saveRoom.call(this, activeRoom, socket, user, res);
+                } else if (req.body.overwrite === 'true') {  // overwrite
+                    saveRoom.call(this, activeRoom, socket, user, res);
+                } else {  // rename
+                    activeRoom.changeName();
+                    saveRoom.call(this, activeRoom, socket, user, res);
                 }
-
-                if (!user) {
-                    error(`user not found: "${username}" - cannot save!`);
-                    return res.status(400).send('ERROR: user not found');
-                }
-
-                // Look up the user's room
-                activeRoom = socket._room;
-                if (!activeRoom) {
-                    error(`Could not find active room for "${username}" - cannot save!`);
-                    return res.status(500).send('ERROR: active room not found');
-                }
-
-                // Save the entire room
-                if (socket.isOwner()) {
-                    log(`saving entire room for ${socket.username}`);
-                    // Create the room object
-                    room = this.storage.rooms.new(user, activeRoom);
-                    room.setActiveRole(socket.roleId);
-                    room.save(function(err) {
-                        if (err) {
-                            error(`room save failed for room "${activeRoom.name}" initiated by "${username}"`);
-                            return res.status(500).send('ERROR: ' + err);
-                        }
-                        log(`room save successful for room "${activeRoom.name}" initiated by "${username}"`);
-                        return res.send('room saved!');
-                    });
-                } else {  // just update the project cache for the given user
-                    log(`caching ${socket.roleId} for ${socket.username}`);
-                    activeRoom.cache(socket.roleId, err => {
-                        if (err) {
-                            error(`Could not cache the ${socket.roleId} for non-owner "${username}"`);
-                            return res.status(500).send('ERROR: ' + err);
-                        }
-                        log(`cache of ${socket.roleId} successful for for non-owner "${username}"`);
-                        return res.send('code saved!');
-                    });
-                }
-            });
+            } else {
+                log(`caching ${socket.roleId} for ${socket.username}`);
+                activeRoom.cache(socket.roleId, err => {
+                    if (err) {
+                        error(`Could not cache the ${socket.roleId} for non-owner "${username}"`);
+                        return res.status(500).send('ERROR: ' + err);
+                    }
+                    log(`cache of ${socket.roleId} successful for for non-owner "${username}"`);
+                    return res.send('code saved!');
+                });
+            }
         }
     },
     {
@@ -241,7 +245,7 @@ module.exports = [
                 user = req.session.user,
                 rooms = getRoomsNamed.call(this, roomName, user);
 
-            log(`${user.username} is checking if project "${req.body.ProjectName}" is active`);
+            log(`${user.username} is checking if project "${req.body.ProjectName}" is active (${rooms.areSame})`);
             // Check if it is actually the same - do the originTime's match?
             return res.send(`active=${rooms.areSame}`);
         }
