@@ -24,16 +24,15 @@ var _ = require('lodash'),
     // Compilation helpers
     async = require('async'),
     spawn = require('child_process').spawn,
-    TMP_DIR = path.join(__dirname, 'tmp');
+    TMP_DIR = path.join(__dirname, 'tmp'),
+    mailer = require('../mailer');
 
 var CLIENT_DIR = path.join(__dirname, '..', '..', 'client'),
     CLIENT_JS = fs.readdirSync(CLIENT_DIR)
         .filter(file => path.extname(file) === '.js')
         .map(file => path.join(CLIENT_DIR, file));
 
-var MobileManager = function(mailTransport) {
-    this.transport = mailTransport;
-
+var MobileManager = function() {
     // Check environment for cordova command
     this.supported = false;
     this.checkCommands('android', 'cordova');
@@ -74,7 +73,6 @@ MobileManager.prototype.emailProjectApk = function(name, email, baseURL, xml) {
 MobileManager.prototype._emailResults = function(err, email, project, projectPath) {
     var mkdn,
         emailOptions = {
-            from: 'no-reply@netsblox.com',
             subject: project + ' for Android',
             to: email
         };
@@ -96,7 +94,7 @@ MobileManager.prototype._emailResults = function(err, email, project, projectPat
 
     trace('Emailing ' + email + ' about ' + project + ' compilation');
     emailOptions.markdown = mkdn;
-    this.transport.sendMail(emailOptions);
+    mailer.sendMail(emailOptions);
 };
 
 

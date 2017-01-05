@@ -3,15 +3,13 @@
 var randomString = require('just.randomstring'),
     hash = require('../../common/sha512').hex_sha512,
     generate = require('project-name-generator'),
-    ObjectId = require('mongodb').ObjectId,
     DataWrapper = require('./Data'),
-    MAILER;
+    mailer = require('../mailer');
 
 class UserStore {
-    constructor (logger, db, mailer) {
+    constructor (logger, db) {
         this._logger = logger.fork('Users');
         this._users = db.collection('users');
-        MAILER = mailer;
     }
 
     get (username, callback) {
@@ -24,7 +22,7 @@ class UserStore {
     names () {
         return this._users.find().toArray()
             .then(users => users.map(user => user.username))
-            .catch(e => this._logger.error('Could not get the user names!'));
+            .catch(e => this._logger.error('Could not get the user names!', e));
     }
 
     new(username, email) {
@@ -89,7 +87,7 @@ class User extends DataWrapper {
     }
 
     _emailTmpPassword(password) {
-        MAILER.sendMail({
+        mailer.sendMail({
             from: 'no-reply@netsblox.com',
             to: this.email,
             subject: 'Temporary Password',

@@ -7,7 +7,6 @@ var MongoClient = require('mongodb').MongoClient,
 var Storage = function(logger, opts) {
     this._logger = logger.fork('Storage');
     this._mongoURI = opts.mongoURI || 'mongodb://localhost:27017';
-    this._transporter = opts.transporter;
 
     this.users = null;
     this.rooms = null;
@@ -19,7 +18,7 @@ Storage.prototype.connect = function(callback) {
             throw err;
         }
 
-        this.users = new UserStore(this._logger, db, this._transporter);
+        this.users = new UserStore(this._logger, db);
         this.rooms = new RoomStore(this._logger, db);
         RPCStore.init(this._logger, db);
 

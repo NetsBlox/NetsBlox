@@ -14,11 +14,6 @@ var express = require('express'),
         vantage: true
     },
 
-    // Mailer
-    nodemailer = require('nodemailer'),
-    markdown = require('nodemailer-markdown').markdown,
-    transporter = nodemailer.createTransport(),  // TODO: Change to smtp
-
     // Routes
     createRouter = require('./CreateRouter'),
     path = require('path'),
@@ -37,11 +32,7 @@ var Server = function(opts) {
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
 
-    // Mailer
-    transporter.use('compile', markdown());
-
     // Mongo variables
-    opts.transporter = transporter;
     this.storage = new Storage(this._logger, opts);
     this._server = null;
 
@@ -49,7 +40,7 @@ var Server = function(opts) {
     this.rpcManager = RPCManager;
     RPCManager.init(this);
 
-    this.mobileManager = new MobileManager(transporter);
+    this.mobileManager = new MobileManager();
 
     BASE_CLASSES.forEach(BASE => BASE.call(this, this._logger));
 };

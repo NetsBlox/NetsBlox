@@ -18,6 +18,7 @@ var R = require('ramda'),
     fs = require('fs'),
     path = require('path'),
     EXAMPLES = require('../examples'),
+    mailer = require('../mailer'),
     middleware = require('./middleware'),
     saveLogin = middleware.saveLogin,
 
