@@ -52,9 +52,10 @@ _.extend.apply(null, classes);
 Server.prototype.configureRoutes = function() {
     this.app.use(express.static(__dirname + '/../client/'));
     this.app.use(bodyParser.urlencoded({
+        limit: '50mb',
         extended: true
     }));
-    this.app.use(bodyParser.json());
+    this.app.use(bodyParser.json({limit: '50mb'}));
 
     // Session & Cookie settings
     this.app.use(cookieParser());
