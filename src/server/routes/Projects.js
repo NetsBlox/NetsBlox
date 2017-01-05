@@ -128,7 +128,6 @@ var saveRoom = function (activeRoom, socket, user, res) {
         }
         log(`room save successful for room "${activeRoom.name}" initiated by "${user.username}"`);
 
-        activeRoom.originTime = room._content.originTime;
         trace('setting active room origin time to', activeRoom.originTime);
         return res.send('room saved!');
     });
@@ -161,12 +160,19 @@ module.exports = [
 
             if (socket.isOwner()) {
                 info('Initiating room save for ' + username);
+
+                // If we overwrite, we don't want to change the originTime
+                if (rooms.stored) {
+                    activeRoom.originTime = rooms.stored.originTime;
+                }
+
                 if (rooms.areSame) {  // overwrite
                     saveRoom.call(this, activeRoom, socket, user, res);
                 } else if (req.body.overwrite === 'true') {  // overwrite
                     saveRoom.call(this, activeRoom, socket, user, res);
                 } else {  // rename
                     activeRoom.changeName();
+                    activeRoom.originTime = Date.now();
                     saveRoom.call(this, activeRoom, socket, user, res);
                 }
             } else {
