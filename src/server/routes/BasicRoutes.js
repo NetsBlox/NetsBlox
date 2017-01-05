@@ -331,5 +331,60 @@ module.exports = [
 
             return res.send(room.cachedProjects[role].SourceCode);
         }
+    },
+    // Bug reporting
+    {
+        Method: 'post',
+        URL: 'BugReport',
+        Handler: function(req, res) {
+            var user = req.body.user,
+                report = req.body,
+                screenshot = report.screenshot;
+
+            if (user) {
+                this._logger.info(`Received bug report from ${user}`);
+            } else {
+                this._logger.info('Received anonymous bug report');
+            }
+
+            // email this to the maintainer
+            if (process.env.MAINTAINER_EMAIL) {
+                var mailOpts = {
+                    from: 'bug-reporter@netsblox.org',
+                    to: process.env.MAINTAINER_EMAIL,
+                    subject: 'Bug Report' + (user ? ' from ' + user : ''),
+                    markdown: 'Hello,\n\nA new bug report has been created' +
+                        (user !== null ? ' by ' + user : '') + ':\n\n---\n\n' +
+                        report.description + '\n\n---\n\n',
+                    attachments: [
+                        {
+                            filename: 'bug-report.json',
+                            content: JSON.stringify(report)
+                        },
+                        {
+                            filename: 'screenshot.png',
+                            content: screenshot
+                        }
+                    ]
+                };
+
+                if (report.user) {
+                    this.storage.users.get(report.user, (e, user) => {
+                        if (!e && user) {
+                            mailOpts.markdown += '\n\nReporter\'s email: ' + user.email;
+                        }
+                        mailer.sendMail(mailOpts);
+                        this._logger.info('Bug report has been sent to ' + process.env.MAINTAINER_EMAIL);
+                    });
+                } else {
+                    mailer.sendMail(mailOpts);
+                    this._logger.info('Bug report has been sent to ' + process.env.MAINTAINER_EMAIL);
+                }
+            } else {
+                this._logger.warn('No maintainer email set! Bug reports will ' +
+                    'not be recorded until MAINTAINER_EMAIL is set in the env!');
+            }
+            return res.sendStatus(200);
+        }
     }
 ].concat(resourcePaths);
