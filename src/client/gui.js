@@ -301,11 +301,9 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
         },
         function () {
             SnapCloud.reconnect(function() {
-                SnapCloud.callService(
-                    'isProjectActive',
-                    function(response) {
-                        var isActive = response[0].active === 'true',
-                            choices,
+                SnapCloud.isProjectActive(
+                    function(isActive) {
+                        var choices,
                             dialog;
 
                         if (isActive) {

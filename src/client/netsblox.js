@@ -912,6 +912,37 @@ NetsBloxMorph.prototype.save = function () {
     }
 };
 
+NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
+    var myself = this;
+
+    // Check if it will overwrite the current one
+    SnapCloud.isProjectActive(name,
+        function(isActive) {
+            if (isActive) {
+                return IDE_Morph.prototype.saveProjectToCloud.call(this, name);
+            } else {  // doesn't match the stored version!
+                var dialog = new DialogBoxMorph(null, function() {
+                    // TODO
+                    console.log('overwrite!');
+                });
+
+                dialog.cancel = function() {
+                    // TODO
+                    console.log('don\'t overwrite!');
+                    dialog.destroy();
+                };
+                dialog.askYesNo(
+                    localize('Overwrite Existing Project'),
+                    localize('A project with the given name already exists.\n' +
+                        'Would you like to overwrite it?'),
+                    myself.world()
+                );
+            }
+        },
+        this.cloudError()
+    );
+};
+
 NetsBloxMorph.prototype.getURL = function (url) {
     var request = new XMLHttpRequest(),
         myself = this;

@@ -435,4 +435,23 @@ NetCloud.prototype.signup = function (
     }
 };
 
+NetCloud.prototype.isProjectActive = function (name, callBack, errorCall) {
+    var myself = this;
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'isProjectActive',
+                function(response) {
+                    var isActive = response[0].active === 'true';
+
+                    return callBack(isActive);
+                },
+                errorCall
+            );
+        },
+        errorCall
+    );
+};
+
 var SnapCloud = new NetCloud(window.location.protocol + '//' + window.location.host+'/api/');
