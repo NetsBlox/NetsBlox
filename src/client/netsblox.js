@@ -946,25 +946,6 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     );
 };
 
-NetsBloxMorph.prototype.getURL = function (url) {
-    var request = new XMLHttpRequest(),
-        myself = this;
-    try {
-        request.open('GET', url, false);
-        request.send();
-        if (request.status === 200) {
-            return request.responseText;
-        }
-        var msg = request.responseText.indexOf('ERROR') === 0 ?
-            request.responseText : 'unable to retrieve ' + url;
-
-        throw new Error(msg);
-    } catch (err) {
-        myself.showMessage(err.message);
-        return;
-    }
-};
-
 NetsBloxMorph.prototype.logout = function () {
     NetsBloxMorph.uber.logout.call(this);
     this.room.update();
