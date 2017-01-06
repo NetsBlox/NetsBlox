@@ -456,4 +456,26 @@ NetCloud.prototype.isProjectActive = function (name, callBack, errorCall) {
     );
 };
 
+NetCloud.prototype.hasConflictingStoredProject = function (callBack, errorCall) {
+    var myself = this;
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'hasConflictingStoredProject',
+                function(response) {
+                    var hasConflicting = response[0].hasConflicting === 'true';
+
+                    return callBack(hasConflicting);
+                },
+                errorCall,
+                [
+                    myself.socketId()
+                ]
+            );
+        },
+        errorCall
+    );
+};
+
 var SnapCloud = new NetCloud(window.location.protocol + '//' + window.location.host+'/api/');

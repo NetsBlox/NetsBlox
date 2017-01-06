@@ -901,29 +901,35 @@ NetsBloxMorph.prototype.save = function () {
 
 NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     var myself = this,
-        overwriteExisting = function(overwrite) {
-            if (name) {
-                myself.showMessage('Saving project\nto the cloud...');
-                myself.setProjectName(name);
-                SnapCloud.saveProject(
-                    myself,
-                    function () {
-                        if (overwrite) {
-                            myself.showMessage('saved.', 2);
-                        } else {
-                            myself.showMessage('saved as ' + myself.room.name, 2);
-                        }
-                    },
-                    myself.cloudError(),
-                    overwrite
-                );
-            }
-        };
+        overwriteExisting;
+
+    if (SnapCloud.username !== this.room.ownerId) {
+        return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
+    }
+
+    overwriteExisting = function(overwrite) {
+        if (name) {
+            myself.showMessage('Saving project\nto the cloud...');
+            myself.setProjectName(name);
+            SnapCloud.saveProject(
+                myself,
+                function () {
+                    if (overwrite) {
+                        myself.showMessage('saved.', 2);
+                    } else {
+                        myself.showMessage('saved as ' + myself.room.name, 2);
+                    }
+                },
+                myself.cloudError(),
+                overwrite
+            );
+        }
+    };
 
     // Check if it will overwrite the current one
-    SnapCloud.isProjectActive(this.room.name,
-        function(isActive) {
-            if (isActive) {
+    SnapCloud.hasConflictingStoredProject(
+        function(hasConflicting) {
+            if (!hasConflicting) {
                 return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
             } else {  // doesn't match the stored version!
                 var dialog = new DialogBoxMorph(null, function() {
