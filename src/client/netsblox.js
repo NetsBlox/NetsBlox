@@ -1,9 +1,9 @@
 /* global RoomMorph, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
-   InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, newCanvas,
+   InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
    NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo,
-   ScrollFrameMorph, TextMorph*/
+   ScrollFrameMorph, */
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -568,6 +568,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
     );
 
     if (shiftClicked) {
+        // Netsblox addition: start
         menu.addItem(
             localize('Export role...'),
             function () {
@@ -584,6 +585,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
             'save "' + myself.projectName + '" as XML\nto your downloads folder',
             new Color(100, 0, 0)
         );
+        // Netsblox addition: end
     }
     menu.addItem(
         shiftClicked ?
@@ -601,6 +603,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
         shiftClicked ? new Color(100, 0, 0) : null
     );
 
+    // Netsblox addition: start
     if (this.stage.globalBlocks.length || this.stage.deletableMessageNames().length) {
         menu.addItem(
             'Export blocks/msgs...',
@@ -608,6 +611,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
             'show global custom block definitions/message types as XML' +
                 '\nin a new browser window'
         );
+    // Netsblox addition: end
         menu.addItem(
             'Unused blocks...',
             function () {myself.removeUnusedBlocks(); },
@@ -615,24 +619,6 @@ NetsBloxMorph.prototype.projectMenu = function () {
                 '\nand remove their definitions'
         );
     }
-
-    /*
-    if (SnapCloud.username) {  // If logged in
-        menu.addItem(
-            'Export as Android App...',
-            function () {
-                if (myself.projectName) {
-                    myself.requestAndroidApp(myself.projectName);
-                } else {
-                    myself.prompt('What is the name of this project?', function (name) {
-                        myself.requestAndroidApp(name);
-                    }, null, 'requestAndroidApp');
-                }
-            },
-            'create an Android app from the current project'
-        );
-    }
-    */
 
     menu.addItem(
         'Export summary...',
@@ -662,25 +648,42 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addItem(
         'Import tools',
         function () {
-            myself.droppedText(
-                myself.getURL('api/tools.xml'),
-                'tools'
+            myself.getURL(
+                myself.resourceURL('tools.xml'),
+                function (txt) {
+                    myself.droppedText(txt, 'tools');
+                }
             );
         },
         'load the official library of\npowerful blocks'
     );
+    //menu.addItem(
+        //'Import tools',
+        //function () {
+            //myself.droppedText(
+                //myself.getURL('api/tools.xml'),
+                //'tools'
+            //);
+        //},
+        //'load the official library of\npowerful blocks'
+    //);
     menu.addItem(
         'Libraries...',
         createMediaMenu(
             'libraries',
-            function loadLib(file, name) {
-                var url = myself.resourceURL('libraries', file);
-                myself.droppedText(myself.getURL(url), name);
+            function (file, name) {
+                myself.getURL(
+                    myself.resourceURL('libraries', file),
+                    function (txt) {
+                        myself.droppedText(txt, name);
+                    }
+                );
             }
         ),
         'Select categories of additional blocks to add to this project.'
     );
 
+    // Netsblox addition: start
     menu.addItem(
         'Services...',
         createMediaMenu(
@@ -693,36 +696,20 @@ NetsBloxMorph.prototype.projectMenu = function () {
         ),
         'Select services to include in this project.'
     );
+    // Netsblox addition: end
 
     menu.addItem(
         localize(graphicsName) + '...',
-        createMediaMenu(
-            graphicsName,
-            function loadCostume(file, name) {
-                var url = myself.resourceURL(graphicsName, file),
-                    img = new Image();
-                img.onload = function () {
-                    var canvas = newCanvas(new Point(img.width, img.height));
-                    canvas.getContext('2d').drawImage(img, 0, 0);
-                    myself.droppedImage(canvas, name);
-                };
-                img.src = url;
-            }
-        ),
+        function () {
+            myself.importMedia(graphicsName);
+        },
         'Select a costume from the media library'
     );
     menu.addItem(
         localize('Sounds') + '...',
-        createMediaMenu(
-            'Sounds',
-            function loadSound(file, name) {
-                var url = myself.resourceURL('Sounds', file),
-                    audio = new Audio();
-                audio.src = url;
-                audio.load();
-                myself.droppedAudio(audio, name);
-            }
-        ),
+        function () {
+            myself.importMedia('Sounds');
+        },
         'Select a sound from the media library'
     );
 
@@ -957,25 +944,6 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
         },
         myself.cloudError()
     );
-};
-
-NetsBloxMorph.prototype.getURL = function (url) {
-    var request = new XMLHttpRequest(),
-        myself = this;
-    try {
-        request.open('GET', url, false);
-        request.send();
-        if (request.status === 200) {
-            return request.responseText;
-        }
-        var msg = request.responseText.indexOf('ERROR') === 0 ?
-            request.responseText : 'unable to retrieve ' + url;
-
-        throw new Error(msg);
-    } catch (err) {
-        myself.showMessage(err.message);
-        return;
-    }
 };
 
 NetsBloxMorph.prototype.logout = function () {
