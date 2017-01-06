@@ -1,9 +1,9 @@
 /* global RoomMorph, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
-   InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, newCanvas,
+   InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
    NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo,
-   ScrollFrameMorph, TextMorph*/
+   ScrollFrameMorph, */
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
