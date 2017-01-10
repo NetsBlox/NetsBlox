@@ -1093,31 +1093,29 @@ NetsBloxMorph.prototype.snapMenu = function () {
         world = this.world();
 
     menu = new MenuMorph(this);
-    menu.addItem('About...', 'aboutSnap');
+    menu.addItem('About...', 'aboutNetsBlox');
     menu.addLine();
     menu.addItem(
-        'Reference manual',
+        'NetsBlox website',
+        function () {
+            window.open('https://netsblox.org', 'NetsBloxWebsite');
+        }
+    );
+    menu.addItem(
+        'Snap! manual',
         function () {
             var url = myself.resourceURL('help', 'SnapManual.pdf');
             window.open(url, 'SnapReferenceManual');
         }
     );
     menu.addItem(
-        'Snap! website',
-        function () {
-            window.open('http://snap.berkeley.edu/', 'SnapWebsite');
-        }
-    );
-    menu.addItem(
-        'Download source',
+        'Source code',
         function () {
             window.open(
-                'http://snap.berkeley.edu/snapsource/snap.zip',
-                'SnapSource'
+                'https://github.com/netsblox/netsblox'
             );
         }
     );
-    // Netsblox addition: start
     menu.addLine();
     menu.addItem(
         'Report a bug',
@@ -1131,7 +1129,6 @@ NetsBloxMorph.prototype.snapMenu = function () {
             new Color(100, 0, 0)
         );
     }
-    // Netsblox addition: end
     if (world.isDevMode) {
         menu.addLine();
         menu.addItem(
@@ -1152,6 +1149,36 @@ NetsBloxMorph.prototype.snapMenu = function () {
         );
     }
     menu.popup(world, this.logo.bottomLeft());
+};
+
+NetsBloxMorph.prototype.aboutNetsBlox = function () {
+    var dlg,
+        version = NetsBloxSerializer.prototype.app.split(',')[0],
+        aboutTxt,
+        world = this.world();
+
+    version = NetsBloxSerializer.prototype.app
+        .split(',')[0] // NetsBlox <version>
+        .replace(/NetsBlox /, '');
+
+    aboutTxt = 'NetsBlox v' + version + '\n\n'
+        + 'Copyright \u24B8 2017 Vanderbilt University\n'
+        + 'brian.broll@vanderbilt.edu, akos.ledeczi@vanderbilt.edu\n\n'
+
+        + 'NetsBlox is developed by Vanderbilt University with support\n'
+        + '          from the National Science Foundation (NSF)\n\n'
+
+        + 'NetsBlox extends Snap!, from the University of California, Berkeley and \n'
+        + 'is influenced and inspired by Scratch, from the Lifelong Kindergarten\n'
+        + 'group at the MIT Media Lab\n\n'
+        
+        + 'for more information see https://netsblox.org,\nhttp://snap.berkeley.edu '
+        + 'and http://scratch.mit.edu';
+
+    dlg = new DialogBoxMorph();
+    dlg.inform('About NetsBlox', aboutTxt, world);
+    dlg.fixLayout();
+    dlg.drawNew();
 };
 
 NetsBloxMorph.prototype.reportBug = function () {
