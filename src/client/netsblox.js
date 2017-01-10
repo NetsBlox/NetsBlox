@@ -1162,8 +1162,6 @@ NetsBloxMorph.prototype.aboutNetsBlox = function () {
         .replace(/NetsBlox /, '');
 
     aboutTxt = 'NetsBlox v' + version + '\n\n'
-        + 'Copyright \u24B8 2017 Vanderbilt University\n'
-        + 'brian.broll@vanderbilt.edu, akos.ledeczi@vanderbilt.edu\n\n'
 
         + 'NetsBlox is developed by Vanderbilt University with support\n'
         + '          from the National Science Foundation (NSF)\n\n'
