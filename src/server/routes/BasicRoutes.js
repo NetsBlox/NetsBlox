@@ -30,7 +30,8 @@ var R = require('ramda'),
         'help',
         'Backgrounds'
     ],
-    CLIENT_ROOT = path.join(__dirname, '..', '..', 'client', 'Snap--Build-Your-Own-Blocks'),
+    CLIENT_ROOT = path.join(__dirname, '..', '..', 'client'),
+    SNAP_ROOT = path.join(CLIENT_ROOT, 'Snap--Build-Your-Own-Blocks'),
     PUBLIC_FILES = [
         'snap_logo_sm.png',
         'tools.xml'
@@ -47,7 +48,7 @@ var createIndexFor = function(name, list) {
 
 // Create the paths
 var resourcePaths = PATHS.map(function(name) {
-    var resPath = path.join(CLIENT_ROOT, name);
+    var resPath = path.join(SNAP_ROOT, name);
 
     return { 
         Method: 'get', 
@@ -76,7 +77,11 @@ resourcePaths = resourcePaths.concat(PUBLIC_FILES.map(file => {
         Method: 'get', 
         URL: file,
         Handler: function(req, res) {
-            res.sendFile(path.join(CLIENT_ROOT, file));
+            if (file.includes('logo')) {
+                res.sendFile(path.join(CLIENT_ROOT, 'netsblox_logo_sm.png'));
+            } else {
+                res.sendFile(path.join(SNAP_ROOT, file));
+            }
         }
     };
 }));
