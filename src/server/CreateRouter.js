@@ -21,7 +21,6 @@ var createRouter = function() {
     middleware.init(this);
 
     routes.forEach(function(api) {
-        // TODO: Add an authentication step to user routes (check the cookie)
         var method = api.Method.toLowerCase();
         api.URL = '/' + api.URL;
         logger.log(`adding "${method}" to ${api.URL}`);
