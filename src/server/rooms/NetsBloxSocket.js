@@ -403,11 +403,11 @@ NetsBloxSocket.MessageHandlers = {
             projectId = 'n/a',
             record = {};
 
-        if (this.hasRoom(true)) {
+        if (this.hasRoom()) {
             record.projectId = this._room.uuid;
         }
 
-        record.username = this.username;
+        record.username = this.username === this.uuid ? 'n/a' : this.username;
         record.sessionId = sessionId;
         record.action = msg.action;
 
