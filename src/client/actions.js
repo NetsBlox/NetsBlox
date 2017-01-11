@@ -55,6 +55,7 @@ ActionManager.prototype._setField = function(field, value) {
 };
 
 SnapActions.serializer = new NetsBloxSerializer();
+SnapActions.__sessionId = Date.now();
 
 // Recording user actions
 SnapActions.__connect = function() {
@@ -73,7 +74,13 @@ SnapActions.send = function(json) {
     if (this._ws && this._ws.readyState === WebSocket.OPEN) {
         var msg = {};
         msg.type = 'record-action';
+        msg.sessionId = this.__sessionId;
         msg.action = json;
         this._ws.send(JSON.stringify(msg));
     }
+};
+
+SnapActions.loadProject = function() {
+    this.__sessionId = Date.now();
+    return ActionManager.prototype.loadProject.apply(this, arguments);
 };
