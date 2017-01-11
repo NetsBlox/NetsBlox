@@ -15,8 +15,8 @@ var express = require('express'),
     },
 
     // Routes
-    createRouter = require('./CreateRouter'),
     path = require('path'),
+    fs = require('fs'),
     // Logging
     Logger = require('./logger'),
 
@@ -75,8 +75,7 @@ Server.prototype.configureRoutes = function() {
 
     // Add routes
     this.app.use('/rpc', this.rpcManager.router);
-    createRouter.init(this._logger);
-    this.app.use('/api', createRouter.call(this));
+    this.app.use('/api', this.createRouter());
 
     // Initial page
     this.app.get('/', function(req, res) {
@@ -108,6 +107,40 @@ Server.prototype.stop = function(done) {
     done = done || Utils.nop;
     SocketManager.prototype.stop.call(this);
     this._server.close(done);
+};
+
+Server.prototype.createRouter = function() {
+    var router = express.Router({mergeParams: true}),
+        logger = this._logger.fork('API'),
+        middleware = require('./routes/middleware'),
+        routes;
+
+    // Load the routes from routes/
+    routes = fs.readdirSync(path.join(__dirname, 'routes'))
+        .filter(name => path.extname(name) === '.js')  // Only read js files
+        .filter(name => name !== 'middleware.js')  // ignore middleware file
+        .map(name => __dirname + '/routes/' + name)  // Create the file path
+        .map(filePath => require(filePath))  // Load the routes
+        .reduce((prev, next) => prev.concat(next), []);  // Merge all routes
+
+    middleware.init(this);
+
+    routes.forEach(api => {
+        var method = api.Method.toLowerCase();
+        api.URL = '/' + api.URL;
+        logger.log(`adding "${method}" to ${api.URL}`);
+
+        // Add the middleware
+        if (api.middleware) {
+            logger.trace(`adding "${method}" to ${api.URL}`);
+            var args = api.middleware.map(name => middleware[name]);
+            args.unshift(api.URL);
+            router.use.apply(router, args);
+        }
+
+        router.route(api.URL)[method](api.Handler.bind(this));
+    });
+    return router;
 };
 
 module.exports = Server;
