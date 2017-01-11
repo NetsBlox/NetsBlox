@@ -75,5 +75,17 @@ SnapActions.send = function(json) {
 SnapActions.loadProject = function() {
     this.__sessionId = Date.now();
 
-    return ActionManager.prototype.loadProject.apply(this, arguments);
+    // Send the project state
+    var msg = {},
+        str,
+        result;
+
+    result = ActionManager.prototype.loadProject.apply(this, arguments);
+
+    str = this.serializer.serialize(this.ide().stage);
+    msg.type = 'session-project';
+    msg.project = str;
+    this.send(msg);
+
+    return result;
 };
