@@ -2,7 +2,8 @@
 var MongoClient = require('mongodb').MongoClient,
     RPCStore = require('../rpc/storage'),
     UserStore = require('./UserStore'),
-    RoomStore = require('./RoomStore');
+    RoomStore = require('./RoomStore'),
+    UserActions = require('./UserActions');
 
 var Storage = function(logger, opts) {
     this._logger = logger.fork('Storage');
@@ -21,6 +22,7 @@ Storage.prototype.connect = function(callback) {
         this.users = new UserStore(this._logger, db);
         this.rooms = new RoomStore(this._logger, db);
         RPCStore.init(this._logger, db);
+        UserActions.init(this._logger, db);
 
         // TODO: Initialize collections
         this.onDatabaseConnected();
