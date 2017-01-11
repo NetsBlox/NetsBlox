@@ -16,6 +16,7 @@ var counter = 0,
     R = require('ramda'),
     parseXml = require('xml2js').parseString,
     assert = require('assert'),
+    UserActions = require('../storage/UserActions'),
     CONDENSED_MSGS = ['project-response', 'import-room'];
 
 var createSaveableProject = function(json, callback) {
@@ -64,8 +65,8 @@ class NetsBloxSocket {
     }
 
 
-    hasRoom () {
-        if (!this._room) {
+    hasRoom (silent) {
+        if (!this._room && !silent) {
             this._logger.error('user has no room!');
         }
         return !!this._room;
@@ -394,6 +395,24 @@ NetsBloxSocket.MessageHandlers = {
      
     'share-msg-type': function(msg) {
         this.sendToEveryone(msg);
+    },
+
+    // message for recording user actions
+    'record-action': function(msg) {
+        var sessionId = this.uuid + '/' + msg.sessionId,  // unique for the given editing session
+            projectId = 'n/a',
+            record = {};
+
+        if (this.hasRoom()) {
+            projectId = this._room.uuid;
+        }
+
+        record.username = this.username === this.uuid ? 'n/a' : this.username;
+        record.sessionId = sessionId;
+        record.projectId = projectId;
+        record.action = msg.action;
+
+        UserActions.record(record);  // Store action in the database by sessionId
     }
 };
 

@@ -55,3 +55,25 @@ ActionManager.prototype._setField = function(field, value) {
 };
 
 SnapActions.serializer = new NetsBloxSerializer();
+SnapActions.__sessionId = Date.now();
+
+// Recording user actions
+SnapActions.send = function(json) {
+    var ws = this.ide().sockets.websocket;
+
+    json.id = json.id || this.lastSeen + 1;
+    this.lastSent = json.id;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        var msg = {};
+        msg.type = 'record-action';
+        msg.sessionId = this.__sessionId;
+        msg.action = json;
+        ws.send(JSON.stringify(msg));
+    }
+};
+
+SnapActions.loadProject = function() {
+    this.__sessionId = Date.now();
+
+    return ActionManager.prototype.loadProject.apply(this, arguments);
+};

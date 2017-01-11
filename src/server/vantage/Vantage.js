@@ -6,11 +6,13 @@ var vantage = require('vantage')(),
     repl = require('vantage-repl'),
     R = require('ramda'),
     fs = require('fs'),
+    exists = require('exists-file'),
     banner,
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
     ],
     CONSTANTS = require('../../common/Constants'),
+    UserActions = require('../storage/UserActions'),
     NO_USER_LABEL = '<vacant>';
 
 // Set the banner
@@ -137,12 +139,115 @@ var NetsBloxVantage = function(server) {
 
     // Expose variables for easy debugging
     global.server = server;
+
+    // User Action Data
+    vantage
+        .command('sessions', 'Query the recorded user sessions')
+        .option('-l, --long', 'List additional metadata about the sessions')
+        .option('--clear', 'Clear the user data records')
+        .action((args, cb) => {
+            UserActions.sessions()
+                .then(sessions => {
+                    var ids = sessions.map(session => session.id),
+                        index = ids.map((id, index) => `${id} (${index+1})`).join('\n');
+
+                    if (args.options.long) {
+                        var lengths = sessions.map(sessions => sessions.actions.length),
+                            lasts = sessions.map((session, i) => session.actions[lengths[i]-1]),
+                            durations = sessions.map((session, i) => {
+                                var first = session.actions[0],
+                                    last = lasts[i];
+
+                                return last.action.time - first.action.time;
+                            }),
+                            usernames = sessions.map((session, i) => lasts[i].username),
+                            projectIds = sessions.map((session, i) => lasts[i].projectId),
+                            cats = [
+                                'sessionId\t',
+                                'time',
+                                'actions',
+                                'username',
+                                'projectId'
+                            ],
+                            lines;
+
+                        // duration, action counts, project name, username
+                        lines = ids.map((id, i) => [
+                            id,
+                            durations[i],
+                            lengths[i],
+                            usernames[i],
+                            projectIds[i]
+                        ].join('\t'));
+                        index = cats.join('\t') + '\n' + lines.join('\n');
+                    }
+
+                    if (args.options.clear) {
+                        var filename = 'user-actions-backup.json',
+                            i = 2,
+                            basename;
+
+                        basename = filename.replace('.json', '');
+                        while (exists.sync(filename)) {
+                            filename = `${basename} (${i++}).json`;
+                        }
+                        console.log('Creating user data backup at', filename);
+                        fs.writeFileSync(filename, JSON.stringify(sessions));
+                        console.log('Clearing user actions from database...');
+                        return UserActions.clear()
+                            .then(() => {
+                                console.log('User actions have been removed from the database.');
+                                cb();
+                            });
+                    }
+
+                    if (sessions.length) {
+                        console.log(index);
+                    } else {
+                        console.log('<no sessions>');
+                    }
+                    cb();
+                });
+        });
+
+    vantage
+        .command('session <uuid>', 'Query the recorded user session')
+        .option('-e, --export', 'Export the given session actions')
+        .action((args, cb) => {
+            var uuid = args.uuid,
+                getSession;
+
+            if (!isNaN(parseInt(args.uuid))) {
+                getSession = UserActions.sessionIds()
+                    .then(ids => {
+                        var index = parseInt(args.uuid);
+
+                        uuid = ids[index-1];
+                        return UserActions.session(uuid);
+                    });
+
+            } else {
+                getSession = UserActions.session(args.uuid);
+            }
+
+            getSession
+                .then(actions => {
+                    if (args.options.export) {
+                        fs.writeFileSync(args.options.export, JSON.stringify(actions, null, 2));
+                        console.log('exported session to', args.options.export);
+                    } else {
+                        console.log(actions);
+                    }
+                    cb();
+                });
+        });
 };
 
 NetsBloxVantage.prototype.initRoomManagement = function(server) {
     vantage
         .command('rooms', 'List all active rooms')
         .option('-e, --entries', 'List the entries from the manager')
+        .option('-l, --long', 'Display long format')
         .alias('rs')
         //.option('--with-names', 'Include the group names')
         .action(function(args, cb) {
@@ -154,6 +259,10 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
                         .map(role => {
                             let client = room.roles[role],
                                 username = client ? client.username : NO_USER_LABEL;
+
+                            if (args.options.long && client) {
+                                username = `${username} (${client.uuid})`;
+                            }
 
                             return `\t${role}: ${username}`;
                         });
@@ -170,7 +279,7 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
 
     vantage
         .command('room <uuid>', 'Look up room info from global database')
-        .alias('t')
+        .alias('r')
         .action((args, cb) => {
             server.storage.rooms.get(args.uuid, (err, room) => {
                 if (err || !room) {
@@ -219,6 +328,7 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
             return cb();
         });
 };
+
 
 NetsBloxVantage.checkSocket = function(args, nbSocket) {
     var socket = nbSocket._socket,
