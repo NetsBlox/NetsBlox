@@ -11,7 +11,6 @@ var R = require('ramda'),
         .filter(api => api.Service)
         .map(R.omit.bind(R, 'Handler'))
         .map(R.omit.bind(R, 'middleware')),
-    GameTypes = require('../GameTypes'),
 
     debug = require('debug'),
     log = debug('NetsBlox:API:log'),
@@ -187,7 +186,6 @@ module.exports = [
             log('Signup/validate request:', req.body.Username, req.body.Email);
             var self = this,
                 uname = req.body.Username,
-                password = req.body.Password,
                 email = req.body.Email;
 
             // Must have an email and username
@@ -221,7 +219,7 @@ module.exports = [
                 }
 
                 if (!username) {
-                    log(`"passive" login failed - no session found!`);
+                    log('"passive" login failed - no session found!');
                     if (req.body.silent) {
                         return res.sendStatus(204);
                     } else {
@@ -263,21 +261,13 @@ module.exports = [
                     } else {
                         if (user) {
                             log(`Incorrect password attempt for ${user.username}`);
-                            return res.status(403).send(`Incorrect password`);
+                            return res.status(403).send('Incorrect password');
                         }
                         log(`Could not find user "${username}"`);
                         return res.status(403).send(`Could not find user "${username}"`);
                     }
                 });
             });
-        }
-    },
-    // Add game types query
-    { 
-        Method: 'get', 
-        URL: 'GameTypes',
-        Handler: function(req, res) {
-            return res.status(200).json(GameTypes);
         }
     },
     // index
