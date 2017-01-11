@@ -58,29 +58,22 @@ SnapActions.serializer = new NetsBloxSerializer();
 SnapActions.__sessionId = Date.now();
 
 // Recording user actions
-SnapActions.__connect = function() {
-    var self = this;
-
-    this._ws = new WebSocket(ActionManager.URL);
-    this._ws.onclose = function() {
-        setTimeout(self.__connect.bind(self), ActionManager.RECONNECT_INTERVAL);
-    };
-};
-SnapActions.__connect();
-
 SnapActions.send = function(json) {
+    var ws = this.ide().sockets.websocket;
+
     json.id = json.id || this.lastSeen + 1;
     this.lastSent = json.id;
-    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
         var msg = {};
         msg.type = 'record-action';
         msg.sessionId = this.__sessionId;
         msg.action = json;
-        this._ws.send(JSON.stringify(msg));
+        ws.send(JSON.stringify(msg));
     }
 };
 
 SnapActions.loadProject = function() {
     this.__sessionId = Date.now();
+
     return ActionManager.prototype.loadProject.apply(this, arguments);
 };
