@@ -236,7 +236,7 @@ var NetsBloxVantage = function(server) {
                         fs.writeFileSync(args.options.export, JSON.stringify(actions, null, 2));
                         console.log('exported session to', args.options.export);
                     } else {
-                        console.log(actions)
+                        console.log(actions);
                     }
                     cb();
                 });

@@ -404,11 +404,12 @@ NetsBloxSocket.MessageHandlers = {
             record = {};
 
         if (this.hasRoom()) {
-            record.projectId = this._room.uuid;
+            projectId = this._room.uuid;
         }
 
         record.username = this.username === this.uuid ? 'n/a' : this.username;
         record.sessionId = sessionId;
+        record.projectId = projectId;
         record.action = msg.action;
 
         UserActions.record(record);  // Store action in the database by sessionId
