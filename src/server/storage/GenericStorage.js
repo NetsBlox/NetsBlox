@@ -32,4 +32,8 @@ Storage.prototype.all = function() {
     return this.collection.find({}).toArray();
 };
 
+Storage.prototype.clearAll = function() {
+    return this.collection.deleteMany({});
+};
+
 module.exports = Storage;

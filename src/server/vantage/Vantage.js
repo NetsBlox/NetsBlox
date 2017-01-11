@@ -6,6 +6,7 @@ var vantage = require('vantage')(),
     repl = require('vantage-repl'),
     R = require('ramda'),
     fs = require('fs'),
+    exists = require('exists-file'),
     banner,
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
@@ -143,6 +144,7 @@ var NetsBloxVantage = function(server) {
     vantage
         .command('sessions', 'Query the recorded user sessions')
         .option('-l, --long', 'List additional metadata about the sessions')
+        .option('--clear', 'Clear the user data records')
         .action((args, cb) => {
             UserActions.sessions()
                 .then(sessions => {
@@ -180,7 +182,30 @@ var NetsBloxVantage = function(server) {
                         index = cats.join('\t') + '\n' + lines.join('\n');
                     }
 
-                    console.log(index);
+                    if (args.options.clear) {
+                        var filename = 'user-actions-backup.json',
+                            i = 2,
+                            basename;
+
+                        basename = filename.replace('.json', '');
+                        while (exists.sync(filename)) {
+                            filename = `${basename} (${i++}).json`;
+                        }
+                        console.log('Creating user data backup at', filename);
+                        fs.writeFileSync(filename, JSON.stringify(sessions));
+                        console.log('Clearing user actions from database...');
+                        return UserActions.clear()
+                            .then(() => {
+                                console.log('User actions have been removed from the database.');
+                                cb();
+                            });
+                    }
+
+                    if (sessions.length) {
+                        console.log(index);
+                    } else {
+                        console.log('<no sessions>');
+                    }
                     cb();
                 });
         });

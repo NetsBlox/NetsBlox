@@ -45,4 +45,8 @@
         return storage.get(sessionId);
     };
 
+    UserActionData.clear = function() {
+        return storage.clearAll();
+    };
+
 })(exports);
