@@ -1233,7 +1233,7 @@ NetsBloxMorph.prototype.reportBug = function () {
     text.edit();
 };
 
-NetsBloxMorph.prototype.submitBugReport = function (desc) {
+NetsBloxMorph.prototype.submitBugReport = function (desc, silent) {
     var myself = this,
         report = {};
 
@@ -1260,7 +1260,7 @@ NetsBloxMorph.prototype.submitBugReport = function (desc) {
     request.open('post', url);
     request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
     request.onreadystatechange = function () {
-        if (request.readyState === 4) {
+        if (request.readyState === 4 && !silent) {
             if (request.status > 199 && request.status < 400) {  // success
                 myself.showMessage(localize('Bug has been reported!'), 2);
             } else {  // failed...
