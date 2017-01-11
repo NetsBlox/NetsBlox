@@ -20,18 +20,6 @@ var serialize = function(service) {
     return encodeURI(pairs.map(R.join('=')).join('&'));
 };
 
-var loadJsFiles = function(dir) {
-    return fs.readdirSync(dir)
-        // Get only js files
-        .filter(name => path.extname(name) === '.js')
-        // Require the files
-        .map(R.pipe(
-            R.nthArg(0),
-            path.join.bind(path, dir), 
-            require
-        ));
-};
-
 var uuid = function(owner, name) {
     return owner + '/' + name;
 };
@@ -113,7 +101,6 @@ var getArgumentsFor = function(fn) {
 
 module.exports = {
     serialize: serialize,
-    loadJsFiles: loadJsFiles,
     serializeArray: serializeArray,
     serializeRole: serializeRole,
     joinActiveProject: joinActiveProject,
