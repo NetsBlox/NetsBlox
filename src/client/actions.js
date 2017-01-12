@@ -82,3 +82,13 @@ SnapActions.loadProject = function() {
 
     return event;
 };
+
+SnapActions._applyEvent = function() {
+    try {
+        return ActionManager.prototype._applyEvent.apply(this, arguments);
+    } catch (e) {
+        // Report the error!
+        this.ide().submitBugReport('Auto-report:\n' + e.stack, true);
+        throw e;
+    }
+};
