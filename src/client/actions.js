@@ -59,33 +59,26 @@ SnapActions.__sessionId = Date.now();
 
 // Recording user actions
 SnapActions.send = function(json) {
-    var ws = this.ide().sockets.websocket;
+    var socket = this.ide().sockets,
+        msg = {};
 
     json.id = json.id || this.lastSeen + 1;
     this.lastSent = json.id;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        var msg = {};
-        msg.type = 'record-action';
-        msg.sessionId = this.__sessionId;
-        msg.action = json;
-        ws.send(JSON.stringify(msg));
-    }
+
+    msg.type = 'record-action';
+    msg.sessionId = this.__sessionId;
+    msg.action = json;
+    socket.sendMessage(msg);
 };
 
 SnapActions.loadProject = function() {
+    var event;
+
     this.__sessionId = Date.now();
 
     // Send the project state
-    var msg = {},
-        str,
-        result;
+    event = ActionManager.prototype.loadProject.apply(this, arguments);
+    this.send(event);
 
-    result = ActionManager.prototype.loadProject.apply(this, arguments);
-
-    str = this.serializer.serialize(this.ide().stage);
-    msg.type = 'openProject';
-    msg.project = str;
-    this.send(msg);
-
-    return result;
+    return event;
 };
