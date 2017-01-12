@@ -83,7 +83,7 @@ SnapActions.loadProject = function() {
     result = ActionManager.prototype.loadProject.apply(this, arguments);
 
     str = this.serializer.serialize(this.ide().stage);
-    msg.type = 'session-project';
+    msg.type = 'openProject';
     msg.project = str;
     this.send(msg);
 
