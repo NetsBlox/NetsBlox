@@ -166,7 +166,7 @@ Battleship.prototype.fire = function(row, column) {
         socket._room.sockets().forEach(s => s.send(msg));
     }
 
-    this.socket.send(!!result);
+    this.response.send(!!result);
     return !!result;
 };
 
@@ -178,7 +178,7 @@ Battleship.prototype.remainingShips = function(roleId) {
         this._boards[role] = new Board(BOARD_SIZE);
     }
 
-    return this.response.send(this._boards[role].remaining());
+    return this._boards[role].remaining();
 };
 
 Battleship.prototype.allShips = function() {
