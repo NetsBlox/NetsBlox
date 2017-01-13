@@ -1298,20 +1298,23 @@ NetsBloxMorph.prototype.loadBugReport = function () {
             myself.filePicker = null;
 
             reader.onloadend = function(result) {
-                var report = JSON.parse(result.target.result);
+                var report = JSON.parse(result.target.result),
+                    allEvents = report.undoState.allEvents,
+                    action;
 
-                // Open the project
-                myself.droppedText(report.project);
-
-                // Update the undo state
-                setTimeout(function() {
-                    var keys = Object.keys(report.undoState);
-                    for (var i = keys.length; i--;) {
-                        SnapUndo[keys[i]] = report.undoState[keys[i]];
-                    }
-                    myself.showMessage('Loaded bug report:\n' + report.description);
-
-                }, 10);
+                // Replay from 'allEvents'
+                allEvents.forEach(function(event, i) {
+                    setTimeout(function() {
+                        SnapActions.applyEvent(event)
+                            .accept(function() {
+                                //action = SnapActions.applyEvent(event);
+                                myself.showMessage('applied #' + i + ' (' + event.type + ')');
+                            })
+                            .reject(function() {
+                                myself.showMessage('Action failed: ' + event.type);
+                            });
+                    }, 500 * i);
+                });
 
                 return;
             };
