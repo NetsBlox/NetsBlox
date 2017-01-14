@@ -89,9 +89,8 @@ NetsBloxSerializer.prototype.openProject = function (project, ide) {
     //  watcher.onNextStep = function () {this.currentValue = null;};
     //})
 
-    // Update the collaborator
-    SnapActions.loadProject(ide, project.collabStartIndex);
     ide.world().keyboardReceiver = project.stage;
+    return project;
 };
 
 

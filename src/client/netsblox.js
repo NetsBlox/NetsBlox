@@ -158,6 +158,7 @@ NetsBloxMorph.prototype.loadNextRoom = function () {
 };
 
 NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
+    var project;
     StageMorph.prototype.hiddenPrimitives = {};
     StageMorph.prototype.codeMappings = {};
     StageMorph.prototype.codeHeaders = {};
@@ -167,7 +168,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
         try {
             model = parsed ? model : this.serializer.parse(model);
             this.serializer.loadMediaModel(model.childNamed('media'));
-            this.serializer.openProject(
+            project = this.serializer.openProject(
                 this.serializer.loadProjectModel(
                     model.childNamed('project'),
                     this
@@ -182,7 +183,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
     } else {
         model = parsed ? model : this.serializer.parse(model);
         this.serializer.loadMediaModel(model.childNamed('media'));
-        this.serializer.openProject(
+        project = this.serializer.openProject(
             this.serializer.loadProjectModel(
                 model.childNamed('project'),
                 this
@@ -191,6 +192,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
         );
         this.loadNextRoom();
     }
+    SnapActions.loadProject(this, project.collabStartIndex, model.toString());
     this.stopFastTracking();
 };
 
