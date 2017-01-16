@@ -158,6 +158,7 @@ NetsBloxMorph.prototype.loadNextRoom = function () {
 };
 
 NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
+    var project;
     StageMorph.prototype.hiddenPrimitives = {};
     StageMorph.prototype.codeMappings = {};
     StageMorph.prototype.codeHeaders = {};
@@ -167,7 +168,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
         try {
             model = parsed ? model : this.serializer.parse(model);
             this.serializer.loadMediaModel(model.childNamed('media'));
-            this.serializer.openProject(
+            project = this.serializer.openProject(
                 this.serializer.loadProjectModel(
                     model.childNamed('project'),
                     this
@@ -182,7 +183,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
     } else {
         model = parsed ? model : this.serializer.parse(model);
         this.serializer.loadMediaModel(model.childNamed('media'));
-        this.serializer.openProject(
+        project = this.serializer.openProject(
             this.serializer.loadProjectModel(
                 model.childNamed('project'),
                 this
@@ -191,6 +192,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
         );
         this.loadNextRoom();
     }
+    SnapActions.loadProject(this, project.collabStartIndex, model.toString());
     this.stopFastTracking();
 };
 
@@ -1298,20 +1300,23 @@ NetsBloxMorph.prototype.loadBugReport = function () {
             myself.filePicker = null;
 
             reader.onloadend = function(result) {
-                var report = JSON.parse(result.target.result);
+                var report = JSON.parse(result.target.result),
+                    allEvents = report.undoState.allEvents,
+                    action;
 
-                // Open the project
-                myself.droppedText(report.project);
-
-                // Update the undo state
-                setTimeout(function() {
-                    var keys = Object.keys(report.undoState);
-                    for (var i = keys.length; i--;) {
-                        SnapUndo[keys[i]] = report.undoState[keys[i]];
-                    }
-                    myself.showMessage('Loaded bug report:\n' + report.description);
-
-                }, 10);
+                // Replay from 'allEvents'
+                allEvents.forEach(function(event, i) {
+                    setTimeout(function() {
+                        SnapActions.applyEvent(event)
+                            .accept(function() {
+                                //action = SnapActions.applyEvent(event);
+                                myself.showMessage('applied #' + i + ' (' + event.type + ')');
+                            })
+                            .reject(function() {
+                                myself.showMessage('Action failed: ' + event.type);
+                            });
+                    }, 500 * i);
+                });
 
                 return;
             };
