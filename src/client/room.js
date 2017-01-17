@@ -830,17 +830,25 @@ function EditRoleMorph(room, role) {
         this.addButton('deleteRole', 'Delete role');
     }
     this.addButton('cancel', 'Cancel');
-
-    // FIXME: This isn't centering it
-    this.drawNew();
-    var center = this.center();
-    this.label.setCenter(center);
-    txt.setCenter(center);
 }
 
 EditRoleMorph.prototype.inviteUser = function() {
     this.room.inviteUser(this.role.name);
     this.destroy();
+};
+
+EditRoleMorph.prototype.fixLayout = function() {
+    var center = this.center();
+
+    EditRoleMorph.uber.fixLayout.call(this);
+
+    if (this.label) {
+        this.label.setLeft(center.x - this.label.width()/2);
+    }
+
+    if (this.body) {
+        this.body.setLeft(center.x - this.body.width()/2);
+    }
 };
 
 EditRoleMorph.prototype.editRoleName = function() {
