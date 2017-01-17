@@ -94,12 +94,6 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name, callback) {
     }
 };
 
-RoomManager.prototype.onCreate = function() {
-};
-
-RoomManager.prototype.getActiveMembers = function() {
-};
-
 RoomManager.prototype.checkRoom = function(room) {
     var uuid = room.uuid,
         roles = Object.keys(room.roles)
