@@ -38,7 +38,7 @@ var Server = function(opts) {
     // Group and RPC Managers
     this.rpcManager = RPCManager;
     RPCManager.init(this);
-    RoomManager.init(this.storage);
+    RoomManager.init(this._logger, this.storage);
 
     this.mobileManager = new MobileManager();
 

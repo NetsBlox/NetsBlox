@@ -2,7 +2,6 @@
 'use strict';
 
 var WebSocketServer = require('ws').Server,
-    RoomManager = require('./rooms/RoomManager'),
     Socket = require('./rooms/NetsBloxSocket'),
     logger;
 

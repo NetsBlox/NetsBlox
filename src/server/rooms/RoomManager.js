@@ -7,15 +7,12 @@
 'use strict';
 
 var ActiveRoom = require('./ActiveRoom'),
-    Logger = require('../logger'),
     utils = require('../ServerUtils');
 
 var RoomManager = function() {
     var self = this;
-    this._logger = new Logger('NetsBlox:Rooms');
     this.rooms = {};
 
-    // TODO: Move this to the ActiveRoom.js file
     ActiveRoom.prototype.onUuidChange = function(oldUuid) {
         var room = this;
         // update the rooms dictionary
@@ -30,7 +27,8 @@ var RoomManager = function() {
     };
 };
 
-RoomManager.prototype.init = function(storage) {
+RoomManager.prototype.init = function(logger, storage) {
+    this._logger = logger.fork('Rooms');
     this.storage = storage;
 };
 
