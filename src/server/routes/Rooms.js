@@ -8,6 +8,7 @@ var _ = require('lodash'),
     warn = debug('NetsBlox:API:Rooms:warn'),
     error = debug('NetsBlox:API:Rooms:error'),
     utils = require('../ServerUtils'),
+    RoomManager = require('../rooms/RoomManager'),
     invites = {};
 
 
@@ -27,7 +28,7 @@ var acceptInvitation = function(username, id, response, socketId, callback) {
 
     if (response) {
         // Add the roleId to the room (if doesn't exist)
-        let room = this.rooms[invite.room],
+        let room = RoomManager.rooms[invite.room],
             project;
 
         if (!room) {
@@ -92,7 +93,7 @@ module.exports = [
                 roomId = Utils.uuid(ownerId, roomName),
                 userId = req.body.userId,
                 socket,
-                room = this.rooms[roomId];
+                room = RoomManager.rooms[roomId];
 
             // Get the socket at the given room role
             log(`roomId is ${roomId}`);
@@ -111,7 +112,7 @@ module.exports = [
                 if (userId === ownerId) {  // removing another instance of self
                     socket.newRoom();
                 } else {  // Fork the room
-                    this.forkRoom({room, socket});
+                    RoomManager.forkRoom({room, socket});
                 }
                 room.onRolesChanged();
             } else {
@@ -222,7 +223,7 @@ module.exports = [
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName,
                 roomId = utils.uuid(ownerId, roomName),
-                room = this.rooms[roomId];
+                room = RoomManager.rooms[roomId];
 
             //  Get the room
             if (!room) {
@@ -245,7 +246,7 @@ module.exports = [
             //  TODO: Check that the owner doesn't remove the last role
             // If the role has an owner...
             if (room.roles[roleId]) {
-                this.forkRoom({room, roleId});
+                RoomManager.forkRoom({room, roleId});
             }
 
             //  Remove the given role
@@ -267,7 +268,7 @@ module.exports = [
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName,
                 roomId = Utils.uuid(ownerId, roomName),
-                room = this.rooms[roomId];
+                room = RoomManager.rooms[roomId];
 
             if (!socket) {
                 this._logger.error('Could not find socket for ' + socketId);

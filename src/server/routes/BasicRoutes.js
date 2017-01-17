@@ -2,6 +2,7 @@
 var R = require('ramda'),
     _ = require('lodash'),
     Utils = _.extend(require('../Utils'), require('../ServerUtils.js')),
+    RoomManager = require('../rooms/RoomManager'),
     UserAPI = require('./Users'),
     RoomAPI = require('./Rooms'),
     ProjectAPI = require('./Projects'),
@@ -311,10 +312,10 @@ module.exports = [
                 room = this.rooms[Utils.uuid(socket.username, name)];
 
                 if (!room) {  // Create the room
-                    room = this.createRoom(socket, name);
+                    room = RoomManager.createRoom(socket, name);
                     room = _.extend(room, example);
                     // Check the room in 10 seconds
-                    setTimeout(this.checkRoom.bind(this, room), 10000);
+                    setTimeout(RoomManager.checkRoom.bind(RoomManager, room), 10000);
                 }
 
                 // Add the user to the given room

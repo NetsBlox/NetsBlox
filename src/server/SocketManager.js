@@ -12,22 +12,10 @@ var SocketManager = function(_logger) {
     this.sockets = {};
 
     // Provide getter for sockets
-    var self = this;
-    Socket.prototype.getRoom = function(uuid, name, callback) {
-        return self.getRoom(this, uuid, name, callback);
-    };
-    Socket.prototype.createRoom = RoomManager.prototype.createRoom.bind(this);
-    Socket.prototype.checkRoom = RoomManager.prototype.checkRoom.bind(this);
     Socket.prototype.onClose = SocketManager.prototype.onClose.bind(this);
 };
 
 
-/**
- * Start the WebSocket server and start the socket updating interval.
- *
- * @param {Object} opts
- * @return {undefined}
- */
 SocketManager.prototype.start = function(options) {
     this._wss = new WebSocketServer(options);
     logger.info('WebSocket server started!');
@@ -60,4 +48,5 @@ SocketManager.prototype.socketsFor = function(username) {
     return sockets;
 };
 
+// TODO: Make this a singleton
 module.exports = SocketManager;

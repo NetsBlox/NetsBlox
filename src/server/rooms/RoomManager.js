@@ -7,16 +7,15 @@
 'use strict';
 
 var ActiveRoom = require('./ActiveRoom'),
+    Logger = require('../logger'),
     utils = require('../ServerUtils');
 
-var RoomManager = function(logger) {
+var RoomManager = function() {
     var self = this;
-    this._logger = logger.fork('Rooms');
+    this._logger = new Logger('NetsBlox:Rooms');
     this.rooms = {};
-    if (!this.storage) {
-        this._logger.warn('missing storage component!');
-    }
 
+    // TODO: Move this to the ActiveRoom.js file
     ActiveRoom.prototype.onUuidChange = function(oldUuid) {
         var room = this;
         // update the rooms dictionary
@@ -29,10 +28,10 @@ var RoomManager = function(logger) {
         this._logger.trace(`Removing room ${this.uuid}`);
         delete self.rooms[this.uuid];
     };
+};
 
-    ActiveRoom.prototype.check = function() {
-        self.checkRoom(this);
-    };
+RoomManager.prototype.init = function(storage) {
+    this.storage = storage;
 };
 
 RoomManager.prototype.forkRoom = function(params) {
@@ -114,4 +113,4 @@ RoomManager.prototype.checkRoom = function(room) {
     }
 };
 
-module.exports = RoomManager;
+module.exports = new RoomManager();

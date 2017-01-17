@@ -12,6 +12,7 @@ var vantage = require('vantage')(),
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
     ],
     CONSTANTS = require('../../common/Constants'),
+    RoomManager = require('../rooms/RoomManager'),
     UserActions = require('../storage/UserActions'),
     NO_USER_LABEL = '<vacant>';
 
@@ -253,7 +254,7 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
         .action(function(args, cb) {
             // Get all groups
             var header = '* * * * * * * Rooms * * * * * * * \n',
-                rooms = R.values(server.rooms),
+                rooms = R.values(RoomManager.rooms),
                 text = rooms.map(function(room) {
                     var clients = Object.keys(room.roles)
                         .map(role => {
@@ -271,7 +272,7 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
                 }).join('\n');
 
             if (args.options.entries) {
-                text = Object.keys(server.rooms).join('\n');
+                text = Object.keys(RoomManager.rooms).join('\n');
             }
             console.log(header+text);
             return cb();

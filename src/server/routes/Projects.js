@@ -4,6 +4,7 @@ var _ = require('lodash'),
     Utils = _.extend(require('../Utils'), require('../ServerUtils.js')),
 
     middleware = require('./middleware'),
+    RoomManager = require('../rooms/RoomManager'),
     debug = require('debug'),
     log = debug('NetsBlox:API:Projects:log'),
     info = debug('NetsBlox:API:Projects:info'),
@@ -77,7 +78,7 @@ var getRoomsNamed = function(name, user) {
     trace(`found room ${name} for ${user.username}`);
 
     if (room) {
-        activeRoom = this.rooms[Utils.uuid(room.owner, room.name)];
+        activeRoom = RoomManager.rooms[Utils.uuid(room.owner, room.name)];
     }
 
     return {

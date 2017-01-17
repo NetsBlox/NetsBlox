@@ -24,8 +24,7 @@ var express = require('express'),
     cookieParser = require('cookie-parser');
 
 var BASE_CLASSES = [
-    SocketManager,
-    RoomManager
+    SocketManager
 ];
 var Server = function(opts) {
     this._logger = new Logger('NetsBlox');
@@ -39,6 +38,7 @@ var Server = function(opts) {
     // Group and RPC Managers
     this.rpcManager = RPCManager;
     RPCManager.init(this);
+    RoomManager.init(this.storage);
 
     this.mobileManager = new MobileManager();
 
