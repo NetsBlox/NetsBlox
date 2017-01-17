@@ -23,9 +23,6 @@ var express = require('express'),
     // Session and cookie info
     cookieParser = require('cookie-parser');
 
-var BASE_CLASSES = [
-    SocketManager
-];
 var Server = function(opts) {
     this._logger = new Logger('NetsBlox');
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
@@ -37,17 +34,11 @@ var Server = function(opts) {
 
     // Group and RPC Managers
     this.rpcManager = RPCManager;
-    RPCManager.init(this);
     RoomManager.init(this._logger, this.storage);
+    SocketManager.init(this._logger, this.storage);
 
     this.mobileManager = new MobileManager();
-
-    BASE_CLASSES.forEach(BASE => BASE.call(this, this._logger));
 };
-
-// Inherit from all the base classes
-var classes = [Server].concat(BASE_CLASSES).map(fn => fn.prototype);
-_.extend.apply(null, classes);
 
 Server.prototype.configureRoutes = function() {
     this.app.use(express.static(__dirname + '/../client/'));
@@ -93,7 +84,7 @@ Server.prototype.start = function(done) {
         self.configureRoutes();
         self._server = self.app.listen(self.opts.port, function(err) {
             console.log('listening on port ' + self.opts.port);
-            SocketManager.prototype.start.call(self, {server: self._server});
+            SocketManager.start({server: self._server});
             // Enable Vantage
             if (self.opts.vantage) {
                 new Vantage(self).start(self.opts.vantagePort);

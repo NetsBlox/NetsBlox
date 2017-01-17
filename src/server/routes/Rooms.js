@@ -9,11 +9,12 @@ var _ = require('lodash'),
     error = debug('NetsBlox:API:Rooms:error'),
     utils = require('../ServerUtils'),
     RoomManager = require('../rooms/RoomManager'),
+    SocketManager = require('../SocketManager'),
     invites = {};
 
 
 var acceptInvitation = function(username, id, response, socketId, callback) {
-    var socket = this.sockets[socketId],
+    var socket = SocketManager.sockets[socketId],
         invite = invites[id];
 
     // Ignore if the invite no longer exists
@@ -64,7 +65,7 @@ module.exports = [
         middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
-                uuids = Object.keys(this.sockets),
+                uuids = Object.keys(SocketManager.sockets),
                 socket,
                 resp = {};
 
@@ -72,7 +73,7 @@ module.exports = [
 
             warn('returning ALL active sockets');
             for (var i = uuids.length; i--;) {
-                socket = this.sockets[uuids[i]];
+                socket = SocketManager.sockets[uuids[i]];
                 if (socket.username !== username && socket.loggedIn) {
                     resp[socket.username] = uuids[i];
                 }
@@ -140,7 +141,7 @@ module.exports = [
                 roomId = utils.uuid(req.body.ownerId, roomName),
                 roleId = req.body.roleId,
                 inviteId = [inviter, invitee, roomId, roleId].join('-'),
-                inviteeSockets = this.socketsFor(invitee);
+                inviteeSockets = SocketManager.socketsFor(invitee);
 
             log(`${inviter} is inviting ${invitee} to ${roleId} at ${roomId}`);
 
@@ -193,7 +194,7 @@ module.exports = [
                 };
 
             // Notify other clients of response
-            this.socketsFor(invitee)
+            SocketManager.socketsFor(invitee)
                 .filter(socket => socket.uuid !== socketId)
                 .forEach(socket => socket.send(closeInvite));
 
@@ -262,7 +263,7 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             var socketId = req.body.socketId;
-            var socket = this.sockets[socketId],
+            var socket = SocketManager.sockets[socketId],
                 roleId = req.body.roleId,
                 dstId = req.body.dstId,
                 ownerId = req.body.ownerId,
@@ -305,7 +306,7 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             // Check that the requestor is the owner
-            var socket = this.sockets[req.body.socketId],
+            var socket = SocketManager.sockets[req.body.socketId],
                 roleId = req.body.roleId,
                 room = socket._room,
                 newRole;

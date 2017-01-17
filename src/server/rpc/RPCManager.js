@@ -11,6 +11,7 @@ var fs = require('fs'),
     express = require('express'),
     Logger = require('../logger'),
     PROCEDURES_DIR = path.join(__dirname,'procedures'),
+    SocketManager = require('../SocketManager'),
     utils = require('../ServerUtils'),
 
     RESERVED_FN_NAMES = require('../../common/Constants').RPC.RESERVED_FN_NAMES;
@@ -50,12 +51,6 @@ RPCManager.prototype.loadRPCs = function() {
 
             return RPCConstructor;
         });
-};
-
-RPCManager.prototype.init = function(socketManager) {
-    // In this object, they contain the RPC's owned by
-    // the associated active room.
-    this.socketManager = socketManager;
 };
 
 RPCManager.prototype.registerRPC = function(rpc) {
@@ -119,7 +114,7 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
 
     // Look up the rpc context
     // socket -> active room -> rpc contexts
-    socket = this.socketManager.sockets[uuid];
+    socket = SocketManager.sockets[uuid];
     if (!socket || !socket._room) {
         return null;
     }
@@ -158,7 +153,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         this._logger.log(`About to call ${RPC.getPath()}=>${action}`);
 
         // Add the netsblox socket for triggering network messages from an RPC
-        rpc.socket = this.socketManager.sockets[uuid];
+        rpc.socket = SocketManager.sockets[uuid];
         rpc.response = res;
 
         // Get the arguments

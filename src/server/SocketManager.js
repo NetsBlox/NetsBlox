@@ -2,11 +2,9 @@
 'use strict';
 
 var WebSocketServer = require('ws').Server,
-    Socket = require('./rooms/NetsBloxSocket'),
-    logger;
+    Socket = require('./rooms/NetsBloxSocket');
 
-var SocketManager = function(_logger) {
-    logger = _logger.fork('SocketManager');
+var SocketManager = function() {
     this._wss = null;
     this.sockets = {};
 
@@ -14,13 +12,16 @@ var SocketManager = function(_logger) {
     Socket.prototype.onClose = SocketManager.prototype.onClose.bind(this);
 };
 
+SocketManager.prototype.init = function(logger) {
+    this._logger = logger.fork('SocketManager');
+};
 
 SocketManager.prototype.start = function(options) {
     this._wss = new WebSocketServer(options);
-    logger.info('WebSocket server started!');
+    this._logger.info('WebSocket server started!');
 
     this._wss.on('connection', rawSocket => {
-        var socket = new Socket(logger, rawSocket);
+        var socket = new Socket(this._logger, rawSocket);
         this.sockets[socket.uuid] = socket;
     });
 };
@@ -47,5 +48,4 @@ SocketManager.prototype.socketsFor = function(username) {
     return sockets;
 };
 
-// TODO: Make this a singleton
-module.exports = SocketManager;
+module.exports = new SocketManager();
