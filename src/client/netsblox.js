@@ -1302,21 +1302,67 @@ NetsBloxMorph.prototype.loadBugReport = function () {
             reader.onloadend = function(result) {
                 var report = JSON.parse(result.target.result),
                     allEvents = report.undoState.allEvents,
-                    action;
+                    dialog = new DialogBoxMorph(null, nop),
+                    date,
+                    msg,
+                    choices = {};
 
-                // Replay from 'allEvents'
-                allEvents.forEach(function(event, i) {
+                choices['Replay All Events'] = function() {
+                    // Replay from 'allEvents'
+                    myself.replayEvents(allEvents);
+                    dialog.destroy();
+                };
+
+                choices['Replay Some Events'] = function() {
+                    var range = new Point(0, allEvents.length);
+
+                    new DialogBoxMorph(
+                        myself,
+                        function(point) {
+                            myself.replayEvents(allEvents.slice(point.x, point.y));
+                        },
+                        myself
+                    ).promptVector(
+                        'Which events?',
+                        range,
+                        range,
+                        'Start (inclusive)',
+                        'End (exclusive)',
+                        this.world(),
+                        null, // pic
+                        null // msg
+                    );
+                    dialog.destroy();
+                };
+
+                choices['Load Project'] = function() {
+                    myself.droppedText(report.project);
                     setTimeout(function() {
-                        SnapActions.applyEvent(event)
-                            .accept(function() {
-                                //action = SnapActions.applyEvent(event);
-                                myself.showMessage('applied #' + i + ' (' + event.type + ')');
-                            })
-                            .reject(function() {
-                                myself.showMessage('Action failed: ' + event.type);
-                            });
-                    }, 500 * i);
-                });
+                        var keys = Object.keys(report.undoState);
+                        for (var i = keys.length; i--;) {
+                            SnapUndo[keys[i]] = report.undoState[keys[i]];
+                        }
+                        myself.showMessage('Loaded bug report!');
+                    }, 10);
+                    dialog.destroy();
+                };
+
+                date = new Date(report.timestamp);
+                msg = [
+                    'User: ' + report.user,
+                    'Date: ' + date.toDateString() + ' ' + date.toLocaleTimeString(),
+                    'Version: ' + report.version,
+                    'Browser: ' + report.userAgent,
+                    'Event Count: ' + allEvents.length,
+                    'Description:\n\n' + report.description
+                ].join('\n');
+
+                dialog.ask(
+                    localize('Bug Report'),
+                    msg,
+                    myself.world(),
+                    choices
+                );
 
                 return;
             };
@@ -1327,4 +1373,21 @@ NetsBloxMorph.prototype.loadBugReport = function () {
     document.body.appendChild(inp);
     myself.filePicker = inp;
     inp.click();
+};
+
+NetsBloxMorph.prototype.replayEvents = function (events) {
+    var myself = this;
+
+    events.forEach(function(event, i) {
+        setTimeout(function() {
+            SnapActions.applyEvent(event)
+                .accept(function() {
+                    myself.showMessage('applied #' + i + ' (' + event.type + ')');
+                })
+                .reject(function() {
+                    myself.showMessage('Action failed: ' + event.type);
+                });
+        }, 500 * i);
+    });
+
 };
