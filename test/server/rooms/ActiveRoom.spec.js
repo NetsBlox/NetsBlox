@@ -1,6 +1,7 @@
 
 describe('ActiveRoom', function() {
     var ROOT_DIR = '../../../',
+        RoomManager = require(ROOT_DIR + 'src/server/rooms/RoomManager'),
         ActiveRoom = require(ROOT_DIR + 'src/server/rooms/ActiveRoom'),
         Logger = require(ROOT_DIR + 'src/server/logger'),
         Constants = require(ROOT_DIR + 'src/common/Constants'),

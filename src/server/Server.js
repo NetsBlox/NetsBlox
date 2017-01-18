@@ -96,7 +96,7 @@ Server.prototype.start = function(done) {
 
 Server.prototype.stop = function(done) {
     done = done || Utils.nop;
-    SocketManager.prototype.stop.call(this);
+    SocketManager.stop();
     this._server.close(done);
 };
 
