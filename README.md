@@ -5,13 +5,13 @@
 NetsBlox is a visual programming language which allows people to develop networked programs.
 
 ## Overview
-Netsblox is an extension of _Snap!_ which allows users to use some distributed systems principles and develop networked apps. That is, users can create apps that can interact with other instances of Netsblox.
+Netsblox is an extension of _Snap!_ which allows users to use some distributed systems principles and develop networked apps. That is, users can create apps that can interact with other instances of Netsblox. An introduction to the new networking features can be found [here](https://github.com/NetsBlox/NetsBlox/wiki/Introduction-to-Distributed-Programming-in-NetsBlox)
 
 Currently, we have support for networked _events_ and _messages_ where a message is like an event except contains some additional information. For example, in the Tic-Tac-Toe example, the user is able to  create a "TicTacToe" message which contains the row and column that the user played in.
 
 Along with the events and messages, we also currently support _remote procedure calls_. RPC's are implemented as REST endpoints on the server which can perform some of the more challenging computation for the student (allowing support to make more complicated apps) as well as providing access to extra utilities not otherwise available to the student.
 
-For example, if you import the `map-utilities` RPC blocks which gives the user access to Google Maps with a `map of (latitude), (longitude) with zoom (zoom)` block:
+For example, you can import the `Map utilities` service which gives the user access to Google Maps with a `map of (latitude), (longitude) with zoom (zoom)` block:
 
 ![Remote Procedure Returning a Costume](./map-blocks.png)
 
@@ -20,7 +20,7 @@ This results in the stage costume changing:
 ![Google map costume on the stage](./map-example.png)
 
 ## Installation
-Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= v4.0.0) and a [MongoDB](https://www.mongodb.com/download-center?jmp=nav#community) database. By default, NetsBlox will expect MongoDB to be running locally (this can be changed by setting the `MONGO_URI` environment variable).
+Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= v6.0.0) and a [MongoDB](https://www.mongodb.com/download-center?jmp=nav#community) database. By default, NetsBlox will expect MongoDB to be running locally (this can be changed by setting the `MONGO_URI` environment variable).
 
 First clone the repository and install the dependencies.
 ```
