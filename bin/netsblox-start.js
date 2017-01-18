@@ -23,11 +23,10 @@ app.get('/', function(req, res) {
 
 // Set the group manager
 var opts = {
-        port: port,
-        vantagePort: vport,
-        vantage: process.env.ENV !== 'production',
-        mongoURI: mongoURI || 'mongodb://localhost:27017'
-    };
+    port: port,
+    vantagePort: vport,
+    vantage: process.env.ENV !== 'production'
+};
 
 var Server = require('../src/server/Server'),
     server = new Server(opts);

@@ -1,5 +1,6 @@
 // Utilities for querying data (like from cli or in vantage)
 var Q = require('q'),
+    exists = require('exists-file'),
     fs = require('fs'),
     UserActions = require('../server/storage/UserActions');
 
@@ -105,16 +106,15 @@ var printSessions = (ids, options) => {
                 return JSON.stringify(actions, null, 2);
             } else {
                 return actions.map(action => {
-                        return [
-                            action.type,
-                            action.args.join(' ')
-                        ].join(' ');
-                    }).join('\n');
+                    return [
+                        action.type,
+                        action.args.join(' ')
+                    ].join(' ');
+                }).join('\n');
             }
         })
         .catch(err => console.err(err))
         .then(output => {
-            // TODO: Format this better
             if (options.export) {
                 fs.writeFileSync(options.export, output);
                 console.log('exported session to', options.export);

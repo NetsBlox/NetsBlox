@@ -7,7 +7,6 @@ var vantage = require('vantage')(),
     R = require('ramda'),
     Query = require('../../common/data-query'),
     fs = require('fs'),
-    exists = require('exists-file'),
     banner,
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
