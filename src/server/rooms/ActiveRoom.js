@@ -7,8 +7,7 @@ var R = require('ramda'),
     _ = require('lodash'),
     async = require('async'),
     utils = require('../ServerUtils'),
-    Constants = require('../../common/Constants'),
-    RoomManager = require('./RoomManager');
+    Constants = require('../../common/Constants');
 
 class ActiveRoom {
 
@@ -149,7 +148,7 @@ class ActiveRoom {
         this._logger.info(`moving from ${src} to ${dst}`);
         this.roles[src] = null;
         this.add(socket, dst);
-        RoomManager.checkRoom(this);
+        this.check();
     }
 
     sendFrom (socket, msg) {
@@ -228,7 +227,7 @@ class ActiveRoom {
 
         delete this.roles[id];
 
-        RoomManager.checkRoom(this);
+        this.check();
         this.onRolesChanged();
     }
 
@@ -248,7 +247,7 @@ class ActiveRoom {
         this.cachedProjects[newId] = this.cachedProjects[roleId];
 
         this.onRolesChanged();
-        RoomManager.checkRoom(this);
+        this.check();
     }
 
     onRolesChanged () {

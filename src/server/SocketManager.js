@@ -4,7 +4,6 @@
 var Socket = require('./rooms/NetsBloxSocket');
 
 var SocketManager = function() {
-    this._wss = null;
     this.sockets = {};
 
     // Provide getter for sockets

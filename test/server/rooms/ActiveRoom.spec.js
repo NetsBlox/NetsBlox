@@ -8,9 +8,15 @@ describe('ActiveRoom', function() {
         assert = require('assert'),
         logger = new Logger('ActiveRoom'),
         owner = {
-            username: 'test'
+            username: 'test',
+            _messages: [],
+            send: msg => owner._messages.push(msg)
         },
         room;
+
+    before(function() {
+        RoomManager.init(new Logger('ActiveRoomTest'), {}, ActiveRoom);
+    });
 
     describe('sendToEveryone', function() {
         var socket = {},
@@ -49,6 +55,27 @@ describe('ActiveRoom', function() {
                 done();
             };
             room.sendToEveryone(msg);
+        });
+    });
+
+    describe('move', function() {
+        before(function() {
+            room = new ActiveRoom(logger, 'moveTest', owner);
+            room.add(owner, 'myRole');
+            room.silentCreateRole('otherRole');
+            room.move({
+                src: 'myRole',
+                socket: owner,
+                dst: 'otherRole'
+            });
+        });
+
+        it('should move the socket to the target role', function() {
+            assert(room.roles['otherRole']);
+        });
+
+        it('should move the socket out of the src role', function() {
+            assert(!room.roles['myRole']);
         });
     });
 });

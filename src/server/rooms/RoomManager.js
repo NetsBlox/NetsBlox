@@ -1,9 +1,3 @@
-/*
- * RoomManager manages all the rooms. This includes:
- *  + Creating virtual clients for the projects w/o users
- *  + Getting the active peers at a room (for saving)
- */
-
 'use strict';
 
 var ActiveRoom = require('./ActiveRoom'),
@@ -24,6 +18,10 @@ var RoomManager = function() {
     ActiveRoom.prototype.destroy = function() {
         this._logger.trace(`Removing room ${this.uuid}`);
         delete self.rooms[this.uuid];
+    };
+
+    ActiveRoom.prototype.check = function() {
+        self.checkRoom(this);
     };
 };
 
@@ -99,7 +97,6 @@ RoomManager.prototype.checkRoom = function(room) {
 
     this._logger.trace('Checking room ' + uuid + ' (' + roles.length + ')');
     if (roles.length === 0) {
-        // FIXME: This will need to be updated for virtual clients
         this._logger.trace('Removing empty room: ' + uuid);
         delete this.rooms[uuid];
     }
