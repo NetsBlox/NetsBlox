@@ -95,14 +95,31 @@ var printSessions = (ids, options) => {
         .then(() => {
             return Q.all(ids.map(id => UserActions.session(id)));
         })
-        .then(actions => {
+        .then(sessions => {  // formatting..
+            // merge the sessions
+            var actions = sessions
+                .reduce((l1, l2) => l1.concat(l2), [])
+                .map(event => event.action);
+
+            if (options.json) {
+                return JSON.stringify(actions, null, 2);
+            } else {
+                return actions.map(action => {
+                        return [
+                            action.type,
+                            action.args.join(' ')
+                        ].join(' ');
+                    }).join('\n');
+            }
+        })
+        .catch(err => console.err(err))
+        .then(output => {
             // TODO: Format this better
-            actions = actions.map(act => act.map(action => action.action));
             if (options.export) {
-                fs.writeFileSync(options.export, JSON.stringify(actions, null, 2));
+                fs.writeFileSync(options.export, output);
                 console.log('exported session to', options.export);
             } else {
-                console.log(actions);
+                console.log(output);
             }
         });
 };

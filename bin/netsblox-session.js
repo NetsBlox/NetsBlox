@@ -9,11 +9,10 @@ var Command = require('commander').Command,
 
 program
     .arguments('[sessionIds...]')
-    .option('-l, --long', 'List additional metadata about the sessions')
-    .option('--clear', 'Clear the user data records')
+    .option('--json', 'Print actions in json')
     .parse(process.argv);
 
 storage.connect()
-    .then(() => Query.printSessions(program.args))
+    .then(() => Query.printSessions(program.args, program))
     .then(() => storage.disconnect())
     .catch(err => console.err(err));

@@ -161,33 +161,6 @@ var NetsBloxVantage = function(server) {
             return Query.printSessions([args.uuid], args.options)
                 .then(() => cb());
         });
-            var uuid = args.uuid,
-                getSession;
-
-            if (!isNaN(parseInt(args.uuid))) {
-                getSession = UserActions.sessionIds()
-                    .then(ids => {
-                        var index = parseInt(args.uuid);
-
-                        uuid = ids[index-1];
-                        return UserActions.session(uuid);
-                    });
-
-            } else {
-                getSession = UserActions.session(args.uuid);
-            }
-
-            getSession
-                .then(actions => {
-                    if (args.options.export) {
-                        fs.writeFileSync(args.options.export, JSON.stringify(actions, null, 2));
-                        console.log('exported session to', args.options.export);
-                    } else {
-                        console.log(actions);
-                    }
-                    cb();
-                });
-        });
 };
 
 NetsBloxVantage.prototype.initRoomManagement = function(server) {
