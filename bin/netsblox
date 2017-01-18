@@ -17,7 +17,7 @@ program
 program
     .command('start', 'start the netsblox server')
     .command('sessions', 'list the recorded data sessions')
-    .command('session [sessionId]', 'display collected session info')
+    .command('session [sessionId...]', 'display collected session info')
     .command('users', 'list the usernames')
     .command('user [sessionId]', 'display user information')
     .parse(process.argv);

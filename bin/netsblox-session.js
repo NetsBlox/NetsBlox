@@ -8,15 +8,12 @@ var Command = require('commander').Command,
     program = new Command();
 
 program
+    .arguments('[sessionIds...]')
     .option('-l, --long', 'List additional metadata about the sessions')
     .option('--clear', 'Clear the user data records')
     .parse(process.argv);
 
 storage.connect()
-    .then(() => {
-        logger.trace('About to request sessions');
-        return UserActions.sessions();
-    })
-    .then(sessions => Query.listSessions(sessions, program))
-    .catch(err => console.err(err))
-    .then(() => storage.disconnect());
+    .then(() => Query.printSessions(program.args))
+    .then(() => storage.disconnect())
+    .catch(err => console.err(err));
