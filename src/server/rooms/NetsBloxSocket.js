@@ -17,6 +17,7 @@ var counter = 0,
     parseXml = require('xml2js').parseString,
     assert = require('assert'),
     UserActions = require('../storage/UserActions'),
+    RoomManager = require('./RoomManager'),
     CONDENSED_MSGS = ['project-response', 'import-room'];
 
 var createSaveableProject = function(json, callback) {
@@ -151,7 +152,7 @@ class NetsBloxSocket {
         name = opts.room || opts.name || this.getNewName();
         this._logger.info(`"${this.username}" is making a new room "${name}"`);
 
-        room = this.createRoom(this, name);
+        room = RoomManager.createRoom(this, name);
         room.createRole(opts.role);
         this.join(room, opts.role);
     }
@@ -164,7 +165,7 @@ class NetsBloxSocket {
             this._room.close();
         } else {
             this._room.onRolesChanged();
-            this.checkRoom(this._room);
+            RoomManager.checkRoom(this._room);
         }
     }
 
@@ -288,7 +289,7 @@ NetsBloxSocket.MessageHandlers = {
             name = msg.room,
             role = msg.role;
 
-        this.getRoom(owner, name, (room) => {
+        RoomManager.getRoom(this, owner, name, (room) => {
             if (!room) {
                 this._logger.error(`Could not join room ${name} - doesn't exist!`);
                 return;

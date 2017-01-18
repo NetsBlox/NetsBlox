@@ -1,5 +1,6 @@
 var express = require('express'),
     bodyParser = require('body-parser'),
+    WebSocketServer = require('ws').Server,
     _ = require('lodash'),
     Utils = _.extend(require('./Utils'), require('./ServerUtils.js')),
     SocketManager = require('./SocketManager'),
@@ -15,18 +16,14 @@ var express = require('express'),
     },
 
     // Routes
-    createRouter = require('./CreateRouter'),
     path = require('path'),
+    fs = require('fs'),
     // Logging
     Logger = require('./logger'),
 
     // Session and cookie info
     cookieParser = require('cookie-parser');
 
-var BASE_CLASSES = [
-    SocketManager,
-    RoomManager
-];
 var Server = function(opts) {
     this._logger = new Logger('NetsBlox');
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
@@ -38,16 +35,11 @@ var Server = function(opts) {
 
     // Group and RPC Managers
     this.rpcManager = RPCManager;
-    RPCManager.init(this);
+    RoomManager.init(this._logger, this.storage);
+    SocketManager.init(this._logger, this.storage);
 
     this.mobileManager = new MobileManager();
-
-    BASE_CLASSES.forEach(BASE => BASE.call(this, this._logger));
 };
-
-// Inherit from all the base classes
-var classes = [Server].concat(BASE_CLASSES).map(fn => fn.prototype);
-_.extend.apply(null, classes);
 
 Server.prototype.configureRoutes = function() {
     this.app.use(express.static(__dirname + '/../client/'));
@@ -75,8 +67,7 @@ Server.prototype.configureRoutes = function() {
 
     // Add routes
     this.app.use('/rpc', this.rpcManager.router);
-    createRouter.init(this._logger);
-    this.app.use('/api', createRouter.call(this));
+    this.app.use('/api', this.createRouter());
 
     // Initial page
     this.app.get('/', function(req, res) {
@@ -85,19 +76,19 @@ Server.prototype.configureRoutes = function() {
 };
 
 Server.prototype.start = function(done) {
-    var self = this;
     done = done || Utils.nop;
-    self.storage.connect(function (err) {
+    this.storage.connect(err => {
         if (err) {
             return done(err);
         }
-        self.configureRoutes();
-        self._server = self.app.listen(self.opts.port, function(err) {
-            console.log('listening on port ' + self.opts.port);
-            SocketManager.prototype.start.call(self, {server: self._server});
+        this.configureRoutes();
+        this._server = this.app.listen(this.opts.port, err => {
+            console.log('listening on port ' + this.opts.port);
+            this._wss = new WebSocketServer({server: this._server});
+            SocketManager.enable(this._wss);
             // Enable Vantage
-            if (self.opts.vantage) {
-                new Vantage(self).start(self.opts.vantagePort);
+            if (this.opts.vantage) {
+                new Vantage(this).start(this.opts.vantagePort);
             }
             done(err);
         });
@@ -106,8 +97,42 @@ Server.prototype.start = function(done) {
 
 Server.prototype.stop = function(done) {
     done = done || Utils.nop;
-    SocketManager.prototype.stop.call(this);
+    this._wss.close();
     this._server.close(done);
+};
+
+Server.prototype.createRouter = function() {
+    var router = express.Router({mergeParams: true}),
+        logger = this._logger.fork('API'),
+        middleware = require('./routes/middleware'),
+        routes;
+
+    // Load the routes from routes/
+    routes = fs.readdirSync(path.join(__dirname, 'routes'))
+        .filter(name => path.extname(name) === '.js')  // Only read js files
+        .filter(name => name !== 'middleware.js')  // ignore middleware file
+        .map(name => __dirname + '/routes/' + name)  // Create the file path
+        .map(filePath => require(filePath))  // Load the routes
+        .reduce((prev, next) => prev.concat(next), []);  // Merge all routes
+
+    middleware.init(this);
+
+    routes.forEach(api => {
+        var method = api.Method.toLowerCase();
+        api.URL = '/' + api.URL;
+        logger.log(`adding "${method}" to ${api.URL}`);
+
+        // Add the middleware
+        if (api.middleware) {
+            logger.trace(`adding "${method}" to ${api.URL}`);
+            var args = api.middleware.map(name => middleware[name]);
+            args.unshift(api.URL);
+            router.use.apply(router, args);
+        }
+
+        router.route(api.URL)[method](api.Handler.bind(this));
+    });
+    return router;
 };
 
 module.exports = Server;

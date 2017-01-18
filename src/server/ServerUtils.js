@@ -3,13 +3,16 @@
 
 var R = require('ramda'),
     assert = require('assert'),
-    path = require('path'),
-    fs = require('fs'),
     debug = require('debug'),
     info = debug('NetsBlox:API:Utils:info'),
     trace = debug('NetsBlox:API:Utils:trace'),
     error = debug('NetsBlox:API:Utils:error');
 
+var uuid = function(owner, name) {
+    return owner + '/' + name;
+};
+
+// Helpers for routes
 var serializeArray = function(content) {
     assert(content instanceof Array);
     return content.map(serialize).join(' ');
@@ -18,22 +21,6 @@ var serializeArray = function(content) {
 var serialize = function(service) {
     var pairs = R.toPairs(service);
     return encodeURI(pairs.map(R.join('=')).join('&'));
-};
-
-var loadJsFiles = function(dir) {
-    return fs.readdirSync(dir)
-        // Get only js files
-        .filter(name => path.extname(name) === '.js')
-        // Require the files
-        .map(R.pipe(
-            R.nthArg(0),
-            path.join.bind(path, dir), 
-            require
-        ));
-};
-
-var uuid = function(owner, name) {
-    return owner + '/' + name;
 };
 
 var serializeRole = (project, roomName) => {
@@ -45,7 +32,6 @@ var serializeRole = (project, roomName) => {
         project))}&SourceCode=${src}`;
 };
 
-// Helper for routes
 var joinActiveProject = function(userId, room, res) {
     var serialized,
         openRole,
@@ -113,7 +99,6 @@ var getArgumentsFor = function(fn) {
 
 module.exports = {
     serialize: serialize,
-    loadJsFiles: loadJsFiles,
     serializeArray: serializeArray,
     serializeRole: serializeRole,
     joinActiveProject: joinActiveProject,

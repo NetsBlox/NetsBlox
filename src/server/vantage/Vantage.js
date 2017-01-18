@@ -12,6 +12,8 @@ var vantage = require('vantage')(),
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
     ],
     CONSTANTS = require('../../common/Constants'),
+    RoomManager = require('../rooms/RoomManager'),
+    SocketManager = require('../SocketManager'),
     UserActions = require('../storage/UserActions'),
     NO_USER_LABEL = '<vacant>';
 
@@ -253,7 +255,7 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
         .action(function(args, cb) {
             // Get all groups
             var header = '* * * * * * * Rooms * * * * * * * \n',
-                rooms = R.values(server.rooms),
+                rooms = R.values(RoomManager.rooms),
                 text = rooms.map(function(room) {
                     var clients = Object.keys(room.roles)
                         .map(role => {
@@ -271,7 +273,7 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
                 }).join('\n');
 
             if (args.options.entries) {
-                text = Object.keys(server.rooms).join('\n');
+                text = Object.keys(RoomManager.rooms).join('\n');
             }
             console.log(header+text);
             return cb();
@@ -305,26 +307,16 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
                 checkSocket = NetsBloxVantage.checkSocket.bind(null, args);
 
             if (args.uuid === 'all') {
-                result = Object.keys(server.sockets).map(function(uuid) {
-                    var socket = server.sockets[uuid];
+                result = Object.keys(SocketManager.sockets).map(function(uuid) {
+                    var socket = SocketManager.sockets[uuid];
                     return `${uuid} (${socket.username}):  ${checkSocket(socket)}`;
                 }).join('\n');
 
             } else {
-                var socket = server.sockets[args.uuid];
+                var socket = SocketManager.sockets[args.uuid];
                 result = checkSocket(socket);
             }
             console.log(result);
-            return cb();
-        });
-
-    vantage
-        .command('update sockets', 'Update the sockets')
-        .alias('us')
-        .action(function(args, cb) {
-            var comm = server.groupManager;
-            comm.sockets.forEach(comm.updateSocket, comm);
-            console.log('Updated sockets');
             return cb();
         });
 };

@@ -2,6 +2,7 @@
 var R = require('ramda'),
     _ = require('lodash'),
     Utils = _.extend(require('../Utils'), require('../ServerUtils.js')),
+    RoomManager = require('../rooms/RoomManager'),
     UserAPI = require('./Users'),
     RoomAPI = require('./Rooms'),
     ProjectAPI = require('./Projects'),
@@ -19,6 +20,7 @@ var R = require('ramda'),
     EXAMPLES = require('../examples'),
     mailer = require('../mailer'),
     middleware = require('./middleware'),
+    SocketManager = require('../SocketManager'),
     saveLogin = middleware.saveLogin,
 
     // PATHS
@@ -184,8 +186,7 @@ module.exports = [
         URL: 'SignUp/validate',
         Handler: function(req, res) {
             log('Signup/validate request:', req.body.Username, req.body.Email);
-            var self = this,
-                uname = req.body.Username,
+            var uname = req.body.Username,
                 email = req.body.Email;
 
             // Must have an email and username
@@ -194,7 +195,7 @@ module.exports = [
                 return res.status(400).send('ERROR: need both username and email!');
             }
 
-            self.storage.users.get(uname, function(e, user) {
+            this.storage.users.get(uname, (e, user) => {
                 if (!user) {
                     return res.send('Valid User Signup Request!');
                 }
@@ -243,7 +244,7 @@ module.exports = [
                         log(`"${user.username}" has logged in.`);
 
                         // Associate the websocket with the username
-                        socket = this.sockets[req.body.socketId];
+                        socket = SocketManager.sockets[req.body.socketId];
                         if (socket) {  // websocket has already connected
                             socket.onLogin(user);
                         }
@@ -302,19 +303,19 @@ module.exports = [
             // This needs to...
             //  + create the room for the socket
             example = _.cloneDeep(EXAMPLES[name]);
-            socket = this.sockets[uuid];
+            socket = SocketManager.sockets[uuid];
             var role,
                 room;
 
             if (!isPreview) {
                 // Check if the room already exists
-                room = this.rooms[Utils.uuid(socket.username, name)];
+                room = RoomManager.rooms[Utils.uuid(socket.username, name)];
 
                 if (!room) {  // Create the room
-                    room = this.createRoom(socket, name);
+                    room = RoomManager.createRoom(socket, name);
                     room = _.extend(room, example);
                     // Check the room in 10 seconds
-                    setTimeout(this.checkRoom.bind(this, room), 10000);
+                    setTimeout(RoomManager.checkRoom.bind(RoomManager, room), 10000);
                 }
 
                 // Add the user to the given room

@@ -6,17 +6,4 @@ var ServerUtils = require(__dirname+'/../../src/server/ServerUtils'),
 describe('Server Utils', function() {
     'use strict';
     
-    describe('loadJsFiles', function() {
-        it('should load js files from a directory', function() {
-            ServerUtils.loadJsFiles(__dirname+'/../../src/server/rpc/procedures')
-                .forEach(function(procedure) {
-                    assert.equal(typeof procedure.getPath(), 'string');
-                    if (procedure.isStateless) {
-                        assert.equal(typeof procedure, 'object');
-                    } else {
-                        assert.equal(typeof procedure, 'function');
-                    }
-                });
-        });
-    });
 });

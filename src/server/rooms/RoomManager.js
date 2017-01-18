@@ -1,21 +1,11 @@
-/*
- * RoomManager manages all the rooms. This includes:
- *  + Creating virtual clients for the projects w/o users
- *  + Getting the active peers at a room (for saving)
- */
-
 'use strict';
 
 var ActiveRoom = require('./ActiveRoom'),
     utils = require('../ServerUtils');
 
-var RoomManager = function(logger) {
+var RoomManager = function() {
     var self = this;
-    this._logger = logger.fork('Rooms');
     this.rooms = {};
-    if (!this.storage) {
-        this._logger.warn('missing storage component!');
-    }
 
     ActiveRoom.prototype.onUuidChange = function(oldUuid) {
         var room = this;
@@ -33,6 +23,11 @@ var RoomManager = function(logger) {
     ActiveRoom.prototype.check = function() {
         self.checkRoom(this);
     };
+};
+
+RoomManager.prototype.init = function(logger, storage) {
+    this._logger = logger.fork('Rooms');
+    this.storage = storage;
 };
 
 RoomManager.prototype.forkRoom = function(params) {
@@ -95,12 +90,6 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name, callback) {
     }
 };
 
-RoomManager.prototype.onCreate = function() {
-};
-
-RoomManager.prototype.getActiveMembers = function() {
-};
-
 RoomManager.prototype.checkRoom = function(room) {
     var uuid = room.uuid,
         roles = Object.keys(room.roles)
@@ -108,10 +97,9 @@ RoomManager.prototype.checkRoom = function(room) {
 
     this._logger.trace('Checking room ' + uuid + ' (' + roles.length + ')');
     if (roles.length === 0) {
-        // FIXME: This will need to be updated for virtual clients
         this._logger.trace('Removing empty room: ' + uuid);
         delete this.rooms[uuid];
     }
 };
 
-module.exports = RoomManager;
+module.exports = new RoomManager();

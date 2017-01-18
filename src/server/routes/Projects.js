@@ -4,6 +4,8 @@ var _ = require('lodash'),
     Utils = _.extend(require('../Utils'), require('../ServerUtils.js')),
 
     middleware = require('./middleware'),
+    RoomManager = require('../rooms/RoomManager'),
+    SocketManager = require('../SocketManager'),
     debug = require('debug'),
     log = debug('NetsBlox:API:Projects:log'),
     info = debug('NetsBlox:API:Projects:info'),
@@ -77,7 +79,7 @@ var getRoomsNamed = function(name, user) {
     trace(`found room ${name} for ${user.username}`);
 
     if (room) {
-        activeRoom = this.rooms[Utils.uuid(room.owner, room.name)];
+        activeRoom = RoomManager.rooms[Utils.uuid(room.owner, room.name)];
     }
 
     return {
@@ -143,7 +145,7 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username,
                 socketId = req.body.socketId,
-                socket = this.sockets[socketId],
+                socket = SocketManager.sockets[socketId],
 
                 activeRoom = socket._room,
                 user = req.session.user,
@@ -247,7 +249,7 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'hasSocket', 'noCache', 'setUser'],
         Handler: function(req, res) {
-            var socket = this.sockets[req.body.socketId],
+            var socket = SocketManager.sockets[req.body.socketId],
                 roomName = socket._room.name,
                 user = req.session.user,
                 rooms = getRoomsNamed.call(this, roomName, user),
