@@ -1,5 +1,4 @@
 var Command = require('commander').Command,
-    UserActions = require('../src/server/storage/UserActions'),
     Storage = require('../src/server/storage/Storage'),
     Logger = require('../src/server/logger'),
     Query = require('../src/common/data-query'),
