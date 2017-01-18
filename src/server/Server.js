@@ -1,5 +1,6 @@
 var express = require('express'),
     bodyParser = require('body-parser'),
+    WebSocketServer = require('ws').Server,
     _ = require('lodash'),
     Utils = _.extend(require('./Utils'), require('./ServerUtils.js')),
     SocketManager = require('./SocketManager'),
@@ -75,19 +76,19 @@ Server.prototype.configureRoutes = function() {
 };
 
 Server.prototype.start = function(done) {
-    var self = this;
     done = done || Utils.nop;
-    self.storage.connect(function (err) {
+    this.storage.connect(err => {
         if (err) {
             return done(err);
         }
-        self.configureRoutes();
-        self._server = self.app.listen(self.opts.port, function(err) {
-            console.log('listening on port ' + self.opts.port);
-            SocketManager.start({server: self._server});
+        this.configureRoutes();
+        this._server = this.app.listen(this.opts.port, err => {
+            console.log('listening on port ' + this.opts.port);
+            this._wss = new WebSocketServer({server: this._server});
+            SocketManager.enable(this._wss);
             // Enable Vantage
-            if (self.opts.vantage) {
-                new Vantage(self).start(self.opts.vantagePort);
+            if (this.opts.vantage) {
+                new Vantage(this).start(this.opts.vantagePort);
             }
             done(err);
         });
@@ -96,7 +97,7 @@ Server.prototype.start = function(done) {
 
 Server.prototype.stop = function(done) {
     done = done || Utils.nop;
-    SocketManager.stop();
+    this._wss.close();
     this._server.close(done);
 };
 
