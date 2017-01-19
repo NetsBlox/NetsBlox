@@ -70,6 +70,8 @@ var printSessions = (ids, options) => {
         getSessionIds;
 
     options = options || {};
+    // Remove any parens'ed ids...
+    ids = ids.filter(id => id[0] !== '(');
     lookupIds = ids
         .map((id, index) => [id, index])
         .filter(pair => isInt.test(pair[0]));
