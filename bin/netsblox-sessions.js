@@ -1,3 +1,4 @@
+/* eslint-disable no-console*/
 var Command = require('commander').Command,
     UserActions = require('../src/server/storage/UserActions'),
     Storage = require('../src/server/storage/Storage'),
@@ -20,3 +21,4 @@ storage.connect()
     .then(sessions => Query.listSessions(sessions, program))
     .catch(err => console.err(err))
     .then(() => storage.disconnect());
+/* eslint-enable no-console*/
