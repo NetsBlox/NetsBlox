@@ -7,6 +7,8 @@
 //   - netsblox users
 //   - netsblox user <username>
 
+require('epipebomb')();  // Allow piping to 'head'
+
 var Command = require('commander').Command,
     program = new Command(),
     version = require('../package.json').version;
@@ -21,5 +23,3 @@ program
     .command('users', 'list the usernames')
     .command('user [sessionId]', 'display user information')
     .parse(process.argv);
-    
-

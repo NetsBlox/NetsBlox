@@ -1,4 +1,6 @@
 /* eslint-disable no-console*/
+require('epipebomb')();  // Allow piping to 'head'
+
 var Command = require('commander').Command,
     UserActions = require('../src/server/storage/UserActions'),
     Storage = require('../src/server/storage/Storage'),
