@@ -8,12 +8,10 @@ require('dotenv').load({
 var express = require('express'),
     app = express(),
     port,
-    vport,
-    mongoURI;
+    vport;
 
 port = process.env.PORT || 8080;
 vport = process.env.VANTAGE_PORT || 1234;
-mongoURI = process.env.MONGO_URI || process.env.MONGOLAB_URI;
 
 app.use(express.static(__dirname + '/client/'));
 
@@ -23,11 +21,10 @@ app.get('/', function(req, res) {
 
 // Set the group manager
 var opts = {
-        port: port,
-        vantagePort: vport,
-        vantage: process.env.ENV !== 'production',
-        mongoURI: mongoURI || 'mongodb://localhost:27017'
-    };
+    port: port,
+    vantagePort: vport,
+    vantage: process.env.ENV !== 'production'
+};
 
 var Server = require('../src/server/Server'),
     server = new Server(opts);

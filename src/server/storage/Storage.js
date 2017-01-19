@@ -5,34 +5,30 @@ var MongoClient = require('mongodb').MongoClient,
     RoomStore = require('./RoomStore'),
     UserActions = require('./UserActions');
 
-var Storage = function(logger, opts) {
+var Storage = function(logger) {
     this._logger = logger.fork('Storage');
-    this._mongoURI = opts.mongoURI || 'mongodb://localhost:27017';
 
     this.users = null;
     this.rooms = null;
 };
 
-Storage.prototype.connect = function(callback) {
-    MongoClient.connect(this._mongoURI, (err, db) => {
-        if (err) {
-            throw err;
-        }
+Storage.prototype.connect = function() {
+    var mongoURI = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
+    return MongoClient.connect(mongoURI)
+        .then(db => {
+            this.users = new UserStore(this._logger, db);
+            this.rooms = new RoomStore(this._logger, db);
+            RPCStore.init(this._logger, db);
+            UserActions.init(this._logger, db);
 
-        this.users = new UserStore(this._logger, db);
-        this.rooms = new RoomStore(this._logger, db);
-        RPCStore.init(this._logger, db);
-        UserActions.init(this._logger, db);
-
-        // TODO: Initialize collections
-        this.onDatabaseConnected();
-
-        console.log('Connected to '+this._mongoURI);
-        callback(err);
-    });
+            this._db = db;
+            this._logger.info(`Connected to ${mongoURI}`);
+        })
+        .catch(err => this._logger.error(err));
 };
 
-Storage.prototype.onDatabaseConnected = function() {
+Storage.prototype.disconnect = function() {
+    return this._db.close(true);
 };
 
 module.exports = Storage;
