@@ -71,30 +71,48 @@ MultiArgMorph.prototype.mouseClickLeft = function (pos) {
     // prevent expansion in the palette
     // (because it can be hard or impossible to collapse again)
     // NetsBlox addition: start
-    if (!this.parentThatIsA(ScriptsMorph) && !this.parentThatIsA(MessageDefinitionBlock)) {
+    var isMsgTypeBlock = this.parentThatIsA(MessageDefinitionBlock);
+    if (!this.parentThatIsA(ScriptsMorph) && !isMsgTypeBlock) {
     // NetsBlox addition: end
         this.escalateEvent('mouseClickLeft', pos);
         return;
     }
-    // if the <shift> key is pressed, repeat action 5 times
+    // if the <shift> key is pressed, repeat action 3 times
     var arrows = this.arrows(),
         leftArrow = arrows.children[0],
         rightArrow = arrows.children[1],
         repetition = this.world().currentKey === 16 ? 3 : 1,
         i;
 
+    repetition = Math.min(repetition, this.inputs().length - this.minInputs);
     this.startLayout();
     if (rightArrow.bounds.containsPoint(pos)) {
-        for (i = 0; i < repetition; i += 1) {
-            if (rightArrow.isVisible) {
-                this.addInput();
+        if (rightArrow.isVisible) {
+            // NetsBlox addition: start
+            if (isMsgTypeBlock) {
+                for (i = 0; i < repetition; i++) {
+                    this.addInput();
+                }
+            } else {
+                // NetsBlox addition: end
+                SnapActions.addListInput(this, repetition);
+                // NetsBlox addition: start
             }
+            // NetsBlox addition: end
         }
     } else if (leftArrow.bounds.containsPoint(pos)) {
-        for (i = 0; i < repetition; i += 1) {
-            if (leftArrow.isVisible) {
-                this.removeInput();
+        if (leftArrow.isVisible) {
+            // NetsBlox addition: start
+            if (isMsgTypeBlock) {
+                for (i = 0; i < repetition; i++) {
+                    this.removeInput();
+                }
+            } else {
+                // NetsBlox addition: end
+                SnapActions.removeListInput(this, repetition);
+                // NetsBlox addition: start
             }
+            // NetsBlox addition: end
         }
     } else {
         this.escalateEvent('mouseClickLeft', pos);
