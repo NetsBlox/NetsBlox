@@ -1,3 +1,4 @@
+/* eslint-disable no-console*/
 // Utilities for querying data (like from cli or in vantage)
 var Q = require('q'),
     exists = require('exists-file'),
@@ -130,3 +131,4 @@ module.exports = {
     listSessions: listSessions,
     printSessions: printSessions
 };
+/* eslint-enable no-console*/

@@ -1,3 +1,4 @@
+/* eslint-disable no-console*/
 var Command = require('commander').Command,
     Storage = require('../src/server/storage/Storage'),
     Logger = require('../src/server/logger'),
@@ -15,3 +16,4 @@ storage.connect()
     .then(() => Query.printSessions(program.args, program))
     .then(() => storage.disconnect())
     .catch(err => console.err(err));
+/* eslint-enable no-console*/

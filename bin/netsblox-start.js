@@ -8,12 +8,10 @@ require('dotenv').load({
 var express = require('express'),
     app = express(),
     port,
-    vport,
-    mongoURI;
+    vport;
 
 port = process.env.PORT || 8080;
 vport = process.env.VANTAGE_PORT || 1234;
-mongoURI = process.env.MONGO_URI || process.env.MONGOLAB_URI;
 
 app.use(express.static(__dirname + '/client/'));
 
