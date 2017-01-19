@@ -3,7 +3,9 @@
 var Q = require('q'),
     exists = require('exists-file'),
     fs = require('fs'),
-    UserActions = require('../server/storage/UserActions');
+    UserActions = require('../server/storage/UserActions'),
+    Logger = require('../server/logger'),
+    logger = new Logger('NetsBlox:Storage:Query');
 
 var listSessions = (sessions, options) => {
     var ids = sessions.map(session => session.id),
@@ -73,6 +75,7 @@ var printSessions = (ids, options) => {
     options = options || {};
     // Remove any parens'ed ids...
     ids = ids.filter(id => id[0] !== '(');
+
     lookupIds = ids
         .map((id, index) => [id, index])
         .filter(pair => isInt.test(pair[0]));
@@ -97,27 +100,30 @@ var printSessions = (ids, options) => {
 
     return getSessionIds
         .then(() => {
-            return Q.all(ids.map(id => UserActions.session(id)));
-        })
-        .then(sessions => {  // formatting..
+            return ids.reduce((p1, p2) => p1.then(printSession(p2, options)), Q());
+        });
+};
+
+var printSession = (id, options) => {
+    return UserActions.session(id)
+        .then(session => {  // formatting..
+            logger.trace('received session info for ', id);
             // merge the sessions
-            var actions = sessions
-                .reduce((l1, l2) => l1.concat(l2), [])
+            var actions = session
                 .map(event => event.action);
 
             if (options.json) {
-                return JSON.stringify(actions, null, 2);
+                output = JSON.stringify(actions, null, 2);
             } else {
-                return actions.map(action => {
+                output = actions.map(action => {
                     return [
                         action.type,
                         action.args.join(' ')
                     ].join(' ');
                 }).join('\n');
             }
-        })
-        .catch(err => console.err(err))
-        .then(output => {
+
+            // print it!
             if (options.export) {
                 fs.writeFileSync(options.export, output);
                 console.log('exported session to', options.export);

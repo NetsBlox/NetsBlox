@@ -18,21 +18,25 @@ Storage.prototype.save = function(key, value) {
 };
 
 Storage.prototype.get = function(key) {
+    this.logger.trace('getting ' + key);
     return this.collection.findOne({_id: key})
         .then(found => found && found.value)
         .catch(e => this.logger.error(`could not retrieve "${key}": ${e}`));
 };
 
 Storage.prototype.delete = function(key) {
+    this.logger.trace('deleting ' + key);
     return this.collection.deleteOne({_id: key})
         .catch(e => this.logger.error(`could not retrieve "${key}": ${e}`));
 };
 
 Storage.prototype.all = function() {
+    this.logger.trace('requesting all values');
     return this.collection.find({}).toArray();
 };
 
 Storage.prototype.clearAll = function() {
+    this.logger.trace('clearing all values');
     return this.collection.deleteMany({});
 };
 
