@@ -2,6 +2,72 @@
    ReporterBlockMorph, CommandBlockMorph, MultiArgMorph, SnapActions, isNil,
    ReporterSlotMorph, RingMorph, SyntaxElementMorph*/
 // Extensions to the Snap blocks
+MultiHintArgMorph.prototype = new MultiArgMorph();
+MultiHintArgMorph.prototype.constructor = MultiHintArgMorph;
+MultiHintArgMorph.uber = MultiArgMorph.prototype;
+
+// MultiHintArgMorph preferences settings:
+
+MultiHintArgMorph.prototype.executeOnSliderEdit = false;
+function MultiHintArgMorph(
+    hintText,
+    labelTxt,
+    min,
+    eSpec,
+    arrowColor,
+    labelColor,
+    shadowColor,
+    shadowOffset,
+    isTransparent
+) {
+    this.init(
+        hintText,
+        labelTxt,
+        min,
+        eSpec,
+        arrowColor,
+        labelColor,
+        shadowColor,
+        shadowOffset,
+        isTransparent
+    );
+}
+
+MultiHintArgMorph.prototype.init = function(
+    hintText,
+    labelTxt,
+    min,
+    eSpec,
+    arrowColor,
+    labelColor,
+    shadowColor,
+    shadowOffset,
+    isTransparent
+) {
+    this.hintText = hintText || '';
+    MultiHintArgMorph.uber.init.call(
+        this,
+        '%s',  // all multi hint args are strings
+        labelTxt,
+        min,
+        eSpec,
+        arrowColor,
+        labelColor,
+        shadowColor,
+        shadowOffset,
+        isTransparent
+    );
+};
+
+MultiHintArgMorph.prototype.addInput = function () {
+    var newPart = this.labelPart('%hint' + this.hintText),
+        idx = this.children.length - 1;
+    newPart.parent = this;
+    this.children.splice(idx, 0, newPart);
+    newPart.drawNew();
+    this.fixLayout();
+};
+
 
 // I should refactor the MessageInputSlotMorph to a generic base class. This
 // base class should be a dropdown which dynamically inserts input fields (w/

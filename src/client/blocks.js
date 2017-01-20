@@ -5,7 +5,7 @@
    CommandSlotMorph, RingCommandSlotMorph, RingReporterSlotMorph, CSlotMorph,
    ColorSlotMorph, TemplateSlotMorph, FunctionSlotMorph, ReporterSlotMorph,
    SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume, ScriptsMorph,
-   MessageDefinitionBlock, RPCInputSlotMorph, SnapActions
+   MessageDefinitionBlock, RPCInputSlotMorph, SnapActions, MultiHintArgMorph
    */
 
 BlockMorph.prototype.setSpec = function (spec, silently) {
@@ -120,15 +120,6 @@ MultiArgMorph.prototype.mouseClickLeft = function (pos) {
     this.endLayout();
 };
 
-MultiArgMorph.prototype.addHintInput = function (text) {
-    var newPart = this.labelPart('%hint' + text),
-        idx = this.children.length - 1;
-    newPart.parent = this;
-    this.children.splice(idx, 0, newPart);
-    newPart.drawNew();
-    this.fixLayout();
-};
-
 SyntaxElementMorph.prototype.labelPart = function (spec) {
     var part, tokens;
     if (spec[0] === '%' &&
@@ -150,13 +141,9 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         }
 
         if ((spec.length > 6) && (spec.slice(0, 6) === '%mhint')) {
-            tokens = spec.slice(6).split('%');
-            part = new MultiArgMorph('%s', null, 0);
+            var token = spec.slice(6);
+            part = new MultiHintArgMorph(token, null, 1);
 
-            part.minInputs = 1;
-            tokens.forEach(function(token) {
-                part.addHintInput(token);
-            });
             part.isStatic = true;
             part.canBeEmpty = false;
             return part;
