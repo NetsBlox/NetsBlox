@@ -5,7 +5,7 @@
    CommandSlotMorph, RingCommandSlotMorph, RingReporterSlotMorph, CSlotMorph,
    ColorSlotMorph, TemplateSlotMorph, FunctionSlotMorph, ReporterSlotMorph,
    SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume, ScriptsMorph,
-   MessageDefinitionBlock, RPCInputSlotMorph, SnapActions
+   MessageDefinitionBlock, RPCInputSlotMorph, SnapActions, MultiHintArgMorph
    */
 
 BlockMorph.prototype.setSpec = function (spec, silently) {
