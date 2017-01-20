@@ -14,7 +14,7 @@ var vantage = require('vantage')(),
     CONSTANTS = require('../../common/Constants'),
     RoomManager = require('../rooms/RoomManager'),
     SocketManager = require('../SocketManager'),
-    UserActions = require('../storage/UserActions'),
+    UserActions = require('../storage/user-actions'),
     NO_USER_LABEL = '<vacant>';
 
 // Set the banner

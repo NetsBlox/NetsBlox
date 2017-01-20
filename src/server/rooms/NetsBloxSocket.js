@@ -3,8 +3,8 @@
  */
 'use strict';
 var counter = 0,
-    Constants = require(__dirname + '/../../common/Constants'),
-    publicRoleManager = require(__dirname + '/../PublicRoleManager'),
+    Constants = require(__dirname + '/../../common/constants'),
+    PublicRoleManager = require(__dirname + '/../public-role-manager'),
     PROJECT_FIELDS = [
         'ProjectName',
         'SourceCode',
@@ -16,8 +16,8 @@ var counter = 0,
     R = require('ramda'),
     parseXml = require('xml2js').parseString,
     assert = require('assert'),
-    UserActions = require('../storage/UserActions'),
-    RoomManager = require('./RoomManager'),
+    UserActions = require('../storage/user-actions'),
+    RoomManager = require('./room-manager'),
     CONDENSED_MSGS = ['project-response', 'import-room'];
 
 var createSaveableProject = function(json, callback) {
@@ -233,7 +233,7 @@ NetsBloxSocket.MessageHandlers = {
 
             msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
         } else {  // inter-room message
-            var socket = publicRoleManager.lookUp(msg.dstId);
+            var socket = PublicRoleManager.lookUp(msg.dstId);
             if (socket) {
                 msg.dstId = Constants.EVERYONE;
                 socket.send(msg);

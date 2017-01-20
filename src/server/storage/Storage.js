@@ -1,9 +1,9 @@
 'use strict';
 var MongoClient = require('mongodb').MongoClient,
     RPCStore = require('../rpc/storage'),
-    UserStore = require('./UserStore'),
-    RoomStore = require('./RoomStore'),
-    UserActions = require('./UserActions');
+    UserStore = require('./user-store'),
+    RoomStore = require('./room-store'),
+    UserActions = require('./user-actions');
 
 var Storage = function(logger) {
     this._logger = logger.fork('Storage');

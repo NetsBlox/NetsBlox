@@ -42,6 +42,7 @@
     };
 
     UserActionData.session = function(sessionId) {
+        // TODO: Use a stream
         return storage.get(sessionId);
     };
 

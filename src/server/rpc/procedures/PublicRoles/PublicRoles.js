@@ -3,7 +3,7 @@
 
 var debug = require('debug'),
     trace = debug('NetsBlox:RPCManager:PublicRoles:trace'),
-    publicRoleManager = require('../../../PublicRoleManager');
+    PublicRoleManager = require('../../../public-role-manager');
 
 module.exports = {
 
@@ -16,7 +16,7 @@ module.exports = {
     },
 
     requestPublicRoleId: function() {
-        var id = publicRoleManager.register(this.socket);
+        var id = PublicRoleManager.register(this.socket);
 
         trace(`${this.socket.username} has requested public id ${id}`);
 
