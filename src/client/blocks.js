@@ -84,7 +84,6 @@ MultiArgMorph.prototype.mouseClickLeft = function (pos) {
         repetition = this.world().currentKey === 16 ? 3 : 1,
         i;
 
-    repetition = Math.min(repetition, this.inputs().length - this.minInputs);
     this.startLayout();
     if (rightArrow.bounds.containsPoint(pos)) {
         if (rightArrow.isVisible) {
@@ -103,6 +102,7 @@ MultiArgMorph.prototype.mouseClickLeft = function (pos) {
     } else if (leftArrow.bounds.containsPoint(pos)) {
         if (leftArrow.isVisible) {
             // NetsBlox addition: start
+            repetition = Math.min(repetition, this.inputs().length - this.minInputs);
             if (isMsgTypeBlock) {
                 for (i = 0; i < repetition; i++) {
                     this.removeInput();
@@ -153,6 +153,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             tokens = spec.slice(6).split('%');
             part = new MultiArgMorph('%s', null, 0);
 
+            part.minInputs = 1;
             tokens.forEach(function(token) {
                 part.addHintInput(token);
             });
