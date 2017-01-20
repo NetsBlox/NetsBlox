@@ -2,13 +2,13 @@ var express = require('express'),
     bodyParser = require('body-parser'),
     WebSocketServer = require('ws').Server,
     _ = require('lodash'),
-    Utils = _.extend(require('./Utils'), require('./ServerUtils.js')),
-    SocketManager = require('./SocketManager'),
-    RoomManager = require('./rooms/RoomManager'),
-    RPCManager = require('./rpc/RPCManager'),
-    MobileManager = require('./mobile/MobileManager'),
-    Storage = require('./storage/Storage'),
-    Vantage = require('./vantage/Vantage'),
+    Utils = _.extend(require('./utils'), require('./server-utils.js')),
+    SocketManager = require('./socket-manager'),
+    RoomManager = require('./rooms/room-manager'),
+    RPCManager = require('./rpc/rpc-manager'),
+    MobileManager = require('./mobile/mobile-manager'),
+    Storage = require('./storage/storage'),
+    Vantage = require('./vantage/vantage'),
     DEFAULT_OPTIONS = {
         port: 8080,
         vantagePort: 1234,
@@ -25,7 +25,7 @@ var express = require('express'),
     cookieParser = require('cookie-parser');
 
 var Server = function(opts) {
-    this._logger = new Logger('NetsBlox');
+    this._logger = new Logger('netsblox');
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
 
