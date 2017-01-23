@@ -25,14 +25,12 @@ class UserStore {
     }
 
     new(username, email) {
-        var createdAt = Date.now(),
-            lastLoginAt = createdAt;
+        var createdAt = Date.now();
 
         return new User(this._logger, this._users, {
             username,
             email,
-            createdAt,
-            lastLoginAt
+            createdAt
         });
     }
 }
