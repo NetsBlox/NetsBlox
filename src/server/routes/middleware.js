@@ -3,7 +3,7 @@ var server,
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
     COOKIE_ID = 'netsblox-cookie',
     jwt = require('jsonwebtoken'),
-    SocketManager = require('../SocketManager'),
+    SocketManager = require('../socket-manager'),
     logger;
 
 var hasSocket = function(req, res, next) {

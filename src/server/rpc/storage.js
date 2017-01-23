@@ -4,7 +4,7 @@
 //
 // Stateful RPC's have a "Store" created for each instance
 (function(Storage) {
-    var GenStorage = require('../storage/GenericStorage'),
+    var GenStorage = require('../storage/generic-storage'),
         storage,
         logger,
         db;

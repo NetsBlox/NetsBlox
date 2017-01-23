@@ -3,9 +3,9 @@
 var Q = require('q'),
     exists = require('exists-file'),
     fs = require('fs'),
-    UserActions = require('../server/storage/UserActions'),
     Logger = require('../server/logger'),
-    logger = new Logger('NetsBlox:Storage:Query');
+    logger = new Logger('netsblox:storage:query'),
+    UserActions = require('../server/storage/user-actions');
 
 var listSessions = (sessions, options) => {
     var ids = sessions.map(session => session.id),
@@ -109,8 +109,10 @@ var printSession = (id, options) => {
         .then(session => {  // formatting..
             logger.trace('received session info for ', id);
             // merge the sessions
-            var actions = session
-                .map(event => event.action);
+            var actions,
+                output;
+
+            actions= session.map(event => event.action);
 
             if (options.json) {
                 output = JSON.stringify(actions, null, 2);

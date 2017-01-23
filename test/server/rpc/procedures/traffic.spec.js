@@ -1,6 +1,6 @@
 describe('traffic', function() {
-    var Traffic = require('../../../../src/server/rpc/procedures/Traffic/Traffic'),
-        RPCMock = require('../../../assets/MockRPC'),
+    var Traffic = require('../../../../src/server/rpc/procedures/traffic/traffic'),
+        RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         traffic = new RPCMock(Traffic);
 

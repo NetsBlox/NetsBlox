@@ -5,8 +5,8 @@
 
 describe('ConnectN Tests', function() {
 
-    var ConnectN = require('../../../../src/server/rpc/procedures/ConnectN/ConnectN.js'),
-        RPCMock = require('../../../assets/MockRPC'),
+    var ConnectN = require('../../../../src/server/rpc/procedures/connect-n/connect-n.js'),
+        RPCMock = require('../../../assets/mock-rpc'),
         assert = require('assert'),
         connectn;
 

@@ -1,6 +1,6 @@
 describe('weather', function() {
-    var Weather = require('../../../../src/server/rpc/procedures/Weather/Weather'),
-        RPCMock = require('../../../assets/MockRPC'),
+    var Weather = require('../../../../src/server/rpc/procedures/weather/weather'),
+        RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         weather = new RPCMock(Weather);
 

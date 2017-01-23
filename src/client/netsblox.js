@@ -1357,6 +1357,7 @@ NetsBloxMorph.prototype.loadBugReport = function () {
                     'Description:\n\n' + report.description
                 ].join('\n');
 
+                choices['Cancel'] = 'cancel';
                 dialog.ask(
                     localize('Bug Report'),
                     msg,

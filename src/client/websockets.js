@@ -145,6 +145,7 @@ WebSocketManager.MessageHandlers = {
                                 ide.spriteBar.tabBar.tabTo('room');
                             }
                         });
+                    this.destroy();
                 };
             }
         }
