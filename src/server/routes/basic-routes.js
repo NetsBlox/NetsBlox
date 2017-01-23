@@ -249,6 +249,7 @@ module.exports = [
                             socket.onLogin(user);
                         }
 
+                        user.recordLogin();
                         if (req.body.return_user) {
                             return res.status(200).json({
                                 username: username,

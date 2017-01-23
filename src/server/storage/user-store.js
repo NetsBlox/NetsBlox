@@ -25,7 +25,15 @@ class UserStore {
     }
 
     new(username, email) {
-        return new User(this._logger, this._users, {username, email});
+        var createdAt = Date.now(),
+            lastLoginAt = createdAt;
+
+        return new User(this._logger, this._users, {
+            username,
+            email,
+            createdAt,
+            lastLoginAt
+        });
     }
 }
 
@@ -62,6 +70,11 @@ class User extends DataWrapper {
         }
         delete this.password;
         this.rooms = this.rooms || this.tables || [];
+    }
+
+    recordLogin() {
+        this.lastLoginAt = Date.now();
+        this.save();
     }
 
     getNewName(name) {
