@@ -1,11 +1,11 @@
 // This is a key value store that can be used across tables
 'use strict';
 
-var debug = require('debug'),
-    Storage = require('../../storage'),
+var Storage = require('../../storage'),
     NAME = 'KeyValueStore',
-    SEP = '/',
-    logger;
+    Logger = require('../../../logger'),
+    logger = new Logger('netsblox:rpc:kv-store'),
+    SEP = '/';
 
 var getKeys = key => key.split(SEP).filter(k => k !== '');  // rm empty strings
 
@@ -20,7 +20,6 @@ var saveStore = function(store) {
 
 var KeyValueStore = {
 
-    init: _logger => logger = _logger.fork(NAME),
     // This is very important => Otherwise it will try to instantiate this
     isStateless: true,
 
