@@ -101,7 +101,7 @@ Server.prototype.stop = function(done) {
 
 Server.prototype.createRouter = function() {
     var router = express.Router({mergeParams: true}),
-        logger = this._logger.fork('API'),
+        logger = this._logger.fork('api'),
         middleware = require('./routes/middleware'),
         routes;
 

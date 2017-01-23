@@ -14,7 +14,7 @@ var R = require('ramda'),
         .map(R.omit.bind(R, 'middleware')),
 
     debug = require('debug'),
-    log = debug('NetsBlox:API:log'),
+    log = debug('netsblox:api:log'),
     fs = require('fs'),
     path = require('path'),
     EXAMPLES = require('../examples'),

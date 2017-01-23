@@ -4,9 +4,9 @@
 var R = require('ramda'),
     assert = require('assert'),
     debug = require('debug'),
-    info = debug('NetsBlox:API:Utils:info'),
-    trace = debug('NetsBlox:API:Utils:trace'),
-    error = debug('NetsBlox:API:Utils:error');
+    info = debug('netsblox:api:utils:info'),
+    trace = debug('netsblox:api:utils:trace'),
+    error = debug('netsblox:api:utils:error');
 
 var uuid = function(owner, name) {
     return owner + '/' + name;
