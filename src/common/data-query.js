@@ -3,7 +3,7 @@
 var Q = require('q'),
     exists = require('exists-file'),
     fs = require('fs'),
-    UserActions = require('../server/storage/UserActions');
+    UserActions = require('../server/storage/user-actions');
 
 var listSessions = (sessions, options) => {
     var ids = sessions.map(session => session.id),
@@ -97,6 +97,7 @@ var printSessions = (ids, options) => {
 
     return getSessionIds
         .then(() => {
+            // TODO: Convert this to stream?
             return Q.all(ids.map(id => UserActions.session(id)));
         })
         .then(sessions => {  // formatting..

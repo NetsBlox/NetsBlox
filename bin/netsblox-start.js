@@ -26,7 +26,7 @@ var opts = {
     vantage: process.env.ENV !== 'production'
 };
 
-var Server = require('../src/server/Server'),
+var Server = require('../src/server/server'),
     server = new Server(opts);
 
 server.start();

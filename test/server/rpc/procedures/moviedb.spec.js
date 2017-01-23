@@ -1,6 +1,6 @@
 describe('moviedb', function() {
-    var MovieDB = require('../../../../src/server/rpc/procedures/MovieDB/MovieDB'),
-        RPCMock = require('../../../assets/MockRPC'),
+    var MovieDB = require('../../../../src/server/rpc/procedures/movie-db/movie-db'),
+        RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         moviedb = new RPCMock(MovieDB);
 
