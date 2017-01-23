@@ -1,6 +1,6 @@
 describe('kvstore', function() {
-    var KVStore = require('../../../../src/server/rpc/procedures/KVStore/KVStore'),
-        RPCMock = require('../../../assets/MockRPC'),
+    var KVStore = require('../../../../src/server/rpc/procedures/kv-store/kv-store'),
+        RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         kvstore = new RPCMock(KVStore);
 

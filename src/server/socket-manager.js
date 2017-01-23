@@ -1,7 +1,7 @@
 
 'use strict';
 
-var Socket = require('./rooms/NetsBloxSocket');
+var Socket = require('./rooms/netsblox-socket');
 
 var SocketManager = function() {
     this.sockets = {};
@@ -11,7 +11,7 @@ var SocketManager = function() {
 };
 
 SocketManager.prototype.init = function(logger) {
-    this._logger = logger.fork('SocketManager');
+    this._logger = logger.fork('socket-manager');
 };
 
 SocketManager.prototype.enable = function(wss) {

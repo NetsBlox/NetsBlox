@@ -2,7 +2,7 @@
 
 var randomString = require('just.randomstring'),
     hash = require('../../common/sha512').hex_sha512,
-    DataWrapper = require('./Data'),
+    DataWrapper = require('./data'),
     mailer = require('../mailer');
 
 class UserStore {

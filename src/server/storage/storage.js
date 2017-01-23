@@ -6,7 +6,7 @@ var MongoClient = require('mongodb').MongoClient,
     UserActions = require('./user-actions');
 
 var Storage = function(logger) {
-    this._logger = logger.fork('Storage');
+    this._logger = logger.fork('storage');
 
     this.users = null;
     this.rooms = null;

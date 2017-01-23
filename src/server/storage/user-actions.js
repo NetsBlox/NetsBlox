@@ -1,9 +1,9 @@
 (function(UserActionData) {
-    var GenStorage = require('./GenericStorage'),
+    var GenStorage = require('./generic-storage'),
         storage;
 
     UserActionData.init = function(logger, db) {
-        storage = new GenStorage(logger, db, 'UserActions');
+        storage = new GenStorage(logger, db, 'user-actions');
     };
 
     UserActionData.record = function(action) {

@@ -1,6 +1,6 @@
 'use strict';
 
-var DataWrapper = require('./Data'),
+var DataWrapper = require('./data'),
     async = require('async'),
     ObjectId = require('mongodb').ObjectId;
 

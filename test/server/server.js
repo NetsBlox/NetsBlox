@@ -9,10 +9,10 @@ var supertest = require('supertest'),
         vantage: false
     },
     api,
-    Server = require('../../src/server/Server'),
+    Server = require('../../src/server/server'),
 
-    basicRoutes = require('../../src/server/routes/BasicRoutes'),
-    userRoutes = require('../../src/server/routes/Users');
+    basicRoutes = require('../../src/server/routes/basic-routes'),
+    userRoutes = require('../../src/server/routes/users');
 
 // TODO: Add API message
 describe('Server Tests', function() {
