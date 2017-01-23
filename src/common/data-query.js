@@ -67,6 +67,45 @@ var listSessions = (sessions, options) => {
     }
 };
 
+var getSessionHeader = options => {
+    if (options.long) {
+        return [
+            'sessionId\t',
+            'time',
+            'actions',
+            'username',
+            'projectId'
+        ].join('\t');
+    }
+};
+
+var getSessionConversionFn = options => {
+    return session => {
+        if (options.long) {
+            var length = session.actions.length,
+                last = session.actions[length-1],
+                duration,
+                username = last.username,
+                projectId = last.projectId;
+
+            var first = session.actions[0];
+
+            duration = last.action.time - first.action.time;
+
+            // duration, action counts, project name, username
+            return [
+                session.id,
+                duration,
+                length,
+                username,
+                projectId
+            ].join('\t');
+        }
+
+        return session.id;
+    };
+};
+
 var isInt = /^\d+$/;
 var printSessions = (ids, options) => {
     var lookupIds = [],
@@ -137,6 +176,8 @@ var printSession = (id, options) => {
 
 module.exports = {
     listSessions: listSessions,
+    sessionPrintFn: getSessionConversionFn,
+    getSessionHeader: getSessionHeader,
     printSessions: printSessions
 };
 /* eslint-enable no-console*/

@@ -27,12 +27,12 @@
     // query-ing
     UserActionData.sessions = function() {
         return storage.all()
-            .then(sessions => sessions.map(session => {
+            .transform(session => {
                 return {
                     id: session._id,
                     actions: session.value
                 };
-            }));
+            });
     };
 
     UserActionData.sessionIds = function() {

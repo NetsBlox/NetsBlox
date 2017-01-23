@@ -32,12 +32,41 @@ Storage.prototype.delete = function(key) {
 
 Storage.prototype.all = function() {
     this.logger.trace('requesting all values');
-    return this.collection.find({}).toArray();
+    var stream = this.collection.find({});
+
+    return new ChainableDataStream(stream);
 };
 
 Storage.prototype.clearAll = function() {
     this.logger.trace('clearing all values');
     return this.collection.deleteMany({});
+};
+
+var ChainableDataStream = function(stream) {
+    this._stream = stream;
+    this._transformers = [];
+
+    stream.on('data', doc => {
+        this._transformers.reduce((data, fn) => {
+            return fn(data) || data;
+        }, doc);
+    });
+
+    stream.once('end', doc => {
+        if (this._end) {
+            this._end(doc);
+        }
+    });
+};
+
+ChainableDataStream.prototype.transform = function(transformer) {
+    this._transformers.push(transformer);
+    return this;
+};
+
+ChainableDataStream.prototype.then = function(end) {
+    this._end = end;
+    return this;
 };
 
 module.exports = Storage;
