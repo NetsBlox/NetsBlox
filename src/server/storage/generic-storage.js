@@ -24,6 +24,19 @@ Storage.prototype.get = function(key) {
         .catch(e => this.logger.error(`could not retrieve "${key}": ${e}`));
 };
 
+Storage.prototype.getMany = function(keys) {
+    var query = {
+            $or: keys.map(key => {
+                return {
+                    _id: key
+                };
+            })
+        },
+        stream = this.collection.find(query);
+
+    return new ChainableDataStream(stream);
+};
+
 Storage.prototype.delete = function(key) {
     this.logger.trace('deleting ' + key);
     return this.collection.deleteOne({_id: key})

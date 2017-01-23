@@ -139,39 +139,37 @@ var printSessions = (ids, options) => {
 
     return getSessionIds
         .then(() => {
-            return ids.reduce((p1, p2) => p1.then(printSession(p2, options)), Q());
+            return UserActions.sessions(ids)
+                .transform(session => catSession(session, options));
         });
 };
 
-var printSession = (id, options) => {
-    return UserActions.session(id)
-        .then(session => {  // formatting..
-            logger.trace('received session info for ', id);
-            // merge the sessions
-            var actions,
-                output;
+var catSession = (session, options) => {
+    logger.trace('received session info for ', session.id);
+    // merge the sessions
+    var actions,
+        output;
 
-            actions= session.map(event => event.action);
+    actions = session.actions.map(event => event.action);
 
-            if (options.json) {
-                output = JSON.stringify(actions, null, 2);
-            } else {
-                output = actions.map(action => {
-                    return [
-                        action.type,
-                        action.args.join(' ')
-                    ].join(' ');
-                }).join('\n');
-            }
+    if (options.json) {
+        output = JSON.stringify(actions, null, 2);
+    } else {
+        output = actions.map(action => {
+            return [
+                action.type,
+                action.args.join(' ')
+            ].join(' ');
+        }).join('\n');
+    }
 
-            // print it!
-            if (options.export) {
-                fs.writeFileSync(options.export, output);
-                console.log('exported session to', options.export);
-            } else {
-                console.log(output);
-            }
-        });
+    // print it!
+    if (options.export) {
+        fs.writeFileSync(options.export, output);
+        console.log('exported session to', options.export);
+    } else {
+        console.log(output);
+    }
 };
 
 module.exports = {
