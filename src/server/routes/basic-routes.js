@@ -350,10 +350,18 @@ module.exports = [
 
             // email this to the maintainer
             if (process.env.MAINTAINER_EMAIL) {
-                var mailOpts = {
+                var subject,
+                    mailOpts;
+
+                subject = 'Bug Report' + (user ? ' from ' + user : '');
+                if (report.isAutoReport) {
+                    subject = 'Auto ' + subject;
+                }
+
+                mailOpts = {
                     from: 'bug-reporter@netsblox.org',
                     to: process.env.MAINTAINER_EMAIL,
-                    subject: 'Bug Report' + (user ? ' from ' + user : ''),
+                    subject: subject,
                     markdown: 'Hello,\n\nA new bug report has been created' +
                         (user !== null ? ' by ' + user : '') + ':\n\n---\n\n' +
                         report.description + '\n\n---\n\n',
