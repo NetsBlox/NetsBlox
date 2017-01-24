@@ -1237,6 +1237,7 @@ NetsBloxMorph.prototype.reportBug = function () {
 
 NetsBloxMorph.prototype.submitBugReport = function (desc, silent) {
     var myself = this,
+        canvas = document.getElementsByTagName('canvas')[0],
         report = {};
 
     // Add the description
@@ -1246,7 +1247,7 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, silent) {
     report.version = NetsBloxSerializer.prototype.app;
 
     // Add screenshot
-    report.screenshot = this.world().image.toDataURL();
+    report.screenshot = canvas.toDataURL();
 
     // Add project state
     report.project = this.serializer.serialize(this.stage);
