@@ -62,6 +62,9 @@ class Room extends DataWrapper {
                 k = sockets.indexOf(socket);
                 if (k !== -1) {
                     // role content
+                    if (!projects[k]) {
+                        this._logger.error(`requested project is falsey (${projects[k]}) at ${roles[i]} in this._room.uuid`);
+                    }
                     content.roles[roles[i]] = projects[k];
                 } else {
                     content.roles[roles[i]] = this._room.cachedProjects[roles[i]] || null;
@@ -75,7 +78,7 @@ class Room extends DataWrapper {
     save(callback) {
         if (!this._user) {
             this._logger.error(`Cannot save room "${this.name}" - no user`);
-            return callback('Can\'t save table w/o user');
+            return callback('Can\'t save project w/o user');
         }
         this.collectProjects((err, content) => {
             if (err) {
