@@ -1254,6 +1254,7 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, silent) {
 
     // Add username (if logged in)
     report.user = SnapCloud.username;
+    report.isAutoReport = !!silent;
 
     // Report to the server
     var request = new XMLHttpRequest(),
