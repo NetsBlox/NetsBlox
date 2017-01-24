@@ -349,7 +349,6 @@ module.exports = [
             }
 
             // email this to the maintainer
-            console.log('report:', report);
             if (process.env.MAINTAINER_EMAIL) {
                 var subject,
                     mailOpts;
