@@ -63,7 +63,7 @@ class Room extends DataWrapper {
                 if (k !== -1) {
                     // role content
                     if (!projects[k]) {
-                        this._logger.error(`requested project is falsey (${projects[k]}) at ${roles[i]} in this._room.uuid`);
+                        this._logger.error(`requested project is falsey (${projects[k]}) at ${roles[i]} in ${this._room.uuid}`);
                     }
                     content.roles[roles[i]] = projects[k];
                 } else {
@@ -100,7 +100,7 @@ class Room extends DataWrapper {
                     hasContent = true;
                 }
             }
-            if (!hasContent) {  // only saving a null role
+            if (!hasContent) {  // only saving null role(s)
                 err = `${this._user.username} tried to save a project w/ only ` +
                     `falsey roles (${this.name})!`;
                 this._logger.error(err);
