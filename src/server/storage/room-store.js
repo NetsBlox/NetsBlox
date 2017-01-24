@@ -104,7 +104,7 @@ class Room extends DataWrapper {
                 err = `${this._user.username} tried to save a project w/ only ` +
                     `falsey roles (${this.name})!`;
                 this._logger.error(err);
-                callback();
+                return callback(err);
             }
 
             if (this.activeRole) {
