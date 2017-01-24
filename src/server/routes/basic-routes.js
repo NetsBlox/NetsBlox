@@ -361,10 +361,6 @@ module.exports = [
                         {
                             filename: 'bug-report.json',
                             content: JSON.stringify(report)
-                        },
-                        {
-                            filename: 'screenshot.png',
-                            content: screenshot
                         }
                     ]
                 };
