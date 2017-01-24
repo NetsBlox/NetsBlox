@@ -339,8 +339,7 @@ module.exports = [
         URL: 'BugReport',
         Handler: function(req, res) {
             var user = req.body.user,
-                report = req.body,
-                screenshot = report.screenshot;
+                report = req.body;
 
             if (user) {
                 this._logger.info(`Received bug report from ${user}`);
@@ -369,10 +368,6 @@ module.exports = [
                         {
                             filename: 'bug-report.json',
                             content: JSON.stringify(report)
-                        },
-                        {
-                            filename: 'screenshot.png',
-                            content: screenshot
                         }
                     ]
                 };
