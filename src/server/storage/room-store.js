@@ -86,6 +86,27 @@ class Room extends DataWrapper {
                 return callback(err);
             }
             this._logger.trace('collected projects for ' + this._user.username);
+
+            // Check for 'null' roles
+            var roleIds = Object.keys(content),
+                hasContent = false;
+
+            for (var i = roleIds.length; i--;) {
+                if (!content.roles[roleIds[i]]) {
+                    this._logger.warn(`${this._user.username} saving project ` +
+                        `(${this.name}) with null role (${roleIds[i]})! Will ` +
+                        `try to proceed...`);
+                } else {
+                    hasContent = true;
+                }
+            }
+            if (!hasContent) {  // only saving a null role
+                err = `${this._user.username} tried to save a project w/ only ` +
+                    `falsey roles (${this.name})!`;
+                this._logger.error(err);
+                callback();
+            }
+
             if (this.activeRole) {
                 content.activeRole = this.activeRole;
             }
