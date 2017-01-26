@@ -24,7 +24,7 @@ Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= v6.0.0
 
 First clone the repository and install the dependencies.
 ```
-git clone https://github.com/NetsBlox/NetsBlox.git
+git clone https://github.com/NetsBlox/NetsBlox.git --recursive
 cd NetsBlox
 npm install
 ```
