@@ -24,7 +24,18 @@ Storage.prototype.connect = function() {
             this._db = db;
             this._logger.info(`Connected to ${mongoURI}`);
         })
-        .catch(err => this._logger.error(err));
+        .catch(err => {
+            console.error(`Could not connect to mongodb at ${mongoURI}.`);
+            console.error('To connect to a different mongo instance, set MONGO_URI to the mongo uri and try again:');
+            console.error('');
+            console.error('    MONGO_URI=mongodb://some.ip.address:27017/ netsblox start');
+            console.error('');
+            console.error('or, if running from the root of the netsblox project:');
+            console.error('');
+            console.error('    MONGO_URI=mongodb://some.ip.address:27017/ ./bin/netsblox start');
+            console.error('');
+            throw err;
+        });
 };
 
 Storage.prototype.disconnect = function() {
