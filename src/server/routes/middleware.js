@@ -3,7 +3,7 @@ var server,
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
     COOKIE_ID = 'netsblox-cookie',
     jwt = require('jsonwebtoken'),
-    nop = function(){},
+    SocketManager = require('../socket-manager'),
     logger;
 
 var hasSocket = function(req, res, next) {
@@ -12,7 +12,7 @@ var hasSocket = function(req, res, next) {
         (req.query && req.query.socketId);
 
     if (socketId) {
-        if (server.sockets[socketId]) {
+        if (SocketManager.sockets[socketId]) {
             return next();
         }
         logger.error(`No socket found for ${socketId} (${req.get('User-Agent')})`);
@@ -24,7 +24,7 @@ var hasSocket = function(req, res, next) {
 };
 
 var noCache = function(req, res, next) {
-    res.set('Cache-Control', 'no-cache')
+    res.set('Cache-Control', 'no-cache');
     return next();
 };
 
@@ -98,7 +98,7 @@ var refreshCookie = function(res, cookie) {
     }
 
     logger.trace(`Saving cookie ${JSON.stringify(cookie)}`);
-	res.cookie(COOKIE_ID, token, options);
+    res.cookie(COOKIE_ID, token, options);
 };
 
 var Session = function(res) {

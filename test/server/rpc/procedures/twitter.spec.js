@@ -1,6 +1,6 @@
 describe('twitter', function() {
-    var Twitter = require('../../../../src/server/rpc/procedures/Twitter/Twitter'),
-        RPCMock = require('../../../assets/MockRPC'),
+    var Twitter = require('../../../../src/server/rpc/procedures/twitter/twitter'),
+        RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         twitter = new RPCMock(Twitter);
 

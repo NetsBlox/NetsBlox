@@ -9,17 +9,14 @@ var supertest = require('supertest'),
         vantage: false
     },
     api,
-    Server = require('../../src/server/Server'),
+    Server = require('../../src/server/server'),
 
-    _ = require('lodash'),
-    basicRoutes = require('../../src/server/routes/BasicRoutes'),
-    userRoutes = require('../../src/server/routes/Users'),
-    DefaultGameTypes = require('../../src/server/GameTypes');
+    basicRoutes = require('../../src/server/routes/basic-routes'),
+    userRoutes = require('../../src/server/routes/users');
 
 // TODO: Add API message
 describe('Server Tests', function() {
     var username = 'test',
-        email = 'test@test.com',
         server;
 
     before(function(done) {
@@ -93,19 +90,6 @@ describe('Server Tests', function() {
             .forEach(verifyExists);
     });
 
-    describe('Game Types', function() {
-        describe('/', function() {
-            it('should return the default game types', function(done) {
-                api.get('/GameTypes')
-                    .end(function(err, result) {
-                        assert.notEqual(result.status, 404, result.text);
-                        assert(_.matches(result.body, DefaultGameTypes));
-                        done();
-                    });
-            });
-        });
-    });
-
     describe('SignUp tests', function() {
 
         it('should require both username and password', function(done) {
@@ -114,9 +98,6 @@ describe('Server Tests', function() {
                     assert(!result || (result.status === 400));
                     done();
                 });
-        });
-
-        it.skip('should create user account /SignUp', function(done) {
         });
     });
 
@@ -128,7 +109,6 @@ describe('Server Tests', function() {
     describe('RPC Manager Tests', function() {
         var uuid,
             WebSocket = require('ws'),  // jshint ignore:line
-            server,
             ROOM_NAME = 'ttt-test-room',
             api;
 
@@ -192,7 +172,7 @@ describe('Server Tests', function() {
             });
 
             it('should maintain state', function(done) {
-                var play = api.get('/guess?uuid='+uuid+'&letter=_')
+                api.get('/guess?uuid='+uuid+'&letter=_')
                     .expect(200)
                     .end(function() {
                         api.get('/getWrongCount?uuid='+uuid)

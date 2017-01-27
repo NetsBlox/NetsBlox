@@ -7,7 +7,7 @@ NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
 
-NetsBloxSerializer.prototype.app = 'NetsBlox 0.8.0, http://netsblox.org';  // Make this version automatic
+NetsBloxSerializer.prototype.app = 'NetsBlox 0.10.4, http://netsblox.org';  // Make this version automatic
 
 function NetsBloxSerializer() {
     this.init();
@@ -89,9 +89,8 @@ NetsBloxSerializer.prototype.openProject = function (project, ide) {
     //  watcher.onNextStep = function () {this.currentValue = null;};
     //})
 
-    // Update the collaborator
-    SnapActions.loadProject(ide, project.collabStartIndex);
     ide.world().keyboardReceiver = project.stage;
+    return project;
 };
 
 
@@ -318,6 +317,7 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     }
     model.globalVariables = model.project.childNamed('variables');
     project.globalVariables = new VariableFrame();
+    project.collabStartIndex = +(model.project.attributes.collabStartIndex || 0);
 
     /* Stage */
 

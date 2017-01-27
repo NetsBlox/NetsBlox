@@ -1,6 +1,6 @@
 describe('air quality', function() {
-    var AirQuality = require('../../../../src/server/rpc/procedures/AirQuality/AirQuality'),
-        RPCMock = require('../../../assets/MockRPC'),
+    var AirQuality = require('../../../../src/server/rpc/procedures/air-quality/air-quality'),
+        RPCMock = require('../../../assets/mock-rpc'),
         airquality,
         assert = require('assert');
 

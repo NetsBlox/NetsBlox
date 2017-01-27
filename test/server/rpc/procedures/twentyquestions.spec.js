@@ -1,6 +1,6 @@
 describe('twentyquestions', function() {
-    var TwentyQuestions = require('../../../../src/server/rpc/procedures/Twenty Questions/Twenty Questions'),
-        RPCMock = require('../../../assets/MockRPC'),
+    var TwentyQuestions = require('../../../../src/server/rpc/procedures/twenty-questions/twenty-questions'),
+        RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         twentyquestions = new RPCMock(TwentyQuestions);
 

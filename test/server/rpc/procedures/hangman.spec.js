@@ -1,6 +1,6 @@
 describe('hangman', function() {
-    var Hangman = require('../../../../src/server/rpc/procedures/Hangman/Hangman'),
-        RPCMock = require('../../../assets/MockRPC'),
+    var Hangman = require('../../../../src/server/rpc/procedures/hangman/hangman'),
+        RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         hangman = new RPCMock(Hangman);
 

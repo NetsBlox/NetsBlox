@@ -4,39 +4,27 @@
 //
 // Stateful RPC's have a "Store" created for each instance
 (function(Storage) {
-    var ObjectId = require('mongodb').ObjectId,
-        shared,
-        db,
-        logger;
+    var GenStorage = require('../storage/generic-storage'),
+        storage,
+        logger,
+        db;
 
     Storage.init = function(_logger, _db) {
-        logger = _logger.fork('RPC')
         db = _db;
-        shared = _db.collection('netsblox:rpc:shared');
+        logger = _logger;
+        storage = new GenStorage(_logger, _db, 'rpc:shared');
     };
 
     Storage.save = function(key, value) {
-        var data = {
-            _id: key,
-            value
-        };
-        return shared.save(data)
-            .then(result => {
-                if (result.writeError) {
-                    logger.error(`could not save to ${key}: ${result.errmsg}`);
-                }
-            });
+        return storage.save(key, value);
     };
 
     Storage.get = function(key) {
-        return shared.findOne({_id: key})
-            .then(found => found && found.value)
-            .catch(e => logger.error(`could not retrieve "${key}": ${e}`));
+        return storage.get(key);
     };
 
     Storage.delete = function(key) {
-        return shared.deleteOne({_id: key})
-            .catch(e => logger.error(`could not retrieve "${key}": ${e}`));
+        return storage.delete(key);
     };
 
     ///////////////// Stateful, Room-based RPC's /////////////////

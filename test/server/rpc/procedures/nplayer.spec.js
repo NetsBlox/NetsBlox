@@ -1,6 +1,6 @@
 describe('nplayer', function() {
-    var NPlayer = require('../../../../src/server/rpc/procedures/NPlayer/NPlayer'),
-        RPCMock = require('../../../assets/MockRPC'),
+    var NPlayer = require('../../../../src/server/rpc/procedures/n-player/n-player'),
+        RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         nplayer = new RPCMock(NPlayer);
 

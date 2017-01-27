@@ -212,7 +212,7 @@ NetCloud.prototype.socketId = function () {
 };
 
 // Override
-NetCloud.prototype.saveProject = function (ide, callBack, errorCall) {
+NetCloud.prototype.saveProject = function (ide, callBack, errorCall, overwrite) {
     var myself = this;
     myself.reconnect(
         function () {
@@ -223,7 +223,8 @@ NetCloud.prototype.saveProject = function (ide, callBack, errorCall) {
                 },
                 errorCall,
                 [
-                    myself.socketId()
+                    myself.socketId(),
+                    overwrite === true
                 ]
             );
         },
@@ -309,6 +310,7 @@ NetCloud.prototype.passiveLogin = function (ide, callback) {
         usr = JSON.stringify({
             return_user: true,
             api: true,
+            silent: true,
             socketId: socketId
         }),
         myself = this,
@@ -432,6 +434,48 @@ NetCloud.prototype.signup = function (
     } catch (err) {
         errorCall.call(this, err.toString(), 'NetsBlox Cloud');
     }
+};
+
+NetCloud.prototype.isProjectActive = function (name, callBack, errorCall) {
+    var myself = this;
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'isProjectActive',
+                function(response) {
+                    var isActive = response[0].active === 'true';
+
+                    return callBack(isActive);
+                },
+                errorCall,
+                [name]
+            );
+        },
+        errorCall
+    );
+};
+
+NetCloud.prototype.hasConflictingStoredProject = function (callBack, errorCall) {
+    var myself = this;
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'hasConflictingStoredProject',
+                function(response) {
+                    var hasConflicting = response[0].hasConflicting === 'true';
+
+                    return callBack(hasConflicting);
+                },
+                errorCall,
+                [
+                    myself.socketId()
+                ]
+            );
+        },
+        errorCall
+    );
 };
 
 var SnapCloud = new NetCloud(window.location.protocol + '//' + window.location.host+'/api/');

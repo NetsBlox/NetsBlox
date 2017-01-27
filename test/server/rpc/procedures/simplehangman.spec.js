@@ -1,6 +1,6 @@
 describe('simple hangman', function() {
-    var SimpleHangman = require('../../../../src/server/rpc/procedures/SimpleHangman/SimpleHangman.js'),
-        RPCMock = require('../../../assets/MockRPC'),
+    var SimpleHangman = require('../../../../src/server/rpc/procedures/simple-hangman/simple-hangman'),
+        RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         hangman = new RPCMock(SimpleHangman),
         assert = require('assert');

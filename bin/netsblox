@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+
+// Supported commands:
+//   - netsblox start
+//   - netsblox sessions (-l)
+//   - netsblox session <sessionName|index|both>
+//   - netsblox users
+//   - netsblox user <username>
+
+require('epipebomb')();  // Allow piping to 'head'
+
+var Command = require('commander').Command,
+    program = new Command(),
+    version = require('../package.json').version;
+
+program
+    .version('v'+version)
+
+program
+    .command('start', 'start the netsblox server')
+    .command('sessions', 'list the recorded data sessions')
+    .command('session [sessionId...]', 'display collected session info')
+    .command('users', 'list the usernames')
+    .command('user [sessionId]', 'display user information')
+    .parse(process.argv);
