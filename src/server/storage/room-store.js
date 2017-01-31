@@ -88,7 +88,7 @@ class Room extends DataWrapper {
             this._logger.trace('collected projects for ' + this._user.username);
 
             // Check for 'null' roles
-            var roleIds = Object.keys(content),
+            var roleIds = Object.keys(content.roles),
                 hasContent = false;
 
             for (var i = roleIds.length; i--;) {
