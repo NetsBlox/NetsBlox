@@ -205,7 +205,7 @@ Room.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(EXTRA_KEYS
 
 class RoomStore {
     constructor(logger, db) {
-        this._logger = logger.fork('Rooms');
+        this._logger = logger.fork('rooms');
         this._rooms = db.collection('rooms');
     }
 
