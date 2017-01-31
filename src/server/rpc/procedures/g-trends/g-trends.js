@@ -17,7 +17,7 @@ TrendsRPC.byLocation = function(longitude, latitude) {
     // or can use geocoder package
     let countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?';
     let username = 'demo';
-    let url = `${countryInfoBaseUrl}radius=${500}&lat=${latitude}&lng=${longitude}&username=${username}`,
+    let url = `${countryInfoBaseUrl}radius=${100}&lat=${latitude}&lng=${longitude}&username=${username}`,
         response = this.response,
         socket = this.socket;
     trace('Requesting country data from ', url);
@@ -28,9 +28,21 @@ TrendsRPC.byLocation = function(longitude, latitude) {
         }
         // TODO check if body is expected - try catch
         countryInfo = JSON.parse(body);
-        trace('detected country: ', countryInfo.countryCode);
+        trace('detected country: ', countryInfo.countryName, countryInfo, 'long', longitude, 'lat', latitude);
         // TODO synchronized sth? promise? gonna do it this way for now
-        getTrendsByCountry(countryInfo.countryCode);
+        if (typeof countryInfo.countryCode != 'undefined') {
+            getTrendsByCountry(countryInfo.countryCode);
+        }else{
+            let msg = {
+                type: 'message',
+                dstId: socket.roleId,
+                msgType: 'trend',
+                content: {
+                    q: 'country not found'
+                }
+              };
+            socket.send(msg);
+        }
     }); //end of request
 
     // get trends
