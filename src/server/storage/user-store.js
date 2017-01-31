@@ -7,7 +7,7 @@ var randomString = require('just.randomstring'),
 
 class UserStore {
     constructor (logger, db) {
-        this._logger = logger.fork('Users');
+        this._logger = logger.fork('users');
         this._users = db.collection('users');
     }
 
