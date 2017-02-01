@@ -246,25 +246,28 @@ NetsBloxSocket.MessageHandlers = {
             json = msg.project;
 
         createSaveableProject(json, (err, project) => {
-            delete this._projectRequests[id];
-
             if (err) {
                 var msg = [
                     `Could not create saveable project for ${this.roleId} from `,
                     `${JSON.stringify(json)} (${err.toString()})`
                 ].join('');
                 this._logger.error(msg);
-                return this._projectRequests[id].call(null, err);
+                this._projectRequests[id].call(null, err);
+                delete this._projectRequests[id];
+                return;
             }
 
             if (!project) {  // silent failure
                 err = `Received falsey project! ${JSON.stringify(project)}`;
                 this._logger.error(err);
-                return this._projectRequests[id].call(null, err);
+                this._projectRequests[id].call(null, err);
+                delete this._projectRequests[id];
+                return;
             }
 
             this._logger.log('created saveable project for request ' + id);
             this._projectRequests[id].call(null, null, project);
+            delete this._projectRequests[id];
         });
     },
 

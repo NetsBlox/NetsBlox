@@ -1,5 +1,5 @@
 var Storage = function(_logger, _db, name) {
-    this.logger = _logger.fork(name);
+    this.logger = _logger.fork(name.toLowerCase());
     this.db = _db;
     this.collection = _db.collection('netsblox:storage:' + name);
 };
