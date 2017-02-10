@@ -395,6 +395,13 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
         });
     }
 
+    // Add message types
+    model.messageTypes = model.stage.childNamed('messageTypes');
+    if (model.messageTypes) {
+        var messageTypes = model.messageTypes.children;
+        messageTypes.forEach(this.loadMessageType.bind(this, project.stage));
+    }
+
     model.globalBlocks = model.project.childNamed('blocks');
     if (model.globalBlocks) {
         this.loadCustomBlocks(project.stage, model.globalBlocks, true);
@@ -403,13 +410,6 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
             model.globalBlocks,
             true
         );
-    }
-
-    // Add message types
-    model.messageTypes = model.stage.childNamed('messageTypes');
-    if (model.messageTypes) {
-        var messageTypes = model.messageTypes.children;
-        messageTypes.forEach(this.loadMessageType.bind(this, project.stage));
     }
 
     this.loadObject(project.stage, model.stage);
