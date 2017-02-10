@@ -2,7 +2,9 @@
 // Utilities for querying data (like from cli or in vantage)
 var Q = require('q'),
     fs = require('fs'),
-    UserActions = require('../server/storage/user-actions');
+    UserActions = require('../server/storage/user-actions'),
+    Logger = require('../server/logger'),
+    logger = new Logger('query');
 
 var listSessions = (options) => {
     return UserActions.sessions().then(sessions => {
@@ -47,6 +49,7 @@ var printSessions = (ids, options) => {
     var lookupIds = [],
         getSessionIds;
 
+    logger.debug(`printing sessions: ${ids}`);
     options = options || {};
     // Remove any parens'ed ids...
     ids = ids.filter(id => id[0] !== '(');
@@ -55,13 +58,14 @@ var printSessions = (ids, options) => {
         .filter(pair => isInt.test(pair[0]));
 
     if (lookupIds.length) {
+        logger.debug('resolving session ids');
         getSessionIds = UserActions.sessionIds()
             .then(sessionIds => {
                 var sessionIndex,
                     index,
                     pair;
 
-                console.log(sessionIds);
+                logger.trace(`retrieved all ${sessionIds.length} session ids`);
                 for (var i = lookupIds.length; i--;) {
                     pair = lookupIds[i];
                     sessionIndex = parseInt(pair);
@@ -76,7 +80,7 @@ var printSessions = (ids, options) => {
     return getSessionIds
         .then(() => {
             // TODO: Convert this to stream?
-            console.log('ids are', ids);
+            logger.trace('resolved ids are', ids);
             return Q.all(ids.map(id => UserActions.session(id)));
         })
         .then(sessions => {  // formatting..
@@ -85,6 +89,7 @@ var printSessions = (ids, options) => {
                 .reduce((l1, l2) => l1.concat(l2), [])
                 .map(event => event.action);
 
+            console.log('session');
             if (options.json) {
                 return JSON.stringify(actions, null, 2);
             } else {
@@ -96,6 +101,7 @@ var printSessions = (ids, options) => {
                 }).join('\n');
             }
         })
+        .fail(err => console.error(err))
         .catch(err => console.err(err))
         .then(output => {
             if (options.export) {
@@ -108,6 +114,7 @@ var printSessions = (ids, options) => {
 };
 
 module.exports = {
+    init: _logger => logger = _logger.fork('query'),
     listSessions: listSessions,
     printSessions: printSessions
 };

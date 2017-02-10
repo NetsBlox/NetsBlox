@@ -6,6 +6,7 @@
     UserActionData.init = function(_logger, db) {
         logger = _logger.fork('user-actions');
         collection = db.collection('netsblox:storage:user-actions');
+        logger.trace('initialized!');
     };
 
     UserActionData.record = function(action) {
@@ -21,6 +22,7 @@
 
     // query-ing
     UserActionData.sessions = function() {
+        logger.trace('getting sessions');
         // Get a list of all sessionIds
         var cursor = collection.find({}).stream(),
             sessionIdDict = {},
@@ -49,6 +51,10 @@
 
         });
 
+        cursor.on('error', err => {
+            logger.error(err);
+            deferred.reject(err);
+        });
         cursor.once('end', () => {
             var sessions = Object.keys(sessionIdDict).sort()
                 .map(id => sessionIdDict[id]);
@@ -60,18 +66,24 @@
     };
 
     UserActionData.sessionIds = function() {
+        logger.trace('getting session ids');
         return UserActionData.sessions()
-            .then(sessions => {
-                return sessions.map(session => session.id);
-            });
+            .then(sessions => sessions.map(session => session.id));
     };
 
     UserActionData.session = function(sessionId) {
+        logger.trace(`requesting session info for ${sessionId}`);
         return collection.find({sessionId: sessionId}).toArray()
-            .sort((a, b) => a.action.time < b.action.time ? -1 : 1);
+            .then(events => {
+                logger.trace(`found ${events.length} actions for ${sessionId}`);
+                return events
+                    .map(event => event.action)
+                    .sort((a, b) => a.time < b.time ? -1 : 1);
+            });
     };
 
     UserActionData.clear = function() {
+        logger.trace('clearing user action data');
         return collection.deleteMany({});
     };
 

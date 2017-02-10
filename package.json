@@ -48,7 +48,7 @@
     "jsonwebtoken": "^6.2.0",
     "just.randomstring": "^0.1.1",
     "lodash": "^4.8.2",
-    "mongodb": "^2.2.21",
+    "mongodb": "^2.2.22",
     "moviedb": "^0.2.7",
     "nodemailer": "=2.6.4",
     "nodemailer-markdown": "^1.0.0",
