@@ -32,7 +32,9 @@
             if (!sessionIdDict[id]) {
                 sessionIdDict[id] = {
                     id: id,
-                    actionCount: 0
+                    actionCount: 0,
+                    minTime: Infinity,
+                    maxTime: -Infinity
                 };
             }
             sessionIdDict[id].username = sessionIdDict[id].username ||
@@ -60,7 +62,6 @@
     UserActionData.sessionIds = function() {
         return UserActionData.sessions()
             .then(sessions => {
-                console.log('sessions:', sessions);
                 return sessions.map(session => session.id);
             });
     };

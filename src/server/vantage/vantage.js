@@ -146,10 +146,8 @@ var NetsBloxVantage = function(server) {
     vantage
         .command('sessions', 'Query the recorded user sessions')
         .option('-l, --long', 'List additional metadata about the sessions')
-        .option('--clear', 'Clear the user data records')
         .action((args, cb) => {
-            UserActions.sessions()
-                .then(sessions => Query.listSessions(sessions, args.options))
+            Query.listSessions(args.options)
                 .then(() => cb());
         });
 
