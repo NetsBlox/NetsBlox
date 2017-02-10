@@ -1,53 +1,77 @@
 (function(UserActionData) {
-    var GenStorage = require('./generic-storage'),
-        storage;
+    var Q = require('q'),
+        logger,
+        collection;
 
-    UserActionData.init = function(logger, db) {
-        storage = new GenStorage(logger, db, 'user-actions');
+    UserActionData.init = function(_logger, db) {
+        logger = _logger.fork('user-actions');
+        collection = db.collection('netsblox:storage:user-actions');
     };
 
     UserActionData.record = function(action) {
         if (!action.sessionId) {
-            storage.logger.error('No sessionId found for action:', action);
+            logger.error('No sessionId found for action:', action);
             return;
         }
 
-        storage.logger.trace(`about to store action from session: ${action.sessionId}`);
-        return storage.get(action.sessionId)
-            .then(actions => {
-                if (!actions) {
-                    actions = [];
-                }
-                actions.push(action);
-                return storage.save(action.sessionId, actions);
-            })
-            .then(() => storage.logger.trace(`successfully added action to session ${action.sessionId}`));
+        logger.trace(`about to store action from session: ${action.sessionId}`);
+        return collection.save(action)
+            .then(() => logger.trace(`successfully recorded action from session ${action.sessionId}`));
     };
 
     // query-ing
     UserActionData.sessions = function() {
-        return storage.all()
-            .then(sessions => sessions.map(session => {
-                return {
-                    id: session._id,
-                    actions: session.value
+        // Get a list of all sessionIds
+        var cursor = collection.find({}).stream(),
+            sessionIdDict = {},
+            deferred = Q.defer();
+
+        cursor.on('data', event => {
+            var id = event.sessionId;
+
+            if (!sessionIdDict[id]) {
+                sessionIdDict[id] = {
+                    id: id,
+                    actionCount: 0
                 };
-            }));
+            }
+            sessionIdDict[id].username = sessionIdDict[id].username ||
+                event.username;
+
+            sessionIdDict[id].projectId = event.projectId;
+            sessionIdDict[id].actionCount++;
+            sessionIdDict[id].minTime = Math.min(sessionIdDict[id].minTime,
+                event.action.time);
+            sessionIdDict[id].maxTime = Math.max(sessionIdDict[id].maxTime,
+                event.action.time);
+
+        });
+
+        cursor.once('end', () => {
+            var sessions = Object.keys(sessionIdDict).sort()
+                .map(id => sessionIdDict[id]);
+
+            deferred.resolve(sessions);
+        });
+
+        return deferred.promise;
     };
 
     UserActionData.sessionIds = function() {
-        // Get a list of all sessionIds
-        return storage.all()
-            .then(sessions => sessions.map(session => session._id));
+        return UserActionData.sessions()
+            .then(sessions => {
+                console.log('sessions:', sessions);
+                return sessions.map(session => session.id);
+            });
     };
 
     UserActionData.session = function(sessionId) {
-        // TODO: Use a stream
-        return storage.get(sessionId);
+        return collection.find({sessionId: sessionId}).toArray()
+            .sort((a, b) => a.action.time < b.action.time ? -1 : 1);
     };
 
     UserActionData.clear = function() {
-        return storage.clearAll();
+        return collection.deleteMany({});
     };
 
 })(exports);
