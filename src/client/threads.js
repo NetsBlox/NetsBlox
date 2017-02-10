@@ -1,4 +1,5 @@
-/* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph, Message */
+/* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
+   List */
 ThreadManager.prototype.startProcess = function (
     block,
     isThreadSafe,
@@ -76,37 +77,33 @@ function NetsProcess(topBlock, onComplete, rightAway, context) {
     }
 }
 
-NetsProcess.prototype.doSocketMessage = function (name) {
+NetsProcess.prototype.doSocketMessage = function (msgInfo) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
         targetRole = arguments[arguments.length-1],
         myRole = ide.projectName,  // same as seat name
-        fields = Array.prototype.slice.call(arguments, 1),
-        stage = ide.stage,
-        messageType,
-        fieldNames,
-        msg;
+        name = msgInfo[0],
+        fieldNames = msgInfo[1],
+        fieldValues = Array.prototype.slice.call(arguments, 1, fieldNames.length + 1),
+        contents;
 
     // If there is no name, return
     if (!name) {
         return;
     }
 
-    messageType = stage.messageTypes.getMsgType(name);
-    fieldNames = messageType.fields;
-
     // Create the message
-    msg = new Message(messageType);
+    contents = {};
     // Set the fields
     for (var i = fieldNames.length; i--;) {
-        msg.set(fieldNames[i], fields[i] || '');
+        contents[fieldNames[i]] = fieldValues[i] || '';
     }
 
     ide.sockets.sendMessage({
         type: 'message',
         dstId: targetRole,
         srcId: myRole,
-        msgType: msg.type.name,
-        content: msg.contents
+        msgType: name,
+        content: contents
     });
 };
 
@@ -149,7 +146,8 @@ NetsProcess.prototype.createRPCUrl = function (rpc, params) {
 
 NetsProcess.prototype.callRPC = function (rpc, params, noCache) {
     var url = this.createRPCUrl(rpc, params),
-        response;
+        response,
+        image;
 
     if (noCache) {
         url += '&t=' + Date.now();
@@ -160,50 +158,44 @@ NetsProcess.prototype.callRPC = function (rpc, params, noCache) {
         this.rpcRequest.open('GET', url, true);
         this.rpcRequest.send(null);
     } else if (this.rpcRequest.readyState === 4) {
-        response = this.rpcRequest.responseText;
-        this.rpcRequest = null;
-        return response;
+        if (this.rpcRequest.getResponseHeader('content-type').indexOf('image') === 0) {
+            image = this.getCostumeFromRPC(rpc, params);
+            if (image) {
+                this.rpcRequest = null;
+            }
+            return image;
+        } else {
+            response = this.rpcRequest.responseText;
+            this.rpcRequest = null;
+            return response;
+        }
     }
     this.pushContext('doYield');
     this.pushContext();
 };
 
-// TODO: Consider moving these next two functions to the Stage
-NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
-    var result = this.callRPC(rpc, params, true);
-    if (result) {
-        try {  // Try to convert it to JSON
-            result = JSON.parse(result);
-        } catch (e) {
-            // nop
-        }
-    }
-    if (result instanceof Array) {
-        result = new List(result);
-    }
-    return result;
-};
-
-NetsProcess.prototype.getJSFromRPCDropdown = function (rpc, action, params) {
-    return this.getJSFromRPC(['', rpc, action].join('/'), params);
-};
-
 NetsProcess.prototype.getCostumeFromRPC = function (rpc, action, params) {
     var image,
         stage = this.homeContext.receiver.parentThatIsA(StageMorph),
+        paramItems;
+
+    if (arguments.length === 2) {
+        params = action;
+    } else {
+        rpc = ['', rpc, action].join('/');
         paramItems = params.length ? params.split('&') : [];
-        
-    rpc = ['', rpc, action].join('/');
-    // Add the width and height of the stage as default params
-    if (params.indexOf('width') === -1) {
-        paramItems.push('width=' + stage.width());
-    }
 
-    if (params.indexOf('height') === -1) {
-        paramItems.push('height=' + stage.height());
-    }
+        // Add the width and height of the stage as default params
+        if (params.indexOf('width') === -1) {
+            paramItems.push('width=' + stage.width());
+        }
 
-    params = paramItems.join('&');
+        if (params.indexOf('height') === -1) {
+            paramItems.push('height=' + stage.height());
+        }
+
+        params = paramItems.join('&');
+    }
 
     // Create the costume (analogous to reportURL)
     if (!this.requestedImage) {
@@ -219,6 +211,43 @@ NetsProcess.prototype.getCostumeFromRPC = function (rpc, action, params) {
     }
     this.pushContext('doYield');
     this.pushContext();
+};
+
+NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
+    var result = this.callRPC(rpc, params, true);
+    if (result) {
+        try {  // Try to convert it to JSON
+            result = JSON.parse(result);
+        } catch (e) {
+            // nop
+        }
+    }
+
+    result = this.parseRPCResult(result);
+    return result;
+};
+
+NetsProcess.prototype.parseRPCResult = function (result) {
+    if (result instanceof Array) {
+        return new List(result.map(this.parseRPCResult.bind(this)));
+    }
+    return result;
+};
+
+NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
+    var action = methodSignature[0],
+        argNames = methodSignature[1],
+        values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
+        params;
+
+    params = argNames.map(function(name, index) {
+        return name + '=' + values[index];
+    }).join('&');
+    return this.getJSFromRPCDropdown(rpc, action, params);
+};
+
+NetsProcess.prototype.getJSFromRPCDropdown = function (rpc, action, params) {
+    return this.getJSFromRPC(['', rpc, action].join('/'), params);
 };
 
 // Process Geo

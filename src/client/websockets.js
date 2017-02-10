@@ -1,4 +1,6 @@
-/*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions*/
+/*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions,
+  DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject, NetsBloxSerializer,
+  BlockMorph*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
@@ -17,6 +19,7 @@ var WebSocketManager = function (ide) {
     this.errored = false;
     this.hasConnected = false;
     this.connected = false;
+    this.serializer = new NetsBloxSerializer();
 };
 
 WebSocketManager.HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
@@ -36,9 +39,9 @@ WebSocketManager.MessageHandlers = {
 
         // filter for gameplay
         if (dstId === this.ide.projectName || dstId === 'others in room' || dstId === 'everyone in room') {
+            content = this.deserializeMessage(msg);
             this.onMessageReceived(messageType, content, 'role');
         }
-        // TODO: pass to debugger
     },
 
     'export-room': function(msg) {
@@ -134,7 +137,6 @@ WebSocketManager.MessageHandlers = {
 
                             // notify
                             this.destroy();
-                            var acceptDialog = new DialogBoxMorph();
                             myself.ide.showMessage(notification, 2);
 
                             // refresh message palette
@@ -143,6 +145,7 @@ WebSocketManager.MessageHandlers = {
                                 ide.spriteBar.tabBar.tabTo('room');
                             }
                         });
+                    this.destroy();
                 };
             }
         }
@@ -168,7 +171,6 @@ WebSocketManager.prototype._connectWebSocket = function() {
     this.websocket = new WebSocket(this.url);
     // Set up message firing queue
     this.websocket.onopen = function() {
-        console.log('Connection established');  // REMOVE this
         if (self.errored === true) {
             self.ide.showMessage((self.hasConnected ? 're' : '') + 'connected!', 2);
             self.errored = false;
@@ -220,12 +222,101 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
 WebSocketManager.prototype.sendMessage = function(message) {
     var state = this.websocket.readyState;
-    message = JSON.stringify(message);
+    message = this.serializeMessage(message);
     if (state === this.websocket.OPEN) {
         this.websocket.send(message);
     } else {
         this.messages.push(message);
     }
+};
+
+WebSocketManager.prototype.serializeMessage = function(message) {
+    if (message.content) {
+        var myself = this,
+            fields = Object.keys(message.content),
+            definitions = [],
+            content;
+
+        for (var i = fields.length; i--;) {
+            content = message.content[fields[i]];
+            if (isObject(content)) {
+                if (content instanceof Context) {
+                    content.receiver = null;
+                    content.outerContext = null;
+                    definitions = definitions.concat(this.getRequiredDefinitions(content.expression));
+                }
+                message.content[fields[i]] = this.serializer.serialize(content);
+            }
+        }
+
+        // Attach the necessary definitions
+        message.definitions = definitions.map(function(definition) {
+            return myself.serializer.serialize(definition);
+        }).reverse();
+    }
+
+    return JSON.stringify(message);
+};
+
+WebSocketManager.prototype.getRequiredDefinitions = function(block) {
+    var myself = this,
+        allDefinitions;
+
+    if (!(block instanceof BlockMorph)) {
+        return [];
+    }
+
+    allDefinitions = block.inputs().map(function(input) {
+        return myself.getRequiredDefinitions(input);
+    }).reduce(function(l1, l2) {
+        return l1.concat(l2);
+    }, []);
+
+    if (block.definition) {
+        allDefinitions.push(block.definition);
+        allDefinitions = allDefinitions.concat(
+            this.getRequiredDefinitions(block.definition.body.expression));
+    }
+
+    if (block.nextBlock && block.nextBlock()) {
+        allDefinitions = allDefinitions.concat(this.getRequiredDefinitions(block.nextBlock()));
+    }
+
+    return allDefinitions;
+};
+
+WebSocketManager.prototype.deserializeMessage = function(message) {
+    var myself = this,
+        content = message.content,
+        fields = Object.keys(content),
+        definitions = message.definitions,
+        value;
+
+    // Load any provided block definitions first
+    if (definitions) {
+        definitions = definitions.map(function(definition) {
+            return myself.serializer.loadCustomBlock(
+                myself.serializer.parse(definition),
+                true
+            );
+        });
+        this.serializer.init();
+        this.serializer.project.stage = new StageMorph();
+        this.serializer.project.sprites = {};
+        this.serializer.project.stage.globalBlocks = definitions;
+    }
+
+    for (var i = fields.length; i--;) {
+        value = content[fields[i]];
+        if (value[0] === '<') {
+            try {
+                content[fields[i]] = this.serializer.loadValue(this.serializer.parse(value));
+            } catch(e) {  // must not have been XML
+                console.error('Could not deserialize!', e);
+            }
+        }
+    }
+    return content;
 };
 
 WebSocketManager.prototype.setGameType = function(gameType) {
@@ -396,13 +487,13 @@ WebSocketManager.prototype.getSerializedProject = function() {
     ide.serializer.flushMedia();
 
     return {
-            ProjectName: ide.projectName,
-            SourceCode: pdata,
-            Media: media,
-            SourceSize: pdata.length,
-            MediaSize: media ? media.length : 0,
-            RoomName: this.ide.room.name
-        };
+        ProjectName: ide.projectName,
+        SourceCode: pdata,
+        Media: media,
+        SourceSize: pdata.length,
+        MediaSize: media ? media.length : 0,
+        RoomName: this.ide.room.name
+    };
 };
 
 WebSocketManager.prototype.destroy = function () {

@@ -1,4 +1,5 @@
-/* globals UndoManager, ActionManager, SnapActions */
+/* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer,
+   HintInputSlotMorph */
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
@@ -28,10 +29,74 @@ ActionManager.prototype.onDeleteMessageType = function(name) {
     ide.refreshPalette();
 };
 
+// HintInputSlotMorph support
+ActionManager.prototype._setField = function(field, value) {
+    var fieldId = this.getId(field),
+        oldValue = field.contents().text;
+
+    if (field instanceof HintInputSlotMorph && field.empty) {
+        oldValue = '';
+    }
+
+    return [
+        fieldId,
+        value,
+        oldValue
+    ];
+};
+
 UndoManager.Invert.addMessageType = function() {
     return 'deleteMessageType';
 };
 
 UndoManager.Invert.deleteMessageType = function() {
     return 'addMessageType';
+};
+
+SnapActions.serializer = new NetsBloxSerializer();
+SnapActions.__sessionId = Date.now();
+
+// Recording user actions
+SnapActions.send = function(json) {
+    var socket = this.ide().sockets,
+        msg = {};
+
+    json.id = json.id || this.lastSeen + 1;
+    this.lastSent = json.id;
+
+    msg.type = 'record-action';
+    msg.sessionId = this.__sessionId;
+    msg.action = json;
+    socket.sendMessage(msg);
+};
+
+SnapActions.loadProject = function() {
+    var event;
+
+    this.__sessionId = Date.now();
+
+    // Send the project state
+    event = ActionManager.prototype.loadProject.apply(this, arguments);
+    this.send(event);
+
+    return event;
+};
+
+SnapActions._applyEvent = function(event) {
+    try {
+        return ActionManager.prototype._applyEvent.apply(this, arguments);
+    } catch (e) {
+        var msg = [
+            '## Auto-report',
+            'Error:',
+            e.stack,
+            '---',
+            'Failing Event:',
+            JSON.stringify(event, null, 2)
+        ].join('\n');
+
+        // Report the error!
+        this.ide().submitBugReport(msg, true);
+        throw e;
+    }
 };

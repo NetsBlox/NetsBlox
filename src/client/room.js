@@ -1,7 +1,8 @@
 /* global SnapCloud, StringMorph, DialogBoxMorph, localize, newCanvas, Point, Morph,
- Color, nop, InputFieldMorph, ListMorph, AlignmentMorph, IDE_Morph, TurtleIconMorph,
- ProjectDialogMorph, TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph,
- SymbolMorph, PushButtonMorph*/
+ Color, nop, InputFieldMorph, ListMorph, IDE_Morph, TurtleIconMorph,
+ TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph, ReporterBlockMorph 
+ MessageOutputSlotMorph, MessageInputSlotMorph, SymbolMorph, PushButtonMorph, MenuMorph,
+ SpeechBubbleMorph, ProjectDialogMorph, HandleMorph, fontHeight*/
 /* * * * * * * * * RoomMorph * * * * * * * * */
 RoomMorph.prototype = new Morph();
 RoomMorph.prototype.constructor = RoomMorph;
@@ -57,14 +58,14 @@ function RoomMorph(ide) {
         if (myself._name === localize('MyRoom')) {
             myself.ide.sockets.sendMessage({type: 'request-new-name'});
         }
-    }
+    };
 
     // change room name if default on passive login
     SnapCloud.onPassiveLogin = function() {
         if (myself._name === localize('MyRoom')) {
             myself.ide.sockets.sendMessage({type: 'request-new-name'});
         }
-    }
+    };
 
     // Set the initial values
     var roles = {};
@@ -174,20 +175,20 @@ RoomMorph.prototype.drawNew = function() {
 };
 
 RoomMorph.prototype.showOwnerName = function(center) {
-     if (this.ownerLabel) {
-         this.ownerLabel.destroy();
-     }
-    
-     if (this.ownerId && !this.ownerId.startsWith('_client_')) {
-         this.ownerLabel = new StringMorph('Owner: ' + this.ownerId, false, false, true);
- 
-         this.ownerLabel.setCenter(center);
- 
-         this.add(this.ownerLabel);
+    if (this.ownerLabel) {
+        this.ownerLabel.destroy();
+    }
+
+    if (this.ownerId && !this.ownerId.startsWith('_client_')) {
+        this.ownerLabel = new StringMorph('Owner: ' + this.ownerId, false, false, true);
+
+        this.ownerLabel.setCenter(center);
+
+        this.add(this.ownerLabel);
         // For rooms with one user occupying many roles--make sure only one owner is assigned
-         this.owner = false;
-     }
- }
+        this.owner = false;
+    }
+};
 
 
 RoomMorph.prototype.mouseClickLeft = function() {
@@ -363,7 +364,8 @@ RoomMorph.prototype.deleteRole = function(role) {
 
 RoomMorph.prototype.createRoleClone = function(role) {
     var myself = this;
-    SnapCloud.cloneRole(function(response) {
+    SnapCloud.cloneRole(
+        function(response) {
             var newRole = Object.keys(response[0])[0];
             myself.ide.showMessage('cloned ' + role + ' to ' +
                 newRole + ' !');
@@ -390,7 +392,8 @@ RoomMorph.prototype.setRoleName = function(role) {
 // FIXME: create ide.confirm
 RoomMorph.prototype.evictUser = function (user, role) {
     var myself = this;
-    SnapCloud.evictUser(function(err) {
+    SnapCloud.evictUser(
+        function(err) {
             myself.ide.showMessage(err || 'evicted ' + user + '!');
         },
         function (err, lbl) {
@@ -424,6 +427,7 @@ RoomMorph.prototype.inviteUser = function (role) {
 RoomMorph.prototype.promptShare = function(name) {
     var roles = Object.keys(this.roles),
         choices = {},
+        world = this.world(),
         myself = this;
 
     roles.splice(roles.indexOf(this.ide.projectName), 1);  // exclude myself
@@ -453,79 +457,28 @@ RoomMorph.prototype.promptShare = function(name) {
                         roleId: choice, 
                         msg: {name: name, fields: myself.ide.stage.messageTypes.getMsgType(name).fields}, 
                         from: myself.ide.projectName
-                        });
+                    });
                     myself.ide.showMessage('The role will receive this message type on next occupation.', 2);
-                    }
+                }
             } else {
                 myself.ide.showMessage('There is no role by the name of \'' + choice + '\'!', 2);
             }
             this.destroy();
-        }
+        };
     } else {  // notify user no available recipients
         myself.ide.showMessage('There are no other roles in the room!', 2);
     }
 };
 
 RoomMorph.prototype._inviteFriendDialog = function (role, friends) {
-    // Create a list of clients to invite (retrieve from server - ajax)
-    // Allow the user to select the person and role
-    var dialog = new DialogBoxMorph().withKey('inviteFriend'),
-        frame = new AlignmentMorph('column', 7),
-        listField,
-        ok = dialog.ok,
-        myself = this,
-        size = 200,
-        minHeight = 50,
-        maxHeight = 250,
-        heightEstimate = friends.length*15,
-        world = this.world();
-
-    frame.padding = 6;
-    frame.setWidth(size);
-    frame.acceptsDrops = false;
-
-    listField = new ListMorph(friends);
-    listField.fixLayout = nop;
-    listField.edge = InputFieldMorph.prototype.edge;
-    listField.fontSize = InputFieldMorph.prototype.fontSize;
-    listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
-    listField.contrast = InputFieldMorph.prototype.contrast;
-    listField.drawNew = InputFieldMorph.prototype.drawNew;
-    listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
-    listField.setWidth(size-2*frame.padding);
-    listField.setHeight(Math.max(Math.min(maxHeight, heightEstimate), minHeight));
-
-    frame.add(listField);
-
-    frame.edge = InputFieldMorph.prototype.edge;
-    frame.fontSize = InputFieldMorph.prototype.fontSize;
-    frame.typeInPadding = InputFieldMorph.prototype.typeInPadding;
-    frame.contrast = InputFieldMorph.prototype.contrast;
-    frame.drawNew = InputFieldMorph.prototype.drawNew;
-    frame.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
-
-    dialog.ok = function () {
-        var friend = listField.selected;
-        if (friend) {
-            // For now, I might just make a new role on the server
-            myself._inviteFriend(friend, role);
+    new UserDialogMorph(this, function(user) {
+        if (user) {
+            this.inviteFriend(user, role);
         }
-        ok.call(this);
-    };
-
-    dialog.labelString = 'Invite a Friend to the Room';
-    dialog.createLabel();
-    dialog.addBody(frame);
-    frame.drawNew();
-    dialog.addButton('ok', 'OK');
-    dialog.addButton('cancel', 'Cancel');
-    dialog.fixLayout();
-    dialog.drawNew();
-    dialog.popUp(world);
-    dialog.setCenter(world.center());
+    }, friends).popUp();
 };
 
-RoomMorph.prototype._inviteFriend = function (friend, role) {
+RoomMorph.prototype.inviteFriend = function (friend, role) {
     // Use inviteToRoom service
     var socketId = this.ide.sockets.uuid;
     if (friend === 'myself') {
@@ -600,21 +553,21 @@ RoomMorph.prototype._invitationResponse = function (id, response, role) {
 };
 
 RoomMorph.prototype.checkForSharedMsgs = function(role) {
-     // Send queried messages if possible
-     for (var i = 0 ; i < this.sharedMsgs.length; i++) {
-         if (this.sharedMsgs[i].roleId === role) {
-             this.ide.sockets.sendMessage({
-                 type: 'share-msg-type', 
-                 name: this.sharedMsgs[i].msg.name,
-                 fields: this.sharedMsgs[i].msg.fields, 
-                 from: this.sharedMsgs[i].from,
-                 roleId: role
-             });
-             this.sharedMsgs.splice(i, 1);
-             i--;
-         }
-     }
- };
+    // Send queried messages if possible
+    for (var i = 0 ; i < this.sharedMsgs.length; i++) {
+        if (this.sharedMsgs[i].roleId === role) {
+            this.ide.sockets.sendMessage({
+                type: 'share-msg-type', 
+                name: this.sharedMsgs[i].msg.name,
+                fields: this.sharedMsgs[i].msg.fields, 
+                from: this.sharedMsgs[i].from,
+                roleId: role
+            });
+            this.sharedMsgs.splice(i, 1);
+            i--;
+        }
+    }
+};
 
 RoleMorph.prototype = new Morph();
 RoleMorph.prototype.constructor = RoleMorph;
@@ -877,17 +830,25 @@ function EditRoleMorph(room, role) {
         this.addButton('deleteRole', 'Delete role');
     }
     this.addButton('cancel', 'Cancel');
-
-    // FIXME: This isn't centering it
-    this.drawNew();
-    var center = this.center();
-    this.label.setCenter(center);
-    txt.setCenter(center);
 }
 
 EditRoleMorph.prototype.inviteUser = function() {
     this.room.inviteUser(this.role.name);
     this.destroy();
+};
+
+EditRoleMorph.prototype.fixLayout = function() {
+    var center = this.center();
+
+    EditRoleMorph.uber.fixLayout.call(this);
+
+    if (this.label) {
+        this.label.setLeft(center.x - this.label.width()/2);
+    }
+
+    if (this.body) {
+        this.body.setLeft(center.x - this.body.width()/2);
+    }
 };
 
 EditRoleMorph.prototype.editRoleName = function() {
@@ -967,7 +928,6 @@ ProjectsMorph.prototype.updateRoom = function() {
 
 ProjectsMorph.prototype.drawMsgPalette = function() {
     var width = 0,  // default width
-        myself = this,
         stage = this.room.ide.stage;
 
     // Create and style the message palette
@@ -1007,7 +967,7 @@ ProjectsMorph.prototype.drawMsgPalette = function() {
 
         // Custom menu
         var menu = new MenuMorph(this, null);
-        menu.addItem('Send to...', function() {this.room.promptShare(msg.blockSpec)});
+        menu.addItem('Send to...', function() {this.room.promptShare(msg.blockSpec);});
         msg.children[0].customContextMenu = menu;
         msg.customContextMenu = menu;
 
@@ -1023,7 +983,7 @@ ProjectsMorph.prototype.drawMsgPalette = function() {
     // Display message palette with no scroll bar until it overflows
     this.addContents(palette);
     this.vBar.hide();
-}
+};
 
 ProjectsMorph.prototype.destroy = function() {
     this.room.changed = nop;
@@ -1065,4 +1025,178 @@ ProjectsMorph.prototype._addButton = function(params) {
 
     this.addContents(newButton);
     return newButton;
+};
+
+// UserDialogMorph ////////////////////////////////////////////////////
+
+// UserDialogMorph inherits from DialogBoxMorph:
+
+UserDialogMorph.prototype = new DialogBoxMorph();
+UserDialogMorph.prototype.constructor = UserDialogMorph;
+UserDialogMorph.uber = DialogBoxMorph.prototype;
+
+// UserDialogMorph instance creation:
+
+function UserDialogMorph(target, action, users) {
+    this.init(target, action, users);
+}
+
+UserDialogMorph.prototype.init = function(target, action, users) {
+    this.key = 'inviteFriend';
+    this.userList = users;
+    UserDialogMorph.uber.init.call(
+        this,
+        target, // target
+        action, // function
+        null // environment
+    );
+    this.buildContents();
+};
+
+UserDialogMorph.prototype.buildContents = function() {
+    this.addBody(new Morph());
+    this.body.color = this.color;
+
+    this.buildFilterField();
+
+    this.listField = new ListMorph(this.userList);
+    this.fixListFieldItemColors();
+    this.listField.fixLayout = nop;
+    this.listField.edge = InputFieldMorph.prototype.edge;
+    this.listField.fontSize = InputFieldMorph.prototype.fontSize;
+    this.listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    this.listField.contrast = InputFieldMorph.prototype.contrast;
+    this.listField.drawNew = InputFieldMorph.prototype.drawNew;
+    this.listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+
+    this.body.add(this.listField);
+
+    // add buttons
+    this.labelString = 'Invite a Friend to the Room';
+    this.createLabel();
+    this.addButton('ok', 'OK');
+    this.addButton('cancel', 'Cancel');
+
+    this.setHeight(300);
+    this.fixLayout();
+};
+
+UserDialogMorph.prototype.fixLayout = function () {
+    var th = fontHeight(this.titleFontSize) + this.titlePadding * 2,
+        inputField = this.filterField,
+        oldFlag = Morph.prototype.trackChanges;
+
+    Morph.prototype.trackChanges = false;
+
+    if (this.buttons && (this.buttons.children.length > 0)) {
+        this.buttons.fixLayout();
+    }
+
+    if (this.body) {
+        this.body.setPosition(this.position().add(new Point(
+            this.padding,
+            th + this.padding
+        )));
+        this.body.setExtent(new Point(
+            this.width() - this.padding * 2,
+            this.height() - this.padding * 3 - th - this.buttons.height()
+        ));
+
+        inputField.setWidth(
+                this.body.width() -  this.padding * 6
+            );
+        inputField.setLeft(this.body.left() + this.padding * 3);
+        inputField.drawNew();
+
+        this.listField.setLeft(this.body.left() + this.padding);
+        this.listField.setWidth(
+            this.body.width()
+                - this.padding
+        );
+        this.listField.contents.children[0].adjustWidths();
+
+        this.listField.setTop(inputField.bottom() + this.padding);
+        this.listField.setHeight(
+            this.body.height() - inputField.height() - this.padding
+        );
+
+        if (this.magnifiyingGlass) {
+            this.magnifiyingGlass.setTop(inputField.top());
+            this.magnifiyingGlass.setLeft(this.listField.left());
+        }
+    }
+
+    if (this.label) {
+        this.label.setCenter(this.center());
+        this.label.setTop(this.top() + (th - this.label.height()) / 2);
+    }
+
+    if (this.buttons && (this.buttons.children.length > 0)) {
+        this.buttons.setCenter(this.center());
+        this.buttons.setBottom(this.bottom() - this.padding);
+    }
+
+    Morph.prototype.trackChanges = oldFlag;
+    this.changed();
+};
+
+UserDialogMorph.prototype.fixListFieldItemColors = 
+    ProjectDialogMorph.prototype.fixListFieldItemColors;
+
+UserDialogMorph.prototype.buildFilterField = 
+    ProjectDialogMorph.prototype.buildFilterField;
+
+UserDialogMorph.prototype.getInput = function() {
+    return this.listField.selected;
+};
+
+UserDialogMorph.prototype.buildFilterField = function () {
+    var myself = this;
+
+    this.filterField = new InputFieldMorph('');
+    this.magnifiyingGlass =
+        new SymbolMorph(
+            'magnifiyingGlass',
+            this.filterField.height(),
+            this.titleBarColor.darker(50));
+
+    this.body.add(this.magnifiyingGlass);
+    this.body.add(this.filterField);
+
+    this.filterField.reactToKeystroke = function () {
+        var text = this.getValue();
+
+        myself.listField.elements = 
+            // Netsblox addition: start
+            myself.userList.filter(function (username) {
+                return username.toLowerCase().indexOf(text.toLowerCase()) > -1;
+            });
+            // Netsblox addition: end
+
+        if (myself.listField.elements.length === 0) {
+            myself.listField.elements.push('(no matches)');
+        }
+
+        myself.listField.buildListContents();
+        myself.fixListFieldItemColors();
+        myself.listField.adjustScrollBars();
+        myself.listField.scrollY(myself.listField.top());
+        myself.fixLayout();
+    };
+};
+
+UserDialogMorph.prototype.popUp = function(wrrld) {
+    var world = wrrld || this.target.world();
+    this.setCenter(world.center());
+    if (world) {
+        ProjectDialogMorph.uber.popUp.call(this, world);
+        this.handle = new HandleMorph(
+            this,
+            200,
+            100,
+            this.corner,
+            this.corner
+        );
+        this.filterField.edit();
+    }
 };

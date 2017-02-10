@@ -1,7 +1,7 @@
 /* globals ProjectDialogMorph, Morph, AlignmentMorph, InputFieldMorph, localize,
    Point, TextMorph, Color, nop, ListMorph, IDE_Morph, Process, BlockImportDialogMorph,
    BlockExportDialogMorph, detect, SnapCloud, SnapSerializer, ScrollFrameMorph,
-   DialogBoxMorph
+   DialogBoxMorph, SnapActions
    */
 ProjectDialogMorph.prototype.buildContents = function () {
     var thumbnail, notification;
@@ -31,6 +31,7 @@ ProjectDialogMorph.prototype.buildContents = function () {
     this.addSourceButton('cloud', localize('Cloud'), 'cloud');
     this.addSourceButton('local', localize('Browser'), 'storage');
     if (this.task === 'open') {
+        this.buildFilterField();
         this.addSourceButton('examples', localize('Examples'), 'poster');
     }
     this.srcBar.fixLayout();
@@ -229,10 +230,10 @@ ProjectDialogMorph.prototype.setSource = function (source) {
             if (myself.nameField) {
                 myself.nameField.setContents(item.name || '');
             }
-            src = JSON.parse(myself.ide.getURL(
+            src = myself.ide.getURL(
                 'api/Examples/' + item.name + '?socketId=' + myself.ide.sockets.uuid +
                 '&preview=true'
-            )).src.SourceCode;
+            );
 
             xml = myself.ide.serializer.parse(src);
             myself.notesText.text = xml.childNamed('notes').contents
@@ -268,17 +269,18 @@ ProjectDialogMorph.prototype.openProject = function () {
         response;
 
     if (this.source === 'examples') {
-        response = JSON.parse(this.ide.getURL('api/Examples/' + proj.name +
+        response = SnapCloud.parseDict(this.ide.getURL('api/Examples/' + proj.name +
             '?socketId=' + this.ide.sockets.uuid));
+
         this.ide.room.nextRoom = {
-            ownerId: response.ownerId,
-            roomName: response.roomName,
-            roleId: response.role
+            ownerId: response.OwnerId,
+            roomName: response.RoomName,
+            roleId: response.ProjectName
         };
 
         // role name
-        if (response.src.SourceCode) {
-            this.ide.openProjectString(response.src.SourceCode);
+        if (response.SourceCode) {
+            this.ide.droppedText(response.SourceCode);
         } else {
             this.ide.clearProject();
         }
@@ -299,11 +301,10 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
         },
         function () {
             SnapCloud.reconnect(function() {
-                SnapCloud.callService(
-                    'isProjectActive',
-                    function(response) {
-                        var isActive = response[0].active === 'true',
-                            choices,
+                SnapCloud.isProjectActive(
+                    project.ProjectName,
+                    function(isActive) {
+                        var choices,
                             dialog;
 
                         if (isActive) {
@@ -332,8 +333,7 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
                             myself.rawOpenCloudProject(project);
                         }
                     },
-                    myself.ide.cloudError(),
-                    [project.ProjectName]
+                    myself.ide.cloudError()
                 );
             }, myself.ide.cloudError());
 
@@ -443,26 +443,37 @@ IDE_Morph.prototype.exportGlobalBlocks = function () {
 IDE_Morph.prototype.rawOpenBlocksString = function (str, name, silently) {
     // name is optional (string), so is silently (bool)
     var blocks,
-        myself = this;
+        myself = this,
+        msgTypes;
+
     if (Process.prototype.isCatchingErrors) {
         try {
             blocks = this.serializer.loadBlocks(str, myself.stage);
+            msgTypes = this.serializer.parse(str).childrenNamed('messageType');
         } catch (err) {
             this.showMessage('Load failed: ' + err);
         }
     } else {
         blocks = this.serializer.loadBlocks(str, myself.stage);
+        msgTypes = this.serializer.parse(str).childrenNamed('messageType');
     }
     if (silently) {
+        msgTypes.forEach(function(msgType) {
+            var name = msgType.childNamed('name').contents,
+                fields = msgType.childNamed('fields').children.map(function(field) {
+                    return field.contents;
+                });
+
+            myself.stage.addMessageType({
+                name: name,
+                fields: fields
+            });
+        });
+
         blocks.forEach(function (def) {
-            // Message type import
-            if (def.category === 'msg') {
-                myself.stage.addMessageType(JSON.parse(def.spec));
-            } else {  // Block import
-                def.receiver = myself.stage;
-                myself.stage.globalBlocks.push(def);
-                myself.stage.replaceDoubleDefinitionsFor(def);
-            }
+            def.receiver = myself.stage;
+            myself.stage.globalBlocks.push(def);
+            myself.stage.replaceDoubleDefinitionsFor(def);
         });
         this.flushBlocksCache();
         this.flushPaletteCache();
@@ -471,6 +482,7 @@ IDE_Morph.prototype.rawOpenBlocksString = function (str, name, silently) {
             'Imported Blocks / Message Types Module' + (name ? ': ' + name : '') + '.',
             2
         );
+        SnapActions.loadCustomBlocks(blocks);
     } else {
         new BlockImportDialogMorph(blocks, this.stage, name).popUp();
     }

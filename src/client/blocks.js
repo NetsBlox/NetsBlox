@@ -5,7 +5,7 @@
    CommandSlotMorph, RingCommandSlotMorph, RingReporterSlotMorph, CSlotMorph,
    ColorSlotMorph, TemplateSlotMorph, FunctionSlotMorph, ReporterSlotMorph,
    SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume, ScriptsMorph,
-   MessageDefinitionBlock
+   MessageDefinitionBlock, RPCInputSlotMorph, SnapActions, MultiHintArgMorph
    */
 
 BlockMorph.prototype.setSpec = function (spec, silently) {
@@ -71,12 +71,13 @@ MultiArgMorph.prototype.mouseClickLeft = function (pos) {
     // prevent expansion in the palette
     // (because it can be hard or impossible to collapse again)
     // NetsBlox addition: start
-    if (!this.parentThatIsA(ScriptsMorph) && !this.parentThatIsA(MessageDefinitionBlock)) {
+    var isMsgTypeBlock = this.parentThatIsA(MessageDefinitionBlock);
+    if (!this.parentThatIsA(ScriptsMorph) && !isMsgTypeBlock) {
     // NetsBlox addition: end
         this.escalateEvent('mouseClickLeft', pos);
         return;
     }
-    // if the <shift> key is pressed, repeat action 5 times
+    // if the <shift> key is pressed, repeat action 3 times
     var arrows = this.arrows(),
         leftArrow = arrows.children[0],
         rightArrow = arrows.children[1],
@@ -85,30 +86,38 @@ MultiArgMorph.prototype.mouseClickLeft = function (pos) {
 
     this.startLayout();
     if (rightArrow.bounds.containsPoint(pos)) {
-        for (i = 0; i < repetition; i += 1) {
-            if (rightArrow.isVisible) {
-                this.addInput();
+        if (rightArrow.isVisible) {
+            // NetsBlox addition: start
+            if (isMsgTypeBlock) {
+                for (i = 0; i < repetition; i++) {
+                    this.addInput();
+                }
+            } else {
+                // NetsBlox addition: end
+                SnapActions.addListInput(this, repetition);
+                // NetsBlox addition: start
             }
+            // NetsBlox addition: end
         }
     } else if (leftArrow.bounds.containsPoint(pos)) {
-        for (i = 0; i < repetition; i += 1) {
-            if (leftArrow.isVisible) {
-                this.removeInput();
+        if (leftArrow.isVisible) {
+            // NetsBlox addition: start
+            repetition = Math.min(repetition, this.inputs().length - this.minInputs);
+            if (isMsgTypeBlock) {
+                for (i = 0; i < repetition; i++) {
+                    this.removeInput();
+                }
+            } else {
+                // NetsBlox addition: end
+                SnapActions.removeListInput(this, repetition);
+                // NetsBlox addition: start
             }
+            // NetsBlox addition: end
         }
     } else {
         this.escalateEvent('mouseClickLeft', pos);
     }
     this.endLayout();
-};
-
-MultiArgMorph.prototype.addHintInput = function (text) {
-    var newPart = this.labelPart('%hint' + text),
-        idx = this.children.length - 1;
-    newPart.parent = this;
-    this.children.splice(idx, 0, newPart);
-    newPart.drawNew();
-    this.fixLayout();
 };
 
 SyntaxElementMorph.prototype.labelPart = function (spec) {
@@ -132,12 +141,9 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         }
 
         if ((spec.length > 6) && (spec.slice(0, 6) === '%mhint')) {
-            tokens = spec.slice(6).split('%');
-            part = new MultiArgMorph('%s', null, 0);
+            var token = spec.slice(6);
+            part = new MultiHintArgMorph(token, null, 1);
 
-            tokens.forEach(function(token) {
-                part.addHintInput(token);
-            });
             part.isStatic = true;
             part.canBeEmpty = false;
             return part;
@@ -545,7 +551,6 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             );
             break;
         case '%rpcNames':
-            // rpc names (used in dev mode)
             part = new InputSlotMorph(
                 null,
                 false,
@@ -554,13 +559,15 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             );
             break;
         case '%rpcActions':
-            // rpc names (used in dev mode)
             part = new InputSlotMorph(
                 null,
                 false,
                 'rpcActions',
                 true
             );
+            break;
+        case '%rpcMethod':
+            part = new RPCInputSlotMorph();
             break;
         // Netsblox addition (end)
         case '%msg':
@@ -939,8 +946,8 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
 };
 
 InputSlotMorph.prototype.messageTypes = function () {
-    var stage = this.parentThatIsA(IDE_Morph).stage,  // FIXME
-        msgTypes = stage.messageTypes.names();
+    var stage = this.parentThatIsA(IDE_Morph).stage,
+        msgTypes = stage.messageTypes.names(),
         dict = {};
 
     for (var i = msgTypes.length; i--;) {
@@ -966,57 +973,6 @@ InputSlotMorph.prototype.roleNames = function () {
     return dict;
 };
 
-// IDE_Morph is not always accessible. quick fix => add getURL to
-// InputSlotMorph
-InputSlotMorph.prototype.getURL = function (url) {
-    try {
-        var request = new XMLHttpRequest();
-        request.open('GET', url, false);
-        request.send();
-        if (request.status === 200) {
-            return request.responseText;
-        }
-        throw new Error('unable to retrieve ' + url);
-    } catch (err) {
-        return '';
-    }
-};
-
-InputSlotMorph.prototype.rpcNames = function () {
-    var rpcs = JSON.parse(this.getURL('/rpc')),
-        dict = {},
-        name;
-
-    for (var i = rpcs.length; i--;) {
-        name = rpcs[i].replace('/', '');
-        dict[name] = name;
-    }
-    return dict;
-};
-
-InputSlotMorph.prototype.rpcActions = function () {
-    var fields = this.parent.inputs(),
-        field,
-        actions,
-        rpc,
-        dict = {},
-        i;
-
-    // assume that the rpc is right before this input
-    i = fields.indexOf(this);
-    field = fields[i-1];
-
-    if (field) {
-        rpc = field.evaluate();
-        actions = JSON.parse(this.getURL('/rpc/' + rpc));
-        for (i = actions.length; i--;) {
-            dict[actions[i]] = actions[i];
-        }
-    }
-    return dict;
-};
-
-// TODO: Refactor the switch case
 SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     // private
     if (this.name instanceof Costume) {
@@ -1026,12 +982,16 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     var canvas = newCanvas(new Point(this.symbolWidth(), this.size));
 
     switch (this.name) {
+    // NetsBlox addition: start
     case 'plus':  // TODO: Make this a smaller changeset (only added 2 lines)
         return this.drawSymbolPlus(canvas, aColor);
+    // NetsBlox addition: end
     case 'square':
         return this.drawSymbolStop(canvas, aColor);
     case 'pointRight':
         return this.drawSymbolPointRight(canvas, aColor);
+    case 'stepForward':
+        return this.drawSymbolStepForward(canvas, aColor);
     case 'gears':
         return this.drawSymbolGears(canvas, aColor);
     case 'file':
@@ -1096,6 +1056,10 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
         return this.drawSymbolSpeechBubble(canvas, aColor);
     case 'speechBubbleOutline':
         return this.drawSymbolSpeechBubbleOutline(canvas, aColor);
+    case 'turnBack':
+        return this.drawSymbolTurnBack(canvas, aColor);
+    case 'turnForward':
+        return this.drawSymbolTurnForward(canvas, aColor);
     case 'arrowUp':
         return this.drawSymbolArrowUp(canvas, aColor);
     case 'arrowUpOutline':
@@ -1114,6 +1078,8 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
         return this.drawSymbolArrowRightOutline(canvas, aColor);
     case 'robot':
         return this.drawSymbolRobot(canvas, aColor);
+    case 'magnifiyingGlass':
+        return this.drawSymbolMagnifyingGlass(canvas, aColor);
     default:
         return canvas;
     }
@@ -1136,5 +1102,54 @@ SymbolMorph.prototype.drawSymbolPlus = function (canvas, color) {
     ctx.stroke();
 
     return canvas;
+};
+
+// IDE_Morph is not always accessible. quick fix => add getURL to
+// InputSlotMorph
+InputSlotMorph.prototype.getURL = function (url) {
+    try {
+        var request = new XMLHttpRequest();
+        request.open('GET', url, false);
+        request.send();
+        if (request.status === 200) {
+            return request.responseText;
+        }
+        throw new Error('unable to retrieve ' + url);
+    } catch (err) {
+        return '';
+    }
+};
+
+InputSlotMorph.prototype.rpcNames = function () {
+    var rpcs = JSON.parse(this.getURL('/rpc')),
+        dict = {},
+        name;
+
+    for (var i = rpcs.length; i--;) {
+        name = rpcs[i].replace('/', '');
+        dict[name] = name;
+    }
+    return dict;
+};
+
+InputSlotMorph.prototype.rpcActions = function () {
+    var field = this.parent.inputs()[0],
+        dict = {},
+        actions,
+        rpc;
+
+    // assume that the rpc name is the first field
+    if (field) {
+        rpc = field.evaluate();
+    }
+
+    if (rpc) {
+        actions = Object.keys(JSON.parse(this.getURL('/rpc/' + rpc)));
+        for (var i = actions.length; i--;) {
+            dict[actions[i]] = actions[i];
+        }
+    }
+
+    return dict;
 };
 

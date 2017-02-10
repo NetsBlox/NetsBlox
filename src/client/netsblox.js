@@ -1,8 +1,9 @@
 /* global RoomMorph, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
-   InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, newCanvas,
-   NetsBloxSerializer, nop, SnapActions, SnapUndo*/
+   InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
+   NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo,
+   ScrollFrameMorph, SnapUndo*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -31,6 +32,34 @@ NetsBloxMorph.prototype.resourceURL = function () {
     return 'api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
 };
 
+NetsBloxMorph.prototype.parseResourceFile = function (text) {
+    // A Resource File lists all the files that could be loaded in a submenu
+    // Examples are libraries/LIBRARIES, Costumes/COSTUMES, etc
+    // The file format is tab-delimited, with unix newlines:
+    // file-name, Display Name, Help Text (optional)
+    var parts,
+        items = [];
+
+    text.split('\n').map(function (line) {
+        return line.trim();
+    }).filter(function (line) {
+        return line.length > 0;
+    }).forEach(function (line) {
+        parts = line.split('\t').map(function (str) { return str.trim(); });
+
+        if (parts.length < 2) {return; }
+
+        items.push({
+            fileName: parts[0],
+            name: parts[1],
+            // NetsBlox addition: start
+            description: ''
+            // NetsBlox addition: end
+        });
+    });
+
+    return items;
+};
 NetsBloxMorph.prototype.clearProject = function () {
     this.source = SnapCloud.username ? 'cloud' : 'local';
     if (this.stage) {
@@ -157,6 +186,7 @@ NetsBloxMorph.prototype.loadNextRoom = function () {
 };
 
 NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
+    var project;
     StageMorph.prototype.hiddenPrimitives = {};
     StageMorph.prototype.codeMappings = {};
     StageMorph.prototype.codeHeaders = {};
@@ -166,7 +196,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
         try {
             model = parsed ? model : this.serializer.parse(model);
             this.serializer.loadMediaModel(model.childNamed('media'));
-            this.serializer.openProject(
+            project = this.serializer.openProject(
                 this.serializer.loadProjectModel(
                     model.childNamed('project'),
                     this
@@ -181,7 +211,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
     } else {
         model = parsed ? model : this.serializer.parse(model);
         this.serializer.loadMediaModel(model.childNamed('media'));
-        this.serializer.openProject(
+        project = this.serializer.openProject(
             this.serializer.loadProjectModel(
                 model.childNamed('project'),
                 this
@@ -190,6 +220,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
         );
         this.loadNextRoom();
     }
+    SnapActions.loadProject(this, project.collabStartIndex, model.toString());
     this.stopFastTracking();
 };
 
@@ -446,18 +477,20 @@ NetsBloxMorph.prototype.projectMenu = function () {
 
     // Utility for creating Costumes, etc menus.
     // loadFunction takes in two parameters: a file URL, and a canonical name
-    function createMediaMenu(mediaType, loadFunction) {
+    function createMediaMenu(mediaType, loadFunction, header) {
         return function () {
             var names = this.getMediaList(mediaType),
+                headerText = header ? localize(header) :
+                    localize('Import') + ' ' + localize(mediaType),
                 mediaMenu = new MenuMorph(
                     myself,
-                    localize('Import') + ' ' + localize(mediaType)
+                    headerText
                 );
 
             names.forEach(function (item) {
                 mediaMenu.addItem(
                     item.name,
-                    function () {loadFunction(item.file, item.name); },
+                    function () {loadFunction(item.fileName, item.name); },
                     item.help
                 );
             });
@@ -472,6 +505,63 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addItem('Open...', 'openProjectsBrowser');
     menu.addItem('Save', 'save');
     menu.addItem('Save As...', 'saveProjectsBrowser');
+    if (shiftClicked) {
+        menu.addItem(
+            localize('Download replay events'),
+            function() {
+                myself.saveFileAs(
+                    JSON.stringify(SnapUndo.allEvents, null, 2),
+                    'text/json;charset=utf-8,',
+                    'replay-actions'
+                );
+            },
+            'download events for debugging and troubleshooting',
+            new Color(100, 0, 0)
+        );
+        menu.addItem(
+            localize('Replay events from file'),
+            function() {
+                var inp = document.createElement('input');
+                if (SnapUndo.allEvents.length) {
+                    return this.showMessage('events can only be replayed on empty project');
+                }
+
+                if (myself.filePicker) {
+                    document.body.removeChild(myself.filePicker);
+                    myself.filePicker = null;
+                }
+                inp.type = 'file';
+                inp.style.color = "transparent";
+                inp.style.backgroundColor = "transparent";
+                inp.style.border = "none";
+                inp.style.outline = "none";
+                inp.style.position = "absolute";
+                inp.style.top = "0px";
+                inp.style.left = "0px";
+                inp.style.width = "0px";
+                inp.style.height = "0px";
+                inp.addEventListener(
+                    'change',
+                    function () {
+                        var reader = new FileReader();
+                        document.body.removeChild(inp);
+                        myself.filePicker = null;
+
+                        reader.onloadend = function(result) {
+                            return myself.loadSnapActions(result.target.result);
+                        };
+                        reader.readAsText(inp.files[0]);
+                    },
+                    false
+                );
+                document.body.appendChild(inp);
+                myself.filePicker = inp;
+                inp.click();
+            },
+            'download events for debugging and troubleshooting',
+            new Color(100, 0, 0)
+        );
+    }
     menu.addLine();
     menu.addItem(
         'Import...',
@@ -508,6 +598,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
     );
 
     if (shiftClicked) {
+        // Netsblox addition: start
         menu.addItem(
             localize('Export role...'),
             function () {
@@ -524,6 +615,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
             'save "' + myself.projectName + '" as XML\nto your downloads folder',
             new Color(100, 0, 0)
         );
+        // Netsblox addition: end
     }
     menu.addItem(
         shiftClicked ?
@@ -541,6 +633,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
         shiftClicked ? new Color(100, 0, 0) : null
     );
 
+    // Netsblox addition: start
     if (this.stage.globalBlocks.length || this.stage.deletableMessageNames().length) {
         menu.addItem(
             'Export blocks/msgs...',
@@ -548,6 +641,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
             'show global custom block definitions/message types as XML' +
                 '\nin a new browser window'
         );
+    // Netsblox addition: end
         menu.addItem(
             'Unused blocks...',
             function () {myself.removeUnusedBlocks(); },
@@ -555,24 +649,6 @@ NetsBloxMorph.prototype.projectMenu = function () {
                 '\nand remove their definitions'
         );
     }
-
-    /*
-    if (SnapCloud.username) {  // If logged in
-        menu.addItem(
-            'Export as Android App...',
-            function () {
-                if (myself.projectName) {
-                    myself.requestAndroidApp(myself.projectName);
-                } else {
-                    myself.prompt('What is the name of this project?', function (name) {
-                        myself.requestAndroidApp(name);
-                    }, null, 'requestAndroidApp');
-                }
-            },
-            'create an Android app from the current project'
-        );
-    }
-    */
 
     menu.addItem(
         'Export summary...',
@@ -602,103 +678,68 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addItem(
         'Import tools',
         function () {
-            myself.droppedText(
-                myself.getURL('api/tools.xml'),
-                'tools'
+            myself.getURL(
+                myself.resourceURL('tools.xml'),
+                function (txt) {
+                    myself.droppedText(txt, 'tools');
+                }
             );
         },
         'load the official library of\npowerful blocks'
     );
+    //menu.addItem(
+        //'Import tools',
+        //function () {
+            //myself.droppedText(
+                //myself.getURL('api/tools.xml'),
+                //'tools'
+            //);
+        //},
+        //'load the official library of\npowerful blocks'
+    //);
     menu.addItem(
         'Libraries...',
         createMediaMenu(
             'libraries',
-            function loadLib(file, name) {
-                var url = myself.resourceURL('libraries', file);
-                myself.droppedText(myself.getURL(url), name);
+            function (file, name) {
+                myself.getURL(
+                    myself.resourceURL('libraries', file),
+                    function (txt) {
+                        myself.droppedText(txt, name);
+                    }
+                );
             }
         ),
         'Select categories of additional blocks to add to this project.'
     );
 
+    // Netsblox addition: start
     menu.addItem(
-        'Remote Calls...',
+        'Services...',
         createMediaMenu(
             'rpc',
             function loadLib(file, name) {
                 var url = myself.resourceURL('rpc', file);
                 myself.droppedText(myself.getURL(url), name);
-            }
+            },
+            localize('Import') + ' ' + localize('Service')
         ),
-        'Select remote procedure calls to add to this project.'
+        'Select services to include in this project.'
     );
-
-    menu.addItem(
-        'Message Types...',
-        function () {
-            // read a list of libraries from an external file,
-            var MsgTypeMenu = new MenuMorph(this, 'Import Network Message Type'),
-                msgTypeUrl = '/api/MessageTypes/index';
-
-            function loadMessageType(name) {
-                var url = '/api/MessageTypes/' + name;
-                try {
-                    var msgType = JSON.parse(myself.getURL(url));
-                    myself.stage.addMessageType(msgType);
-                } catch (e) {
-                    console.error('could not load the message type "' + name + '"');
-                }
-            }
-
-            var msgTypes = [];
-
-            try {
-                msgTypes = JSON.parse(myself.getURL(msgTypeUrl));
-            } catch(e) {
-                console.error('could not load the message types');
-            }
-
-            msgTypes.forEach(function (name) {
-                MsgTypeMenu.addItem(
-                    name,
-                    loadMessageType.bind(null, name)
-                );
-            });
-
-            MsgTypeMenu.popup(world, pos);
-        },
-        'Add new types of messages to your project!'
-    );
+    // Netsblox addition: end
 
     menu.addItem(
         localize(graphicsName) + '...',
-        createMediaMenu(
-            graphicsName,
-            function loadCostume(file, name) {
-                var url = myself.resourceURL(graphicsName, file),
-                    img = new Image();
-                img.onload = function () {
-                    var canvas = newCanvas(new Point(img.width, img.height));
-                    canvas.getContext('2d').drawImage(img, 0, 0);
-                    myself.droppedImage(canvas, name);
-                };
-                img.src = url;
-            }
-        ),
+        function () {
+            myself.importMedia(graphicsName);
+        },
         'Select a costume from the media library'
     );
     menu.addItem(
         localize('Sounds') + '...',
-        createMediaMenu(
-            'Sounds',
-            function loadSound(file, name) {
-                var url = myself.resourceURL('Sounds', file),
-                    audio = new Audio();
-                audio.src = url;
-                audio.load();
-                myself.droppedAudio(audio, name);
-            }
-        ),
+        function () {
+            myself.importMedia('Sounds');
+        },
         'Select a sound from the media library'
     );
 
@@ -737,8 +778,8 @@ NetsBloxMorph.prototype.requestAndroidApp = function(name) {
 NetsBloxMorph.prototype.exportRole = NetsBloxMorph.prototype.exportProject;
 
 // Trigger the export
-NetsBloxMorph.prototype.exportProject = function (name) {
-    this.showMessage('Exporting', 3);
+NetsBloxMorph.prototype.exportProject = function () {
+    this.showMessage('Exporting...', 3);
 
     // Trigger server export of all roles
     this.sockets.sendMessage({
@@ -888,23 +929,57 @@ NetsBloxMorph.prototype.save = function () {
     }
 };
 
-NetsBloxMorph.prototype.getURL = function (url) {
-    var request = new XMLHttpRequest(),
-        myself = this;
-    try {
-        request.open('GET', url, false);
-        request.send();
-        if (request.status === 200) {
-            return request.responseText;
-        }
-        var msg = request.responseText.indexOf('ERROR') === 0 ?
-            request.responseText : 'unable to retrieve ' + url;
+NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
+    var myself = this,
+        overwriteExisting;
 
-        throw new Error(msg);
-    } catch (err) {
-        myself.showMessage(err.message);
-        return;
+    if (SnapCloud.username !== this.room.ownerId) {
+        return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
     }
+
+    overwriteExisting = function(overwrite) {
+        if (name) {
+            myself.showMessage('Saving project\nto the cloud...');
+            myself.setProjectName(name);
+            SnapCloud.saveProject(
+                myself,
+                function () {
+                    if (overwrite) {
+                        myself.showMessage('saved.', 2);
+                    } else {
+                        myself.showMessage('saved as ' + myself.room.name, 2);
+                    }
+                },
+                myself.cloudError(),
+                overwrite
+            );
+        }
+    };
+
+    // Check if it will overwrite the current one
+    SnapCloud.hasConflictingStoredProject(
+        function(hasConflicting) {
+            if (!hasConflicting) {
+                return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
+            } else {  // doesn't match the stored version!
+                var dialog = new DialogBoxMorph(null, function() {
+                    overwriteExisting(true);
+                });
+
+                dialog.cancel = function() {  // don't overwrite
+                    overwriteExisting();
+                    dialog.destroy();
+                };
+                dialog.askYesNo(
+                    localize('Overwrite Existing Project'),
+                    localize('A project with the given name already exists.\n' +
+                        'Would you like to overwrite it?'),
+                    myself.world()
+                );
+            }
+        },
+        myself.cloudError()
+    );
 };
 
 NetsBloxMorph.prototype.logout = function () {
@@ -963,12 +1038,13 @@ NetsBloxMorph.prototype.rawOpenBlocksMsgTypeString = function (aString) {
     }
 
     // load blocks
-    this.rawOpenBlocksString(blocksStr, '', true)
+    this.rawOpenBlocksString(blocksStr, '', true);
 };
 
 NetsBloxMorph.prototype.initializeCloud = function () {
     var myself = this,
         world = this.world();
+
     new DialogBoxMorph(
         null,
         function (user) {
@@ -1040,3 +1116,309 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
     }
 };
 
+// Bug reporting assistance
+NetsBloxMorph.prototype.snapMenu = function () {
+    var menu,
+        myself = this,
+        world = this.world();
+
+    menu = new MenuMorph(this);
+    menu.addItem('About...', 'aboutNetsBlox');
+    menu.addLine();
+    menu.addItem(
+        'NetsBlox website',
+        function () {
+            window.open('https://netsblox.org', 'NetsBloxWebsite');
+        }
+    );
+    menu.addItem(
+        'Snap! manual',
+        function () {
+            var url = myself.resourceURL('help', 'SnapManual.pdf');
+            window.open(url, 'SnapReferenceManual');
+        }
+    );
+    menu.addItem(
+        'Source code',
+        function () {
+            window.open(
+                'https://github.com/netsblox/netsblox'
+            );
+        }
+    );
+    menu.addLine();
+    menu.addItem(
+        'Report a bug',
+        'reportBug'
+    );
+    if (world.currentKey === 16) {
+        menu.addItem(
+            'Load reported bug',
+            'loadBugReport',
+            undefined,
+            new Color(100, 0, 0)
+        );
+    }
+    if (world.isDevMode) {
+        menu.addLine();
+        menu.addItem(
+            'Switch back to user mode',
+            'switchToUserMode',
+            'disable deep-Morphic\ncontext menus'
+                + '\nand show user-friendly ones',
+            new Color(0, 100, 0)
+        );
+    } else if (world.currentKey === 16) { // shift-click
+        menu.addLine();
+        menu.addItem(
+            'Switch to dev mode',
+            'switchToDevMode',
+            'enable Morphic\ncontext menus\nand inspectors,'
+                + '\nnot user-friendly!',
+            new Color(100, 0, 0)
+        );
+    }
+    menu.popup(world, this.logo.bottomLeft());
+};
+
+NetsBloxMorph.prototype.aboutNetsBlox = function () {
+    var dlg,
+        version = NetsBloxSerializer.prototype.app.split(',')[0],
+        aboutTxt,
+        world = this.world();
+
+    version = NetsBloxSerializer.prototype.app
+        .split(',')[0] // NetsBlox <version>
+        .replace(/NetsBlox /, '');
+
+    aboutTxt = 'NetsBlox v' + version + '\n\n'
+
+        + 'NetsBlox is developed by Vanderbilt University with support\n'
+        + '          from the National Science Foundation (NSF)\n\n'
+
+        + 'NetsBlox extends Snap!, from the University of California, Berkeley and \n'
+        + 'is influenced and inspired by Scratch, from the Lifelong Kindergarten\n'
+        + 'group at the MIT Media Lab\n\n'
+        
+        + 'for more information see https://netsblox.org,\nhttp://snap.berkeley.edu '
+        + 'and http://scratch.mit.edu';
+
+    dlg = new DialogBoxMorph();
+    dlg.inform('About NetsBlox', aboutTxt, world);
+    dlg.fixLayout();
+    dlg.drawNew();
+};
+
+NetsBloxMorph.prototype.reportBug = function () {
+    // Prompt for a description of the bug
+    var dialog = new DialogBoxMorph().withKey('bugReport'),
+        frame = new ScrollFrameMorph(),
+        text = new TextMorph(''),
+        ok = dialog.ok,
+        myself = this,
+        size = 250,
+        world = this.world();
+
+    frame.padding = 6;
+    frame.setWidth(size);
+    frame.acceptsDrops = false;
+    frame.contents.acceptsDrops = false;
+
+    text.setWidth(size - frame.padding * 2);
+    text.setPosition(frame.topLeft().add(frame.padding));
+    text.enableSelecting();
+    text.isEditable = true;
+
+    frame.setHeight(size);
+    frame.fixLayout = nop;
+    frame.edge = InputFieldMorph.prototype.edge;
+    frame.fontSize = InputFieldMorph.prototype.fontSize;
+    frame.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    frame.contrast = InputFieldMorph.prototype.contrast;
+    frame.drawNew = InputFieldMorph.prototype.drawNew;
+    frame.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+
+    frame.addContents(text);
+    text.drawNew();
+
+    dialog.ok = function () {
+        myself.submitBugReport(text.text);
+        ok.call(this);
+    };
+
+    dialog.justDropped = function () {
+        text.edit();
+    };
+
+    dialog.labelString = localize('What went wrong?');
+    dialog.createLabel();
+    dialog.addBody(frame);
+    frame.drawNew();
+    dialog.addButton('ok', 'OK');
+    dialog.addButton('cancel', 'Cancel');
+    dialog.fixLayout();
+    dialog.drawNew();
+    dialog.popUp(world);
+    dialog.setCenter(world.center());
+    text.edit();
+};
+
+NetsBloxMorph.prototype.submitBugReport = function (desc, silent) {
+    var myself = this,
+        canvas = document.getElementsByTagName('canvas')[0],
+        report = {};
+
+    // Add the description
+    report.description = desc;
+    report.timestamp = Date.now();
+    report.userAgent = navigator.userAgent;
+    report.version = NetsBloxSerializer.prototype.app;
+
+    // Add screenshot
+    report.screenshot = canvas.toDataURL();
+
+    // Add project state
+    report.project = this.serializer.serialize(this.stage);
+    report.undoState = SnapUndo;
+
+    // Add username (if logged in)
+    report.user = SnapCloud.username;
+    report.isAutoReport = !!silent;
+
+    // Report to the server
+    var request = new XMLHttpRequest(),
+        url = SnapCloud.url + '/BugReport';
+
+    request.open('post', url);
+    request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+    request.onreadystatechange = function () {
+        if (request.readyState === 4 && !silent) {
+            if (request.status > 199 && request.status < 400) {  // success
+                myself.showMessage(localize('Bug has been reported!'), 2);
+            } else {  // failed...
+                myself.cloudError()(url, localize('bug could not be reported:') +
+                    request.responseText);
+            }
+        }
+    };
+    request.send(JSON.stringify(report));
+};
+
+NetsBloxMorph.prototype.loadBugReport = function () {
+    var myself = this,
+        inp = document.createElement('input');
+
+    if (myself.filePicker) {
+        document.body.removeChild(myself.filePicker);
+        myself.filePicker = null;
+    }
+    inp.type = 'file';
+    inp.style.color = 'transparent';
+    inp.style.backgroundColor = 'transparent';
+    inp.style.border = 'none';
+    inp.style.outline = 'none';
+    inp.style.position = 'absolute';
+    inp.style.top = '0px';
+    inp.style.left = '0px';
+    inp.style.width = '0px';
+    inp.style.height = '0px';
+    inp.addEventListener(
+        'change',
+        function () {
+            var reader = new FileReader();
+            document.body.removeChild(inp);
+            myself.filePicker = null;
+
+            reader.onloadend = function(result) {
+                var report = JSON.parse(result.target.result),
+                    allEvents = report.undoState.allEvents,
+                    dialog = new DialogBoxMorph(null, nop),
+                    date,
+                    msg,
+                    choices = {};
+
+                choices['Replay All Events'] = function() {
+                    // Replay from 'allEvents'
+                    myself.replayEvents(allEvents);
+                    dialog.destroy();
+                };
+
+                choices['Replay Some Events'] = function() {
+                    var range = new Point(0, allEvents.length);
+
+                    new DialogBoxMorph(
+                        myself,
+                        function(point) {
+                            myself.replayEvents(allEvents.slice(point.x, point.y));
+                        },
+                        myself
+                    ).promptVector(
+                        'Which events?',
+                        range,
+                        range,
+                        'Start (inclusive)',
+                        'End (exclusive)',
+                        this.world(),
+                        null, // pic
+                        null // msg
+                    );
+                    dialog.destroy();
+                };
+
+                choices['Load Project'] = function() {
+                    myself.droppedText(report.project);
+                    setTimeout(function() {
+                        var keys = Object.keys(report.undoState);
+                        for (var i = keys.length; i--;) {
+                            SnapUndo[keys[i]] = report.undoState[keys[i]];
+                        }
+                        myself.showMessage('Loaded bug report!');
+                    }, 10);
+                    dialog.destroy();
+                };
+
+                date = new Date(report.timestamp);
+                msg = [
+                    'User: ' + report.user,
+                    'Date: ' + date.toDateString() + ' ' + date.toLocaleTimeString(),
+                    'Version: ' + report.version,
+                    'Browser: ' + report.userAgent,
+                    'Event Count: ' + allEvents.length,
+                    'Description:\n\n' + report.description
+                ].join('\n');
+
+                choices['Cancel'] = 'cancel';
+                dialog.ask(
+                    localize('Bug Report'),
+                    msg,
+                    myself.world(),
+                    choices
+                );
+
+                return;
+            };
+            reader.readAsText(inp.files[0]);
+        },
+        false
+    );
+    document.body.appendChild(inp);
+    myself.filePicker = inp;
+    inp.click();
+};
+
+NetsBloxMorph.prototype.replayEvents = function (events) {
+    var myself = this;
+
+    events.forEach(function(event, i) {
+        setTimeout(function() {
+            SnapActions.applyEvent(event)
+                .accept(function() {
+                    myself.showMessage('applied #' + i + ' (' + event.type + ')');
+                })
+                .reject(function() {
+                    myself.showMessage('Action failed: ' + event.type);
+                });
+        }, 500 * i);
+    });
+
+};

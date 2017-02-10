@@ -1,12 +1,13 @@
 /* global SnapSerializer, SpriteMorph, sizeOf, List, detect, CustomCommandBlockMorph,
    CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
    WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame,
-   MessageInputSlotMorph, SnapActions*/
+   MessageInputSlotMorph, HintInputSlotMorph, InputSlotMorph, SnapActions,
+   normalizeCanvas, StructInputSlotMorph */
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
 
-NetsBloxSerializer.prototype.app = 'NetsBlox 0.8.0, http://netsblox.org';  // Make this version automatic
+NetsBloxSerializer.prototype.app = 'NetsBlox 0.11.0, http://netsblox.org';  // Make this version automatic
 
 function NetsBloxSerializer() {
     this.init();
@@ -47,10 +48,12 @@ NetsBloxSerializer.prototype.openProject = function (project, ide) {
     if (!project || !project.stage) {
         return;
     }
+    // NetsBlox addition: start
     // Only load the projectName if the current name is the default
     if (ide.projectName === 'myRole') {
         ide.setProjectName(project.name);
     }
+    // NetsBlox addition: end
     ide.projectNotes = project.notes || '';
     if (ide.globalVariables) {
         ide.globalVariables = project.globalVariables;
@@ -88,6 +91,7 @@ NetsBloxSerializer.prototype.openProject = function (project, ide) {
 
     SnapActions.loadProject(ide, project.collabStartIndex);
     ide.world().keyboardReceiver = project.stage;
+    return project;
 };
 
 
@@ -101,9 +105,11 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
                 model.attributes,
                 'var'
             )) {
-            return SpriteMorph.prototype.variableBlock(
+            block = SpriteMorph.prototype.variableBlock(
                 model.attributes['var']
             );
+            block.id = model.attributes.collabId;
+            return block;
         }
         block = SpriteMorph.prototype.blockForSelector(model.attributes.s);
     } else if (model.tag === 'custom-block') {
@@ -120,7 +126,9 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
             if (!isGlobal) {
                 receiver = this.project.stage;
             } else {
-                return this.obsoleteBlock(isReporter);
+                block = this.obsoleteBlock(isReporter);
+                block.id = model.attributes.collabId;
+                return block;
             }
         }
         if (isGlobal) {
@@ -141,7 +149,9 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
             });
         }
         if (!info) {
-            return this.obsoleteBlock(isReporter);
+            block = this.obsoleteBlock(isReporter);
+            block.id = model.attributes.collabId;
+            return block;
         }
         block = info.type === 'command' ? new CustomCommandBlockMorph(
             info,
@@ -156,48 +166,49 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
         block = this.obsoleteBlock(isReporter);
     }
     block.isDraggable = true;
+    block.id = model.attributes.collabId;
     inputs = block.inputs();
+
+    // NetsBlox addition: start
     // Try to batch children for the inputs if appropriate. This is
-    // used with MessageInputSlotMorph and MessageOutputSlotMorph
+    // used with StructInputSlotMorphs
     if (inputs.length < model.children.length) {
-        var batch = [],
-            skipTypes = ['comment', 'receiver'];
+        var struct = detect(inputs, function(input) {
+                return input instanceof StructInputSlotMorph;
+            }),
+            structIndex = inputs.indexOf(struct);
 
-        // While the tag is not 'comment' or 'receiver', group the children
-        // into an array.
-        for (var i = model.children.length; i--;) {
-            if (skipTypes.indexOf(model.children[i].tag) !== -1) {
-                break;
-            }
-            batch = model.children.splice(i,1).concat(batch);
-        }
-
-        if (batch.length) {
+        // Find the StructInputSlotMorph and batch the given value and the extras
+        // together
+        if (structIndex !== -1) {
             // Set the contents for the entire batch
             var self = this,
-                vals = batch.map(function(value) {
-                    if (value.tag === 'block' || value.tag === 'custom-block') {
-                        return self.loadBlock(value);
-                    }
-                    if (value.tag === 'script') {
-                        return self.loadScript(value);
-                    }
-                    if (value.tag === 'color') {
-                        return self.loadColor(value);
-                    }
-                    return self.loadValue(value) || '';
-                }),
-                input = inputs[++i];
+                batch,
+                batchLength = model.children.length - inputs.length,
+                structVals;
 
-            if (input.setContents) {
-                var msgType = this.project.stage.messageTypes.getMsgType(vals[0]);
-                input.setContents(vals[0], vals.slice(1), msgType);
-            }
+            inputs.splice(structIndex, 1);
+            batch = model.children.splice(structIndex, structIndex + batchLength + 1);
+            structVals = batch.map(function(value) {
+                if (value.tag === 'block' || value.tag === 'custom-block') {
+                    return self.loadBlock(value);
+                }
+                if (value.tag === 'script') {
+                    return self.loadScript(value);
+                }
+                if (value.tag === 'color') {
+                    return self.loadColor(value);
+                }
+                return self.loadValue(value) || '';
+            });
         }
     }
+    // NetsBlox addition: end
 
     model.children.forEach(function (child, i) {
-        if (child.tag === 'comment') {
+        if (child.tag === 'variables') {
+            this.loadVariables(block.variables, child);
+        } else if (child.tag === 'comment') {
             block.comment = this.loadComment(child);
             block.comment.block = block;
         } else if (child.tag === 'receiver') {
@@ -207,6 +218,18 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
         }
     }, this);
     block.cachedInputs = null;
+
+    // NetsBlox addition: start
+    if (struct && structVals) {
+        if (struct instanceof MessageInputSlotMorph) {
+            var msgType = this.project.stage.messageTypes.getMsgType(structVals[0]);
+
+            struct.setContents(structVals[0], structVals.slice(1), msgType);
+        } else {
+            struct.setContents(structVals[0], structVals.slice(1));
+        }
+    }
+    // NetsBlox addition: end
     return block;
 };
 
@@ -295,6 +318,7 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     }
     model.globalVariables = model.project.childNamed('variables');
     project.globalVariables = new VariableFrame();
+    project.collabStartIndex = +(model.project.attributes.collabStartIndex || 0);
 
     /* Stage */
 
@@ -513,7 +537,10 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
 };
 
 StageMorph.prototype.toXML = function (serializer) {
-    var thumbnail = this.thumbnail(NetsBloxSerializer.prototype.thumbnailSize),
+    var thumbnail = normalizeCanvas(
+            this.thumbnail(SnapSerializer.prototype.thumbnailSize),
+            true
+        ),
         thumbdata,
         ide = this.parentThatIsA(IDE_Morph);
 
@@ -542,21 +569,24 @@ StageMorph.prototype.toXML = function (serializer) {
 
     this.removeAllClones();
     return serializer.format(
-        '<project name="@" app="@" version="@">' +
+        '<project collabStartIndex="@" name="@" app="@" version="@">' +
             '<notes>$</notes>' +
             '<thumbnail>$</thumbnail>' +
-            '<stage name="@" width="@" height="@" ' +
+            '<stage name="@" width="@" height="@" collabId="@" ' +
             'costume="@" tempo="@" threadsafe="@" ' +
             'lines="@" ' +
             'codify="@" ' +
             'inheritance="@" ' +
+            'sublistIDs="@" ' +
             'scheduled="@" ~>' +
             '<pentrails>$</pentrails>' +
             '<costumes>%</costumes>' +
             '<sounds>%</sounds>' +
             '<variables>%</variables>' +
             '<blocks>%</blocks>' +
+            // NetsBlox addition: start
             '<messageTypes>%</messageTypes>' +
+            // NetsBlox addition: end
             '<scripts>%</scripts><sprites>%</sprites>' +
             '</stage>' +
             '<hidden>$</hidden>' +
@@ -565,6 +595,7 @@ StageMorph.prototype.toXML = function (serializer) {
             '<blocks>%</blocks>' +
             '<variables>%</variables>' +
             '</project>',
+        SnapActions.lastSeen,
         (ide && ide.projectName) ? ide.projectName : localize('Untitled'),
         serializer.app,
         serializer.version,
@@ -573,19 +604,23 @@ StageMorph.prototype.toXML = function (serializer) {
         this.name,
         StageMorph.prototype.dimensions.x,
         StageMorph.prototype.dimensions.y,
+        this.id,
         this.getCostumeIdx(),
         this.getTempo(),
         this.isThreadSafe,
         SpriteMorph.prototype.useFlatLineEnds ? 'flat' : 'round',
         this.enableCodeMapping,
         this.enableInheritance,
+        this.enableSublistIDs,
         StageMorph.prototype.frameRate !== 0,
-        this.trailsCanvas.toDataURL('image/png'),
+        normalizeCanvas(this.trailsCanvas, true).toDataURL('image/png'),
         serializer.store(this.costumes, this.name + '_cst'),
         serializer.store(this.sounds, this.name + '_snd'),
         serializer.store(this.variables),
         serializer.store(this.customBlocks),
+        // NetsBlox addition: start
         serializer.store(this.messageTypes),
+        // NetsBlox addition: end
         serializer.store(this.scripts),
         serializer.store(this.children),
         Object.keys(StageMorph.prototype.hiddenPrimitives).reduce(
@@ -628,4 +663,11 @@ MessageType.prototype.toXML = function (serializer) {
         serializer.escape(this.name),
         fields
     );
+};
+
+HintInputSlotMorph.prototype.toXML = function(serializer) {
+    if (this.empty) {
+        return serializer.format('<l>$</l>', '');
+    }
+    return InputSlotMorph.prototype.toXML.call(this, serializer);
 };
