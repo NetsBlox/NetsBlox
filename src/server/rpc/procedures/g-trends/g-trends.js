@@ -9,12 +9,14 @@ var debug = require('debug'),
     translate = require('google-translate-api'),
     error = debug('netsblox:rpc:trends:error'),
     trace = debug('netsblox:rpc:trends:trace');
+let q = require('q');
 
 TrendsRPC.byLocation = function(latitude, longitude) {
 
     // get location data eg: country, language
     // or can use geocoder package
     let countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?';
+
     let username = 'demo';
     let url = `${countryInfoBaseUrl}radius=${100}&lat=${latitude}&lng=${longitude}&username=${username}`,
         response = this.response,
@@ -30,65 +32,54 @@ TrendsRPC.byLocation = function(latitude, longitude) {
         trace('detected country: ', countryInfo.countryName, countryInfo, 'long', longitude, 'lat', latitude);
         // TODO synchronized sth? promise? gonna do it this way for now
         if (typeof countryInfo.countryCode != 'undefined') {
-            getTrendsByCountry(countryInfo.countryCode);
+            // TODO google does not use official country codes for trends see VN vs VE
+            googleTrends.hotTrends(countryInfo.countryCode)
+            .then((trendsArr)=>{
+                return trendsArr.slice(0,5);
+            })
+            .then((trendsArr)=>{
+                let translatePromisesArr = trendsArr.map((val,indx,arr) => {
+                    return translate(val,{to:'en'});
+                });
+                return q.all(translatePromisesArr)
+            })
+            .then((translatedArr) => {
+                trendsTexts = translatedArr.map((val,indx,arr)=>{
+                    return '#' + val.text
+                })
+                let msg = {
+                    type: 'message',
+                    // dstId: socket.roleId,
+                    msgType: 'trends',
+                    content: {
+                        array: trendsTexts.join(' ')
+                    }
+                  }; 
+                socket.send(msg);
+
+            })
+            // doesn't catch some errors..
+            .catch((err) => {
+                error(err);
+                showError(`no google trends available for ${countryInfo.countryCode}`)
+            })
+
         }else{
-            let msg = {
-                type: 'message',
-                dstId: socket.roleId,
-                msgType: 'trend',
-                content: {
-                    q: 'country not found'
-                }
-              };
-            socket.send(msg);
+            showError('failed to detect the country.')
         }
     }); //end of request
 
-    // get trends
-    function getTrendsByCountry (countryCode) {
-        googleTrends.hotTrends(countryCode)
-            .then(function (results) {
-                // trace(results);
-                // just the top5 please
-                results = results.slice(0,5);
-                // TODO check if it needs translation
-                translateToEn(results);
-
-            })
-            .catch(function (err) {
-                error(err);
-            });
-    }
-
-    // translate to eng
-    // TODO handle arrays as input ( one call ) (no overloading? )
-    function translateToEn (param){
-        if (Array.isArray(param)){
-            // TODO how to manipulate the current array (inplace) foreach & return?
-            // let translations = [];
-            for (let item of param){
-                translateToEn(item);
-            }
-            // return translations;
-        }else {
-            translate(param, {to: 'en'}).then(res => {
-                // QUESTION what does this do?
-                // response.send(string);
-                let msg = {
-                    type: 'message',
-                    dstId: socket.roleId,
-                    msgType: 'trend',
-                    content: {
-                        q: res.text
-                    }
-                };
-                socket.send(msg);
-                // return res.text;
-            }).catch(err => {
-                error(err);
-            });
-        }
-    }
+function showError(err){
+            let msg = {
+                type: 'message',
+                dstId: socket.roleId,
+                msgType: 'trends',
+                content: {
+                    array: err
+                }
+              };
+            socket.send(msg);
+}
 
     // or null?
     return 0;
