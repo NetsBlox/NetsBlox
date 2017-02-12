@@ -88,7 +88,7 @@ class Room extends DataWrapper {
             this._logger.trace('collected projects for ' + this._user.username);
 
             // Check for 'null' roles
-            var roleIds = Object.keys(content),
+            var roleIds = Object.keys(content.roles),
                 hasContent = false;
 
             for (var i = roleIds.length; i--;) {
@@ -205,7 +205,7 @@ Room.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(EXTRA_KEYS
 
 class RoomStore {
     constructor(logger, db) {
-        this._logger = logger.fork('Rooms');
+        this._logger = logger.fork('rooms');
         this._rooms = db.collection('rooms');
     }
 
