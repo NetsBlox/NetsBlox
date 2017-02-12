@@ -1,6 +1,6 @@
 let TrendsRPC = {
     isStateless: true,
-    getPath: () => '/trends'
+    getPath: () => '/g-trends'
 };
 
 var debug = require('debug'),
@@ -10,8 +10,7 @@ var debug = require('debug'),
     error = debug('netsblox:rpc:trends:error'),
     trace = debug('netsblox:rpc:trends:trace');
 
-// Q: why this doesn't work with as an arrow function?
-TrendsRPC.byLocation = function(longitude, latitude) {
+TrendsRPC.byLocation = function(latitude, longitude) {
 
     // get location data eg: country, language
     // or can use geocoder package
@@ -62,7 +61,7 @@ TrendsRPC.byLocation = function(longitude, latitude) {
     }
 
     // translate to eng
-    // TODO array begire bede ( one call ) (no overloading? )
+    // TODO handle arrays as input ( one call ) (no overloading? )
     function translateToEn (param){
         if (Array.isArray(param)){
             // TODO how to manipulate the current array (inplace) foreach & return?
