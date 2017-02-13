@@ -38,15 +38,15 @@ TrendsRPC.byLocation = function(latitude, longitude) {
                 return trendsArr.slice(0,5);
             })
             .then((trendsArr)=>{
-                let translatePromisesArr = trendsArr.map((val,indx,arr) => {
+                let translatePromisesArr = trendsArr.map((val) => {
                     return translate(val,{to:'en'});
                 });
-                return q.all(translatePromisesArr)
+                return q.all(translatePromisesArr);
             })
             .then((translatedArr) => {
-                trendsTexts = translatedArr.map((val,indx,arr)=>{
-                    return '#' + val.text
-                })
+                let trendsTexts = translatedArr.map((val)=>{
+                    return '#' + val.text;
+                });
                 let msg = {
                     type: 'message',
                     // dstId: socket.roleId,
@@ -54,32 +54,32 @@ TrendsRPC.byLocation = function(latitude, longitude) {
                     content: {
                         array: trendsTexts.join(' ')
                     }
-                  }; 
+                }; 
                 socket.send(msg);
 
             })
             // doesn't catch some errors..
             .catch((err) => {
                 error(err);
-                showError(`no google trends available for ${countryInfo.countryCode}`)
-            })
+                showError(`no trends available for ${countryInfo.countryCode}`);
+            });
 
         }else{
-            showError('failed to detect the country.')
+            showError('failed to detect the country.');
         }
     }); //end of request
 
-function showError(err){
-            let msg = {
-                type: 'message',
-                dstId: socket.roleId,
-                msgType: 'trends',
-                content: {
-                    array: err
-                }
-              };
-            socket.send(msg);
-}
+    function showError(err){
+        let msg = {
+            type: 'message',
+            dstId: socket.roleId,
+            msgType: 'trends',
+            content: {
+                array: err
+            }
+        };
+        socket.send(msg);
+    }
 
     // or null?
     return 0;
