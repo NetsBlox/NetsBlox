@@ -22,47 +22,35 @@ TrendsRPC.byLocation = function(latitude, longitude) {
         response = this.response,
         socket = this.socket;
     trace('Requesting country data from ', url);
-    let countryInfo = 'this is stupid';
     request(url, (err, res, body) => {
         if (err) {
             return response.status(500).send('ERROR: ' + err);
         }
         // TODO check if body is expected - try catch
-        countryInfo = JSON.parse(body);
+        let countryInfo = JSON.parse(body);
         trace('detected country: ', countryInfo.countryName, countryInfo, 'long', longitude, 'lat', latitude);
         // TODO synchronized sth? promise? gonna do it this way for now
         if (typeof countryInfo.countryCode != 'undefined') {
             // TODO google does not use official country codes for trends see VN vs VE
             googleTrends.hotTrends(countryInfo.countryCode)
-            .then((trendsArr)=>{
-                return trendsArr.slice(0,5);
-            })
-            .then((trendsArr)=>{
-                let translatePromisesArr = trendsArr.map((val) => {
-                    return translate(val,{to:'en'});
+                .then((trendsArr)=>{
+                    return trendsArr.slice(0,5);
+                })
+                .then((trendsArr)=>{
+                    let translatePromisesArr = trendsArr.map((val) => {
+                        return translate(val,{to:'en'});
+                    });
+                    return q.all(translatePromisesArr);
+                })
+                .then((translatedArr) => {
+                    let trendsTexts = translatedArr.map(val => val.text);
+                    response.json(trendsTexts);
+                })
+                // doesn't catch some errors..
+                .catch((err) => {
+                    error(err);
+                    showError(`no trends available for ${countryInfo.countryCode}`);
                 });
-                return q.all(translatePromisesArr);
-            })
-            .then((translatedArr) => {
-                let trendsTexts = translatedArr.map((val)=>{
-                    return '#' + val.text;
-                });
-                let msg = {
-                    type: 'message',
-                    // dstId: socket.roleId,
-                    msgType: 'trends',
-                    content: {
-                        array: trendsTexts.join(' ')
-                    }
-                }; 
-                socket.send(msg);
-
-            })
-            // doesn't catch some errors..
-            .catch((err) => {
-                error(err);
-                showError(`no trends available for ${countryInfo.countryCode}`);
-            });
 
         }else{
             showError('failed to detect the country.');
@@ -82,7 +70,7 @@ TrendsRPC.byLocation = function(latitude, longitude) {
     }
 
     // or null?
-    return 0;
+    return null;
 };
 
 
