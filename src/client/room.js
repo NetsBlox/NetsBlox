@@ -1072,8 +1072,9 @@ UserDialogMorph.prototype.buildContents = function() {
     this.body.add(this.listField);
 
     // add buttons
-    this.labelString = 'Invite a Friend to the Room';
+    this.labelString = 'Invite a Friend to the Room';  // TODO
     this.createLabel();
+    // TODO: make this customizable...
     this.addButton('ok', 'OK');
     this.addButton('cancel', 'Cancel');
 
@@ -1200,3 +1201,49 @@ UserDialogMorph.prototype.popUp = function(wrrld) {
         this.filterField.edit();
     }
 };
+
+// CollaboratorDialogMorph ////////////////////////////////////////////////////
+
+// CollaboratorDialogMorph inherits from DialogBoxMorph:
+
+CollaboratorDialogMorph.prototype = new UserDialogMorph();
+CollaboratorDialogMorph.prototype.constructor = CollaboratorDialogMorph;
+CollaboratorDialogMorph.uber = UserDialogMorph.prototype;
+
+// CollaboratorDialogMorph instance creation:
+
+function CollaboratorDialogMorph(target, action, users) {
+    this.init(target, action, users);
+}
+
+CollaboratorDialogMorph.prototype.buildContents = function() {
+    this.addBody(new Morph());
+    this.body.color = this.color;
+
+    this.buildFilterField();
+
+    this.listField = new ListMorph(this.userList);
+    this.fixListFieldItemColors();
+    this.listField.fixLayout = nop;
+    this.listField.edge = InputFieldMorph.prototype.edge;
+    this.listField.fontSize = InputFieldMorph.prototype.fontSize;
+    this.listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    this.listField.contrast = InputFieldMorph.prototype.contrast;
+    this.listField.drawNew = InputFieldMorph.prototype.drawNew;
+    this.listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+
+    this.body.add(this.listField);
+
+    // add buttons
+    this.labelString = 'Invite a Friend to Collaborate';
+    this.createLabel();
+    // TODO: make this customizable...
+    this.addButton('ok', 'OK');
+    this.addButton('cancel', 'Cancel');
+
+    this.setHeight(300);
+    this.fixLayout();
+};
+
+// TODO: If the user is already collaborating, bold the name and change the
+// button to allow them to remove the person from the current collaborators

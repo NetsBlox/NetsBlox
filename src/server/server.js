@@ -5,6 +5,7 @@ var express = require('express'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
     SocketManager = require('./socket-manager'),
     RoomManager = require('./rooms/room-manager'),
+    Collaboration = require('./collaboration/collaboration'),
     RPCManager = require('./rpc/rpc-manager'),
     MobileManager = require('./mobile/mobile-manager'),
     Storage = require('./storage/storage'),
@@ -81,8 +82,8 @@ Server.prototype.start = function(done) {
         .then(() => {
             this.configureRoutes();
             this._server = this.app.listen(this.opts.port, err => {
-                console.log('listening on port ' + this.opts.port);
                 this._wss = new WebSocketServer({server: this._server});
+                Collaboration.enable(this.app, this._wss, 'collaboration');
                 SocketManager.enable(this._wss);
                 // Enable Vantage
                 if (this.opts.vantage) {

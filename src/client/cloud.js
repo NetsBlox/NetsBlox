@@ -151,6 +151,42 @@ NetCloud.prototype.inviteToRoom = function () {
     );
 };
 
+NetCloud.prototype.inviteToCollaborate = function () {
+    var myself = this,
+        args = arguments;
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'inviteToCollaborate',
+                nop,
+                nop,
+                args
+            );
+        },
+        nop
+    );
+};
+
+NetCloud.prototype.collabResponse = function (id, accepted, onSuccess, onFail) {
+    var myself = this,
+        args = [id, accepted, this.socketId()];
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'inviteCollaboratorResponse',
+                onSuccess,
+                onFail,
+                args
+            );
+        },
+        function(err) {
+            myself.ide.showMessage(err, 2);
+        }
+    );
+};
+
 NetCloud.prototype.getFriendList = function (callBack, errorCall) {
     var myself = this;
     this.reconnect(

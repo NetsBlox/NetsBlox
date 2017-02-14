@@ -3,7 +3,7 @@
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
    NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo,
-   ScrollFrameMorph, SnapUndo, LibraryImportDialogMorph*/
+   ScrollFrameMorph, SnapUndo, LibraryImportDialogMorph, CollaboratorDialogMorph*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -62,6 +62,148 @@ NetsBloxMorph.prototype.clearProject = function () {
     SnapUndo.reset();
 };
 
+NetsBloxMorph.prototype.cloudMenu = function () {
+    var menu,
+        myself = this,
+        world = this.world(),
+        pos = this.controlBar.cloudButton.bottomLeft(),
+        shiftClicked = (world.currentKey === 16);
+
+    menu = new MenuMorph(this);
+    if (shiftClicked) {
+        menu.addItem(
+            'url...',
+            'setCloudURL',
+            null,
+            new Color(100, 0, 0)
+        );
+        menu.addLine();
+    }
+    if (!SnapCloud.username) {
+        menu.addItem(
+            'Login...',
+            'initializeCloud'
+        );
+        menu.addItem(
+            'Signup...',
+            'createCloudAccount'
+        );
+        menu.addItem(
+            'Reset Password...',
+            'resetCloudPassword'
+        );
+    } else {
+        menu.addItem(
+            localize('Logout') + ' ' + SnapCloud.username,
+            'logout'
+        );
+        menu.addItem(
+            'Change Password...',
+            'changeCloudPassword'
+        );
+        if (SnapActions.supportsCollaboration !== false) {
+            menu.addLine();
+            menu.addItem(
+                'Collaborators...',
+                'manageCollaborators'
+            );
+        }
+    }
+    if (shiftClicked) {
+        menu.addLine();
+        menu.addItem(
+            'export project media only...',
+            function () {
+                if (myself.projectName) {
+                    myself.exportProjectMedia(myself.projectName);
+                } else {
+                    myself.prompt('Export Project As...', function (name) {
+                        myself.exportProjectMedia(name);
+                    }, null, 'exportProject');
+                }
+            },
+            null,
+            this.hasChangedMedia ? new Color(100, 0, 0) : new Color(0, 100, 0)
+        );
+        menu.addItem(
+            'export project without media...',
+            function () {
+                if (myself.projectName) {
+                    myself.exportProjectNoMedia(myself.projectName);
+                } else {
+                    myself.prompt('Export Project As...', function (name) {
+                        myself.exportProjectNoMedia(name);
+                    }, null, 'exportProject');
+                }
+            },
+            null,
+            new Color(100, 0, 0)
+        );
+        menu.addItem(
+            'export project as cloud data...',
+            function () {
+                if (myself.projectName) {
+                    myself.exportProjectAsCloudData(myself.projectName);
+                } else {
+                    myself.prompt('Export Project As...', function (name) {
+                        myself.exportProjectAsCloudData(name);
+                    }, null, 'exportProject');
+                }
+            },
+            null,
+            new Color(100, 0, 0)
+        );
+        menu.addLine();
+        menu.addItem(
+            'open shared project from cloud...',
+            function () {
+                myself.prompt('Author name…', function (usr) {
+                    myself.prompt('Project name...', function (prj) {
+                        var id = 'Username=' +
+                            encodeURIComponent(usr.toLowerCase()) +
+                            '&ProjectName=' +
+                            encodeURIComponent(prj);
+                        myself.showMessage(
+                            'Fetching project\nfrom the cloud...'
+                        );
+                        SnapCloud.getPublicProject(
+                            id,
+                            function (projectData) {
+                                var msg;
+                                if (!Process.prototype.isCatchingErrors) {
+                                    window.open(
+                                        'data:text/xml,' + projectData
+                                    );
+                                }
+                                myself.nextSteps([
+                                    function () {
+                                        msg = myself.showMessage(
+                                            'Opening project...'
+                                        );
+                                    },
+                                    function () {nop(); }, // yield (Chrome)
+                                    function () {
+                                        myself.rawOpenCloudDataString(
+                                            projectData
+                                        );
+                                    },
+                                    function () {
+                                        msg.destroy();
+                                    }
+                                ]);
+                            },
+                            myself.cloudError()
+                        );
+
+                    }, null, 'project');
+                }, null, 'project');
+            },
+            null,
+            new Color(100, 0, 0)
+        );
+    }
+    menu.popup(world, pos);
+};
 
 NetsBloxMorph.prototype.newProject = function (projectName) {
     this.clearProject();
@@ -1367,4 +1509,84 @@ NetsBloxMorph.prototype.loadBugReport = function () {
     document.body.appendChild(inp);
     myself.filePicker = inp;
     inp.click();
+};
+
+// Collaboration
+NetsBloxMorph.prototype.manageCollaborators = function () {
+    var myself = this,
+        ownerId = this.room.ownerId,
+        name = this.room.name,
+        role = this.projectName,
+        socketId = this.sockets.uuid;
+
+    // TODO: Provide an interface for inviting/removing collaborators
+    // The owner is probably the only person to invite people?
+    SnapCloud.getFriendList(
+        function(friends) {
+            friends.push('myself');
+            // record the collaborators
+            // TODO
+            new CollaboratorDialogMorph(
+                myself,
+                function(user) {
+                    if (user) {
+                        if (user === 'myself') {
+                            user = SnapCloud.username;
+                        }
+                        SnapCloud.inviteToCollaborate(socketId, user, ownerId, name, role);
+                    }
+                },
+                friends,
+                'Invite a Friend to Collaborate'
+            ).popUp();
+        },
+        function (err, lbl) {
+            myself.cloudError().call(null, err, lbl);
+        }
+    );
+};
+
+NetsBloxMorph.prototype.promptCollabInvite = function (params) {  // id, room, roomName, role
+    // Create a confirm dialog about joining the group
+    var myself = this,
+        // unpack the params
+        id = params.id,
+        roomName = params.roomName,
+
+        action = this.collabResponse.bind(this, id, true),
+        dialog = new DialogBoxMorph(null, action),
+        msg;
+
+    if (params.inviter === SnapCloud.username) {
+        msg = 'Would you like to collaborate at "' + roomName + '"?';
+    } else {
+        msg = params.inviter + ' has invited you to collaborate with\nhim/her at "' + roomName +
+            '"\nAccept?';
+    }
+
+    dialog.cancel = function() {
+        myself.collabResponse(id, false);
+        this.destroy();
+    };
+
+    dialog.askYesNo(
+        'Collaboration Invitation',
+        localize(msg),
+        this.world()
+    );
+};
+
+NetsBloxMorph.prototype.collabResponse = function (id, response) {
+    var myself = this;
+
+    SnapCloud.collabResponse(
+        id,
+        response, 
+        function() {
+            myself.showMessage('Collaborating!', 2);
+        },
+        function(err){
+            myself.showMessage(err, 2);
+        }
+    );
 };

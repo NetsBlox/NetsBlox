@@ -72,6 +72,10 @@ WebSocketManager.MessageHandlers = {
         this.ide.room.promptInvite(msg);
     },
 
+    'collab-invitation': function(msg) {
+        this.ide.promptCollabInvite(msg);
+    },
+
     'project-closed': function() {
         var owner = this.ide.room.ownerId;
         this.ide.showMessage(owner + ' closed the room. ' +
