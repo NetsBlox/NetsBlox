@@ -3,7 +3,7 @@
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
    NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo,
-   ScrollFrameMorph, SnapUndo*/
+   ScrollFrameMorph, SnapUndo, LibraryImportDialogMorph*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -32,34 +32,6 @@ NetsBloxMorph.prototype.resourceURL = function () {
     return 'api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
 };
 
-NetsBloxMorph.prototype.parseResourceFile = function (text) {
-    // A Resource File lists all the files that could be loaded in a submenu
-    // Examples are libraries/LIBRARIES, Costumes/COSTUMES, etc
-    // The file format is tab-delimited, with unix newlines:
-    // file-name, Display Name, Help Text (optional)
-    var parts,
-        items = [];
-
-    text.split('\n').map(function (line) {
-        return line.trim();
-    }).filter(function (line) {
-        return line.length > 0;
-    }).forEach(function (line) {
-        parts = line.split('\t').map(function (str) { return str.trim(); });
-
-        if (parts.length < 2) {return; }
-
-        items.push({
-            fileName: parts[0],
-            name: parts[1],
-            // NetsBlox addition: start
-            description: ''
-            // NetsBlox addition: end
-        });
-    });
-
-    return items;
-};
 NetsBloxMorph.prototype.clearProject = function () {
     this.source = SnapCloud.username ? 'cloud' : 'local';
     if (this.stage) {
@@ -475,6 +447,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
                 'Costumes' : 'Backgrounds',
         shiftClicked = (world.currentKey === 16);
 
+    // Netsblox addition: start
     // Utility for creating Costumes, etc menus.
     // loadFunction takes in two parameters: a file URL, and a canonical name
     function createMediaMenu(mediaType, loadFunction, header) {
@@ -497,13 +470,14 @@ NetsBloxMorph.prototype.projectMenu = function () {
             mediaMenu.popup(world, pos);
         };
     }
+    // Netsblox addition: end
 
     menu = new MenuMorph(this);
     menu.addItem('Project notes...', 'editProjectNotes');
     menu.addLine();
-    menu.addItem('New', 'createNewProject');
-    menu.addItem('Open...', 'openProjectsBrowser');
-    menu.addItem('Save', 'save');
+    menu.addPair('New', 'createNewProject', '^N');
+    menu.addPair('Open...', 'openProjectsBrowser', '^O');
+    menu.addPair('Save', "save", '^S');
     menu.addItem('Save As...', 'saveProjectsBrowser');
     if (shiftClicked) {
         menu.addItem(
@@ -511,7 +485,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
             function() {
                 myself.saveFileAs(
                     JSON.stringify(SnapUndo.allEvents, null, 2),
-                    'text/json;charset=utf-8,',
+                    'text/json;charset=utf-8',
                     'replay-actions'
                 );
             },
@@ -522,7 +496,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
             localize('Replay events from file'),
             function() {
                 var inp = document.createElement('input');
-                if (SnapUndo.allEvents.length) {
+                if (SnapUndo.allEvents.length > 1) {
                     return this.showMessage('events can only be replayed on empty project');
                 }
 
@@ -572,17 +546,18 @@ NetsBloxMorph.prototype.projectMenu = function () {
                 myself.filePicker = null;
             }
             inp.type = 'file';
-            inp.style.color = 'transparent';
-            inp.style.backgroundColor = 'transparent';
-            inp.style.border = 'none';
-            inp.style.outline = 'none';
-            inp.style.position = 'absolute';
-            inp.style.top = '0px';
-            inp.style.left = '0px';
-            inp.style.width = '0px';
-            inp.style.height = '0px';
+            inp.style.color = "transparent";
+            inp.style.backgroundColor = "transparent";
+            inp.style.border = "none";
+            inp.style.outline = "none";
+            inp.style.position = "absolute";
+            inp.style.top = "0px";
+            inp.style.left = "0px";
+            inp.style.width = "0px";
+            inp.style.height = "0px";
+            inp.style.display = "none";
             inp.addEventListener(
-                'change',
+                "change",
                 function () {
                     document.body.removeChild(inp);
                     myself.filePicker = null;
@@ -687,29 +662,17 @@ NetsBloxMorph.prototype.projectMenu = function () {
         },
         'load the official library of\npowerful blocks'
     );
-    //menu.addItem(
-        //'Import tools',
-        //function () {
-            //myself.droppedText(
-                //myself.getURL('api/tools.xml'),
-                //'tools'
-            //);
-        //},
-        //'load the official library of\npowerful blocks'
-    //);
     menu.addItem(
         'Libraries...',
-        createMediaMenu(
-            'libraries',
-            function (file, name) {
-                myself.getURL(
-                    myself.resourceURL('libraries', file),
-                    function (txt) {
-                        myself.droppedText(txt, name);
-                    }
-                );
-            }
-        ),
+        function() {
+            myself.getURL(
+                myself.resourceURL('libraries', 'LIBRARIES'),
+                function (txt) {
+                    var libraries = myself.parseResourceFile(txt);
+                    new LibraryImportDialogMorph(myself, libraries).popUp();
+                }
+            );
+        },
         'Select categories of additional blocks to add to this project.'
     );
 
@@ -1404,21 +1367,4 @@ NetsBloxMorph.prototype.loadBugReport = function () {
     document.body.appendChild(inp);
     myself.filePicker = inp;
     inp.click();
-};
-
-NetsBloxMorph.prototype.replayEvents = function (events) {
-    var myself = this;
-
-    events.forEach(function(event, i) {
-        setTimeout(function() {
-            SnapActions.applyEvent(event)
-                .accept(function() {
-                    myself.showMessage('applied #' + i + ' (' + event.type + ')');
-                })
-                .reject(function() {
-                    myself.showMessage('Action failed: ' + event.type);
-                });
-        }, 500 * i);
-    });
-
 };

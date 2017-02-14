@@ -38,15 +38,6 @@ var R = require('ramda'),
         'tools.xml'
     ];
 
-var createIndexFor = function(name, list) {
-    return list
-        .filter(item => item.toUpperCase() !== name.toUpperCase())
-        .map(function(item) {
-            return [item, item, item].join('\t');
-        }).join('\n');
-};
-
-
 // Create the paths
 var resourcePaths = PATHS.map(function(name) {
     var resPath = path.join(SNAP_ROOT, name);
@@ -55,19 +46,7 @@ var resourcePaths = PATHS.map(function(name) {
         Method: 'get', 
         URL: name + '/:filename',
         Handler: function(req, res) {
-            if (req.params.filename === name.toUpperCase()) {  // index
-                // Load the costumes and create rough HTML content...
-                fs.readdir(resPath, function(err, resources) {
-                    if (err) {
-                        return res.send(err);
-                    }
-
-                    var result = createIndexFor(name, resources);
-                    return res.send(result);
-                });
-            } else {  // retrieve a file
-                res.sendFile(path.join(resPath, req.params.filename));
-            }
+            res.sendFile(path.join(resPath, req.params.filename));
         }
     };
 });

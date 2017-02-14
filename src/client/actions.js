@@ -20,6 +20,7 @@ ActionManager.prototype.onAddMessageType = function(name, fields) {
     });
     ide.flushBlocksCache('services');  //  b/c of inheritance
     ide.refreshPalette();
+    this.completeAction();
 };
 
 ActionManager.prototype.onDeleteMessageType = function(name) {
@@ -27,6 +28,7 @@ ActionManager.prototype.onDeleteMessageType = function(name) {
     ide.stage.deleteMessageType(name);
     ide.flushBlocksCache('services');  //  b/c of inheritance
     ide.refreshPalette();
+    this.completeAction();
 };
 
 // HintInputSlotMorph support
