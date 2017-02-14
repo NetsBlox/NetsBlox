@@ -32,34 +32,6 @@ NetsBloxMorph.prototype.resourceURL = function () {
     return 'api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
 };
 
-NetsBloxMorph.prototype.parseResourceFile = function (text) {
-    // A Resource File lists all the files that could be loaded in a submenu
-    // Examples are libraries/LIBRARIES, Costumes/COSTUMES, etc
-    // The file format is tab-delimited, with unix newlines:
-    // file-name, Display Name, Help Text (optional)
-    var parts,
-        items = [];
-
-    text.split('\n').map(function (line) {
-        return line.trim();
-    }).filter(function (line) {
-        return line.length > 0;
-    }).forEach(function (line) {
-        parts = line.split('\t').map(function (str) { return str.trim(); });
-
-        if (parts.length < 2) {return; }
-
-        items.push({
-            fileName: parts[0],
-            name: parts[1],
-            // NetsBlox addition: start
-            description: ''
-            // NetsBlox addition: end
-        });
-    });
-
-    return items;
-};
 NetsBloxMorph.prototype.clearProject = function () {
     this.source = SnapCloud.username ? 'cloud' : 'local';
     if (this.stage) {
