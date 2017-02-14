@@ -1,6 +1,6 @@
 let TrendsRPC = {
     isStateless: true,
-    getPath: () => '/g-trends'
+    getPath: () => '/GoogleTrends'
 };
 
 var debug = require('debug'),
