@@ -982,16 +982,18 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     var canvas = newCanvas(new Point(this.symbolWidth(), this.size));
 
     switch (this.name) {
+    case 'square':
+        return this.drawSymbolStop(canvas, aColor);
     // NetsBlox addition: start
     case 'plus':  // TODO: Make this a smaller changeset (only added 2 lines)
         return this.drawSymbolPlus(canvas, aColor);
     // NetsBlox addition: end
-    case 'square':
-        return this.drawSymbolStop(canvas, aColor);
     case 'pointRight':
         return this.drawSymbolPointRight(canvas, aColor);
     case 'stepForward':
         return this.drawSymbolStepForward(canvas, aColor);
+    case 'stepBackward':
+        return this.drawSymbolStepBackward(canvas, aColor);
     case 'gears':
         return this.drawSymbolGears(canvas, aColor);
     case 'file':
