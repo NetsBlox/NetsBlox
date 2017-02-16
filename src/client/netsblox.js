@@ -56,6 +56,7 @@ NetsBloxMorph.prototype.clearProject = function () {
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
+    SnapActions.loadProject(this);
 };
 
 NetsBloxMorph.prototype.cloudMenu = function () {
