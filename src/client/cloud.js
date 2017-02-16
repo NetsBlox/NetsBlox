@@ -153,8 +153,9 @@ NetCloud.prototype.inviteToRoom = function () {
 
 NetCloud.prototype.inviteToCollaborate = function () {
     var myself = this,
-        args = arguments;
+        args = Array.prototype.slice.call(arguments);
 
+    args.push(SnapActions.sessionId);
     this.reconnect(
         function () {
             myself.callService(
@@ -170,7 +171,7 @@ NetCloud.prototype.inviteToCollaborate = function () {
 
 NetCloud.prototype.collabResponse = function (id, accepted, onSuccess, onFail) {
     var myself = this,
-        args = [id, accepted, this.socketId()];
+        args = [id, accepted, this.socketId(), SnapActions.id];
 
     this.reconnect(
         function () {

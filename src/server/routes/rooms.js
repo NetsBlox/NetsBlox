@@ -295,7 +295,7 @@ module.exports = [
     },
     {  // Collaboration
         Service: 'inviteToCollaborate',
-        Parameters: 'socketId,invitee,ownerId,roomName,roleId',
+        Parameters: 'socketId,invitee,ownerId,roomName,roleId,sessionId',
         middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
         Note: '',
@@ -305,15 +305,17 @@ module.exports = [
                 roomName = req.body.roomName,
                 roomId = utils.uuid(req.body.ownerId, roomName),
                 roleId = req.body.roleId,
+                sessionId = req.body.sessionId,
                 inviteId = ['collab', inviter, invitee, roomId, roleId].join('-'),
                 inviteeSockets = SocketManager.socketsFor(invitee);
 
-            log(`${inviter} is inviting ${invitee} to ${roleId} at ${roomId}`);
+            log(`${inviter} is inviting ${invitee} to ${roleId} at ${roomId} (${sessionId})`);
 
             // Record the invitation
             invites[inviteId] = {
                 room: roomId,
                 role: roleId,
+                sessionId: sessionId,
                 invitee
             };
 
@@ -338,7 +340,7 @@ module.exports = [
     },
     {
         Service: 'inviteCollaboratorResponse',
-        Parameters: 'inviteId,response,socketId',
+        Parameters: 'inviteId,response,socketId,collabId',
         middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
         Note: '',
@@ -381,7 +383,7 @@ module.exports = [
                 }
 
                 // add the given socket to the session
-                Sessions.joinSession(socket.id, invite.sessionId);
+                Sessions.joinSession(req.body.collabId, invite.sessionId);
                 return res.sendStatus(200);
             }
         }

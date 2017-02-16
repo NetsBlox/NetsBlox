@@ -83,6 +83,7 @@ Server.prototype.start = function(done) {
             this.configureRoutes();
             this._server = this.app.listen(this.opts.port, err => {
                 this._wss = new WebSocketServer({server: this._server});
+                Collaboration.init(this._logger.fork('collaboration'));
                 Collaboration.enable(this.app, this._wss, 'collaboration');
                 SocketManager.enable(this._wss);
                 // Enable Vantage
