@@ -9,7 +9,7 @@ var _ = require('lodash'),
     error = debug('netsblox:api:rooms:error'),
     utils = require('../server-utils'),
     RoomManager = require('../rooms/room-manager'),
-    Sessions = require('../collaboration/session-manager'),
+    Sessions = require('snap-collaboration').sessions,
     SocketManager = require('../socket-manager'),
     invites = {};
 
