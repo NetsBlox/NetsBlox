@@ -59,18 +59,21 @@ SnapActions.serializer = new NetsBloxSerializer();
 SnapActions.__sessionId = Date.now();
 
 // Recording user actions
-//SnapActions.send = function(json) {
-    //var socket = this.ide().sockets,
-        //msg = {};
+SnapActions.send = function(json) {
+    var socket = this.ide().sockets,
+        msg = {},
+        result;
 
-    //json.id = json.id || this.lastSeen + 1;
-    //this.lastSent = json.id;
+    result = ActionManager.prototype.send.apply(this, arguments);
 
-    //msg.type = 'record-action';
-    //msg.sessionId = this.__sessionId;
-    //msg.action = json;
-    //socket.sendMessage(msg);
-//};
+    // Record the action
+    msg.type = 'record-action';
+    msg.sessionId = this.__sessionId;
+    msg.action = json;
+    socket.sendMessage(msg);
+
+    return result;
+};
 
 SnapActions.loadProject = function() {
     var event;
