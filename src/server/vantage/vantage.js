@@ -130,7 +130,7 @@ var NetsBloxVantage = function(server) {
         .action(function(args, cb) {
             var level = args.level;
             if (level === 'on') {
-                level = 'NetsBlox:*';
+                level = 'netsblox:*';
             } else if (level === 'off') {
                 level = '';
             }
