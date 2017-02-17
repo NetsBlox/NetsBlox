@@ -1072,9 +1072,8 @@ UserDialogMorph.prototype.buildContents = function() {
     this.body.add(this.listField);
 
     // add buttons
-    this.labelString = 'Invite a Friend to the Room';  // TODO
+    this.labelString = 'Invite a Friend to the Room';
     this.createLabel();
-    // TODO: make this customizable...
     this.addButton('ok', 'OK');
     this.addButton('cancel', 'Cancel');
 
