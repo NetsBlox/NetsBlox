@@ -1,8 +1,8 @@
 var debug = require('debug'),
     _ = require('lodash'),
-    log = debug('NetsBlox:PublicRoleManager:log'),
-    trace = debug('NetsBlox:PublicRoleManager:trace'),
-    error = debug('NetsBlox:PublicRoleManager:error'),
+    log = debug('netsblox:public-role-manager:log'),
+    trace = debug('netsblox:public-role-manager:trace'),
+    error = debug('netsblox:public-role-manager:error'),
     ID_LENGTH = 5;
 
 var PublicRoleManager = function() {
