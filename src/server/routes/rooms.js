@@ -357,8 +357,7 @@ module.exports = [
 
             // Notify other clients of response
             var allSockets = SocketManager.socketsFor(invitee),
-                invite = invites[inviteId],
-                socket = allSockets.find(socket => socket.uuid === socketId);
+                invite = invites[inviteId];
 
             allSockets.filter(socket => socket.uuid !== socketId)
                 .forEach(socket => socket.send(closeInvite));
@@ -393,9 +392,6 @@ module.exports = [
     api.URL = api.Service;
     return api;
 });
-
-function recordInvitation (username, id, response, socketId, callback) {
-}
 
 function acceptInvitation (username, id, response, socketId, callback) {
     var socket = SocketManager.sockets[socketId],
@@ -437,5 +433,5 @@ function acceptInvitation (username, id, response, socketId, callback) {
         }
         callback(null, project);
     }
-};
+}
 

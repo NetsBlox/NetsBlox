@@ -1,4 +1,4 @@
-/* global localize, nop, IDE_Morph, Cloud, detect*/
+/* global localize, nop, IDE_Morph, Cloud, detect, SnapActions*/
 NetCloud.prototype = new Cloud();
 
 function NetCloud(url) {
