@@ -205,6 +205,32 @@ NetCloud.prototype.getFriendList = function (callBack, errorCall) {
     );
 };
 
+NetCloud.prototype.getCollaboratorList = function (callBack, errorCall) {
+    var myself = this;
+    this.reconnect(
+        function () {
+            myself.callService(
+                'getCollaborators',
+                function (response, url) {
+                    var usernames = Object.keys(response[0] || {}),
+                        users = [];
+
+                    for (var i = usernames.length; i--;) {
+                        users.push({
+                            username: usernames[i],
+                            collaborating: response[0][usernames[i]] === 'true'
+                        });
+                    }
+                    callBack.call(null, users, url);
+                },
+                errorCall,
+                [myself.socketId()]
+            );
+        },
+        errorCall
+    );
+};
+
 NetCloud.prototype.deleteRole = function(onSuccess, onFail, args) {
     var myself = this;
     this.reconnect(

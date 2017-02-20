@@ -408,6 +408,9 @@ RoomMorph.prototype.inviteUser = function (role) {
         callback;
 
     callback = function(friends) {
+        friends = friends.map(function(friend) {
+            return friend.username;
+        });
         friends.push('myself');
         myself._inviteFriendDialog(role, friends);
     };
@@ -1221,7 +1224,21 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
 
     this.buildFilterField();
 
-    this.listField = new ListMorph(this.userList);
+    this.listField = new ListMorph(
+        this.userList,
+        this.userList.length > 0 ?
+                function (element) {
+                    return element.username || element;
+                } : null,
+        [ // format: display shared project names bold
+            [
+                'bold',
+                function (proj) {return proj.collaborating; }
+            ]
+        ]//,
+        //function () {myself.ok(); }
+    );
+
     this.fixListFieldItemColors();
     this.listField.fixLayout = nop;
     this.listField.edge = InputFieldMorph.prototype.edge;
@@ -1236,8 +1253,10 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     // add buttons
     this.labelString = 'Invite a Friend to Collaborate';
     this.createLabel();
-    // TODO: make this customizable...
-    this.addButton('ok', 'OK');
+    this.uncollaborateButton = this.addButton('uncollaborate', 'Remove');
+    this.collaborateButton = this.addButton('ok', 'OK');
+    this.uncollaborateButton.hide();
+    this.collaborateButton.hide();
     this.addButton('cancel', 'Cancel');
 
     this.setHeight(300);

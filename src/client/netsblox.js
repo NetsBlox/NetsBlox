@@ -1929,18 +1929,15 @@ NetsBloxMorph.prototype.manageCollaborators = function () {
 
     // TODO: Provide an interface for inviting/removing collaborators
     // The owner is probably the only person to invite people?
-    SnapCloud.getFriendList(
+    SnapCloud.getCollaboratorList(
         function(friends) {
-            friends.push('myself');
-            // record the collaborators
-            // TODO
+            friends.sort(function(a, b) {
+                return a.username.toLowerCase() < b.username.toLowerCase() ? -1 : 1;
+            });
             new CollaboratorDialogMorph(
                 myself,
                 function(user) {
                     if (user) {
-                        if (user === 'myself') {
-                            user = SnapCloud.username;
-                        }
                         SnapCloud.inviteToCollaborate(socketId, user, ownerId, name, role);
                     }
                 },

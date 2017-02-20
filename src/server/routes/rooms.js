@@ -22,21 +22,30 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn'],
         Handler: function(req, res) {
-            var username = req.session.username,
-                uuids = Object.keys(SocketManager.sockets),
-                socket,
+            var sockets = getFriendSockets(req.session.username),
                 resp = {};
 
-            log(username +' requested friend list');
+            sockets.forEach(socket => resp[socket.username] = socket.uuid);
 
-            warn('returning ALL active sockets');
-            for (var i = uuids.length; i--;) {
-                socket = SocketManager.sockets[uuids[i]];
-                if (socket.username !== username && socket.loggedIn) {
-                    resp[socket.username] = uuids[i];
-                }
-            }
             log(Utils.serialize(resp));
+            return res.send(Utils.serialize(resp));
+        }
+    },
+    {
+        Service: 'getCollaborators',
+        Parameters: 'socketId',
+        Method: 'post',
+        middleware: ['hasSocket', 'isLoggedIn'],
+        Handler: function(req, res) {
+            var friends = getFriendSockets(req.session.username),
+                socketId = req.body.socketId,
+                sessionId = Sessions.sessionId(socketId),
+                resp = {};
+
+            friends.forEach(socket =>
+                resp[socket.username] = sessionId && Sessions.sessionId(socket.uuid) === sessionId
+            );
+
             return res.send(Utils.serialize(resp));
         }
     },
@@ -392,6 +401,17 @@ module.exports = [
     api.URL = api.Service;
     return api;
 });
+
+function getFriendSockets(username) {
+    log(username +' requested friend list');
+    warn('returning ALL active sockets');
+
+    var allSockets = Object.keys(SocketManager.sockets)
+        .map(id => SocketManager.sockets[id])
+        .filter(socket => socket.username !== username && socket.loggedIn);
+
+    return allSockets;
+}
 
 function acceptInvitation (username, id, response, socketId, callback) {
     var socket = SocketManager.sockets[socketId],
