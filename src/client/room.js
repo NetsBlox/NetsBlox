@@ -1219,6 +1219,8 @@ function CollaboratorDialogMorph(target, action, users) {
 }
 
 CollaboratorDialogMorph.prototype.buildContents = function() {
+    var myself = this;
+
     this.addBody(new Morph());
     this.body.color = this.color;
 
@@ -1239,6 +1241,39 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
         //function () {myself.ok(); }
     );
 
+    this.listField.action = function (item) {
+        if (item === undefined) {return; }
+        if (item.collaborating) {
+            myself.collaborateButton.hide();
+            myself.uncollaborateButton.show();
+        } else {
+            myself.uncollaborateButton.hide();
+            myself.collaborateButton.show();
+        }
+        myself.buttons.fixLayout();
+        myself.fixLayout();
+        myself.edit();
+    };
+
+    this.filterField.reactToKeystroke = function () {
+        var text = this.getValue();
+
+        myself.listField.elements = 
+            myself.userList.filter(function (user) {
+                return user.username.toLowerCase().indexOf(text.toLowerCase()) > -1;
+            });
+
+        if (myself.listField.elements.length === 0) {
+            myself.listField.elements.push('(no matches)');
+        }
+
+        myself.listField.buildListContents();
+        myself.fixListFieldItemColors();
+        myself.listField.adjustScrollBars();
+        myself.listField.scrollY(myself.listField.top());
+        myself.fixLayout();
+    };
+
     this.fixListFieldItemColors();
     this.listField.fixLayout = nop;
     this.listField.edge = InputFieldMorph.prototype.edge;
@@ -1254,7 +1289,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.labelString = 'Invite a Friend to Collaborate';
     this.createLabel();
     this.uncollaborateButton = this.addButton('uncollaborate', 'Remove');
-    this.collaborateButton = this.addButton('ok', 'OK');
+    this.collaborateButton = this.addButton('ok', 'Invite');
     this.uncollaborateButton.hide();
     this.collaborateButton.hide();
     this.addButton('cancel', 'Cancel');

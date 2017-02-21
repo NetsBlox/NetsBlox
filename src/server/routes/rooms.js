@@ -35,16 +35,18 @@ module.exports = [
         Service: 'getCollaborators',
         Parameters: 'socketId',
         Method: 'post',
-        middleware: ['hasSocket', 'isLoggedIn'],
+        middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var friends = getFriendSockets(req.session.username),
                 socketId = req.body.socketId,
                 sessionId = Sessions.sessionId(socketId),
                 resp = {};
 
-            friends.forEach(socket =>
-                resp[socket.username] = sessionId && Sessions.sessionId(socket.uuid) === sessionId
-            );
+            log(`session for ${socketId} is ${sessionId}`);
+            friends.forEach(socket => {
+                log(`session for ${socket.id} is ${Sessions.sessionId(socket.id)}`);
+                resp[socket.username] = sessionId && Sessions.sessionId(socket.id) === sessionId;
+            });
 
             return res.send(Utils.serialize(resp));
         }

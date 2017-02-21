@@ -226,6 +226,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
 WebSocketManager.prototype.sendMessage = function(message) {
     var state = this.websocket.readyState;
+    message.netsblox = true;
     message = this.serializeMessage(message);
     if (state === this.websocket.OPEN) {
         this.websocket.send(message);

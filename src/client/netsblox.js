@@ -1938,7 +1938,7 @@ NetsBloxMorph.prototype.manageCollaborators = function () {
                 myself,
                 function(user) {
                     if (user) {
-                        SnapCloud.inviteToCollaborate(socketId, user, ownerId, name, role);
+                        SnapCloud.inviteToCollaborate(socketId, user.username, ownerId, name, role);
                     }
                 },
                 friends,

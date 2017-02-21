@@ -77,14 +77,18 @@ Server.prototype.configureRoutes = function() {
 };
 
 Server.prototype.start = function(done) {
+    var opts = {};
     done = done || Utils.nop;
+
+    opts.msgFilter = msg => !msg.netsblox;
+
     return this.storage.connect()
         .then(() => {
             this.configureRoutes();
             this._server = this.app.listen(this.opts.port, err => {
                 this._wss = new WebSocketServer({server: this._server});
                 Collaboration.init(this._logger.fork('collaboration'));
-                Collaboration.enable(this.app, this._wss, 'collaboration');
+                Collaboration.enable(this.app, this._wss, opts);
                 SocketManager.enable(this._wss);
                 // Enable Vantage
                 if (this.opts.vantage) {

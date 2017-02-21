@@ -66,6 +66,10 @@ class NetsBloxSocket {
     }
 
 
+    collaborationId () {
+        return this._socket.id;
+    }
+
     hasRoom (silent) {
         if (!this._room && !silent) {
             this._logger.error('user has no room!');
@@ -81,6 +85,9 @@ class NetsBloxSocket {
         this._socket.on('message', data => {
             var msg = JSON.parse(data),
                 type = msg.type;
+
+            // check the namespace
+            if (!msg.netsblox) return;
 
             this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message`);
             if (NetsBloxSocket.MessageHandlers[type]) {
