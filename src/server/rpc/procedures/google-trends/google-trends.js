@@ -14,12 +14,12 @@ var debug = require('debug'),
 
 var countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
-    geoNamesUsername = process.env.GOOGLE_TRENDS_USERNAME || 'demo';
+    geoNamesUsername = process.env.GOOGLE_TRENDS_USERNAME || 'hamidzr'; // add more users and rotate?
 TrendsRPC.byLocation = function (latitude, longitude) {
 
     // get location data eg: country, language
     // or we can use geocoder package
-    let url = `${countryInfoBaseUrl}radius=${100}&lat=${latitude}&lng=${longitude}&username=${geoNamesUsername}`,
+    let url = `${countryInfoBaseUrl}radius=${50}&lat=${latitude}&lng=${longitude}&username=${geoNamesUsername}`,
         response = this.response;
         // socket = this.socket;
 
@@ -69,7 +69,6 @@ TrendsRPC.byCountryCode = function (countryCode) {
             // doesn't catch some errors.. ?
             .catch((err) => {
                 error(err);
-                showError(`No trends available for ${countryCode}`, response);
                 return cacheCallback(null, `No trends available for ${countryCode}`);
             });
     }, (err, results) => {
