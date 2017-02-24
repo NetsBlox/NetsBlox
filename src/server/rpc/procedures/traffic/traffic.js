@@ -97,7 +97,7 @@ if (!process.env.BING_TRAFFIC_KEY) {
             var socket = this.socket;
             if (msgs) {
                 // remove those with a different roleId | dont remove other's messages
-                msgs = msgs.filter((msg) => {
+                msgs = msgs.filter(msg => {
                     return msg.dstId != socket.roleId;
                 });
             }
