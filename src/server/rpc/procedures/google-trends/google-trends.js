@@ -48,6 +48,7 @@ TrendsRPC.byCountryCode = function (countryCode) {
     let response = this.response;
 
     // assumption: first callback is called when there is nochaed value for the id
+    countryCode = countryCode.toUpperCase();
     cache.wrap(countryCode, cacheCallback => {
         // Get the trends -> not in cache!
         trace('this request is not cached, requesting googleTrends for : ', countryCode);
