@@ -59,7 +59,10 @@ class NetsBloxSocket {
         this._initialize();
 
         // Provide a uuid
-        this.send({type: 'uuid', body: this.uuid});
+        this.send({
+            type: 'uuid',
+            body: this.uuid
+        });
         this.onclose = [];
 
         this._logger.trace('created');
@@ -192,6 +195,7 @@ class NetsBloxSocket {
 
     send (msg) {
         // Set the defaults
+        msg.netsblox = true;
         msg.type = msg.type || 'message';
         if (msg.type === 'message') {
             msg.dstId = msg.dstId || Constants.EVERYONE;

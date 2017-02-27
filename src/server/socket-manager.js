@@ -18,11 +18,8 @@ SocketManager.prototype.enable = function(wss) {
     this._logger.info('Socket management enabled!');
 
     wss.on('connection', rawSocket => {
-        var url = rawSocket.upgradeReq.url;
-        if (url === '/') {
-            var socket = new Socket(this._logger, rawSocket);
-            this.sockets[socket.uuid] = socket;
-        }
+        var socket = new Socket(this._logger, rawSocket);
+        this.sockets[socket.uuid] = socket;
     });
 };
 

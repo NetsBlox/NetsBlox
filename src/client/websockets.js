@@ -193,10 +193,14 @@ WebSocketManager.prototype._connectWebSocket = function() {
         var msg = JSON.parse(rawMsg.data),
             type = msg.type;
 
-        if (WebSocketManager.MessageHandlers[type]) {
-            WebSocketManager.MessageHandlers[type].call(self, msg);
+        if (msg.netsblox) {
+            if (WebSocketManager.MessageHandlers[type]) {
+                WebSocketManager.MessageHandlers[type].call(self, msg);
+            } else {
+                console.error('Unknown message:', msg);
+            }
         } else {
-            console.error('Unknown message:', msg);
+            SnapActions.onMessage(msg);
         }
     };
 

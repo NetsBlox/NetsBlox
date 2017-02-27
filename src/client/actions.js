@@ -57,6 +57,7 @@ UndoManager.Invert.deleteMessageType = function() {
 
 SnapActions.serializer = new NetsBloxSerializer();
 SnapActions.__sessionId = Date.now();
+SnapActions.enableCollaboration = function() {};
 
 // Recording user actions
 SnapActions.send = function(json) {
@@ -64,6 +65,7 @@ SnapActions.send = function(json) {
         msg = {},
         result;
 
+    this._ws = socket.websocket;
     result = ActionManager.prototype.send.apply(this, arguments);
 
     // Record the action
