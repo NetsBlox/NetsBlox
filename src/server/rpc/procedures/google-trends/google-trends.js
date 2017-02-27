@@ -14,14 +14,13 @@ var debug = require('debug'),
 
 var countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
-    geoNamesUsername = process.env.GOOGLE_TRENDS_USERNAME || 'hamidzr'; // add more users and rotate?
-TrendsRPC.byLocation = function (latitude, longitude) {
+    geoNamesUsername = process.env.GOOGLE_TRENDS_USERNAME || 'hamidzr';
 
+TrendsRPC.byLocation = function (latitude, longitude) {
     // get location data eg: country, language
     // or we can use geocoder package
     let url = `${countryInfoBaseUrl}radius=${50}&lat=${latitude}&lng=${longitude}&username=${geoNamesUsername}`,
         response = this.response;
-        // socket = this.socket;
 
     trace('Requesting country data from ', url);
     request(url, (err, res, body) => {
@@ -32,7 +31,6 @@ TrendsRPC.byLocation = function (latitude, longitude) {
         let countryInfo = JSON.parse(body);
         trace('detected country: ', countryInfo.countryName, countryInfo, 'long', longitude, 'lat', latitude);
         if (typeof countryInfo.countryCode != 'undefined') {
-            // QUESTION this.byCountryCode?
             // Improve: google does not use official country codes for trends see VN vs VE
             TrendsRPC.byCountryCode(countryInfo.countryCode);
         } else {
@@ -64,10 +62,8 @@ TrendsRPC.byCountryCode = function (countryCode) {
             })
             .then((translatedArr) => {
                 let trendsTexts = translatedArr.map(val => val.text);
-                // response.json(trendsTexts);
                 return cacheCallback(null, trendsTexts);
             })
-            // doesn't catch some errors.. ?
             .catch((err) => {
                 error(err);
                 return cacheCallback(null, `No trends available for ${countryCode}`);
