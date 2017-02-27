@@ -40,12 +40,16 @@ module.exports = [
             var friends = getFriendSockets(req.session.username),
                 socketId = req.body.socketId,
                 sessionId = Sessions.sessionId(socketId),
-                resp = {};
+                resp = {},
+                id;
 
             log(`session for ${socketId} is ${sessionId}`);
+            console.log('sessions', Object.keys(Sessions._sessions));
+            console.log('sockets', Object.keys(Sessions._sockets));
             friends.forEach(socket => {
-                log(`session for ${socket.id} is ${Sessions.sessionId(socket.id)}`);
-                resp[socket.username] = sessionId && Sessions.sessionId(socket.id) === sessionId;
+                id = socket.collaborationId();
+                log(`session for ${id} is ${Sessions.sessionId(id)}`);
+                resp[socket.username] = sessionId && Sessions.sessionId(id) === sessionId;
             });
 
             return res.send(Utils.serialize(resp));
