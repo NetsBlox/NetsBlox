@@ -1288,7 +1288,10 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     // add buttons
     this.labelString = 'Invite a Friend to Collaborate';
     this.createLabel();
-    this.uncollaborateButton = this.addButton('uncollaborate', 'Remove');
+    this.uncollaborateButton = this.addButton(function() {
+        SnapCloud.evictCollaborator(myself.listField.selected.value);
+        myself.destroy();
+    }, 'Remove');
     this.collaborateButton = this.addButton('ok', 'Invite');
     this.uncollaborateButton.hide();
     this.collaborateButton.hide();
@@ -1297,6 +1300,3 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.setHeight(300);
     this.fixLayout();
 };
-
-// TODO: If the user is already collaborating, bold the name and change the
-// button to allow them to remove the person from the current collaborators

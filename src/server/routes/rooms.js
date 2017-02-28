@@ -49,10 +49,43 @@ module.exports = [
             friends.forEach(socket => {
                 id = socket.collaborationId();
                 log(`session for ${id} is ${Sessions.sessionId(id)}`);
-                resp[socket.username] = sessionId && Sessions.sessionId(id) === sessionId;
+                if (sessionId && Sessions.sessionId(id) === sessionId) {
+                    resp[socket.username] = socket.uuid;
+                } else {
+                    resp[socket.username] = false;
+                }
             });
 
             return res.send(Utils.serialize(resp));
+        }
+    },
+    {
+        Service: 'evictCollaborator',
+        Parameters: 'socketId,otherId',
+        Method: 'post',
+        middleware: ['hasSocket', 'isLoggedIn'],
+        Handler: function(req, res) {
+            var socketId = req.body.socketId,
+                socket = SocketManager.sockets[socketId],
+                otherId = req.body.otherId,
+                otherSocket = SocketManager.sockets[otherId];
+
+            if (!otherSocket) {
+                this._logger.warn(`Could not find socket to remove: ${otherId}`);
+                return res.sendStatus(400);  // TODO
+            }
+
+            // Remove the other socket
+            this._logger.debug(`Removing socket ${otherId} from ${otherSocket.getSessionId()}`);
+            otherSocket.leaveSession();
+            this._logger.debug(`New session for ${otherId} is ${otherSocket.getSessionId()}`);
+
+            // Send the remove message to the other socket
+            otherSocket.send({
+                type: 'notification',
+                message: 'You are no longer collaborating with ' + socket.username
+            });
+            return res.sendStatus(200);
         }
     },
     {

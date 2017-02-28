@@ -14,6 +14,7 @@ var counter = 0,
         'RoomUuid'
     ],
     R = require('ramda'),
+    Sessions = require('snap-collaboration').sessions,
     parseXml = require('xml2js').parseString,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
@@ -71,6 +72,15 @@ class NetsBloxSocket {
 
     collaborationId () {
         return this._socket.id;
+    }
+
+    leaveSession () {
+        Sessions.remove(this._socket);
+        return Sessions.newSession(this._socket);
+    }
+
+    getSessionId () {
+        return Sessions.sessionId(this.collaborationId());
     }
 
     hasRoom (silent) {

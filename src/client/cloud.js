@@ -169,6 +169,23 @@ NetCloud.prototype.inviteToCollaborate = function () {
     );
 };
 
+NetCloud.prototype.evictCollaborator = function (id) {
+    var myself = this,
+        args = [this.socketId(), id];
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'evictCollaborator',
+                nop,
+                nop,
+                args
+            );
+        },
+        nop
+    );
+};
+
 NetCloud.prototype.collabResponse = function (id, accepted, onSuccess, onFail) {
     var myself = this,
         args = [id, accepted, this.socketId(), SnapActions.id];
@@ -218,7 +235,8 @@ NetCloud.prototype.getCollaboratorList = function (callBack, errorCall) {
                     for (var i = usernames.length; i--;) {
                         users.push({
                             username: usernames[i],
-                            collaborating: response[0][usernames[i]] === 'true'
+                            collaborating: response[0][usernames[i]] !== 'false',
+                            value: response[0][usernames[i]]
                         });
                     }
                     callBack.call(null, users, url);
