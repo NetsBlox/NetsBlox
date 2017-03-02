@@ -14,6 +14,7 @@ var debug = require('debug'),
 
 var countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
+<<<<<<< HEAD
     geoNamesUsername = process.env.GOOGLE_TRENDS_USERNAME || 'demo';
 TrendsRPC.byLocation = function (latitude, longitude) {
 
@@ -22,6 +23,15 @@ TrendsRPC.byLocation = function (latitude, longitude) {
     let url = `${countryInfoBaseUrl}radius=${100}&lat=${latitude}&lng=${longitude}&username=${geoNamesUsername}`,
         response = this.response;
         // socket = this.socket;
+=======
+    geoNamesUsername = process.env.GOOGLE_TRENDS_USERNAME || 'hamidzr';
+
+TrendsRPC.byLocation = function (latitude, longitude) {
+    // get location data eg: country, language
+    // or we can use geocoder package
+    let url = `${countryInfoBaseUrl}radius=${50}&lat=${latitude}&lng=${longitude}&username=${geoNamesUsername}`,
+        response = this.response;
+>>>>>>> 6f50881710956f6767a43b5950ba5141d937cb01
 
     trace('Requesting country data from ', url);
     request(url, (err, res, body) => {
@@ -32,7 +42,10 @@ TrendsRPC.byLocation = function (latitude, longitude) {
         let countryInfo = JSON.parse(body);
         trace('detected country: ', countryInfo.countryName, countryInfo, 'long', longitude, 'lat', latitude);
         if (typeof countryInfo.countryCode != 'undefined') {
+<<<<<<< HEAD
             // QUESTION this.byCountryCode?
+=======
+>>>>>>> 6f50881710956f6767a43b5950ba5141d937cb01
             // Improve: google does not use official country codes for trends see VN vs VE
             TrendsRPC.byCountryCode(countryInfo.countryCode);
         } else {
@@ -48,6 +61,10 @@ TrendsRPC.byCountryCode = function (countryCode) {
     let response = this.response;
 
     // assumption: first callback is called when there is nochaed value for the id
+<<<<<<< HEAD
+=======
+    countryCode = countryCode.toUpperCase();
+>>>>>>> 6f50881710956f6767a43b5950ba5141d937cb01
     cache.wrap(countryCode, cacheCallback => {
         // Get the trends -> not in cache!
         trace('this request is not cached, requesting googleTrends for : ', countryCode);
@@ -63,6 +80,7 @@ TrendsRPC.byCountryCode = function (countryCode) {
             })
             .then((translatedArr) => {
                 let trendsTexts = translatedArr.map(val => val.text);
+<<<<<<< HEAD
                 // response.json(trendsTexts);
                 return cacheCallback(null, trendsTexts);
             })
@@ -70,6 +88,12 @@ TrendsRPC.byCountryCode = function (countryCode) {
             .catch((err) => {
                 error(err);
                 showError(`No trends available for ${countryCode}`, response);
+=======
+                return cacheCallback(null, trendsTexts);
+            })
+            .catch((err) => {
+                error(err);
+>>>>>>> 6f50881710956f6767a43b5950ba5141d937cb01
                 return cacheCallback(null, `No trends available for ${countryCode}`);
             });
     }, (err, results) => {
@@ -86,4 +110,8 @@ function showError(err, response) {
     response.json(err);
 }
 
+<<<<<<< HEAD
 module.exports = TrendsRPC;
+=======
+module.exports = TrendsRPC;
+>>>>>>> 6f50881710956f6767a43b5950ba5141d937cb01
