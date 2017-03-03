@@ -58,24 +58,26 @@ UndoManager.Invert.deleteMessageType = function() {
 SnapActions.serializer = new NetsBloxSerializer();
 SnapActions.__sessionId = Date.now();
 SnapActions.enableCollaboration = function() {};
+ActionManager.prototype.disableCollaboration = function() {
+    var msg = {
+        type: 'new-session'
+    };
+
+    if (this.isCollaborating()) {
+        this._ws.send(JSON.stringify(msg));
+    }
+};
 
 // Recording user actions
-SnapActions.send = function(json) {
+SnapActions.send = function() {
     var socket = this.ide().sockets,
-        msg = {},
         result;
 
     this._ws = socket.websocket;
     result = ActionManager.prototype.send.apply(this, arguments);
-
     this.recordActionNB(result);
 
     return result;
-};
-
-SnapActions.onMessage = function(msg) {
-    console.log('msg:', msg);
-    return ActionManager.prototype.onMessage.call(this, msg);
 };
 
 SnapActions.recordActionNB = function(action) {
