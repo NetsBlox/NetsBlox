@@ -80,6 +80,13 @@ SnapActions.send = function() {
     return result;
 };
 
+SnapActions.onMessage = function() {
+    ActionManager.prototype.onMessage.apply(this, arguments);
+    if (location.hash.indexOf('collaborate') !== -1) {
+        location.hash = '';
+    }
+};
+
 SnapActions.recordActionNB = function(action) {
     var socket = this.ide().sockets,
         msg = {};
