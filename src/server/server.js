@@ -80,7 +80,7 @@ Server.prototype.start = function(done) {
     var opts = {};
     done = done || Utils.nop;
 
-    opts.msgFilter = msg => !msg.netsblox;
+    opts.msgFilter = msg => !msg.namespace;
 
     return this.storage.connect()
         .then(() => {

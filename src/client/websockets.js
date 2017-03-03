@@ -193,7 +193,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
         var msg = JSON.parse(rawMsg.data),
             type = msg.type;
 
-        if (msg.netsblox) {
+        if (msg.namespace === 'netsblox') {
             if (WebSocketManager.MessageHandlers[type]) {
                 WebSocketManager.MessageHandlers[type].call(self, msg);
             } else {
@@ -230,7 +230,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
 WebSocketManager.prototype.sendMessage = function(message) {
     var state = this.websocket.readyState;
-    message.netsblox = true;
+    message.namespace = 'netsblox';
     message = this.serializeMessage(message);
     if (state === this.websocket.OPEN) {
         this.websocket.send(message);

@@ -100,7 +100,7 @@ class NetsBloxSocket {
                 type = msg.type;
 
             // check the namespace
-            if (!msg.netsblox) return;
+            if (msg.namespace !== 'netsblox') return;
 
             this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message`);
             if (NetsBloxSocket.MessageHandlers[type]) {
@@ -205,7 +205,7 @@ class NetsBloxSocket {
 
     send (msg) {
         // Set the defaults
-        msg.netsblox = true;
+        msg.namespace = 'netsblox';
         msg.type = msg.type || 'message';
         if (msg.type === 'message') {
             msg.dstId = msg.dstId || Constants.EVERYONE;
