@@ -1927,8 +1927,6 @@ NetsBloxMorph.prototype.manageCollaborators = function () {
         SnapActions.enableCollaboration();
     }
 
-    // TODO: Provide an interface for inviting/removing collaborators
-    // The owner is probably the only person to invite people?
     SnapCloud.getCollaboratorList(
         function(friends) {
             friends.sort(function(a, b) {

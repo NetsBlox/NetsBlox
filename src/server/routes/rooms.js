@@ -44,8 +44,6 @@ module.exports = [
                 id;
 
             log(`session for ${socketId} is ${sessionId}`);
-            console.log('sessions', Object.keys(Sessions._sessions));
-            console.log('sockets', Object.keys(Sessions._sockets));
             friends.forEach(socket => {
                 id = socket.collaborationId();
                 log(`session for ${id} is ${Sessions.sessionId(id)}`);
@@ -462,7 +460,7 @@ function acceptInvitation (username, id, response, socketId, callback) {
     }
 
     log(`${username} ${response ? 'accepted' : 'denied'} ` +
-        `invitation for ${invite.role} at ${invite.room}`);
+        `invitation (${id}) for ${invite.role} at ${invite.room}`);
 
     delete invites[id];
 
@@ -472,7 +470,7 @@ function acceptInvitation (username, id, response, socketId, callback) {
             project;
 
         if (!room) {
-            warn(`room no longer exists "${invite.room}`);
+            warn(`room no longer exists "${invite.room} ${JSON.stringify(invites)}`);
             return callback('ERROR: project is no longer open');
         }
 
