@@ -68,13 +68,25 @@ SnapActions.send = function(json) {
     this._ws = socket.websocket;
     result = ActionManager.prototype.send.apply(this, arguments);
 
+    this.recordActionNB(result);
+
+    return result;
+};
+
+SnapActions.onMessage = function(msg) {
+    console.log('msg:', msg);
+    return ActionManager.prototype.onMessage.call(this, msg);
+};
+
+SnapActions.recordActionNB = function(action) {
+    var socket = this.ide().sockets,
+        msg = {};
+
     // Record the action
     msg.type = 'record-action';
     msg.sessionId = this.__sessionId;
-    msg.action = json;
+    msg.action = action;
     socket.sendMessage(msg);
-
-    return result;
 };
 
 SnapActions.loadProject = function() {
@@ -84,7 +96,7 @@ SnapActions.loadProject = function() {
 
     // Send the project state
     event = ActionManager.prototype.loadProject.apply(this, arguments);
-    this.send(event);
+    this.recordActionNB(event);
 
     return event;
 };
