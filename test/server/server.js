@@ -136,10 +136,11 @@ describe('Server Tests', function() {
                     socket.on('message', function(msg) {
                         msg = JSON.parse(msg);
 
-                        if (msg.type === 'uuid') {
+                        if (msg.namespace === 'netsblox' && msg.type === 'uuid') {
                             uuid = msg.body;
                             // create a room
                             var res = {
+                                namespace: 'netsblox',
                                 type: 'create-room',
                                 room: ROOM_NAME,
                                 role: 's1'
@@ -193,14 +194,16 @@ describe('Server Tests', function() {
                         newSocket.on('message', function(msg) {
                             msg = JSON.parse(msg);
 
-                            if (msg.type === 'uuid') {
+                            if (msg.namespace === 'netsblox' && msg.type === 'uuid') {
                                 username2 = msg.body;
 
                                 socket.send(JSON.stringify({
+                                    namespace: 'netsblox',
                                     type: 'add-role',
                                     name: 's2'
                                 }));
                                 var res = {
+                                    namespace: 'netsblox',
                                     type: 'join-room',
                                     room: ROOM_NAME,
                                     owner: uuid,

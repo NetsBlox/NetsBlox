@@ -14,6 +14,7 @@ var counter = 0,
         'RoomUuid'
     ],
     R = require('ramda'),
+    Sessions = require('snap-collaboration').sessions,
     parseXml = require('xml2js').parseString,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
@@ -59,12 +60,28 @@ class NetsBloxSocket {
         this._initialize();
 
         // Provide a uuid
-        this.send({type: 'uuid', body: this.uuid});
+        this.send({
+            type: 'uuid',
+            body: this.uuid
+        });
         this.onclose = [];
 
         this._logger.trace('created');
     }
 
+
+    collaborationId () {
+        return this._socket.id;
+    }
+
+    leaveSession () {
+        Sessions.remove(this._socket);
+        return Sessions.newSession(this._socket);
+    }
+
+    getSessionId () {
+        return Sessions.sessionId(this.collaborationId());
+    }
 
     hasRoom (silent) {
         if (!this._room && !silent) {
@@ -81,6 +98,9 @@ class NetsBloxSocket {
         this._socket.on('message', data => {
             var msg = JSON.parse(data),
                 type = msg.type;
+
+            // check the namespace
+            if (msg.namespace !== 'netsblox') return;
 
             this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message`);
             if (NetsBloxSocket.MessageHandlers[type]) {
@@ -185,6 +205,7 @@ class NetsBloxSocket {
 
     send (msg) {
         // Set the defaults
+        msg.namespace = 'netsblox';
         msg.type = msg.type || 'message';
         if (msg.type === 'message') {
             msg.dstId = msg.dstId || Constants.EVERYONE;

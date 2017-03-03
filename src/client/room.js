@@ -408,6 +408,9 @@ RoomMorph.prototype.inviteUser = function (role) {
         callback;
 
     callback = function(friends) {
+        friends = friends.map(function(friend) {
+            return friend.username;
+        });
         friends.push('myself');
         myself._inviteFriendDialog(role, friends);
     };
@@ -1199,4 +1202,101 @@ UserDialogMorph.prototype.popUp = function(wrrld) {
         );
         this.filterField.edit();
     }
+};
+
+// CollaboratorDialogMorph ////////////////////////////////////////////////////
+
+// CollaboratorDialogMorph inherits from DialogBoxMorph:
+
+CollaboratorDialogMorph.prototype = new UserDialogMorph();
+CollaboratorDialogMorph.prototype.constructor = CollaboratorDialogMorph;
+CollaboratorDialogMorph.uber = UserDialogMorph.prototype;
+
+// CollaboratorDialogMorph instance creation:
+
+function CollaboratorDialogMorph(target, action, users) {
+    this.init(target, action, users);
+}
+
+CollaboratorDialogMorph.prototype.buildContents = function() {
+    var myself = this;
+
+    this.addBody(new Morph());
+    this.body.color = this.color;
+
+    this.buildFilterField();
+
+    this.listField = new ListMorph(
+        this.userList,
+        this.userList.length > 0 ?
+                function (element) {
+                    return element.username || element;
+                } : null,
+        [ // format: display shared project names bold
+            [
+                'bold',
+                function (proj) {return proj.collaborating; }
+            ]
+        ]//,
+        //function () {myself.ok(); }
+    );
+
+    this.listField.action = function (item) {
+        if (item === undefined) {return; }
+        if (item.collaborating) {
+            myself.collaborateButton.hide();
+            myself.uncollaborateButton.show();
+        } else {
+            myself.uncollaborateButton.hide();
+            myself.collaborateButton.show();
+        }
+        myself.buttons.fixLayout();
+        myself.fixLayout();
+        myself.edit();
+    };
+
+    this.filterField.reactToKeystroke = function () {
+        var text = this.getValue();
+
+        myself.listField.elements = 
+            myself.userList.filter(function (user) {
+                return user.username.toLowerCase().indexOf(text.toLowerCase()) > -1;
+            });
+
+        if (myself.listField.elements.length === 0) {
+            myself.listField.elements.push('(no matches)');
+        }
+
+        myself.listField.buildListContents();
+        myself.fixListFieldItemColors();
+        myself.listField.adjustScrollBars();
+        myself.listField.scrollY(myself.listField.top());
+        myself.fixLayout();
+    };
+
+    this.fixListFieldItemColors();
+    this.listField.fixLayout = nop;
+    this.listField.edge = InputFieldMorph.prototype.edge;
+    this.listField.fontSize = InputFieldMorph.prototype.fontSize;
+    this.listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    this.listField.contrast = InputFieldMorph.prototype.contrast;
+    this.listField.drawNew = InputFieldMorph.prototype.drawNew;
+    this.listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+
+    this.body.add(this.listField);
+
+    // add buttons
+    this.labelString = 'Invite a Friend to Collaborate';
+    this.createLabel();
+    this.uncollaborateButton = this.addButton(function() {
+        SnapCloud.evictCollaborator(myself.listField.selected.value);
+        myself.destroy();
+    }, 'Remove');
+    this.collaborateButton = this.addButton('ok', 'Invite');
+    this.uncollaborateButton.hide();
+    this.collaborateButton.hide();
+    this.addButton('cancel', 'Cancel');
+
+    this.setHeight(300);
+    this.fixLayout();
 };
