@@ -994,6 +994,10 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
         return this.drawSymbolStepForward(canvas, aColor);
     case 'stepBackward':
         return this.drawSymbolStepBackward(canvas, aColor);
+    case 'jumpForward':
+        return this.drawSymbolJumpForward(canvas, aColor);
+    case 'jumpBackward':
+        return this.drawSymbolJumpBackward(canvas, aColor);
     case 'gears':
         return this.drawSymbolGears(canvas, aColor);
     case 'file':

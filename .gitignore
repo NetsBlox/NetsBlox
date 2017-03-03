@@ -7,3 +7,4 @@ coverage/
 .env
 src/client/netsblox-build.js
 src/client/dist/
+.idea/
