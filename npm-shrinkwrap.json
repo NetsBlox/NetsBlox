@@ -1441,27 +1441,10 @@
           "from": "configstore@>=2.0.0 <3.0.0",
           "resolved": "https://registry.npmjs.org/configstore/-/configstore-2.1.0.tgz"
         },
-        "got": {
-          "version": "6.7.1",
-          "from": "got@>=6.3.0 <7.0.0",
-          "resolved": "https://registry.npmjs.org/got/-/got-6.7.1.tgz"
-        },
-        "timed-out": {
-          "version": "4.0.1",
-          "from": "timed-out@>=4.0.0 <5.0.0",
-          "resolved": "https://registry.npmjs.org/timed-out/-/timed-out-4.0.1.tgz"
-        }
-      }
-    },
-    "google-translate-token": {
-      "version": "1.0.0",
-      "from": "google-translate-token@latest",
-      "resolved": "https://registry.npmjs.org/google-translate-token/-/google-translate-token-1.0.0.tgz",
-      "dependencies": {
-        "configstore": {
-          "version": "2.1.0",
-          "from": "configstore@>=2.0.0 <3.0.0",
-          "resolved": "https://registry.npmjs.org/configstore/-/configstore-2.1.0.tgz"
+        "google-translate-token": {
+          "version": "1.0.0",
+          "from": "google-translate-token@latest",
+          "resolved": "https://registry.npmjs.org/google-translate-token/-/google-translate-token-1.0.0.tgz"
         },
         "got": {
           "version": "6.7.1",
@@ -4481,6 +4464,11 @@
       "from": "smtp-connection@2.12.0",
       "resolved": "https://registry.npmjs.org/smtp-connection/-/smtp-connection-2.12.0.tgz"
     },
+    "snap-collaboration": {
+      "version": "1.1.0",
+      "from": "snap-collaboration@>=1.1.0 <2.0.0",
+      "resolved": "https://registry.npmjs.org/snap-collaboration/-/snap-collaboration-1.1.0.tgz"
+    },
     "sntp": {
       "version": "0.2.4",
       "from": "sntp@>=0.2.0 <0.3.0",
@@ -5162,6 +5150,11 @@
             }
           }
         },
+        "vantage-auth-basic": {
+          "version": "1.0.0",
+          "from": "vantage-auth-basic@latest",
+          "resolved": "https://registry.npmjs.org/vantage-auth-basic/-/vantage-auth-basic-1.0.0.tgz"
+        },
         "ws": {
           "version": "1.0.1",
           "from": "ws@1.0.1",
@@ -5171,18 +5164,6 @@
           "version": "1.5.1",
           "from": "xmlhttprequest-ssl@1.5.1",
           "resolved": "https://registry.npmjs.org/xmlhttprequest-ssl/-/xmlhttprequest-ssl-1.5.1.tgz"
-        }
-      }
-    },
-    "vantage-auth-basic": {
-      "version": "1.0.0",
-      "from": "vantage-auth-basic@latest",
-      "resolved": "https://registry.npmjs.org/vantage-auth-basic/-/vantage-auth-basic-1.0.0.tgz",
-      "dependencies": {
-        "lodash": {
-          "version": "3.10.1",
-          "from": "lodash@>=3.10.0 <4.0.0",
-          "resolved": "https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz"
         }
       }
     },

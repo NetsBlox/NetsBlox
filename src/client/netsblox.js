@@ -3,7 +3,10 @@
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
    NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo,
-   ScrollFrameMorph, LibraryImportDialogMorph*/
+   ScrollFrameMorph, SnapUndo, LibraryImportDialogMorph, CollaboratorDialogMorph,
+   BooleanSlotMorph, isRetinaSupported, isRetinaEnabled, useBlurredShadows,
+   BlockMorph, SyntaxElementMorph, ScriptsMorph, InputSlotDialogMorph, ArgMorph,
+   BlockLabelPlaceHolderMorph, TableMorph*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -56,12 +59,555 @@ NetsBloxMorph.prototype.clearProject = function () {
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
-
-    SnapActions.disableCollaboration();
     SnapActions.loadProject(this);
-    SnapUndo.reset();
 };
 
+NetsBloxMorph.prototype.cloudMenu = function () {
+    var menu,
+        myself = this,
+        world = this.world(),
+        pos = this.controlBar.cloudButton.bottomLeft(),
+        shiftClicked = (world.currentKey === 16);
+
+    menu = new MenuMorph(this);
+    if (shiftClicked) {
+        menu.addItem(
+            'url...',
+            'setCloudURL',
+            null,
+            new Color(100, 0, 0)
+        );
+        menu.addLine();
+    }
+    if (!SnapCloud.username) {
+        menu.addItem(
+            'Login...',
+            'initializeCloud'
+        );
+        menu.addItem(
+            'Signup...',
+            'createCloudAccount'
+        );
+        menu.addItem(
+            'Reset Password...',
+            'resetCloudPassword'
+        );
+    } else {
+        menu.addItem(
+            localize('Logout') + ' ' + SnapCloud.username,
+            'logout'
+        );
+        menu.addItem(
+            'Change Password...',
+            'changeCloudPassword'
+        );
+        if (SnapActions.supportsCollaboration !== false) {
+            menu.addLine();
+            menu.addItem(
+                'Collaborators...',
+                'manageCollaborators'
+            );
+        }
+    }
+    if (shiftClicked) {
+        menu.addLine();
+        menu.addItem(
+            'export project media only...',
+            function () {
+                if (myself.projectName) {
+                    myself.exportProjectMedia(myself.projectName);
+                } else {
+                    myself.prompt('Export Project As...', function (name) {
+                        myself.exportProjectMedia(name);
+                    }, null, 'exportProject');
+                }
+            },
+            null,
+            this.hasChangedMedia ? new Color(100, 0, 0) : new Color(0, 100, 0)
+        );
+        menu.addItem(
+            'export project without media...',
+            function () {
+                if (myself.projectName) {
+                    myself.exportProjectNoMedia(myself.projectName);
+                } else {
+                    myself.prompt('Export Project As...', function (name) {
+                        myself.exportProjectNoMedia(name);
+                    }, null, 'exportProject');
+                }
+            },
+            null,
+            new Color(100, 0, 0)
+        );
+        menu.addItem(
+            'export project as cloud data...',
+            function () {
+                if (myself.projectName) {
+                    myself.exportProjectAsCloudData(myself.projectName);
+                } else {
+                    myself.prompt('Export Project As...', function (name) {
+                        myself.exportProjectAsCloudData(name);
+                    }, null, 'exportProject');
+                }
+            },
+            null,
+            new Color(100, 0, 0)
+        );
+        menu.addLine();
+        menu.addItem(
+            'open shared project from cloud...',
+            function () {
+                myself.prompt('Author name…', function (usr) {
+                    myself.prompt('Project name...', function (prj) {
+                        var id = 'Username=' +
+                            encodeURIComponent(usr.toLowerCase()) +
+                            '&ProjectName=' +
+                            encodeURIComponent(prj);
+                        myself.showMessage(
+                            'Fetching project\nfrom the cloud...'
+                        );
+                        SnapCloud.getPublicProject(
+                            id,
+                            function (projectData) {
+                                var msg;
+                                if (!Process.prototype.isCatchingErrors) {
+                                    window.open(
+                                        'data:text/xml,' + projectData
+                                    );
+                                }
+                                myself.nextSteps([
+                                    function () {
+                                        msg = myself.showMessage(
+                                            'Opening project...'
+                                        );
+                                    },
+                                    function () {nop(); }, // yield (Chrome)
+                                    function () {
+                                        myself.rawOpenCloudDataString(
+                                            projectData
+                                        );
+                                    },
+                                    function () {
+                                        msg.destroy();
+                                    }
+                                ]);
+                            },
+                            myself.cloudError()
+                        );
+
+                    }, null, 'project');
+                }, null, 'project');
+            },
+            null,
+            new Color(100, 0, 0)
+        );
+    }
+    menu.popup(world, pos);
+};
+
+NetsBloxMorph.prototype.settingsMenu = function () {
+    var menu,
+        stage = this.stage,
+        world = this.world(),
+        myself = this,
+        pos = this.controlBar.settingsButton.bottomLeft(),
+        shiftClicked = (world.currentKey === 16);
+
+    function addPreference(label, toggle, test, onHint, offHint, hide) {
+        var on = '\u2611 ',
+            off = '\u2610 ';
+        if (!hide || shiftClicked) {
+            menu.addItem(
+                (test ? on : off) + localize(label),
+                toggle,
+                test ? onHint : offHint,
+                hide ? new Color(100, 0, 0) : null
+            );
+        }
+    }
+
+    menu = new MenuMorph(this);
+    menu.addItem('Language...', 'languageMenu');
+    menu.addItem(
+        'Zoom blocks...',
+        'userSetBlocksScale'
+    );
+    menu.addItem(
+        'Stage size...',
+        'userSetStageSize'
+    );
+    if (shiftClicked) {
+        menu.addItem(
+            'Dragging threshold...',
+            'userSetDragThreshold',
+            'specify the distance the hand has to move\n' +
+                'before it picks up an object',
+            new Color(100, 0, 0)
+        );
+    }
+    menu.addLine();
+    /*
+    addPreference(
+        'JavaScript',
+        function () {
+            Process.prototype.enableJS = !Process.prototype.enableJS;
+            myself.currentSprite.blocksCache.operators = null;
+            myself.currentSprite.paletteCache.operators = null;
+            myself.refreshPalette();
+        },
+        Process.prototype.enableJS,
+        'uncheck to disable support for\nnative JavaScript functions',
+        'check to support\nnative JavaScript functions'
+    );
+    */
+    if (isRetinaSupported()) {
+        addPreference(
+            'Retina display support',
+            'toggleRetina',
+            isRetinaEnabled(),
+            'uncheck for lower resolution,\nsaves computing resources',
+            'check for higher resolution,\nuses more computing resources'
+        );
+    }
+    addPreference(
+        'Blurred shadows',
+        'toggleBlurredShadows',
+        useBlurredShadows,
+        'uncheck to use solid drop\nshadows and highlights',
+        'check to use blurred drop\nshadows and highlights',
+        true
+    );
+    addPreference(
+        'Zebra coloring',
+        'toggleZebraColoring',
+        BlockMorph.prototype.zebraContrast,
+        'uncheck to disable alternating\ncolors for nested block',
+        'check to enable alternating\ncolors for nested blocks',
+        true
+    );
+    addPreference(
+        'Dynamic input labels',
+        'toggleDynamicInputLabels',
+        SyntaxElementMorph.prototype.dynamicInputLabels,
+        'uncheck to disable dynamic\nlabels for variadic inputs',
+        'check to enable dynamic\nlabels for variadic inputs',
+        true
+    );
+    addPreference(
+        'Prefer empty slot drops',
+        'togglePreferEmptySlotDrops',
+        ScriptsMorph.prototype.isPreferringEmptySlots,
+        'uncheck to allow dropped\nreporters to kick out others',
+        'settings menu prefer empty slots hint',
+        true
+    );
+    addPreference(
+        'Long form input dialog',
+        'toggleLongFormInputDialog',
+        InputSlotDialogMorph.prototype.isLaunchingExpanded,
+        'uncheck to use the input\ndialog in short form',
+        'check to always show slot\ntypes in the input dialog'
+    );
+    addPreference(
+        'Plain prototype labels',
+        'togglePlainPrototypeLabels',
+        BlockLabelPlaceHolderMorph.prototype.plainLabel,
+        'uncheck to always show (+) symbols\nin block prototype labels',
+        'check to hide (+) symbols\nin block prototype labels'
+    );
+    addPreference(
+        'Virtual keyboard',
+        'toggleVirtualKeyboard',
+        MorphicPreferences.useVirtualKeyboard,
+        'uncheck to disable\nvirtual keyboard support\nfor mobile devices',
+        'check to enable\nvirtual keyboard support\nfor mobile devices',
+        true
+    );
+    addPreference(
+        'Input sliders',
+        'toggleInputSliders',
+        MorphicPreferences.useSliderForInput,
+        'uncheck to disable\ninput sliders for\nentry fields',
+        'check to enable\ninput sliders for\nentry fields'
+    );
+    if (MorphicPreferences.useSliderForInput) {
+        addPreference(
+            'Execute on slider change',
+            'toggleSliderExecute',
+            ArgMorph.prototype.executeOnSliderEdit,
+            'uncheck to suppress\nrunning scripts\nwhen moving the slider',
+            'check to run\nthe edited script\nwhen moving the slider'
+        );
+    }
+    addPreference(
+        'Clicking sound',
+        function () {
+            BlockMorph.prototype.toggleSnapSound();
+            if (BlockMorph.prototype.snapSound) {
+                myself.saveSetting('click', true);
+            } else {
+                myself.removeSetting('click');
+            }
+        },
+        BlockMorph.prototype.snapSound,
+        'uncheck to turn\nblock clicking\nsound off',
+        'check to turn\nblock clicking\nsound on'
+    );
+    addPreference(
+        'Animations',
+        function () {myself.isAnimating = !myself.isAnimating; },
+        myself.isAnimating,
+        'uncheck to disable\nIDE animations',
+        'check to enable\nIDE animations',
+        true
+    );
+    addPreference(
+        'Turbo mode',
+        'toggleFastTracking',
+        this.stage.isFastTracked,
+        'uncheck to run scripts\nat normal speed',
+        'check to prioritize\nscript execution'
+    );
+    addPreference(
+        'Cache Inputs',
+        function () {
+            BlockMorph.prototype.isCachingInputs =
+                !BlockMorph.prototype.isCachingInputs;
+        },
+        BlockMorph.prototype.isCachingInputs,
+        'uncheck to stop caching\ninputs (for debugging the evaluator)',
+        'check to cache inputs\nboosts recursion',
+        true
+    );
+    addPreference(
+        'Rasterize SVGs',
+        function () {
+            MorphicPreferences.rasterizeSVGs =
+                !MorphicPreferences.rasterizeSVGs;
+        },
+        MorphicPreferences.rasterizeSVGs,
+        'uncheck for smooth\nscaling of vector costumes',
+        'check to rasterize\nSVGs on import',
+        true
+    );
+    addPreference(
+        'Flat design',
+        function () {
+            if (MorphicPreferences.isFlat) {
+                return myself.defaultDesign();
+            }
+            myself.flatDesign();
+        },
+        MorphicPreferences.isFlat,
+        'uncheck for default\nGUI design',
+        'check for alternative\nGUI design',
+        false
+    );
+    addPreference(
+        'Nested auto-wrapping',
+        function () {
+            ScriptsMorph.prototype.enableNestedAutoWrapping =
+                !ScriptsMorph.prototype.enableNestedAutoWrapping;
+            if (ScriptsMorph.prototype.enableNestedAutoWrapping) {
+                myself.removeSetting('autowrapping');
+            } else {
+                myself.saveSetting('autowrapping', false);
+            }
+        },
+        ScriptsMorph.prototype.enableNestedAutoWrapping,
+        'uncheck to confine auto-wrapping\nto top-level block stacks',
+        'check to enable auto-wrapping\ninside nested block stacks',
+        false
+    );
+    addPreference(
+        'Project URLs',
+        function () {
+            myself.projectsInURLs = !myself.projectsInURLs;
+            if (myself.projectsInURLs) {
+                myself.saveSetting('longurls', true);
+            } else {
+                myself.removeSetting('longurls');
+            }
+        },
+        myself.projectsInURLs,
+        'uncheck to disable\nproject data in URLs',
+        'check to enable\nproject data in URLs',
+        true
+    );
+    addPreference(
+        'Sprite Nesting',
+        function () {
+            SpriteMorph.prototype.enableNesting =
+                !SpriteMorph.prototype.enableNesting;
+        },
+        SpriteMorph.prototype.enableNesting,
+        'uncheck to disable\nsprite composition',
+        'check to enable\nsprite composition',
+        true
+    );
+    addPreference(
+        'First-Class Sprites',
+        function () {
+            SpriteMorph.prototype.enableFirstClass =
+                !SpriteMorph.prototype.enableFirstClass;
+            myself.currentSprite.blocksCache.sensing = null;
+            myself.currentSprite.paletteCache.sensing = null;
+            myself.refreshPalette();
+        },
+        SpriteMorph.prototype.enableFirstClass,
+        'uncheck to disable support\nfor first-class sprites',
+        'check to enable support\n for first-class sprite',
+        true
+    );
+    addPreference(
+        'Keyboard Editing',
+        function () {
+            ScriptsMorph.prototype.enableKeyboard =
+                !ScriptsMorph.prototype.enableKeyboard;
+            if (ScriptsMorph.prototype.enableKeyboard) {
+                myself.removeSetting('keyboard');
+            } else {
+                myself.saveSetting('keyboard', false);
+            }
+        },
+        ScriptsMorph.prototype.enableKeyboard,
+        'uncheck to disable\nkeyboard editing support',
+        'check to enable\nkeyboard editing support',
+        false
+    );
+    addPreference(
+        'Table support',
+        function () {
+            List.prototype.enableTables =
+                !List.prototype.enableTables;
+            if (List.prototype.enableTables) {
+                myself.removeSetting('tables');
+            } else {
+                myself.saveSetting('tables', false);
+            }
+        },
+        List.prototype.enableTables,
+        'uncheck to disable\nmulti-column list views',
+        'check for multi-column\nlist view support',
+        false
+    );
+    if (List.prototype.enableTables) {
+        addPreference(
+            'Table lines',
+            function () {
+                TableMorph.prototype.highContrast =
+                    !TableMorph.prototype.highContrast;
+                if (TableMorph.prototype.highContrast) {
+                    myself.saveSetting('tableLines', true);
+                } else {
+                    myself.removeSetting('tableLines');
+                }
+            },
+            TableMorph.prototype.highContrast,
+            'uncheck for less contrast\nmulti-column list views',
+            'check for higher contrast\ntable views',
+            false
+        );
+    }
+    addPreference(
+        'Live coding support',
+        function () {
+            Process.prototype.enableLiveCoding =
+                !Process.prototype.enableLiveCoding;
+        },
+        Process.prototype.enableLiveCoding,
+        'EXPERIMENTAL! uncheck to disable live\ncustom control structures',
+        'EXPERIMENTAL! check to enable\n live custom control structures',
+        true
+    );
+    addPreference(
+        'Visible stepping',
+        'toggleSingleStepping',
+        Process.prototype.enableSingleStepping,
+        'uncheck to turn off\nvisible stepping',
+        'check to turn on\n visible stepping (slow)',
+        false
+    );
+    // Netsblox addition: start
+    // (Removed the collaboration option)
+    // Netsblox addition: end
+    menu.addLine(); // everything below this line is stored in the project
+    addPreference(
+        'Thread safe scripts',
+        function () {stage.isThreadSafe = !stage.isThreadSafe; },
+        this.stage.isThreadSafe,
+        'uncheck to allow\nscript reentrance',
+        'check to disallow\nscript reentrance'
+    );
+    addPreference(
+        'Prefer smooth animations',
+        'toggleVariableFrameRate',
+        StageMorph.prototype.frameRate,
+        'uncheck for greater speed\nat variable frame rates',
+        'check for smooth, predictable\nanimations across computers',
+        true
+    );
+    addPreference(
+        'Flat line ends',
+        function () {
+            SpriteMorph.prototype.useFlatLineEnds =
+                !SpriteMorph.prototype.useFlatLineEnds;
+        },
+        SpriteMorph.prototype.useFlatLineEnds,
+        'uncheck for round ends of lines',
+        'check for flat ends of lines'
+    );
+    addPreference(
+        'Ternary Boolean slots',
+        function () {
+            BooleanSlotMorph.prototype.isTernary =
+                !BooleanSlotMorph.prototype.isTernary;
+        },
+        BooleanSlotMorph.prototype.isTernary,
+        'uncheck to only\ntoggle true / false\noutside of rings',
+        'check to enable toggling\nBoolean slots to empty'
+    );
+    addPreference(
+        'Codification support',
+        function () {
+            StageMorph.prototype.enableCodeMapping =
+                !StageMorph.prototype.enableCodeMapping;
+            myself.currentSprite.blocksCache.variables = null;
+            myself.currentSprite.paletteCache.variables = null;
+            myself.refreshPalette();
+        },
+        StageMorph.prototype.enableCodeMapping,
+        'uncheck to disable\nblock to text mapping features',
+        'check for block\nto text mapping features',
+        false
+    );
+    addPreference(
+        'Inheritance support',
+        function () {
+            StageMorph.prototype.enableInheritance =
+                !StageMorph.prototype.enableInheritance;
+            myself.currentSprite.blocksCache.variables = null;
+            myself.currentSprite.paletteCache.variables = null;
+            myself.refreshPalette();
+        },
+        StageMorph.prototype.enableInheritance,
+        'uncheck to disable\nsprite inheritance features',
+        'check for sprite\ninheritance features',
+        false
+    );
+    addPreference(
+        'Persist linked sublist IDs',
+        function () {
+            StageMorph.prototype.enableSublistIDs =
+                !StageMorph.prototype.enableSublistIDs;
+        },
+        StageMorph.prototype.enableSublistIDs,
+        'uncheck to disable\nsaving linked sublist identities',
+        'check to enable\nsaving linked sublist identities',
+        true
+    );
+    menu.popup(world, pos);
+};
 
 NetsBloxMorph.prototype.newProject = function (projectName) {
     this.clearProject();
@@ -1367,4 +1913,92 @@ NetsBloxMorph.prototype.loadBugReport = function () {
     document.body.appendChild(inp);
     myself.filePicker = inp;
     inp.click();
+};
+
+// Collaboration
+NetsBloxMorph.prototype.manageCollaborators = function () {
+    var myself = this,
+        ownerId = this.room.ownerId,
+        name = this.room.name,
+        role = this.projectName,
+        socketId = this.sockets.uuid;
+
+    if (!SnapActions.isCollaborating()) {
+        SnapActions.enableCollaboration();
+    }
+
+    SnapCloud.getCollaboratorList(
+        function(friends) {
+            friends.sort(function(a, b) {
+                return a.username.toLowerCase() < b.username.toLowerCase() ? -1 : 1;
+            });
+            new CollaboratorDialogMorph(
+                myself,
+                function(user) {
+                    if (user) {
+                        SnapCloud.inviteToCollaborate(socketId, user.username, ownerId, name, role);
+                    }
+                },
+                friends,
+                'Invite a Friend to Collaborate'
+            ).popUp();
+        },
+        function (err, lbl) {
+            myself.cloudError().call(null, err, lbl);
+        }
+    );
+};
+
+NetsBloxMorph.prototype.promptCollabInvite = function (params) {  // id, room, roomName, role
+    // Create a confirm dialog about joining the group
+    var myself = this,
+        // unpack the params
+        id = params.id,
+        roomName = params.roomName,
+
+        action = this.collabResponse.bind(this, id, true),
+        dialog = new DialogBoxMorph(null, action),
+        enabled = false,
+        msg;
+
+    if (!SnapActions.isCollaborating()) {
+        SnapActions.enableCollaboration();
+        enabled = true;
+    }
+
+    if (params.inviter === SnapCloud.username) {
+        msg = 'Would you like to collaborate at "' + roomName + '"?';
+    } else {
+        msg = params.inviter + ' has invited you to collaborate with\nhim/her at "' + roomName +
+            '"\nAccept?';
+    }
+
+    dialog.cancel = function() {
+        myself.collabResponse(id, false);
+        if (enabled) {
+            SnapActions.disableCollaboration();
+        }
+        this.destroy();
+    };
+
+    dialog.askYesNo(
+        'Collaboration Invitation',
+        localize(msg),
+        this.world()
+    );
+};
+
+NetsBloxMorph.prototype.collabResponse = function (id, response) {
+    var myself = this;
+
+    SnapCloud.collabResponse(
+        id,
+        response, 
+        function() {
+            myself.showMessage('Collaborating!', 2);
+        },
+        function(err){
+            myself.showMessage(err, 2);
+        }
+    );
 };
