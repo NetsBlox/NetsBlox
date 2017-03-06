@@ -361,6 +361,7 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
         StageMorph.prototype.dimensions.y =
             Math.max(+model.stage.attributes.height, 180);
     }
+    project.stage.id = model.stage.attributes.collabId || null;
     project.stage.setExtent(StageMorph.prototype.dimensions);
     SpriteMorph.prototype.useFlatLineEnds =
         model.stage.attributes.lines === 'flat';
