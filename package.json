@@ -60,6 +60,7 @@
     "request": "https://registry.npmjs.org/request/-/request-2.79.0.tgz",
     "request-promise": "https://registry.npmjs.org/request-promise/-/request-promise-4.1.1.tgz",
     "rimraf": "^2.4.3",
+    "snap-collaboration": "^1.1.0",
     "socket.io": "^1.3.5",
     "temp-units-conv": "^0.1.1",
     "vantage": "^1.5.1",

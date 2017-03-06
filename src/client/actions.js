@@ -6,6 +6,7 @@ SnapActions.addActions(
     'deleteMessageType'
 );
 
+ActionManager.URL = 'ws://' + window.location.host + '/collaboration';
 ActionManager.prototype._deleteMessageType = function(name) {
     var fields = this.ide().stage.messageTypes.getMsgType(name).fields;
     return [name, fields];
@@ -30,16 +31,6 @@ ActionManager.prototype.onDeleteMessageType = function(name) {
     this.completeAction();
 };
 
-UndoManager.Invert.addMessageType = function() {
-    return 'deleteMessageType';
-};
-
-UndoManager.Invert.deleteMessageType = function() {
-    return 'addMessageType';
-};
-
-SnapActions.supportsCollaboration = false;
-
 // HintInputSlotMorph support
 ActionManager.prototype._setField = function(field, value) {
     var fieldId = this.getId(field),
@@ -56,20 +47,54 @@ ActionManager.prototype._setField = function(field, value) {
     ];
 };
 
+UndoManager.Invert.addMessageType = function() {
+    return 'deleteMessageType';
+};
+
+UndoManager.Invert.deleteMessageType = function() {
+    return 'addMessageType';
+};
+
 SnapActions.serializer = new NetsBloxSerializer();
 SnapActions.__sessionId = Date.now();
+SnapActions.enableCollaboration = function() {};
+ActionManager.prototype.disableCollaboration = function() {
+    var msg = {
+        type: 'new-session'
+    };
+
+    if (this.isCollaborating()) {
+        this._ws.send(JSON.stringify(msg));
+    }
+};
 
 // Recording user actions
-SnapActions.send = function(json) {
+SnapActions.send = function() {
+    var socket = this.ide().sockets,
+        result;
+
+    this._ws = socket.websocket;
+    result = ActionManager.prototype.send.apply(this, arguments);
+    this.recordActionNB(result);
+
+    return result;
+};
+
+SnapActions.onMessage = function() {
+    ActionManager.prototype.onMessage.apply(this, arguments);
+    if (location.hash.indexOf('collaborate') !== -1) {
+        location.hash = '';
+    }
+};
+
+SnapActions.recordActionNB = function(action) {
     var socket = this.ide().sockets,
         msg = {};
 
-    json.id = json.id || this.lastSeen + 1;
-    this.lastSent = json.id;
-
+    // Record the action
     msg.type = 'record-action';
     msg.sessionId = this.__sessionId;
-    msg.action = json;
+    msg.action = action;
     socket.sendMessage(msg);
 };
 
@@ -80,7 +105,7 @@ SnapActions.loadProject = function() {
 
     // Send the project state
     event = ActionManager.prototype.loadProject.apply(this, arguments);
-    this.send(event);
+    this.recordActionNB(event);
 
     return event;
 };
