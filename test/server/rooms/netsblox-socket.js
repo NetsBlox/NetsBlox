@@ -1,12 +1,11 @@
-var ROOT_DIR = '../../../',
-    NBSocket = require(ROOT_DIR + 'src/server/rooms/netsblox-socket'),
-    Logger = require(ROOT_DIR + 'src/server/logger'),
-    Constants = require(ROOT_DIR + 'src/common/constants'),
-    assert = require('assert'),
-    logger = new Logger('netsblox-socket');
-
 describe('netsblox-socket', function() {
-    var socket;
+    var ROOT_DIR = '../../../',
+        NBSocket = require(ROOT_DIR + 'src/server/rooms/netsblox-socket'),
+        Logger = require(ROOT_DIR + 'src/server/logger'),
+        Constants = require(ROOT_DIR + 'src/common/constants'),
+        assert = require('assert'),
+        logger = new Logger('netsblox-socket'),
+        socket;
 
     describe('getNewName', function() {
 
