@@ -4,8 +4,6 @@
 'use strict';
 
 var debug = require('debug'),
-    // log = debug('netsblox:rpc:traffic:log'),
-    // error = debug('netsblox:rpc:traffic:error'),
     trace = debug('netsblox:rpc:traffic:trace'),
     API_KEY = process.env.BING_TRAFFIC_KEY,
     request = require('request'),
