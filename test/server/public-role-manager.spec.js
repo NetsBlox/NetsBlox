@@ -1,7 +1,7 @@
-var publicRoleManager = require('../../src/server/public-role-manager'),
-    assert = require('assert');
-
 describe('public-role-manager', function() {
+    var publicRoleManager = require('../../src/server/public-role-manager'),
+        assert = require('assert');
+
     beforeEach(() => {
         publicRoleManager.reset();
     });

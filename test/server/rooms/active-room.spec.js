@@ -1,4 +1,3 @@
-
 describe('active-room', function() {
     var ROOT_DIR = '../../../',
         _ = require('lodash'),

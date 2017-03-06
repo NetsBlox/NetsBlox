@@ -1,22 +1,21 @@
 /*globals describe,it,before,beforeEach,after*/
 'use strict';
 
-var supertest = require('supertest'),
-    assert = require('assert'),
-    port = 8493,
-    options = {
-        port: port,
-        vantage: false
-    },
-    api,
-    Server = require('../../src/server/server'),
-
-    basicRoutes = require('../../src/server/routes/basic-routes'),
-    userRoutes = require('../../src/server/routes/users');
-
-// TODO: Add API message
 describe('Server Tests', function() {
-    var username = 'test',
+    var supertest = require('supertest'),
+        assert = require('assert'),
+        port = 8493,
+        options = {
+            port: port,
+            vantage: false
+        },
+        api,
+        Server = require('../../src/server/server'),
+
+        basicRoutes = require('../../src/server/routes/basic-routes'),
+        userRoutes = require('../../src/server/routes/users'),
+
+        username = 'test',
         server;
 
     before(function(done) {
