@@ -3,6 +3,8 @@
 var Q = require('q'),
     exists = require('exists-file'),
     fs = require('fs'),
+    Logger = require('../server/logger'),
+    logger = new Logger('netsblox:storage:query'),
     UserActions = require('../server/storage/user-actions');
 
 var listSessions = (sessions, options) => {
@@ -65,6 +67,45 @@ var listSessions = (sessions, options) => {
     }
 };
 
+var getSessionHeader = options => {
+    if (options.long) {
+        return [
+            'sessionId\t',
+            'time',
+            'actions',
+            'username',
+            'projectId'
+        ].join('\t');
+    }
+};
+
+var getSessionConversionFn = options => {
+    return session => {
+        if (options.long) {
+            var length = session.actions.length,
+                last = session.actions[length-1],
+                duration,
+                username = last.username,
+                projectId = last.projectId;
+
+            var first = session.actions[0];
+
+            duration = last.action.time - first.action.time;
+
+            // duration, action counts, project name, username
+            return [
+                session.id,
+                duration,
+                length,
+                username,
+                projectId
+            ].join('\t');
+        }
+
+        return session.id;
+    };
+};
+
 var isInt = /^\d+$/;
 var printSessions = (ids, options) => {
     var lookupIds = [],
@@ -73,6 +114,7 @@ var printSessions = (ids, options) => {
     options = options || {};
     // Remove any parens'ed ids...
     ids = ids.filter(id => id[0] !== '(');
+
     lookupIds = ids
         .map((id, index) => [id, index])
         .filter(pair => isInt.test(pair[0]));
@@ -97,39 +139,43 @@ var printSessions = (ids, options) => {
 
     return getSessionIds
         .then(() => {
-            // TODO: Convert this to stream?
-            return Q.all(ids.map(id => UserActions.session(id)));
-        })
-        .then(sessions => {  // formatting..
-            // merge the sessions
-            var actions = sessions
-                .reduce((l1, l2) => l1.concat(l2), [])
-                .map(event => event.action);
-
-            if (options.json) {
-                return JSON.stringify(actions, null, 2);
-            } else {
-                return actions.map(action => {
-                    return [
-                        action.type,
-                        action.args.join(' ')
-                    ].join(' ');
-                }).join('\n');
-            }
-        })
-        .catch(err => console.err(err))
-        .then(output => {
-            if (options.export) {
-                fs.writeFileSync(options.export, output);
-                console.log('exported session to', options.export);
-            } else {
-                console.log(output);
-            }
+            return UserActions.sessions(ids)
+                .transform(session => catSession(session, options));
         });
+};
+
+var catSession = (session, options) => {
+    logger.trace('received session info for ', session.id);
+    // merge the sessions
+    var actions,
+        output;
+
+    actions = session.actions.map(event => event.action);
+
+    if (options.json) {
+        output = JSON.stringify(actions, null, 2);
+    } else {
+        output = actions.map(action => {
+            return [
+                action.type,
+                action.args.join(' ')
+            ].join(' ');
+        }).join('\n');
+    }
+
+    // print it!
+    if (options.export) {
+        fs.writeFileSync(options.export, output);
+        console.log('exported session to', options.export);
+    } else {
+        console.log(output);
+    }
 };
 
 module.exports = {
     listSessions: listSessions,
+    sessionPrintFn: getSessionConversionFn,
+    getSessionHeader: getSessionHeader,
     printSessions: printSessions
 };
 /* eslint-enable no-console*/

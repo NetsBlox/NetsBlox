@@ -3,7 +3,11 @@ var MongoClient = require('mongodb').MongoClient,
     RPCStore = require('../rpc/storage'),
     UserStore = require('./user-store'),
     RoomStore = require('./room-store'),
-    UserActions = require('./user-actions');
+    UserActions = require('./user-actions'),
+    connectOpts = {
+        keepAlive: 1,
+        connectTimeoutMS: 30000
+    };
 
 var Storage = function(logger) {
     this._logger = logger.fork('storage');
@@ -14,7 +18,7 @@ var Storage = function(logger) {
 
 Storage.prototype.connect = function() {
     var mongoURI = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
-    return MongoClient.connect(mongoURI)
+    return MongoClient.connect(mongoURI, connectOpts)
         .then(db => {
             this.users = new UserStore(this._logger, db);
             this.rooms = new RoomStore(this._logger, db);
@@ -39,6 +43,7 @@ Storage.prototype.connect = function() {
 };
 
 Storage.prototype.disconnect = function() {
+    this._logger.trace('closing mongo connection');
     return this._db.close(true);
 };
 

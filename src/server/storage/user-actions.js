@@ -25,14 +25,19 @@
     };
 
     // query-ing
-    UserActionData.sessions = function() {
-        return storage.all()
-            .then(sessions => sessions.map(session => {
-                return {
-                    id: session._id,
-                    actions: session.value
-                };
-            }));
+    UserActionData.sessions = function(ids) {
+        var stream;
+        if (ids) {
+            stream = storage.getMany(ids);
+        } else {
+            stream = storage.all();
+        }
+        return stream.transform(session => {
+            return {
+                id: session._id,
+                actions: session.value
+            };
+        });
     };
 
     UserActionData.sessionIds = function() {

@@ -12,15 +12,23 @@ var Command = require('commander').Command,
 
 program
     .option('-l, --long', 'List additional metadata about the sessions')
-    .option('--clear', 'Clear the user data records')
+    //.option('--clear', 'Clear the user data records')
     .parse(process.argv);
 
 storage.connect()
     .then(() => {
         logger.trace('About to request sessions');
-        return UserActions.sessions();
+        var header = Query.getSessionHeader(program),
+            transform = Query.sessionPrintFn(program);
+
+        if (header) {
+            console.log(header);
+        }
+        return UserActions.sessions()
+            .transform(session => {
+                console.log(transform(session));
+            });
     })
-    .then(sessions => Query.listSessions(sessions, program))
     .catch(err => console.err(err))
     .then(() => storage.disconnect());
 /* eslint-enable no-console*/
