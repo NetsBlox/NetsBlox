@@ -79,17 +79,14 @@ var printSessions = (ids, options) => {
 
     return getSessionIds
         .then(() => {
-            // TODO: Convert this to stream?
             logger.trace('resolved ids are', ids);
             return Q.all(ids.map(id => UserActions.session(id)));
         })
         .then(sessions => {  // formatting..
             // merge the sessions
             var actions = sessions
-                .reduce((l1, l2) => l1.concat(l2), [])
-                .map(event => event.action);
+                .reduce((l1, l2) => l1.concat(l2), []);
 
-            console.log('session');
             if (options.json) {
                 return JSON.stringify(actions, null, 2);
             } else {
