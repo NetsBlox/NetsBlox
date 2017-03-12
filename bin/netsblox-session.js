@@ -18,7 +18,7 @@ Query.init(logger);
 storage.connect()
     .then(() => {
         logger.trace('About to print sessions');
-        Query.printSessions(program.args, program);
+        return Query.printSessions(program.args, program);
     })
     .then(() => storage.disconnect())
     .catch(err => console.err(err));
