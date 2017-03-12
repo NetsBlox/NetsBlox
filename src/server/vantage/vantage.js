@@ -150,14 +150,6 @@ var NetsBloxVantage = function(server) {
             Query.listSessions(args.options)
                 .then(() => cb());
         });
-
-    vantage
-        .command('session <uuid>', 'Query the recorded user session')
-        .option('-e, --export', 'Export the given session actions')
-        .action((args, cb) => {
-            return Query.printSessions([args.uuid], args.options)
-                .then(() => cb());
-        });
 };
 
 NetsBloxVantage.prototype.initRoomManagement = function(server) {
