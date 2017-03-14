@@ -138,22 +138,7 @@ class Room extends DataWrapper {
             this._room.cachedProjects[role] = room.roles[role]
         );
 
-        // Save the table under the owning user
-        // var originalUuid = room._uuid;
-        // delete room._uuid;
-        // this._logger.trace(`saving as ${room.name}`);
-        // this._db.replaceOne(
-            // {uuid: originalUuid || room.uuid},  // search criteria
-            // room,  // new value
-            // {upsert: true},  // settings
-            // (e) => {
-                // if (e) {
-                    // this._logger.error(e);
-                // }
-                // this._logger.trace('updated in global room database');
-                this._saveLocal(room, callback);
-            // }
-        // );
+        this._saveLocal(room, callback);
     }
 
     _saveLocal(room, callback) {
