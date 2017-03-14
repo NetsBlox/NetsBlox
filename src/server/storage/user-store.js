@@ -107,7 +107,7 @@ class User extends DataWrapper {
                     return room;
                 });
         }))
-        .then(projects => this.projects = projects);
+        .then(rooms => this.rooms = rooms);
     }
 
     saveProjects () {  // save the rooms to the blob and update the 'projects'
