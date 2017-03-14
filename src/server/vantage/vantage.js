@@ -11,10 +11,8 @@ var vantage = require('vantage')(),
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
     ],
-    CONSTANTS = require('../../common/constants'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
-    UserActions = require('../storage/user-actions'),
     NO_USER_LABEL = '<vacant>';
 
 // Set the banner
