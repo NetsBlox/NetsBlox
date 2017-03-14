@@ -33,6 +33,7 @@ var NetsBloxVantage = function(server) {
     vantage
         .command('user [username]', 'Get info about a specific user')
         .option('-r, --rooms', 'Get the user\'s saved rooms')
+        .option('-j, --json', 'Print as json')
         .option('-a, --admin', 'Toggle admin status')
         .option('-u, --update', 'Update the user\'s schema')
         .option('-c, --clear', 'Clear the room info')
@@ -69,7 +70,11 @@ var NetsBloxVantage = function(server) {
                         return cb();
                     }
                     if (args.options.rooms) {
-                        console.log(user.pretty().rooms);
+                        if (args.options.json) {
+                            console.log(JSON.stringify(user.pretty().rooms, null, 2));
+                        } else {
+                            console.log(user.pretty().rooms);
+                        }
                     } else if (args.options.e) {
                         var name = args.options.e,
                             room = user.rooms.find(room => room.name === name),
@@ -116,6 +121,8 @@ var NetsBloxVantage = function(server) {
                         user.password = args.options.password;
                         user.save();
                         console.log(`Set password to "${args.options.password}"`);
+                    } else if (args.options.json) {
+                        console.log(JSON.stringify(user.pretty()));
                     } else {
                         console.log(user.pretty());
                     }
