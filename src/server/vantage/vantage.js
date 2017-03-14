@@ -11,10 +11,8 @@ var vantage = require('vantage')(),
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
     ],
-    CONSTANTS = require('../../common/constants'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
-    UserActions = require('../storage/user-actions'),
     NO_USER_LABEL = '<vacant>';
 
 // Set the banner
@@ -153,18 +151,8 @@ var NetsBloxVantage = function(server) {
     vantage
         .command('sessions', 'Query the recorded user sessions')
         .option('-l, --long', 'List additional metadata about the sessions')
-        .option('--clear', 'Clear the user data records')
         .action((args, cb) => {
-            UserActions.sessions()
-                .then(sessions => Query.listSessions(sessions, args.options))
-                .then(() => cb());
-        });
-
-    vantage
-        .command('session <uuid>', 'Query the recorded user session')
-        .option('-e, --export', 'Export the given session actions')
-        .action((args, cb) => {
-            return Query.printSessions([args.uuid], args.options)
+            Query.listSessions(args.options)
                 .then(() => cb());
         });
 };
