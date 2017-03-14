@@ -171,5 +171,5 @@ class User extends DataWrapper {
 
 }
 
-User.prototype.IGNORE_KEYS = Data.prototype.IGNORE_KEYS.concat(['rooms']);
+User.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(['rooms']);
 module.exports = UserStore;
