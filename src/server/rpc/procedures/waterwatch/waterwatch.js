@@ -14,14 +14,15 @@ let debug = require('debug'),
     Q = require('q');
 
 let baseUrl = 'https://waterservices.usgs.gov/nwis/iv/?',
+    msgs = [],
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000});
 
 
 
-// let westernLong = -82;
-// let southernLat = 37;
-// let easternLong = -81;
 // let northernLat = 38;
+// let easternLong = -81;
+// let southernLat = 37;
+// let westernLong = -82;
 
 
 // turn an options object into query friendly string
@@ -34,32 +35,62 @@ function encodeQueryData(options) {
 
 // used to send feedback about errors to the caller.
 function showError(err, response) {
-    console.log('error',err);
+    error('error',err);
+    response.send('Error occured. Bounding box too big?');
     // response.json(err);
 }
 
-// factor out message sending and handling of multiple users
-// msgs: an array of msgs.
-function sendMsgs(msgs,socket){
-    // QUESTION is there a need to check for the socket ID? 
-    msgs.forEach(msg => {
-        socket.send(msg);
-    })
+
+//******************************
+// factor out message sending and handling of multiple users = sendNext and Stop
+// msgs: an array of msgs stored in global scope.
+let DELAY = 250;
+function sendNextMsg(socket){
+    // QUESTION is there a need to check for the socket ID? no need.
+    if (msgs.length < 1){
+        return;
+    }
+    socket.send(msgs.shift());
+    setTimeout(sendNextMsg,DELAY,socket);
 }
+
+function stopSendingMsgs($this){
+    socket = $this.socket;
+    response = $this.response;
+    if (msgs) {
+        // remove those with a different roleId | dont remove other's messages
+        msgs = msgs.filter(msg => {
+            return msg.dstId != socket.roleId;
+        });
+    }
+    trace(`Stopped sending messages to user with roleId ${socket.roleId}`);
+    response.send('Stopped sending messages.');
+}
+
+// notes: dont forget to return null in your stop since we are handling the response in here.
+//**********************************
 
 WaterWatchRPC.byCoordinates = function (northernLat, easternLong, southernLat, westernLong) {
     //init
+    // list of parameteCD: https://help.waterdata.usgs.gov/codes-and-parameters/parameters
+    // query descriptions: https://waterservices.usgs.gov/rest/IV-Test-Tool.html
+    trace('calling the api with coordinates: ',northernLat,easternLong,southernLat,westernLong);
+    
+    northernLat = parseFloat(northernLat).toFixed(5);
+    easternLong = parseFloat(easternLong).toFixed(5);
+    southernLat = parseFloat(southernLat).toFixed(5);
+    westernLong = parseFloat(westernLong).toFixed(5);
     let options = {'format':'json', 'bBox':`${westernLong},${southernLat},${easternLong},${northernLat}`,
-        'siteType':'ST','siteStatus':'active','parameterCd':'00060,00065'},
+        'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00060,00065,00010'},
         url = baseUrl+encodeQueryData(options),
         socket = this.socket,
         response = this.response;
-
-    console.log('Requesting data from ', url);
+    trace('calling the api with coordinates: ',northernLat,easternLong,southernLat,westernLong);
+    trace('Requesting data from ', url);
     rp(url)
         .then(data => {
             // santize and send messages to user
-            console.log("Received data back");
+            trace("Received data back");
 
             try {
                 data = JSON.parse(data);
@@ -69,7 +100,6 @@ WaterWatchRPC.byCoordinates = function (northernLat, easternLong, southernLat, w
             }
 
             //clean and store the sections we want in a form of a message
-            let msgs = [];
             data.value.timeSeries.forEach(item => {
                 theData = {
                     siteName: item.sourceInfo.siteName,
@@ -80,6 +110,7 @@ WaterWatchRPC.byCoordinates = function (northernLat, easternLong, southernLat, w
                     unit: item.variable.unit.unitCode,
                     value: item.values[0].value[0].value
                 };
+                trace(theData);
                 msgs.push({
                     type: 'message',
                     msgType: 'streamInfo',
@@ -87,11 +118,11 @@ WaterWatchRPC.byCoordinates = function (northernLat, easternLong, southernLat, w
                     content: theData
                 });
             });
-            console.log('loaded ', data.value.timeSeries.length,'  items');
+            trace('loaded ', data.value.timeSeries.length,'  items');
             response.send(`Sendig ${msgs.length} messages of type "streamInfo"`);
             // start sending messages - will send other user's messages too 
-            // QUESTION: can you send to whatever socket.roleId you want from any source? 
-            sendMsgs(msgs,socket);
+            // QUESTION: can you send to whatever socket.roleId you want from any source? yes can do
+            sendNextMsg(socket);
         })
         .catch(err => {
             // show error
@@ -99,6 +130,12 @@ WaterWatchRPC.byCoordinates = function (northernLat, easternLong, southernLat, w
         });
 
     return null;  // explicitly return null since async
+};
+
+
+WaterWatchRPC.stop = function(){
+    stopSendingMsgs(this);
+    return null;
 };
 
 
