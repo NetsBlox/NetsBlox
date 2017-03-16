@@ -3,6 +3,9 @@
 var randomString = require('just.randomstring'),
     hash = require('../../common/sha512').hex_sha512,
     DataWrapper = require('./data'),
+    blob = require('./blob-storage'),
+    Q = require('q'),
+    _ = require('lodash'),
     mailer = require('../mailer');
 
 class UserStore {
@@ -14,7 +17,14 @@ class UserStore {
     get (username, callback) {
         // Retrieve the user
         this._users.findOne({username}, (e, data) => {
-            callback(e, data ? new User(this._logger, this._users, data) : null);
+            // retrieve the role info from the blob storage and create 'rooms'
+            let user = null;
+            if (data) {
+                user = new User(this._logger, this._users, data);
+                user.loadProjects().then(() => callback(e, user));
+            } else {
+                callback(e, null);
+            }
         });
     }
 
@@ -41,6 +51,7 @@ class User extends DataWrapper {
         // Update tables => rooms
         data.rooms = data.rooms || data.tables || [];
         delete data.tables;
+
         // Update seats => roles
         data.rooms
             .forEach(room => {
@@ -68,6 +79,62 @@ class User extends DataWrapper {
         }
         delete this.password;
         this.rooms = this.rooms || this.tables || [];
+
+        return this.saveProjects();
+    }
+
+    loadProjects () {  // load the rooms from the projects (retrieve blob data)
+        return Q.all(this.projects.map(project => {
+            let room = project,
+                roles = Object.keys(room.roles).map(name => room.roles[name]),
+                srcContent,
+                media;
+
+            srcContent = roles.map(role => blob.get(role.SourceCode));
+            media = roles.map(role => blob.get(role.Media));
+
+            return Q.all(srcContent)
+                .then(content => {
+                    for (let i = roles.length; i--;) {
+                        room.roles[roles[i].ProjectName].SourceCode = content[i];
+                    }
+                    return Q.all(media);
+                })
+                .then(content => {
+                    for (let i = roles.length; i--;) {
+                        room.roles[roles[i].ProjectName].Media = content[i];
+                    }
+                    return room;
+                });
+        }))
+        .then(rooms => this.rooms = rooms);
+    }
+
+    saveProjects () {  // save the rooms to the blob and update the 'projects'
+        return Q.all(this.rooms.map(room => {
+            let project = _.cloneDeep(room),
+                roles = Object.keys(room.roles).map(name => room.roles[name]),
+                srcIds,
+                mediaIds;
+
+            srcIds = roles.map(role => blob.store(role.SourceCode));
+            mediaIds = roles.map(role => blob.store(role.Media));
+
+            return Q.all(srcIds)
+                .then(ids => {
+                    for (let i = roles.length; i--;) {
+                        project.roles[roles[i].ProjectName].SourceCode = ids[i];
+                    }
+                    return Q.all(mediaIds);
+                })
+                .then(ids => {
+                    for (let i = roles.length; i--;) {
+                        project.roles[roles[i].ProjectName].Media = ids[i];
+                    }
+                    return project;
+                });
+        }))
+        .then(projects => this.projects = projects);
     }
 
     recordLogin() {
@@ -103,4 +170,6 @@ class User extends DataWrapper {
     }
 
 }
+
+User.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(['rooms']);
 module.exports = UserStore;

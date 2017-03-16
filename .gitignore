@@ -8,3 +8,4 @@ coverage/
 src/client/netsblox-build.js
 src/client/dist/
 .idea/
+blob-storage
