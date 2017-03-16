@@ -72,6 +72,10 @@ WebSocketManager.MessageHandlers = {
         this.ide.room.promptInvite(msg);
     },
 
+    'collab-invitation': function(msg) {
+        this.ide.promptCollabInvite(msg);
+    },
+
     'project-closed': function() {
         var owner = this.ide.room.ownerId;
         this.ide.showMessage(owner + ' closed the room. ' +
@@ -189,10 +193,14 @@ WebSocketManager.prototype._connectWebSocket = function() {
         var msg = JSON.parse(rawMsg.data),
             type = msg.type;
 
-        if (WebSocketManager.MessageHandlers[type]) {
-            WebSocketManager.MessageHandlers[type].call(self, msg);
+        if (msg.namespace === 'netsblox') {
+            if (WebSocketManager.MessageHandlers[type]) {
+                WebSocketManager.MessageHandlers[type].call(self, msg);
+            } else {
+                console.error('Unknown message:', msg);
+            }
         } else {
-            console.error('Unknown message:', msg);
+            SnapActions.onMessage(msg);
         }
     };
 
@@ -222,6 +230,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
 WebSocketManager.prototype.sendMessage = function(message) {
     var state = this.websocket.readyState;
+    message.namespace = 'netsblox';
     message = this.serializeMessage(message);
     if (state === this.websocket.OPEN) {
         this.websocket.send(message);

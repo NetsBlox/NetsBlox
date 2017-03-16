@@ -1,22 +1,21 @@
 /*globals describe,it,before,beforeEach,after*/
 'use strict';
 
-var supertest = require('supertest'),
-    assert = require('assert'),
-    port = 8493,
-    options = {
-        port: port,
-        vantage: false
-    },
-    api,
-    Server = require('../../src/server/server'),
-
-    basicRoutes = require('../../src/server/routes/basic-routes'),
-    userRoutes = require('../../src/server/routes/users');
-
-// TODO: Add API message
 describe('Server Tests', function() {
-    var username = 'test',
+    var supertest = require('supertest'),
+        assert = require('assert'),
+        port = 8493,
+        options = {
+            port: port,
+            vantage: false
+        },
+        api,
+        Server = require('../../src/server/server'),
+
+        basicRoutes = require('../../src/server/routes/basic-routes'),
+        userRoutes = require('../../src/server/routes/users'),
+
+        username = 'test',
         server;
 
     before(function(done) {
@@ -136,10 +135,11 @@ describe('Server Tests', function() {
                     socket.on('message', function(msg) {
                         msg = JSON.parse(msg);
 
-                        if (msg.type === 'uuid') {
+                        if (msg.namespace === 'netsblox' && msg.type === 'uuid') {
                             uuid = msg.body;
                             // create a room
                             var res = {
+                                namespace: 'netsblox',
                                 type: 'create-room',
                                 room: ROOM_NAME,
                                 role: 's1'
@@ -193,14 +193,16 @@ describe('Server Tests', function() {
                         newSocket.on('message', function(msg) {
                             msg = JSON.parse(msg);
 
-                            if (msg.type === 'uuid') {
+                            if (msg.namespace === 'netsblox' && msg.type === 'uuid') {
                                 username2 = msg.body;
 
                                 socket.send(JSON.stringify({
+                                    namespace: 'netsblox',
                                     type: 'add-role',
                                     name: 's2'
                                 }));
                                 var res = {
+                                    namespace: 'netsblox',
                                     type: 'join-room',
                                     room: ROOM_NAME,
                                     owner: uuid,
