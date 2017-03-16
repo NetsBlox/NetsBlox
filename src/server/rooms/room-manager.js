@@ -23,6 +23,14 @@ var RoomManager = function() {
     ActiveRoom.prototype.check = function() {
         self.checkRoom(this);
     };
+
+    ActiveRoom.prototype.getAllActiveFor = (socket) => {
+        return Object.keys(this.rooms).map(uuid => this.rooms[uuid])
+            .filter(room => room.owner.username === socket.username)
+            .filter(room => room.owner !== socket)
+            .map(room => room.name);
+
+    };
 };
 
 RoomManager.prototype.init = function(logger, storage) {
