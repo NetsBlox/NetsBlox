@@ -142,11 +142,13 @@ class User extends DataWrapper {
         this.save();
     }
 
-    getNewName(name) {
+    getNewName(name, takenNames) {
         var nameExists = {},
             i = 2,
             basename;
 
+        takenNames = takenNames || [];
+        takenNames.forEach(name => nameExists[name] = true);
         this.rooms.forEach(room => nameExists[room.name] = true);
 
         name = name || 'untitled';
