@@ -18,10 +18,10 @@ let baseUrl = 'https://waterservices.usgs.gov/nwis/iv/?',
 
 
 
-// let westernLong = -82;
-// let southernLat = 37;
-// let easternLong = -81;
 // let northernLat = 38;
+// let easternLong = -81;
+// let southernLat = 37;
+// let westernLong = -82;
 
 
 // turn an options object into query friendly string
@@ -35,6 +35,7 @@ function encodeQueryData(options) {
 // used to send feedback about errors to the caller.
 function showError(err, response) {
     error('error',err);
+    response.send('Error occured. Bounding box too big?');
     // response.json(err);
 }
 
@@ -80,7 +81,6 @@ function stopSendingMsgs($this){
 function doTheWork(options,socket,response,msgType){
 
     let url = baseUrl+encodeQueryData(options);
-    trace('Requesting data from ', url);
     rp(url)
         .then(data => {
             // santize and send messages to user
