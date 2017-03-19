@@ -267,7 +267,6 @@ module.exports = [
     {
         Method: 'get',
         URL: 'Examples/:name',
-        middleware: ['hasSocket'],
         Handler: function(req, res) {
             var name = req.params.name,
                 uuid = req.query.socketId,
@@ -283,12 +282,19 @@ module.exports = [
             // This needs to...
             //  + create the room for the socket
             example = _.cloneDeep(EXAMPLES[name]);
-            socket = SocketManager.sockets[uuid];
             var role,
                 room;
 
             if (!isPreview) {
+                socket = SocketManager.sockets[uuid];
                 // Check if the room already exists
+                if (!uuid) {
+                    return res.status(400).send('ERROR: Bad Request: missing socket id');
+                } else if (!socket) {
+                    logger.error(`No socket found for ${socketId} (${req.get('User-Agent')})`);
+                    return res.status(400)
+                        .send('ERROR: Not fully connected to server. Please refresh or try a different browser');
+                }
                 room = RoomManager.rooms[Utils.uuid(socket.username, name)];
 
                 if (!room) {  // Create the room
