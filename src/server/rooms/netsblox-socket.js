@@ -153,9 +153,9 @@ class NetsBloxSocket {
         this.roleId = role;
     }
 
-    getNewName (name) {
+    getNewName (name, taken) {
         if (this.user) {
-            name = this.user.getNewName(name);
+            name = this.user.getNewName(name, taken);
         } else {
             name = 'New Room ' + (Date.now() % 100);
         }
