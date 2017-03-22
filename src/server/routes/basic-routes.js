@@ -291,7 +291,7 @@ module.exports = [
                 if (!uuid) {
                     return res.status(400).send('ERROR: Bad Request: missing socket id');
                 } else if (!socket) {
-                    logger.error(`No socket found for ${socketId} (${req.get('User-Agent')})`);
+                    this._logger.error(`No socket found for ${uuid} (${req.get('User-Agent')})`);
                     return res.status(400)
                         .send('ERROR: Not fully connected to server. Please refresh or try a different browser');
                 }
