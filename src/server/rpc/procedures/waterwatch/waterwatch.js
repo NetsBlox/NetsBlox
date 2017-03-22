@@ -39,6 +39,8 @@ function showError(err, response) {
     // response.json(err);
 }
 
+//sanitize coordinate inputs
+// todo
 
 //******************************
 // factor out message sending and handling of multiple users = sendNext and Stop
@@ -81,6 +83,7 @@ function stopSendingMsgs($this){
 function doTheWork(options,socket,response,msgType){
 
     let url = baseUrl+encodeQueryData(options);
+    trace('requesting this url for data', url);
     rp(url)
         .then(data => {
             // santize and send messages to user
@@ -133,7 +136,11 @@ WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, west
     //init
     // list of parameteCD: https://help.waterdata.usgs.gov/codes-and-parameters/parameters
     // query descriptions: https://waterservices.usgs.gov/rest/IV-Test-Tool.html
-    // QUESTIONS i cant pass socket to doTheWork func when using let. why? 
+    // QUESTIONS i cant pass socket to doTheWork func when using let. why?
+    westernLong = parseFloat(westernLong).toFixed(7);
+    easternLong = parseFloat(easternLong).toFixed(7);
+    southernLat = parseFloat(southernLat).toFixed(7);
+    northernLat = parseFloat(northernLat).toFixed(7);
     var options = {'format':'json', 'bBox':`${westernLong},${southernLat},${easternLong},${northernLat}`,
         'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00065'},
         socket = this.socket,
@@ -149,6 +156,10 @@ WaterWatchRPC.streamFlow = function (northernLat, easternLong, southernLat, west
     //init
     // list of parameteCD: https://help.waterdata.usgs.gov/codes-and-parameters/parameters
     // query descriptions: https://waterservices.usgs.gov/rest/IV-Test-Tool.html
+    westernLong = parseFloat(westernLong).toFixed(7);
+    easternLong = parseFloat(easternLong).toFixed(7);
+    southernLat = parseFloat(southernLat).toFixed(7);
+    northernLat = parseFloat(northernLat).toFixed(7);
     var options = {'format':'json', 'bBox':`${westernLong},${southernLat},${easternLong},${northernLat}`,
         'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00060'},
         socket = this.socket,
@@ -163,6 +174,10 @@ WaterWatchRPC.waterTemp = function (northernLat, easternLong, southernLat, weste
     //init
     // list of parameteCD: https://help.waterdata.usgs.gov/codes-and-parameters/parameters
     // query descriptions: https://waterservices.usgs.gov/rest/IV-Test-Tool.html
+    westernLong = parseInt(westernLong).toFixed(7);
+    easternLong = parseInt(easternLong).toFixed(7);
+    southernLat = parseInt(southernLat).toFixed(7);
+    northernLat = parseInt(northernLat).toFixed(7);
     var options = {'format':'json', 'bBox':`${westernLong},${southernLat},${easternLong},${northernLat}`,
         'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00010'},
         socket = this.socket,
