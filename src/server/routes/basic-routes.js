@@ -5,6 +5,7 @@ var R = require('ramda'),
     Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     RoomManager = require('../rooms/room-manager'),
+    PublicProjects = require('../storage/public-projects'),
     UserAPI = require('./users'),
     RoomAPI = require('./rooms'),
     ProjectAPI = require('./projects'),
@@ -345,6 +346,18 @@ module.exports = [
             }
 
             return res.send(room.cachedProjects[role].SourceCode);
+        }
+    },
+    // public projects
+    {
+        Method: 'get',
+        URL: 'Projects/PROJECTS',
+        Handler: function(req, res) {
+            var start = +req.query.start || 0,
+                end = Math.max(+req.query.end, start+1);
+
+            return PublicProjects.list(start, end)
+                .then(projects => res.send(projects));
         }
     },
     // Bug reporting
