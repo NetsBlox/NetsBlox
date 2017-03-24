@@ -1,6 +1,8 @@
 'use strict';
 var R = require('ramda'),
     _ = require('lodash'),
+    xml2js = require('xml2js'),
+    Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     RoomManager = require('../rooms/room-manager'),
     UserAPI = require('./users'),
@@ -251,16 +253,43 @@ module.exports = [
             });
         }
     },
-    // index
     {
         Method: 'get',
         URL: 'Examples/EXAMPLES',
         Handler: function(req, res) {
             // if no name requested, get index
-            var result = Object.keys(EXAMPLES)
-                .map(name => `${name}\t${name}\t  `)
-                .join('\n');
-            return res.send(result);
+            var metadata = req.query.metadata === 'true',
+                result;
+
+            if (metadata) {
+                result = Object.keys(EXAMPLES)
+                    .map(name => {
+                        let example = EXAMPLES[name],
+                            role = Object.keys(example.roles).shift(),
+                            primaryRole = example.cachedProjects[role].SourceCode;
+
+                        return Q.nfcall(xml2js.parseString, primaryRole)
+                            .then(result => {
+                                return {
+                                    projectName: name,
+                                    primaryRoleName: role,
+                                    roleNames: Object.keys(example.cachedProjects),
+                                    thumbnail: result.project.thumbnail[0],
+                                    notes: result.project.notes[0]
+                                };
+                            });
+                    });
+
+                return Q.all(result)
+                    .then(examples => res.json(examples))
+                    .fail(err => this._logger.error(err));
+            } else {
+                result = Object.keys(EXAMPLES)
+                    .map(name => `${name}\t${name}\t  `)
+                    .join('\n');
+
+                return res.send(result);
+            }
         }
     },
     // individual example
