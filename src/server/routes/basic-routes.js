@@ -354,7 +354,7 @@ module.exports = [
         URL: 'Projects/PROJECTS',
         Handler: function(req, res) {
             var start = +req.query.start || 0,
-                end = Math.max(+req.query.end, start+1);
+                end = Math.min(+req.query.end, start+1);
 
             return PublicProjects.list(start, end)
                 .then(projects => res.send(projects));
