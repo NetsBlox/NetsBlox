@@ -32,11 +32,52 @@ describe('Server Tests', function() {
         // FIXME: Unauthorized stream readable error
     });
 
+    describe('Examples API', function() {
+        var expectedFields = [
+            'projectName',
+            'primaryRoleName',
+            'thumbnail',
+            'notes',
+            'roleNames'
+        ];
+        it('should provide list of examples', function(done) {
+            api.get('/Examples/EXAMPLES/?metadata=true')
+                .expect('Content-Type', /json/)
+                .expect(200)
+                .expect(function(res) {
+                    assert.notEqual(res.body.length, 0);
+                })
+                .end(done);
+        });
+
+        expectedFields.forEach(name => {
+            it(`should provide ${name}`, function(done) {
+                api.get('/Examples/EXAMPLES/?metadata=true')
+                    .expect(function(res) {
+                        assert.notEqual(res.body[0][name], undefined);
+                    })
+                    .end(done);
+            });
+        });
+    });
+
     describe('Reset Password tests', function() {
+        it.skip('should return API details', function(done) {
+            var key = process.env.SECRET_KEY || 'change this',
+                hasher = require('crypto').createHmac('sha512', key);
+
+            hasher.update('password');
+            api.post('/')
+                .set('__u', username)
+                .set('__h', hasher.digest('hex'))
+                .expect(function(res) {
+                    assert(res.text.indexOf('Service') === 0);
+                })
+                .end(done);
+        });
     });
 
     describe('login tests', function() {
-
         it.skip('should return API details', function(done) {
             var key = process.env.SECRET_KEY || 'change this',
                 hasher = require('crypto').createHmac('sha512', key);
