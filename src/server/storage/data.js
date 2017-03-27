@@ -1,7 +1,8 @@
 // This is a wrapper for data from storage that implements
 // save(), destroy() and (optionally) prepare() functions
 'use strict';
-var ObjectId = require('mongodb').ObjectId;
+var ObjectId = require('mongodb').ObjectId,
+    Q = require('q');
 
 class Data {
     constructor (db, data) {
@@ -14,12 +15,13 @@ class Data {
     }
 
     save() {
-        var data;
+        return Q().then(() => this.prepare())
+            .then(() => {
+                let data = this._saveable();
 
-        this.prepare();
-        data = this._saveable();
-        this._logger.trace('saving', this.pretty());
-        return this._db.save(data)
+                this._logger.trace('saving', this.pretty());
+                return this._db.save(data);
+            })
             .then(result => {
                 if (result.writeError) {
                     this._logger.error('could not save to database: ' + result.errmsg);

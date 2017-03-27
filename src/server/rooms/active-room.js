@@ -101,8 +101,12 @@ class ActiveRoom {
 
     changeName(name) {
         if (!name) {
+            // make sure name is also unique to the existing rooms...
+            let activeRoomNames = this.getAllActiveFor(this.owner);
+            this._logger.trace(`all active rooms for ${this.owner.username} are ${activeRoomNames}`);
+
             // Get name unique to the owner
-            name = this.owner.getNewName(this.name);
+            name = this.owner.getNewName(this.name, activeRoomNames);
         }
         this.update(name);
         return name;
