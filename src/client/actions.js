@@ -63,9 +63,30 @@ ActionManager.prototype.disableCollaboration = function() {
         type: 'new-session'
     };
 
-    if (this.isCollaborating()) {
+    if (this._ws !== null) {
         this._ws.send(JSON.stringify(msg));
     }
+};
+
+SnapActions.isCollaborating = function() {
+    var myself = this;
+
+    // TODO: should have this._ws defined and should have 
+    // This is problematic since 'isCollaborating' needs to be synchronous
+    // TODO
+    //
+    // I should probably have the server send collaboration updates as they occur...
+    SnapCloud.getCollaboratorList(
+        function(friends) {
+            friends.sort(function(a, b) {
+                return a.username.toLowerCase() < b.username.toLowerCase() ? -1 : 1;
+            });
+            console.log('collaborators:', friends);
+        },
+        function (err, lbl) {
+            myself.ide().cloudError().call(null, err, lbl);
+        }
+    );
 };
 
 // Recording user actions
