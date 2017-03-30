@@ -11,10 +11,8 @@ var vantage = require('vantage')(),
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
     ],
-    CONSTANTS = require('../../common/constants'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
-    UserActions = require('../storage/user-actions'),
     NO_USER_LABEL = '<vacant>';
 
 // Set the banner
@@ -33,6 +31,7 @@ var NetsBloxVantage = function(server) {
     vantage
         .command('user [username]', 'Get info about a specific user')
         .option('-r, --rooms', 'Get the user\'s saved rooms')
+        .option('-j, --json', 'Print as json')
         .option('-a, --admin', 'Toggle admin status')
         .option('-u, --update', 'Update the user\'s schema')
         .option('-c, --clear', 'Clear the room info')
@@ -69,7 +68,11 @@ var NetsBloxVantage = function(server) {
                         return cb();
                     }
                     if (args.options.rooms) {
-                        console.log(user.pretty().rooms);
+                        if (args.options.json) {
+                            console.log(JSON.stringify(user.pretty().rooms, null, 2));
+                        } else {
+                            console.log(user.pretty().rooms);
+                        }
                     } else if (args.options.e) {
                         var name = args.options.e,
                             room = user.rooms.find(room => room.name === name),
@@ -116,6 +119,8 @@ var NetsBloxVantage = function(server) {
                         user.password = args.options.password;
                         user.save();
                         console.log(`Set password to "${args.options.password}"`);
+                    } else if (args.options.json) {
+                        console.log(JSON.stringify(user.pretty()));
                     } else {
                         console.log(user.pretty());
                     }
@@ -146,18 +151,8 @@ var NetsBloxVantage = function(server) {
     vantage
         .command('sessions', 'Query the recorded user sessions')
         .option('-l, --long', 'List additional metadata about the sessions')
-        .option('--clear', 'Clear the user data records')
         .action((args, cb) => {
-            UserActions.sessions()
-                .then(sessions => Query.listSessions(sessions, args.options))
-                .then(() => cb());
-        });
-
-    vantage
-        .command('session <uuid>', 'Query the recorded user session')
-        .option('-e, --export', 'Export the given session actions')
-        .action((args, cb) => {
-            return Query.printSessions([args.uuid], args.options)
+            Query.listSessions(args.options)
                 .then(() => cb());
         });
 };

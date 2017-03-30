@@ -2,7 +2,7 @@
 
 var DataWrapper = require('./data'),
     async = require('async'),
-    ObjectId = require('mongodb').ObjectId;
+    PublicProjectStore = require('./public-projects');
 
 // Every time a room is saved, it is saved for some user AND in the global store
 // Schema:
@@ -138,22 +138,7 @@ class Room extends DataWrapper {
             this._room.cachedProjects[role] = room.roles[role]
         );
 
-        // Save the table under the owning user
-        // var originalUuid = room._uuid;
-        // delete room._uuid;
-        // this._logger.trace(`saving as ${room.name}`);
-        // this._db.replaceOne(
-            // {uuid: originalUuid || room.uuid},  // search criteria
-            // room,  // new value
-            // {upsert: true},  // settings
-            // (e) => {
-                // if (e) {
-                    // this._logger.error(e);
-                // }
-                // this._logger.trace('updated in global room database');
-                this._saveLocal(room, callback);
-            // }
-        // );
+        this._saveLocal(room, callback);
     }
 
     _saveLocal(room, callback) {
@@ -173,6 +158,10 @@ class Room extends DataWrapper {
             this._logger.log(`overwriting existing room "${room.name}" for ${this._user.username}`);
             oldRoom = this._user.rooms.splice(index, 1, room)[0];
             room.Public = oldRoom.Public;
+            if (room.Public) {
+                this._logger.log(`updating published room "${room.name}" for ${this._user.username}`);
+                PublicProjectStore.update(room);
+            }
         }
         this._user.save();
         this._logger.log(`saved room "${room.name}" for ${this._user.username}`);

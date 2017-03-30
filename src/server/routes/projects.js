@@ -6,6 +6,7 @@ var _ = require('lodash'),
     middleware = require('./middleware'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
+    PublicProjects = require('../storage/public-projects'),
     debug = require('debug'),
     log = debug('netsblox:api:projects:log'),
     info = debug('netsblox:api:projects:info'),
@@ -35,6 +36,13 @@ var setProjectPublic = function(name, user, value) {
         return false;
     }
     user.rooms[index].Public = value;
+
+    if (value) {
+        PublicProjects.publish(user.rooms[index]);
+    } else {
+        PublicProjects.unpublish(user.rooms[index]);
+    }
+
     user.save();
     return true;
 };

@@ -1,68 +1,47 @@
 /* eslint-disable no-console*/
 // Utilities for querying data (like from cli or in vantage)
 var Q = require('q'),
-    exists = require('exists-file'),
     fs = require('fs'),
-    UserActions = require('../server/storage/user-actions');
+    UserActions = require('../server/storage/user-actions'),
+    Logger = require('../server/logger'),
+    logger = new Logger('query');
 
-var listSessions = (sessions, options) => {
-    var ids = sessions.map(session => session.id),
-        index = ids.map((id, index) => `${id} (${index+1})`).join('\n');
+var listSessions = (options) => {
+    return UserActions.sessions().then(sessions => {
+        var ids = sessions.map(session => session.id),
+            index = ids.map((id, index) => `${id} (${index+1})`).join('\n');
 
-    if (options.long) {
-        var lengths = sessions.map(sessions => sessions.actions.length),
-            lasts = sessions.map((session, i) => session.actions[lengths[i]-1]),
-            durations = sessions.map((session, i) => {
-                var first = session.actions[0],
-                    last = lasts[i];
+        if (options.long) {
+            var lengths = sessions.map(sessions => sessions.actionCount),
+                durations = sessions.map(session => session.maxTime - session.minTime),
+                usernames = sessions.map(session => session.username),
+                projectIds = sessions.map(session => session.projectId),
+                cats = [
+                    'sessionId\t',
+                    'time',
+                    'actions',
+                    'username',
+                    'projectId'
+                ],
+                lines;
 
-                return last.action.time - first.action.time;
-            }),
-            usernames = sessions.map((session, i) => lasts[i].username),
-            projectIds = sessions.map((session, i) => lasts[i].projectId),
-            cats = [
-                'sessionId\t',
-                'time',
-                'actions',
-                'username',
-                'projectId'
-            ],
-            lines;
-
-        // duration, action counts, project name, username
-        lines = ids.map((id, i) => [
-            id,
-            durations[i],
-            lengths[i],
-            usernames[i],
-            projectIds[i]
-        ].join('\t'));
-        index = cats.join('\t') + '\n' + lines.join('\n');
-    }
-
-    if (options.clear) {
-        var filename = 'user-actions-backup.json',
-            i = 2,
-            basename;
-
-        basename = filename.replace('.json', '');
-        while (exists.sync(filename)) {
-            filename = `${basename} (${i++}).json`;
+            // duration, action counts, project name, username
+            lines = ids.map((id, i) => [
+                id,
+                durations[i],
+                lengths[i],
+                usernames[i],
+                projectIds[i]
+            ].join('\t'));
+            index = cats.join('\t') + '\n' + lines.join('\n');
         }
-        console.log('Creating user data backup at', filename);
-        fs.writeFileSync(filename, JSON.stringify(sessions));
-        console.log('Clearing user actions from database...');
-        return UserActions.clear()
-            .then(() => {
-                console.log('User actions have been removed from the database.');
-            });
-    }
 
-    if (sessions.length) {
-        console.log(index);
-    } else {
-        console.log('<no sessions>');
-    }
+        if (sessions.length) {
+            console.log(index);
+        } else {
+            console.log('<no sessions>');
+        }
+    });
 };
 
 var isInt = /^\d+$/;
@@ -70,6 +49,7 @@ var printSessions = (ids, options) => {
     var lookupIds = [],
         getSessionIds;
 
+    logger.debug(`printing sessions: ${ids}`);
     options = options || {};
     // Remove any parens'ed ids...
     ids = ids.filter(id => id[0] !== '(');
@@ -78,12 +58,14 @@ var printSessions = (ids, options) => {
         .filter(pair => isInt.test(pair[0]));
 
     if (lookupIds.length) {
+        logger.debug('resolving session ids');
         getSessionIds = UserActions.sessionIds()
             .then(sessionIds => {
                 var sessionIndex,
                     index,
                     pair;
 
+                logger.trace(`retrieved all ${sessionIds.length} session ids`);
                 for (var i = lookupIds.length; i--;) {
                     pair = lookupIds[i];
                     sessionIndex = parseInt(pair);
@@ -97,14 +79,13 @@ var printSessions = (ids, options) => {
 
     return getSessionIds
         .then(() => {
-            // TODO: Convert this to stream?
+            logger.trace('resolved ids are', ids);
             return Q.all(ids.map(id => UserActions.session(id)));
         })
         .then(sessions => {  // formatting..
             // merge the sessions
             var actions = sessions
-                .reduce((l1, l2) => l1.concat(l2), [])
-                .map(event => event.action);
+                .reduce((l1, l2) => l1.concat(l2), []);
 
             if (options.json) {
                 return JSON.stringify(actions, null, 2);
@@ -117,6 +98,7 @@ var printSessions = (ids, options) => {
                 }).join('\n');
             }
         })
+        .fail(err => console.error(err))
         .catch(err => console.err(err))
         .then(output => {
             if (options.export) {
@@ -129,6 +111,7 @@ var printSessions = (ids, options) => {
 };
 
 module.exports = {
+    init: _logger => logger = _logger.fork('query'),
     listSessions: listSessions,
     printSessions: printSessions
 };

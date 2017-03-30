@@ -1,4 +1,4 @@
-describe.only('traffic', function() {
+describe('traffic', function() {
     var Traffic = require('../../../../src/server/rpc/procedures/traffic/traffic'),
         RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
