@@ -43,7 +43,6 @@ function extractRpcs(projectXml){
                 notes: activeRole.Notes[0],
                 services: _.uniq(extractRpcs(activeRole.SourceCode))
             };
-        console.log(metadata);
 
         logger.trace(`Publishing project ${project.name} from ${project.owner}`);
 

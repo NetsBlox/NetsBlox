@@ -44,7 +44,7 @@ fs.readdirSync(__dirname)
                 SourceCode: src,
                 ProjectName: roles[i],
                 RoomName: item.RoomName,
-                Media: '<media></media>',
+                Media: '<media></media>'
             };
 
         }
@@ -62,8 +62,6 @@ fs.readdirSync(__dirname)
             return rpcs
         }
 
-        // console.log(item.cachedProjects.length);
-        // item.services = 
         // Add to examples dictionary
         examples[item.RoomName] = item;
     });
