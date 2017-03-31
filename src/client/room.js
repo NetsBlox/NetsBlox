@@ -1235,7 +1235,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
         [ // format: display shared project names bold
             [
                 'bold',
-                function (proj) {return proj.collaborating; }
+                function (user) {return user.collaborating; }
             ]
         ]//,
         //function () {myself.ok(); }

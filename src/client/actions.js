@@ -63,9 +63,13 @@ ActionManager.prototype.disableCollaboration = function() {
         type: 'new-session'
     };
 
-    if (this.isCollaborating()) {
+    if (this._ws !== null) {
         this._ws.send(JSON.stringify(msg));
     }
+};
+
+SnapActions.isCollaborating = function() {
+    return this.sessionUsersCount > 1;
 };
 
 // Recording user actions
@@ -80,10 +84,13 @@ SnapActions.send = function() {
     return result;
 };
 
-SnapActions.onMessage = function() {
+SnapActions.onMessage = function(msg) {
     ActionManager.prototype.onMessage.apply(this, arguments);
     if (location.hash.indexOf('collaborate') !== -1) {
         location.hash = '';
+    }
+    if (msg.type === 'session-user-count') {
+        this.sessionUsersCount = msg.value;
     }
 };
 
