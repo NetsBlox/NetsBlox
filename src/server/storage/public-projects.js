@@ -1,3 +1,15 @@
+// given a project source code returns an array of used services.
+function extractRpcs(projectXml){
+    let rpcs = [];
+    let foundRpcs = projectXml.match(/ct"><l>([a-zA-Z]+)<\/l>/g);
+    if (foundRpcs) {
+        foundRpcs.forEach(txt=>{
+            rpcs.push(txt.match(/ct"><l>([a-zA-Z]+)<\/l>/)[1]);
+        });                
+    }
+    return rpcs
+}
+
 (function(PublicProjectStore) {
     var _ = require('lodash'),
         logger, collection;
@@ -19,6 +31,7 @@
             .then(projects => projects.map(project => _.omit(project, '_id')));
     };
 
+
     PublicProjectStore.publish = function(project) {
         var activeRole = project.roles[project.activeRole],
             metadata = {
@@ -27,8 +40,10 @@
                 primaryRoleName: project.activeRole,
                 roleNames: Object.keys(project.roles),
                 thumbnail: activeRole.Thumbnail[0],
-                notes: activeRole.Notes[0]
+                notes: activeRole.Notes[0],
+                services: _.uniq(extractRpcs(activeRole.SourceCode))
             };
+        console.log(metadata);
 
         logger.trace(`Publishing project ${project.name} from ${project.owner}`);
 

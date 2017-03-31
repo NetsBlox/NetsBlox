@@ -1,6 +1,7 @@
 // This file will prepare the raw source code from the examples directory
 var fs = require('fs'),
-    path = require('path');
+    path = require('path'),
+    _ = require('underscore');
 
 // Create the dictionary of examples
 var examples = {};
@@ -33,18 +34,36 @@ fs.readdirSync(__dirname)
             src;
 
         item.roles = {};
+        item.services = [];
         for (var i = roles.length; i--;) {
             item.roles[roles[i]] = null;
             // TODO: FIXME: the cachedProjects are not the correct format
             src = item.cachedProjects[roles[i]];
+            item.services = item.services.concat(extractRpcs(src));
             item.cachedProjects[roles[i]] = {
                 SourceCode: src,
                 ProjectName: roles[i],
                 RoomName: item.RoomName,
-                Media: '<media></media>'
+                Media: '<media></media>',
             };
+
+        }
+        item.services = _.uniq(item.services); // keep only the unique services.
+
+        // given a project source code returns an array of used services.
+        function extractRpcs(projectXml){
+            let rpcs = [];
+            let foundRpcs = projectXml.match(/ct"><l>([a-zA-Z]+)<\/l>/g);
+            if (foundRpcs) {
+                foundRpcs.forEach(txt=>{
+                    rpcs.push(txt.match(/ct"><l>([a-zA-Z]+)<\/l>/)[1]);
+                });                
+            }
+            return rpcs
         }
 
+        // console.log(item.cachedProjects.length);
+        // item.services = 
         // Add to examples dictionary
         examples[item.RoomName] = item;
     });
