@@ -28,7 +28,7 @@ WebSocketManager.MessageHandlers = {
     // Receive an assigned uuid
     'uuid': function(msg) {
         this.uuid = msg.body;
-        this._onConnect();
+        this.onConnect();
     },
 
     // Game play message
@@ -333,7 +333,7 @@ WebSocketManager.prototype.setGameType = function(gameType) {
     // FIXME: Remove this
 };
 
-WebSocketManager.prototype._onConnect = function() {
+WebSocketManager.prototype.onConnect = function() {
     if (SnapCloud.username) {  // Reauthenticate if needed
         var updateRoom = this.updateRoomInfo.bind(this);
         SnapCloud.reconnect(updateRoom, updateRoom);

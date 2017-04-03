@@ -31,6 +31,37 @@ NetsBloxMorph.prototype.buildPanes = function () {
     NetsBloxMorph.uber.buildPanes.call(this);
 };
 
+NetsBloxMorph.prototype.openIn = function () {
+    NetsBloxMorph.uber.openIn.apply(this, arguments);
+    if (location.hash.substr(0, 9) === '#example:') {
+        var myself = this,
+            example = location.hash.substr(9),
+            onConnect = this.sockets.onConnect;
+
+        this.sockets.onConnect = function() {
+            SnapCloud.passiveLogin(myself, function() {
+                var response = SnapCloud.parseDict(myself.getURL('api/Examples/' + example +
+                    '?socketId=' + myself.sockets.uuid));
+
+                myself.room.nextRoom = {
+                    ownerId: response.OwnerId,
+                    roomName: response.RoomName,
+                    roleId: response.ProjectName
+                };
+
+                // role name
+                if (response.SourceCode) {
+                    myself.droppedText(response.SourceCode);
+                } else {
+                    myself.clearProject();
+                }
+                myself.loadNextRoom();
+                myself.sockets.onConnect = onConnect;
+            });
+        };
+    }
+};
+
 NetsBloxMorph.prototype.resourceURL = function () {
     return 'api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
 };
@@ -716,7 +747,7 @@ NetsBloxMorph.prototype.loadNextRoom = function () {
     if (this.room.nextRoom) {
         var next = this.room.nextRoom;
         this.room._name = next.roomName;  // silent set
-        this.room.leaderId = next.leaderId;
+        this.room.ownerId = next.ownerId;
         this.silentSetProjectName(next.roleId);
 
         // Send the message to the server
