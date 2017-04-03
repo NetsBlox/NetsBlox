@@ -37,7 +37,7 @@ module.exports = {
 
         trace(`Querying object by name: ${name}`);
 
-        var response = request.get(queryUrl, function (err, res) {
+        request.get(queryUrl, function (err, res) {
             
             rsp.set('cache-control', 'private, no-store, max-age=0');
 
