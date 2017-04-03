@@ -38,24 +38,24 @@ module.exports = {
         trace(`Querying object by name: ${name}`);
 
         var response = request.get(queryUrl, function (err, res) {
-	    	
-	        rsp.set('cache-control', 'private, no-store, max-age=0');
+            
+            rsp.set('cache-control', 'private, no-store, max-age=0');
 
-	        var lines = res.body.split(/\r?\n/);
+            var lines = res.body.split(/\r?\n/);
 
-	        if(lines.length < 3) {
-	        	rsp.status(400).send("Not found.");
-	        } else {
-	        	trace(lines);
-	        	var objName = lines[0].split(":")[1].trim();
-	        	var ra = lines[1].split(":")[1].trim();
-	        	var dec = lines[2].split(":")[1].trim();
-	        	ra = parseFloat(ra);
-	        	dec = parseFloat(dec);
-	        	trace(`Found ${objName} at ra=${ra} dec=${dec}`);
-		        rsp.status(200).json([ra, dec]);
-	        }
-		});
+            if(lines.length < 3) {
+                rsp.status(400).send('Not found.');
+            } else {
+                trace(lines);
+                var objName = lines[0].split(':')[1].trim();
+                var ra = lines[1].split(':')[1].trim();
+                var dec = lines[2].split(':')[1].trim();
+                ra = parseFloat(ra);
+                dec = parseFloat(dec);
+                trace(`Found ${objName} at ra=${ra} dec=${dec}`);
+                rsp.status(200).json([ra, dec]);
+            }
+        });
 
         // explicitly state that we're async
         return null;
@@ -67,15 +67,15 @@ module.exports = {
         var scale = parseFloat(arcseconds_per_pixel);
 
         if(!width) {
-        	width = 480.0;
+            width = 480.0;
         } else {
-        	width = parseFloat(width);
+            width = parseFloat(width);
         }
 
         if(!height) {
-        	height = 360.0;
+            height = 360.0;
         } else {
-        	height = parseFloat(height);
+            height = parseFloat(height);
         }
 
         info(`width = ${width}`);
