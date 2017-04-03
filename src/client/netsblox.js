@@ -531,6 +531,29 @@ NetsBloxMorph.prototype.settingsMenu = function () {
     // Netsblox addition: start
     // (Removed the collaboration option)
     // Netsblox addition: end
+    addPreference(
+        'Replay Mode',
+        function() {
+            if (myself.isReplayMode) return myself.exitReplayMode();
+            if (SnapActions.isCollaborating()) {
+                this.confirm(
+                    'Cannot enter replay mode while collaborating. \nWould you ' +
+                    'like to disable collaboration and enter replay mode?',
+                    'Disable Collaboration?',
+                    function () {
+                        SnapActions.disableCollaboration();
+                        myself.replayEvents();
+                    }
+                );
+            } else {
+                myself.replayEvents();
+            }
+        },
+        myself.isReplayMode,
+        'uncheck to disable replay mode',
+        'check to enable replay mode',
+        false
+    );
     menu.addLine(); // everything below this line is stored in the project
     addPreference(
         'Thread safe scripts',
