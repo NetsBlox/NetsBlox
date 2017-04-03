@@ -213,6 +213,11 @@ NetCloud.prototype.getFriendList = function (callBack, errorCall) {
                 'getFriendList',
                 function (response, url) {
                     var ids = Object.keys(response[0] || {});
+                    ids = ids.map(function(id) {
+                        return {
+                            username: id
+                        };
+                    });
                     callBack.call(null, ids, url);
                 },
                 errorCall
