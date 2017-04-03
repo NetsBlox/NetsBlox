@@ -25,7 +25,9 @@ let extractRpcs = require('../server-utils').extractRpcs;
         // grab all the sourcecodes for diff roles and extracts rpcs for each
         let sourceCodes = Object.keys(project.roles).map(rId => project.roles[rId].SourceCode);
         let services = [];
-        sourceCodes.forEach(srcCode => services.concat(extractRpcs(srcCode)));
+        sourceCodes.forEach(srcCode => {
+            services = services.concat(extractRpcs(srcCode));
+        });
         var activeRole = project.roles[project.activeRole],
             metadata = {
                 owner: project.owner,
