@@ -1,7 +1,7 @@
 // This file will prepare the raw source code from the examples directory
 var fs = require('fs'),
     path = require('path'),
-    extractRpcs = require('../server-utils'),
+    extractRpcs = require('../server-utils').extractRpcs,
     _ = require('lodash');
 
 // Create the dictionary of examples

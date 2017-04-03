@@ -98,12 +98,12 @@ var getArgumentsFor = function(fn) {
 };
 
 // given a project source code returns an array of used services as tags.
-let extractRpcs = function (projectXml){
+var extractRpcs = function(projectXml){
     let rpcs = [];
-    let foundRpcs = projectXml.match(/ct"><l>([a-zA-Z]+)<\/l>/g);
+    let foundRpcs = projectXml.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/g);
     if (foundRpcs) {
         foundRpcs.forEach(txt=>{
-            rpcs.push(txt.match(/ct"><l>([a-zA-Z]+)<\/l>/)[1]);
+            rpcs.push(txt.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/)[1]);
         });                
     }
     return rpcs;
