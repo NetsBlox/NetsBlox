@@ -1,7 +1,8 @@
 // This file will prepare the raw source code from the examples directory
 var fs = require('fs'),
     path = require('path'),
-    _ = require('underscore');
+    extractRpcs = require('../server-utils'),
+    _ = require('lodash');
 
 // Create the dictionary of examples
 var examples = {};
@@ -49,18 +50,6 @@ fs.readdirSync(__dirname)
 
         }
         item.services = _.uniq(item.services); // keep only the unique services.
-
-        // given a project source code returns an array of used services.
-        function extractRpcs(projectXml){
-            let rpcs = [];
-            let foundRpcs = projectXml.match(/ct"><l>([a-zA-Z]+)<\/l>/g);
-            if (foundRpcs) {
-                foundRpcs.forEach(txt=>{
-                    rpcs.push(txt.match(/ct"><l>([a-zA-Z]+)<\/l>/)[1]);
-                });                
-            }
-            return rpcs
-        }
 
         // Add to examples dictionary
         examples[item.RoomName] = item;

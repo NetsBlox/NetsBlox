@@ -1,14 +1,4 @@
-// given a project source code returns an array of used services.
-function extractRpcs(projectXml){
-    let rpcs = [];
-    let foundRpcs = projectXml.match(/ct"><l>([a-zA-Z]+)<\/l>/g);
-    if (foundRpcs) {
-        foundRpcs.forEach(txt=>{
-            rpcs.push(txt.match(/ct"><l>([a-zA-Z]+)<\/l>/)[1]);
-        });                
-    }
-    return rpcs
-}
+let extractRpcs = require('../server-utils');
 
 (function(PublicProjectStore) {
     var _ = require('lodash'),
