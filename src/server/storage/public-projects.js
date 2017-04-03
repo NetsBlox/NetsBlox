@@ -1,3 +1,5 @@
+let extractRpcs = require('../server-utils').extractRpcs;
+
 (function(PublicProjectStore) {
     var _ = require('lodash'),
         logger, collection;
@@ -20,6 +22,10 @@
     };
 
     PublicProjectStore.publish = function(project) {
+        // grab all the sourcecodes for diff roles and extracts rpcs for each
+        let sourceCodes = Object.keys(project.roles).map(rId => project.roles[rId].SourceCode);
+        let services = [];
+        sourceCodes.forEach(srcCode => services.concat(extractRpcs(srcCode)));
         var activeRole = project.roles[project.activeRole],
             metadata = {
                 owner: project.owner,
@@ -27,7 +33,8 @@
                 primaryRoleName: project.activeRole,
                 roleNames: Object.keys(project.roles),
                 thumbnail: activeRole.Thumbnail[0],
-                notes: activeRole.Notes[0]
+                notes: activeRole.Notes[0],
+                services: _.uniq(services)
             };
 
         logger.trace(`Publishing project ${project.name} from ${project.owner}`);

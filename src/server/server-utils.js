@@ -97,13 +97,25 @@ var getArgumentsFor = function(fn) {
         .filter(arg => !!arg);
 };
 
+// given a project source code returns an array of used services as tags.
+var extractRpcs = function(projectXml){
+    let rpcs = [];
+    let foundRpcs = projectXml.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/g);
+    if (foundRpcs) {
+        foundRpcs.forEach(txt=>{
+            rpcs.push(txt.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/)[1]);
+        });                
+    }
+    return rpcs;
+};
+
 module.exports = {
     serialize: serialize,
     serializeArray: serializeArray,
     serializeRole: serializeRole,
     joinActiveProject: joinActiveProject,
     uuid: uuid,
-
+    extractRpcs: extractRpcs,
     getArgumentsFor: getArgumentsFor
 
 };
