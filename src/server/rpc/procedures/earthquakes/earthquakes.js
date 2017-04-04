@@ -122,7 +122,7 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
         }
         if (msgs.length) {
             Earthquakes._remainingMsgs[socket.uuid] = msgs;
-            sendNext(socket);
+            Earthquakes._sendNext(socket);
         }
     });
     return null;
