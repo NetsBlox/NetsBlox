@@ -10,17 +10,23 @@ var debug = require('debug'),
     request = require('request'),
     MercatorProjection = require('./mercator-projection'),
     CacheManager = require('cache-manager'),
+    Storage = require('../../storage'),
     // TODO: Change this cache to mongo or something (file?)
     // This cache is shared among all StaticMap instances
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity}),
     key = process.env.GOOGLE_MAPS_KEY;
 
-var mercator = new MercatorProjection();
+// TODO: check that the env variable is defined
+var mercator = new MercatorProjection(),
+    storage = Storage.create('static-map');
 
 // Retrieving a static map image
 var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
 
-var StaticMap = function() {
+// TODO: Can I set a ttl?
+var StaticMap = function(roomId) {
+    // TODO: create the entry
+    this.roomId = roomId;
     this.userMaps = {};  // Store the state of the map for each user
 };
 
@@ -42,6 +48,16 @@ StaticMap.prototype._getGoogleParams = function(options) {
     params.push('key=' + key);
     params.push('zoom='+(options.zoom || '12'));
     return params.join('&');
+};
+
+StaticMap.prototype._getMapInfo = function(uuid) {
+    // TODO: Should I store by uuid or roleId?
+    // probably roleId (unless there are two uuid)
+    return storage.get(this.roomId)
+        .then(maps => {
+            trace(`getting map for ${uuid}: ${JSON.stringify(maps, null, 2)}`);
+            return maps[uuid];
+        });
 };
 
 StaticMap.prototype._recordUserMap = function(socket, options) {
@@ -68,9 +84,8 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
             width: options.width
         };
         
-    this.userMaps[socket.uuid] = map;
-
-    trace('Stored map for ' + socket.uuid + ': ' + JSON.stringify(map));
+    return storage.save(this.roomId, map)
+        .then(() => trace('Stored map for ' + socket.uuid + ': ' + JSON.stringify(map)));
 };
 
 StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) {
@@ -85,7 +100,6 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
         params = this._getGoogleParams(options),
         url = baseUrl+'?'+params;
 
-    this._recordUserMap(this.socket, options);
     // Check the cache
     cache.wrap(url, cacheCallback => {
         // Get the image -> not in cache!
@@ -115,12 +129,12 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
         response.status(200).send(imageBuffer);
         trace('Sent the response!');
     });
-    return null;
+    return this._recordUserMap(this.socket, options);
 };
 
 StaticMap.prototype.getLongitude = function(x) {
     // Need lat, lng, width, zoom and x
-    var map = this.userMaps[this.socket.uuid] || {},
+    var map = this._getMapInfo(this.socket.uuid),
         center = map.center,
         zoom = map.zoom,
         width = map.width,
@@ -130,7 +144,7 @@ StaticMap.prototype.getLongitude = function(x) {
         myLng;
 
     x = +x + (width/2);  // translate x from center to edge
-    if (!this.userMaps[this.socket.uuid]) {
+    if (!map) {
         log('Map requested before creation from ' + this.socket.uuid);
     } else {
         trace('Map found for ' + this.socket.uuid + ': ' + JSON.stringify(map));
@@ -148,7 +162,7 @@ StaticMap.prototype.getLongitude = function(x) {
 
 StaticMap.prototype.getLatitude = function(y) {
     // Need lat, lng, height, zoom and x
-    var map = this.userMaps[this.socket.uuid] || {},
+    var map = this._getMapInfo(this.socket.uuid),
         center = map.center,
         zoom = map.zoom,
         height = map.height,
@@ -158,7 +172,7 @@ StaticMap.prototype.getLatitude = function(y) {
         myLat;
 
     y = +y + (height/2);  // translate y from center to edge
-    if (!this.userMaps[this.socket.uuid]) {
+    if (!map) {
         log('Map requested before creation from ' + this.socket.uuid);
     } else {
         trace('Map found for ' + this.socket.uuid + ': ' + JSON.stringify(map));
@@ -175,7 +189,7 @@ StaticMap.prototype.getLatitude = function(y) {
 };
 
 StaticMap.prototype.getXFromLongitude = function(longitude) {
-    var map = this.userMaps[this.socket.uuid],
+    var map = this._getMapInfo(this.socket.uuid),
         lng,
         proportion,
         x;
@@ -193,7 +207,7 @@ StaticMap.prototype.getXFromLongitude = function(longitude) {
 };
 
 StaticMap.prototype.getYFromLatitude = function(latitude) {
-    var map = this.userMaps[this.socket.uuid],
+    var map = this._getMapInfo(this.socket.uuid),
         lat,
         proportion,
         y;
@@ -212,22 +226,22 @@ StaticMap.prototype.getYFromLatitude = function(latitude) {
 
 // Getting current map settings
 StaticMap.prototype.maxLongitude = function() {
-    var map = this.userMaps[this.socket.uuid];
+    var map = this._getMapInfo(this.socket.uuid);
     return map.max.lng;
 };
 
 StaticMap.prototype.maxLatitude = function() {
-    var map = this.userMaps[this.socket.uuid];
+    var map = this._getMapInfo(this.socket.uuid);
     return map.max.lat;
 };
 
 StaticMap.prototype.minLongitude = function() {
-    var map = this.userMaps[this.socket.uuid];
+    var map = this._getMapInfo(this.socket.uuid);
     return map.min.lng;
 };
 
 StaticMap.prototype.minLatitude = function() {
-    var map = this.userMaps[this.socket.uuid];
+    var map = this._getMapInfo(this.socket.uuid);
     return map.min.lat;
 };
 
