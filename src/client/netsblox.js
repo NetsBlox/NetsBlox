@@ -59,7 +59,12 @@ NetsBloxMorph.prototype.openIn = function () {
                 myself.sockets.onConnect = onConnect;
             });
         };
+    } else if () {
+        // TODO: Get the room string
+        this.openRoomString();
     }
+    // TODO: Fix opening public projects
+    // TODO: Send the info about the room
 };
 
 NetsBloxMorph.prototype.resourceURL = function () {
