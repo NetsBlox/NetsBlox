@@ -36,7 +36,7 @@
         }
 
         return preprocess.then(() => collection.save(event))
-            .then(() => logger.trace(`successfully recorded event from session ${action.sessionId}`));
+            .then(() => logger.trace(`successfully recorded event from session ${event.sessionId}`));
     };
 
     // query-ing
