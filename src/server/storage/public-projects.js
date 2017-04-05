@@ -34,8 +34,8 @@ let extractRpcs = require('../server-utils').extractRpcs;
                 projectName: project.name,
                 primaryRoleName: project.activeRole,
                 roleNames: Object.keys(project.roles),
-                thumbnail: activeRole.Thumbnail[0],
-                notes: activeRole.Notes[0],
+                thumbnail: activeRole && activeRole.Thumbnail[0],
+                notes: activeRole && activeRole.Notes[0],
                 services: _.uniq(services)
             };
 
