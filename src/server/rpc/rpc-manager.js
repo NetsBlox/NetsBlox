@@ -176,14 +176,14 @@ RPCManager.prototype.sendRPCResult = function(response, result) {
     if (!response.headersSent && result !== null) {  // send the return value
         if (typeof result === 'object') {
             if (Q.isPromise(result)) {
-                result.then(result => this.sendRPCResult(response, result));
+                return result.then(result => this.sendRPCResult(response, result));
             } else {
-                response.json(result);
+                return response.json(result);
             }
         } else if (result !== undefined) {
-            response.send(result.toString());
+            return response.send(result.toString());
         } else {
-            response.sendStatus(200);
+            return response.sendStatus(200);
         }
     }
 };
