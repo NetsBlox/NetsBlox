@@ -54,13 +54,13 @@ StaticMap.prototype._getGoogleParams = function(options) {
     return params.join('&');
 };
 
-StaticMap.prototype._getMapInfo = function(uuid) {
-    // TODO: Should I store by uuid or roleId?
-    // probably roleId (unless there are two uuid)
+StaticMap.prototype._getMapInfo = function(roleId) {
+    // TODO: Should I store by roleId or roleId?
+    // probably roleId (unless there are two roleId)
     return getStorage().get(this.roomId)
         .then(maps => {
-            trace(`getting map for ${uuid}: ${JSON.stringify(maps, null, 2)}`);
-            return maps[uuid];
+            trace(`getting map for ${roleId}: ${JSON.stringify(maps, null, 2)}`);
+            return maps[roleId];
         });
 };
 
@@ -90,10 +90,10 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
         
     return getStorage().get(this.roomId)
         .then(maps => {
-            maps[socket.uuid] = map;
+            maps[socket.roleId] = map;
             getStorage().save(this.roomId, maps);
         })
-        .then(() => trace(`Stored map for ${socket.uuid}: ${JSON.stringify(map)}`));
+        .then(() => trace(`Stored map for ${socket.roleId}: ${JSON.stringify(map)}`));
 };
 
 StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) {
@@ -147,7 +147,7 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
 
 StaticMap.prototype.getLongitude = function(x) {
     // Need lat, lng, width, zoom and x
-    var map = this._getMapInfo(this.socket.uuid),
+    var map = this._getMapInfo(this.socket.roleId),
         center = map.center,
         zoom = map.zoom,
         width = map.width,
@@ -158,9 +158,9 @@ StaticMap.prototype.getLongitude = function(x) {
 
     x = +x + (width/2);  // translate x from center to edge
     if (!map) {
-        log('Map requested before creation from ' + this.socket.uuid);
+        log('Map requested before creation from ' + this.socket.roleId);
     } else {
-        trace('Map found for ' + this.socket.uuid + ': ' + JSON.stringify(map));
+        trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
     }
 
     // Just approximate here
@@ -175,7 +175,7 @@ StaticMap.prototype.getLongitude = function(x) {
 
 StaticMap.prototype.getLatitude = function(y) {
     // Need lat, lng, height, zoom and x
-    var map = this._getMapInfo(this.socket.uuid),
+    var map = this._getMapInfo(this.socket.roleId),
         center = map.center,
         zoom = map.zoom,
         height = map.height,
@@ -186,9 +186,9 @@ StaticMap.prototype.getLatitude = function(y) {
 
     y = +y + (height/2);  // translate y from center to edge
     if (!map) {
-        log('Map requested before creation from ' + this.socket.uuid);
+        log('Map requested before creation from ' + this.socket.roleId);
     } else {
-        trace('Map found for ' + this.socket.uuid + ': ' + JSON.stringify(map));
+        trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
     }
 
     // Just approximate here
@@ -202,13 +202,13 @@ StaticMap.prototype.getLatitude = function(y) {
 };
 
 StaticMap.prototype.getXFromLongitude = function(longitude) {
-    var map = this._getMapInfo(this.socket.uuid),
+    var map = this._getMapInfo(this.socket.roleId),
         lng,
         proportion,
         x;
 
     if (!map) {
-        log('Map requested before creation from ' + this.socket.uuid);
+        log('Map requested before creation from ' + this.socket.roleId);
     }
 
     lng = +longitude;
@@ -220,13 +220,13 @@ StaticMap.prototype.getXFromLongitude = function(longitude) {
 };
 
 StaticMap.prototype.getYFromLatitude = function(latitude) {
-    var map = this._getMapInfo(this.socket.uuid),
+    var map = this._getMapInfo(this.socket.roleId),
         lat,
         proportion,
         y;
 
     if (!map) {
-        log('Map requested before creation from ' + this.socket.uuid);
+        log('Map requested before creation from ' + this.socket.roleId);
     }
 
     lat = +latitude;
@@ -242,7 +242,7 @@ var mapGetter = function(minMax, attr) {
     return function() {
         var response = this.response;
 
-        this._getMapInfo(this.socket.uuid).then(map => {
+        this._getMapInfo(this.socket.roleId).then(map => {
 
             if (!map) {
                 response.send('ERROR: No map found. Please request a map and try again.');
