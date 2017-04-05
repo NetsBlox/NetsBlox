@@ -8,7 +8,6 @@ var debug = require('debug'),
     log = debug('netsblox:rpc:static-map:log'),
     trace = debug('netsblox:rpc:static-map:trace'),
     request = require('request'),
-    Q = require('q'),
     MercatorProjection = require('./mercator-projection'),
     CacheManager = require('cache-manager'),
     Storage = require('../../storage'),
@@ -22,16 +21,17 @@ var mercator = new MercatorProjection(),
     storage;
 
 // Retrieving a static map image
-var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
+var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap',
+    getStorage = function() {
+        if (!storage) {
+            storage = Storage.create('static-map');
+        }
+        return storage;
+    };
 
-// TODO: Can I set a ttl?
 var StaticMap = function(roomId) {
-    // TODO: create the entry
     this.roomId = roomId;
     this.userMaps = {};  // Store the state of the map for each user
-    if (!storage) {
-        storage = Storage.create('static-map');
-    }
 };
 
 StaticMap.getPath = function() {
@@ -57,7 +57,7 @@ StaticMap.prototype._getGoogleParams = function(options) {
 StaticMap.prototype._getMapInfo = function(uuid) {
     // TODO: Should I store by uuid or roleId?
     // probably roleId (unless there are two uuid)
-    return storage.get(this.roomId)
+    return getStorage().get(this.roomId)
         .then(maps => {
             trace(`getting map for ${uuid}: ${JSON.stringify(maps, null, 2)}`);
             return maps[uuid];
@@ -88,8 +88,12 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
             width: options.width
         };
         
-    return storage.save(this.roomId, map)
-        .then(() => trace('Stored map for ' + socket.uuid + ': ' + JSON.stringify(map)));
+    return getStorage().get(this.roomId)
+        .then(maps => {
+            maps[socket.uuid] = map;
+            getStorage().save(this.roomId, maps);
+        })
+        .then(() => trace(`Stored map for ${socket.uuid}: ${JSON.stringify(map)}`));
 };
 
 StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) {
@@ -105,8 +109,7 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
         url = baseUrl+'?'+params;
 
     // Check the cache
-    return this._recordUserMap(this.socket, options).then(() => {
-        var deferred = Q.defer();
+    this._recordUserMap(this.socket, options).then(() => {
 
         cache.wrap(url, cacheCallback => {
             // Get the image -> not in cache!
@@ -135,11 +138,11 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
 
             response.status(200).send(imageBuffer);
             trace('Sent the response!');
-            deferred.resolve();
         });
 
-        return deferred.promise;
     });
+
+    return null;
 };
 
 StaticMap.prototype.getLongitude = function(x) {
@@ -235,25 +238,28 @@ StaticMap.prototype.getYFromLatitude = function(latitude) {
 };
 
 // Getting current map settings
-StaticMap.prototype.maxLongitude = function() {
-    var map = this._getMapInfo(this.socket.uuid);
-    return map.max.lng;
+var mapGetter = function(minMax, attr) {
+    return function() {
+        var response = this.response;
+
+        this._getMapInfo(this.socket.uuid).then(map => {
+
+            if (!map) {
+                response.send('ERROR: No map found. Please request a map and try again.');
+            } else {
+                response.json(map[minMax][attr]);
+            }
+
+        });
+
+        return null;
+    };
 };
 
-StaticMap.prototype.maxLatitude = function() {
-    var map = this._getMapInfo(this.socket.uuid);
-    return map.max.lat;
-};
-
-StaticMap.prototype.minLongitude = function() {
-    var map = this._getMapInfo(this.socket.uuid);
-    return map.min.lng;
-};
-
-StaticMap.prototype.minLatitude = function() {
-    var map = this._getMapInfo(this.socket.uuid);
-    return map.min.lat;
-};
+StaticMap.prototype.maxLongitude = mapGetter('max', 'lng');
+StaticMap.prototype.maxLatitude = mapGetter('max', 'lat');
+StaticMap.prototype.minLongitude = mapGetter('min', 'lng');
+StaticMap.prototype.minLatitude = mapGetter('min', 'lat');
 
 // Map of argument name to old field name
 StaticMap.COMPATIBILITY = {
