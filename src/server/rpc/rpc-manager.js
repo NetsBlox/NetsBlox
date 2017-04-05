@@ -7,6 +7,7 @@
 
 var fs = require('fs'),
     path = require('path'),
+    Q = require('q'),
     _ = require('lodash'),
     express = require('express'),
     Logger = require('../logger'),
@@ -164,18 +165,26 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         });
         result = rpc[action].apply(rpc, args);
 
-        if (!res.headersSent && result !== null) {  // send the return value
-            if (typeof result === 'object') {
-                res.json(result);
-            } else if (result !== undefined) {
-                res.send(result.toString());
-            } else {
-                res.sendStatus(200);
-            }
-        }
+        this.sendRPCResult(res, result);
     } else {
         this._logger.log('Invalid action requested for '+RPC.getPath()+': '+action);
         return res.status(400).send('unrecognized action');
+    }
+};
+
+RPCManager.prototype.sendRPCResult = function(response, result) {
+    if (!response.headersSent && result !== null) {  // send the return value
+        if (typeof result === 'object') {
+            if (Q.isPromise(result)) {
+                result.then(result => this.sendRPCResult(response, result));
+            } else {
+                response.json(result);
+            }
+        } else if (result !== undefined) {
+            response.send(result.toString());
+        } else {
+            response.sendStatus(200);
+        }
     }
 };
 
