@@ -86,9 +86,16 @@ class User extends DataWrapper {
     loadProjects () {  // load the rooms from the projects (retrieve blob data)
         return Q.all(this.projects.map(project => {
             let room = project,
-                roles = Object.keys(room.roles).map(name => room.roles[name]),
+                roles,
                 srcContent,
                 media;
+
+            roles = Object.keys(room.roles).map(name => room.roles[name])
+                .filter(role => !!role);
+
+            if (roles.length < Object.keys(room.roles).length) {
+                this._logger.warn(`Found null roles in ${room.uuid}. Removing...`);
+            }
 
             srcContent = roles.map(role => blob.get(role.SourceCode));
             media = roles.map(role => blob.get(role.Media));

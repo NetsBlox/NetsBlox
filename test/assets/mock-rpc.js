@@ -4,6 +4,7 @@
 // RPCs now contain the methods 
 var Constants = require('../../src/common/constants'),
     getArgsFor = require('../../src/server/server-utils').getArgumentsFor,
+    MockResponse = require('./mock-response'),
     _ = require('lodash');
 
 var MockRPC = function(RPC, raw) {
@@ -73,22 +74,5 @@ MockSocket.prototype.reset = function() {
         sockets: () => []
     };
 };
-
-var MockResponse = function() {
-    this.code = null;
-    this.response = null;
-};
-
-MockResponse.prototype.status = function(code) {
-    this.code = code;
-    return this;
-};
-
-MockResponse.prototype.send = function(text) {
-    this.response = text;
-    return this;
-};
-
-MockResponse.prototype.json = MockResponse.prototype.send;
 
 module.exports = MockRPC;
