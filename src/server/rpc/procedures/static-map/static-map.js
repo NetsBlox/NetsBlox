@@ -8,6 +8,7 @@ var debug = require('debug'),
     log = debug('netsblox:rpc:static-map:log'),
     trace = debug('netsblox:rpc:static-map:trace'),
     request = require('request'),
+    Q = require('q'),
     MercatorProjection = require('./mercator-projection'),
     CacheManager = require('cache-manager'),
     Storage = require('../../storage'),
@@ -18,7 +19,7 @@ var debug = require('debug'),
 
 // TODO: check that the env variable is defined
 var mercator = new MercatorProjection(),
-    storage = Storage.create('static-map');
+    storage;
 
 // Retrieving a static map image
 var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
@@ -28,6 +29,9 @@ var StaticMap = function(roomId) {
     // TODO: create the entry
     this.roomId = roomId;
     this.userMaps = {};  // Store the state of the map for each user
+    if (!storage) {
+        storage = Storage.create('static-map');
+    }
 };
 
 StaticMap.getPath = function() {
@@ -101,35 +105,41 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
         url = baseUrl+'?'+params;
 
     // Check the cache
-    cache.wrap(url, cacheCallback => {
-        // Get the image -> not in cache!
-        trace('request params:', options);
-        trace('url is '+url);
-        trace('Requesting new image from google!');
-        var response = request.get(url);
-        delete response.headers['cache-control'];
+    return this._recordUserMap(this.socket, options).then(() => {
+        var deferred = Q.defer();
 
-        // Gather the data...
-        var result = new Buffer(0);
-        response.on('data', function(data) {
-            result = Buffer.concat([result, data]);
-        });
-        response.on('end', function() {
-            return cacheCallback(null, result);
-        });
-    }, (err, imageBuffer) => {
-        // Send the response to the user
-        trace('Sending the response!');
-        // Set the headers
-        response.set('cache-control', 'private, no-store, max-age=0');
-        response.set('content-type', 'image/png');
-        response.set('content-length', imageBuffer.length);
-        response.set('connection', 'close');
+        cache.wrap(url, cacheCallback => {
+            // Get the image -> not in cache!
+            trace('request params:', options);
+            trace('url is '+url);
+            trace('Requesting new image from google!');
+            var mapResponse = request.get(url);
+            delete mapResponse.headers['cache-control'];
 
-        response.status(200).send(imageBuffer);
-        trace('Sent the response!');
+            // Gather the data...
+            var result = new Buffer(0);
+            mapResponse.on('data', function(data) {
+                result = Buffer.concat([result, data]);
+            });
+            mapResponse.on('end', function() {
+                return cacheCallback(null, result);
+            });
+        }, (err, imageBuffer) => {
+            // Send the response to the user
+            trace('Sending the response!');
+            // Set the headers
+            response.set('cache-control', 'private, no-store, max-age=0');
+            response.set('content-type', 'image/png');
+            response.set('content-length', imageBuffer.length);
+            response.set('connection', 'close');
+
+            response.status(200).send(imageBuffer);
+            trace('Sent the response!');
+            deferred.resolve();
+        });
+
+        return deferred.promise;
     });
-    return this._recordUserMap(this.socket, options);
 };
 
 StaticMap.prototype.getLongitude = function(x) {

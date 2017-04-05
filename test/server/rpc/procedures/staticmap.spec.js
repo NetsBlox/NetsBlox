@@ -1,18 +1,21 @@
 describe.only('staticmap', function() {
-    var StaticMap,
+    var StaticMap = require('../../../../src/server/rpc/procedures/static-map/static-map'),
         RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
-        storage = require('../../../../src/server/storage/storage'),
-        staticmap;
+        Storage = require('../../../../src/server/storage/storage'),
+        Logger = require('../../../../src/server/logger'),
+        storage = new Storage(new Logger('netsblox')),
+        staticmap = new RPCMock(StaticMap);
 
     before(function(done) {
         storage.connect()
             .then(() => {
-                console.log('connected!');
-                StaticMap = require('../../../../src/server/rpc/procedures/static-map/static-map');
                 staticmap = new RPCMock(StaticMap);
                 done();
             });
+    });
+
+    describe('interfaces', function() {
     });
 
     describe('interfaces', function() {
