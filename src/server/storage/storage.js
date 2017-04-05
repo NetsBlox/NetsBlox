@@ -25,6 +25,7 @@ Storage.prototype.connect = function() {
 
             this._db = db;
             this._logger.info(`Connected to ${mongoURI}`);
+            return db;
         })
         .catch(err => {
             console.error(`Could not connect to mongodb at ${mongoURI}.`);
