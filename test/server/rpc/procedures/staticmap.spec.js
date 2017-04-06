@@ -1,4 +1,4 @@
-describe.only('staticmap', function() {
+describe('staticmap', function() {
     var StaticMap = require('../../../../src/server/rpc/procedures/static-map/static-map'),
         RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
