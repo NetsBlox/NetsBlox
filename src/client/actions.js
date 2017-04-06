@@ -73,15 +73,14 @@ SnapActions.isCollaborating = function() {
 };
 
 // Recording user actions
-SnapActions.send = function() {
-    var socket = this.ide().sockets,
-        result;
+SnapActions.send = function(event) {
+    var socket = this.ide().sockets;
 
     this._ws = socket.websocket;
-    result = ActionManager.prototype.send.apply(this, arguments);
-    this.recordActionNB(result);
+    ActionManager.prototype.send.apply(this, arguments);
+    this.recordActionNB(event);
 
-    return result;
+    return event;
 };
 
 SnapActions.onMessage = function(msg) {
