@@ -7,7 +7,6 @@
 
 var fs = require('fs'),
     path = require('path'),
-    Q = require('q'),
     _ = require('lodash'),
     express = require('express'),
     Logger = require('../logger'),
