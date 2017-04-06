@@ -7,7 +7,6 @@
 
 var fs = require('fs'),
     path = require('path'),
-    Q = require('q'),
     _ = require('lodash'),
     express = require('express'),
     Logger = require('../logger'),
@@ -175,7 +174,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
 RPCManager.prototype.sendRPCResult = function(response, result) {
     if (!response.headersSent && result !== null) {  // send the return value
         if (typeof result === 'object') {
-            if (Q.isPromise(result)) {
+            if (typeof result.then === 'function') {
                 return result.then(result => this.sendRPCResult(response, result));
             } else {
                 return response.json(result);
