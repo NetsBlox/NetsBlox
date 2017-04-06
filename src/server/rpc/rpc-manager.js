@@ -124,7 +124,7 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
     if (!rpcs[RPC.getPath()]) {
         this._logger.info('Creating new RPC (' + RPC.getPath() +
             ') for ' + socket._room.uuid);
-        rpcs[RPC.getPath()] = new RPC();
+        rpcs[RPC.getPath()] = new RPC(socket._room.uuid);
     }
     return rpcs[RPC.getPath()];
 
@@ -155,6 +155,10 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         // Add the netsblox socket for triggering network messages from an RPC
         rpc.socket = SocketManager.sockets[uuid];
         rpc.response = res;
+        if (!rpc.socket) {
+            this._logger.error(`Could not find socket ${uuid} for rpc ` + 
+                `${RPC.getPath()}:${action}. Will try to call it anyway...`);
+        }
 
         // Get the arguments
         oldFieldNameFor = compatDict[action] || {};

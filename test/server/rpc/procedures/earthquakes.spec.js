@@ -2,6 +2,7 @@ describe('earthquakes', function() {
     var EarthQuakes = require('../../../../src/server/rpc/procedures/earthquakes/earthquakes'),
         RPCMock = require('../../../assets/mock-rpc'),
         earthquakes,
+        storage = require('../../../../src/server/storage/storage'),
         assert = require('assert');
 
     before(function() {
