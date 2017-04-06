@@ -5,7 +5,6 @@
 'use strict';
 
 var debug = require('debug'),
-    Q = require('q'),
     log = debug('netsblox:rpc:static-map:log'),
     trace = debug('netsblox:rpc:static-map:trace'),
     request = require('request'),
@@ -56,11 +55,9 @@ StaticMap.prototype._getGoogleParams = function(options) {
 };
 
 StaticMap.prototype._getMapInfo = function(roleId) {
-    // TODO: Should I store by roleId or roleId?
-    // probably roleId (unless there are two roleId)
     return getStorage().get(this.roomId)
         .then(maps => {
-            trace(`getting map for ${roleId}: ${JSON.stringify(maps, null, 2)}`);
+            trace(`getting map for ${roleId}: ${JSON.stringify(maps)}`);
             return maps[roleId];
         });
 };
