@@ -5,6 +5,7 @@
 'use strict';
 
 var debug = require('debug'),
+    Q = require('q'),
     log = debug('netsblox:rpc:static-map:log'),
     trace = debug('netsblox:rpc:static-map:trace'),
     request = require('request'),
@@ -90,6 +91,7 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
         
     return getStorage().get(this.roomId)
         .then(maps => {
+            maps = maps || {};
             maps[socket.roleId] = map;
             getStorage().save(this.roomId, maps);
         })
@@ -147,97 +149,105 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
 
 StaticMap.prototype.getLongitude = function(x) {
     // Need lat, lng, width, zoom and x
-    var map = this._getMapInfo(this.socket.roleId),
-        center = map.center,
-        zoom = map.zoom,
-        width = map.width,
-        lngs = map ? [map.min.lng, map.max.lng] :
-            mercator.getLongitudes(center, zoom, width, 1),
-        lngWidth,
-        myLng;
+    return this._getUserMap().then(map => {
+        var center = map.center,
+            zoom = map.zoom,
+            width = map.width,
+            lngs = map ? [map.min.lng, map.max.lng] :
+                mercator.getLongitudes(center, zoom, width, 1),
+            lngWidth,
+            myLng;
 
-    x = +x + (width/2);  // translate x from center to edge
-    if (!map) {
-        log('Map requested before creation from ' + this.socket.roleId);
-    } else {
-        trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
-    }
+        x = +x + (width/2);  // translate x from center to edge
+        if (!map) {
+            log('Map requested before creation from ' + this.socket.roleId);
+        } else {
+            trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
+        }
 
-    // Just approximate here
-    trace('Longitudes are', lngs);
-    // FIXME: Fix the "roll over"
-    lngWidth = Math.abs(lngs[1] - lngs[0]);
-    trace('width:', lngWidth);
-    myLng = lngs[0] + (x/width)*lngWidth;
-    trace('longitude:', myLng);
-    return myLng;  // This may need to be made a little more accurate...
+        // Just approximate here
+        trace('Longitudes are', lngs);
+        // FIXME: Fix the "roll over"
+        lngWidth = Math.abs(lngs[1] - lngs[0]);
+        trace('width:', lngWidth);
+        myLng = lngs[0] + (x/width)*lngWidth;
+        trace('longitude:', myLng);
+        return myLng;  // This may need to be made a little more accurate...
+    });
 };
 
 StaticMap.prototype.getLatitude = function(y) {
     // Need lat, lng, height, zoom and x
-    var map = this._getMapInfo(this.socket.roleId),
-        center = map.center,
-        zoom = map.zoom,
-        height = map.height,
-        lats = map ? [map.min.lat, map.max.lat] :
-            mercator.getLatitudes(center, zoom, 1, height),
-        latWidth,
-        myLat;
+    return this._getUserMap().then(map => {
+        var center = map.center,
+            zoom = map.zoom,
+            height = map.height,
+            lats = map ? [map.min.lat, map.max.lat] :
+                mercator.getLatitudes(center, zoom, 1, height),
+            latWidth,
+            myLat;
 
-    y = +y + (height/2);  // translate y from center to edge
-    if (!map) {
-        log('Map requested before creation from ' + this.socket.roleId);
-    } else {
-        trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
-    }
+        y = +y + (height/2);  // translate y from center to edge
+        if (!map) {
+            log('Map requested before creation from ' + this.socket.roleId);
+        } else {
+            trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
+        }
 
-    // Just approximate here
-    trace('y is:', y);
-    trace('Latitude window is', lats);
-    latWidth = Math.abs(lats[1] - lats[0]);
-    trace('window width is', latWidth);
-    myLat = lats[0] + (y/height)*latWidth;
-    trace('latitude:', myLat);
-    return myLat;  // This may need to be made a little more accurate...
+        // Just approximate here
+        trace('y is:', y);
+        trace('Latitude window is', lats);
+        latWidth = Math.abs(lats[1] - lats[0]);
+        trace('window width is', latWidth);
+        myLat = lats[0] + (y/height)*latWidth;
+        trace('latitude:', myLat);
+        return myLat;  // This may need to be made a little more accurate...
+    });
 };
 
 StaticMap.prototype.getXFromLongitude = function(longitude) {
-    var map = this._getMapInfo(this.socket.roleId),
-        lng,
+    var lng,
         proportion,
         x;
 
-    if (!map) {
-        log('Map requested before creation from ' + this.socket.roleId);
-    }
+    return this._getUserMap().then(map => {
+        lng = +longitude;
+        proportion = (lng - map.min.lng)/(map.max.lng - map.min.lng);
+        x = proportion*map.width - (map.width/2);  // Translate y to account for 0 in center
 
-    lng = +longitude;
-    proportion = (lng - map.min.lng)/(map.max.lng - map.min.lng);
-    x = proportion*map.width - (map.width/2);  // Translate y to account for 0 in center
-
-    trace('x value is ' + x);
-    return x;
+        trace('x value is ' + x);
+        return x;
+    });
 };
 
 StaticMap.prototype.getYFromLatitude = function(latitude) {
-    var map = this._getMapInfo(this.socket.roleId),
-        lat,
+    var lat,
         proportion,
         y;
 
-    if (!map) {
-        log('Map requested before creation from ' + this.socket.roleId);
-    }
+    return this._getUserMap().then(map => {
+        lat = +latitude;
+        proportion = (lat - map.min.lat)/(map.max.lat - map.min.lat);
+        y = proportion*map.height - (map.height/2);  // Translate y to account for 0 in center
 
-    lat = +latitude;
-    proportion = (lat - map.min.lat)/(map.max.lat - map.min.lat);
-    y = proportion*map.height - (map.height/2);  // Translate y to account for 0 in center
-
-    trace('y value is ' + y);
-    return y;
+        trace('y value is ' + y);
+        return y;
+    });
 };
 
 // Getting current map settings
+StaticMap.prototype._getUserMap = function() {
+    var response = this.response;
+
+    return this._getMapInfo(this.socket.roleId).then(map => {
+        if (!map) {
+            response.send('ERROR: No map found. Please request a map and try again.');
+            return null;
+        }
+        return map;
+    });
+};
+
 var mapGetter = function(minMax, attr) {
     return function() {
         var response = this.response;
