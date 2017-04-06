@@ -10,17 +10,27 @@ var debug = require('debug'),
     request = require('request'),
     MercatorProjection = require('./mercator-projection'),
     CacheManager = require('cache-manager'),
+    Storage = require('../../storage'),
     // TODO: Change this cache to mongo or something (file?)
     // This cache is shared among all StaticMap instances
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity}),
     key = process.env.GOOGLE_MAPS_KEY;
 
-var mercator = new MercatorProjection();
+// TODO: check that the env variable is defined
+var mercator = new MercatorProjection(),
+    storage;
 
 // Retrieving a static map image
-var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
+var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap',
+    getStorage = function() {
+        if (!storage) {
+            storage = Storage.create('static-map');
+        }
+        return storage;
+    };
 
-var StaticMap = function() {
+var StaticMap = function(roomId) {
+    this.roomId = roomId;
     this.userMaps = {};  // Store the state of the map for each user
 };
 
@@ -42,6 +52,14 @@ StaticMap.prototype._getGoogleParams = function(options) {
     params.push('key=' + key);
     params.push('zoom='+(options.zoom || '12'));
     return params.join('&');
+};
+
+StaticMap.prototype._getMapInfo = function(roleId) {
+    return getStorage().get(this.roomId)
+        .then(maps => {
+            trace(`getting map for ${roleId}: ${JSON.stringify(maps)}`);
+            return maps[roleId];
+        });
 };
 
 StaticMap.prototype._recordUserMap = function(socket, options) {
@@ -68,9 +86,13 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
             width: options.width
         };
         
-    this.userMaps[socket.uuid] = map;
-
-    trace('Stored map for ' + socket.uuid + ': ' + JSON.stringify(map));
+    return getStorage().get(this.roomId)
+        .then(maps => {
+            maps = maps || {};
+            maps[socket.roleId] = map;
+            getStorage().save(this.roomId, maps);
+        })
+        .then(() => trace(`Stored map for ${socket.roleId}: ${JSON.stringify(map)}`));
 };
 
 StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) {
@@ -85,151 +107,166 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
         params = this._getGoogleParams(options),
         url = baseUrl+'?'+params;
 
-    this._recordUserMap(this.socket, options);
     // Check the cache
-    cache.wrap(url, cacheCallback => {
-        // Get the image -> not in cache!
-        trace('request params:', options);
-        trace('url is '+url);
-        trace('Requesting new image from google!');
-        var response = request.get(url);
-        delete response.headers['cache-control'];
+    this._recordUserMap(this.socket, options).then(() => {
 
-        // Gather the data...
-        var result = new Buffer(0);
-        response.on('data', function(data) {
-            result = Buffer.concat([result, data]);
-        });
-        response.on('end', function() {
-            return cacheCallback(null, result);
-        });
-    }, (err, imageBuffer) => {
-        // Send the response to the user
-        trace('Sending the response!');
-        // Set the headers
-        response.set('cache-control', 'private, no-store, max-age=0');
-        response.set('content-type', 'image/png');
-        response.set('content-length', imageBuffer.length);
-        response.set('connection', 'close');
+        cache.wrap(url, cacheCallback => {
+            // Get the image -> not in cache!
+            trace('request params:', options);
+            trace('url is '+url);
+            trace('Requesting new image from google!');
+            var mapResponse = request.get(url);
+            delete mapResponse.headers['cache-control'];
 
-        response.status(200).send(imageBuffer);
-        trace('Sent the response!');
+            // Gather the data...
+            var result = new Buffer(0);
+            mapResponse.on('data', function(data) {
+                result = Buffer.concat([result, data]);
+            });
+            mapResponse.on('end', function() {
+                return cacheCallback(null, result);
+            });
+        }, (err, imageBuffer) => {
+            // Send the response to the user
+            trace('Sending the response!');
+            // Set the headers
+            response.set('cache-control', 'private, no-store, max-age=0');
+            response.set('content-type', 'image/png');
+            response.set('content-length', imageBuffer.length);
+            response.set('connection', 'close');
+
+            response.status(200).send(imageBuffer);
+            trace('Sent the response!');
+        });
+
     });
+
     return null;
 };
 
 StaticMap.prototype.getLongitude = function(x) {
     // Need lat, lng, width, zoom and x
-    var map = this.userMaps[this.socket.uuid] || {},
-        center = map.center,
-        zoom = map.zoom,
-        width = map.width,
-        lngs = map ? [map.min.lng, map.max.lng] :
-            mercator.getLongitudes(center, zoom, width, 1),
-        lngWidth,
-        myLng;
+    return this._getUserMap().then(map => {
+        var center = map.center,
+            zoom = map.zoom,
+            width = map.width,
+            lngs = map ? [map.min.lng, map.max.lng] :
+                mercator.getLongitudes(center, zoom, width, 1),
+            lngWidth,
+            myLng;
 
-    x = +x + (width/2);  // translate x from center to edge
-    if (!this.userMaps[this.socket.uuid]) {
-        log('Map requested before creation from ' + this.socket.uuid);
-    } else {
-        trace('Map found for ' + this.socket.uuid + ': ' + JSON.stringify(map));
-    }
+        x = +x + (width/2);  // translate x from center to edge
+        if (!map) {
+            log('Map requested before creation from ' + this.socket.roleId);
+        } else {
+            trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
+        }
 
-    // Just approximate here
-    trace('Longitudes are', lngs);
-    // FIXME: Fix the "roll over"
-    lngWidth = Math.abs(lngs[1] - lngs[0]);
-    trace('width:', lngWidth);
-    myLng = lngs[0] + (x/width)*lngWidth;
-    trace('longitude:', myLng);
-    return myLng;  // This may need to be made a little more accurate...
+        // Just approximate here
+        trace('Longitudes are', lngs);
+        // FIXME: Fix the "roll over"
+        lngWidth = Math.abs(lngs[1] - lngs[0]);
+        trace('width:', lngWidth);
+        myLng = lngs[0] + (x/width)*lngWidth;
+        trace('longitude:', myLng);
+        return myLng;  // This may need to be made a little more accurate...
+    });
 };
 
 StaticMap.prototype.getLatitude = function(y) {
     // Need lat, lng, height, zoom and x
-    var map = this.userMaps[this.socket.uuid] || {},
-        center = map.center,
-        zoom = map.zoom,
-        height = map.height,
-        lats = map ? [map.min.lat, map.max.lat] :
-            mercator.getLatitudes(center, zoom, 1, height),
-        latWidth,
-        myLat;
+    return this._getUserMap().then(map => {
+        var center = map.center,
+            zoom = map.zoom,
+            height = map.height,
+            lats = map ? [map.min.lat, map.max.lat] :
+                mercator.getLatitudes(center, zoom, 1, height),
+            latWidth,
+            myLat;
 
-    y = +y + (height/2);  // translate y from center to edge
-    if (!this.userMaps[this.socket.uuid]) {
-        log('Map requested before creation from ' + this.socket.uuid);
-    } else {
-        trace('Map found for ' + this.socket.uuid + ': ' + JSON.stringify(map));
-    }
+        y = +y + (height/2);  // translate y from center to edge
+        if (!map) {
+            log('Map requested before creation from ' + this.socket.roleId);
+        } else {
+            trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
+        }
 
-    // Just approximate here
-    trace('y is:', y);
-    trace('Latitude window is', lats);
-    latWidth = Math.abs(lats[1] - lats[0]);
-    trace('window width is', latWidth);
-    myLat = lats[0] + (y/height)*latWidth;
-    trace('latitude:', myLat);
-    return myLat;  // This may need to be made a little more accurate...
+        // Just approximate here
+        trace('y is:', y);
+        trace('Latitude window is', lats);
+        latWidth = Math.abs(lats[1] - lats[0]);
+        trace('window width is', latWidth);
+        myLat = lats[0] + (y/height)*latWidth;
+        trace('latitude:', myLat);
+        return myLat;  // This may need to be made a little more accurate...
+    });
 };
 
 StaticMap.prototype.getXFromLongitude = function(longitude) {
-    var map = this.userMaps[this.socket.uuid],
-        lng,
+    var lng,
         proportion,
         x;
 
-    if (!map) {
-        log('Map requested before creation from ' + this.socket.uuid);
-    }
+    return this._getUserMap().then(map => {
+        lng = +longitude;
+        proportion = (lng - map.min.lng)/(map.max.lng - map.min.lng);
+        x = proportion*map.width - (map.width/2);  // Translate y to account for 0 in center
 
-    lng = +longitude;
-    proportion = (lng - map.min.lng)/(map.max.lng - map.min.lng);
-    x = proportion*map.width - (map.width/2);  // Translate y to account for 0 in center
-
-    trace('x value is ' + x);
-    return x;
+        trace('x value is ' + x);
+        return x;
+    });
 };
 
 StaticMap.prototype.getYFromLatitude = function(latitude) {
-    var map = this.userMaps[this.socket.uuid],
-        lat,
+    var lat,
         proportion,
         y;
 
-    if (!map) {
-        log('Map requested before creation from ' + this.socket.uuid);
-    }
+    return this._getUserMap().then(map => {
+        lat = +latitude;
+        proportion = (lat - map.min.lat)/(map.max.lat - map.min.lat);
+        y = proportion*map.height - (map.height/2);  // Translate y to account for 0 in center
 
-    lat = +latitude;
-    proportion = (lat - map.min.lat)/(map.max.lat - map.min.lat);
-    y = proportion*map.height - (map.height/2);  // Translate y to account for 0 in center
-
-    trace('y value is ' + y);
-    return y;
+        trace('y value is ' + y);
+        return y;
+    });
 };
 
 // Getting current map settings
-StaticMap.prototype.maxLongitude = function() {
-    var map = this.userMaps[this.socket.uuid];
-    return map.max.lng;
+StaticMap.prototype._getUserMap = function() {
+    var response = this.response;
+
+    return this._getMapInfo(this.socket.roleId).then(map => {
+        if (!map) {
+            response.send('ERROR: No map found. Please request a map and try again.');
+            return null;
+        }
+        return map;
+    });
 };
 
-StaticMap.prototype.maxLatitude = function() {
-    var map = this.userMaps[this.socket.uuid];
-    return map.max.lat;
+var mapGetter = function(minMax, attr) {
+    return function() {
+        var response = this.response;
+
+        this._getMapInfo(this.socket.roleId).then(map => {
+
+            if (!map) {
+                response.send('ERROR: No map found. Please request a map and try again.');
+            } else {
+                response.json(map[minMax][attr]);
+            }
+
+        });
+
+        return null;
+    };
 };
 
-StaticMap.prototype.minLongitude = function() {
-    var map = this.userMaps[this.socket.uuid];
-    return map.min.lng;
-};
-
-StaticMap.prototype.minLatitude = function() {
-    var map = this.userMaps[this.socket.uuid];
-    return map.min.lat;
-};
+StaticMap.prototype.maxLongitude = mapGetter('max', 'lng');
+StaticMap.prototype.maxLatitude = mapGetter('max', 'lat');
+StaticMap.prototype.minLongitude = mapGetter('min', 'lng');
+StaticMap.prototype.minLatitude = mapGetter('min', 'lat');
 
 // Map of argument name to old field name
 StaticMap.COMPATIBILITY = {
