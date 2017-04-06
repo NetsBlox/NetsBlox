@@ -4,7 +4,6 @@
 'use strict';
 var counter = 0,
     Constants = require(__dirname + '/../../common/constants'),
-    PublicRoleManager = require(__dirname + '/../public-role-manager'),
     PROJECT_FIELDS = [
         'ProjectName',
         'SourceCode',
@@ -14,6 +13,7 @@ var counter = 0,
         'RoomUuid'
     ],
     R = require('ramda'),
+    Utils = require('../server-utils'),
     Sessions = require('snap-collaboration').sessions,
     parseXml = require('xml2js').parseString,
     assert = require('assert'),
@@ -254,10 +254,30 @@ NetsBloxSocket.MessageHandlers = {
 
             msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
         } else {  // inter-room message
-            var socket = PublicRoleManager.lookUp(msg.dstId);
-            if (socket) {
-                msg.dstId = Constants.EVERYONE;
-                socket.send(msg);
+            // Look up the socket matching
+            //
+            //     <role>@<project>@<owner> or <project>@<owner>
+            //
+            var idChunks = msg.dstId.split('@'),
+                sockets = [],
+                ownerId = idChunks.pop(),
+                roomName = idChunks.pop(),
+                roleId = idChunks.pop(),
+                roomId = Utils.uuid(ownerId, roomName),
+                room = RoomManager.rooms[roomId];
+
+            if (room) {
+                if (roleId) {
+                    if (room.roles[roleId]) {
+                        sockets.push(room.roles[roleId]);
+                    }
+                } else {
+                    sockets = room.sockets();
+                }
+                sockets.forEach(socket => {
+                    msg.dstId = Constants.EVERYONE;
+                    socket.send(msg);
+                });
             }
         }
     },
