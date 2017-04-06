@@ -1,4 +1,4 @@
-describe.only('rpc-manager', function() {
+describe('rpc-manager', function() {
     var RPCManager = require('../../../src/server/rpc/rpc-manager'),
         MockResponse = require('../../assets/mock-response'),
         assert = require('assert'),
