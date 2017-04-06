@@ -474,11 +474,7 @@ module.exports = [
                 }
                 var project = user.rooms.find(room => room.name === projectName);
                 if (project && project.Public) {
-                    var openRole = project.activeRole || Object.keys(project.roles)[0],
-                        role = project.roles[openRole];
-
-
-                    return res.send(`<snapdata>${role.SourceCode + role.Media}</snapdata>`);
+                    return res.send(Utils.getRoomXML(project));
                 } else {
                     return res.status(400).send('ERROR: Project not available');
                 }
