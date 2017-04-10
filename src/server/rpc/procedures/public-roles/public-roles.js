@@ -2,8 +2,7 @@
 'use strict';
 
 var debug = require('debug'),
-    trace = debug('netsblox:rpc:public-roles:trace'),
-    PublicRoleManager = require('../../../public-role-manager');
+    trace = debug('netsblox:rpc:public-roles:trace');
 
 module.exports = {
 
@@ -16,10 +15,16 @@ module.exports = {
     },
 
     requestPublicRoleId: function() {
-        var id = PublicRoleManager.register(this.socket);
+        var room = this.socket._room,
+            owner = room.owner.username,
+            roomName = room.name,
+            roleId = this.socket.roleId;
 
-        trace(`${this.socket.username} has requested public id ${id}`);
-
-        return id;
+        trace(`${this.socket.username} has requested public id`);
+        return [
+            roleId,
+            roomName,
+            owner
+        ].join('@');
     }
 };

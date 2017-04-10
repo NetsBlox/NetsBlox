@@ -6,13 +6,27 @@ var R = require('ramda'),
     debug = require('debug'),
     info = debug('netsblox:api:utils:info'),
     trace = debug('netsblox:api:utils:trace'),
-    error = debug('netsblox:api:utils:error');
+    error = debug('netsblox:api:utils:error'),
+    version = require('../../package.json').version;
 
 var uuid = function(owner, name) {
     return owner + '/' + name;
 };
 
 // Helpers for routes
+var APP_REGEX = /app="([^"]+)"/;
+var getRoomXML = function(project) {
+    var roles = [project.activeRole].concat(Object.keys(project.roles)
+        .filter(name => name !== project.activeRole))
+        .map(roleName => project.roles[roleName]);
+    var roleXml = roles.map(role =>
+        `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
+    ).join('');
+    var app = roleXml.match(APP_REGEX)[1] || `NetsBlox ${version}, http://netsblox.org`;
+
+    return `<room name="${project.name}" app="${app}">${roleXml}</room>`;
+};
+
 var serializeArray = function(content) {
     assert(content instanceof Array);
     return content.map(serialize).join(' ');
@@ -110,12 +124,12 @@ var extractRpcs = function(projectXml){
 };
 
 module.exports = {
-    serialize: serialize,
-    serializeArray: serializeArray,
-    serializeRole: serializeRole,
-    joinActiveProject: joinActiveProject,
-    uuid: uuid,
-    extractRpcs: extractRpcs,
-    getArgumentsFor: getArgumentsFor
-
+    serialize,
+    serializeArray,
+    serializeRole,
+    joinActiveProject,
+    uuid,
+    getRoomXML,
+    extractRpcs,
+    getArgumentsFor
 };
