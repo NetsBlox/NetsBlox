@@ -7,7 +7,7 @@ NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
 
-NetsBloxSerializer.prototype.app = 'NetsBlox 0.11.0, http://netsblox.org';  // Make this version automatic
+NetsBloxSerializer.prototype.app = 'NetsBlox 0.13.2, http://netsblox.org';  // Make this version automatic
 
 function NetsBloxSerializer() {
     this.init();

@@ -267,7 +267,8 @@ module.exports = [
                     .map(name => {
                         let example = EXAMPLES[name],
                             role = Object.keys(example.roles).shift(),
-                            primaryRole = example.cachedProjects[role].SourceCode;
+                            primaryRole = example.cachedProjects[role].SourceCode,
+                            services = example.services;
 
                         return Q.nfcall(xml2js.parseString, primaryRole)
                             .then(result => {
@@ -276,7 +277,8 @@ module.exports = [
                                     primaryRoleName: role,
                                     roleNames: Object.keys(example.cachedProjects),
                                     thumbnail: result.project.thumbnail[0],
-                                    notes: result.project.notes[0]
+                                    notes: result.project.notes[0],
+                                    services: services
                                 };
                             });
                     });

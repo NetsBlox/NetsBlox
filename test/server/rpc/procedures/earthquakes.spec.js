@@ -2,10 +2,11 @@ describe('earthquakes', function() {
     var EarthQuakes = require('../../../../src/server/rpc/procedures/earthquakes/earthquakes'),
         RPCMock = require('../../../assets/mock-rpc'),
         earthquakes,
+        storage = require('../../../../src/server/storage/storage'),
         assert = require('assert');
 
     before(function() {
-        earthquakes = new RPCMock(EarthQuakes);
+        earthquakes = new RPCMock(EarthQuakes, true);
     });
 
     describe('byRegion', function() {
@@ -31,11 +32,43 @@ describe('earthquakes', function() {
 
         it('should remove entry from remainingMsgs', function() {
             var uuid = earthquakes._rpc.socket.uuid,
-                remainingMsgs = earthquakes._rpc._getRemainingMsgs();
+                remainingMsgs = earthquakes._rpc._remainingMsgs;
 
             remainingMsgs[uuid] = [];
-            earthquakes.stop();
+            earthquakes.stop(remainingMsgs);
             assert(!remainingMsgs[uuid]);
+        });
+    });
+
+    describe('sendNext', function() {
+        var socket;
+
+        describe('changing roles', function() {
+            before(function() {
+                var remainingMsgs = earthquakes._rpc._remainingMsgs;
+
+                socket = earthquakes._rpc.socket;
+                remainingMsgs[socket.uuid] = [{dstId: 'someOldRole'}];
+                earthquakes._rpc._sendNext(socket);
+            });
+
+            it('should stop sending if the socket changes roles', function() {
+                assert.equal(socket.messages().length, 0);
+            });
+
+            it('should remove remaining msgs record', function() {
+                assert(!earthquakes._rpc._remainingMsgs[socket.uuid]);
+            });
+        });
+
+        describe('no earthquakes found', function() {
+            it('should not fail if no earthquakes found', function() {
+                var remainingMsgs = earthquakes._rpc._remainingMsgs;
+
+                socket = earthquakes._rpc.socket;
+                remainingMsgs[socket.uuid] = [];
+                earthquakes._rpc._sendNext(socket);
+            });
         });
     });
 });

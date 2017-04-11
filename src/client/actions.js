@@ -63,27 +63,33 @@ ActionManager.prototype.disableCollaboration = function() {
         type: 'new-session'
     };
 
-    if (this.isCollaborating()) {
+    if (this._ws !== null) {
         this._ws.send(JSON.stringify(msg));
     }
 };
 
-// Recording user actions
-SnapActions.send = function() {
-    var socket = this.ide().sockets,
-        result;
-
-    this._ws = socket.websocket;
-    result = ActionManager.prototype.send.apply(this, arguments);
-    this.recordActionNB(result);
-
-    return result;
+SnapActions.isCollaborating = function() {
+    return this.sessionUsersCount > 1;
 };
 
-SnapActions.onMessage = function() {
+// Recording user actions
+SnapActions.send = function(event) {
+    var socket = this.ide().sockets;
+
+    this._ws = socket.websocket;
+    ActionManager.prototype.send.apply(this, arguments);
+    this.recordActionNB(event);
+
+    return event;
+};
+
+SnapActions.onMessage = function(msg) {
     ActionManager.prototype.onMessage.apply(this, arguments);
     if (location.hash.indexOf('collaborate') !== -1) {
         location.hash = '';
+    }
+    if (msg.type === 'session-user-count') {
+        this.sessionUsersCount = msg.value;
     }
 };
 

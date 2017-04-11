@@ -1,6 +1,6 @@
 {
   "name": "netsblox",
-  "version": "0.12.0",
+  "version": "0.13.2",
   "description": "Visual programming environment with networking support",
   "bin": {
     "netsblox": "./bin/netsblox"
@@ -59,7 +59,7 @@
     "ramda": "^0.20.1",
     "request": "^2.63.0",
     "rimraf": "^2.4.3",
-    "snap-collaboration": "^1.1.0",
+    "snap-collaboration": "^1.2.0",
     "socket.io": "^1.3.5",
     "temp-units-conv": "^0.1.1",
     "vantage": "^1.5.1",

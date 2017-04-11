@@ -381,7 +381,18 @@ ProjectDialogMorph.prototype.saveProject = function () {
                     ) + '\n"' + name + '"?',
                     'Replace Project',
                     function () {
+                        // NetsBlox changes - start
+                        myself.ide.showMessage('Saving project\nto the cloud...');
                         myself.ide.room.name = name;
+                        SnapCloud.saveProject(
+                            myself,
+                            function () {
+                                myself.ide.showMessage('saved.', 2);
+                            },
+                            myself.ide.cloudError(),
+                            true
+                        );
+                        // NetsBlox changes - end
                         myself.saveCloudProject();
                     }
                 );

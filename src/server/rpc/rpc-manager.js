@@ -124,7 +124,7 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
     if (!rpcs[RPC.getPath()]) {
         this._logger.info('Creating new RPC (' + RPC.getPath() +
             ') for ' + socket._room.uuid);
-        rpcs[RPC.getPath()] = new RPC();
+        rpcs[RPC.getPath()] = new RPC(socket._room.uuid);
     }
     return rpcs[RPC.getPath()];
 
@@ -155,6 +155,10 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         // Add the netsblox socket for triggering network messages from an RPC
         rpc.socket = SocketManager.sockets[uuid];
         rpc.response = res;
+        if (!rpc.socket) {
+            this._logger.error(`Could not find socket ${uuid} for rpc ` + 
+                `${RPC.getPath()}:${action}. Will try to call it anyway...`);
+        }
 
         // Get the arguments
         oldFieldNameFor = compatDict[action] || {};
@@ -164,18 +168,26 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         });
         result = rpc[action].apply(rpc, args);
 
-        if (!res.headerSent && result !== null) {  // send the return value
-            if (typeof result === 'object') {
-                res.json(result);
-            } else if (result !== undefined) {
-                res.send(result.toString());
-            } else {
-                res.sendStatus(200);
-            }
-        }
+        this.sendRPCResult(res, result);
     } else {
         this._logger.log('Invalid action requested for '+RPC.getPath()+': '+action);
         return res.status(400).send('unrecognized action');
+    }
+};
+
+RPCManager.prototype.sendRPCResult = function(response, result) {
+    if (!response.headersSent && result !== null) {  // send the return value
+        if (typeof result === 'object') {
+            if (typeof result.then === 'function') {
+                return result.then(result => this.sendRPCResult(response, result));
+            } else {
+                return response.json(result);
+            }
+        } else if (result !== undefined) {
+            return response.send(result.toString());
+        } else {
+            return response.sendStatus(200);
+        }
     }
 };
 

@@ -3,8 +3,8 @@
  */
 'use strict';
 var counter = 0,
+    Q = require('q'),
     Constants = require(__dirname + '/../../common/constants'),
-    PublicRoleManager = require(__dirname + '/../public-role-manager'),
     PROJECT_FIELDS = [
         'ProjectName',
         'SourceCode',
@@ -14,12 +14,14 @@ var counter = 0,
         'RoomUuid'
     ],
     R = require('ramda'),
+    Utils = require('../server-utils'),
     Sessions = require('snap-collaboration').sessions,
     parseXml = require('xml2js').parseString,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
     RoomManager = require('./room-manager'),
-    CONDENSED_MSGS = ['project-response', 'import-room'];
+    CONDENSED_MSGS = ['project-response', 'import-room'],
+    PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/;
 
 var createSaveableProject = function(json, callback) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -51,6 +53,7 @@ class NetsBloxSocket {
 
         this.roleId = null;
         this._room = null;
+        this._onRoomJoinDeferred = null;
         this.loggedIn = false;
 
         this.user = null;
@@ -88,6 +91,25 @@ class NetsBloxSocket {
             this._logger.error('user has no room!');
         }
         return !!this._room;
+    }
+
+    getRoom () {
+        if (!this.hasRoom()) {
+            if (!this._onRoomJoinDeferred) {
+                this._onRoomJoinDeferred = Q.defer();
+            }
+            return this._onRoomJoinDeferred.promise;
+        } else {
+            return Q(this._room);
+        }
+    }
+
+    _setRoom (room) {
+        this._room = room;
+        if (this._onRoomJoinDeferred) {
+            this._onRoomJoinDeferred.resolve(room);
+            this._onRoomJoinDeferred = null;
+        }
     }
 
     isOwner () {
@@ -147,7 +169,8 @@ class NetsBloxSocket {
             this.leave();
         }
 
-        this._room = room;
+        this._setRoom(room);
+
         this._room.add(this, role);
         this._logger.trace(`${this.username} joined ${room.uuid} at ${role}`);
         this.roleId = role;
@@ -253,11 +276,31 @@ NetsBloxSocket.MessageHandlers = {
             this._room.roles.hasOwnProperty(msg.dstId)) {  // local message
 
             msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
-        } else {  // inter-room message
-            var socket = PublicRoleManager.lookUp(msg.dstId);
-            if (socket) {
-                msg.dstId = Constants.EVERYONE;
-                socket.send(msg);
+        } else if (PUBLIC_ROLE_FORMAT.test(msg.dstId)) {  // inter-room message
+            // Look up the socket matching
+            //
+            //     <role>@<project>@<owner> or <project>@<owner>
+            //
+            var idChunks = msg.dstId.split('@'),
+                sockets = [],
+                ownerId = idChunks.pop(),
+                roomName = idChunks.pop(),
+                roleId = idChunks.pop(),
+                roomId = Utils.uuid(ownerId, roomName),
+                room = RoomManager.rooms[roomId];
+
+            if (room) {
+                if (roleId) {
+                    if (room.roles[roleId]) {
+                        sockets.push(room.roles[roleId]);
+                    }
+                } else {
+                    sockets = room.sockets();
+                }
+                sockets.forEach(socket => {
+                    msg.dstId = Constants.EVERYONE;
+                    socket.send(msg);
+                });
             }
         }
     },
