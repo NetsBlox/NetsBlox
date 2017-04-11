@@ -19,7 +19,8 @@ var counter = 0,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
     RoomManager = require('./room-manager'),
-    CONDENSED_MSGS = ['project-response', 'import-room'];
+    CONDENSED_MSGS = ['project-response', 'import-room'],
+    PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/;
 
 var createSaveableProject = function(json, callback) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -253,7 +254,7 @@ NetsBloxSocket.MessageHandlers = {
             this._room.roles.hasOwnProperty(msg.dstId)) {  // local message
 
             msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
-        } else {  // inter-room message
+        } else if (PUBLIC_ROLE_FORMAT.test(msg.dstId)) {  // inter-room message
             // Look up the socket matching
             //
             //     <role>@<project>@<owner> or <project>@<owner>
