@@ -19,6 +19,29 @@ describe('netsblox-socket', function() {
         });
     });
 
+    describe('getRoom', function() {
+        before(function() {
+            socket = new NBSocket(logger, {on: () => {}});
+        });
+
+        it('should resolve when the room is set', function(done) {
+            var testRoom = {},
+                waited = false;
+
+            socket.getRoom()
+                .then(room => {
+                    assert.equal(room, testRoom);
+                    assert(waited);
+                })
+                .nodeify(done);
+
+            setTimeout(() => {
+                waited = true;
+                socket._setRoom(testRoom);
+            }, 25);
+        });
+    });
+
     describe('send', function() {
         var msg,
             rawSocket;
