@@ -16,6 +16,10 @@
             logger.error('No sessionId found for event:', event);
         }
 
+        if (!event.action) {
+            logger.error('No action found for event:', event);
+            return Q();
+        }
         logger.trace(`about to store event from session: ${event.sessionId}`);
 
         // If openProject, store the project in the blob
