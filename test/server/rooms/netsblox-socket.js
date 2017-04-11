@@ -65,4 +65,23 @@ describe('netsblox-socket', function() {
             socket.send(msg);
         });
     });
+
+    describe('message handlers', function() {
+        describe('message', function() {
+            var socket;
+            before(function() {
+                socket = {};
+                socket.hasRoom = () => true;
+                socket._room = {
+                    roles: {}
+                };
+            });
+
+            it('should ignore bad dstId for interroom messages', function() {
+                var msg = {};
+                msg.dstId = 0;
+                NBSocket.MessageHandlers.message.call(socket, msg);
+            });
+        });
+    });
 });
