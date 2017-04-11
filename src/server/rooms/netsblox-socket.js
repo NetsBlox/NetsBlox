@@ -3,6 +3,7 @@
  */
 'use strict';
 var counter = 0,
+    Q = require('q'),
     Constants = require(__dirname + '/../../common/constants'),
     PROJECT_FIELDS = [
         'ProjectName',
@@ -51,6 +52,7 @@ class NetsBloxSocket {
 
         this.roleId = null;
         this._room = null;
+        this._onRoomJoinDeferred = null;
         this.loggedIn = false;
 
         this.user = null;
@@ -88,6 +90,25 @@ class NetsBloxSocket {
             this._logger.error('user has no room!');
         }
         return !!this._room;
+    }
+
+    getRoom () {
+        if (!this.hasRoom()) {
+            if (!this._onRoomJoinDeferred) {
+                this._onRoomJoinDeferred = Q.defer();
+            }
+            return this._onRoomJoinDeferred.promise;
+        } else {
+            return Q(this._room);
+        }
+    }
+
+    _setRoom (room) {
+        this._room = room;
+        if (this._onRoomJoinDeferred) {
+            this._onRoomJoinDeferred.resolve(room);
+            this._onRoomJoinDeferred = null;
+        }
     }
 
     isOwner () {
@@ -147,7 +168,8 @@ class NetsBloxSocket {
             this.leave();
         }
 
-        this._room = room;
+        this._setRoom(room);
+
         this._room.add(this, role);
         this._logger.trace(`${this.username} joined ${room.uuid} at ${role}`);
         this.roleId = role;
