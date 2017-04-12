@@ -93,11 +93,12 @@ describe('netsblox-socket', function() {
         describe('message', function() {
             var socket;
             before(function() {
-                socket = {};
-                socket.hasRoom = () => true;
-                socket._room = {
-                    roles: {}
+                var rawSocket = {
+                    on: () => {},
+                    send: () => {},
+                    readyState: NBSocket.prototype.OPEN
                 };
+                socket = new NBSocket(logger, rawSocket);
             });
 
             it('should ignore bad dstId for interroom messages', function() {
