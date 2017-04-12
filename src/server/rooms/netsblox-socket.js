@@ -257,7 +257,6 @@ class NetsBloxSocket {
     }
 
     sendMessageTo (msg, dstId) {
-        console.log('\n\nsending to ' + dstId);
         msg.dstId = dstId;
         if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
             this._room.roles.hasOwnProperty(dstId)) {  // local message
