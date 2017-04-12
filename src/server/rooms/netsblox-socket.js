@@ -255,33 +255,19 @@ class NetsBloxSocket {
         });
         this._projectRequests[id] = callback;
     }
-}
 
-// From the WebSocket spec
-NetsBloxSocket.prototype.CONNECTING = 0;
-NetsBloxSocket.prototype.OPEN = 1;
-NetsBloxSocket.prototype.CLOSING = 2;
-NetsBloxSocket.prototype.CLOSED = 3;
+    sendMessageTo (msg, dstId) {
+        msg.dstId = dstId;
+        if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
+            this._room.roles.hasOwnProperty(dstId)) {  // local message
 
-NetsBloxSocket.MessageHandlers = {
-    'beat': function() {},
-
-    'message': function(msg) {
-        if (!this.hasRoom()) {
-            this._logger.error(`Cannot send a message when not in a room! ${this.username} (${this.uuid})`);
-            return;
-        }
-
-        if (msg.dstId === 'others in room' || msg.dstId === Constants.EVERYONE ||
-            this._room.roles.hasOwnProperty(msg.dstId)) {  // local message
-
-            msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
-        } else if (PUBLIC_ROLE_FORMAT.test(msg.dstId)) {  // inter-room message
+            dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
+        } else if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
             // Look up the socket matching
             //
             //     <role>@<project>@<owner> or <project>@<owner>
             //
-            var idChunks = msg.dstId.split('@'),
+            var idChunks = dstId.split('@'),
                 sockets = [],
                 ownerId = idChunks.pop(),
                 roomName = idChunks.pop(),
@@ -303,6 +289,26 @@ NetsBloxSocket.MessageHandlers = {
                 });
             }
         }
+    }
+}
+
+// From the WebSocket spec
+NetsBloxSocket.prototype.CONNECTING = 0;
+NetsBloxSocket.prototype.OPEN = 1;
+NetsBloxSocket.prototype.CLOSING = 2;
+NetsBloxSocket.prototype.CLOSED = 3;
+
+NetsBloxSocket.MessageHandlers = {
+    'beat': function() {},
+
+    'message': function(msg) {
+        if (!this.hasRoom()) {
+            this._logger.error(`Cannot send a message when not in a room! ${this.username} (${this.uuid})`);
+            return;
+        }
+
+        var dstIds = typeof msg.dstId !== 'object' ? [msg.dstId] : msg.dstId.contents;
+        dstIds.forEach(dstId => this.sendMessageTo(msg, dstId));
     },
 
     'project-response': function(msg) {
