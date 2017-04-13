@@ -71,8 +71,36 @@ Server.prototype.configureRoutes = function() {
     this.app.use('/api', this.createRouter());
 
     // Initial page
-    this.app.get('/', function(req, res) {
-        res.sendFile(path.join(__dirname, '..', 'client', 'netsblox.html'));
+    this.app.get('/', (req, res) => {
+        // Check for bots
+        var userAgent = req.headers['user-agent'];
+        console.log();
+        console.log();
+        console.log('userAgent is', userAgent);
+        console.log();
+        console.log();
+        if (userAgent.startsWith('facebookexternalhit/1.1') ||
+            userAgent === 'Facebot' || userAgent.startsWith('Twitterbot')) {
+
+            // TODO: Get the querystring. If it requests a project, return 
+            /* Do something for the bot */
+            var url = req.originalUrl;
+            if (req.query.action === 'present') {
+                var projectName = req.query.ProjectName,
+                    username = req.query.Username;
+
+                // TODO:
+                return this.storage.publicProjects.get(username, projectName)
+                    .then(project => {
+                        console.log('found public project:', project);
+                        if (project) {
+                            return res.send(this.generateProjectOGPage(project));
+                        }
+                        return res.sendFile(path.join(__dirname, '..', 'client', 'netsblox.html'));
+                    });
+            }
+        }
+        return res.sendFile(path.join(__dirname, '..', 'client', 'netsblox.html'));
     });
 };
 
@@ -137,6 +165,19 @@ Server.prototype.createRouter = function() {
         router.route(api.URL)[method](api.Handler.bind(this));
     });
     return router;
+};
+
+Server.prototype.generateProjectOGPage = function(project) {
+    return `
+    <html>
+    <head>
+    <meta property="og:site_name" content="NetsBlox"/>
+    <meta property="og:image" content="${project.thumbnail}"/>
+    <meta property="og:url" content="https://editor.netsblox.org/"/>
+    </head>
+    </head>
+    </html>
+    `;
 };
 
 module.exports = Server;

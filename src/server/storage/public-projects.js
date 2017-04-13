@@ -9,6 +9,10 @@ let extractRpcs = require('../server-utils').extractRpcs;
         collection = db.collection('public-projects');
     };
 
+    PublicProjectStore.get = function(username, projectName) {
+        return collection.findOne({owner: username, projectName: projectName});
+    };
+
     PublicProjectStore.list = function(start, end) {
         start = start || 0;
         end = end || start + 25;
