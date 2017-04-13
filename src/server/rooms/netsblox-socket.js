@@ -3,6 +3,7 @@
  */
 'use strict';
 var counter = 0,
+    Q = require('q'),
     Constants = require(__dirname + '/../../common/constants'),
     PROJECT_FIELDS = [
         'ProjectName',
@@ -19,7 +20,8 @@ var counter = 0,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
     RoomManager = require('./room-manager'),
-    CONDENSED_MSGS = ['project-response', 'import-room'];
+    CONDENSED_MSGS = ['project-response', 'import-room'],
+    PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/;
 
 var createSaveableProject = function(json, callback) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -51,6 +53,7 @@ class NetsBloxSocket {
 
         this.roleId = null;
         this._room = null;
+        this._onRoomJoinDeferred = null;
         this.loggedIn = false;
 
         this.user = null;
@@ -88,6 +91,25 @@ class NetsBloxSocket {
             this._logger.error('user has no room!');
         }
         return !!this._room;
+    }
+
+    getRoom () {
+        if (!this.hasRoom()) {
+            if (!this._onRoomJoinDeferred) {
+                this._onRoomJoinDeferred = Q.defer();
+            }
+            return this._onRoomJoinDeferred.promise;
+        } else {
+            return Q(this._room);
+        }
+    }
+
+    _setRoom (room) {
+        this._room = room;
+        if (this._onRoomJoinDeferred) {
+            this._onRoomJoinDeferred.resolve(room);
+            this._onRoomJoinDeferred = null;
+        }
     }
 
     isOwner () {
@@ -147,7 +169,8 @@ class NetsBloxSocket {
             this.leave();
         }
 
-        this._room = room;
+        this._setRoom(room);
+
         this._room.add(this, role);
         this._logger.trace(`${this.username} joined ${room.uuid} at ${role}`);
         this.roleId = role;
@@ -232,33 +255,19 @@ class NetsBloxSocket {
         });
         this._projectRequests[id] = callback;
     }
-}
 
-// From the WebSocket spec
-NetsBloxSocket.prototype.CONNECTING = 0;
-NetsBloxSocket.prototype.OPEN = 1;
-NetsBloxSocket.prototype.CLOSING = 2;
-NetsBloxSocket.prototype.CLOSED = 3;
+    sendMessageTo (msg, dstId) {
+        msg.dstId = dstId;
+        if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
+            this._room.roles.hasOwnProperty(dstId)) {  // local message
 
-NetsBloxSocket.MessageHandlers = {
-    'beat': function() {},
-
-    'message': function(msg) {
-        if (!this.hasRoom()) {
-            this._logger.error(`Cannot send a message when not in a room! ${this.username} (${this.uuid})`);
-            return;
-        }
-
-        if (msg.dstId === 'others in room' || msg.dstId === Constants.EVERYONE ||
-            this._room.roles.hasOwnProperty(msg.dstId)) {  // local message
-
-            msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
-        } else {  // inter-room message
+            dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
+        } else if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
             // Look up the socket matching
             //
             //     <role>@<project>@<owner> or <project>@<owner>
             //
-            var idChunks = msg.dstId.split('@'),
+            var idChunks = dstId.split('@'),
                 sockets = [],
                 ownerId = idChunks.pop(),
                 roomName = idChunks.pop(),
@@ -280,6 +289,26 @@ NetsBloxSocket.MessageHandlers = {
                 });
             }
         }
+    }
+}
+
+// From the WebSocket spec
+NetsBloxSocket.prototype.CONNECTING = 0;
+NetsBloxSocket.prototype.OPEN = 1;
+NetsBloxSocket.prototype.CLOSING = 2;
+NetsBloxSocket.prototype.CLOSED = 3;
+
+NetsBloxSocket.MessageHandlers = {
+    'beat': function() {},
+
+    'message': function(msg) {
+        if (!this.hasRoom()) {
+            this._logger.error(`Cannot send a message when not in a room! ${this.username} (${this.uuid})`);
+            return;
+        }
+
+        var dstIds = typeof msg.dstId !== 'object' ? [msg.dstId] : msg.dstId.contents;
+        dstIds.forEach(dstId => this.sendMessageTo(msg, dstId));
     },
 
     'project-response': function(msg) {

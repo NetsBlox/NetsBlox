@@ -15,16 +15,19 @@ module.exports = {
     },
 
     requestPublicRoleId: function() {
-        var room = this.socket._room,
-            owner = room.owner.username,
-            roomName = room.name,
-            roleId = this.socket.roleId;
+        var socket = this.socket;
 
-        trace(`${this.socket.username} has requested public id`);
-        return [
-            roleId,
-            roomName,
-            owner
-        ].join('@');
+        return this.socket.getRoom().then(room => {
+            var owner = room.owner.username,
+                roomName = room.name,
+                roleId = socket.roleId;
+
+            trace(`${this.socket.username} has requested public id`);
+            return [
+                roleId,
+                roomName,
+                owner
+            ].join('@');
+        });
     }
 };
