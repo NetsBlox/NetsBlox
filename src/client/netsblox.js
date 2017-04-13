@@ -127,6 +127,22 @@ NetsBloxMorph.prototype.openIn = function (world) {
     function interpretUrlAnchors() {
         var dict, idx;
 
+        // Netsblox addition: start
+        function getParameterByName(name) {
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(window.location.href);
+
+            if (!results || !results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+
+        var isPresenting = location.hash.substr(0, 9) === '#present:';
+        if (!isPresenting) {
+            isPresenting = getParameterByName('action').toLowerCase() === 'present';
+        }
+        // Netsblox addition: end
+
         if (location.hash.substr(0, 6) === '#open:') {
             hash = location.hash.substr(6);
             if (hash.charAt(0) === '%'
@@ -161,16 +177,26 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 this.rawOpenProjectString(getURL(hash));
             }
             applyFlags(SnapCloud.parseDict(location.hash.substr(5)));
-        } else if (location.hash.substr(0, 9) === '#present:') {
+        // Netsblox addition: start
+        } else if (isPresenting) {
+        // Netsblox addition: end
             this.shield = new Morph();
             this.shield.color = this.color;
             this.shield.setExtent(this.parent.extent());
             this.parent.add(this.shield);
             myself.showMessage('Fetching project\nfrom the cloud...');
 
-            // make sure to lowercase the username
-            dict = SnapCloud.parseDict(location.hash.substr(9));
-            dict.Username = dict.Username.toLowerCase();
+            // Netsblox addition: start
+            if (location.hash.substr(0, 9) === '#present:') {
+                dict = SnapCloud.parseDict(location.hash.substr(9));
+            } else {
+                dict = {
+                    ProjectName: getParameterByName('ProjectName'),
+                    Username: getParameterByName('Username')
+                };
+            }
+            // (removed lowercasing the username)
+            // Netsblox addition: end
 
             SnapCloud.getPublicProject(
                 SnapCloud.encodeDict(dict),
