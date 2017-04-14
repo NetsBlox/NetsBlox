@@ -1,9 +1,11 @@
 'use strict';
 
 var _ = require('lodash'),
+    Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
 
     middleware = require('./middleware'),
+    lwip = require('lwip'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
     PublicProjects = require('../storage/public-projects'),
@@ -141,6 +143,30 @@ var saveRoom = function (activeRoom, socket, user, res) {
         trace('setting active room origin time to', activeRoom.originTime);
         return res.send('room saved!');
     });
+};
+
+const TRANSPARENT = [0,0,0,0];
+var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
+    return Q.ninvoke(lwip, 'open', buffer, 'png')
+        .then(image => {
+            var width = image.width(),
+                height = image.height(),
+                diff,
+                left = 0,
+                top = 0,
+                right = 0,
+                bottom = 0;
+
+            if (ratio * height < width) {  // Add padding to the height
+                diff = width - ratio * height;
+                top = bottom = diff/2;
+            } else {  // add padding to the width
+                diff = ratio * height - width;
+                left = right = diff/2;
+            }
+            return Q.ninvoke(image, 'pad', left, top, right, bottom, TRANSPARENT);
+        })
+        .then(image => Q.ninvoke(image, 'toBuffer', 'png'));
 };
 
 module.exports = [
@@ -424,7 +450,8 @@ module.exports = [
         URL: 'projects/:owner/:project/thumbnail',
         middleware: ['setUsername'],
         Handler: function(req, res) {
-            var name = req.params.project;
+            var name = req.params.project,
+                aspectRatio = +req.query.aspectRatio || 0;
 
             // return the names of all projects owned by :owner
             middleware.loadUser(req.params.owner, res, user => {
@@ -450,11 +477,23 @@ module.exports = [
                     .replace(/^data:image\/png;base64,|^data:image\/jpeg;base64,|^data:image\/jpg;base64,|^data:image\/bmp;base64,/, '');
 
                 buffer = new Buffer(image, 'base64');
+                res.contentType('image/png');
                 this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
 
                 // send the image
-                res.contentType('image/png');
-                res.end(buffer, 'binary');
+                if (aspectRatio) {  // pad the image
+                    this._logger.trace(`padding image with aspect ratio ${aspectRatio}`);
+                    aspectRatio = Math.max(aspectRatio, 0.2);
+                    aspectRatio = Math.min(aspectRatio, 5);
+                    return padImage(buffer, aspectRatio)
+                        .then(buffer => res.end(buffer, 'binary'))
+                        .fail(err => {
+                            this._logger.error(`padding image failed: ${err}`);
+                            res.serverError(err);
+                        });
+                } else {
+                    return res.end(buffer, 'binary');
+                }
             });
             
         }
