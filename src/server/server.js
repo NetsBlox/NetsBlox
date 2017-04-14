@@ -167,18 +167,4 @@ Server.prototype.createRouter = function() {
     return router;
 };
 
-Server.prototype.generateProjectOGPage = function(project) {
-    var thumbnailUrl = `/api/projects/${project.owner}/${project.projectName}/thumbnail`;
-    return `
-    <html>
-    <head>
-    <meta property="og:site_name" content="NetsBlox"/>
-    <meta property="og:image" content="${thumbnailUrl}"/>
-    <meta property="og:url" content="https://editor.netsblox.org/"/>
-    </head>
-    </head>
-    </html>
-    `;
-};
-
 module.exports = Server;
