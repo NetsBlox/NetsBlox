@@ -70,12 +70,14 @@ ProjectDialogMorph.prototype.buildContents = function () {
     };
     this.preview.drawCachedTexture = function () {
         var context = this.image.getContext('2d');
-        context.drawImage(this.cachedTexture, this.edge, this.edge);
+        context.drawImage(this.cachedTexture, this.edge, this.edge, this.width(), this.height());
         this.changed();
     };
     this.preview.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
     this.preview.setExtent(
-        this.ide.serializer.thumbnailSize.add(this.preview.edge * 2)
+        // NetsBlox changes: start
+        this.ide.serializer.thumbnailSize.divideBy(4).add(this.preview.edge * 2)
+        // NetsBlox changes: end
     );
 
     this.body.add(this.preview);
