@@ -2,6 +2,7 @@ var express = require('express'),
     bodyParser = require('body-parser'),
     WebSocketServer = require('ws').Server,
     _ = require('lodash'),
+    dot = require('dot'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
     SocketManager = require('./socket-manager'),
     RoomManager = require('./rooms/room-manager'),
@@ -23,7 +24,8 @@ var express = require('express'),
     Logger = require('./logger'),
 
     // Session and cookie info
-    cookieParser = require('cookie-parser');
+    cookieParser = require('cookie-parser'),
+    indexTpl = dot.template(fs.readFileSync(path.join(__dirname, '..', 'client', 'netsblox.dot')));
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -84,19 +86,22 @@ Server.prototype.configureRoutes = function() {
 
             // TODO: Get the querystring. If it requests a project, return 
             /* Do something for the bot */
-            var url = req.originalUrl;
+            var baseUrl = `https://${req.get('host')}`,
+                url = baseUrl + req.originalUrl;
+            console.log('url is', url)
             if (req.query.action === 'present') {
                 var projectName = req.query.ProjectName,
                     username = req.query.Username;
 
-                // TODO:
                 return this.storage.publicProjects.get(username, projectName)
                     .then(project => {
-                        console.log('found public project:', project);
+                        var metaInfo = {url: url};
+
                         if (project) {
-                            return res.send(this.generateProjectOGPage(project));
+                            metaInfo.image = baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`);
+                            metaInfo.title = `&quot;${project.projectName}&quot; in NetsBlox`;
                         }
-                        return res.sendFile(path.join(__dirname, '..', 'client', 'netsblox.html'));
+                        return res.send(indexTpl(metaInfo));
                     });
             }
         }

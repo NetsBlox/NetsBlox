@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>NetsBlox</title>
+        <link rel="shortcut icon" href="favicon.ico">
+        <meta property="og:site_name" content="NetsBlox"/>
+        <meta property="og:title" content="{{= it.title || 'NetsBlox'}}"/>
+        <meta property="og:image" content="{{= it.image }}"/>
+        {{ if (it.url) { }} <meta property="og:url" content="{{= it.url }}"/> {{ } }}
+        <script type="text/javascript" src="dist/netsblox-build.js"></script>
+
+		<script type="text/javascript">
+			var world;
+			window.onload = function () {
+				world = new WorldMorph(document.getElementById('world'));
+                world.worldCanvas.focus();
+				new NetsBloxMorph().openIn(world);
+        loop();
+			};
+			function loop() {
+        requestAnimationFrame(loop);
+				world.doOneCycle();
+			}
+		</script>
+    </head>
+    <body style="margin: 0;">
+        <canvas id="world" tabindex="1" style="position: absolute;" ></canvas>
+    </body>
+</html>
+
