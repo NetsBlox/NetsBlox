@@ -6,6 +6,7 @@
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
+SnapSerializer.prototype.thumbnailSize = new Point(320, 240);
 
 NetsBloxSerializer.prototype.app = 'NetsBlox 0.13.2, http://netsblox.org';  // Make this version automatic
 

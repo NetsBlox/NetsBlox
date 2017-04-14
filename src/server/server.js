@@ -73,39 +73,34 @@ Server.prototype.configureRoutes = function() {
     this.app.use('/api', this.createRouter());
 
     // Initial page
+    this.app.get('/debug.html', (req, res) =>
+        res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html')));
+
     this.app.get('/', (req, res) => {
-        // Check for bots
-        var userAgent = req.headers['user-agent'];
-        console.log();
-        console.log();
-        console.log('userAgent is', userAgent);
-        console.log();
-        console.log();
-        if (userAgent.startsWith('facebookexternalhit/1.1') ||
-            userAgent === 'Facebot' || userAgent.startsWith('Twitterbot')) {
+        // TODO: Get the querystring. If it requests a project, return 
+        var baseUrl = `https://${req.get('host')}`,
+            url = baseUrl + req.originalUrl,
+            metaInfo = {url: url};
 
-            // TODO: Get the querystring. If it requests a project, return 
-            /* Do something for the bot */
-            var baseUrl = `https://${req.get('host')}`,
-                url = baseUrl + req.originalUrl;
-            console.log('url is', url)
-            if (req.query.action === 'present') {
-                var projectName = req.query.ProjectName,
-                    username = req.query.Username;
 
-                return this.storage.publicProjects.get(username, projectName)
-                    .then(project => {
-                        var metaInfo = {url: url};
+        if (req.query.action === 'present') {
+            var projectName = req.query.ProjectName,
+                username = req.query.Username;
 
-                        if (project) {
-                            metaInfo.image = baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`);
-                            metaInfo.title = `&quot;${project.projectName}&quot; in NetsBlox`;
-                        }
-                        return res.send(indexTpl(metaInfo));
-                    });
-            }
+            return this.storage.publicProjects.get(username, projectName)
+                .then(project => {
+                    if (project) {
+                        metaInfo.image = {
+                            url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`),
+                            width: 320,
+                            height: 240
+                        };
+                        metaInfo.title = `&quot;${project.projectName}&quot; in NetsBlox`;
+                    }
+                    return res.send(indexTpl(metaInfo));
+                });
         }
-        return res.sendFile(path.join(__dirname, '..', 'client', 'netsblox.html'));
+        return res.send(indexTpl(metaInfo));
     });
 };
 
