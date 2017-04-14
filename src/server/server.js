@@ -96,6 +96,12 @@ Server.prototype.configureRoutes = function() {
                         };
                         metaInfo.title = project.projectName;
                         metaInfo.description = project.notes;
+
+                        // fix the aspect ratio for facebook
+                        if (req.headers['user-agent'].includes('facebookexternalhit') ||
+                            req.headers['user-agent'] === 'Facebot') {
+                            metaInfo.image.url += '?aspectRatio=1.91';
+                        }
                     }
                     return res.send(indexTpl(metaInfo));
                 });
