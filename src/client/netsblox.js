@@ -1941,10 +1941,10 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
         }
     }
     if (isPublic === 'true') {
-        location.hash = '#present:Username=' +
+        window.history.pushState(newRoom, newRoom, location.pathname + '?action=present&Username=' +
             encodeURIComponent(SnapCloud.username) +
             '&ProjectName=' +
-            encodeURIComponent(newRoom);
+            encodeURIComponent(newRoom));
     }
 };
 
