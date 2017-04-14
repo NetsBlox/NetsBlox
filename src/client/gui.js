@@ -76,7 +76,7 @@ ProjectDialogMorph.prototype.buildContents = function () {
     this.preview.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
     this.preview.setExtent(
         // NetsBlox changes: start
-        this.ide.serializer.thumbnailSize.divideBy(2).add(this.preview.edge * 2)
+        this.ide.serializer.thumbnailSize.divideBy(4).add(this.preview.edge * 2)
         // NetsBlox changes: end
     );
 

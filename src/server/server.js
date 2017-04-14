@@ -77,7 +77,6 @@ Server.prototype.configureRoutes = function() {
         res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html')));
 
     this.app.get('/', (req, res) => {
-        // TODO: Get the querystring. If it requests a project, return 
         var baseUrl = `https://${req.get('host')}`,
             url = baseUrl + req.originalUrl,
             metaInfo = {url: url};
@@ -92,10 +91,11 @@ Server.prototype.configureRoutes = function() {
                     if (project) {
                         metaInfo.image = {
                             url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`),
-                            width: 320,
-                            height: 240
+                            width: 640,
+                            height: 480
                         };
-                        metaInfo.title = `&quot;${project.projectName}&quot; in NetsBlox`;
+                        metaInfo.title = project.projectName;
+                        metaInfo.description = project.notes;
                     }
                     return res.send(indexTpl(metaInfo));
                 });
