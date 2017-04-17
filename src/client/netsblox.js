@@ -125,21 +125,15 @@ NetsBloxMorph.prototype.openIn = function (world) {
     */
 
     function interpretUrlAnchors() {
-        var dict, idx;
+        var dict = {}, idx;
 
         // Netsblox addition: start
-        function getParameterByName(name) {
-            name = name.replace(/[\[\]]/g, "\\$&");
-            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-                results = regex.exec(window.location.href);
+        if (location.href.indexOf('?') > -1) {
+            var querystring = location.href
+                .replace(/^.*\?/, '')
+                .replace('#' + location.hash, '');
 
-            if (!results || !results[2]) return '';
-            return decodeURIComponent(results[2].replace(/\+/g, " "));
-        }
-
-        var isPresenting = location.hash.substr(0, 9) === '#present:';
-        if (!isPresenting) {
-            isPresenting = getParameterByName('action').toLowerCase() === 'present';
+            dict = SnapCloud.parseDict(querystring);
         }
         // Netsblox addition: end
 
@@ -178,7 +172,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
             }
             applyFlags(SnapCloud.parseDict(location.hash.substr(5)));
         // Netsblox addition: start
-        } else if (isPresenting) {
+        } else if (location.hash.substr(0, 9) === '#present:' || dict.action === 'present') {
         // Netsblox addition: end
             this.shield = new Morph();
             this.shield.color = this.color;
@@ -189,11 +183,6 @@ NetsBloxMorph.prototype.openIn = function (world) {
             // Netsblox addition: start
             if (location.hash.substr(0, 9) === '#present:') {
                 dict = SnapCloud.parseDict(location.hash.substr(9));
-            } else {
-                dict = {
-                    ProjectName: getParameterByName('ProjectName'),
-                    Username: getParameterByName('Username')
-                };
             }
             // (removed lowercasing the username)
             // Netsblox addition: end
@@ -290,8 +279,8 @@ NetsBloxMorph.prototype.openIn = function (world) {
             SnapActions.joinSession(sessionId, this.cloudError());
 
         // Netsblox addition: start
-        } else if (location.hash.substr(0, 9) === '#example:') {
-            var example = location.hash.substr(9),
+        } else if (location.hash.substr(0, 9) === '#example:' || dict.action === 'example') {
+            var example = dict ? dict.ProjectName : location.hash.substr(9),
                 onConnect = this.sockets.onConnect;
 
             this.sockets.onConnect = function() {
