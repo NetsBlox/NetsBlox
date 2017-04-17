@@ -279,8 +279,8 @@ NetsBloxMorph.prototype.openIn = function (world) {
             SnapActions.joinSession(sessionId, this.cloudError());
 
         // Netsblox addition: start
-        } else if (location.hash.substr(0, 9) === '#example:') {
-            var example = location.hash.substr(9),
+        } else if (location.hash.substr(0, 9) === '#example:' || dict.action === 'example') {
+            var example = dict ? dict.ProjectName : location.hash.substr(9),
                 onConnect = this.sockets.onConnect;
 
             this.sockets.onConnect = function() {
