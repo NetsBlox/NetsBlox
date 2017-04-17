@@ -2,6 +2,7 @@
 
 var _ = require('lodash'),
     Q = require('q'),
+    xml2js = require('xml2js'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
 
     middleware = require('./middleware'),
@@ -9,6 +10,7 @@ var _ = require('lodash'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
     PublicProjects = require('../storage/public-projects'),
+    EXAMPLES = require('../examples'),
     debug = require('debug'),
     log = debug('netsblox:api:projects:log'),
     info = debug('netsblox:api:projects:info'),
@@ -167,6 +169,21 @@ var padImage = function (buffer, ratio) {  // Pad the image to match the given a
             return Q.ninvoke(image, 'pad', left, top, right, bottom, TRANSPARENT);
         })
         .then(image => Q.ninvoke(image, 'toBuffer', 'png'));
+};
+
+var applyAspectRatio = function (thumbnail, aspectRatio) {
+    var image = thumbnail
+        .replace(/^data:image\/png;base64,|^data:image\/jpeg;base64,|^data:image\/jpg;base64,|^data:image\/bmp;base64,/, '');
+    var buffer = new Buffer(image, 'base64');
+
+    if (aspectRatio) {
+        trace(`padding image with aspect ratio ${aspectRatio}`);
+        aspectRatio = Math.max(aspectRatio, 0.2);
+        aspectRatio = Math.min(aspectRatio, 5);
+        return padImage(buffer, aspectRatio);
+    } else {
+        return Q(buffer);
+    }
 };
 
 module.exports = [
@@ -457,8 +474,6 @@ module.exports = [
             middleware.loadUser(req.params.owner, res, user => {
                 var project = user.rooms.find(room => room.name === name),
                     preview = getPreview(project),
-                    buffer,
-                    image,
                     err;
 
                 if (!project) {
@@ -473,29 +488,47 @@ module.exports = [
                     return res.status(400).send(err);
                 }
 
-                image = preview.Thumbnail[0]
-                    .replace(/^data:image\/png;base64,|^data:image\/jpeg;base64,|^data:image\/jpg;base64,|^data:image\/bmp;base64,/, '');
-
-                buffer = new Buffer(image, 'base64');
-                res.contentType('image/png');
                 this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
-
-                // send the image
-                if (aspectRatio) {  // pad the image
-                    this._logger.trace(`padding image with aspect ratio ${aspectRatio}`);
-                    aspectRatio = Math.max(aspectRatio, 0.2);
-                    aspectRatio = Math.min(aspectRatio, 5);
-                    return padImage(buffer, aspectRatio)
-                        .then(buffer => res.end(buffer, 'binary'))
-                        .fail(err => {
-                            this._logger.error(`padding image failed: ${err}`);
-                            res.serverError(err);
-                        });
-                } else {
-                    return res.end(buffer, 'binary');
-                }
+                return applyAspectRatio(preview.Thumbnail[0], aspectRatio)
+                    .then(buffer => {
+                        res.contentType('image/png');
+                        res.end(buffer, 'binary');
+                    })
+                    .fail(err => {
+                        this._logger.error(`padding image failed: ${err}`);
+                        res.serverError(err);
+                    });
             });
             
+        }
+    },
+    {
+        Method: 'get',
+        URL: 'examples/:name/thumbnail',
+        Handler: function(req, res) {
+            var name = req.params.name,
+                aspectRatio = +req.query.aspectRatio || 0;
+
+            if (!EXAMPLES.hasOwnProperty(name)) {
+                this._logger.warn(`ERROR: Could not find example "${name}`);
+                return res.status(500).send('ERROR: Could not find example.');
+            }
+
+            // Get the thumbnail
+            var example = EXAMPLES[name];
+            var role = Object.keys(example.roles).shift();
+            var src = example.cachedProjects[role].SourceCode;
+            return Q.nfcall(xml2js.parseString, src)
+                .then(result => result.project.thumbnail[0])
+                .then(thumbnail => applyAspectRatio(thumbnail, aspectRatio))
+                .then(buffer => {
+                    res.contentType('image/png');
+                    res.end(buffer, 'binary');
+                })
+                .fail(err => {
+                    this._logger.error(`padding image failed: ${err}`);
+                    res.serverError(err);
+                });
         }
     },
     {
