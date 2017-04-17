@@ -6,6 +6,7 @@ describe('star-map', function() {
 
     utils.verifyRPCInterfaces(starmap, [
         ['arcHourMinSecToDeg', ['arcHour', 'arcMin', 'arcSec']],
-        ['getImage', ['right_ascension', 'declination', 'arcseconds_per_pixel', 'options']]
+        ['findObject', ['name']],
+        ['getImage', ['right_ascension', 'declination', 'arcseconds_per_pixel', 'options', 'width', 'height']]
     ]);
 });
