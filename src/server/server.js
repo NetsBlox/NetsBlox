@@ -2,6 +2,7 @@ var express = require('express'),
     bodyParser = require('body-parser'),
     WebSocketServer = require('ws').Server,
     _ = require('lodash'),
+    dot = require('dot'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
     SocketManager = require('./socket-manager'),
     RoomManager = require('./rooms/room-manager'),
@@ -23,7 +24,8 @@ var express = require('express'),
     Logger = require('./logger'),
 
     // Session and cookie info
-    cookieParser = require('cookie-parser');
+    cookieParser = require('cookie-parser'),
+    indexTpl = dot.template(fs.readFileSync(path.join(__dirname, '..', 'client', 'netsblox.dot')));
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -71,8 +73,40 @@ Server.prototype.configureRoutes = function() {
     this.app.use('/api', this.createRouter());
 
     // Initial page
-    this.app.get('/', function(req, res) {
-        res.sendFile(path.join(__dirname, '..', 'client', 'netsblox.html'));
+    this.app.get('/debug.html', (req, res) =>
+        res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html')));
+
+    this.app.get('/', (req, res) => {
+        var baseUrl = `https://${req.get('host')}`,
+            url = baseUrl + req.originalUrl,
+            metaInfo = {url: url};
+
+
+        if (req.query.action === 'present') {
+            var projectName = req.query.ProjectName,
+                username = req.query.Username;
+
+            return this.storage.publicProjects.get(username, projectName)
+                .then(project => {
+                    if (project) {
+                        metaInfo.image = {
+                            url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`),
+                            width: 640,
+                            height: 480
+                        };
+                        metaInfo.title = project.projectName;
+                        metaInfo.description = project.notes;
+
+                        // fix the aspect ratio for facebook
+                        if (req.headers['user-agent'].includes('facebookexternalhit') ||
+                            req.headers['user-agent'] === 'Facebot') {
+                            metaInfo.image.url += '?aspectRatio=1.91';
+                        }
+                    }
+                    return res.send(indexTpl(metaInfo));
+                });
+        }
+        return res.send(indexTpl(metaInfo));
     });
 };
 
