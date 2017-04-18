@@ -70,12 +70,14 @@ ProjectDialogMorph.prototype.buildContents = function () {
     };
     this.preview.drawCachedTexture = function () {
         var context = this.image.getContext('2d');
-        context.drawImage(this.cachedTexture, this.edge, this.edge);
+        context.drawImage(this.cachedTexture, this.edge, this.edge, this.width(), this.height());
         this.changed();
     };
     this.preview.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
     this.preview.setExtent(
-        this.ide.serializer.thumbnailSize.add(this.preview.edge * 2)
+        // NetsBlox changes: start
+        this.ide.serializer.thumbnailSize.divideBy(4).add(this.preview.edge * 2)
+        // NetsBlox changes: end
     );
 
     this.body.add(this.preview);
@@ -138,6 +140,101 @@ ProjectDialogMorph.prototype.buildContents = function () {
     }
     this.fixLayout();
 
+};
+
+ProjectDialogMorph.prototype.shareProject = function () {
+    var myself = this,
+        ide = this.ide,
+        proj = this.listField.selected,
+        entry = this.listField.active;
+
+    if (proj) {
+        this.ide.confirm(
+            localize(
+                'Are you sure you want to publish'
+            ) + '\n"' + proj.ProjectName + '"?',
+            'Share Project',
+            function () {
+                myself.ide.showMessage('sharing\nproject...');
+                SnapCloud.reconnect(
+                    function () {
+                        SnapCloud.callService(
+                            'publishProject',
+                            function () {
+                                SnapCloud.disconnect();
+                                proj.Public = 'true';
+                                myself.unshareButton.show();
+                                myself.shareButton.hide();
+                                entry.label.isBold = true;
+                                entry.label.drawNew();
+                                entry.label.changed();
+                                myself.buttons.fixLayout();
+                                myself.drawNew();
+                                myself.ide.showMessage('shared.', 2);
+                            },
+                            myself.ide.cloudError(),
+                            [proj.ProjectName]
+                        );
+                        // Set the Shared URL if the project is currently open
+                        if (proj.ProjectName === ide.projectName) {
+                            // Netsblox addition: start
+                            myself.ide.updateUrlQueryString(proj.ProjectName, true);
+                            // Netsblox addition: end
+                        }
+                    },
+                    myself.ide.cloudError()
+                );
+            }
+        );
+    }
+};
+
+ProjectDialogMorph.prototype.unshareProject = function () {
+    var myself = this,
+        ide = this.ide,
+        proj = this.listField.selected,
+        entry = this.listField.active;
+
+
+    if (proj) {
+        this.ide.confirm(
+            localize(
+                'Are you sure you want to unpublish'
+            ) + '\n"' + proj.ProjectName + '"?',
+            'Unshare Project',
+            function () {
+                myself.ide.showMessage('unsharing\nproject...');
+                SnapCloud.reconnect(
+                    function () {
+                        SnapCloud.callService(
+                            'unpublishProject',
+                            function () {
+                                SnapCloud.disconnect();
+                                proj.Public = 'false';
+                                myself.shareButton.show();
+                                myself.unshareButton.hide();
+                                entry.label.isBold = false;
+                                entry.label.drawNew();
+                                entry.label.changed();
+                                myself.buttons.fixLayout();
+                                myself.drawNew();
+                                myself.ide.showMessage('unshared.', 2);
+                            },
+                            myself.ide.cloudError(),
+                            [proj.ProjectName]
+                        );
+                        // Remove the shared URL if the project is open.
+                        if (proj.ProjectName === ide.projectName) {
+                            // Netsblox addition: start
+                            myself.ide.updateUrlQueryString(proj.ProjectName, false);
+                            // Netsblox addition: end
+                        }
+                    },
+                    myself.ide.cloudError()
+                );
+            }
+        );
+    }
 };
 
 ProjectDialogMorph.prototype.setSource = function (source) {
@@ -286,6 +383,7 @@ ProjectDialogMorph.prototype.openProject = function () {
         }
         this.ide.loadNextRoom();
         this.destroy();
+        this.ide.updateUrlQueryString(proj.name, false, true);
     } else {
         return superOpenProj.call(this);
     }
