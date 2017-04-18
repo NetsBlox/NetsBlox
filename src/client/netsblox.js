@@ -1929,7 +1929,6 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
             this.showMessage(localize('A new role has been created for you at ' + newRoom));
         }
     }
-    // TODO: check if it was an example
     this.updateUrlQueryString(newRoom, isPublic === 'true');
 };
 
