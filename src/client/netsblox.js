@@ -929,7 +929,7 @@ NetsBloxMorph.prototype.newProject = function (projectName) {
     this.silentSetProjectName(projectName || RoomMorph.DEFAULT_ROLE);
     this.createRoom();
     this.selectSprite(this.stage.children[0]);
-    this.updateUrlQueryString(this.room._name);
+    this.updateUrlQueryString();
 };
 
 NetsBloxMorph.prototype.createRoom = function() {
@@ -1782,6 +1782,7 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     SnapCloud.hasConflictingStoredProject(
         function(hasConflicting) {
             if (!hasConflicting) {
+                myself.updateUrlQueryString();
                 return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
             } else {  // doesn't match the stored version!
                 var dialog = new DialogBoxMorph(null, function() {
@@ -1936,6 +1937,7 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
 NetsBloxMorph.prototype.updateUrlQueryString = function (room, isPublic, isExample) {
     var url = location.pathname;
 
+    room = room || this.room._name;
     if (isExample) {
         url += '?action=example&ProjectName=' + encodeURIComponent(room);
     } else if (isPublic) {
