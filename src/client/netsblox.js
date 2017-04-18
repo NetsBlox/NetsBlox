@@ -1929,12 +1929,21 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
             this.showMessage(localize('A new role has been created for you at ' + newRoom));
         }
     }
-    if (isPublic === 'true') {
-        window.history.pushState(newRoom, newRoom, location.pathname + '?action=present&Username=' +
-            encodeURIComponent(SnapCloud.username) +
-            '&ProjectName=' +
-            encodeURIComponent(newRoom));
+    // TODO: check if it was an example
+    this.updateUrlQueryString(newRoom, isPublic === 'true');
+};
+
+NetsBloxMorph.prototype.updateUrlQueryString = function (room, isPublic, isExample) {
+    var url = location.pathname;
+
+    if (isExample) {
+        url += '?action=example&ProjectName=' + encodeURIComponent(room);
+    } else if (isPublic) {
+        url += '?action=present&Username=' + encodeURIComponent(SnapCloud.username) +
+            '&ProjectName=' + encodeURIComponent(room);
     }
+
+    window.history.pushState(room, room, url);
 };
 
 // Bug reporting assistance
