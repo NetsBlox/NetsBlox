@@ -70,7 +70,18 @@ ProjectDialogMorph.prototype.buildContents = function () {
     };
     this.preview.drawCachedTexture = function () {
         var context = this.image.getContext('2d');
-        context.drawImage(this.cachedTexture, this.edge, this.edge, this.width(), this.height());
+        // NetsBlox changes: start
+        var scale = Math.min(
+                (this.width() / this.cachedTexture.width),
+                (this.height() / this.cachedTexture.height)
+            ),
+            width = scale * this.cachedTexture.width,
+            height = scale * this.cachedTexture.height;
+
+        context.drawImage(this.cachedTexture, this.edge, this.edge,
+            width, height);
+
+        // NetsBlox changes: end
         this.changed();
     };
     this.preview.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;

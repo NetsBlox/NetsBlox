@@ -4,7 +4,7 @@
    MessageFrame, BlockMorph, ToggleMorph, MessageCreatorMorph,
    VariableDialogMorph, SnapCloud, contains, List, CommandBlockMorph,
    MessageType, isNil, RingMorph, SnapActions, ProjectsMorph, NetsBloxMorph,
-   SnapUndo*/
+   SnapUndo, newCanvas*/
 
 SpriteMorph.prototype.categories =
     [
@@ -1622,5 +1622,112 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(button);
     }
     return blocks;
+};
+
+StageMorph.prototype.thumbnail = function (extentPoint, excludedSprite) {
+/*
+    answer a new Canvas of extentPoint dimensions containing
+    my thumbnail representation keeping the originial aspect ratio
+*/
+    var myself = this,
+        src = this.image,
+        scale = Math.min(
+            (extentPoint.x / src.width),
+            (extentPoint.y / src.height)
+        ),
+    // Netsblox addition: start
+        trg,
+        ctx,
+        fb,
+        fimg;
+
+    extentPoint = new Point(src.width * scale, src.height * scale);
+    trg = newCanvas(extentPoint);
+    ctx = trg.getContext('2d');
+    // Netsblox addition: end
+
+    ctx.scale(scale, scale);
+    ctx.drawImage(
+        src,
+        0,
+        0
+    );
+    ctx.drawImage(
+        this.penTrails(),
+        0,
+        0,
+        this.dimensions.x * this.scale,
+        this.dimensions.y * this.scale
+    );
+    this.children.forEach(function (morph) {
+        if (morph.isVisible && (morph !== excludedSprite)) {
+            fb = morph.fullBounds();
+            fimg = morph.fullImage();
+            if (fimg.width && fimg.height) {
+                ctx.drawImage(
+                    morph.fullImage(),
+                    fb.origin.x - myself.bounds.origin.x,
+                    fb.origin.y - myself.bounds.origin.y
+                );
+            }
+        }
+    });
+    return trg;
+};
+
+SpriteMorph.prototype.thumbnail = function (extentPoint) {
+/*
+    answer a new Canvas of extentPoint dimensions containing
+    my thumbnail representation keeping the originial aspect ratio
+*/
+    var src = this.image, // at this time sprites aren't composite morphs
+        scale = Math.min(
+            (extentPoint.x / src.width),
+            (extentPoint.y / src.height)
+        ),
+    // Netsblox addition: start
+        xOffset,
+        yOffset,
+        trg,
+        ctx;
+
+    extentPoint = new Point(src.width * scale, src.height * scale);
+    xOffset = (extentPoint.x - (src.width * scale)) / 2,
+    yOffset = (extentPoint.y - (src.height * scale)) / 2,
+    trg = newCanvas(extentPoint);
+    ctx = trg.getContext('2d');
+    // Netsblox addition: end
+
+    function xOut(style, alpha, width) {
+        var inset = Math.min(extentPoint.x, extentPoint.y) / 10;
+        ctx.strokeStyle = style;
+        ctx.globalAlpha = alpha;
+        ctx.compositeOperation = 'lighter';
+        ctx.lineWidth = width || 1;
+        ctx.moveTo(inset, inset);
+        ctx.lineTo(trg.width - inset, trg.height - inset);
+        ctx.moveTo(inset, trg.height - inset);
+        ctx.lineTo(trg.width - inset, inset);
+        ctx.stroke();
+    }
+
+    ctx.save();
+    if (this.isCorpse) {
+        ctx.globalAlpha = 0.3;
+    }
+    if (src.width && src.height) {
+        ctx.scale(scale, scale);
+        ctx.drawImage(
+            src,
+            Math.floor(xOffset / scale),
+            Math.floor(yOffset / scale)
+        );
+    }
+    if (this.isCorpse) {
+        ctx.restore();
+        xOut('white', 0.8, 6);
+        xOut('black', 0.8, 1);
+    }
+    return trg;
 };
 
