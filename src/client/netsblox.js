@@ -281,8 +281,10 @@ NetsBloxMorph.prototype.openIn = function (world) {
         // Netsblox addition: start
         } else if (location.hash.substr(0, 9) === '#example:' || dict.action === 'example') {
             var example = dict ? dict.ProjectName : location.hash.substr(9),
-                onConnect = this.sockets.onConnect;
+                onConnect = this.sockets.onConnect,
+                msg;
 
+            msg = this.showMessage('Opening ' + example + ' example...');
             this.sockets.onConnect = function() {
                 SnapCloud.passiveLogin(myself, function() {
                     var response = SnapCloud.parseDict(myself.getURL('api/Examples/' + example +
@@ -302,7 +304,8 @@ NetsBloxMorph.prototype.openIn = function (world) {
                     }
                     myself.loadNextRoom();
                     myself.sockets.onConnect = onConnect;
-                });
+                    msg.destroy();
+                }, true);
             };
         // Netsblox addition: end
         }

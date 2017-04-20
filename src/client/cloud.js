@@ -389,7 +389,7 @@ NetCloud.prototype.callService = function (
     }
 };
 
-NetCloud.prototype.passiveLogin = function (ide, callback) {
+NetCloud.prototype.passiveLogin = function (ide, callback, callOnFail) {
     // Try to login w/ cookie only
     var request = new XMLHttpRequest(),
         socketId = this.socketId(),
@@ -428,7 +428,9 @@ NetCloud.prototype.passiveLogin = function (ide, callback) {
                         ide.source = 'cloud';
                     }
                     myself.onPassiveLogin();
-                    callback();
+                    callback(true);
+                } else if (callOnFail) {
+                    callback(false);
                 }
             }
         };
