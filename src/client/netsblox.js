@@ -281,7 +281,8 @@ NetsBloxMorph.prototype.openIn = function (world) {
         // Netsblox addition: start
         } else if (location.hash.substr(0, 9) === '#example:' || dict.action === 'example') {
             var example = dict ? dict.ProjectName : location.hash.substr(9),
-                onConnect = this.sockets.onConnect;
+                onConnect = this.sockets.onConnect,
+                msg;
 
             this.sockets.onConnect = function() {
                 SnapCloud.passiveLogin(myself, function() {
@@ -295,14 +296,29 @@ NetsBloxMorph.prototype.openIn = function (world) {
                     };
 
                     // role name
-                    if (response.SourceCode) {
-                        myself.droppedText(response.SourceCode);
-                    } else {
-                        myself.clearProject();
-                    }
-                    myself.loadNextRoom();
-                    myself.sockets.onConnect = onConnect;
-                });
+                    myself.nextSteps([
+                        function () {
+                            msg = this.showMessage('Opening ' + example + ' example...');
+                        },
+                        function () {nop(); }, // yield (bug in Chrome)
+                        function () {
+                            if (response.SourceCode) {
+                                myself.rawOpenCloudDataString(
+                                    response.SourceCode
+                                );
+                            } else {
+                                myself.clearProject();
+                            }
+                            myself.loadNextRoom();
+                            myself.sockets.onConnect = onConnect;
+                            myself.hasChangedMedia = true;
+                        },
+                        function () {
+                            msg.destroy();
+                            applyFlags(dict);
+                        }
+                    ]);
+                }, true);
             };
         // Netsblox addition: end
         }
