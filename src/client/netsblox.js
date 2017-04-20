@@ -284,7 +284,6 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 onConnect = this.sockets.onConnect,
                 msg;
 
-            msg = this.showMessage('Opening ' + example + ' example...');
             this.sockets.onConnect = function() {
                 SnapCloud.passiveLogin(myself, function() {
                     var response = SnapCloud.parseDict(myself.getURL('api/Examples/' + example +
@@ -297,14 +296,28 @@ NetsBloxMorph.prototype.openIn = function (world) {
                     };
 
                     // role name
-                    if (response.SourceCode) {
-                        myself.droppedText(response.SourceCode);
-                    } else {
-                        myself.clearProject();
-                    }
-                    myself.loadNextRoom();
-                    myself.sockets.onConnect = onConnect;
-                    msg.destroy();
+                    myself.nextSteps([
+                        function () {
+                            msg = this.showMessage('Opening ' + example + ' example...');
+                        },
+                        function () {nop(); }, // yield (bug in Chrome)
+                        function () {
+                            if (response.SourceCode) {
+                                myself.rawOpenCloudDataString(
+                                    response.SourceCode
+                                );
+                            } else {
+                                myself.clearProject();
+                            }
+                            myself.loadNextRoom();
+                            myself.sockets.onConnect = onConnect;
+                            myself.hasChangedMedia = true;
+                        },
+                        function () {
+                            msg.destroy();
+                            applyFlags(dict);
+                        }
+                    ]);
                 }, true);
             };
         // Netsblox addition: end
