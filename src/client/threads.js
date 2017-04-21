@@ -1,5 +1,5 @@
 /* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
-   List */
+   List, SnapActions*/
 ThreadManager.prototype.startProcess = function (
     block,
     isThreadSafe,
@@ -85,6 +85,12 @@ NetsProcess.prototype.doSocketMessage = function (msgInfo) {
         fieldNames = msgInfo[1],
         fieldValues = Array.prototype.slice.call(arguments, 1, fieldNames.length + 1),
         contents;
+
+    // check if collaborating. If so, show a message but don't send
+    if (SnapActions.isCollaborating() && !SnapActions.isLeader) {
+        this.topBlock.showBubble('Cannot send message when collaborating');
+        return;
+    }
 
     // If there is no name, return
     if (!name) {
