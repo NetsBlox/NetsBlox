@@ -1689,6 +1689,8 @@ NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
         myself = this,
         str = parsed ? model : model.toString(),
         size = Math.round(str.length / 1024);
+
+    this.exitReplayMode();
     this.nextSteps([
         function () {
             msg = myself.showMessage('Opening project\n' + size + ' KB...');
