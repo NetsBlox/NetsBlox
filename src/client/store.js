@@ -2,7 +2,7 @@
    CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
    WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame,
    MessageInputSlotMorph, HintInputSlotMorph, InputSlotMorph, SnapActions,
-   normalizeCanvas, StructInputSlotMorph */
+   normalizeCanvas, StructInputSlotMorph, BooleanSlotMorph */
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
@@ -320,6 +320,7 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     model.globalVariables = model.project.childNamed('variables');
     project.globalVariables = new VariableFrame();
     project.collabStartIndex = +(model.project.attributes.collabStartIndex || 0);
+    this.loadReplayHistory(xmlNode.childNamed('replay'));
 
     /* Stage */
 
@@ -416,6 +417,7 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     }
 
     this.loadObject(project.stage, model.stage);
+    this.loadHistory(xmlNode.childNamed('history'));
 
     /* Sprites */
 
@@ -577,6 +579,7 @@ StageMorph.prototype.toXML = function (serializer) {
             '<stage name="@" width="@" height="@" collabId="@" ' +
             'costume="@" tempo="@" threadsafe="@" ' +
             'lines="@" ' +
+            'ternary="@" ' +
             'codify="@" ' +
             'inheritance="@" ' +
             'sublistIDs="@" ' +
@@ -596,6 +599,8 @@ StageMorph.prototype.toXML = function (serializer) {
             '<code>%</code>' +
             '<blocks>%</blocks>' +
             '<variables>%</variables>' +
+            '<history>%</history>' +
+            '<replay>%</replay>' +
             '</project>',
         SnapActions.lastSeen,
         (ide && ide.projectName) ? ide.projectName : localize('Untitled'),
@@ -611,6 +616,7 @@ StageMorph.prototype.toXML = function (serializer) {
         this.getTempo(),
         this.isThreadSafe,
         SpriteMorph.prototype.useFlatLineEnds ? 'flat' : 'round',
+        BooleanSlotMorph.prototype.isTernary,
         this.enableCodeMapping,
         this.enableInheritance,
         this.enableSublistIDs,
@@ -633,7 +639,9 @@ StageMorph.prototype.toXML = function (serializer) {
         code('codeMappings'),
         serializer.store(this.globalBlocks),
         (ide && ide.globalVariables) ?
-                    serializer.store(ide.globalVariables) : ''
+                    serializer.store(ide.globalVariables) : '',
+        serializer.historyXML(this.id),
+        serializer.replayHistory()
     );
 };
 
