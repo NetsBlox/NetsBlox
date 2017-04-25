@@ -163,6 +163,7 @@ class Room extends DataWrapper {
                 PublicProjectStore.update(room);
             }
         }
+        this._user.changed(room);
         this._user.save();
         this._logger.log(`saved room "${room.name}" for ${this._user.username}`);
         callback(null);
@@ -181,15 +182,9 @@ class Room extends DataWrapper {
 
     }
 
-    destroy() {
-        // remove the room from the user's list
-        // TODO
-        // set the user's 
-        // TODO
-    }
 }
 
-var EXTRA_KEYS = ['_user', '_room', '_content'];
+var EXTRA_KEYS = ['_user', '_room', '_content', '_changedRoles'];
 Room.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(EXTRA_KEYS);
 
 class RoomStore {
