@@ -377,6 +377,7 @@ ProjectDialogMorph.prototype.openProject = function () {
         response;
 
     if (this.source === 'examples') {
+        this.destroy();
         response = SnapCloud.parseDict(this.ide.getURL('api/Examples/' + proj.name +
             '?socketId=' + this.ide.sockets.uuid));
 
@@ -393,7 +394,6 @@ ProjectDialogMorph.prototype.openProject = function () {
             this.ide.clearProject();
         }
         this.ide.loadNextRoom();
-        this.destroy();
         this.ide.updateUrlQueryString(proj.name, false, true);
     } else {
         return superOpenProj.call(this);
@@ -404,6 +404,7 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
     var myself = this,
         msg;
 
+    this.destroy();
     myself.ide.nextSteps([
         function () {
             msg = myself.ide.showMessage('Fetching project\nfrom the cloud...');
@@ -454,13 +455,15 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
 };
 
 ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
-    var myself = this;
+    var myself = this,
+        msg = myself.ide.showMessage('Fetching project\nfrom the cloud...');
 
     SnapCloud.reconnect(
         function () {
             SnapCloud.callService(
                 'getProject',
                 function (response) {
+                    msg.destroy();
                     myself.ide.rawLoadCloudProject(response[0], proj.Public);
                 },
                 myself.ide.cloudError(),
@@ -469,7 +472,6 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
         },
         myself.ide.cloudError()
     );
-    this.destroy();
 };
 
 ProjectDialogMorph.prototype.saveProject = function () {
