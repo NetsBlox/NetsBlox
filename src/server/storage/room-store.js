@@ -164,9 +164,15 @@ class Room extends DataWrapper {
             }
         }
         this._user.changed(room);
-        this._user.save();
-        this._logger.log(`saved room "${room.name}" for ${this._user.username}`);
-        callback(null);
+        return this._user.save()
+            .then(() => {
+                this._logger.log(`saved room "${room.name}" for ${this._user.username}`);
+                callback(null);
+            })
+            .fail(err => {
+                this._logger.error(`room save failed: ${err}`);
+                callback(err);
+            });
     }
 
     pretty() {
