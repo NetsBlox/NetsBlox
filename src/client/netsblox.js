@@ -837,7 +837,26 @@ NetsBloxMorph.prototype.settingsMenu = function () {
     addPreference(
         'Replay Mode',
         function() {
-            if (myself.isReplayMode) return myself.exitReplayMode();
+            if (myself.isReplayMode) {  // exiting replay mode
+
+                if (myself.isPreviousVersion()) {
+                    myself.confirm(
+                        'Exiting replay mode now will revert the project to\n' +
+                        'the current point in history (losing any unapplied ' + 
+                        'changes)\n\nAre you sure you want to exit replay mode?',
+                        'Exit Replay Mode?',
+                        function () {
+                            myself.exitReplayMode();
+                        }
+                    );
+                    return;
+                }
+                return myself.exitReplayMode();
+            }
+            // entering replay mode
+            if (SnapUndo.allEvents.length < 2) {
+                return myself.showMessage('Nothing to replay!', 2);
+            }
             if (SnapActions.isCollaborating()) {
                 this.confirm(
                     'Cannot enter replay mode while collaborating. \nWould you ' +
@@ -1354,7 +1373,13 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addPair('New', 'createNewProject', '^N');
     menu.addPair('Open...', 'openProjectsBrowser', '^O');
     menu.addPair('Save', "save", '^S');
-    menu.addItem('Save As...', 'saveProjectsBrowser');
+    menu.addItem('Save As...', function() {
+        if (myself.isPreviousVersion()) {
+            return myself.showMessage('Please exit replay mode before saving');
+        }
+
+        myself.saveProjectsBrowser();
+    });
     if (shiftClicked) {
         menu.addItem(
             localize('Download replay events'),
@@ -1758,6 +1783,10 @@ NetsBloxMorph.prototype.openProject = function (name) {
 };
 
 NetsBloxMorph.prototype.save = function () {
+    if (this.isPreviousVersion()) {
+        return this.showMessage('Please exit replay mode before saving');
+    }
+
     if (this.source === 'examples') {
         this.source = 'local'; // cannot save to examples
     }
