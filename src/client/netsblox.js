@@ -125,7 +125,17 @@ NetsBloxMorph.prototype.openIn = function (world) {
     */
 
     function interpretUrlAnchors() {
-        var dict, idx;
+        var dict = {}, idx;
+
+        // Netsblox addition: start
+        if (location.href.indexOf('?') > -1) {
+            var querystring = location.href
+                .replace(/^.*\?/, '')
+                .replace('#' + location.hash, '');
+
+            dict = SnapCloud.parseDict(querystring);
+        }
+        // Netsblox addition: end
 
         if (location.hash.substr(0, 6) === '#open:') {
             hash = location.hash.substr(6);
@@ -161,16 +171,21 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 this.rawOpenProjectString(getURL(hash));
             }
             applyFlags(SnapCloud.parseDict(location.hash.substr(5)));
-        } else if (location.hash.substr(0, 9) === '#present:') {
+        // Netsblox addition: start
+        } else if (location.hash.substr(0, 9) === '#present:' || dict.action === 'present') {
+        // Netsblox addition: end
             this.shield = new Morph();
             this.shield.color = this.color;
             this.shield.setExtent(this.parent.extent());
             this.parent.add(this.shield);
             myself.showMessage('Fetching project\nfrom the cloud...');
 
-            // make sure to lowercase the username
-            dict = SnapCloud.parseDict(location.hash.substr(9));
-            dict.Username = dict.Username.toLowerCase();
+            // Netsblox addition: start
+            if (location.hash.substr(0, 9) === '#present:') {
+                dict = SnapCloud.parseDict(location.hash.substr(9));
+            }
+            // (removed lowercasing the username)
+            // Netsblox addition: end
 
             SnapCloud.getPublicProject(
                 SnapCloud.encodeDict(dict),
@@ -264,9 +279,10 @@ NetsBloxMorph.prototype.openIn = function (world) {
             SnapActions.joinSession(sessionId, this.cloudError());
 
         // Netsblox addition: start
-        } else if (location.hash.substr(0, 9) === '#example:') {
-            var example = location.hash.substr(9),
-                onConnect = this.sockets.onConnect;
+        } else if (location.hash.substr(0, 9) === '#example:' || dict.action === 'example') {
+            var example = dict ? dict.ProjectName : location.hash.substr(9),
+                onConnect = this.sockets.onConnect,
+                msg;
 
             this.sockets.onConnect = function() {
                 SnapCloud.passiveLogin(myself, function() {
@@ -280,14 +296,29 @@ NetsBloxMorph.prototype.openIn = function (world) {
                     };
 
                     // role name
-                    if (response.SourceCode) {
-                        myself.droppedText(response.SourceCode);
-                    } else {
-                        myself.clearProject();
-                    }
-                    myself.loadNextRoom();
-                    myself.sockets.onConnect = onConnect;
-                });
+                    myself.nextSteps([
+                        function () {
+                            msg = this.showMessage('Opening ' + example + ' example...');
+                        },
+                        function () {nop(); }, // yield (bug in Chrome)
+                        function () {
+                            if (response.SourceCode) {
+                                myself.rawOpenCloudDataString(
+                                    response.SourceCode
+                                );
+                            } else {
+                                myself.clearProject();
+                            }
+                            myself.loadNextRoom();
+                            myself.sockets.onConnect = onConnect;
+                            myself.hasChangedMedia = true;
+                        },
+                        function () {
+                            msg.destroy();
+                            applyFlags(dict);
+                        }
+                    ]);
+                }, true);
             };
         // Netsblox addition: end
         }
@@ -329,6 +360,8 @@ NetsBloxMorph.prototype.clearProject = function () {
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
+    SnapActions.disableCollaboration();
+    SnapUndo.reset();
     SnapActions.loadProject(this);
 };
 
@@ -914,6 +947,9 @@ NetsBloxMorph.prototype.newProject = function (projectName) {
     this.silentSetProjectName(projectName || RoomMorph.DEFAULT_ROLE);
     this.createRoom();
     this.selectSprite(this.stage.children[0]);
+    if (!projectName) {
+        this.updateUrlQueryString();
+    }
 };
 
 NetsBloxMorph.prototype.createRoom = function() {
@@ -1003,6 +1039,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
     StageMorph.prototype.codeHeaders = {};
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
+    SnapUndo.reset();
     if (Process.prototype.isCatchingErrors) {
         try {
             model = parsed ? model : this.serializer.parse(model);
@@ -1657,6 +1694,8 @@ NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
         myself = this,
         str = parsed ? model : model.toString(),
         size = Math.round(str.length / 1024);
+
+    this.exitReplayMode();
     this.nextSteps([
         function () {
             msg = myself.showMessage('Opening project\n' + size + ' KB...');
@@ -1766,6 +1805,7 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     SnapCloud.hasConflictingStoredProject(
         function(hasConflicting) {
             if (!hasConflicting) {
+                myself.updateUrlQueryString();
                 return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
             } else {  // doesn't match the stored version!
                 var dialog = new DialogBoxMorph(null, function() {
@@ -1914,12 +1954,21 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
             this.showMessage(localize('A new role has been created for you at ' + newRoom));
         }
     }
-    if (isPublic === 'true') {
-        location.hash = '#present:Username=' +
-            encodeURIComponent(SnapCloud.username) +
-            '&ProjectName=' +
-            encodeURIComponent(newRoom);
+    this.updateUrlQueryString(newRoom, isPublic === 'true');
+};
+
+NetsBloxMorph.prototype.updateUrlQueryString = function (room, isPublic, isExample) {
+    var url = location.pathname;
+
+    room = room || this.room._name;
+    if (isExample) {
+        url += '?action=example&ProjectName=' + encodeURIComponent(room);
+    } else if (isPublic) {
+        url += '?action=present&Username=' + encodeURIComponent(SnapCloud.username) +
+            '&ProjectName=' + encodeURIComponent(room);
     }
+
+    window.history.pushState(room, room, url);
 };
 
 // Bug reporting assistance

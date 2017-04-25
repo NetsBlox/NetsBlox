@@ -70,12 +70,25 @@ ProjectDialogMorph.prototype.buildContents = function () {
     };
     this.preview.drawCachedTexture = function () {
         var context = this.image.getContext('2d');
-        context.drawImage(this.cachedTexture, this.edge, this.edge);
+        // NetsBlox changes: start
+        var scale = Math.min(
+                (this.width() / this.cachedTexture.width),
+                (this.height() / this.cachedTexture.height)
+            ),
+            width = scale * this.cachedTexture.width,
+            height = scale * this.cachedTexture.height;
+
+        context.drawImage(this.cachedTexture, this.edge, this.edge,
+            width, height);
+
+        // NetsBlox changes: end
         this.changed();
     };
     this.preview.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
     this.preview.setExtent(
-        this.ide.serializer.thumbnailSize.add(this.preview.edge * 2)
+        // NetsBlox changes: start
+        this.ide.serializer.thumbnailSize.divideBy(4).add(this.preview.edge * 2)
+        // NetsBlox changes: end
     );
 
     this.body.add(this.preview);
@@ -138,6 +151,101 @@ ProjectDialogMorph.prototype.buildContents = function () {
     }
     this.fixLayout();
 
+};
+
+ProjectDialogMorph.prototype.shareProject = function () {
+    var myself = this,
+        ide = this.ide,
+        proj = this.listField.selected,
+        entry = this.listField.active;
+
+    if (proj) {
+        this.ide.confirm(
+            localize(
+                'Are you sure you want to publish'
+            ) + '\n"' + proj.ProjectName + '"?',
+            'Share Project',
+            function () {
+                myself.ide.showMessage('sharing\nproject...');
+                SnapCloud.reconnect(
+                    function () {
+                        SnapCloud.callService(
+                            'publishProject',
+                            function () {
+                                SnapCloud.disconnect();
+                                proj.Public = 'true';
+                                myself.unshareButton.show();
+                                myself.shareButton.hide();
+                                entry.label.isBold = true;
+                                entry.label.drawNew();
+                                entry.label.changed();
+                                myself.buttons.fixLayout();
+                                myself.drawNew();
+                                myself.ide.showMessage('shared.', 2);
+                            },
+                            myself.ide.cloudError(),
+                            [proj.ProjectName]
+                        );
+                        // Set the Shared URL if the project is currently open
+                        if (proj.ProjectName === ide.projectName) {
+                            // Netsblox addition: start
+                            myself.ide.updateUrlQueryString(proj.ProjectName, true);
+                            // Netsblox addition: end
+                        }
+                    },
+                    myself.ide.cloudError()
+                );
+            }
+        );
+    }
+};
+
+ProjectDialogMorph.prototype.unshareProject = function () {
+    var myself = this,
+        ide = this.ide,
+        proj = this.listField.selected,
+        entry = this.listField.active;
+
+
+    if (proj) {
+        this.ide.confirm(
+            localize(
+                'Are you sure you want to unpublish'
+            ) + '\n"' + proj.ProjectName + '"?',
+            'Unshare Project',
+            function () {
+                myself.ide.showMessage('unsharing\nproject...');
+                SnapCloud.reconnect(
+                    function () {
+                        SnapCloud.callService(
+                            'unpublishProject',
+                            function () {
+                                SnapCloud.disconnect();
+                                proj.Public = 'false';
+                                myself.shareButton.show();
+                                myself.unshareButton.hide();
+                                entry.label.isBold = false;
+                                entry.label.drawNew();
+                                entry.label.changed();
+                                myself.buttons.fixLayout();
+                                myself.drawNew();
+                                myself.ide.showMessage('unshared.', 2);
+                            },
+                            myself.ide.cloudError(),
+                            [proj.ProjectName]
+                        );
+                        // Remove the shared URL if the project is open.
+                        if (proj.ProjectName === ide.projectName) {
+                            // Netsblox addition: start
+                            myself.ide.updateUrlQueryString(proj.ProjectName, false);
+                            // Netsblox addition: end
+                        }
+                    },
+                    myself.ide.cloudError()
+                );
+            }
+        );
+    }
 };
 
 ProjectDialogMorph.prototype.setSource = function (source) {
@@ -269,6 +377,7 @@ ProjectDialogMorph.prototype.openProject = function () {
         response;
 
     if (this.source === 'examples') {
+        this.destroy();
         response = SnapCloud.parseDict(this.ide.getURL('api/Examples/' + proj.name +
             '?socketId=' + this.ide.sockets.uuid));
 
@@ -285,7 +394,7 @@ ProjectDialogMorph.prototype.openProject = function () {
             this.ide.clearProject();
         }
         this.ide.loadNextRoom();
-        this.destroy();
+        this.ide.updateUrlQueryString(proj.name, false, true);
     } else {
         return superOpenProj.call(this);
     }
@@ -295,6 +404,7 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
     var myself = this,
         msg;
 
+    this.destroy();
     myself.ide.nextSteps([
         function () {
             msg = myself.ide.showMessage('Fetching project\nfrom the cloud...');
@@ -345,13 +455,15 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
 };
 
 ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
-    var myself = this;
+    var myself = this,
+        msg = myself.ide.showMessage('Fetching project\nfrom the cloud...');
 
     SnapCloud.reconnect(
         function () {
             SnapCloud.callService(
                 'getProject',
                 function (response) {
+                    msg.destroy();
                     myself.ide.rawLoadCloudProject(response[0], proj.Public);
                 },
                 myself.ide.cloudError(),
@@ -360,7 +472,6 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
         },
         myself.ide.cloudError()
     );
-    this.destroy();
 };
 
 ProjectDialogMorph.prototype.saveProject = function () {

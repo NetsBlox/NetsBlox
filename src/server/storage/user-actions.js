@@ -25,7 +25,7 @@
         // If openProject, store the project in the blob
         if (event.action.type === 'openProject' && event.action.args.length) {
             var xml = event.action.args[0];
-            if (xml.substring(0, 10) === 'snapdata') {
+            if (xml && xml.substring(0, 10) === 'snapdata') {
                 // split the media, source code
                 var endOfCode = xml.lastIndexOf('</project>') + 10,
                     code = xml.substring(11, endOfCode),
@@ -33,7 +33,7 @@
 
                 preprocess = Q.all([code, media].map(data => blob.store(data)))
                     .then(hashes => event.action.args[0] = hashes);
-            } else {  // store the xml in one chunk in the blob
+            } else if (xml) {  // store the xml in one chunk in the blob
                 preprocess = Q.all([xml].map(data => blob.store(data)))
                     .then(hashes => event.action.args[0] = hashes);
             }
