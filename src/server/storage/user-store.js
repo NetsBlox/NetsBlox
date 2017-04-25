@@ -90,6 +90,7 @@ class User extends DataWrapper {
             let room = project,
                 roles,
                 srcContent,
+                hashes,
                 media,
                 role;
 
@@ -104,10 +105,11 @@ class User extends DataWrapper {
             this._roomHashes[project.name] = {};
             for (let i = roles.length; i--;) {
                 role = room.roles[roles[i].ProjectName];
-                this._roomHashes[project.name][roles[i].ProjectName] = {
+                hashes = {
                     SourceCode: role.SourceCode,
                     Media: role.Media
                 };
+                this._roomHashes[project.name][roles[i].ProjectName] = hashes;
             }
 
             srcContent = roles.map(role => blob.get(role.SourceCode));
@@ -127,7 +129,8 @@ class User extends DataWrapper {
                     return room;
                 });
         }))
-        .then(rooms => this.rooms = rooms);
+        .then(rooms => this.rooms = rooms)
+        .fail(err => this.logger.error(`Project load failed for ${this.username}: ${err}`));
     }
 
     saveProjects () {  // save the rooms to the blob and update the 'projects'
@@ -139,15 +142,14 @@ class User extends DataWrapper {
                 mediaIds;
 
             // Store the changed rooms and look up the other rooms
-            if (this._changedRooms.includes(room)) {
+            if (this.hasChanged(room)) {
                 srcIds = roles.map(role => blob.store(role.SourceCode));
                 mediaIds = roles.map(role => blob.store(role.Media));
             } else {
                 // Look up the original hashes
-                srcIds = roleNames.map(name =>
-                    this._roomHashes[project.name][name].SourceCode);
-                mediaIds = roleNames.map(name =>
-                    this._roomHashes[project.name][name].Media);
+                var hashes = this._roomHashes[project.name];
+                srcIds = roleNames.map(name => hashes[name].SourceCode);
+                mediaIds = roleNames.map(name => hashes[name].Media);
             }
 
             return Q.all(srcIds)
@@ -165,13 +167,27 @@ class User extends DataWrapper {
                 });
         }))
         .then(projects => {
+            // Verify that all the projects are the correct format
             this.projects = projects;
             this._changedRooms = [];
-        });
+        })
+        .fail(err => this.logger.error(`Project save failed for ${this.username}: ${err}`));
     }
 
     changed(room) {  // record that the room should be saved on the next save
         this._changedRooms.push(room);
+    }
+
+    hasChanged(room) {
+        let iter;
+        for (var i = this._changedRooms.length; i--;) {
+            iter = this._changedRooms[i];
+            if (room.name === iter.name && room.originTime === iter.originTime) {
+                this._logger.trace(`${room.name} has changed!`);
+                return true;
+            }
+        }
+        return false;
     }
 
     recordLogin() {
