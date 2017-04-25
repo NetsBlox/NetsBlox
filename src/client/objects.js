@@ -4,7 +4,7 @@
    MessageFrame, BlockMorph, ToggleMorph, MessageCreatorMorph,
    VariableDialogMorph, SnapCloud, contains, List, CommandBlockMorph,
    MessageType, isNil, RingMorph, SnapActions, ProjectsMorph, NetsBloxMorph,
-   SnapUndo, newCanvas, ReplayControls*/
+   SnapUndo, newCanvas, ReplayControls, copy*/
 
 SpriteMorph.prototype.categories =
     [
