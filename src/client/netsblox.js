@@ -360,6 +360,8 @@ NetsBloxMorph.prototype.clearProject = function () {
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
+    SnapActions.disableCollaboration();
+    SnapUndo.reset();
     SnapActions.loadProject(this);
 };
 
