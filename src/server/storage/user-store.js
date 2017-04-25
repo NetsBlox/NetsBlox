@@ -60,6 +60,8 @@ class User extends DataWrapper {
             });
 
         super(db, data);
+        this._changedRooms = [];
+        this._roomHashes = {};
         this._logger = logger.fork(data.username);
     }
 
@@ -88,13 +90,24 @@ class User extends DataWrapper {
             let room = project,
                 roles,
                 srcContent,
-                media;
+                media,
+                role;
 
             roles = Object.keys(room.roles).map(name => room.roles[name])
                 .filter(role => !!role);
 
             if (roles.length < Object.keys(room.roles).length) {
                 this._logger.warn(`Found null roles in ${room.uuid}. Removing...`);
+            }
+
+            // Record the hashes
+            this._roomHashes[project.name] = {};
+            for (let i = roles.length; i--;) {
+                role = room.roles[roles[i].ProjectName];
+                this._roomHashes[project.name][roles[i].ProjectName] = {
+                    SourceCode: role.SourceCode,
+                    Media: role.Media
+                };
             }
 
             srcContent = roles.map(role => blob.get(role.SourceCode));
@@ -120,12 +133,22 @@ class User extends DataWrapper {
     saveProjects () {  // save the rooms to the blob and update the 'projects'
         return Q.all(this.rooms.map(room => {
             let project = _.cloneDeep(room),
-                roles = Object.keys(room.roles).map(name => room.roles[name]),
+                roleNames = Object.keys(room.roles),
+                roles = roleNames.map(name => room.roles[name]),
                 srcIds,
                 mediaIds;
 
-            srcIds = roles.map(role => blob.store(role.SourceCode));
-            mediaIds = roles.map(role => blob.store(role.Media));
+            // Store the changed rooms and look up the other rooms
+            if (this._changedRooms.includes(room)) {
+                srcIds = roles.map(role => blob.store(role.SourceCode));
+                mediaIds = roles.map(role => blob.store(role.Media));
+            } else {
+                // Look up the original hashes
+                srcIds = roleNames.map(name =>
+                    this._roomHashes[project.name][name].SourceCode);
+                mediaIds = roleNames.map(name =>
+                    this._roomHashes[project.name][name].Media);
+            }
 
             return Q.all(srcIds)
                 .then(ids => {
@@ -141,7 +164,14 @@ class User extends DataWrapper {
                     return project;
                 });
         }))
-        .then(projects => this.projects = projects);
+        .then(projects => {
+            this.projects = projects;
+            this._changedRooms = [];
+        });
+    }
+
+    changed(room) {  // record that the room should be saved on the next save
+        this._changedRooms.push(room);
     }
 
     recordLogin() {
@@ -177,8 +207,8 @@ class User extends DataWrapper {
                 'logging in.'
         });
     }
-
 }
 
-User.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(['rooms']);
+var IGNORE_KEYS = ['rooms', '_changedRooms', '_roomHashes'];
+User.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(IGNORE_KEYS);
 module.exports = UserStore;
