@@ -281,7 +281,8 @@ NetsBloxMorph.prototype.openIn = function (world) {
         // Netsblox addition: start
         } else if (location.hash.substr(0, 9) === '#example:' || dict.action === 'example') {
             var example = dict ? dict.ProjectName : location.hash.substr(9),
-                onConnect = this.sockets.onConnect;
+                onConnect = this.sockets.onConnect,
+                msg;
 
             this.sockets.onConnect = function() {
                 SnapCloud.passiveLogin(myself, function() {
@@ -295,14 +296,29 @@ NetsBloxMorph.prototype.openIn = function (world) {
                     };
 
                     // role name
-                    if (response.SourceCode) {
-                        myself.droppedText(response.SourceCode);
-                    } else {
-                        myself.clearProject();
-                    }
-                    myself.loadNextRoom();
-                    myself.sockets.onConnect = onConnect;
-                });
+                    myself.nextSteps([
+                        function () {
+                            msg = this.showMessage('Opening ' + example + ' example...');
+                        },
+                        function () {nop(); }, // yield (bug in Chrome)
+                        function () {
+                            if (response.SourceCode) {
+                                myself.rawOpenCloudDataString(
+                                    response.SourceCode
+                                );
+                            } else {
+                                myself.clearProject();
+                            }
+                            myself.loadNextRoom();
+                            myself.sockets.onConnect = onConnect;
+                            myself.hasChangedMedia = true;
+                        },
+                        function () {
+                            msg.destroy();
+                            applyFlags(dict);
+                        }
+                    ]);
+                }, true);
             };
         // Netsblox addition: end
         }
@@ -344,6 +360,8 @@ NetsBloxMorph.prototype.clearProject = function () {
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
+    SnapActions.disableCollaboration();
+    SnapUndo.reset();
     SnapActions.loadProject(this);
 };
 
@@ -929,7 +947,9 @@ NetsBloxMorph.prototype.newProject = function (projectName) {
     this.silentSetProjectName(projectName || RoomMorph.DEFAULT_ROLE);
     this.createRoom();
     this.selectSprite(this.stage.children[0]);
-    this.updateUrlQueryString();
+    if (!projectName) {
+        this.updateUrlQueryString();
+    }
 };
 
 NetsBloxMorph.prototype.createRoom = function() {
@@ -1019,6 +1039,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
     StageMorph.prototype.codeHeaders = {};
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
+    SnapUndo.reset();
     if (Process.prototype.isCatchingErrors) {
         try {
             model = parsed ? model : this.serializer.parse(model);
@@ -1673,6 +1694,8 @@ NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
         myself = this,
         str = parsed ? model : model.toString(),
         size = Math.round(str.length / 1024);
+
+    this.exitReplayMode();
     this.nextSteps([
         function () {
             msg = myself.showMessage('Opening project\n' + size + ' KB...');

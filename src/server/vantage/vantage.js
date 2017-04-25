@@ -35,6 +35,8 @@ var NetsBloxVantage = function(server) {
         .option('-a, --admin', 'Toggle admin status')
         .option('-u, --update', 'Update the user\'s schema')
         .option('-c, --clear', 'Clear the room info')
+        .option('--delete', 'Delete the user')
+        .option('--force', 'Force the given command')
         .option('-e [project]', 'Save user project to file')
         .option('-p, --password <password>', 'Set the user password')
         .alias('u')
@@ -119,6 +121,13 @@ var NetsBloxVantage = function(server) {
                         user.password = args.options.password;
                         user.save();
                         console.log(`Set password to "${args.options.password}"`);
+                    } else if (args.options.delete) {
+                        if (args.options.force) {
+                            user.destroy();
+                            console.log(`${user.username} has been deleted!`);
+                        } else {
+                            console.log(`Are you sure you want to delete ${user.username}? If so, add the --force flag`);
+                        }
                     } else if (args.options.json) {
                         console.log(JSON.stringify(user.pretty()));
                     } else {
