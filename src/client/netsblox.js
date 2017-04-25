@@ -1035,6 +1035,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
     StageMorph.prototype.codeHeaders = {};
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
+    SnapUndo.reset();
     if (Process.prototype.isCatchingErrors) {
         try {
             model = parsed ? model : this.serializer.parse(model);
