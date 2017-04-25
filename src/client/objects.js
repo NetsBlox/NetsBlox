@@ -4,7 +4,7 @@
    MessageFrame, BlockMorph, ToggleMorph, MessageCreatorMorph,
    VariableDialogMorph, SnapCloud, contains, List, CommandBlockMorph,
    MessageType, isNil, RingMorph, SnapActions, ProjectsMorph, NetsBloxMorph,
-   SnapUndo, newCanvas, ReplayControls*/
+   SnapUndo, newCanvas, ReplayControls, copy*/
 
 SpriteMorph.prototype.categories =
     [
@@ -1753,7 +1753,7 @@ ReplayControls.prototype.update = function() {
         if (dir === 1) {
             index = this.actionIndex + dir;
             originalEvent = this.actions[index];
-            action = originalEvent;
+            action = copy(originalEvent);
             if (!originalEvent || originalEvent.time >= this.slider.value) {
                 return setTimeout(this.update.bind(this), 100);
             }
