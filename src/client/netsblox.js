@@ -947,7 +947,9 @@ NetsBloxMorph.prototype.newProject = function (projectName) {
     this.silentSetProjectName(projectName || RoomMorph.DEFAULT_ROLE);
     this.createRoom();
     this.selectSprite(this.stage.children[0]);
-    this.updateUrlQueryString();
+    if (!projectName) {
+        this.updateUrlQueryString();
+    }
 };
 
 NetsBloxMorph.prototype.createRoom = function() {
