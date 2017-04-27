@@ -28,7 +28,7 @@ describe('server-utils', function() {
             });
 
             ['top', 'bottom', 'left', 'right'].forEach(side => {
-                it(`should not have negative ${side} pad`, function() {
+                it(`should have non-negative ${side} pad`, function() {
                     assert(pad[side] >= 0, `${side} has pad of ${pad[side]}`);
                 });
             });
