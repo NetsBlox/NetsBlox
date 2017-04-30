@@ -60,6 +60,8 @@ class User extends DataWrapper {
             });
 
         super(db, data);
+        this._changedRooms = [];
+        this._roomHashes = {};
         this._logger = logger.fork(data.username);
     }
 
@@ -88,13 +90,26 @@ class User extends DataWrapper {
             let room = project,
                 roles,
                 srcContent,
-                media;
+                hashes,
+                media,
+                role;
 
             roles = Object.keys(room.roles).map(name => room.roles[name])
                 .filter(role => !!role);
 
             if (roles.length < Object.keys(room.roles).length) {
                 this._logger.warn(`Found null roles in ${room.uuid}. Removing...`);
+            }
+
+            // Record the hashes
+            this._roomHashes[project.name] = {};
+            for (let i = roles.length; i--;) {
+                role = room.roles[roles[i].ProjectName];
+                hashes = {
+                    SourceCode: role.SourceCode,
+                    Media: role.Media
+                };
+                this._roomHashes[project.name][roles[i].ProjectName] = hashes;
             }
 
             srcContent = roles.map(role => blob.get(role.SourceCode));
@@ -114,18 +129,28 @@ class User extends DataWrapper {
                     return room;
                 });
         }))
-        .then(rooms => this.rooms = rooms);
+        .then(rooms => this.rooms = rooms)
+        .fail(err => this.logger.error(`Project load failed for ${this.username}: ${err}`));
     }
 
     saveProjects () {  // save the rooms to the blob and update the 'projects'
         return Q.all(this.rooms.map(room => {
             let project = _.cloneDeep(room),
-                roles = Object.keys(room.roles).map(name => room.roles[name]),
+                roleNames = Object.keys(room.roles),
+                roles = roleNames.map(name => room.roles[name]),
                 srcIds,
                 mediaIds;
 
-            srcIds = roles.map(role => blob.store(role.SourceCode));
-            mediaIds = roles.map(role => blob.store(role.Media));
+            // Store the changed rooms and look up the other rooms
+            if (this.hasChanged(room)) {
+                srcIds = roles.map(role => blob.store(role.SourceCode));
+                mediaIds = roles.map(role => blob.store(role.Media));
+            } else {
+                // Look up the original hashes
+                var hashes = this._roomHashes[project.name];
+                srcIds = roleNames.map(name => hashes[name].SourceCode);
+                mediaIds = roleNames.map(name => hashes[name].Media);
+            }
 
             return Q.all(srcIds)
                 .then(ids => {
@@ -141,7 +166,28 @@ class User extends DataWrapper {
                     return project;
                 });
         }))
-        .then(projects => this.projects = projects);
+        .then(projects => {
+            // Verify that all the projects are the correct format
+            this.projects = projects;
+            this._changedRooms = [];
+        })
+        .fail(err => this.logger.error(`Project save failed for ${this.username}: ${err}`));
+    }
+
+    changed(room) {  // record that the room should be saved on the next save
+        this._changedRooms.push(room);
+    }
+
+    hasChanged(room) {
+        let iter;
+        for (var i = this._changedRooms.length; i--;) {
+            iter = this._changedRooms[i];
+            if (room.name === iter.name && room.originTime === iter.originTime) {
+                this._logger.trace(`${room.name} has changed!`);
+                return true;
+            }
+        }
+        return false;
     }
 
     recordLogin() {
@@ -177,8 +223,8 @@ class User extends DataWrapper {
                 'logging in.'
         });
     }
-
 }
 
-User.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(['rooms']);
+var IGNORE_KEYS = ['rooms', '_changedRooms', '_roomHashes'];
+User.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(IGNORE_KEYS);
 module.exports = UserStore;

@@ -153,20 +153,17 @@ var padImage = function (buffer, ratio) {  // Pad the image to match the given a
         .then(image => {
             var width = image.width(),
                 height = image.height(),
-                diff,
-                left = 0,
-                top = 0,
-                right = 0,
-                bottom = 0;
+                pad = Utils.computeAspectRatioPadding(width, height, ratio);
 
-            if (ratio * height < width) {  // Add padding to the height
-                diff = width - ratio * height;
-                top = bottom = diff/2;
-            } else {  // add padding to the width
-                diff = ratio * height - width;
-                left = right = diff/2;
-            }
-            return Q.ninvoke(image, 'pad', left, top, right, bottom, TRANSPARENT);
+            return Q.ninvoke(
+                image,
+                'pad',
+                pad.left,
+                pad.top,
+                pad.right,
+                pad.bottom,
+                TRANSPARENT
+            );
         })
         .then(image => Q.ninvoke(image, 'toBuffer', 'png'));
 };

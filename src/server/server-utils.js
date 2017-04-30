@@ -123,6 +123,26 @@ var extractRpcs = function(projectXml){
     return rpcs;
 };
 
+var computeAspectRatioPadding = function(width, height, ratio){
+    var diff,
+        left = 0,
+        top = 0,
+        right = 0,
+        bottom = 0,
+        expectedHeight = width/ratio;
+
+    if (expectedHeight > height) {  // Add padding to the height
+        diff = expectedHeight - height;
+        top = bottom = diff/2;
+        trace(`new dims should be ${width}x${height+diff}`);
+    } else {  // add padding to the width
+        diff = ratio * height - width;
+        left = right = diff/2;
+        trace(`new dims should be ${width+diff}x${height}`);
+    }
+    return {left, right, top, bottom};
+};
+
 module.exports = {
     serialize,
     serializeArray,
@@ -131,5 +151,6 @@ module.exports = {
     uuid,
     getRoomXML,
     extractRpcs,
+    computeAspectRatioPadding,
     getArgumentsFor
 };
