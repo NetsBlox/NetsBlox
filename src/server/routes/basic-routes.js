@@ -327,6 +327,7 @@ module.exports = [
                     return res.status(400)
                         .send('ERROR: Not fully connected to server. Please refresh or try a different browser');
                 }
+                socket.leave();
                 room = RoomManager.rooms[Utils.uuid(socket.username, name)];
 
                 if (!room) {  // Create the room
