@@ -32,6 +32,15 @@ describe('Server Tests', function() {
         // FIXME: Unauthorized stream readable error
     });
 
+    it('should provide lang files', function(done) {
+        api.get('/lang-hu.js')
+            .expect(200)
+            .expect(function(res) {
+                assert.notEqual(res.body.length, 0);
+            })
+            .end(done);
+    });
+
     describe('Examples API', function() {
         var expectedFields = [
             'projectName',
