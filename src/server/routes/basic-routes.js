@@ -55,9 +55,12 @@ var resourcePaths = PATHS.map(function(name) {
 });
 
 // Add translation file paths
-var langFiles = fs.readdirSync(path.join(__dirname, '..', '..', 'client'));
+var langFiles = fs.readdirSync(path.join(__dirname, '..', '..', 'client'))
+    .filter(name => /^lang/.test(name));
 var snapLangFiles = fs.readdirSync(SNAP_ROOT)
+    .filter(name => /^lang/.test(name))
     .filter(filename => !langFiles.includes(filename));
+
 publicFiles = publicFiles.concat(snapLangFiles);
 
 // Add importing tools, logo to the resource paths
