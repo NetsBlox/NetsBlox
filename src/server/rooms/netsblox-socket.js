@@ -202,12 +202,14 @@ class NetsBloxSocket {
 
     // This should only be called internally *EXCEPT* when the socket is going to close
     leave () {
-        this._room.roles[this.roleId] = null;
+        if (this._room) {
+            this._room.roles[this.roleId] = null;
 
-        if (this.isOwner() && this._room.ownerCount() === 0) {  // last owner socket closing
-            this._room.close();
-        } else {
-            this._room.onRolesChanged();
+            if (this.isOwner() && this._room.ownerCount() === 0) {  // last owner socket closing
+                this._room.close();
+            } else {
+                this._room.onRolesChanged();
+            }
             RoomManager.checkRoom(this._room);
         }
     }
