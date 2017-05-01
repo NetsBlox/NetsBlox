@@ -145,6 +145,7 @@ RoomMorph.prototype.drawNew = function() {
     roles = Object.keys(this.roleLabels);
     for (i = roles.length; i--;) {
         this.roleLabels[roles[i]].destroy();
+        delete this.roleLabels[roles[i]];
     }
     
     this.setPosition(new Point(115, 0));  // Shift the room to the right
