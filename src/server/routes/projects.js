@@ -355,29 +355,24 @@ module.exports = [
         Handler: function(req, res) {
             var roomName = req.body.ProjectName,
                 user = req.session.user,
-                rooms = getRoomsNamed.call(this, roomName, user);
+                rooms,
+                socketId = req.body.socketId,
+                socket = socketId && SocketManager.sockets[socketId];
+
+            if (socket) {
+                socket.leave();
+            }
 
             // Get the project
+            rooms = getRoomsNamed.call(this, roomName, user);
             if (rooms.active) {
                 trace(`room with name ${roomName} already open. Are they the same? ${rooms.areSame}`);
                 if (rooms.areSame) {
-                    // account for the user getting his/her own project and
-                    // he/she is the only occupant
-                    var occupants = rooms.active.sockets(),
-                        socketId = req.body.socketId,
-                        socket = socketId && SocketManager.sockets[socketId];
-
-                    if (occupants.length === 1 && socket === occupants[0]) {
-                        // close the current active room
-                        socket.leave();
-                        sendProjectTo(rooms.stored, res);
-                    } else {
-                        // Clone, change the room name, and send!
-                        // Since they are the same, we assume the user wants to create
-                        // a copy of the active room
-                        var projectCopy = createCopyFrom(user, rooms.stored);
-                        sendProjectTo(projectCopy, res);
-                    }
+                    // Clone, change the room name, and send!
+                    // Since they are the same, we assume the user wants to create
+                    // a copy of the active room
+                    var projectCopy = createCopyFrom(user, rooms.stored);
+                    sendProjectTo(projectCopy, res);
                 } else {
                     // not the same; simply change the name of the active room
                     // (the active room must be newer since it hasn't been saved
