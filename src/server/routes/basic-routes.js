@@ -36,7 +36,7 @@ var R = require('ramda'),
     ],
     CLIENT_ROOT = path.join(__dirname, '..', '..', 'client'),
     SNAP_ROOT = path.join(CLIENT_ROOT, 'Snap--Build-Your-Own-Blocks'),
-    PUBLIC_FILES = [
+    publicFiles = [
         'snap_logo_sm.png',
         'tools.xml'
     ];
@@ -54,8 +54,17 @@ var resourcePaths = PATHS.map(function(name) {
     };
 });
 
+// Add translation file paths
+var langFiles = fs.readdirSync(path.join(__dirname, '..', '..', 'client'))
+    .filter(name => /^lang/.test(name));
+var snapLangFiles = fs.readdirSync(SNAP_ROOT)
+    .filter(name => /^lang/.test(name))
+    .filter(filename => !langFiles.includes(filename));
+
+publicFiles = publicFiles.concat(snapLangFiles);
+
 // Add importing tools, logo to the resource paths
-resourcePaths = resourcePaths.concat(PUBLIC_FILES.map(file => {
+resourcePaths = resourcePaths.concat(publicFiles.map(file => {
     return {
         Method: 'get', 
         URL: file,
