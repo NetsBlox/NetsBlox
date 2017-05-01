@@ -411,40 +411,50 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
         },
         function () {
             SnapCloud.reconnect(function() {
-                SnapCloud.isProjectActive(
-                    project.ProjectName,
-                    function(isActive) {
-                        var choices,
-                            dialog;
+                var isReopen = project.ProjectName === myself.ide.room.name,
+                    roles = Object.keys(myself.ide.room.roles),
+                    onlyMe = roles.filter(function(roleName) {
+                        return !!myself.ide.room.roles[roleName];
+                    }).length === 1;
 
-                        if (isActive) {
-                            // Prompt if we should join the project or open new
-                            dialog = new DialogBoxMorph(null, nop);
-                            choices = {};
-                            choices['Join Existing'] = function() {
-                                SnapCloud.callService('joinActiveProject', function(response) {
-                                    myself.ide.rawLoadCloudProject(response[0], project.Public);
-                                }, myself.ide.cloudError(), [project.ProjectName]);
-                                dialog.destroy();
-                                myself.destroy();
-                            };
-                            choices['Create Copy'] = function() {
+                if (isReopen && onlyMe) {  // reopening own project
+                    myself.rawOpenCloudProject(project);
+                } else {
+                    SnapCloud.isProjectActive(
+                        project.ProjectName,
+                        function(isActive) {
+                            var choices,
+                                dialog;
+
+                            if (isActive) {
+                                // Prompt if we should join the project or open new
+                                dialog = new DialogBoxMorph(null, nop);
+                                choices = {};
+                                choices['Join Existing'] = function() {
+                                    SnapCloud.callService('joinActiveProject', function(response) {
+                                        myself.ide.rawLoadCloudProject(response[0], project.Public);
+                                    }, myself.ide.cloudError(), [project.ProjectName]);
+                                    dialog.destroy();
+                                    myself.destroy();
+                                };
+                                choices['Create Copy'] = function() {
+                                    myself.rawOpenCloudProject(project);
+                                    dialog.destroy();
+                                };
+                                dialog.ask(
+                                    localize('Join Existing Project'),
+                                    localize('This project is already open. Would you like to join\n' +
+                                        'the active one or create a new copy?'),
+                                    myself.world(),
+                                    choices
+                                );
+                            } else {
                                 myself.rawOpenCloudProject(project);
-                                dialog.destroy();
-                            };
-                            dialog.ask(
-                                localize('Join Existing Project'),
-                                localize('This project is already open. Would you like to join\n' +
-                                    'the active one or create a new copy?'),
-                                myself.world(),
-                                choices
-                            );
-                        } else {
-                            myself.rawOpenCloudProject(project);
-                        }
-                    },
-                    myself.ide.cloudError()
-                );
+                            }
+                        },
+                        myself.ide.cloudError()
+                    );
+                }
             }, myself.ide.cloudError());
 
         },
@@ -467,7 +477,7 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
                     myself.ide.rawLoadCloudProject(response[0], proj.Public);
                 },
                 myself.ide.cloudError(),
-                [proj.ProjectName]
+                [proj.ProjectName, SnapCloud.socketId()]
             );
         },
         myself.ide.cloudError()

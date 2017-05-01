@@ -208,8 +208,8 @@ class NetsBloxSocket {
             this._room.close();
         } else {
             this._room.onRolesChanged();
-            RoomManager.checkRoom(this._room);
         }
+        RoomManager.checkRoom(this._room);
     }
 
     changeSeats (role) {
