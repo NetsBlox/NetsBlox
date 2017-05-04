@@ -119,7 +119,9 @@ var NetsBloxVantage = function(server) {
                     } else if (args.options.password) {
                         delete user.hash;
                         user.password = args.options.password;
-                        user.save();
+                        user.save()
+                            .then(() => console.log('saved ' + user.username))
+                            .catch(err => console.error(err));
                         console.log(`Set password to "${args.options.password}"`);
                     } else if (args.options.delete) {
                         if (args.options.force) {
