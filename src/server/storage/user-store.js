@@ -90,11 +90,13 @@ class User extends DataWrapper {
             let room = project,
                 roles,
                 srcContent,
+                roleNames,
                 hashes,
                 media,
                 role;
 
-            roles = Object.keys(room.roles).map(name => room.roles[name])
+            roleNames = Object.keys(room.roles);
+            roles = roleNames.map(name => room.roles[name])
                 .filter(role => !!role);
 
             if (roles.length < Object.keys(room.roles).length) {
@@ -104,12 +106,12 @@ class User extends DataWrapper {
             // Record the hashes
             this._roomHashes[project.name] = {};
             for (let i = roles.length; i--;) {
-                role = room.roles[roles[i].ProjectName];
+                role = room.roles[roleNames[i]];
                 hashes = {
                     SourceCode: role.SourceCode,
                     Media: role.Media
                 };
-                this._roomHashes[project.name][roles[i].ProjectName] = hashes;
+                this._roomHashes[project.name][roleNames[i]] = hashes;
             }
 
             srcContent = roles.map(role => blob.get(role.SourceCode));
@@ -118,13 +120,13 @@ class User extends DataWrapper {
             return Q.all(srcContent)
                 .then(content => {
                     for (let i = roles.length; i--;) {
-                        room.roles[roles[i].ProjectName].SourceCode = content[i];
+                        room.roles[roleNames[i]].SourceCode = content[i];
                     }
                     return Q.all(media);
                 })
                 .then(content => {
                     for (let i = roles.length; i--;) {
-                        room.roles[roles[i].ProjectName].Media = content[i];
+                        room.roles[roleNames[i]].Media = content[i];
                     }
                     return room;
                 });
@@ -155,13 +157,13 @@ class User extends DataWrapper {
             return Q.all(srcIds)
                 .then(ids => {
                     for (let i = roles.length; i--;) {
-                        project.roles[roles[i].ProjectName].SourceCode = ids[i];
+                        project.roles[roleNames[i]].SourceCode = ids[i];
                     }
                     return Q.all(mediaIds);
                 })
                 .then(ids => {
                     for (let i = roles.length; i--;) {
-                        project.roles[roles[i].ProjectName].Media = ids[i];
+                        project.roles[roleNames[i]].Media = ids[i];
                     }
                     return project;
                 });
