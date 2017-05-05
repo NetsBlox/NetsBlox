@@ -2,7 +2,6 @@
 var R = require('ramda'),
     _ = require('lodash'),
     xml2js = require('xml2js'),
-    existsFile = require('exists-file'),
     Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     RoomManager = require('../rooms/room-manager'),
