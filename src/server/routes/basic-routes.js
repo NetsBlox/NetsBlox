@@ -2,6 +2,7 @@
 var R = require('ramda'),
     _ = require('lodash'),
     xml2js = require('xml2js'),
+    existsFile = require('exists-file'),
     Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     RoomManager = require('../rooms/room-manager'),
@@ -57,9 +58,24 @@ var resourcePaths = PATHS.map(function(name) {
 // Add translation file paths
 var langFiles = fs.readdirSync(path.join(__dirname, '..', '..', 'client'))
     .filter(name => /^lang/.test(name));
+
 var snapLangFiles = fs.readdirSync(SNAP_ROOT)
     .filter(name => /^lang/.test(name))
     .filter(filename => !langFiles.includes(filename));
+
+var getFileFrom = dir => {
+    return file => {
+        return {
+            Method: 'get', 
+            URL: file,
+            Handler: (req, res) => res.sendFile(path.join(dir, file))
+        };
+    };
+};
+
+resourcePaths = resourcePaths
+    .concat(langFiles.map(getFileFrom(CLIENT_ROOT)))
+    .concat(snapLangFiles.map(getFileFrom(SNAP_ROOT)));
 
 publicFiles = publicFiles.concat(snapLangFiles);
 
