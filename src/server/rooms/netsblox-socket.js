@@ -21,7 +21,8 @@ var counter = 0,
     UserActions = require('../storage/user-actions'),
     RoomManager = require('./room-manager'),
     CONDENSED_MSGS = ['project-response', 'import-room'],
-    PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/;
+    PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/,
+    SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
 
 var createSaveableProject = function(json, callback) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -46,9 +47,7 @@ var createSaveableProject = function(json, callback) {
 
 class NetsBloxSocket {
     constructor (logger, socket) {
-        var id = ++counter;
         this.id = id;
-        this.uuid = '_client_'+id;
         this._logger = logger.fork(this.uuid);
 
         this.roleId = null;
@@ -62,11 +61,6 @@ class NetsBloxSocket {
         this._projectRequests = {};  // saving
         this._initialize();
 
-        // Provide a uuid
-        this.send({
-            type: 'uuid',
-            body: this.uuid
-        });
         this.onclose = [];
 
         this._logger.trace('created');
@@ -302,6 +296,19 @@ NetsBloxSocket.prototype.CLOSED = 3;
 
 NetsBloxSocket.MessageHandlers = {
     'beat': function() {},
+
+    'set-uuid': function(msg) {
+        this.uuid = msg.body;
+    },
+
+    'request-uuid': function(msg) {
+        this.uuid = SERVER_NAME + Date.now();
+        // Provide a uuid
+        this.send({
+            type: 'uuid',
+            body: this.uuid
+        });
+    },
 
     'message': function(msg) {
         if (!this.hasRoom()) {
