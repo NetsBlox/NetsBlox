@@ -1462,8 +1462,6 @@ SnapTranslator.dict.hu = {
         'Soronként egy lehetőséget írjon be.\nSzükség esetén használhatja az "=" jelet\nkulcs/érték pár elválasztására, pl.\na válasz=42',
     'paint a new sprite':
         'új alakzat rajzolása',
-    'Paint a new costume':
-        'Új jelmez rajzolása',
     'add a new Turtle sprite':
         'új teknőc rajzának hozzáadása',
     'Flat design':
