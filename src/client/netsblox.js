@@ -321,14 +321,11 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 }, true);
             };
         } else if (location.hash.substr(0, 9) === '#private:' || dict.action === 'private') {
-            var name = dict ? dict.ProjectName : location.hash.substr(9),
-                onConnect = this.sockets.onConnect,
-                msg;
+            var name = dict ? dict.ProjectName : location.hash.substr(9);
+            onConnect = this.sockets.onConnect;
 
             this.sockets.onConnect = function() {
                 SnapCloud.passiveLogin(myself, function(isLoggedIn) {
-                    var msg;
-
                     if (!isLoggedIn) {
                         myself.showMessage('You are not logged in. Cannot open ' + name);
                         return;
@@ -351,6 +348,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                         }
                     ]);
                 }, true);
+                myself.sockets.onConnect = onConnect;
             };
         // Netsblox addition: end
         }
