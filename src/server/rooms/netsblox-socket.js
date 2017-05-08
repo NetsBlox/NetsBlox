@@ -302,7 +302,7 @@ NetsBloxSocket.MessageHandlers = {
         this.username = this.username || this.uuid;
     },
 
-    'request-uuid': function(msg) {
+    'request-uuid': function() {
         this.uuid = SERVER_NAME + Date.now();
         this.username = this.username || this.uuid;
         // Provide a uuid
