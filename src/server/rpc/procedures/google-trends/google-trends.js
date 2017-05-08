@@ -54,7 +54,7 @@ TrendsRPC.byCountryCode = function (countryCode) {
                 return trendsArr.slice(0, 10);
             })
             .then((results) => {
-                console.log(results);
+                trace(results);
                 return cacheCallback(null, results);
             })
             .catch((err) => {
