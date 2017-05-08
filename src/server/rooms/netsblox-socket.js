@@ -47,7 +47,7 @@ var createSaveableProject = function(json, callback) {
 
 class NetsBloxSocket {
     constructor (logger, socket) {
-        this.id = id;
+        this.id = (++counter);
         this._logger = logger.fork(this.uuid);
 
         this.roleId = null;
@@ -299,10 +299,12 @@ NetsBloxSocket.MessageHandlers = {
 
     'set-uuid': function(msg) {
         this.uuid = msg.body;
+        this.username = this.username || this.uuid;
     },
 
     'request-uuid': function(msg) {
         this.uuid = SERVER_NAME + Date.now();
+        this.username = this.username || this.uuid;
         // Provide a uuid
         this.send({
             type: 'uuid',
