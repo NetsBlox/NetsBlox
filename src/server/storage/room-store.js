@@ -20,6 +20,7 @@ class Room extends DataWrapper {
         this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
         this._user = params.user;
         this._room = params.room;
+        this.lastUpdateAt = Date.now();
     }
 
     fork(room) {
@@ -28,6 +29,7 @@ class Room extends DataWrapper {
             user: this._user,
             room: room,
             logger: this._logger,
+            lastUpdateAt: Date.now(),
             db: this._db
         };
         this._logger.trace('forking (' + room.uuid + ')');
@@ -163,6 +165,7 @@ class Room extends DataWrapper {
                 PublicProjectStore.update(room);
             }
         }
+        room.lastUpdateAt = Date.now();
         this._user.changed(room);
         return this._user.save()
             .then(() => {
@@ -218,6 +221,7 @@ class RoomStore {
             logger: this._logger,
             db: this._rooms,
             user: user,
+            lastUpdateAt: Date.now(),
             room: activeRoom
         });
     }
