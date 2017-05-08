@@ -189,9 +189,6 @@ WebSocketManager.prototype._connectWebSocket = function() {
             self.sendMessage({type: 'request-uuid'});
         }
 
-        while (self.messages.length) {
-            self.websocket.send(self.messages.shift());
-        }
     };
 
     // Set up message events
@@ -342,6 +339,9 @@ WebSocketManager.prototype.onConnect = function() {
     } else {
         SnapCloud.passiveLogin(this.ide);
         this.updateRoomInfo();
+    }
+    while (this.messages.length) {
+        this.websocket.send(this.messages.shift());
     }
 };
 
