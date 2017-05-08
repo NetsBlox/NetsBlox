@@ -4,7 +4,7 @@
 var Socket = require('./rooms/netsblox-socket');
 
 var SocketManager = function() {
-    this.sockets = {};
+    this._sockets = [];
 
     // Provide getter for sockets
     Socket.prototype.onClose = SocketManager.prototype.onClose.bind(this);
@@ -19,21 +19,34 @@ SocketManager.prototype.enable = function(wss) {
 
     wss.on('connection', rawSocket => {
         var socket = new Socket(this._logger, rawSocket);
-        this.sockets[socket.uuid] = socket;
+        this._sockets.push(socket);
     });
 };
 
+SocketManager.prototype.getSocket = function(uuid) {
+    return this._sockets.find(socket => socket.uuid === uuid);
+};
+
+SocketManager.prototype.sockets = function() {
+    return this._sockets.slice();
+};
+
 SocketManager.prototype.onClose = function(uuid) {
-    delete this.sockets[uuid];
+    for (var i = this._sockets.length; i--;) {
+        if (this._sockets[i].uuid === uuid) {
+            delete this._sockets[uuid];
+            return;
+        }
+    }
 };
 
 SocketManager.prototype.socketsFor = function(username) {
-    var uuids = Object.keys(this.sockets),
+    var uuids = Object.keys(this._sockets),
         sockets = [],
         socket;
 
     for (var i = uuids.length; i--;) {
-        socket = this.sockets[uuids[i]];
+        socket = this._sockets[uuids[i]];
         if (socket.username === username) {
             sockets.push(socket);
         }
