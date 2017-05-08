@@ -29,7 +29,6 @@ class Room extends DataWrapper {
             user: this._user,
             room: room,
             logger: this._logger,
-            createdAt: Date.now(),
             lastUpdateAt: Date.now(),
             db: this._db
         };
@@ -222,7 +221,6 @@ class RoomStore {
             logger: this._logger,
             db: this._rooms,
             user: user,
-            createdAt: Date.now(),
             lastUpdateAt: Date.now(),
             room: activeRoom
         });
