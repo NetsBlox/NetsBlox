@@ -235,7 +235,7 @@ module.exports = [
                         log(`"${user.username}" has logged in.`);
 
                         // Associate the websocket with the username
-                        socket = SocketManager.sockets[req.body.socketId];
+                        socket = SocketManager.getSocket(req.body.socketId);
                         if (socket) {  // websocket has already connected
                             socket.onLogin(user);
                         }
@@ -327,7 +327,7 @@ module.exports = [
                 room;
 
             if (!isPreview) {
-                socket = SocketManager.sockets[uuid];
+                socket = SocketManager.getSocket(uuid);
                 // Check if the room already exists
                 if (!uuid) {
                     return res.status(400).send('ERROR: Bad Request: missing socket id');

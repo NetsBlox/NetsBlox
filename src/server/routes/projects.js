@@ -193,7 +193,7 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username,
                 socketId = req.body.socketId,
-                socket = SocketManager.sockets[socketId],
+                socket = SocketManager.getSocket(socketId),
 
                 activeRoom = socket._room,
                 user = req.session.user,
@@ -297,7 +297,7 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'hasSocket', 'noCache', 'setUser'],
         Handler: function(req, res) {
-            var socket = SocketManager.sockets[req.body.socketId],
+            var socket = SocketManager.getSocket(req.body.socketId),
                 roomName = socket._room.name,
                 user = req.session.user,
                 rooms = getRoomsNamed.call(this, roomName, user),
@@ -357,7 +357,7 @@ module.exports = [
                 user = req.session.user,
                 rooms,
                 socketId = req.body.socketId,
-                socket = socketId && SocketManager.sockets[socketId];
+                socket = socketId && SocketManager.getSocket(socketId);
 
             if (socket) {
                 socket.leave();
