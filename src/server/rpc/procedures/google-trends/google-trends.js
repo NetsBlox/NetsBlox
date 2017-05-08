@@ -6,7 +6,6 @@ let TrendsRPC = {
 var debug = require('debug'),
     request = require('request'),
     googleTrends = require('google-trends-api'),
-    translate = require('google-translate-api'),
     error = debug('netsblox:rpc:trends:error'),
     CacheManager = require('cache-manager'),
     trace = debug('netsblox:rpc:trends:trace'),
@@ -54,15 +53,9 @@ TrendsRPC.byCountryCode = function (countryCode) {
             .then((trendsArr) => {
                 return trendsArr.slice(0, 10);
             })
-            .then((trendsArr) => {
-                let translatePromisesArr = trendsArr.map((val) => {
-                    return translate(val, {to: 'en'});
-                });
-                return Q.all(translatePromisesArr);
-            })
-            .then((translatedArr) => {
-                let trendsTexts = translatedArr.map(val => val.text);
-                return cacheCallback(null, trendsTexts);
+            .then((results) => {
+                console.log(results);
+                return cacheCallback(null, results);
             })
             .catch((err) => {
                 error(err);
