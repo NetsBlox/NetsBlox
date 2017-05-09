@@ -320,6 +320,36 @@ NetsBloxMorph.prototype.openIn = function (world) {
                     ]);
                 }, true);
             };
+        } else if (location.hash.substr(0, 9) === '#private:' || dict.action === 'private') {
+            var name = dict ? dict.ProjectName : location.hash.substr(9);
+            onConnect = this.sockets.onConnect;
+
+            this.sockets.onConnect = function() {
+                SnapCloud.passiveLogin(myself, function(isLoggedIn) {
+                    if (!isLoggedIn) {
+                        myself.showMessage('You are not logged in. Cannot open ' + name);
+                        return;
+                    }
+
+                    myself.nextSteps([
+                        function () {
+                            msg = this.showMessage('Opening ' + name + ' example...');
+                        },
+                        function () {nop(); }, // yield (bug in Chrome)
+                        function () {
+                            SnapCloud.callService(
+                                'getProject',
+                                function (response) {
+                                    myself.rawLoadCloudProject(response[0], dict.Public);
+                                },
+                                myself.cloudError(),
+                                [dict.ProjectName, SnapCloud.socketId()]
+                            );
+                        }
+                    ]);
+                }, true);
+                myself.sockets.onConnect = onConnect;
+            };
         // Netsblox addition: end
         }
     }

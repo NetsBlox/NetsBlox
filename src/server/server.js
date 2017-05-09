@@ -83,7 +83,10 @@ Server.prototype.configureRoutes = function() {
         var baseUrl = `https://${req.get('host')}`,
             url = baseUrl + req.originalUrl,
             projectName = req.query.ProjectName,
-            metaInfo = {url: url};
+            metaInfo = {
+                googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
+                url: url
+            };
 
 
         if (req.query.action === 'present') {

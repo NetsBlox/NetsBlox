@@ -182,9 +182,13 @@ WebSocketManager.prototype._connectWebSocket = function() {
         self.hasConnected = true;
         self.connected = true;
 
-        while (self.messages.length) {
-            self.websocket.send(self.messages.shift());
+        if (self.uuid) {
+            self.sendMessage({type: 'set-uuid', body: self.uuid});
+            self.onConnect();
+        } else {
+            self.sendMessage({type: 'request-uuid'});
         }
+
     };
 
     // Set up message events
@@ -328,11 +332,6 @@ WebSocketManager.prototype.deserializeMessage = function(message) {
     return content;
 };
 
-WebSocketManager.prototype.setGameType = function(gameType) {
-    this.gameType = gameType.name;
-    // FIXME: Remove this
-};
-
 WebSocketManager.prototype.onConnect = function() {
     if (SnapCloud.username) {  // Reauthenticate if needed
         var updateRoom = this.updateRoomInfo.bind(this);
@@ -340,6 +339,9 @@ WebSocketManager.prototype.onConnect = function() {
     } else {
         SnapCloud.passiveLogin(this.ide);
         this.updateRoomInfo();
+    }
+    while (this.messages.length) {
+        this.websocket.send(this.messages.shift());
     }
 };
 

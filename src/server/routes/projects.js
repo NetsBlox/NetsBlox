@@ -193,7 +193,7 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username,
                 socketId = req.body.socketId,
-                socket = SocketManager.sockets[socketId],
+                socket = SocketManager.getSocket(socketId),
 
                 activeRoom = socket._room,
                 user = req.session.user,
@@ -297,7 +297,7 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'hasSocket', 'noCache', 'setUser'],
         Handler: function(req, res) {
-            var socket = SocketManager.sockets[req.body.socketId],
+            var socket = SocketManager.getSocket(req.body.socketId),
                 roomName = socket._room.name,
                 user = req.session.user,
                 rooms = getRoomsNamed.call(this, roomName, user),
@@ -348,17 +348,25 @@ module.exports = [
     },
     {
         Service: 'getProject',
-        Parameters: 'ProjectName',
+        Parameters: 'ProjectName,socketId',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
             var roomName = req.body.ProjectName,
                 user = req.session.user,
-                rooms = getRoomsNamed.call(this, roomName, user);
+                rooms,
+                socketId = req.body.socketId,
+                socket = socketId && SocketManager.getSocket(socketId);
+
+            if (socket) {
+                socket.leave();
+            }
 
             // Get the project
+            rooms = getRoomsNamed.call(this, roomName, user);
             if (rooms.active) {
+                trace(`room with name ${roomName} already open. Are they the same? ${rooms.areSame}`);
                 if (rooms.areSame) {
                     // Clone, change the room name, and send!
                     // Since they are the same, we assume the user wants to create
@@ -369,10 +377,12 @@ module.exports = [
                     // not the same; simply change the name of the active room
                     // (the active room must be newer since it hasn't been saved
                     // yet)
+                    trace(`active room is ${roomName} already open`);
                     rooms.active.changeName();
                     sendProjectTo(rooms.stored, res);
                 }
             } else if (rooms.stored) {
+                trace(`no active room with name ${roomName}. Proceeding normally`);
                 sendProjectTo(rooms.stored, res);
             } else {
                 res.send('ERROR: Project not found');

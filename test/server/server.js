@@ -32,6 +32,15 @@ describe('Server Tests', function() {
         // FIXME: Unauthorized stream readable error
     });
 
+    it('should provide lang files', function(done) {
+        api.get('/lang-hu.js')
+            .expect(200)
+            .expect(function(res) {
+                assert.notEqual(res.body.length, 0);
+            })
+            .end(done);
+    });
+
     describe('Examples API', function() {
         var expectedFields = [
             'projectName',
@@ -160,7 +169,13 @@ describe('Server Tests', function() {
             before(function(done) {
                 socket = new WebSocket(host);
                 socket.on('open', function() {
+                    socket.send(JSON.stringify({
+                        namespace: 'netsblox',
+                        type: 'request-uuid'
+                    }));
+
                     socket.on('message', function(msg) {
+                        console.log(msg);
                         msg = JSON.parse(msg);
 
                         if (msg.namespace === 'netsblox' && msg.type === 'uuid') {
@@ -218,6 +233,10 @@ describe('Server Tests', function() {
                 before(function(done) {
                     newSocket = new WebSocket(host);
                     newSocket.on('open', function() {
+                        newSocket.send(JSON.stringify({
+                            namespace: 'netsblox',
+                            type: 'request-uuid'
+                        }));
                         newSocket.on('message', function(msg) {
                             msg = JSON.parse(msg);
 

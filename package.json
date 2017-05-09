@@ -1,6 +1,6 @@
 {
   "name": "netsblox",
-  "version": "0.13.4",
+  "version": "0.14.1",
   "description": "Visual programming environment with networking support",
   "bin": {
     "netsblox": "./bin/netsblox"
@@ -41,7 +41,7 @@
     "dot": "^1.1.1",
     "dotenv": "^2.0.0",
     "epipebomb": "^1.0.0",
-    "exists-file": "^3.0.0",
+    "exists-file": "^3.0.1",
     "express": "^4.12.3",
     "fs-extra": "^0.26.7",
     "geolib": "^2.0.18",

@@ -36,7 +36,7 @@ var R = require('ramda'),
     ],
     CLIENT_ROOT = path.join(__dirname, '..', '..', 'client'),
     SNAP_ROOT = path.join(CLIENT_ROOT, 'Snap--Build-Your-Own-Blocks'),
-    PUBLIC_FILES = [
+    publicFiles = [
         'snap_logo_sm.png',
         'tools.xml'
     ];
@@ -54,8 +54,32 @@ var resourcePaths = PATHS.map(function(name) {
     };
 });
 
+// Add translation file paths
+var langFiles = fs.readdirSync(path.join(__dirname, '..', '..', 'client'))
+    .filter(name => /^lang/.test(name));
+
+var snapLangFiles = fs.readdirSync(SNAP_ROOT)
+    .filter(name => /^lang/.test(name))
+    .filter(filename => !langFiles.includes(filename));
+
+var getFileFrom = dir => {
+    return file => {
+        return {
+            Method: 'get', 
+            URL: file,
+            Handler: (req, res) => res.sendFile(path.join(dir, file))
+        };
+    };
+};
+
+resourcePaths = resourcePaths
+    .concat(langFiles.map(getFileFrom(CLIENT_ROOT)))
+    .concat(snapLangFiles.map(getFileFrom(SNAP_ROOT)));
+
+publicFiles = publicFiles.concat(snapLangFiles);
+
 // Add importing tools, logo to the resource paths
-resourcePaths = resourcePaths.concat(PUBLIC_FILES.map(file => {
+resourcePaths = resourcePaths.concat(publicFiles.map(file => {
     return {
         Method: 'get', 
         URL: file,
@@ -226,7 +250,7 @@ module.exports = [
                         log(`"${user.username}" has logged in.`);
 
                         // Associate the websocket with the username
-                        socket = SocketManager.sockets[req.body.socketId];
+                        socket = SocketManager.getSocket(req.body.socketId);
                         if (socket) {  // websocket has already connected
                             socket.onLogin(user);
                         }
@@ -318,7 +342,7 @@ module.exports = [
                 room;
 
             if (!isPreview) {
-                socket = SocketManager.sockets[uuid];
+                socket = SocketManager.getSocket(uuid);
                 // Check if the room already exists
                 if (!uuid) {
                     return res.status(400).send('ERROR: Bad Request: missing socket id');
@@ -327,6 +351,7 @@ module.exports = [
                     return res.status(400)
                         .send('ERROR: Not fully connected to server. Please refresh or try a different browser');
                 }
+                socket.leave();
                 room = RoomManager.rooms[Utils.uuid(socket.username, name)];
 
                 if (!room) {  // Create the room

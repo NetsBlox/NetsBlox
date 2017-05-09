@@ -64,9 +64,9 @@ module.exports = [
         middleware: ['hasSocket', 'isLoggedIn'],
         Handler: function(req, res) {
             var socketId = req.body.socketId,
-                socket = SocketManager.sockets[socketId],
+                socket = SocketManager.getSocket(socketId),
                 otherId = req.body.otherId,
-                otherSocket = SocketManager.sockets[otherId];
+                otherSocket = SocketManager.getSocket(otherId);
 
             if (!otherSocket) {
                 this._logger.warn(`Could not find socket to remove: ${otherId}`);
@@ -267,7 +267,7 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             var socketId = req.body.socketId;
-            var socket = SocketManager.sockets[socketId],
+            var socket = SocketManager.getSocket(socketId),
                 roleId = req.body.roleId,
                 dstId = req.body.dstId,
                 ownerId = req.body.ownerId,
@@ -310,7 +310,7 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             // Check that the requestor is the owner
-            var socket = SocketManager.sockets[req.body.socketId],
+            var socket = SocketManager.getSocket(req.body.socketId),
                 roleId = req.body.roleId,
                 room = socket._room,
                 newRole;
@@ -443,15 +443,14 @@ function getFriendSockets(username) {
     log(username +' requested friend list');
     warn('returning ALL active sockets');
 
-    var allSockets = Object.keys(SocketManager.sockets)
-        .map(id => SocketManager.sockets[id])
+    var allSockets = SocketManager.sockets()
         .filter(socket => socket.username !== username && socket.loggedIn);
 
     return allSockets;
 }
 
 function acceptInvitation (username, id, response, socketId, callback) {
-    var socket = SocketManager.sockets[socketId],
+    var socket = SocketManager.getSocket(socketId),
         invite = invites[id];
 
     // Ignore if the invite no longer exists
