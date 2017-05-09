@@ -40,7 +40,6 @@ function showError(err, response) {
 }
 
 //sanitize coordinate inputs
-// todo
 
 //******************************
 // factor out message sending and handling of multiple users = sendNext and Stop
@@ -57,7 +56,7 @@ function sendNextMsg(socket){
     setTimeout(sendNextMsg,DELAY,socket);
 }
 
-//checks msg ownership, needs access to socket. 
+//checks msg ownership, needs access to socket.
 function isMsgOwner(msg){
     return msg.dstId = socket.roleId
 }
@@ -101,7 +100,7 @@ function doTheWork(options,socket,response,msgType){
                 theData = {
                     siteName: item.sourceInfo.siteName,
                     lat: item.sourceInfo.geoLocation.geogLocation.latitude,
-                    long: item.sourceInfo.geoLocation.geogLocation.longitude,
+                    lon: item.sourceInfo.geoLocation.geogLocation.longitude,
                     // varName: item.variable.variableName,
                     // varDescription: item.variable.variableDescription,
                     unit: item.variable.unit.unitCode,
@@ -120,8 +119,8 @@ function doTheWork(options,socket,response,msgType){
             let myMsgs = msgs.filter(msg => {
                 return msg.dstId == socket.roleId && msg.msgType == msgType
             })
-            response.send(`Sendig ${myMsgs.length} messages of ${msgType}`);
-            // start sending messages - will send other user's messages too 
+            response.send(`Sending ${myMsgs.length} messages of ${msgType}`);
+            // start sending messages - will send other user's messages too
             // QUESTION: can you send to whatever socket.roleId you want from any source? yes can do
             sendNextMsg(socket);
         })
@@ -147,7 +146,7 @@ WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, west
         response = this.response;
 
     doTheWork(options,socket,response,'gageHeight');
-    
+
     return null;  // explicitly return null since async
 };
 
@@ -166,7 +165,7 @@ WaterWatchRPC.streamFlow = function (northernLat, easternLong, southernLat, west
         response = this.response;
 
     doTheWork(options,socket,response,'streamFlow');
-    
+
     return null;  // explicitly return null since async
 };
 
@@ -184,7 +183,7 @@ WaterWatchRPC.waterTemp = function (northernLat, easternLong, southernLat, weste
         response = this.response;
 
     doTheWork(options,socket,response,'waterTemp');
-    
+
     return null;  // explicitly return null since async
 };
 
