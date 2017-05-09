@@ -34,9 +34,11 @@ let reverseGeocode = (lat, lon, response, filtersArr)=>{
         filtersArr.forEach(filter => {
           res = res[filter];
         });
+      }else {
+        res = JSON.stringify(res);
       }
       // send the response to user
-      response.json(JSON.stringify(res));
+      response.json(res);
     })
     .catch(err => {
       error('Error in reverse geocoding', err);
