@@ -7,6 +7,7 @@ var debug = require('debug'),
     error = debug('netsblox:rpc:trends:error'),
     CacheManager = require('cache-manager'),
     NodeGeocoder = require('node-geocoder'),
+    axios = require('axios'),
     trace = debug('netsblox:rpc:trends:trace');
 
 // init
@@ -77,17 +78,54 @@ GeocodingRPC.getCity = function (latitude, longitude) {
     return null;
 };
 
-// reverse geocode and send back an specific detail
-GeocodingRPC.getCountryCode = function (latitude, longitude) {
-    reverseGeocode(latitude, longitude, this.response, ['countryCode'])
-    return null;
-};
 
 // reverse geocode and send back an specific detail
 GeocodingRPC.getCountry = function (latitude, longitude) {
     reverseGeocode(latitude, longitude, this.response, ['country'])
     return null;
 };
+
+// reverse geocode and send back an specific detail
+GeocodingRPC.getCountryCode = function (latitude, longitude) {
+    reverseGeocode(latitude, longitude, this.response, ['countryCode'])
+    return null;
+};
+
+// find places near a coordinate (20 reults max)
+GeocodingRPC.nearbySearch = function (latitude, longitude, keyword, radius) {
+    let response = this.response;
+    radius = radius || 100; // default to 100
+    trace('Doing a nearby search', latitude, longitude);
+
+    let requestOptions = {
+      method: 'get',
+      url: 'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
+      params: {
+        location: latitude + ',' + longitude,
+        radius: radius,
+        // rankby: 'distance',
+        key: GEOCODER_API
+      }
+    };
+
+    if (keyword) {
+      requestOptions.params.keyword = keyword;
+    }
+
+    axios(requestOptions).then(res=>{
+      let places = res.data.results;
+      places = places.map(place => {
+        return place.name + ' (' + place.types[0] + ')'
+      })
+      response.json(places);
+    }).catch(err => {
+      error("Error in searching for places",err);
+      showError('Failed to find places',response);
+    })
+
+    return null;
+};
+
 
 
     // cache.wrap(countryCode, cacheCallback => {
