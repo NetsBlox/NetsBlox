@@ -45,7 +45,6 @@
     "express": "^4.12.3",
     "fs-extra": "^0.26.7",
     "geolib": "^2.0.18",
-    "google-translate-api": "^2.2.2",
     "google-trends-api": "^3.0.1",
     "jade": "^1.9.2",
     "jsonwebtoken": "^6.2.0",

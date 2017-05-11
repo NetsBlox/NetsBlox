@@ -6,11 +6,9 @@ let TrendsRPC = {
 var debug = require('debug'),
     request = require('request'),
     googleTrends = require('google-trends-api'),
-    translate = require('google-translate-api'),
     error = debug('netsblox:rpc:trends:error'),
     CacheManager = require('cache-manager'),
-    trace = debug('netsblox:rpc:trends:trace'),
-    Q = require('q');
+    trace = debug('netsblox:rpc:trends:trace');
 
 var countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
@@ -54,15 +52,9 @@ TrendsRPC.byCountryCode = function (countryCode) {
             .then((trendsArr) => {
                 return trendsArr.slice(0, 10);
             })
-            .then((trendsArr) => {
-                let translatePromisesArr = trendsArr.map((val) => {
-                    return translate(val, {to: 'en'});
-                });
-                return Q.all(translatePromisesArr);
-            })
-            .then((translatedArr) => {
-                let trendsTexts = translatedArr.map(val => val.text);
-                return cacheCallback(null, trendsTexts);
+            .then((results) => {
+                trace(results);
+                return cacheCallback(null, results);
             })
             .catch((err) => {
                 error(err);
