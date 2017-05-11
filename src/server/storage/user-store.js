@@ -85,9 +85,29 @@ class User extends DataWrapper {
         return this.saveProjects();
     }
 
+    cleanProject (project) {
+        let allRoleNames = Object.keys(project.roles),
+            removed = [],
+            name;
+
+        for (let i = allRoleNames.length; i--;) {
+            name = allRoleNames[i];
+            if (!project.roles[name]) {
+                removed.push(name);
+                delete project.roles[name];
+            }
+        }
+
+        if (removed.length) {
+            this._logger.warn(`Found ${removed.length} null roles in ${project.uuid}. Removing...`);
+        }
+
+        return project;
+    }
+
     loadProjects () {  // load the rooms from the projects (retrieve blob data)
         return Q.all(this.projects.map(project => {
-            let room = project,
+            let room = this.cleanProject(project),
                 roles,
                 srcContent,
                 roleNames,
@@ -96,16 +116,11 @@ class User extends DataWrapper {
                 role;
 
             roleNames = Object.keys(room.roles);
-            roles = roleNames.map(name => room.roles[name])
-                .filter(role => !!role);
-
-            if (roles.length < Object.keys(room.roles).length) {
-                this._logger.warn(`Found null roles in ${room.uuid}. Removing...`);
-            }
+            roles = roleNames.map(name => room.roles[name]);
 
             // Record the hashes
             this._roomHashes[project.name] = {};
-            for (let i = roles.length; i--;) {
+            for (let i = roleNames.length; i--;) {
                 role = room.roles[roleNames[i]];
                 hashes = {
                     SourceCode: role.SourceCode,
@@ -119,7 +134,7 @@ class User extends DataWrapper {
 
             return Q.all(srcContent)
                 .then(content => {
-                    for (let i = roles.length; i--;) {
+                    for (let i = roleNames.length; i--;) {
                         room.roles[roleNames[i]].SourceCode = content[i];
                     }
                     return Q.all(media);
@@ -137,7 +152,7 @@ class User extends DataWrapper {
 
     saveProjects () {  // save the rooms to the blob and update the 'projects'
         return Q.all(this.rooms.map(room => {
-            let project = _.cloneDeep(room),
+            let project = _.cloneDeep(this.cleanProject(room)),
                 roleNames = Object.keys(room.roles),
                 roles = roleNames.map(name => room.roles[name]),
                 srcIds,
