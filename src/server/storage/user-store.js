@@ -111,7 +111,6 @@ class User extends DataWrapper {
                 roles,
                 srcContent,
                 roleNames,
-                allRoleNames,
                 hashes,
                 media,
                 role;
