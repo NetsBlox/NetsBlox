@@ -91,11 +91,21 @@ class User extends DataWrapper {
                 roles,
                 srcContent,
                 roleNames,
+                allRoleNames,
                 hashes,
                 media,
                 role;
 
-            roleNames = Object.keys(room.roles).filter(name => !!room.roles[name]);
+            roleNames = [];
+            allRoleNames = Object.keys(room.roles);
+            for (var i = allRoleNames.length; i--;) {
+                name = allRoleNames[i];
+                if (!!room.roles[name]) {
+                    roleNames.push(name);
+                } else {
+                    delete room.roles[name];
+                }
+            }
             roles = roleNames.map(name => room.roles[name]);
 
             if (roles.length < Object.keys(room.roles).length) {
