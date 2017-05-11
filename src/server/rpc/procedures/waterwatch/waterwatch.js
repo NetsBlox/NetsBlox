@@ -1,12 +1,9 @@
-// TODO change console logs.
-// eslint
 let WaterWatchRPC = {
     isStateless: true,
     getPath: () => '/waterwatch'
 };
 
 let debug = require('debug'),
-    // request = require('request'),
     rp = require('request-promise'), //maybe use request-promise-native?
     error = debug('netsblox:rpc:trends:error'),
     CacheManager = require('cache-manager'),
@@ -15,13 +12,6 @@ let debug = require('debug'),
 
 let baseUrl = 'https://waterservices.usgs.gov/nwis/iv/?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000});
-
-
-
-// let northernLat = 38;
-// let easternLong = -81;
-// let southernLat = 37;
-// let westernLong = -82;
 
 
 // turn an options object into query friendly string
@@ -61,25 +51,22 @@ function isMsgOwner(msg){
     return msg.dstId = socket.roleId
 }
 
-function stopSendingMsgs($this){
-    socket = $this.socket;
-    response = $this.response;
+function stopSendingMsgs(socket){
     if (msgs) {
         // remove those with a different roleId | dont remove other's messages
         msgs = msgs.filter(msg => {
-            return msg.dstId != socket.roleId;
+            return msg.dstId !== socket.roleId;
         });
     }
     trace(`Stopped sending messages to user with roleId ${socket.roleId}`);
-    response.send('Stopped sending messages.');
 }
 
 // notes: dont forget to return null in your stop since we are handling the response in here.
 //**********************************
 
 // factor our the bulk of the work to provide easily readable settings for users.
-// TODO rename the function
-function doTheWork(options,socket,response,msgType){
+// requests for data from the api, processes the response and sends the messages
+function send(options,socket,response,msgType){
 
     let url = baseUrl+encodeQueryData(options);
     trace('requesting this url for data', url);
@@ -97,21 +84,22 @@ function doTheWork(options,socket,response,msgType){
 
             //clean and store the sections we want in a form of a message
             data.value.timeSeries.forEach(item => {
-                theData = {
+                let msgContent = {
                     siteName: item.sourceInfo.siteName,
                     lat: item.sourceInfo.geoLocation.geogLocation.latitude,
                     lon: item.sourceInfo.geoLocation.geogLocation.longitude,
+                    // we can include more information in the messages that we
+                    //  are sending to the user
                     // varName: item.variable.variableName,
                     // varDescription: item.variable.variableDescription,
                     unit: item.variable.unit.unitCode,
                     value: item.values[0].value[0].value
                 };
-                trace(theData);
                 msgs.push({
                     type: 'message',
                     msgType: msgType,
                     dstId: socket.roleId,
-                    content: theData
+                    content: msgContent
                 });
             });
             trace('loaded ', data.value.timeSeries.length,'  items');
@@ -121,11 +109,9 @@ function doTheWork(options,socket,response,msgType){
             })
             response.send(`Sending ${myMsgs.length} messages of ${msgType}`);
             // start sending messages - will send other user's messages too
-            // QUESTION: can you send to whatever socket.roleId you want from any source? yes can do
             sendNextMsg(socket);
         })
         .catch(err => {
-            // show error
             showError(err,response);
         });
 }
@@ -135,7 +121,7 @@ WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, west
     //init
     // list of parameteCD: https://help.waterdata.usgs.gov/codes-and-parameters/parameters
     // query descriptions: https://waterservices.usgs.gov/rest/IV-Test-Tool.html
-    // QUESTIONS i cant pass socket to doTheWork func when using let. why?
+    // QUESTIONS i cant pass socket to send func when using let. why?
     westernLong = parseFloat(westernLong).toFixed(7);
     easternLong = parseFloat(easternLong).toFixed(7);
     southernLat = parseFloat(southernLat).toFixed(7);
@@ -145,7 +131,7 @@ WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, west
         socket = this.socket,
         response = this.response;
 
-    doTheWork(options,socket,response,'gageHeight');
+    send(options,socket,response,'gageHeight');
 
     return null;  // explicitly return null since async
 };
@@ -164,7 +150,7 @@ WaterWatchRPC.streamFlow = function (northernLat, easternLong, southernLat, west
         socket = this.socket,
         response = this.response;
 
-    doTheWork(options,socket,response,'streamFlow');
+    send(options,socket,response,'streamFlow');
 
     return null;  // explicitly return null since async
 };
@@ -182,18 +168,17 @@ WaterWatchRPC.waterTemp = function (northernLat, easternLong, southernLat, weste
         socket = this.socket,
         response = this.response;
 
-    doTheWork(options,socket,response,'waterTemp');
+    send(options,socket,response,'waterTemp');
 
     return null;  // explicitly return null since async
 };
 
 WaterWatchRPC.stop = function(){
-    stopSendingMsgs(this);
+    stopSendingMsgs(this.socket);
+    response.send('Stopped sending messages.');
     return null;
 };
 
 
 
-if(true) { // add check for the availability of api key
 module.exports = WaterWatchRPC;
-}

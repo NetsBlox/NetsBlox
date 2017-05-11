@@ -7,6 +7,6 @@ describe('waterwatch', function() {
     utils.verifyRPCInterfaces(waterwatch, [
         ['gageHeight', ['northernLat', 'easternLong', 'southernLat', 'westernLong']],
         ['streamFlow', ['northernLat', 'easternLong', 'southernLat', 'westernLong']],
-        ['waterHeight', ['northernLat', 'easternLong', 'southernLat', 'westernLong']]
+        ['waterTemp', ['northernLat', 'easternLong', 'southernLat', 'westernLong']]
     ]);
 });
