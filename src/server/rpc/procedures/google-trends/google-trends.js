@@ -8,8 +8,7 @@ var debug = require('debug'),
     googleTrends = require('google-trends-api'),
     error = debug('netsblox:rpc:trends:error'),
     CacheManager = require('cache-manager'),
-    trace = debug('netsblox:rpc:trends:trace'),
-    Q = require('q');
+    trace = debug('netsblox:rpc:trends:trace');
 
 var countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
