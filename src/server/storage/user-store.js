@@ -95,9 +95,8 @@ class User extends DataWrapper {
                 media,
                 role;
 
-            roleNames = Object.keys(room.roles);
-            roles = roleNames.map(name => room.roles[name])
-                .filter(role => !!role);
+            roleNames = Object.keys(room.roles).filter(name => !!room.roles[name]);
+            roles = roleNames.map(name => room.roles[name]);
 
             if (roles.length < Object.keys(room.roles).length) {
                 this._logger.warn(`Found null roles in ${room.uuid}. Removing...`);
