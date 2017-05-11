@@ -94,7 +94,7 @@ module.exports = {
         else if(!height || isNaN(height) || height>4096 || height < 1) {
             rsp.status(400).send('Error: height must be between 1-4096, got ' + width);        
         } else {
-            url = baseUrl+`/ImgCutout/getjpeg?ra=${right_ascension}&dec=${declination}&width=${height}&height=${width}&scale=${scale}&opt=${options}`;
+            url = baseUrl+`/ImgCutout/getjpeg?ra=${right_ascension}&dec=${declination}&width=${width}&height=${height}&scale=${scale}&opt=${options}`;
 
             info(`Getting image from URL ${url}`);
 
