@@ -10,6 +10,7 @@ RoomMorph.uber = Morph.prototype;
 
 RoomMorph.SIZE = 300;
 RoomMorph.DEFAULT_ROLE = 'myRole';
+RoomMorph.DEFAULT_ROOM = 'untitled';
 
 function RoomMorph(ide) {
     // Get the users at the room
@@ -21,7 +22,7 @@ function RoomMorph(ide) {
     this.roomLabel = null;
     this.init();
     // Set up the room name
-    this._name = localize('MyRoom');
+    this._name = localize(RoomMorph.DEFAULT_ROOM);
     Object.defineProperty(this, 'name', {
         get: function() {
             return this._name;
@@ -55,14 +56,14 @@ function RoomMorph(ide) {
     // update on login (changing room name if default)
     SnapCloud.onLogin = function() {
         myself.update();
-        if (myself._name === localize('MyRoom')) {
+        if (myself._name === localize(RoomMorph.DEFAULT_ROOM)) {
             myself.ide.sockets.sendMessage({type: 'request-new-name'});
         }
     };
 
     // change room name if default on passive login
     SnapCloud.onPassiveLogin = function() {
-        if (myself._name === localize('MyRoom')) {
+        if (myself._name === localize(RoomMorph.DEFAULT_ROOM)) {
             myself.ide.sockets.sendMessage({type: 'request-new-name'});
         }
     };
@@ -145,6 +146,7 @@ RoomMorph.prototype.drawNew = function() {
     roles = Object.keys(this.roleLabels);
     for (i = roles.length; i--;) {
         this.roleLabels[roles[i]].destroy();
+        delete this.roleLabels[roles[i]];
     }
     
     this.setPosition(new Point(115, 0));  // Shift the room to the right
@@ -1235,7 +1237,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
         [ // format: display shared project names bold
             [
                 'bold',
-                function (proj) {return proj.collaborating; }
+                function (user) {return user.collaborating; }
             ]
         ]//,
         //function () {myself.ok(); }

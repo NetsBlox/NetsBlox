@@ -29,12 +29,7 @@
 
     ///////////////// Stateful, Room-based RPC's /////////////////
     Storage.create = function(name) {
-        return new Store(name);
-    };
-
-    var Store = function(name) {
-        this._db = db.collection('netsblox:rpc:' + name);
-        this._logger = logger.fork(name);
+        return new GenStorage(logger, db, ':rpc:' + name);
     };
 
 })(exports);

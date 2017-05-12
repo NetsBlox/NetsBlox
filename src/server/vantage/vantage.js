@@ -12,7 +12,6 @@ var vantage = require('vantage')(),
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
     ],
     RoomManager = require('../rooms/room-manager'),
-    SocketManager = require('../socket-manager'),
     NO_USER_LABEL = '<vacant>';
 
 // Set the banner
@@ -35,6 +34,8 @@ var NetsBloxVantage = function(server) {
         .option('-a, --admin', 'Toggle admin status')
         .option('-u, --update', 'Update the user\'s schema')
         .option('-c, --clear', 'Clear the room info')
+        .option('--delete', 'Delete the user')
+        .option('--force', 'Force the given command')
         .option('-e [project]', 'Save user project to file')
         .option('-p, --password <password>', 'Set the user password')
         .alias('u')
@@ -117,8 +118,17 @@ var NetsBloxVantage = function(server) {
                     } else if (args.options.password) {
                         delete user.hash;
                         user.password = args.options.password;
-                        user.save();
+                        user.save()
+                            .then(() => console.log('saved ' + user.username))
+                            .catch(err => console.error(err));
                         console.log(`Set password to "${args.options.password}"`);
+                    } else if (args.options.delete) {
+                        if (args.options.force) {
+                            user.destroy();
+                            console.log(`${user.username} has been deleted!`);
+                        } else {
+                            console.log(`Are you sure you want to delete ${user.username}? If so, add the --force flag`);
+                        }
                     } else if (args.options.json) {
                         console.log(JSON.stringify(user.pretty()));
                     } else {
@@ -205,32 +215,6 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
             });
         });
 
-    // Check socket status
-    vantage
-        .command('check <uuid>', 'Check the connectivity of the given socket')
-        .alias('c')
-        .option('-d, --domain', 'Get the domain of the given socket')
-        .option('-s, --state', 'Get the state of the given socket')
-        .option('-a, --all-keys', 'Dump all keys of the given socket')
-        .option('-k, --key', 'Get the key value of the given socket')
-        .action(function(args, cb) {
-            // Get all groups
-            var result = '',
-                checkSocket = NetsBloxVantage.checkSocket.bind(null, args);
-
-            if (args.uuid === 'all') {
-                result = Object.keys(SocketManager.sockets).map(function(uuid) {
-                    var socket = SocketManager.sockets[uuid];
-                    return `${uuid} (${socket.username}):  ${checkSocket(socket)}`;
-                }).join('\n');
-
-            } else {
-                var socket = SocketManager.sockets[args.uuid];
-                result = checkSocket(socket);
-            }
-            console.log(result);
-            return cb();
-        });
 };
 
 

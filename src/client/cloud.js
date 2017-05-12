@@ -213,6 +213,11 @@ NetCloud.prototype.getFriendList = function (callBack, errorCall) {
                 'getFriendList',
                 function (response, url) {
                     var ids = Object.keys(response[0] || {});
+                    ids = ids.map(function(id) {
+                        return {
+                            username: id
+                        };
+                    });
                     callBack.call(null, ids, url);
                 },
                 errorCall
@@ -384,7 +389,7 @@ NetCloud.prototype.callService = function (
     }
 };
 
-NetCloud.prototype.passiveLogin = function (ide, callback) {
+NetCloud.prototype.passiveLogin = function (ide, callback, callOnFail) {
     // Try to login w/ cookie only
     var request = new XMLHttpRequest(),
         socketId = this.socketId(),
@@ -423,7 +428,9 @@ NetCloud.prototype.passiveLogin = function (ide, callback) {
                         ide.source = 'cloud';
                     }
                     myself.onPassiveLogin();
-                    callback();
+                    callback(true);
+                } else if (callOnFail) {
+                    callback(false);
                 }
             }
         };

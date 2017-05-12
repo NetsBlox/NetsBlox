@@ -12,7 +12,7 @@ var hasSocket = function(req, res, next) {
         (req.query && req.query.socketId);
 
     if (socketId) {
-        if (SocketManager.sockets[socketId]) {
+        if (SocketManager.getSocket(socketId)) {
             return next();
         }
         logger.error(`No socket found for ${socketId} (${req.get('User-Agent')})`);

@@ -22,9 +22,11 @@ Storage.prototype.connect = function() {
             RPCStore.init(this._logger, db);
             UserActions.init(this._logger, db);
             PublicProjects.init(this._logger, db);
+            this.publicProjects = PublicProjects;
 
             this._db = db;
             this._logger.info(`Connected to ${mongoURI}`);
+            return db;
         })
         .catch(err => {
             console.error(`Could not connect to mongodb at ${mongoURI}.`);

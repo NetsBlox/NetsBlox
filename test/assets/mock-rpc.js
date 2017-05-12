@@ -4,11 +4,12 @@
 // RPCs now contain the methods 
 var Constants = require('../../src/common/constants'),
     getArgsFor = require('../../src/server/server-utils').getArgumentsFor,
+    MockResponse = require('./mock-response'),
     _ = require('lodash');
 
-var MockRPC = function(RPC) {
+var MockRPC = function(RPC, raw) {
     this._methods = [];
-    this._rpc = typeof RPC === 'function' ? new RPC() : _.cloneDeep(RPC);
+    this._rpc = typeof RPC === 'function' ? new RPC() : raw ? RPC : _.cloneDeep(RPC);
     this.createMethods(RPC);
 
     this.socket = new MockSocket();
@@ -45,29 +46,33 @@ MockRPC.prototype.addMethod = function(name) {
 };
 
 var MockSocket = function() {
+    this.reset();
+};
+
+MockSocket.prototype.send = function(msg) {
+    this._messages.push(msg);
+};
+
+MockSocket.prototype.message = function(index) {
+    if (index < 0) {
+        return this._messages[this._messages+index];
+    } else {
+        return this._messages[index];
+    }
+};
+
+MockSocket.prototype.messages = function() {
+    return this._messages.slice();
+};
+
+MockSocket.prototype.reset = function() {
     this.roleId = 'newRole';
     this.uuid = 'someSocketUuid';
 
+    this._messages = [];
     this._room = {
         sockets: () => []
     };
 };
-
-var MockResponse = function() {
-    this.code = null;
-    this.response = null;
-};
-
-MockResponse.prototype.status = function(code) {
-    this.code = code;
-    return this;
-};
-
-MockResponse.prototype.send = function(text) {
-    this.response = text;
-    return this;
-};
-
-MockResponse.prototype.json = MockResponse.prototype.send;
 
 module.exports = MockRPC;

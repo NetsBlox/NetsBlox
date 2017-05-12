@@ -31,6 +31,337 @@ NetsBloxMorph.prototype.buildPanes = function () {
     NetsBloxMorph.uber.buildPanes.call(this);
 };
 
+NetsBloxMorph.prototype.openIn = function (world) {
+    var hash, usr, myself = this, urlLanguage = null;
+
+    // get persistent user data, if any
+    if (localStorage) {
+        usr = localStorage['-snap-user'];
+        if (usr) {
+            usr = SnapCloud.parseResponse(usr)[0];
+            if (usr) {
+                SnapCloud.username = usr.username || null;
+                SnapCloud.password = usr.password || null;
+                if (SnapCloud.username) {
+                    this.source = 'cloud';
+                }
+            }
+        }
+    }
+
+    this.buildPanes();
+    SnapActions.disableCollaboration();
+    SnapUndo.reset();
+    SnapActions.loadProject(this);
+    world.add(this);
+    world.userMenu = this.userMenu;
+
+    // override SnapCloud's user message with Morphic
+    SnapCloud.message = function (string) {
+        var m = new MenuMorph(null, string),
+            intervalHandle;
+        m.popUpCenteredInWorld(world);
+        intervalHandle = setInterval(function () {
+            m.destroy();
+            clearInterval(intervalHandle);
+        }, 2000);
+    };
+
+    // prevent non-DialogBoxMorphs from being dropped
+    // onto the World in user-mode
+    world.reactToDropOf = function (morph) {
+        if (!(morph instanceof DialogBoxMorph)) {
+            if (world.hand.grabOrigin) {
+                morph.slideBackTo(world.hand.grabOrigin);
+            } else {
+                world.hand.grab(morph);
+            }
+        }
+    };
+
+    this.reactToWorldResize(world.bounds);
+
+    function getURL(url) {
+        try {
+            var request = new XMLHttpRequest();
+            request.open('GET', url, false);
+            request.send();
+            if (request.status === 200) {
+                return request.responseText;
+            }
+            throw new Error('unable to retrieve ' + url);
+        } catch (err) {
+            myself.showMessage('unable to retrieve project');
+            return '';
+        }
+    }
+
+	function applyFlags(dict) {
+        if (dict.editMode) {
+            myself.toggleAppMode(false);
+        } else {
+            myself.toggleAppMode(true);
+        }
+        if (!dict.noRun) {
+            myself.runScripts();
+        }
+        if (dict.hideControls) {
+            myself.controlBar.hide();
+            window.onbeforeunload = nop;
+        }
+        if (dict.noExitWarning) {
+            window.onbeforeunload = nop;
+        }
+	}
+
+    // dynamic notifications from non-source text files
+    // has some issues, commented out for now
+    /*
+    this.cloudMsg = getURL('http://snap.berkeley.edu/cloudmsg.txt');
+    motd = getURL('http://snap.berkeley.edu/motd.txt');
+    if (motd) {
+        this.inform('Snap!', motd);
+    }
+    */
+
+    function interpretUrlAnchors() {
+        var dict = {}, idx;
+
+        // Netsblox addition: start
+        if (location.href.indexOf('?') > -1) {
+            var querystring = location.href
+                .replace(/^.*\?/, '')
+                .replace('#' + location.hash, '');
+
+            dict = SnapCloud.parseDict(querystring);
+        }
+        // Netsblox addition: end
+
+        if (location.hash.substr(0, 6) === '#open:') {
+            hash = location.hash.substr(6);
+            if (hash.charAt(0) === '%'
+                    || hash.search(/\%(?:[0-9a-f]{2})/i) > -1) {
+                hash = decodeURIComponent(hash);
+            }
+            if (contains(
+                    ['project', 'blocks', 'sprites', 'snapdata'].map(
+                        function (each) {
+                            return hash.substr(0, 8).indexOf(each);
+                        }
+                    ),
+                    1
+                )) {
+                this.droppedText(hash);
+            } else {
+                this.droppedText(getURL(hash));
+            }
+        } else if (location.hash.substr(0, 5) === '#run:') {
+            hash = location.hash.substr(5);
+            idx = hash.indexOf("&");
+            if (idx > 0) {
+                hash = hash.slice(0, idx);
+            }
+            if (hash.charAt(0) === '%'
+                    || hash.search(/\%(?:[0-9a-f]{2})/i) > -1) {
+                hash = decodeURIComponent(hash);
+            }
+            if (hash.substr(0, 8) === '<project>') {
+                this.rawOpenProjectString(hash);
+            } else {
+                this.rawOpenProjectString(getURL(hash));
+            }
+            applyFlags(SnapCloud.parseDict(location.hash.substr(5)));
+        // Netsblox addition: start
+        } else if (location.hash.substr(0, 9) === '#present:' || dict.action === 'present') {
+        // Netsblox addition: end
+            this.shield = new Morph();
+            this.shield.color = this.color;
+            this.shield.setExtent(this.parent.extent());
+            this.parent.add(this.shield);
+            myself.showMessage('Fetching project\nfrom the cloud...');
+
+            // Netsblox addition: start
+            if (location.hash.substr(0, 9) === '#present:') {
+                dict = SnapCloud.parseDict(location.hash.substr(9));
+            }
+            // (removed lowercasing the username)
+            // Netsblox addition: end
+
+            SnapCloud.getPublicProject(
+                SnapCloud.encodeDict(dict),
+                function (projectData) {
+                    var msg;
+                    myself.nextSteps([
+                        function () {
+                            msg = myself.showMessage('Opening project...');
+                        },
+                        function () {nop(); }, // yield (bug in Chrome)
+                        function () {
+                            // Netsblox addition: start
+                            myself.openRoomString(projectData, true);
+                            // Netsblox addition: end
+                            myself.hasChangedMedia = true;
+                        },
+                        function () {
+                            myself.shield.destroy();
+                            myself.shield = null;
+                            msg.destroy();
+                            applyFlags(dict);
+                        }
+                    ]);
+                },
+                this.cloudError()
+            );
+        } else if (location.hash.substr(0, 7) === '#cloud:') {
+            this.shield = new Morph();
+            this.shield.alpha = 0;
+            this.shield.setExtent(this.parent.extent());
+            this.parent.add(this.shield);
+            myself.showMessage('Fetching project\nfrom the cloud...');
+
+            // make sure to lowercase the username
+            dict = SnapCloud.parseDict(location.hash.substr(7));
+            dict.Username = dict.Username.toLowerCase();
+
+            SnapCloud.getPublicProject(
+                SnapCloud.encodeDict(dict),
+                function (projectData) {
+                    var msg;
+                    myself.nextSteps([
+                        function () {
+                            msg = myself.showMessage('Opening project...');
+                        },
+                        function () {nop(); }, // yield (bug in Chrome)
+                        function () {
+                            if (projectData.indexOf('<snapdata') === 0) {
+                                myself.rawOpenCloudDataString(projectData);
+                            } else if (
+                                projectData.indexOf('<project') === 0
+                            ) {
+                                myself.rawOpenProjectString(projectData);
+                            }
+                            myself.hasChangedMedia = true;
+                        },
+                        function () {
+                            myself.shield.destroy();
+                            myself.shield = null;
+                            msg.destroy();
+                            myself.toggleAppMode(false);
+                        }
+                    ]);
+                },
+                this.cloudError()
+            );
+        } else if (location.hash.substr(0, 4) === '#dl:') {
+            myself.showMessage('Fetching project\nfrom the cloud...');
+
+            // make sure to lowercase the username
+            dict = SnapCloud.parseDict(location.hash.substr(4));
+            dict.Username = dict.Username.toLowerCase();
+
+            SnapCloud.getPublicProject(
+                SnapCloud.encodeDict(dict),
+                function (projectData) {
+                    window.open('data:text/xml,' + projectData);
+                },
+                this.cloudError()
+            );
+        } else if (location.hash.substr(0, 6) === '#lang:') {
+            urlLanguage = location.hash.substr(6);
+            this.setLanguage(urlLanguage);
+            this.loadNewProject = true;
+        } else if (location.hash.substr(0, 7) === '#signup') {
+            this.createCloudAccount();
+        } else if (location.hash.substr(0, 12) === '#collaborate') {
+            var sessionId = location.hash.substr(13);
+            // Get the session id and join it!
+            SnapActions.enableCollaboration();
+            SnapActions.joinSession(sessionId, this.cloudError());
+
+        // Netsblox addition: start
+        } else if (location.hash.substr(0, 9) === '#example:' || dict.action === 'example') {
+            var example = dict ? dict.ProjectName : location.hash.substr(9),
+                onConnect = this.sockets.onConnect,
+                msg;
+
+            this.sockets.onConnect = function() {
+                SnapCloud.passiveLogin(myself, function() {
+                    var response = SnapCloud.parseDict(myself.getURL('api/Examples/' + example +
+                        '?socketId=' + myself.sockets.uuid));
+
+                    myself.room.nextRoom = {
+                        ownerId: response.OwnerId,
+                        roomName: response.RoomName,
+                        roleId: response.ProjectName
+                    };
+
+                    // role name
+                    myself.nextSteps([
+                        function () {
+                            msg = this.showMessage('Opening ' + example + ' example...');
+                        },
+                        function () {nop(); }, // yield (bug in Chrome)
+                        function () {
+                            if (response.SourceCode) {
+                                myself.rawOpenCloudDataString(
+                                    response.SourceCode
+                                );
+                            } else {
+                                myself.clearProject();
+                            }
+                            myself.loadNextRoom();
+                            myself.sockets.onConnect = onConnect;
+                            myself.hasChangedMedia = true;
+                        },
+                        function () {
+                            msg.destroy();
+                            applyFlags(dict);
+                        }
+                    ]);
+                }, true);
+            };
+        } else if (location.hash.substr(0, 9) === '#private:' || dict.action === 'private') {
+            var name = dict ? dict.ProjectName : location.hash.substr(9);
+            onConnect = this.sockets.onConnect;
+
+            this.sockets.onConnect = function() {
+                SnapCloud.passiveLogin(myself, function(isLoggedIn) {
+                    if (!isLoggedIn) {
+                        myself.showMessage('You are not logged in. Cannot open ' + name);
+                        return;
+                    }
+
+                    myself.nextSteps([
+                        function () {
+                            msg = this.showMessage('Opening ' + name + ' example...');
+                        },
+                        function () {nop(); }, // yield (bug in Chrome)
+                        function () {
+                            SnapCloud.callService(
+                                'getProject',
+                                function (response) {
+                                    myself.rawLoadCloudProject(response[0], dict.Public);
+                                },
+                                myself.cloudError(),
+                                [dict.ProjectName, SnapCloud.socketId()]
+                            );
+                        }
+                    ]);
+                }, true);
+                myself.sockets.onConnect = onConnect;
+            };
+        // Netsblox addition: end
+        }
+    }
+
+    if (this.userLanguage) {
+        this.loadNewProject = true;
+        this.setLanguage(this.userLanguage, interpretUrlAnchors);
+    } else {
+        interpretUrlAnchors.call(this);
+    }
+};
+
 NetsBloxMorph.prototype.resourceURL = function () {
     return 'api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
 };
@@ -59,6 +390,8 @@ NetsBloxMorph.prototype.clearProject = function () {
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
+    SnapActions.disableCollaboration();
+    SnapUndo.reset();
     SnapActions.loadProject(this);
 };
 
@@ -531,6 +864,48 @@ NetsBloxMorph.prototype.settingsMenu = function () {
     // Netsblox addition: start
     // (Removed the collaboration option)
     // Netsblox addition: end
+    addPreference(
+        'Replay Mode',
+        function() {
+            if (myself.isReplayMode) {  // exiting replay mode
+
+                if (myself.isPreviousVersion()) {
+                    myself.confirm(
+                        'Exiting replay mode now will revert the project to\n' +
+                        'the current point in history (losing any unapplied ' + 
+                        'changes)\n\nAre you sure you want to exit replay mode?',
+                        'Exit Replay Mode?',
+                        function () {
+                            myself.exitReplayMode();
+                        }
+                    );
+                    return;
+                }
+                return myself.exitReplayMode();
+            }
+            // entering replay mode
+            if (SnapUndo.allEvents.length < 2) {
+                return myself.showMessage('Nothing to replay!', 2);
+            }
+            if (SnapActions.isCollaborating()) {
+                this.confirm(
+                    'Cannot enter replay mode while collaborating. \nWould you ' +
+                    'like to disable collaboration and enter replay mode?',
+                    'Disable Collaboration?',
+                    function () {
+                        SnapActions.disableCollaboration();
+                        myself.replayEvents();
+                    }
+                );
+            } else {
+                myself.replayEvents();
+            }
+        },
+        myself.isReplayMode,
+        'uncheck to disable replay mode',
+        'check to enable replay mode',
+        false
+    );
     menu.addLine(); // everything below this line is stored in the project
     addPreference(
         'Thread safe scripts',
@@ -621,6 +996,9 @@ NetsBloxMorph.prototype.newProject = function (projectName) {
     this.silentSetProjectName(projectName || RoomMorph.DEFAULT_ROLE);
     this.createRoom();
     this.selectSprite(this.stage.children[0]);
+    if (!projectName) {
+        this.updateUrlQueryString();
+    }
 };
 
 NetsBloxMorph.prototype.createRoom = function() {
@@ -693,7 +1071,7 @@ NetsBloxMorph.prototype.loadNextRoom = function () {
     if (this.room.nextRoom) {
         var next = this.room.nextRoom;
         this.room._name = next.roomName;  // silent set
-        this.room.leaderId = next.leaderId;
+        this.room.ownerId = next.ownerId;
         this.silentSetProjectName(next.roleId);
 
         // Send the message to the server
@@ -710,6 +1088,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
     StageMorph.prototype.codeHeaders = {};
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
+    SnapUndo.reset();
     if (Process.prototype.isCatchingErrors) {
         try {
             model = parsed ? model : this.serializer.parse(model);
@@ -1024,7 +1403,13 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addPair('New', 'createNewProject', '^N');
     menu.addPair('Open...', 'openProjectsBrowser', '^O');
     menu.addPair('Save', "save", '^S');
-    menu.addItem('Save As...', 'saveProjectsBrowser');
+    menu.addItem('Save As...', function() {
+        if (myself.isPreviousVersion()) {
+            return myself.showMessage('Please exit replay mode before saving');
+        }
+
+        myself.saveProjectsBrowser();
+    });
     if (shiftClicked) {
         menu.addItem(
             localize('Download replay events'),
@@ -1317,7 +1702,7 @@ NetsBloxMorph.prototype.exportRoom = function (roles) {
 };
 
 // Open the room
-NetsBloxMorph.prototype.openRoomString = function (str) {
+NetsBloxMorph.prototype.openRoomString = function (str, isRaw) {
     var room = this.serializer.parse(str),
         roles = {},
         role;
@@ -1352,7 +1737,11 @@ NetsBloxMorph.prototype.openRoomString = function (str) {
     });
 
     // load the given project
-    this.openCloudDataString(room.children[0], true);
+    if (isRaw) {
+        this.rawOpenCloudDataString(room.children[0], true);
+    } else {
+        this.openCloudDataString(room.children[0], true);
+    }
 };
 
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
@@ -1360,6 +1749,8 @@ NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
         myself = this,
         str = parsed ? model : model.toString(),
         size = Math.round(str.length / 1024);
+
+    this.exitReplayMode();
     this.nextSteps([
         function () {
             msg = myself.showMessage('Opening project\n' + size + ' KB...');
@@ -1422,6 +1813,10 @@ NetsBloxMorph.prototype.openProject = function (name) {
 };
 
 NetsBloxMorph.prototype.save = function () {
+    if (this.isPreviousVersion()) {
+        return this.showMessage('Please exit replay mode before saving');
+    }
+
     if (this.source === 'examples') {
         this.source = 'local'; // cannot save to examples
     }
@@ -1469,6 +1864,7 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     SnapCloud.hasConflictingStoredProject(
         function(hasConflicting) {
             if (!hasConflicting) {
+                myself.updateUrlQueryString();
                 return IDE_Morph.prototype.saveProjectToCloud.call(myself, name);
             } else {  // doesn't match the stored version!
                 var dialog = new DialogBoxMorph(null, function() {
@@ -1617,12 +2013,21 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
             this.showMessage(localize('A new role has been created for you at ' + newRoom));
         }
     }
-    if (isPublic === 'true') {
-        location.hash = '#present:Username=' +
-            encodeURIComponent(SnapCloud.username) +
-            '&ProjectName=' +
-            encodeURIComponent(newRoom);
+    this.updateUrlQueryString(newRoom, isPublic === 'true');
+};
+
+NetsBloxMorph.prototype.updateUrlQueryString = function (room, isPublic, isExample) {
+    var url = location.pathname;
+
+    room = room || this.room._name;
+    if (isExample) {
+        url += '?action=example&ProjectName=' + encodeURIComponent(room);
+    } else if (isPublic) {
+        url += '?action=present&Username=' + encodeURIComponent(SnapCloud.username) +
+            '&ProjectName=' + encodeURIComponent(room);
     }
+
+    window.history.pushState(room, room, url);
 };
 
 // Bug reporting assistance

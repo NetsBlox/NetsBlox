@@ -3,8 +3,8 @@
  */
 'use strict';
 var counter = 0,
+    Q = require('q'),
     Constants = require(__dirname + '/../../common/constants'),
-    PublicRoleManager = require(__dirname + '/../public-role-manager'),
     PROJECT_FIELDS = [
         'ProjectName',
         'SourceCode',
@@ -14,12 +14,15 @@ var counter = 0,
         'RoomUuid'
     ],
     R = require('ramda'),
+    Utils = require('../server-utils'),
     Sessions = require('snap-collaboration').sessions,
     parseXml = require('xml2js').parseString,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
     RoomManager = require('./room-manager'),
-    CONDENSED_MSGS = ['project-response', 'import-room'];
+    CONDENSED_MSGS = ['project-response', 'import-room'],
+    PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/,
+    SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
 
 var createSaveableProject = function(json, callback) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -44,13 +47,12 @@ var createSaveableProject = function(json, callback) {
 
 class NetsBloxSocket {
     constructor (logger, socket) {
-        var id = ++counter;
-        this.id = id;
-        this.uuid = '_client_'+id;
+        this.id = (++counter);
         this._logger = logger.fork(this.uuid);
 
         this.roleId = null;
         this._room = null;
+        this._onRoomJoinDeferred = null;
         this.loggedIn = false;
 
         this.user = null;
@@ -59,11 +61,6 @@ class NetsBloxSocket {
         this._projectRequests = {};  // saving
         this._initialize();
 
-        // Provide a uuid
-        this.send({
-            type: 'uuid',
-            body: this.uuid
-        });
         this.onclose = [];
 
         this._logger.trace('created');
@@ -88,6 +85,25 @@ class NetsBloxSocket {
             this._logger.error('user has no room!');
         }
         return !!this._room;
+    }
+
+    getRoom () {
+        if (!this.hasRoom()) {
+            if (!this._onRoomJoinDeferred) {
+                this._onRoomJoinDeferred = Q.defer();
+            }
+            return this._onRoomJoinDeferred.promise;
+        } else {
+            return Q(this._room);
+        }
+    }
+
+    _setRoom (room) {
+        this._room = room;
+        if (this._onRoomJoinDeferred) {
+            this._onRoomJoinDeferred.resolve(room);
+            this._onRoomJoinDeferred = null;
+        }
     }
 
     isOwner () {
@@ -147,7 +163,8 @@ class NetsBloxSocket {
             this.leave();
         }
 
-        this._room = room;
+        this._setRoom(room);
+
         this._room.add(this, role);
         this._logger.trace(`${this.username} joined ${room.uuid} at ${role}`);
         this.roleId = role;
@@ -179,12 +196,14 @@ class NetsBloxSocket {
 
     // This should only be called internally *EXCEPT* when the socket is going to close
     leave () {
-        this._room.roles[this.roleId] = null;
+        if (this._room) {
+            this._room.roles[this.roleId] = null;
 
-        if (this.isOwner() && this._room.ownerCount() === 0) {  // last owner socket closing
-            this._room.close();
-        } else {
-            this._room.onRolesChanged();
+            if (this.isOwner() && this._room.ownerCount() === 0) {  // last owner socket closing
+                this._room.close();
+            } else {
+                this._room.onRolesChanged();
+            }
             RoomManager.checkRoom(this._room);
         }
     }
@@ -232,6 +251,41 @@ class NetsBloxSocket {
         });
         this._projectRequests[id] = callback;
     }
+
+    sendMessageTo (msg, dstId) {
+        msg.dstId = dstId;
+        if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
+            this._room.roles.hasOwnProperty(dstId)) {  // local message
+
+            dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
+        } else if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
+            // Look up the socket matching
+            //
+            //     <role>@<project>@<owner> or <project>@<owner>
+            //
+            var idChunks = dstId.split('@'),
+                sockets = [],
+                ownerId = idChunks.pop(),
+                roomName = idChunks.pop(),
+                roleId = idChunks.pop(),
+                roomId = Utils.uuid(ownerId, roomName),
+                room = RoomManager.rooms[roomId];
+
+            if (room) {
+                if (roleId) {
+                    if (room.roles[roleId]) {
+                        sockets.push(room.roles[roleId]);
+                    }
+                } else {
+                    sockets = room.sockets();
+                }
+                sockets.forEach(socket => {
+                    msg.dstId = Constants.EVERYONE;
+                    socket.send(msg);
+                });
+            }
+        }
+    }
 }
 
 // From the WebSocket spec
@@ -243,23 +297,29 @@ NetsBloxSocket.prototype.CLOSED = 3;
 NetsBloxSocket.MessageHandlers = {
     'beat': function() {},
 
+    'set-uuid': function(msg) {
+        this.uuid = msg.body;
+        this.username = this.username || this.uuid;
+    },
+
+    'request-uuid': function() {
+        this.uuid = SERVER_NAME + Date.now();
+        this.username = this.username || this.uuid;
+        // Provide a uuid
+        this.send({
+            type: 'uuid',
+            body: this.uuid
+        });
+    },
+
     'message': function(msg) {
         if (!this.hasRoom()) {
             this._logger.error(`Cannot send a message when not in a room! ${this.username} (${this.uuid})`);
             return;
         }
 
-        if (msg.dstId === 'others in room' || msg.dstId === Constants.EVERYONE ||
-            this._room.roles.hasOwnProperty(msg.dstId)) {  // local message
-
-            msg.dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
-        } else {  // inter-room message
-            var socket = PublicRoleManager.lookUp(msg.dstId);
-            if (socket) {
-                msg.dstId = Constants.EVERYONE;
-                socket.send(msg);
-            }
-        }
+        var dstIds = typeof msg.dstId !== 'object' ? [msg.dstId] : msg.dstId.contents;
+        dstIds.forEach(dstId => this.sendMessageTo(msg, dstId));
     },
 
     'project-response': function(msg) {

@@ -5,6 +5,7 @@ var R = require('ramda'),
     Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     RoomManager = require('../rooms/room-manager'),
+    exists = require('exists-file'),
     PublicProjects = require('../storage/public-projects'),
     UserAPI = require('./users'),
     RoomAPI = require('./rooms'),
@@ -30,16 +31,22 @@ var R = require('ramda'),
     PATHS = [
         'Costumes',
         'Sounds',
-        'libraries',
         'help',
         'Backgrounds'
     ],
     CLIENT_ROOT = path.join(__dirname, '..', '..', 'client'),
     SNAP_ROOT = path.join(CLIENT_ROOT, 'Snap--Build-Your-Own-Blocks'),
-    PUBLIC_FILES = [
+    publicFiles = [
         'snap_logo_sm.png',
         'tools.xml'
     ];
+
+// merge netsblox libraries with Snap libraries
+var snapLibRoot = path.join(SNAP_ROOT, 'libraries');
+var snapLibs = fs.readdirSync(snapLibRoot).map(filename => 'libraries/' + filename);
+var libs = fs.readdirSync(path.join(CLIENT_ROOT, 'libraries'))
+    .map(filename => 'libraries/' + filename)
+    .concat(snapLibs);
 
 // Create the paths
 var resourcePaths = PATHS.map(function(name) {
@@ -54,8 +61,36 @@ var resourcePaths = PATHS.map(function(name) {
     };
 });
 
+// Add translation file paths
+var getFileFrom = dir => {
+    return file => {
+        return {
+            Method: 'get', 
+            URL: file,
+            Handler: (req, res) => res.sendFile(path.join(dir, file))
+        };
+    };
+};
+
+const isInNetsBlox = file => exists.sync(path.join(CLIENT_ROOT, file));
+var overrideSnapFiles = function(snapFiles) {
+    var netsbloxFiles = Utils.extract(isInNetsBlox, snapFiles);
+
+    resourcePaths = resourcePaths
+        .concat(snapFiles.map(getFileFrom(SNAP_ROOT)))
+        .concat(netsbloxFiles.map(getFileFrom(CLIENT_ROOT)));
+};
+
+var snapLangFiles = fs.readdirSync(SNAP_ROOT)
+    .filter(name => /^lang/.test(name));
+
+overrideSnapFiles(snapLangFiles);
+overrideSnapFiles(libs);
+
+publicFiles = publicFiles.concat(snapLangFiles);
+
 // Add importing tools, logo to the resource paths
-resourcePaths = resourcePaths.concat(PUBLIC_FILES.map(file => {
+resourcePaths = resourcePaths.concat(publicFiles.map(file => {
     return {
         Method: 'get', 
         URL: file,
@@ -226,7 +261,7 @@ module.exports = [
                         log(`"${user.username}" has logged in.`);
 
                         // Associate the websocket with the username
-                        socket = SocketManager.sockets[req.body.socketId];
+                        socket = SocketManager.getSocket(req.body.socketId);
                         if (socket) {  // websocket has already connected
                             socket.onLogin(user);
                         }
@@ -267,7 +302,8 @@ module.exports = [
                     .map(name => {
                         let example = EXAMPLES[name],
                             role = Object.keys(example.roles).shift(),
-                            primaryRole = example.cachedProjects[role].SourceCode;
+                            primaryRole = example.cachedProjects[role].SourceCode,
+                            services = example.services;
 
                         return Q.nfcall(xml2js.parseString, primaryRole)
                             .then(result => {
@@ -276,7 +312,8 @@ module.exports = [
                                     primaryRoleName: role,
                                     roleNames: Object.keys(example.cachedProjects),
                                     thumbnail: result.project.thumbnail[0],
-                                    notes: result.project.notes[0]
+                                    notes: result.project.notes[0],
+                                    services: services
                                 };
                             });
                     });
@@ -316,7 +353,7 @@ module.exports = [
                 room;
 
             if (!isPreview) {
-                socket = SocketManager.sockets[uuid];
+                socket = SocketManager.getSocket(uuid);
                 // Check if the room already exists
                 if (!uuid) {
                     return res.status(400).send('ERROR: Bad Request: missing socket id');
@@ -325,6 +362,7 @@ module.exports = [
                     return res.status(400)
                         .send('ERROR: Not fully connected to server. Please refresh or try a different browser');
                 }
+                socket.leave();
                 room = RoomManager.rooms[Utils.uuid(socket.username, name)];
 
                 if (!room) {  // Create the room

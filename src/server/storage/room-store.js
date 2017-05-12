@@ -20,6 +20,7 @@ class Room extends DataWrapper {
         this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
         this._user = params.user;
         this._room = params.room;
+        this.lastUpdateAt = Date.now();
     }
 
     fork(room) {
@@ -28,6 +29,7 @@ class Room extends DataWrapper {
             user: this._user,
             room: room,
             logger: this._logger,
+            lastUpdateAt: Date.now(),
             db: this._db
         };
         this._logger.trace('forking (' + room.uuid + ')');
@@ -163,9 +165,17 @@ class Room extends DataWrapper {
                 PublicProjectStore.update(room);
             }
         }
-        this._user.save();
-        this._logger.log(`saved room "${room.name}" for ${this._user.username}`);
-        callback(null);
+        room.lastUpdateAt = Date.now();
+        this._user.changed(room);
+        return this._user.save()
+            .then(() => {
+                this._logger.log(`saved room "${room.name}" for ${this._user.username}`);
+                callback(null);
+            })
+            .fail(err => {
+                this._logger.error(`room save failed: ${err}`);
+                callback(err);
+            });
     }
 
     pretty() {
@@ -181,15 +191,9 @@ class Room extends DataWrapper {
 
     }
 
-    destroy() {
-        // remove the room from the user's list
-        // TODO
-        // set the user's 
-        // TODO
-    }
 }
 
-var EXTRA_KEYS = ['_user', '_room', '_content'];
+var EXTRA_KEYS = ['_user', '_room', '_content', '_changedRoles'];
 Room.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(EXTRA_KEYS);
 
 class RoomStore {
@@ -217,6 +221,7 @@ class RoomStore {
             logger: this._logger,
             db: this._rooms,
             user: user,
+            lastUpdateAt: Date.now(),
             room: activeRoom
         });
     }

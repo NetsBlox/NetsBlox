@@ -1,6 +1,6 @@
 {
   "name": "netsblox",
-  "version": "0.12.0",
+  "version": "0.14.2",
   "description": "Visual programming environment with networking support",
   "bin": {
     "netsblox": "./bin/netsblox"
@@ -38,18 +38,19 @@
     "cordova": "^6.1.1",
     "cordova-lib": "^6.1.1",
     "debug": "^2.1.3",
+    "dot": "^1.1.1",
     "dotenv": "^2.0.0",
     "epipebomb": "^1.0.0",
-    "exists-file": "^3.0.0",
+    "exists-file": "^3.0.1",
     "express": "^4.12.3",
     "fs-extra": "^0.26.7",
     "geolib": "^2.0.18",
-    "google-translate-api": "^2.2.2",
     "google-trends-api": "^3.0.1",
     "jade": "^1.9.2",
     "jsonwebtoken": "^6.2.0",
     "just.randomstring": "^0.1.1",
     "lodash": "^4.8.2",
+    "lwip": "0.0.9",
     "mongodb": "^2.2.22",
     "moviedb": "^0.2.7",
     "nodemailer": "=2.6.4",
@@ -60,7 +61,7 @@
     "request": "^2.81.0",
     "request-promise": "^4.2.1",
     "rimraf": "^2.4.3",
-    "snap-collaboration": "^1.1.0",
+    "snap-collaboration": "^1.2.0",
     "socket.io": "^1.3.5",
     "temp-units-conv": "^0.1.1",
     "vantage": "^1.5.1",
@@ -73,9 +74,7 @@
     "expect": "^1.6.0",
     "istanbul": "^0.4.2",
     "mocha": "^2.2.1",
-    "mocha-phantomjs": "^4.0.2",
     "nodemon": "^1.3.7",
-    "sinon": "^1.16.1",
     "supertest": "^1.0.1",
     "uglify-js": "^2.6.2"
   }
