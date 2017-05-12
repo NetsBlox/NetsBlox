@@ -34,25 +34,19 @@ function showError(err, response) {
 // factor out message sending and handling of multiple users = sendNext and Stop
 // msgs: an array of msgs stored in global scope.
 let DELAY = 250;
-let msgs = [];
+let waterwatchMsgs = {};
 
 function sendNextMsg(socket){
-    // QUESTION is there a need to check for the socket ID? no need.
-    if (msgs.length < 1){
+    if (waterwatchMsgs[socket.roleId].length < 1){
         return;
     }
-    socket.send(msgs.shift());
+    socket.send(waterwatchMsgs[socket.roleId].shift());
     setTimeout(sendNextMsg,DELAY,socket);
 }
 
 function stopSendingMsgs(socket){
-    if (msgs) {
-        // remove those with a different roleId | dont remove other's messages
-        msgs = msgs.filter(msg => {
-            return msg.dstId !== socket.roleId;
-        });
-    }
-    trace(`Stopped sending messages to user with roleId ${socket.roleId}`);
+  waterwatchMsgs[socket.roleId] = [];
+  trace(`Stopped sending messages to user with roleId ${socket.roleId}`);
 }
 
 // notes: dont forget to return null in your stop since we are handling the response in here.
@@ -61,7 +55,7 @@ function stopSendingMsgs(socket){
 // factor our the bulk of the work to provide easily readable settings for users.
 // requests for data from the api, processes the response and sends the messages
 function send(options,socket,response,msgType){
-
+    waterwatchMsgs[socket.roleId] = [];
     let url = baseUrl+encodeQueryData(options);
     cache.wrap(url, cacheCallback => {
       trace('requesting this url for data (not cached!)', url);
@@ -96,7 +90,7 @@ function send(options,socket,response,msgType){
                 unit: item.variable.unit.unitCode,
                 value: item.values[0].value[0].value
             };
-            msgs.push({
+            waterwatchMsgs[socket.roleId].push({
                 type: 'message',
                 msgType: msgType,
                 dstId: socket.roleId,
@@ -104,11 +98,7 @@ function send(options,socket,response,msgType){
             });
         });
         trace('loaded ', results.value.timeSeries.length,'  items');
-        // filterout messages ( imp if having multiple people use the shared msgs var)
-        let myMsgs = msgs.filter(msg => {
-            return msg.dstId == socket.roleId && msg.msgType == msgType;
-        });
-        response.send(`Sending ${myMsgs.length} messages of ${msgType}`);
+        response.send(`Sending ${waterwatchMsgs[socket.roleId].length} messages of ${msgType}`);
         // start sending messages - will send other user's messages too
         sendNextMsg(socket);
       }else {
