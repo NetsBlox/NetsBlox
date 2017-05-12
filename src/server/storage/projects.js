@@ -7,7 +7,7 @@
 
     class Project extends DataWrapper {
         constructor(params) {
-            params.data = params.data || {};
+            params.data = _.extend(params.data || {};
             params.data.roles = params.data.roles || {};
 
             // Update seats => roles
@@ -16,16 +16,12 @@
 
             super(params.db, params.data || {});
             this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
-            this._user = params.user;
             this._room = params.room;
-
-            this.lastUpdateAt = Date.now();
         }
 
         fork(room) {
             var params;
             params = {
-                user: this._user,
                 room: room,
                 logger: this._logger,
                 lastUpdateAt: Date.now(),
@@ -67,6 +63,8 @@
                                 this.roles[name] = role;
                             });
                     }));
+
+                    this.lastUpdateAt = Date.now();
                 });
         }
 
@@ -97,12 +95,12 @@
         pretty() {
             var prettyRoom = {
                 name: this.name,
-                roles: this.roles,
+                roles: {},
                 owner: this.owner,
                 collaborators: this.collaborators
             };
 
-            Object.keys(prettyRoom.roles || {})
+            Object.keys(this.roles || {})
                 .forEach(role => {
                     if (prettyRoom.roles[role]) {
                         prettyRoom.roles[role] = '<project xml>';
@@ -114,7 +112,7 @@
 
     }
 
-    var EXTRA_KEYS = ['_user', '_room'];
+    var EXTRA_KEYS = ['_room'];
     Project.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(EXTRA_KEYS);
 
     // Project Storage
@@ -178,12 +176,21 @@
     };
 
     // Create room from ActiveRoom (request projects from clients)
+    const getDefaultProjectData = function(user, room) {
+        return {
+            owner: user.username,
+            name: room.name,
+            originTime: room.originTime,
+            activeRole: user.roleId,
+            roles: {}
+        };
+    };
+
     ProjectStorage.new = function(user, activeRoom) {
         return new Project({
             logger: logger,
             db: collection,
-            user: user,
-            lastUpdateAt: Date.now(),
+            data: getDefaultProjectData(user, activeRoom),
             room: activeRoom
         });
     };
