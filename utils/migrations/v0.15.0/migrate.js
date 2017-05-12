@@ -45,10 +45,6 @@ function transformUser(user, projectStore) {
 }
 
 function transformProject(project) {
-    project.uuid = [
-        project.owner,
-        project.name
-    ].join('/');
     project.collaborators = [];
     return project;
 }
