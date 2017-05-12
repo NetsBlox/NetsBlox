@@ -7,8 +7,7 @@ let debug = require('debug'),
     rp = require('request-promise'), //maybe use request-promise-native?
     error = debug('netsblox:rpc:trends:error'),
     CacheManager = require('cache-manager'),
-    trace = debug('netsblox:rpc:trends:trace'),
-    Q = require('q');
+    trace = debug('netsblox:rpc:trends:trace');
 
 let baseUrl = 'https://waterservices.usgs.gov/nwis/iv/?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000});
@@ -16,10 +15,10 @@ let baseUrl = 'https://waterservices.usgs.gov/nwis/iv/?',
 
 // turn an options object into query friendly string
 function encodeQueryData(options) {
-   let ret = [];
-   for (let d in options)
-     ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(options[d]));
-   return ret.join('&');
+  let ret = [];
+  for (let d in options)
+    ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(options[d]));
+  return ret.join('&');
 }
 
 // used to send feedback about errors to the caller.
@@ -46,11 +45,6 @@ function sendNextMsg(socket){
     setTimeout(sendNextMsg,DELAY,socket);
 }
 
-//checks msg ownership, needs access to socket.
-function isMsgOwner(msg){
-    return msg.dstId = socket.roleId
-}
-
 function stopSendingMsgs(socket){
     if (msgs) {
         // remove those with a different roleId | dont remove other's messages
@@ -73,7 +67,7 @@ function send(options,socket,response,msgType){
     rp(url)
         .then(data => {
             // santize and send messages to user
-            trace("Received data back");
+            trace('Received data back');
 
             try {
                 data = JSON.parse(data);
@@ -105,8 +99,8 @@ function send(options,socket,response,msgType){
             trace('loaded ', data.value.timeSeries.length,'  items');
             // filterout messages ( imp if having multiple people use the shared msgs var)
             let myMsgs = msgs.filter(msg => {
-                return msg.dstId == socket.roleId && msg.msgType == msgType
-            })
+                return msg.dstId == socket.roleId && msg.msgType == msgType;
+            });
             response.send(`Sending ${myMsgs.length} messages of ${msgType}`);
             // start sending messages - will send other user's messages too
             sendNextMsg(socket);
@@ -139,8 +133,6 @@ WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, west
 
 WaterWatchRPC.streamFlow = function (northernLat, easternLong, southernLat, westernLong) {
     //init
-    // list of parameteCD: https://help.waterdata.usgs.gov/codes-and-parameters/parameters
-    // query descriptions: https://waterservices.usgs.gov/rest/IV-Test-Tool.html
     westernLong = parseFloat(westernLong).toFixed(7);
     easternLong = parseFloat(easternLong).toFixed(7);
     southernLat = parseFloat(southernLat).toFixed(7);
@@ -157,8 +149,6 @@ WaterWatchRPC.streamFlow = function (northernLat, easternLong, southernLat, west
 
 WaterWatchRPC.waterTemp = function (northernLat, easternLong, southernLat, westernLong) {
     //init
-    // list of parameteCD: https://help.waterdata.usgs.gov/codes-and-parameters/parameters
-    // query descriptions: https://waterservices.usgs.gov/rest/IV-Test-Tool.html
     westernLong = parseInt(westernLong).toFixed(7);
     easternLong = parseInt(easternLong).toFixed(7);
     southernLat = parseInt(southernLat).toFixed(7);
@@ -175,7 +165,7 @@ WaterWatchRPC.waterTemp = function (northernLat, easternLong, southernLat, weste
 
 WaterWatchRPC.stop = function(){
     stopSendingMsgs(this.socket);
-    response.send('Stopped sending messages.');
+    this.response.send('Stopped sending messages.');
     return null;
 };
 
