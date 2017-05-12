@@ -83,7 +83,7 @@ GeoLocationRPC.geolocate = function (address) {
   geocoder.geocode(address)
     .then(function(res) {
       trace(res);
-      response.json([res[0].latitude, res[0].longitude]);
+      response.json([['latitude', res[0].latitude], ['longitude', res[0].longitude]]);
     })
     .catch(function(err) {
       error('Error in geocoding', err);
