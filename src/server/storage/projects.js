@@ -1,7 +1,9 @@
 (function(ProjectStorage) {
 
-    var DataWrapper = require('./data'),
-        async = require('async');
+    const DataWrapper = require('./data');
+    const async = require('async');
+    const Q = require('q');
+    const blob = require('./blob-storage');
 
     class Project extends DataWrapper {
         constructor(params) {
@@ -158,6 +160,45 @@
     var logger,
         collection;
 
+    const cleanProject = function (project) {
+        let allRoleNames = Object.keys(project.roles),
+            removed = [],
+            name;
+
+        for (let i = allRoleNames.length; i--;) {
+            name = allRoleNames[i];
+            if (!project.roles[name]) {
+                removed.push(name);
+                delete project.roles[name];
+            }
+        }
+
+        if (removed.length) {
+            logger.warn(`Found ${removed.length} null roles in ${project.uuid}. Removing...`);
+        }
+
+        return project;
+    };
+
+    const loadProjectBinaryData = function(project) {
+        cleanProject(project);
+
+        var roles = Object.keys(project.roles).map(name => project.roles[name]);
+        return Q.all(roles.map(loadRole))
+            .then(() => project);
+    };
+
+    const loadRole = function(role) {
+        const srcHash = role.SourceCode;
+        const mediaHash = role.Media;
+        return Q.all([blob.get(srcHash), blob.get(mediaHash)])
+            .then(content => {
+                [role.SourceCode, role.Media] = content;
+                console.log('content for', role.ProjectName, 'is', content);
+                return role;
+            });
+    };
+
     ProjectStorage.init = function (_logger, db) {
         logger = _logger.fork('projects');
         collection = db.collection('projects');
@@ -167,7 +208,7 @@
         return collection.findOne({owner: username, name: projectName})
             .then(data => {
                 var params = {
-                    logger: this._logger,
+                    logger: logger,
                     db: collection,
                     data
                 };
@@ -175,9 +216,25 @@
             });
     };
 
-    ProjectStorage.getUserProjects = function (username) {
-        // TODO: load from the blob
+    ProjectStorage.getProject = function (username, projectName) {
+        return ProjectStorage.get(username, projectName)
+            .then(project => {
+                var promise = Q(project);
+
+                if (project) {
+                    promise = loadProjectBinaryData(project);
+                }
+                return promise;
+            });
+    };
+
+    ProjectStorage.getRawUserProjects = function (username) {
         return collection.find({owner: username}).toArray();
+    };
+
+    ProjectStorage.getUserProjects = function (username) {
+        return ProjectStorage.getRawUserProjects(username)
+            .then(projects => Q.all(projects.map(loadProjectBinaryData)));
     };
 
     // Create room from ActiveRoom (request projects from clients)

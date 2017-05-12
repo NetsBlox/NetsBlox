@@ -64,28 +64,13 @@ class User extends DataWrapper {
         delete this.password;
     }
 
-    cleanProject (project) {
-        let allRoleNames = Object.keys(project.roles),
-            removed = [],
-            name;
-
-        for (let i = allRoleNames.length; i--;) {
-            name = allRoleNames[i];
-            if (!project.roles[name]) {
-                removed.push(name);
-                delete project.roles[name];
-            }
-        }
-
-        if (removed.length) {
-            this._logger.warn(`Found ${removed.length} null roles in ${project.uuid}. Removing...`);
-        }
-
-        return project;
-    }
-
     getProject(name) {
-        return Projects.get(this.username, name);
+        this._logger.trace(`Getting project ${name} for ${this.username}`);
+        return Projects.getProject(this.username, name)
+            .catch(err => {
+                this._logger.error(`Could not load project ${name}: ${err}`);
+                throw err;
+            });
     }
 
     getProjects() {
