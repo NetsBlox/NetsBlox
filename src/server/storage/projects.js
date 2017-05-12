@@ -1,8 +1,7 @@
 (function(ProjectStorage) {
 
     var DataWrapper = require('./data'),
-        async = require('async'),
-        PublicProjectStore = require('./public-projects');
+        async = require('async');
 
     class Project extends DataWrapper {
         constructor(params) {
@@ -107,6 +106,7 @@
                 if (this.activeRole) {
                     content.activeRole = this.activeRole;
                 }
+                // TODO: Save the content to the blob
                 this._content = content;
                 this._save(callback);
             });
@@ -176,6 +176,7 @@
     };
 
     ProjectStorage.getUserProjects = function (username) {
+        // TODO: load from the blob
         return collection.find({owner: username}).toArray();
     };
 

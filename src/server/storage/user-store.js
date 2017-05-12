@@ -3,10 +3,7 @@
 var randomString = require('just.randomstring'),
     hash = require('../../common/sha512').hex_sha512,
     DataWrapper = require('./data'),
-    blob = require('./blob-storage'),
-    Q = require('q'),
     Projects = require('./projects'),
-    _ = require('lodash'),
     mailer = require('../mailer');
 
 class UserStore {
@@ -18,7 +15,6 @@ class UserStore {
     get (username, callback) {
         // Retrieve the user
         this._users.findOne({username}, (e, data) => {
-            // retrieve the role info from the blob storage and
             let user = null;
             if (data) {
                 user = new User(this._logger, this._users, data);
@@ -98,7 +94,7 @@ class User extends DataWrapper {
 
     getProjectNames() {
         return this.getProjects()
-            .then(projects => projects.map(project.name));
+            .then(projects => projects.map(project => project.name));
     }
 
     recordLogin() {

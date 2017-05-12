@@ -420,7 +420,6 @@ module.exports = [
         Handler: function(req, res) {
             var roomName = req.body.ProjectName,
                 user = req.session.user,
-                rooms,
                 socketId = req.body.socketId,
                 socket = socketId && SocketManager.getSocket(socketId);
 
@@ -437,7 +436,7 @@ module.exports = [
                         // Since they are the same, we assume the user wants to create
                         // a copy of the active room
                         return createCopyFrom(user, rooms.stored)
-                            .then(copy => sendProjectTo(projectCopy, res));
+                            .then(copy => sendProjectTo(copy, res));
                     } else {
                         // not the same; simply change the name of the active room
                         // (the active room must be newer since it hasn't been saved
