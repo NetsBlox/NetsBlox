@@ -1,4 +1,4 @@
-/* global localize, nop, IDE_Morph, Cloud, detect*/
+/* global localize, nop, IDE_Morph, Cloud, detect, SnapActions*/
 NetCloud.prototype = new Cloud();
 
 function NetCloud(url) {
@@ -151,6 +151,60 @@ NetCloud.prototype.inviteToRoom = function () {
     );
 };
 
+NetCloud.prototype.inviteToCollaborate = function () {
+    var myself = this,
+        args = Array.prototype.slice.call(arguments);
+
+    args.push(SnapActions.sessionId);
+    this.reconnect(
+        function () {
+            myself.callService(
+                'inviteToCollaborate',
+                nop,
+                nop,
+                args
+            );
+        },
+        nop
+    );
+};
+
+NetCloud.prototype.evictCollaborator = function (id) {
+    var myself = this,
+        args = [this.socketId(), id];
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'evictCollaborator',
+                nop,
+                nop,
+                args
+            );
+        },
+        nop
+    );
+};
+
+NetCloud.prototype.collabResponse = function (id, accepted, onSuccess, onFail) {
+    var myself = this,
+        args = [id, accepted, this.socketId(), SnapActions.id];
+
+    this.reconnect(
+        function () {
+            myself.callService(
+                'inviteCollaboratorResponse',
+                onSuccess,
+                onFail,
+                args
+            );
+        },
+        function(err) {
+            myself.ide.showMessage(err, 2);
+        }
+    );
+};
+
 NetCloud.prototype.getFriendList = function (callBack, errorCall) {
     var myself = this;
     this.reconnect(
@@ -159,9 +213,41 @@ NetCloud.prototype.getFriendList = function (callBack, errorCall) {
                 'getFriendList',
                 function (response, url) {
                     var ids = Object.keys(response[0] || {});
+                    ids = ids.map(function(id) {
+                        return {
+                            username: id
+                        };
+                    });
                     callBack.call(null, ids, url);
                 },
                 errorCall
+            );
+        },
+        errorCall
+    );
+};
+
+NetCloud.prototype.getCollaboratorList = function (callBack, errorCall) {
+    var myself = this;
+    this.reconnect(
+        function () {
+            myself.callService(
+                'getCollaborators',
+                function (response, url) {
+                    var usernames = Object.keys(response[0] || {}),
+                        users = [];
+
+                    for (var i = usernames.length; i--;) {
+                        users.push({
+                            username: usernames[i],
+                            collaborating: response[0][usernames[i]] !== 'false',
+                            value: response[0][usernames[i]]
+                        });
+                    }
+                    callBack.call(null, users, url);
+                },
+                errorCall,
+                [SnapActions.id]
             );
         },
         errorCall
@@ -303,7 +389,7 @@ NetCloud.prototype.callService = function (
     }
 };
 
-NetCloud.prototype.passiveLogin = function (ide, callback) {
+NetCloud.prototype.passiveLogin = function (ide, callback, callOnFail) {
     // Try to login w/ cookie only
     var request = new XMLHttpRequest(),
         socketId = this.socketId(),
@@ -342,7 +428,9 @@ NetCloud.prototype.passiveLogin = function (ide, callback) {
                         ide.source = 'cloud';
                     }
                     myself.onPassiveLogin();
-                    callback();
+                    callback(true);
+                } else if (callOnFail) {
+                    callback(false);
                 }
             }
         };

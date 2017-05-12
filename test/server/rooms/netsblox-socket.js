@@ -1,12 +1,11 @@
-var ROOT_DIR = '../../../',
-    NBSocket = require(ROOT_DIR + 'src/server/rooms/netsblox-socket'),
-    Logger = require(ROOT_DIR + 'src/server/logger'),
-    Constants = require(ROOT_DIR + 'src/common/constants'),
-    assert = require('assert'),
-    logger = new Logger('netsblox-socket');
-
 describe('netsblox-socket', function() {
-    var socket;
+    var ROOT_DIR = '../../../',
+        NBSocket = require(ROOT_DIR + 'src/server/rooms/netsblox-socket'),
+        Logger = require(ROOT_DIR + 'src/server/logger'),
+        Constants = require(ROOT_DIR + 'src/common/constants'),
+        assert = require('assert'),
+        logger = new Logger('netsblox-socket'),
+        socket;
 
     describe('getNewName', function() {
 
@@ -17,6 +16,29 @@ describe('netsblox-socket', function() {
         it('should generate new project names', function() {
             var name = socket.getNewName();
             assert(name);
+        });
+    });
+
+    describe('getRoom', function() {
+        before(function() {
+            socket = new NBSocket(logger, {on: () => {}});
+        });
+
+        it('should resolve when the room is set', function(done) {
+            var testRoom = {},
+                waited = false;
+
+            socket.getRoom()
+                .then(room => {
+                    assert.equal(room, testRoom);
+                    assert(waited);
+                })
+                .nodeify(done);
+
+            setTimeout(() => {
+                waited = true;
+                socket._setRoom(testRoom);
+            }, 25);
         });
     });
 
@@ -64,6 +86,26 @@ describe('netsblox-socket', function() {
             msg.type = 'not-message';
             msg.dstId = 'fred';
             socket.send(msg);
+        });
+    });
+
+    describe('message handlers', function() {
+        describe('message', function() {
+            var socket;
+            before(function() {
+                var rawSocket = {
+                    on: () => {},
+                    send: () => {},
+                    readyState: NBSocket.prototype.OPEN
+                };
+                socket = new NBSocket(logger, rawSocket);
+            });
+
+            it('should ignore bad dstId for interroom messages', function() {
+                var msg = {};
+                msg.dstId = 0;
+                NBSocket.MessageHandlers.message.call(socket, msg);
+            });
         });
     });
 });

@@ -1,22 +1,21 @@
 /*globals describe,it,before,beforeEach,after*/
 'use strict';
 
-var supertest = require('supertest'),
-    assert = require('assert'),
-    port = 8493,
-    options = {
-        port: port,
-        vantage: false
-    },
-    api,
-    Server = require('../../src/server/server'),
-
-    basicRoutes = require('../../src/server/routes/basic-routes'),
-    userRoutes = require('../../src/server/routes/users');
-
-// TODO: Add API message
 describe('Server Tests', function() {
-    var username = 'test',
+    var supertest = require('supertest'),
+        assert = require('assert'),
+        port = 8493,
+        options = {
+            port: port,
+            vantage: false
+        },
+        api,
+        Server = require('../../src/server/server'),
+
+        basicRoutes = require('../../src/server/routes/basic-routes'),
+        userRoutes = require('../../src/server/routes/users'),
+
+        username = 'test',
         server;
 
     before(function(done) {
@@ -33,11 +32,48 @@ describe('Server Tests', function() {
         // FIXME: Unauthorized stream readable error
     });
 
+    it('should provide lang files', function(done) {
+        api.get('/lang-hu.js')
+            .expect(200)
+            .expect(function(res) {
+                assert.notEqual(res.body.length, 0);
+            })
+            .end(done);
+    });
+
+    describe('Examples API', function() {
+        var expectedFields = [
+            'projectName',
+            'primaryRoleName',
+            'thumbnail',
+            'notes',
+            'roleNames'
+        ];
+        it('should provide list of examples', function(done) {
+            api.get('/Examples/EXAMPLES/?metadata=true')
+                .expect('Content-Type', /json/)
+                .expect(200)
+                .expect(function(res) {
+                    assert.notEqual(res.body.length, 0);
+                })
+                .end(done);
+        });
+
+        expectedFields.forEach(name => {
+            it(`should provide ${name}`, function(done) {
+                api.get('/Examples/EXAMPLES/?metadata=true')
+                    .expect(function(res) {
+                        assert.notEqual(res.body[0][name], undefined);
+                    })
+                    .end(done);
+            });
+        });
+    });
+
     describe('Reset Password tests', function() {
     });
 
     describe('login tests', function() {
-
         it.skip('should return API details', function(done) {
             var key = process.env.SECRET_KEY || 'change this',
                 hasher = require('crypto').createHmac('sha512', key);
@@ -133,13 +169,20 @@ describe('Server Tests', function() {
             before(function(done) {
                 socket = new WebSocket(host);
                 socket.on('open', function() {
+                    socket.send(JSON.stringify({
+                        namespace: 'netsblox',
+                        type: 'request-uuid'
+                    }));
+
                     socket.on('message', function(msg) {
+                        console.log(msg);
                         msg = JSON.parse(msg);
 
-                        if (msg.type === 'uuid') {
+                        if (msg.namespace === 'netsblox' && msg.type === 'uuid') {
                             uuid = msg.body;
                             // create a room
                             var res = {
+                                namespace: 'netsblox',
                                 type: 'create-room',
                                 room: ROOM_NAME,
                                 role: 's1'
@@ -190,17 +233,23 @@ describe('Server Tests', function() {
                 before(function(done) {
                     newSocket = new WebSocket(host);
                     newSocket.on('open', function() {
+                        newSocket.send(JSON.stringify({
+                            namespace: 'netsblox',
+                            type: 'request-uuid'
+                        }));
                         newSocket.on('message', function(msg) {
                             msg = JSON.parse(msg);
 
-                            if (msg.type === 'uuid') {
+                            if (msg.namespace === 'netsblox' && msg.type === 'uuid') {
                                 username2 = msg.body;
 
                                 socket.send(JSON.stringify({
+                                    namespace: 'netsblox',
                                     type: 'add-role',
                                     name: 's2'
                                 }));
                                 var res = {
+                                    namespace: 'netsblox',
                                     type: 'join-room',
                                     room: ROOM_NAME,
                                     owner: uuid,

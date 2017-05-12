@@ -28,7 +28,7 @@ WebSocketManager.MessageHandlers = {
     // Receive an assigned uuid
     'uuid': function(msg) {
         this.uuid = msg.body;
-        this._onConnect();
+        this.onConnect();
     },
 
     // Game play message
@@ -70,6 +70,10 @@ WebSocketManager.MessageHandlers = {
     // Receive an invite to join a room
     'room-invitation': function(msg) {
         this.ide.room.promptInvite(msg);
+    },
+
+    'collab-invitation': function(msg) {
+        this.ide.promptCollabInvite(msg);
     },
 
     'project-closed': function() {
@@ -178,9 +182,13 @@ WebSocketManager.prototype._connectWebSocket = function() {
         self.hasConnected = true;
         self.connected = true;
 
-        while (self.messages.length) {
-            self.websocket.send(self.messages.shift());
+        if (self.uuid) {
+            self.sendMessage({type: 'set-uuid', body: self.uuid});
+            self.onConnect();
+        } else {
+            self.sendMessage({type: 'request-uuid'});
         }
+
     };
 
     // Set up message events
@@ -189,10 +197,14 @@ WebSocketManager.prototype._connectWebSocket = function() {
         var msg = JSON.parse(rawMsg.data),
             type = msg.type;
 
-        if (WebSocketManager.MessageHandlers[type]) {
-            WebSocketManager.MessageHandlers[type].call(self, msg);
+        if (msg.namespace === 'netsblox') {
+            if (WebSocketManager.MessageHandlers[type]) {
+                WebSocketManager.MessageHandlers[type].call(self, msg);
+            } else {
+                console.error('Unknown message:', msg);
+            }
         } else {
-            console.error('Unknown message:', msg);
+            SnapActions.onMessage(msg);
         }
     };
 
@@ -222,6 +234,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
 
 WebSocketManager.prototype.sendMessage = function(message) {
     var state = this.websocket.readyState;
+    message.namespace = 'netsblox';
     message = this.serializeMessage(message);
     if (state === this.websocket.OPEN) {
         this.websocket.send(message);
@@ -319,18 +332,16 @@ WebSocketManager.prototype.deserializeMessage = function(message) {
     return content;
 };
 
-WebSocketManager.prototype.setGameType = function(gameType) {
-    this.gameType = gameType.name;
-    // FIXME: Remove this
-};
-
-WebSocketManager.prototype._onConnect = function() {
+WebSocketManager.prototype.onConnect = function() {
     if (SnapCloud.username) {  // Reauthenticate if needed
         var updateRoom = this.updateRoomInfo.bind(this);
         SnapCloud.reconnect(updateRoom, updateRoom);
     } else {
         SnapCloud.passiveLogin(this.ide);
         this.updateRoomInfo();
+    }
+    while (this.messages.length) {
+        this.websocket.send(this.messages.shift());
     }
 };
 

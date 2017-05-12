@@ -6,6 +6,7 @@ SnapActions.addActions(
     'deleteMessageType'
 );
 
+ActionManager.URL = 'ws://' + window.location.host + '/collaboration';
 ActionManager.prototype._deleteMessageType = function(name) {
     var fields = this.ide().stage.messageTypes.getMsgType(name).fields;
     return [name, fields];
@@ -19,6 +20,7 @@ ActionManager.prototype.onAddMessageType = function(name, fields) {
     });
     ide.flushBlocksCache('services');  //  b/c of inheritance
     ide.refreshPalette();
+    this.completeAction();
 };
 
 ActionManager.prototype.onDeleteMessageType = function(name) {
@@ -26,17 +28,8 @@ ActionManager.prototype.onDeleteMessageType = function(name) {
     ide.stage.deleteMessageType(name);
     ide.flushBlocksCache('services');  //  b/c of inheritance
     ide.refreshPalette();
+    this.completeAction();
 };
-
-UndoManager.Invert.addMessageType = function() {
-    return 'deleteMessageType';
-};
-
-UndoManager.Invert.deleteMessageType = function() {
-    return 'addMessageType';
-};
-
-SnapActions.supportsCollaboration = false;
 
 // HintInputSlotMorph support
 ActionManager.prototype._setField = function(field, value) {
@@ -54,20 +47,60 @@ ActionManager.prototype._setField = function(field, value) {
     ];
 };
 
+UndoManager.Invert.addMessageType = function() {
+    return 'deleteMessageType';
+};
+
+UndoManager.Invert.deleteMessageType = function() {
+    return 'addMessageType';
+};
+
 SnapActions.serializer = new NetsBloxSerializer();
 SnapActions.__sessionId = Date.now();
+SnapActions.enableCollaboration = function() {};
+ActionManager.prototype.disableCollaboration = function() {
+    var msg = {
+        type: 'new-session'
+    };
+
+    if (this._ws !== null) {
+        this._ws.send(JSON.stringify(msg));
+    }
+};
+
+SnapActions.isCollaborating = function() {
+    return this.sessionUsersCount > 1;
+};
 
 // Recording user actions
-SnapActions.send = function(json) {
+SnapActions.send = function(event) {
+    var socket = this.ide().sockets;
+
+    this._ws = socket.websocket;
+    ActionManager.prototype.send.apply(this, arguments);
+    this.recordActionNB(event);
+
+    return event;
+};
+
+SnapActions.onMessage = function(msg) {
+    ActionManager.prototype.onMessage.apply(this, arguments);
+    if (location.hash.indexOf('collaborate') !== -1) {
+        location.hash = '';
+    }
+    if (msg.type === 'session-user-count') {
+        this.sessionUsersCount = msg.value;
+    }
+};
+
+SnapActions.recordActionNB = function(action) {
     var socket = this.ide().sockets,
         msg = {};
 
-    json.id = json.id || this.lastSeen + 1;
-    this.lastSent = json.id;
-
+    // Record the action
     msg.type = 'record-action';
     msg.sessionId = this.__sessionId;
-    msg.action = json;
+    msg.action = action;
     socket.sendMessage(msg);
 };
 
@@ -78,7 +111,7 @@ SnapActions.loadProject = function() {
 
     // Send the project state
     event = ActionManager.prototype.loadProject.apply(this, arguments);
-    this.send(event);
+    this.recordActionNB(event);
 
     return event;
 };

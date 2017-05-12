@@ -1,53 +1,113 @@
 (function(UserActionData) {
-    var GenStorage = require('./generic-storage'),
-        storage;
+    var Q = require('q'),
+        logger,
+        blob = require('./blob-storage'),
+        collection;
 
-    UserActionData.init = function(logger, db) {
-        storage = new GenStorage(logger, db, 'user-actions');
+    UserActionData.init = function(_logger, db) {
+        logger = _logger.fork('user-actions');
+        collection = db.collection('netsblox:storage:user-actions');
+        logger.trace('initialized!');
     };
 
-    UserActionData.record = function(action) {
-        if (!action.sessionId) {
-            storage.logger.error('No sessionId found for action:', action);
-            return;
+    UserActionData.record = function(event) {
+        var preprocess = Q();
+        if (!event.sessionId) {
+            logger.error('No sessionId found for event:', event);
         }
 
-        storage.logger.trace(`about to store action from session: ${action.sessionId}`);
-        return storage.get(action.sessionId)
-            .then(actions => {
-                if (!actions) {
-                    actions = [];
-                }
-                actions.push(action);
-                return storage.save(action.sessionId, actions);
-            })
-            .then(() => storage.logger.trace(`successfully added action to session ${action.sessionId}`));
+        if (!event.action) {
+            logger.error('No action found for event:', event);
+            return Q();
+        }
+        logger.trace(`about to store event from session: ${event.sessionId}`);
+
+        // If openProject, store the project in the blob
+        if (event.action.type === 'openProject' && event.action.args.length) {
+            var xml = event.action.args[0];
+            if (xml && xml.substring(0, 10) === 'snapdata') {
+                // split the media, source code
+                var endOfCode = xml.lastIndexOf('</project>') + 10,
+                    code = xml.substring(11, endOfCode),
+                    media = xml.substring(endOfCode).replace('</snapdata>', '');
+
+                preprocess = Q.all([code, media].map(data => blob.store(data)))
+                    .then(hashes => event.action.args[0] = hashes);
+            } else if (xml) {  // store the xml in one chunk in the blob
+                preprocess = Q.all([xml].map(data => blob.store(data)))
+                    .then(hashes => event.action.args[0] = hashes);
+            }
+        }
+
+        return preprocess.then(() => collection.save(event))
+            .then(() => logger.trace(`successfully recorded event from session ${event.sessionId}`));
     };
 
     // query-ing
     UserActionData.sessions = function() {
-        return storage.all()
-            .then(sessions => sessions.map(session => {
-                return {
-                    id: session._id,
-                    actions: session.value
+        logger.trace('getting sessions');
+        // Get a list of all sessionIds
+        var cursor = collection.find({}).stream(),
+            sessionIdDict = {},
+            deferred = Q.defer();
+
+        cursor.on('data', event => {
+            var id = event.sessionId;
+
+            if (!sessionIdDict[id]) {
+                sessionIdDict[id] = {
+                    id: id,
+                    actionCount: 0,
+                    minTime: Infinity,
+                    maxTime: -Infinity
                 };
-            }));
+            }
+            sessionIdDict[id].username = sessionIdDict[id].username ||
+                event.username;
+
+            sessionIdDict[id].projectId = event.projectId;
+            sessionIdDict[id].actionCount++;
+            sessionIdDict[id].minTime = Math.min(sessionIdDict[id].minTime,
+                event.action.time);
+            sessionIdDict[id].maxTime = Math.max(sessionIdDict[id].maxTime,
+                event.action.time);
+
+        });
+
+        cursor.on('error', err => {
+            logger.error(err);
+            deferred.reject(err);
+        });
+        cursor.once('end', () => {
+            var sessions = Object.keys(sessionIdDict).sort()
+                .map(id => sessionIdDict[id]);
+
+            deferred.resolve(sessions);
+        });
+
+        return deferred.promise;
     };
 
     UserActionData.sessionIds = function() {
-        // Get a list of all sessionIds
-        return storage.all()
-            .then(sessions => sessions.map(session => session._id));
+        logger.trace('getting session ids');
+        return UserActionData.sessions()
+            .then(sessions => sessions.map(session => session.id));
     };
 
     UserActionData.session = function(sessionId) {
-        // TODO: Use a stream
-        return storage.get(sessionId);
+        logger.trace(`requesting session info for ${sessionId}`);
+        return collection.find({sessionId: sessionId}).toArray()
+            .then(events => {
+                logger.trace(`found ${events.length} actions for ${sessionId}`);
+                return events
+                    .map(event => event.action)
+                    .sort((a, b) => a.time < b.time ? -1 : 1);
+            });
     };
 
     UserActionData.clear = function() {
-        return storage.clearAll();
+        logger.trace('clearing user action data');
+        return collection.deleteMany({});
     };
 
 })(exports);

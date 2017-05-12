@@ -2,7 +2,7 @@
 
 var DataWrapper = require('./data'),
     async = require('async'),
-    ObjectId = require('mongodb').ObjectId;
+    PublicProjectStore = require('./public-projects');
 
 // Every time a room is saved, it is saved for some user AND in the global store
 // Schema:
@@ -20,6 +20,7 @@ class Room extends DataWrapper {
         this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
         this._user = params.user;
         this._room = params.room;
+        this.lastUpdateAt = Date.now();
     }
 
     fork(room) {
@@ -28,6 +29,7 @@ class Room extends DataWrapper {
             user: this._user,
             room: room,
             logger: this._logger,
+            lastUpdateAt: Date.now(),
             db: this._db
         };
         this._logger.trace('forking (' + room.uuid + ')');
@@ -138,22 +140,7 @@ class Room extends DataWrapper {
             this._room.cachedProjects[role] = room.roles[role]
         );
 
-        // Save the table under the owning user
-        // var originalUuid = room._uuid;
-        // delete room._uuid;
-        // this._logger.trace(`saving as ${room.name}`);
-        // this._db.replaceOne(
-            // {uuid: originalUuid || room.uuid},  // search criteria
-            // room,  // new value
-            // {upsert: true},  // settings
-            // (e) => {
-                // if (e) {
-                    // this._logger.error(e);
-                // }
-                // this._logger.trace('updated in global room database');
-                this._saveLocal(room, callback);
-            // }
-        // );
+        this._saveLocal(room, callback);
     }
 
     _saveLocal(room, callback) {
@@ -173,10 +160,22 @@ class Room extends DataWrapper {
             this._logger.log(`overwriting existing room "${room.name}" for ${this._user.username}`);
             oldRoom = this._user.rooms.splice(index, 1, room)[0];
             room.Public = oldRoom.Public;
+            if (room.Public) {
+                this._logger.log(`updating published room "${room.name}" for ${this._user.username}`);
+                PublicProjectStore.update(room);
+            }
         }
-        this._user.save();
-        this._logger.log(`saved room "${room.name}" for ${this._user.username}`);
-        callback(null);
+        room.lastUpdateAt = Date.now();
+        this._user.changed(room);
+        return this._user.save()
+            .then(() => {
+                this._logger.log(`saved room "${room.name}" for ${this._user.username}`);
+                callback(null);
+            })
+            .fail(err => {
+                this._logger.error(`room save failed: ${err}`);
+                callback(err);
+            });
     }
 
     pretty() {
@@ -192,15 +191,9 @@ class Room extends DataWrapper {
 
     }
 
-    destroy() {
-        // remove the room from the user's list
-        // TODO
-        // set the user's 
-        // TODO
-    }
 }
 
-var EXTRA_KEYS = ['_user', '_room', '_content'];
+var EXTRA_KEYS = ['_user', '_room', '_content', '_changedRoles'];
 Room.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(EXTRA_KEYS);
 
 class RoomStore {
@@ -228,6 +221,7 @@ class RoomStore {
             logger: this._logger,
             db: this._rooms,
             user: user,
+            lastUpdateAt: Date.now(),
             room: activeRoom
         });
     }

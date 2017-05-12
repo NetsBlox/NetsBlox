@@ -1,11 +1,16 @@
 'use strict';
 
 var _ = require('lodash'),
+    Q = require('q'),
+    xml2js = require('xml2js'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
 
     middleware = require('./middleware'),
+    lwip = require('lwip'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
+    PublicProjects = require('../storage/public-projects'),
+    EXAMPLES = require('../examples'),
     debug = require('debug'),
     log = debug('netsblox:api:projects:log'),
     info = debug('netsblox:api:projects:info'),
@@ -35,6 +40,13 @@ var setProjectPublic = function(name, user, value) {
         return false;
     }
     user.rooms[index].Public = value;
+
+    if (value) {
+        PublicProjects.publish(user.rooms[index]);
+    } else {
+        PublicProjects.unpublish(user.rooms[index]);
+    }
+
     user.save();
     return true;
 };
@@ -135,6 +147,42 @@ var saveRoom = function (activeRoom, socket, user, res) {
     });
 };
 
+const TRANSPARENT = [0,0,0,0];
+var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
+    return Q.ninvoke(lwip, 'open', buffer, 'png')
+        .then(image => {
+            var width = image.width(),
+                height = image.height(),
+                pad = Utils.computeAspectRatioPadding(width, height, ratio);
+
+            return Q.ninvoke(
+                image,
+                'pad',
+                pad.left,
+                pad.top,
+                pad.right,
+                pad.bottom,
+                TRANSPARENT
+            );
+        })
+        .then(image => Q.ninvoke(image, 'toBuffer', 'png'));
+};
+
+var applyAspectRatio = function (thumbnail, aspectRatio) {
+    var image = thumbnail
+        .replace(/^data:image\/png;base64,|^data:image\/jpeg;base64,|^data:image\/jpg;base64,|^data:image\/bmp;base64,/, '');
+    var buffer = new Buffer(image, 'base64');
+
+    if (aspectRatio) {
+        trace(`padding image with aspect ratio ${aspectRatio}`);
+        aspectRatio = Math.max(aspectRatio, 0.2);
+        aspectRatio = Math.min(aspectRatio, 5);
+        return padImage(buffer, aspectRatio);
+    } else {
+        return Q(buffer);
+    }
+};
+
 module.exports = [
     {
         Service: 'saveProject',
@@ -145,7 +193,7 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username,
                 socketId = req.body.socketId,
-                socket = SocketManager.sockets[socketId],
+                socket = SocketManager.getSocket(socketId),
 
                 activeRoom = socket._room,
                 user = req.session.user,
@@ -249,7 +297,7 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'hasSocket', 'noCache', 'setUser'],
         Handler: function(req, res) {
-            var socket = SocketManager.sockets[req.body.socketId],
+            var socket = SocketManager.getSocket(req.body.socketId),
                 roomName = socket._room.name,
                 user = req.session.user,
                 rooms = getRoomsNamed.call(this, roomName, user),
@@ -300,17 +348,25 @@ module.exports = [
     },
     {
         Service: 'getProject',
-        Parameters: 'ProjectName',
+        Parameters: 'ProjectName,socketId',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
             var roomName = req.body.ProjectName,
                 user = req.session.user,
-                rooms = getRoomsNamed.call(this, roomName, user);
+                rooms,
+                socketId = req.body.socketId,
+                socket = socketId && SocketManager.getSocket(socketId);
+
+            if (socket) {
+                socket.leave();
+            }
 
             // Get the project
+            rooms = getRoomsNamed.call(this, roomName, user);
             if (rooms.active) {
+                trace(`room with name ${roomName} already open. Are they the same? ${rooms.areSame}`);
                 if (rooms.areSame) {
                     // Clone, change the room name, and send!
                     // Since they are the same, we assume the user wants to create
@@ -321,10 +377,12 @@ module.exports = [
                     // not the same; simply change the name of the active room
                     // (the active room must be newer since it hasn't been saved
                     // yet)
+                    trace(`active room is ${roomName} already open`);
                     rooms.active.changeName();
                     sendProjectTo(rooms.stored, res);
                 }
             } else if (rooms.stored) {
+                trace(`no active room with name ${roomName}. Proceeding normally`);
                 sendProjectTo(rooms.stored, res);
             } else {
                 res.send('ERROR: Project not found');
@@ -416,14 +474,13 @@ module.exports = [
         URL: 'projects/:owner/:project/thumbnail',
         middleware: ['setUsername'],
         Handler: function(req, res) {
-            var name = req.params.project;
+            var name = req.params.project,
+                aspectRatio = +req.query.aspectRatio || 0;
 
             // return the names of all projects owned by :owner
             middleware.loadUser(req.params.owner, res, user => {
                 var project = user.rooms.find(room => room.name === name),
                     preview = getPreview(project),
-                    buffer,
-                    image,
                     err;
 
                 if (!project) {
@@ -438,17 +495,47 @@ module.exports = [
                     return res.status(400).send(err);
                 }
 
-                image = preview.Thumbnail[0]
-                    .replace(/^data:image\/png;base64,|^data:image\/jpeg;base64,|^data:image\/jpg;base64,|^data:image\/bmp;base64,/, '');
-
-                buffer = new Buffer(image, 'base64');
                 this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
-
-                // send the image
-                res.contentType('image/png');
-                res.end(buffer, 'binary');
+                return applyAspectRatio(preview.Thumbnail[0], aspectRatio)
+                    .then(buffer => {
+                        res.contentType('image/png');
+                        res.end(buffer, 'binary');
+                    })
+                    .fail(err => {
+                        this._logger.error(`padding image failed: ${err}`);
+                        res.serverError(err);
+                    });
             });
             
+        }
+    },
+    {
+        Method: 'get',
+        URL: 'examples/:name/thumbnail',
+        Handler: function(req, res) {
+            var name = req.params.name,
+                aspectRatio = +req.query.aspectRatio || 0;
+
+            if (!EXAMPLES.hasOwnProperty(name)) {
+                this._logger.warn(`ERROR: Could not find example "${name}`);
+                return res.status(500).send('ERROR: Could not find example.');
+            }
+
+            // Get the thumbnail
+            var example = EXAMPLES[name];
+            var role = Object.keys(example.roles).shift();
+            var src = example.cachedProjects[role].SourceCode;
+            return Q.nfcall(xml2js.parseString, src)
+                .then(result => result.project.thumbnail[0])
+                .then(thumbnail => applyAspectRatio(thumbnail, aspectRatio))
+                .then(buffer => {
+                    res.contentType('image/png');
+                    res.end(buffer, 'binary');
+                })
+                .fail(err => {
+                    this._logger.error(`padding image failed: ${err}`);
+                    res.serverError(err);
+                });
         }
     },
     {
@@ -466,11 +553,7 @@ module.exports = [
                 }
                 var project = user.rooms.find(room => room.name === projectName);
                 if (project && project.Public) {
-                    var openRole = project.activeRole || Object.keys(project.roles)[0],
-                        role = project.roles[openRole];
-
-
-                    return res.send(`<snapdata>${role.SourceCode + role.Media}</snapdata>`);
+                    return res.send(Utils.getRoomXML(project));
                 } else {
                     return res.status(400).send('ERROR: Project not available');
                 }

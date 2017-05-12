@@ -2,12 +2,17 @@ var express = require('express'),
     bodyParser = require('body-parser'),
     WebSocketServer = require('ws').Server,
     _ = require('lodash'),
+    dot = require('dot'),
+    xml2js = require('xml2js'),
+    Q = require('q'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
     SocketManager = require('./socket-manager'),
     RoomManager = require('./rooms/room-manager'),
+    Collaboration = require('snap-collaboration'),
     RPCManager = require('./rpc/rpc-manager'),
     MobileManager = require('./mobile/mobile-manager'),
     Storage = require('./storage/storage'),
+    EXAMPLES = require('./examples'),
     Vantage = require('./vantage/vantage'),
     DEFAULT_OPTIONS = {
         port: 8080,
@@ -22,7 +27,8 @@ var express = require('express'),
     Logger = require('./logger'),
 
     // Session and cookie info
-    cookieParser = require('cookie-parser');
+    cookieParser = require('cookie-parser'),
+    indexTpl = dot.template(fs.readFileSync(path.join(__dirname, '..', 'client', 'netsblox.dot')));
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -70,19 +76,78 @@ Server.prototype.configureRoutes = function() {
     this.app.use('/api', this.createRouter());
 
     // Initial page
-    this.app.get('/', function(req, res) {
-        res.sendFile(path.join(__dirname, '..', 'client', 'netsblox.html'));
+    this.app.get('/debug.html', (req, res) =>
+        res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html')));
+
+    this.app.get('/', (req, res) => {
+        var baseUrl = `https://${req.get('host')}`,
+            url = baseUrl + req.originalUrl,
+            projectName = req.query.ProjectName,
+            metaInfo = {
+                googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
+                url: url
+            };
+
+
+        if (req.query.action === 'present') {
+            var username = req.query.Username;
+
+            return this.storage.publicProjects.get(username, projectName)
+                .then(project => {
+                    if (project) {
+                        metaInfo.image = {
+                            url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`),
+                            width: 640,
+                            height: 480
+                        };
+                        metaInfo.title = project.projectName;
+                        metaInfo.description = project.notes;
+                        this.addScraperSettings(req.headers['user-agent'], metaInfo);
+                    }
+                    return res.send(indexTpl(metaInfo));
+                });
+        } else if (req.query.action === 'example' && EXAMPLES[projectName]) {
+            metaInfo.image = {
+                url: baseUrl + encodeURI(`/api/examples/${projectName}/thumbnail`),
+                width: 640,
+                height: 480
+            };
+            metaInfo.title = projectName;
+            var example = EXAMPLES[projectName];
+            var role = Object.keys(example.roles).shift();
+            var src = example.cachedProjects[role].SourceCode;
+            return Q.nfcall(xml2js.parseString, src)
+                .then(result => result.project.notes[0])
+                .then(notes => {
+                    metaInfo.description = notes;
+                    this.addScraperSettings(req.headers['user-agent'], metaInfo);
+                    return res.send(indexTpl(metaInfo));
+                });
+        }
+        return res.send(indexTpl(metaInfo));
     });
 };
 
+Server.prototype.addScraperSettings = function(userAgent, metaInfo) {
+    // fix the aspect ratio for facebook
+    if (userAgent.includes('facebookexternalhit') || userAgent === 'Facebot') {
+        metaInfo.image.url += '?aspectRatio=1.91';
+    }
+};
+
 Server.prototype.start = function(done) {
+    var opts = {};
     done = done || Utils.nop;
+
+    opts.msgFilter = msg => !msg.namespace;
+
     return this.storage.connect()
         .then(() => {
             this.configureRoutes();
             this._server = this.app.listen(this.opts.port, err => {
-                console.log('listening on port ' + this.opts.port);
                 this._wss = new WebSocketServer({server: this._server});
+                Collaboration.init(this._logger.fork('collaboration'));
+                Collaboration.enable(this.app, this._wss, opts);
                 SocketManager.enable(this._wss);
                 // Enable Vantage
                 if (this.opts.vantage) {

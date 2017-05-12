@@ -4,7 +4,7 @@
    MessageFrame, BlockMorph, ToggleMorph, MessageCreatorMorph,
    VariableDialogMorph, SnapCloud, contains, List, CommandBlockMorph,
    MessageType, isNil, RingMorph, SnapActions, ProjectsMorph, NetsBloxMorph,
-   SnapUndo*/
+   SnapUndo, newCanvas, ReplayControls, copy*/
 
 SpriteMorph.prototype.categories =
     [
@@ -1624,3 +1624,188 @@ StageMorph.prototype.blockTemplates = function (category) {
     return blocks;
 };
 
+StageMorph.prototype.thumbnail = function (extentPoint, excludedSprite) {
+/*
+    answer a new Canvas of extentPoint dimensions containing
+    my thumbnail representation keeping the originial aspect ratio
+*/
+    var myself = this,
+        src = this.image,
+        scale = Math.min(
+            (extentPoint.x / src.width),
+            (extentPoint.y / src.height)
+        ),
+    // Netsblox addition: start
+        trg,
+        ctx,
+        fb,
+        fimg;
+
+    extentPoint = new Point(src.width * scale, src.height * scale);
+    trg = newCanvas(extentPoint);
+    ctx = trg.getContext('2d');
+    // Netsblox addition: end
+
+    ctx.scale(scale, scale);
+    ctx.drawImage(
+        src,
+        0,
+        0
+    );
+    ctx.drawImage(
+        this.penTrails(),
+        0,
+        0,
+        this.dimensions.x * this.scale,
+        this.dimensions.y * this.scale
+    );
+    this.children.forEach(function (morph) {
+        if (morph.isVisible && (morph !== excludedSprite)) {
+            fb = morph.fullBounds();
+            fimg = morph.fullImage();
+            if (fimg.width && fimg.height) {
+                ctx.drawImage(
+                    morph.fullImage(),
+                    fb.origin.x - myself.bounds.origin.x,
+                    fb.origin.y - myself.bounds.origin.y
+                );
+            }
+        }
+    });
+    return trg;
+};
+
+SpriteMorph.prototype.thumbnail = function (extentPoint) {
+/*
+    answer a new Canvas of extentPoint dimensions containing
+    my thumbnail representation keeping the originial aspect ratio
+*/
+    var src = this.image, // at this time sprites aren't composite morphs
+        scale = Math.min(
+            (extentPoint.x / src.width),
+            (extentPoint.y / src.height)
+        ),
+    // Netsblox addition: start
+        xOffset,
+        yOffset,
+        trg,
+        ctx;
+
+    extentPoint = new Point(src.width * scale, src.height * scale);
+    xOffset = (extentPoint.x - (src.width * scale)) / 2,
+    yOffset = (extentPoint.y - (src.height * scale)) / 2,
+    trg = newCanvas(extentPoint);
+    ctx = trg.getContext('2d');
+    // Netsblox addition: end
+
+    function xOut(style, alpha, width) {
+        var inset = Math.min(extentPoint.x, extentPoint.y) / 10;
+        ctx.strokeStyle = style;
+        ctx.globalAlpha = alpha;
+        ctx.compositeOperation = 'lighter';
+        ctx.lineWidth = width || 1;
+        ctx.moveTo(inset, inset);
+        ctx.lineTo(trg.width - inset, trg.height - inset);
+        ctx.moveTo(inset, trg.height - inset);
+        ctx.lineTo(trg.width - inset, inset);
+        ctx.stroke();
+    }
+
+    ctx.save();
+    if (this.isCorpse) {
+        ctx.globalAlpha = 0.3;
+    }
+    if (src.width && src.height) {
+        ctx.scale(scale, scale);
+        ctx.drawImage(
+            src,
+            Math.floor(xOffset / scale),
+            Math.floor(yOffset / scale)
+        );
+    }
+    if (this.isCorpse) {
+        ctx.restore();
+        xOut('white', 0.8, 6);
+        xOut('black', 0.8, 1);
+    }
+    return trg;
+};
+
+ReplayControls.prototype.update = function() {
+    var myself = this,
+        originalEvent,
+        diff,
+        dir,
+        index,
+        action;
+
+    if (!this.enabled) {
+        return setTimeout(this.update.bind(this), 100);
+    }
+
+    if (this.actionTime !== this.slider.value && this.actions && !this.isApplyingAction) {
+        diff = this.slider.value - this.actionTime;
+        dir = diff/Math.abs(diff);
+
+        // Since actionIndex is the last applied action, the reverse direction
+        // should use that value -> not one prior
+
+        if (dir === 1) {
+            index = this.actionIndex + dir;
+            originalEvent = this.actions[index];
+            action = copy(originalEvent);
+            if (!originalEvent || originalEvent.time >= this.slider.value) {
+                return setTimeout(this.update.bind(this), 100);
+            }
+        } else {  // "rewind"
+            originalEvent = this.actions[this.actionIndex];
+            if (!originalEvent || originalEvent.time <= this.slider.value) {
+                return setTimeout(this.update.bind(this), 100);
+            }
+            action = this.getInverseEvent(originalEvent);
+        }
+
+        // make the 'openProject' event undo-able...
+        if (action.type === 'openProject' && !action.replayType && action.args.length < 2) {
+            var ide = this.parentThatIsA(IDE_Morph),
+                serialized = ide.serializer.serialize(ide.stage);
+
+            if (action.args.length === 0) {
+                action.args.push(null);
+            }
+            action.args.push(serialized);
+        }
+
+        // Netsblox addition: start
+        // Ignore openProject actions
+        if (action.type === 'openProject') {
+            if (this.isShowingCaptions) {
+                this.displayCaption(action, originalEvent);
+            }
+            return setTimeout(myself.update.bind(myself), 10);
+
+        }
+        // Netsblox addition: end
+
+        // Apply the given event
+        this.isApplyingAction = true;
+        action.isReplay = true;
+        SnapActions.applyEvent(action)
+            .accept(function() {
+                myself.actionIndex += dir;
+                myself.actionTime = originalEvent.time;
+                myself.isApplyingAction = false;
+
+                if (myself.isShowingCaptions) {
+                    myself.displayCaption(action, originalEvent);
+                }
+
+                setTimeout(myself.update.bind(myself), 10);
+            })
+            .reject(function() {
+                throw Error('Could not apply event: ' + JSON.stringify(action, null, 2));
+            });
+    } else {
+        setTimeout(this.update.bind(this), 100);
+    }
+};
