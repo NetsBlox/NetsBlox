@@ -171,14 +171,18 @@ class NetsBloxSocket {
     }
 
     getNewName (name, taken) {
+        var promise;
+
         if (this.user) {
-            name = this.user.getNewName(name, taken);
+            promise = this.user.getNewName(name, taken);
         } else {
-            name = 'New Room ' + (Date.now() % 100);
+            promise = Q('New Room ' + (Date.now() % 100));
         }
 
-        this._logger.info(`generated unique name for ${this.username} - ${name}`);
-        return name;
+        return promise.then(name => {
+            this._logger.info(`generated unique name for ${this.username} - ${name}`);
+            return name;
+        });
     }
 
     newRoom (opts) {
@@ -186,12 +190,14 @@ class NetsBloxSocket {
             room;
 
         opts = opts || {role: 'myRole'};
-        name = opts.room || opts.name || this.getNewName();
-        this._logger.info(`"${this.username}" is making a new room "${name}"`);
+        return Q(opts.room || opts.name || this.getNewName())
+            .then(name => {
+                this._logger.info(`"${this.username}" is making a new room "${name}"`);
 
-        room = RoomManager.createRoom(this, name);
-        room.createRole(opts.role);
-        this.join(room, opts.role);
+                room = RoomManager.createRoom(this, name);
+                room.createRole(opts.role);
+                this.join(room, opts.role);
+            });
     }
 
     // This should only be called internally *EXCEPT* when the socket is going to close
@@ -429,7 +435,8 @@ NetsBloxSocket.MessageHandlers = {
 
         // change the socket's name to the given name (as long as it isn't colliding)
         if (this.user) {
-            this.user.rooms.forEach(room => names[room.name] = true);
+            // TODO: refactor this
+            this.user.getProjectNames().forEach(name => names[name] = true);
         }
 
         // create unique name, if needed

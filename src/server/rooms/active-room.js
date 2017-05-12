@@ -5,6 +5,7 @@
 
 var R = require('ramda'),
     _ = require('lodash'),
+    Q = require('q'),
     async = require('async'),
     utils = require('../server-utils'),
     Constants = require('../../common/constants');
@@ -100,16 +101,19 @@ class ActiveRoom {
     }
 
     changeName(name) {
+        var promise = Q(name);
         if (!name) {
             // make sure name is also unique to the existing rooms...
             let activeRoomNames = this.getAllActiveFor(this.owner);
             this._logger.trace(`all active rooms for ${this.owner.username} are ${activeRoomNames}`);
 
             // Get name unique to the owner
-            name = this.owner.getNewName(this.name, activeRoomNames);
+            promise = this.owner.getNewName(this.name, activeRoomNames);
         }
-        this.update(name);
-        return name;
+        return promise.then(name => {
+            this.update(name);
+            return name;
+        })
     }
 
     save() {

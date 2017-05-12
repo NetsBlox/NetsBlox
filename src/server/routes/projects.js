@@ -85,20 +85,23 @@ var getPreview = function(project) {
 
 ////////////////////// Project Helpers ////////////////////// 
 var getRoomsNamed = function(name, user) {
-    var room = user.rooms.find(room => room.name === name),
-        activeRoom;
+    return user.getProject(name)
+        .then(project => {
+            var activeRoom;
 
-    trace(`found room ${name} for ${user.username}`);
+            trace(`found project ${name} for ${user.username}`);
 
-    if (room) {
-        activeRoom = RoomManager.rooms[Utils.uuid(room.owner, room.name)];
-    }
+            if (project) {
+                activeRoom = RoomManager.rooms[Utils.uuid(project.owner, project.name)];
+            }
 
-    return {
-        active: activeRoom,
-        stored: room,
-        areSame: !!activeRoom && !!room && activeRoom.originTime === room.originTime
-    };
+            return {
+                active: activeRoom,
+                stored: project,
+                areSame: !!activeRoom && !!project &&
+                    activeRoom.originTime === project.originTime
+            };
+        });
 };
 
 var sendProjectTo = function(project, res) {
@@ -124,10 +127,12 @@ var createCopyFrom = function(user, project) {
     var copy = _.cloneDeep(project);
 
     // Create copy from the project and rename it
-    copy.name = user.getNewName(copy.name);
-    copy.Public = false;
-
-    return copy;
+    return user.getNewName(copy.name)
+        .then(name => {
+            copy.name = name;
+            copy.Public = false;
+            return copy;
+        });
 };
 
 var saveRoom = function (activeRoom, socket, user, res) {
@@ -197,8 +202,7 @@ module.exports = [
 
                 activeRoom = socket._room,
                 user = req.session.user,
-                roomName,
-                rooms;
+                roomName;
 
             if (!activeRoom) {
                 error(`Could not find active room for "${username}" - cannot save!`);
@@ -206,36 +210,37 @@ module.exports = [
             }
 
             roomName = activeRoom.name;
-            rooms = getRoomsNamed.call(this, roomName, user);
+            return getRoomsNamed.call(this, roomName, user)
+                .then(rooms => {
+                    if (socket.isOwner()) {
+                        info('Initiating room save for ' + username);
 
-            if (socket.isOwner()) {
-                info('Initiating room save for ' + username);
+                        // If we overwrite, we don't want to change the originTime
+                        if (rooms.stored) {
+                            activeRoom.originTime = rooms.stored.originTime;
+                        }
 
-                // If we overwrite, we don't want to change the originTime
-                if (rooms.stored) {
-                    activeRoom.originTime = rooms.stored.originTime;
-                }
-
-                if (rooms.areSame) {  // overwrite
-                    saveRoom.call(this, activeRoom, socket, user, res);
-                } else if (req.body.overwrite === 'true') {  // overwrite
-                    saveRoom.call(this, activeRoom, socket, user, res);
-                } else {  // rename
-                    activeRoom.changeName();
-                    activeRoom.originTime = Date.now();
-                    saveRoom.call(this, activeRoom, socket, user, res);
-                }
-            } else {
-                log(`caching ${socket.roleId} for ${socket.username}`);
-                activeRoom.cache(socket.roleId, err => {
-                    if (err) {
-                        error(`Could not cache the ${socket.roleId} for non-owner "${username}"`);
-                        return res.status(500).send('ERROR: ' + err);
+                        if (rooms.areSame) {  // overwrite
+                            saveRoom.call(this, activeRoom, socket, user, res);
+                        } else if (req.body.overwrite === 'true') {  // overwrite
+                            saveRoom.call(this, activeRoom, socket, user, res);
+                        } else {  // rename
+                            activeRoom.changeName();
+                            activeRoom.originTime = Date.now();
+                            saveRoom.call(this, activeRoom, socket, user, res);
+                        }
+                    } else {
+                        log(`caching ${socket.roleId} for ${socket.username}`);
+                        activeRoom.cache(socket.roleId, err => {
+                            if (err) {
+                                error(`Could not cache the ${socket.roleId} for non-owner "${username}"`);
+                                return res.status(500).send('ERROR: ' + err);
+                            }
+                            log(`cache of ${socket.roleId} successful for for non-owner "${username}"`);
+                            return res.send('code saved!');
+                        });
                     }
-                    log(`cache of ${socket.roleId} successful for for non-owner "${username}"`);
-                    return res.send('code saved!');
                 });
-            }
         }
     },
     {
@@ -353,13 +358,16 @@ module.exports = [
         Handler: function(req, res) {
             var socket = SocketManager.getSocket(req.body.socketId),
                 roomName = socket._room.name,
-                user = req.session.user,
-                rooms = getRoomsNamed.call(this, roomName, user),
-                hasConflicting = rooms.stored && !rooms.areSame;
+                user = req.session.user;
 
-            log(`${user.username} is checking if project "${roomName}" conflicts w/ any saved names (${hasConflicting})`);
-            // Check if it is actually the same - do the originTime's match?
-            return res.send(`hasConflicting=${!!hasConflicting}`);
+            return getRoomsNamed.call(this, roomName, user).then(rooms => {
+
+                var hasConflicting = rooms.stored && !rooms.areSame;
+
+                log(`${user.username} is checking if project "${roomName}" conflicts w/ any saved names (${hasConflicting})`);
+                // Check if it is actually the same - do the originTime's match?
+                return res.send(`hasConflicting=${!!hasConflicting}`);
+            });
         }
     },
     {
@@ -370,12 +378,14 @@ module.exports = [
         middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
             var roomName = req.body.ProjectName,
-                user = req.session.user,
-                rooms = getRoomsNamed.call(this, roomName, user);
+                user = req.session.user;
 
-            log(`${user.username} is checking if project "${req.body.ProjectName}" is active (${rooms.areSame})`);
-            // Check if it is actually the same - do the originTime's match?
-            return res.send(`active=${rooms.areSame}`);
+            return getRoomsNamed.call(this, roomName, user).then(rooms => {
+
+                log(`${user.username} is checking if project "${req.body.ProjectName}" is active (${rooms.areSame})`);
+                // Check if it is actually the same - do the originTime's match?
+                return res.send(`active=${rooms.areSame}`);
+            });
         }
     },
     {
@@ -386,18 +396,19 @@ module.exports = [
         middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
             var roomName = req.body.ProjectName,
-                user = req.session.user,
-                rooms = getRoomsNamed.call(this, roomName, user);
+                user = req.session.user;
 
-            // Get the active project and join it
-            if (rooms.active) {
-                // Join the project
-                Utils.joinActiveProject(user.username, rooms.active, res);
-            } else if (rooms.stored) {  // else, getProject w/ the stored version
-                sendProjectTo(rooms.stored, res);
-            } else {  // if there is no stored version, ERROR!
-                res.send('ERROR: Project not found');
-            }
+            return getRoomsNamed.call(this, roomName, user).then(rooms => {
+                // Get the active project and join it
+                if (rooms.active) {
+                    // Join the project
+                    Utils.joinActiveProject(user.username, rooms.active, res);
+                } else if (rooms.stored) {  // else, getProject w/ the stored version
+                    sendProjectTo(rooms.stored, res);
+                } else {  // if there is no stored version, ERROR!
+                    res.send('ERROR: Project not found');
+                }
+            });
         }
     },
     {
@@ -418,29 +429,30 @@ module.exports = [
             }
 
             // Get the project
-            rooms = getRoomsNamed.call(this, roomName, user);
-            if (rooms.active) {
-                trace(`room with name ${roomName} already open. Are they the same? ${rooms.areSame}`);
-                if (rooms.areSame) {
-                    // Clone, change the room name, and send!
-                    // Since they are the same, we assume the user wants to create
-                    // a copy of the active room
-                    var projectCopy = createCopyFrom(user, rooms.stored);
-                    sendProjectTo(projectCopy, res);
-                } else {
-                    // not the same; simply change the name of the active room
-                    // (the active room must be newer since it hasn't been saved
-                    // yet)
-                    trace(`active room is ${roomName} already open`);
-                    rooms.active.changeName();
+            return getRoomsNamed.call(this, roomName, user).then(rooms => {
+                if (rooms.active) {
+                    trace(`room with name ${roomName} already open. Are they the same? ${rooms.areSame}`);
+                    if (rooms.areSame) {
+                        // Clone, change the room name, and send!
+                        // Since they are the same, we assume the user wants to create
+                        // a copy of the active room
+                        return createCopyFrom(user, rooms.stored)
+                            .then(copy => sendProjectTo(projectCopy, res));
+                    } else {
+                        // not the same; simply change the name of the active room
+                        // (the active room must be newer since it hasn't been saved
+                        // yet)
+                        trace(`active room is ${roomName} already open`);
+                        rooms.active.changeName();
+                        sendProjectTo(rooms.stored, res);
+                    }
+                } else if (rooms.stored) {
+                    trace(`no active room with name ${roomName}. Proceeding normally`);
                     sendProjectTo(rooms.stored, res);
+                } else {
+                    res.send('ERROR: Project not found');
                 }
-            } else if (rooms.stored) {
-                trace(`no active room with name ${roomName}. Proceeding normally`);
-                sendProjectTo(rooms.stored, res);
-            } else {
-                res.send('ERROR: Project not found');
-            }
+            });
         }
     },
     {

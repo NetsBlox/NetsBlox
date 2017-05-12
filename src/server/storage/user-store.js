@@ -88,6 +88,10 @@ class User extends DataWrapper {
         return project;
     }
 
+    getProject(name) {
+        return Projects.get(this.username, name);
+    }
+
     getProjects() {
         return Projects.getUserProjects(this.username);
     }
@@ -109,15 +113,18 @@ class User extends DataWrapper {
 
         takenNames = takenNames || [];
         takenNames.forEach(name => nameExists[name] = true);
-        this.getProjectNames().forEach(name => nameExists[name] = true);
 
-        name = name || 'untitled';
-        basename = name;
-        while (nameExists[name]) {
-            name = `${basename} (${i++})`;
-        }
+        return this.getProjectNames()
+            .then(names => {
+                names.forEach(name => nameExists[name] = true);
+                name = name || 'untitled';
+                basename = name;
+                while (nameExists[name]) {
+                    name = `${basename} (${i++})`;
+                }
 
-        return name;
+                return name;
+            });
     }
 
     _emailTmpPassword(password) {

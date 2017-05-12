@@ -163,17 +163,16 @@
         collection = db.collection('projects');
     };
 
-    ProjectStorage.get = function (username, projectName, callback) {
-        // Get the room from the global store
-        // TODO: update this...
-        collection.findOne({owner: username, name: projectName}, (e, data) => {
-            var params = {
-                logger: this._logger,
-                db: collection,
-                data
-            };
-            callback(e, data ? new Project(params) : null);
-        });
+    ProjectStorage.get = function (username, projectName) {
+        return collection.findOne({owner: username, name: projectName})
+            .then(data => {
+                var params = {
+                    logger: this._logger,
+                    db: collection,
+                    data
+                };
+                return data ? new Project(params) : null;
+            });
     };
 
     ProjectStorage.getUserProjects = function (username) {
