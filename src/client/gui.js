@@ -142,8 +142,10 @@ ProjectDialogMorph.prototype.buildContents = function () {
         this.addButton('saveProject', 'Save');
         this.action = 'saveProject';
     }
-    this.shareButton = this.addButton('shareProject', 'Share');
-    this.unshareButton = this.addButton('unshareProject', 'Unshare');
+    // Netsblox addition: start
+    this.shareButton = this.addButton('shareProject', 'Publish');
+    this.unshareButton = this.addButton('unshareProject', 'Unpublish');
+    // Netsblox addition: end
     this.shareButton.hide();
     this.unshareButton.hide();
     this.deleteButton = this.addButton('deleteProject', 'Delete');
