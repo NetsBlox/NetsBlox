@@ -434,6 +434,7 @@ NetsBloxMorph.prototype.cloudMenu = function () {
             'Change Password...',
             'changeCloudPassword'
         );
+        // TODO: Check if the user is the owner
         if (SnapActions.supportsCollaboration !== false) {
             menu.addLine();
             menu.addItem(
@@ -2327,10 +2328,6 @@ NetsBloxMorph.prototype.manageCollaborators = function () {
         name = this.room.name,
         role = this.projectName,
         socketId = this.sockets.uuid;
-
-    if (!SnapActions.isCollaborating()) {
-        SnapActions.enableCollaboration();
-    }
 
     SnapCloud.getCollaboratorList(
         function(friends) {

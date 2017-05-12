@@ -29,6 +29,11 @@ ProjectDialogMorph.prototype.buildContents = function () {
     }
 
     this.addSourceButton('cloud', localize('Cloud'), 'cloud');
+    // NetsBlox changes start
+    if (this.task === 'open') {
+        this.addSourceButton('cloud-shared', localize('Shared with me'), 'cloud');
+    }
+    // NetsBlox changes end
     this.addSourceButton('local', localize('Browser'), 'storage');
     if (this.task === 'open') {
         this.buildFilterField();
@@ -145,9 +150,11 @@ ProjectDialogMorph.prototype.buildContents = function () {
     this.addButton('cancel', 'Cancel');
 
     if (notification) {
-        this.setExtent(new Point(455, 335).add(notification.extent()));
+        // NetsBlox changes: start
+        this.setExtent(new Point(455, 385).add(notification.extent()));
     } else {
-        this.setExtent(new Point(455, 335));
+        this.setExtent(new Point(455, 385));
+        // NetsBlox changes: end
     }
     this.fixLayout();
 
@@ -274,6 +281,25 @@ ProjectDialogMorph.prototype.setSource = function (source) {
             }
         );
         return;
+    // Netsblox addition: start
+    case 'cloud-shared':
+        msg = myself.ide.showMessage('Updating\nproject list...');
+        this.projectList = [];
+        SnapCloud.getSharedProjectList(
+            function (projectList) {
+                // Don't show cloud projects if user has since switch panes.
+                if (myself.source === 'cloud-shared') {
+                    myself.installCloudProjectList(projectList);
+                }
+                msg.destroy();
+            },
+            function (err, lbl) {
+                msg.destroy();
+                myself.ide.cloudError().call(null, err, lbl);
+            }
+        );
+        return;
+    // Netsblox addition: end
     case 'examples':
         this.projectList = this.getExamplesProjectList();
         break;

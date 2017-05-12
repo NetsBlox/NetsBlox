@@ -985,8 +985,10 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     case 'square':
         return this.drawSymbolStop(canvas, aColor);
     // NetsBlox addition: start
-    case 'plus':  // TODO: Make this a smaller changeset (only added 2 lines)
+    case 'plus':
         return this.drawSymbolPlus(canvas, aColor);
+    case 'people':
+        return this.drawSymbolPeople(canvas, aColor);
     // NetsBlox addition: end
     case 'pointRight':
         return this.drawSymbolPointRight(canvas, aColor);
@@ -1092,6 +1094,26 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
 };
 
 SymbolMorph.prototype.drawSymbolPlus = function (canvas, color) {
+    var ctx = canvas.getContext('2d'),
+        w = canvas.width,
+        l = Math.max(w / 12, 1),
+        h = canvas.height;
+
+    ctx.lineWidth = l;
+    ctx.strokeStyle = color.toString();
+    ctx.fillStyle = color.toString();
+
+    ctx.moveTo(0, h/2);
+    ctx.lineTo(w, h/2);
+    ctx.moveTo(w/2, 0);
+    ctx.lineTo(w/2, h);
+    ctx.stroke();
+
+    return canvas;
+};
+
+SymbolMorph.prototype.drawSymbolPeople = function (canvas, color) {
+    // TODO
     var ctx = canvas.getContext('2d'),
         w = canvas.width,
         l = Math.max(w / 12, 1),

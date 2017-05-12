@@ -419,6 +419,7 @@ module.exports = [
             delete invites[inviteId];
 
             if (response) {
+                // TODO: Update this to add the user as a collaborator
                 // Add the roleId to the room (if doesn't exist)
                 let room = RoomManager.rooms[invite.room];
 
