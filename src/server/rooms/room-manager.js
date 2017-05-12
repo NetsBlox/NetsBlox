@@ -66,7 +66,7 @@ RoomManager.prototype.createRoom = function(socket, name, ownerId) {
 
     this.rooms[uuid] = new ActiveRoom(this._logger, name, socket);
     // Create the data element
-    var data = this.storage.rooms.new(null, this.rooms[uuid]);
+    var data = this.storage.projects.new(null, this.rooms[uuid]);
     this.rooms[uuid].setStorage(data);
 
     return this.rooms[uuid];

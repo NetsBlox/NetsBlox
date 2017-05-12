@@ -2,7 +2,7 @@
 var MongoClient = require('mongodb').MongoClient,
     RPCStore = require('../rpc/storage'),
     UserStore = require('./user-store'),
-    RoomStore = require('./room-store'),
+    Projects = require('./projects'),
     UserActions = require('./user-actions'),
     PublicProjects = require('./public-projects');
 
@@ -10,7 +10,7 @@ var Storage = function(logger) {
     this._logger = logger.fork('storage');
 
     this.users = null;
-    this.rooms = null;
+    this.projects = null;
 };
 
 Storage.prototype.connect = function() {
@@ -18,7 +18,8 @@ Storage.prototype.connect = function() {
     return MongoClient.connect(mongoURI)
         .then(db => {
             this.users = new UserStore(this._logger, db);
-            this.rooms = new RoomStore(this._logger, db);
+            this.projects = Projects;
+            Projects.init(this._logger, db);
             RPCStore.init(this._logger, db);
             UserActions.init(this._logger, db);
             PublicProjects.init(this._logger, db);

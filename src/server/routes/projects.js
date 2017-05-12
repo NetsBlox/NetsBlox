@@ -302,42 +302,43 @@ module.exports = [
             log(username +' requested project list');
 
             this.storage.users.get(username, (e, user) => {
-                var previews,
-                    rooms;
+                var previews;
 
                 if (e) {
                     this._logger.error(`Could not find user ${username}: ${e}`);
                     return res.status(500).send('ERROR: ' + e);
                 }
+
                 if (user) {
-                    rooms = user.rooms || user.tables || [];
+                    return user.getProjects().then(projects => {
+                        trace(`found project list (${projects.length}) ` +
+                            `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                    trace(`found project list (${rooms.length}) ` +
-                        `for ${username}: ${rooms.map(room => room.name)}`);
-                    // Return the following for each room:
-                    //
-                    //  + ProjectName
-                    //  + Updated
-                    //  + Notes
-                    //  + Thumbnail
-                    //  + Public?
-                    //
-                    // These values are retrieved from whatever role has notes
-                    // or chosen arbitrarily (for now)
+                        // Return the following for each room:
+                        //
+                        //  + ProjectName
+                        //  + Updated
+                        //  + Notes
+                        //  + Thumbnail
+                        //  + Public?
+                        //
+                        // These values are retrieved from whatever role has notes
+                        // or chosen arbitrarily (for now)
 
-                    // Update this to parse the projects from the room list
-                    previews = rooms.map(getPreview);
+                        // Update this to parse the projects from the room list
+                        previews = projects.map(getPreview);
 
-                    info(`Projects for ${username} are ${JSON.stringify(
-                        previews.map(preview => preview.ProjectName)
-                        )}`
-                    );
-                        
-                    if (req.query.format === 'json') {
-                        return res.json(previews);
-                    } else {
-                        return res.send(Utils.serializeArray(previews));
-                    }
+                        info(`Projects for ${username} are ${JSON.stringify(
+                            previews.map(preview => preview.ProjectName)
+                            )}`
+                        );
+                            
+                        if (req.query.format === 'json') {
+                            return res.json(previews);
+                        } else {
+                            return res.send(Utils.serializeArray(previews));
+                        }
+                    });
                 }
                 return res.status(404);
             });

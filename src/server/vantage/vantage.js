@@ -76,7 +76,6 @@ var NetsBloxVantage = function(server) {
                         }
                     } else if (args.options.e) {
                         var name = args.options.e,
-                            room = user.rooms.find(room => room.name === name),
                             saveable;
 
                         if (room) {
@@ -101,13 +100,8 @@ var NetsBloxVantage = function(server) {
                             console.log(`Could not find room "${name}"`);
                         }
 
-                    } else if (args.options.update) {
-                        user.rooms = user.rooms || user.projects || [];
-                        delete user.projects;
-                        user.save();
-                        console.log('User updated!');
                     } else if (args.options.clear) {
-                        user.rooms = [];
+                        // TODO
                         user.save();
                         console.log('User updated!');
                     } else if (args.options.admin) {
