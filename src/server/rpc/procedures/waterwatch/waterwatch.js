@@ -5,9 +5,9 @@ let WaterWatchRPC = {
 
 let debug = require('debug'),
     rp = require('request-promise'), //maybe use request-promise-native?
-    error = debug('netsblox:rpc:trends:error'),
+    error = debug('netsblox:rpc:waterwatch:error'),
     CacheManager = require('cache-manager'),
-    trace = debug('netsblox:rpc:trends:trace');
+    trace = debug('netsblox:rpc:waterwatch:trace');
 
 let baseUrl = 'https://waterservices.usgs.gov/nwis/iv/?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000});
@@ -24,7 +24,7 @@ function encodeQueryData(options) {
 // used to send feedback about errors to the caller.
 function showError(err, response) {
     error('error',err);
-    response.send('Error occured. Bounding box too big?');
+    this.response.send('Error occured. Bounding box too big?');
     // response.json(err);
 }
 
@@ -63,52 +63,61 @@ function stopSendingMsgs(socket){
 function send(options,socket,response,msgType){
 
     let url = baseUrl+encodeQueryData(options);
-    trace('requesting this url for data', url);
-    rp(url)
+    cache.wrap(url, cacheCallback => {
+      trace('requesting this url for data (not cached!)', url);
+      rp(url)
         .then(data => {
             // santize and send messages to user
-            trace('Received data back');
-
             try {
                 data = JSON.parse(data);
+                return cacheCallback(null,data)
             } catch(e) {
                 trace('Non-JSON data...');
-                return response.send('Bad API Result: ' + data);
+                return cacheCallback('Bad API result',null)
             }
-
-            //clean and store the sections we want in a form of a message
-            data.value.timeSeries.forEach(item => {
-                let msgContent = {
-                    siteName: item.sourceInfo.siteName,
-                    lat: item.sourceInfo.geoLocation.geogLocation.latitude,
-                    lon: item.sourceInfo.geoLocation.geogLocation.longitude,
-                    // we can include more information in the messages that we
-                    //  are sending to the user
-                    // varName: item.variable.variableName,
-                    // varDescription: item.variable.variableDescription,
-                    unit: item.variable.unit.unitCode,
-                    value: item.values[0].value[0].value
-                };
-                msgs.push({
-                    type: 'message',
-                    msgType: msgType,
-                    dstId: socket.roleId,
-                    content: msgContent
-                });
-            });
-            trace('loaded ', data.value.timeSeries.length,'  items');
-            // filterout messages ( imp if having multiple people use the shared msgs var)
-            let myMsgs = msgs.filter(msg => {
-                return msg.dstId == socket.roleId && msg.msgType == msgType;
-            });
-            response.send(`Sending ${myMsgs.length} messages of ${msgType}`);
-            // start sending messages - will send other user's messages too
-            sendNextMsg(socket);
-        })
+          })
         .catch(err => {
-            showError(err,response);
+          return cacheCallback('Bad API result',null)
         });
-}
+
+    }, (err, results) => {
+      if(results){
+        // after we have the data from the endpoint proceed
+        //clean and store the sections we want in a form of a message
+        results.value.timeSeries.forEach(item => {
+            let msgContent = {
+                siteName: item.sourceInfo.siteName,
+                lat: item.sourceInfo.geoLocation.geogLocation.latitude,
+                lon: item.sourceInfo.geoLocation.geogLocation.longitude,
+                // we can include more information in the messages that we
+                //  are sending to the user
+                // varName: item.variable.variableName,
+                // varDescription: item.variable.variableDescription,
+                unit: item.variable.unit.unitCode,
+                value: item.values[0].value[0].value
+            };
+            msgs.push({
+                type: 'message',
+                msgType: msgType,
+                dstId: socket.roleId,
+                content: msgContent
+            });
+        });
+        trace('loaded ', results.value.timeSeries.length,'  items');
+        // filterout messages ( imp if having multiple people use the shared msgs var)
+        let myMsgs = msgs.filter(msg => {
+            return msg.dstId == socket.roleId && msg.msgType == msgType;
+        });
+        response.send(`Sending ${myMsgs.length} messages of ${msgType}`);
+        // start sending messages - will send other user's messages too
+        sendNextMsg(socket);
+      }else {
+        showError(err);
+      }
+    });
+
+
+  } // end of send()
 
 
 WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, westernLong) {
