@@ -315,7 +315,7 @@ module.exports = [
                 }
 
                 if (user) {
-                    return user.getProjects().then(projects => {
+                    return user.getRawProjects().then(projects => {
                         trace(`found project list (${projects.length}) ` +
                             `for ${username}: ${projects.map(proj => proj.name)}`);
 

@@ -77,6 +77,10 @@ class User extends DataWrapper {
         return Projects.getUserProjects(this.username);
     }
 
+    getRawProjects() {
+        return Projects.getRawUserProjects(this.username);
+    }
+
     getProjectNames() {
         return this.getProjects()
             .then(projects => projects.map(project => project.name));
