@@ -5,6 +5,7 @@ var R = require('ramda'),
     Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     RoomManager = require('../rooms/room-manager'),
+    exists = require('exists-file'),
     PublicProjects = require('../storage/public-projects'),
     UserAPI = require('./users'),
     RoomAPI = require('./rooms'),
@@ -30,7 +31,6 @@ var R = require('ramda'),
     PATHS = [
         'Costumes',
         'Sounds',
-        'libraries',
         'help',
         'Backgrounds'
     ],
@@ -40,6 +40,13 @@ var R = require('ramda'),
         'snap_logo_sm.png',
         'tools.xml'
     ];
+
+// merge netsblox libraries with Snap libraries
+var snapLibRoot = path.join(SNAP_ROOT, 'libraries');
+var snapLibs = fs.readdirSync(snapLibRoot).map(filename => 'libraries/' + filename);
+var libs = fs.readdirSync(path.join(CLIENT_ROOT, 'libraries'))
+    .map(filename => 'libraries/' + filename)
+    .concat(snapLibs);
 
 // Create the paths
 var resourcePaths = PATHS.map(function(name) {
@@ -55,13 +62,6 @@ var resourcePaths = PATHS.map(function(name) {
 });
 
 // Add translation file paths
-var langFiles = fs.readdirSync(path.join(__dirname, '..', '..', 'client'))
-    .filter(name => /^lang/.test(name));
-
-var snapLangFiles = fs.readdirSync(SNAP_ROOT)
-    .filter(name => /^lang/.test(name))
-    .filter(filename => !langFiles.includes(filename));
-
 var getFileFrom = dir => {
     return file => {
         return {
@@ -72,9 +72,20 @@ var getFileFrom = dir => {
     };
 };
 
-resourcePaths = resourcePaths
-    .concat(langFiles.map(getFileFrom(CLIENT_ROOT)))
-    .concat(snapLangFiles.map(getFileFrom(SNAP_ROOT)));
+const isInNetsBlox = file => exists.sync(path.join(CLIENT_ROOT, file));
+var overrideSnapFiles = function(snapFiles) {
+    var netsbloxFiles = Utils.extract(isInNetsBlox, snapFiles);
+
+    resourcePaths = resourcePaths
+        .concat(snapFiles.map(getFileFrom(SNAP_ROOT)))
+        .concat(netsbloxFiles.map(getFileFrom(CLIENT_ROOT)));
+};
+
+var snapLangFiles = fs.readdirSync(SNAP_ROOT)
+    .filter(name => /^lang/.test(name));
+
+overrideSnapFiles(snapLangFiles);
+overrideSnapFiles(libs);
 
 publicFiles = publicFiles.concat(snapLangFiles);
 
