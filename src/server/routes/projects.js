@@ -6,7 +6,6 @@ var _ = require('lodash'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
 
     middleware = require('./middleware'),
-    lwip = require('lwip'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
     PublicProjects = require('../storage/public-projects'),
@@ -137,23 +136,24 @@ var createCopyFrom = function(user, project) {
 
 var saveRoom = function (activeRoom, socket, user, res) {
     log(`saving entire room for ${socket.username}`);
-    // Create the room object
-    var room = this.storage.rooms.new(user, activeRoom);
-    room.setActiveRole(socket.roleId);
-    room.save(function(err) {
+    // Create the new project
+    var project = this.storage.projects.new(user, activeRoom);
+    project.setActiveRole(socket.roleId);
+    project.save(function(err) {
         if (err) {
-            error(`room save failed for room "${activeRoom.name}" initiated by "${user.username}"`);
+            error(`project save failed for "${activeRoom.name}" initiated by "${user.username}"`);
             return res.status(500).send('ERROR: ' + err);
         }
-        log(`room save successful for room "${activeRoom.name}" initiated by "${user.username}"`);
+        log(`room save successful for project "${activeRoom.name}" initiated by "${user.username}"`);
 
-        trace('setting active room origin time to', activeRoom.originTime);
-        return res.send('room saved!');
+        trace('setting active project origin time to', activeRoom.originTime);
+        return res.send('project saved!');
     });
 };
 
 const TRANSPARENT = [0,0,0,0];
 var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
+    var lwip = require('lwip');
     return Q.ninvoke(lwip, 'open', buffer, 'png')
         .then(image => {
             var width = image.width(),
