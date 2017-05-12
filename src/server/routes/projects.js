@@ -139,16 +139,15 @@ var saveRoom = function (activeRoom, socket, user, res) {
     // Create the new project
     var project = this.storage.projects.new(user, activeRoom);
     project.setActiveRole(socket.roleId);
-    project.save(function(err) {
-        if (err) {
-            error(`project save failed for "${activeRoom.name}" initiated by "${user.username}"`);
+    return project.save()
+        .then(() => {
+            log(`room save successful for project "${activeRoom.name}" initiated by "${user.username}"`);
+            return res.send('project saved!');
+        })
+        .fail(err => {
+            error(`project save failed for "${activeRoom.name}" initiated by "${user.username}": ${err}`);
             return res.status(500).send('ERROR: ' + err);
-        }
-        log(`room save successful for project "${activeRoom.name}" initiated by "${user.username}"`);
-
-        trace('setting active project origin time to', activeRoom.originTime);
-        return res.send('project saved!');
-    });
+        });
 };
 
 const TRANSPARENT = [0,0,0,0];
