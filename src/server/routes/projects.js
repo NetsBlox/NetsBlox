@@ -465,18 +465,18 @@ module.exports = [
                 room;
 
             log(user.username +' trying to delete "' + project + '"');
-            for (var i = user.rooms.length; i--;) {
-                room = user.rooms[i];
-                if (room.name === project) {
-                    user.rooms.splice(i, 1);
-                    trace(`project ${project} deleted`);
-                    user.save();
-                    return res.send('project deleted!');
-                }
+            // Get the project and call "destroy" on it
+            return user.getProject(project)
+                .then(project => {
+                    if (project) {
+                        project.destroy();
+                        trace(`project ${project.name} deleted`);
+                        return res.send('project deleted!');
+                    }
 
-            }
-            error(`project ${project} not found`);
-            res.status(400).send(`${project} not found!`);
+                    error(`project ${project} not found`);
+                    res.status(400).send(`${project} not found!`);
+                });
         }
     },
     {
