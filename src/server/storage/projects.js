@@ -7,22 +7,21 @@
 
     class Project extends DataWrapper {
         constructor(params) {
+            params.data = _.extend(params.data || {});
+            params.data.roles = params.data.roles || {};
+
             // Update seats => roles
-            if (params && params.data) {
-                params.data.roles = params.data.roles || params.data.seats;
-                delete params.data.seats;
-            }
+            params.data.roles = params.data.roles || params.data.seats;
+            delete params.data.seats;
+
             super(params.db, params.data || {});
             this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
-            this._user = params.user;
             this._room = params.room;
-            this.lastUpdateAt = Date.now();
         }
 
         fork(room) {
             var params;
             params = {
-                user: this._user,
                 room: room,
                 logger: this._logger,
                 lastUpdateAt: Date.now(),
@@ -33,87 +32,37 @@
         }
 
         collectProjects() {
-            // Collect the projects from the websockets
-            var sockets = this._room.sockets(),
-                projects = sockets.map(socket => socket.getProjectJson());
-
+            var sockets = this._room.sockets();
             // Add saving the cached projects
-            return Q.all(projects).then(projects => {
-                // create the room from the projects
-                var roles = Object.keys(this._room.roles),
-                    socket,
-                    k,
-                    content = {
-                        owner: this._room.owner.username,
-                        name: this._room.name,
-                        originTime: this._room.originTime || Date.now(),
-                        roles: {}
-                    };
+            return Q.all(sockets.map(socket => socket.getProjectJson()))
+                .then(projects => {
+                    // create the room from the projects
+                    var roles = [];
 
-                for (var i = roles.length; i--;) {
-                    socket = this._room.roles[roles[i]];
-
-                    k = sockets.indexOf(socket);
-                    if (k !== -1) {
-                        // role content
-                        if (!projects[k]) {
-                            this._logger.error(`requested project is falsey (${projects[k]}) at ${roles[i]} in ${this._room.uuid}`);
-                        }
-                        content.roles[roles[i]] = projects[k];
-                    } else {
-                        content.roles[roles[i]] = this._room.cachedProjects[roles[i]] || null;
-                    }
-                }
-                return content;
-            });
+                    sockets.forEach((socket, i) => roles.push([socket.roleId, projects[i]]));
+                    return roles;
+                });
         }
 
         // Override
         prepare() {
-            if (!this._user) {
-                this._logger.error(`Cannot save room "${this.name}" - no user`);
-                throw 'Can\'t save project w/o user';
-            }
             return this.collectProjects()
-                .then(content => {
-                    this._logger.trace('collected projects for ' + this._user.username);
+                .then(roles => {
+                    this._logger.trace('collected projects for ' + this.owner);
 
-                    // Check for 'null' roles
-                    var roleIds = Object.keys(content.roles),
-                        hasContent = false;
+                    this.clean();  // remove any null roles
+                    return Q.all(roles.map(pair => {
+                        let [name, role] = pair;
+                        return Q.all([blob.store(role.SourceCode), blob.store(role.Media)])
+                            .then(hashes => {
+                                let [srcHash, mediaHash] = hashes;
+                                role.SourceCode = srcHash;
+                                role.Media = mediaHash;
+                                this.roles[name] = role;
+                            });
+                    }));
 
-                    for (var i = roleIds.length; i--;) {
-                        if (!content.roles[roleIds[i]]) {
-                            this._logger.warn(`${this._user.username} saving project ` +
-                                `(${this.name}) with null role (${roleIds[i]})! Will ` +
-                                `try to proceed...`);
-                        } else {
-                            hasContent = true;
-                        }
-                    }
-                    if (!hasContent) {  // only saving null role(s)
-                        err = `${this._user.username} tried to save a project w/ only ` +
-                            `falsey roles (${this.name})!`;
-                        this._logger.error(err);
-                        throw err;
-                    }
-
-                    if (this.activeRole) {
-                        content.activeRole = this.activeRole;
-                    }
-
-                    // Save the src, media to the blob
-                    var roles = Object.keys(content.roles)
-                        .map(name => content.roles[name]);
-
-                    return Q.all(roles.map(storeRole))
-                        .then(() => {
-                            this._content = content;
-                        });
-                })
-                .catch(err => {
-                    this._logger.error(`saving ${this.name} failed: ${err}`);
-                    throw err;
+                    this.lastUpdateAt = Date.now();
                 });
         }
 
@@ -121,14 +70,15 @@
             this.activeRole = role;
         }
 
-        // Override
-        _saveable() {
-            return this._content;
-        }
-
         pretty() {
-            var prettyRoom = _.cloneDeep(this._saveable());
-            Object.keys(prettyRoom.roles || {})
+            var prettyRoom = {
+                name: this.name,
+                roles: {},
+                owner: this.owner,
+                collaborators: this.collaborators
+            };
+
+            Object.keys(this.roles || {})
                 .forEach(role => {
                     if (prettyRoom.roles[role]) {
                         prettyRoom.roles[role] = '<project xml>';
@@ -136,40 +86,39 @@
                 });
 
             return prettyRoom;
+        }
 
+        clean () {
+            let allRoleNames = Object.keys(this.roles),
+                removed = [],
+                name;
+
+            for (let i = allRoleNames.length; i--;) {
+                name = allRoleNames[i];
+                if (!this.roles[name]) {
+                    removed.push(name);
+                    delete this.roles[name];
+                }
+            }
+
+            if (removed.length) {
+                logger.warn(`Found ${removed.length} null roles in ${this.uuid}. Removing...`);
+            }
+
+            return this;
         }
 
     }
 
-    var EXTRA_KEYS = ['_user', '_room', '_content', '_changedRoles'];
+    var EXTRA_KEYS = ['_room'];
     Project.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(EXTRA_KEYS);
 
     // Project Storage
     var logger,
         collection;
 
-    const cleanProject = function (project) {
-        let allRoleNames = Object.keys(project.roles),
-            removed = [],
-            name;
-
-        for (let i = allRoleNames.length; i--;) {
-            name = allRoleNames[i];
-            if (!project.roles[name]) {
-                removed.push(name);
-                delete project.roles[name];
-            }
-        }
-
-        if (removed.length) {
-            logger.warn(`Found ${removed.length} null roles in ${project.uuid}. Removing...`);
-        }
-
-        return project;
-    };
-
     const loadProjectBinaryData = function(project) {
-        cleanProject(project);
+        project.clean();
 
         var roles = Object.keys(project.roles).map(name => project.roles[name]);
         return Q.all(roles.map(loadRole))
@@ -180,16 +129,6 @@
         const srcHash = role.SourceCode;
         const mediaHash = role.Media;
         return Q.all([blob.get(srcHash), blob.get(mediaHash)])
-            .then(content => {
-                [role.SourceCode, role.Media] = content;
-                return role;
-            });
-    };
-
-    const storeRole = function(role) {
-        const src = role.SourceCode;
-        const media = role.Media;
-        return Q.all([blob.store(src), blob.store(media)])
             .then(content => {
                 [role.SourceCode, role.Media] = content;
                 return role;
@@ -235,12 +174,21 @@
     };
 
     // Create room from ActiveRoom (request projects from clients)
+    const getDefaultProjectData = function(user, room) {
+        return {
+            owner: user.username,
+            name: room.name,
+            originTime: room.originTime,
+            activeRole: user.roleId,
+            roles: {}
+        };
+    };
+
     ProjectStorage.new = function(user, activeRoom) {
         return new Project({
             logger: logger,
             db: collection,
-            user: user,
-            lastUpdateAt: Date.now(),
+            data: getDefaultProjectData(user, activeRoom),
             room: activeRoom
         });
     };
