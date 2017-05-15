@@ -4,28 +4,27 @@ let WaterWatchRPC = {
 };
 
 let debug = require('debug'),
-    rp = require('request-promise'), //maybe use request-promise-native?
-    error = debug('netsblox:rpc:waterwatch:error'),
-    CacheManager = require('cache-manager'),
-    trace = debug('netsblox:rpc:waterwatch:trace');
+rp = require('request-promise'), //maybe use request-promise-native?
+error = debug('netsblox:rpc:waterwatch:error'),
+CacheManager = require('cache-manager'),
+trace = debug('netsblox:rpc:waterwatch:trace');
 
 let baseUrl = 'https://waterservices.usgs.gov/nwis/iv/?',
-    cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000});
+cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000});
 
 
 // turn an options object into query friendly string
 function encodeQueryData(options) {
-  let ret = [];
-  for (let d in options)
+    let ret = [];
+    for (let d in options)
     ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(options[d]));
-  return ret.join('&');
+    return ret.join('&');
 }
 
 // used to send feedback about errors to the caller.
 function showError(err, response) {
     error('error',err);
-    this.response.send('Error occured. Bounding box too big?');
-    // response.json(err);
+    response.send('Error occured. Bounding box too big?');
 }
 
 //sanitize coordinate inputs
@@ -45,8 +44,8 @@ function sendNextMsg(socket){
 }
 
 function stopSendingMsgs(socket){
-  waterwatchMsgs[socket.roleId] = [];
-  trace(`Stopped sending messages to user with roleId ${socket.roleId}`);
+    waterwatchMsgs[socket.roleId] = [];
+    trace(`Stopped sending messages to user with roleId ${socket.roleId}`);
 }
 
 // notes: dont forget to return null in your stop since we are handling the response in here.
@@ -58,56 +57,57 @@ function send(options,socket,response,msgType){
     waterwatchMsgs[socket.roleId] = [];
     let url = baseUrl+encodeQueryData(options);
     cache.wrap(url, cacheCallback => {
-      trace('requesting this url for data (not cached!)', url);
-      rp(url)
+        trace('requesting this url for data (not cached!)', url);
+        rp(url)
         .then(data => {
             // santize and send messages to user
             try {
                 data = JSON.parse(data);
-                return cacheCallback(null,data)
+                return cacheCallback(null,data);
             } catch(e) {
                 trace('Non-JSON data...');
-                return cacheCallback('Bad API result',null)
+                return cacheCallback('Bad API result',null);
             }
-          })
+        })
         .catch(err => {
-          return cacheCallback('Bad API result',null)
+            error(err);
+            return cacheCallback('Bad API result',null);
         });
 
     }, (err, results) => {
-      if(results){
-        // after we have the data from the endpoint proceed
-        //clean and store the sections we want in a form of a message
-        results.value.timeSeries.forEach(item => {
-            let msgContent = {
-                siteName: item.sourceInfo.siteName,
-                lat: item.sourceInfo.geoLocation.geogLocation.latitude,
-                lon: item.sourceInfo.geoLocation.geogLocation.longitude,
-                // we can include more information in the messages that we
-                //  are sending to the user
-                // varName: item.variable.variableName,
-                // varDescription: item.variable.variableDescription,
-                unit: item.variable.unit.unitCode,
-                value: item.values[0].value[0].value
-            };
-            waterwatchMsgs[socket.roleId].push({
-                type: 'message',
-                msgType: msgType,
-                dstId: socket.roleId,
-                content: msgContent
+        if(results){
+            // after we have the data from the endpoint proceed
+            //clean and store the sections we want in a form of a message
+            results.value.timeSeries.forEach(item => {
+                let msgContent = {
+                    siteName: item.sourceInfo.siteName,
+                    lat: item.sourceInfo.geoLocation.geogLocation.latitude,
+                    lon: item.sourceInfo.geoLocation.geogLocation.longitude,
+                    // we can include more information in the messages that we
+                    //  are sending to the user
+                    // varName: item.variable.variableName,
+                    // varDescription: item.variable.variableDescription,
+                    unit: item.variable.unit.unitCode,
+                    value: item.values[0].value[0].value
+                };
+                waterwatchMsgs[socket.roleId].push({
+                    type: 'message',
+                    msgType: msgType,
+                    dstId: socket.roleId,
+                    content: msgContent
+                });
             });
-        });
-        trace('loaded ', results.value.timeSeries.length,'  items');
-        response.send(`Sending ${waterwatchMsgs[socket.roleId].length} messages of ${msgType}`);
-        // start sending messages - will send other user's messages too
-        sendNextMsg(socket);
-      }else {
-        showError(err);
-      }
+            trace('loaded ', results.value.timeSeries.length,'  items');
+            response.send(`Sending ${waterwatchMsgs[socket.roleId].length} messages of ${msgType}`);
+            // start sending messages - will send other user's messages too
+            sendNextMsg(socket);
+        }else {
+            showError(err, response);
+        }
     });
 
 
-  } // end of send()
+} // end of send()
 
 
 WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, westernLong) {
@@ -120,9 +120,9 @@ WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, west
     southernLat = parseFloat(southernLat).toFixed(7);
     northernLat = parseFloat(northernLat).toFixed(7);
     var options = {'format':'json', 'bBox':`${westernLong},${southernLat},${easternLong},${northernLat}`,
-        'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00065'},
-        socket = this.socket,
-        response = this.response;
+    'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00065'},
+    socket = this.socket,
+    response = this.response;
 
     send(options,socket,response,'gageHeight');
 
@@ -137,9 +137,9 @@ WaterWatchRPC.streamFlow = function (northernLat, easternLong, southernLat, west
     southernLat = parseFloat(southernLat).toFixed(7);
     northernLat = parseFloat(northernLat).toFixed(7);
     var options = {'format':'json', 'bBox':`${westernLong},${southernLat},${easternLong},${northernLat}`,
-        'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00060'},
-        socket = this.socket,
-        response = this.response;
+    'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00060'},
+    socket = this.socket,
+    response = this.response;
 
     send(options,socket,response,'streamFlow');
 
@@ -153,9 +153,9 @@ WaterWatchRPC.waterTemp = function (northernLat, easternLong, southernLat, weste
     southernLat = parseInt(southernLat).toFixed(7);
     northernLat = parseInt(northernLat).toFixed(7);
     var options = {'format':'json', 'bBox':`${westernLong},${southernLat},${easternLong},${northernLat}`,
-        'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00010'},
-        socket = this.socket,
-        response = this.response;
+    'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00010'},
+    socket = this.socket,
+    response = this.response;
 
     send(options,socket,response,'waterTemp');
 
