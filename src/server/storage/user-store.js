@@ -14,13 +14,14 @@ class UserStore {
 
     get (username, callback) {
         // Retrieve the user
-        this._users.findOne({username}, (e, data) => {
-            let user = null;
-            if (data) {
-                user = new User(this._logger, this._users, data);
-            }
-            callback(e, user);
-        });
+        return this._users.findOne({username})
+            .then(data => {
+                let user = null;
+                if (data) {
+                    user = new User(this._logger, this._users, data);
+                }
+                return user;
+            });
     }
 
     names () {

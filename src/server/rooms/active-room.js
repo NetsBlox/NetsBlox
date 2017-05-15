@@ -17,7 +17,7 @@ class ActiveRoom {
 
         // Seats
         this.roles = {};  // actual occupants
-        this.cachedProjects = {};  // 
+        this.cachedProjects = {};
 
         this.owner = owner;
 
@@ -28,7 +28,7 @@ class ActiveRoom {
         this._store = null;
 
         this.uuid = utils.uuid(owner.username, name);
-        this._logger = logger.fork('active-room:' + this.uuid);
+        this._logger = logger.fork('active-room' + this.uuid);
         this._logger.log('created!');
     }
 

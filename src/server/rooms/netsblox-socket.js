@@ -394,25 +394,26 @@ NetsBloxSocket.MessageHandlers = {
             name = msg.room,
             role = msg.role;
 
-        RoomManager.getRoom(this, owner, name, (room) => {
-            if (!room) {
-                this._logger.error(`Could not join room ${name} - doesn't exist!`);
-                return;
-            }
-            // Check if the user is already at the room
-            if (this._room === room) {
-                this._logger.warn(`${this.username} is already in ${name}! ` +
-                    ` Switching roles instead of "join-room" for ${room.uuid}`);
-                return this.changeSeats(role);
-            }
+        return RoomManager.getRoom(this, owner, name)
+            .then(room => {
+                if (!room) {
+                    this._logger.error(`Could not join room ${name} - doesn't exist!`);
+                    return;
+                }
+                // Check if the user is already at the room
+                if (this._room === room) {
+                    this._logger.warn(`${this.username} is already in ${name}! ` +
+                        ` Switching roles instead of "join-room" for ${room.uuid}`);
+                    return this.changeSeats(role);
+                }
 
-            // create the role if need be (and if we are the owner)
-            if (!room.roles.hasOwnProperty(role) && room.owner === this) {
-                this._logger.info(`creating role ${role} at ${room.uuid}`);
-                room.createRole(role);
-            }
-            return this.join(room, role);
-        });
+                // create the role if need be (and if we are the owner)
+                if (!room.roles.hasOwnProperty(role) && room.owner === this) {
+                    this._logger.info(`creating role ${role} at ${room.uuid}`);
+                    room.createRole(role);
+                }
+                return this.join(room, role);
+            });
         
     },
 

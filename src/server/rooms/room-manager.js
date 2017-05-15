@@ -1,7 +1,8 @@
 'use strict';
 
-var ActiveRoom = require('./active-room'),
-    utils = require('../server-utils');
+const ActiveRoom = require('./active-room');
+const utils = require('../server-utils');
+const Q = require('q');
 
 var RoomManager = function() {
     var self = this;
@@ -72,29 +73,28 @@ RoomManager.prototype.createRoom = function(socket, name, ownerId) {
     return this.rooms[uuid];
 };
 
-RoomManager.prototype.getRoom = function(socket, ownerId, name, callback) {
+RoomManager.prototype.getRoom = function(socket, ownerId, name) {
     var uuid = utils.uuid(ownerId, name);
     if (!this.rooms[uuid]) {
-        this.storage.users.get(ownerId, (err, user) => {
-            // Get the room
-            var rooms = user && (user.rooms || user.tables),
-                room = rooms && rooms.find(room => room.name === name);
-            if (!room) {
-                this._logger.error(err || 'No room found for ' + uuid);
-                // If no room is found, create a new room for the user
-                room = room || this.createRoom(socket, name, ownerId);
-                this.rooms[uuid] = room;
-                return callback(room);
-            }
+        return this.storage.users.get(ownerId)
+            .then(user => user.getProject(name))
+            .then(project => {
+                if (!project) {
+                    this._logger.error(err || 'No project found for ' + uuid);
+                    // If no project is found, create a new project for the user
+                    project = project || this.createRoom(socket, name, ownerId);
+                    this.rooms[uuid] = project;
+                    return project;
+                }
 
-            this._logger.trace(`retrieving room ${uuid} from database`);
-            var activeRoom = ActiveRoom.fromStore(this._logger, socket, room);
-            this.rooms[uuid] = activeRoom;
-            return callback(activeRoom);
-        });
+                this._logger.trace(`retrieving project ${uuid} from database`);
+                var activeRoom = ActiveRoom.fromStore(this._logger, socket, project);
+                this.rooms[uuid] = activeRoom;
+                return activeRoom;
+            });
 
     } else {
-        return callback(this.rooms[uuid]);
+        return Q(this.rooms[uuid]);
     }
 };
 

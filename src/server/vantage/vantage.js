@@ -60,10 +60,7 @@ var NetsBloxVantage = function(server) {
                         .join('\n')))
                     .then(cb);
             } else {
-                server.storage.users.get(username, function(err, user) {
-                    if (err) {
-                        return cb(err);
-                    }
+                server.storage.users.get(username).then(user => {
                     if (!user) {
                         console.log('user does not exist!');
                         return cb();
@@ -129,7 +126,8 @@ var NetsBloxVantage = function(server) {
                         console.log(user.pretty());
                     }
                     cb();
-                });
+                })
+                .catch(err => cb(err));
             }
         });
 

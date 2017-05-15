@@ -94,6 +94,8 @@ var getRoomsNamed = function(name, user) {
                 activeRoom = RoomManager.rooms[Utils.uuid(project.owner, project.name)];
             }
 
+            console.log('project.originTime', project.originTime);
+            console.log('activeRoom.originTime', activeRoom.originTime);
             return {
                 active: activeRoom,
                 stored: project,
@@ -253,46 +255,8 @@ module.exports = [
             log(username +' requested project list');
 
             // TODO: get the projects that this user is a collaborator on
-            this.storage.users.get(username, (e, user) => {
-                var previews,
-                    rooms;
-
-                if (e) {
-                    this._logger.error(`Could not find user ${username}: ${e}`);
-                    return res.status(500).send('ERROR: ' + e);
-                }
-                if (user) {
-                    rooms = user.rooms || user.tables || [];
-
-                    trace(`found project list (${rooms.length}) ` +
-                        `for ${username}: ${rooms.map(room => room.name)}`);
-                    // Return the following for each room:
-                    //
-                    //  + ProjectName
-                    //  + Updated
-                    //  + Notes
-                    //  + Thumbnail
-                    //  + Public?
-                    //
-                    // These values are retrieved from whatever role has notes
-                    // or chosen arbitrarily (for now)
-
-                    // Update this to parse the projects from the room list
-                    previews = rooms.map(getPreview);
-
-                    info(`Projects for ${username} are ${JSON.stringify(
-                        previews.map(preview => preview.ProjectName)
-                        )}`
-                    );
-                        
-                    if (req.query.format === 'json') {
-                        return res.json(previews);
-                    } else {
-                        return res.send(Utils.serializeArray(previews));
-                    }
-                }
-                return res.status(404);
-            });
+            var previews = [];
+            return res.send(Utils.serializeArray(previews));
         }
     },
     {
@@ -305,47 +269,45 @@ module.exports = [
             var username = req.session.username;
             log(username +' requested project list');
 
-            this.storage.users.get(username, (e, user) => {
-                var previews;
+            return this.storage.users.get(username)
+                .then(user => {
+                    if (user) {
+                        return user.getRawProjects().then(projects => {
+                            trace(`found project list (${projects.length}) ` +
+                                `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                if (e) {
+                            // Return the following for each room:
+                            //
+                            //  + ProjectName
+                            //  + Updated
+                            //  + Notes
+                            //  + Thumbnail
+                            //  + Public?
+                            //
+                            // These values are retrieved from whatever role has notes
+                            // or chosen arbitrarily (for now)
+
+                            // Update this to parse the projects from the room list
+                            var previews = projects.map(getPreview);
+
+                            info(`Projects for ${username} are ${JSON.stringify(
+                                previews.map(preview => preview.ProjectName)
+                                )}`
+                            );
+                                
+                            if (req.query.format === 'json') {
+                                return res.json(previews);
+                            } else {
+                                return res.send(Utils.serializeArray(previews));
+                            }
+                        });
+                    }
+                    return res.status(404);
+                })
+                .catch(e => {
                     this._logger.error(`Could not find user ${username}: ${e}`);
                     return res.status(500).send('ERROR: ' + e);
-                }
-
-                if (user) {
-                    return user.getRawProjects().then(projects => {
-                        trace(`found project list (${projects.length}) ` +
-                            `for ${username}: ${projects.map(proj => proj.name)}`);
-
-                        // Return the following for each room:
-                        //
-                        //  + ProjectName
-                        //  + Updated
-                        //  + Notes
-                        //  + Thumbnail
-                        //  + Public?
-                        //
-                        // These values are retrieved from whatever role has notes
-                        // or chosen arbitrarily (for now)
-
-                        // Update this to parse the projects from the room list
-                        previews = projects.map(getPreview);
-
-                        info(`Projects for ${username} are ${JSON.stringify(
-                            previews.map(preview => preview.ProjectName)
-                            )}`
-                        );
-                            
-                        if (req.query.format === 'json') {
-                            return res.json(previews);
-                        } else {
-                            return res.send(Utils.serializeArray(previews));
-                        }
-                    });
-                }
-                return res.status(404);
-            });
+                });
         }
     },
     {

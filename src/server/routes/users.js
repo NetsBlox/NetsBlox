@@ -17,13 +17,16 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username;
             log('Deleting user "'+username+'"');
-            this.storage.users.get(username, function(e, user) {
-                if (e || !user) {
-                    return res.status(500).send(e || 'Could not remove "'+username+'"');
+            return this.storage.users.get(username).then(user => {
+                if (!user) {
+                    return res.status(500).send(`Could not remove "${username}": user not found`);
                 }
                 user.destroy();
                 req.session.destroy();
                 return res.send('account for "'+username+'" has been deleted');
+            })
+            .catch(err => {
+                return res.status(500).send(err);
             });
         }
     },
@@ -58,17 +61,16 @@ module.exports = [
 
             info('Changing password for '+username);
             // Verify that the old password is correct
-            this.storage.users.get(username, (e, user) => {
-                if (e) {
-                    return res.status(500).send('ERROR: ' + e);
-                }
-                if (!user || user.hash !== oldPassword) {
-                    return res.status(403).send('ERROR: incorrect login');
-                }
-                user.hash = newPassword;
-                user.save();
-                return res.send('Password has been updated!');
-            });
+            this.storage.users.get(username)
+                .then(user => {
+                    if (!user || user.hash !== oldPassword) {
+                        return res.status(403).send('ERROR: incorrect login');
+                    }
+                    user.hash = newPassword;
+                    user.save();
+                    return res.send('Password has been updated!');
+                })
+                .catch(err => return res.status(500).send('ERROR: ' + err););
         }
     }
 ]
