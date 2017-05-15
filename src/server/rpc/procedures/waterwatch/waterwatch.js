@@ -55,6 +55,14 @@ function stopSendingMsgs(socket){
 // requests for data from the api, processes the response and sends the messages
 function send(options,socket,response,msgType){
     waterwatchMsgs[socket.roleId] = [];
+    // parse and make the coordinates compatible with the api
+    options.bBox[0] = parseFloat(options.bBox[0]).toFixed(7);
+    options.bBox[1] = parseFloat(options.bBox[1]).toFixed(7);
+    options.bBox[2] = parseFloat(options.bBox[2]).toFixed(7);
+    options.bBox[3] = parseFloat(options.bBox[3]).toFixed(7);
+    // console.log(parseFloat(options.bBox.westernLong).toFixed(7));
+    // console.log(options.bBox.westernLong);
+    console.log(options);
     let url = baseUrl+encodeQueryData(options);
     cache.wrap(url, cacheCallback => {
         trace('requesting this url for data (not cached!)', url);
@@ -115,11 +123,7 @@ WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, west
     // list of parameteCD: https://help.waterdata.usgs.gov/codes-and-parameters/parameters
     // query descriptions: https://waterservices.usgs.gov/rest/IV-Test-Tool.html
     // QUESTIONS i cant pass socket to send func when using let. why?
-    westernLong = parseFloat(westernLong).toFixed(7);
-    easternLong = parseFloat(easternLong).toFixed(7);
-    southernLat = parseFloat(southernLat).toFixed(7);
-    northernLat = parseFloat(northernLat).toFixed(7);
-    var options = {'format':'json', 'bBox':`${westernLong},${southernLat},${easternLong},${northernLat}`,
+    var options = {'format':'json', 'bBox':[westernLong,southernLat,easternLong,northernLat],
     'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00065'},
     socket = this.socket,
     response = this.response;
@@ -132,11 +136,7 @@ WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, west
 
 WaterWatchRPC.streamFlow = function (northernLat, easternLong, southernLat, westernLong) {
     //init
-    westernLong = parseFloat(westernLong).toFixed(7);
-    easternLong = parseFloat(easternLong).toFixed(7);
-    southernLat = parseFloat(southernLat).toFixed(7);
-    northernLat = parseFloat(northernLat).toFixed(7);
-    var options = {'format':'json', 'bBox':`${westernLong},${southernLat},${easternLong},${northernLat}`,
+    var options = {'format':'json', 'bBox': [westernLong,southernLat,easternLong,northernLat],
     'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00060'},
     socket = this.socket,
     response = this.response;
@@ -148,11 +148,7 @@ WaterWatchRPC.streamFlow = function (northernLat, easternLong, southernLat, west
 
 WaterWatchRPC.waterTemp = function (northernLat, easternLong, southernLat, westernLong) {
     //init
-    westernLong = parseInt(westernLong).toFixed(7);
-    easternLong = parseInt(easternLong).toFixed(7);
-    southernLat = parseInt(southernLat).toFixed(7);
-    northernLat = parseInt(northernLat).toFixed(7);
-    var options = {'format':'json', 'bBox':`${westernLong},${southernLat},${easternLong},${northernLat}`,
+    var options = {'format':'json', 'bBox':[westernLong,southernLat,easternLong,northernLat],
     'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00010'},
     socket = this.socket,
     response = this.response;
