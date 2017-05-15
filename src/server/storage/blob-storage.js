@@ -34,10 +34,20 @@ BlobStorage.prototype.configure = function(dir) {
     this.baseDir = dir;
 };
 
+BlobStorage.prototype.getDirectoryAndFile = function(hash) {
+    if (!hash || !hash.substring) {
+        throw Error(`Invalid hash "${hash}"`);
+    }
+
+    const dirname = path.join(this.baseDir, hash.substring(0, 2));
+    const filename = path.join(dirname, hash.substring(2));
+
+    return [dirname, filename];
+};
+
 BlobStorage.prototype.store = function(data) {
     var id = hash(data),
-        dirname = path.join(this.baseDir, id.substring(0, 2)),
-        filename = path.join(dirname, id.substring(2));
+        [dirname, filename] = this.getDirectoryAndFile(id);
 
     logger.info(`storing data in the blob: ${id}`);
 
@@ -60,8 +70,7 @@ BlobStorage.prototype.store = function(data) {
 };
 
 BlobStorage.prototype.get = function(id) {
-    var dirname = path.join(this.baseDir, id.substring(0, 2)),
-        filename = path.join(dirname, id.substring(2));
+    var filename = this.getDirectoryAndFile(id)[1];
 
     // get the data from the given hash
     return Q.nfcall(fs.readFile, filename, 'utf8')

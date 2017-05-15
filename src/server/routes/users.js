@@ -17,17 +17,16 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username;
             log('Deleting user "'+username+'"');
-            return this.storage.users.get(username).then(user => {
-                if (!user) {
-                    return res.status(500).send(`Could not remove "${username}": user not found`);
-                }
-                user.destroy();
-                req.session.destroy();
-                return res.send('account for "'+username+'" has been deleted');
-            })
-            .catch(err => {
-                return res.status(500).send(err);
-            });
+            return this.storage.users.get(username)
+                .then(user => {
+                    if (!user) {
+                        return res.status(500).send(`Could not remove "${username}": user not found`);
+                    }
+                    user.destroy();
+                    req.session.destroy();
+                    return res.send('account for "'+username+'" has been deleted');
+                })
+                .catch(err => res.status(500).send(err));
         }
     },
     {
@@ -70,7 +69,7 @@ module.exports = [
                     user.save();
                     return res.send('Password has been updated!');
                 })
-                .catch(err => return res.status(500).send('ERROR: ' + err););
+                .catch(err => res.status(500).send('ERROR: ' + err));
         }
     }
 ]

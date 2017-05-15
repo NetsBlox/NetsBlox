@@ -21,6 +21,10 @@ class UserStore {
                     user = new User(this._logger, this._users, data);
                 }
                 return user;
+            })
+            .catch(err => {
+                this._logger.error(`Error when retrieving user: ${err}`);
+                throw err;
             });
     }
 

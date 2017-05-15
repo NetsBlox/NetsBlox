@@ -44,6 +44,27 @@
                 });
         }
 
+        clean () {
+            let allRoleNames = Object.keys(this.roles),
+                removed = [],
+                name;
+
+            for (let i = allRoleNames.length; i--;) {
+                name = allRoleNames[i];
+                if (!this.roles[name]) {
+                    removed.push(name);
+                    delete this.roles[name];
+                }
+            }
+
+            if (removed.length) {
+                logger.warn(`Found ${removed.length} null roles in ${this.uuid}. Removing...`);
+            }
+
+            return this;
+        }
+
+
         // Override
         prepare() {
             return this.collectProjects()
@@ -86,27 +107,6 @@
 
             return prettyRoom;
         }
-
-        clean () {
-            let allRoleNames = Object.keys(this.roles),
-                removed = [],
-                name;
-
-            for (let i = allRoleNames.length; i--;) {
-                name = allRoleNames[i];
-                if (!this.roles[name]) {
-                    removed.push(name);
-                    delete this.roles[name];
-                }
-            }
-
-            if (removed.length) {
-                logger.warn(`Found ${removed.length} null roles in ${this.uuid}. Removing...`);
-            }
-
-            return this;
-        }
-
     }
 
     var EXTRA_KEYS = ['_room'];
@@ -169,7 +169,16 @@
 
     ProjectStorage.getUserProjects = function (username) {
         return ProjectStorage.getRawUserProjects(username)
-            .then(projects => Q.all(projects.map(loadProjectBinaryData)));
+            .then(data => data.map(d => new Project({
+                logger: logger,
+                db: collection,
+                data: d
+            })))
+            .then(projects => Q.all(projects.map(loadProjectBinaryData)))
+            .catch(e => {
+                logger.error(`getting user projects errored: ${e}`);
+                throw e;
+            });
     };
 
     // Create room from ActiveRoom (request projects from clients)
