@@ -94,8 +94,6 @@ var getRoomsNamed = function(name, user) {
                 activeRoom = RoomManager.rooms[Utils.uuid(project.owner, project.name)];
             }
 
-            console.log('project.originTime', project.originTime);
-            console.log('activeRoom.originTime', activeRoom.originTime);
             return {
                 active: activeRoom,
                 stored: project,
