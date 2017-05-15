@@ -36,7 +36,6 @@ var NetsBloxVantage = function(server) {
         .option('-c, --clear', 'Clear the room info')
         .option('--delete', 'Delete the user')
         .option('--force', 'Force the given command')
-        .option('-e [project]', 'Save user project to file')
         .option('-p, --password <password>', 'Set the user password')
         .alias('u')
         .action((args, cb) => {
@@ -71,32 +70,6 @@ var NetsBloxVantage = function(server) {
                         } else {
                             console.log(user.pretty().rooms);
                         }
-                    } else if (args.options.e) {
-                        var name = args.options.e,
-                            saveable;
-
-                        if (room) {
-                            saveable = `<room name="${name}">` +
-                                // Create role/project info
-                                Object.keys(room.roles).map(role => [
-                                    `<role name="${role}">`,
-                                    room.roles[role].SourceCode || '',
-                                    room.roles[role].Media || '',
-                                    `</role>`
-                                ].join('\n')) +
-                                `</room>`;
-
-                            fs.writeFile(name + '.xml', saveable, err => {
-                                if (err) {
-                                    return cb(err);
-                                }
-                                console.log(`saved ${name} to ${name}.xml`);
-                                cb();
-                            });
-                        } else {
-                            console.log(`Could not find room "${name}"`);
-                        }
-
                     } else if (args.options.clear) {
                         // TODO
                         user.save();

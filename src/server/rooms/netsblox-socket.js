@@ -186,15 +186,12 @@ class NetsBloxSocket {
     }
 
     newRoom (opts) {
-        var name,
-            room;
-
         opts = opts || {role: 'myRole'};
         return Q(opts.room || opts.name || this.getNewName())
             .then(name => {
                 this._logger.info(`"${this.username}" is making a new room "${name}"`);
 
-                room = RoomManager.createRoom(this, name);
+                var room = RoomManager.createRoom(this, name);
                 room.createRole(opts.role);
                 this.join(room, opts.role);
             });

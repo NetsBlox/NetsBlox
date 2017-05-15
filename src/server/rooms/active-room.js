@@ -293,8 +293,8 @@ class ActiveRoom {
     // Retrieve a dictionary of role => project content
     collectProjects() {
         // Collect the projects from the websockets
-        var projects = this.sockets()
-            .map(socket => socket.getProjectJson());
+        const sockets = this.sockets();
+        const projects = sockets.map(socket => socket.getProjectJson());
 
         // Add saving the cached projects
         return Q.all(projects).then(projects => {

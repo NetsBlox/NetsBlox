@@ -12,7 +12,7 @@ class UserStore {
         this._users = db.collection('users');
     }
 
-    get (username, callback) {
+    get (username) {
         // Retrieve the user
         return this._users.findOne({username})
             .then(data => {

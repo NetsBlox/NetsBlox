@@ -51,6 +51,7 @@
                     this._logger.trace('collected projects for ' + this.owner);
 
                     this.clean();  // remove any null roles
+                    this.lastUpdateAt = Date.now();
                     return Q.all(roles.map(pair => {
                         let [name, role] = pair;
                         return Q.all([blob.store(role.SourceCode), blob.store(role.Media)])
@@ -61,8 +62,6 @@
                                 this.roles[name] = role;
                             });
                     }));
-
-                    this.lastUpdateAt = Date.now();
                 });
         }
 
