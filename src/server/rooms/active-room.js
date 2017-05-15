@@ -6,7 +6,6 @@
 var R = require('ramda'),
     _ = require('lodash'),
     Q = require('q'),
-    async = require('async'),
     utils = require('../server-utils'),
     Constants = require('../../common/constants');
 
@@ -270,36 +269,35 @@ class ActiveRoom {
 
     /////////// Caching and Saving ///////////
     cache (role, callback) {
+        this._logger.trace('caching ' + role);
+
         var socket = this.roles[role];
 
         if (!socket) {
-            let err = 'No socket in ' + role;
-            this._logger.error(err);
-            return callback(err);
+            return Q().then(() => {
+                let err = 'No socket in ' + role;
+                this._logger.error(err);
+                throw err;
+            });
         }
-        this._logger.trace('caching ' + role);
+
         // Get the project json from the socket
-        socket.getProjectJson((err, project) => {
-            if (err) {
-                return callback(err);
-            }
-            this.cachedProjects[role] = project;
-            return callback(err);
-        });
+        return socket.getProjectJson()
+            .then(project => {
+                this.cachedProjects[role] = project;
+                return project;
+            })
+            .nodeify(callback);
     }
 
     // Retrieve a dictionary of role => project content
-    collectProjects(callback) {
+    collectProjects() {
         // Collect the projects from the websockets
-        var sockets = this.sockets();
-        // Add saving the cached projects
-        async.map(sockets, (socket, callback) => {
-            socket.getProjectJson(callback);
-        }, (err, projects) => {
-            if (err) {
-                return callback(err);
-            }
+        var projects = this.sockets()
+            .map(socket => socket.getProjectJson());
 
+        // Add saving the cached projects
+        return Q.all(projects).then(projects => {
             // create the room from the projects
             var roles = Object.keys(this.roles),
                 socket,
@@ -317,7 +315,7 @@ class ActiveRoom {
                     content[roles[i]] = this.cachedProjects[roles[i]] || null;
                 }
             }
-            callback(null, content);
+            return content;
         });
     }
 

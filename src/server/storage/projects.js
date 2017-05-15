@@ -1,8 +1,8 @@
 (function(ProjectStorage) {
 
     const DataWrapper = require('./data');
-    const async = require('async');
     const Q = require('q');
+    const _ = require('lodash');
     const blob = require('./blob-storage');
 
     class Project extends DataWrapper {
@@ -32,17 +32,13 @@
             return new Project(params);
         }
 
-        collectProjects(callback) {
+        collectProjects() {
             // Collect the projects from the websockets
-            var sockets = this._room.sockets();
-            // Add saving the cached projects
-            async.map(sockets, (socket, callback) => {
-                socket.getProjectJson(callback);
-            }, (err, projects) => {
-                if (err) {
-                    return callback(err);
-                }
+            var sockets = this._room.sockets(),
+                projects = sockets.map(socket => socket.getProjectJson());
 
+            // Add saving the cached projects
+            return Q.all(projects).then(projects => {
                 // create the room from the projects
                 var roles = Object.keys(this._room.roles),
                     socket,
@@ -68,50 +64,57 @@
                         content.roles[roles[i]] = this._room.cachedProjects[roles[i]] || null;
                     }
                 }
-                callback(null, content);
+                return content;
             });
         }
 
         // Override
-        prepare(callback) {
+        prepare() {
             if (!this._user) {
                 this._logger.error(`Cannot save room "${this.name}" - no user`);
                 throw 'Can\'t save project w/o user';
             }
-            this.collectProjects((err, content) => {
-                if (err) {
-                    this._logger.error('could not save room: ' + err);
-                    throw err;
-                }
-                this._logger.trace('collected projects for ' + this._user.username);
+            return this.collectProjects()
+                .then(content => {
+                    this._logger.trace('collected projects for ' + this._user.username);
 
-                // Check for 'null' roles
-                var roleIds = Object.keys(content.roles),
-                    hasContent = false;
+                    // Check for 'null' roles
+                    var roleIds = Object.keys(content.roles),
+                        hasContent = false;
 
-                for (var i = roleIds.length; i--;) {
-                    if (!content.roles[roleIds[i]]) {
-                        this._logger.warn(`${this._user.username} saving project ` +
-                            `(${this.name}) with null role (${roleIds[i]})! Will ` +
-                            `try to proceed...`);
-                    } else {
-                        hasContent = true;
+                    for (var i = roleIds.length; i--;) {
+                        if (!content.roles[roleIds[i]]) {
+                            this._logger.warn(`${this._user.username} saving project ` +
+                                `(${this.name}) with null role (${roleIds[i]})! Will ` +
+                                `try to proceed...`);
+                        } else {
+                            hasContent = true;
+                        }
                     }
-                }
-                if (!hasContent) {  // only saving null role(s)
-                    err = `${this._user.username} tried to save a project w/ only ` +
-                        `falsey roles (${this.name})!`;
-                    this._logger.error(err);
-                    return callback(err);
-                }
+                    if (!hasContent) {  // only saving null role(s)
+                        err = `${this._user.username} tried to save a project w/ only ` +
+                            `falsey roles (${this.name})!`;
+                        this._logger.error(err);
+                        throw err;
+                    }
 
-                if (this.activeRole) {
-                    content.activeRole = this.activeRole;
-                }
-                // TODO: Save the content to the blob
-                this._content = content;
-                this._save(callback);
-            });
+                    if (this.activeRole) {
+                        content.activeRole = this.activeRole;
+                    }
+
+                    // Save the src, media to the blob
+                    var roles = Object.keys(content.roles)
+                        .map(name => content.roles[name]);
+
+                    return Q.all(roles.map(storeRole))
+                        .then(() => {
+                            this._content = content;
+                        });
+                })
+                .catch(err => {
+                    this._logger.error(`saving ${this.name} failed: ${err}`);
+                    throw err;
+                });
         }
 
         setActiveRole(role) {
@@ -123,23 +126,8 @@
             return this._content;
         }
 
-        _save(callback) {
-            var room = this._saveable();
-
-            // TODO: remove the cache and replace it with just saving the given role
-            // Update the cache for each role
-            this._logger.trace(`Updating the role cache for ${this._room.name} `+
-                `(${Object.keys(room.roles).join(', ')})`);
-
-            Object.keys(room.roles).forEach(role => 
-                this._room.cachedProjects[role] = room.roles[role]
-            );
-
-            this._saveLocal(room, callback);
-        }
-
         pretty() {
-            var prettyRoom = this._saveable();
+            var prettyRoom = _.cloneDeep(this._saveable());
             Object.keys(prettyRoom.roles || {})
                 .forEach(role => {
                     if (prettyRoom.roles[role]) {
@@ -194,7 +182,16 @@
         return Q.all([blob.get(srcHash), blob.get(mediaHash)])
             .then(content => {
                 [role.SourceCode, role.Media] = content;
-                console.log('content for', role.ProjectName, 'is', content);
+                return role;
+            });
+    };
+
+    const storeRole = function(role) {
+        const src = role.SourceCode;
+        const media = role.Media;
+        return Q.all([blob.store(src), blob.store(media)])
+            .then(content => {
+                [role.SourceCode, role.Media] = content;
                 return role;
             });
     };

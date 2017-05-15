@@ -20,7 +20,7 @@ var counter = 0,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
     RoomManager = require('./room-manager'),
-    CONDENSED_MSGS = ['project-response', 'import-room'],
+    CONDENSED_MSGS = ['project-response', 'import-room', 'record-action'],
     PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/,
     SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
 
@@ -249,13 +249,15 @@ class NetsBloxSocket {
         return this._socket.readyState;
     }
 
-    getProjectJson (callback) {
+    getProjectJson () {
         var id = ++counter;
+        const deferred = Q.defer();
         this.send({
             type: 'project-request',
             id: id
         });
-        this._projectRequests[id] = callback;
+        this._projectRequests[id] = deferred;
+        return deferred.promise;
     }
 
     sendMessageTo (msg, dstId) {
@@ -339,7 +341,7 @@ NetsBloxSocket.MessageHandlers = {
                     `${JSON.stringify(json)} (${err.toString()})`
                 ].join('');
                 this._logger.error(msg);
-                this._projectRequests[id].call(null, err);
+                this._projectRequests[id].reject(err);
                 delete this._projectRequests[id];
                 return;
             }
@@ -347,13 +349,13 @@ NetsBloxSocket.MessageHandlers = {
             if (!project) {  // silent failure
                 err = `Received falsey project! ${JSON.stringify(project)}`;
                 this._logger.error(err);
-                this._projectRequests[id].call(null, err);
+                this._projectRequests[id].reject(err);
                 delete this._projectRequests[id];
                 return;
             }
 
             this._logger.log('created saveable project for request ' + id);
-            this._projectRequests[id].call(null, null, project);
+            this._projectRequests[id].resolve(project);
             delete this._projectRequests[id];
         });
     },
