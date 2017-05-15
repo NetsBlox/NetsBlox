@@ -90,6 +90,13 @@
             this.activeRole = role;
         }
 
+        getStorageId() {
+            return {
+                name: this.name,
+                owner: this.owner
+            };
+        }
+
         pretty() {
             var prettyRoom = {
                 name: this.name,

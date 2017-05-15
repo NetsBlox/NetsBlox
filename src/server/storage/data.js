@@ -20,7 +20,7 @@ class Data {
                 let data = this._saveable();
 
                 this._logger.trace('saving', this.pretty());
-                return this._db.save(data);
+                return this._db.update(this.getStorageId(), data, {upsert: true});
             })
             .then(result => {
                 if (result.writeError) {
@@ -36,17 +36,22 @@ class Data {
     prepare() {
     }
 
+    getStorageId() {
+        return {_id: ObjectId(this._id)};
+    }
+
     _saveable() {
         var result = {},
             keys = Object.keys(this)
                 .filter(key => this.IGNORE_KEYS.indexOf(key) === -1);
+
         keys.forEach(key => result[key] = this[key]);
 
         return result;
     }
 
     destroy() {
-        this._db.deleteOne({_id: ObjectId(this._id)});  // jshint ignore:line
+        this._db.deleteOne(this.getStorageId());
     }
 
     pretty() {
