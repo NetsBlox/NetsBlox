@@ -56,12 +56,7 @@ function stopSendingMsgs(socket){
 function send(options,socket,response,msgType){
     waterwatchMsgs[socket.roleId] = [];
     // parse and make the coordinates compatible with the api
-    options.bBox[0] = parseFloat(options.bBox[0]).toFixed(7);
-    options.bBox[1] = parseFloat(options.bBox[1]).toFixed(7);
-    options.bBox[2] = parseFloat(options.bBox[2]).toFixed(7);
-    options.bBox[3] = parseFloat(options.bBox[3]).toFixed(7);
-    // console.log(parseFloat(options.bBox.westernLong).toFixed(7));
-    // console.log(options.bBox.westernLong);
+    options.bBox = options.bBox.map(coord => parseFloat(coord).toFixed(7))
     console.log(options);
     let url = baseUrl+encodeQueryData(options);
     cache.wrap(url, cacheCallback => {
