@@ -423,8 +423,7 @@ module.exports = [
         middleware: ['isLoggedIn', 'setUser'],
         Handler: function(req, res) {
             var user = req.session.user,
-                project = req.body.ProjectName,
-                room;
+                project = req.body.ProjectName;
 
             log(user.username +' trying to delete "' + project + '"');
             // Get the project and call "destroy" on it
@@ -572,18 +571,19 @@ module.exports = [
                 projectName = req.query.ProjectName;
 
             this._logger.trace(`Retrieving the public project: ${projectName} from ${username}`);
-            this.storage.users.get(username, function(e, user) {
-                if (e || !user) {
-                    log(`Could not find user ${username}`);
-                    return res.status(400).send('ERROR: User not found');
-                }
-                var project = user.rooms.find(room => room.name === projectName);
-                if (project && project.Public) {
-                    return res.send(Utils.getRoomXML(project));
-                } else {
-                    return res.status(400).send('ERROR: Project not available');
-                }
-            });
+            return this.storage.users.get(username)
+                .then(user => {
+                    if (!user) {
+                        log(`Could not find user ${username}`);
+                        return res.status(400).send('ERROR: User not found');
+                    }
+                    var project = user.rooms.find(room => room.name === projectName);
+                    if (project && project.Public) {
+                        return res.send(Utils.getRoomXML(project));
+                    } else {
+                        return res.status(400).send('ERROR: Project not available');
+                    }
+                });
         }
     }
 

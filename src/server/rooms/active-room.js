@@ -112,7 +112,7 @@ class ActiveRoom {
         return promise.then(name => {
             this.update(name);
             return name;
-        })
+        });
     }
 
     save() {
