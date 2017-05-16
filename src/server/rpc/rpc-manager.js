@@ -150,7 +150,6 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
             this._logger.log('Could not find group for user "'+req.query.uuid+'"');
             return res.status(401).send('ERROR: user not found. who are you?');
         }
-        this._logger.log(`About to call ${RPC.getPath()}=>${action}`);
 
         // Add the netsblox socket for triggering network messages from an RPC
         rpc.socket = SocketManager.getSocket(uuid);
@@ -166,6 +165,9 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
             var oldName = oldFieldNameFor[argName];
             return req.query.hasOwnProperty(argName) ? req.query[argName] : req.query[oldName];
         });
+        let prettyArgs = JSON.stringify(args);
+        prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
+        this._logger.log(`calling ${RPC.getPath()}.${action}(${prettyArgs})`);
         result = rpc[action].apply(rpc, args);
 
         this.sendRPCResult(res, result);
