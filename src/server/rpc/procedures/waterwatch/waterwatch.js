@@ -4,20 +4,20 @@ let WaterWatchRPC = {
 };
 
 let debug = require('debug'),
-rp = require('request-promise'), //maybe use request-promise-native?
-error = debug('netsblox:rpc:waterwatch:error'),
-CacheManager = require('cache-manager'),
-trace = debug('netsblox:rpc:waterwatch:trace');
+    rp = require('request-promise'), //maybe use request-promise-native?
+    error = debug('netsblox:rpc:waterwatch:error'),
+    CacheManager = require('cache-manager'),
+    trace = debug('netsblox:rpc:waterwatch:trace');
 
 let baseUrl = 'https://waterservices.usgs.gov/nwis/iv/?',
-cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000});
+    cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000});
 
 
 // turn an options object into query friendly string
 function encodeQueryData(options) {
     let ret = [];
     for (let d in options)
-    ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(options[d]));
+        ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(options[d]));
     return ret.join('&');
 }
 
@@ -56,8 +56,8 @@ function stopSendingMsgs(socket){
 function send(options,socket,response,msgType){
     waterwatchMsgs[socket.roleId] = [];
     // parse and make the coordinates compatible with the api
-    options.bBox = options.bBox.map(coord => parseFloat(coord).toFixed(7))
-    console.log(options);
+    options.bBox = options.bBox.map(coord => parseFloat(coord).toFixed(7));
+    trace(options);
     let url = baseUrl+encodeQueryData(options);
     cache.wrap(url, cacheCallback => {
         trace('requesting this url for data (not cached!)', url);
@@ -118,10 +118,9 @@ WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, west
     // list of parameteCD: https://help.waterdata.usgs.gov/codes-and-parameters/parameters
     // query descriptions: https://waterservices.usgs.gov/rest/IV-Test-Tool.html
     // QUESTIONS i cant pass socket to send func when using let. why?
-    var options = {'format':'json', 'bBox':[westernLong,southernLat,easternLong,northernLat],
-    'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00065'},
-    socket = this.socket,
-    response = this.response;
+    var options = {'format':'json', 'bBox':[westernLong,southernLat,easternLong,northernLat], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00065'},
+        socket = this.socket,
+        response = this.response;
 
     send(options,socket,response,'gageHeight');
 
@@ -131,10 +130,9 @@ WaterWatchRPC.gageHeight = function (northernLat, easternLong, southernLat, west
 
 WaterWatchRPC.streamFlow = function (northernLat, easternLong, southernLat, westernLong) {
     //init
-    var options = {'format':'json', 'bBox': [westernLong,southernLat,easternLong,northernLat],
-    'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00060'},
-    socket = this.socket,
-    response = this.response;
+    var options = {'format':'json', 'bBox': [westernLong,southernLat,easternLong,northernLat], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00060'},
+        socket = this.socket,
+        response = this.response;
 
     send(options,socket,response,'streamFlow');
 
@@ -143,10 +141,9 @@ WaterWatchRPC.streamFlow = function (northernLat, easternLong, southernLat, west
 
 WaterWatchRPC.waterTemp = function (northernLat, easternLong, southernLat, westernLong) {
     //init
-    var options = {'format':'json', 'bBox':[westernLong,southernLat,easternLong,northernLat],
-    'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00010'},
-    socket = this.socket,
-    response = this.response;
+    var options = {'format':'json', 'bBox':[westernLong,southernLat,easternLong,northernLat], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00010'},
+        socket = this.socket,
+        response = this.response;
 
     send(options,socket,response,'waterTemp');
 
