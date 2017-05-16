@@ -4,11 +4,11 @@ let GeoLocationRPC = {
 };
 
 var debug = require('debug'),
-    error = debug('netsblox:rpc:trends:error'),
+    error = debug('netsblox:rpc:geolocation:error'),
     CacheManager = require('cache-manager'),
     NodeGeocoder = require('node-geocoder'),
     rp = require('request-promise'),
-    trace = debug('netsblox:rpc:trends:trace');
+    trace = debug('netsblox:rpc:geolocation:trace');
 
 // init
 var cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
