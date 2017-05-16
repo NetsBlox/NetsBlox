@@ -426,7 +426,8 @@ NetsBloxSocket.MessageHandlers = {
         var roles = Object.keys(msg.roles),
             names = {},
             name,
-            i = 2;
+            i = 2,
+            promise = Q();
 
         if (!this.hasRoom()) {
             this._logger.error(`${this.username} has no associated room`);
@@ -435,38 +436,41 @@ NetsBloxSocket.MessageHandlers = {
 
         // change the socket's name to the given name (as long as it isn't colliding)
         if (this.user) {
-            // TODO: refactor this
-            this.user.getProjectNames().forEach(name => names[name] = true);
+            promise = this.user.getProjectNames()
+                .then(names => names.forEach(name => names[name] = true));
         }
 
-        // create unique name, if needed
-        name = msg.name;
-        while (names[name]) {
-            name = msg.name + ' (' + i + ')';
-            i++;
-        }
+        return promise
+            .then(() => {
+                // create unique name, if needed
+                name = msg.name;
+                while (names[name]) {
+                    name = msg.name + ' (' + i + ')';
+                    i++;
+                }
 
-        this._logger.trace(`changing room name from ${this._room.name} to ${name}`);
-        this._room.update(name);
+                this._logger.trace(`changing room name from ${this._room.name} to ${name}`);
+                this._room.update(name);
 
-        // Rename the socket's role
-        this._logger.trace(`changing role name from ${this.roleId} to ${msg.role}`);
-        this._room.renameRole(this.roleId, msg.role);
+                // Rename the socket's role
+                this._logger.trace(`changing role name from ${this.roleId} to ${msg.role}`);
+                this._room.renameRole(this.roleId, msg.role);
 
-        // Add all the additional roles
-        this._logger.trace(`adding roles: ${roles.join(',')}`);
-        roles.forEach(role => this._room.silentCreateRole(role));
+                // Add all the additional roles
+                this._logger.trace(`adding roles: ${roles.join(',')}`);
+                roles.forEach(role => this._room.silentCreateRole(role));
 
-        // load the roles into the cache
-        roles.forEach(role => this._room.cachedProjects[role] = {
-            SourceCode: msg.roles[role].SourceCode,
-            Media: msg.roles[role].Media,
-            MediaSize: msg.roles[role].Media.length,
-            SourceSize: msg.roles[role].SourceCode.length,
-            RoomName: msg.name
-        });
+                // load the roles into the cache
+                roles.forEach(role => this._room.cachedProjects[role] = {
+                    SourceCode: msg.roles[role].SourceCode,
+                    Media: msg.roles[role].Media,
+                    MediaSize: msg.roles[role].Media.length,
+                    SourceSize: msg.roles[role].SourceCode.length,
+                    RoomName: msg.name
+                });
 
-        this._room.onRolesChanged();
+                this._room.onRolesChanged();
+            });
     },
 
     // Retrieve the json for each project and respond
