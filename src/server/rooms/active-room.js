@@ -341,6 +341,7 @@ ActiveRoom.fromStore = function(logger, socket, data) {
     // Store the data
     room.setStorage(data);
     room.originTime = data.originTime;
+    room.collaborators = data.collaborators;
 
     // Set up the roles
     room._uuid = data.uuid;  // save over the old uuid even if it changes
