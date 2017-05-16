@@ -2,7 +2,7 @@
 // will then be handled wrt this list stored in the filesystem. Hourly, we will update
 // our cache of this earthquake data.
 //
-// This is a static rpc collection. That is, it does not maintain state and is 
+// This is a static rpc collection. That is, it does not maintain state and is
 // shared across groups
 'use strict';
 
@@ -17,8 +17,17 @@ var debug = require('debug'),
 // Helpers
 var createParams = function(obj) {
     return R.toPairs(obj)
+        .filter(keyVal => keyVal[1] != null )
         .map(keyVal => keyVal.join('='))
         .join('&');
+};
+
+let stringToDate = string => {
+    let miliseconds = parseInt(string);
+    if (!isNaN(miliseconds)) {
+        return new Date(miliseconds);
+    }
+    return new Date(string);
 };
 
 var DELAY = 250;
@@ -64,18 +73,23 @@ Earthquakes.stop = function() {
     return '';
 };
 
-Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongitude) {
+Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongitude, startTime, endTime) {
     var socket = this.socket,
         response = this.response,
-        params = createParams({
+        options = {
             minlatitude: +minLatitude || 0,
             minlongitude: +minLongitude || 0,
             maxlatitude: +maxLatitude || 0,
             maxlongitude: +maxLongitude || 0
-        }),
-        url = baseUrl + params;
+        };
+    if(startTime && endTime){
+        options.starttime = stringToDate(startTime).toISOString();
+        options.endtime = stringToDate(endTime).toISOString();
+    }
+    let params = createParams(options);
+    let url = baseUrl + params;
 
-    trace('Requesting earthquakes at : ' + params);
+    trace('Requesting earthquakes at : ' + url);
 
     // This method will not respond with anything... It will simply
     // trigger socket messages to the given client
