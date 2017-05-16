@@ -87,6 +87,10 @@ RoomMorph.prototype._onNameChanged = function(newName) {
     }
 };
 
+RoomMorph.prototype.isOwner = function() {
+    return this.ownerId && this.ownerId === SnapCloud.username;
+};
+
 RoomMorph.prototype.update = function(ownerId, name, roles) {
     var myself = this,
         wasEditable = this.editable,
@@ -98,7 +102,7 @@ RoomMorph.prototype.update = function(ownerId, name, roles) {
     // Update the roles, etc
     this.ownerId = ownerId || this.ownerId;
     this.roles = roles || this.roles;
-    this.editable = this.ownerId && this.ownerId === SnapCloud.username;
+    this.editable = this.isOwner();
 
     changed = name && this.name !== name;
     if (changed) {

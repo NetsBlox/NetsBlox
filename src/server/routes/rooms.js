@@ -11,6 +11,7 @@ var _ = require('lodash'),
     RoomManager = require('../rooms/room-manager'),
     Sessions = require('snap-collaboration').sessions,
     SocketManager = require('../socket-manager'),
+    ProjectStorage = require('../storage/projects'),
     invites = {};
 
 module.exports = [
@@ -128,6 +129,7 @@ module.exports = [
         }
     },
     {
+        // TODO: update this!
         Service: 'inviteToRoom',
         Parameters: 'socketId,invitee,ownerId,roomName,roleId',
         middleware: ['hasSocket', 'isLoggedIn'],
@@ -341,7 +343,7 @@ module.exports = [
     },
     {  // Collaboration
         Service: 'inviteToCollaborate',
-        Parameters: 'socketId,invitee,ownerId,roomName,roleId,sessionId',
+        Parameters: 'socketId,invitee,ownerId,roomName',
         middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
         Note: '',
@@ -351,17 +353,15 @@ module.exports = [
                 roomName = req.body.roomName,
                 roomId = utils.uuid(req.body.ownerId, roomName),
                 roleId = req.body.roleId,
-                sessionId = req.body.sessionId,
                 inviteId = ['collab', inviter, invitee, roomId, roleId].join('-'),
                 inviteeSockets = SocketManager.socketsFor(invitee);
 
-            log(`${inviter} is inviting ${invitee} to ${roleId} at ${roomId} (${sessionId})`);
+            log(`${inviter} is inviting ${invitee} to ${roomId}`);
 
             // Record the invitation
             invites[inviteId] = {
-                room: roomId,
-                role: roleId,
-                sessionId: sessionId,
+                owner: req.body.ownerId,
+                project: roomName,  // TODO: This would be nice to be an id...
                 invitee
             };
 
@@ -420,16 +420,25 @@ module.exports = [
 
             if (response) {
                 // TODO: Update this to add the user as a collaborator
+
+                // TODO: add the user to the project's collaborator list
+                // FIXME
+
                 // Add the roleId to the room (if doesn't exist)
-                let room = RoomManager.rooms[invite.room];
+                const uuid = Utils.uuid(invite.owner, invite.project);
+                let project = RoomManager.rooms[uuid];
 
-                if (!room) {
-                    warn(`room no longer exists "${invite.room}`);
-                    return res.send('ERROR: project is no longer open');
+                if (!project) {
+                    // TODO: Look up the room
+                    warn(`room no longer exists "${uuid}`);
+                    return ProjectStorage.getProject(invite.owner, invite.project)
+                        .then(project => {
+                            project.addCollaborator(username);
+                            project.save();
+                            return res.sendStatus(200);
+                        });
                 }
-
-                // add the given socket to the session
-                Sessions.joinSession(req.body.collabId, invite.sessionId);
+                project.addCollaborator(username);
                 return res.sendStatus(200);
             }
         }

@@ -17,6 +17,7 @@
             super(params.db, params.data || {});
             this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
             this._room = params.room;
+            this.collaborators = this.collaborators || [];
         }
 
         fork(room) {
@@ -88,6 +89,19 @@
 
         setActiveRole(role) {
             this.activeRole = role;
+        }
+
+        addCollaborator(username) {
+            if (this.collaborators.includes(username)) return;
+            this.collaborators.push(username);
+            this._logger.info(`added collaborator ${username} to ${this.name}`);
+        }
+
+        removeCollaborator(username) {
+            var index = this.collaborators.indexOf(username);
+            if (index === -1) return;
+            this.collaborators.splice(index, 1);
+            this._logger.info(`removed collaborator ${username} from ${this.name}`);
         }
 
         getStorageId() {
@@ -195,6 +209,7 @@
             name: room.name,
             originTime: room.originTime,
             activeRole: user.roleId,
+            collaborators: room.collaborators,
             roles: {}
         };
     };

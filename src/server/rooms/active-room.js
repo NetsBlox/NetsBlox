@@ -17,6 +17,8 @@ class ActiveRoom {
 
         // Seats
         this.roles = {};  // actual occupants
+        this.collaborators = [];
+
         this.cachedProjects = {};
 
         this.owner = owner;
@@ -30,6 +32,17 @@ class ActiveRoom {
         this.uuid = utils.uuid(owner.username, name);
         this._logger = logger.fork('active-room' + this.uuid);
         this._logger.log('created!');
+    }
+
+    addCollaborator(username) {
+        if (this.collaborators.includes(username)) return;
+        this.collaborators.push(username);
+    }
+
+    removeCollaborator(username) {
+        var index = this.collaborators.indexOf(username);
+        if (index === -1) return;
+        this.collaborators.splice(index, 1);
     }
 
     close () {
