@@ -155,7 +155,9 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
                             return `\t${role}: ${username}`;
                         });
 
-                    return `${room.uuid}:\n${clients.join('\n')}\n`;
+                    const collabs = room.collaborators.join(' ');
+                    return `${room.uuid}:\n   collabs: ${collabs}\n` +
+                        `   roles:\n${clients.join('\n')}\n`;
                 }).join('\n');
 
             if (args.options.entries) {

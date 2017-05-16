@@ -505,7 +505,7 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
                     myself.ide.rawLoadCloudProject(response[0], proj.Public);
                 },
                 myself.ide.cloudError(),
-                [proj.ProjectName, SnapCloud.socketId()]
+                [proj.Owner, proj.ProjectName, SnapCloud.socketId()]
             );
         },
         myself.ide.cloudError()

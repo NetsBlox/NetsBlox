@@ -191,6 +191,24 @@
             });
     };
 
+    ProjectStorage.getSharedProject = function (owner, projectName, user) {
+        return collection.findOne({owner: owner, name: projectName, collaborators: user})
+            .then(data => {
+                const params = {
+                    logger: logger,
+                    db: collection,
+                    data
+                };
+                const project = data ? new Project(params) : null;
+                let promise = Q(project);
+
+                if (project) {
+                    promise = loadProjectBinaryData(project);
+                }
+                return promise;
+            });
+    };
+
     ProjectStorage.getRawUserProjects = function (username) {
         return collection.find({owner: username}).toArray();
     };
@@ -205,6 +223,24 @@
             .then(projects => Q.all(projects.map(loadProjectBinaryData)))
             .catch(e => {
                 logger.error(`getting user projects errored: ${e}`);
+                throw e;
+            });
+    };
+
+    ProjectStorage.getRawSharedProjects = function (username) {
+        return collection.find({collaborators: username}).toArray();
+    };
+
+    ProjectStorage.getSharedProjects = function (username) {
+        return ProjectStorage.getRawSharedProjects(username)
+            .then(data => data.map(d => new Project({
+                logger: logger,
+                db: collection,
+                data: d
+            })))
+            .then(projects => Q.all(projects.map(loadProjectBinaryData)))
+            .catch(e => {
+                logger.error(`getting shared projects errored: ${e}`);
                 throw e;
             });
     };

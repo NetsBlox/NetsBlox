@@ -78,12 +78,25 @@ class User extends DataWrapper {
             });
     }
 
+    getSharedProject(owner, name) {
+        this._logger.trace(`getting shared project ${owner}/${name} for ${this.username}`);
+        return Projects.getSharedProject(owner, name, this.username);
+    }
+
     getProjects() {
         return Projects.getUserProjects(this.username);
     }
 
     getRawProjects() {
         return Projects.getRawUserProjects(this.username);
+    }
+
+    getRawSharedProjects() {
+        return Projects.getRawSharedProjects(this.username);
+    }
+
+    getSharedProjects() {
+        return Projects.getSharedProjects(this.username);
     }
 
     getProjectNames() {

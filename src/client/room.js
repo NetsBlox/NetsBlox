@@ -56,6 +56,7 @@ function RoomMorph(ide) {
     // update on login (changing room name if default)
     SnapCloud.onLogin = function() {
         myself.update();
+        // FIXME: This has problems if opening default project
         if (myself._name === localize(RoomMorph.DEFAULT_ROOM)) {
             myself.ide.sockets.sendMessage({type: 'request-new-name'});
         }
@@ -835,7 +836,7 @@ function EditRoleMorph(room, role) {
         }
     } else {  // vacant
         this.addButton('moveToRole', 'Move to');
-        this.addButton('inviteUser', 'Invite User');
+        //this.addButton('inviteUser', 'Invite User');
         this.addButton('deleteRole', 'Delete role');
     }
     this.addButton('cancel', 'Cancel');

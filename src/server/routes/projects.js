@@ -79,28 +79,31 @@ var getPreview = function(project) {
     }
     preview.Updated = new Date(preview.Updated);  // to string
     preview.Public = project.Public;
+    preview.Owner = project.owner;
     return preview;
 };
 
 ////////////////////// Project Helpers ////////////////////// 
-var getRoomsNamed = function(name, user) {
-    return user.getProject(name)
-        .then(project => {
-            var activeRoom;
+var getRoomsNamed = function(name, user, owner) {
+    let getProject = user.username === owner ? user.getProject(name) :
+        user.getSharedProject(name);
 
-            trace(`found project ${name} for ${user.username}`);
+    return getProject.then(project => {
+        var activeRoom;
 
-            if (project) {
-                activeRoom = RoomManager.rooms[Utils.uuid(project.owner, project.name)];
-            }
+        trace(`found project ${name} for ${user.username}`);
 
-            return {
-                active: activeRoom,
-                stored: project,
-                areSame: !!activeRoom && !!project &&
-                    activeRoom.originTime === project.originTime
-            };
-        });
+        if (project) {
+            activeRoom = RoomManager.rooms[Utils.uuid(project.owner, project.name)];
+        }
+
+        return {
+            active: activeRoom,
+            stored: project,
+            areSame: !!activeRoom && !!project &&
+                activeRoom.originTime === project.originTime
+        };
+    });
 };
 
 var sendProjectTo = function(project, res) {
@@ -252,9 +255,32 @@ module.exports = [
             var username = req.session.username;
             log(username +' requested project list');
 
-            // TODO: get the projects that this user is a collaborator on
-            var previews = [];
-            return res.send(Utils.serializeArray(previews));
+            return this.storage.users.get(username)
+                .then(user => {
+                    if (user) {
+                        return user.getSharedProjects().then(projects => {
+                            trace(`found project list (${projects.length}) ` +
+                                `for ${username}: ${projects.map(proj => proj.name)}`);
+
+                            const previews = projects.map(getPreview);
+                            const names = JSON.stringify(previews.map(preview =>
+                                preview.ProjectName));
+
+                            info(`shared projects for ${username} are ${names}`);
+                                
+                            if (req.query.format === 'json') {
+                                return res.json(previews);
+                            } else {
+                                return res.send(Utils.serializeArray(previews));
+                            }
+                        });
+                    }
+                    return res.status(404);
+                })
+                .catch(e => {
+                    this._logger.error(`could not find user ${username}: ${e}`);
+                    return res.status(500).send('ERROR: ' + e);
+                });
         }
     },
     {
@@ -274,18 +300,6 @@ module.exports = [
                             trace(`found project list (${projects.length}) ` +
                                 `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                            // Return the following for each room:
-                            //
-                            //  + ProjectName
-                            //  + Updated
-                            //  + Notes
-                            //  + Thumbnail
-                            //  + Public?
-                            //
-                            // These values are retrieved from whatever role has notes
-                            // or chosen arbitrarily (for now)
-
-                            // Update this to parse the projects from the room list
                             var previews = projects.map(getPreview);
 
                             info(`Projects for ${username} are ${JSON.stringify(
@@ -372,24 +386,24 @@ module.exports = [
     },
     {
         Service: 'getProject',
-        Parameters: 'ProjectName,socketId',
+        Parameters: 'owner,projectName,socketId',  // TODO: add the owner
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
-            var roomName = req.body.ProjectName,
+            var {owner, projectName, socketId} = req.body,
                 user = req.session.user,
-                socketId = req.body.socketId,
                 socket = socketId && SocketManager.getSocket(socketId);
 
             if (socket) {
                 socket.leave();
             }
 
-            // Get the project
-            return getRoomsNamed.call(this, roomName, user).then(rooms => {
+            // Get the projectName
+            trace(`${user.username} opening shared project ${owner}/${projectName}`);
+            return getRoomsNamed.call(this, projectName, user, owner).then(rooms => {
                 if (rooms.active) {
-                    trace(`room with name ${roomName} already open. Are they the same? ${rooms.areSame}`);
+                    trace(`room with name ${projectName} already open. Are they the same? ${rooms.areSame}`);
                     if (rooms.areSame) {
                         // Clone, change the room name, and send!
                         // Since they are the same, we assume the user wants to create
@@ -400,12 +414,12 @@ module.exports = [
                         // not the same; simply change the name of the active room
                         // (the active room must be newer since it hasn't been saved
                         // yet)
-                        trace(`active room is ${roomName} already open`);
+                        trace(`active room is ${projectName} already open`);
                         rooms.active.changeName();
                         sendProjectTo(rooms.stored, res);
                     }
                 } else if (rooms.stored) {
-                    trace(`no active room with name ${roomName}. Proceeding normally`);
+                    trace(`no active room with name ${projectName}. Proceeding normally`);
                     sendProjectTo(rooms.stored, res);
                 } else {
                     res.send('ERROR: Project not found');
