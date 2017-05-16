@@ -74,14 +74,21 @@
 
                     this.clean();  // remove any null roles
                     this.lastUpdateAt = Date.now();
-                    return Q.all(roles.map(pair => {
+                    roles.forEach(pair => {  // update roles
                         let [name, role] = pair;
+                        this.roles[name] = role;
+                    });
+
+                    roles = Object.keys(this.roles)
+                        .map(name => [name, this.roles[name]]);
+
+                    return Q.all(roles.map(pair => {
+                        let role = pair[1];
                         return Q.all([blob.store(role.SourceCode), blob.store(role.Media)])
                             .then(hashes => {
                                 let [srcHash, mediaHash] = hashes;
                                 role.SourceCode = srcHash;
                                 role.Media = mediaHash;
-                                this.roles[name] = role;
                             });
                     }));
                 });
