@@ -33,7 +33,7 @@
         }
 
         collectProjects() {
-            var sockets = this._room.sockets();
+            var sockets = this._room ? this._room.sockets() : [];
             // Add saving the cached projects
             return Q.all(sockets.map(socket => socket.getProjectJson()))
                 .then(projects => {
