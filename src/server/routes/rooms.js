@@ -9,7 +9,6 @@ var _ = require('lodash'),
     error = debug('netsblox:api:rooms:error'),
     utils = require('../server-utils'),
     RoomManager = require('../rooms/room-manager'),
-    Sessions = require('snap-collaboration').sessions,
     SocketManager = require('../socket-manager'),
     ProjectStorage = require('../storage/projects'),
     invites = {};
@@ -36,26 +35,28 @@ module.exports = [
         Service: 'getCollaborators',
         Parameters: 'socketId',
         Method: 'post',
-        middleware: ['isLoggedIn'],
+        middleware: ['isLoggedIn', 'hasSocket'],
         Handler: function(req, res) {
-            var friends = getFriendSockets(req.session.username),
-                socketId = req.body.socketId,
-                sessionId = Sessions.sessionId(socketId),
-                resp = {},
-                id;
+            const socket = SocketManager.getSocket(req.body.socketId);
 
-            log(`session for ${socketId} is ${sessionId}`);
-            friends.forEach(socket => {
-                id = socket.collaborationId();
-                log(`session for ${id} is ${Sessions.sessionId(id)}`);
-                if (sessionId && Sessions.sessionId(id) === sessionId) {
-                    resp[socket.username] = socket.uuid;
-                } else {
-                    resp[socket.username] = false;
-                }
+            return socket.getRoom().then(room => {
+                const friends = getFriendSockets(req.session.username);
+                const collaborators = room.collaborators;
+                const resp = {};
+                let username;
+
+                friends.forEach(socket => {
+                    username = socket.username;
+
+                    if (collaborators.includes(username)) {
+                        resp[socket.username] = socket.uuid;
+                    } else {
+                        resp[socket.username] = false;
+                    }
+                });
+                return res.send(Utils.serialize(resp));
             });
 
-            return res.send(Utils.serialize(resp));
         }
     },
     {

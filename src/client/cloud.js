@@ -247,7 +247,7 @@ NetCloud.prototype.getCollaboratorList = function (callBack, errorCall) {
                     callBack.call(null, users, url);
                 },
                 errorCall,
-                [SnapActions.id]
+                [myself.socketId()]
             );
         },
         errorCall
