@@ -61,31 +61,26 @@ module.exports = [
     },
     {
         Service: 'evictCollaborator',
-        Parameters: 'socketId,otherId',
+        Parameters: 'socketId,userId',
         Method: 'post',
         middleware: ['hasSocket', 'isLoggedIn'],
         Handler: function(req, res) {
-            var socketId = req.body.socketId,
-                socket = SocketManager.getSocket(socketId),
-                otherId = req.body.otherId,
-                otherSocket = SocketManager.getSocket(otherId);
+            var {socketId, userId} = req.body,
+                socket = SocketManager.getSocket(socketId);
 
-            if (!otherSocket) {
-                this._logger.warn(`Could not find socket to remove: ${otherId}`);
-                return res.sendStatus(400);  // TODO
-            }
-
-            // Remove the other socket
-            this._logger.debug(`Removing socket ${otherId} from ${otherSocket.getSessionId()}`);
-            otherSocket.leaveSession();
-            this._logger.debug(`New session for ${otherId} is ${otherSocket.getSessionId()}`);
-
-            // Send the remove message to the other socket
-            otherSocket.send({
-                type: 'notification',
-                message: 'You are no longer collaborating with ' + socket.username
+            return socket.getRoom().then(room => {
+                // Remove all sockets with the given username
+                log(`removing collaborator ${userId} from room ${room.uuid}`);
+                room.removeCollaborator(userId);
+                room.sockets().forEach(socket => {
+                    if (socket.username === userId) {
+                        RoomManager.forkRoom({room, socket});
+                    }
+                });
+                room.onRolesChanged();
+                room.save();
+                return res.sendStatus(200);
             });
-            return res.sendStatus(200);
         }
     },
     {

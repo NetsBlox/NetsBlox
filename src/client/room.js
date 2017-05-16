@@ -1296,7 +1296,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.labelString = 'Invite a Friend to Collaborate';
     this.createLabel();
     this.uncollaborateButton = this.addButton(function() {
-        SnapCloud.evictCollaborator(myself.listField.selected.value);
+        SnapCloud.evictCollaborator(myself.listField.selected.username);
         myself.destroy();
     }, 'Remove');
     this.collaborateButton = this.addButton('ok', 'Invite');
