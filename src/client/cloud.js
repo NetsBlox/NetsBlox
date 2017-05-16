@@ -402,6 +402,8 @@ NetCloud.prototype.passiveLogin = function (ide, callback, callOnFail) {
         myself = this,
         response;
 
+    if (myself.session && myself.password === true) return callback(true);
+
     callback = callback || nop;
     try {
         request.open(
