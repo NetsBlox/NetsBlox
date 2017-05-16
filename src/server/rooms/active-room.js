@@ -30,7 +30,7 @@ class ActiveRoom {
         this._store = null;
 
         this.uuid = utils.uuid(owner.username, name);
-        this._logger = logger.fork('active-room' + this.uuid);
+        this._logger = logger.fork('active-room:' + this.uuid);
         this._logger.log('created!');
     }
 
