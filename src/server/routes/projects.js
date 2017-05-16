@@ -372,7 +372,7 @@ module.exports = [
                 user = req.session.user,
                 owner = req.body.owner || user.username;
 
-            log(`${user.username} joining active ${roomName}`);
+            log(`${user.username} joining active ${owner}/${roomName}`);
             return getRoomsNamed.call(this, roomName, user, owner).then(rooms => {
                 // Get the active project and join it
                 if (rooms.active) {

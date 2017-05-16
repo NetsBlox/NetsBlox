@@ -427,7 +427,7 @@ ProjectDialogMorph.prototype.openProject = function () {
         var myself = this;
         SnapCloud.callService('joinActiveProject', function(response) {
             myself.ide.rawLoadCloudProject(response[0], proj.Public);
-        }, myself.ide.cloudError(), [proj.ProjectName, proj.owner]);
+        }, myself.ide.cloudError(), [proj.ProjectName, proj.Owner]);
     } else {
         return superOpenProj.call(this);
     }
