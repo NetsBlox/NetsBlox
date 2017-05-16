@@ -55,7 +55,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
 
     // reverse geocoding helper, doesn't return a promise. handles sending of response.
     let reverseGeocode = (lat, lon, response, query)=>{
-        cache.wrap(lat + ', ' + lon, cacheCallback => {
+        cache.wrap(lat + ', ' + lon + query, cacheCallback => {
             trace('Geocoding (not cached)', lat, lon);
             geocoder.reverse({lat, lon})
             .then(function(res) {
