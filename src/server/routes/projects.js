@@ -86,7 +86,7 @@ var getPreview = function(project) {
 ////////////////////// Project Helpers ////////////////////// 
 var getRoomsNamed = function(name, user, owner) {
     let getProject = user.username === owner ? user.getProject(name) :
-        user.getSharedProject(name);
+        user.getSharedProject(owner, name);
 
     return getProject.then(project => {
         var activeRoom;
@@ -363,15 +363,17 @@ module.exports = [
     },
     {
         Service: 'joinActiveProject',
-        Parameters: 'ProjectName',
+        Parameters: 'ProjectName,owner',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
             var roomName = req.body.ProjectName,
-                user = req.session.user;
+                user = req.session.user,
+                owner = req.body.owner || user.username;
 
-            return getRoomsNamed.call(this, roomName, user).then(rooms => {
+            log(`${user.username} joining active ${roomName}`);
+            return getRoomsNamed.call(this, roomName, user, owner).then(rooms => {
                 // Get the active project and join it
                 if (rooms.active) {
                     // Join the project

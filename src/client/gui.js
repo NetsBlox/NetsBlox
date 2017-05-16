@@ -423,6 +423,11 @@ ProjectDialogMorph.prototype.openProject = function () {
         }
         this.ide.loadNextRoom();
         this.ide.updateUrlQueryString(proj.name, false, true);
+    } else if (this.source === 'cloud-shared'){
+        var myself = this;
+        SnapCloud.callService('joinActiveProject', function(response) {
+            myself.ide.rawLoadCloudProject(response[0], proj.Public);
+        }, myself.ide.cloudError(), [proj.ProjectName, proj.owner]);
     } else {
         return superOpenProj.call(this);
     }
