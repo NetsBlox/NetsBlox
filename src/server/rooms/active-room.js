@@ -352,7 +352,7 @@ class ActiveRoom {
 
 // Factory method
 ActiveRoom.fromStore = function(logger, socket, data) {
-    var room = new ActiveRoom(logger, data.name, socket.username);
+    var room = new ActiveRoom(logger, data.name, data.owner);
 
     // Store the data
     room.setStorage(data);
