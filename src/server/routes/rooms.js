@@ -278,7 +278,7 @@ module.exports = [
                 return res.status(404).send('ERROR: Not fully connected... Please try again or try a different browser (and report this issue to the netsblox maintainers!)');
             }
 
-            if (!socket.isOwner()) {
+            if (!socket.isOwner() && !socket.isCollaborator()) {
                 return res.status(403).send('ERROR: permission denied');
             }
 
