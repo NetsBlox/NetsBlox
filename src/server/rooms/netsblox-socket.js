@@ -121,6 +121,7 @@ class NetsBloxSocket {
 
             // check the namespace
             if (msg.namespace !== 'netsblox') return;
+            if (msg.type === 'beat') return;
 
             this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message`);
             if (NetsBloxSocket.MessageHandlers[type]) {
