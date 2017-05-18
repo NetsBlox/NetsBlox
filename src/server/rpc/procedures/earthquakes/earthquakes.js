@@ -23,9 +23,8 @@ var createParams = function(obj) {
 };
 
 let stringToDate = string => {
-    let miliseconds = parseInt(string);
-    if (!isNaN(miliseconds)) {
-        return new Date(miliseconds);
+    if (string.match(/^\d+$/)) {
+        return new Date(parseInt(string));
     }
     return new Date(string);
 };
