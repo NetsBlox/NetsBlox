@@ -17,8 +17,9 @@ Storage.prototype.connect = function() {
     var mongoURI = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
     return MongoClient.connect(mongoURI)
         .then(db => {
-            this.users = new Users(this._logger, db);
+            this.users = Users;
             this.projects = Projects;
+            Users.init(this._logger, db);
             Projects.init(this._logger, db);
             RPCStore.init(this._logger, db);
             UserActions.init(this._logger, db);
