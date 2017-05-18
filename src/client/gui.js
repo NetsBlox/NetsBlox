@@ -425,6 +425,7 @@ ProjectDialogMorph.prototype.openProject = function () {
         this.ide.updateUrlQueryString(proj.name, false, true);
     } else if (this.source === 'cloud-shared'){
         var myself = this;
+        myself.destroy();
         SnapCloud.callService('joinActiveProject', function(response) {
             myself.ide.rawLoadCloudProject(response[0], proj.Public);
         }, myself.ide.cloudError(), [proj.ProjectName, proj.Owner]);

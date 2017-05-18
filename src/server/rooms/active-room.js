@@ -21,6 +21,7 @@ class ActiveRoom {
 
         this.cachedProjects = {};
 
+        // TODO: make owner a username...
         this.owner = owner;
 
         // RPC contexts
@@ -102,6 +103,7 @@ class ActiveRoom {
         msg = {
             type: 'room-roles',
             owner: this.owner.username,
+            collaborators: this.collaborators,
             name: this.name,
             occupants: occupants
         };

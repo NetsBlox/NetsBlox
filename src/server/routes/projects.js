@@ -120,8 +120,9 @@ var sendProjectTo = function(project, res) {
         return res.status(500).send('ERROR: project has no roles');
     }
 
-    trace(`room is not active. Selected role "${openRole}"`);
-    serialized = Utils.serializeRole(role, project.name);
+    const uuid = Utils.uuid(project.owner, project.name);
+    trace(`project ${uuid} is not active. Selected role "${openRole}"`);
+    serialized = Utils.serializeRole(role, project);
     return res.send(serialized);
 };
 

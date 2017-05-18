@@ -393,10 +393,8 @@ NetsBloxSocket.MessageHandlers = {
 
         return RoomManager.getRoom(this, owner, name)
             .then(room => {
-                if (!room) {
-                    this._logger.error(`Could not join room ${name} - doesn't exist!`);
-                    return;
-                }
+                this._logger.trace(`loaded room ${room.uuid}`);
+
                 // Check if the user is already at the room
                 if (this._room === room) {
                     this._logger.warn(`${this.username} is already in ${name}! ` +

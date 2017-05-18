@@ -37,13 +37,15 @@ var serialize = function(service) {
     return encodeURI(pairs.map(R.join('=')).join('&'));
 };
 
-var serializeRole = (project, roomName) => {
-    var src;
-    src = project.SourceCode ? 
-        `<snapdata>+${encodeURIComponent(project.SourceCode + project.Media)}</snapdata>` :
+var serializeRole = (role, project) => {
+    const owner = project.owner;
+    const name = project.name;
+    const src = role.SourceCode ? 
+        `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
-    return `RoomName=${encodeURIComponent(roomName)}&${serialize(R.omit(['SourceCode', 'Media'],
-        project))}&SourceCode=${src}`;
+    return `RoomName=${encodeURIComponent(name)}&` +
+        `Owner=${owner}&${serialize(R.omit(['SourceCode', 'Media'], role))}` + 
+        `&SourceCode=${src}`;
 };
 
 var joinActiveProject = function(userId, room, res) {

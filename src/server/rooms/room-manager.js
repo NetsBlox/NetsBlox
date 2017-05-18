@@ -59,7 +59,10 @@ RoomManager.prototype.forkRoom = function(params) {
 };
 
 RoomManager.prototype.createRoom = function(socket, name, ownerId) {
+    console.log('\n\n', ownerId, '\n\n');
     ownerId = ownerId || socket.username;
+
+    this._logger.trace(`creating room ${name} for ${ownerId}`);
     var uuid = utils.uuid(ownerId, name);
     if (this.rooms[uuid]) {
         this._logger.error('room already exists! (' + uuid + ')');
@@ -75,14 +78,16 @@ RoomManager.prototype.createRoom = function(socket, name, ownerId) {
 
 RoomManager.prototype.getRoom = function(socket, ownerId, name) {
     var uuid = utils.uuid(ownerId, name);
+    this._logger.trace(`getting project ${name} for ${ownerId}`);
     if (!this.rooms[uuid]) {
+        this._logger.trace(`retrieving project ${name} for ${ownerId}`);
         return this.storage.users.get(ownerId)
             .then(user => user.getProject(name))
             .then(project => {
                 if (!project) {
                     this._logger.error('No project found for ' + uuid);
                     // If no project is found, create a new project for the user
-                    project = project || this.createRoom(socket, name, ownerId);
+                    project = this.createRoom(socket, name, ownerId);
                     this.rooms[uuid] = project;
                     return project;
                 }

@@ -1996,12 +1996,12 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
 
     this.source = 'cloud';
     if (project.SourceCode) {
-        this.droppedText(project.SourceCode);
         this.room.nextRoom = {
-            ownerId: SnapCloud.username,
+            ownerId: project.Owner || SnapCloud.username,
             roomName: newRoom,
             roleId: roleId
         };
+        this.droppedText(project.SourceCode);
     } else {  // initialize an empty code base
         this.clearProject();
         this.room._name = newRoom;  // silent set name
