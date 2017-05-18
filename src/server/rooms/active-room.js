@@ -116,15 +116,7 @@ class ActiveRoom {
 
     getOwner() {
         // Look up the owner in the user storage
-        return Users.get(this.owner)
-            .then(owner => {
-                if (!owner) {
-                    const msg = `Could not find owner "${this.owner}" of "${this.name}"`;
-                    this._logger.error(msg);
-                    throw Error(msg);
-                }
-                return owner;
-            });
+        return Users.get(this.owner);
     }
 
     changeName(name) {
@@ -136,7 +128,8 @@ class ActiveRoom {
 
             // Get name unique to the owner
             promise = this.getOwner()
-                .then(owner => owner.getNewName(this.name, activeRoomNames));
+                .then(owner => owner ?
+                    owner.getNewName(this.name, activeRoomNames) : this.name);
         }
         return promise.then(name => {
             this.update(name);

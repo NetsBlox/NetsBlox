@@ -85,16 +85,21 @@ var getPreview = function(project) {
 
 ////////////////////// Project Helpers ////////////////////// 
 var getRoomsNamed = function(name, user, owner) {
+    owner = owner || user.username;
+
+    trace(`looking up projects ${owner}/${name} for ${user.username}`);
+
     let getProject = user.username === owner ? user.getProject(name) :
         user.getSharedProject(owner, name);
 
     return getProject.then(project => {
         var activeRoom;
 
-        trace(`found project ${name} for ${user.username}`);
-
         if (project) {
+            trace(`found project ${name} for ${user.username}`);
             activeRoom = RoomManager.rooms[Utils.uuid(project.owner, project.name)];
+        } else {
+            trace(`no ${name} project found for ${user.username}`);
         }
 
         return {
@@ -215,12 +220,19 @@ module.exports = [
             roomName = activeRoom.name;
             return getRoomsNamed.call(this, roomName, user)
                 .then(rooms => {
-                    if (socket.isOwner()) {
-                        info('Initiating room save for ' + username);
+                    if (socket.isOwner() || socket.isCollaborator()) {
+                        info('initiating room save for ' + username);
 
                         // If we overwrite, we don't want to change the originTime
                         if (rooms.stored) {
+                            trace(`Found project with same name (${rooms.stored.name}) in database`);
                             activeRoom.originTime = rooms.stored.originTime;
+                            if (!rooms.areSame) {
+                                trace(`Projects are different: ${rooms.stored.originTime} ` + 
+                                    `vs ${rooms.active.originTime}`);
+                            }
+                        } else {
+                            trace(`saving first project named ${roomName} for ${username}`);
                         }
 
                         if (rooms.areSame) {  // overwrite
@@ -233,15 +245,8 @@ module.exports = [
                             saveRoom.call(this, activeRoom, socket, user, res);
                         }
                     } else {
-                        log(`caching ${socket.roleId} for ${socket.username}`);
-                        activeRoom.cache(socket.roleId, err => {
-                            if (err) {
-                                error(`Could not cache the ${socket.roleId} for non-owner "${username}"`);
-                                return res.status(500).send('ERROR: ' + err);
-                            }
-                            log(`cache of ${socket.roleId} successful for for non-owner "${username}"`);
-                            return res.send('code saved!');
-                        });
+                        // TODO: should this be used to save their own copy?
+                        return res.status(403).send('guests are not allowed to save');
                     }
                 });
         }
