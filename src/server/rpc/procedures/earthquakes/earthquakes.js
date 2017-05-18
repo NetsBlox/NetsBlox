@@ -10,6 +10,7 @@ var debug = require('debug'),
     log = debug('netsblox:rpc:earthquakes:log'),
     error = debug('netsblox:rpc:earthquakes:error'),
     trace = debug('netsblox:rpc:earthquakes:trace'),
+    moment = require('moment'),
     R = require('ramda'),
     request = require('request'),
     baseUrl = 'http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&';
@@ -72,19 +73,19 @@ Earthquakes.stop = function() {
     return '';
 };
 
-Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongitude, startTime, endTime) {
+Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongitude, startTime, endTime, minMagnitude, maxMagnitude) {
     var socket = this.socket,
         response = this.response,
         options = {
             minlatitude: +minLatitude || 0,
             minlongitude: +minLongitude || 0,
             maxlatitude: +maxLatitude || 0,
-            maxlongitude: +maxLongitude || 0
+            maxlongitude: +maxLongitude || 0,
+            starttime: startTime ? stringToDate(startTime).toISOString() : moment().subtract(30, 'days').toDate().toISOString(),
+            endtime: endTime ? stringToDate(endTime).toISOString() : new Date().toISOString(),
+            minmagnitude: minMagnitude || null,
+            maxmagnitude: maxMagnitude || null
         };
-    if(startTime && endTime){
-        options.starttime = stringToDate(startTime).toISOString();
-        options.endtime = stringToDate(endTime).toISOString();
-    }
     let params = createParams(options);
     let url = baseUrl + params;
 
@@ -105,8 +106,8 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
             return response.status(500).send('ERROR: could not retrieve earthquakes');
         }
 
-        log('Found ' + body.metadata.count + ' earthquakes');
-        response.sendStatus(200);
+        trace('Found ' + body.metadata.count + ' earthquakes');
+        response.send('Sending ' + body.metadata.count + ' earthquake messages');
 
         var earthquakes = [],
             msg;
