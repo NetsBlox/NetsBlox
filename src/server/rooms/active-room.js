@@ -7,6 +7,7 @@ var R = require('ramda'),
     _ = require('lodash'),
     Q = require('q'),
     utils = require('../server-utils'),
+    Users = require('../storage/users'),
     Constants = require('../../common/constants');
 
 class ActiveRoom {
@@ -21,7 +22,6 @@ class ActiveRoom {
 
         this.cachedProjects = {};
 
-        // TODO: make owner a username...
         this.owner = owner;
 
         // RPC contexts
@@ -30,7 +30,7 @@ class ActiveRoom {
         // Saving
         this._store = null;
 
-        this.uuid = utils.uuid(owner.username, name);
+        this.uuid = utils.uuid(owner, name);
         this._logger = logger.fork('active-room:' + this.uuid);
         this._logger.log('created!');
     }
@@ -56,7 +56,7 @@ class ActiveRoom {
     // This should only be called by the RoomManager (otherwise, the room will not be recorded)
     fork (logger, socket) {
         // Create a copy of the room with the socket as the new owner
-        var fork = new ActiveRoom(logger, this.name, socket),
+        var fork = new ActiveRoom(logger, this.name, socket.username),
             roles = Object.keys(this.roles),
             data;
 
@@ -102,7 +102,7 @@ class ActiveRoom {
 
         msg = {
             type: 'room-roles',
-            owner: this.owner.username,
+            owner: this.owner,
             collaborators: this.collaborators,
             name: this.name,
             occupants: occupants
@@ -114,15 +114,29 @@ class ActiveRoom {
         this._store = store;
     }
 
+    getOwner() {
+        // Look up the owner in the user storage
+        return Users.get(this.owner)
+            .then(owner => {
+                if (!owner) {
+                    const msg = `Could not find owner "${this.owner}" of "${this.name}"`;
+                    this._logger.error(msg);
+                    throw Error(msg);
+                }
+                return owner;
+            });
+    }
+
     changeName(name) {
         var promise = Q(name);
         if (!name) {
             // make sure name is also unique to the existing rooms...
-            let activeRoomNames = this.getAllActiveFor(this.owner);
-            this._logger.trace(`all active rooms for ${this.owner.username} are ${activeRoomNames}`);
+            let activeRoomNames = this.getAllActiveFor(this.owner);  // TODO: Update owner to username
+            this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
 
             // Get name unique to the owner
-            promise = this.owner.getNewName(this.name, activeRoomNames);
+            promise = this.getOwner()
+                .then(owner => owner.getNewName(this.name, activeRoomNames));
         }
         return promise.then(name => {
             this.update(name);
@@ -196,7 +210,7 @@ class ActiveRoom {
     ownerCount () {
         return this.sockets()
             .map(socket => socket.username)
-            .filter(name => name === this.owner.username)
+            .filter(name => name === this.owner)
             .length;
     }
 
@@ -216,7 +230,7 @@ class ActiveRoom {
     update (name) {
         var oldUuid = this.uuid;
         this.name = name || this.name;
-        this.uuid = utils.uuid(this.owner.username, this.name);
+        this.uuid = utils.uuid(this.owner, this.name);
 
         if (this.uuid !== oldUuid) {
             this._logger.trace('Updating uuid to ' + this.uuid);
@@ -338,7 +352,7 @@ class ActiveRoom {
 
 // Factory method
 ActiveRoom.fromStore = function(logger, socket, data) {
-    var room = new ActiveRoom(logger, data.name, socket);
+    var room = new ActiveRoom(logger, data.name, socket.username);
 
     // Store the data
     room.setStorage(data);

@@ -107,7 +107,7 @@ class NetsBloxSocket {
     }
 
     isOwner () {
-        return this._room && this._room.owner.username === this.username;
+        return this._room && this._room.owner === this.username;
     }
 
     _initialize () {
@@ -202,7 +202,7 @@ class NetsBloxSocket {
         if (this._room) {
             this._room.roles[this.roleId] = null;
 
-            if (this.isOwner() && this._room.ownerCount() === 0) {  // last owner socket closing
+            if (this._room.sockets().length === 0) {  // last socket closing
                 this._room.close();
             } else {
                 this._room.onRolesChanged();
@@ -403,7 +403,8 @@ NetsBloxSocket.MessageHandlers = {
                 }
 
                 // create the role if need be (and if we are the owner)
-                if (!room.roles.hasOwnProperty(role) && room.owner === this) {
+                // TODO: may not actually need this
+                if (!room.roles.hasOwnProperty(role) && room.owner === this.username) {
                     this._logger.info(`creating role ${role} at ${room.uuid}`);
                     room.createRole(role);
                 }

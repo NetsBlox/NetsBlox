@@ -18,7 +18,7 @@ module.exports = {
         var socket = this.socket;
 
         return this.socket.getRoom().then(room => {
-            var owner = room.owner.username,
+            var owner = room.owner,
                 roomName = room.name,
                 roleId = socket.roleId;
 

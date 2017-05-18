@@ -27,7 +27,8 @@ var RoomManager = function() {
 
     ActiveRoom.prototype.getAllActiveFor = (socket) => {
         return Object.keys(this.rooms).map(uuid => this.rooms[uuid])
-            .filter(room => room.owner.username === socket.username)
+            // TODO: update owner to username
+            .filter(room => room.owner === socket.username)
             .filter(room => room.owner !== socket)
             .map(room => room.name);
 
@@ -44,6 +45,7 @@ RoomManager.prototype.forkRoom = function(params) {
         socket = params.socket || room.roles[params.roleId],
         newRoom;
 
+    // TODO: update owner to username
     if (socket === room.owner) {
         this._logger.error(`${socket.username} tried to fork it's own room: ${room.name}`);
         return;
@@ -68,7 +70,8 @@ RoomManager.prototype.createRoom = function(socket, name, ownerId) {
         this._logger.error('room already exists! (' + uuid + ')');
     }
 
-    this.rooms[uuid] = new ActiveRoom(this._logger, name, socket);
+    console.log('owner is', ownerId);
+    this.rooms[uuid] = new ActiveRoom(this._logger, name, ownerId);
     // Create the data element
     var data = this.storage.projects.new(socket, this.rooms[uuid]);
     this.rooms[uuid].setStorage(data);
