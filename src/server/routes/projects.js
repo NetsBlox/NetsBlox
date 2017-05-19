@@ -86,9 +86,9 @@ var getPreview = function(project) {
 ////////////////////// Project Helpers ////////////////////// 
 var getRoomsNamed = function(name, user, owner) {
     owner = owner || user.username;
+    const uuid = owner + '/' + name;
 
-    trace(`looking up projects ${owner}/${name} for ${user.username}`);
-
+    trace(`looking up projects ${uuid} for ${user.username}`);
     let getProject = user.username === owner ? user.getProject(name) :
         user.getSharedProject(owner, name);
 
@@ -96,10 +96,10 @@ var getRoomsNamed = function(name, user, owner) {
         var activeRoom;
 
         if (project) {
-            trace(`found project ${name} for ${user.username}`);
+            trace(`found project ${uuid} for ${user.username}`);
             activeRoom = RoomManager.rooms[Utils.uuid(project.owner, project.name)];
         } else {
-            trace(`no ${name} project found for ${user.username}`);
+            trace(`no ${uuid} project found for ${user.username}`);
         }
 
         return {
