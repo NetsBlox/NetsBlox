@@ -193,6 +193,7 @@ RoomMorph.prototype.drawNew = function() {
 
     // Owner name
     this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.15 * radius)));
+    this.showCollaborators(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.25 * radius)));
 };
 
 RoomMorph.prototype.showOwnerName = function(center) {
@@ -211,6 +212,28 @@ RoomMorph.prototype.showOwnerName = function(center) {
     }
 };
 
+RoomMorph.prototype.showCollaborators = function(top) {
+    if (this.collabList) {
+        this.collabList.destroy();
+    }
+
+    if (this.ownerId && !this.ownerId.startsWith('_client_')) {
+        if (this.collaborators.length) {
+            this.collabList = new StringMorph('Collaborators:\n' +
+                this.collaborators.join('\n'), false, false, true);
+        } else {
+            this.collabList = new StringMorph('No collaborators', false, false,
+                true, true);
+        }
+
+        this.collabList.setCenter(top);
+        this.collabList.setTop(top.y);
+
+        this.add(this.collabList);
+        // For rooms with one user occupying many roles--make sure only one owner is assigned
+        this.owner = false;
+    }
+};
 
 RoomMorph.prototype.mouseClickLeft = function() {
     if (!this.isEditable()) {
