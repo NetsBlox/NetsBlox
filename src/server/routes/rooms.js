@@ -278,7 +278,7 @@ module.exports = [
                 return res.status(404).send('ERROR: Not fully connected... Please try again or try a different browser (and report this issue to the netsblox maintainers!)');
             }
 
-            if (!socket.isOwner() && !socket.isCollaborator()) {
+            if (!socket.canEditRoom()) {
                 return res.status(403).send('ERROR: permission denied');
             }
 
@@ -313,9 +313,9 @@ module.exports = [
                 room = socket._room,
                 newRole;
 
-            if (!socket.isOwner()) {
+            if (!socket.canEditRoom()) {
                 this._logger.error(`${socket.username} tried to clone role... DENIED`);
-                return res.status(403).send('ERROR: Only owners can clone roles');
+                return res.status(403).send('ERROR: Guests can\'t clone roles');
             }
 
             // Create the new role

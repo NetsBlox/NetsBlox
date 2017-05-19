@@ -114,6 +114,10 @@ class NetsBloxSocket {
         return this._room && this._room.collaborators.includes(this.username);
     }
 
+    canEditRoom () {
+        return this.isOwner() || this.isCollaborator();
+    }
+
     _initialize () {
         this._socket.on('message', data => {
             var msg = JSON.parse(data),
