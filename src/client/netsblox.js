@@ -343,7 +343,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                                     myself.rawLoadCloudProject(response[0], dict.Public);
                                 },
                                 myself.cloudError(),
-                                [dict.ProjectName, SnapCloud.socketId()]
+                                [SnapCloud.username, dict.ProjectName, SnapCloud.socketId()]
                             );
                         }
                     ]);
