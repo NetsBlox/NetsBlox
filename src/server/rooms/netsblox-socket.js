@@ -378,7 +378,7 @@ NetsBloxSocket.MessageHandlers = {
 
     'rename-role': function(msg) {
         var socket;
-        if (this.isOwner() && msg.roleId !== msg.name) {
+        if (this.canEditRoom() && msg.roleId !== msg.name) {
             this._room.renameRole(msg.roleId, msg.name);
 
             socket = this._room.roles[msg.name];
