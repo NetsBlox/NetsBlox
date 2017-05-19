@@ -67,6 +67,7 @@ var joinActiveProject = function(userId, room, res) {
             base;
 
         if (!openRole) {
+            createdNewRole = true;
             openRole = base = 'new role';
             while (room.hasOwnProperty(openRole)) {
                 openRole = `${base} (${i++})`;
@@ -81,7 +82,6 @@ var joinActiveProject = function(userId, room, res) {
             `"${room.name}"`);
 
         room.createRole(openRole);
-        createdNewRole = true;
         role = {
             ProjectName: openRole,
             SourceCode: null,
