@@ -28,7 +28,7 @@ class ActiveRoom {
         this.rpcs = {};
 
         // Saving
-        this._store = null;
+        this._project = null;
 
         this.uuid = utils.uuid(owner, name);
         this._logger = logger.fork('active-room:' + this.uuid);
@@ -38,12 +38,14 @@ class ActiveRoom {
     addCollaborator(username) {
         if (this.collaborators.includes(username)) return;
         this.collaborators.push(username);
+        this.onRolesChanged();
     }
 
     removeCollaborator(username) {
         var index = this.collaborators.indexOf(username);
         if (index === -1) return;
         this.collaborators.splice(index, 1);
+        this.onRolesChanged();
     }
 
     close () {
@@ -61,8 +63,8 @@ class ActiveRoom {
             data;
 
         // Clone the room storage data
-        if (this._store) {
-            data = this._store.fork(fork);
+        if (this._project) {
+            data = this._project.fork(fork);
             fork.setStorage(data);
         } else {
             this._logger.error('ERROR: no store defined for room "' + this.name + '"');
@@ -111,7 +113,7 @@ class ActiveRoom {
     }
 
     setStorage(store) {
-        this._store = store;
+        this._project = store;
     }
 
     getOwner() {
@@ -138,7 +140,9 @@ class ActiveRoom {
     }
 
     save() {
-        // TODO: Remove this fn
+        if (this._project) {  // has been saved
+            this._project.save();
+        }
     }
 
     move (params) {

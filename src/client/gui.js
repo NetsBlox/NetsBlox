@@ -162,6 +162,27 @@ ProjectDialogMorph.prototype.buildContents = function () {
 
 };
 
+ProjectDialogMorph.prototype._deleteProject =
+    ProjectDialogMorph.prototype.deleteProject;
+
+ProjectDialogMorph.prototype.deleteProject = function () {
+    if (this.source === 'cloud-shared') {
+        // Remove self from list of collabs
+        var name = this.listField.selected.ProjectName;
+        this.ide.confirm(
+            localize(
+                'Are you sure you want to delete'
+            ) + '\n"' + name + '"?',
+            'Delete Project',
+            function() {
+                SnapCloud.evictCollaborator(SnapCloud.username);
+            }
+        );
+    } else {
+        this._deleteProject();
+    }
+};
+
 ProjectDialogMorph.prototype.shareProject = function () {
     var myself = this,
         ide = this.ide,
@@ -331,9 +352,7 @@ ProjectDialogMorph.prototype.installShareCloudProjectList = function (pl) {
     this.body.add(this.listField);
     this.shareButton.show();
     this.unshareButton.hide();
-    // Netsblox addition: start
-    this.deleteButton.hide();
-    // Netsblox addition: end
+    this.deleteButton.show();
     this.buttons.fixLayout();
     this.fixLayout();
     if (this.task === 'open') {
