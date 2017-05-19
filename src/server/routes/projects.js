@@ -86,7 +86,7 @@ var getPreview = function(project) {
 ////////////////////// Project Helpers ////////////////////// 
 var getRoomsNamed = function(name, user, owner) {
     owner = owner || user.username;
-    const uuid = owner + '/' + name;
+    const uuid = Utils.uuid(owner, name);
 
     trace(`looking up projects ${uuid} for ${user.username}`);
     let getProject = user.username === owner ? user.getProject(name) :
@@ -145,16 +145,16 @@ var createCopyFrom = function(user, project) {
 
 var saveRoom = function (activeRoom, socket, user, res) {
     log(`saving entire room for ${socket.username}`);
-    // Create the new project
     var project = this.storage.projects.new(user, activeRoom);
+    const uuid = Utils.uuid(user.username, activeRoom.name);
     project.setActiveRole(socket.roleId);
     return project.save()
         .then(() => {
-            log(`room save successful for project "${activeRoom.name}" initiated by "${user.username}"`);
+            log(`room save successful for project "${uuid}"`);
             return res.send('project saved!');
         })
         .fail(err => {
-            error(`project save failed for "${activeRoom.name}" initiated by "${user.username}": ${err}`);
+            error(`project save failed for "${uuid}": ${err}`);
             return res.status(500).send('ERROR: ' + err);
         });
 };
@@ -202,14 +202,14 @@ module.exports = [
         Parameters: 'socketId,overwrite',
         Method: 'Post',
         Note: '',
-        middleware: ['hasSocket', 'isLoggedIn', 'setUser'],
+        middleware: ['hasSocket', 'isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
                 socketId = req.body.socketId,
                 socket = SocketManager.getSocket(socketId),
 
                 activeRoom = socket._room,
-                user = req.session.user,
+                owner,
                 roomName;
 
             if (!activeRoom) {
@@ -218,10 +218,15 @@ module.exports = [
             }
 
             roomName = activeRoom.name;
-            return getRoomsNamed.call(this, roomName, user)
+            const ownerName = activeRoom.owner;
+            return this.storage.users.get(ownerName)
+                .then(user => {
+                    owner = user;
+                    return getRoomsNamed.call(this, roomName, owner);
+                })
                 .then(rooms => {
                     if (socket.isOwner() || socket.isCollaborator()) {
-                        info('initiating room save for ' + username);
+                        info(`${username} initiating room save for ${activeRoom.uuid}`);
 
                         // If we overwrite, we don't want to change the originTime
                         if (rooms.stored) {
@@ -236,13 +241,13 @@ module.exports = [
                         }
 
                         if (rooms.areSame) {  // overwrite
-                            saveRoom.call(this, activeRoom, socket, user, res);
+                            saveRoom.call(this, activeRoom, socket, owner, res);
                         } else if (req.body.overwrite === 'true') {  // overwrite
-                            saveRoom.call(this, activeRoom, socket, user, res);
+                            saveRoom.call(this, activeRoom, socket, owner, res);
                         } else {  // rename
                             activeRoom.changeName();
                             activeRoom.originTime = Date.now();
-                            saveRoom.call(this, activeRoom, socket, user, res);
+                            saveRoom.call(this, activeRoom, socket, owner, res);
                         }
                     } else {
                         // TODO: should this be used to save their own copy?
@@ -394,7 +399,7 @@ module.exports = [
     },
     {
         Service: 'getProject',
-        Parameters: 'owner,projectName,socketId',  // TODO: add the owner
+        Parameters: 'owner,projectName,socketId',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn', 'noCache', 'setUser'],
