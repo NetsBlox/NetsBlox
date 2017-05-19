@@ -331,7 +331,9 @@ ProjectDialogMorph.prototype.installShareCloudProjectList = function (pl) {
     this.body.add(this.listField);
     this.shareButton.show();
     this.unshareButton.hide();
-    this.deleteButton.show();
+    // Netsblox addition: start
+    this.deleteButton.hide();
+    // Netsblox addition: end
     this.buttons.fixLayout();
     this.fixLayout();
     if (this.task === 'open') {
