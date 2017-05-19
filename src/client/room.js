@@ -88,12 +88,18 @@ RoomMorph.prototype._onNameChanged = function(newName) {
     }
 };
 
-RoomMorph.prototype.isOwner = function() {
-    return this.ownerId && this.ownerId === SnapCloud.username;
+RoomMorph.prototype.isOwner = function(user) {
+    user = user || SnapCloud.username;
+    return this.ownerId && this.ownerId === user;
 };
 
-RoomMorph.prototype.isCollaborator = function() {
-    return this.collaborators.indexOf(SnapCloud.username) > -1;
+RoomMorph.prototype.isCollaborator = function(user) {
+    user = user || SnapCloud.username;
+    return this.collaborators.indexOf(user) > -1;
+};
+
+RoomMorph.prototype.isGuest = function(user) {
+    return !(this.isOwner(user) || this.isCollaborator(user));
 };
 
 RoomMorph.prototype.isEditable = function() {
@@ -429,8 +435,8 @@ RoomMorph.prototype.inviteUser = function (role) {
         friends.push('myself');
         myself._inviteFriendDialog(role, friends);
     };
-    // TODO: Check if the user is the owner
-    if (SnapCloud.username) {
+
+    if (this.isOwner() || this.isCollaborator()) {
         SnapCloud.getFriendList(callback,
             function (err, lbl) {
                 myself.ide.cloudError().call(null, err, lbl);
@@ -838,8 +844,9 @@ function EditRoleMorph(room, role) {
     this.addButton('createRoleClone', 'Clone');
 
     if (role.user) {  // occupied
-        // Check that the role name isn't the currently occupied role name
-        if (role.name !== this.room.role()) {
+        // owner can evict collaborators, collaborators can evict guests
+        if (role.name !== this.room.role() &&  // can't evict own role
+            (this.isOwner() || this.isGuest(role.user))) {
             this.addButton('evictUser', 'Evict User');
         }
     } else {  // vacant
