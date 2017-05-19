@@ -467,7 +467,7 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
                                 choices['Join Existing'] = function() {
                                     SnapCloud.callService('joinActiveProject', function(response) {
                                         myself.ide.rawLoadCloudProject(response[0], project.Public);
-                                    }, myself.ide.cloudError(), [project.ProjectName]);
+                                    }, myself.ide.cloudError(), [project.ProjectName, project.Owner]);
                                     dialog.destroy();
                                     myself.destroy();
                                 };

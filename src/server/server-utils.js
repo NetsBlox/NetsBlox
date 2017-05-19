@@ -78,8 +78,7 @@ var joinActiveProject = function(userId, room, res) {
             error(`Found open role "${openRole}" but it is not cached! May have lost data!!!`);
         }
 
-        info(`adding ${userId} to new role "${openRole}" at ` +
-            `"${room.name}"`);
+        info(`adding ${userId} to new role "${openRole}" at "${room.name}"`);
 
         room.createRole(openRole);
         role = {
