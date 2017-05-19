@@ -89,8 +89,8 @@ var joinActiveProject = function(userId, room, res) {
         };
         room.cachedProjects[openRole] = role;
     }
-    serialized = serializeRole(role, room.name);
-    return res.send(`OwnerId=${room.owner.username}&NewRole=${createdNewRole}&${serialized}`);
+    serialized = serializeRole(role, room);
+    return res.send(`OwnerId=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
 };
 
 // Function helpers
