@@ -330,6 +330,7 @@ module.exports = [
                 room.cache(roleId, err => {
                     if (!err) {
                         room.cachedProjects[newRole] = room.cachedProjects[roleId];
+                        room.cachedProjects[newRole].ProjectName = newRole;
                     }
                     res.send(encodeURIComponent(newRole));
                 });
