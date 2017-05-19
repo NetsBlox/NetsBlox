@@ -290,7 +290,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                         '?socketId=' + myself.sockets.uuid));
 
                     myself.room.nextRoom = {
-                        ownerId: response.OwnerId,
+                        ownerId: response.Owner,
                         roomName: response.RoomName,
                         roleId: response.ProjectName
                     };
@@ -1995,9 +1995,10 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
         roleId = project.ProjectName;  // src proj name
 
     this.source = 'cloud';
+    project.Owner = project.Owner || SnapCloud.username;
     if (project.SourceCode) {
         this.room.nextRoom = {
-            ownerId: project.Owner || SnapCloud.username,
+            ownerId: project.Owner,
             roomName: newRoom,
             roleId: roleId
         };
@@ -2006,7 +2007,7 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
         this.clearProject();
         this.room._name = newRoom;  // silent set name
         // FIXME: this could cause problems later
-        this.room.ownerId = SnapCloud.username;
+        this.room.ownerId = project.Owner;
         this.silentSetProjectName(roleId);
         this.sockets.updateRoomInfo();
         if (isNewRole) {

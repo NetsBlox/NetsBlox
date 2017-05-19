@@ -410,7 +410,7 @@ ProjectDialogMorph.prototype.openProject = function () {
             '?socketId=' + this.ide.sockets.uuid));
 
         this.ide.room.nextRoom = {
-            ownerId: response.OwnerId,
+            ownerId: response.Owner,
             roomName: response.RoomName,
             roleId: response.ProjectName
         };

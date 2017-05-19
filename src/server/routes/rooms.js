@@ -415,12 +415,8 @@ module.exports = [
             delete invites[inviteId];
 
             if (response) {
-                // TODO: Update this to add the user as a collaborator
-
-                // TODO: add the user to the project's collaborator list
-                // FIXME
-
-                // Add the roleId to the room (if doesn't exist)
+                // TODO: update the inviter...
+                // Add the given user as a collaborator
                 const uuid = Utils.uuid(invite.owner, invite.project);
                 let project = RoomManager.rooms[uuid];
 
