@@ -274,6 +274,8 @@ class ActiveRoom {
         delete this.roles[roleId];
         this.roles[newId] = socket;
         this.cachedProjects[newId] = this.cachedProjects[roleId];
+        delete this.cachedProjects[roleId];
+        this.cachedProjects[newId].ProjectName = newId;
 
         this.onRolesChanged();
         this.check();
