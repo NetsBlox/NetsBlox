@@ -13,3 +13,4 @@ multiline.xml	Allow multi-line text input to a block	In general, text inputs all
 Eisenbergification.xml	Provide getters and setters for all GUI-controlled global settings	Eisenberg's Law: Anything that can be done from the GUI should be doable from the programming language, and vice versa.
 time-utils.xml	Time conversion utility	Convert between different time 
 formats.
+list-utils.xml	helpers to extract data out of 3d lists	get value of a given key for a single item or an array of key value items.
