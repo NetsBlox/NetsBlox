@@ -2346,7 +2346,7 @@ NetsBloxMorph.prototype.manageCollaborators = function () {
                     }
                 },
                 friends,
-                'Invite a Friend to Collaborate'
+                'Invite a Collaborator to the Project'
             ).popUp();
         },
         function (err, lbl) {
@@ -2401,7 +2401,7 @@ NetsBloxMorph.prototype.collabResponse = function (id, response) {
         id,
         response, 
         function() {
-            myself.showMessage('Collaborating!', 2);
+            myself.showMessage('Added to the project!', 2);
         },
         function(err){
             myself.showMessage(err, 2);
