@@ -134,3 +134,25 @@ SnapActions._applyEvent = function(event) {
         throw e;
     }
 };
+
+SnapActions.applyEvent = function() {
+    var ide = this.ide();
+    // TODO: check if the user can edit the project
+    if (ide.room.isEditable()) {
+        return ActionManager.prototype.applyEvent.apply(this, arguments);
+    } else {
+        // ask the user if he/she would like to request to be a collaborator
+        // TODO: Add option for saving your own copy
+        ide.confirm(
+            'Edits cannot be made on projects by guests.\n\nWould ' +
+            'you like to request to be made a collaborator?',
+            'Request Collaborator Priviledges?',
+            function () {
+                ide.sockets.sendMessage({
+                    type: 'permission-elevation-request',
+                    guest: SnapCloud.username
+                });
+            }
+        );
+    }
+};
