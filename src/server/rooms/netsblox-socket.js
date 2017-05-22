@@ -153,7 +153,7 @@ class NetsBloxSocket {
         this._logger.log('logged in as ' + user.username);
         // Update the room if we are the owner (and not already logged in)
         if (this.isOwner() && this.username !== this.uuid) {
-            this._room.owner = user.username;
+            this._room.setOwner(user.username);
         }
         this.username = user.username;
         this.user = user;
