@@ -1,5 +1,5 @@
 /* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer,
-   HintInputSlotMorph */
+   HintInputSlotMorph, SnapCloud*/
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
@@ -137,7 +137,6 @@ SnapActions._applyEvent = function(event) {
 
 SnapActions.applyEvent = function() {
     var ide = this.ide();
-    // TODO: check if the user can edit the project
     if (ide.room.isEditable()) {
         return ActionManager.prototype.applyEvent.apply(this, arguments);
     } else {

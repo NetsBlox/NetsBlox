@@ -1402,7 +1402,11 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addLine();
     menu.addPair('New', 'createNewProject', '^N');
     menu.addPair('Open...', 'openProjectsBrowser', '^O');
-    menu.addPair('Save', "save", '^S');
+    if (!this.room.isGuest()) {
+        menu.addPair('Save', "save", '^S');
+    } else {
+        menu.addPair('Save a Copy', "save", '^S');
+    }
     menu.addItem('Save As...', function() {
         if (myself.isPreviousVersion()) {
             return myself.showMessage('Please exit replay mode before saving');
