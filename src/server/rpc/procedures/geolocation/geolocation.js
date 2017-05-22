@@ -141,15 +141,11 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         return rp(requestOptions).then(res=>{
             let places = res.results;
             places = places.map(place => {
-                return place.name + ' (' + place.types[0] + ')';
+                return [['latitude',place.geometry.location.lat],['longitude',place.geometry.location.lng],['name',place.name],['types',place.types]];
             });
             // keep the 10 best results
             places = places.slice(0,10);
-            if (places.length < 1) {
-                showError('No place found within the ' + radius + ' meters radius',response);
-            }else {
-                response.json(places);
-            }
+            response.send(places);
         }).catch(err => {
             error('Error in searching for places',err);
             showError('Failed to find places',response);
