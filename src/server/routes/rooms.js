@@ -126,7 +126,7 @@ module.exports = [
     },
     {
         // TODO: update this!
-        Service: 'inviteToRoom',
+        Service: 'inviteGuest',
         Parameters: 'socketId,invitee,ownerId,roomName,roleId',
         middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
