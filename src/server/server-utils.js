@@ -144,6 +144,10 @@ var computeAspectRatioPadding = function(width, height, ratio){
     return {left, right, top, bottom};
 };
 
+var isSocketUuid = function(name) {
+    return name[0] === '_';
+};
+
 module.exports = {
     serialize,
     serializeArray,
@@ -153,5 +157,6 @@ module.exports = {
     getRoomXML,
     extractRpcs,
     computeAspectRatioPadding,
+    isSocketUuid,
     getArgumentsFor
 };
