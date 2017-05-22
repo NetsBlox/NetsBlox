@@ -123,6 +123,10 @@ class ActiveRoom {
         return Users.get(this.owner);
     }
 
+    setOwner(owner) {
+        // TODO: make sure the current name is unique
+    }
+
     changeName(name) {
         var promise = Q(name);
         if (!name) {
