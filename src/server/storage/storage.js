@@ -1,8 +1,8 @@
 'use strict';
 var MongoClient = require('mongodb').MongoClient,
     RPCStore = require('../rpc/storage'),
-    UserStore = require('./user-store'),
-    RoomStore = require('./room-store'),
+    Users = require('./users'),
+    Projects = require('./projects'),
     UserActions = require('./user-actions'),
     PublicProjects = require('./public-projects');
 
@@ -10,15 +10,17 @@ var Storage = function(logger) {
     this._logger = logger.fork('storage');
 
     this.users = null;
-    this.rooms = null;
+    this.projects = null;
 };
 
 Storage.prototype.connect = function() {
     var mongoURI = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
     return MongoClient.connect(mongoURI)
         .then(db => {
-            this.users = new UserStore(this._logger, db);
-            this.rooms = new RoomStore(this._logger, db);
+            this.users = Users;
+            this.projects = Projects;
+            Users.init(this._logger, db);
+            Projects.init(this._logger, db);
             RPCStore.init(this._logger, db);
             UserActions.init(this._logger, db);
             PublicProjects.init(this._logger, db);

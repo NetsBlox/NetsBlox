@@ -175,7 +175,10 @@ Server.prototype.createRouter = function() {
         .filter(name => path.extname(name) === '.js')  // Only read js files
         .filter(name => name !== 'middleware.js')  // ignore middleware file
         .map(name => __dirname + '/routes/' + name)  // Create the file path
-        .map(filePath => require(filePath))  // Load the routes
+        .map(filePath => {
+            logger.trace('about to load ' + filePath);
+            return require(filePath);
+        })  // Load the routes
         .reduce((prev, next) => prev.concat(next), []);  // Merge all routes
 
     middleware.init(this);
@@ -193,7 +196,10 @@ Server.prototype.createRouter = function() {
             router.use.apply(router, args);
         }
 
-        router.route(api.URL)[method](api.Handler.bind(this));
+        router.route(api.URL)[method]((req, res) => {
+            logger.trace(`received ${api.Service} request`);
+            return api.Handler.call(this, req, res);
+        });
     });
     return router;
 };

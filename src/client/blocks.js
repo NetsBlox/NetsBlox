@@ -985,7 +985,7 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     case 'square':
         return this.drawSymbolStop(canvas, aColor);
     // NetsBlox addition: start
-    case 'plus':  // TODO: Make this a smaller changeset (only added 2 lines)
+    case 'plus':
         return this.drawSymbolPlus(canvas, aColor);
     // NetsBlox addition: end
     case 'pointRight':

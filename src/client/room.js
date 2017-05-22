@@ -19,6 +19,9 @@ function RoomMorph(ide) {
     this.roleLabels = {};
     this.invitations = {};  // open invitations
 
+    this.ownerId = null;
+    this.collaborators = [];
+
     this.roomLabel = null;
     this.init();
     // Set up the room name
@@ -30,10 +33,7 @@ function RoomMorph(ide) {
         set: this._onNameChanged.bind(this)
     });
 
-    // Set up the ownerId
-    this.ownerId = null;
     this.nextRoom = null;  // next room info
-    this.editable = false;
     // The projectName is used for the roleId
     if (!this.ide.projectName) {
         this.ide.projectName = RoomMorph.DEFAULT_ROLE;
@@ -48,7 +48,7 @@ function RoomMorph(ide) {
     RoleMorph.prototype.editRole = RoomMorph.prototype.editRole.bind(this);
     var myself = this;
     RoleLabelMorph.prototype.mouseClickLeft = function() {
-        if (myself.editable) {
+        if (myself.isEditable()) {
             myself.editRoleName(this.name);
         }
     };
@@ -56,6 +56,7 @@ function RoomMorph(ide) {
     // update on login (changing room name if default)
     SnapCloud.onLogin = function() {
         myself.update();
+        // FIXME: This has problems if opening default project
         if (myself._name === localize(RoomMorph.DEFAULT_ROOM)) {
             myself.ide.sockets.sendMessage({type: 'request-new-name'});
         }
@@ -87,9 +88,27 @@ RoomMorph.prototype._onNameChanged = function(newName) {
     }
 };
 
-RoomMorph.prototype.update = function(ownerId, name, roles) {
+RoomMorph.prototype.isOwner = function(user) {
+    user = user || SnapCloud.username;
+    return this.ownerId && this.ownerId === user;
+};
+
+RoomMorph.prototype.isCollaborator = function(user) {
+    user = user || SnapCloud.username;
+    return this.collaborators.indexOf(user) > -1;
+};
+
+RoomMorph.prototype.isGuest = function(user) {
+    return !(this.isOwner(user) || this.isCollaborator(user));
+};
+
+RoomMorph.prototype.isEditable = function() {
+    return this.isOwner() || this.isCollaborator();
+};
+
+RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     var myself = this,
-        wasEditable = this.editable,
+        wasEditable = this.isEditable(),
         oldRoles = this.roles,
         oldNames = Object.keys(oldRoles),
         names,
@@ -98,7 +117,7 @@ RoomMorph.prototype.update = function(ownerId, name, roles) {
     // Update the roles, etc
     this.ownerId = ownerId || this.ownerId;
     this.roles = roles || this.roles;
-    this.editable = this.ownerId && this.ownerId === SnapCloud.username;
+    this.collaborators = collaborators || this.collaborators;
 
     changed = name && this.name !== name;
     if (changed) {
@@ -109,7 +128,7 @@ RoomMorph.prototype.update = function(ownerId, name, roles) {
     // Check if it has changed in a meaningful way
     names = Object.keys(this.roles);
     changed = changed ||
-        wasEditable !== this.editable ||
+        wasEditable !== this.isEditable() ||
         oldNames.length !== names.length || names.reduce(function(prev, name) {
             return prev || oldRoles[name] !== myself.roles[name];
         }, false);
@@ -174,6 +193,7 @@ RoomMorph.prototype.drawNew = function() {
 
     // Owner name
     this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.15 * radius)));
+    this.showCollaborators(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.25 * radius)));
 };
 
 RoomMorph.prototype.showOwnerName = function(center) {
@@ -192,9 +212,31 @@ RoomMorph.prototype.showOwnerName = function(center) {
     }
 };
 
+RoomMorph.prototype.showCollaborators = function(top) {
+    if (this.collabList) {
+        this.collabList.destroy();
+    }
+
+    if (this.ownerId && !this.ownerId.startsWith('_client_')) {
+        if (this.collaborators.length) {
+            this.collabList = new StringMorph('Collaborators:\n' +
+                this.collaborators.join('\n'), false, false, true);
+        } else {
+            this.collabList = new StringMorph('No collaborators', false, false,
+                true, true);
+        }
+
+        this.collabList.setCenter(top);
+        this.collabList.setTop(top.y);
+
+        this.add(this.collabList);
+        // For rooms with one user occupying many roles--make sure only one owner is assigned
+        this.owner = false;
+    }
+};
 
 RoomMorph.prototype.mouseClickLeft = function() {
-    if (!this.editable) {
+    if (!this.isEditable()) {
         // If logged in, prompt about leaving the room
         if (SnapCloud.username) {
             this.ide.confirm(
@@ -224,7 +266,7 @@ RoomMorph.prototype.renderRoomTitle = function(center) {
     this.add(this.titleBox);
     this.titleBox.setExtent(new Point(width, height));
     this.titleBox.setCenter(center);
-    if (this.editable) {
+    if (this.isEditable()) {
         this.titleBox.mouseClickLeft = this.editRoomName.bind(this);
     }
 
@@ -416,8 +458,8 @@ RoomMorph.prototype.inviteUser = function (role) {
         friends.push('myself');
         myself._inviteFriendDialog(role, friends);
     };
-    // TODO: Check if the user is the owner
-    if (SnapCloud.username) {
+
+    if (this.isOwner() || this.isCollaborator()) {
         SnapCloud.getFriendList(callback,
             function (err, lbl) {
                 myself.ide.cloudError().call(null, err, lbl);
@@ -671,7 +713,7 @@ RoleMorph.prototype.drawNew = function() {
 };
 
 RoleMorph.prototype.mouseClickLeft = function() {
-    if (this.parent.editable) {
+    if (this.parent.isEditable()) {
         this.editRole(this._label);
     } else {
         this.escalateEvent('mouseClickLeft');
@@ -825,13 +867,14 @@ function EditRoleMorph(room, role) {
     this.addButton('createRoleClone', 'Clone');
 
     if (role.user) {  // occupied
-        // Check that the role name isn't the currently occupied role name
-        if (role.name !== this.room.role()) {
+        // owner can evict collaborators, collaborators can evict guests
+        if (role.name !== this.room.role() &&  // can't evict own role
+            (this.isOwner() || this.isGuest(role.user))) {
             this.addButton('evictUser', 'Evict User');
         }
     } else {  // vacant
         this.addButton('moveToRole', 'Move to');
-        this.addButton('inviteUser', 'Invite User');
+        //this.addButton('inviteUser', 'Invite User');
         this.addButton('deleteRole', 'Delete role');
     }
     this.addButton('cancel', 'Cancel');
@@ -921,7 +964,7 @@ ProjectsMorph.prototype.updateRoom = function() {
     this.drawMsgPalette();  // Draw the message palette
 
     // Draw the "new role" button
-    if (this.room.editable) {
+    if (this.room.isEditable()) {
         this._addButton({
             selector: 'createNewRole',
             icon: 'plus',
@@ -1291,7 +1334,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.labelString = 'Invite a Friend to Collaborate';
     this.createLabel();
     this.uncollaborateButton = this.addButton(function() {
-        SnapCloud.evictCollaborator(myself.listField.selected.value);
+        SnapCloud.evictCollaborator(myself.listField.selected.username);
         myself.destroy();
     }, 'Remove');
     this.collaborateButton = this.addButton('ok', 'Invite');
