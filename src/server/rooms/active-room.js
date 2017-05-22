@@ -123,6 +123,11 @@ class ActiveRoom {
         return Users.get(this.owner);
     }
 
+    setOwner(owner) {
+        this.owner = owner;
+        this.changeName();
+    }
+
     changeName(name) {
         var promise = Q(name);
         if (!name) {
