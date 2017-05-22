@@ -124,7 +124,8 @@ class ActiveRoom {
     }
 
     setOwner(owner) {
-        // TODO: make sure the current name is unique
+        this.owner = owner;
+        this.changeName();
     }
 
     changeName(name) {
