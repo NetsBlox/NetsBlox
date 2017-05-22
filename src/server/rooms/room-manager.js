@@ -27,9 +27,8 @@ var RoomManager = function() {
 
     ActiveRoom.prototype.getAllActiveFor = (socket) => {
         return Object.keys(this.rooms).map(uuid => this.rooms[uuid])
-            // TODO: update owner to username
             .filter(room => room.owner === socket.username)
-            .filter(room => room.owner !== socket)
+            .filter(room => room !== socket.getRawRoom())
             .map(room => room.name);
 
     };
@@ -45,8 +44,7 @@ RoomManager.prototype.forkRoom = function(params) {
         socket = params.socket || room.roles[params.roleId],
         newRoom;
 
-    // TODO: update owner to username
-    if (socket === room.owner) {
+    if (socket.username === room.owner) {
         this._logger.error(`${socket.username} tried to fork it's own room: ${room.name}`);
         return;
     }

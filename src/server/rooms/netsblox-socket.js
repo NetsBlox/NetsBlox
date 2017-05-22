@@ -98,6 +98,10 @@ class NetsBloxSocket {
         }
     }
 
+    getRawRoom () {
+        return this._room;
+    }
+
     _setRoom (room) {
         this._room = room;
         if (this._onRoomJoinDeferred) {
