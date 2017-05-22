@@ -4,9 +4,7 @@ var _ = require('lodash'),
     Q = require('q'),
     xml2js = require('xml2js'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
-
     middleware = require('./middleware'),
-    lwip = require('lwip'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
     PublicProjects = require('../storage/public-projects'),
@@ -17,13 +15,15 @@ var _ = require('lodash'),
     trace = debug('netsblox:api:projects:trace'),
     error = debug('netsblox:api:projects:error');
 
+
 try {
     info('trying to load lwip');
-    lwip = require('lwip');
+    var lwip = require('lwip');
 } catch (e) {
-    console.error('Could not load lwip:', e);
-    console.error('aspectRatio for image thumbnails will not be supported');
+    error('Could not load lwip:');
+    error('aspectRatio for image thumbnails will not be supported');
 }
+
 
 var getProjectIndexFrom = function(name, user) {
     for (var i = user.rooms.length; i--;) {
@@ -91,7 +91,7 @@ var getPreview = function(project) {
     return preview;
 };
 
-////////////////////// Project Helpers ////////////////////// 
+////////////////////// Project Helpers //////////////////////
 var getRoomsNamed = function(name, user) {
     var room = user.rooms.find(room => room.name === name),
         activeRoom;
@@ -156,6 +156,8 @@ var saveRoom = function (activeRoom, socket, user, res) {
 };
 
 const TRANSPARENT = [0,0,0,0];
+
+
 var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
     return Q.ninvoke(lwip, 'open', buffer, 'png')
         .then(image => {
@@ -176,6 +178,7 @@ var padImage = function (buffer, ratio) {  // Pad the image to match the given a
         .then(image => Q.ninvoke(image, 'toBuffer', 'png'));
 };
 
+
 var applyAspectRatio = function (thumbnail, aspectRatio) {
     var image = thumbnail
         .replace(/^data:image\/png;base64,|^data:image\/jpeg;base64,|^data:image\/jpg;base64,|^data:image\/bmp;base64,/, '');
@@ -187,6 +190,7 @@ var applyAspectRatio = function (thumbnail, aspectRatio) {
         aspectRatio = Math.min(aspectRatio, 5);
         return padImage(buffer, aspectRatio);
     } else {
+        if (aspectRatio) error('module lwip is not available thus setting aspect ratio will not work');
         return Q(buffer);
     }
 };
@@ -287,7 +291,7 @@ module.exports = [
                         previews.map(preview => preview.ProjectName)
                         )}`
                     );
-                        
+
                     if (req.query.format === 'json') {
                         return res.json(previews);
                     } else {
@@ -474,7 +478,7 @@ module.exports = [
                     .filter(room => !publicOnly || !!room.Public)
                     .map(room => room.name))
             );
-            
+
         }
     },
     {
@@ -514,7 +518,7 @@ module.exports = [
                         res.serverError(err);
                     });
             });
-            
+
         }
     },
     {
