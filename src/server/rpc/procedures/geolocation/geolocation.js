@@ -141,7 +141,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         return rp(requestOptions).then(res=>{
             let places = res.results;
             places = places.map(place => {
-                return [['latitude',place.geometry.location.lat],['longitude',place.geometry.location.lng],['name',place.name],['types',place.types]]
+                return [['latitude',place.geometry.location.lat],['longitude',place.geometry.location.lng],['name',place.name],['types',place.types]];
             });
             // keep the 10 best results
             places = places.slice(0,10);
