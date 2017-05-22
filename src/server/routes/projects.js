@@ -262,9 +262,9 @@ module.exports = [
                             activeRoom.originTime = Date.now();
                             saveRoom.call(this, activeRoom, socket, owner, res);
                         }
-                    } else {
-                        // TODO: should this be used to save their own copy?
-                        return res.status(403).send('guests are not allowed to save');
+                    } else {  // Save a copy for the given user and move to the given room
+                        RoomManager.forkRoom({room: activeRoom, socket});
+                        return res.status(200).send('saved own copy!');
                     }
                 });
         }

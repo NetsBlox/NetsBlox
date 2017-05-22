@@ -134,14 +134,14 @@ NetCloud.prototype.invitationResponse = function (id, accepted, onSuccess, onFai
     );
 };
 
-NetCloud.prototype.inviteToRoom = function () {
+NetCloud.prototype.inviteGuest = function () {
     var myself = this,
         args = arguments;
 
     this.reconnect(
         function () {
             myself.callService(
-                'inviteToRoom',
+                'inviteGuest',
                 nop,
                 nop,
                 args
