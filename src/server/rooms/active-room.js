@@ -55,6 +55,12 @@ class ActiveRoom {
         var msg = {type: 'project-closed'};
         this.sockets().forEach(socket => socket.send(msg));
         this.destroy();
+
+        // If the owner is a socket uuid, then delete it from the database, too
+        if (utils.isSocketUuid(this.owner) && this._project) {
+            this._logger.trace(`removing project ${this.uuid} as the room has closed`);
+            this._project.destroy();
+        }
     }
 
     // This should only be called by the RoomManager (otherwise, the room will not be recorded)
