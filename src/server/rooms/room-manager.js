@@ -59,7 +59,6 @@ RoomManager.prototype.forkRoom = function(params) {
 };
 
 RoomManager.prototype.createRoom = function(socket, name, ownerId) {
-    console.log('\n\n', ownerId, '\n\n');
     ownerId = ownerId || socket.username;
 
     this._logger.trace(`creating room ${name} for ${ownerId}`);
@@ -68,7 +67,6 @@ RoomManager.prototype.createRoom = function(socket, name, ownerId) {
         this._logger.error('room already exists! (' + uuid + ')');
     }
 
-    console.log('owner is', ownerId);
     this.rooms[uuid] = new ActiveRoom(this._logger, name, ownerId);
     // Create the data element
     var data = this.storage.projects.new(socket, this.rooms[uuid]);
