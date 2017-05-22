@@ -145,11 +145,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
             });
             // keep the 10 best results
             places = places.slice(0,10);
-            if (places.length < 1) {
-                showError('No place found within the ' + radius + ' meters radius',response);
-            }else {
-                response.json(places);
-            }
+            response.send(places);
         }).catch(err => {
             error('Error in searching for places',err);
             showError('Failed to find places',response);
