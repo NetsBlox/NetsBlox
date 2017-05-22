@@ -39,6 +39,7 @@ class ActiveRoom {
         if (this.collaborators.includes(username)) return;
         this.collaborators.push(username);
         this.onRolesChanged();
+        this.save();
     }
 
     removeCollaborator(username) {
@@ -46,6 +47,7 @@ class ActiveRoom {
         if (index === -1) return;
         this.collaborators.splice(index, 1);
         this.onRolesChanged();
+        this.save();
     }
 
     close () {
