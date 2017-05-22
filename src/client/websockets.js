@@ -54,9 +54,11 @@ WebSocketManager.MessageHandlers = {
 
     // Update on the current roles at the given room
     'room-roles': function(msg) {
-        this.ide.room.update(msg.owner,
+        this.ide.room.update(
+            msg.owner,
             msg.name,
-            msg.occupants
+            msg.occupants,
+            msg.collaborators
         );
     },
 

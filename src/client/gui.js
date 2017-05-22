@@ -1,7 +1,7 @@
 /* globals ProjectDialogMorph, Morph, AlignmentMorph, InputFieldMorph, localize,
    Point, TextMorph, Color, nop, ListMorph, IDE_Morph, Process, BlockImportDialogMorph,
    BlockExportDialogMorph, detect, SnapCloud, SnapSerializer, ScrollFrameMorph,
-   DialogBoxMorph, SnapActions
+   DialogBoxMorph, SnapActions, SpeechBubbleMorph
    */
 ProjectDialogMorph.prototype.buildContents = function () {
     var thumbnail, notification;
@@ -29,6 +29,11 @@ ProjectDialogMorph.prototype.buildContents = function () {
     }
 
     this.addSourceButton('cloud', localize('Cloud'), 'cloud');
+    // NetsBlox changes start
+    if (this.task === 'open') {
+        this.addSourceButton('cloud-shared', localize('Shared with me'), 'cloud');
+    }
+    // NetsBlox changes end
     this.addSourceButton('local', localize('Browser'), 'storage');
     if (this.task === 'open') {
         this.buildFilterField();
@@ -137,20 +142,45 @@ ProjectDialogMorph.prototype.buildContents = function () {
         this.addButton('saveProject', 'Save');
         this.action = 'saveProject';
     }
-    this.shareButton = this.addButton('shareProject', 'Share');
-    this.unshareButton = this.addButton('unshareProject', 'Unshare');
+    // Netsblox addition: start
+    this.shareButton = this.addButton('shareProject', 'Publish');
+    this.unshareButton = this.addButton('unshareProject', 'Unpublish');
+    // Netsblox addition: end
     this.shareButton.hide();
     this.unshareButton.hide();
     this.deleteButton = this.addButton('deleteProject', 'Delete');
     this.addButton('cancel', 'Cancel');
 
     if (notification) {
-        this.setExtent(new Point(455, 335).add(notification.extent()));
+        // NetsBlox changes: start
+        this.setExtent(new Point(455, 385).add(notification.extent()));
     } else {
-        this.setExtent(new Point(455, 335));
+        this.setExtent(new Point(455, 385));
+        // NetsBlox changes: end
     }
     this.fixLayout();
 
+};
+
+ProjectDialogMorph.prototype._deleteProject =
+    ProjectDialogMorph.prototype.deleteProject;
+
+ProjectDialogMorph.prototype.deleteProject = function () {
+    if (this.source === 'cloud-shared') {
+        // Remove self from list of collabs
+        var name = this.listField.selected.ProjectName;
+        this.ide.confirm(
+            localize(
+                'Are you sure you want to delete'
+            ) + '\n"' + name + '"?',
+            'Delete Project',
+            function() {
+                SnapCloud.evictCollaborator(SnapCloud.username);
+            }
+        );
+    } else {
+        this._deleteProject();
+    }
 };
 
 ProjectDialogMorph.prototype.shareProject = function () {
@@ -248,6 +278,88 @@ ProjectDialogMorph.prototype.unshareProject = function () {
     }
 };
 
+// adapted from installCloudProjectList
+ProjectDialogMorph.prototype.installShareCloudProjectList = function (pl) {
+    var myself = this;
+    this.projectList = pl || [];
+    this.projectList.sort(function (x, y) {
+        return x.ProjectName.toLowerCase() < y.ProjectName.toLowerCase() ?
+                 -1 : 1;
+    });
+
+    this.listField.destroy();
+    this.listField = new ListMorph(
+        this.projectList,
+        this.projectList.length > 0 ?
+                function (element) {
+                    return element.ProjectName || element;
+                } : null,
+        [ // format: display shared project names bold
+            [
+                'bold',
+                function (proj) {return proj.Public === 'true'; }
+            ]
+        ],
+        function () {myself.ok(); }
+    );
+    this.fixListFieldItemColors();
+    this.listField.fixLayout = nop;
+    this.listField.edge = InputFieldMorph.prototype.edge;
+    this.listField.fontSize = InputFieldMorph.prototype.fontSize;
+    this.listField.typeInPadding = InputFieldMorph.prototype.typeInPadding;
+    this.listField.contrast = InputFieldMorph.prototype.contrast;
+    this.listField.drawNew = InputFieldMorph.prototype.drawNew;
+    this.listField.drawRectBorder = InputFieldMorph.prototype.drawRectBorder;
+
+    this.listField.action = function (item) {
+        if (item === undefined) {return; }
+        if (myself.nameField) {
+            myself.nameField.setContents(item.ProjectName || '');
+        }
+        if (myself.task === 'open') {
+            myself.notesText.text = item.Notes || '';
+            myself.notesText.drawNew();
+            myself.notesField.contents.adjustBounds();
+            myself.preview.texture = item.Thumbnail || null;
+            myself.preview.cachedTexture = null;
+            myself.preview.drawNew();
+            (new SpeechBubbleMorph(new TextMorph(
+            // Netsblox addition: start
+                localize('owner') + ': ' + item.Owner + '\n' +
+                localize('last changed') + '\n' + item.Updated,
+            // Netsblox addition: end
+                null,
+                null,
+                null,
+                null,
+                'center'
+            ))).popUp(
+                myself.world(),
+                myself.preview.rightCenter().add(new Point(2, 0))
+            );
+        }
+        if (item.Public === 'true') {
+            myself.shareButton.hide();
+            myself.unshareButton.show();
+        } else {
+            myself.unshareButton.hide();
+            myself.shareButton.show();
+        }
+        myself.buttons.fixLayout();
+        myself.fixLayout();
+        myself.edit();
+    };
+    this.body.add(this.listField);
+    this.shareButton.show();
+    this.unshareButton.hide();
+    this.deleteButton.show();
+    this.buttons.fixLayout();
+    this.fixLayout();
+    if (this.task === 'open') {
+        this.clearDetails();
+    }
+};
+
 ProjectDialogMorph.prototype.setSource = function (source) {
     var myself = this,
         msg;
@@ -274,6 +386,25 @@ ProjectDialogMorph.prototype.setSource = function (source) {
             }
         );
         return;
+    // Netsblox addition: start
+    case 'cloud-shared':
+        msg = myself.ide.showMessage('Updating\nproject list...');
+        this.projectList = [];
+        SnapCloud.getSharedProjectList(
+            function (projectList) {
+                // Don't show cloud projects if user has since switch panes.
+                if (myself.source === 'cloud-shared') {
+                    myself.installShareCloudProjectList(projectList);
+                }
+                msg.destroy();
+            },
+            function (err, lbl) {
+                msg.destroy();
+                myself.ide.cloudError().call(null, err, lbl);
+            }
+        );
+        return;
+    // Netsblox addition: end
     case 'examples':
         this.projectList = this.getExamplesProjectList();
         break;
@@ -382,7 +513,7 @@ ProjectDialogMorph.prototype.openProject = function () {
             '?socketId=' + this.ide.sockets.uuid));
 
         this.ide.room.nextRoom = {
-            ownerId: response.OwnerId,
+            ownerId: response.Owner,
             roomName: response.RoomName,
             roleId: response.ProjectName
         };
@@ -395,6 +526,12 @@ ProjectDialogMorph.prototype.openProject = function () {
         }
         this.ide.loadNextRoom();
         this.ide.updateUrlQueryString(proj.name, false, true);
+    } else if (this.source === 'cloud-shared'){
+        var myself = this;
+        myself.destroy();
+        SnapCloud.callService('joinActiveProject', function(response) {
+            myself.ide.rawLoadCloudProject(response[0], proj.Public);
+        }, myself.ide.cloudError(), [proj.ProjectName, proj.Owner]);
     } else {
         return superOpenProj.call(this);
     }
@@ -433,7 +570,7 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
                                 choices['Join Existing'] = function() {
                                     SnapCloud.callService('joinActiveProject', function(response) {
                                         myself.ide.rawLoadCloudProject(response[0], project.Public);
-                                    }, myself.ide.cloudError(), [project.ProjectName]);
+                                    }, myself.ide.cloudError(), [project.ProjectName, project.Owner]);
                                     dialog.destroy();
                                     myself.destroy();
                                 };
@@ -477,7 +614,7 @@ ProjectDialogMorph.prototype.rawOpenCloudProject = function (proj) {
                     myself.ide.rawLoadCloudProject(response[0], proj.Public);
                 },
                 myself.ide.cloudError(),
-                [proj.ProjectName, SnapCloud.socketId()]
+                [proj.Owner, proj.ProjectName, SnapCloud.socketId()]
             );
         },
         myself.ide.cloudError()

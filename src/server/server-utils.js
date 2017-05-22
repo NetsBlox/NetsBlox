@@ -37,13 +37,15 @@ var serialize = function(service) {
     return encodeURI(pairs.map(R.join('=')).join('&'));
 };
 
-var serializeRole = (project, roomName) => {
-    var src;
-    src = project.SourceCode ? 
-        `<snapdata>+${encodeURIComponent(project.SourceCode + project.Media)}</snapdata>` :
+var serializeRole = (role, project) => {
+    const owner = project.owner;
+    const name = project.name;
+    const src = role.SourceCode ? 
+        `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
-    return `RoomName=${encodeURIComponent(roomName)}&${serialize(R.omit(['SourceCode', 'Media'],
-        project))}&SourceCode=${src}`;
+    return `RoomName=${encodeURIComponent(name)}&` +
+        `Owner=${owner}&${serialize(R.omit(['SourceCode', 'Media'], role))}` + 
+        `&SourceCode=${src}`;
 };
 
 var joinActiveProject = function(userId, room, res) {
@@ -65,6 +67,7 @@ var joinActiveProject = function(userId, room, res) {
             base;
 
         if (!openRole) {
+            createdNewRole = true;
             openRole = base = 'new role';
             while (room.hasOwnProperty(openRole)) {
                 openRole = `${base} (${i++})`;
@@ -75,11 +78,9 @@ var joinActiveProject = function(userId, room, res) {
             error(`Found open role "${openRole}" but it is not cached! May have lost data!!!`);
         }
 
-        info(`adding ${userId} to new role "${openRole}" at ` +
-            `"${room.name}"`);
+        info(`adding ${userId} to new role "${openRole}" at "${room.name}"`);
 
         room.createRole(openRole);
-        createdNewRole = true;
         role = {
             ProjectName: openRole,
             SourceCode: null,
@@ -87,8 +88,8 @@ var joinActiveProject = function(userId, room, res) {
         };
         room.cachedProjects[openRole] = role;
     }
-    serialized = serializeRole(role, room.name);
-    return res.send(`OwnerId=${room.owner.username}&NewRole=${createdNewRole}&${serialized}`);
+    serialized = serializeRole(role, room);
+    return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
 };
 
 // Function helpers
