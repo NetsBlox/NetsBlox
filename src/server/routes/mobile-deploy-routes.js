@@ -36,21 +36,21 @@ module.exports = [
                     'logged in to compile Android apps');
             }
 
-            self.storage.users.get(username, (e, user) => {
-                if (e) {
+            return self.storage.users.get(username)
+                .then(user => {
+                    if (user) {
+                        self.mobileManager.emailProjectApk(project, user.email, baseURL, xml);
+                        return res.status(200).send('Building the Android app. ' + 
+                            '\nResults will be emailed to ' + user.email + ' on completion.');
+                    } else {
+                        error('Could not find user to build android app (user "'+username+'")');
+                        return res.status(400).send('ERROR: could not find user "'+username+'"');
+                    }
+                })
+                .catch(e => {
                     error('Server error when looking for user: "'+username+'". Error:', e);
                     return res.status(500).send('ERROR: ' + e);
-                }
-
-                if (user) {
-                    self.mobileManager.emailProjectApk(project, user.email, baseURL, xml);
-                    return res.status(200).send('Building the Android app. ' + 
-                        '\nResults will be emailed to ' + user.email + ' on completion.');
-                } else {
-                    error('Could not find user to build android app (user "'+username+'")');
-                    return res.status(400).send('ERROR: could not find user "'+username+'"');
-                }
-            });
+                });
         }
     }
 ];
