@@ -17,6 +17,14 @@ var _ = require('lodash'),
     trace = debug('netsblox:api:projects:trace'),
     error = debug('netsblox:api:projects:error');
 
+try {
+    info('trying to load lwip');
+    lwip = require('lwip');
+} catch (e) {
+    console.error('Could not load lwip:', e);
+    console.error('aspectRatio for image thumbnails will not be supported');
+}
+
 var getProjectIndexFrom = function(name, user) {
     for (var i = user.rooms.length; i--;) {
         if (user.rooms[i].name === name) {
@@ -173,7 +181,7 @@ var applyAspectRatio = function (thumbnail, aspectRatio) {
         .replace(/^data:image\/png;base64,|^data:image\/jpeg;base64,|^data:image\/jpg;base64,|^data:image\/bmp;base64,/, '');
     var buffer = new Buffer(image, 'base64');
 
-    if (aspectRatio) {
+    if (aspectRatio && typeof lwip !== 'undefined') {
         trace(`padding image with aspect ratio ${aspectRatio}`);
         aspectRatio = Math.max(aspectRatio, 0.2);
         aspectRatio = Math.min(aspectRatio, 5);
