@@ -11,6 +11,9 @@ RoomMorph.uber = Morph.prototype;
 RoomMorph.SIZE = 300;
 RoomMorph.DEFAULT_ROLE = 'myRole';
 RoomMorph.DEFAULT_ROOM = 'untitled';
+RoomMorph.isSocketUuid = function(name) {
+    return name && name[0] === '_';
+};
 
 function RoomMorph(ide) {
     // Get the users at the room
@@ -89,6 +92,10 @@ RoomMorph.prototype._onNameChanged = function(newName) {
 };
 
 RoomMorph.prototype.isOwner = function(user) {
+    if (RoomMorph.isSocketUuid(this.ownerId) && !user) {
+        return this.ide.sockets.uuid === this.ownerId;
+    }
+
     user = user || SnapCloud.username;
     return this.ownerId && this.ownerId === user;
 };
@@ -201,15 +208,18 @@ RoomMorph.prototype.showOwnerName = function(center) {
         this.ownerLabel.destroy();
     }
 
-    if (this.ownerId && !this.ownerId.startsWith('_client_')) {
-        this.ownerLabel = new StringMorph('Owner: ' + this.ownerId, false, false, true);
+    var owner = RoomMorph.isSocketUuid(this.ownerId) ?
+        'myself' : this.ownerId;
 
-        this.ownerLabel.setCenter(center);
+    this.ownerLabel = new StringMorph(
+        'Owner: ' + owner,
+        false,
+        false,
+        true
+    );
+    this.ownerLabel.setCenter(center);
 
-        this.add(this.ownerLabel);
-        // For rooms with one user occupying many roles--make sure only one owner is assigned
-        this.owner = false;
-    }
+    this.add(this.ownerLabel);
 };
 
 RoomMorph.prototype.showCollaborators = function(top) {
@@ -217,22 +227,18 @@ RoomMorph.prototype.showCollaborators = function(top) {
         this.collabList.destroy();
     }
 
-    if (this.ownerId && !this.ownerId.startsWith('_client_')) {
-        if (this.collaborators.length) {
-            this.collabList = new StringMorph('Collaborators:\n' +
-                this.collaborators.join('\n'), false, false, true);
-        } else {
-            this.collabList = new StringMorph('No collaborators', false, false,
-                true, true);
-        }
-
-        this.collabList.setCenter(top);
-        this.collabList.setTop(top.y);
-
-        this.add(this.collabList);
-        // For rooms with one user occupying many roles--make sure only one owner is assigned
-        this.owner = false;
+    if (this.collaborators.length) {
+        this.collabList = new StringMorph('Collaborators:\n' +
+            this.collaborators.join('\n'), false, false, true);
+    } else {
+        this.collabList = new StringMorph('No collaborators', false, false,
+            true, true);
     }
+
+    this.collabList.setCenter(top);
+    this.collabList.setTop(top.y);
+
+    this.add(this.collabList);
 };
 
 RoomMorph.prototype.mouseClickLeft = function() {
@@ -704,11 +710,10 @@ RoleMorph.prototype.drawNew = function() {
     this._label.setCenter(pos);
 
     // Visual indicator of ownership
-    if (this.parent && this.user === this.parent.ownerId && !this.parent.owner) {
+    if (this.parent && this.user === this.parent.ownerId) {
         this.ownerLabel = new StringMorph('[OWNER]', 11, false, true, true);
         this.add(this.ownerLabel);
         this.ownerLabel.setCenter(new Point(pos.x - 12.5, pos.y + 25));
-        this.parent.owner = true;  // Don't assign ownership to myself more than once
     }
 };
 
