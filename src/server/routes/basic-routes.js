@@ -186,6 +186,11 @@ module.exports = [
                 return res.status(400).send('ERROR: need both username and email!');
             }
 
+            // validate username
+            if (uname[0] === '_') {
+                return res.status(400).send('ERROR: invalid username');
+            }
+
             self.storage.users.get(uname)
                 .then(user => {
                     if (!user) {
@@ -225,7 +230,7 @@ module.exports = [
     },
     { 
         Method: 'post', 
-        URL: '',  // login/SignUp method
+        URL: '',  // login method
         Handler: function(req, res) {
             var hash = req.body.__h,
                 isUsingCookie = !req.body.__u,
