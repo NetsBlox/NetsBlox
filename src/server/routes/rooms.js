@@ -72,13 +72,6 @@ module.exports = [
                 // Remove all sockets with the given username
                 log(`removing collaborator ${userId} from room ${room.uuid}`);
                 room.removeCollaborator(userId);
-                room.sockets().forEach(socket => {
-                    if (socket.username === userId) {
-                        RoomManager.forkRoom({room, socket});
-                    }
-                });
-                room.onRolesChanged();
-                room.save();
                 return res.sendStatus(200);
             });
         }
@@ -126,7 +119,7 @@ module.exports = [
     },
     {
         // TODO: update this!
-        Service: 'inviteToRoom',
+        Service: 'inviteGuest',
         Parameters: 'socketId,invitee,ownerId,roomName,roleId',
         middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',

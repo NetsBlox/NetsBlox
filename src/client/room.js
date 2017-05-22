@@ -456,7 +456,7 @@ RoomMorph.prototype.inviteUser = function (role) {
             return friend.username;
         });
         friends.push('myself');
-        myself._inviteFriendDialog(role, friends);
+        myself._inviteGuestDialog(role, friends);
     };
 
     if (this.isOwner() || this.isCollaborator()) {
@@ -517,21 +517,21 @@ RoomMorph.prototype.promptShare = function(name) {
     }
 };
 
-RoomMorph.prototype._inviteFriendDialog = function (role, friends) {
+RoomMorph.prototype._inviteGuestDialog = function (role, friends) {
     new UserDialogMorph(this, function(user) {
         if (user) {
-            this.inviteFriend(user, role);
+            this.inviteGuest(user, role);
         }
     }, friends).popUp();
 };
 
-RoomMorph.prototype.inviteFriend = function (friend, role) {
-    // Use inviteToRoom service
+RoomMorph.prototype.inviteGuest = function (friend, role) {
+    // Use inviteGuest service
     var socketId = this.ide.sockets.uuid;
     if (friend === 'myself') {
         friend = SnapCloud.username;
     }
-    SnapCloud.inviteToRoom(socketId, friend, this.ownerId, this.name, role);
+    SnapCloud.inviteGuest(socketId, friend, this.ownerId, this.name, role);
 };
 
 RoomMorph.prototype.promptInvite = function (params) {  // id, room, roomName, role
@@ -869,12 +869,12 @@ function EditRoleMorph(room, role) {
     if (role.user) {  // occupied
         // owner can evict collaborators, collaborators can evict guests
         if (role.name !== this.room.role() &&  // can't evict own role
-            (this.isOwner() || this.isGuest(role.user))) {
+            (this.room.isOwner() || this.room.isGuest(role.user))) {
             this.addButton('evictUser', 'Evict User');
         }
     } else {  // vacant
         this.addButton('moveToRole', 'Move to');
-        //this.addButton('inviteUser', 'Invite User');
+        this.addButton('inviteUser', 'Invite Guest');
         this.addButton('deleteRole', 'Delete role');
     }
     this.addButton('cancel', 'Cancel');
@@ -1090,7 +1090,7 @@ function UserDialogMorph(target, action, users) {
 }
 
 UserDialogMorph.prototype.init = function(target, action, users) {
-    this.key = 'inviteFriend';
+    this.key = 'inviteGuest';
     this.userList = users;
     UserDialogMorph.uber.init.call(
         this,

@@ -380,6 +380,20 @@ NetsBloxSocket.MessageHandlers = {
         }
     },
 
+    'elevate-permissions': function(msg) {
+        if (this.isOwner()) {
+            var username = msg.username;
+            this._room.addCollaborator(username);
+            this._room.save();
+        }
+    },
+
+    'permission-elevation-request': function(msg) {
+        this.getRoom()
+            .then(room => room.getOwnerSockets())
+            .then(sockets => sockets.forEach(socket => socket.send(msg)));
+    },
+
     'rename-role': function(msg) {
         var socket;
         if (this.canEditRoom() && msg.roleId !== msg.name) {
@@ -431,8 +445,7 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'add-role': function(msg) {
-        // TODO: make sure this is the room owner
-        if (this.hasRoom()) {
+        if (this.isOwner()) {
             this._room.createRole(msg.name);
         }
     },

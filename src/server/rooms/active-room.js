@@ -123,6 +123,11 @@ class ActiveRoom {
         return Users.get(this.owner);
     }
 
+    getOwnerSockets() {
+        return this.sockets()
+            .filter(socket => socket.username === this.owner);
+    }
+
     setOwner(owner) {
         this.owner = owner;
         this.changeName();

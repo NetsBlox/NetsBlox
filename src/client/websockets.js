@@ -1,6 +1,6 @@
 /*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions,
   DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject, NetsBloxSerializer,
-  BlockMorph*/
+  BlockMorph, localize*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
@@ -87,6 +87,24 @@ WebSocketManager.MessageHandlers = {
 
     'project-fork': function() {
         this.ide.showMessage('You have been evicted from the room.\nYou are now the owner.');
+    },
+
+    'permission-elevation-request': function(msg) {
+        var myself = this,
+            username = msg.guest;
+
+        this.ide.confirm(
+            username + localize(' would like to be made a collaborator on ') +
+            myself.ide.room.name + '\n\n' + localize('Would you like to make ') + username +
+            localize(' a collaborator?'),
+            'Collaboration Request',
+            function() {
+                myself.sendMessage({
+                    type: 'elevate-permissions',
+                    username: username
+                });
+            }
+        );
     },
 
     'project-request': function(msg) {
