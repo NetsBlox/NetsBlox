@@ -1,7 +1,8 @@
 'use strict';
 
-var ActiveRoom = require('./active-room'),
-    utils = require('../server-utils');
+const ActiveRoom = require('./active-room');
+const utils = require('../server-utils');
+const Q = require('q');
 
 var RoomManager = function() {
     var self = this;
@@ -26,8 +27,8 @@ var RoomManager = function() {
 
     ActiveRoom.prototype.getAllActiveFor = (socket) => {
         return Object.keys(this.rooms).map(uuid => this.rooms[uuid])
-            .filter(room => room.owner.username === socket.username)
-            .filter(room => room.owner !== socket)
+            .filter(room => room.owner === socket.username)
+            .filter(room => room !== socket.getRawRoom())
             .map(room => room.name);
 
     };
@@ -43,7 +44,7 @@ RoomManager.prototype.forkRoom = function(params) {
         socket = params.socket || room.roles[params.roleId],
         newRoom;
 
-    if (socket === room.owner) {
+    if (socket.username === room.owner) {
         this._logger.error(`${socket.username} tried to fork it's own room: ${room.name}`);
         return;
     }
@@ -59,42 +60,45 @@ RoomManager.prototype.forkRoom = function(params) {
 
 RoomManager.prototype.createRoom = function(socket, name, ownerId) {
     ownerId = ownerId || socket.username;
+
+    this._logger.trace(`creating room ${name} for ${ownerId}`);
     var uuid = utils.uuid(ownerId, name);
     if (this.rooms[uuid]) {
         this._logger.error('room already exists! (' + uuid + ')');
     }
 
-    this.rooms[uuid] = new ActiveRoom(this._logger, name, socket);
+    this.rooms[uuid] = new ActiveRoom(this._logger, name, ownerId);
     // Create the data element
-    var data = this.storage.rooms.new(null, this.rooms[uuid]);
+    var data = this.storage.projects.new(socket, this.rooms[uuid]);
     this.rooms[uuid].setStorage(data);
 
     return this.rooms[uuid];
 };
 
-RoomManager.prototype.getRoom = function(socket, ownerId, name, callback) {
-    var uuid = utils.uuid(ownerId, name);
+RoomManager.prototype.getRoom = function(socket, ownerId, name) {
+    const uuid = utils.uuid(ownerId, name);
+    this._logger.trace(`getting project ${uuid} for ${ownerId}`);
     if (!this.rooms[uuid]) {
-        this.storage.users.get(ownerId, (err, user) => {
-            // Get the room
-            var rooms = user && (user.rooms || user.tables),
-                room = rooms && rooms.find(room => room.name === name);
-            if (!room) {
-                this._logger.error(err || 'No room found for ' + uuid);
-                // If no room is found, create a new room for the user
-                room = room || this.createRoom(socket, name, ownerId);
-                this.rooms[uuid] = room;
-                return callback(room);
-            }
+        this._logger.trace(`retrieving project ${uuid} for ${ownerId}`);
+        return this.storage.users.get(ownerId)
+            .then(user => user.getProject(name))
+            .then(project => {
+                if (!project) {
+                    this._logger.error(`No project found for ${uuid}`);
+                    // If no project is found, create a new project for the user
+                    project = this.createRoom(socket, name, ownerId);
+                    this.rooms[uuid] = project;
+                    return project;
+                }
 
-            this._logger.trace(`retrieving room ${uuid} from database`);
-            var activeRoom = ActiveRoom.fromStore(this._logger, socket, room);
-            this.rooms[uuid] = activeRoom;
-            return callback(activeRoom);
-        });
+                this._logger.trace(`retrieving project ${uuid} from database`);
+                var activeRoom = ActiveRoom.fromStore(this._logger, socket, project);
+                this.rooms[uuid] = activeRoom;
+                return activeRoom;
+            });
 
     } else {
-        return callback(this.rooms[uuid]);
+        return Q(this.rooms[uuid]);
     }
 };
 

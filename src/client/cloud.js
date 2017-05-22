@@ -247,7 +247,7 @@ NetCloud.prototype.getCollaboratorList = function (callBack, errorCall) {
                     callBack.call(null, users, url);
                 },
                 errorCall,
-                [SnapActions.id]
+                [myself.socketId()]
             );
         },
         errorCall
@@ -560,6 +560,23 @@ NetCloud.prototype.hasConflictingStoredProject = function (callBack, errorCall) 
                 [
                     myself.socketId()
                 ]
+            );
+        },
+        errorCall
+    );
+};
+
+NetCloud.prototype.getSharedProjectList = function(callBack, errorCall) {
+    var myself = this;
+    this.reconnect(
+        function () {
+            myself.callService(
+                'getSharedProjectList',
+                function (response, url) {
+                    callBack.call(null, response, url);
+                    myself.disconnect();
+                },
+                errorCall
             );
         },
         errorCall
