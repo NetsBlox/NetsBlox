@@ -80,6 +80,7 @@
                         this.roles[name] = role;
                     });
 
+                    // Update the owner name if the
                     roles = Object.keys(this.roles)
                         .map(name => [name, this.roles[name]]);
 
@@ -95,13 +96,25 @@
                 })
                 .then(() => {
                     // Update the owner id if necessary
-                    if (utils.isSocketUuid(this.owner) && this._room.owner !== this.owner) {
+                    const nameChanged = this.name !== this._room.name;
+                    const ownerLoggedIn = utils.isSocketUuid(this.owner) &&
+                        this._room.owner !== this.owner;
+
+                    if (ownerLoggedIn || nameChanged) {
                         return this._db.update(
                             this.getStorageId(),
-                            {$set: {owner: this._room.owner}},
+                            {
+                                $set: {
+                                    owner: this._room.owner,
+                                    name: this._room.name
+                                }
+                            },
                             {upsert: true}
                         )
-                        .then(() => this.owner = this._room.owner);
+                        .then(() => {
+                            this.owner = this._room.owner;
+                            this.name = this._room.name;
+                        });
                     }
 
                 });
@@ -109,6 +122,16 @@
 
         setActiveRole(role) {
             this.activeRole = role;
+        }
+
+        persist() {  // save in the non-transient storage
+            this.destroy();
+            this._db = collection;
+            return this.save();
+        }
+
+        isTransient() {
+            return this._db === transientCollection;
         }
 
         addCollaborator(username) {
@@ -155,7 +178,8 @@
 
     // Project Storage
     var logger,
-        collection;
+        collection,
+        transientCollection;
 
     const loadProjectBinaryData = function(project) {
         project.clean();
@@ -178,6 +202,7 @@
     ProjectStorage.init = function (_logger, db) {
         logger = _logger.fork('projects');
         collection = db.collection('projects');
+        transientCollection = db.collection('unsaved-projects');
     };
 
     ProjectStorage.get = function (username, projectName) {
@@ -273,7 +298,7 @@
     ProjectStorage.new = function(user, activeRoom) {
         return new Project({
             logger: logger,
-            db: collection,
+            db: transientCollection,
             data: getDefaultProjectData(user, activeRoom),
             room: activeRoom
         });

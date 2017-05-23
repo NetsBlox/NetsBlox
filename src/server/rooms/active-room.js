@@ -57,7 +57,7 @@ class ActiveRoom {
         this.destroy();
 
         // If the owner is a socket uuid, then delete it from the database, too
-        if (utils.isSocketUuid(this.owner) && this._project) {
+        if (this._project && this._project.isTransient()) {
             this._logger.trace(`removing project ${this.uuid} as the room has closed`);
             this._project.destroy();
         }
@@ -124,6 +124,10 @@ class ActiveRoom {
         this._project = store;
     }
 
+    getProject() {
+        return this._project;
+    }
+
     getOwner() {
         // Look up the owner in the user storage
         return Users.get(this.owner);
@@ -143,7 +147,7 @@ class ActiveRoom {
         var promise = Q(name);
         if (!name) {
             // make sure name is also unique to the existing rooms...
-            let activeRoomNames = this.getAllActiveFor(this.owner);  // TODO: Update owner to username
+            let activeRoomNames = this.getAllActiveFor(this.owner);
             this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
 
             // Get name unique to the owner
@@ -382,7 +386,7 @@ ActiveRoom.fromStore = function(logger, socket, data) {
     room.collaborators = data.collaborators;
 
     // Set up the roles
-    room._uuid = data.uuid;  // save over the old uuid even if it changes
+    room.uuid = data.uuid;  // save over the old uuid even if it changes
                               // this should be reset if the room is forked TODO
     // load cached projects
     room.cachedProjects = data.roles || data.seats;

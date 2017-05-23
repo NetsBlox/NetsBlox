@@ -15,6 +15,8 @@ var _ = require('lodash'),
     trace = debug('netsblox:api:projects:trace'),
     error = debug('netsblox:api:projects:error');
 
+const Projects = require('../storage/projects');
+
 
 try {
     info('trying to load lwip');
@@ -154,10 +156,13 @@ var createCopyFrom = function(user, project) {
 
 var saveRoom = function (activeRoom, socket, user, res) {
     log(`saving entire room for ${socket.username}`);
-    var project = this.storage.projects.new(user, activeRoom);
+    const project = activeRoom.getProject() || Projects.new(user, activeRoom);
     const uuid = Utils.uuid(user.username, activeRoom.name);
+
+    activeRoom.setStorage(project);
     project.setActiveRole(socket.roleId);
-    return project.save()
+
+    return project.persist()
         .then(() => {
             log(`room save successful for project "${uuid}"`);
             return res.send('project saved!');
