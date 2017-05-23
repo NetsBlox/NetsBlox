@@ -138,7 +138,6 @@
             if (this.collaborators.includes(username)) return;
             this.collaborators.push(username);
             this._logger.info(`added collaborator ${username} to ${this.name}`);
-            // TODO: save the update to the collaborators
         }
 
         removeCollaborator(username) {
@@ -146,7 +145,6 @@
             if (index === -1) return;
             this.collaborators.splice(index, 1);
             this._logger.info(`removed collaborator ${username} from ${this.name}`);
-            // TODO: save the update to the collaborators
         }
 
         getStorageId() {
