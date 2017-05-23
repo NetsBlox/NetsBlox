@@ -71,8 +71,8 @@ if(!process.env.GOOGLE_GEOCODING_API) {
                 // send the response to user
                 return cacheCallback(null, res);
             })
-            .catch(err => {
-                // showError('Failed to reverse geocode',response);
+            .catch((err) => {
+                error(err);
                 return cacheCallback('Error in reverse geocoding', null);
             });
         }, (err, results) => {
