@@ -156,11 +156,12 @@ var createCopyFrom = function(user, project) {
 
 var saveRoom = function (activeRoom, socket, user, res) {
     log(`saving entire room for ${socket.username}`);
-    const project = Projects.new(user, activeRoom);
+    const project = activeRoom.getProject() || Projects.new(user, activeRoom);
     const uuid = Utils.uuid(user.username, activeRoom.name);
 
-    project.setActiveRole(socket.roleId);
     activeRoom.setStorage(project);
+    project.setActiveRole(socket.roleId);
+
     return project.persist()
         .then(() => {
             log(`room save successful for project "${uuid}"`);

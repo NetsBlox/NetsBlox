@@ -124,6 +124,10 @@ class ActiveRoom {
         this._project = store;
     }
 
+    getProject() {
+        return this._project;
+    }
+
     getOwner() {
         // Look up the owner in the user storage
         return Users.get(this.owner);
@@ -382,7 +386,7 @@ ActiveRoom.fromStore = function(logger, socket, data) {
     room.collaborators = data.collaborators;
 
     // Set up the roles
-    room._uuid = data.uuid;  // save over the old uuid even if it changes
+    room.uuid = data.uuid;  // save over the old uuid even if it changes
                               // this should be reset if the room is forked TODO
     // load cached projects
     room.cachedProjects = data.roles || data.seats;
