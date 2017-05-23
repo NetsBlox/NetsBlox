@@ -80,9 +80,12 @@
                         this.roles[name] = role;
                     });
 
-                    // Update the owner name if the
-                    roles = Object.keys(this.roles)
-                        .map(name => [name, this.roles[name]]);
+                    // remove extra roles in the project
+                    if (this._room) {
+                        Object.keys(this.roles)
+                            .filter(roleId => !this._room.roles[roleId])
+                            .forEach(roleId => delete this.roles[roleId]);
+                    }
 
                     return Q.all(roles.map(pair => {
                         let role = pair[1];
