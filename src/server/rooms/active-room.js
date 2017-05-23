@@ -143,7 +143,7 @@ class ActiveRoom {
         var promise = Q(name);
         if (!name) {
             // make sure name is also unique to the existing rooms...
-            let activeRoomNames = this.getAllActiveFor(this.owner);  // TODO: Update owner to username
+            let activeRoomNames = this.getAllActiveFor(this.owner);
             this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
 
             // Get name unique to the owner

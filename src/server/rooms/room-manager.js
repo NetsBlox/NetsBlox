@@ -3,6 +3,7 @@
 const ActiveRoom = require('./active-room');
 const utils = require('../server-utils');
 const Q = require('q');
+const Projects = require('../storage/projects');
 
 var RoomManager = function() {
     var self = this;
@@ -68,9 +69,10 @@ RoomManager.prototype.createRoom = function(socket, name, ownerId) {
     }
 
     this.rooms[uuid] = new ActiveRoom(this._logger, name, ownerId);
+
     // Create the data element
-    var data = this.storage.projects.new(socket, this.rooms[uuid]);
-    this.rooms[uuid].setStorage(data);
+    var project = Projects.new(socket, this.rooms[uuid]);
+    this.rooms[uuid].setStorage(project);
 
     return this.rooms[uuid];
 };
