@@ -4,6 +4,7 @@
     const Q = require('q');
     const _ = require('lodash');
     const blob = require('./blob-storage');
+    const utils = require('../server-utils');
 
     class Project extends DataWrapper {
         constructor(params) {
@@ -91,6 +92,18 @@
                                 role.Media = mediaHash;
                             });
                     }));
+                })
+                .then(() => {
+                    // Update the owner id if necessary
+                    if (utils.isSocketUuid(this.owner) && this._room.owner !== this.owner) {
+                        return this._db.update(
+                            this.getStorageId(),
+                            {$set: {owner: this._room.owner}},
+                            {upsert: true}
+                        )
+                        .then(() => this.owner = this._room.owner);
+                    }
+
                 });
         }
 
