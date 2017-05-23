@@ -157,7 +157,7 @@ var saveRoom = function (activeRoom, socket, user, res) {
     var project = this.storage.projects.new(user, activeRoom);
     const uuid = Utils.uuid(user.username, activeRoom.name);
     project.setActiveRole(socket.roleId);
-    return project.save()
+    return project.persist()
         .then(() => {
             log(`room save successful for project "${uuid}"`);
             return res.send('project saved!');
