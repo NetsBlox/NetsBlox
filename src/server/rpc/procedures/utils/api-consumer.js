@@ -25,10 +25,10 @@ class ApiConsumer {
      * @return {Promise}                 promise from request-promise
      */
     _requestData(queryOptions){
-        // TODO encode make sure queryOptions is url friendly
-        if (queryOptions.constructor === Array) {
+        // when extending use encodeURIComponent() tjo encode the query parameters
+        if (Array.isArray(queryOptions)) {
             this._logger.trace('requesting data from', queryOptions.length, 'sources');
-            let promises = queryOptions.map( qo => this._requestData(qo))
+            let promises = queryOptions.map( qo => this._requestData(qo));
             return Promise.all(promises);
         }
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
@@ -56,27 +56,27 @@ class ApiConsumer {
         var imgResponse = request.get(fullUrl);
         this._logger.trace('requesting image', fullUrl);
         delete imgResponse.headers['cache-control'];
-        imgResponse.isImage = true
+        imgResponse.isImage = true;
         imgResponse.on('response', res => {
             if (!res.headers['content-type'].startsWith('image')) {
-                console.log(res.headers['content-type']);
+                this._logger.error(res.headers['content-type']);
                 this._logger.error('invalid id / response',res.headers);
                 imgResponse.isImage = false;
                 this.response.send('null');
             }
-        })
+        });
         return imgResponse;
     }
 
     // private
     _sendNext() {
         const DELAY = 250;
-        var msgs = this._remainingMsgs[this.socket.roleId];
+        var msgs = this._remainingMsgs[this.socket.uuid];
         if (msgs && msgs.length) {
             // send an earthquake message
             var msg = msgs.shift();
 
-            while (msgs.length && msg.dstId !== this.socket.roleId) {
+            while (msgs.length && msg.dstId !== this.socket.uuid) {
                 msg = msgs.shift();
             }
 
@@ -88,10 +88,10 @@ class ApiConsumer {
             if (msgs.length) {
                 setTimeout(this._sendNext, DELAY);
             } else {
-                delete this._remainingMsgs[this.socket.roleId];
+                delete this._remainingMsgs[this.socket.uuid];
             }
         } else {
-            delete this._remainingMsgs[this.socket.roleId];
+            delete this._remainingMsgs[this.socket.uuid];
         }
     }
 
@@ -127,7 +127,7 @@ class ApiConsumer {
         // if (typeof(res) === 'object') {
         //     res = JSON.stringify(res);
         // }
-        if (res === null) this._logger.trace(query, 'query, returend no result');
+        if (res === null) this._logger.trace(query, 'query, returned no result');
         return res;
     }
 
@@ -189,7 +189,6 @@ class ApiConsumer {
             .then(res => {
                 let answer = this._queryJson(res,selector);
                 this._logger.trace('answer is', answer);
-                // TODO check validity of answer.
                 this.response.send(answer);
             });
     }
@@ -221,7 +220,7 @@ class ApiConsumer {
         });
     }
 
-    // WIP
+    // WIP needs further testing
     _makeHelpers(argsArr,fnMap, queryOptionsMaker){
         fnMap.forEach(fnEntry => {
             this[fnEntry.name] = (...argsArr) => {
@@ -245,8 +244,8 @@ class ApiConsumer {
 
 
     _stopMsgs(){
-        delete this._remainingMsgs[this.socket.roleId];
-        this._logger.trace('stopped sending messages for roleId:',this.socket.roleId);
+        delete this._remainingMsgs[this.socket.uuid];
+        this._logger.trace('stopped sending messages for uuid:',this.socket.uuid);
     }
 
 }
