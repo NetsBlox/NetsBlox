@@ -1,11 +1,20 @@
 // This file will prepare the raw source code from the examples directory
-var fs = require('fs'),
-    path = require('path'),
-    extractRpcs = require('../server-utils').extractRpcs,
-    _ = require('lodash');
+const fs = require('fs');
+const path = require('path');
+const extractRpcs = require('../server-utils').extractRpcs;
+const _ = require('lodash');
 
 // Create the dictionary of examples
 var examples = {};
+
+const Example = {};
+Example.getRole = function(role) {
+    return this._roles[role];
+};
+
+Example.getRoleNames = function(role) {
+    return Object.keys(this._roles);
+};
 
 // Read in the directories
 fs.readdirSync(__dirname)
@@ -17,7 +26,7 @@ fs.readdirSync(__dirname)
     )
     // create the example data objects
     .map(pair => {
-        var result = {},
+        var result = Object.create(Example),
             clients = pair[1];
 
         result.RoomName = pair[0];
@@ -50,10 +59,6 @@ fs.readdirSync(__dirname)
 
         }
         item.services = _.uniq(item.services); // keep only the unique services.
-
-        item.getRole = function(role) {
-            return this._roles[role];
-        };
 
         // Add to examples dictionary
         examples[item.RoomName] = item;
