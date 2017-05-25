@@ -12,7 +12,7 @@ Example.getRole = function(role) {
     return this._roles[role];
 };
 
-Example.getRoleNames = function(role) {
+Example.getRoleNames = function() {
     return Object.keys(this._roles);
 };
 
@@ -47,7 +47,7 @@ fs.readdirSync(__dirname)
         item.services = [];
         for (var i = roles.length; i--;) {
             item.roles[roles[i]] = null;
-            // TODO: FIXME: the _roles are not the correct format
+            // TODO: FIXME: the roles are not the correct format
             src = item._roles[roles[i]];
             item.services = item.services.concat(extractRpcs(src));
             item._roles[roles[i]] = {
@@ -64,6 +64,4 @@ fs.readdirSync(__dirname)
         examples[item.RoomName] = item;
     });
 
-// TODO: make objects for these examples
-// need 'getRole' method
 module.exports = Object.freeze(examples);

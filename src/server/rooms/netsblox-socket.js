@@ -209,13 +209,11 @@ class NetsBloxSocket {
                 this._logger.info(`"${this.username}" is making a new room "${name}"`);
 
                 var room = RoomManager.createRoom(this, name);
-                console.log('<<< about to join the room at', opts.role);
                 return room.createRole(opts.role)
                     .then(() => {
-                        console.log('<<< finished creating role...');
                         return this.join(room, opts.role);
                     })
-                    .catch(err => console.error(err));
+                    .catch(err => this._logger.error(err));
             });
     }
 
