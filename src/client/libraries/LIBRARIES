@@ -14,3 +14,4 @@ Eisenbergification.xml	Provide getters and setters for all GUI-controlled global
 time-utils.xml	Time conversion utility	Convert between different time 
 formats.
 struct-utils.xml	Structured data	Provide getters and setters for working with structured data using keys.
+image-loader.xml	Image loader	Load images directly and quickly (requires and openly accessible image url).
