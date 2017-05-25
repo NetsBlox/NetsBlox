@@ -290,7 +290,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                         '?socketId=' + myself.sockets.uuid));
 
                     myself.room.nextRoom = {
-                        ownerId: response.OwnerId,
+                        ownerId: response.Owner,
                         roomName: response.RoomName,
                         roleId: response.ProjectName
                     };
@@ -343,7 +343,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                                     myself.rawLoadCloudProject(response[0], dict.Public);
                                 },
                                 myself.cloudError(),
-                                [dict.ProjectName, SnapCloud.socketId()]
+                                [SnapCloud.username, dict.ProjectName, SnapCloud.socketId()]
                             );
                         }
                     ]);
@@ -434,7 +434,7 @@ NetsBloxMorph.prototype.cloudMenu = function () {
             'Change Password...',
             'changeCloudPassword'
         );
-        if (SnapActions.supportsCollaboration !== false) {
+        if (this.room.isOwner()) {
             menu.addLine();
             menu.addItem(
                 'Collaborators...',
@@ -1402,7 +1402,11 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addLine();
     menu.addPair('New', 'createNewProject', '^N');
     menu.addPair('Open...', 'openProjectsBrowser', '^O');
-    menu.addPair('Save', "save", '^S');
+    if (!this.room.isGuest()) {
+        menu.addPair('Save', "save", '^S');
+    } else {
+        menu.addPair('Save a Copy', "save", '^S');
+    }
     menu.addItem('Save As...', function() {
         if (myself.isPreviousVersion()) {
             return myself.showMessage('Please exit replay mode before saving');
@@ -1995,18 +1999,19 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
         roleId = project.ProjectName;  // src proj name
 
     this.source = 'cloud';
+    project.Owner = project.Owner || SnapCloud.username;
     if (project.SourceCode) {
-        this.droppedText(project.SourceCode);
         this.room.nextRoom = {
-            ownerId: SnapCloud.username,
+            ownerId: project.Owner,
             roomName: newRoom,
             roleId: roleId
         };
+        this.droppedText(project.SourceCode);
     } else {  // initialize an empty code base
         this.clearProject();
         this.room._name = newRoom;  // silent set name
         // FIXME: this could cause problems later
-        this.room.ownerId = SnapCloud.username;
+        this.room.ownerId = project.Owner;
         this.silentSetProjectName(roleId);
         this.sockets.updateRoomInfo();
         if (isNewRole) {
@@ -2325,12 +2330,7 @@ NetsBloxMorph.prototype.manageCollaborators = function () {
     var myself = this,
         ownerId = this.room.ownerId,
         name = this.room.name,
-        role = this.projectName,
         socketId = this.sockets.uuid;
-
-    if (!SnapActions.isCollaborating()) {
-        SnapActions.enableCollaboration();
-    }
 
     SnapCloud.getCollaboratorList(
         function(friends) {
@@ -2341,11 +2341,16 @@ NetsBloxMorph.prototype.manageCollaborators = function () {
                 myself,
                 function(user) {
                     if (user) {
-                        SnapCloud.inviteToCollaborate(socketId, user.username, ownerId, name, role);
+                        SnapCloud.inviteToCollaborate(
+                            socketId,
+                            user.username,
+                            ownerId,
+                            name
+                        );
                     }
                 },
                 friends,
-                'Invite a Friend to Collaborate'
+                'Invite a Collaborator to the Project'
             ).popUp();
         },
         function (err, lbl) {
@@ -2400,7 +2405,7 @@ NetsBloxMorph.prototype.collabResponse = function (id, response) {
         id,
         response, 
         function() {
-            myself.showMessage('Collaborating!', 2);
+            myself.showMessage('Added to the project!', 2);
         },
         function(err){
             myself.showMessage(err, 2);

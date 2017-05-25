@@ -1,5 +1,5 @@
 /* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer,
-   HintInputSlotMorph */
+   HintInputSlotMorph, SnapCloud*/
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
@@ -132,5 +132,26 @@ SnapActions._applyEvent = function(event) {
         // Report the error!
         this.ide().submitBugReport(msg, true);
         throw e;
+    }
+};
+
+SnapActions.applyEvent = function() {
+    var ide = this.ide();
+    if (ide.room.isEditable()) {
+        return ActionManager.prototype.applyEvent.apply(this, arguments);
+    } else {
+        // ask the user if he/she would like to request to be a collaborator
+        // TODO: Add option for saving your own copy
+        ide.confirm(
+            'Edits cannot be made on projects by guests.\n\nWould ' +
+            'you like to request to be made a collaborator?',
+            'Request Collaborator Priviledges?',
+            function () {
+                ide.sockets.sendMessage({
+                    type: 'permission-elevation-request',
+                    guest: SnapCloud.username
+                });
+            }
+        );
     }
 };
