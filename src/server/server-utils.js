@@ -83,7 +83,7 @@ var joinActiveProject = function(userId, room, res) {
         info(`adding ${userId} to new role "${openRole}" at "${room.name}"`);
 
         room.createRole(openRole);
-        role = getEmptyRole();;
+        role = getEmptyRole();
         return room.setRole(openRole, role).then(() => {
             serialized = serializeRole(role, room);
             return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
