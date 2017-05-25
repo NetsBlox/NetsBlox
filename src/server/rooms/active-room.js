@@ -4,7 +4,6 @@
 'use strict';
 
 var R = require('ramda'),
-    _ = require('lodash'),
     Q = require('q'),
     utils = require('../server-utils'),
     Users = require('../storage/users'),
@@ -20,14 +19,14 @@ class ActiveRoom {
         this.roles = {};  // actual occupants
         this.collaborators = [];
 
-        this.cachedProjects = {};
-
         this.owner = owner;
 
         // RPC contexts
         this.rpcs = {};
 
         // Saving
+        // TODO: should I set this everytime?
+        // TODO: load the role names
         this._project = null;
 
         this.uuid = utils.uuid(owner, name);
@@ -57,7 +56,7 @@ class ActiveRoom {
         this.destroy();
 
         // If the owner is a socket uuid, then delete it from the database, too
-        if (utils.isSocketUuid(this.owner) && this._project) {
+        if (this._project && this._project.isTransient()) {
             this._logger.trace(`removing project ${this.uuid} as the room has closed`);
             this._project.destroy();
         }
@@ -79,9 +78,6 @@ class ActiveRoom {
         }
 
         roles.forEach(role => fork.silentCreateRole(role));
-
-        // Copy the data from each project
-        fork.cachedProjects = _.cloneDeep(this.cachedProjects);
 
         // Notify the socket of the fork
         socket.send({
@@ -124,6 +120,10 @@ class ActiveRoom {
         this._project = store;
     }
 
+    getProject() {
+        return this._project;
+    }
+
     getOwner() {
         // Look up the owner in the user storage
         return Users.get(this.owner);
@@ -143,7 +143,7 @@ class ActiveRoom {
         var promise = Q(name);
         if (!name) {
             // make sure name is also unique to the existing rooms...
-            let activeRoomNames = this.getAllActiveFor(this.owner);  // TODO: Update owner to username
+            let activeRoomNames = this.getAllActiveFor(this.owner);
             this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
 
             // Get name unique to the owner
@@ -257,20 +257,64 @@ class ActiveRoom {
     }
 
     /////////// Role Operations ///////////
-    createRole (role) {
-        this.silentCreateRole(role);
-        this.onRolesChanged();
+    getRoleNames () {
+        return Object.keys(this.roles);
     }
 
-    silentCreateRole (role) {
+    getRole(role) {
+        return this._project.getRole(role);
+    }
+
+    setRole(role, content) {
+        this._logger.trace(`setting ${role} to ${content}`);
+        return this._project.setRole(role, content);
+    }
+
+    cloneRole(roleId) {
+        // Create the new role
+        let count = 2;
+        let newRole;
+        while (this.roles.hasOwnProperty(newRole = `${roleId} (${count++})`));
+
+        if (!this.roles[newRole]) {
+            this.roles[newRole] = null;
+        }
+
+        return this._project.cloneRole(roleId, newRole)
+            .then(() => this.onRolesChanged())
+            .then(() => newRole);
+    }
+
+    createRole (role, content) {
+        return this.silentCreateRole(role, content)
+            .then(() => this.onRolesChanged());
+    }
+
+    silentCreateRole (role, content) {
         this._logger.trace(`Adding role ${role}`);
         if (!this.roles[role]) {
             this.roles[role] = null;
+            if (content) {
+                return this.setRole(role, content || utils.getEmptyRole(role));
+            }
         }
+        return Q();
     }
 
     updateRole () {
         this.onRolesChanged();
+    }
+
+    saveRole(role) {
+        const socket = this.roles[role];
+
+        if (!socket) {
+            this._logger.warn(`cannot save unoccupied role: ${role}`);
+            return Q();
+        }
+
+        return socket.getProjectJson()
+            .then(content => this.setRole(role, content));
     }
 
     removeRole (id) {
@@ -278,8 +322,11 @@ class ActiveRoom {
 
         delete this.roles[id];
 
-        this.check();
-        this.onRolesChanged();
+        return this._project.removeRole(id)
+            .then(() => {
+                this.check();
+                this.onRolesChanged();
+            });
     }
 
     renameRole (roleId, newId) {
@@ -295,17 +342,12 @@ class ActiveRoom {
 
         delete this.roles[roleId];
         this.roles[newId] = socket;
-        this.cachedProjects[newId] = this.cachedProjects[roleId];
-        delete this.cachedProjects[roleId];
 
-        if (!this.cachedProjects[newId]) {
-            this.cachedProjects[newId] = {};
-        }
-
-        this.cachedProjects[newId].ProjectName = newId;
-
-        this.onRolesChanged();
-        this.check();
+        return this._project.renameRole(roleId, newId)
+            .then(() => {
+                this.onRolesChanged();
+                this.check();
+            });
     }
 
     onRolesChanged () {
@@ -316,29 +358,6 @@ class ActiveRoom {
         this.sockets().forEach(socket => socket.send(msg));
 
         this.save();
-    }
-
-    /////////// Caching and Saving ///////////
-    cache (role, callback) {
-        this._logger.trace('caching ' + role);
-
-        var socket = this.roles[role];
-
-        if (!socket) {
-            return Q().then(() => {
-                let err = 'No socket in ' + role;
-                this._logger.error(err);
-                throw err;
-            });
-        }
-
-        // Get the project json from the socket
-        return socket.getProjectJson()
-            .then(project => {
-                this.cachedProjects[role] = project;
-                return project;
-            })
-            .nodeify(callback);
     }
 
     // Retrieve a dictionary of role => project content
@@ -363,7 +382,7 @@ class ActiveRoom {
                 if (k !== -1) {
                     content[roles[i]] = projects[k];
                 } else {  // socket is closed -> use the cache
-                    content[roles[i]] = this.cachedProjects[roles[i]] || null;
+                    content[roles[i]] = this.getRole(roles[i]);
                 }
             }
             return content;
@@ -373,22 +392,17 @@ class ActiveRoom {
 }
 
 // Factory method
-ActiveRoom.fromStore = function(logger, socket, data) {
-    var room = new ActiveRoom(logger, data.name, data.owner);
+ActiveRoom.fromStore = function(logger, socket, project) {
+    var room = new ActiveRoom(logger, project.name, project.owner);
 
-    // Store the data
-    room.setStorage(data);
-    room.originTime = data.originTime;
-    room.collaborators = data.collaborators;
+    // Store the project
+    room.setStorage(project);
+    room.originTime = project.originTime;
+    room.collaborators = project.collaborators;
 
     // Set up the roles
-    room._uuid = data.uuid;  // save over the old uuid even if it changes
+    room.uuid = project.uuid;  // save over the old uuid even if it changes
                               // this should be reset if the room is forked TODO
-    // load cached projects
-    room.cachedProjects = data.roles || data.seats;
-
-    // Add the roles
-    Object.keys(room.cachedProjects).forEach(role => room.roles[role] = null);
     return room;
 };
 

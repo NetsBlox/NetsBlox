@@ -51,7 +51,7 @@ class Data {
     }
 
     destroy() {
-        this._db.deleteOne(this.getStorageId());
+        return this._db.deleteOne(this.getStorageId());
     }
 
     pretty() {
