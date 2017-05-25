@@ -209,8 +209,11 @@ class NetsBloxSocket {
                 this._logger.info(`"${this.username}" is making a new room "${name}"`);
 
                 var room = RoomManager.createRoom(this, name);
-                room.createRole(opts.role);
-                this.join(room, opts.role);
+                return room.createRole(opts.role)
+                    .then(() => {
+                        return this.join(room, opts.role);
+                    })
+                    .catch(err => this._logger.error(err));
             });
     }
 
@@ -490,13 +493,16 @@ NetsBloxSocket.MessageHandlers = {
                 roles.forEach(role => this._room.silentCreateRole(role));
 
                 // load the roles into the cache
-                roles.forEach(role => this._room.cachedProjects[role] = {
-                    SourceCode: msg.roles[role].SourceCode,
-                    Media: msg.roles[role].Media,
-                    MediaSize: msg.roles[role].Media.length,
-                    SourceSize: msg.roles[role].SourceCode.length,
-                    RoomName: msg.name
-                });
+                roles.forEach(role => this._room.setRole(
+                    role,
+                    {
+                        SourceCode: msg.roles[role].SourceCode,
+                        Media: msg.roles[role].Media,
+                        MediaSize: msg.roles[role].Media.length,
+                        SourceSize: msg.roles[role].SourceCode.length,
+                        RoomName: msg.name
+                    }
+                ));
 
                 this._room.onRolesChanged();
             });

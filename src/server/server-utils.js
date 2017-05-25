@@ -59,9 +59,11 @@ var joinActiveProject = function(userId, room, res) {
         .shift();
 
     trace(`room "${room.name}" is already active`);
-    if (openRole && room.cachedProjects[openRole]) {  // Send an open role and add the user
+    if (openRole && room.getRole(openRole)) {  // Send an open role and add the user
         trace(`adding ${userId} to open role "${openRole}" at "${room.name}"`);
-        role = room.cachedProjects[openRole];
+        role = room.getRole(openRole);
+        serialized = serializeRole(role, room);
+        return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
     } else {  // If no open role w/ cache -> make a new role
         let i = 2,
             base;
@@ -81,15 +83,12 @@ var joinActiveProject = function(userId, room, res) {
         info(`adding ${userId} to new role "${openRole}" at "${room.name}"`);
 
         room.createRole(openRole);
-        role = {
-            ProjectName: openRole,
-            SourceCode: null,
-            SourceSize: 0
-        };
-        room.cachedProjects[openRole] = role;
+        role = getEmptyRole();
+        return room.setRole(openRole, role).then(() => {
+            serialized = serializeRole(role, room);
+            return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
+        });
     }
-    serialized = serializeRole(role, room);
-    return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
 };
 
 // Function helpers
@@ -146,6 +145,14 @@ var computeAspectRatioPadding = function(width, height, ratio){
 
 var isSocketUuid = function(name) {
     return name[0] === '_';
+};
+
+var getEmptyRole = function(name) {
+    return {
+        ProjectName: name,
+        SourceCode: null,
+        SourceSize: 0
+    };
 };
 
 module.exports = {

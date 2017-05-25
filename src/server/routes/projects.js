@@ -63,35 +63,34 @@ var setProjectPublic = function(name, user, value) {
 
 // Select a preview from a project (retrieve them from the roles)
 var getPreview = function(project) {
-    var preview,
-        roles,
-        role;
 
-    roles = Object.keys(project.roles);
-    preview = {
-        ProjectName: project.name,
-        Public: !!project.public
-    };
+    return project.getRawRoles()
+        .then(roles => {
 
-    for (var i = roles.length; i--;) {
-        role = project.roles[roles[i]];
-        if (role) {
-            // Get the most recent time
-            preview.Updated = Math.max(
-                preview.Updated || 0,
-                new Date(role.Updated).getTime()
-            );
+            const preview = {
+                ProjectName: project.name,
+                Public: !!project.public
+            };
 
-            // Notes
-            preview.Notes = preview.Notes || role.Notes;
-            preview.Thumbnail = preview.Thumbnail ||
-                role.Thumbnail;
-        }
-    }
-    preview.Updated = new Date(preview.Updated);  // to string
-    preview.Public = project.Public;
-    preview.Owner = project.owner;
-    return preview;
+            let role;
+            for (var i = roles.length; i--;) {
+                role = roles[i];
+                // Get the most recent time
+                preview.Updated = Math.max(
+                    preview.Updated || 0,
+                    new Date(role.Updated).getTime()
+                );
+
+                // Notes
+                preview.Notes = preview.Notes || role.Notes;
+                preview.Thumbnail = preview.Thumbnail ||
+                    role.Thumbnail;
+            }
+            preview.Updated = new Date(preview.Updated);  // to string
+            preview.Public = project.Public;
+            preview.Owner = project.owner;
+            return preview;
+        });
 };
 
 ////////////////////// Project Helpers //////////////////////
@@ -156,7 +155,8 @@ var createCopyFrom = function(user, project) {
 
 var saveRoom = function (activeRoom, socket, user, res) {
     log(`saving entire room for ${socket.username}`);
-    const project = activeRoom.getProject() || Projects.new(user, activeRoom);
+    const project = activeRoom.getProject() ? activeRoom.getProject() :
+        Projects.new(user, activeRoom);
     const uuid = Utils.uuid(user.username, activeRoom.name);
 
     activeRoom.setStorage(project);
@@ -287,22 +287,25 @@ module.exports = [
             return this.storage.users.get(username)
                 .then(user => {
                     if (user) {
-                        return user.getSharedProjects().then(projects => {
-                            trace(`found project list (${projects.length}) ` +
-                                `for ${username}: ${projects.map(proj => proj.name)}`);
+                        return user.getSharedProjects()
+                            .then(projects => {
+                                trace(`found project list (${projects.length}) ` +
+                                    `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                            const previews = projects.map(getPreview);
-                            const names = JSON.stringify(previews.map(preview =>
-                                preview.ProjectName));
+                                return Q.all(projects.map(getPreview));
+                            })
+                            .then(previews => {
+                                const names = JSON.stringify(previews.map(preview =>
+                                    preview.ProjectName));
 
-                            info(`shared projects for ${username} are ${names}`);
+                                info(`shared projects for ${username} are ${names}`);
 
-                            if (req.query.format === 'json') {
-                                return res.json(previews);
-                            } else {
-                                return res.send(Utils.serializeArray(previews));
-                            }
-                        });
+                                if (req.query.format === 'json') {
+                                    return res.json(previews);
+                                } else {
+                                    return res.send(Utils.serializeArray(previews));
+                                }
+                            });
                     }
                     return res.status(404);
                 })
@@ -325,23 +328,26 @@ module.exports = [
             return this.storage.users.get(username)
                 .then(user => {
                     if (user) {
-                        return user.getRawProjects().then(projects => {
-                            trace(`found project list (${projects.length}) ` +
-                                `for ${username}: ${projects.map(proj => proj.name)}`);
+                        return user.getRawProjects()
+                            .then(projects => {
+                                trace(`found project list (${projects.length}) ` +
+                                    `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                            var previews = projects.map(getPreview);
+                                return Q.all(projects.map(getPreview));
+                            })
+                            .then(previews => {
 
-                            info(`Projects for ${username} are ${JSON.stringify(
-                                previews.map(preview => preview.ProjectName)
-                                )}`
-                            );
+                                info(`Projects for ${username} are ${JSON.stringify(
+                                    previews.map(preview => preview.ProjectName)
+                                    )}`
+                                );
 
-                            if (req.query.format === 'json') {
-                                return res.json(previews);
-                            } else {
-                                return res.send(Utils.serializeArray(previews));
-                            }
-                        });
+                                if (req.query.format === 'json') {
+                                    return res.json(previews);
+                                } else {
+                                    return res.send(Utils.serializeArray(previews));
+                                }
+                            });
                     }
                     return res.status(404);
                 })
@@ -547,32 +553,37 @@ module.exports = [
 
             // return the names of all projects owned by :owner
             middleware.loadUser(req.params.owner, res, user => {
-                var project = user.rooms.find(room => room.name === name),
-                    preview = getPreview(project),
-                    err;
-
-                if (!project) {
-                    err = `could not find project ${name}`;
-                    this._logger.error(err);
-                    return res.status(400).send(err);
-                }
-
-                if (!preview || !preview.Thumbnail) {
-                    err = `could not find thumbnail for ${name}`;
-                    this._logger.error(err);
-                    return res.status(400).send(err);
-                }
-
-                this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
-                return applyAspectRatio(preview.Thumbnail[0], aspectRatio)
-                    .then(buffer => {
-                        res.contentType('image/png');
-                        res.end(buffer, 'binary');
+                return user.getRawProject(name)
+                    .then(project => {
+                        if (project) {
+                            return getPreview(project)
+                                .then(preview => {
+                                    if (!preview || !preview.Thumbnail) {
+                                        const err = `could not find thumbnail for ${name}`;
+                                        this._logger.error(err);
+                                        return res.status(400).send(err);
+                                    }
+                                    this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
+                                    return applyAspectRatio(
+                                        preview.Thumbnail[0],
+                                        aspectRatio
+                                    );
+                                })
+                                .then(buffer => {
+                                    res.contentType('image/png');
+                                    res.end(buffer, 'binary');
+                                });
+                        } else {
+                            const err = `could not find project ${name}`;
+                            this._logger.error(err);
+                            return res.status(400).send(err);
+                        }
                     })
                     .fail(err => {
                         this._logger.error(`padding image failed: ${err}`);
                         res.serverError(err);
                     });
+
             });
 
         }
@@ -592,7 +603,7 @@ module.exports = [
             // Get the thumbnail
             var example = EXAMPLES[name];
             var role = Object.keys(example.roles).shift();
-            var src = example.cachedProjects[role].SourceCode;
+            var src = example.getRole(role).SourceCode;
             return Q.nfcall(xml2js.parseString, src)
                 .then(result => result.project.thumbnail[0])
                 .then(thumbnail => applyAspectRatio(thumbnail, aspectRatio))

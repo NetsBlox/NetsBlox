@@ -276,21 +276,21 @@ module.exports = [
             }
 
             //  Cache the current state in the active room
-            room.cache(roleId, err => {
-                if (err) {
-                    return res.status(500).send('ERROR: ' + err);
-                }
+            return room.saveRole(roleId)
+                .then(() => {
+                    // Update the room state
+                    room.move({src: roleId, dst: dstId});
 
-                // Update the room state
-                room.move({src: roleId, dst: dstId});
-
-                // Reply w/ the new role code
-                var project = room.cachedProjects[dstId] || null;
-                if (project) {
-                    project = Utils.serializeRole(project, room.name);
-                }
-                res.send(project);
-            });
+                    // Reply w/ the new role code
+                    return room.getRole(dstId);
+                })
+                .then(project => {
+                    if (project) {
+                        project = Utils.serializeRole(project, room.name);
+                    }
+                    res.send(project);
+                })
+                .catch(err => res.status(500).send('ERROR: ' + err));
         }
     },
     {  // Create a new role and copy this project's blocks to it
@@ -303,32 +303,19 @@ module.exports = [
             // Check that the requestor is the owner
             var socket = SocketManager.getSocket(req.body.socketId),
                 roleId = req.body.roleId,
-                room = socket._room,
-                newRole;
+                room = socket._room;
 
             if (!socket.canEditRoom()) {
                 this._logger.error(`${socket.username} tried to clone role... DENIED`);
                 return res.status(403).send('ERROR: Guests can\'t clone roles');
             }
 
-            // Create the new role
-            var count = 2;
-            while (room.roles.hasOwnProperty(newRole = `${roleId} (${count++})`));
-            room.createRole(newRole);
-
-            // Get the project json
-            if (room.roles[roleId]) {  // Request via ws
-                room.cache(roleId, err => {
-                    if (!err) {
-                        room.cachedProjects[newRole] = room.cachedProjects[roleId];
-                        room.cachedProjects[newRole].ProjectName = newRole;
-                    }
-                    res.send(encodeURIComponent(newRole));
+            return room.cloneRole(roleId)
+                .then(newRole => res.send(encodeURIComponent(newRole)))
+                .catch(err => {
+                    this._logger.error(`Clone role failed: ${err}`);
+                    res.send(`ERROR: ${err}`);
                 });
-            } else {  // use the current cached value
-                room.cachedProjects[newRole] = room.cachedProjects[roleId];
-                res.send(encodeURIComponent(newRole));
-            }
         }
     },
     {  // Collaboration
@@ -479,7 +466,7 @@ function acceptInvitation (username, id, response, socketId, callback) {
             room.onRolesChanged();
         }
 
-        project = room.cachedProjects[invite.role] || null;
+        project = room.getRole(invite.role) || null;
         if (project) {
             project = Utils.serializeRole(project, room.name);
         }
