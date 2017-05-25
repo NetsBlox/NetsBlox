@@ -21,27 +21,27 @@ fs.readdirSync(__dirname)
             clients = pair[1];
 
         result.RoomName = pair[0];
-        result.cachedProjects = {};
+        result._roles = {};
 
         // Add project source
         for (var i = clients.length; i--;) {
-            result.cachedProjects[clients[i].replace('.xml', '')] =
+            result._roles[clients[i].replace('.xml', '')] =
                 fs.readFileSync(path.join(__dirname, pair[0], clients[i]), 'utf8');
         }
         return result;
     })
     .forEach(item => {
-        var roles = Object.keys(item.cachedProjects),
+        var roles = Object.keys(item._roles),
             src;
 
         item.roles = {};
         item.services = [];
         for (var i = roles.length; i--;) {
             item.roles[roles[i]] = null;
-            // TODO: FIXME: the cachedProjects are not the correct format
-            src = item.cachedProjects[roles[i]];
+            // TODO: FIXME: the _roles are not the correct format
+            src = item._roles[roles[i]];
             item.services = item.services.concat(extractRpcs(src));
-            item.cachedProjects[roles[i]] = {
+            item._roles[roles[i]] = {
                 SourceCode: src,
                 ProjectName: roles[i],
                 RoomName: item.RoomName,
@@ -51,8 +51,14 @@ fs.readdirSync(__dirname)
         }
         item.services = _.uniq(item.services); // keep only the unique services.
 
+        item.getRole = function(role) {
+            return this._roles[role];
+        };
+
         // Add to examples dictionary
         examples[item.RoomName] = item;
     });
 
+// TODO: make objects for these examples
+// need 'getRole' method
 module.exports = Object.freeze(examples);

@@ -22,15 +22,51 @@
         }
 
         fork(room) {
-            var params;
-            params = {
+            const params = {
                 room: room,
                 logger: this._logger,
                 lastUpdateAt: Date.now(),
                 db: this._db
             };
-            this._logger.trace('forking (' + room.uuid + ')');
+            const data = this._saveable();
+            data.owner = room.owner;
+            params.data = data;
+
+            this._logger.trace('creating fork: ' + room.uuid);
             return new Project(params);
+        }
+
+        setRole(role, content) {
+            this.roles[role] = content;
+            var query = {$set: {}};
+            query.$set[`roles.${role}`] = content;
+            this._logger.trace(`updating role: ${role}`);
+            return this._db.update(this.getStorageId(), query)
+                .then(() => content);
+        }
+
+        getRole(role) {
+            return this.roles[role];
+        }
+
+        removeRole(role) {
+            delete this.roles[role];
+            var query = {$unset: {}};
+            query.$unset[`roles.${role}`] = '';
+            this._logger.trace(`removing role: ${role}`);
+            return this._db.update(this.getStorageId(), query);
+        }
+
+        renameRole(role, newName) {
+            var query = {$rename: {}};
+            query.$rename[`roles.${role}`] = `roles.${newName}`;
+
+            // update in-memory
+            this.roles[newName] = this.roles[role];
+            delete this.roles[role];
+
+            this._logger.trace(`renaming role: ${role} -> ${newName}`);
+            return this._db.update(this.getStorageId(), query);
         }
 
         collectProjects() {
@@ -42,6 +78,7 @@
                     var roles = [];
 
                     sockets.forEach((socket, i) => roles.push([socket.roleId, projects[i]]));
+
                     return roles;
                 });
         }
@@ -55,6 +92,7 @@
                 name = allRoleNames[i];
                 if (!this.roles[name]) {
                     removed.push(name);
+                    console.log('removing', name);
                     delete this.roles[name];
                 }
             }
@@ -79,13 +117,6 @@
                         let [name, role] = pair;
                         this.roles[name] = role;
                     });
-
-                    // remove extra roles in the project
-                    if (this._room) {
-                        Object.keys(this.roles)
-                            .filter(roleId => !this._room.roles[roleId])
-                            .forEach(roleId => delete this.roles[roleId]);
-                    }
 
                     return Q.all(roles.map(pair => {
                         let role = pair[1];
@@ -299,6 +330,7 @@
     };
 
     ProjectStorage.new = function(user, activeRoom) {
+        // TODO: check for the room in the transient collection...
         return new Project({
             logger: logger,
             db: transientCollection,

@@ -592,7 +592,7 @@ module.exports = [
             // Get the thumbnail
             var example = EXAMPLES[name];
             var role = Object.keys(example.roles).shift();
-            var src = example.cachedProjects[role].SourceCode;
+            var src = example.getRole(role).SourceCode;
             return Q.nfcall(xml2js.parseString, src)
                 .then(result => result.project.thumbnail[0])
                 .then(thumbnail => applyAspectRatio(thumbnail, aspectRatio))

@@ -115,7 +115,7 @@ Server.prototype.configureRoutes = function() {
             metaInfo.title = projectName;
             var example = EXAMPLES[projectName];
             var role = Object.keys(example.roles).shift();
-            var src = example.cachedProjects[role].SourceCode;
+            var src = example.getRole(role).SourceCode;
             return Q.nfcall(xml2js.parseString, src)
                 .then(result => result.project.notes[0])
                 .then(notes => {
