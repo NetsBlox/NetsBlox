@@ -27,10 +27,11 @@
             data.owner = room.owner;
             params.data = data;
 
-            this._logger.trace('creating fork: ' + room.uuid);
+            this._logger.trace(`creating fork: ${room.uuid}`);
             return new Project(params);
         }
 
+        ///////////////////////// Roles ///////////////////////// 
         setRawRole(role, content) {
             const query = {$set: {}};
             query.$set[`roles.${role}`] = content;
@@ -105,6 +106,7 @@
                 );
         }
 
+        ///////////////////////// End Roles ///////////////////////// 
         collectProjects() {
             var sockets = this._room ? this._room.sockets() : [];
             // Add saving the cached projects
@@ -177,8 +179,8 @@
                     return this._db.update(this.getStorageId(), query, {upsert: true})
                         .then(() => {
                             this._logger.trace(`saved project ${this.owner}/${this.name}`);
-                            this.owner = this._room.owner;
-                            this.name = this._room.name;
+                            this.owner = query.$set.owner || this.owner;
+                            this.name = query.$set.name || this.name;
                         });
                 });
         }
