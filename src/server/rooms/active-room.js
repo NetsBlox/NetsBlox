@@ -26,6 +26,8 @@ class ActiveRoom {
         this.rpcs = {};
 
         // Saving
+        // TODO: should I set this everytime?
+        // TODO: load the role names
         this._project = null;
 
         this.uuid = utils.uuid(owner, name);
@@ -275,7 +277,12 @@ class ActiveRoom {
         let newRole;
         while (this.roles.hasOwnProperty(newRole = `${roleId} (${count++})`));
 
-        return this.createRole(newRole, this.getRole(roleId))
+        if (!this.roles[newRole]) {
+            this.roles[newRole] = null;
+        }
+
+        return this._project.cloneRole(roleId, newRole)
+            .then(() => this.onRolesChanged())
             .then(() => newRole);
     }
 

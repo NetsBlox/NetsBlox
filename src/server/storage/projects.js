@@ -9,11 +9,6 @@
     class Project extends DataWrapper {
         constructor(params) {
             params.data = _.extend(params.data || {});
-            params.data.roles = params.data.roles || {};
-
-            // Update seats => roles
-            params.data.roles = params.data.roles || params.data.seats;
-            delete params.data.seats;
 
             super(params.db, params.data || {});
             this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
@@ -36,21 +31,54 @@
             return new Project(params);
         }
 
-        setRole(role, content) {
-            this.roles[role] = content;
-            var query = {$set: {}};
+        setRawRole(role, content) {
+            const query = {$set: {}};
             query.$set[`roles.${role}`] = content;
+            return this._db.update(this.getStorageId(), query);
+        }
+
+        setRole(role, content) {
             this._logger.trace(`updating role: ${role}`);
-            return this._db.update(this.getStorageId(), query)
-                .then(() => content);
+            return Q.all([
+                blob.store(content.SourceCode),
+                blob.store(content.Media)
+            ])
+            .then(hashes => {
+                const [srcHash, mediaHash] = hashes;
+
+                content.SourceCode = srcHash;
+                content.Media = mediaHash;
+                return this.setRawRole(role, content);
+            });
+        }
+
+        getRawRole(role) {
+            return this._db.findOne(this.getStorageId())
+                .then(project => project.roles[role]);
         }
 
         getRole(role) {
-            return this.roles[role];
+            return this.getRawRole(role)
+                .then(content => {
+                    return Q.all([
+                        blob.get(content.SourceCode),
+                        blob.get(content.Media)
+                    ])
+                    .then(data => {
+                        const [code, media] = data;
+                        content.SourceCode = code;
+                        content.Media = media;
+                        return content;
+                    });
+                });
+        }
+
+        cloneRole(role, newName) {
+            return this.getRawRole(role)
+                .then(content => this.setRawRole(newName, content));
         }
 
         removeRole(role) {
-            delete this.roles[role];
             var query = {$unset: {}};
             query.$unset[`roles.${role}`] = '';
             this._logger.trace(`removing role: ${role}`);
@@ -61,12 +89,20 @@
             var query = {$rename: {}};
             query.$rename[`roles.${role}`] = `roles.${newName}`;
 
-            // update in-memory
-            this.roles[newName] = this.roles[role];
-            delete this.roles[role];
-
             this._logger.trace(`renaming role: ${role} -> ${newName}`);
             return this._db.update(this.getStorageId(), query);
+        }
+
+        getRoleNames () {
+            return this._db.findOne(this.getStorageId())
+                .then(project => Object.keys(project.roles));
+        }
+
+        getRawRoles () {
+            return this._db.findOne(this.getStorageId())
+                .then(project =>
+                    Object.keys(project.roles).map(name => project.roles[name])
+                );
         }
 
         collectProjects() {
@@ -84,47 +120,46 @@
         }
 
         clean () {
-            let allRoleNames = Object.keys(this.roles),
-                removed = [],
-                name;
+            return this.getRoleNames()
+                .then(allRoleNames => {
+                    let removed = [],
+                        name;
 
-            for (let i = allRoleNames.length; i--;) {
-                name = allRoleNames[i];
-                if (!this.roles[name]) {
-                    removed.push(name);
-                    console.log('removing', name);
-                    delete this.roles[name];
-                }
-            }
+                    for (let i = allRoleNames.length; i--;) {
+                        name = allRoleNames[i];
+                        if (!this.roles[name]) {
+                            removed.push(name);
+                            delete this.roles[name];
+                        }
+                    }
 
-            if (removed.length) {
-                logger.warn(`Found ${removed.length} null roles in ${this.uuid}. Removing...`);
-            }
+                    if (removed.length) {
+                        logger.warn(`Found ${removed.length} null roles in ${this.uuid}. Removing...`);
+                    }
 
-            return this;
+                    return this;
+                });
         }
 
 
         // Override
-        prepare() {
+        save() {
+            const query = {$set: {}};
             return this.collectProjects()
                 .then(roles => {
                     this._logger.trace('collected projects for ' + this.owner);
 
                     this.clean();  // remove any null roles
-                    this.lastUpdateAt = Date.now();
-                    roles.forEach(pair => {  // update roles
-                        let [name, role] = pair;
-                        this.roles[name] = role;
-                    });
 
+                    query.$set.lastUpdateAt = Date.now();
                     return Q.all(roles.map(pair => {
-                        let role = pair[1];
+                        let [name, role] = pair;
                         return Q.all([blob.store(role.SourceCode), blob.store(role.Media)])
                             .then(hashes => {
                                 let [srcHash, mediaHash] = hashes;
                                 role.SourceCode = srcHash;
                                 role.Media = mediaHash;
+                                query.$set[`roles.${name}`] = role;
                             });
                     }));
                 })
@@ -135,22 +170,16 @@
                         this._room.owner !== this.owner;
 
                     if (ownerLoggedIn || nameChanged) {
-                        return this._db.update(
-                            this.getStorageId(),
-                            {
-                                $set: {
-                                    owner: this._room.owner,
-                                    name: this._room.name
-                                }
-                            },
-                            {upsert: true}
-                        )
+                        query.$set.owner = this._room.owner;
+                        query.$set.name = this._room.name;
+                    }
+
+                    return this._db.update(this.getStorageId(), query, {upsert: true})
                         .then(() => {
+                            this._logger.trace(`saved project ${this.owner}/${this.name}`);
                             this.owner = this._room.owner;
                             this.name = this._room.name;
                         });
-                    }
-
                 });
         }
 
@@ -215,23 +244,23 @@
         collection,
         transientCollection;
 
-    const loadProjectBinaryData = function(project) {
-        project.clean();
+    //const loadProjectBinaryData = function(project) {
+        //project.clean();
 
-        var roles = Object.keys(project.roles).map(name => project.roles[name]);
-        return Q.all(roles.map(loadRole))
-            .then(() => project);
-    };
+        //var roles = Object.keys(project.roles).map(name => project.roles[name]);
+        //return Q.all(roles.map(loadRole))
+            //.then(() => project);
+    //};
 
-    const loadRole = function(role) {
-        const srcHash = role.SourceCode;
-        const mediaHash = role.Media;
-        return Q.all([blob.get(srcHash), blob.get(mediaHash)])
-            .then(content => {
-                [role.SourceCode, role.Media] = content;
-                return role;
-            });
-    };
+    //const loadRole = function(role) {
+        //const srcHash = role.SourceCode;
+        //const mediaHash = role.Media;
+        //return Q.all([blob.get(srcHash), blob.get(mediaHash)])
+            //.then(content => {
+                //[role.SourceCode, role.Media] = content;
+                //return role;
+            //});
+    //};
 
     ProjectStorage.init = function (_logger, db) {
         logger = _logger.fork('projects');
@@ -252,15 +281,7 @@
     };
 
     ProjectStorage.getProject = function (username, projectName) {
-        return ProjectStorage.get(username, projectName)
-            .then(project => {
-                var promise = Q(project);
-
-                if (project) {
-                    promise = loadProjectBinaryData(project);
-                }
-                return promise;
-            });
+        return ProjectStorage.get(username, projectName);
     };
 
     ProjectStorage.getSharedProject = function (owner, projectName, user) {
@@ -271,13 +292,7 @@
                     db: collection,
                     data
                 };
-                const project = data ? new Project(params) : null;
-                let promise = Q(project);
-
-                if (project) {
-                    promise = loadProjectBinaryData(project);
-                }
-                return promise;
+                return data ? new Project(params) : null;
             });
     };
 
@@ -292,7 +307,6 @@
                 db: collection,
                 data: d
             })))
-            .then(projects => Q.all(projects.map(loadProjectBinaryData)))
             .catch(e => {
                 logger.error(`getting user projects errored: ${e}`);
                 throw e;
@@ -310,7 +324,6 @@
                 db: collection,
                 data: d
             })))
-            .then(projects => Q.all(projects.map(loadProjectBinaryData)))
             .catch(e => {
                 logger.error(`getting shared projects errored: ${e}`);
                 throw e;
