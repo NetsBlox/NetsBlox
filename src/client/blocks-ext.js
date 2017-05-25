@@ -108,14 +108,12 @@ StructInputSlotMorph.prototype.setContents = function(name, values) {
     InputSlotMorph.prototype.setContents.call(this, name);
 
     if (this.parent) {  // update fields
-        var children = this.parent.children,
-            myIndex = children.indexOf(this),
-            currentFields = this.fields,
-            i = currentFields.length + myIndex + 1,
-            input = children[--i],
+        var inputs = this.parent.inputs(),
+            myIndex = inputs.indexOf(this),
             removed = [],
             scripts = this.parentThatIsA(ScriptsMorph),
-            inputs;
+            input,
+            i;
 
         // Remove the "i" fields after the current morph
         inputs = this.parent.inputs();
@@ -137,7 +135,16 @@ StructInputSlotMorph.prototype.setContents = function(name, values) {
         }
 
         // Create new struct fields
-        values = values || [];
+        // Set the inputs...
+        if (!values) {
+            values = inputs.slice(myIndex+1).map(function(content) {
+                if (content instanceof BlockMorph) {
+                    return content;
+                } else {
+                    return content.evaluate();
+                }
+            });
+        }
         this.fieldContent = [];
         for (i = 0; i < this.fields.length; i++) {
             this.fieldContent.push(this.updateField(this.fields[i], values[i]));
