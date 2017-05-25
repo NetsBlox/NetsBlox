@@ -282,7 +282,9 @@ module.exports = [
                     room.move({src: roleId, dst: dstId});
 
                     // Reply w/ the new role code
-                    var project = room.getRole(dstId) || null;
+                    return room.getRole(dstId);
+                })
+                .then(project => {
                     if (project) {
                         project = Utils.serializeRole(project, room.name);
                     }

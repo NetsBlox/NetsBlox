@@ -121,37 +121,12 @@
                 });
         }
 
-        clean () {
-            return this.getRoleNames()
-                .then(allRoleNames => {
-                    let removed = [],
-                        name;
-
-                    for (let i = allRoleNames.length; i--;) {
-                        name = allRoleNames[i];
-                        if (!this.roles[name]) {
-                            removed.push(name);
-                            delete this.roles[name];
-                        }
-                    }
-
-                    if (removed.length) {
-                        logger.warn(`Found ${removed.length} null roles in ${this.uuid}. Removing...`);
-                    }
-
-                    return this;
-                });
-        }
-
-
         // Override
         save() {
             const query = {$set: {}};
             return this.collectProjects()
                 .then(roles => {
                     this._logger.trace('collected projects for ' + this.owner);
-
-                    this.clean();  // remove any null roles
 
                     query.$set.lastUpdateAt = Date.now();
                     return Q.all(roles.map(pair => {
@@ -245,24 +220,6 @@
     var logger,
         collection,
         transientCollection;
-
-    //const loadProjectBinaryData = function(project) {
-        //project.clean();
-
-        //var roles = Object.keys(project.roles).map(name => project.roles[name]);
-        //return Q.all(roles.map(loadRole))
-            //.then(() => project);
-    //};
-
-    //const loadRole = function(role) {
-        //const srcHash = role.SourceCode;
-        //const mediaHash = role.Media;
-        //return Q.all([blob.get(srcHash), blob.get(mediaHash)])
-            //.then(content => {
-                //[role.SourceCode, role.Media] = content;
-                //return role;
-            //});
-    //};
 
     ProjectStorage.init = function (_logger, db) {
         logger = _logger.fork('projects');

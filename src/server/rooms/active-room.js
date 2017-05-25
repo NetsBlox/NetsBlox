@@ -4,7 +4,6 @@
 'use strict';
 
 var R = require('ramda'),
-    _ = require('lodash'),
     Q = require('q'),
     utils = require('../server-utils'),
     Users = require('../storage/users'),
@@ -306,6 +305,18 @@ class ActiveRoom {
         this.onRolesChanged();
     }
 
+    saveRole(role) {
+        const socket = this.roles[role];
+
+        if (!socket) {
+            this._logger.warn(`cannot save unoccupied role: ${role}`);
+            return Q();
+        }
+
+        return socket.getProjectJson()
+            .then(content => this.setRole(role, content));
+    }
+
     removeRole (id) {
         this._logger.trace(`removing role "${id}"`);
 
@@ -347,25 +358,6 @@ class ActiveRoom {
         this.sockets().forEach(socket => socket.send(msg));
 
         this.save();
-    }
-
-    /////////// Caching and Saving ///////////
-    saveRole (role) {
-        this._logger.trace('caching ' + role);
-
-        const socket = this.roles[role];
-
-        if (!socket) {
-            return Q().then(() => {
-                const err = 'No socket in ' + role;
-                this._logger.error(err);
-                throw err;
-            });
-        }
-
-        // Get the project json from the socket
-        return socket.getProjectJson()
-            .then(project => this.setRole(role, project));
     }
 
     // Retrieve a dictionary of role => project content
