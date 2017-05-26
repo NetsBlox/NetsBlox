@@ -3,14 +3,16 @@ const Logger = require('../../../logger'),
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 86400}), // cache for 24hrs
     R = require('ramda'),
     request = require('request'),
-    rp = require('request-promise');
+    rp = require('request-promise'),
+    MSG_SENDING_DELAY = 250;
+
+let remainingMsgs = {};
 
 class ApiConsumer {
     constructor(name, baseUrl) {
         // should be a urlfriendly name
         this._name = name;
         this._baseUrl = baseUrl;
-        this._remainingMsgs = {};
         this._logger = new Logger('netsblox:rpc:'+name);
         // setup api endpoint
         this.getPath = () => '/'+name;
@@ -70,28 +72,27 @@ class ApiConsumer {
 
     // private
     _sendNext() {
-        const DELAY = 250;
-        var msgs = this._remainingMsgs[this.socket.uuid];
+        var msgs = remainingMsgs[this.socket.uuid];
         if (msgs && msgs.length) {
-            // send an earthquake message
             var msg = msgs.shift();
 
-            while (msgs.length && msg.dstId !== this.socket.uuid) {
-                msg = msgs.shift();
-            }
+            // while (msgs.length && msg.dstId !== this.socket.uuid) {
+            //     msg = msgs.shift();
+            // }
 
             // check that the socket is still at the role receiving the messages
             if (msg && msg.dstId === this.socket.roleId) {
+                this._logger.trace('sending msg to', this.socket.uuid, this.socket.roleId);
                 this.socket.send(msg);
             }
 
             if (msgs.length) {
-                setTimeout(this._sendNext, DELAY);
+                setTimeout(this._sendNext.bind(this), MSG_SENDING_DELAY);
             } else {
-                delete this._remainingMsgs[this.socket.uuid];
+                delete remainingMsgs[this.socket.uuid];
             }
         } else {
-            delete this._remainingMsgs[this.socket.uuid];
+            delete remainingMsgs[this.socket.uuid];
         }
     }
 
@@ -160,21 +161,23 @@ class ApiConsumer {
             });
     }
 
-    _sendMsgs(queryOptions,msgType,parserFn){
+    _sendMsgs(queryOptions,parserFn,msgType){
+        remainingMsgs[this.socket.uuid] = [];
         return this._requestData(queryOptions)
             .then(res => {
                 let msgContents = parserFn(res);
-                this.response.send(msgContents.length); // send back number of msgs
+                this.response.send(msgContents.length+''); // send back number of msgs
                 // TODO check if parserFn is doing ok
                 msgContents.forEach(content=>{
                     let msg = {
-                        type: 'message',
                         dstId: this.socket.roleId,
                         msgType,
                         content
                     };
-                    this._remainingMsgs[this.socket.roleId].push(msg);
+                    remainingMsgs[this.socket.uuid].push(msg);
                 });
+                this._logger.trace(`initializing sending of ${msgContents.length} messages`);
+                this._sendNext();
             });
     }
 
@@ -242,10 +245,11 @@ class ApiConsumer {
             });
     }
 
-
+    // QUESTION how to make this apply whenever sendMsgs() is used?
     _stopMsgs(){
-        delete this._remainingMsgs[this.socket.uuid];
-        this._logger.trace('stopped sending messages for uuid:',this.socket.uuid);
+        this.response.status(200).send('stopping sending of the remaining ' + remainingMsgs[this.socket.uuid].length + 'msgs');
+        delete remainingMsgs[this.socket.uuid];
+        this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
     }
 
 }
