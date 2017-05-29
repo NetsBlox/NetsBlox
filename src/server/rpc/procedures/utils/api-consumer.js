@@ -142,9 +142,9 @@ class ApiConsumer {
     _sendStruct(queryOptions,parserFn){
         return this._requestData(queryOptions)
             .then(res => {
-                this._logger.trace('got response back',res.length);
+                this._logger.trace('got response back',res);
                 let parsedRes =  parserFn(res);
-                this._logger.trace(parsedRes);
+                this._logger.trace('parsed response:', parsedRes);
                 // TODO check if parserFn is doing ok
                 try{
                     if (Array.isArray(parsedRes)) {
