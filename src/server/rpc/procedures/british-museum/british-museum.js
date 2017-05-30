@@ -22,10 +22,10 @@ britishmuseum.search = function(label, type, material, limit) {
                     label: res.label.value,
                     type: res.type.value,
                     material: res.material.value,
-                    image: res.img.value,
+                    image: res.img.value.match(/AN(\d{6,10})/)[1],
                     description: res.description.value,
                     id: res.object.value.substr(res.object.value.lastIndexOf('/') + 1)
-                }
+                };
                 // res.info = res.info.split('::').slice(0,2).map(str => str.trim());
                 // res.info.forEach(infoTuple => {
                 //   res[infoTuple[0]] = infoTuple[1];
@@ -41,7 +41,7 @@ britishmuseum.search = function(label, type, material, limit) {
     return this._sendStruct(queryOptions,objParser);
     // this._inspectResponse(queryOptions, '.results');
 
-}
+};
 
 britishmuseum.itemDetails = function(objId){
 
@@ -79,39 +79,6 @@ britishmuseum.itemDetails = function(objId){
 
     return this._sendStruct(resourceQueryOpts, resourceParser);
 }
-
-
-// let objParser = sparqlJsons => {
-//     // make the sparqlJson structure less weird
-//     let structure = sparqlJsons.map(sparqlJson => {
-//         sparqlJson = sparqlJson[Object.keys(sparqlJson)[0]];
-//         let mainImages = sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_has_main_representation'] || [];
-//         let otherImages = sparqlJson['http://erlangen-crm.org/current/P138i_has_representation'] || [];
-//         let images = mainImages.concat(otherImages);
-//         let info = sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_display_wrap'].map(item => item.value).map(info => {
-//             return info.split('::').slice(0,2).map(str => str.trim());
-//         });
-//         try {
-//             let idealObj = {
-//                 name: sparqlJson['http://www.w3.org/2000/01/rdf-schema#label'][0].value,
-//                 images: images.map(img => img.value.match(/AN(\d{6,10})/)[1]),
-//                 physicalDescription: sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_physical_description'][0].value
-//             };
-//             info.forEach(keyVal => {
-//                 idealObj[keyVal[0].toLowerCase()] = keyVal[1];
-//             });
-//             console.log(idealObj);
-//             return idealObj;
-//         } catch (e) {
-//             console.log('exception occured when creating structure');
-//             return null;
-//         }
-//     })
-//     // TODO use reduce or filter to combine next step with last
-//     structure = structure.filter(item => item !== null);
-//     console.log('generated structure size', structure.length); // doesn't reach this line sometimes..
-//     return structure;
-// };
 
 britishmuseum.getImage = function getImage(id, maxWidth, maxHeight) {
     let parentId = id.substr(0,5);
