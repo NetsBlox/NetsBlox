@@ -10,6 +10,7 @@ PREFIX fts: <http://www.ontotext.com/owlim/fts#>
 PREFIX btm: <http://collection.britishmuseum.org/id/ontology/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>`;
 
+
 let searchParser = resp => {
     let results = [];
     resp.results.bindings.forEach(res => {
@@ -60,8 +61,6 @@ britishmuseum.search = function(label, type, material, limit) {
     };
 
 
-
-
     return this._sendStruct(queryOptions,searchParser);
 
 };
@@ -84,7 +83,7 @@ britishmuseum.searchByLabel = function(label, limit){
 
     return this._sendStruct(queryOptions,searchParser);
 
-}
+};
 
 
 britishmuseum.searchByType = function(type, limit){
@@ -106,7 +105,7 @@ britishmuseum.searchByType = function(type, limit){
 
     return this._sendStruct(queryOptions,searchParser);
 
-}
+};
 
 
 britishmuseum.searchByMaterial = function(material, limit){
