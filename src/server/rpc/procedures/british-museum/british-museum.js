@@ -12,6 +12,8 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>`;
 
 
 let searchParser = resp => {
+
+
     let results = [];
     resp.results.bindings.forEach(res => {
         try {
@@ -21,6 +23,7 @@ let searchParser = resp => {
                 // material: res.material.value,
                 image: res.img.value.match(/AN(\d{6,10})/)[1],
                 // description: res.description.value,
+               //  url: res.object.value,
                 id: res.object.value.substr(res.object.value.lastIndexOf('/') + 1)
             };
             results.push(searchResult);
@@ -30,6 +33,88 @@ let searchParser = resp => {
     });
     return results;
 };
+
+var osmosis = require('osmosis');
+
+
+
+britishmuseum.searchByLabel2 = function(label, limit){
+    limit = limit || 10;
+    let response = this.response;
+
+    let simpleLabelQ = `
+    SELECT DISTINCT (SAMPLE(?object) AS ?object) ?img
+    { ?object rdfs:label ?label .
+      ?object btm:PX_has_main_representation ?img.
+      OPTIONAL { ?object btm:PX_physical_description ?description. }
+      FILTER(REGEX(?label, "${label}", "i")).}
+      GROUP BY ?img
+    LIMIT ${limit}`;
+
+
+    let results = [];
+    osmosis
+    .get('http://collection.britishmuseum.org/sparql?query='+urlencode(prefix + simpleLabelQ, 'utf-8'))
+    // .find('h1 + div a')
+    // .set('location')
+    // .follow('@href')
+    // .find('header + div + div li > a')
+    // .set('category')
+    // .follow('@href')
+    // .paginate('.totallink + a.button.next:first')
+    // .find('p > a')
+    // .follow('@href')
+    .find('tbody tr')
+    .set({
+        obj:        'td[1] a',
+        // 'description':  '#postingbody',
+        // 'subcategory':  'div.breadbox > span[4]',
+        // 'date':         'time@datetime',
+        // 'latitude':     '#map@data-latitude',
+        // 'longitude':    '#map@data-longitude',
+        // 'image':       ['img@src']
+        image:              'td[2] a@title'
+    })
+    .data(function(data) {
+        // console.log('got data');
+        // console.log(listing);
+        results.push(data);
+        // do something with listing data
+    })
+    .done(()=>{
+        console.log('got results',results);
+        let idealArray = results.map(res => {
+            return [
+                ['id', res.obj.substr(res.obj.lastIndexOf('/') + 1)],
+                ['img', res.image]
+            ];
+        });
+        response.send(idealArray);
+        console.log('sent');
+    })
+    .log(console.log)
+    .error(console.log)
+    .debug(console.log)
+
+    // x('http://collection.britishmuseum.org/sparql?query='+urlencode(prefix + simpleLabelQ, 'utf-8'), 'tbody tr', {
+    //     obj: 'td:nth-child(1) a@title',
+    //     image: 'td:nth-child(2) a@title'
+    // })((err, results) => {
+    //     console.log('got results',results);
+    //     let idealArray = results.map(res => {
+    //         return [
+    //             ['id', res.obj.substr(res.object.value.lastIndexOf('/') + 1)],
+    //             ['img', res.image]
+    //         ];
+    //     });
+    //     response.send(idealArray);
+    //     console.log('sent');
+    // });
+
+
+    return null;
+};
+
 
 
 
@@ -65,16 +150,16 @@ britishmuseum.search = function(label, type, material, limit) {
 
 };
 
-
 britishmuseum.searchByLabel = function(label, limit){
     limit = limit || 10;
 
     let simpleLabelQ = `
-    SELECT DISTINCT ?object ?img
+    SELECT DISTINCT (SAMPLE(?object) AS ?object) ?img
     { ?object rdfs:label ?label .
       ?object btm:PX_has_main_representation ?img.
       OPTIONAL { ?object btm:PX_physical_description ?description. }
       FILTER(REGEX(?label, "${label}", "i")).}
+      GROUP BY ?img
     LIMIT ${limit}`;
 
     let queryOptions = {
@@ -90,13 +175,14 @@ britishmuseum.searchByType = function(type, limit){
     limit = limit || 10;
 
     let simpleTypeQ = `
-    SELECT DISTINCT ?object ?img
+    SELECT DISTINCT (SAMPLE(?object) AS ?object) ?img
     WHERE {
       ?object btm:PX_has_main_representation ?img.
       ?object btm:PX_object_type ?typeThesauri.
       ?typeThesauri skos:prefLabel ?type.
       FILTER(REGEX(?type, "${type}", "i"))
     }
+    GROUP BY ?img
     LIMIT ${limit}`;
 
     let queryOptions = {
@@ -112,13 +198,14 @@ britishmuseum.searchByMaterial = function(material, limit){
     limit = limit || 10;
 
     let simpleMaterialQ = `
-    SELECT DISTINCT ?object ?img
+    SELECT DISTINCT (SAMPLE(?object) AS ?object) ?img
     WHERE {
       ?object btm:PX_has_main_representation ?img.
       ?object crm:P45_consists_of ?materialThesauri.
       ?materialThesauri skos:prefLabel ?material.
       FILTER(REGEX(?material, "${material}", "i"))
     }
+    GROUP BY ?img
     LIMIT ${limit}`;
 
     let queryOptions = {
