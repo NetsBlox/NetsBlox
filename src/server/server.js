@@ -8,7 +8,7 @@ var express = require('express'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
     SocketManager = require('./socket-manager'),
     RoomManager = require('./rooms/room-manager'),
-    Collaboration = require('snap-collaboration'),
+    //Collaboration = require('snap-collaboration'),
     RPCManager = require('./rpc/rpc-manager'),
     MobileManager = require('./mobile/mobile-manager'),
     Storage = require('./storage/storage'),
@@ -115,7 +115,7 @@ Server.prototype.configureRoutes = function() {
             metaInfo.title = projectName;
             var example = EXAMPLES[projectName];
             var role = Object.keys(example.roles).shift();
-            var src = example.cachedProjects[role].SourceCode;
+            var src = example.getRole(role).SourceCode;
             return Q.nfcall(xml2js.parseString, src)
                 .then(result => result.project.notes[0])
                 .then(notes => {
@@ -146,8 +146,8 @@ Server.prototype.start = function(done) {
             this.configureRoutes();
             this._server = this.app.listen(this.opts.port, err => {
                 this._wss = new WebSocketServer({server: this._server});
-                Collaboration.init(this._logger.fork('collaboration'));
-                Collaboration.enable(this.app, this._wss, opts);
+                //Collaboration.init(this._logger.fork('collaboration'));
+                //Collaboration.enable(this.app, this._wss, opts);
                 SocketManager.enable(this._wss);
                 // Enable Vantage
                 if (this.opts.vantage) {
@@ -175,7 +175,10 @@ Server.prototype.createRouter = function() {
         .filter(name => path.extname(name) === '.js')  // Only read js files
         .filter(name => name !== 'middleware.js')  // ignore middleware file
         .map(name => __dirname + '/routes/' + name)  // Create the file path
-        .map(filePath => require(filePath))  // Load the routes
+        .map(filePath => {
+            logger.trace('about to load ' + filePath);
+            return require(filePath);
+        })  // Load the routes
         .reduce((prev, next) => prev.concat(next), []);  // Merge all routes
 
     middleware.init(this);
@@ -193,7 +196,10 @@ Server.prototype.createRouter = function() {
             router.use.apply(router, args);
         }
 
-        router.route(api.URL)[method](api.Handler.bind(this));
+        router.route(api.URL)[method]((req, res) => {
+            logger.trace(`received ${api.Service} request`);
+            return api.Handler.call(this, req, res);
+        });
     });
     return router;
 };

@@ -30,22 +30,28 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         if (typeof(json) === 'string') {
             json = JSON.parse(json);
         }
-        let arr2 = [];
+
+        if (!query) return json;
+
+        let queryComponents = [];
         let res = json;
 
         query.split('.').forEach(item => {
             let searchRes = /\d+/g.exec(item);
             if (searchRes) {
-                arr2.push(item.substring(0,searchRes.index -1));
-                arr2.push(searchRes[0]);
+                queryComponents.push(item.substring(0,searchRes.index -1));
+                queryComponents.push(searchRes[0]);
             }else {
-                arr2.push(item);
+                queryComponents.push(item);
             }
         });
-        arr2.shift(); // remove the first item which is always empty
-
-        arr2.forEach(q=>{
-            res = res[q];
+        queryComponents.shift(); // remove the first item which is always empty
+        queryComponents.forEach(q=>{
+            if (res[q]){
+                res = res[q];
+            } else {
+                res = null;
+            }
         });
         if (typeof(res) === 'object') {
             res = JSON.stringify(res);
@@ -61,16 +67,17 @@ if(!process.env.GOOGLE_GEOCODING_API) {
             .then(function(res) {
                 // only intereseted in the first match
                 res = queryJson(res[0], query);
+                if (res === null) return cacheCallback('not found', null);
                 // send the response to user
                 return cacheCallback(null, res);
             })
-            .catch(err => {
-                error('Error in reverse geocoding', err);
-                // showError('Failed to reverse geocode',response);
+            .catch((err) => {
+                error(err);
                 return cacheCallback('Error in reverse geocoding', null);
             });
         }, (err, results) => {
             if(results){
+                trace('answering with',results);
                 response.send(results);
             }else {
                 showError(err, response);
@@ -141,15 +148,11 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         return rp(requestOptions).then(res=>{
             let places = res.results;
             places = places.map(place => {
-                return place.name + ' (' + place.types[0] + ')';
+                return [['latitude',place.geometry.location.lat],['longitude',place.geometry.location.lng],['name',place.name],['types',place.types]];
             });
             // keep the 10 best results
             places = places.slice(0,10);
-            if (places.length < 1) {
-                showError('No place found within the ' + radius + ' meters radius',response);
-            }else {
-                response.json(places);
-            }
+            response.send(places);
         }).catch(err => {
             error('Error in searching for places',err);
             showError('Failed to find places',response);
@@ -160,7 +163,8 @@ if(!process.env.GOOGLE_GEOCODING_API) {
 
 
     function showError(err, response) {
-        response.send(err);
+        // if we can't answer their question return snap null
+        response.send('null');
     }
 
     module.exports = GeoLocationRPC;

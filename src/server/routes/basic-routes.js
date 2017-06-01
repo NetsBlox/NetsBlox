@@ -153,21 +153,21 @@ module.exports = [
                 username = req.query.Username;
 
             // Look up the email
-            self.storage.users.get(username, function(e, user) {
-                if (e) {
+            self.storage.users.get(username)
+                .then(user => {
+                    if (user) {
+                        delete user.hash;  // force tmp password creation
+                        user.save();
+                        return res.sendStatus(200);
+                    } else {
+                        log('Could not find user to reset password (user "'+username+'")');
+                        return res.status(400).send('ERROR: could not find user "'+username+'"');
+                    }
+                })
+                .catch(e => {
                     log('Server error when looking for user: "'+username+'". Error:', e);
                     return res.status(500).send('ERROR: ' + e);
-                }
-
-                if (user) {
-                    delete user.hash;  // force tmp password creation
-                    user.save();
-                    return res.sendStatus(200);
-                } else {
-                    log('Could not find user to reset password (user "'+username+'")');
-                    return res.status(400).send('ERROR: could not find user "'+username+'"');
-                }
-            });
+                });
         }
     },
     { 
@@ -186,16 +186,22 @@ module.exports = [
                 return res.status(400).send('ERROR: need both username and email!');
             }
 
-            self.storage.users.get(uname, function(e, user) {
-                if (!user) {
-                    var newUser = self.storage.users.new(uname, email);
-                    newUser.hash = password || null;
-                    newUser.save();
-                    return res.send('User Created!');
-                }
-                log('User "'+uname+'" already exists. Could not make new user.');
-                return res.status(401).send('ERROR: user exists');
-            });
+            // validate username
+            if (uname[0] === '_') {
+                return res.status(400).send('ERROR: invalid username');
+            }
+
+            self.storage.users.get(uname)
+                .then(user => {
+                    if (!user) {
+                        var newUser = self.storage.users.new(uname, email);
+                        newUser.hash = password || null;
+                        newUser.save();
+                        return res.send('User Created!');
+                    }
+                    log('User "'+uname+'" already exists. Could not make new user.');
+                    return res.status(401).send('ERROR: user exists');
+                });
         }
     },
     { 
@@ -212,18 +218,19 @@ module.exports = [
                 return res.status(400).send('ERROR: need both username and email!');
             }
 
-            this.storage.users.get(uname, (e, user) => {
-                if (!user) {
-                    return res.send('Valid User Signup Request!');
-                }
-                log('User "'+uname+'" already exists.');
-                return res.status(401).send('ERROR: user exists');
-            });
+            this.storage.users.get(uname)
+                .then(user => {
+                    if (!user) {
+                        return res.send('Valid User Signup Request!');
+                    }
+                    log('User "'+uname+'" already exists.');
+                    return res.status(401).send('ERROR: user exists');
+                });
         }
     },
     { 
         Method: 'post', 
-        URL: '',  // login/SignUp method
+        URL: '',  // login method
         Handler: function(req, res) {
             var hash = req.body.__h,
                 isUsingCookie = !req.body.__u,
@@ -247,45 +254,45 @@ module.exports = [
 
                 // Explicit login
                 log(`Logging in as ${username}`);
-                this.storage.users.get(username, (e, user) => {
-                    if (e) {
+                return this.storage.users.get(username)
+                    .then(user => {
+                        if (user && (loggedIn || user.hash === hash)) {  // Sign in 
+                            if (!isUsingCookie) {
+                                saveLogin(res, user, req.body.remember);
+                            }
+
+                            log(`"${user.username}" has logged in.`);
+
+                            // Associate the websocket with the username
+                            socket = SocketManager.getSocket(req.body.socketId);
+                            if (socket) {  // websocket has already connected
+                                socket.onLogin(user);
+                            }
+
+                            user.recordLogin();
+                            if (req.body.return_user) {
+                                return res.status(200).json({
+                                    username: username,
+                                    admin: user.admin,
+                                    email: user.email,
+                                    api: req.body.api ? Utils.serializeArray(EXTERNAL_API) : null
+                                });
+                            } else {
+                                return res.status(200).send(Utils.serializeArray(EXTERNAL_API));
+                            }
+                        } else {
+                            if (user) {
+                                log(`Incorrect password attempt for ${user.username}`);
+                                return res.status(403).send('Incorrect password');
+                            }
+                            log(`Could not find user "${username}"`);
+                            return res.status(403).send(`Could not find user "${username}"`);
+                        }
+                    })
+                    .catch(e => {
                         log(`Could not find user "${username}": ${e}`);
                         return res.status(500).send('ERROR: ' + e);
-                    }
-
-                    if (user && (loggedIn || user.hash === hash)) {  // Sign in 
-                        if (!isUsingCookie) {
-                            saveLogin(res, user, req.body.remember);
-                        }
-
-                        log(`"${user.username}" has logged in.`);
-
-                        // Associate the websocket with the username
-                        socket = SocketManager.getSocket(req.body.socketId);
-                        if (socket) {  // websocket has already connected
-                            socket.onLogin(user);
-                        }
-
-                        user.recordLogin();
-                        if (req.body.return_user) {
-                            return res.status(200).json({
-                                username: username,
-                                admin: user.admin,
-                                email: user.email,
-                                api: req.body.api ? Utils.serializeArray(EXTERNAL_API) : null
-                            });
-                        } else {
-                            return res.status(200).send(Utils.serializeArray(EXTERNAL_API));
-                        }
-                    } else {
-                        if (user) {
-                            log(`Incorrect password attempt for ${user.username}`);
-                            return res.status(403).send('Incorrect password');
-                        }
-                        log(`Could not find user "${username}"`);
-                        return res.status(403).send(`Could not find user "${username}"`);
-                    }
-                });
+                    });
             });
         }
     },
@@ -302,7 +309,7 @@ module.exports = [
                     .map(name => {
                         let example = EXAMPLES[name],
                             role = Object.keys(example.roles).shift(),
-                            primaryRole = example.cachedProjects[role].SourceCode,
+                            primaryRole = example.getRole(role).SourceCode,
                             services = example.services;
 
                         return Q.nfcall(xml2js.parseString, primaryRole)
@@ -310,7 +317,7 @@ module.exports = [
                                 return {
                                     projectName: name,
                                     primaryRoleName: role,
-                                    roleNames: Object.keys(example.cachedProjects),
+                                    roleNames: example.getRoleNames(),
                                     thumbnail: result.project.thumbnail[0],
                                     notes: result.project.notes[0],
                                     services: services
@@ -383,7 +390,7 @@ module.exports = [
                 role = Object.keys(room.roles).shift();
             }
 
-            return res.send(room.cachedProjects[role].SourceCode);
+            return res.send(room.getRole(role).SourceCode);
         }
     },
     // public projects
@@ -438,13 +445,14 @@ module.exports = [
                 };
 
                 if (report.user) {
-                    this.storage.users.get(report.user, (e, user) => {
-                        if (!e && user) {
-                            mailOpts.markdown += '\n\nReporter\'s email: ' + user.email;
-                        }
-                        mailer.sendMail(mailOpts);
-                        this._logger.info('Bug report has been sent to ' + process.env.MAINTAINER_EMAIL);
-                    });
+                    this.storage.users.get(report.user)
+                        .then(user => {
+                            if (user) {
+                                mailOpts.markdown += '\n\nReporter\'s email: ' + user.email;
+                            }
+                            mailer.sendMail(mailOpts);
+                            this._logger.info('Bug report has been sent to ' + process.env.MAINTAINER_EMAIL);
+                        });
                 } else {
                     mailer.sendMail(mailOpts);
                     this._logger.info('Bug report has been sent to ' + process.env.MAINTAINER_EMAIL);

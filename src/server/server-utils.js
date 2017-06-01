@@ -37,13 +37,15 @@ var serialize = function(service) {
     return encodeURI(pairs.map(R.join('=')).join('&'));
 };
 
-var serializeRole = (project, roomName) => {
-    var src;
-    src = project.SourceCode ? 
-        `<snapdata>+${encodeURIComponent(project.SourceCode + project.Media)}</snapdata>` :
+var serializeRole = (role, project) => {
+    const owner = project.owner;
+    const name = project.name;
+    const src = role.SourceCode ? 
+        `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
-    return `RoomName=${encodeURIComponent(roomName)}&${serialize(R.omit(['SourceCode', 'Media'],
-        project))}&SourceCode=${src}`;
+    return `RoomName=${encodeURIComponent(name)}&` +
+        `Owner=${owner}&${serialize(R.omit(['SourceCode', 'Media'], role))}` + 
+        `&SourceCode=${src}`;
 };
 
 var joinActiveProject = function(userId, room, res) {
@@ -57,14 +59,17 @@ var joinActiveProject = function(userId, room, res) {
         .shift();
 
     trace(`room "${room.name}" is already active`);
-    if (openRole && room.cachedProjects[openRole]) {  // Send an open role and add the user
+    if (openRole && room.getRole(openRole)) {  // Send an open role and add the user
         trace(`adding ${userId} to open role "${openRole}" at "${room.name}"`);
-        role = room.cachedProjects[openRole];
+        role = room.getRole(openRole);
+        serialized = serializeRole(role, room);
+        return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
     } else {  // If no open role w/ cache -> make a new role
         let i = 2,
             base;
 
         if (!openRole) {
+            createdNewRole = true;
             openRole = base = 'new role';
             while (room.hasOwnProperty(openRole)) {
                 openRole = `${base} (${i++})`;
@@ -75,20 +80,15 @@ var joinActiveProject = function(userId, room, res) {
             error(`Found open role "${openRole}" but it is not cached! May have lost data!!!`);
         }
 
-        info(`adding ${userId} to new role "${openRole}" at ` +
-            `"${room.name}"`);
+        info(`adding ${userId} to new role "${openRole}" at "${room.name}"`);
 
         room.createRole(openRole);
-        createdNewRole = true;
-        role = {
-            ProjectName: openRole,
-            SourceCode: null,
-            SourceSize: 0
-        };
-        room.cachedProjects[openRole] = role;
+        role = getEmptyRole();
+        return room.setRole(openRole, role).then(() => {
+            serialized = serializeRole(role, room);
+            return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
+        });
     }
-    serialized = serializeRole(role, room.name);
-    return res.send(`OwnerId=${room.owner.username}&NewRole=${createdNewRole}&${serialized}`);
 };
 
 // Function helpers
@@ -143,6 +143,18 @@ var computeAspectRatioPadding = function(width, height, ratio){
     return {left, right, top, bottom};
 };
 
+var isSocketUuid = function(name) {
+    return name[0] === '_';
+};
+
+var getEmptyRole = function(name) {
+    return {
+        ProjectName: name,
+        SourceCode: null,
+        SourceSize: 0
+    };
+};
+
 module.exports = {
     serialize,
     serializeArray,
@@ -152,5 +164,6 @@ module.exports = {
     getRoomXML,
     extractRpcs,
     computeAspectRatioPadding,
+    isSocketUuid,
     getArgumentsFor
 };
