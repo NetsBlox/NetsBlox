@@ -1,5 +1,7 @@
-const ApiConsumer = require('../utils/api-consumer');
-let britishmuseum = new ApiConsumer('britishmuseum','http://collection.britishmuseum.org/');
+const ApiConsumer = require('../utils/api-consumer'),
+    {SparqlClient, SPARQL} = require('sparql-client-2'),
+    urlencode = require('urlencode');
+let britishmuseum = new ApiConsumer('britishmuseum','http://collection.britishmuseum.org/sparql.xml?query=');
 
 britishmuseum.search = function(label, type, material, limit) {
     if (!(label || type || material)) return 'Please pass in a query';
@@ -8,10 +10,54 @@ britishmuseum.search = function(label, type, material, limit) {
     material = material || '.*';
     limit = limit || 20;
 
-    let queryOptions = {
-        queryString:   `sparql.json?query=%0D%0APREFIX+skos%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2004%2F02%2Fskos%2Fcore%23%3E%0D%0APREFIX+crm%3A+%3Chttp%3A%2F%2Ferlangen-crm.org%2Fcurrent%2F%3E%0D%0APREFIX+fts%3A+%3Chttp%3A%2F%2Fwww.ontotext.com%2Fowlim%2Ffts%23%3E%0D%0APREFIX+btm%3A+%3Chttp%3A%2F%2Fcollection.britishmuseum.org%2Fid%2Fontology%2F%3E%0D%0APREFIX+rdfs%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E%0D%0A%0D%0ASELECT+DISTINCT+%3Fobject+%3Flabel+%3Fimg+%3Fdescription+%3Ftype+%3Fmaterial%0D%0A%7B+%3Fobject+rdfs%3Alabel+%3Flabel+.%0D%0A++%3Fobject+btm%3APX_has_main_representation+%3Fimg.%0D%0A++OPTIONAL+%7B+%3Fobject+btm%3APX_physical_description+%3Fdescription.+%7D%0D%0A++%3Fobject+crm%3AP45_consists_of+%3FmaterialThesauri.%0D%0A++%3FmaterialThesauri+skos%3AprefLabel+%3Fmaterial.%0D%0A++%3Fobject+btm%3APX_object_type+%3FtypeThesauri.%0D%0A++%3FtypeThesauri+skos%3AprefLabel+%3Ftype.%0D%0A++FILTER%28REGEX%28%3Flabel%2C+%22${label}%22%2C+%22i%22%29%29.%0D%0A++FILTER%28REGEX%28%3Fmaterial%2C+%22${material}%22%2C+%22i%22%29%29%0D%0A++FILTER%28REGEX%28%3Ftype%2C+%22${type}%22%2C+%22i%22%29%29%0D%0A%7D%0D%0ALIMIT+${limit}%0D%0A&_implicit=false&_equivalent=false&_form=%2Fsparql`
-    };
+    let prefix = `PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    PREFIX crm: <http://erlangen-crm.org/current/>
+    PREFIX fts: <http://www.ontotext.com/owlim/fts#>
+    PREFIX btm: <http://collection.britishmuseum.org/id/ontology/>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>`;
 
+    let simpleLabelQ = `
+    SELECT DISTINCT ?object ?label ?img ?description
+    { ?object rdfs:label ?label .
+      ?object btm:PX_has_main_representation ?img.
+      OPTIONAL { ?object btm:PX_physical_description ?description. }
+      FILTER(REGEX(?label, "${label}", "i")).}
+    LIMIT 1`;
+
+    let materialQ = `
+    SELECT DISTINCT ?object ?label ?img ?description ?type ?material
+    {
+      OPTIONAL { ?object rdfs:label ?label. }
+      ?object btm:PX_has_main_representation ?img.
+      OPTIONAL { ?object btm:PX_physical_description ?description. }
+      ?object crm:P45_consists_of ?materialThesauri.
+      ?materialThesauri skos:prefLabel ?material.
+      ?object btm:PX_object_type ?typeThesauri.
+      ?typeThesauri skos:prefLabel ?type.
+      FILTER(REGEX(?material, "${material}", "i"))
+    }
+    LIMIT ${limit}`;
+
+    let labelTypeMaterialQ = `
+    SELECT DISTINCT ?object ?label ?img ?description ?type ?material
+    {
+      OPTIONAL { ?object rdfs:label ?label. }
+      ?object btm:PX_has_main_representation ?img.
+      OPTIONAL { ?object btm:PX_physical_description ?description. }
+      ?object crm:P45_consists_of ?materialThesauri.
+      ?materialThesauri skos:prefLabel ?material.
+      ?object btm:PX_object_type ?typeThesauri.
+      ?typeThesauri skos:prefLabel ?type.
+      FILTER(REGEX(?label, "${label}", "i")).
+      FILTER(REGEX(?material, "${material}", "i"))
+      FILTER(REGEX(?type, "${type}", "i"))
+    }
+    LIMIT ${limit}`;
+
+
+    let queryOptions = {
+        queryString: urlencode(prefix + labelTypeMaterialQ, 'utf-8')
+    };
 
 
     let objParser = resp => {
@@ -38,8 +84,7 @@ britishmuseum.search = function(label, type, material, limit) {
         return results;
     };
 
-    return this._sendStruct(queryOptions,objParser);
-    // this._inspectResponse(queryOptions, '.results');
+
 
 };
 
@@ -48,7 +93,7 @@ britishmuseum.itemDetails = function(objId){
     let resourceUri = 'http://collection.britishmuseum.org/id/object/' + objId;
     let resourceQueryOpts = {
         queryString: 'resource?uri=' + resourceUri + '&format=json'
-    }
+    };
 
     let resourceParser = sparqlJson => {
         try {
