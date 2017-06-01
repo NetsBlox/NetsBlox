@@ -166,7 +166,8 @@ class ApiConsumer {
         return this._requestData(queryOptions)
             .then(res => {
                 let msgContents = parserFn(res);
-                this.response.send(msgContents.length+''); // send back number of msgs
+                let msgKeys = Object.keys(msgContents[0]);
+                this.response.send(`sending ${msgContents.length} messages with message type: ${msgType} and following fields: ${msgKeys.join(', ')}`); // send back number of msgs
                 // TODO check if parserFn is doing ok
                 msgContents.forEach(content=>{
                     let msg = {
