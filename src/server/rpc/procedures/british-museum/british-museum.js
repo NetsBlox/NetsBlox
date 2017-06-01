@@ -1,42 +1,43 @@
 const ApiConsumer = require('../utils/api-consumer'),
-    {SparqlClient, SPARQL} = require('sparql-client-2'),
     urlencode = require('urlencode');
-let britishmuseum = new ApiConsumer('britishmuseum','http://collection.britishmuseum.org/sparql.xml?query=');
+
+let britishmuseum = new ApiConsumer('britishmuseum','http://collection.britishmuseum.org/');
+
+
+const prefix = `PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX crm: <http://erlangen-crm.org/current/>
+PREFIX fts: <http://www.ontotext.com/owlim/fts#>
+PREFIX btm: <http://collection.britishmuseum.org/id/ontology/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>`;
+
+let searchParser = resp => {
+    let results = [];
+    resp.results.bindings.forEach(res => {
+        try {
+            let searchResult = {
+                // label: res.label.value,
+                // type: res.type.value,
+                // material: res.material.value,
+                image: res.img.value.match(/AN(\d{6,10})/)[1],
+                // description: res.description.value,
+                id: res.object.value.substr(res.object.value.lastIndexOf('/') + 1)
+            };
+            results.push(searchResult);
+        } catch (e) {
+            this._logger.error(e);
+        }
+    });
+    return results;
+};
+
+
 
 britishmuseum.search = function(label, type, material, limit) {
     if (!(label || type || material)) return 'Please pass in a query';
+    limit = limit || 10;
     label = label || '.*';
     type = type || '.*';
     material = material || '.*';
-    limit = limit || 20;
-
-    let prefix = `PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-    PREFIX crm: <http://erlangen-crm.org/current/>
-    PREFIX fts: <http://www.ontotext.com/owlim/fts#>
-    PREFIX btm: <http://collection.britishmuseum.org/id/ontology/>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>`;
-
-    let simpleLabelQ = `
-    SELECT DISTINCT ?object ?label ?img ?description
-    { ?object rdfs:label ?label .
-      ?object btm:PX_has_main_representation ?img.
-      OPTIONAL { ?object btm:PX_physical_description ?description. }
-      FILTER(REGEX(?label, "${label}", "i")).}
-    LIMIT 1`;
-
-    let materialQ = `
-    SELECT DISTINCT ?object ?label ?img ?description ?type ?material
-    {
-      OPTIONAL { ?object rdfs:label ?label. }
-      ?object btm:PX_has_main_representation ?img.
-      OPTIONAL { ?object btm:PX_physical_description ?description. }
-      ?object crm:P45_consists_of ?materialThesauri.
-      ?materialThesauri skos:prefLabel ?material.
-      ?object btm:PX_object_type ?typeThesauri.
-      ?typeThesauri skos:prefLabel ?type.
-      FILTER(REGEX(?material, "${material}", "i"))
-    }
-    LIMIT ${limit}`;
 
     let labelTypeMaterialQ = `
     SELECT DISTINCT ?object ?label ?img ?description ?type ?material
@@ -54,39 +55,81 @@ britishmuseum.search = function(label, type, material, limit) {
     }
     LIMIT ${limit}`;
 
-
     let queryOptions = {
-        queryString: urlencode(prefix + labelTypeMaterialQ, 'utf-8')
+        queryString: 'sparql.json?query=' + urlencode( prefix + labelTypeMaterialQ, 'utf-8')
     };
 
 
-    let objParser = resp => {
-        let results = [];
-        resp.results.bindings.forEach(res => {
-            try {
-                let searchResult = {
-                    label: res.label.value,
-                    type: res.type.value,
-                    material: res.material.value,
-                    image: res.img.value.match(/AN(\d{6,10})/)[1],
-                    description: res.description.value,
-                    id: res.object.value.substr(res.object.value.lastIndexOf('/') + 1)
-                };
-                // res.info = res.info.split('::').slice(0,2).map(str => str.trim());
-                // res.info.forEach(infoTuple => {
-                //   res[infoTuple[0]] = infoTuple[1];
-                // })
-                results.push(searchResult);
-            } catch (e) {
-                this._logger.error(e);
-            }
-        });
-        return results;
-    };
 
 
+    return this._sendStruct(queryOptions,searchParser);
 
 };
+
+
+britishmuseum.searchByLabel = function(label, limit){
+    limit = limit || 10;
+
+    let simpleLabelQ = `
+    SELECT DISTINCT ?object ?img
+    { ?object rdfs:label ?label .
+      ?object btm:PX_has_main_representation ?img.
+      OPTIONAL { ?object btm:PX_physical_description ?description. }
+      FILTER(REGEX(?label, "${label}", "i")).}
+    LIMIT ${limit}`;
+
+    let queryOptions = {
+        queryString: 'sparql.json?query=' + urlencode( prefix + simpleLabelQ, 'utf-8')
+    };
+
+    return this._sendStruct(queryOptions,searchParser);
+
+}
+
+
+britishmuseum.searchByType = function(type, limit){
+    limit = limit || 10;
+
+    let simpleTypeQ = `
+    SELECT DISTINCT ?object ?img
+    WHERE {
+      ?object btm:PX_has_main_representation ?img.
+      ?object btm:PX_object_type ?typeThesauri.
+      ?typeThesauri skos:prefLabel ?type.
+      FILTER(REGEX(?type, "${type}", "i"))
+    }
+    LIMIT ${limit}`;
+
+    let queryOptions = {
+        queryString: 'sparql.json?query=' + urlencode( prefix + simpleTypeQ, 'utf-8')
+    };
+
+    return this._sendStruct(queryOptions,searchParser);
+
+}
+
+
+britishmuseum.searchByMaterial = function(material, limit){
+    limit = limit || 10;
+
+    let simpleMaterialQ = `
+    SELECT DISTINCT ?object ?img
+    WHERE {
+      ?object btm:PX_has_main_representation ?img.
+      ?object crm:P45_consists_of ?materialThesauri.
+      ?materialThesauri skos:prefLabel ?material.
+      FILTER(REGEX(?material, "${material}", "i"))
+    }
+    LIMIT ${limit}`;
+
+    let queryOptions = {
+        queryString: 'sparql.json?query=' + urlencode( prefix + simpleMaterialQ, 'utf-8')
+    };
+
+    return this._sendStruct(queryOptions,searchParser);
+
+}
+
 
 britishmuseum.itemDetails = function(objId){
 
@@ -106,11 +149,21 @@ britishmuseum.itemDetails = function(objId){
             });
 
             let idealObj = {
-                name: sparqlJson['http://www.w3.org/2000/01/rdf-schema#label'][0].value,
                 image: mainImages[0].value.match(/AN(\d{6,10})/)[1],
                 otherImages: images.map(img => img.value.match(/AN(\d{6,10})/)[1]),
-                physicalDescription: sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_physical_description'][0].value
             };
+            // TODO better check for attribute existence. oneliner?
+            if (sparqlJson['http://www.w3.org/2000/01/rdf-schema#label']) {
+                idealObj.label = sparqlJson['http://www.w3.org/2000/01/rdf-schema#label'][0].value;
+            }else {
+                idealObj.label = ''
+            }
+            if (sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_physical_description']) {
+                idealObj.physicalDescription =  sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_physical_description'][0].value
+            }else {
+                idealObj.physicalDescription = ''
+            }
+
             info.forEach(keyVal => {
                 idealObj[keyVal[0].toLowerCase()] = keyVal[1];
             });
