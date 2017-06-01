@@ -86,7 +86,7 @@ britishmuseum.searchByLabel2 = function(label, limit){
         let idealArray = results.map(res => {
             return [
                 ['id', res.obj.substr(res.obj.lastIndexOf('/') + 1)],
-                ['image', res.image]
+                ['image', res.image.match(/AN(\d{6,10})/)[1]]
             ];
         });
         response.send(idealArray);
