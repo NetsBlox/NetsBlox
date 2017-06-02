@@ -21,10 +21,19 @@ class ApiConsumer {
     }
 
     /**
-     * requests json data from an endpoint and caches it.
+     * requests data from an endpoint and caches it.
      * @param  {array/json} queryOptions a single item or an array of queryOptions
      * that describe the options used to call the endpoint.
      * @return {Promise}                 promise from request-promise
+     */
+
+    /**
+        queryOptions = {
+            queryString,
+            baseUrl,
+            headers,
+            json
+        }
      */
     _requestData(queryOptions){
         // when extending use encodeURIComponent() tjo encode the query parameters
@@ -40,7 +49,7 @@ class ApiConsumer {
             return rp({
                 uri: fullUrl,
                 headers: queryOptions.headers,
-                json: true
+                json: queryOptions.json !== undefined ? queryOptions.json : true
             });
         }).catch(err => {
             this._logger.error('error in requesting data from', fullUrl, err);
@@ -133,6 +142,22 @@ class ApiConsumer {
     }
 
 
+    // creates snap friendly structure out of an array ofsimple keyValue json object or just single on of them.
+    _createSnapStructure(jsonData){
+        this._logger.trace('creating snap friendly structure');
+        let snapStructure = '';
+        try{
+            if (Array.isArray(jsonData)) {
+                snapStructure = jsonData.map( obj => R.toPairs(obj));
+            }else {
+                snapStructure = R.toPairs(jsonData);
+            }
+        } catch (e) {
+            this._logger.error('input structure has invalid format',e);
+        }
+        return snapStructure;
+    }
+
     /**
      * request a full response sending back a data structure.
      * @param  {string} queryOptions
@@ -146,18 +171,9 @@ class ApiConsumer {
                 let parsedRes =  parserFn(res);
                 this._logger.trace('parsed response:', parsedRes);
                 // TODO check if parserFn is doing ok
-                try{
-                    if (Array.isArray(parsedRes)) {
-                        let arrayStruct = parsedRes.map( obj => R.toPairs(obj));
-                        this.response.send(arrayStruct);
-                        this._logger.trace('responded with an arrayStruct', arrayStruct);
-                    }else {
-                        this._logger.trace('responding with single struct');
-                        this.response.send(R.toPairs(parsedRes));
-                    }
-                } catch (e) {
-                    this._logger.error('parser returned and invalid format',e);
-                }
+                let snapStructure = this._createSnapStructure(parsedRes);
+                this.response.send(snapStructure);
+                this._logger.trace('responded with an structure', snapStructure);
             });
     }
 
