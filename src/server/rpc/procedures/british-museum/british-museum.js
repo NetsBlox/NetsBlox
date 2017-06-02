@@ -1,4 +1,5 @@
 const ApiConsumer = require('../utils/api-consumer'),
+    osmosis = require('osmosis'),
     urlencode = require('urlencode');
 
 let britishmuseum = new ApiConsumer('britishmuseum','http://collection.britishmuseum.org/');
@@ -11,9 +12,8 @@ PREFIX btm: <http://collection.britishmuseum.org/id/ontology/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>`;
 
 
+// parser used for when calling the json endPoint
 let searchParser = resp => {
-
-
     let results = [];
     resp.results.bindings.forEach(res => {
         try {
@@ -31,48 +31,20 @@ let searchParser = resp => {
             this._logger.error(e);
         }
     });
-    return results;
+    return {
+        image: 'foo',
+        id: 'bar'
+    };
 };
 
-var osmosis = require('osmosis');
-
-
-
-britishmuseum.searchByLabel2 = function(label, limit){
-    limit = limit || 10;
-    let response = this.response;
-
-    let simpleLabelQ = `
-    SELECT DISTINCT (SAMPLE(?object) AS ?object) ?img
-    { ?object rdfs:label ?label .
-      ?object btm:PX_has_main_representation ?img.
-      OPTIONAL { ?object btm:PX_physical_description ?description. }
-      FILTER(REGEX(?label, "${label}", "i")).}
-      GROUP BY ?img
-    LIMIT ${limit}`;
-
-
+// parses and sends a respond back to the user. used when using the basic endpoint
+let htmlSearchHandler = (html, self) => {
     let results = [];
     osmosis
-    .get('http://collection.britishmuseum.org/sparql?query='+urlencode(prefix + simpleLabelQ, 'utf-8'))
-    // .find('h1 + div a')
-    // .set('location')
-    // .follow('@href')
-    // .find('header + div + div li > a')
-    // .set('category')
-    // .follow('@href')
-    // .paginate('.totallink + a.button.next:first')
-    // .find('p > a')
-    // .follow('@href')
+    .parse(html)
     .find('tbody tr')
     .set({
-        obj:        'td[1] a',
-        // 'description':  '#postingbody',
-        // 'subcategory':  'div.breadbox > span[4]',
-        // 'date':         'time@datetime',
-        // 'latitude':     '#map@data-latitude',
-        // 'longitude':    '#map@data-longitude',
-        // 'image':       ['img@src']
+        obj:        'td[1] a@title',
         image:              'td[2] a@title'
     })
     .data(function(data) {
@@ -82,39 +54,20 @@ britishmuseum.searchByLabel2 = function(label, limit){
         // do something with listing data
     })
     .done(()=>{
-        console.log('got results',results);
-        let idealArray = results.map(res => {
-            return [
-                ['id', res.obj.substr(res.obj.lastIndexOf('/') + 1)],
-                ['image', res.image.match(/AN(\d{6,10})/)[1]]
-            ];
+        results = results.map(res => {
+            console.log(res);
+            return {
+                id: res.obj.substr(res.obj.lastIndexOf('/') + 1),
+                image: res.image.match(/AN(\d{6,10})/)[1]
+            };
         });
-        response.send(idealArray);
-        console.log('sent');
+        let structure = self._createSnapStructure(results);
+        self.response.send(structure);
     })
     .log(console.log)
     .error(console.log)
     .debug(console.log)
-
-    // x('http://collection.britishmuseum.org/sparql?query='+urlencode(prefix + simpleLabelQ, 'utf-8'), 'tbody tr', {
-    //     obj: 'td:nth-child(1) a@title',
-    //     image: 'td:nth-child(2) a@title'
-    // })((err, results) => {
-    //     console.log('got results',results);
-    //     let idealArray = results.map(res => {
-    //         return [
-    //             ['id', res.obj.substr(res.object.value.lastIndexOf('/') + 1)],
-    //             ['img', res.image]
-    //         ];
-    //     });
-    //     response.send(idealArray);
-    //     console.log('sent');
-    // });
-
-
-    return null;
 };
-
 
 
 
@@ -126,7 +79,7 @@ britishmuseum.search = function(label, type, material, limit) {
     material = material || '.*';
 
     let labelTypeMaterialQ = `
-    SELECT DISTINCT ?object ?label ?img ?description ?type ?material
+    SELECT DISTINCT ?object ?img ?label ?description ?type ?material
     {
       OPTIONAL { ?object rdfs:label ?label. }
       ?object btm:PX_has_main_representation ?img.
@@ -142,11 +95,17 @@ britishmuseum.search = function(label, type, material, limit) {
     LIMIT ${limit}`;
 
     let queryOptions = {
-        queryString: 'sparql.json?query=' + urlencode( prefix + labelTypeMaterialQ, 'utf-8')
+        queryString: 'sparql?query=' + urlencode( prefix + labelTypeMaterialQ, 'utf-8'),
+        json: false
     };
 
 
-    return this._sendStruct(queryOptions,searchParser);
+    this._requestData(queryOptions)
+        .then(html => {
+            htmlSearchHandler(html,this);
+        })
+    return null;
+    // return this._sendStruct(queryOptions,searchParser);
 
 };
 
@@ -163,11 +122,16 @@ britishmuseum.searchByLabel = function(label, limit){
     LIMIT ${limit}`;
 
     let queryOptions = {
-        queryString: 'sparql.json?query=' + urlencode( prefix + simpleLabelQ, 'utf-8')
+        queryString: 'sparql?query=' + urlencode( prefix + simpleLabelQ, 'utf-8'),
+        json: false
     };
 
-    return this._sendStruct(queryOptions,searchParser);
-
+    this._requestData(queryOptions)
+        .then(html => {
+            htmlSearchHandler(html,this);
+        })
+    return null;
+    // return this._sendStruct(queryOptions,searchParser);
 };
 
 
@@ -186,10 +150,16 @@ britishmuseum.searchByType = function(type, limit){
     LIMIT ${limit}`;
 
     let queryOptions = {
-        queryString: 'sparql.json?query=' + urlencode( prefix + simpleTypeQ, 'utf-8')
+        queryString: 'sparql?query=' + urlencode( prefix + simpleTypeQ, 'utf-8'),
+        json: false
     };
 
-    return this._sendStruct(queryOptions,searchParser);
+    this._requestData(queryOptions)
+        .then(html => {
+            htmlSearchHandler(html,this);
+        })
+    return null;
+    // return this._sendStruct(queryOptions,searchParser);
 
 };
 
@@ -209,17 +179,23 @@ britishmuseum.searchByMaterial = function(material, limit){
     LIMIT ${limit}`;
 
     let queryOptions = {
-        queryString: 'sparql.json?query=' + urlencode( prefix + simpleMaterialQ, 'utf-8')
+        queryString: 'sparql?query=' + urlencode( prefix + simpleMaterialQ, 'utf-8'),
+        json: false
     };
 
-    return this._sendStruct(queryOptions,searchParser);
+    this._requestData(queryOptions)
+        .then(html => {
+            htmlSearchHandler(html,this);
+        })
+    return null;
+    // return this._sendStruct(queryOptions,searchParser);
 
 }
 
 
-britishmuseum.itemDetails = function(objId){
+britishmuseum.itemDetails = function(itemId){
 
-    let resourceUri = 'http://collection.britishmuseum.org/id/object/' + objId;
+    let resourceUri = 'http://collection.britishmuseum.org/id/object/' + itemId;
     let resourceQueryOpts = {
         queryString: 'resource?uri=' + resourceUri + '&format=json'
     };
@@ -264,14 +240,14 @@ britishmuseum.itemDetails = function(objId){
     return this._sendStruct(resourceQueryOpts, resourceParser);
 }
 
-britishmuseum.getImage = function getImage(id, maxWidth, maxHeight) {
-    let parentId = id.substr(0,5);
+britishmuseum.getImage = function getImage(imageId, maxWidth, maxHeight) {
+    let parentId = imageId.substr(0,5);
     // can set maxwidth and height
     maxWidth = maxWidth || 300;
     maxHeight = maxHeight || 300;
     this._sendImage({
         baseUrl: 'http://www.britishmuseum.org/collectionimages/',
-        queryString: `AN${id.substr(0,5)}/AN${id}_001_l.jpg?maxwidth=${maxWidth}&maxheight=${maxHeight}`,
+        queryString: `AN${imageId.substr(0,5)}/AN${imageId}_001_l.jpg?maxwidth=${maxWidth}&maxheight=${maxHeight}`,
         cache: false
     })
 
