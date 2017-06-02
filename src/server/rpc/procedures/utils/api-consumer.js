@@ -168,7 +168,14 @@ class ApiConsumer {
         return this._requestData(queryOptions)
             .then(res => {
                 this._logger.trace('got response back',res);
-                let parsedRes =  parserFn(res);
+                let parsedRes;
+                try {
+                    parsedRes =  parserFn(res);
+                } catch(e) {
+                    this._logger.error('exception occured when parsing the response', e);
+                    this.response.status(500).send('');
+                    return;
+                }
                 this._logger.trace('parsed response:', parsedRes);
                 // TODO check if parserFn is doing ok
                 let snapStructure = this._createSnapStructure(parsedRes);
@@ -181,7 +188,14 @@ class ApiConsumer {
         remainingMsgs[this.socket.uuid] = [];
         return this._requestData(queryOptions)
             .then(res => {
-                let msgContents = parserFn(res);
+                let msgContents;
+                try {
+                    msgContents = parserFn(res);
+                } catch(e) {
+                    this._logger.error('exception occured when parsing the response', e);
+                    this.response.status(500).send('');
+                    return;
+                }
                 let msgKeys = Object.keys(msgContents[0]);
                 this.response.send(`sending ${msgContents.length} messages with message type: ${msgType} and following fields: ${msgKeys.join(', ')}`); // send back number of msgs
                 // TODO check if parserFn is doing ok
