@@ -11,7 +11,7 @@ function parser(data) {
       image_url: item.webformatURL,
       tags: item.tags.split(", "),
       type: item.type
-    }
+    };
   });
 }
 
@@ -21,7 +21,7 @@ function parserSmall(data) {
       image_url: item.webformatURL.replace("_640", "_180"),
       tags: item.tags.split(", "),
       type: item.type
-    }
+    };
   });
 }
 
@@ -32,7 +32,7 @@ function parserMedium(data) {
       image_url: item.webformatURL.replace("_640", "_340"),
       tags: item.tags.split(", "),
       type: item.type
-    }
+    };
   });
 }
 
@@ -46,16 +46,13 @@ function parserFn (maxHeight) {
   return parserMedium;
 }
 
-console.log(parserFn());
-
 function encodeQueryData(options) {
       let ret = [];
-      for (let d in options)
-            ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(options[d]));
+      for (let d in options) ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(options[d]));
       return ret.join('&');
 }
 
-function encodeQueryOptions(keywords, type, maxHeight, minHeight) {
+function encodeQueryOptions(keywords, type, minHeight) {
   return {
     queryString: encodeQueryData({
       key: KEY,
@@ -69,15 +66,15 @@ function encodeQueryOptions(keywords, type, maxHeight, minHeight) {
 
 imageSearch.searchAll = function (keywords, maxHeight, minHeight) {
   return this._sendStruct(encodeQueryOptions(keywords, minHeight), parserFn(maxHeight));
-}
+};
 
 imageSearch.searchPhoto = function (keywords, maxHeight, minHeight) {
-  return this._sendStruct(encodeQueryOptions(keywords, "photo", minHeight), parserFn(maxHeight));
-}
+  return this._sendStruct(encodeQueryOptions(keywords, 'photo', minHeight), parserFn(maxHeight));
+};
 
 imageSearch.searchIllustration = function (keywords, maxHeight, minHeight) {
-  return this._sendStruct(encodeQueryOptions(keywords, "illustration", minHeight), parserFn(maxHeight));
-}
+  return this._sendStruct(encodeQueryOptions(keywords, 'illustration', minHeight), parserFn(maxHeight));
+};
 
 module.exports = imageSearch;
 
