@@ -1,6 +1,6 @@
 const ApiConsumer = require('../utils/api-consumer');
 const imageSearch = new ApiConsumer('imageSearch', 'https://pixabay.com/api/?');
-const KEY = '5553987-d2bf6e3c8db7e4a1515be8a86';
+const KEY = process.env.PIXABAY;
 
 function parserFnGen(maxHeight) {
   let optimalSize;
