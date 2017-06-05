@@ -12,7 +12,7 @@ function parserFnGen(maxHeight) {
     optimalSize = ['_640', '_340'];
   }
   return data => {
-    data.hits.map(item => {
+    return data.hits.map(item => {
       return {
         image_url: item.webformatURL.replace(optimalSize[0], optimalSize[1]),
         tags: item.tags.split(", "),
@@ -21,7 +21,6 @@ function parserFnGen(maxHeight) {
     });
   };
 }
-
 
 function encodeQueryData(options) {
   let ret = [];
