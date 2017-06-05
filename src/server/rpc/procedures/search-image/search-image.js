@@ -1,55 +1,32 @@
-/**
- * Created by admin on 6/5/17.
- */
 const ApiConsumer = require('../utils/api-consumer');
 const imageSearch = new ApiConsumer('imageSearch', 'https://pixabay.com/api/?');
 const KEY = '5553987-d2bf6e3c8db7e4a1515be8a86';
 
-function parser(data) {
-  return data.hits.map(item => {
-    return {
-      image_url: item.webformatURL,
-      tags: item.tags.split(", "),
-      type: item.type
-    };
-  });
-}
-
-function parserSmall(data) {
-  return data.hits.map(item => {
-    return {
-      image_url: item.webformatURL.replace("_640", "_180"),
-      tags: item.tags.split(", "),
-      type: item.type
-    };
-  });
-}
-
-
-function parserMedium(data) {
-  return data.hits.map(item => {
-    return {
-      image_url: item.webformatURL.replace("_640", "_340"),
-      tags: item.tags.split(", "),
-      type: item.type
-    };
-  });
-}
-
-function parserFn (maxHeight) {
+function parserFnGen(maxHeight) {
+  let optimalSize;
   if (maxHeight == "" || maxHeight > 640) {
-    return parser;
+    optimalSize = ['_640', '_640'];
+  } else if (maxHeight < 360) {
+    optimalSize = ['_640', '_180'];
+  } else {
+    optimalSize = ['_640', '_340'];
   }
-  if (maxHeight < 360) {
-    return parserSmall;
-  }
-  return parserMedium;
+  return data => {
+    data.hits.map(item => {
+      return {
+        image_url: item.webformatURL.replace(optimalSize[0], optimalSize[1]),
+        tags: item.tags.split(", "),
+        type: item.type
+      };
+    });
+  };
 }
+
 
 function encodeQueryData(options) {
-      let ret = [];
-      for (let d in options) ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(options[d]));
-      return ret.join('&');
+  let ret = [];
+  for (let d in options) ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(options[d]));
+  return ret.join('&');
 }
 
 function encodeQueryOptions(keywords, type, minHeight) {
@@ -65,16 +42,15 @@ function encodeQueryOptions(keywords, type, minHeight) {
 }
 
 imageSearch.searchAll = function (keywords, maxHeight, minHeight) {
-  return this._sendStruct(encodeQueryOptions(keywords, minHeight), parserFn(maxHeight));
+  return this._sendStruct(encodeQueryOptions(keywords, minHeight), parserFnGen(maxHeight));
 };
 
 imageSearch.searchPhoto = function (keywords, maxHeight, minHeight) {
-  return this._sendStruct(encodeQueryOptions(keywords, 'photo', minHeight), parserFn(maxHeight));
+  return this._sendStruct(encodeQueryOptions(keywords, 'photo', minHeight), parserFnGen(maxHeight));
 };
 
 imageSearch.searchIllustration = function (keywords, maxHeight, minHeight) {
-  return this._sendStruct(encodeQueryOptions(keywords, 'illustration', minHeight), parserFn(maxHeight));
+  return this._sendStruct(encodeQueryOptions(keywords, 'illustration', minHeight), parserFnGen(maxHeight));
 };
 
 module.exports = imageSearch;
-
