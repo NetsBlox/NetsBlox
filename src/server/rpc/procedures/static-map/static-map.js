@@ -51,6 +51,7 @@ StaticMap.prototype._getGoogleParams = function(options) {
     params.push('center=' + options.lat + ',' + options.lon);
     params.push('key=' + key);
     params.push('zoom='+(options.zoom || '12'));
+    params.push('maptype='+(options.mapType));
     return params.join('&');
 };
 
@@ -85,7 +86,7 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
             height: options.height,
             width: options.width
         };
-        
+
     return getStorage().get(this.roomId)
         .then(maps => {
             maps = maps || {};
@@ -95,20 +96,23 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
         .then(() => trace(`Stored map for ${socket.roleId}: ${JSON.stringify(map)}`));
 };
 
-StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) {
-    var response = this.response,
+
+
+StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom, mapType, self) {
+    var response = self.response,
         options = {
             lat: latitude,
             lon: longitude,
             width: width,
             height: height,
-            zoom: zoom
+            zoom: zoom,
+            mapType: mapType || 'roadmap'
         },
-        params = this._getGoogleParams(options),
+        params = self._getGoogleParams(options),
         url = baseUrl+'?'+params;
 
     // Check the cache
-    this._recordUserMap(this.socket, options).then(() => {
+    self._recordUserMap(self.socket, options).then(() => {
 
         cache.wrap(url, cacheCallback => {
             // Get the image -> not in cache!
@@ -140,6 +144,27 @@ StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom) 
         });
 
     });
+};
+
+StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom){
+
+    // this._getMap.bind(this, latitude, longitude, width, height, zoom);
+    this._getMap(latitude, longitude, width, height, zoom, 'roadmap', this);
+
+    return null;
+};
+
+StaticMap.prototype.getSatelliteMap = function(latitude, longitude, width, height, zoom){
+
+    this._getMap(latitude, longitude, width, height, zoom, 'satellite', this);
+
+    return null;
+};
+
+
+StaticMap.prototype.getTerrainMap = function(latitude, longitude, width, height, zoom){
+
+    this._getMap(latitude, longitude, width, height, zoom, 'terrain', this);
 
     return null;
 };
