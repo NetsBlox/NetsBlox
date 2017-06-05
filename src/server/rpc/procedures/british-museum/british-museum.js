@@ -48,14 +48,12 @@ let htmlSearchHandler = (html, self) => {
         image:              'td[2] a@title'
     })
     .data(function(data) {
-        // console.log('got data');
-        // console.log(listing);
+        // data for one result
         results.push(data);
-        // do something with listing data
     })
     .done(()=>{
         results = results.map(res => {
-            console.log(res);
+            britishmuseum._logger.trace(res);
             return {
                 id: res.obj.substr(res.obj.lastIndexOf('/') + 1),
                 image: res.image.match(/AN(\d{6,10})/)[1]
@@ -64,9 +62,9 @@ let htmlSearchHandler = (html, self) => {
         let structure = self._createSnapStructure(results);
         self.response.send(structure);
     })
-    .log(console.log)
-    .error(console.log)
-    .debug(console.log)
+    .log(britishmuseum._logger.trace)
+    .error(britishmuseum._logger.error)
+    .debug(britishmuseum._logger.debug);
 };
 
 
@@ -103,7 +101,7 @@ britishmuseum.search = function(label, type, material, limit) {
     this._requestData(queryOptions)
         .then(html => {
             htmlSearchHandler(html,this);
-        })
+        });
     return null;
     // return this._sendStruct(queryOptions,searchParser);
 
@@ -129,7 +127,7 @@ britishmuseum.searchByLabel = function(label, limit){
     this._requestData(queryOptions)
         .then(html => {
             htmlSearchHandler(html,this);
-        })
+        });
     return null;
     // return this._sendStruct(queryOptions,searchParser);
 };
@@ -157,7 +155,7 @@ britishmuseum.searchByType = function(type, limit){
     this._requestData(queryOptions)
         .then(html => {
             htmlSearchHandler(html,this);
-        })
+        });
     return null;
     // return this._sendStruct(queryOptions,searchParser);
 
@@ -186,11 +184,11 @@ britishmuseum.searchByMaterial = function(material, limit){
     this._requestData(queryOptions)
         .then(html => {
             htmlSearchHandler(html,this);
-        })
+        });
     return null;
     // return this._sendStruct(queryOptions,searchParser);
 
-}
+};
 
 
 britishmuseum.itemDetails = function(itemId){
@@ -218,30 +216,29 @@ britishmuseum.itemDetails = function(itemId){
             if (sparqlJson['http://www.w3.org/2000/01/rdf-schema#label']) {
                 idealObj.label = sparqlJson['http://www.w3.org/2000/01/rdf-schema#label'][0].value;
             }else {
-                idealObj.label = ''
+                idealObj.label = '';
             }
             if (sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_physical_description']) {
                 idealObj.physicalDescription =  sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_physical_description'][0].value
             }else {
-                idealObj.physicalDescription = ''
+                idealObj.physicalDescription = '';
             }
 
             info.forEach(keyVal => {
                 idealObj[keyVal[0].toLowerCase()] = keyVal[1];
             });
-            console.log(idealObj);
+            this._logger.trace(idealObj);
             return idealObj;
         } catch (e) {
-            console.log('exception occured when creating resource structure', e);
+            this._logger.error('exception occured when creating resource structure', e);
             return null;
         }
     }; // end of parser
 
     return this._sendStruct(resourceQueryOpts, resourceParser);
-}
+};
 
 britishmuseum.getImage = function getImage(imageId, maxWidth, maxHeight) {
-    let parentId = imageId.substr(0,5);
     // can set maxwidth and height
     maxWidth = maxWidth || 300;
     maxHeight = maxHeight || 300;
@@ -249,9 +246,9 @@ britishmuseum.getImage = function getImage(imageId, maxWidth, maxHeight) {
         baseUrl: 'http://www.britishmuseum.org/collectionimages/',
         queryString: `AN${imageId.substr(0,5)}/AN${imageId}_001_l.jpg?maxwidth=${maxWidth}&maxheight=${maxHeight}`,
         cache: false
-    })
+    });
 
     return null;
-}
+};
 
 module.exports = britishmuseum;
