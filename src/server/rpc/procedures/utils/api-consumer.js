@@ -4,6 +4,7 @@ const Logger = require('../../../logger'),
     R = require('ramda'),
     request = require('request'),
     rp = require('request-promise'),
+    jsonQuery = require('json-query'),
     MSG_SENDING_DELAY = 250;
 
 let remainingMsgs = {};
@@ -105,40 +106,22 @@ class ApiConsumer {
         }
     }
 
+    // TODO move this out of the class as a helper
     /**
      * processes and queries json object or strings
      * @param  {json/string} json  [description]
-     * @param  {string} query query string written in standard js notation: '.attr.attr[i]'
+     * @param  {string} query query string from json-query package
      * @return {json}       returns the value found withing the input json
      */
     _queryJson(json, query){
-      // assuming that there is no digit in attribute names
-        if (typeof(json) === 'string') {
-            json = JSON.parse(json);
-        }
-        if(!query){
-            return json;
-        }
-        let queryComponents = [],
-            res = json;
-        query.split('.').forEach(item => {
-            let searchRes = /\d+/g.exec(item);
-            if (searchRes) {
-                queryComponents.push(item.substring(0,searchRes.index -1));
-                queryComponents.push(searchRes[0]);
-            }else {
-                queryComponents.push(item);
+        try {
+            if (typeof(json) === 'string') {
+                json = JSON.parse(json);
             }
-        });
-        queryComponents.shift(); // remove the first item which is always empty=
-        queryComponents.forEach(q=>{
-            res = res[q] ? res[q] : null;
-        });
-        // if (typeof(res) === 'object') {
-        //     res = JSON.stringify(res);
-        // }
-        if (res === null) this._logger.trace(query, 'query, returned no result');
-        return res;
+        } catch (e) {
+            this._logger.error('input is not valid json');
+        }
+        return jsonQuery(query, {data: json}).value;
     }
 
 
