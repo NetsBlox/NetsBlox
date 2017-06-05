@@ -37,7 +37,7 @@ class ApiConsumer {
         }
      */
     _requestData(queryOptions){
-        // when extending use encodeURIComponent() tjo encode the query parameters
+        // when extending use urlencoding such as 'urlencode' to encode the query parameters
         if (Array.isArray(queryOptions)) {
             this._logger.trace('requesting data from', queryOptions.length, 'sources');
             let promises = queryOptions.map( qo => this._requestData(qo));
