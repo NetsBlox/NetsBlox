@@ -1,5 +1,6 @@
 (function(UserStorage) {
 
+    const Q = require('q');
     var randomString = require('just.randomstring'),
         hash = require('../../common/sha512').hex_sha512,
         DataWrapper = require('./data'),
@@ -128,6 +129,21 @@
         return this._users.find().toArray()
             .then(users => users.map(user => user.username))
             .catch(e => this._logger.error('Could not get the user names!', e));
+    };
+
+    UserStorage.forEach = function (fn) {
+        const deferred = Q.defer();
+        const stream = this._users.find().stream();
+
+        stream.on('data', function(user) {
+            fn(user);
+        });
+
+        stream.on('end', function() {
+            return deferred.resolve();
+        });
+
+        return deferred.promise;
     };
 
     UserStorage.new = function (username, email) {
