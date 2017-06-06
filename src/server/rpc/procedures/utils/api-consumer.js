@@ -64,38 +64,46 @@ class ApiConsumer {
      * @return {Response Obj}              response object from 'request' module
      */
     _requestImage(queryOptions){
-        // TODO add optional caching
+        let logger = this._logger;
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
-        var imgResponse = request.get(fullUrl);
-        this._logger.trace('requesting image', fullUrl);
-        delete imgResponse.headers['cache-control'];
-        imgResponse.isImage = true;
-        imgResponse.on('response', res => {
-            if (!res.headers['content-type'].startsWith('image')) {
-                this._logger.error(res.headers['content-type']);
-                this._logger.error('invalid id / response',res.headers);
-                imgResponse.isImage = false;
-                deferred.reject('requested resource is not a valid image.')
-            }
-        });
-        let deferred = Q.defer();
-        var imageBuffer = new Buffer(0);
-        imgResponse.on('data', function(data) {
-            imageBuffer = Buffer.concat([imageBuffer, data]);
-        });
-        imgResponse.on('end', function() {
-            if (imgResponse.isImage){
-                response.set('cache-control', 'private, no-store, max-age=0');
-                response.set('content-type', 'image/png');
-                response.set('content-length', imageBuffer.length);
-                response.set('connection', 'close');
-                deferred.resolve(imageBuffer);
-            }
-        });
-        imgResponse.on('error', err => {
-            deferred.reject(err)
-        });
-        return deferred.promise;
+        let requestImage = () => {
+            logger.trace('requesting image from', fullUrl);
+            var imgResponse = request.get(fullUrl);
+            delete imgResponse.headers['cache-control'];
+            imgResponse.isImage = true;
+            imgResponse.on('response', res => {
+                if (!res.headers['content-type'].startsWith('image')) {
+                    logger.error(res.headers['content-type']);
+                    logger.error('invalid id / response',res.headers);
+                    imgResponse.isImage = false;
+                    deferred.reject('requested resource is not a valid image.')
+                }
+            });
+            let deferred = Q.defer();
+            var imageBuffer = new Buffer(0);
+            imgResponse.on('data', function(data) {
+                imageBuffer = Buffer.concat([imageBuffer, data]);
+            });
+            imgResponse.on('end', function() {
+                if (imgResponse.isImage){
+                    deferred.resolve(imageBuffer);
+                }
+            });
+            imgResponse.on('error', err => {
+                deferred.reject(err)
+            });
+            return deferred.promise.catch(err => {
+                    this._logger.error('error in requesting the image', err);
+                    this.response.status(404).send('');
+                });
+        };
+        if (queryOptions.cache === false) {
+            return requestImage();
+        }else {
+            return cache.wrap(fullUrl, ()=>{
+                return requestImage();
+            })
+        };
     }
 
     // private
@@ -227,20 +235,15 @@ class ApiConsumer {
 
     // sends an image to the user
     _sendImage(queryOptions){
-        let logger = this._logger,
-            response = this.response;
-
         return this._requestImage(queryOptions)
-            .then(image => {
+            .then(imageBuffer => {
+                this.response.set('cache-control', 'private, no-store, max-age=0');
+                this.response.set('content-type', 'image/png');
+                this.response.set('content-length', imageBuffer.length);
+                this.response.set('connection', 'close');
                 this.response.status(200).send(imageBuffer);
-                logger.trace('sent the image');
-            })
-            .catch(err => {
-                this._logger.error('error in requesting the image', err);
-                this.response.status(404).send('');
-            })
-
-
+                this._logger.trace('sent the image');
+            });
     }
 
     // helper test the response
