@@ -37,6 +37,17 @@ let searchParser = resp => {
     };
 };
 
+
+// injects / adds query into a base query
+let queryInjector = (baseQ, statements) => {
+
+    // add the statement in the middle of baseQ
+    // baseQ.splice(1, 0, statement);
+    baseQ.splice.apply(baseQ, [1, 0].concat(statements));
+    return baseQ.join('\n');
+}
+
+
 // parses and sends a respond back to the user. used when using the basic endpoint
 let htmlSearchHandler = (html, self) => {
     let results = [];
@@ -44,8 +55,8 @@ let htmlSearchHandler = (html, self) => {
     .parse(html)
     .find('tbody tr')
     .set({
-        obj:        'td[1] a@title',
-        image:              'td[2] a@title'
+        obj: 'td[1] a@title',
+        image: 'td[2] a@title'
     })
     .data(function(data) {
         // data for one result
@@ -62,9 +73,9 @@ let htmlSearchHandler = (html, self) => {
         let structure = self._createSnapStructure(results);
         self.response.send(structure);
     })
-    .log(britishmuseum._logger.trace)
-    .error(britishmuseum._logger.error)
-    .debug(britishmuseum._logger.debug);
+    // .log(britishmuseum._logger.trace)
+    // .debug(britishmuseum._logger.debug)
+    .error(britishmuseum._logger.error);
 };
 
 
@@ -72,28 +83,37 @@ let htmlSearchHandler = (html, self) => {
 britishmuseum.search = function(label, type, material, limit) {
     if (!(label || type || material)) return 'Please pass in a query';
     limit = limit || 10;
-    label = label || '.*';
-    type = type || '.*';
-    material = material || '.*';
 
-    let labelTypeMaterialQ = `
-    SELECT DISTINCT ?object ?img ?label ?description ?type ?material
-    {
-      OPTIONAL { ?object rdfs:label ?label. }
-      ?object btm:PX_has_main_representation ?img.
-      OPTIONAL { ?object btm:PX_physical_description ?description. }
-      ?object crm:P45_consists_of ?materialThesauri.
-      ?materialThesauri skos:prefLabel ?material.
-      ?object btm:PX_object_type ?typeThesauri.
-      ?typeThesauri skos:prefLabel ?type.
-      FILTER(REGEX(?label, "${label}", "i")).
-      FILTER(REGEX(?material, "${material}", "i"))
-      FILTER(REGEX(?type, "${type}", "i"))
-    }
-    LIMIT ${limit}`;
+    let baseQ = [
+        `SELECT DISTINCT (SAMPLE(?object) AS ?object) ?img
+        {
+        ?object btm:PX_has_main_representation ?img.`,
+
+        `}
+        GROUP BY ?img
+        LIMIT ${limit}`
+    ];
+
+    let labelQ = `?object rdfs:label ?label .
+    FILTER(REGEX(?label, "${label}", "i")).`;
+
+    let typeQ = `?object btm:PX_object_type ?typeThesauri.
+          ?typeThesauri skos:prefLabel ?type.
+          FILTER(REGEX(?type, "${type}", "i")).`;
+
+    let materialQ = `?object crm:P45_consists_of ?materialThesauri.
+          ?materialThesauri skos:prefLabel ?material.
+          FILTER(REGEX(?material, "${material}", "i")).`;
+
+    let queries = [];
+    if (label) queries.push(labelQ);
+    if (type) queries.push(typeQ);
+    if (material) queries.push(materialQ);
+
+    let combinedQuery =  queryInjector(baseQ, queries);
 
     let queryOptions = {
-        queryString: 'sparql?query=' + urlencode( prefix + labelTypeMaterialQ, 'utf-8'),
+        queryString: 'sparql?query=' + urlencode( prefix + combinedQuery, 'utf-8'),
         json: false
     };
 
@@ -114,7 +134,6 @@ britishmuseum.searchByLabel = function(label, limit){
     SELECT DISTINCT (SAMPLE(?object) AS ?object) ?img
     { ?object rdfs:label ?label .
       ?object btm:PX_has_main_representation ?img.
-      OPTIONAL { ?object btm:PX_physical_description ?description. }
       FILTER(REGEX(?label, "${label}", "i")).}
       GROUP BY ?img
     LIMIT ${limit}`;
