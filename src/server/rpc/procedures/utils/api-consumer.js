@@ -76,7 +76,7 @@ class ApiConsumer {
                     logger.error(res.headers['content-type']);
                     logger.error('invalid id / response',res.headers);
                     imgResponse.isImage = false;
-                    deferred.reject('requested resource is not a valid image.')
+                    deferred.reject('requested resource is not a valid image.');
                 }
             });
             let deferred = Q.defer();
@@ -90,20 +90,20 @@ class ApiConsumer {
                 }
             });
             imgResponse.on('error', err => {
-                deferred.reject(err)
+                deferred.reject(err);
             });
             return deferred.promise.catch(err => {
-                    this._logger.error('error in requesting the image', err);
-                    this.response.status(404).send('');
-                });
+                this._logger.error('error in requesting the image', err);
+                this.response.status(404).send('');
+            });
         };
         if (queryOptions.cache === false) {
             return requestImage();
         }else {
             return cache.wrap(fullUrl, ()=>{
                 return requestImage();
-            })
-        };
+            });
+        }
     }
 
     // private
@@ -112,9 +112,9 @@ class ApiConsumer {
         if (msgs && msgs.length) {
             var msg = msgs.shift();
 
-            // while (msgs.length && msg.dstId !== this.socket.uuid) {
-            //     msg = msgs.shift();
-            // }
+            while (msgs.length && msg.dstId !== this.socket.roleId) {
+                msg = msgs.shift();
+            }
 
             // check that the socket is still at the role receiving the messages
             if (msg && msg.dstId === this.socket.roleId) {
