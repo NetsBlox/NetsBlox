@@ -98,7 +98,8 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
 
 
 
-StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom, mapType, self) {
+StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom, mapType) {
+    let self = this;
     var response = self.response,
         options = {
             lat: latitude,
@@ -149,14 +150,14 @@ StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom,
 StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom){
 
     // this._getMap.bind(this, latitude, longitude, width, height, zoom);
-    this._getMap(latitude, longitude, width, height, zoom, 'roadmap', this);
+    this._getMap(latitude, longitude, width, height, zoom, 'roadmap');
 
     return null;
 };
 
 StaticMap.prototype.getSatelliteMap = function(latitude, longitude, width, height, zoom){
 
-    this._getMap(latitude, longitude, width, height, zoom, 'satellite', this);
+    this._getMap(latitude, longitude, width, height, zoom, 'satellite');
 
     return null;
 };
@@ -164,7 +165,7 @@ StaticMap.prototype.getSatelliteMap = function(latitude, longitude, width, heigh
 
 StaticMap.prototype.getTerrainMap = function(latitude, longitude, width, height, zoom){
 
-    this._getMap(latitude, longitude, width, height, zoom, 'terrain', this);
+    this._getMap(latitude, longitude, width, height, zoom, 'terrain');
 
     return null;
 };
