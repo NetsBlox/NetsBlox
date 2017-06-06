@@ -2,6 +2,7 @@ const Logger = require('../../../logger'),
     CacheManager = require('cache-manager'),
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 86400}), // cache for 24hrs
     R = require('ramda'),
+    Q = require('q'),
     request = require('request'),
     rp = require('request-promise'),
     jsonQuery = require('json-query'),
@@ -33,11 +34,11 @@ class ApiConsumer {
             queryString,
             baseUrl,
             headers,
-            json
+            json: boolean to show indicate if the response is json or not. default: true
         }
      */
     _requestData(queryOptions){
-        // when extending use encodeURIComponent() tjo encode the query parameters
+        // when extending use urlencoding such as 'urlencode' to encode the query parameters
         if (Array.isArray(queryOptions)) {
             this._logger.trace('requesting data from', queryOptions.length, 'sources');
             let promises = queryOptions.map( qo => this._requestData(qo));
@@ -63,21 +64,46 @@ class ApiConsumer {
      * @return {Response Obj}              response object from 'request' module
      */
     _requestImage(queryOptions){
-        // TODO add optional caching
+        let logger = this._logger;
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
-        var imgResponse = request.get(fullUrl);
-        this._logger.trace('requesting image', fullUrl);
-        delete imgResponse.headers['cache-control'];
-        imgResponse.isImage = true;
-        imgResponse.on('response', res => {
-            if (!res.headers['content-type'].startsWith('image')) {
-                this._logger.error(res.headers['content-type']);
-                this._logger.error('invalid id / response',res.headers);
-                imgResponse.isImage = false;
-                this.response.send('null');
-            }
-        });
-        return imgResponse;
+        let requestImage = () => {
+            logger.trace('requesting image from', fullUrl);
+            var imgResponse = request.get(fullUrl);
+            delete imgResponse.headers['cache-control'];
+            imgResponse.isImage = true;
+            imgResponse.on('response', res => {
+                if (!res.headers['content-type'].startsWith('image')) {
+                    logger.error(res.headers['content-type']);
+                    logger.error('invalid id / response',res.headers);
+                    imgResponse.isImage = false;
+                    deferred.reject('requested resource is not a valid image.')
+                }
+            });
+            let deferred = Q.defer();
+            var imageBuffer = new Buffer(0);
+            imgResponse.on('data', function(data) {
+                imageBuffer = Buffer.concat([imageBuffer, data]);
+            });
+            imgResponse.on('end', function() {
+                if (imgResponse.isImage){
+                    deferred.resolve(imageBuffer);
+                }
+            });
+            imgResponse.on('error', err => {
+                deferred.reject(err)
+            });
+            return deferred.promise.catch(err => {
+                    this._logger.error('error in requesting the image', err);
+                    this.response.status(404).send('');
+                });
+        };
+        if (queryOptions.cache === false) {
+            return requestImage();
+        }else {
+            return cache.wrap(fullUrl, ()=>{
+                return requestImage();
+            })
+        };
     }
 
     // private
@@ -106,7 +132,6 @@ class ApiConsumer {
         }
     }
 
-    // TODO move this out of the class as a helper
     /**
      * processes and queries json object or strings
      * @param  {json/string} json  [description]
@@ -160,7 +185,6 @@ class ApiConsumer {
                     return;
                 }
                 this._logger.trace('parsed response:', parsedRes);
-                // TODO check if parserFn is doing ok
                 let snapStructure = this._createSnapStructure(parsedRes);
                 this.response.send(snapStructure);
                 this._logger.trace('responded with an structure', snapStructure);
@@ -181,7 +205,6 @@ class ApiConsumer {
                 }
                 let msgKeys = Object.keys(msgContents[0]);
                 this.response.send(`sending ${msgContents.length} messages with message type: ${msgType} and following fields: ${msgKeys.join(', ')}`); // send back number of msgs
-                // TODO check if parserFn is doing ok
                 msgContents.forEach(content=>{
                     let msg = {
                         dstId: this.socket.roleId,
@@ -212,41 +235,15 @@ class ApiConsumer {
 
     // sends an image to the user
     _sendImage(queryOptions){
-        let logger = this._logger,
-            response = this.response;
-        var imageBuffer = new Buffer(0);
-        let imgResponse = this._requestImage(queryOptions);
-        imgResponse.on('data', function(data) {
-            imageBuffer = Buffer.concat([imageBuffer, data]);
-        });
-
-        imgResponse.on('end', function() {
-            if (imgResponse.isImage){
-                response.set('cache-control', 'private, no-store, max-age=0');
-                response.set('content-type', 'image/png');
-                response.set('content-length', imageBuffer.length);
-                response.set('connection', 'close');
-                response.status(200).send(imageBuffer);
-                logger.trace('sent the image');
-            }
-        });
-        imgResponse.on('error', err => {
-            logger.error(err);
-            // QUESTION what to return in case of an error?
-            response.status(404).send('null');
-        });
-    }
-
-    // WIP needs further testing
-    _makeHelpers(argsArr,fnMap, queryOptionsMaker){
-        fnMap.forEach(fnEntry => {
-            this[fnEntry.name] = (...argsArr) => {
-                // QUESTION can I pass in an obj with place holder for future defined variables?
-                let queryOptions = queryOptionsMaker(...argsArr);
-                this._sendAnswer(queryOptions,fnEntry.selector);
-                return null;
-            };
-        });
+        return this._requestImage(queryOptions)
+            .then(imageBuffer => {
+                this.response.set('cache-control', 'private, no-store, max-age=0');
+                this.response.set('content-type', 'image/png');
+                this.response.set('content-length', imageBuffer.length);
+                this.response.set('connection', 'close');
+                this.response.status(200).send(imageBuffer);
+                this._logger.trace('sent the image');
+            });
     }
 
     // helper test the response
@@ -259,7 +256,6 @@ class ApiConsumer {
             });
     }
 
-    // QUESTION how to make this apply whenever sendMsgs() is used?
     _stopMsgs(){
         this.response.status(200).send('stopping sending of the remaining ' + remainingMsgs[this.socket.uuid].length + 'msgs');
         delete remainingMsgs[this.socket.uuid];
