@@ -99,8 +99,7 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
 
 
 StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom, mapType) {
-    let self = this;
-    var response = self.response,
+    var response = this.response,
         options = {
             lat: latitude,
             lon: longitude,
@@ -109,11 +108,11 @@ StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom,
             zoom: zoom,
             mapType: mapType || 'roadmap'
         },
-        params = self._getGoogleParams(options),
+        params = this._getGoogleParams(options),
         url = baseUrl+'?'+params;
 
     // Check the cache
-    self._recordUserMap(self.socket, options).then(() => {
+    this._recordUserMap(this.socket, options).then(() => {
 
         cache.wrap(url, cacheCallback => {
             // Get the image -> not in cache!
