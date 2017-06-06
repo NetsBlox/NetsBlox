@@ -9,7 +9,6 @@ var Command = require('commander').Command,
     storage = new Storage(logger),
     program = new Command();
 
-// TODO: print the users in either regular or long format
 program
     .option('-l, --long', 'List additional metadata about the users')
     .option('-h, --human', 'Print in human-readable format')
