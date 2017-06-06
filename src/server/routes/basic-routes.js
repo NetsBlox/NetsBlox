@@ -1,8 +1,6 @@
 'use strict';
 var R = require('ramda'),
     _ = require('lodash'),
-    xml2js = require('xml2js'),
-    Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     RoomManager = require('../rooms/room-manager'),
     exists = require('exists-file'),
