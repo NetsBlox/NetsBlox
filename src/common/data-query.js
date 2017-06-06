@@ -47,8 +47,15 @@ var listSessions = (options) => {
 
 const listUsers = options => {
     return Users.forEach(user => {
-        console.log('item');
-        console.log(user.username);
+        if (options.long) {
+            console.log([
+                user.username,
+                user.email,
+                options.human ? new Date(user.lastLoginAt) : user.lastLoginAt
+            ].join('\t'));
+        } else {
+            console.log(user.username);
+        }
     });
 };
 
