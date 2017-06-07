@@ -171,6 +171,8 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         result = rpc[action].apply(rpc, args);
 
         this.sendRPCResult(res, result);
+
+        return result;
     } else {
         this._logger.log('Invalid action requested for '+RPC.getPath()+': '+action);
         return res.status(400).send('unrecognized action');
@@ -181,7 +183,12 @@ RPCManager.prototype.sendRPCResult = function(response, result) {
     if (!response.headersSent && result !== null) {  // send the return value
         if (typeof result === 'object') {
             if (typeof result.then === 'function') {
-                return result.then(result => this.sendRPCResult(response, result));
+                return result
+                    .then(result => this.sendRPCResult(response, result))
+                    .catch(err => {
+                        this._logger.error(`Uncaught exception: ${err.toString()}`);
+                        response.status(500).send('Error occurred!');
+                    });
             } else {
                 return response.json(result);
             }

@@ -47,7 +47,7 @@ class ApiConsumer {
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
         this._logger.trace('requesting data for',fullUrl);
         return cache.wrap(fullUrl, ()=>{
-            this._logger.trace('first time requesting this resource, calling external endpoint for data',fullUrl);
+            this._logger.trace('request is not cached, calling external endpoint');
             return rp({
                 uri: fullUrl,
                 headers: queryOptions.headers,
@@ -94,7 +94,6 @@ class ApiConsumer {
             });
             return deferred.promise.catch(err => {
                 this._logger.error('error in requesting the image', err);
-                this.response.status(404).send('');
             });
         };
         if (queryOptions.cache === false) {
@@ -243,6 +242,8 @@ class ApiConsumer {
                 this.response.set('connection', 'close');
                 this.response.status(200).send(imageBuffer);
                 this._logger.trace('sent the image');
+            }).catch(() => {
+                this.response.status(404).send('');
             });
     }
 
@@ -257,9 +258,13 @@ class ApiConsumer {
     }
 
     _stopMsgs(){
-        this.response.status(200).send('stopping sending of the remaining ' + remainingMsgs[this.socket.uuid].length + 'msgs');
-        delete remainingMsgs[this.socket.uuid];
-        this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
+        if (remainingMsgs[this.socket.uuid]) {
+            this.response.status(200).send('stopping sending of the remaining ' + remainingMsgs[this.socket.uuid].length + 'msgs');
+            delete remainingMsgs[this.socket.uuid];
+            this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
+        }else {
+            this.response.send('there are no messages in the queue to stop.');
+        }
     }
 
 }
