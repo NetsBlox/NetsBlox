@@ -8,148 +8,148 @@ var debug = require('debug'),
     trace = debug('netsblox:rpc:twenty-questions:trace'),
     Constants = require('../../../../common/constants');
 
-var correctAnswer, // hold the answer
-    guessCount, // keep track of amount of guesses made so far
-    answerer, // answerer role
-    started = false; // keep track of if the game has stared or not
+let Twenty = function () {
+    this.correctAnswer = null;
+    this.guessCount = null;
+    this.answerer = null;
+    this.started = false;
+    this.isStateless = false;
+};
 
-module.exports = {
+Twenty.prototype.getPath = () => '/twentyquestions',
 
-    isStateless: true, 
-    getPath: () => '/twentyquestions',
+Twenty.prototype.start = (answer) => {
+    // safeguard against starting in the middle of a game
+    if (this.started) {
+        return 'Game has already started...';
+    }
+    // ensure valid answer
+    if (answer === '') {
+        return 'No answer received';
+    }
+    // set variables appropriately
+    this.started = true;
+    this.guessCount = 0;
+    this.correctAnswer = answer.toLowerCase();
+    this.answerer = this.socket.roleId;
+    // send start message to everyone
+    this.socket._room.sockets()
+        .forEach(socket => socket.send({
+            type: 'message',
+            dstId: Constants.EVERYONE,
+            msgType: 'start',
+            content: {}
+        }));
+    return true;
+};
 
-    start: function(answer) {
-        // safeguard against starting in the middle of a game
-        if (started) {
-            return 'Game has already started...';
-        }
-        // ensure valid answer
-        if (answer === '') {
-            return 'No answer received';
-        }
-        // set variables appropriately
-        started = true;
-        guessCount = 0;
-        correctAnswer = answer.toLowerCase();
-        answerer = this.socket.roleId;
-        // send start message to everyone
-        this.socket._room.sockets()
-            .forEach(socket => socket.send({
-                type: 'message',
-                dstId: Constants.EVERYONE,
-                msgType: 'start',
-                content: {}
-            }));
-        return true;
-    },
+Twenty.prototype.guess = function(guess) {
+    // safeguard against guessing before a game has started
+    if (!this.started) {
+        return 'Game hasn\'t started yet...wait for the answerer to think of something!';
+    }
+    // safeguard against the answerer accidentally attempting to guess
+    if (this.socket.roleId === this.answerer) {
+        return 'You\'re not the guesser!';
+    }
+    // ensure valid guess
+    if (guess === '') {
+        return 'Enter a guess!';
+    }
 
-    guess: function(guess) {
-        // safeguard against guessing before a game has started
-        if (!started) {
-            return 'Game hasn\'t started yet...wait for the answerer to think of something!';
+    // split the guess
+    var correct = false;
+    var attempt = guess.toLowerCase().split(/[\s\?]+/);
+    for (var i = 0; i < attempt.length && !correct; i++) {
+        if (attempt[i] === this.correctAnswer) {
+            correct = true;
         }
-        // safeguard against the answerer accidentally attempting to guess
-        if (this.socket.roleId == answerer) {
-            return 'You\'re not the guesser!';
-        }
-        // ensure valid guess
-        if (guess === '') {
-            return 'Enter a guess!';
-        }
+    }
 
-        // split the guess
-        var correct = false;
-        var attempt = guess.toLowerCase().split(/[\s\?]+/);
-        for (var i = 0; i < attempt.length && !correct; i++) {
-            if (attempt[i] == correctAnswer) {
-                correct = true;
-            }
-        }
-
-        guessCount++;
-        
-        // incorrect guess
-        if (!correct) {
-            // guesses are up! guesser loses...
-            if (guessCount == 20) {
-                this.socket._room.sockets()
-                .forEach(socket => socket.send({
-                    type: 'message',
-                    dstId: Constants.EVERYONE,
-                    msgType: 'EndGame',
-                    content: {
-                        turn: guessCount,
-                        GuesserWin: false
-                    }
-                }));
-            // wait for answerer to answer the question
-            } else {
-                this.socket._room.sockets()
-                .forEach(socket => socket.send({
-                    type: 'message',
-                    dstId: Constants.EVERYONE,
-                    msgType: 'EndGuesserTurn',
-                    content: {
-                        turn: guessCount,
-                        guess: guess
-                    }
-                }));
-            }
-            return true;
-        } 
-        // correct guess, end the game
-        this.socket._room.sockets()
+    this.guessCount++;
+    
+    // incorrect guess
+    if (!correct) {
+        // guesses are up! guesser loses...
+        if (this.guessCount === 20) {
+            this.socket._room.sockets()
             .forEach(socket => socket.send({
                 type: 'message',
                 dstId: Constants.EVERYONE,
                 msgType: 'EndGame',
                 content: {
-                    turn: guessCount,
-                    GuesserWin: true
+                    turn: this.guessCount,
+                    GuesserWin: false
                 }
             }));
-        return true;
-    },
-
-    answer: function(answer) {
-        // safeguard against answering before a game has started
-        if (!started) {
-            return this.response.send('Game hasn\'t started yet...think of something to be guessed!');
-        }
-        // safeguard against the guesser accidently attempting to answer
-        if (this.socket.roleId != answerer) {
-            return this.response.send('You\'re not the answerer!');
-        }
-        // ensure valid answer
-        if (answer === '' || answer.toLowerCase() != 'yes' && answer.toLowerCase() != 'no') {
-            return this.response.send('Answer the guess with yes/no!');
-        }
-        // end answerer's turn
-        this.socket._room.sockets()
+        // wait for answerer to answer the question
+        } else {
+            this.socket._room.sockets()
             .forEach(socket => socket.send({
                 type: 'message',
                 dstId: Constants.EVERYONE,
-                msgType: 'EndAnswererTurn',
+                msgType: 'EndGuesserTurn',
                 content: {
-                    turn: guessCount,
-                    response: answer.toLowerCase()
+                    turn: this.guessCount,
+                    guess: guess
                 }
             }));
+        }
         return true;
-    },
-
-    // return whether or not the game has already started
-    gameStarted: function() {
-        return started;
-    },
-
-    // restart the game, resetting all the variables...
-    restart: function() {
-        started = false;
-        guessCount = 0;
-        correctAnswer = '';
-        answerer = '';
-        return false;
     }
-
+    // correct guess, end the game
+    this.socket._room.sockets()
+        .forEach(socket => socket.send({
+            type: 'message',
+            dstId: Constants.EVERYONE,
+            msgType: 'EndGame',
+            content: {
+                turn: this.guessCount,
+                GuesserWin: true
+            }
+        }));
+    return true;
 };
+
+Twenty.prototype.answer = function(answer) {
+    // safeguard against answering before a game has started
+    if (!this.started) {
+        return this.response.send('Game hasn\'t started yet...think of something to be guessed!');
+    }
+    // safeguard against the guesser accidently attempting to answer
+    if (this.socket.roleId !== this.answerer) {
+        return this.response.send('You\'re not the answerer!');
+    }
+    // ensure valid answer
+    if (answer === '' || answer.toLowerCase() != 'yes' && answer.toLowerCase() != 'no') {
+        return this.response.send('Answer the guess with yes/no!');
+    }
+    // end answerer's turn
+    this.socket._room.sockets()
+        .forEach(socket => socket.send({
+            type: 'message',
+            dstId: Constants.EVERYONE,
+            msgType: 'EndAnswererTurn',
+            content: {
+                turn: this.guessCount,
+                response: answer.toLowerCase()
+            }
+        }));
+    return true;
+};
+
+// return whether or not the game has already started
+Twenty.prototype.gameStarted = function() {
+    return this.started;
+};
+
+// restart the game, resetting all the variables...
+Twenty.prototype.restart = function() {
+    this.started = false;
+    this.guessCount = 0;
+    this.correctAnswer = '';
+    this.answerer = '';
+    return false;
+};
+
+module.exports = Twenty;
