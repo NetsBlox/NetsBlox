@@ -49,6 +49,7 @@ describe('Server Tests', function() {
             'notes',
             'roleNames'
         ];
+
         it('should provide list of examples', function(done) {
             api.get('/Examples/EXAMPLES/?metadata=true')
                 .expect('Content-Type', /json/)

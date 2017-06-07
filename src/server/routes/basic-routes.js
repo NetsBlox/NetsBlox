@@ -1,8 +1,6 @@
 'use strict';
 var R = require('ramda'),
     _ = require('lodash'),
-    xml2js = require('xml2js'),
-    Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     RoomManager = require('../rooms/room-manager'),
     exists = require('exists-file'),
@@ -301,39 +299,43 @@ module.exports = [
         URL: 'Examples/EXAMPLES',
         Handler: function(req, res) {
             // if no name requested, get index
-            var metadata = req.query.metadata === 'true',
-                result;
+            let metadata = req.query.metadata === 'true',
+                examples;
 
             if (metadata) {
-                result = Object.keys(EXAMPLES)
+                examples = Object.keys(EXAMPLES)
                     .map(name => {
                         let example = EXAMPLES[name],
                             role = Object.keys(example.roles).shift(),
                             primaryRole = example.getRole(role).SourceCode,
                             services = example.services;
 
-                        return Q.nfcall(xml2js.parseString, primaryRole)
-                            .then(result => {
-                                return {
-                                    projectName: name,
-                                    primaryRoleName: role,
-                                    roleNames: example.getRoleNames(),
-                                    thumbnail: result.project.thumbnail[0],
-                                    notes: result.project.notes[0],
-                                    services: services
-                                };
-                            });
+                        // There should be a faster way to do this if all I want is the thumbnail and the notes...
+                        let startIndex = primaryRole.indexOf('<thumbnail>');
+                        let endIndex = primaryRole.indexOf('</thumbnail>');
+                        const thumbnail = primaryRole.substring(startIndex + 11, endIndex);
+
+                        startIndex = primaryRole.indexOf('<notes>');
+                        endIndex = primaryRole.indexOf('</notes>');
+                        const notes = primaryRole.substring(startIndex + 7, endIndex);
+
+                        return {
+                            projectName: name,
+                            primaryRoleName: role,
+                            roleNames: example.getRoleNames(),
+                            thumbnail: thumbnail,
+                            notes: notes,
+                            services: services
+                        };
                     });
 
-                return Q.all(result)
-                    .then(examples => res.json(examples))
-                    .fail(err => this._logger.error(err));
+                return res.json(examples);
             } else {
-                result = Object.keys(EXAMPLES)
+                examples = Object.keys(EXAMPLES)
                     .map(name => `${name}\t${name}\t  `)
                     .join('\n');
 
-                return res.send(result);
+                return res.send(examples);
             }
         }
     },

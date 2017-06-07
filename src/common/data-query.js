@@ -1,10 +1,11 @@
 /* eslint-disable no-console*/
 // Utilities for querying data (like from cli or in vantage)
-var Q = require('q'),
-    fs = require('fs'),
-    UserActions = require('../server/storage/user-actions'),
-    Logger = require('../server/logger'),
-    logger = new Logger('query');
+const Q = require('q');
+const fs = require('fs');
+const UserActions = require('../server/storage/user-actions');
+const Users = require('../server/storage/users');
+const Logger = require('../server/logger');
+let logger = new Logger('query');
 
 var listSessions = (options) => {
     return UserActions.sessions().then(sessions => {
@@ -40,6 +41,20 @@ var listSessions = (options) => {
             console.log(index);
         } else {
             console.log('<no sessions>');
+        }
+    });
+};
+
+const listUsers = options => {
+    return Users.forEach(user => {
+        if (options.long) {
+            console.log([
+                user.username,
+                user.email,
+                options.human ? new Date(user.lastLoginAt) : user.lastLoginAt
+            ].join('\t'));
+        } else {
+            console.log(user.username);
         }
     });
 };
@@ -113,6 +128,7 @@ var printSessions = (ids, options) => {
 module.exports = {
     init: _logger => logger = _logger.fork('query'),
     listSessions: listSessions,
-    printSessions: printSessions
+    printSessions: printSessions,
+    listUsers: listUsers
 };
 /* eslint-enable no-console*/
