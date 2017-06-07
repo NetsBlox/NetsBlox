@@ -258,9 +258,13 @@ class ApiConsumer {
     }
 
     _stopMsgs(){
-        this.response.status(200).send('stopping sending of the remaining ' + remainingMsgs[this.socket.uuid].length + 'msgs');
-        delete remainingMsgs[this.socket.uuid];
-        this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
+        if (remainingMsgs[this.socket.uuid]) {
+            this.response.status(200).send('stopping sending of the remaining ' + remainingMsgs[this.socket.uuid].length + 'msgs');
+            delete remainingMsgs[this.socket.uuid];
+            this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
+        }else {
+            this.response.send('there are no messages in the queue to stop.');
+        }
     }
 
 }

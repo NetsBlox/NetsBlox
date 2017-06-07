@@ -37,5 +37,23 @@ describe('rpc-manager', function() {
                     done();
                 });
         });
+
+        const delayP = function(dur) {
+            const deferred = Q.defer();
+            setTimeout(() => deferred.resolve(), dur);
+            return deferred.promise;
+        };
+
+        it('should set status code if promise fails', function(done) {
+            const result = delayP(10).then(() => {
+                throw Error('test exception');
+            });
+
+            RPCManager.sendRPCResult(response, result);
+            response.status = function(code) {
+                assert.equal(code, 500);
+                done();
+            };
+        });
     });
 });
