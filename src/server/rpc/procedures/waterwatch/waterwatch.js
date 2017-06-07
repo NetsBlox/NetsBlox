@@ -58,8 +58,10 @@ waterwatch.streamFlow = function (northernLat, easternLong, southernLat, western
                 longitude: item.sourceInfo.geoLocation.geogLocation.longitude,
                 'ft3/s': item.values[0].value[0].value
             };
-            return idealObj;
-        });
+            return idealObj['ft3/s'] < 0 ? null : idealObj;
+        }).filter(item => item!==null);
+
+
     };
 
     return this._sendMsgs(queryOptions, parser, 'streamFlow');
