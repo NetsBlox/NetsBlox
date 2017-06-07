@@ -195,8 +195,8 @@ RoomMorph.prototype.drawNew = function() {
         label.setCenter(this.center());
         this.roleLabels[roles[i]] = label;
     }
-    // Room name
-    this.renderRoomTitle(new Point(center, center).translateBy(this.topLeft()));
+    //Room name
+    this.renderRoomTitle(new Point(center - 12, center).translateBy(this.topLeft()));
 
     // Owner name
     this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.15 * radius)));
@@ -677,25 +677,28 @@ RoleMorph.prototype.drawNew = function() {
 
     // Draw the roles
     var angleSize = 2*Math.PI/this.total,
-        angle = this.index*angleSize,
+        angle = -Math.PI / 2 + this.index*angleSize,
         len = RoleMorph.COLORS.length,
-        x,y;
+        x,y, circleSize;
 
     cxt.textAlign = 'center';
 
+    // Write the role name on the role
+    x = 0.65 * radius * Math.cos(angle);
+    y = 0.65 * radius * Math.sin(angle);
+    if (this.total < 3) {
+        circleSize = radius * 0.37;
+    } else {
+        circleSize = radius * 0.3;
+    }
+    
     // Draw the role
     cxt.fillStyle = RoleMorph.COLORS[this.index%len].toString();
     cxt.beginPath();
-    cxt.moveTo(center, center);
-    cxt.arc(center, center, radius, angle, angle+angleSize, false);
-    cxt.lineTo(center, center);
+    cxt.arc(center + x - 0.08 * radius, center + y, circleSize, 0, 2 * Math.PI, false);
     cxt.fill();
-
-    // Write the role name on the role
-    x = 0.65 * radius * Math.cos(angle + angleSize/2);
-    y = 0.65 * radius * Math.sin(angle + angleSize/2);
+    
     pos = new Point(x, y).translateBy(this.center());
-
     this.acceptsDrops = true;
     if (this._label) {
         this._label.destroy();
