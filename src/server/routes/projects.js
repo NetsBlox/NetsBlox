@@ -128,17 +128,14 @@ var sendProjectTo = function(project, res) {
 
     // If room is not active, pick a role arbitrarily
     openRole = project.activeRole || Object.keys(project.roles)[0];
-    role = project.roles[openRole];
-
-    if (!role) {
-        error('Found room with no roles!');
-        return res.status(500).send('ERROR: project has no roles');
-    }
-
-    const uuid = Utils.uuid(project.owner, project.name);
-    trace(`project ${uuid} is not active. Selected role "${openRole}"`);
-    serialized = Utils.serializeRole(role, project);
-    return res.send(serialized);
+    return project.getRole(openRole)
+        .then(role => {
+            const uuid = Utils.uuid(project.owner, project.name);
+            trace(`project ${uuid} is not active. Selected role "${openRole}"`);
+            serialized = Utils.serializeRole(role, project);
+            return res.send(serialized);
+        })
+        .catch(err => res.status(500).send('ERROR: ' + err));
 };
 
 var createCopyFrom = function(user, project) {
@@ -437,7 +434,7 @@ module.exports = [
             }
 
             // Get the projectName
-            trace(`${user.username} opening shared project ${owner}/${projectName}`);
+            trace(`${user.username} opening project ${owner}/${projectName}`);
             return getRoomsNamed.call(this, projectName, user, owner).then(rooms => {
                 if (rooms.active) {
                     trace(`room with name ${projectName} already open. Are they the same? ${rooms.areSame}`);
