@@ -289,7 +289,7 @@ module.exports = [
                     if (user) {
                         return user.getSharedProjects()
                             .then(projects => {
-                                trace(`found project list (${projects.length}) ` +
+                                trace(`found shared project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
                                 return Q.all(projects.map(getPreview));
