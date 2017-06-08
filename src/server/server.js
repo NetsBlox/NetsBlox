@@ -83,6 +83,11 @@ Server.prototype.configureRoutes = function() {
         state.rooms = Object.keys(RoomManager.rooms).map(uuid => {
             const room = RoomManager.rooms[uuid];
             const roles = {};
+            const project = room.getProject();
+
+            if (project) {
+                state.lastUpdateAt = new Date(project.lastUpdateAt);
+            }
 
             Object.keys(room.roles).forEach(roleId => {
                 const socket = room.roles[roleId];
