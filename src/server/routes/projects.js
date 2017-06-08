@@ -123,8 +123,7 @@ var getRoomsNamed = function(name, user, owner) {
 
 var sendProjectTo = function(project, res) {
     var serialized,
-        openRole,
-        role;
+        openRole;
 
     // If room is not active, pick a role arbitrarily
     openRole = project.activeRole || Object.keys(project.roles)[0];
