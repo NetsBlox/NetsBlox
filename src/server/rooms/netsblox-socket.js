@@ -115,7 +115,7 @@ class NetsBloxSocket {
     }
 
     isCollaborator () {
-        return this._room && this._room.collaborators.includes(this.username);
+        return this._room && this._room.getCollaborators().includes(this.username);
     }
 
     canEditRoom () {

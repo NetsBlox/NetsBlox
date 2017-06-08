@@ -106,7 +106,7 @@ Server.prototype.configureRoutes = function() {
                 uuid: uuid,
                 name: room.name,
                 owner: room.owner,
-                collaborators: room.collaborators,
+                collaborators: room.getCollaborators(),
                 lastUpdateAt: lastUpdateAt,
                 roles: roles
             };
