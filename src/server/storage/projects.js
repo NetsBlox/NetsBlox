@@ -169,8 +169,10 @@
         }
 
         persist() {  // save in the non-transient storage
-            this.destroy();
-            this._db = collection;
+            if (this.isTransient()) {
+                this.destroy();
+                this._db = collection;
+            }
             return this.save();
         }
 
