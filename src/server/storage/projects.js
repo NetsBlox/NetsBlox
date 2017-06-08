@@ -181,16 +181,28 @@
         }
 
         addCollaborator(username) {
-            if (this.collaborators.includes(username)) return;
+            if (this.collaborators.includes(username)) return Q();
             this.collaborators.push(username);
-            this._logger.info(`added collaborator ${username} to ${this.name}`);
+
+            return this._updateCollaborators().then(() => {
+                this._logger.info(`added collaborator ${username} to ${this.name}`);
+            });
         }
 
         removeCollaborator(username) {
             var index = this.collaborators.indexOf(username);
-            if (index === -1) return;
+            if (index === -1) return Q();
             this.collaborators.splice(index, 1);
             this._logger.info(`removed collaborator ${username} from ${this.name}`);
+
+            return this._updateCollaborators().then(() => {
+                this._logger.info(`added collaborator ${username} to ${this.name}`);
+            });
+        }
+
+        _updateCollaborators() {
+            const query = {$set: {collaborators: this.collaborators}};
+            return this._db.update(this.getStorageId(), query, {upsert: true});
         }
 
         getStorageId() {
@@ -302,7 +314,7 @@
             name: room.name,
             originTime: room.originTime,
             activeRole: user.roleId,
-            collaborators: room.collaborators,
+            collaborators: room.getCollaborators(),
             roles: {}
         };
     };

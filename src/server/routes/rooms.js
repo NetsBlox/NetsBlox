@@ -41,7 +41,7 @@ module.exports = [
 
             return socket.getRoom().then(room => {
                 const friends = getFriendSockets(req.session.username);
-                const collaborators = room.collaborators;
+                const collaborators = room.getCollaborators();
                 const resp = {};
                 let username;
 
@@ -405,14 +405,10 @@ module.exports = [
                     // TODO: Look up the room
                     warn(`room no longer exists "${uuid}`);
                     return ProjectStorage.getProject(invite.owner, invite.project)
-                        .then(project => {
-                            project.addCollaborator(username);
-                            project.save();
-                            return res.sendStatus(200);
-                        });
+                        .then(project => project.addCollaborator(username))
+                        .then(() => res.sendStatus(200));
                 }
-                project.addCollaborator(username);
-                return res.sendStatus(200);
+                project.addCollaborator(username).then(() => res.sendStatus(200));
             }
         }
     }
