@@ -427,7 +427,7 @@ NetsBloxSocket.MessageHandlers = {
 
         return RoomManager.getRoom(this, owner, name)
             .then(room => {
-                this._logger.trace(`loaded room ${room.uuid}`);
+                this._logger.trace(`loaded room ${owner}/${name}`);
 
                 // Check if the user is already at the room
                 if (this._room === room) {

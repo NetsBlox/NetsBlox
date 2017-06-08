@@ -141,14 +141,18 @@
                     }));
                 })
                 .then(() => {
-                    // Update the owner id if necessary
-                    const nameChanged = this.name !== this._room.name;
-                    const ownerLoggedIn = utils.isSocketUuid(this.owner) &&
-                        this._room.owner !== this.owner;
+                    if (this._room) {  // update if attached to a room
+                        const nameChanged = this.name !== this._room.name;
+                        const ownerLoggedIn = utils.isSocketUuid(this.owner) &&
+                            this._room.owner !== this.owner;
 
-                    if (ownerLoggedIn || nameChanged) {
-                        query.$set.owner = this._room.owner;
-                        query.$set.name = this._room.name;
+                        if (ownerLoggedIn) {
+                            query.$set.owner = this._room.owner;
+                        }
+
+                        if (nameChanged) {
+                            query.$set.name = this._room.name;
+                        }
                     }
 
                     return this._db.update(this.getStorageId(), query, {upsert: true})
@@ -165,8 +169,10 @@
         }
 
         persist() {  // save in the non-transient storage
-            this.destroy();
-            this._db = collection;
+            if (this.isTransient()) {
+                this.destroy();
+                this._db = collection;
+            }
             return this.save();
         }
 

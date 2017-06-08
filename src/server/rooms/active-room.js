@@ -118,6 +118,7 @@ class ActiveRoom {
 
     setStorage(store) {
         this._project = store;
+        store._room = store._room || this;
     }
 
     getProject() {
