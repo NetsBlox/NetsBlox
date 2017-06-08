@@ -45,6 +45,17 @@ function transformUser(user, projectStore) {
 }
 
 function transformProject(project) {
+    const roleIds = Object.keys(project.roles);
+    const roles = project.roles;
+
+    project.roles = {};
+    roleIds.forEach(id => {
+        if (id.replace(/\./g, '-') !== id) {
+            console.log('renaming role', id);
+        }
+        project.roles[id.replace(/\./g, '-')] = roles[id];
+    });
+
     project.collaborators = [];
     return project;
 }
