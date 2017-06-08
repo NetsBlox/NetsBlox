@@ -2,6 +2,7 @@
 
 var _ = require('lodash'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
+    Q = require('q'),
 
     debug = require('debug'),
     log = debug('netsblox:api:rooms:log'),
@@ -118,7 +119,6 @@ module.exports = [
         }
     },
     {
-        // TODO: update this!
         Service: 'inviteGuest',
         Parameters: 'socketId,invitee,ownerId,roomName,roleId',
         middleware: ['hasSocket', 'isLoggedIn'],
@@ -179,13 +179,13 @@ module.exports = [
             //  roomId
             //  roleId
             var username = req.session.username,
-                inviteId = req.body.inviteId,
+                id = req.body.inviteId,
                 response = req.body.response === 'true',
-                invitee = invites[inviteId].invitee,
+                invitee = invites[id].invitee,
                 socketId = req.body.socketId,
                 closeInvite = {
                     type: 'close-invite',
-                    id: inviteId
+                    id: id
                 };
 
             // Notify other clients of response
@@ -193,18 +193,25 @@ module.exports = [
                 .filter(socket => socket.uuid !== socketId)
                 .forEach(socket => socket.send(closeInvite));
 
-            acceptInvitation.call(this,
-                username,
-                inviteId,
-                response,
-                socketId,
-                (err, project) => {
-                    if (err) {
-                        return res.status(500).send(err);
-                    }
-                    res.status(200).send(project);
-                }
-            );
+
+            const invite = invites[id];
+            delete invites[id];
+
+            // Ignore if the invite no longer exists
+            if (!invite && response) return res.status(400).send('ERROR: invite no longer exists');
+
+            if (invite) {
+                log(`${username} ${response ? 'accepted' : 'denied'} ` +
+                    `invitation (${id}) for ${invite.role} at ${invite.room}`);
+            }
+
+            if (response) {
+                return Q(acceptInvitation(invite, socketId))
+                .then(project => res.status(200).send(project))
+                .fail(err => res.status(500).send(`ERROR: ${err}`));
+            } else {
+                res.sendStatus(200);
+            }
         }
     },
     {
@@ -428,45 +435,26 @@ function getFriendSockets(username) {
     return allSockets;
 }
 
-function acceptInvitation (username, id, response, socketId, callback) {
-    var socket = SocketManager.getSocket(socketId),
-        invite = invites[id];
+function acceptInvitation (invite, socketId) {
+    const socket = SocketManager.getSocket(socketId);
+    const room = RoomManager.rooms[invite.room];
 
-    // Ignore if the invite no longer exists
-    if (!invite) {
-        return callback('ERROR: invite no longer exists');
+    if (!room) {
+        warn(`room no longer exists "${invite.room} ${JSON.stringify(invites)}`);
+        throw 'project is no longer open';
     }
 
-    log(`${username} ${response ? 'accepted' : 'denied'} ` +
-        `invitation (${id}) for ${invite.role} at ${invite.room}`);
-
-    delete invites[id];
-
-    if (response) {
-        // Add the roleId to the room (if doesn't exist)
-        let room = RoomManager.rooms[invite.room],
-            project;
-
-        if (!room) {
-            warn(`room no longer exists "${invite.room} ${JSON.stringify(invites)}`);
-            return callback('ERROR: project is no longer open');
-        }
-
-        if (room.roles[invite.role]) {
-            return callback('ERROR: role is occupied');
-        }
-
-        if (socket) {
-            socket.join(room, invite.role);
-        } else {
-            room.onRolesChanged();
-        }
-
-        project = room.getRole(invite.role) || null;
-        if (project) {
-            project = Utils.serializeRole(project, room.name);
-        }
-        callback(null, project);
+    if (room.roles[invite.role]) {
+        throw 'role is occupied';
     }
+
+    if (socket) {
+        socket.join(room, invite.role);
+    } else {
+        room.onRolesChanged();
+    }
+
+    return room.getRole(invite.role)
+        .then(project => Utils.serializeRole(project, room.name));
 }
 
