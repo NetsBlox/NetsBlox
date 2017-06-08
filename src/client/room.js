@@ -1,6 +1,6 @@
 /* global SnapCloud, StringMorph, DialogBoxMorph, localize, newCanvas, Point, Morph,
  Color, nop, InputFieldMorph, ListMorph, IDE_Morph, TurtleIconMorph,
- TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph, ReporterBlockMorph 
+ TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph, ReporterBlockMorph
  MessageOutputSlotMorph, MessageInputSlotMorph, SymbolMorph, PushButtonMorph, MenuMorph,
  SpeechBubbleMorph, ProjectDialogMorph, HandleMorph, fontHeight*/
 /* * * * * * * * * RoomMorph * * * * * * * * */
@@ -14,6 +14,8 @@ RoomMorph.DEFAULT_ROOM = 'untitled';
 RoomMorph.isSocketUuid = function(name) {
     return name && name[0] === '_';
 };
+
+let white = new Color(224, 224, 224);
 
 function RoomMorph(ide) {
     // Get the users at the room
@@ -161,6 +163,8 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
 };
 
 RoomMorph.prototype.drawNew = function() {
+    var oldBound = this.bounds;
+    this.bounds = new Rectangle(- this.bounds.corner.x * 1.5,  - this.bounds.corner.y * 1.5,  - this.bounds.origin.x,  - this.bounds.origin.y);
     var label,
         padding = 4,
         radius = (Math.min(this.width(), this.height())-padding)/2,
@@ -168,11 +172,6 @@ RoomMorph.prototype.drawNew = function() {
         roles,
         len,
         i;
-    var oldBound = this.bounds;
-    console.log(this.bounds);
-    this.bounds = new Rectangle(- this.bounds.corner.x * 1.5,  - this.bounds.corner.y * 1.5,  - this.bounds.origin.x,  - this.bounds.origin.y);
-    console.log(this.width());
-    console.log(this.height());
     // Remove the old roleLabels
     roles = Object.keys(this.roleLabels);
     for (i = roles.length; i--;) {
@@ -180,9 +179,8 @@ RoomMorph.prototype.drawNew = function() {
         delete this.roleLabels[roles[i]];
     }
     
-    this.setPosition(new Point(115, 0));  // Shift the room to the right
+    this.setPosition(new Point(0, 0));  // Shift the room to the right
     this.image = newCanvas(this.extent());
-    console.log(this.image);
     // Draw the roles
     roles = Object.keys(this.roles);
     len = roles.length;
@@ -221,7 +219,12 @@ RoomMorph.prototype.showOwnerName = function(center) {
         'Owner: ' + owner,
         false,
         false,
-        true
+        true,
+        true,
+        false,
+        null,
+        null,
+        white
     );
     this.ownerLabel.setCenter(center);
 
@@ -238,7 +241,7 @@ RoomMorph.prototype.showCollaborators = function(top) {
             this.collaborators.join('\n'), false, false, true);
     } else {
         this.collabList = new StringMorph('No collaborators', false, false,
-            true, true);
+            true, true, false, null, null, white);
     }
 
     this.collabList.setCenter(top);
@@ -274,7 +277,7 @@ RoomMorph.prototype.renderRoomTitle = function(center) {
     // Create the background box
     this.titleBox = new Morph();
     this.titleBox.image = newCanvas(this.extent());
-    this.titleBox.color = new Color(158, 158, 158);
+    this.titleBox.color = new Color(158, 158, 158, 0);
     this.add(this.titleBox);
     this.titleBox.setExtent(new Point(width, height));
     this.titleBox.setCenter(center);
@@ -285,10 +288,14 @@ RoomMorph.prototype.renderRoomTitle = function(center) {
     // Add the room name text
     this.roomLabel = new StringMorph(
         this.name,
-        15,
+        18,
         null,
         true,
-        false
+        false,
+        false,
+        null,
+        null,
+        white
     );
     this.titleBox.add(this.roomLabel);
     this.roomLabel.setCenter(center);
@@ -513,8 +520,8 @@ RoomMorph.prototype.promptShare = function(name) {
                     myself.ide.showMessage('Successfully sent!', 2);
                 } else {  // not occupied, store in sharedMsgs array
                     myself.sharedMsgs.push({
-                        roleId: choice, 
-                        msg: {name: name, fields: myself.ide.stage.messageTypes.getMsgType(name).fields}, 
+                        roleId: choice,
+                        msg: {name: name, fields: myself.ide.stage.messageTypes.getMsgType(name).fields},
                         from: myself.ide.projectName
                     });
                     myself.ide.showMessage('The role will receive this message type on next occupation.', 2);
@@ -616,9 +623,9 @@ RoomMorph.prototype.checkForSharedMsgs = function(role) {
     for (var i = 0 ; i < this.sharedMsgs.length; i++) {
         if (this.sharedMsgs[i].roleId === role) {
             this.ide.sockets.sendMessage({
-                type: 'share-msg-type', 
+                type: 'share-msg-type',
                 name: this.sharedMsgs[i].msg.name,
-                fields: this.sharedMsgs[i].msg.fields, 
+                fields: this.sharedMsgs[i].msg.fields,
                 from: this.sharedMsgs[i].from,
                 roleId: role
             });
@@ -693,15 +700,15 @@ RoleMorph.prototype.drawNew = function() {
     x = 0.65 * radius * Math.cos(angle);
     y = 0.65 * radius * Math.sin(angle);
     if (this.total < 3) {
-        circleSize = radius * 0.37;
+        circleSize = radius * 0.25;
     } else {
-        circleSize = radius * 0.3;
+        circleSize = radius * 0.2;
     }
     
     // Draw the role
     cxt.fillStyle = RoleMorph.COLORS[this.index%len].toString();
     cxt.beginPath();
-    cxt.arc(center + x - 0.08 * radius, center + y, circleSize, 0, 2 * Math.PI, false);
+    cxt.arc(center + x - 0.06 * radius, center + y - 0.04 * radius, circleSize, 0, 2 * Math.PI, false);
     cxt.fill();
     
     pos = new Point(x, y).translateBy(this.center());
@@ -717,13 +724,6 @@ RoleMorph.prototype.drawNew = function() {
     this._label = new RoleLabelMorph(this.name, this.user);
     this.add(this._label);
     this._label.setCenter(pos);
-
-    // Visual indicator of ownership
-    if (this.parent && this.user === this.parent.ownerId) {
-        this.ownerLabel = new StringMorph('[OWNER]', 11, false, true, true);
-        this.add(this.ownerLabel);
-        this.ownerLabel.setCenter(new Point(pos.x - 12.5, pos.y + 25));
-    }
 };
 
 RoleMorph.prototype.mouseClickLeft = function() {
@@ -773,8 +773,8 @@ RoleMorph.prototype.reactToDropOf = function(drop) {
             myself.parent.ide.showMessage('Successfully sent!', 2);
         } else {  // not occupied, store in sharedMsgs array
             myself.parent.sharedMsgs.push({
-                roleId: myself.name, 
-                msg: {name: name, fields: fields}, 
+                roleId: myself.name,
+                msg: {name: name, fields: fields},
                 from: myself.parent.ide.projectName
             });
             myself.parent.ide.showMessage('The role will receive this message type on next occupation.', 2);
@@ -813,7 +813,11 @@ RoleLabelMorph.prototype.init = function() {
         14,
         null,
         false,
-        true
+        true,
+        false,
+        null,
+        null,
+        white
     );
 
     RoleLabelMorph.uber.init.call(this);
@@ -848,7 +852,7 @@ RoleLabelMorph.prototype.fixLayout = function() {
     height = this._userLabel.height();
     this._userLabel.setCenter(new Point(
         center.x/2,
-        center.y + height/2
+        center.y + height * 4.5
     ));
 };
 
@@ -870,7 +874,7 @@ function EditRoleMorph(room, role) {
         null,
         null,
         MorphicPreferences.isFlat ? null : new Point(1, 1),
-        new Color(255, 255, 255)
+        white
     );
 
     this.labelString = 'Edit ' + role.name;
@@ -983,7 +987,7 @@ ProjectsMorph.prototype.updateRoom = function() {
             selector: 'createNewRole',
             icon: 'plus',
             hint: 'Add a role to the room',
-            left: this.room.right() + padding*4
+            left: this.room.right() + padding*4 + 100
         });
     }
 };
@@ -1021,7 +1025,7 @@ ProjectsMorph.prototype.drawMsgPalette = function() {
         };
         // Display fields of the message type when clicked
         msg.mouseClickLeft = function() {
-            var fields = stage.messageTypes.msgTypes[this.blockSpec].fields.length === 0 ? 
+            var fields = stage.messageTypes.msgTypes[this.blockSpec].fields.length === 0 ?
                 'This message type has no fields.' :
                 stage.messageTypes.msgTypes[this.blockSpec].fields;
             new SpeechBubbleMorph(fields, null, null, 2).popUp(this.world(), new Point(0, 0).add(this.bounds.corner));
@@ -1202,10 +1206,10 @@ UserDialogMorph.prototype.fixLayout = function () {
     this.changed();
 };
 
-UserDialogMorph.prototype.fixListFieldItemColors = 
+UserDialogMorph.prototype.fixListFieldItemColors =
     ProjectDialogMorph.prototype.fixListFieldItemColors;
 
-UserDialogMorph.prototype.buildFilterField = 
+UserDialogMorph.prototype.buildFilterField =
     ProjectDialogMorph.prototype.buildFilterField;
 
 UserDialogMorph.prototype.getInput = function() {
@@ -1228,7 +1232,7 @@ UserDialogMorph.prototype.buildFilterField = function () {
     this.filterField.reactToKeystroke = function () {
         var text = this.getValue();
 
-        myself.listField.elements = 
+        myself.listField.elements =
             // Netsblox addition: start
             myself.userList.filter(function (username) {
                 return username.toLowerCase().indexOf(text.toLowerCase()) > -1;
@@ -1317,7 +1321,7 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.filterField.reactToKeystroke = function () {
         var text = this.getValue();
 
-        myself.listField.elements = 
+        myself.listField.elements =
             myself.userList.filter(function (user) {
                 return user.username.toLowerCase().indexOf(text.toLowerCase()) > -1;
             });
