@@ -398,10 +398,15 @@ ActiveRoom.fromStore = function(logger, socket, project) {
     room.setStorage(project);
     room.originTime = project.originTime;
 
-    // Set up the roles
     room.uuid = project.uuid;  // save over the old uuid even if it changes
                               // this should be reset if the room is forked TODO
-    return room;
+
+    return project.getRoleNames().then(names => {
+        names.filter(name => !room.roles.hasOwnProperty(name))
+            .forEach(newName => room.roles[newName] = null);
+        room.onRolesChanged();
+        return room;
+    });
 };
 
 module.exports = ActiveRoom;
