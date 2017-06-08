@@ -8,7 +8,7 @@ var debug = require('debug'),
     trace = debug('netsblox:rpc:twenty-questions:trace'),
     Constants = require('../../../../common/constants');
 
-let Twenty = function () {
+let TwentyQuestions = function () {
     this.correctAnswer = null;
     this.guessCount = null;
     this.answerer = null;
@@ -16,9 +16,9 @@ let Twenty = function () {
     this.isStateless = false;
 };
 
-Twenty.prototype.getPath = () => '/twentyquestions',
+TwentyQuestions.prototype.getPath = () => '/twentyquestions',
 
-Twenty.prototype.start = (answer) => {
+TwentyQuestions.prototype.start = (answer) => {
     // safeguard against starting in the middle of a game
     if (this.started) {
         return 'Game has already started...';
@@ -43,7 +43,7 @@ Twenty.prototype.start = (answer) => {
     return true;
 };
 
-Twenty.prototype.guess = function(guess) {
+TwentyQuestions.prototype.guess = function(guess) {
     // safeguard against guessing before a game has started
     if (!this.started) {
         return 'Game hasn\'t started yet...wait for the answerer to think of something!';
@@ -67,33 +67,33 @@ Twenty.prototype.guess = function(guess) {
     }
 
     this.guessCount++;
-    
+    let msgSocket = {
+        type: 'message',
+        dstId: Constants.EVERYONE,
+        content: {
+            turn: this.guessCount
+        }
+    };
     // incorrect guess
     if (!correct) {
         // guesses are up! guesser loses...
         if (this.guessCount === 20) {
             this.socket._room.sockets()
-            .forEach(socket => socket.send({
-                type: 'message',
-                dstId: Constants.EVERYONE,
-                msgType: 'EndGame',
-                content: {
-                    turn: this.guessCount,
-                    GuesserWin: false
-                }
-            }));
+            .forEach(socket => {
+                let msg = msgSocket;
+                msg.msgType = 'EndGame';
+                msg.content.GuesserWin = false;
+                socket.send(msg);
+            });
         // wait for answerer to answer the question
         } else {
             this.socket._room.sockets()
-            .forEach(socket => socket.send({
-                type: 'message',
-                dstId: Constants.EVERYONE,
-                msgType: 'EndGuesserTurn',
-                content: {
-                    turn: this.guessCount,
-                    guess: guess
-                }
-            }));
+            .forEach(socket => {
+                let msg = msgSocket;
+                msg.msgType = 'EndGame';
+                msg.content.guess = guess;
+                socket.send(msg);
+            });
         }
         return true;
     }
@@ -111,7 +111,7 @@ Twenty.prototype.guess = function(guess) {
     return true;
 };
 
-Twenty.prototype.answer = function(answer) {
+TwentyQuestions.prototype.answer = function(answer) {
     // safeguard against answering before a game has started
     if (!this.started) {
         return this.response.send('Game hasn\'t started yet...think of something to be guessed!');
@@ -121,7 +121,7 @@ Twenty.prototype.answer = function(answer) {
         return this.response.send('You\'re not the answerer!');
     }
     // ensure valid answer
-    if (answer === '' || answer.toLowerCase() != 'yes' && answer.toLowerCase() != 'no') {
+    if (answer === '' || answer.toLowerCase() !== 'yes' && answer.toLowerCase() !== 'no') {
         return this.response.send('Answer the guess with yes/no!');
     }
     // end answerer's turn
@@ -139,12 +139,12 @@ Twenty.prototype.answer = function(answer) {
 };
 
 // return whether or not the game has already started
-Twenty.prototype.gameStarted = function() {
+TwentyQuestions.prototype.gameStarted = function() {
     return this.started;
 };
 
 // restart the game, resetting all the variables...
-Twenty.prototype.restart = function() {
+TwentyQuestions.prototype.restart = function() {
     this.started = false;
     this.guessCount = 0;
     this.correctAnswer = '';
@@ -152,4 +152,4 @@ Twenty.prototype.restart = function() {
     return false;
 };
 
-module.exports = Twenty;
+module.exports = TwentyQuestions;
