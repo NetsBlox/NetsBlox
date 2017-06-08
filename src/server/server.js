@@ -84,9 +84,10 @@ Server.prototype.configureRoutes = function() {
             const room = RoomManager.rooms[uuid];
             const roles = {};
             const project = room.getProject();
+            let lastUpdateAt = null;
 
             if (project) {
-                state.lastUpdateAt = new Date(project.lastUpdateAt);
+                lastUpdateAt = new Date(project.lastUpdateAt);
             }
 
             Object.keys(room.roles).forEach(roleId => {
@@ -106,6 +107,7 @@ Server.prototype.configureRoutes = function() {
                 name: room.name,
                 owner: room.owner,
                 collaborators: room.collaborators,
+                lastUpdateAt: lastUpdateAt,
                 roles: roles
             };
         });
