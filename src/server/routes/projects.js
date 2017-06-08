@@ -103,20 +103,25 @@ var getRoomsNamed = function(name, user, owner) {
         user.getSharedProject(owner, name);
 
     return getProject.then(project => {
-        var activeRoom;
+        const activeRoom = RoomManager.rooms[Utils.uuid(owner, name)];
+        const areSame = !!activeRoom && !!project &&
+            activeRoom.originTime === project.originTime;
+
 
         if (project) {
             trace(`found project ${uuid} for ${user.username}`);
-            activeRoom = RoomManager.rooms[Utils.uuid(project.owner, project.name)];
         } else {
             trace(`no ${uuid} project found for ${user.username}`);
+        }
+
+        if (areSame) {
+            project = activeRoom.getProject() || project;
         }
 
         return {
             active: activeRoom,
             stored: project,
-            areSame: !!activeRoom && !!project &&
-                activeRoom.originTime === project.originTime
+            areSame: areSame
         };
     });
 };
@@ -151,8 +156,7 @@ var createCopyFrom = function(user, project) {
 
 var saveRoom = function (activeRoom, socket, user, res) {
     log(`saving entire room for ${socket.username}`);
-    const project = activeRoom.getProject() ? activeRoom.getProject() :
-        Projects.new(user, activeRoom);
+    const project = activeRoom.getProject() || Projects.new(user, activeRoom);
     const uuid = Utils.uuid(user.username, activeRoom.name);
 
     activeRoom.setStorage(project);

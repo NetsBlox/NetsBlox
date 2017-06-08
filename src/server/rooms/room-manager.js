@@ -18,7 +18,7 @@ var RoomManager = function() {
     };
 
     ActiveRoom.prototype.destroy = function() {
-        this._logger.trace(`Removing room ${this.uuid}`);
+        self._logger.trace(`Removing room ${this.uuid}`);
         delete self.rooms[this.uuid];
     };
 
