@@ -35,8 +35,8 @@ waterwatch.gageHeight = function (minLatitude, maxLatitude, minLongitude, maxLon
                 // varDescription: item.variable.variableDescription,
                 ft: item.values[0].value[0].value
             };
-            return idealObj;
-        });
+            return idealObj['ft'] < 0 ? null : idealObj;
+        }).filter(item => item!==null);
     };
 
     // this._sendStruct(queryOptions, parser);
@@ -83,8 +83,8 @@ waterwatch.waterTemp = function (minLatitude, maxLatitude, minLongitude, maxLong
                 longitude: item.sourceInfo.geoLocation.geogLocation.longitude,
                 c: item.values[0].value[0].value
             };
-            return idealObj;
-        });
+            return idealObj['c'] < -9999 ? null : idealObj;
+        }).filter(item => item!==null);
     };
 
     return this._sendMsgs(queryOptions, parser, 'waterTemp');
