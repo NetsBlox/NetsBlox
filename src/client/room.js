@@ -24,7 +24,8 @@ function RoomMorph(ide) {
 
     this.ownerId = null;
     this.collaborators = [];
-
+    // this.bounds = new Rectangle(0, 0, 100, 80);
+    console.log(this.bounds);
     this.roomLabel = null;
     this.init();
     // Set up the room name
@@ -167,7 +168,11 @@ RoomMorph.prototype.drawNew = function() {
         roles,
         len,
         i;
-
+    var oldBound = this.bounds;
+    console.log(this.bounds);
+    this.bounds = new Rectangle(- this.bounds.corner.x * 1.5,  - this.bounds.corner.y * 1.5,  - this.bounds.origin.x,  - this.bounds.origin.y);
+    console.log(this.width());
+    console.log(this.height());
     // Remove the old roleLabels
     roles = Object.keys(this.roleLabels);
     for (i = roles.length; i--;) {
@@ -177,7 +182,7 @@ RoomMorph.prototype.drawNew = function() {
     
     this.setPosition(new Point(115, 0));  // Shift the room to the right
     this.image = newCanvas(this.extent());
-
+    console.log(this.image);
     // Draw the roles
     roles = Object.keys(this.roles);
     len = roles.length;
@@ -201,6 +206,7 @@ RoomMorph.prototype.drawNew = function() {
     // Owner name
     this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.15 * radius)));
     this.showCollaborators(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.25 * radius)));
+    this.bounds = oldBound;
 };
 
 RoomMorph.prototype.showOwnerName = function(center) {
