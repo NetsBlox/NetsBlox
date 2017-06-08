@@ -105,7 +105,7 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
 };
 
 RoomManager.prototype.checkRoom = function(room) {
-    var uuid = room.uuid,
+    var uuid = utils.uuid(room.owner, room.name),
         roles = Object.keys(room.roles)
             .filter(role => !!room.roles[role]);
 
