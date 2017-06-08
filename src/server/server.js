@@ -75,6 +75,44 @@ Server.prototype.configureRoutes = function() {
     this.app.use('/rpc', this.rpcManager.router);
     this.app.use('/api', this.createRouter());
 
+    // Add deployment state endpoint info
+    const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
+    this.app.get(`/${stateEndpoint}`, function(req, res) {
+        const state = {};
+
+        state.rooms = Object.keys(RoomManager.rooms).map(uuid => {
+            const room = RoomManager.rooms[uuid];
+            const roles = {};
+            const project = room.getProject();
+
+            if (project) {
+                state.lastUpdateAt = new Date(project.lastUpdateAt);
+            }
+
+            Object.keys(room.roles).forEach(roleId => {
+                const socket = room.roles[roleId];
+                if (socket) {
+                    roles[roleId] = {
+                        username: socket.username,
+                        uuid: socket.uuid
+                    };
+                } else {
+                    roles[roleId] = null;
+                }
+            });
+
+            return {
+                uuid: uuid,
+                name: room.name,
+                owner: room.owner,
+                collaborators: room.collaborators,
+                roles: roles
+            };
+        });
+
+        return res.json(state);
+    });
+
     // Initial page
     this.app.get('/debug.html', (req, res) =>
         res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html')));
