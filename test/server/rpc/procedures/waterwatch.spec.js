@@ -5,8 +5,8 @@ describe('waterwatch', function() {
         waterwatch = new RPCMock(Waterwatch);
 
     utils.verifyRPCInterfaces(waterwatch, [
-        ['gageHeight', ['northernLat', 'easternLong', 'southernLat', 'westernLong']],
-        ['streamFlow', ['northernLat', 'easternLong', 'southernLat', 'westernLong']],
-        ['waterTemp', ['northernLat', 'easternLong', 'southernLat', 'westernLong']]
+        ['gageHeight', ['minLatitude', 'maxLatitude', 'minLongitude', 'maxLongitude']],
+        ['streamFlow', ['minLatitude', 'maxLatitude', 'minLongitude', 'maxLongitude']],
+        ['waterTemp', ['minLatitude', 'maxLatitude', 'minLongitude', 'maxLongitude']]
     ]);
 });

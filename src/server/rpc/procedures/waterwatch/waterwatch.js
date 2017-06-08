@@ -12,11 +12,11 @@ function encodeQueryData(options) {
 }
 
 
-waterwatch.gageHeight = function (northernLat, easternLong, southernLat, westernLong) {
+waterwatch.gageHeight = function (minLatitude, maxLatitude, minLongitude, maxLongitude) {
     // https://help.waterdata.usgs.gov/codes-and-parameters/parameters
     // query descriptions: https://waterservices.usgs.gov/rest/IV-Test-Tool.html
     // QUESTIONS i cant pass socket to send func when using let. why?
-    var options = {'format':'json', 'bBox':[westernLong,southernLat,easternLong,northernLat], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00065'};
+    var options = {'format':'json', 'bBox':[minLongitude,minLatitude,maxLongitude,maxLatitude], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00065'};
 
 
     let queryOptions = {
@@ -43,8 +43,8 @@ waterwatch.gageHeight = function (northernLat, easternLong, southernLat, western
     return this._sendMsgs(queryOptions, parser, 'gageHeight');
 };
 
-waterwatch.streamFlow = function (northernLat, easternLong, southernLat, westernLong) {
-    var options = {'format':'json', 'bBox': [westernLong,southernLat,easternLong,northernLat], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00060'};
+waterwatch.streamFlow = function (minLatitude, maxLatitude, minLongitude, maxLongitude) {
+    var options = {'format':'json', 'bBox': [minLongitude,minLatitude,maxLongitude,maxLatitude], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00060'};
 
     let queryOptions = {
         queryString: encodeQueryData(options)
@@ -68,8 +68,8 @@ waterwatch.streamFlow = function (northernLat, easternLong, southernLat, western
 
 };
 
-waterwatch.waterTemp = function (northernLat, easternLong, southernLat, westernLong) {
-    var options = {'format':'json', 'bBox':[westernLong,southernLat,easternLong,northernLat], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00010'};
+waterwatch.waterTemp = function (minLatitude, maxLatitude, minLongitude, maxLongitude) {
+    var options = {'format':'json', 'bBox':[minLongitude,minLatitude,maxLongitude,maxLatitude], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00010'};
 
     let queryOptions = {
         queryString: encodeQueryData(options)
