@@ -26,8 +26,6 @@ function RoomMorph(ide) {
 
     this.ownerId = null;
     this.collaborators = [];
-    // this.bounds = new Rectangle(0, 0, 100, 80);
-    console.log(this.bounds);
     this.roomLabel = null;
     this.init();
     // Set up the room name
