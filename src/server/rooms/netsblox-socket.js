@@ -511,20 +511,19 @@ NetsBloxSocket.MessageHandlers = {
     // Retrieve the json for each project and respond
     'export-room': function(msg) {
         if (this.hasRoom()) {
-            this._room.collectProjects((err, projects) => {
-                if (err) {
-                    this._logger.error(`Could not collect projects from ${this._room.name}`);
-                    return;
-                }
-                this._logger.trace(`Exporting projects for ${this._room.name}` +
-                    ` to ${this.username}`);
+            this._room.collectProjects()
+                .then(projects => {
+                    this._logger.trace(`Exporting projects for ${this._room.name}` +
+                        ` to ${this.username}`);
 
-                this.send({
-                    type: 'export-room',
-                    roles: projects,
-                    action: msg.action
-                });
-            });
+                    this.send({
+                        type: 'export-room',
+                        roles: projects,
+                        action: msg.action
+                    });
+                })
+                .catch(() =>
+                    this._logger.error(`Could not collect projects from ${this._room.name}`));
         }
     },
 
