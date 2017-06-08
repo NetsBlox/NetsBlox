@@ -202,8 +202,13 @@ class ApiConsumer {
                     this.response.status(500).send('');
                     return;
                 }
-                let msgKeys = Object.keys(msgContents[0]);
-                this.response.send(`sending ${msgContents.length} messages with message type: ${msgType} and following fields: ${msgKeys.join(', ')}`); // send back number of msgs
+                if (msgContents[0]) {
+                    let msgKeys = Object.keys(msgContents[0]);
+                    this.response.send(`sending ${msgContents.length} messages with message type: ${msgType} and following fields: ${msgKeys.join(', ')}`); // send back number of msgs
+                }else {
+                    this.response.send(`sending ${msgContents.length} messages with message type: ${msgType}`); // send back number of msgs
+                }
+
                 msgContents.forEach(content=>{
                     let msg = {
                         dstId: this.socket.roleId,
