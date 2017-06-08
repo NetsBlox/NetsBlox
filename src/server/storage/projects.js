@@ -40,6 +40,7 @@
 
         setRole(role, content) {
             this._logger.trace(`updating role: ${role}`);
+            content.ProjectName = role;
             return Q.all([
                 blob.store(content.SourceCode),
                 blob.store(content.Media)
@@ -55,7 +56,11 @@
 
         getRawRole(role) {
             return this._db.findOne(this.getStorageId())
-                .then(project => project.roles[role]);
+                .then(project => {
+                    const content = project.roles[role];
+                    content.ProjectName = role;
+                    return content;
+                });
         }
 
         getRole(role) {
