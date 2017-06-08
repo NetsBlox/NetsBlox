@@ -202,8 +202,13 @@ class ApiConsumer {
                     this.response.status(500).send('');
                     return;
                 }
-                let msgKeys = Object.keys(msgContents[0]);
-                this.response.send(`sending ${msgContents.length} messages with message type: ${msgType} and following fields: ${msgKeys.join(', ')}`); // send back number of msgs
+                if (msgContents[0]) {
+                    let msgKeys = Object.keys(msgContents[0]);
+                    this.response.send(`sending ${msgContents.length} messages with message type: ${msgType} and following fields: ${msgKeys.join(', ')}`); // send back number of msgs
+                }else {
+                    this.response.send(`sending ${msgContents.length} messages with message type: ${msgType}`); // send back number of msgs
+                }
+
                 msgContents.forEach(content=>{
                     let msg = {
                         dstId: this.socket.roleId,
@@ -258,9 +263,13 @@ class ApiConsumer {
     }
 
     _stopMsgs(){
-        this.response.status(200).send('stopping sending of the remaining ' + remainingMsgs[this.socket.uuid].length + 'msgs');
-        delete remainingMsgs[this.socket.uuid];
-        this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
+        if (remainingMsgs[this.socket.uuid]) {
+            this.response.status(200).send('stopping sending of the remaining ' + remainingMsgs[this.socket.uuid].length + 'msgs');
+            delete remainingMsgs[this.socket.uuid];
+            this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
+        }else {
+            this.response.send('there are no messages in the queue to stop.');
+        }
     }
 
 }
