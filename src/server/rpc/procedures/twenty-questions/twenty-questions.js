@@ -90,7 +90,7 @@ TwentyQuestions.prototype.guess = function(guess) {
             this.socket._room.sockets()
             .forEach(socket => {
                 let msg = msgSocket;
-                msg.msgType = 'EndGame';
+                msg.msgType = 'EndGuesserTurn';
                 msg.content.guess = guess;
                 socket.send(msg);
             });
@@ -99,15 +99,12 @@ TwentyQuestions.prototype.guess = function(guess) {
     }
     // correct guess, end the game
     this.socket._room.sockets()
-        .forEach(socket => socket.send({
-            type: 'message',
-            dstId: Constants.EVERYONE,
-            msgType: 'EndGame',
-            content: {
-                turn: this.guessCount,
-                GuesserWin: true
-            }
-        }));
+        .forEach(socket => {
+            let msg = msgSocket;
+            msg.msgType = 'EndGame';
+            msg.content.GuesserWin = true;
+            socket.send(msg);
+        });
     return true;
 };
 
