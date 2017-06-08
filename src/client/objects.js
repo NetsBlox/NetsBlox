@@ -261,6 +261,12 @@ SpriteMorph.prototype.initBlocks = function () {
     };
 
     // Network Messages
+    SpriteMorph.prototype.blocks.doSocketResponse = {
+        type: 'command',
+        category: 'services',
+        spec: 'send reply %s'
+    };
+
     SpriteMorph.prototype.blocks.doSocketMessage = {
         type: 'command',
         category: 'services',
@@ -273,7 +279,7 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'when I receive %msgOutput'
     };
 
-    // Seat Reporters
+    // Role Reporters
     SpriteMorph.prototype.blocks.getProjectId = {
         type: 'reporter',
         category: 'services',
