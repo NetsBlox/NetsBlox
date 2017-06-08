@@ -40,6 +40,7 @@
 
         setRole(role, content) {
             this._logger.trace(`updating role: ${role}`);
+            content.ProjectName = role;
             return Q.all([
                 blob.store(content.SourceCode),
                 blob.store(content.Media)
@@ -55,7 +56,11 @@
 
         getRawRole(role) {
             return this._db.findOne(this.getStorageId())
-                .then(project => project.roles[role]);
+                .then(project => {
+                    const content = project.roles[role];
+                    content.ProjectName = role;
+                    return content;
+                });
         }
 
         getRole(role) {
@@ -141,14 +146,18 @@
                     }));
                 })
                 .then(() => {
-                    // Update the owner id if necessary
-                    const nameChanged = this.name !== this._room.name;
-                    const ownerLoggedIn = utils.isSocketUuid(this.owner) &&
-                        this._room.owner !== this.owner;
+                    if (this._room) {  // update if attached to a room
+                        const nameChanged = this.name !== this._room.name;
+                        const ownerLoggedIn = utils.isSocketUuid(this.owner) &&
+                            this._room.owner !== this.owner;
 
-                    if (ownerLoggedIn || nameChanged) {
-                        query.$set.owner = this._room.owner;
-                        query.$set.name = this._room.name;
+                        if (ownerLoggedIn) {
+                            query.$set.owner = this._room.owner;
+                        }
+
+                        if (nameChanged) {
+                            query.$set.name = this._room.name;
+                        }
                     }
 
                     return this._db.update(this.getStorageId(), query, {upsert: true})
@@ -165,8 +174,10 @@
         }
 
         persist() {  // save in the non-transient storage
-            this.destroy();
-            this._db = collection;
+            if (this.isTransient()) {
+                this.destroy();
+                this._db = collection;
+            }
             return this.save();
         }
 
@@ -175,16 +186,28 @@
         }
 
         addCollaborator(username) {
-            if (this.collaborators.includes(username)) return;
+            if (this.collaborators.includes(username)) return Q();
             this.collaborators.push(username);
-            this._logger.info(`added collaborator ${username} to ${this.name}`);
+
+            return this._updateCollaborators().then(() => {
+                this._logger.info(`added collaborator ${username} to ${this.name}`);
+            });
         }
 
         removeCollaborator(username) {
             var index = this.collaborators.indexOf(username);
-            if (index === -1) return;
+            if (index === -1) return Q();
             this.collaborators.splice(index, 1);
             this._logger.info(`removed collaborator ${username} from ${this.name}`);
+
+            return this._updateCollaborators().then(() => {
+                this._logger.info(`added collaborator ${username} to ${this.name}`);
+            });
+        }
+
+        _updateCollaborators() {
+            const query = {$set: {collaborators: this.collaborators}};
+            return this._db.update(this.getStorageId(), query, {upsert: true});
         }
 
         getStorageId() {
@@ -296,7 +319,7 @@
             name: room.name,
             originTime: room.originTime,
             activeRole: user.roleId,
-            collaborators: room.collaborators,
+            collaborators: room.getCollaborators(),
             roles: {}
         };
     };

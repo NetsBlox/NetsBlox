@@ -17,7 +17,6 @@ class ActiveRoom {
 
         // Seats
         this.roles = {};  // actual occupants
-        this.collaborators = [];
 
         this.owner = owner;
 
@@ -32,21 +31,6 @@ class ActiveRoom {
         this.uuid = utils.uuid(owner, name);
         this._logger = logger.fork('active-room:' + this.uuid);
         this._logger.log('created!');
-    }
-
-    addCollaborator(username) {
-        if (this.collaborators.includes(username)) return;
-        this.collaborators.push(username);
-        this.onRolesChanged();
-        this.save();
-    }
-
-    removeCollaborator(username) {
-        var index = this.collaborators.indexOf(username);
-        if (index === -1) return;
-        this.collaborators.splice(index, 1);
-        this.onRolesChanged();
-        this.save();
     }
 
     close () {
@@ -109,7 +93,7 @@ class ActiveRoom {
         msg = {
             type: 'room-roles',
             owner: this.owner,
-            collaborators: this.collaborators,
+            collaborators: this.getCollaborators(),
             name: this.name,
             occupants: occupants
         };
@@ -118,6 +102,21 @@ class ActiveRoom {
 
     setStorage(store) {
         this._project = store;
+        store._room = store._room || this;
+    }
+
+    addCollaborator(username) {
+        return this._project.addCollaborator(username)
+            .then(() => this.onRolesChanged());
+    }
+
+    getCollaborators() {
+        return this._project ? this._project.collaborators.slice() : [];
+    }
+
+    removeCollaborator(username) {
+        return this._project.removeCollaborator(username)
+            .then(() => this.onRolesChanged());
     }
 
     getProject() {
@@ -398,12 +397,16 @@ ActiveRoom.fromStore = function(logger, socket, project) {
     // Store the project
     room.setStorage(project);
     room.originTime = project.originTime;
-    room.collaborators = project.collaborators;
 
-    // Set up the roles
     room.uuid = project.uuid;  // save over the old uuid even if it changes
                               // this should be reset if the room is forked TODO
-    return room;
+
+    return project.getRoleNames().then(names => {
+        names.filter(name => !room.roles.hasOwnProperty(name))
+            .forEach(newName => room.roles[newName] = null);
+        room.onRolesChanged();
+        return room;
+    });
 };
 
 module.exports = ActiveRoom;

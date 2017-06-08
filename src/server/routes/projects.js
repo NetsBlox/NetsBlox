@@ -103,42 +103,43 @@ var getRoomsNamed = function(name, user, owner) {
         user.getSharedProject(owner, name);
 
     return getProject.then(project => {
-        var activeRoom;
+        const activeRoom = RoomManager.rooms[Utils.uuid(owner, name)];
+        const areSame = !!activeRoom && !!project &&
+            activeRoom.originTime === project.originTime;
+
 
         if (project) {
             trace(`found project ${uuid} for ${user.username}`);
-            activeRoom = RoomManager.rooms[Utils.uuid(project.owner, project.name)];
         } else {
             trace(`no ${uuid} project found for ${user.username}`);
+        }
+
+        if (areSame) {
+            project = activeRoom.getProject() || project;
         }
 
         return {
             active: activeRoom,
             stored: project,
-            areSame: !!activeRoom && !!project &&
-                activeRoom.originTime === project.originTime
+            areSame: areSame
         };
     });
 };
 
 var sendProjectTo = function(project, res) {
     var serialized,
-        openRole,
-        role;
+        openRole;
 
     // If room is not active, pick a role arbitrarily
     openRole = project.activeRole || Object.keys(project.roles)[0];
-    role = project.roles[openRole];
-
-    if (!role) {
-        error('Found room with no roles!');
-        return res.status(500).send('ERROR: project has no roles');
-    }
-
-    const uuid = Utils.uuid(project.owner, project.name);
-    trace(`project ${uuid} is not active. Selected role "${openRole}"`);
-    serialized = Utils.serializeRole(role, project);
-    return res.send(serialized);
+    return project.getRole(openRole)
+        .then(role => {
+            const uuid = Utils.uuid(project.owner, project.name);
+            trace(`project ${uuid} is not active. Selected role "${openRole}"`);
+            serialized = Utils.serializeRole(role, project);
+            return res.send(serialized);
+        })
+        .catch(err => res.status(500).send('ERROR: ' + err));
 };
 
 var createCopyFrom = function(user, project) {
@@ -155,8 +156,7 @@ var createCopyFrom = function(user, project) {
 
 var saveRoom = function (activeRoom, socket, user, res) {
     log(`saving entire room for ${socket.username}`);
-    const project = activeRoom.getProject() ? activeRoom.getProject() :
-        Projects.new(user, activeRoom);
+    const project = activeRoom.getProject() || Projects.new(user, activeRoom);
     const uuid = Utils.uuid(user.username, activeRoom.name);
 
     activeRoom.setStorage(project);
@@ -289,7 +289,7 @@ module.exports = [
                     if (user) {
                         return user.getSharedProjects()
                             .then(projects => {
-                                trace(`found project list (${projects.length}) ` +
+                                trace(`found shared project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
                                 return Q.all(projects.map(getPreview));
@@ -328,7 +328,7 @@ module.exports = [
             return this.storage.users.get(username)
                 .then(user => {
                     if (user) {
-                        return user.getRawProjects()
+                        return user.getProjects()
                             .then(projects => {
                                 trace(`found project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
@@ -437,7 +437,7 @@ module.exports = [
             }
 
             // Get the projectName
-            trace(`${user.username} opening shared project ${owner}/${projectName}`);
+            trace(`${user.username} opening project ${owner}/${projectName}`);
             return getRoomsNamed.call(this, projectName, user, owner).then(rooms => {
                 if (rooms.active) {
                     trace(`room with name ${projectName} already open. Are they the same? ${rooms.areSame}`);
@@ -553,7 +553,7 @@ module.exports = [
 
             // return the names of all projects owned by :owner
             middleware.loadUser(req.params.owner, res, user => {
-                return user.getRawProject(name)
+                return user.getProject(name)
                     .then(project => {
                         if (project) {
                             return getPreview(project)

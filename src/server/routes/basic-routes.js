@@ -1,6 +1,7 @@
 'use strict';
 var R = require('ramda'),
     _ = require('lodash'),
+    Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     RoomManager = require('../rooms/room-manager'),
     exists = require('exists-file'),
@@ -307,29 +308,38 @@ module.exports = [
                     .map(name => {
                         let example = EXAMPLES[name],
                             role = Object.keys(example.roles).shift(),
-                            primaryRole = example.getRole(role).SourceCode,
-                            services = example.services;
+                            primaryRole,
+                            services = example.services,
+                            thumbnail,
+                            notes;
 
                         // There should be a faster way to do this if all I want is the thumbnail and the notes...
-                        let startIndex = primaryRole.indexOf('<thumbnail>');
-                        let endIndex = primaryRole.indexOf('</thumbnail>');
-                        const thumbnail = primaryRole.substring(startIndex + 11, endIndex);
+                        return example.getRole(role)
+                            .then(content => {
+                                primaryRole = content.SourceCode;
+                                let startIndex = primaryRole.indexOf('<thumbnail>');
+                                let endIndex = primaryRole.indexOf('</thumbnail>');
+                                thumbnail = primaryRole.substring(startIndex + 11, endIndex);
 
-                        startIndex = primaryRole.indexOf('<notes>');
-                        endIndex = primaryRole.indexOf('</notes>');
-                        const notes = primaryRole.substring(startIndex + 7, endIndex);
+                                startIndex = primaryRole.indexOf('<notes>');
+                                endIndex = primaryRole.indexOf('</notes>');
+                                notes = primaryRole.substring(startIndex + 7, endIndex);
 
-                        return {
-                            projectName: name,
-                            primaryRoleName: role,
-                            roleNames: example.getRoleNames(),
-                            thumbnail: thumbnail,
-                            notes: notes,
-                            services: services
-                        };
+                                return example.getRoleNames();
+                            })
+                            .then(roleNames => {
+                                return {
+                                    projectName: name,
+                                    primaryRoleName: role,
+                                    roleNames: roleNames,
+                                    thumbnail: thumbnail,
+                                    notes: notes,
+                                    services: services
+                                };
+                            });
                     });
 
-                return res.json(examples);
+                return Q.all(examples).then(examples => res.json(examples));
             } else {
                 examples = Object.keys(EXAMPLES)
                     .map(name => `${name}\t${name}\t  `)
@@ -392,7 +402,8 @@ module.exports = [
                 role = Object.keys(room.roles).shift();
             }
 
-            return res.send(room.getRole(role).SourceCode);
+            return room.getRole(role)
+                .then(content => res.send(content.SourceCode));
         }
     },
     // public projects
