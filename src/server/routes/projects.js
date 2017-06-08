@@ -328,7 +328,7 @@ module.exports = [
             return this.storage.users.get(username)
                 .then(user => {
                     if (user) {
-                        return user.getRawProjects()
+                        return user.getProjects()
                             .then(projects => {
                                 trace(`found project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
@@ -553,7 +553,7 @@ module.exports = [
 
             // return the names of all projects owned by :owner
             middleware.loadUser(req.params.owner, res, user => {
-                return user.getRawProject(name)
+                return user.getProject(name)
                     .then(project => {
                         if (project) {
                             return getPreview(project)
