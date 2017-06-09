@@ -16,9 +16,10 @@ let TwentyQuestions = function () {
     this.isStateless = false;
 };
 
-TwentyQuestions.prototype.getPath = () => '/twentyquestions',
+TwentyQuestions.getPath = () => '/twentyquestions';
 
-TwentyQuestions.prototype.start = (answer) => {
+TwentyQuestions.prototype.start = function (answer) {
+    
     // safeguard against starting in the middle of a game
     if (this.started) {
         return 'Game has already started...';
