@@ -18,12 +18,7 @@ let searchParser = resp => {
     resp.results.bindings.forEach(res => {
         try {
             let searchResult = {
-                // label: res.label.value,
-                // type: res.type.value,
-                // material: res.material.value,
                 image: res.img.value.match(/AN(\d{6,10})/)[1],
-                // description: res.description.value,
-               //  url: res.object.value,
                 id: res.object.value.substr(res.object.value.lastIndexOf('/') + 1)
             };
             results.push(searchResult);
@@ -31,10 +26,7 @@ let searchParser = resp => {
             this._logger.error(e);
         }
     });
-    return {
-        image: 'foo',
-        id: 'bar'
-    };
+    return results;
 };
 
 
@@ -42,11 +34,9 @@ let searchParser = resp => {
 let queryInjector = (baseQ, statements) => {
 
     // add the statement in the middle of baseQ
-    // baseQ.splice(1, 0, statement);
     baseQ.splice.apply(baseQ, [1, 0].concat(statements));
     return baseQ.join('\n');
-}
-
+};
 
 // parses and sends a respond back to the user. used when using the basic endpoint
 let htmlSearchHandler = (html, self) => {
@@ -123,6 +113,7 @@ britishmuseum.search = function(label, type, material, limit) {
             htmlSearchHandler(html,this);
         });
     return null;
+    // or send use sendStruct if hitting the json endpoint.
     // return this._sendStruct(queryOptions,searchParser);
 
 };
@@ -148,7 +139,6 @@ britishmuseum.searchByLabel = function(label, limit){
             htmlSearchHandler(html,this);
         });
     return null;
-    // return this._sendStruct(queryOptions,searchParser);
 };
 
 
@@ -176,7 +166,6 @@ britishmuseum.searchByType = function(type, limit){
             htmlSearchHandler(html,this);
         });
     return null;
-    // return this._sendStruct(queryOptions,searchParser);
 
 };
 
@@ -205,7 +194,6 @@ britishmuseum.searchByMaterial = function(material, limit){
             htmlSearchHandler(html,this);
         });
     return null;
-    // return this._sendStruct(queryOptions,searchParser);
 
 };
 
@@ -231,17 +219,11 @@ britishmuseum.itemDetails = function(itemId){
                 image: mainImages[0].value.match(/AN(\d{6,10})/)[1],
                 otherImages: images.map(img => img.value.match(/AN(\d{6,10})/)[1]),
             };
-            // TODO better check for attribute existence. oneliner?
-            if (sparqlJson['http://www.w3.org/2000/01/rdf-schema#label']) {
-                idealObj.label = sparqlJson['http://www.w3.org/2000/01/rdf-schema#label'][0].value;
-            }else {
-                idealObj.label = '';
-            }
-            if (sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_physical_description']) {
-                idealObj.physicalDescription =  sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_physical_description'][0].value
-            }else {
-                idealObj.physicalDescription = '';
-            }
+            let promisedLabel = sparqlJson['http://www.w3.org/2000/01/rdf-schema#label'];
+            idealObj.label =  promisedLabel ? promisedLabel[0].value : '';
+
+            let promisedDesc =sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_physical_description'];
+            idealObj.physicalDescription =  promisedDesc ? promisedDesc[0].value : '';
 
             info.forEach(keyVal => {
                 idealObj[keyVal[0].toLowerCase()] = keyVal[1];
