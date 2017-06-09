@@ -6,6 +6,19 @@
     const blob = require('./blob-storage');
     const utils = require('../server-utils');
 
+    const loadRoleContent = function(role) {
+        return Q.all([
+            blob.get(role.SourceCode),
+            blob.get(role.Media)
+        ])
+        .then(data => {
+            const [code, media] = data;
+            role.SourceCode = code;
+            role.Media = media;
+            return role;
+        });
+    };
+
     class Project extends DataWrapper {
         constructor(params) {
             params.data = _.extend(params.data || {});
@@ -65,18 +78,24 @@
 
         getRole(role) {
             return this.getRawRole(role)
-                .then(content => {
-                    return Q.all([
-                        blob.get(content.SourceCode),
-                        blob.get(content.Media)
-                    ])
-                    .then(data => {
-                        const [code, media] = data;
-                        content.SourceCode = code;
-                        content.Media = media;
-                        return content;
-                    });
+                .then(content => loadRoleContent(content));
+        }
+
+        getRawRoles() {
+            return this._db.findOne(this.getStorageId())
+                .then(project => {
+                    return Object.keys(project.roles)
+                        .map(name => {
+                            const content = project.roles[name];
+                            content.ProjectName = name;
+                            return content;
+                        });
                 });
+        }
+
+        getRoles() {
+            return this.getRawRoles()
+                .then(roles => Q.all(roles.map(loadRoleContent)));
         }
 
         cloneRole(role, newName) {
@@ -102,13 +121,6 @@
         getRoleNames () {
             return this._db.findOne(this.getStorageId())
                 .then(project => Object.keys(project.roles));
-        }
-
-        getRawRoles () {
-            return this._db.findOne(this.getStorageId())
-                .then(project =>
-                    Object.keys(project.roles).map(name => project.roles[name])
-                );
         }
 
         ///////////////////////// End Roles ///////////////////////// 
