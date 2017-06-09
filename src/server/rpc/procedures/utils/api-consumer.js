@@ -8,8 +8,6 @@ const Logger = require('../../../logger'),
     jsonQuery = require('json-query'),
     MSG_SENDING_DELAY = 250;
 
-let remainingMsgs = {};
-
 class ApiConsumer {
     constructor(name, baseUrl) {
         // should be a urlfriendly name
@@ -19,7 +17,7 @@ class ApiConsumer {
         // setup api endpoint
         this.getPath = () => '/'+name;
         this.isStateless = true;
-
+        this._remainingMsgs = {};
     }
 
     /**
@@ -107,7 +105,7 @@ class ApiConsumer {
 
     // private
     _sendNext() {
-        var msgs = remainingMsgs[this.socket.uuid];
+        var msgs = this._remainingMsgs[this.socket.uuid];
         if (msgs && msgs.length) {
             var msg = msgs.shift();
 
@@ -124,10 +122,10 @@ class ApiConsumer {
             if (msgs.length) {
                 setTimeout(this._sendNext.bind(this), MSG_SENDING_DELAY);
             } else {
-                delete remainingMsgs[this.socket.uuid];
+                delete this._remainingMsgs[this.socket.uuid];
             }
         } else {
-            delete remainingMsgs[this.socket.uuid];
+            delete this._remainingMsgs[this.socket.uuid];
         }
     }
 
@@ -191,7 +189,7 @@ class ApiConsumer {
     }
 
     _sendMsgs(queryOptions,parserFn,msgType){
-        remainingMsgs[this.socket.uuid] = [];
+        this._remainingMsgs[this.socket.uuid] = [];
         return this._requestData(queryOptions)
             .then(res => {
                 let msgContents;
@@ -202,15 +200,20 @@ class ApiConsumer {
                     this.response.status(500).send('');
                     return;
                 }
-                let msgKeys = Object.keys(msgContents[0]);
-                this.response.send(`sending ${msgContents.length} messages with message type: ${msgType} and following fields: ${msgKeys.join(', ')}`); // send back number of msgs
+                if (msgContents[0]) {
+                    let msgKeys = Object.keys(msgContents[0]);
+                    this.response.send(`sending ${msgContents.length} messages with message type: ${msgType} and following fields: ${msgKeys.join(', ')}`); // send back number of msgs
+                }else {
+                    this.response.send(`sending ${msgContents.length} messages with message type: ${msgType}`); // send back number of msgs
+                }
+
                 msgContents.forEach(content=>{
                     let msg = {
                         dstId: this.socket.roleId,
                         msgType,
                         content
                     };
-                    remainingMsgs[this.socket.uuid].push(msg);
+                    this._remainingMsgs[this.socket.uuid].push(msg);
                 });
                 this._logger.trace(`initializing sending of ${msgContents.length} messages`);
                 this._sendNext();
@@ -258,9 +261,9 @@ class ApiConsumer {
     }
 
     _stopMsgs(){
-        if (remainingMsgs[this.socket.uuid]) {
-            this.response.status(200).send('stopping sending of the remaining ' + remainingMsgs[this.socket.uuid].length + 'msgs');
-            delete remainingMsgs[this.socket.uuid];
+        if (this._remainingMsgs[this.socket.uuid]) {
+            this.response.status(200).send('stopping sending of the remaining ' + this._remainingMsgs[this.socket.uuid].length + 'msgs');
+            delete this._remainingMsgs[this.socket.uuid];
             this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
         }else {
             this.response.send('there are no messages in the queue to stop.');
