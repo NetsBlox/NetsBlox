@@ -123,13 +123,6 @@
                 .then(project => Object.keys(project.roles));
         }
 
-        getRawRoles () {
-            return this._db.findOne(this.getStorageId())
-                .then(project =>
-                    Object.keys(project.roles).map(name => project.roles[name])
-                );
-        }
-
         ///////////////////////// End Roles ///////////////////////// 
         collectProjects() {
             var sockets = this._room ? this._room.sockets() : [];
