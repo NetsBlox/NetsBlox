@@ -41,8 +41,8 @@
 
       ga('create', '{{= it.googleAnalyticsKey }}', 'auto');
       ga('send', 'pageview');
+    </script>
 {{ } }}
 
-    </script>
 </html>
 
