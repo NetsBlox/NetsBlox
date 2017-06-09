@@ -77,10 +77,8 @@ Server.prototype.configureRoutes = function() {
 
     // Add deployment state endpoint info
     const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
-    this.app.get(`/${stateEndpoint}`, function(req, res) {
-        const state = {};
-
-        state.rooms = Object.keys(RoomManager.rooms).map(uuid => {
+    this.app.get(`/${stateEndpoint}/rooms`, function(req, res) {
+        const rooms = Object.keys(RoomManager.rooms).map(uuid => {
             const room = RoomManager.rooms[uuid];
             const roles = {};
             const project = room.getProject();
@@ -112,7 +110,23 @@ Server.prototype.configureRoutes = function() {
             };
         });
 
-        return res.json(state);
+        return res.json(rooms);
+    });
+
+    this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {
+        const sockets = SocketManager.sockets().map(socket => {
+            const room = socket.getRawRoom();
+            const roomName = room && Utils.uuid(room.owner, room.name);
+
+            return {
+                uuid: socket.uuid,
+                username: socket.username,
+                room: roomName,
+                roleId: socket.roleId
+            };
+        });
+
+        res.json(sockets);
     });
 
     // Initial page
