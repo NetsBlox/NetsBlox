@@ -16,9 +16,10 @@ let TwentyQuestions = function () {
     this.isStateless = false;
 };
 
-TwentyQuestions.prototype.getPath = () => '/twentyquestions',
+TwentyQuestions.getPath = () => '/twentyquestions';
 
-TwentyQuestions.prototype.start = (answer) => {
+TwentyQuestions.prototype.start = function (answer) {
+    
     // safeguard against starting in the middle of a game
     if (this.started) {
         return 'Game has already started...';
@@ -90,7 +91,7 @@ TwentyQuestions.prototype.guess = function(guess) {
             this.socket._room.sockets()
             .forEach(socket => {
                 let msg = msgSocket;
-                msg.msgType = 'EndGame';
+                msg.msgType = 'EndGuesserTurn';
                 msg.content.guess = guess;
                 socket.send(msg);
             });
@@ -99,15 +100,12 @@ TwentyQuestions.prototype.guess = function(guess) {
     }
     // correct guess, end the game
     this.socket._room.sockets()
-        .forEach(socket => socket.send({
-            type: 'message',
-            dstId: Constants.EVERYONE,
-            msgType: 'EndGame',
-            content: {
-                turn: this.guessCount,
-                GuesserWin: true
-            }
-        }));
+        .forEach(socket => {
+            let msg = msgSocket;
+            msg.msgType = 'EndGame';
+            msg.content.GuesserWin = true;
+            socket.send(msg);
+        });
     return true;
 };
 
