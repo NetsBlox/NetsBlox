@@ -2,7 +2,6 @@
 
 var _ = require('lodash'),
     Q = require('q'),
-    xml2js = require('xml2js'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     middleware = require('./middleware'),
     RoomManager = require('../rooms/room-manager'),
