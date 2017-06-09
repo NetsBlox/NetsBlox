@@ -602,11 +602,15 @@ module.exports = [
 
             // Get the thumbnail
             var example = EXAMPLES[name];
-            var role = Object.keys(example.roles).shift();
-            var src = example.getRole(role).SourceCode;
-            return Q.nfcall(xml2js.parseString, src)
-                .then(result => result.project.thumbnail[0])
-                .then(thumbnail => applyAspectRatio(thumbnail, aspectRatio))
+            return example.getRoleNames()
+                .then(names => example.getRole(names.shift()))
+                .then(content => {
+                    const src = content.SourceCode;
+                    const startIndex = src.indexOf('<thumbnail>');
+                    const endIndex = src.indexOf('</thumbnail>');
+                    const thumbnail = src.substring(startIndex + 11, endIndex);
+                    return applyAspectRatio(thumbnail, aspectRatio);
+                })
                 .then(buffer => {
                     res.contentType('image/png');
                     res.end(buffer, 'binary');
