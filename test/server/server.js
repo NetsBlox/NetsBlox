@@ -50,6 +50,22 @@ describe('Server Tests', function() {
             'roleNames'
         ];
 
+        describe('thumbnail', function() {
+            it('should get example thumbnail w/ aspectRatio', function(done) {
+                api.get('/examples/Star%20Map/thumbnail?aspectRatio=1.3333')
+                    .expect('Content-Type', 'image/png')
+                    .expect(200)
+                    .end(done);
+            });
+
+            it('should get example thumbnail w/o aspectRatio', function(done) {
+                api.get('/examples/Star%20Map/thumbnail')
+                    .expect('Content-Type', 'image/png')
+                    .expect(200)
+                    .end(done);
+            });
+        });
+
         it('should provide list of examples', function(done) {
             api.get('/Examples/EXAMPLES/?metadata=true')
                 .expect('Content-Type', /json/)
