@@ -20,6 +20,19 @@ This results in the stage costume changing:
 ![Google map costume on the stage](./map-example.png)
 
 ## Installation
+The recommended method of installation is using [Docker](https://www.docker.com).
+### Docker
+NetsBlox requires access to MongoDB and a file system (for blob storage). MongoDB can be started using Docker:
+```
+docker run -d -v /abs/path/to/data:/data/db mongo
+```
+where `/abs/path/to/data` is a path on the host machine where the project content and media will be stored.
+
+NetsBlox can then be started with
+```
+docker run -it -p 8080:8080 -e MONGO_URI='mongodb://172.17.0.1:27017/netsblox' -v /home/brian/projects/netsblox/netsblox/blob-storage:/blob-data netsblox/server
+```
+### Native
 Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= v6.0.0) and a [MongoDB](https://www.mongodb.com/download-center?jmp=nav#community) database. By default, NetsBlox will expect MongoDB to be running locally (this can be changed by setting the `MONGO_URI` environment variable).
 
 First clone the repository and install the dependencies.
