@@ -628,15 +628,19 @@ module.exports = [
                 projectName = req.query.ProjectName;
 
             this._logger.trace(`Retrieving the public project: ${projectName} from ${username}`);
+
             return this.storage.users.get(username)
                 .then(user => {
                     if (!user) {
                         log(`Could not find user ${username}`);
                         return res.status(400).send('ERROR: User not found');
                     }
-                    var project = user.rooms.find(room => room.name === projectName);
+                    return user.getProject(projectName);
+                })
+                .then(project => {
                     if (project && project.Public) {
-                        return res.send(Utils.getRoomXML(project));
+                        return Utils.getRoomXML(project)
+                            .then(xml => res.send(xml));
                     } else {
                         return res.status(400).send('ERROR: Project not available');
                     }

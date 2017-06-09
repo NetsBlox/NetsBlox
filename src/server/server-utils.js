@@ -17,15 +17,17 @@ var uuid = function(owner, name) {
 // Helpers for routes
 var APP_REGEX = /app="([^"]+)"/;
 var getRoomXML = function(project) {
-    var roles = [project.activeRole].concat(Object.keys(project.roles)
-        .filter(name => name !== project.activeRole))
-        .map(roleName => project.roles[roleName]);
-    var roleXml = roles.map(role =>
-        `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
-    ).join('');
-    var app = roleXml.match(APP_REGEX)[1] || `NetsBlox ${version}, http://netsblox.org`;
+    return project.getRoles()
+        .then(roles => {
+            roles.sort(role => role.ProjectName === project.activeRole ? -1 : 1);
 
-    return `<room name="${project.name}" app="${app}">${roleXml}</room>`;
+            var roleXml = roles.map(role =>
+                `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
+            ).join('');
+            var app = roleXml.match(APP_REGEX)[1] || `NetsBlox ${version}, http://netsblox.org`;
+
+            return `<room name="${project.name}" app="${app}">${roleXml}</room>`;
+        });
 };
 
 var serializeArray = function(content) {
