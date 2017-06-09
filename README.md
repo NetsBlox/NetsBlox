@@ -20,7 +20,7 @@ This results in the stage costume changing:
 ![Google map costume on the stage](./map-example.png)
 
 ## Installation
-The recommended method of installation is using [Docker](https://www.docker.com).
+The recommended method of installation is using [Docker](https://www.docker.com) as explained below. Otherwise, native installation instructions are also available.
 ### Docker
 NetsBlox requires access to MongoDB and a file system (for blob storage). MongoDB can be started using Docker:
 ```
