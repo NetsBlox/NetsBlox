@@ -3,8 +3,6 @@ var express = require('express'),
     WebSocketServer = require('ws').Server,
     _ = require('lodash'),
     dot = require('dot'),
-    xml2js = require('xml2js'),
-    Q = require('q'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
     SocketManager = require('./socket-manager'),
     RoomManager = require('./rooms/room-manager'),
@@ -168,11 +166,15 @@ Server.prototype.configureRoutes = function() {
             };
             metaInfo.title = projectName;
             var example = EXAMPLES[projectName];
-            var role = Object.keys(example.roles).shift();
-            var src = example.getRole(role).SourceCode;
-            return Q.nfcall(xml2js.parseString, src)
-                .then(result => result.project.notes[0])
-                .then(notes => {
+
+            return example.getRoleNames()
+                .then(names => example.getRole(names.shift()))
+                .then(content => {
+                    const src = content.SourceCode;
+                    const startIndex = src.indexOf('<notes>');
+                    const endIndex = src.indexOf('</notes>');
+                    const notes = src.substring(startIndex + 7, endIndex);
+
                     metaInfo.description = notes;
                     this.addScraperSettings(req.headers['user-agent'], metaInfo);
                     return res.send(indexTpl(metaInfo));
