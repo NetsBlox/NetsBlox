@@ -1,6 +1,6 @@
 {
   "name": "netsblox",
-  "version": "0.14.2",
+  "version": "0.15.1",
   "description": "Visual programming environment with networking support",
   "bin": {
     "netsblox": "./bin/netsblox"
@@ -47,6 +47,7 @@
     "geolib": "^2.0.18",
     "google-trends-api": "^3.0.1",
     "jade": "^1.9.2",
+    "json-query": "^2.2.2",
     "jsonwebtoken": "^6.2.0",
     "just.randomstring": "^0.1.1",
     "lodash": "^4.8.2",

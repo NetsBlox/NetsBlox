@@ -18,7 +18,7 @@ var RoomManager = function() {
     };
 
     ActiveRoom.prototype.destroy = function() {
-        this._logger.trace(`Removing room ${this.uuid}`);
+        self._logger.trace(`Removing room ${this.uuid}`);
         delete self.rooms[this.uuid];
     };
 
@@ -94,7 +94,9 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
                 }
 
                 this._logger.trace(`retrieving project ${uuid} from database`);
-                var activeRoom = ActiveRoom.fromStore(this._logger, socket, project);
+                return ActiveRoom.fromStore(this._logger, socket, project);
+            })
+            .then(activeRoom => {
                 this.rooms[uuid] = activeRoom;
                 return activeRoom;
             });
@@ -105,7 +107,7 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
 };
 
 RoomManager.prototype.checkRoom = function(room) {
-    var uuid = room.uuid,
+    var uuid = utils.uuid(room.owner, room.name),
         roles = Object.keys(room.roles)
             .filter(role => !!room.roles[role]);
 

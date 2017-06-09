@@ -75,6 +75,60 @@ Server.prototype.configureRoutes = function() {
     this.app.use('/rpc', this.rpcManager.router);
     this.app.use('/api', this.createRouter());
 
+    // Add deployment state endpoint info
+    const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
+    this.app.get(`/${stateEndpoint}/rooms`, function(req, res) {
+        const rooms = Object.keys(RoomManager.rooms).map(uuid => {
+            const room = RoomManager.rooms[uuid];
+            const roles = {};
+            const project = room.getProject();
+            let lastUpdateAt = null;
+
+            if (project) {
+                lastUpdateAt = new Date(project.lastUpdateAt);
+            }
+
+            Object.keys(room.roles).forEach(roleId => {
+                const socket = room.roles[roleId];
+                if (socket) {
+                    roles[roleId] = {
+                        username: socket.username,
+                        uuid: socket.uuid
+                    };
+                } else {
+                    roles[roleId] = null;
+                }
+            });
+
+            return {
+                uuid: uuid,
+                name: room.name,
+                owner: room.owner,
+                collaborators: room.getCollaborators(),
+                lastUpdateAt: lastUpdateAt,
+                roles: roles
+            };
+        });
+
+        return res.json(rooms);
+    });
+
+    this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {
+        const sockets = SocketManager.sockets().map(socket => {
+            const room = socket.getRawRoom();
+            const roomName = room && Utils.uuid(room.owner, room.name);
+
+            return {
+                uuid: socket.uuid,
+                username: socket.username,
+                room: roomName,
+                roleId: socket.roleId
+            };
+        });
+
+        res.json(sockets);
+    });
+
     // Initial page
     this.app.get('/debug.html', (req, res) =>
         res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html')));

@@ -2,6 +2,7 @@
 'use strict';
 
 var R = require('ramda'),
+    Q = require('q'),
     assert = require('assert'),
     debug = require('debug'),
     info = debug('netsblox:api:utils:info'),
@@ -50,45 +51,46 @@ var serializeRole = (role, project) => {
 
 var joinActiveProject = function(userId, room, res) {
     var serialized,
-        openRole,
-        createdNewRole = false,
-        role;
+        createdNewRole = false;
 
-    openRole = Object.keys(room.roles)
+    let openRole = Object.keys(room.roles)
         .filter(role => !room.roles[role])  // not occupied
         .shift();
 
     trace(`room "${room.name}" is already active`);
-    if (openRole && room.getRole(openRole)) {  // Send an open role and add the user
-        trace(`adding ${userId} to open role "${openRole}" at "${room.name}"`);
-        role = room.getRole(openRole);
-        serialized = serializeRole(role, room);
-        return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
-    } else {  // If no open role w/ cache -> make a new role
-        let i = 2,
-            base;
 
-        if (!openRole) {
-            createdNewRole = true;
-            openRole = base = 'new role';
-            while (room.hasOwnProperty(openRole)) {
-                openRole = `${base} (${i++})`;
-            }
-            trace(`creating new role "${openRole}" at "${room.name}" ` +
-                `for ${userId}`);
-        } else {
-            error(`Found open role "${openRole}" but it is not cached! May have lost data!!!`);
-        }
+    const getRoleContent = openRole ? room.getRole(openRole) : Q();
 
-        info(`adding ${userId} to new role "${openRole}" at "${room.name}"`);
-
-        room.createRole(openRole);
-        role = getEmptyRole();
-        return room.setRole(openRole, role).then(() => {
+    return getRoleContent.then(role => {
+        if (role) {  // Send an open role and add the user
+            trace(`adding ${userId} to open role "${openRole}" at "${room.name}"`);
             serialized = serializeRole(role, room);
             return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
-        });
-    }
+        } else {  // If no open role w/ cache -> make a new role
+            let i = 2,
+                base;
+
+            if (!openRole) {
+                createdNewRole = true;
+                openRole = base = 'new role';
+                while (room.hasOwnProperty(openRole)) {
+                    openRole = `${base} (${i++})`;
+                }
+                trace(`creating new role "${openRole}" at "${room.name}" ` +
+                    `for ${userId}`);
+            } else {
+                error(`Found open role "${openRole}" but it is not cached! May have lost data!!!`);
+            }
+
+            info(`adding ${userId} to new role "${openRole}" at "${room.name}"`);
+
+            role = getEmptyRole();
+            return room.setRole(openRole, role).then(() => {
+                serialized = serializeRole(role, room);
+                return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
+            });
+        }
+    });
 };
 
 // Function helpers
