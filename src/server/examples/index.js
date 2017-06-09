@@ -7,13 +7,14 @@ const _ = require('lodash');
 // Create the dictionary of examples
 var examples = {};
 
+const Q = require('q');
 const Example = {};
 Example.getRole = function(role) {
-    return this._roles[role];
+    return Q(this._roles[role]);
 };
 
 Example.getRoleNames = function() {
-    return Object.keys(this._roles);
+    return Q(Object.keys(this._roles));
 };
 
 // Read in the directories

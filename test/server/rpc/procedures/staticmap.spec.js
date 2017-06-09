@@ -21,6 +21,8 @@ describe('staticmap', function() {
     describe('interfaces', function() {
         utils.verifyRPCInterfaces(staticmap, [
             ['getMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
+            ['getSatelliteMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
+            ['getTerrainMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
             ['getLongitude', ['x']],
             ['getLatitude', ['y']],
             ['getXFromLongitude', ['longitude']],

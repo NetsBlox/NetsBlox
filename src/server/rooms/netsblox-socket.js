@@ -115,7 +115,7 @@ class NetsBloxSocket {
     }
 
     isCollaborator () {
-        return this._room && this._room.collaborators.includes(this.username);
+        return this._room && this._room.getCollaborators().includes(this.username);
     }
 
     canEditRoom () {
@@ -427,7 +427,7 @@ NetsBloxSocket.MessageHandlers = {
 
         return RoomManager.getRoom(this, owner, name)
             .then(room => {
-                this._logger.trace(`loaded room ${room.uuid}`);
+                this._logger.trace(`loaded room ${owner}/${name}`);
 
                 // Check if the user is already at the room
                 if (this._room === room) {
@@ -511,20 +511,19 @@ NetsBloxSocket.MessageHandlers = {
     // Retrieve the json for each project and respond
     'export-room': function(msg) {
         if (this.hasRoom()) {
-            this._room.collectProjects((err, projects) => {
-                if (err) {
-                    this._logger.error(`Could not collect projects from ${this._room.name}`);
-                    return;
-                }
-                this._logger.trace(`Exporting projects for ${this._room.name}` +
-                    ` to ${this.username}`);
+            this._room.collectProjects()
+                .then(projects => {
+                    this._logger.trace(`Exporting projects for ${this._room.name}` +
+                        ` to ${this.username}`);
 
-                this.send({
-                    type: 'export-room',
-                    roles: projects,
-                    action: msg.action
-                });
-            });
+                    this.send({
+                        type: 'export-room',
+                        roles: projects,
+                        action: msg.action
+                    });
+                })
+                .catch(() =>
+                    this._logger.error(`Could not collect projects from ${this._room.name}`));
         }
     },
 

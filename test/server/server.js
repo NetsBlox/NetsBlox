@@ -10,6 +10,7 @@ describe('Server Tests', function() {
             vantage: false
         },
         api,
+        index,
         Server = require('../../src/server/server'),
 
         basicRoutes = require('../../src/server/routes/basic-routes'),
@@ -22,10 +23,22 @@ describe('Server Tests', function() {
         server = new Server(options);
         server.start(done);
         api = supertest('http://localhost:'+port+'/api');
+        index = supertest('http://localhost:'+port);
     });
 
     after(function(done) {
         server.stop(done);
+    });
+
+    describe('editor', function() {
+        it('should open examples from url', function(done) {
+            index.get('/?action=example&ProjectName=Traffic')
+                .expect(200)
+                .expect(function(res) {
+                    assert.notEqual(res.body.length, 0);
+                })
+                .end(done);
+        });
     });
 
     describe('SignUp tests', function() {
@@ -49,6 +62,22 @@ describe('Server Tests', function() {
             'notes',
             'roleNames'
         ];
+
+        describe('thumbnail', function() {
+            it('should get example thumbnail w/ aspectRatio', function(done) {
+                api.get('/examples/Star%20Map/thumbnail?aspectRatio=1.3333')
+                    .expect('Content-Type', 'image/png')
+                    .expect(200)
+                    .end(done);
+            });
+
+            it('should get example thumbnail w/o aspectRatio', function(done) {
+                api.get('/examples/Star%20Map/thumbnail')
+                    .expect('Content-Type', 'image/png')
+                    .expect(200)
+                    .end(done);
+            });
+        });
 
         it('should provide list of examples', function(done) {
             api.get('/Examples/EXAMPLES/?metadata=true')
