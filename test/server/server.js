@@ -10,6 +10,7 @@ describe('Server Tests', function() {
             vantage: false
         },
         api,
+        index,
         Server = require('../../src/server/server'),
 
         basicRoutes = require('../../src/server/routes/basic-routes'),
@@ -22,10 +23,22 @@ describe('Server Tests', function() {
         server = new Server(options);
         server.start(done);
         api = supertest('http://localhost:'+port+'/api');
+        index = supertest('http://localhost:'+port);
     });
 
     after(function(done) {
         server.stop(done);
+    });
+
+    describe('editor', function() {
+        it('should open examples from url', function(done) {
+            index.get('/?action=example&ProjectName=Traffic')
+                .expect(200)
+                .expect(function(res) {
+                    assert.notEqual(res.body.length, 0);
+                })
+                .end(done);
+        });
     });
 
     describe('SignUp tests', function() {
