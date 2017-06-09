@@ -26,15 +26,6 @@ try {
 }
 
 
-var getProjectIndexFrom = function(name, user) {
-    for (var i = user.rooms.length; i--;) {
-        if (user.rooms[i].name === name) {
-            return i;
-        }
-    }
-    return -1;
-};
-
 /**
  * Find and set the given project's public value.
  *
@@ -44,20 +35,21 @@ var getProjectIndexFrom = function(name, user) {
  * @return {Boolean} success
  */
 var setProjectPublic = function(name, user, value) {
-    var index = getProjectIndexFrom(name, user);
-    if (index === -1) {
-        return false;
-    }
-    user.rooms[index].Public = value;
 
-    if (value) {
-        PublicProjects.publish(user.rooms[index]);
-    } else {
-        PublicProjects.unpublish(user.rooms[index]);
-    }
+    return user.getProject(name)
+        .then(project => {
+            if (project) {
+                return project.setPublic(value).then(() => {
+                    if (value) {
+                        PublicProjects.publish(project);
+                    } else {
+                        PublicProjects.unpublish(project);
+                    }
+                });
+            }
 
-    user.save();
-    return true;
+            throw Error('project not found');
+        });
 };
 
 // Select a preview from a project (retrieve them from the roles)
@@ -499,11 +491,9 @@ module.exports = [
                 user = req.session.user;
 
             log(`${user.username} is publishing project ${name}`);
-            var success = setProjectPublic(name, user, true);
-            if (success) {
-                return res.send(`"${name}" is shared!`);
-            }
-            return res.send('ERROR: could not find the project');
+            return setProjectPublic(name, user, true)
+                .then(() => res.send(`"${name}" is shared!`))
+                .catch(err => res.send(`ERROR: ${err}`));
         }
     },
     {
@@ -517,11 +507,10 @@ module.exports = [
                 user = req.session.user;
 
             log(`${user.username} is unpublishing project ${name}`);
-            var success = setProjectPublic(name, user, false);
-            if (success) {
-                return res.send(`"${name}" is no longer shared`);
-            }
-            return res.send('ERROR: could not find the project');
+
+            return setProjectPublic(name, user, true)
+                .then(() => res.send(`"${name}" is no longer shared`))
+                .catch(err => res.send(`ERROR: ${err}`));
         }
     },
 

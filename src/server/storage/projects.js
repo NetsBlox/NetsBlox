@@ -185,6 +185,11 @@
             return this._db === transientCollection;
         }
 
+        setPublic(isPublic) {
+            const query = {$set: {Public: isPublic === true}};
+            return this._db.update(this.getStorageId(), query, {upsert: true});
+        }
+
         addCollaborator(username) {
             if (this.collaborators.includes(username)) return Q();
             this.collaborators.push(username);
