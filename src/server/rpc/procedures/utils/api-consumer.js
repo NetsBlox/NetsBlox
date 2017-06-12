@@ -2,6 +2,7 @@ const Logger = require('../../../logger'),
     CacheManager = require('cache-manager'),
     fsStore = require('cache-manager-fs'),
     R = require('ramda'),
+    fs = require('fs'),
     Q = require('q'),
     _ = require('lodash'),
     request = require('request'),
@@ -12,19 +13,20 @@ const Logger = require('../../../logger'),
 class ApiConsumer {
     constructor(name, baseUrl, opts) {
         // or set opts like this: { cache } = { }
-        // should be a urlfriendly name
+        // must be a urlfriendly name
         this._name = name;
         // set the defaults for the options
         opts = _.merge({
             cache: {
                 ttl: 3600*24,
-                path: process.env.CACHE_DIR || 'cache/'+name,
+                path: process.env.CACHE_DIR || 'cache',
             }
         },opts);
+        if (!fs.existsSync(opts.cache.path)) fs.mkdirSync(opts.cache.path);
         this._baseUrl = baseUrl;
-        this._logger = new Logger('netsblox:rpc:'+name);
+        this._logger = new Logger('netsblox:rpc:'+this._name);
         // setup api endpoint
-        this.getPath = () => '/'+name;
+        this.getPath = () => '/'+this._name;
         this.isStateless = true;
         this._remainingMsgs = {};
         // setup cache. maxsize is in bytes, ttl in seconds
@@ -33,7 +35,7 @@ class ApiConsumer {
             options: {
                 ttl: opts.cache.ttl,
                 maxsize: 1024*1000*100,
-                path: opts.cache.path,
+                path: opts.cache.path + '/' + this._name,
                 preventfill: false,
                 reviveBuffers: true
             }
