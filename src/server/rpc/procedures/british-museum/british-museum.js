@@ -39,7 +39,8 @@ let queryInjector = (baseQ, statements) => {
 };
 
 // parses and sends a respond back to the user. used when using the basic endpoint
-let htmlSearchHandler = (html, self) => {
+britishmuseum._htmlSearchHandler = function(html, response) {
+    let self = this;
     let results = [];
     osmosis
     .parse(html)
@@ -61,7 +62,7 @@ let htmlSearchHandler = (html, self) => {
             };
         });
         let structure = self._createSnapStructure(results);
-        self.response.send(structure);
+        response.send(structure);
     })
     // .log(britishmuseum._logger.trace)
     // .debug(britishmuseum._logger.debug)
@@ -73,7 +74,7 @@ let htmlSearchHandler = (html, self) => {
 britishmuseum.search = function(label, type, material, limit) {
     if (!(label || type || material)) return 'Please pass in a query';
     limit = limit || 10;
-
+    let response = this.response;
     let baseQ = [
         `SELECT DISTINCT (SAMPLE(?object) AS ?object) ?img
         {
@@ -110,7 +111,7 @@ britishmuseum.search = function(label, type, material, limit) {
 
     this._requestData(queryOptions)
         .then(html => {
-            htmlSearchHandler(html,this);
+            this._htmlSearchHandler(html,response);
         });
     return null;
     // or send use sendStruct if hitting the json endpoint.
@@ -120,6 +121,7 @@ britishmuseum.search = function(label, type, material, limit) {
 
 britishmuseum.searchByLabel = function(label, limit){
     limit = limit || 10;
+    let response = this.response;
 
     let simpleLabelQ = `
     SELECT DISTINCT (SAMPLE(?object) AS ?object) ?img
@@ -136,7 +138,7 @@ britishmuseum.searchByLabel = function(label, limit){
 
     this._requestData(queryOptions)
         .then(html => {
-            htmlSearchHandler(html,this);
+            this._htmlSearchHandler(html, response);
         });
     return null;
 };
@@ -144,6 +146,7 @@ britishmuseum.searchByLabel = function(label, limit){
 
 britishmuseum.searchByType = function(type, limit){
     limit = limit || 10;
+    let response = this.response;
 
     let simpleTypeQ = `
     SELECT DISTINCT (SAMPLE(?object) AS ?object) ?img
@@ -163,7 +166,7 @@ britishmuseum.searchByType = function(type, limit){
 
     this._requestData(queryOptions)
         .then(html => {
-            htmlSearchHandler(html,this);
+            this._htmlSearchHandler(html,response);
         });
     return null;
 
@@ -172,6 +175,7 @@ britishmuseum.searchByType = function(type, limit){
 
 britishmuseum.searchByMaterial = function(material, limit){
     limit = limit || 10;
+    let response = this.response;
 
     let simpleMaterialQ = `
     SELECT DISTINCT (SAMPLE(?object) AS ?object) ?img
@@ -191,7 +195,7 @@ britishmuseum.searchByMaterial = function(material, limit){
 
     this._requestData(queryOptions)
         .then(html => {
-            htmlSearchHandler(html,this);
+            this._htmlSearchHandler(html,response);
         });
     return null;
 
