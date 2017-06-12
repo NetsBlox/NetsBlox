@@ -9,7 +9,7 @@ let multipleData = [
     {name: 'Jack', age: '30', friends: ['Emily', 'Doug']},
     {name: 'Rosa', age: '23', friends: ['Emily', 'Doug']},
     {name: 'Melrose', age: '55', friends: ['Emily', 'Slim']}
-]
+];
 
 describe('snap structure creation form ApiConsumer', function() {
     it('should accept falsy values', function() {
