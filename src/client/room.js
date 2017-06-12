@@ -461,7 +461,7 @@ RoomMorph.prototype.inviteUser = function (role) {
         friends = friends.map(function(friend) {
             return friend.username;
         });
-        friends.push('myself');
+        friends.unshift('myself');
         myself._inviteGuestDialog(role, friends);
     };
 
