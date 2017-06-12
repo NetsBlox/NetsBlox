@@ -1,5 +1,7 @@
 const ApiConsumer = require('../../../../../src/server/rpc/procedures/utils/api-consumer.js'),
     apiConsumer = new ApiConsumer('testConsumer',''),
+    RPCMock = require('../../../../assets/mock-rpc'),
+    testRpc = new RPCMock(apiConsumer),
     assert = require('assert');
 
 let singleData = {name: 'Jack', age: '30', friends: ['Emily', 'Doug']};
@@ -23,5 +25,19 @@ describe('snap structure creation form ApiConsumer', function() {
 
     it('should convert array of json response to a array of snap tuples', function() {
         assert.deepEqual(apiConsumer._createSnapStructure(multipleData)[2][1][1], '55');
+    });
+});
+
+
+describe('cache manager filestorage store', function(){
+    it('should be able to save and read data to and from cache', ()=>{
+        let cache = testRpc._rpc._cache;
+        cache.set('foo', 'bar', function(err) {
+            if (err) { throw err; }
+            cache.get('foo', function(err, result) {
+                assert(result,'bar');
+                cache.del('foo', function() {});
+            });
+        });
     });
 });
