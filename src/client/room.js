@@ -801,10 +801,14 @@ RoleLabelMorph.prototype.init = function() {
 
     this._roleLabel = new StringMorph(
         this.name,
-        14,
+        15,
         null,
         true,
-        false
+        false,
+        false,
+        null,
+        null,
+        white
     );
     this._userLabel = new StringMorph(
         usrTxt,
@@ -850,7 +854,7 @@ RoleLabelMorph.prototype.fixLayout = function() {
     height = this._userLabel.height();
     this._userLabel.setCenter(new Point(
         center.x/2,
-        center.y + height * 4.5
+        center.y + height * 3.5
     ));
 };
 
@@ -985,7 +989,8 @@ ProjectsMorph.prototype.updateRoom = function() {
             selector: 'createNewRole',
             icon: 'plus',
             hint: 'Add a role to the room',
-            left: this.room.right() + padding*4 + 100
+            left: this.room.center().x + 42,
+            top: this.room.center().y + 100
         });
     }
 };
