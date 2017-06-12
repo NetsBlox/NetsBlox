@@ -311,9 +311,18 @@ RoomMorph.prototype.createNewRole = function () {
                 'the provided name already exists.',
                 world
             );
+        } else if (roleName.indexOf('.') !== -1) {
+            // Error! Role has a dot
+            new DialogBoxMorph().inform(
+                'Invalid Role Name',
+                'Could not create a new role because\n' +
+                'the provided name is invalid',
+                world
+            );
         } else {
             myself._createNewRole(roleName);
         }
+        
     }, null, 'createNewRole');
 };
 
