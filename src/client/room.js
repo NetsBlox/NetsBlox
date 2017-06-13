@@ -2,11 +2,13 @@
  Color, nop, InputFieldMorph, ListMorph, IDE_Morph, TurtleIconMorph,
  TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph, ReporterBlockMorph
  MessageOutputSlotMorph, MessageInputSlotMorph, SymbolMorph, PushButtonMorph, MenuMorph,
- SpeechBubbleMorph, ProjectDialogMorph, HandleMorph, fontHeight*/
+ SpeechBubbleMorph, ProjectDialogMorph, HandleMorph, Rectangle, fontHeight*/
 /* * * * * * * * * RoomMorph * * * * * * * * */
 RoomMorph.prototype = new Morph();
 RoomMorph.prototype.constructor = RoomMorph;
 RoomMorph.uber = Morph.prototype;
+Rectangle.prototype = new Rectangle();
+Rectangle.prototype.constructor = Rectangle;
 
 RoomMorph.SIZE = 300;
 RoomMorph.DEFAULT_ROLE = 'myRole';
@@ -971,8 +973,6 @@ function ProjectsMorph(room, sliderColor) {
 
 ProjectsMorph.prototype.updateRoom = function() {
     // Receive updates about the room from the server
-    var padding = 4;
-
     this.contents.destroy();
     this.contents = new FrameMorph(this);
     this.contents.acceptsDrops = false;
