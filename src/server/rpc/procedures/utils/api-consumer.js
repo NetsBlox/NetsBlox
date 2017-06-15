@@ -148,13 +148,11 @@ class ApiConsumer {
 
     // creates snap friendly structure out of an array ofsimple keyValue json object or just single on of them.
     _createSnapStructure(input){
-        this._logger.trace('creating snap friendly structure');
         // if an string is passed check to see if it can be parsed to json
         if (typeof input === 'string') {
             try {
                 input =  JSON.parse(input);
             } catch (e) {
-                this._logger.trace('input data has is not json',e);
             }
         }
 
