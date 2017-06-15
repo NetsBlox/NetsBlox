@@ -6,10 +6,13 @@ const ApiConsumer = require('../utils/api-consumer'),
 
 let corgis = new ApiConsumer('corgis','');
 
-const STORAGE_DIR = process.env.CORGIS_DIR || '~/Downloads/';
+const STORAGE_DIR = process.env.CORGIS_DIR || 'datasets/';
 
 // probably a shell script would be better
 let updateDatasets = (names) => {
+    if (!fs.existsSync(STORAGE_DIR)){
+        fs.mkdirSync(STORAGE_DIR);
+    }
     return new Promise((resolve, reject) => {
         if (names === undefined) names = [];
         osmosis
@@ -23,14 +26,14 @@ let updateDatasets = (names) => {
             names.forEach(dsName => {
                 let directUrl = `https://think.cs.vt.edu/corgis/json/${dsName}/${dsName}.json?forcedownload=1`;
                 let absolutePath = STORAGE_DIR + dsName + '.json';
-                corgis._logger.trace('downloading dataset', dsName, directUrl);
+                corgis._logger.trace('updating dataset', dsName, directUrl);
                 exec(`curl ${directUrl} -o ${absolutePath}`, (error, stdout, stderr)=>{
                 });
             });
         })
         .log(corgis._logger.trace)
-        .error(reject)
-        .debug(corgis._logger.trace);
+        // .debug(corgis._logger.trace)
+        .error(reject);
     });
 };
 
@@ -51,9 +54,8 @@ let loadDataset = dsName => {
 
 
 updateDatasets();
-
 corgis.searchDataset = function(name,query){
-    return loadDataset('election')
+    return loadDataset(name)
         .then( data => {
             this._logger.trace(data.length, 'rows loaded');
             let queryRes = jsonQuery(query,{data}).value;
@@ -61,7 +63,6 @@ corgis.searchDataset = function(name,query){
             this.response.json(queryRes);
         })
         .catch(err => this._logger.error);
-
 };
 
 
