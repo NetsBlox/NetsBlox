@@ -8,7 +8,7 @@ const fs = require('fs');
 const PROJECT_ROOT = path.join(__dirname, '..', '..');
 
 var clientDir = path.join(PROJECT_ROOT, 'src', 'client', 'Snap--Build-Your-Own-Blocks'),
-    srcFiles = ['morphic.js', 'xml.js', 'store.js'],
+    srcFiles = ['morphic.js', 'xml.js', 'store.js', 'actions.js'],
     src;
 
 src = srcFiles
@@ -18,21 +18,26 @@ src = srcFiles
         if (file.includes('morphic.js')) {
             code = code
                 .split('// Morph')[0]
-                .split('// Nodes')[1];
+                .split('// Global Functions')[1];
+        }
+    
+        if (file.includes('store.js')) {  // remove the SnapSerializer stuff
+            code = code.split('StageMorph.prototype.toXML')[0];
         }
         return code;
     })
     .join('\n');
 
-// remove the SnapSerializer stuff
-src = src.split('var SnapSerializer')[0];
 
 // expose the XML_Serializer
 src = [
     'modules = {};',
+    'window = {location:{}};',
+    'var SnapActions;',
     src,
     'global.Client = global.Client || {};',
-    'global.Client.XML_Serializer = XML_Serializer;'
+    'global.Client.XML_Serializer = XML_Serializer;',
+    'global.Client.SnapActions = SnapActions;'
 ].join('\n');
 eval(src);
 
@@ -45,12 +50,10 @@ const idBlocks = block => {
 
 const parser = new Client.XML_Serializer();
 const canLoadXml = string => {
-    var res = parser.parse(string),
-        xml;
+    var xml;
 
     // Add a collabId and reserialize
-    assert(res);
-    idBlocks(res);
+    var res = Client.SnapActions.uniqueIdForImport(string);
     xml = res.toString();
     assert(parser.parse(xml));
 };
