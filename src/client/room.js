@@ -17,7 +17,7 @@ RoomMorph.isSocketUuid = function(name) {
     return name && name[0] === '_';
 };
 
-let white = new Color(224, 224, 224);
+var white = new Color(224, 224, 224);
 
 function RoomMorph(ide) {
     // Get the users at the room
