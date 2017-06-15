@@ -1,7 +1,6 @@
 const Logger = require('../../../logger'),
     CacheManager = require('cache-manager'),
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 86400}), // cache for 24hrs
-    R = require('ramda'),
     Q = require('q'),
     request = require('request'),
     rp = require('request-promise'),
@@ -148,19 +147,37 @@ class ApiConsumer {
 
 
     // creates snap friendly structure out of an array ofsimple keyValue json object or just single on of them.
-    _createSnapStructure(jsonData){
+    _createSnapStructure(input){
         this._logger.trace('creating snap friendly structure');
-        let snapStructure = '';
-        try{
-            if (Array.isArray(jsonData)) {
-                snapStructure = jsonData.map( obj => R.toPairs(obj));
-            }else {
-                snapStructure = R.toPairs(jsonData);
+        // if an string is passed check to see if it can be parsed to json
+        if (typeof input === 'string') {
+            try {
+                input =  JSON.parse(input);
+            } catch (e) {
+                this._logger.trace('input data has is not json',e);
+            }
+        }
+
+        // if it's not an obj(json or array)
+        if (input === null || input === undefined) return [];
+        if (typeof input !== 'object') return input;
+
+        let keyVals = [];
+        try {
+            if (Array.isArray(input)) {
+                for (let i = 0; i < input.length; i++) {
+                    keyVals.push(this._createSnapStructure(input[i]));
+                }
+            }else{
+                for (let i = 0; i < Object.keys(input).length; i++) {
+                    keyVals.push([Object.keys(input)[i], this._createSnapStructure(Object.values(input)[i]) ]);
+                }
             }
         } catch (e) {
-            this._logger.error('input structure has invalid format',e);
+            this._logger.error('error in creating snap structure', e);
+        } finally {
+            return keyVals;
         }
-        return snapStructure;
     }
 
     /**
