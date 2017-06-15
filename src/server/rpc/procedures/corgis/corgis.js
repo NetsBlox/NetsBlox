@@ -60,7 +60,7 @@ corgis.searchDataset = function(name,query){
             this._logger.trace(data.length, 'rows loaded');
             let queryRes = jsonQuery(query,{data}).value;
             this._logger.trace(queryRes);
-            this.response.json(queryRes);
+            this.response.send(this._createSnapStructure(queryRes));
         })
         .catch(err => this._logger.error);
 };
