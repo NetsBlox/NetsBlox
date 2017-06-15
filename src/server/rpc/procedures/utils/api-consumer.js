@@ -2,6 +2,7 @@ const Logger = require('../../../logger'),
     CacheManager = require('cache-manager'),
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 86400}), // cache for 24hrs
     Q = require('q'),
+    _ = require('lodash'),
     request = require('request'),
     rp = require('request-promise'),
     jsonQuery = require('json-query'),
@@ -152,8 +153,7 @@ class ApiConsumer {
         if (typeof input === 'string') {
             try {
                 input =  JSON.parse(input);
-            } catch (e) {
-            }
+            } catch (e) {}
         }
 
         // if it's not an obj(json or array)
@@ -168,7 +168,7 @@ class ApiConsumer {
                 }
             }else{
                 for (let i = 0; i < Object.keys(input).length; i++) {
-                    keyVals.push([Object.keys(input)[i], this._createSnapStructure(Object.values(input)[i]) ]);
+                    keyVals.push([Object.keys(input)[i], this._createSnapStructure(_.values(input)[i]) ]);
                 }
             }
         } catch (e) {
