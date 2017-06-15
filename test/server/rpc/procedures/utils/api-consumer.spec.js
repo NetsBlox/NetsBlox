@@ -30,14 +30,39 @@ describe('snap structure creation form ApiConsumer', function() {
 
 
 describe('cache manager filestorage store', function(){
-    it('should be able to save and read data to and from cache', ()=>{
+    it('should be able to save and read data to and from cache', done=>{
         let cache = testRpc._rpc._cache;
         cache.set('foo', 'bar', function(err) {
             if (err) { throw err; }
             cache.get('foo', function(err, result) {
                 assert(result,'bar');
-                cache.del('foo', function() {});
+                cache.del('foo', done);
             });
         });
+    });
+});
+
+
+describe('requestData', ()=>{
+    it('should get response from the cache', done => {
+        let cache = testRpc._rpc._cache;
+        let queryOpts = {
+            queryString: '',
+            baseUrl: 'http://google.com',
+            json: false
+        };
+
+        let requestCacheKey = queryOpts.baseUrl + queryOpts.queryString;
+        // cache the key for this request to 'response'
+        cache.set(requestCacheKey, 'response', function(err) {
+            if (err) { throw err; }
+            testRpc._rpc._requestData(queryOpts)
+                .then(data => {
+                    // requesting for the same key should return 'response' as data
+                    assert.deepEqual(data,'response');
+                    done();
+                });
+        });
+
     });
 });
