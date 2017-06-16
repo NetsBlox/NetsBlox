@@ -173,9 +173,8 @@ class ApiConsumer {
             }
         } catch (e) {
             this._logger.error('error in creating snap structure', e);
-        } finally {
-            return keyVals;
         }
+        return keyVals;
     }
 
     /**
