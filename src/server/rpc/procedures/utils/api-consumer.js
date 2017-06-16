@@ -2,7 +2,6 @@ const Logger = require('../../../logger'),
     CacheManager = require('cache-manager'),
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 86400}), // cache for 24hrs
     Q = require('q'),
-    _ = require('lodash'),
     request = require('request'),
     rp = require('request-promise'),
     jsonQuery = require('json-query'),
@@ -153,7 +152,9 @@ class ApiConsumer {
         if (typeof input === 'string') {
             try {
                 input =  JSON.parse(input);
-            } catch (e) {}
+            } catch (e) {
+                return input;
+            }
         }
 
         // if it's not an obj(json or array)
@@ -161,18 +162,15 @@ class ApiConsumer {
         if (typeof input !== 'object') return input;
 
         let keyVals = [];
-        try {
-            if (Array.isArray(input)) {
-                for (let i = 0; i < input.length; i++) {
-                    keyVals.push(this._createSnapStructure(input[i]));
-                }
-            }else{
-                for (let i = 0; i < Object.keys(input).length; i++) {
-                    keyVals.push([Object.keys(input)[i], this._createSnapStructure(_.values(input)[i]) ]);
-                }
+        if (Array.isArray(input)) {
+            for (let i = 0; i < input.length; i++) {
+                keyVals.push(this._createSnapStructure(input[i]));
             }
-        } catch (e) {
-            this._logger.error('error in creating snap structure', e);
+        }else{
+            const inputKeys = Object.keys(input);
+            for (let i = 0; i < inputKeys.length; i++) {
+                keyVals.push([inputKeys[i], this._createSnapStructure(input[inputKeys[i]]) ]);
+            }
         }
         return keyVals;
     }
@@ -283,7 +281,6 @@ class ApiConsumer {
             this.response.send('there are no messages in the queue to stop.');
         }
     }
-
 }
 
 
