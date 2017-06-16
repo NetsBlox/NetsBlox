@@ -1158,4 +1158,3 @@ InputSlotMorph.prototype.rpcActions = function () {
 
     return dict;
 };
-
