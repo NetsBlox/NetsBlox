@@ -1,23 +1,45 @@
 const Logger = require('../../../logger'),
     CacheManager = require('cache-manager'),
-    cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 86400}), // cache for 24hrs
+    fsStore = require('cache-manager-fs'),
     R = require('ramda'),
+    fs = require('fs'),
     Q = require('q'),
+    _ = require('lodash'),
     request = require('request'),
     rp = require('request-promise'),
     jsonQuery = require('json-query'),
     MSG_SENDING_DELAY = 250;
 
 class ApiConsumer {
-    constructor(name, baseUrl) {
-        // should be a urlfriendly name
+    constructor(name, baseUrl, opts) {
+        // or set opts like this: { cache } = { }
+        // must be a urlfriendly name
         this._name = name;
+        // set the defaults for the options
+        opts = _.merge({
+            cache: {
+                ttl: 3600*24,
+                path: process.env.CACHE_DIR || 'cache',
+            }
+        },opts);
+        if (!fs.existsSync(opts.cache.path)) fs.mkdirSync(opts.cache.path);
         this._baseUrl = baseUrl;
-        this._logger = new Logger('netsblox:rpc:'+name);
+        this._logger = new Logger('netsblox:rpc:'+this._name);
         // setup api endpoint
-        this.getPath = () => '/'+name;
+        this.getPath = () => '/'+this._name;
         this.isStateless = true;
         this._remainingMsgs = {};
+        // setup cache. maxsize is in bytes, ttl in seconds
+        this._cache = CacheManager.caching({
+            store: fsStore,
+            options: {
+                ttl: opts.cache.ttl,
+                maxsize: 1024*1000*100,
+                path: opts.cache.path + '/' + this._name,
+                preventfill: false,
+                reviveBuffers: true
+            }
+        });
     }
 
     /**
@@ -44,7 +66,7 @@ class ApiConsumer {
         }
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
         this._logger.trace('requesting data for',fullUrl);
-        return cache.wrap(fullUrl, ()=>{
+        return this._cache.wrap(fullUrl, ()=>{
             this._logger.trace('request is not cached, calling external endpoint');
             return rp({
                 uri: fullUrl,
@@ -97,7 +119,7 @@ class ApiConsumer {
         if (queryOptions.cache === false) {
             return requestImage();
         }else {
-            return cache.wrap(fullUrl, ()=>{
+            return this._cache.wrap(fullUrl, ()=>{
                 return requestImage();
             });
         }
