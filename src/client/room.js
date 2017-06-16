@@ -381,6 +381,14 @@ RoomMorph.prototype.editRoleName = function(role) {
                 'the provided name already exists.',
                 myself.world()
             );
+        } else if (roleName.indexOf('.') !== -1) {
+            // Error! Role has a dot
+            new DialogBoxMorph().inform(
+                'Invalid Role Name',
+                'Could not create a new role because\n' +
+                'the provided name is invalid',
+                myself.world()
+            );
         } else {
             myself.ide.sockets.sendMessage({
                 type: 'rename-role',
