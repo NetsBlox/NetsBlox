@@ -60,6 +60,20 @@ describe('cache manager filestorage store', function(){
 });
 
 describe('requestData', ()=>{
+    it('should get correct data from the endpoint', done => {
+        let queryOpts = {
+            queryString: '/',
+            baseUrl: 'http://google.com',
+            json: false
+        };
+        apiConsumer._requestData(queryOpts).then(data => {
+            assert(data.match(/www\.google\.com/).length > 0);
+            done();
+        }).catch(e => {
+            done(e);
+        });
+    });
+
 
     it('should get response from the cache', done => {
         let cache = testRpc._rpc._cache;
