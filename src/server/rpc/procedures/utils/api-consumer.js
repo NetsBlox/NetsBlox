@@ -1,7 +1,6 @@
 const Logger = require('../../../logger'),
     CacheManager = require('cache-manager'),
     fsStore = require('cache-manager-fs'),
-    R = require('ramda'),
     fs = require('fs'),
     Q = require('q'),
     _ = require('lodash'),
@@ -170,19 +169,32 @@ class ApiConsumer {
 
 
     // creates snap friendly structure out of an array ofsimple keyValue json object or just single on of them.
-    _createSnapStructure(jsonData){
-        this._logger.trace('creating snap friendly structure');
-        let snapStructure = '';
-        try{
-            if (Array.isArray(jsonData)) {
-                snapStructure = jsonData.map( obj => R.toPairs(obj));
-            }else {
-                snapStructure = R.toPairs(jsonData);
+    _createSnapStructure(input){
+        // if an string is passed check to see if it can be parsed to json
+        if (typeof input === 'string') {
+            try {
+                input =  JSON.parse(input);
+            } catch (e) {
+                return input;
             }
-        } catch (e) {
-            this._logger.error('input structure has invalid format',e);
         }
-        return snapStructure;
+
+        // if it's not an obj(json or array)
+        if (input === null || input === undefined) return [];
+        if (typeof input !== 'object') return input;
+
+        let keyVals = [];
+        if (Array.isArray(input)) {
+            for (let i = 0; i < input.length; i++) {
+                keyVals.push(this._createSnapStructure(input[i]));
+            }
+        }else{
+            const inputKeys = Object.keys(input);
+            for (let i = 0; i < inputKeys.length; i++) {
+                keyVals.push([inputKeys[i], this._createSnapStructure(input[inputKeys[i]]) ]);
+            }
+        }
+        return keyVals;
     }
 
     /**
@@ -291,7 +303,6 @@ class ApiConsumer {
             this.response.send('there are no messages in the queue to stop.');
         }
     }
-
 }
 
 

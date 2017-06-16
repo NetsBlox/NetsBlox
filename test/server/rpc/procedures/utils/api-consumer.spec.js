@@ -3,7 +3,8 @@ describe('APIConsumer', function() {
         apiConsumer = new ApiConsumer('testConsumer',''),
         RPCMock = require('../../../../assets/mock-rpc'),
         testRpc = new RPCMock(apiConsumer),
-        assert = require('assert');
+        assert = require('assert'),
+        stringJson = '{"name":"Lisa","age":"2","gholi":"foo","friends":[{"avtar":true},23,45,56]}';
 
     describe('snap structure creation', function() {
         let singleData = {name: 'Jack', age: '30', friends: ['Emily', 'Doug']};
@@ -28,6 +29,16 @@ describe('APIConsumer', function() {
         it('should convert array of json response to a array of snap tuples', function() {
             assert.deepEqual(apiConsumer._createSnapStructure(multipleData)[2][1][1], '55');
         });
+
+        it('should convert array of json responses to a array of snap tuples', function() {
+            assert.deepEqual(apiConsumer._createSnapStructure(multipleData)[2][1][1], '55');
+            assert.deepEqual(apiConsumer._createSnapStructure(multipleData)[2][0][1], 'Melrose');
+        });
+
+        it('should work on stringified json', function(){
+            assert.deepEqual(apiConsumer._createSnapStructure(stringJson)[2][1], 'foo');
+        });
+
     });
 
 
@@ -43,7 +54,6 @@ describe('APIConsumer', function() {
             });
         });
     });
-
 
     describe('requestData', ()=>{
         it('should get response from the cache', done => {
