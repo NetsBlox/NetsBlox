@@ -2,7 +2,7 @@ const ApiConsumer = require('../utils/api-consumer'),
     osmosis = require('osmosis'),
     urlencode = require('urlencode');
 
-let britishmuseum = new ApiConsumer('britishmuseum','http://collection.britishmuseum.org/');
+let britishmuseum = new ApiConsumer('britishmuseum','http://collection.britishmuseum.org/',{cache: {ttl: 3600*24*30*6}});
 
 
 const prefix = `PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
