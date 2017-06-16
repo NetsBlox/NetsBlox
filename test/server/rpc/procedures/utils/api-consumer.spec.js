@@ -30,11 +30,6 @@ describe('snap structure creation', function() {
         assert.deepEqual(apiConsumer._createSnapStructure(singleData)[0][1], 'Jack');
     });
 
-    it('should convert array of json response to a array of snap tuples', function() {
-        assert.deepEqual(apiConsumer._createSnapStructure(multipleData)[2][1][1], '55');
-    });
-
-
     it('should convert array of json responses to a array of snap tuples', function() {
         assert.deepEqual(apiConsumer._createSnapStructure(multipleData)[2][1][1], '55');
         assert.deepEqual(apiConsumer._createSnapStructure(multipleData2)[2][0][1], 'Melrose');
@@ -74,7 +69,6 @@ describe('requestData', ()=>{
         });
     });
 
-
     it('should get response from the cache', done => {
         let cache = testRpc._rpc._cache;
         let queryOpts = {
@@ -95,4 +89,5 @@ describe('requestData', ()=>{
             });
         });
     });
+
 });
