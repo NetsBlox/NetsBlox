@@ -157,20 +157,16 @@ NetsProcess.prototype.doSocketRequest = function (msgInfo) {
             requestId: requestId,
             content: contents
         });
-    }else{
-        // request has already been made
+    }else if (this.reply ){
+        // request has already been made and we received the reply
         requestId = this.requestId;
-        console.log('listening for msg', requestId);
-        // If we haven't received a message, do nothing
-        if (this.reply) {
-            // there is a message - reply?
-            console.log(this.reply);
-            let reply = this.reply;
-            console.log('we caught a message in request block', reply);
+        var reply = this.reply;
 
-            if (this.requestId === requestId ) delete this.requestId, this.reply;
-            return reply.content.body;
+        if (this.requestId === requestId ) {
+            this.requestId = null;
+            this.reply = null;
         }
+        return reply.content.body;
     }
     this.pushContext('doYield');
     this.pushContext();
@@ -179,20 +175,17 @@ NetsProcess.prototype.doSocketRequest = function (msgInfo) {
 // reply block
 NetsProcess.prototype.doSocketResponse = function (resource) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
-        myRole = ide.projectName,  // same as seat name
         contents;
 
-    let requestId = this.context.variables.getVar('__requestId__');
-    let srcId = this.context.variables.getVar('__srcId__');
-    console.log(requestId);
+    var requestId = this.context.variables.getVar('__requestId__');
+    var srcId = this.context.variables.getVar('__srcId__');
 
     // Create the message
     contents = {body: resource};
-    console.log(srcId);
     ide.sockets.sendMessage({
         type: 'message',
         dstId: srcId,
-        msgType: requestId,
+        msgType: '__reply__',
         requestId: requestId,
         content: contents
     });

@@ -399,7 +399,7 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role,
     if (message !== '') {
         // if the message is for requestId
         stage.threads.processes.forEach(function (p) {
-            if (p.requestId === message) p.reply = msg;
+            if (message === '__reply__' && (p.requestId === msg.requestId) ) p.reply = msg;
         });
         stage.children.concat(stage).forEach(function (morph) {
             if (morph instanceof SpriteMorph || morph instanceof StageMorph) {
