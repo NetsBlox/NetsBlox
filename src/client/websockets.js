@@ -464,8 +464,17 @@ WebSocketManager.prototype.startProcesses = function () {
 
 
 WebSocketManager.prototype.onCostumesLoaded = function(callback) {
-    // Check that all the costumes have been loaded
-    // TODO:
+    // Check that all the costumes have been loaded for the stage and sprites
+    var costumes = [],
+        objects = this.ide.sprites.asArray().concat([this.ide.stage]);
+
+    // Get all the costumes
+    for (var i = objects.length; i--;) {
+        costumes = costumes.concat(objects.costumes.asArray());
+    }
+
+    // Check that they are all loaded
+    // TODO
 };
 
 WebSocketManager.prototype.getSerializedProject = function() {
