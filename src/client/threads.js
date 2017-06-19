@@ -113,8 +113,94 @@ NetsProcess.prototype.doSocketMessage = function (msgInfo) {
     });
 };
 
+//request block
+NetsProcess.prototype.doSocketRequest = function (msgInfo) {
+    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
+        targetRole = arguments[arguments.length-1],
+        myRole = ide.projectName,  // same as seat name
+        roomName = ide.room._name,
+        name = msgInfo[0], //msg name | resource name
+        fieldNames = msgInfo[1],
+        fieldValues = Array.prototype.slice.call(arguments, 1, fieldNames.length + 1),
+        contents,
+        requestId;
+
+    // check if collaborating. If so, show a message but don't send
+    if (SnapActions.isCollaborating() && !SnapActions.isLeader) {
+        this.topBlock.showBubble('Cannot send message when collaborating');
+        return;
+    }
+
+    // If there is no name, return
+    if (!name) {
+        return;
+    }
+
+    // if there is no requestId then init the requestId
+    if (!this.requestId){
+        requestId= '__REQ' + Date.now();
+        //save the request id to check for later
+        this.requestId = requestId;
+
+        // Create the message
+        contents = {};
+        // Set the fields
+        for (var i = fieldNames.length; i--;) {
+            contents[fieldNames[i]] = fieldValues[i] || '';
+        }
+        contents['requestId'] = requestId;
+        ide.sockets.sendMessage({
+            type: 'message',
+            dstId: targetRole,
+            srcId: myRole+'@'+roomName, //TODO properly set and use this
+            msgType: name,
+            requestId: requestId,
+            content: contents
+        });
+    }else{
+        // request has already been made
+        requestId = this.requestId;
+        console.log('listening for msg', requestId);
+        // If we haven't received a message, do nothing
+        if (this.reply) {
+            // there is a message - reply?
+            console.log(this.reply);
+            let reply = this.reply;
+            console.log('we caught a message in request block', reply);
+
+            if (this.requestId === requestId ) delete this.requestId, this.reply;
+            return reply.content.body;
+        }
+    }
+    this.pushContext('doYield');
+    this.pushContext();
+};
+
+// reply block
+NetsProcess.prototype.doSocketResponse = function (resource) {
+    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
+        myRole = ide.projectName,  // same as seat name
+        contents;
+
+    let requestId = this.context.variables.getVar('__requestId__');
+    let srcId = this.context.variables.getVar('__srcId__');
+    console.log(requestId);
+
+    // Create the message
+    contents = {body: resource};
+    console.log(srcId);
+    ide.sockets.sendMessage({
+        type: 'message',
+        dstId: 'everyone in room', //srcId, //TODO reply to proper source
+        msgType: requestId,
+        requestId: requestId,
+        content: contents
+    });
+};
+
+
 /**
- * On socket message, unpack the message content into the variables in 
+ * On socket message, unpack the message content into the variables in
  * the list.
  *
  * @return {undefined}
@@ -128,7 +214,6 @@ NetsProcess.prototype.receiveSocketMessage = function (fields) {
     if (names.indexOf('__message__') === -1) {
         return;
     }
-
     // Check for the message type in the stage
     // FIXME: Provide an error message about how we must receive an actual msg
     content = this.context.variables.getVar('__message__');
@@ -299,5 +384,3 @@ NetsProcess.prototype.reportStageHeight = function () {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
     return stage.dimensions.y;
 };
-
-

@@ -261,10 +261,17 @@ SpriteMorph.prototype.initBlocks = function () {
     };
 
     // Network Messages
+    // request reply
+    SpriteMorph.prototype.blocks.doSocketRequest = {
+        type: 'reporter',
+        category: 'services',
+        spec: 'request resource %msgInput from %roles'
+    };
+
     SpriteMorph.prototype.blocks.doSocketResponse = {
         type: 'command',
         category: 'services',
-        spec: 'send reply %s'
+        spec: 'reply with %s'
     };
 
     SpriteMorph.prototype.blocks.doSocketMessage = {
@@ -647,6 +654,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getProjectId'));
         blocks.push(block('getProjectIds'));
         blocks.push('-');
+        blocks.push(block('doSocketResponse'));
+        blocks.push(block('doSocketRequest'));
 
         blocks.push(block('getJSFromRPCStruct'));
         if (this.world().isDevMode) {
