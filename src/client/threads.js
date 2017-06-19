@@ -119,6 +119,7 @@ NetsProcess.prototype.doSocketRequest = function (msgInfo) {
         targetRole = arguments[arguments.length-1],
         myRole = ide.projectName,  // same as seat name
         roomName = ide.room._name,
+        ownerId = ide.room.ownerId,
         name = msgInfo[0], //msg name | resource name
         fieldNames = msgInfo[1],
         fieldValues = Array.prototype.slice.call(arguments, 1, fieldNames.length + 1),
@@ -148,11 +149,10 @@ NetsProcess.prototype.doSocketRequest = function (msgInfo) {
         for (var i = fieldNames.length; i--;) {
             contents[fieldNames[i]] = fieldValues[i] || '';
         }
-        contents['requestId'] = requestId;
         ide.sockets.sendMessage({
             type: 'message',
             dstId: targetRole,
-            srcId: myRole+'@'+roomName, //TODO properly set and use this
+            srcId: myRole+'@'+roomName+'@'+ownerId,
             msgType: name,
             requestId: requestId,
             content: contents
@@ -191,7 +191,7 @@ NetsProcess.prototype.doSocketResponse = function (resource) {
     console.log(srcId);
     ide.sockets.sendMessage({
         type: 'message',
-        dstId: 'everyone in room', //srcId, //TODO reply to proper source
+        dstId: srcId,
         msgType: requestId,
         requestId: requestId,
         content: contents
