@@ -654,8 +654,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('getProjectId'));
         blocks.push(block('getProjectIds'));
         blocks.push('-');
-        blocks.push(block('doSocketResponse'));
         blocks.push(block('doSocketRequest'));
+        blocks.push(block('doSocketResponse'));
 
         blocks.push(block('getJSFromRPCStruct'));
         if (this.world().isDevMode) {

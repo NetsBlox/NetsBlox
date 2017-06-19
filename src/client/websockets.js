@@ -135,15 +135,15 @@ WebSocketManager.MessageHandlers = {
                 this.ide.showMessage(msg.from + ' tried sending you message type \'' + msg.name + '\' when you already have it!', 2);
             } else {
                 // Prepare dialog & prompt user
-                var request = 
+                var request =
                     msg.from + ' requested to send you a message type:\n\'' +
-                    msg.name + '\' with ' + 
-                    msg.fields.length + 
+                    msg.name + '\' with ' +
+                    msg.fields.length +
                     (msg.fields.length !== 1 ? ' fields.' : ' field.') + '\n' +
                     'Would you like to accept?';
 
                 dialog.askYesNo('Message Share Request', request, myself.ide.root());
-                
+
                 // Accept the request
                 dialog.ok = function() {
                     var ide = myself.ide.root().children[0].parentThatIsA(IDE_Morph);
@@ -156,7 +156,7 @@ WebSocketManager.MessageHandlers = {
                             }
 
                             // format notification
-                            var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length + 
+                            var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length +
                                 (msg.fields.length === 0 ? ' fields.' : (msg.fields.length === 1 ? ' field: ' + msg.fields : ' fields: ' + msg.fields));
 
                             // notify
@@ -237,7 +237,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
         }
 
         if (!self.errored && Date.now() - self.version > 5000) {  // tried connecting for 5 seconds
-            errMsg = self.hasConnected ? 
+            errMsg = self.hasConnected ?
                 'Temporarily disconnected.\nSome network functionality may be ' +
                 'nonfunctional.\nTrying to reconnect...' :
 
@@ -374,7 +374,7 @@ WebSocketManager.prototype.updateRoomInfo = function() {
             room: roomName,
             role: roleId
         };
-        
+
     if (owner) {
         msg.type = 'join-room';
         msg.owner = owner;
@@ -398,7 +398,7 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role,
     content = content || [];
     if (message !== '') {
         // if the message is for requestId
-        stage.threads.processes.forEach(p => {
+        stage.threads.processes.forEach(function (p) {
             if (p.requestId === message) p.reply = msg;
         });
         stage.children.concat(stage).forEach(function (morph) {
