@@ -108,11 +108,15 @@ WebSocketManager.MessageHandlers = {
     },
 
     'project-request': function(msg) {
-        var project = this.getSerializedProject();
-        msg.type = 'project-response';
-        msg.project = project;
+        var self = this;
 
-        this.sendMessage(msg);
+        this.onCostumesLoaded(function() {
+            var project = self.getSerializedProject();
+            msg.type = 'project-response';
+            msg.project = project;
+
+            self.sendMessage(msg);
+        });
     },
 
     'rename-role': function(msg) {
@@ -456,6 +460,12 @@ WebSocketManager.prototype.startProcesses = function () {
     if (this.processes.length) {
         setTimeout(this.startProcesses.bind(this), 5);
     }
+};
+
+
+WebSocketManager.prototype.onCostumesLoaded = function(callback) {
+    // Check that all the costumes have been loaded
+    // TODO:
 };
 
 WebSocketManager.prototype.getSerializedProject = function() {
