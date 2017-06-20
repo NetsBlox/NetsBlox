@@ -271,7 +271,7 @@ SpriteMorph.prototype.initBlocks = function () {
     SpriteMorph.prototype.blocks.doSocketResponse = {
         type: 'command',
         category: 'services',
-        spec: 'reply with %s'
+        spec: 'send reply %s'
     };
 
     SpriteMorph.prototype.blocks.doSocketMessage = {
@@ -651,11 +651,11 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('receiveSocketMessage'));
         blocks.push(block('doSocketMessage'));
         blocks.push('-');
-        blocks.push(block('getProjectId'));
-        blocks.push(block('getProjectIds'));
-        blocks.push('-');
         blocks.push(block('doSocketRequest'));
         blocks.push(block('doSocketResponse'));
+        blocks.push('-');
+        blocks.push(block('getProjectId'));
+        blocks.push(block('getProjectIds'));
 
         blocks.push(block('getJSFromRPCStruct'));
         if (this.world().isDevMode) {
@@ -1274,6 +1274,9 @@ StageMorph.prototype.blockTemplates = function (category) {
     } else if (cat === 'services') {
         blocks.push(block('receiveSocketMessage'));
         blocks.push(block('doSocketMessage'));
+        blocks.push('-');
+        blocks.push(block('doSocketRequest'));
+        blocks.push(block('doSocketResponse'));
         blocks.push('-');
         blocks.push(block('getProjectId'));
         blocks.push(block('getProjectIds'));
