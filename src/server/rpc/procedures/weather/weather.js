@@ -195,6 +195,8 @@ const order = (a, b, c) => {
 };
 
 const validateArgs = (latitude, longitude) => {
+    latitude = +latitude;
+    longitude = +longitude;
     if (typeof latitude !== 'number') return `Invalid latitude: ${latitude}`;
     if (typeof longitude !== 'number') return `Invalid longitude: ${longitude}`;
     if (!order(-90, latitude, 90)) return `latitude out of range: ${latitude}`;
@@ -211,7 +213,7 @@ Object.keys(WeatherService)
                 trace(`invalid arguments: ${latitude}, ${longitude}`);
                 return this.response.send('ERROR: ' +  err);
             }
-            return fn(latitude, longitude);
+            return fn.call(this, latitude, longitude);
         };
     });
 

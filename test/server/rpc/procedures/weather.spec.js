@@ -31,5 +31,10 @@ describe('weather', function() {
             assert(weather.response.response.includes('ERROR'));
             assert(weather.response.response.includes('longitude'));
         });
+
+        it('should not error with number compat string', function() {
+            weather.temp(0, '-18');
+            assert(!weather.response.response);  // sent request - passed input validation
+        });
     });
 });
