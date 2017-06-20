@@ -9,6 +9,9 @@ const Logger = require('../../../logger'),
     jsonQuery = require('json-query'),
     MSG_SENDING_DELAY = 250;
 
+
+
+
 class ApiConsumer {
     constructor(name, baseUrl, opts) {
         // or set opts like this: { cache } = { }
@@ -19,26 +22,32 @@ class ApiConsumer {
             cache: {
                 ttl: 3600*24,
                 path: process.env.CACHE_DIR || 'cache',
+                isCacheableValue: () => true,
+                preventfill: false,
             }
         },opts);
+        // *** setup caching ***
+        // make sure the base cache directory exists
         if (!fs.existsSync(opts.cache.path)) fs.mkdirSync(opts.cache.path);
+        // setup cache. maxsize is in bytes, ttl in seconds
+        this._cache = CacheManager.caching({
+            store: fsStore,
+            // isCacheableValue: opts.cache.isCacheableValue,
+            options: {
+                ttl: opts.cache.ttl,
+                maxsize: 1024*1000*100,
+                path: opts.cache.path + '/' + this._name,
+                preventfill: opts.cache.preventfill,
+                reviveBuffers: true
+            }
+        });
+        // *** end of caching setup ***
         this._baseUrl = baseUrl;
         this._logger = new Logger('netsblox:rpc:'+this._name);
         // setup api endpoint
         this.getPath = () => '/'+this._name;
         this.isStateless = true;
         this._remainingMsgs = {};
-        // setup cache. maxsize is in bytes, ttl in seconds
-        this._cache = CacheManager.caching({
-            store: fsStore,
-            options: {
-                ttl: opts.cache.ttl,
-                maxsize: 1024*1000*100,
-                path: opts.cache.path + '/' + this._name,
-                preventfill: false,
-                reviveBuffers: true
-            }
-        });
     }
 
     /**
@@ -63,7 +72,7 @@ class ApiConsumer {
             let promises = queryOptions.map( qo => this._requestData(qo));
             return Promise.all(promises);
         }
-        let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
+        let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString; // the cache key
         this._logger.trace('requesting data for',fullUrl);
         return this._cache.wrap(fullUrl, ()=>{
             this._logger.trace('request is not cached, calling external endpoint');
@@ -75,6 +84,7 @@ class ApiConsumer {
         }).catch(err => {
             this._logger.error('error in requesting data from', fullUrl, err);
         });
+        // catching the error here means that if _requestData is directly accessed, caller won't be able to handle the error.
     }
 
     /**

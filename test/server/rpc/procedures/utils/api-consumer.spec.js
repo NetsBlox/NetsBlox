@@ -1,5 +1,5 @@
 const ApiConsumer = require('../../../../../src/server/rpc/procedures/utils/api-consumer.js'),
-    apiConsumer = new ApiConsumer('testConsumer',''),
+    apiConsumer = new ApiConsumer('testConsumer','',{cache: {preventfill: true}}),
     RPCMock = require('../../../../assets/mock-rpc'),
     testRpc = new RPCMock(apiConsumer),
     assert = require('assert');
@@ -53,16 +53,36 @@ describe('ApiConsumer', function(){
                 });
             });
         });
+
+        it('should not cache rejected promises', done => {
+            let queryOpts = {
+                queryString: '/',
+                baseUrl: 'http://nonexistingdomainadslfjazxcvsadf.com',
+                json: false
+            };
+            apiConsumer._requestData(queryOpts).then(() => {
+                throw('this request shouldnt resolve');
+            }).catch(() => {
+                // check if it is cached or not
+                testRpc._rpc._cache.get(queryOpts.baseUrl + queryOpts.queryString, function(err, result) {
+                    // if one of these assertions fail, the exception will be catched by the wrapping func thus u'll get a timeout
+                    assert.equal(err,null);
+                    assert.equal(result,null);
+                    done();
+                });
+            });
+        });
     });
 
     describe('requestData', ()=>{
-        it('should get correct data from the endpoint', done => {
+        it.only('should get correct data from the endpoint', done => {
             let queryOpts = {
                 queryString: '/',
                 baseUrl: 'http://google.com',
                 json: false
             };
             apiConsumer._requestData(queryOpts).then(data => {
+                console.log('data is', data);
                 assert(data.match(/www\.google\.com/).length > 0);
                 done();
             }).catch(e => {
@@ -70,7 +90,7 @@ describe('ApiConsumer', function(){
             });
         });
 
-        it('should get response from the cache', done => {
+        it('should get correct response from the cache', done => {
             let cache = testRpc._rpc._cache;
             let queryOpts = {
                 queryString: '',
