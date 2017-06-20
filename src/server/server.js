@@ -128,10 +128,12 @@ Server.prototype.configureRoutes = function() {
     });
 
     // Initial page
-    this.app.get('/debug.html', (req, res) =>
-        res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html')));
-
     this.app.get('/', (req, res) => {
+        if(process.env.ENV !== 'production'){
+            res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html'));
+            return;
+        }
+        
         var baseUrl = `https://${req.get('host')}`,
             url = baseUrl + req.originalUrl,
             projectName = req.query.ProjectName,
