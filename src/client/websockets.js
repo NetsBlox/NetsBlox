@@ -40,7 +40,7 @@ WebSocketManager.MessageHandlers = {
         // filter for gameplay
         if (dstId === this.ide.projectName || dstId === 'others in room' || dstId === 'everyone in room') {
             content = this.deserializeMessage(msg);
-            this.onMessageReceived(messageType, content, 'role');
+            this.onMessageReceived(messageType, content, 'role', msg);
         }
     },
 
@@ -135,15 +135,15 @@ WebSocketManager.MessageHandlers = {
                 this.ide.showMessage(msg.from + ' tried sending you message type \'' + msg.name + '\' when you already have it!', 2);
             } else {
                 // Prepare dialog & prompt user
-                var request = 
+                var request =
                     msg.from + ' requested to send you a message type:\n\'' +
-                    msg.name + '\' with ' + 
-                    msg.fields.length + 
+                    msg.name + '\' with ' +
+                    msg.fields.length +
                     (msg.fields.length !== 1 ? ' fields.' : ' field.') + '\n' +
                     'Would you like to accept?';
 
                 dialog.askYesNo('Message Share Request', request, myself.ide.root());
-                
+
                 // Accept the request
                 dialog.ok = function() {
                     var ide = myself.ide.root().children[0].parentThatIsA(IDE_Morph);
@@ -156,7 +156,7 @@ WebSocketManager.MessageHandlers = {
                             }
 
                             // format notification
-                            var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length + 
+                            var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length +
                                 (msg.fields.length === 0 ? ' fields.' : (msg.fields.length === 1 ? ' field: ' + msg.fields : ' fields: ' + msg.fields));
 
                             // notify
@@ -237,7 +237,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
         }
 
         if (!self.errored && Date.now() - self.version > 5000) {  // tried connecting for 5 seconds
-            errMsg = self.hasConnected ? 
+            errMsg = self.hasConnected ?
                 'Temporarily disconnected.\nSome network functionality may be ' +
                 'nonfunctional.\nTrying to reconnect...' :
 
@@ -374,7 +374,7 @@ WebSocketManager.prototype.updateRoomInfo = function() {
             room: roomName,
             role: roleId
         };
-        
+
     if (owner) {
         msg.type = 'join-room';
         msg.owner = owner;
@@ -388,7 +388,7 @@ WebSocketManager.prototype.updateRoomInfo = function() {
  * @param {String} message
  * @return {undefined}
  */
-WebSocketManager.prototype.onMessageReceived = function (message, content, role) {
+WebSocketManager.prototype.onMessageReceived = function (message, content, role, msg) {
     var hats = [],
         context,
         idle = !this.processes.length,
@@ -397,6 +397,10 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
 
     content = content || [];
     if (message !== '') {
+        // if the message is for requestId
+        stage.threads.processes.forEach(function (p) {
+            if (message === '__reply__' && (p.requestId === msg.requestId) ) p.reply = msg;
+        });
         stage.children.concat(stage).forEach(function (morph) {
             if (morph instanceof SpriteMorph || morph instanceof StageMorph) {
                 hats = hats.concat(morph.allHatBlocksForSocket(message, role));  // FIXME
@@ -405,13 +409,15 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
 
         for (var h = hats.length; h--;) {
             block = hats[h];
-            // Initialize the variable frame with the message content for 
+            // Initialize the variable frame with the message content for
             // receiveSocketMessage blocks
             context = null;
             if (block.selector === 'receiveSocketMessage') {
                 // Create the network context
                 context = new Context();
                 context.variables.addVar('__message__', content);
+                context.variables.addVar('__requestId__', msg.requestId);
+                context.variables.addVar('__srcId__', msg.srcId);
             }
 
             // Find the process list for the given block

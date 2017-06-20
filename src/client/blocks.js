@@ -1159,3 +1159,17 @@ InputSlotMorph.prototype.rpcActions = function () {
     return dict;
 };
 
+CommandBlockMorph.prototype.isStop = function () {
+    return ([
+        'doStopThis',
+        'doStop',
+        'doStopBlock',
+        'doStopAll',
+        'doForever',
+        'doReport',
+        // Netsblox addition: start
+        'doSocketResponse',
+        // Netsblox addition: end
+        'removeClone'
+    ].indexOf(this.selector) > -1);
+};
