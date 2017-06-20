@@ -3,10 +3,43 @@ const ApiConsumer = require('../utils/api-consumer'),
 
 let chart = new ApiConsumer('chart');
 let chartNode = new ChartNode(600, 600);
+let defaultColor = 'rgba(74, 108, 212, 0.8)';
 chart._dataset = null;
 chart._image = null;
 
-chart._processDataset = function(rawDataset, xAxis, yAxis, title) {
+let defaultOption = (xAxis, yAxis, title) => {
+    return {
+        scales: {
+            xAxes: [{
+                scaleLabel: {
+                    display: true,
+                    labelString: xAxis,
+                    fontSize: 16
+                }
+            }],
+            yAxes: [{
+                scaleLabel: {
+                    display: true,
+                    labelString: yAxis,
+                    fontSize: 16
+                },
+                ticks: {
+                    beginAtZero:true
+                }
+            }]
+        },
+        title: {
+            display: true,
+            text: title,
+            fontSize: 20,
+            padding: 20
+        },
+        legend: {
+            display: false
+        }
+    };
+};
+chart._processDataset = function(rawDataset, xAxis, yAxis, title, chartType) {
     let rawArray = JSON.parse('[' + rawDataset + ']');
     let data = {};
     data.labels = rawArray.map((item) => item[0]);
@@ -15,29 +48,20 @@ chart._processDataset = function(rawDataset, xAxis, yAxis, title) {
         data: rawArray.map((item) => {
             return parseInt(item[1]);
         }),
-        backgroundColor: 'rgba(74, 108, 212, 0.8)'
+        backgroundColor: defaultColor
     }];
+    if (chartType === 'line') {
+        data.datasets[0].fill = false;
+        data.datasets[0].borderColor = defaultColor;
+    }
     return {
-        type: 'bar',
+        type: chartType,
         data: data,
-        options: {
-            scales: {
-                yAxes: [{
-                    ticks: {
-                        beginAtZero:true
-                    }
-                }]
-            },
-            title: {
-                display: true,
-                text: title
-            }
-        }
+        options: defaultOption(xAxis, yAxis, title)
     };
 };
 
-chart.drawBarChart = function(dataset, xAxisTag, yAxis, title) {
-    let chartOptions = this._processDataset(dataset, xAxisTag, title);
+chart._drawChart = function (chartOptions) {
     return chartNode.drawChart(chartOptions).then(() => {
         return chartNode.getImageBuffer('image/png');
     }).then((imageBuffer) => {
@@ -50,6 +74,16 @@ chart.drawBarChart = function(dataset, xAxisTag, yAxis, title) {
     }).catch(() => {
         this.response.status(404).send('');
     });
+};
+
+chart.drawBarChart = function(dataset, xAxisTag, yAxis, title) {
+    let chartOptions = this._processDataset(dataset, xAxisTag, yAxis, title, 'bar');
+    return this._drawChart(chartOptions);
+};
+
+chart.drawLineChart = function(dataset, xAxisTag, yAxis, title) {
+    let chartOptions = this._processDataset(dataset, xAxisTag, yAxis, title, 'line');
+    return this._drawChart(chartOptions);
 };
 
 module.exports = chart;
