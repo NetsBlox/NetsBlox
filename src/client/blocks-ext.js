@@ -280,11 +280,11 @@ function HintInputSlotMorph(text, hint, isNumeric) {
 
     // If the StringMorph gets clicked on when empty, the hint text
     // should be "ghostly"
-    this.contents().mouseDownLeft = function() {
+    this.contents().mouseClickLeft = function() {
         if (self.empty) {
             this.text = '';
         }
-        StringMorph.prototype.mouseDownLeft.apply(this, arguments);
+        StringMorph.prototype.mouseClickLeft.apply(this, arguments);
     };
 }
 
