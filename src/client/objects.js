@@ -265,7 +265,7 @@ SpriteMorph.prototype.initBlocks = function () {
     SpriteMorph.prototype.blocks.doSocketRequest = {
         type: 'reporter',
         category: 'services',
-        spec: 'request resource %msgInput from %roles'
+        spec: 'send msg %msgInput to %roles and wait'
     };
 
     SpriteMorph.prototype.blocks.doSocketResponse = {
