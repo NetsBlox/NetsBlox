@@ -271,7 +271,7 @@ SpriteMorph.prototype.initBlocks = function () {
     SpriteMorph.prototype.blocks.doSocketResponse = {
         type: 'command',
         category: 'services',
-        spec: 'send reply %s'
+        spec: 'send response %s'
     };
 
     SpriteMorph.prototype.blocks.doSocketMessage = {
