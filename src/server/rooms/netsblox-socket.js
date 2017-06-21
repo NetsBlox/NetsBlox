@@ -30,8 +30,8 @@ var createSaveableProject = function(json) {
     project.Updated = new Date();
 
     // Add the thumbnail,notes from the project content
-    project.thumbnail = Utils.xml.thumbnail(project.SourceCode);
-    project.notes = Utils.xml.notes(project.SourceCode);
+    project.Thumbnail = Utils.xml.thumbnail(project.SourceCode);
+    project.Notes = Utils.xml.notes(project.SourceCode);
     return project;
 };
 
