@@ -593,10 +593,7 @@ module.exports = [
             return example.getRoleNames()
                 .then(names => example.getRole(names.shift()))
                 .then(content => {
-                    const src = content.SourceCode;
-                    const startIndex = src.indexOf('<thumbnail>');
-                    const endIndex = src.indexOf('</thumbnail>');
-                    const thumbnail = src.substring(startIndex + 11, endIndex);
+                    const thumbnail = Utils.xml.thumbnail(content.SourceCode);
                     return applyAspectRatio(thumbnail, aspectRatio);
                 })
                 .then(buffer => {

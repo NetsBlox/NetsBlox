@@ -159,6 +159,13 @@ var getEmptyRole = function(name) {
     };
 };
 
+var parseField = function(src, field) {
+    const startIndex = src.indexOf(`<${field}>`);
+    const endIndex = src.indexOf(`</${field}>`);
+    return src.substring(startIndex + field.length + 2, endIndex);
+};
+
+
 module.exports = {
     serialize,
     serializeArray,
@@ -169,5 +176,9 @@ module.exports = {
     extractRpcs,
     computeAspectRatioPadding,
     isSocketUuid,
+    xml: {
+        thumbnail: src => parseField(src, 'thumbnail'),
+        notes: src => parseField(src, 'notes')
+    },
     getArgumentsFor
 };

@@ -317,13 +317,8 @@ module.exports = [
                         return example.getRole(role)
                             .then(content => {
                                 primaryRole = content.SourceCode;
-                                let startIndex = primaryRole.indexOf('<thumbnail>');
-                                let endIndex = primaryRole.indexOf('</thumbnail>');
-                                thumbnail = primaryRole.substring(startIndex + 11, endIndex);
-
-                                startIndex = primaryRole.indexOf('<notes>');
-                                endIndex = primaryRole.indexOf('</notes>');
-                                notes = primaryRole.substring(startIndex + 7, endIndex);
+                                thumbnail = Utils.xml.thumbnail(primaryRole);
+                                notes = Utils.xml.notes(primaryRole);
 
                                 return example.getRoleNames();
                             })
