@@ -86,7 +86,7 @@ var joinActiveProject = function(userId, room, res) {
 
             info(`adding ${userId} to new role "${openRole}" at "${room.name}"`);
 
-            role = getEmptyRole();
+            role = getEmptyRole(openRole);
             return room.setRole(openRole, role).then(() => {
                 serialized = serializeRole(role, room);
                 return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
@@ -154,8 +154,10 @@ var isSocketUuid = function(name) {
 var getEmptyRole = function(name) {
     return {
         ProjectName: name,
-        SourceCode: null,
-        SourceSize: 0
+        SourceCode: '',
+        SourceSize: 0,
+        Media: '',
+        MediaSize: 0
     };
 };
 
@@ -180,5 +182,6 @@ module.exports = {
         thumbnail: src => parseField(src, 'thumbnail'),
         notes: src => parseField(src, 'notes')
     },
+    getEmptyRole,
     getArgumentsFor
 };

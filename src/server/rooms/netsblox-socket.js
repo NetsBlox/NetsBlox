@@ -427,7 +427,7 @@ NetsBloxSocket.MessageHandlers = {
 
     'add-role': function(msg) {
         if (this.isOwner()) {
-            this._room.createRole(msg.name);
+            this._room.createRole(msg.name, Utils.getEmptyRole(msg.name));
         }
     },
 
