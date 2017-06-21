@@ -16,7 +16,6 @@ var counter = 0,
     R = require('ramda'),
     Utils = require('../server-utils'),
     Sessions = require('snap-collaboration').sessions,
-    parseXml = require('xml2js').parseString,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
     RoomManager = require('./room-manager'),
@@ -342,30 +341,18 @@ NetsBloxSocket.MessageHandlers = {
         var id = msg.id,
             json = msg.project;
 
-        createSaveableProject(json, (err, project) => {
-            if (err) {
-                var msg = [
-                    `Could not create saveable project for ${this.roleId} from `,
-                    `${JSON.stringify(json)} (${err.toString()})`
-                ].join('');
-                this._logger.error(msg);
-                this._projectRequests[id].reject(err);
-                delete this._projectRequests[id];
-                return;
-            }
-
-            if (!project) {  // silent failure
-                err = `Received falsey project! ${JSON.stringify(project)}`;
-                this._logger.error(err);
-                this._projectRequests[id].reject(err);
-                delete this._projectRequests[id];
-                return;
-            }
-
-            this._logger.log('created saveable project for request ' + id);
-            this._projectRequests[id].resolve(project);
+        const project = createSaveableProject(json);
+        if (!project) {  // silent failure
+            var err = `Received falsey project! ${JSON.stringify(project)}`;
+            this._logger.error(err);
+            this._projectRequests[id].reject(err);
             delete this._projectRequests[id];
-        });
+            return;
+        }
+
+        this._logger.log('created saveable project for request ' + id);
+        this._projectRequests[id].resolve(project);
+        delete this._projectRequests[id];
     },
 
     'rename-room': function(msg) {
@@ -440,7 +427,7 @@ NetsBloxSocket.MessageHandlers = {
 
     'add-role': function(msg) {
         if (this.isOwner()) {
-            this._room.createRole(msg.name);
+            this._room.createRole(msg.name, Utils.getEmptyRole(msg.name));
         }
     },
 

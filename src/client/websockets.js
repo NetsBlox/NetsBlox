@@ -1,6 +1,6 @@
 /*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions,
   DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject, NetsBloxSerializer,
-  BlockMorph, localize*/
+  localize*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
@@ -265,85 +265,49 @@ WebSocketManager.prototype.sendMessage = function(message) {
 
 WebSocketManager.prototype.serializeMessage = function(message) {
     if (message.content) {
-        var myself = this,
-            fields = Object.keys(message.content),
-            definitions = [],
+        var fields = Object.keys(message.content),
             content;
 
+        this.serializer.flush();
+        this.serializer.isSavingHistory = false;
         for (var i = fields.length; i--;) {
             content = message.content[fields[i]];
             if (isObject(content)) {
-                if (content instanceof Context) {
-                    content.receiver = null;
-                    content.outerContext = null;
-                    definitions = definitions.concat(this.getRequiredDefinitions(content.expression));
-                }
-                message.content[fields[i]] = this.serializer.serialize(content);
+                message.content[fields[i]] = this.serializer.store(content);
             }
         }
-
-        // Attach the necessary definitions
-        message.definitions = definitions.map(function(definition) {
-            return myself.serializer.serialize(definition);
-        }).reverse();
+        this.serializer.isSavingHistory = true;
+        this.serializer.flush();
     }
 
     return JSON.stringify(message);
 };
 
-WebSocketManager.prototype.getRequiredDefinitions = function(block) {
-    var myself = this,
-        allDefinitions;
-
-    if (!(block instanceof BlockMorph)) {
-        return [];
-    }
-
-    allDefinitions = block.inputs().map(function(input) {
-        return myself.getRequiredDefinitions(input);
-    }).reduce(function(l1, l2) {
-        return l1.concat(l2);
-    }, []);
-
-    if (block.definition) {
-        allDefinitions.push(block.definition);
-        allDefinitions = allDefinitions.concat(
-            this.getRequiredDefinitions(block.definition.body.expression));
-    }
-
-    if (block.nextBlock && block.nextBlock()) {
-        allDefinitions = allDefinitions.concat(this.getRequiredDefinitions(block.nextBlock()));
-    }
-
-    return allDefinitions;
-};
-
 WebSocketManager.prototype.deserializeMessage = function(message) {
-    var myself = this,
-        content = message.content,
+    var content = message.content,
         fields = Object.keys(content),
-        definitions = message.definitions,
-        value;
+        value,
+        receiver,
+        project,
+        model;
 
-    // Load any provided block definitions first
-    if (definitions) {
-        definitions = definitions.map(function(definition) {
-            return myself.serializer.loadCustomBlock(
-                myself.serializer.parse(definition),
-                true
-            );
-        });
-        this.serializer.init();
-        this.serializer.project.stage = new StageMorph();
-        this.serializer.project.sprites = {};
-        this.serializer.project.stage.globalBlocks = definitions;
-    }
+    this.serializer.project = {
+        stage: new StageMorph(),
+        sprites: {}
+    };
 
     for (var i = fields.length; i--;) {
         value = content[fields[i]];
         if (value[0] === '<') {
             try {
-                content[fields[i]] = this.serializer.loadValue(this.serializer.parse(value));
+                model = this.serializer.parse(value);
+                receiver = model.childNamed('receiver');
+                project = receiver && receiver.childNamed('project');
+                // If the receiver is the project...
+                if (project) {
+                    this.serializer.rawLoadProjectModel(project);
+                }
+                content[fields[i]] = this.serializer.loadValue(model);
             } catch(e) {  // must not have been XML
                 console.error('Could not deserialize!', e);
             }
@@ -499,6 +463,7 @@ WebSocketManager.prototype.getSerializedProject = function() {
         pdata,
         media;
 
+    ide.serializer.flush();
     ide.serializer.isCollectingMedia = true;
     pdata = ide.serializer.serialize(ide.stage);
     media = ide.serializer.mediaXML(ide.projectName);
@@ -522,6 +487,7 @@ WebSocketManager.prototype.getSerializedProject = function() {
     }
     ide.serializer.isCollectingMedia = false;
     ide.serializer.flushMedia();
+    ide.serializer.flush();
 
     return {
         ProjectName: ide.projectName,
