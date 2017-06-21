@@ -297,7 +297,15 @@
     };
 
     ProjectStorage.getRawUserProjects = function (username) {
-        return collection.find({owner: username}).toArray();
+        return collection.find({owner: username}).toArray()
+            .then(projects => {
+                const validProjects = projects.filter(project => !!project);
+                if (validProjects.length < projects.length) {
+                    logger.warn(`Found invalid project for ${username}. Removing...`);
+                }
+
+                return projects;
+            });
     };
 
     ProjectStorage.getAllRawUserProjects = function (username) {
