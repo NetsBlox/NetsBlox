@@ -153,6 +153,10 @@
         // Override
         save() {
             const query = {$set: {}};
+            if (this.transient) {
+                query.$set.transient = true;
+            }
+
             return this.collectProjects()
                 .then(roles => {
                     this._logger.trace('collected projects for ' + this.owner);
@@ -198,16 +202,16 @@
             this.activeRole = role;
         }
 
-        persist() {  // save in the non-transient storage
-            if (this.isTransient()) {
-                this.destroy();
-                this._db = collection;
-            }
-            return this.save();
+        persist() {
+            const query = {$set: {transient: false}};
+            this.transient = false;
+            return this._db.update(this.getStorageId(), query, {upsert: true})
+                .then(() => this.save());
         }
 
         isTransient() {
-            return this._db === transientCollection;
+            return this.getRawProject()
+                .then(project => !!project.transient);
         }
 
         setPublic(isPublic) {
@@ -271,13 +275,11 @@
 
     // Project Storage
     var logger,
-        collection,
-        transientCollection;
+        collection;
 
     ProjectStorage.init = function (_logger, db) {
         logger = _logger.fork('projects');
         collection = db.collection('projects');
-        transientCollection = db.collection('unsaved-projects');
     };
 
     ProjectStorage.get = function (username, projectName) {
@@ -309,7 +311,7 @@
     };
 
     ProjectStorage.getRawUserProjects = function (username) {
-        return collection.find({owner: username}).toArray()
+        return collection.find({owner: username, transient: {$ne: true}}).toArray()
             .then(projects => {
                 const validProjects = projects.filter(project => !!project);
                 if (validProjects.length < projects.length) {
@@ -322,10 +324,7 @@
 
     ProjectStorage.getAllRawUserProjects = function (username) {
         // Get names from saved and transient projects
-        return Q.all([
-            collection.find({owner: username}).toArray(),
-            transientCollection.find({owner: username}).toArray()
-        ]).then(groups => groups[0].concat(groups[1]));
+        return collection.find({owner: username}).toArray();
     };
 
     ProjectStorage.getUserProjects = function (username) {
@@ -365,16 +364,16 @@
             name: room.name,
             originTime: room.originTime,
             activeRole: user.roleId,
+            transient: true,
             collaborators: room.getCollaborators(),
             roles: {}
         };
     };
 
     ProjectStorage.new = function(user, activeRoom) {
-        // TODO: check for the room in the transient collection...
         return new Project({
             logger: logger,
-            db: transientCollection,
+            db: collection,
             data: getDefaultProjectData(user, activeRoom),
             room: activeRoom
         });
