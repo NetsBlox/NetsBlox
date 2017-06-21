@@ -53,6 +53,10 @@
             return Projects.getRawUserProjects(this.username);
         }
 
+        getAllRawProjects() {
+            return Projects.getAllRawUserProjects(this.username);
+        }
+
         getRawSharedProjects() {
             return Projects.getRawSharedProjects(this.username);
         }
@@ -62,7 +66,7 @@
         }
 
         getProjectNames() {
-            return this.getRawProjects()
+            return this.getAllRawProjects()
                 .then(projects => projects.map(project => project.name));
         }
 
