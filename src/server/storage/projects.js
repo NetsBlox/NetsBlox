@@ -169,6 +169,8 @@
 
                         if (nameChanged) {
                             query.$set.name = this._room.name;
+                            this.name = query.$set.name;
+                            this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
                         }
                     }
 
@@ -176,7 +178,6 @@
                         .then(() => {
                             this._logger.trace(`saved project ${this.owner}/${this.name}`);
                             this.owner = query.$set.owner || this.owner;
-                            this.name = query.$set.name || this.name;
                         });
                 });
         }
