@@ -4,8 +4,6 @@ const ApiConsumer = require('../utils/api-consumer'),
 let chart = new ApiConsumer('chart');
 let chartNode = new ChartNode(600, 600);
 let defaultColor = 'rgba(74, 108, 212, 0.8)';
-chart._dataset = null;
-chart._image = null;
 
 let defaultOption = (xAxis, yAxis, title) => {
     return {
@@ -39,20 +37,40 @@ let defaultOption = (xAxis, yAxis, title) => {
         }
     };
 };
-chart._processDataset = function(rawDataset, xAxis, yAxis, title, chartType) {
-    let rawArray = JSON.parse('[' + rawDataset + ']');
+
+let getField = (input, fieldName) => {
+    return input.map((entry) => {
+        return entry.find((cur) => {
+            return cur[0] === fieldName;
+        });
+    }).reduce((acc, cur) => {
+        if (parseInt(cur[1]) && parseInt(cur[1]).toString().length === cur[1].length) {
+            return acc.concat(parseInt(cur[1]));
+        }
+        return acc.concat(cur[1]);
+    }, []);
+};
+
+chart._processDataset = function(rawArray, xAxis, yAxis, title, chartType) {
     let data = {};
-    data.labels = rawArray.map((item) => item[0]);
+    data.labels = getField(rawArray, xAxis);
     data.datasets = [{
-        label: xAxis,
-        data: rawArray.map((item) => {
-            return parseInt(item[1]);
-        }),
+        label: yAxis,
+        data: getField(rawArray, yAxis),
         backgroundColor: defaultColor
     }];
+    //data.datasets = yAxis.map((dataset) => {
+    //    return {
+    //        label: dataset,
+    //        data: getField(rawArray, dataset),
+    //        backgroundColor: defaultColor
+    //    };
+    //});
     if (chartType === 'line') {
-        data.datasets[0].fill = false;
-        data.datasets[0].borderColor = defaultColor;
+        data.datasets.map((item) => {
+            item.fill = false;
+            item.borderColor = defaultColor;
+        });
     }
     return {
         type: chartType,
@@ -76,14 +94,12 @@ chart._drawChart = function (chartOptions) {
     });
 };
 
-chart.drawBarChart = function(dataset, xAxisTag, yAxis, title) {
-    let chartOptions = this._processDataset(dataset, xAxisTag, yAxis, title, 'bar');
-    return this._drawChart(chartOptions);
+chart.drawBarChart = function(dataset, xAxisTag, yAxisTag, title) {
+    return this._drawChart(this._processDataset(dataset, xAxisTag, yAxisTag, title, 'bar'));
 };
 
-chart.drawLineChart = function(dataset, xAxisTag, yAxis, title) {
-    let chartOptions = this._processDataset(dataset, xAxisTag, yAxis, title, 'line');
-    return this._drawChart(chartOptions);
+chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, title) {
+    return this._drawChart(this._processDataset(dataset, xAxisTag, yAxisTag, title, 'line'));
 };
 
 module.exports = chart;
