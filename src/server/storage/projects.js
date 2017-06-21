@@ -299,6 +299,14 @@
         return collection.find({owner: username}).toArray();
     };
 
+    ProjectStorage.getAllRawUserProjects = function (username) {
+        // Get names from saved and transient projects
+        return Q.all([
+            collection.find({owner: username}).toArray(),
+            transientCollection.find({owner: username}).toArray()
+        ]).then(groups => groups[0].concat(groups[1]));
+    };
+
     ProjectStorage.getUserProjects = function (username) {
         return ProjectStorage.getRawUserProjects(username)
             .then(data => data.map(d => new Project({
