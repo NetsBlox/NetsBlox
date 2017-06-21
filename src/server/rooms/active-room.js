@@ -40,9 +40,14 @@ class ActiveRoom {
         this.destroy();
 
         // If the owner is a socket uuid, then delete it from the database, too
-        if (this._project && this._project.isTransient()) {
-            this._logger.trace(`removing project ${this.uuid} as the room has closed`);
-            this._project.destroy();
+        if (this._project) {
+            return this._project.isTransient()
+                .then(isTrans => {
+                    if (isTrans) {
+                        this._logger.trace(`removing project ${this.uuid} as the room has closed`);
+                        this._project.destroy();
+                    }
+                });
         }
     }
 
