@@ -24,25 +24,16 @@ var counter = 0,
     PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/,
     SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
 
-var createSaveableProject = function(json, callback) {
+var createSaveableProject = function(json) {
     var project = R.pick(PROJECT_FIELDS, json);
     // Set defaults
     project.Public = false;
     project.Updated = new Date();
 
     // Add the thumbnail,notes from the project content
-    var inProjectSource = ['Thumbnail', 'Notes'];
-
-    parseXml(project.SourceCode, (err, jsonSrc) => {
-        if (err) {
-            return callback(err);
-        }
-
-        inProjectSource.forEach(field => {
-            project[field] = jsonSrc.project[field.toLowerCase()];
-        });
-        callback(null, project);
-    });
+    project.Thumbnail = Utils.xml.thumbnail(project.SourceCode);
+    project.Notes = Utils.xml.notes(project.SourceCode);
+    return project;
 };
 
 class NetsBloxSocket {
