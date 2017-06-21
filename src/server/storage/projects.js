@@ -44,6 +44,18 @@
             return new Project(params);
         }
 
+        getRawProject() {
+            return this._db.findOne(this.getStorageId())
+                .then(project => {
+                    if (!project.roles) {
+                        this._logger.warn(`PROJECT FOUND WITH NO ROLES ${project.name}/${project.owner}`)
+                        project.roles = {};
+                        project.roles.myRole = utils.getEmptyRole('myRole');
+                    }
+                    return project;
+                });
+        }
+
         ///////////////////////// Roles ///////////////////////// 
         setRawRole(role, content) {
             const query = {$set: {}};
@@ -68,7 +80,7 @@
         }
 
         getRawRole(role) {
-            return this._db.findOne(this.getStorageId())
+            return this.getRawProject()
                 .then(project => {
                     const content = project.roles[role];
                     content.ProjectName = role;
@@ -82,7 +94,7 @@
         }
 
         getRawRoles() {
-            return this._db.findOne(this.getStorageId())
+            return this.getRawProject()
                 .then(project => {
                     return Object.keys(project.roles)
                         .map(name => {
@@ -119,7 +131,7 @@
         }
 
         getRoleNames () {
-            return this._db.findOne(this.getStorageId())
+            return this.getRawProject()
                 .then(project => Object.keys(project.roles));
         }
 
