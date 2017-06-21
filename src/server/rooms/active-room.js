@@ -290,8 +290,8 @@ class ActiveRoom {
     }
 
     silentCreateRole (role, content) {
-        this._logger.trace(`Adding role ${role}`);
         if (!this.roles[role]) {
+            this._logger.trace(`Adding role ${role}`);
             this.roles[role] = null;
             if (content) {
                 return this.setRole(role, content || utils.getEmptyRole(role));
