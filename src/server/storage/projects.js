@@ -48,7 +48,7 @@
             return this._db.findOne(this.getStorageId())
                 .then(project => {
                     if (!project.roles) {
-                        this._logger.warn(`PROJECT FOUND WITH NO ROLES ${project.name}/${project.owner}`)
+                        this._logger.warn(`PROJECT FOUND WITH NO ROLES ${project.name}/${project.owner}`);
                         project.roles = {};
                         project.roles.myRole = utils.getEmptyRole('myRole');
                     }
