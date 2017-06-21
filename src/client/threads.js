@@ -1,5 +1,6 @@
 /* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
    List, SnapActions*/
+
 ThreadManager.prototype.startProcess = function (
     block,
     isThreadSafe,
@@ -318,13 +319,47 @@ NetsProcess.prototype.parseRPCResult = function (result) {
     return result;
 };
 
+function listToJSON(list) {
+    if (!(list instanceof List)) {
+        return list;
+    }
+    return JSON.stringify(list.itemsArray().map(listToJSON));
+}
+
+function parseList(input) {
+    if (input.charAt(0) !== '[') {
+        return input;
+    }
+    return JSON.parse(input).map(parseList);
+}
+
+function toQueryString(obj, prefix) {
+    var str = [], k, v;
+    for(var p in obj) {
+        if (!obj.hasOwnProperty(p)) {continue;} // skip things from the prototype
+        if (~p.indexOf('[')) {
+            k = prefix ? prefix + '[' + p.substring(0, p.indexOf('[')) + ']' + p.substring(p.indexOf('[')) : p;
+// only put whatever is before the bracket into new brackets; append the rest
+        } else {
+            k = prefix ? prefix + '[' + p + ']' : p;
+        }
+        v = obj[p];
+        str.push(typeof v === 'object' ?
+            toQueryString(v, k) :
+            k + '=' + v);
+    }
+    return str.join('&');
+}
+
 NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
     var action = methodSignature[0],
         argNames = methodSignature[1],
         values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
         params;
-
     params = argNames.map(function(name, index) {
+        if (values[index] instanceof List) {
+            return toQueryString(parseList(listToJSON(values[index])), name);
+        }
         return name + '=' + values[index];
     }).join('&');
     return this.getJSFromRPCDropdown(rpc, action, params);
