@@ -640,8 +640,8 @@ StageMorph.prototype.toXML = function (serializer) {
         serializer.store(this.globalBlocks),
         (ide && ide.globalVariables) ?
                     serializer.store(ide.globalVariables) : '',
-        serializer.historyXML(this.id),
-        serializer.replayHistory()
+        serializer.isSavingHistory ? serializer.historyXML(this.id): '',
+        serializer.isSavingHistory ? serializer.replayHistory() : ''
     );
 };
 
