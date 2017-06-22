@@ -272,6 +272,7 @@ class ActiveRoom {
 
     setRole(role, content) {
         this._logger.trace(`setting ${role} to ${content}`);
+        this.roles[role] = this.roles[role] || null;
         return this._project.setRole(role, content);
     }
 
