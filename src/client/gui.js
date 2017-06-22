@@ -756,3 +756,20 @@ IDE_Morph.prototype.rawOpenBlocksString = function (str, name, silently) {
         new BlockImportDialogMorph(blocks, this.stage, name).popUp();
     }
 };
+
+
+IDE_Morph.prototype.logout = function () {
+    var myself = this;
+    delete localStorage['-snap-user'];
+    SnapCloud.logout(
+        function () {
+            SnapCloud.clear();
+            myself.showMessage('disconnected.', 2);
+        },
+        function () {
+            SnapCloud.clear();
+            myself.showMessage('disconnected.', 2);
+        }
+    );
+    this.newProject(); //Netsblox addition
+};
