@@ -163,8 +163,9 @@ class ActiveRoom {
 
     save() {
         if (this._project) {  // has been saved
-            this._project.save();
+            return this._project.save();
         }
+        return Q();
     }
 
     move (params) {
@@ -220,7 +221,7 @@ class ActiveRoom {
         }
         this.sockets().forEach(socket => socket.send(msg));
     }
- 
+
     sockets () {
         return R.values(this.roles)
             .filter(socket => !!socket);
