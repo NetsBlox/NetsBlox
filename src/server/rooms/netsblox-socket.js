@@ -433,11 +433,7 @@ NetsBloxSocket.MessageHandlers = {
 
     ///////////// Import/Export /////////////
     'import-room': function(msg) {
-        var roles = Object.keys(msg.roles),
-            names = {},
-            name,
-            i = 2,
-            promise = Q();
+        let promise = Q([]);
 
         if (!this.hasRoom()) {
             this._logger.error(`${this.username} has no associated room`);
@@ -446,15 +442,19 @@ NetsBloxSocket.MessageHandlers = {
 
         // change the socket's name to the given name (as long as it isn't colliding)
         if (this.user) {
-            promise = this.user.getProjectNames()
-                .then(names => names.forEach(name => names[name] = true));
+            promise = this.user.getProjectNames();
         }
 
         return promise
-            .then(() => {
+            .then(names => {
                 // create unique name, if needed
-                name = msg.name;
-                while (names[name]) {
+                const takenNames = {};
+                let i = 2;
+
+                names.forEach(name => takenNames[name] = true);
+
+                let name = msg.name;
+                while (takenNames[name]) {
                     name = msg.name + ' (' + i + ')';
                     i++;
                 }
@@ -467,6 +467,7 @@ NetsBloxSocket.MessageHandlers = {
                 this._room.renameRole(this.roleId, msg.role);
 
                 // Add all the additional roles
+                let roles = Object.keys(msg.roles);
                 this._logger.trace(`adding roles: ${roles.join(',')}`);
                 roles.forEach(role => this._room.silentCreateRole(role));
 
