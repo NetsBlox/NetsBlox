@@ -122,7 +122,7 @@ var sendProjectTo = function(project, res) {
         openRole;
 
     // If room is not active, pick a role arbitrarily
-    openRole = project.activeRole || Object.keys(project.roles)[0];
+    openRole = project.activeRole || Object.keys(project.roles)[0];  // TODO: update this
     return project.getRole(openRole)
         .then(role => {
             const uuid = Utils.uuid(project.owner, project.name);

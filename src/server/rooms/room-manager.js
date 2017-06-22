@@ -42,7 +42,7 @@ RoomManager.prototype.init = function(logger, storage) {
 
 RoomManager.prototype.forkRoom = function(params) {
     var room = params.room,
-        socket = params.socket || room.roles[params.roleId],
+        socket = params.socket || room.roles[params.roleId],  // TODO: Update this
         newRoom;
 
     if (socket.username === room.owner) {
@@ -108,11 +108,10 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
 
 RoomManager.prototype.checkRoom = function(room) {
     var uuid = utils.uuid(room.owner, room.name),
-        roles = Object.keys(room.roles)
-            .filter(role => !!room.roles[role]);
+        sockets = room.sockets();
 
-    this._logger.trace('Checking room ' + uuid + ' (' + roles.length + ')');
-    if (roles.length === 0) {
+    this._logger.trace('Checking room ' + uuid + ' (' + sockets.length + ')');
+    if (sockets.length === 0) {
         this._logger.trace('Removing empty room: ' + uuid);
         delete this.rooms[uuid];
     }

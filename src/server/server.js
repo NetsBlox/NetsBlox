@@ -86,16 +86,13 @@ Server.prototype.configureRoutes = function() {
                 lastUpdateAt = new Date(project.lastUpdateAt);
             }
 
-            Object.keys(room.roles).forEach(roleId => {
-                const socket = room.roles[roleId];
-                if (socket) {
-                    roles[roleId] = {
+            room.getRoleNames().forEach(role => {
+                roles[role] = room.getSocketsAt(role).map(socket => {
+                    return {
                         username: socket.username,
                         uuid: socket.uuid
                     };
-                } else {
-                    roles[roleId] = null;
-                }
+                });
             });
 
             return {
