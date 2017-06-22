@@ -158,7 +158,7 @@ var saveRoom = function (activeRoom, socket, user, res) {
             log(`room save successful for project "${uuid}"`);
             return res.send('project saved!');
         })
-        .fail(err => {
+        .catch(err => {
             error(`project save failed for "${uuid}": ${err}`);
             return res.status(500).send('ERROR: ' + err);
         });
