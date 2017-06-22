@@ -155,6 +155,8 @@
             const query = {$set: {}};
             if (this.transient) {
                 query.$set.transient = true;
+            } else {
+                query.$set.transient = false;
             }
 
             return this.collectProjects()
