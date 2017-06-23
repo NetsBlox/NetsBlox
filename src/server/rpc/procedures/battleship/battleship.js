@@ -125,7 +125,7 @@ Battleship.prototype.fire = function(row, column) {
         trace('trying to infer a target');
         roles = Object.keys(this._boards);
         if (!roles.length) {
-            roles = Object.keys(socket._room.roles);
+            roles = socket._room.getRoleNames();
             trace(`no other boards. Checking other roles in the room (${roles})`);
         }
 
