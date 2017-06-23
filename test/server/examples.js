@@ -64,4 +64,16 @@ describe('examples', function() {
         })
     });
 
+    describe('project source creation', ()=>{
+        it('should get the source code for roles', (done)=>{
+            EXAMPLES.Battleship.toFullProject().then(src => {
+                assert(src.indexOf('</room>') > -1);
+                assert(src.indexOf('player 1') > -1);
+                assert(src.indexOf('player 2') > -1);
+                assert(src.indexOf('Battleship') > -1);
+                done();
+            });
+        });
+    });
+
 });

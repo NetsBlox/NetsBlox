@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const extractRpcs = require('../server-utils').extractRpcs;
+const nbVersion = require(ROOT_DIR + 'package.json').version;
 const _ = require('lodash');
 
 // Create the dictionary of examples
@@ -15,6 +16,20 @@ Example.getRole = function(role) {
 
 Example.getRoleNames = function() {
     return Q(Object.keys(this._roles));
+};
+
+Example.toFullProject = function() {
+    let deferred = Q.defer();
+    this.getRoles().then(roles => {
+        const projectName = roles[0].RoomName;
+        // prepare the roles' code
+        let wrappedRoles = roles.map(role => {
+            return `<role name="${role.ProjectName}">` + role.SourceCode + role.Media + '</role>';
+        });
+        const fullProject = `<room name="${projectName}" app="NetsBlox ${nbVersion}, http://netsblox.org">` + wrappedRoles.join('') + '</room>';
+        deferred.resolve(fullProject);
+    });
+    return deferred.promise;
 };
 
 // Read in the directories
