@@ -34,22 +34,24 @@ NPlayer.prototype.start = function() {
     // populate the players list
     this.players = [];
     
-    this.players = this.socket._room.sockets().map(socket => {
+    this.players = this.socket._room.sockets().map(function(socket) {
         return {role: socket.roleId, socket: socket};
     });
 
     // set the active player to the current one
     this.active = R.findIndex(R.propEq('role', this.socket.roleId))(this.players);
-
+    
     info(`Player #${this.active} (${this.players[this.active].role}) is (re)starting a ${this.players.length} player game`);
 
     // Send the start message to everyone
-    this.players.forEach(player => player.socket.send({
-        type: 'message',
-        dstId: player.role,
-        msgType: 'start game',
-        content: {}
-    }));
+    this.players.forEach(function(player) {
+        player.socket.send({
+            type: 'message',
+            dstId: player.role,
+            msgType: 'start game',
+            content: {}
+        });
+    });
 
     return true;
 };
@@ -61,7 +63,7 @@ NPlayer.prototype.getN = function() {
 
 // get the active role
 NPlayer.prototype.getActive = function() {
-    if(this.players.length === 0) {
+    if(this.players.length === 0 || !(this.players[this.active])) {
         return '';
     } else {
         return this.players[this.active].role;
@@ -70,7 +72,7 @@ NPlayer.prototype.getActive = function() {
 
 // get the previous role
 NPlayer.prototype.getPrevious = function() {
-    if(this.previous == null || this.players.length == 0) {
+    if(this.previous == null || this.players.length == 0 || !(this.players[this.previous])) {
         return '';
     } else {
         return this.players[this.previous].role;
@@ -79,7 +81,7 @@ NPlayer.prototype.getPrevious = function() {
 
 // get the next role
 NPlayer.prototype.getNext = function() {
-    if(this.players.length == 0) {
+    if(this.players.length == 0 || !(this.players[this.active])) {
         return '';
     } else {
         var index = (this.active + 1) % this.players.length;
@@ -91,7 +93,7 @@ NPlayer.prototype.getNext = function() {
 // signal end of turn
 NPlayer.prototype.endTurn = function(next) {
 
-    if(this.active === null || this.socket.roleId != this.players[this.active].role ) {
+    if(this.active === null || this.players[this.active] === undefined || this.socket.roleId !== this.players[this.active].role ) {
         // bail out if there's no game yet, or if it's somebody else's turn
         return false;
     } else {
@@ -99,7 +101,7 @@ NPlayer.prototype.endTurn = function(next) {
         info(`Player #${this.active} (${this.players[this.active].role}) called endTurn`);
 
         var nextIndex;
-        if(next == undefined || next == '') {
+        if(next === undefined || next === '') {
             nextIndex = (this.active + 1) % this.players.length;
         } else {
             nextIndex = R.findIndex(R.propEq('role', next), this.players);
