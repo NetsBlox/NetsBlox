@@ -5,7 +5,7 @@ var Command = require('commander').Command,
     Storage = require('../src/server/storage/storage'),
     Logger = require('../src/server/logger'),
     Projects = require('../src/server/storage/projects'),
-    logger = new Logger('netsblox:cli:session'),
+    logger = new Logger('netsblox:cli:projects'),
     storage = new Storage(logger),
     program = new Command();
 
@@ -28,6 +28,18 @@ storage.connect()
         return Projects.getAllRawUserProjects(program.args[0]);
     })
     .then(projects => {
+        projects = projects
+            .filter(project => {
+                if (!project) {
+                    logger.warn(`invalid project found: ${JSON.stringify(project)}`);
+                    return false;
+                }
+                if (!project.name) {
+                    logger.warn(`invalid project name: ${JSON.stringify(project)}`);
+                    return false;
+                }
+                return true;
+            });
         const longestName = Math.max.apply(
             null,
             projects.map(project => project.name.length)
@@ -42,5 +54,8 @@ storage.connect()
         ));
     })
     .then(() => storage.disconnect())
-    .catch(err => console.err(err));
+    .catch(err => {
+        console.error(err);
+        return storage.disconnect();
+    });
 /* eslint-enable no-console*/
