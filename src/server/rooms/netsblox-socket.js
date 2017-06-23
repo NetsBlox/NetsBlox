@@ -152,6 +152,7 @@ class NetsBloxSocket {
         // Update the user's room name
         if (this._room) {
             this._room.update();
+            // TODO: update this
             if (this._room.roles[this.roleId] === this) {
                 this._room.updateRole(this.roleId);
             }
@@ -210,6 +211,7 @@ class NetsBloxSocket {
     // This should only be called internally *EXCEPT* when the socket is going to close
     leave () {
         if (this._room) {
+            // TODO: update this
             this._room.roles[this.roleId] = null;
 
             if (this._room.sockets().length === 0) {  // last socket closing
@@ -270,6 +272,7 @@ class NetsBloxSocket {
     sendMessageTo (msg, dstId) {
         msg.dstId = dstId;
         if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
+            // TODO: update this
             this._room.roles.hasOwnProperty(dstId)) {  // local message
 
             dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
@@ -288,6 +291,7 @@ class NetsBloxSocket {
 
             if (room) {
                 if (roleId) {
+            // TODO: update this
                     if (room.roles[roleId]) {
                         sockets.push(room.roles[roleId]);
                     }
@@ -380,6 +384,7 @@ NetsBloxSocket.MessageHandlers = {
         if (this.canEditRoom() && msg.roleId !== msg.name) {
             this._room.renameRole(msg.roleId, msg.name);
 
+            // TODO: update this
             socket = this._room.roles[msg.name];
             if (socket) {
                 socket.send(msg);
