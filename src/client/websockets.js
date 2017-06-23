@@ -108,15 +108,11 @@ WebSocketManager.MessageHandlers = {
     },
 
     'project-request': function(msg) {
-        var self = this;
+        var project = this.getSerializedProject();
+        msg.type = 'project-response';
+        msg.project = project;
 
-        this.onCostumesLoaded(function() {
-            var project = self.getSerializedProject();
-            msg.type = 'project-response';
-            msg.project = project;
-
-            self.sendMessage(msg);
-        });
+        this.sendMessage(msg);
     },
 
     'rename-role': function(msg) {
@@ -460,21 +456,6 @@ WebSocketManager.prototype.startProcesses = function () {
     if (this.processes.length) {
         setTimeout(this.startProcesses.bind(this), 5);
     }
-};
-
-
-WebSocketManager.prototype.onCostumesLoaded = function(callback) {
-    // Check that all the costumes have been loaded for the stage and sprites
-    var costumes = [],
-        objects = this.ide.sprites.asArray().concat([this.ide.stage]);
-
-    // Get all the costumes
-    for (var i = objects.length; i--;) {
-        costumes = costumes.concat(objects.costumes.asArray());
-    }
-
-    // Check that they are all loaded
-    // TODO
 };
 
 WebSocketManager.prototype.getSerializedProject = function() {
