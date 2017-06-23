@@ -115,17 +115,18 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
     // Look up the rpc context
     // socket -> active room -> rpc contexts
     socket = SocketManager.getSocket(uuid);
+    const room = socket._room;
     if (!socket || !socket._room) {
         return null;
     }
-    rpcs = socket._room.rpcs;
+    rpcs = room.rpcs;
 
     // If the RPC hasn't been created for the given room, create one 
     if (!rpcs[RPC.getPath()]) {
-        this._logger.info('Creating new RPC (' + RPC.getPath() +
-            ') for ' + socket._room.uuid);
-        rpcs[RPC.getPath()] = new RPC(socket._room.uuid);
+        this._logger.info(`Creating new RPC (${RPC.getPath()}) for ${room.uuid}`);
+        rpcs[RPC.getPath()] = new RPC(room.uuid);
     }
+
     return rpcs[RPC.getPath()];
 
 };
