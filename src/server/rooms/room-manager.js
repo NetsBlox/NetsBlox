@@ -82,7 +82,12 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
     if (!this.rooms[uuid]) {
         this._logger.trace(`retrieving project ${uuid} for ${ownerId}`);
         return this.storage.users.get(ownerId)
-            .then(user => user.getProject(name))
+            .then((user) => {
+            if (user !== null) {
+            return user.getProject(name);
+        }
+        
+        })
             .then(project => {
                 if (!project) {
                     this._logger.error(`No project found for ${uuid}`);
