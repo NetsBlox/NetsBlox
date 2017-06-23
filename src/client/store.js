@@ -42,6 +42,273 @@ NetsBloxSerializer.prototype.loadMessageType = function (stage, model) {
     });
 };
 
+SnapSerializer.prototype.loadValue = function (model) {
+    // private
+    var v, i, lst, items, el, center, image, name, audio, option, bool,
+        myself = this;
+
+    function record() {
+        if (Object.prototype.hasOwnProperty.call(
+                model.attributes,
+                'id'
+            )) {
+            myself.objects[model.attributes.id] = v;
+        }
+        if (Object.prototype.hasOwnProperty.call(
+                model.attributes,
+                'mediaID'
+            )) {
+            myself.mediaDict[model.attributes.mediaID] = v;
+        }
+    }
+    switch (model.tag) {
+    case 'ref':
+        if (Object.prototype.hasOwnProperty.call(model.attributes, 'id')) {
+            return this.objects[model.attributes.id];
+        }
+        if (Object.prototype.hasOwnProperty.call(
+                model.attributes,
+                'mediaID'
+            )) {
+            return this.mediaDict[model.attributes.mediaID];
+        }
+        throw new Error('expecting a reference id');
+    case 'l':
+        option = model.childNamed('option');
+        if (option) {
+            return [option.contents];
+        }
+        bool = model.childNamed('bool');
+        if (bool) {
+            return this.loadValue(bool);
+        }
+        return model.contents;
+    case 'bool':
+        return model.contents === 'true';
+    case 'list':
+        if (model.attributes.hasOwnProperty('linked')) {
+            v = new List();
+            v.isLinked = true;
+            record();
+            lst = v;
+            items = model.childrenNamed('item');
+            items.forEach(function (item, i) {
+                var value = item.children[0];
+                if (!value) {
+                    v.first = 0;
+                } else {
+                    v.first = myself.loadValue(value);
+                }
+                var tail = model.childNamed('list') ||
+                    model.childNamed('ref');
+                if (tail) {
+                    v.rest = myself.loadValue(tail);
+                } else {
+                    if (i < (items.length - 1)) {
+                        v.rest = new List();
+                        v = v.rest;
+                        v.isLinked = true;
+                    }
+                }
+            });
+            return lst;
+        }
+        v = new List();
+        record();
+        v.contents = model.childrenNamed('item').map(function (item) {
+            var value = item.children[0];
+            if (!value) {
+                return 0;
+            }
+            return myself.loadValue(value);
+        });
+        return v;
+    case 'sprite':
+        v  = new SpriteMorph(myself.project.globalVariables);
+        if (model.attributes.id) {
+            myself.objects[model.attributes.id] = v;
+        }
+        if (model.attributes.name) {
+            v.name = model.attributes.name;
+            myself.project.sprites[model.attributes.name] = v;
+        }
+        if (model.attributes.idx) {
+            v.idx = +model.attributes.idx;
+        }
+        if (model.attributes.color) {
+            v.color = myself.loadColor(model.attributes.color);
+        }
+        if (model.attributes.pen) {
+            v.penPoint = model.attributes.pen;
+        }
+        if (model.attributes.collabId) {
+            v.id = model.attributes.collabId;
+        }
+        myself.project.stage.add(v);
+        v.scale = parseFloat(model.attributes.scale || '1');
+        v.rotationStyle = parseFloat(
+            model.attributes.rotation || '1'
+        );
+        v.isDraggable = model.attributes.draggable !== 'false';
+        v.isVisible = model.attributes.hidden !== 'true';
+        v.heading = parseFloat(model.attributes.heading) || 0;
+        v.drawNew();
+        v.gotoXY(+model.attributes.x || 0, +model.attributes.y || 0);
+        myself.loadObject(v, model);
+        myself.loadHistory(model.childNamed('history'));
+        return v;
+    case 'context':
+        v = new Context(null);
+        record();
+        el = model.childNamed('script');
+        if (el) {
+            v.expression = this.loadScript(el);
+        } else {
+            el = model.childNamed('block') ||
+                model.childNamed('custom-block');
+            if (el) {
+                v.expression = this.loadBlock(el);
+            } else {
+                el = model.childNamed('l');
+                if (el) {
+                    bool = el.childNamed('bool');
+                    if (bool) {
+                        v.expression = new BooleanSlotMorph(
+                            this.loadValue(bool)
+                        );
+                    } else {
+                        v.expression = new InputSlotMorph(el.contents);
+                    }
+                }
+            }
+        }
+        if (v.expression instanceof BlockMorph) {
+            // bind empty slots to implicit formal parameters
+            i = 0;
+            v.expression.allEmptySlots().forEach(function (slot) {
+                i += 1;
+                if (slot instanceof MultiArgMorph) {
+                    slot.bindingID = ['arguments'];
+                } else {
+                    slot.bindingID = i;
+                }
+            });
+            // and remember the number of detected empty slots
+            v.emptySlots = i;
+        }
+        el = model.childNamed('receiver');
+        if (el) {
+            el = el.childNamed('ref') || el.childNamed('sprite');
+            if (el) {
+                v.receiver = this.loadValue(el);
+            }
+        }
+        el = model.childNamed('inputs');
+        if (el) {
+            el.children.forEach(function (item) {
+                if (item.tag === 'input') {
+                    v.inputs.push(item.contents);
+                }
+            });
+        }
+        el = model.childNamed('variables');
+        if (el) {
+            this.loadVariables(v.variables, el);
+        }
+        el = model.childNamed('context');
+        if (el) {
+            v.outerContext = this.loadValue(el);
+        }
+        if (v.outerContext && v.receiver &&
+                !v.outerContext.variables.parentFrame) {
+            v.outerContext.variables.parentFrame = v.receiver.variables;
+        }
+        return v;
+    case 'costume':
+        center = new Point();
+        if (Object.prototype.hasOwnProperty.call(
+                model.attributes,
+                'center-x'
+            )) {
+            center.x = parseFloat(model.attributes['center-x']);
+        }
+        if (Object.prototype.hasOwnProperty.call(
+                model.attributes,
+                'center-y'
+            )) {
+            center.y = parseFloat(model.attributes['center-y']);
+        }
+        if (Object.prototype.hasOwnProperty.call(
+                model.attributes,
+                'name'
+            )) {
+            name = model.attributes.name;
+        }
+        if (Object.prototype.hasOwnProperty.call(
+                model.attributes,
+                'image'
+            )) {
+            image = new Image();
+            if (model.attributes.image.indexOf('data:image/svg+xml') === 0
+                    && !MorphicPreferences.rasterizeSVGs) {
+                v = new SVG_Costume(null, name, center);
+                image.onload = function () {
+                    v.contents = image;
+                    v.version = +new Date();
+                    // NetsBlox addition: start
+                    v.imageData = null;
+                    // NetsBlox addition: end
+                    if (typeof v.loaded === 'function') {
+                        v.loaded();
+                    } else {
+                        v.loaded = true;
+                    }
+                };
+            } else {
+                v = new Costume(null, name, center);
+                image.onload = function () {
+                    var canvas = newCanvas(
+                            new Point(image.width, image.height),
+                            true // nonRetina
+                        ),
+                        context = canvas.getContext('2d');
+                    context.drawImage(image, 0, 0);
+                    v.contents = canvas;
+                    v.version = +new Date();
+                    // NetsBlox addition: start
+                    v.imageData = null;
+                    // NetsBlox addition: end
+                    if (typeof v.loaded === 'function') {
+                        v.loaded();
+                    } else {
+                        v.loaded = true;
+                    }
+                };
+            }
+            image.src = model.attributes.image;
+            // NetsBlox addition: start
+            v.imageData = model.attributes.image;
+            // NetsBlox addition: end
+        }
+        v.id = model.attributes.collabId;
+        record();
+        return v;
+    case 'sound':
+        audio = new Audio();
+        audio.src = model.attributes.sound;
+        v = new Sound(audio, model.attributes.name);
+        if (Object.prototype.hasOwnProperty.call(
+                model.attributes,
+                'mediaID'
+            )) {
+            myself.mediaDict[model.attributes.mediaID] = v;
+        }
+        v.id = model.attributes.collabId;
+        return v;
+    }
+    return undefined;
+};
+
 NetsBloxSerializer.prototype.openProject = function (project, ide) {
     var stage = ide.stage,
         sprites = [],
@@ -681,3 +948,18 @@ HintInputSlotMorph.prototype.toXML = function(serializer) {
     }
     return InputSlotMorph.prototype.toXML.call(this, serializer);
 };
+
+Costume.prototype.toXML = function (serializer) {
+    return serializer.format(
+        '<costume name="@" collabId="@" center-x="@" center-y="@" image="@" ~/>',
+        this.name,
+        this.id,
+        this.rotationCenter.x,
+        this.rotationCenter.y,
+        // Netsblox addition: start
+        this.imageData || this instanceof SVG_Costume ? this.contents.src
+        // Netsblox addition: end
+                : normalizeCanvas(this.contents).toDataURL('image/png')
+    );
+};
+
