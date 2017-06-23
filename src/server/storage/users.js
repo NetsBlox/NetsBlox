@@ -120,6 +120,8 @@
                 let user = null;
                 if (data) {
                     user = new User(this._logger, this._users, data);
+                } else {
+                    this._logger.warn('Invalid username when get users from storage');
                 }
                 return user;
             })
