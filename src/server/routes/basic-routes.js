@@ -350,7 +350,6 @@ module.exports = [
         URL: 'Examples/:name',
         Handler: function(req, res) {
             var name = req.params.name,
-                uuid = req.query.socketId,
                 isPreview = req.query.preview,
                 socket,
                 example;
@@ -367,28 +366,7 @@ module.exports = [
                 room;
 
             if (!isPreview) {
-                socket = SocketManager.getSocket(uuid);
-                // Check if the room already exists
-                if (!uuid) {
-                    return res.status(400).send('ERROR: Bad Request: missing socket id');
-                } else if (!socket) {
-                    this._logger.error(`No socket found for ${uuid} (${req.get('User-Agent')})`);
-                    return res.status(400)
-                        .send('ERROR: Not fully connected to server. Please refresh or try a different browser');
-                }
-                socket.leave();
-                room = RoomManager.rooms[Utils.uuid(socket.username, name)];
-
-                if (!room) {  // Create the room
-                    room = RoomManager.createRoom(socket, name);
-                    room = _.extend(room, example);
-                    // Check the room in 10 seconds
-                    setTimeout(RoomManager.checkRoom.bind(RoomManager, room), 10000);
-                }
-
-                // Add the user to the given room
-                return Utils.joinActiveProject(uuid, room, res);
-
+                return res.send(example.toString());
             } else {
                 room = example;
                 room.owner = socket;

@@ -470,8 +470,7 @@ ProjectDialogMorph.prototype.setSource = function (source) {
                 myself.nameField.setContents(item.name || '');
             }
             src = myself.ide.getURL(
-                'api/Examples/' + item.name + '?socketId=' + myself.ide.sockets.uuid +
-                '&preview=true'
+                'api/Examples/' + item.name + '?&preview=true'
             );
 
             xml = myself.ide.serializer.parse(src);
@@ -509,22 +508,9 @@ ProjectDialogMorph.prototype.openProject = function () {
 
     if (this.source === 'examples') {
         this.destroy();
-        response = SnapCloud.parseDict(this.ide.getURL('api/Examples/' + proj.name +
-            '?socketId=' + this.ide.sockets.uuid));
-
-        this.ide.room.nextRoom = {
-            ownerId: response.Owner,
-            roomName: response.RoomName,
-            roleId: response.ProjectName
-        };
-
+        response = this.ide.getURL('api/Examples/' + proj.name);
+        this.ide.droppedText(response);
         // role name
-        if (response.SourceCode) {
-            this.ide.droppedText(response.SourceCode);
-        } else {
-            this.ide.clearProject();
-        }
-        this.ide.loadNextRoom();
         this.ide.updateUrlQueryString(proj.name, false, true);
     } else if (this.source === 'cloud-shared'){
         var myself = this;
