@@ -1,3 +1,4 @@
+/* eslint-disable no-console*/
 // Vantage support for the server object
 'use strict';
 
@@ -32,7 +33,6 @@ var NetsBloxVantage = function(server) {
         .option('-j, --json', 'Print as json')
         .option('-a, --admin', 'Toggle admin status')
         .option('-u, --update', 'Update the user\'s schema')
-        .option('-c, --clear', 'Clear the room info')
         .option('--delete', 'Delete the user')
         .option('--force', 'Force the given command')
         .option('-p, --password <password>', 'Set the user password')
@@ -69,10 +69,6 @@ var NetsBloxVantage = function(server) {
                         } else {
                             console.log(user.pretty().rooms);
                         }
-                    } else if (args.options.clear) {
-                        // TODO
-                        user.save();
-                        console.log('User updated!');
                     } else if (args.options.admin) {
                         user.admin = !user.admin;
                         user.save();
@@ -222,3 +218,4 @@ NetsBloxVantage.prototype.start = function(port) {
 };
 
 module.exports = NetsBloxVantage;
+/* eslint-enable no-console*/
