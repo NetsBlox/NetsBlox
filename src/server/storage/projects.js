@@ -59,13 +59,20 @@
         ///////////////////////// Roles ///////////////////////// 
         setRawRole(role, content) {
             const query = {$set: {}};
+            content.ProjectName = role;
+
             query.$set[`roles.${role}`] = content;
             return this._db.update(this.getStorageId(), query);
         }
 
         setRole(role, content) {
             this._logger.trace(`updating role: ${role}`);
-            content.ProjectName = role;
+            return this.storeRoleBlob(content)
+                .then(content => this.setRawRole(role, content));
+        }
+
+        storeRoleBlob(role) {
+            const content = _.clone(role);
             return Q.all([
                 blob.store(content.SourceCode),
                 blob.store(content.Media)
@@ -75,8 +82,18 @@
 
                 content.SourceCode = srcHash;
                 content.Media = mediaHash;
-                return this.setRawRole(role, content);
+                return content;
             });
+        }
+
+        setRoles(roles) {
+            const query = {$set: {}};
+
+            return Q.all(roles.map(role => this.storeRoleBlob(role)))
+                .then(roles => {
+                    roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
+                    return this._db.update(this.getStorageId(), query);
+                });
         }
 
         getRawRole(role) {

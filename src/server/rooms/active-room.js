@@ -267,14 +267,37 @@ class ActiveRoom {
         return Object.keys(this.roles);
     }
 
-    getRole(role) {
-        return this._project.getRole(role);
+    getRole(role, skipSave) {  // Get the project state for a given role
+        let socket = this.getSocketsAt(role)[0];
+
+        // request it from the role if occupied or get it from the database
+        if (socket) {
+            return socket.getProjectJson()
+                .then(content => {
+                    if (!skipSave) {
+                        return this.setRole(role, content)
+                            .then(() => content);
+                    }
+                    return content;
+                })
+                .catch(err => {
+                    this._logger.trace(`could not get project json for ${role} in ${this.name}: ${err}`);
+                    return this._project.getRole(role);
+                });
+        } else {
+            return this._project.getRole(role);
+        }
     }
 
     setRole(role, content) {
         this._logger.trace(`setting ${role} to ${content}`);
         this.roles[role] = this.roles[role] || null;
         return this._project.setRole(role, content);
+    }
+
+    setRoles(roles) {  // bulk load - no update necessary
+        this._logger.trace(`saving all roles in ${this.uuid}`);
+        return this._project.setRoles(roles);
     }
 
     cloneRole(roleId) {
@@ -370,63 +393,24 @@ class ActiveRoom {
     }
 
     serialize() {  // Create project xml from the current room
-        // FIXME: this breaks with examples currently because of the dumb way that
-        // they are currently handled
-        return Q.all(this.getRoleNames().map(name => this.getRoleContent(name)))
-            .then(roleContents => {
-                return utils.xml.format('<room name="@" app="@">', this.name, utils.APP) +
-                    roleContents.join('') + '</room>';
+        return Q.all(this.getRoleNames().map(name => this.getRole(name, true)))
+            .then(roles => {
+                const roleContents = roles.map(content =>
+                    utils.xml.format('<role name="@">', content.ProjectName) +
+                        content.SourceCode + content.Media + '</role>'
+                );
+
+                // only save the ones that may have been updated
+                const updateRoles = this.getRoleNames()
+                    .filter(name => this.isOccupied(name))
+                    .map(name => roles.find(role => role.ProjectName === name))
+                    .filter(role => !!role);
+
+                return this.setRoles(updateRoles)
+                    .then(() => utils.xml.format('<room name="@" app="@">', this.name, utils.APP) +
+                    roleContents.join('') + '</room>');
             });
     }
-
-    getRoleContent(role) {  // Get the project state for a given role
-        let socket = this.roles[role];
-        let getContent;
-
-        // request it from the role if occupied or get it from the database
-        if (socket) {
-            getContent = socket.getProjectJson()
-                .catch(err => {
-                    this._logger.trace(`could not get project json for ${role} in ${this.name}: ${err}`);
-                    return this._project.getRole(role);
-                });
-        } else {
-            getContent = this._project.getRole(role);
-        }
-
-        return getContent.then(content => utils.xml.format('<role name="@">', role) +
-            content.SourceCode + content.Media + '</role>');
-    }
-
-    // Retrieve a dictionary of role => project content
-    collectProjects() {
-        // Collect the projects from the websockets
-        const sockets = this.sockets();
-        const projects = sockets.map(socket => socket.getProjectJson());
-
-        // Add saving the cached projects
-        return Q.all(projects).then(projects => {
-            // create the room from the projects
-            var roles = Object.keys(this.roles),
-                socket,
-                k,
-                content = {
-                };
-
-            for (var i = roles.length; i--;) {
-                socket = this.roles[roles[i]];
-
-                k = sockets.indexOf(socket);
-                if (k !== -1) {
-                    content[roles[i]] = projects[k];
-                } else {  // socket is closed -> use the cache
-                    content[roles[i]] = this.getRole(roles[i]);
-                }
-            }
-            return content;
-        });
-    }
-
 }
 
 // Factory method
