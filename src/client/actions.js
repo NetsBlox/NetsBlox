@@ -65,13 +65,27 @@ SnapActions.isCollaborating = function() {
 
 // Recording user actions
 SnapActions.send = function(event) {
+    // Netsblox addition: start
     var socket = this.ide().sockets;
 
     this._ws = socket.websocket;
-    ActionManager.prototype.send.apply(this, arguments);
+
+    // Netsblox addition: end
+    event.id = event.id || this.lastSeen + 1;
+    this.lastSent = event.id;
+    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+        // Netsblox addition: start
+        this._ws.send(JSON.stringify({
+            type: 'user-action',
+            action: event
+        }));
+        // Netsblox addition: end
+    }
+    // Netsblox addition: start
     this.recordActionNB(event);
 
     return event;
+    // Netsblox addition: end
 };
 
 SnapActions.onMessage = function(msg) {

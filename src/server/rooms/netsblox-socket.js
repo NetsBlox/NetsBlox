@@ -15,7 +15,6 @@ var counter = 0,
     ],
     R = require('ramda'),
     Utils = require('../server-utils'),
-    Sessions = require('snap-collaboration').sessions,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
     RoomManager = require('./room-manager'),
@@ -54,20 +53,6 @@ class NetsBloxSocket {
         this.onclose = [];
 
         this._logger.trace('created');
-    }
-
-
-    collaborationId () {
-        return this._socket.id;
-    }
-
-    leaveSession () {
-        Sessions.remove(this._socket);
-        return Sessions.newSession(this._socket);
-    }
-
-    getSessionId () {
-        return Sessions.sessionId(this.collaborationId());
     }
 
     hasRoom (silent) {
@@ -112,14 +97,35 @@ class NetsBloxSocket {
         return this.isOwner() || this.isCollaborator();
     }
 
+    sendEditMsg (msg) {
+        if (!this.hasRoom()) {
+            this._logger.error(`Trying to send edit msg w/o room ${this.uuid}`);
+            return;
+        }
+
+        const sockets = this._room.getSocketsAt(this.roleId);
+        if (sockets.length === 1) {
+            this._logger.warn(`Socket incorrectly thinks it is collaborating... ${this.uuid}`);
+            return this._room.sendUpdateMsg();
+        }
+
+        // TODO: send the message to leader if the user is the leader.
+        // ow, send it to everyone else
+        const isLeader = sockets.indexOf(this) === 0;
+        if (isLeader) {
+            for (var i = 1; i < sockets.length; i++) {
+                sockets[i].send(msg);
+            }
+        } else {
+            sockets[0].send(msg);
+        }
+    }
+
     _initialize () {
         this._socket.on('message', data => {
             var msg = JSON.parse(data),
                 type = msg.type;
 
-            // check the namespace
-            // TODO: update this for collaborative editing
-            if (msg.namespace !== 'netsblox') return;
             if (msg.type === 'beat') return;
 
             this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message`);
@@ -232,7 +238,6 @@ class NetsBloxSocket {
 
     send (msg) {
         // Set the defaults
-        msg.namespace = 'netsblox';
         msg.type = msg.type || 'message';
         if (msg.type === 'message') {
             msg.dstId = msg.dstId || Constants.EVERYONE;
@@ -331,6 +336,10 @@ NetsBloxSocket.MessageHandlers = {
 
         var dstIds = typeof msg.dstId !== 'object' ? [msg.dstId] : msg.dstId.contents;
         dstIds.forEach(dstId => this.sendMessageTo(msg, dstId));
+    },
+
+    'user-action': function(msg) {
+        return this.sendEditMsg(msg);
     },
 
     'project-response': function(msg) {
