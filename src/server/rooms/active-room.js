@@ -53,7 +53,7 @@ class ActiveRoom {
     fork (logger, socket) {
         // Create a copy of the room with the socket as the new owner
         var fork = new ActiveRoom(logger, this.name, socket.username),
-            roles = Object.keys(this.roles),
+            roles = this.getRoleNames(),
             data;
 
         // Clone the room storage data
@@ -231,10 +231,6 @@ class ActiveRoom {
         return this.roles[role] && this.roles[role].slice();
     }
 
-    getRoleNames () {
-        return Object.keys(this.roles);
-    }
-
     ownerCount () {
         return this.sockets()
             .map(socket => socket.username)
@@ -281,7 +277,7 @@ class ActiveRoom {
         while (this.roles.hasOwnProperty(newRole = `${roleId} (${count++})`));
 
         if (!this.roles[newRole]) {
-            this.roles[newRole] = [];  // TODO: Update this
+            this.roles[newRole] = [];
         }
 
         return this._project.cloneRole(roleId, newRole)
