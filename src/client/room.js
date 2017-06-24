@@ -2,7 +2,7 @@
  Color, nop, InputFieldMorph, ListMorph, IDE_Morph, TurtleIconMorph,
  TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph, ReporterBlockMorph
  MessageOutputSlotMorph, MessageInputSlotMorph, SymbolMorph, PushButtonMorph, MenuMorph,
- SpeechBubbleMorph, ProjectDialogMorph, HandleMorph, Rectangle, fontHeight*/
+ SpeechBubbleMorph, ProjectDialogMorph, HandleMorph, Rectangle, fontHeight, SnapActions*/
 /* * * * * * * * * RoomMorph * * * * * * * * */
 RoomMorph.prototype = new Morph();
 RoomMorph.prototype.constructor = RoomMorph;
@@ -819,7 +819,6 @@ RoleMorph.prototype.reactToDropOf = function(drop) {
 
     // Share the intended message type
     function shareMsgType(myself, name, fields) {
-        // TODO: which user would you like to send it to? all of them? just the first one?
         if (myself.users.length && myself.parent.ide.projectName === myself.name) {  // occupied & myself
             myself.parent.ide.showMessage('Can\'t send a message type to yourself!', 2);
             return;
@@ -1012,7 +1011,8 @@ EditRoleMorph.prototype.moveToRole = function() {
 
 EditRoleMorph.prototype.evictUser = function() {
     // TODO: which user?
-    this.room.evictUser(this.role.user, this.role.name);
+    // FIXME: ask which user
+    this.room.evictUser(this.role.users[0], this.role.name);
     this.destroy();
 };
 

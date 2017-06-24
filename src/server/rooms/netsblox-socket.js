@@ -109,7 +109,7 @@ class NetsBloxSocket {
             return this._room.sendUpdateMsg();
         }
 
-        // TODO: send the message to leader if the user is the leader.
+        // send the message to leader if the user is the leader.
         // ow, send it to everyone else
         const isLeader = sockets.indexOf(this) === 0;
         if (isLeader) {

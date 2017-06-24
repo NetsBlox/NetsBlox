@@ -383,7 +383,7 @@ class ActiveRoom {
                 };
 
             for (var i = roles.length; i--;) {
-                socket = this.roles[roles[i]];  // TODO: update
+                socket = this.roles[roles[i]];
 
                 k = sockets.indexOf(socket);
                 if (k !== -1) {
