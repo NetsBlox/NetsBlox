@@ -366,6 +366,35 @@ class ActiveRoom {
         this.save();
     }
 
+    serialize() {  // Create project xml from the current room
+        // FIXME: this breaks with examples currently because of the dumb way that
+        // they are currently handled
+        return Q.all(this.getRoleNames().map(name => this.getRoleContent(name)))
+            .then(roleContents => {
+                return utils.xml.format('<room name="@" app="@">', this.name, utils.APP) +
+                    roleContents.join('') + '</room>';
+            });
+    }
+
+    getRoleContent(role) {  // Get the project state for a given role
+        let socket = this.roles[role];
+        let getContent;
+
+        // request it from the role if occupied or get it from the database
+        if (socket) {
+            getContent = socket.getProjectJson()
+                .catch(err => {
+                    this._logger.trace(`could not get project json for ${role} in ${this.name}: ${err}`);
+                    return this._project.getRole(role);
+                });
+        } else {
+            getContent = this._project.getRole(role);
+        }
+
+        return getContent.then(content => utils.xml.format('<role name="@">', role) +
+            content.SourceCode + content.Media + '</role>');
+    }
+
     // Retrieve a dictionary of role => project content
     collectProjects() {
         // Collect the projects from the websockets

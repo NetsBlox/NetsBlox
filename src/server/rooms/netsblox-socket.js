@@ -23,6 +23,8 @@ var counter = 0,
     PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/,
     SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
 
+const REQUEST_TIMEOUT = 10*60*1000;
+
 var createSaveableProject = function(json) {
     var project = R.pick(PROJECT_FIELDS, json);
     // Set defaults
@@ -264,6 +266,15 @@ class NetsBloxSocket {
             id: id
         });
         this._projectRequests[id] = deferred;
+
+        // Add the timeout for the project request
+        setTimeout(() => {
+            if (this._projectRequests[id]) {
+                this._projectRequests[id].reject('TIMEOUT');
+                delete this._projectRequests[id];
+            }
+        }, REQUEST_TIMEOUT);
+
         return deferred.promise;
     }
 
@@ -490,14 +501,14 @@ NetsBloxSocket.MessageHandlers = {
     // Retrieve the json for each project and respond
     'export-room': function(msg) {
         if (this.hasRoom()) {
-            this._room.collectProjects()
-                .then(projects => {
-                    this._logger.trace(`Exporting projects for ${this._room.name}` +
+            this._room.serialize()
+                .then(project => {
+                    this._logger.trace(`Exporting project for ${this._room.name}` +
                         ` to ${this.username}`);
 
                     this.send({
                         type: 'export-room',
-                        roles: projects,
+                        content: project,
                         action: msg.action
                     });
                 })

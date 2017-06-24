@@ -46,9 +46,9 @@ WebSocketManager.MessageHandlers = {
 
     'export-room': function(msg) {
         if (msg.action === 'export') {
-            this.ide.exportRoom(msg.roles);
+            this.ide.exportRoom(msg.content);
         } else if (msg.action === 'save') {
-            this.ide.saveRoomLocal(msg.roles);
+            this.ide.saveRoomLocal(msg.content);
         }
     },
 

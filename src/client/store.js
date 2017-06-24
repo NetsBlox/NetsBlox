@@ -14,20 +14,6 @@ function NetsBloxSerializer() {
     this.init();
 }
 
-NetsBloxSerializer.prototype.serializeRoom = function (name, roles) {
-    var roleNames = Object.keys(roles),
-        body = '',
-        content;
-
-    for (var i = roleNames.length; i--;) {
-        content = roles[roleNames[i]];
-        body += this.format('<role name="@">', roleNames[i]) +
-            content.SourceCode + content.Media + '</role>';
-    }
-    return this.format('<room name="@" app="@">', name, this.app) +
-        body + '</room>';
-};
-
 NetsBloxSerializer.prototype.loadMessageType = function (stage, model) {
     var name = model.childNamed('name').contents,
         fields = model.childNamed('fields')

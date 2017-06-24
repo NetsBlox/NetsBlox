@@ -1680,14 +1680,10 @@ NetsBloxMorph.prototype.exportProject = function () {
     });
 };
 
-NetsBloxMorph.prototype.exportRoom = function (roles) {
-    var //dataPrefix,
-        name = this.room.name,
-        str;
+NetsBloxMorph.prototype.exportRoom = function (str) {
+    var name = this.room.name;
 
     try {
-        str = this.serializer.serializeRoom(name, roles);
-        //this.setURL('#open:' + dataPrefix + encodeURIComponent(str));
         this.saveXMLAs(str, name);
         this.showMessage('Exported!', 1);
     } catch (err) {
@@ -1778,14 +1774,12 @@ NetsBloxMorph.prototype.rawSaveProject = function (name) {
     });
 };
 
-NetsBloxMorph.prototype.saveRoomLocal = function (roles) {
-    var str,
-        name = this.room.name;
+NetsBloxMorph.prototype.saveRoomLocal = function (str) {
+    var name = this.room.name;
 
     if (Process.prototype.isCatchingErrors) {
         try {
-            localStorage['-snap-project-' + name]
-                = str = this.serializer.serializeRoom(name, roles);
+            localStorage['-snap-project-' + name] = str;
         
             this.setURL('#open:' + str);
             this.showMessage('Saved!', 1);
@@ -1793,8 +1787,7 @@ NetsBloxMorph.prototype.saveRoomLocal = function (roles) {
             this.showMessage('Save failed: ' + err);
         }
     } else {
-        localStorage['-snap-project-' + name]
-            = str = this.serializer.serializeRoom(name, roles);
+        localStorage['-snap-project-' + name] = str;
         this.setURL('#open:' + str);
         this.showMessage('Saved!', 1);
     }
