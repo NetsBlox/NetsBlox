@@ -224,7 +224,7 @@ class ActiveRoom {
 
     getUnoccupiedRole() {
         return this.getRoleNames()
-            .filter(role => !this.roles[role].length)
+            .sort((n1, n2) => this.roles[n1].length < this.roles[n2].length ? -1 : 1)
             .shift();
     }
 
