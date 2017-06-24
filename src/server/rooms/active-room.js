@@ -96,6 +96,7 @@ class ActiveRoom {
 
         this.roles[role].push(socket);
         socket.roleId = role;
+        socket._setRoom(this);
     }
 
     silentRemove (socket) {
