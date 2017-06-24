@@ -112,7 +112,7 @@ RoomManager.prototype.checkRoom = function(room) {
     this._logger.trace('Checking room ' + uuid + ' (' + sockets.length + ')');
     if (sockets.length === 0) {
         this._logger.trace('Removing empty room: ' + uuid);
-        delete this.rooms[uuid];
+        room.close().then(() => delete this.rooms[uuid]);
     }
 };
 

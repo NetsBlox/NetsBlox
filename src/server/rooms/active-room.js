@@ -330,19 +330,16 @@ class ActiveRoom {
     }
 
     renameRole (roleId, newId) {
-        // TODO: update this for multiple sockets
-        var socket = this.roles[roleId];
-
         if (this.roles[newId]) {
             this._logger.warn(`Cannot rename role: "${newId}" is already taken`);
             return;
         }
-        if (socket) {  // update socket, too!
-            socket.roleId = newId;
-        }
+
+        let sockets = this.getSocketsAt(roleId);
+        sockets.forEach(socket => socket.roleId = newId);
+        this.roles[newId] = sockets;
 
         delete this.roles[roleId];
-        this.roles[newId] = socket;  // TODO
 
         return this._project.renameRole(roleId, newId)
             .then(() => {
