@@ -88,36 +88,30 @@ module.exports = [
                 ownerId = req.body.ownerId,
                 roomId = Utils.uuid(ownerId, roomName),
                 userId = req.body.userId,
-                socket,
                 room = RoomManager.rooms[roomId];
 
             // Get the socket at the given room role
             log(`roomId is ${roomId}`);
             log(`roleId is ${roleId}`);
             log(`userId is ${userId}`);
-            // TODO: Update this for multiple sockets
-            const sockets = room.getSocketsAt(roleId);
-            socket = sockets[sockets.length - 1];
+
+            const socket = room.getSocketsAt(roleId)
+                .find(socket => socket.username === userId);
 
             if (!socket) {  // user is not online
-                this._logger.warn(`Cannot remove role ${roleId} - no associated socket!`);
+                var err = `${userId} is not at ${roleId} at room ${roomId}`;
+                this._logger.warn(err);
                 return res.send('user has been evicted!');
             }
 
-            if (socket.username === userId) {
-                // Remove the user from the room!
-                log(`${userId} is evicted from room ${roomId}`);
-                if (userId === ownerId) {  // removing another instance of self
-                    socket.newRoom();
-                } else {  // Fork the room
-                    RoomManager.forkRoom({room, socket});
-                }
-                room.onRolesChanged();
-            } else {
-                var err = `${userId} is not at ${roleId} at room ${roomId}`;
-                error(err);
-                return res.status(400).send(err);
+            // Remove the user from the room!
+            log(`${userId} is evicted from room ${roomId}`);
+            if (userId === ownerId) {  // removing another instance of self
+                socket.newRoom();
+            } else {  // Fork the room
+                RoomManager.forkRoom(room, socket);
             }
+            room.onRolesChanged();
         }
     },
     {
@@ -237,23 +231,15 @@ module.exports = [
             }
             
             //  Verify that the username is either the ownerId
-            //      or the owner of the role
             this._logger.trace(`ownerId is ${room.owner.username} and username is ${username}`);
-            // TODO: update this
-            if (room.owner.username !== username && !!room.roles[roleId] &&
-                room.roles[roleId].username !== username) {
-
+            if (room.owner.username !== username && !room.getCollaborators().includes(username)) {
                 this._logger.error(`${username} does not have permission to edit ${roleId} at ${roomId}`);
                 return res.status(403).send(`ERROR: You do not have permission to delete ${roleId}`);
             }
 
-            //  Get the socket and join a different room (if not the owner)
-            //  TODO: Check that it isn't the owner
-            //  TODO: Check that the owner doesn't remove the last role
-            // If the role has an owner...
-            // TODO: update this
-            if (room.roles[roleId]) {
-                RoomManager.forkRoom({room, roleId});
+            // Disallow deleting roles without evicting the users first
+            if (room.getSocketsAt(roleId).length) {
+                return res.status(403).send('ERROR: Cannot delete occupied role. Remove the occupants first.');
             }
 
             //  Remove the given role

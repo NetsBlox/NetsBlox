@@ -259,7 +259,7 @@ module.exports = [
                             saveRoom.call(this, activeRoom, socket, owner, res);
                         }
                     } else {  // Save a copy for the given user and move to the given room
-                        RoomManager.forkRoom({room: activeRoom, socket});
+                        RoomManager.forkRoom(activeRoom, socket);
                         return res.status(200).send('saved own copy!');
                     }
                 });
