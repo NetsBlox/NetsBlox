@@ -433,7 +433,7 @@ RoomMorph.prototype.editRoleName = function(role) {
                 'the provided name is invalid',
                 myself.world()
             );
-        } else {
+        } else if (role !== roleName){
             myself.ide.sockets.sendMessage({
                 type: 'rename-role',
                 roleId: role,
@@ -506,11 +506,14 @@ RoomMorph.prototype.role = function() {
 };
 
 RoomMorph.prototype.setRoleName = function(role) {
-    this.ide.sockets.sendMessage({
-        type: 'rename-role',
-        roleId: this.ide.projectName,
-        name: role || 'untitled'
-    });
+    role = role || 'untitled';
+    if (role !== this.ide.projectName) {
+        this.ide.sockets.sendMessage({
+            type: 'rename-role',
+            roleId: this.ide.projectName,
+            name: role
+        });
+    }
 };
 
 // FIXME: create ide.confirm
