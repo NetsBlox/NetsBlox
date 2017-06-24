@@ -6,7 +6,6 @@ var express = require('express'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
     SocketManager = require('./socket-manager'),
     RoomManager = require('./rooms/room-manager'),
-    //Collaboration = require('snap-collaboration'),
     RPCManager = require('./rpc/rpc-manager'),
     MobileManager = require('./mobile/mobile-manager'),
     Storage = require('./storage/storage'),
@@ -201,8 +200,6 @@ Server.prototype.start = function(done) {
             this.configureRoutes();
             this._server = this.app.listen(this.opts.port, err => {
                 this._wss = new WebSocketServer({server: this._server});
-                //Collaboration.init(this._logger.fork('collaboration'));
-                //Collaboration.enable(this.app, this._wss, opts);
                 SocketManager.enable(this._wss);
                 // Enable Vantage
                 if (this.opts.vantage) {
