@@ -81,7 +81,7 @@ class ActiveRoom {
 
     add (socket, role) {
         this.silentAdd(socket, role);
-        this.onRolesChanged();  // Update all clients
+        this.sendUpdateMsg();
     }
 
     silentAdd (socket, role) {
@@ -114,7 +114,7 @@ class ActiveRoom {
 
     remove (socket, role) {
         this.silentRemove(socket, role);
-        this.onRolesChanged();
+        this.sendUpdateMsg();
         this.check();
     }
 
@@ -353,14 +353,18 @@ class ActiveRoom {
             });
     }
 
-    onRolesChanged () {
-        // This should be called when the room layout changes
-        // Send the room info to the socket
+    sendUpdateMsg () {
         var msg = this.getStateMsg();
 
         this.sockets().forEach(socket => socket.send(msg));
+    }
 
-        this.save();
+    onRolesChanged () {
+        // This should be called when the room layout changes in a way that
+        // effects the datamodel (eg, created role). Changes about clients
+        // moving around should call sendUpdateMsg
+        this.sendUpdateMsg();
+        return this.save();
     }
 
     // Retrieve a dictionary of role => project content
