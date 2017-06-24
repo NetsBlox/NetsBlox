@@ -6,7 +6,6 @@ var express = require('express'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
     SocketManager = require('./socket-manager'),
     RoomManager = require('./rooms/room-manager'),
-    //Collaboration = require('snap-collaboration'),
     RPCManager = require('./rpc/rpc-manager'),
     MobileManager = require('./mobile/mobile-manager'),
     Storage = require('./storage/storage'),
@@ -86,16 +85,13 @@ Server.prototype.configureRoutes = function() {
                 lastUpdateAt = new Date(project.lastUpdateAt);
             }
 
-            Object.keys(room.roles).forEach(roleId => {
-                const socket = room.roles[roleId];
-                if (socket) {
-                    roles[roleId] = {
+            room.getRoleNames().forEach(role => {
+                roles[role] = room.getSocketsAt(role).map(socket => {
+                    return {
                         username: socket.username,
                         uuid: socket.uuid
                     };
-                } else {
-                    roles[roleId] = null;
-                }
+                });
             });
 
             return {
@@ -204,8 +200,6 @@ Server.prototype.start = function(done) {
             this.configureRoutes();
             this._server = this.app.listen(this.opts.port, err => {
                 this._wss = new WebSocketServer({server: this._server});
-                //Collaboration.init(this._logger.fork('collaboration'));
-                //Collaboration.enable(this.app, this._wss, opts);
                 SocketManager.enable(this._wss);
                 // Enable Vantage
                 if (this.opts.vantage) {

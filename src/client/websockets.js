@@ -28,6 +28,7 @@ WebSocketManager.MessageHandlers = {
     // Receive an assigned uuid
     'uuid': function(msg) {
         this.uuid = msg.body;
+        SnapActions.id = this.uuid;
         this.onConnect();
     },
 
@@ -173,6 +174,9 @@ WebSocketManager.MessageHandlers = {
                 };
             }
         }
+    },
+    'user-action': function(msg) {
+        SnapActions.onMessage(msg.action);
     }
 };
 
@@ -217,14 +221,10 @@ WebSocketManager.prototype._connectWebSocket = function() {
         var msg = JSON.parse(rawMsg.data),
             type = msg.type;
 
-        if (msg.namespace === 'netsblox') {
-            if (WebSocketManager.MessageHandlers[type]) {
-                WebSocketManager.MessageHandlers[type].call(self, msg);
-            } else {
-                console.error('Unknown message:', msg);
-            }
+        if (WebSocketManager.MessageHandlers[type]) {
+            WebSocketManager.MessageHandlers[type].call(self, msg);
         } else {
-            SnapActions.onMessage(msg);
+            console.error('Unknown message:', msg);
         }
     };
 

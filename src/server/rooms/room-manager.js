@@ -40,9 +40,8 @@ RoomManager.prototype.init = function(logger, storage) {
     this.storage = storage;
 };
 
-RoomManager.prototype.forkRoom = function(params) {
-    var room = params.room,
-        socket = params.socket || room.roles[params.roleId],
+RoomManager.prototype.forkRoom = function(room, socket) {
+    var roleId = socket.roleId,
         newRoom;
 
     if (socket.username === room.owner) {
@@ -50,8 +49,8 @@ RoomManager.prototype.forkRoom = function(params) {
         return;
     }
 
-    this._logger.trace(`${params.roleId} is forking room`);
-    this._logger.trace(`${socket.username} is forking room ${room.uuid}`);
+    this._logger.trace(`${roleId} is forking room`);
+    this._logger.trace(`${socket.username} (${roleId}) is forking room ${room.uuid}`);
 
     // Create the new room
     newRoom = room.fork(this._logger, socket);
@@ -108,13 +107,12 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
 
 RoomManager.prototype.checkRoom = function(room) {
     var uuid = utils.uuid(room.owner, room.name),
-        roles = Object.keys(room.roles)
-            .filter(role => !!room.roles[role]);
+        sockets = room.sockets();
 
-    this._logger.trace('Checking room ' + uuid + ' (' + roles.length + ')');
-    if (roles.length === 0) {
+    this._logger.trace('Checking room ' + uuid + ' (' + sockets.length + ')');
+    if (sockets.length === 0) {
         this._logger.trace('Removing empty room: ' + uuid);
-        delete this.rooms[uuid];
+        room.close().then(() => delete this.rooms[uuid]);
     }
 };
 

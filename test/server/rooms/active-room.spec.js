@@ -3,10 +3,11 @@ describe('active-room', function() {
         _ = require('lodash'),
         RoomManager = require(ROOT_DIR + 'src/server/rooms/room-manager'),
         ActiveRoom = require(ROOT_DIR + 'src/server/rooms/active-room'),
-        Logger = require(ROOT_DIR + 'src/server/logger'),
         Constants = require(ROOT_DIR + 'src/common/constants'),
         assert = require('assert'),
+        Logger = require(ROOT_DIR + 'src/server/logger'),
         logger = new Logger('active-room'),
+        utils = require(ROOT_DIR + 'test/assets/utils'),
         owner = {
             username: 'test',
             _messages: [],
@@ -58,44 +59,44 @@ describe('active-room', function() {
         });
     });
 
-    describe('move', function() {
-        before(function() {
-            room = new ActiveRoom(logger, 'moveTest', owner);
-            room.add(owner, 'myRole');
-            room.silentCreateRole('otherRole');
-            room.move({
-                src: 'myRole',
-                socket: owner,
-                dst: 'otherRole'
-            });
+    // Things to test:
+    //   - add
+    //   - getUnoccupiedRole
+    it('should return the unoccupied role', function() {
+        let room = utils.createRoom({
+            name: 'test-room',
+            owner: 'brian',
+            roles: {
+                p1: ['brian', 'cassie'],
+                p2: ['todd', null],
+                third: null
+            }
         });
 
-        it('should move the socket to the target role', function() {
-            assert(room.roles['otherRole']);
-        });
-
-        it('should move the socket out of the src role', function() {
-            assert(!room.roles['myRole']);
-        });
+        let name = room.getUnoccupiedRole();
+        assert.equal(name, 'third');
     });
 
     describe('close', function() {
         it('should send "project-closed" message to all sockets', function() {
-            var count = 0,
-                sockets = [
-                    {}, {}, {}
-                ];
-
-            sockets.forEach(s => s.send = msg => {
-                if (msg.type === 'project-closed') {
-                    count++;
+            let room = utils.createRoom({
+                name: 'test-room',
+                owner: 'brian',
+                roles: {
+                    p1: ['brian', 'cassie'],
+                    p2: ['todd', null],
+                    third: null
                 }
             });
 
-            room = new ActiveRoom(logger, 'closeTest', owner);
-            sockets.forEach((s, i) => room.add(s, 'role ' + i));
+            const sockets = room.sockets();
             room.close();
-            assert.equal(count, sockets.length);
+
+            sockets.map(s => s._socket)
+                .forEach(socket => {
+                    const msg = socket.message(-1);
+                    assert.equal(msg.type, 'project-closed');
+                });
         });
 
         it('should invoke "destroy"', function(done) {
@@ -105,21 +106,80 @@ describe('active-room', function() {
         });
     });
 
+    describe('get sockets at role', function() {
+        let room = null;
+
+        before(function() {
+            room = utils.createRoom({
+                name: 'move-test',
+                owner: 'first',
+                roles: {
+                    role1: ['first'],
+                    role2: [],
+                }
+            });
+        });
+
+        it('should return the sockets for a given role', function() {
+            const sockets = room.getSocketsAt('role1');
+            assert.equal(sockets.length, 1);
+            assert.equal(sockets[0].username, 'first');
+        });
+
+        it('should return empty array if no sockets', function() {
+            const sockets = room.getSocketsAt('role2');
+            assert.equal(sockets.length, 0);
+        });
+    });
+
+    describe('changing roles', function() {
+        let room = null;
+        let s1 = null;
+
+        before(function() {
+            room = utils.createRoom({
+                name: 'move-test',
+                owner: 'first',
+                roles: {
+                    role1: ['first'],
+                    role2: [],
+                }
+            });
+            s1 = room.getSocketsAt('role1')[0];
+            room.add(s1, 'role2');
+        });
+
+        it('should send update message on changing roles', function() {
+            const msg = s1._socket.message(-1);
+            assert.equal(msg.type, 'room-roles');
+            assert.equal(msg.occupants.role2[0], 'first');
+        });
+
+        it('should remove the socket from the original role', function() {
+            assert.equal(room.getSocketsAt('role1').length, 0);
+        });
+
+        it('should add the socket to new role', function() {
+            assert.equal(room.getSocketsAt('role2')[0], s1);
+        });
+    });
+
     describe('add', function() {
         var s1, s2;
 
         before(function() {
-            s1 = new Socket('first');
-            s2 = new Socket('second');
-
-            room = new ActiveRoom(logger, 'addTest', s1);
+            let room = utils.createRoom({
+                name: 'add-test',
+                owner: 'first',
+                roles: {
+                    role1: [],
+                    role2: [],
+                }
+            });
+            s1 = utils.createSocket('role1');
             room.add(s1, 'role1');
+            s2 = utils.createSocket('role2');
             room.add(s2, 'role2');
-        });
-
-        it('should add the sockets to the "roles" dict', function() {
-            assert.equal(room.roles.role1, s1);
-            assert.equal(room.roles.role2, s2);
         });
 
         it('should update the roleId', function() {
@@ -128,41 +188,52 @@ describe('active-room', function() {
         });
 
         it('should send update messages to each socket', function() {
-            assert.equal(s1.messages().length, 2);
-            assert.equal(s2.messages().length, 1);
+            assert.equal(s1._socket.messages().length, 2);
+            assert.equal(s2._socket.messages().length, 1);
         });
 
         it('should send same updated room to each socket', function() {
-            assert(_.isEqual(s1.message(-1), s2.message(-1)));
+            assert(_.isEqual(s1._socket.message(-1), s2._socket.message(-1)));
         });
 
         it('should send updated room', function() {
             var expected = {
-                role1: s1.username,
-                role2: s2.username
+                role1: [s1.username],
+                role2: [s2.username]
             };
-            assert(_.isEqual(s1.message(-1).occupants, expected));
+            const actual = s1._socket.message(-1).occupants;
+            assert(_.isEqual(actual, expected));
         });
     });
+
+    describe('join role', function() {
+        var alice, bob;
+
+        before(function() {
+            let room = utils.createRoom({
+                name: 'add-test',
+                owner: 'alice',
+                collaborators: ['alice', 'bob'],
+                roles: {
+                    role1: ['alice'],
+                    role2: ['bob'],
+                }
+            });
+            alice = room.getSocketsAt('role1')[0];
+            bob = room.getSocketsAt('role2')[0];
+
+            room.add(alice, 'role2');
+        });
+
+        it('should both receive update messages', function() {
+            assert(alice._socket.message(-1));
+            assert(_.isEqual(alice._socket.message(-1), bob._socket.message(-1)));
+        });
+
+        it('should send correct update message', function() {
+            const usersAtRole2 = alice._socket.message(-1).occupants.role2;
+            assert(_.isEqual(usersAtRole2, ['bob', 'alice']));
+        });
+
+    });
 });
-
-var Socket = function(name) {
-    this.username = name;
-    this._msgs = [];
-};
-
-Socket.prototype.send = function(msg) {
-    this._msgs.push(msg);
-};
-
-Socket.prototype.message = function(index) {
-    if (index > -1) {
-        return this._msgs[index];
-    } else {
-        return this._msgs[this._msgs.length+index];
-    }
-};
-
-Socket.prototype.messages = function() {
-    return this._msgs.slice();
-};

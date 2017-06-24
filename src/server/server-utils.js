@@ -57,9 +57,7 @@ var joinActiveProject = function(userId, room, res) {
     var serialized,
         createdNewRole = false;
 
-    let openRole = Object.keys(room.roles)
-        .filter(role => !room.roles[role])  // not occupied
-        .shift();
+    let openRole = room.getUnoccupiedRole();
 
     trace(`room "${room.name}" is already active`);
 
