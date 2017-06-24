@@ -212,11 +212,9 @@ class ActiveRoom {
         this.sockets().forEach(socket => socket.send(msg));
     }
  
-    // TODO: add a method for getting the sockets at a given role
     sockets () {
         return R.values(this.roles)
-            // TODO: update this for lists of sockets at each position
-            .filter(socket => !!socket);
+            .reduce((l1, l2) => l1.concat(l2), []);
     }
 
     isOccupied(role) {
