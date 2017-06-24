@@ -143,7 +143,7 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
                         .map(role => {
                             let clients = room.getSocketsAt(role),
                                 names = clients.length ?
-                                    clients.map(c => c.username) : NO_USER_LABEL;
+                                    clients.map(c => c.username) : [NO_USER_LABEL];
 
                             return `\t${role}: ${names.join(',')}`;
                         });
