@@ -365,7 +365,8 @@ class ActiveRoom {
     }
 
     serialize() {  // Create project xml from the current room
-        console.log(this.getRoleNames());
+        // FIXME: this breaks with examples currently because of the dumb way that
+        // they are currently handled
         return Q.all(this.getRoleNames().map(name => this.getRoleContent(name)))
             .then(roleContents => {
                 return utils.xml.format('<room name="@" app="@">', this.name, utils.APP) +
