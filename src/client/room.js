@@ -77,7 +77,7 @@ function RoomMorph(ide) {
 
     // Set the initial values
     var roles = {};
-    roles[this.ide.projectName] = 'me';
+    roles[this.ide.projectName] = ['me'];
     this.update(null, this.name, roles);
     // Shared messages array for when messages are sent to unoccupied roles
     this.sharedMsgs = [];
@@ -116,18 +116,27 @@ RoomMorph.prototype.isEditable = function() {
     return this.isOwner() || this.isCollaborator();
 };
 
+RoomMorph.sameOccupants = function(roles, otherRoles) {
+    var names = Object.keys(roles);
+    for (var i = names.length; i--;) {
+        if (!RoomMorph.equalLists(roles[names[i]], otherRoles[names[i]])) return false;
+    }
+    return true;
+};
+
+RoomMorph.equalLists = function(first, second) {
+    if (first.length !== second.length) return false;
+    for (var i = first.length; i--;) {
+        if (first[i] !== second[i]) return false;
+    }
+    return true;
+};
+
 RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
-    var myself = this,
-        wasEditable = this.isEditable(),
-        oldRoles = this.roles,
-        oldNames = Object.keys(oldRoles),
+    var wasEditable = this.isEditable(),
+        oldNames,
         names,
         changed;
-
-    // Update the roles, etc
-    this.ownerId = ownerId || this.ownerId;
-    this.roles = roles || this.roles;
-    this.collaborators = collaborators || this.collaborators;
 
     changed = name && this.name !== name;
     if (changed) {
@@ -136,13 +145,18 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     }
 
     // Check if it has changed in a meaningful way
-    names = Object.keys(this.roles);
+    names = Object.keys(roles);
+    oldNames = Object.keys(this.roles);
     changed = changed ||
         wasEditable !== this.isEditable() ||
-        oldNames.length !== names.length || names.reduce(function(prev, name) {
-            return prev || oldRoles[name] !== myself.roles[name];
-        }, false);
+        !RoomMorph.equalLists(oldNames, names) ||  // roles changed
+        !RoomMorph.equalLists(collaborators, this.collaborators) ||
+        !RoomMorph.sameOccupants(this.roles, roles);
 
+    // Update the roles, etc
+    this.ownerId = ownerId || this.ownerId;
+    this.roles = roles || this.roles;
+    this.collaborators = collaborators || this.collaborators;
 
     if (changed) {
         this.version = Date.now();
@@ -355,7 +369,7 @@ RoomMorph.prototype.editRole = function(role) {
     //   + transfer ownership (if occupied)
     //   + evict user (if occupied)
     //   + change role (if owned by self)
-    var dialog = new EditRoleMorph(this, role, !!this.roles[role.name]),
+    var dialog = new EditRoleMorph(this, role, !!this.roles[role.name].length),
         world = this.world();
 
     dialog.fixLayout();
@@ -675,12 +689,12 @@ function RoleMorph(name, user, index, total) {
     this.init(name, user, index, total);
 }
 
-RoleMorph.prototype.init = function(name, user, index, total) {
+RoleMorph.prototype.init = function(name, users, index, total) {
     RoleMorph.uber.init.call(this, true);
     this.name = name;
-    this.user = user;
+    this.users = users;
 
-    this._label = new RoleLabelMorph(name, user);
+    this._label = new RoleLabelMorph(name, users);
     this.add(this._label);
     this.index = index;
     this.total = total;
@@ -738,7 +752,7 @@ RoleMorph.prototype.drawNew = function() {
         this.ownerLabel.destroy();
     }
 
-    this._label = new RoleLabelMorph(this.name, this.user);
+    this._label = new RoleLabelMorph(this.name, this.users);
     this.add(this._label);
     this._label.setCenter(pos);
 };
@@ -775,11 +789,12 @@ RoleMorph.prototype.reactToDropOf = function(drop) {
 
     // Share the intended message type
     function shareMsgType(myself, name, fields) {
-        if (myself.user && myself.parent.ide.projectName === myself.name) {  // occupied & myself
+        // TODO: which user would you like to send it to? all of them? just the first one?
+        if (myself.users.length && myself.parent.ide.projectName === myself.name) {  // occupied & myself
             myself.parent.ide.showMessage('Can\'t send a message type to yourself!', 2);
             return;
         }
-        if (myself.user && myself.parent.ide.projectName !== myself.name) {  // occupied & not myself
+        if (myself.users && myself.parent.ide.projectName !== myself.name) {  // occupied & not myself
             myself.parent.ide.sockets.sendMessage({
                 type: 'share-msg-type',
                 roleId: myself.name,
@@ -806,14 +821,14 @@ RoleLabelMorph.prototype.constructor = RoleLabelMorph;
 RoleLabelMorph.uber = Morph.prototype;
 
 // Label containing the role & user names
-function RoleLabelMorph(name, user) {
+function RoleLabelMorph(name, users) {
     this.name = name;
-    this.user = user;
+    this.users = users;
     this.init();
 }
 
 RoleLabelMorph.prototype.init = function() {
-    var usrTxt = this.user || '<empty>';
+    var usrTxt = this.users.length ? this.users.join(', ') : '<empty>';
     if (this.isMine()) {
         usrTxt = 'me';
     }
@@ -850,9 +865,9 @@ RoleLabelMorph.prototype.init = function() {
 
 RoleLabelMorph.prototype.isMine = function() {
     if (!SnapCloud.username) {
-        return !!this.user;
+        return !!this.users.length;
     }
-    return this.user === SnapCloud.username;
+    return this.users.indexOf(SnapCloud.username) !== -1;
 };
 
 RoleLabelMorph.prototype.drawNew = function() {
@@ -905,7 +920,7 @@ function EditRoleMorph(room, role) {
     // Role Actions
     this.addButton('createRoleClone', 'Clone');
 
-    if (role.user) {  // occupied
+    if (role.users.length) {  // occupied
         // owner can evict collaborators, collaborators can evict guests
         if (role.name !== this.room.role() &&  // can't evict own role
             (this.room.isOwner() || this.room.isGuest(role.user))) {
@@ -959,6 +974,7 @@ EditRoleMorph.prototype.moveToRole = function() {
 };
 
 EditRoleMorph.prototype.evictUser = function() {
+    // TODO: which user?
     this.room.evictUser(this.role.user, this.role.name);
     this.destroy();
 };
