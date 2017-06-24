@@ -14,6 +14,7 @@ function NetsBloxSerializer() {
     this.init();
 }
 
+// TODO: this should be on the server
 NetsBloxSerializer.prototype.serializeRoom = function (name, roles) {
     var roleNames = Object.keys(roles),
         body = '',

@@ -10,6 +10,8 @@ var R = require('ramda'),
     error = debug('netsblox:api:utils:error'),
     version = require('../../package.json').version;
 
+const APP = `NetsBlox ${version}, http://netsblox.org`;
+
 var uuid = function(owner, name) {
     return owner + '/' + name;
 };
@@ -24,7 +26,7 @@ var getRoomXML = function(project) {
             var roleXml = roles.map(role =>
                 `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
             ).join('');
-            var app = roleXml.match(APP_REGEX)[1] || `NetsBlox ${version}, http://netsblox.org`;
+            var app = roleXml.match(APP_REGEX)[1] || APP;
 
             return `<room name="${project.name}" app="${app}">${roleXml}</room>`;
         });
@@ -167,6 +169,73 @@ var parseField = function(src, field) {
     return src.substring(startIndex + field.length + 2, endIndex);
 };
 
+// Snap serialization functions
+const SnapXml = {};
+function isNil(thing) {
+    return thing === undefined || thing === null;
+}
+
+SnapXml.escape = function (string, ignoreQuotes) {
+    var src = isNil(string) ? '' : string.toString(),
+        result = '',
+        i,
+        ch;
+    for (i = 0; i < src.length; i += 1) {
+        ch = src[i];
+        switch (ch) {
+        case '\'':
+            result += '&apos;';
+            break;
+        case '\"':
+            result += ignoreQuotes ? ch : '&quot;';
+            break;
+        case '<':
+            result += '&lt;';
+            break;
+        case '>':
+            result += '&gt;';
+            break;
+        case '&':
+            result += '&amp;';
+            break;
+        case '\n': // escape CR b/c of export to URL feature
+            result += '&#xD;';
+            break;
+        case '~': // escape tilde b/c it's overloaded in serializer.store()
+            result += '&#126;';
+            break;
+        default:
+            result += ch;
+        }
+    }
+    return result;
+};
+
+SnapXml.format = function (string) {
+    // private
+    var i = -1,
+        values = arguments,
+        value;
+
+    return string.replace(/[@$%]([\d]+)?/g, function (spec, index) {
+        index = parseInt(index, 10);
+
+        if (isNaN(index)) {
+            i += 1;
+            value = values[i + 1];
+        } else {
+            value = values[index + 1];
+        }
+        // original line of code - now frowned upon by JSLint:
+        // value = values[(isNaN(index) ? (i += 1) : index) + 1];
+
+        return spec === '@' ?
+                SnapXml.escape(value)
+                    : spec === '$' ?
+                        SnapXml.escape(value, true)
+                            : value;
+    });
+};
 
 module.exports = {
     serialize,
@@ -180,8 +249,10 @@ module.exports = {
     isSocketUuid,
     xml: {
         thumbnail: src => parseField(src, 'thumbnail'),
-        notes: src => parseField(src, 'notes')
+        notes: src => parseField(src, 'notes'),
+        format: SnapXml.format
     },
     getEmptyRole,
-    getArgumentsFor
+    getArgumentsFor,
+    APP 
 };
