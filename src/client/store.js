@@ -2,7 +2,7 @@
    CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
    WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame,
    MessageInputSlotMorph, HintInputSlotMorph, InputSlotMorph, SnapActions,
-   normalizeCanvas, StructInputSlotMorph, BooleanSlotMorph */
+   normalizeCanvas, StructInputSlotMorph, BooleanSlotMorph, SVG_Costume, Costume*/
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
@@ -950,6 +950,13 @@ HintInputSlotMorph.prototype.toXML = function(serializer) {
 };
 
 Costume.prototype.toXML = function (serializer) {
+    // Netsblox addition: start
+    var imageData = this.imageData;
+    if (imageData === null) {
+        imageData = this instanceof SVG_Costume ? this.contents.src
+            : normalizeCanvas(this.contents).toDataURL('image/png');
+    }
+    // Netsblox addition: end
     return serializer.format(
         '<costume name="@" collabId="@" center-x="@" center-y="@" image="@" ~/>',
         this.name,
@@ -957,9 +964,8 @@ Costume.prototype.toXML = function (serializer) {
         this.rotationCenter.x,
         this.rotationCenter.y,
         // Netsblox addition: start
-        this.imageData || this instanceof SVG_Costume ? this.contents.src
+        imageData
         // Netsblox addition: end
-                : normalizeCanvas(this.contents).toDataURL('image/png')
     );
 };
 
