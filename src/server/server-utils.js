@@ -2,12 +2,9 @@
 'use strict';
 
 var R = require('ramda'),
-    Q = require('q'),
     assert = require('assert'),
     debug = require('debug'),
-    info = debug('netsblox:api:utils:info'),
     trace = debug('netsblox:api:utils:trace'),
-    error = debug('netsblox:api:utils:error'),
     version = require('../../package.json').version;
 
 const APP = `NetsBlox ${version}, http://netsblox.org`;
