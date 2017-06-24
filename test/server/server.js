@@ -200,7 +200,6 @@ describe('Server Tests', function() {
                 socket = new WebSocket(host);
                 socket.on('open', function() {
                     socket.send(JSON.stringify({
-                        namespace: 'netsblox',
                         type: 'request-uuid'
                     }));
 
@@ -208,11 +207,10 @@ describe('Server Tests', function() {
                         console.log(msg);
                         msg = JSON.parse(msg);
 
-                        if (msg.namespace === 'netsblox' && msg.type === 'uuid') {
+                        if (msg.type === 'uuid') {
                             uuid = msg.body;
                             // create a room
                             var res = {
-                                namespace: 'netsblox',
                                 type: 'create-room',
                                 room: ROOM_NAME,
                                 role: 's1'
@@ -264,22 +262,19 @@ describe('Server Tests', function() {
                     newSocket = new WebSocket(host);
                     newSocket.on('open', function() {
                         newSocket.send(JSON.stringify({
-                            namespace: 'netsblox',
                             type: 'request-uuid'
                         }));
                         newSocket.on('message', function(msg) {
                             msg = JSON.parse(msg);
 
-                            if (msg.namespace === 'netsblox' && msg.type === 'uuid') {
+                            if (msg.type === 'uuid') {
                                 username2 = msg.body;
 
                                 socket.send(JSON.stringify({
-                                    namespace: 'netsblox',
                                     type: 'add-role',
                                     name: 's2'
                                 }));
                                 var res = {
-                                    namespace: 'netsblox',
                                     type: 'join-room',
                                     room: ROOM_NAME,
                                     owner: uuid,
