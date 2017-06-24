@@ -13,7 +13,7 @@ var fs = require('fs'),
     PROCEDURES_DIR = path.join(__dirname,'procedures'),
     SocketManager = require('../socket-manager'),
     utils = require('../server-utils'),
-
+    ApiConsumer = require('./procedures/utils/api-consumer'),
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
 /**
@@ -26,7 +26,6 @@ var RPCManager = function() {
     this.rpcRegistry = {};
     this.rpcs = this.loadRPCs();
     this.router = this.createRouter();
-
 };
 
 /**
@@ -76,7 +75,7 @@ RPCManager.prototype.createRouter = function() {
     var router = express.Router({mergeParams: true});
 
     // Create the index for the rpcs
-    router.route('/').get((req, res) => 
+    router.route('/').get((req, res) =>
         res.json(this.rpcs.map(rpc => rpc.getPath())));
 
     this.rpcs
@@ -121,7 +120,7 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
     const room = socket._room;
     rpcs = room.rpcs;
 
-    // If the RPC hasn't been created for the given room, create one 
+    // If the RPC hasn't been created for the given room, create one
     if (!rpcs[RPC.getPath()]) {
         this._logger.info(`Creating new RPC (${RPC.getPath()}) for ${room.uuid}`);
         rpcs[RPC.getPath()] = new RPC(room.uuid);
@@ -153,10 +152,16 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         }
 
         // Add the netsblox socket for triggering network messages from an RPC
-        rpc.socket = SocketManager.getSocket(uuid);
-        rpc.response = res;
-        if (!rpc.socket) {
-            this._logger.error(`Could not find socket ${uuid} for rpc ` + 
+        let ctx;
+        if (rpc instanceof ApiConsumer) {
+            ctx = Object.create(rpc);
+        }else {
+            ctx = rpc;
+        }
+        ctx.socket = SocketManager.getSocket(uuid);
+        ctx.response = res;
+        if (!ctx.socket) {
+            this._logger.error(`Could not find socket ${uuid} for rpc ` +
                 `${RPC.getPath()}:${action}. Will try to call it anyway...`);
         }
 
@@ -169,7 +174,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         let prettyArgs = JSON.stringify(args);
         prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
         this._logger.log(`calling ${RPC.getPath()}.${action}(${prettyArgs})`);
-        result = rpc[action].apply(rpc, args);
+        result = ctx[action].apply(ctx, args);
 
         this.sendRPCResult(res, result);
 
