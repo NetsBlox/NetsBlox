@@ -108,7 +108,7 @@ class ActiveRoom {
             sockets.splice(index, 1);
             socket.roleId = null;
         } else {
-            this._logger.warn(`could not remove socket ${socket.username} from ${this.uuid}. Not found`)
+            this._logger.warn(`could not remove socket ${socket.username} from ${this.uuid}. Not found`);
         }
     }
 
