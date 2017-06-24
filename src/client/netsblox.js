@@ -284,36 +284,30 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 onConnect = this.sockets.onConnect,
                 msg;
 
+            this.shield = new Morph();
+            this.shield.alpha = 0;
+            this.shield.setExtent(this.parent.extent());
+            this.parent.add(this.shield);
+
             this.sockets.onConnect = function() {
                 SnapCloud.passiveLogin(myself, function() {
-                    var response = SnapCloud.parseDict(myself.getURL('api/Examples/' + example +
-                        '?socketId=' + myself.sockets.uuid));
+                    var projectData = myself.getURL('api/Examples/' + example);
 
-                    myself.room.nextRoom = {
-                        ownerId: response.Owner,
-                        roomName: response.RoomName,
-                        roleId: response.ProjectName
-                    };
-
-                    // role name
                     myself.nextSteps([
                         function () {
-                            msg = this.showMessage('Opening ' + example + ' example...');
+                            msg = myself.showMessage('Opening ' + example + ' example...');
                         },
                         function () {nop(); }, // yield (bug in Chrome)
                         function () {
-                            if (response.SourceCode) {
-                                myself.rawOpenCloudDataString(
-                                    response.SourceCode
-                                );
-                            } else {
-                                myself.clearProject();
-                            }
-                            myself.loadNextRoom();
-                            myself.sockets.onConnect = onConnect;
+                            // Netsblox addition: start
+                            myself.openRoomString(projectData, true);
+                            // Netsblox addition: end
                             myself.hasChangedMedia = true;
                         },
                         function () {
+                            myself.shield.destroy();
+                            myself.shield = null;
+                            myself.sockets.onConnect = onConnect;
                             msg.destroy();
                             applyFlags(dict);
                         }
