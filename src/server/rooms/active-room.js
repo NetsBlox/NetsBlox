@@ -87,11 +87,11 @@ class ActiveRoom {
     silentAdd (socket, role) {
         this._logger.trace(`adding ${socket.uuid} to ${role}`);
 
+        const oldRoom = socket._room;
         const oldRole = socket.roleId;
-        const index = this.hasRole(oldRole) ? this.roles[oldRole].indexOf(socket) : -1;
-        if (index > -1) {
+        if (oldRoom && oldRole) {
             this._logger.trace(`removing ${socket.uuid} from old role ${oldRole}`);
-            this.roles[oldRole].splice(index, 1);
+            oldRoom.remove(socket);
         }
 
         this.roles[role].push(socket);
@@ -112,8 +112,8 @@ class ActiveRoom {
         }
     }
 
-    remove (socket, role) {
-        this.silentRemove(socket, role);
+    remove (socket) {
+        this.silentRemove(socket);
         this.sendUpdateMsg();
         this.check();
     }
