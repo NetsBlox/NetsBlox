@@ -106,6 +106,64 @@ describe('active-room', function() {
         });
     });
 
+    describe('get sockets at role', function() {
+        let room = null;
+
+        before(function() {
+            room = utils.createRoom({
+                name: 'move-test',
+                owner: 'first',
+                roles: {
+                    role1: ['first'],
+                    role2: [],
+                }
+            });
+        });
+
+        it('should return the sockets for a given role', function() {
+            const sockets = room.getSocketsAt('role1');
+            assert.equal(sockets.length, 1);
+            assert.equal(sockets[0].username, 'first');
+        });
+
+        it('should return empty array if no sockets', function() {
+            const sockets = room.getSocketsAt('role2');
+            assert.equal(sockets.length, 0);
+        });
+    });
+
+    describe('changing roles', function() {
+        let room = null;
+        let s1 = null;
+
+        before(function() {
+            room = utils.createRoom({
+                name: 'move-test',
+                owner: 'first',
+                roles: {
+                    role1: ['first'],
+                    role2: [],
+                }
+            });
+            s1 = room.getSocketsAt('role1')[0];
+            room.add(s1, 'role2');
+        });
+
+        it('should send update message on changing roles', function() {
+            const msg = s1._socket.message(-1);
+            assert.equal(msg.type, 'room-roles');
+            assert.equal(msg.occupants.role2[0], 'first');
+        });
+
+        it('should remove the socket from the original role', function() {
+            assert.equal(room.getSocketsAt('role1').length, 0);
+        });
+
+        it('should add the socket to new role', function() {
+            assert.equal(room.getSocketsAt('role2')[0], s1);
+        });
+    });
+
     describe('add', function() {
         var s1, s2;
 
