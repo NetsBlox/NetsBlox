@@ -211,21 +211,13 @@ class NetsBloxSocket {
     // This should only be called internally *EXCEPT* when the socket is going to close
     leave () {
         if (this._room) {
-            // TODO: update this
-            this._room.roles[this.roleId] = null;
-
-            if (this._room.sockets().length === 0) {  // last socket closing
-                this._room.close();
-            } else {
-                this._room.onRolesChanged();
-            }
-            RoomManager.checkRoom(this._room);
+            this._room.remove(this);
         }
     }
 
     changeSeats (role) {
         this._logger.log(`changing to role ${this._room.uuid}/${role} from ${this.roleId}`);
-        this._room.move({socket: this, dst: role});
+        this._room.add(this, role);
         assert.equal(this.roleId, role);
     }
 

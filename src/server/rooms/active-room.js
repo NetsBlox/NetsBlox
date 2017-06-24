@@ -15,9 +15,6 @@ class ActiveRoom {
         this.name = name;
         this.originTime = Date.now();
 
-        // Seats
-        // TODO: Add support for multiple sockets at a role
-        // TODO: Make this dict private and access using a function
         this.roles = {};  // actual occupants
 
         this.owner = owner;
@@ -81,20 +78,50 @@ class ActiveRoom {
     }
 
     add (socket, role) {
-        this._logger.trace(`adding ${socket.uuid} to ${role}`);
-        this.roles[role] = socket;
-        socket.roleId = role;
+        this.silentAdd(socket, role);
         this.onRolesChanged();  // Update all clients
+    }
+
+    silentAdd (socket, role) {
+        this._logger.trace(`adding ${socket.uuid} to ${role}`);
+
+        const oldRole = socket.roleId;
+        const index = this.roles[oldRole].indexOf(socket);
+        if (index > -1) {
+            this._logger.trace(`removing ${socket.uuid} from old role ${oldRole}`);
+            this.roles[oldRole].splice(index, 1);
+        }
+
+        this.roles[role].push(socket);
+        socket.roleId = role;
+    }
+
+    silentRemove (socket) {
+        const role = socket.roleId;
+        const sockets = this.roles[role];
+        const index = sockets.indexOf(socket);
+
+        if (index > -1) {
+            sockets.splice(index, 1);
+            socket.roleId = null;
+        } else {
+            this._logger.warn(`could not remove socket ${socket.username} from ${this.uuid}. Not found`)
+        }
+    }
+
+    remove (socket, role) {
+        this.silentRemove(socket, role);
+        this.onRolesChanged();
+        this.check();
     }
 
     getStateMsg () {
         var occupants = {},
             msg;
 
-        Object.keys(this.roles)
-            .forEach(role => {
-                occupants[role] = this.roles[role] ? this.roles[role].username : null;
-            });
+        this.getRoleNames()
+            .forEach(role => occupants[role] =
+                this.getSocketsAt(role).map(socket => socket.username));
 
         msg = {
             type: 'room-roles',
@@ -166,45 +193,6 @@ class ActiveRoom {
         if (this._project) {  // has been saved
             this._project.save();
         }
-    }
-
-    move (params) {
-        var src = params.src || params.socket.roleId,
-            socket = params.socket,
-            dst = params.dst;
-
-        if (socket) {
-            // socket should equal this.roles[src]!
-            if (socket !== this.roles[src]) {
-                var rolesList = Object.keys(this.roles)
-                    .map(role => `${role}: ${this.roles[role] && this.roles[role].username}`)
-                    .join('\n');
-
-                this._logger.error(`room "${this.name}" is out of sync! ${src} should have ` +
-                    `${socket.username} but has ${this.roles[src] && this.roles[src].username}` +
-                    `.\nPrinting all roles: ${rolesList}`);
-
-                if (this.roles[src]) {  // notify the socket of it's removal!
-                    var currSocket = this.roles[src];
-                    currSocket.newRoom();
-                    this._logger.error(`Moved ${this.roles[src].username} from ${this.name} (${src})` +
-                        ` to ${currSocket._room.name} (${currSocket.roleId})`);
-
-                    // Send message to currSocket to explain the move
-                    currSocket.send({
-                        type: 'notification',
-                        message: `${socket.username} has taken your spot.\nYou have been moved ` +
-                            ` to a new project.`
-                    });
-                }
-            }
-        }
-
-        socket = socket || this.roles[src];
-        this._logger.info(`moving from ${src} to ${dst}`);
-        this.roles[src] = null;
-        this.add(socket, dst);
-        this.check();
     }
 
     sendFrom (socket, msg) {

@@ -276,7 +276,7 @@ module.exports = [
             return room.saveRole(roleId)
                 .then(() => {
                     // Update the room state
-                    room.move({src: roleId, dst: dstId});
+                    room.add(socket, dstId);
 
                     // Reply w/ the new role code
                     return room.getRole(dstId);
