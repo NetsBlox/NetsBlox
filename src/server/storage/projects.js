@@ -79,6 +79,13 @@
             });
         }
 
+        setRoles(roles) {
+            const query = {$set: {}};
+            roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
+
+            return this._db.update(this.getStorageId(), query);
+        }
+
         getRawRole(role) {
             return this.getRawProject()
                 .then(project => {
