@@ -22,14 +22,14 @@ var white = new Color(224, 224, 224);
 function RoomMorph(ide) {
     // Get the users at the room
     this.ide = ide;
-    this.roles = {};
+    this.roles = null;
     this.roleLabels = {};
     this.invitations = {};  // open invitations
 
     this.ownerId = null;
     this.collaborators = [];
     this.roomLabel = null;
-    this.init();
+    this.init(true);
     // Set up the room name
     this._name = localize(RoomMorph.DEFAULT_ROOM);
     Object.defineProperty(this, 'name', {
@@ -73,17 +73,34 @@ function RoomMorph(ide) {
         if (myself._name === localize(RoomMorph.DEFAULT_ROOM)) {
             myself.ide.sockets.sendMessage({type: 'request-new-name'});
         }
+        myself.update();
     };
 
     // Set the initial values
-    var roles = {};
-    roles[this.ide.projectName] = ['me'];
-    this.update(null, this.name, roles);
     // Shared messages array for when messages are sent to unoccupied roles
     this.sharedMsgs = [];
 
-    this.drawNew();
+    //this.drawNew();
 }
+
+RoomMorph.prototype.getDefaultRoles = function() {
+    var roles = {};
+    roles[this.ide.projectName] = [this.myUserId()];
+    return roles;
+};
+
+RoomMorph.prototype.getCurrentOccupants = function() {
+    return this.roles[this.ide.projectName].slice();
+};
+
+RoomMorph.prototype.isLeader = function() {
+    var leader = this.roles[this.ide.projectName][0];
+    return leader === this.myUserId();
+};
+
+RoomMorph.prototype.myUserId = function() {
+    return SnapCloud.username || this.ide.sockets.uuid;
+};
 
 RoomMorph.prototype._onNameChanged = function(newName) {
     if (this.name !== newName) {
@@ -145,18 +162,28 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     }
 
     // Check if it has changed in a meaningful way
-    names = Object.keys(roles);
-    oldNames = Object.keys(this.roles);
     changed = changed ||
-        wasEditable !== this.isEditable() ||
-        !RoomMorph.equalLists(oldNames, names) ||  // roles changed
-        !RoomMorph.equalLists(collaborators, this.collaborators) ||
-        !RoomMorph.sameOccupants(this.roles, roles);
+        wasEditable !== this.isEditable();
+
+    if (roles) {
+        names = Object.keys(roles);
+        oldNames = Object.keys(this.roles);
+
+        changed = changed || !RoomMorph.equalLists(oldNames, names) ||
+            !RoomMorph.sameOccupants(this.roles, roles);
+
+        this.roles = roles || this.roles;
+    } else {
+        this.roles = this.roles || this.getDefaultRoles();
+    }
+
+    if (collaborators) {
+        changed = changed || !RoomMorph.equalLists(collaborators, this.collaborators);
+        this.collaborators = collaborators || this.collaborators;
+    }
 
     // Update the roles, etc
     this.ownerId = ownerId || this.ownerId;
-    this.roles = roles || this.roles;
-    this.collaborators = collaborators || this.collaborators;
 
     if (changed) {
         this.version = Date.now();
@@ -174,6 +201,9 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
             }
         }
     }
+
+    // Update collaborative editing
+    SnapActions.isLeader = this.isLeader();
 };
 
 RoomMorph.prototype.drawNew = function() {
@@ -922,6 +952,13 @@ function EditRoleMorph(room, role) {
 
     if (role.users.length) {  // occupied
         // owner can evict collaborators, collaborators can evict guests
+
+        // Check if we are occupying that role already. If not, give the
+        // option for collaborative editing
+        if (role.users.indexOf(this.room.myUserId()) === -1) {
+            this.addButton('moveToRole', 'Move to');
+        }
+
         if (role.name !== this.room.role() &&  // can't evict own role
             (this.room.isOwner() || this.room.isGuest(role.user))) {
             this.addButton('evictUser', 'Evict User');

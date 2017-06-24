@@ -28,6 +28,7 @@ WebSocketManager.MessageHandlers = {
     // Receive an assigned uuid
     'uuid': function(msg) {
         this.uuid = msg.body;
+        SnapActions.id = this.uuid;
         this.onConnect();
     },
 
