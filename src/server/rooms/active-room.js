@@ -46,6 +46,8 @@ class ActiveRoom {
                         this._project.destroy();
                     }
                 });
+        } else {
+            return Q();
         }
     }
 
