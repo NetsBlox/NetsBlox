@@ -205,4 +205,35 @@ describe('active-room', function() {
             assert(_.isEqual(actual, expected));
         });
     });
+
+    describe('join role', function() {
+        var alice, bob;
+
+        before(function() {
+            let room = utils.createRoom({
+                name: 'add-test',
+                owner: 'alice',
+                collaborators: ['alice', 'bob'],
+                roles: {
+                    role1: ['alice'],
+                    role2: ['bob'],
+                }
+            });
+            alice = room.getSocketsAt('role1')[0];
+            bob = room.getSocketsAt('role2')[0];
+
+            room.add(alice, 'role2');
+        });
+
+        it('should both receive update messages', function() {
+            assert(alice._socket.message(-1));
+            assert(_.isEqual(alice._socket.message(-1), bob._socket.message(-1)));
+        });
+
+        it('should send correct update message', function() {
+            const usersAtRole2 = alice._socket.message(-1).occupants.role2;
+            assert(_.isEqual(usersAtRole2, ['bob', 'alice']));
+        });
+
+    });
 });
