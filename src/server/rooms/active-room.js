@@ -88,7 +88,7 @@ class ActiveRoom {
         this._logger.trace(`adding ${socket.uuid} to ${role}`);
 
         const oldRole = socket.roleId;
-        const index = this.roles[oldRole].indexOf(socket);
+        const index = this.hasRole(oldRole) ? this.roles[oldRole].indexOf(socket) : -1;
         if (index > -1) {
             this._logger.trace(`removing ${socket.uuid} from old role ${oldRole}`);
             this.roles[oldRole].splice(index, 1);
@@ -257,6 +257,10 @@ class ActiveRoom {
     }
 
     /////////// Role Operations ///////////
+    hasRole (name) {
+        return this.roles.hasOwnProperty(name);
+    }
+
     getRoleNames () {
         return Object.keys(this.roles);
     }

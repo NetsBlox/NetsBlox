@@ -118,6 +118,7 @@ class NetsBloxSocket {
                 type = msg.type;
 
             // check the namespace
+            // TODO: update this for collaborative editing
             if (msg.namespace !== 'netsblox') return;
             if (msg.type === 'beat') return;
 
@@ -150,11 +151,11 @@ class NetsBloxSocket {
         this.loggedIn = true;
 
         // Update the user's room name
-        if (this._room) {
-            this._room.update();
-            // TODO: update this
-            if (this._room.roles[this.roleId] === this) {
-                this._room.updateRole(this.roleId);
+        const room = this._room;
+        if (room) {
+            room.update();
+            if (room.getSocketsAt(this.roleId).includes(this)) {
+                room.updateRole(this.roleId);
             }
         }
     }
@@ -163,7 +164,7 @@ class NetsBloxSocket {
         role = role || this.roleId;
         this._logger.log(`joining ${room.uuid}/${role} from ${this.roleId}`);
         if (this._room === room && role !== this.roleId) {
-            return this.changeSeats(role);
+            return this.moveToRole(role);
         }
 
         this._logger.log(`joining ${room.uuid}/${role} from ${this.roleId}`);
@@ -215,7 +216,7 @@ class NetsBloxSocket {
         }
     }
 
-    changeSeats (role) {
+    moveToRole (role) {
         this._logger.log(`changing to role ${this._room.uuid}/${role} from ${this.roleId}`);
         this._room.add(this, role);
         assert.equal(this.roleId, role);
@@ -264,8 +265,7 @@ class NetsBloxSocket {
     sendMessageTo (msg, dstId) {
         msg.dstId = dstId;
         if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
-            // TODO: update this
-            this._room.roles.hasOwnProperty(dstId)) {  // local message
+            this._room.hasRole(dstId)) {  // local message
 
             dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
         } else if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
@@ -283,13 +283,13 @@ class NetsBloxSocket {
 
             if (room) {
                 if (roleId) {
-            // TODO: update this
-                    if (room.roles[roleId]) {
-                        sockets.push(room.roles[roleId]);
+                    if (room.hasRole(roleId)) {
+                        sockets = sockets.concat(room.getSocketsAt(roleId));
                     }
                 } else {
                     sockets = room.sockets();
                 }
+
                 sockets.forEach(socket => {
                     msg.dstId = Constants.EVERYONE;
                     socket.send(msg);
@@ -372,15 +372,11 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'rename-role': function(msg) {
-        var socket;
         if (this.canEditRoom() && msg.roleId !== msg.name) {
             this._room.renameRole(msg.roleId, msg.name);
 
-            // TODO: update this
-            socket = this._room.roles[msg.name];
-            if (socket) {
-                socket.send(msg);
-            }
+            const sockets = this._room.getSocketsAt(msg.name);
+            sockets.forEach(socket => socket.send(msg));
         }
     },
 
@@ -408,12 +404,12 @@ NetsBloxSocket.MessageHandlers = {
                 if (this._room === room) {
                     this._logger.warn(`${this.username} is already in ${name}! ` +
                         ` Switching roles instead of "join-room" for ${room.uuid}`);
-                    return this.changeSeats(role);
+                    return this.moveToRole(role);
                 }
 
                 // create the role if need be (and if we are the owner)
                 // TODO: may not actually need this
-                if (!room.roles.hasOwnProperty(role) && room.owner === this.username) {
+                if (!room.hasRole(role) && room.owner === this.username) {
                     this._logger.info(`creating role ${role} at ${room.uuid}`);
                     room.createRole(role);
                 }
