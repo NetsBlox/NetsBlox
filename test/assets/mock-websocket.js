@@ -13,6 +13,12 @@ MockSocket.prototype.send = function(msg) {
     this._messages.push(msg);
 };
 
+/////////////////////////// test helpers /////////////////////////// 
+MockSocket.prototype.receive = function(json) {
+    var msg = JSON.stringify(json);
+    this._events.message(msg);
+};
+
 MockSocket.prototype.message = function(index) {
     if (index < 0) {
         return this._messages[this._messages.length+index];
