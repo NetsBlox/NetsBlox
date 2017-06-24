@@ -167,7 +167,7 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
 
     if (roles) {
         names = Object.keys(roles);
-        oldNames = Object.keys(this.roles);
+        oldNames = Object.keys(this.roles || {});
 
         changed = changed || !RoomMorph.equalLists(oldNames, names) ||
             !RoomMorph.sameOccupants(this.roles, roles);
