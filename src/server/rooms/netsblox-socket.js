@@ -79,8 +79,27 @@ class NetsBloxSocket {
         return this._room;
     }
 
+    updateRoom () {
+        const room = this._room;
+        if (!room) return;
+
+        if (this.isOwner()) {
+            if (Utils.isSocketUuid(this._room.owner)) {
+                this._room.setOwner(this.username);
+            }
+
+            // Update the user's room name
+            room.update();
+        }
+
+        if (this.roleId && room.getSocketsAt(this.roleId).includes(this)) {
+            room.updateRole(this.roleId);
+        }
+    }
+
     _setRoom (room) {
         this._room = room;
+        this.updateRoom();
         if (this._onRoomJoinDeferred) {
             this._onRoomJoinDeferred.resolve(room);
             this._onRoomJoinDeferred = null;
@@ -88,7 +107,8 @@ class NetsBloxSocket {
     }
 
     isOwner () {
-        return this._room && this._room.owner === this.username;
+        return this._room &&
+            (this._room.owner === this.uuid || this._room.owner === this.username);
     }
 
     isCollaborator () {
@@ -151,21 +171,11 @@ class NetsBloxSocket {
     onLogin (user) {
         this._logger.log(`logged in as ${user.username} (from ${this.username})`);
         // Update the room if we are the owner (and not already logged in)
-        if (this.isOwner() && Utils.isSocketUuid(this.username)) {
-            this._room.setOwner(user.username);
-        }
         this.username = user.username;
         this.user = user;
         this.loggedIn = true;
 
-        // Update the user's room name
-        const room = this._room;
-        if (room) {
-            room.update();
-            if (room.getSocketsAt(this.roleId).includes(this)) {
-                room.updateRole(this.roleId);
-            }
-        }
+        this.updateRoom();
     }
 
     join (room, role) {
@@ -212,6 +222,7 @@ class NetsBloxSocket {
                 return RoomManager.createRoom(this, name)
                     .then(_room => {
                         room = _room;
+                        this._setRoom(room);
                         return room.createRole(opts.role);
                     })
                     .then(() => {
@@ -433,6 +444,8 @@ NetsBloxSocket.MessageHandlers = {
     'add-role': function(msg) {
         if (this.canEditRoom()) {
             this._room.createRole(msg.name, Utils.getEmptyRole(msg.name));
+        } else {
+            this._logger.warn(`${this.username} cannot edit the room`);
         }
     },
 
