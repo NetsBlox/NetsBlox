@@ -274,9 +274,6 @@ module.exports = [
             //  Cache the current state in the active room
             return room.saveRole(roleId)
                 .then(() => {
-                    // Update the room state
-                    room.add(socket, dstId);
-
                     // Reply w/ the new role code
                     return room.getRole(dstId);
                 })
@@ -284,6 +281,9 @@ module.exports = [
                     if (project) {
                         project = Utils.serializeRole(project, room.name);
                     }
+                    // Update the room state
+                    room.add(socket, dstId);
+
                     res.send(project);
                 })
                 .catch(err => res.status(500).send('ERROR: ' + err));

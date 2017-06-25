@@ -381,7 +381,7 @@ NetsBloxSocket.MessageHandlers = {
             return;
         }
 
-        this._logger.log('created saveable project for request ' + id);
+        this._logger.log('created saveable project for ' + this.roleId);
         this._projectRequests[id].resolve(project);
         delete this._projectRequests[id];
     },

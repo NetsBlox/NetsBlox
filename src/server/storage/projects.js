@@ -246,7 +246,6 @@
 
         persist() {
             const query = {$set: {transient: false}};
-            this.transient = false;
             return this._db.update(this.getStorageId(), query, {upsert: true})
                 .then(() => this.save());
         }
@@ -406,7 +405,6 @@
             name: room.name,
             originTime: room.originTime,
             activeRole: user.roleId,
-            transient: true,
             collaborators: room.getCollaborators(),
             roles: {}
         };
