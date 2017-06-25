@@ -203,7 +203,7 @@ class NetsBloxSocket {
         if (this.user) {
             promise = this.user.getNewName(name, taken);
         } else {
-            promise = Q('New Room ' + (Date.now() % 100));
+            promise = Q('untitled');
         }
 
         return promise.then(name => {
