@@ -91,7 +91,11 @@ class ActiveRoom {
         const oldRole = socket.roleId;
         if (oldRoom && oldRole) {
             this._logger.trace(`removing ${socket.uuid} from old role ${oldRole}`);
-            oldRoom.remove(socket);
+            if (oldRoom === this) {
+                this.silentRemove(socket);
+            } else {
+                oldRoom.remove(socket);
+            }
         }
 
         this.roles[role].push(socket);
