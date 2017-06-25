@@ -123,4 +123,19 @@ describe('projects', function() {
             })
         .catch(done);
     });
+
+    it('should create copy if name changed after persist', function(done) {
+        project.persist()
+            .then(() => project.addCollaborator('spartacus'))
+            .then(() => {
+                project._room.name = 'name-changed';
+                return project.save();
+            })
+            .then(() => project.getRawProject())
+            .then(data => {
+                assert(data.collaborators.includes('spartacus'));
+                done();
+            })
+            .catch(done);
+    });
 });
