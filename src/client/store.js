@@ -938,7 +938,7 @@ HintInputSlotMorph.prototype.toXML = function(serializer) {
 Costume.prototype.toXML = function (serializer) {
     // Netsblox addition: start
     var imageData = this.imageData;
-    if (imageData === null) {
+    if (!imageData) {
         imageData = this instanceof SVG_Costume ? this.contents.src
             : normalizeCanvas(this.contents).toDataURL('image/png');
     }
