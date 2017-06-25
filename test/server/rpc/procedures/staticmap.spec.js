@@ -2,13 +2,10 @@ describe('staticmap', function() {
     var StaticMap = require('../../../../src/server/rpc/procedures/static-map/static-map'),
         RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
-        Storage = require('../../../../src/server/storage/storage'),
-        Logger = require('../../../../src/server/logger'),
-        storage = new Storage(new Logger('netsblox')),
         staticmap = new RPCMock(StaticMap);
 
     before(function(done) {
-        storage.connect()
+        utils.connect()
             .then(() => {
                 staticmap = new RPCMock(StaticMap);
                 done();
