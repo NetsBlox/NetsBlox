@@ -445,7 +445,7 @@ NetsBloxSocket.MessageHandlers = {
         if (this.canEditRoom()) {
             this._room.createRole(msg.name, Utils.getEmptyRole(msg.name));
         } else {
-            this._logger.warn(`${this.username} cannot edit the room`)
+            this._logger.warn(`${this.username} cannot edit the room`);
         }
     },
 
