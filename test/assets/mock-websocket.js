@@ -1,6 +1,7 @@
 var MockSocket = function() {
     this._events = {};
     this._messages = [];
+    this._responders = {};
     this.readyState = 1;
 };
 
@@ -11,9 +12,18 @@ MockSocket.prototype.on = function(event, handler) {
 MockSocket.prototype.send = function(msg) {
     msg = JSON.parse(msg);
     this._messages.push(msg);
+    if (this._responders[msg.type]) {
+        setTimeout(() => {
+            this.receive(this._responders[msg.type](msg));
+        }, 0);
+    }
 };
 
 /////////////////////////// test helpers /////////////////////////// 
+MockSocket.prototype.addResponse = function(type, fn) {
+    this._responders[type] = fn;
+};
+
 MockSocket.prototype.receive = function(json) {
     var msg = JSON.stringify(json);
     this._events.message(msg);

@@ -163,7 +163,7 @@
                     // create the room from the projects
                     var roles = [];
 
-                    sockets.forEach((socket, i) => roles.push([socket.roleId, projects[i]]));
+                    sockets.forEach((socket, i) => roles.push(projects[i]));
 
                     return roles;
                 });
@@ -190,7 +190,7 @@
                     };
 
                     roles.forEach(role => roleDict[role.ProjectName] = role);
-                    return this._db.save(this.getStorageId(), data);
+                    return this._db.save(data);
                 })
                 .then(() => this);
         }
