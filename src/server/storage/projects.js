@@ -6,6 +6,21 @@
     const blob = require('./blob-storage');
     const utils = require('../server-utils');
 
+    const storeRoleBlob = function(role) {
+        const content = _.clone(role);
+        return Q.all([
+            blob.store(content.SourceCode),
+            blob.store(content.Media)
+        ])
+        .then(hashes => {
+            const [srcHash, mediaHash] = hashes;
+
+            content.SourceCode = srcHash;
+            content.Media = mediaHash;
+            return content;
+        });
+    };
+
     const loadRoleContent = function(role) {
         return Q.all([
             blob.get(role.SourceCode),
@@ -67,29 +82,14 @@
 
         setRole(role, content) {
             this._logger.trace(`updating role: ${role}`);
-            return this.storeRoleBlob(content)
+            return storeRoleBlob(content)
                 .then(content => this.setRawRole(role, content));
-        }
-
-        storeRoleBlob(role) {
-            const content = _.clone(role);
-            return Q.all([
-                blob.store(content.SourceCode),
-                blob.store(content.Media)
-            ])
-            .then(hashes => {
-                const [srcHash, mediaHash] = hashes;
-
-                content.SourceCode = srcHash;
-                content.Media = mediaHash;
-                return content;
-            });
         }
 
         setRoles(roles) {
             const query = {$set: {}};
 
-            return Q.all(roles.map(role => this.storeRoleBlob(role)))
+            return Q.all(roles.map(role => storeRoleBlob(role)))
                 .then(roles => {
                     roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
                     return this._db.update(this.getStorageId(), query);
@@ -100,14 +100,16 @@
             return this.getRawProject()
                 .then(project => {
                     const content = project.roles[role];
-                    content.ProjectName = role;
+                    if (content) {
+                        content.ProjectName = role;
+                    }
                     return content;
                 });
         }
 
         getRole(role) {
             return this.getRawRole(role)
-                .then(content => loadRoleContent(content));
+                .then(content => content && loadRoleContent(content));
         }
 
         getRawRoles() {
@@ -154,45 +156,60 @@
 
         ///////////////////////// End Roles ///////////////////////// 
         collectProjects() {
-            var sockets = this._room ? this._room.sockets() : [];
-            // Add saving the cached projects
-            return Q.all(sockets.map(socket => socket.getProjectJson()))
-                .then(projects => {
-                    // create the room from the projects
-                    var roles = [];
+            var sockets = this._room ?
+                this._room.getRoleNames()
+                    .map(name => this._room.getSocketsAt(name)[0])
+                    .filter(socket => !!socket) : [];
 
-                    sockets.forEach((socket, i) => roles.push([socket.roleId, projects[i]]));
-
-                    return roles;
-                });
+            // Request the project from the first socket
+            // if the request fails, continue with the ones that succeed
+            const jsons = sockets.map(socket =>
+                socket.getProjectJson()
+                    .catch(err => {
+                        this._logger.warn('could not save project at ' +
+                            `${socket.roleId} in ${this.owner}/${this.name}: ${err}`);
+                        return null;
+                    })
+            );
+            return Q.all(jsons)
+                .then(roles => roles.filter(role => !!role));
         }
 
-        // Override
+        collectSaveableRoles() {
+            return this.collectProjects()
+                .then(roles => Q.all(roles.map(role => storeRoleBlob(role))));
+        }
+
+
+        create() {  // initial save
+            return this.collectSaveableRoles()
+                .then(roles => {
+                    const roleDict = {};
+                    const data = {
+                        name: this.name,
+                        owner: this.owner,
+                        transient: true,
+                        lastUpdatedAt: Date.now(),
+                        originTime: Date.now(),
+                        collaborators: this.collaborators,
+                        roles: roleDict
+                    };
+
+                    roles.forEach(role => roleDict[role.ProjectName] = role);
+                    return this._db.save(data);
+                })
+                .then(() => this);
+        }
+
         save() {
             const query = {$set: {}};
-            if (this.transient) {
-                query.$set.transient = true;
-            } else {
-                query.$set.transient = false;
-            }
 
-            return this.collectProjects()
+            return this.collectSaveableRoles()
                 .then(roles => {
                     this._logger.trace('collected projects for ' + this.owner);
-
+                    roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
                     query.$set.lastUpdateAt = Date.now();
-                    return Q.all(roles.map(pair => {
-                        let [name, role] = pair;
-                        return Q.all([blob.store(role.SourceCode), blob.store(role.Media)])
-                            .then(hashes => {
-                                let [srcHash, mediaHash] = hashes;
-                                role.SourceCode = srcHash;
-                                role.Media = mediaHash;
-                                query.$set[`roles.${name}`] = role;
-                            });
-                    }));
-                })
-                .then(() => {
+
                     if (this._room) {  // update if attached to a room
                         const nameChanged = this.name !== this._room.name;
                         const ownerLoggedIn = utils.isSocketUuid(this.owner) &&
@@ -204,19 +221,22 @@
 
                         if (nameChanged) {
                             query.$set.name = this._room.name;
-                            if (!this.transient) {
-                                this.name = query.$set.name;
-                                this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
-                            }
+                            return this.isTransient()
+                                .then(isTransient => {
+                                    if (!isTransient) {
+                                        this.name = query.$set.name;
+                                        this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
+                                    }
+                                });
                         }
                     }
-
-                    return this._db.update(this.getStorageId(), query, {upsert: true})
-                        .then(() => {
-                            this._logger.trace(`saved project ${this.owner}/${this.name}`);
-                            this.owner = query.$set.owner || this.owner;
-                            this.name = query.$set.name || this.name;
-                        });
+                    return Q();
+                })
+                .then(() => this._db.update(this.getStorageId(), query, {upsert: true}))
+                .then(() => {
+                    this._logger.trace(`saved project ${this.owner}/${this.name}`);
+                    this.owner = query.$set.owner || this.owner;
+                    this.name = query.$set.name || this.name;
                 });
         }
 
@@ -393,12 +413,14 @@
     };
 
     ProjectStorage.new = function(user, activeRoom) {
-        return new Project({
+        const project = new Project({
             logger: logger,
             db: collection,
             data: getDefaultProjectData(user, activeRoom),
             room: activeRoom
         });
+
+        return project.create();
     };
 
 })(exports);

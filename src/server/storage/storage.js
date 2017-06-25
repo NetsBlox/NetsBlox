@@ -11,12 +11,14 @@ var Storage = function(logger) {
 
     this.users = null;
     this.projects = null;
+    this.connected = false;
 };
 
 Storage.prototype.connect = function(mongoURI) {
     mongoURI = mongoURI || process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
     return MongoClient.connect(mongoURI)
         .then(db => {
+            this.connected = true;
             this.users = Users;
             this.projects = Projects;
             Users.init(this._logger, db);

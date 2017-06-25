@@ -2,11 +2,6 @@ const assert = require('assert');
 // test if the services are being extracted/identified correctly.
 describe('examples', function() {
     const ROOT_DIR = '../../',
-        NBSocket = require(ROOT_DIR + 'src/server/rooms/netsblox-socket'),
-        RoomManager = require(ROOT_DIR + 'src/server/rooms/room-manager'),
-        Logger = require(ROOT_DIR + 'src/server/logger'),
-        UserStorage = require(ROOT_DIR + 'src/server/storage/users'),
-        Storage = require(ROOT_DIR + 'src/server/storage/storage'),
         EXAMPLES = require(ROOT_DIR + 'src/server/examples');
 
     describe('testing if services are being detected and populated correctly', function() {

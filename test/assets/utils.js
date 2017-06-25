@@ -4,12 +4,18 @@ const assert = require('assert');
 
 // load the *exact* XML_Serializer from Snap!... pretty hacky...
 const path = require('path');
+const Q = require('q');
 const fs = require('fs');
 const PROJECT_ROOT = path.join(__dirname, '..', '..');
+const reqSrc = p => require(PROJECT_ROOT + '/src/server/' + p);
 const ActiveRoom = require(PROJECT_ROOT + '/src/server/rooms/active-room');
 const NetsBloxSocket = require(PROJECT_ROOT + '/src/server/rooms/netsblox-socket');
 const Socket = require('./mock-websocket');
 const Logger = require(PROJECT_ROOT + '/src/server/logger');
+const Storage = require(PROJECT_ROOT + '/src/server/storage/storage');
+const mainLogger = new Logger('netsblox:test');
+const storage = new Storage(mainLogger);
+const Projects = reqSrc('storage/projects');
 
 (function() {
     var clientDir = path.join(PROJECT_ROOT, 'src', 'client', 'Snap--Build-Your-Own-Blocks'),
@@ -89,6 +95,15 @@ const createRoom = function(config) {
     return room;
 };
 
+const connect = function() {
+    const mongoUri = 'mongodb://127.0.0.1:27017/netsblox-tests';
+    if (storage.connected) {
+        return Q(storage._db);
+    } else {
+        return storage.connect(mongoUri);
+    }
+};
+
 module.exports = {
     verifyRPCInterfaces: function(rpc, interfaces) {
         describe(`${rpc.getPath()} interfaces`, function() {
@@ -106,6 +121,10 @@ module.exports = {
     XML_Serializer: Client.XML_Serializer,
     canLoadXml: canLoadXml,
 
+    connect: connect,
+    logger: mainLogger,
     createRoom: createRoom,
-    createSocket: createSocket
+    createSocket: createSocket,
+
+    reqSrc
 };

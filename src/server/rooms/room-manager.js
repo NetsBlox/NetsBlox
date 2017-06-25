@@ -69,11 +69,11 @@ RoomManager.prototype.createRoom = function(socket, name, ownerId) {
 
     this.rooms[uuid] = new ActiveRoom(this._logger, name, ownerId);
 
-    // Create the data element
-    var project = Projects.new(socket, this.rooms[uuid]);
-    this.rooms[uuid].setStorage(project);
-
-    return this.rooms[uuid];
+    return Projects.new(socket, this.rooms[uuid])
+        .then(project => {
+            this.rooms[uuid].setStorage(project);
+            return this.rooms[uuid];
+        });
 };
 
 RoomManager.prototype.getRoom = function(socket, ownerId, name) {
@@ -87,9 +87,11 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
                 if (!project) {
                     this._logger.error(`No project found for ${uuid}`);
                     // If no project is found, create a new project for the user
-                    project = this.createRoom(socket, name, ownerId);
-                    this.rooms[uuid] = project;
-                    return project;
+                    return this.createRoom(socket, name, ownerId)
+                        .then(project => {
+                            this.rooms[uuid] = project;
+                            return project;
+                        });
                 }
 
                 this._logger.trace(`retrieving project ${uuid} from database`);

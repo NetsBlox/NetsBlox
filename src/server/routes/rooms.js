@@ -10,7 +10,7 @@ var _ = require('lodash'),
     utils = require('../server-utils'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
-    ProjectStorage = require('../storage/projects'),
+    Projects = require('../storage/projects'),
     invites = {};
 
 module.exports = [
@@ -400,7 +400,7 @@ module.exports = [
                 if (!project) {
                     // TODO: Look up the room
                     warn(`room no longer exists "${uuid}`);
-                    return ProjectStorage.getProject(invite.owner, invite.project)
+                    return Projects.getProject(invite.owner, invite.project)
                         .then(project => project.addCollaborator(username))
                         .then(() => res.sendStatus(200));
                 }
