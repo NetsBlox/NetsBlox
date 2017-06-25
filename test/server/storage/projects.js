@@ -11,13 +11,15 @@ describe('projects', function() {
         };
     };
 
+    const OWNER = 'brian';
+    const PROJECT_NAME = 'test-projects';
     const getRoom = function() {
         // Get the room and attach a project
         const room = utils.createRoom({
-            name: 'test-projects',
-            owner: 'brian',
+            name: PROJECT_NAME,
+            owner: OWNER,
             roles: {
-                p1: ['brian'],
+                p1: [OWNER],
                 p2: ['cassie'],
                 third: null
             }
@@ -36,78 +38,89 @@ describe('projects', function() {
             });
     };
 
-    const getProject = function() {
-        return getRoom().then(room => room.getProject());
-    };
-
     before(function(done) {
         utils.connect().then(() => done());
     });
 
-    describe.only('persist', function() {
-        let project = null;
-        beforeEach(function(done) {
-            getRoom().then(room => {
-                project = room.getProject();
+    let project = null;
+    beforeEach(function(done) {
+        getRoom().then(room => {
+            project = room.getProject();
+            done();
+        })
+        .catch(done);
+    });
+
+    afterEach(function(done) {
+        project.destroy()
+            .then(() => done())
+            .catch(done);
+    });
+
+    it('should return undefined for non-existent role', function(done) {
+        project.getRole('i-am-not-real')
+            .then(role => assert.equal(role, undefined))
+            .then(() => done())
+            .catch(done);
+    });
+
+    it('should start as transient', function(done) {
+        project.isTransient()
+            .then(isTransient => assert(isTransient))
+            .then(() => done())
+            .catch(done);
+    });
+
+    it('should set transient to true', function(done) {
+        project.persist()
+            .then(() => project.isTransient())
+            .then(isTransient => assert(!isTransient))
+            .then(() => done())
+            .catch(done);
+    });
+
+    it('should set transient to true across duplicate projects', function(done) {
+        Projects.get(OWNER, PROJECT_NAME)
+            .then(p2 => {
+                project.persist()
+                    .then(() => p2.isTransient())
+                    .then(isTransient => assert(!isTransient))
+                    .then(() => done())
+                    .catch(done);
+            });
+    });
+
+    it('should get role', function(done) {
+        project.getRole('p1')
+            .then(role => {
+                assert.equal(role.ProjectName, 'p1');
+                assert.notEqual(role.SourceCode.length, 128);
                 done();
             })
             .catch(done);
-        });
-
-        afterEach(function(done) {
-            project.destroy()
-                .then(() => done())
-                .catch(done);
-        });
-
-        it('should start as transient', function(done) {
-            project.isTransient()
-                .then(isTransient => assert(isTransient))
-                .then(() => done())
-                .catch(done);
-        });
-
-        it.skip('should set transient to true', function(done) {
-            project.persist()
-                .then(() => project.isTransient())
-                .then(isTransient => assert(!isTransient))
-                .then(() => done())
-                .catch(done);
-        });
-
-        it.skip('should set transient to true across duplicate projects', function(done) {
-            //var p2 = Projects.get()
-            // open another project
-            // TODO
-        });
     });
 
-    describe('roles', function() {
-        it('should get role', function() {
-            // TODO
-        });
-
-        it('should set role', function() {
-            // TODO
-        });
-
-        it('should rename role', function() {
-            // TODO
-        });
+    it('should rename role', function(done) {
+        project.renameRole('p1', 'newName')
+            .then(() => project.getRole('p1'))
+            .then(role => assert(!role, 'original role still exists'))
+            .then(() => project.getRole('newName'))
+            .then(role => {
+                assert(role);
+                assert.equal(role.ProjectName, 'newName');
+                done();
+            })
+            .catch(done);
     });
 
-    describe('clone role', function() {
-        it('should create role', function() {
-            // TODO
-        });
-
-        it('should set role name correctly', function() {
-            // TODO
-        });
+    it('should create cloned role', function(done) {
+        project.cloneRole('p1', 'clone1')
+            .then(() => project.getRole('clone1'))
+            .then(role => {
+                assert(role);
+                assert.equal(role.ProjectName, 'clone1');
+                done();
+            })
+        .catch(done);
     });
-
-    // TODO: test public project stuff
-    //  - persist
-    //    - transient (with shared project)
-    //    - transient (with shared project)
 });

@@ -100,14 +100,16 @@
             return this.getRawProject()
                 .then(project => {
                     const content = project.roles[role];
-                    content.ProjectName = role;
+                    if (content) {
+                        content.ProjectName = role;
+                    }
                     return content;
                 });
         }
 
         getRole(role) {
             return this.getRawRole(role)
-                .then(content => loadRoleContent(content));
+                .then(content => content && loadRoleContent(content));
         }
 
         getRawRoles() {
