@@ -156,19 +156,23 @@
 
         ///////////////////////// End Roles ///////////////////////// 
         collectProjects() {
-            var sockets = this._room ? this._room.sockets() : [];
-            // Add saving the cached projects
-            // TODO: Update this to only request the project from the first sockets
+            var sockets = this._room ?
+                this._room.getRoleNames()
+                    .map(name => this._room.getSocketsAt(name)[0])
+                    .filter(socket => !!socket) : [];
+
+            // Request the project from the first socket
             // if the request fails, continue with the ones that succeed
-            return Q.all(sockets.map(socket => socket.getProjectJson()))
-                .then(projects => {
-                    // create the room from the projects
-                    var roles = [];
-
-                    sockets.forEach((socket, i) => roles.push(projects[i]));
-
-                    return roles;
-                });
+            const jsons = sockets.map(socket =>
+                socket.getProjectJson()
+                    .catch(err => {
+                        this._logger.warn('could not save project at ' +
+                            `${socket.roleId} in ${this.owner}/${this.name}: ${err}`);
+                        return null;
+                    })
+            );
+            return Q.all(jsons)
+                .then(roles => roles.filter(role => !!role));
         }
 
         collectSaveableRoles() {
