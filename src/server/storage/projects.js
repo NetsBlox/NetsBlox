@@ -67,6 +67,7 @@
                         project.roles = {};
                         project.roles.myRole = utils.getEmptyRole('myRole');
                     }
+                    delete project._id;
                     return project;
                 });
         }
@@ -221,10 +222,14 @@
 
                         if (nameChanged) {
                             query.$set.name = this._room.name;
-                            return this.isTransient()
-                                .then(isTransient => {
-                                    if (!isTransient) {
+                            return this.getRawProject()
+                                .then(project => {
+                                    if (!project.transient) {  // create a copy
                                         this.name = query.$set.name;
+                                        delete project.roles;
+                                        query.$set = _.extend({}, project, query.$set);
+                                        this._logger.trace(`duplicating project (save as) ${this.name}->${this._room.name}`);
+                                    } else {
                                         this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
                                     }
                                 });
