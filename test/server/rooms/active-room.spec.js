@@ -236,4 +236,33 @@ describe('active-room', function() {
         });
 
     });
+
+    describe('editable', function() {
+        let room = null;
+        before(function() {
+            room = utils.createRoom({
+                name: 'add-test',
+                owner: 'alice',
+                collaborators: ['bob'],
+                roles: {
+                    role1: ['alice'],
+                    role2: ['bob', 'eve'],
+                }
+            });
+        });
+
+        it('should be editable to owner', function() {
+            assert(room.isEditableFor('alice'));
+        });
+
+        it('should be editable to collaborators', function() {
+            room.getCollaborators = () => ['bob'];
+            assert(room.isEditableFor('bob'));
+        });
+
+        it('should be not be editable to guests', function() {
+            assert(!room.isEditableFor('eve'));
+        });
+
+    });
 });
