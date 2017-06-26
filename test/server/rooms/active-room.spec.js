@@ -188,8 +188,8 @@ describe('active-room', function() {
         });
 
         it('should send update messages to each socket', function() {
-            assert.equal(s1._socket.messages().length, 2);
-            assert.equal(s2._socket.messages().length, 1);
+            assert(s1._socket.messages().find(msg => msg.type === 'room-roles'));
+            assert(s2._socket.messages().find(msg => msg.type === 'room-roles'));
         });
 
         it('should send same updated room to each socket', function() {

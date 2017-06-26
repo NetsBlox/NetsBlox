@@ -26,9 +26,10 @@ describe('netsblox-socket', function() {
         });
 
         it('should resolve when the room is set', function(done) {
-            var testRoom = {},
+            var testRoom = {owner: 'abc'},
                 waited = false;
 
+            testRoom.getSocketsAt = () => [];
             socket.getRoom()
                 .then(room => {
                     assert.equal(room, testRoom);
