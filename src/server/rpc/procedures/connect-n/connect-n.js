@@ -17,9 +17,9 @@ var debug = require('debug'),
  * @return {undefined}
  */
 var ConnectN = function() {
-    this.board = ConnectN.getNewBoard();
-    this._winner = null;
-    this.lastMove = null;
+    this._state.board = ConnectN.getNewBoard();
+    this._state._winner = null;
+    this._state.lastMove = null;
 };
 
 /**
@@ -33,21 +33,21 @@ ConnectN.getPath = function() {
 
 // Actions
 ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
-    this.numRow = row || 3;
-    this.numCol = column || 3;
-    this.numDotsToConnect = numDotsToConnect;
-    this._winner = null;
-    this.lastMove = null;
+    this._state.numRow = row || 3;
+    this._state.numCol = column || 3;
+    this._state.numDotsToConnect = numDotsToConnect;
+    this._state._winner = null;
+    this._state.lastMove = null;
 
-    if(this.numRow < 3)
-        this.numRow = 3;
-    if(this.numCol < 3)
-        this.numCol = 3;
+    if(this._state.numRow < 3)
+        this._state.numRow = 3;
+    if(this._state.numCol < 3)
+        this._state.numCol = 3;
 
-    this.numDotsToConnect = Math.min(Math.max(this.numRow, this.numCol), this.numDotsToConnect);
+    this._state.numDotsToConnect = Math.min(Math.max(this._state.numRow, this._state.numCol), this._state.numDotsToConnect);
 
-    info(this.socket.roleId+' is clearing board and creating a new one with size: ', this.numRow, ', ', this.numCol);
-    this.board = ConnectN.getNewBoard(this.numRow, this.numCol);
+    info(this.socket.roleId+' is clearing board and creating a new one with size: ', this._state.numRow, ', ', this._state.numCol);
+    this._state.board = ConnectN.getNewBoard(this._state.numRow, this._state.numCol);
 
     this.socket._room.sockets()
         .forEach(socket => socket.send({
@@ -55,20 +55,20 @@ ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
             msgType: 'start',
             dstId: Constants.EVERYONE,
             content: {
-                row: this.numRow,
-                column: this.numCol,
-                numDotsToConnect: this.numDotsToConnect
+                row: this._state.numRow,
+                column: this._state.numCol,
+                numDotsToConnect: this._state.numDotsToConnect
             }
         }));
 
-    return `Board: ${this.numRow}x${this.numCol} Total dots to connect: ${this.numDotsToConnect}`;
+    return `Board: ${this._state.numRow}x${this._state.numCol} Total dots to connect: ${this._state.numDotsToConnect}`;
 };
 
 
 
 ConnectN.prototype.play = function(row, column) {
     // ...the game is still going
-    if (this._winner) {
+    if (this._state._winner) {
         log('"'+roleId+'" is trying to play after the game is over');
         return 'The game is over!';
     }
@@ -78,15 +78,15 @@ ConnectN.prototype.play = function(row, column) {
         isOnBoard = false;
 
     // ...it is the given role's turn
-    if (this.lastMove === roleId) {
+    if (this._state.lastMove === roleId) {
         log('"'+roleId+'" is trying to play twice in a row!');
         return 'Trying to play twice in a row!';
     }
 
 
     // ...check played on board
-    if(row < this.board.length && row >= 0)
-        if( column < this.board[0].length && column >= 0)
+    if(row < this._state.board.length && row >= 0)
+        if( column < this._state.board[0].length && column >= 0)
             isOnBoard = true;
 
 
@@ -98,16 +98,16 @@ ConnectN.prototype.play = function(row, column) {
 
 
     trace('"'+roleId+'" is trying to play at '+row+','+column+'. Board is \n'+
-        this.board.map(function(row) {
+        this._state.board.map(function(row) {
             return row.map(t => t || '_').join(' ');
         })
             .join('\n'));
 
     // ...it's not occupied
-    open = this.board[row][column] === null;
+    open = this._state.board[row][column] === null;
     if (open) {
-        this.board[row][column] = roleId;
-        this._winner = ConnectN.getWinner(this.board, this.numDotsToConnect);
+        this._state.board[row][column] = roleId;
+        this._state._winner = ConnectN.getWinner(this._state.board, this._state.numDotsToConnect);
         trace('"'+roleId+'" successfully played at '+row+','+column);
         // Send the play message to everyone!
         this.socket._room.sockets()
@@ -122,11 +122,11 @@ ConnectN.prototype.play = function(row, column) {
                 }
             }));
 
-        this.lastMove = roleId;
+        this._state.lastMove = roleId;
 
 
         trace('"'+roleId+'" is after playing at '+row+','+column+'. Board is \n'+
-            this.board.map(function(row) {
+            this._state.board.map(function(row) {
                 return row.map(t => t || '_').join(' ');
             })
                 .join('\n'));
@@ -140,7 +140,7 @@ ConnectN.prototype.play = function(row, column) {
                     dstId: Constants.EVERYONE,
                     msgType: 'gameOver',
                     content: {
-                        winner: this._winner
+                        winner: this._state._winner
                     }
                 }));
         }
@@ -154,14 +154,14 @@ ConnectN.prototype.isGameOver = function() {
     var isOver = false;
 
     // Game is over if someone has won
-    isOver = this._winner !== null;
+    isOver = this._state._winner !== null;
 
     // or all tiles are filled
     var isDraw = this.isFullBoard();
     isOver = isOver || isDraw;
     if(isDraw)
-        this._winner = 'DRAW';
-    log('isGameOver: ' + isOver + ' (' + this._winner + ')');
+        this._state._winner = 'DRAW';
+    log('isGameOver: ' + isOver + ' (' + this._state._winner + ')');
     return isOver;
 };
 
@@ -218,9 +218,9 @@ ConnectN.rotateBoard = function(board) {
 };
 
 ConnectN.prototype.isFullBoard = function() {
-    for (var i = this.board.length; i--;) {
-        for (var j = this.board[i].length; j--;) {
-            if (this.board[i][j] === null) {
+    for (var i = this._state.board.length; i--;) {
+        for (var j = this._state.board[i].length; j--;) {
+            if (this._state.board[i][j] === null) {
                 return false;
             }
         }

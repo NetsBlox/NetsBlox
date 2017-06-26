@@ -10,14 +10,14 @@ var debug = require('debug'),
     BOARD_SIZE = BattleshipConstants.BOARD_SIZE,
     SHIPS = BattleshipConstants.SHIPS,
     DIRS = BattleshipConstants.DIRS;
-    
+
 var isHorizontal = dir => dir === 'east' || dir === 'west';
 
 class Battleship extends TurnBased {
     constructor () {
         super('fire', 'reset');
-        this._boards = {};
-        this._STATE = BattleshipConstants.PLACING;
+        this._state._boards = {};
+        this._state._STATE = BattleshipConstants.PLACING;
     }
 }
 
@@ -27,19 +27,19 @@ var isValidDim = dim => 0 <= dim && dim <= BOARD_SIZE;
 var checkRowCol = (row, col) => isValidDim(row) && isValidDim(col);
 
 Battleship.prototype.reset = function() {
-    this._STATE = BattleshipConstants.PLACING;
-    this._boards = {};
+    this._state._STATE = BattleshipConstants.PLACING;
+    this._state._boards = {};
     return true;
 };
 
 Battleship.prototype.start = function() {
     // Check that all boards are ready
-    var roles = Object.keys(this._boards),
+    var roles = Object.keys(this._state._boards),
         sockets = this.socket._room.sockets(),
         shipsLeft,
         board;
 
-    if (this._STATE !== BattleshipConstants.PLACING) {
+    if (this._state._STATE !== BattleshipConstants.PLACING) {
         return `Game has already started!`;
     }
 
@@ -48,7 +48,7 @@ Battleship.prototype.start = function() {
     }
 
     for (var i = roles.length; i--;) {
-        board = this._boards[roles[i]];
+        board = this._state._boards[roles[i]];
         shipsLeft = board.shipsLeftToPlace();
         if (shipsLeft !== 0) {
             return `${roles[i]} still needs to place ${shipsLeft} ships`;
@@ -62,7 +62,7 @@ Battleship.prototype.start = function() {
         dstId: Constants.EVERYONE
     }));
 
-    this._STATE = BattleshipConstants.SHOOTING;
+    this._state._STATE = BattleshipConstants.SHOOTING;
     return true;
 };
 
@@ -73,7 +73,7 @@ Battleship.prototype.placeShip = function(ship, row, column, facing) {
     row--;
     column--;
 
-    if (this._STATE !== BattleshipConstants.PLACING) {
+    if (this._state._STATE !== BattleshipConstants.PLACING) {
         return `Cannot move ships after game has started`;
     }
 
@@ -96,13 +96,13 @@ Battleship.prototype.placeShip = function(ship, row, column, facing) {
     }
 
     // Create a board if none exists
-    if (!this._boards[role]) {
+    if (!this._state._boards[role]) {
         trace(`creating board for ${role}`);
-        this._boards[role] = new Board(BOARD_SIZE);
+        this._state._boards[role] = new Board(BOARD_SIZE);
     }
 
     // Place the ship
-    var result = this._boards[role].placeShip(ship, row, column, endRow, endCol);
+    var result = this._state._boards[role].placeShip(ship, row, column, endRow, endCol);
     return result || 'Could not place ship - colliding with another ship!';
 };
 
@@ -114,7 +114,7 @@ Battleship.prototype.fire = function(row, column) {
 
     row = row-1;
     column = column-1;
-    if (this._STATE === BattleshipConstants.PLACING) {
+    if (this._state._STATE === BattleshipConstants.PLACING) {
         this.response.send('Cannot fire until game has officially started');
         return false;
     }
@@ -123,7 +123,7 @@ Battleship.prototype.fire = function(row, column) {
     // If none exists, just try to get another role in the room
     if (!target) {
         trace('trying to infer a target');
-        roles = Object.keys(this._boards);
+        roles = Object.keys(this._state._boards);
         if (!roles.length) {
             roles = socket._room.getRoleNames();
             trace(`no other boards. Checking other roles in the room (${roles})`);
@@ -141,12 +141,12 @@ Battleship.prototype.fire = function(row, column) {
     // Fire at row, col and send messages for:
     //   - hit <target> <ship> <row> <col> <sunk>
     //   - miss <target> <row> <col>
-    if (!this._boards[target]) {
+    if (!this._state._boards[target]) {
         error(`board doesn't exist for "${target}"`);
-        this._boards[target] = new Board(BOARD_SIZE);
+        this._state._boards[target] = new Board(BOARD_SIZE);
     }
 
-    var result = this._boards[target].fire(row, column),
+    var result = this._state._boards[target].fire(row, column),
         msg;
 
     if (result) {
@@ -173,12 +173,12 @@ Battleship.prototype.fire = function(row, column) {
 Battleship.prototype.remainingShips = function(roleId) {
     var role = roleId || this.socket.roleId;
 
-    if (!this._boards[role]) {
+    if (!this._state._boards[role]) {
         error(`board doesn't exist for "${role}"`);
-        this._boards[role] = new Board(BOARD_SIZE);
+        this._state._boards[role] = new Board(BOARD_SIZE);
     }
 
-    return this._boards[role].remaining();
+    return this._state._boards[role].remaining();
 };
 
 Battleship.prototype.allShips = function() {
