@@ -14,7 +14,7 @@ var express = require('express'),
     DEFAULT_OPTIONS = {
         port: 8080,
         vantagePort: 1234,
-        vantage: true
+        vantage: false
     },
 
     // Routes
@@ -27,9 +27,6 @@ var express = require('express'),
     cookieParser = require('cookie-parser'),
     indexTpl = dot.template(fs.readFileSync(path.join(__dirname, '..', 'client', 'netsblox.dot')));
 
-if (proces.env.ENV === 'production') {
-    DEFAULT_OPTIONS.vantage = false;
-}
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
