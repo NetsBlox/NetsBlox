@@ -1,5 +1,5 @@
 /* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer,
-   HintInputSlotMorph, SnapCloud*/
+   HintInputSlotMorph, SnapCloud, Action*/
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
@@ -140,10 +140,42 @@ SnapActions._applyEvent = function(event) {
     }
 };
 
-SnapActions.applyEvent = function() {
+SnapActions.applyEvent = function(event) {
     var ide = this.ide();
     if (ide.room.isEditable()) {
-        return ActionManager.prototype.applyEvent.apply(this, arguments);
+        event.user = this.id;
+        event.id = event.id || this.lastSeen + 1;
+        event.time = event.time || Date.now();
+
+        // Skip duplicate undo/redo events
+        if (event.replayType && this.lastSent === event.id) {
+            return;
+        }
+
+        // if in replay mode, check that the event is a replay event
+        var myself = this;
+
+        if (ide.isReplayMode && !event.isReplay) {
+            ide.promptExitReplay(function() {
+            // Netsblox addition: start
+                if (!myself.isCollaborating() || myself.isLeader) {
+            // Netsblox addition: end
+                    myself.acceptEvent(event);
+                } else {
+                    myself.send(event);
+                }
+            });
+        } else {
+            // Netsblox addition: start
+            if (!this.isCollaborating() || this.isLeader) {
+            // Netsblox addition: end
+                this.acceptEvent(event);
+            } else {
+                this.send(event);
+            }
+        }
+
+        return new Action(this, event);
     } else {
         // ask the user if he/she would like to request to be a collaborator
         // TODO: Add option for saving your own copy
