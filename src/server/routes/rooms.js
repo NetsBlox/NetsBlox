@@ -176,6 +176,7 @@ module.exports = [
             var username = req.session.username,
                 id = req.body.inviteId,
                 response = req.body.response === 'true',
+                // TODO: store these in the database
                 invitee = invites[id].invitee,
                 socketId = req.body.socketId,
                 closeInvite = {
@@ -437,13 +438,15 @@ function acceptInvitation (invite, socketId) {
         throw 'role is occupied';
     }
 
-    if (socket) {
-        socket.join(room, invite.role);
-    } else {
-        room.onRolesChanged();
-    }
-
     return room.getRole(invite.role)
-        .then(project => Utils.serializeRole(project, room.name));
+        .then(project => {
+            if (socket) {
+                socket.join(room, invite.role);
+            } else {
+                room.onRolesChanged();
+            }
+
+            return Utils.serializeRole(project, room.name);
+        });
 }
 
