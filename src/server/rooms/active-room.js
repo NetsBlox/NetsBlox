@@ -318,7 +318,8 @@ class ActiveRoom {
             this.roles[newRole] = [];
         }
 
-        return this._project.cloneRole(roleId, newRole)
+        return this.saveRole(roleId)
+            .then(() => this._project.cloneRole(roleId, newRole))
             .then(() => this.onRolesChanged())
             .then(() => newRole);
     }
