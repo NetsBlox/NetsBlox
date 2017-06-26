@@ -51,6 +51,10 @@ class ActiveRoom {
         }
     }
 
+    isEditableFor (user) {
+        return user === this.owner || this.getCollaborators().includes(user);
+    }
+
     // This should only be called by the RoomManager (otherwise, the room will not be recorded)
     fork (logger, socket) {
         // Create a copy of the room with the socket as the new owner

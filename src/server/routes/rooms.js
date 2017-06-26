@@ -232,7 +232,7 @@ module.exports = [
             
             //  Verify that the username is either the ownerId
             this._logger.trace(`ownerId is ${room.owner.username} and username is ${username}`);
-            if (room.owner.username !== username && !room.getCollaborators().includes(username)) {
+            if (!room.isEditableFor(username)) {
                 this._logger.error(`${username} does not have permission to edit ${roleId} at ${roomId}`);
                 return res.status(403).send(`ERROR: You do not have permission to delete ${roleId}`);
             }
