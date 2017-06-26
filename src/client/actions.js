@@ -1,5 +1,5 @@
 /* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer,
-   HintInputSlotMorph, SnapCloud*/
+   HintInputSlotMorph, SnapCloud, Action*/
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
