@@ -92,12 +92,17 @@ class NetsBloxSocket {
             room.update();
         }
 
-        if (this.roleId && room.getSocketsAt(this.roleId).includes(this)) {
+        const sockets = room.getSocketsAt(this.roleId) || [];
+        if (sockets.includes(this)) {
             room.updateRole(this.roleId);
         }
     }
 
     _setRoom (room) {
+        if (this._room && room !== this._room) {  // leave current room
+            this.leave();
+        }
+
         this._room = room;
         this.updateRoom();
         if (this._onRoomJoinDeferred) {
