@@ -238,13 +238,14 @@ module.exports = [
             }
 
             // Disallow deleting roles without evicting the users first
-            if (room.getSocketsAt(roleId).length) {
+            const sockets = room.getSocketsAt(roleId) || [];
+            if (sockets.length) {
                 return res.status(403).send('ERROR: Cannot delete occupied role. Remove the occupants first.');
             }
 
             //  Remove the given role
-            room.removeRole(roleId);
-            res.send('ok');
+            return room.removeRole(roleId)
+                .then(() => res.send('ok'));
         }
     },
     {

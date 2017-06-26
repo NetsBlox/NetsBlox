@@ -105,7 +105,7 @@ class ActiveRoom {
 
     silentRemove (socket) {
         const role = socket.roleId;
-        const sockets = this.roles[role];
+        const sockets = this.roles[role] || [];
         const index = sockets.indexOf(socket);
 
         if (index > -1) {
