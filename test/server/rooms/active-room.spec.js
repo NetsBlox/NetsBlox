@@ -268,69 +268,174 @@ describe('active-room', function() {
 
     });
     
-    describe('remove', function() {
+    let defaultConfig = {
+        name: 'test',
+        owner: 'alice',
+        roles: {
+            role1: ['alice'],
+            role2: ['bob', 'eve']
+        }
+    };
+    
+    describe('without projects', function() {
         let room = null;
         let alice, bob;
         before(function() {
-            room = utils.createRoom({
-                name: 'test',
-                owner: 'alice',
-                roles: {
-                    role1: ['alice'],
-                    role2: ['bob', 'eve']
-                }
-            });
+            room = utils.createRoom(defaultConfig);
             alice = room.getSocketsAt('role1')[0];
             bob = room.getSocketsAt('role2')[0];
         });
         
-        it('should remove a socket', function() {
-            room.remove(alice);
-            assert.equal(room.roles.role1.length, 0);
+        describe('remove', function() {
+            it('should remove a socket', function() {
+                room.remove(alice);
+                assert.equal(room.roles.role1.length, 0);
+            });
+        
+            it('should receive update messages', function() {
+                room.remove(bob);
+                assert(alice._socket.message(-1));
+            });
+        });
+        
+        describe('change name', function() {
+            it('should change name of the room', function(done) {
+                room.changeName('abc').then((name) => {
+                    assert.equal(name, 'abc');
+                    done();
+                });
+            });
         });
     
-        it('should receive update messages', function() {
-            room.remove(bob);
-            assert(alice._socket.message(-1));
+        describe('owner', function() { //TODO: set up user storage
+
         });
     });
     
-    describe('remove', function() {
-        let room = null;
-        let alice, bob;
-        before(function() {
-            room = utils.createRoom({
-                name: 'test',
-                owner: 'alice',
-                roles: {
-                    role1: ['alice'],
-                    role2: ['bob', 'eve']
-                }
+    describe('with projects', function() {
+        before(function(done) {
+            utils.connect().then(() => done()).catch(() => done());
+        });
+    
+        let project = null;
+        let r = null;
+        
+        beforeEach(function(done) {
+            utils.getRoom(defaultConfig).then(room => {
+                project = room.getProject();
+                r = room;
+                done();
+            }).catch(() => done());
+        });
+    
+        afterEach(function(done) {
+            project.destroy()
+            .then(() => done())
+            .catch(done);
+        });
+        
+        describe('collaborators', function() {
+            it('should add one collaborator', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    assert.equal(r.getCollaborators().length, 1);
+                    done();
+                }).catch(() => done());
             });
-            alice = room.getSocketsAt('role1')[0];
-            bob = room.getSocketsAt('role2')[0];
+        
+            it('should remove one collaborator', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    r.removeCollaborator('bob').then(() => {
+                        assert.equal(r.getCollaborators().length, 0);
+                        done();
+                    }).catch(() => done());
+                }).catch(() => done());
+            });
+        
+            it('should remove no collaborator if username is wrong', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    r.removeCollaborator('wrong').then(() => {
+                        assert.equal(r.getCollaborators().length, 1);
+                        done();
+                    });
+                }).catch(() => done());
+            });
+        
+        });
+    
+        describe('collaborators', function() {
+            it('should add one collaborator', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    assert.equal(r.getCollaborators().length, 1);
+                    done();
+                }).catch(() => done());
+            });
+        
+            it('should remove one collaborator', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    r.removeCollaborator('bob').then(() => {
+                        assert.equal(r.getCollaborators().length, 0);
+                        done();
+                    }).catch(() => done());
+                }).catch(() => done());
+            });
+        
+            it('should remove no collaborator if username is wrong', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    r.removeCollaborator('wrong').then(() => {
+                        assert.equal(r.getCollaborators().length, 1);
+                        done();
+                    });
+                }).catch(() => done());
+            });
+        
+        });
+        
+        describe('roles', function() {
+            it('should check whether has a role', function() {
+                assert(r.hasRole('role1'));
+                assert(!(r.hasRole('role3')));
+            });
+    
+            it('should check whether has a role', function() {
+                assert(r.hasRole('role1'));
+                assert(!(r.hasRole('role3')));
+            });
+    
+            it('should return right roles array', function() {
+                assert.equal(r.getRoleNames().length, 2);
+            });
+    
+            it('should return a role', function(done) {
+                r.getRole('role1').then((data) => {
+                    assert.equal(data.ProjectName, 'role1');
+                    done();
+                }).catch(() => done());
+            });
             
-            project = Projects.new(alice, room);
-        });
-        
-        it('should return a proper msg when add a person', function() {
-            var test = utils.createSocket('test');
-            room.add(test, 'role1');
-            var msg = room.getStateMsg();
-            assert.equal(msg.occupants.role1.length, 2);
-        });
+            it('should create a role', function(done) {
+                r.createRole('role3').then(() => {
+                    assert.equal(r.getRoleNames().length, 3);
+                    done();
+                })
+                .catch(() => done());
+            });
     
-        it('should return a proper msg when remove a person', function() {
-            var test = room.getSocketsAt('role1')[1];
-            room.remove(test);
-            var msg = room.getStateMsg();
-            assert.equal(msg.occupants.role1.length, 1);
+            it('should remove a role', function(done) {
+                r.removeRole('role1').then(() => {
+                    assert.equal(r.getRoleNames().length, 2);
+                    done();
+                })
+                .catch(() => done());
+            });
+    
+            it('should rename a role', function(done) {
+                r.renameRole('role1', 'roleNew').then(() => {
+                    assert.equal(r.getRoleNames()[1], 'roleNew');
+                    done();
+                })
+                .catch(() => done());
+            });
         });
-        
-        
     });
     
-    describe('collaborators', function() {
-    
-    });
 });

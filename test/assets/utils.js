@@ -104,6 +104,31 @@ const connect = function() {
     }
 };
 
+const getRoomProject = function(config) {
+    const serverUtils = reqSrc('server-utils');
+    const sendEmptyRole = function(msg) {
+        return {
+            type: 'project-response',
+            id: msg.id,
+            project: serverUtils.getEmptyRole(this.roleId)
+        };
+    };
+    // Get the room and attach a project
+    const room = createRoom(config);
+    const owner = room.getOwnerSockets()[0];
+    
+    //  Add response capabilities
+    room.sockets().forEach(socket => {
+        socket._socket.addResponse('project-request', sendEmptyRole.bind(socket));
+    });
+    
+    return Projects.new(owner, room)
+    .then(project => {
+        room.setStorage(project);
+        return room;
+    });
+};
+
 module.exports = {
     verifyRPCInterfaces: function(rpc, interfaces) {
         describe(`${rpc.getPath()} interfaces`, function() {
@@ -125,6 +150,6 @@ module.exports = {
     logger: mainLogger,
     createRoom: createRoom,
     createSocket: createSocket,
-
+    getRoom: getRoomProject,
     reqSrc
 };
