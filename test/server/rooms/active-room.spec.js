@@ -1,4 +1,5 @@
 describe('active-room', function() {
+    const Projects = require('../../../src/server/storage/projects');
     var ROOT_DIR = '../../../',
         _ = require('lodash'),
         RoomManager = require(ROOT_DIR + 'src/server/rooms/room-manager'),
@@ -14,7 +15,7 @@ describe('active-room', function() {
             send: msg => owner._messages.push(msg)
         },
         room;
-
+    
     before(function() {
         RoomManager.init(new Logger('active-room-test'), {}, ActiveRoom);
     });
@@ -104,6 +105,7 @@ describe('active-room', function() {
             room.destroy = done;
             room.close();
         });
+        
     });
 
     describe('get sockets at role', function() {
@@ -264,5 +266,71 @@ describe('active-room', function() {
             assert(!room.isEditableFor('eve'));
         });
 
+    });
+    
+    describe('remove', function() {
+        let room = null;
+        let alice, bob;
+        before(function() {
+            room = utils.createRoom({
+                name: 'test',
+                owner: 'alice',
+                roles: {
+                    role1: ['alice'],
+                    role2: ['bob', 'eve']
+                }
+            });
+            alice = room.getSocketsAt('role1')[0];
+            bob = room.getSocketsAt('role2')[0];
+        });
+        
+        it('should remove a socket', function() {
+            room.remove(alice);
+            assert.equal(room.roles.role1.length, 0);
+        });
+    
+        it('should receive update messages', function() {
+            room.remove(bob);
+            assert(alice._socket.message(-1));
+        });
+    });
+    
+    describe('remove', function() {
+        let room = null;
+        let alice, bob;
+        before(function() {
+            room = utils.createRoom({
+                name: 'test',
+                owner: 'alice',
+                roles: {
+                    role1: ['alice'],
+                    role2: ['bob', 'eve']
+                }
+            });
+            alice = room.getSocketsAt('role1')[0];
+            bob = room.getSocketsAt('role2')[0];
+            
+            project = Projects.new(alice, room);
+        });
+        
+        it('should return a proper msg when add a person', function() {
+            var test = utils.createSocket('test');
+            room.add(test, 'role1');
+            var msg = room.getStateMsg();
+            assert.equal(msg.occupants.role1.length, 2);
+        });
+    
+        it('should return a proper msg when remove a person', function() {
+            var test = room.getSocketsAt('role1')[1];
+            room.remove(test);
+            var msg = room.getStateMsg();
+            assert.equal(msg.occupants.role1.length, 1);
+        });
+        
+        
+    });
+    
+    describe('collaborators', function() {
+    
     });
 });
