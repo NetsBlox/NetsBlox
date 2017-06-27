@@ -6,6 +6,7 @@ var debug = require('debug'),
     info = debug('netsblox:rpc:hangman:info');
 
 var Hangman = function() {
+    this._state = {};
     this._state.word = null;
     this._state.wrongGuesses = 0;
     this._state.knownIndices = [];

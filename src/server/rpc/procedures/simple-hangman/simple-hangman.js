@@ -25,6 +25,7 @@ var debug = require('debug'),
     trace = debug('netsblox:rpc:simple-hangman:trace');
 
 var SimpleHangman = function() {
+    this._state = {};
     this._state.word = null;
     this._state.wrongGuesses = 0;
     this._state.knownIndices = [];

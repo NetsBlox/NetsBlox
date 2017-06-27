@@ -28,7 +28,7 @@ describe('Battleship Tests', function() {
             var len = battleship.shipLength('Battleship');
             assert.equal(len, 4);
         });
-        
+
         it('should be able to query ship names', function() {
             var ships = battleship.allShips();
             assert.equal(ships.length, 5);
@@ -78,7 +78,7 @@ describe('Battleship Tests', function() {
                 battleship.socket.roleId = 'test';
                 battleship.placeShip('destroyer', row, col, 'north');
                 // Check the spots!
-                board = battleship._rpc._boards.test;
+                board = battleship._rpc._state._boards.test;
             });
 
             it('should place destroyer w/ correct name', function() {

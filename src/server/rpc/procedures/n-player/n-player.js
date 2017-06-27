@@ -14,6 +14,7 @@ var R = require('ramda'),
  * @return {undefined}
  */
 var NPlayer = function() {
+    this._state = {};
     this._state.active = null;
     this._state.previous = null;
     this._state.players = [];

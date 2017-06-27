@@ -9,6 +9,7 @@ var debug = require('debug'),
     Constants = require('../../../../common/constants');
 
 let TwentyQuestions = function () {
+    this._state = {};
     this._state.correctAnswer = null;
     this._state.guessCount = null;
     this._state.answerer = null;

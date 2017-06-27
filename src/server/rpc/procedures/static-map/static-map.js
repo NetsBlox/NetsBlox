@@ -30,6 +30,7 @@ var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap',
     };
 
 var StaticMap = function(roomId) {
+    this._state = {};
     this._state.roomId = roomId;
     this._state.userMaps = {};  // Store the state of the map for each user
 };

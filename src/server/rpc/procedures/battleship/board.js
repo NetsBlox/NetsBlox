@@ -1,6 +1,7 @@
 // Board for playing battleship
 var SHIPS = require('./constants').SHIPS;
 var Board = function(size) {
+    this._state = {};
     this._state._ships = [];
     this._state._shots = [];
     for (var i = size; i--;) {

@@ -16,6 +16,7 @@ var isHorizontal = dir => dir === 'east' || dir === 'west';
 class Battleship extends TurnBased {
     constructor () {
         super('fire', 'reset');
+        this._state = {};
         this._state._boards = {};
         this._state._STATE = BattleshipConstants.PLACING;
     }

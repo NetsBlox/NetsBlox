@@ -17,6 +17,7 @@ var debug = require('debug'),
  * @return {undefined}
  */
 var ConnectN = function() {
+    this._state = {};
     this._state.board = ConnectN.getNewBoard();
     this._state._winner = null;
     this._state.lastMove = null;
