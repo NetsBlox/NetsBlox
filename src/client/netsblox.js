@@ -1741,7 +1741,7 @@ NetsBloxMorph.prototype.openRoomString = function (str, isRaw) {
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
     var msg,
         myself = this,
-        str = parsed ? model : model.toString(),
+        str = parsed ? model.toString() : model,
         size = Math.round(str.length / 1024);
 
     this.exitReplayMode();
