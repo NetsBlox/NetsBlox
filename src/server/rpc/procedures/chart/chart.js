@@ -1,7 +1,6 @@
-const ApiConsumer = require('../utils/api-consumer'),
-    ChartNode = require('chartjs-node');
+const ChartNode = require('chartjs-node');
 
-let chart = new ApiConsumer('chart');
+let chart = {};
 let chartNode = new ChartNode(600, 600);
 let defaultColor = 'rgba(74, 108, 212, 0.8)';
 
