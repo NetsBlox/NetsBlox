@@ -2423,9 +2423,4 @@ NetsBloxMorph.prototype.logout = function () {
             myself.newProject();
         }
     );
-    
-    //myself.loadNextRoom()
-
-    //myself.room.update();
-    //myself.sockets.updateRoomInfo();
 };
