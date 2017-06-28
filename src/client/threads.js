@@ -319,25 +319,12 @@ NetsProcess.prototype.parseRPCResult = function (result) {
     return result;
 };
 
-function listToJSON(list) {
-    if (!(list instanceof List)) {
-        return list;
-    }
-    return JSON.stringify(list.itemsArray().map(listToJSON));
-}
-
-function parseList(input) {
-    if (input.charAt(0) !== '[') {
-        return input;
-    }
-    return JSON.parse(input).map(parseList);
-}
-
 function toQueryString(list, prefix) {
+    var array = list.contents;
     var str = [], k, v;
-    for(var i = 0; i < list.length; i++) {
+    for(var i = 0; i < array.length; i++) {
         k = prefix + '[' + i + ']';
-        v = list[i];
+        v = array[i];
         str.push(typeof v === 'object' ?
             toQueryString(v, k) :
             k + '=' + v);
@@ -352,7 +339,7 @@ NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
         params;
     params = argNames.map(function(name, index) {
         if (values[index] instanceof List) {
-            return toQueryString(parseList(listToJSON(values[index])), name);
+            return toQueryString(values[index], name);
         }
         return name + '=' + values[index];
     }).join('&');
