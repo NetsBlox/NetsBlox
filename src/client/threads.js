@@ -333,17 +333,11 @@ function parseList(input) {
     return JSON.parse(input).map(parseList);
 }
 
-function toQueryString(obj, prefix) {
+function toQueryString(list, prefix) {
     var str = [], k, v;
-    for(var p in obj) {
-        if (!obj.hasOwnProperty(p)) {continue;} // skip things from the prototype
-        if (~p.indexOf('[')) {
-            k = prefix ? prefix + '[' + p.substring(0, p.indexOf('[')) + ']' + p.substring(p.indexOf('[')) : p;
-// only put whatever is before the bracket into new brackets; append the rest
-        } else {
-            k = prefix ? prefix + '[' + p + ']' : p;
-        }
-        v = obj[p];
+    for(var i = 0; i < list.length; i++) {
+        k = prefix + '[' + i + ']';
+        v = list[i];
         str.push(typeof v === 'object' ?
             toQueryString(v, k) :
             k + '=' + v);

@@ -46,6 +46,9 @@ var KeyValueStore = {
                 }
 
                 if (typeof result === 'object') {
+                    if (Array.isArray(result)) {
+                        return response.json(result);
+                    }
                     logger.warn(`invalid key: ${key} (get) -> key is an object`);
                     return response.json(false);
                 }
