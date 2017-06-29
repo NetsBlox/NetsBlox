@@ -542,7 +542,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part = new MessageInputSlotMorph();
             break;
         case '%roles':
-            // Seat ids
+            // role ids
             part = new InputSlotMorph(
                 null,
                 false,
@@ -557,6 +557,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
                 'rpcNames',
                 true
             );
+            part.isStatic = true;
             break;
         case '%rpcActions':
             part = new InputSlotMorph(
