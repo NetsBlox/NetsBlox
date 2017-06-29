@@ -36,7 +36,7 @@ const jsonToSnapList = inputJson => {
         }
     }
     return keyVals;
-}
+};
 
 module.exports = {
     sendImageBuffer,
