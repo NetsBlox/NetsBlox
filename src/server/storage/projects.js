@@ -82,7 +82,7 @@
         }
 
         setRole(role, content) {
-            this._logger.trace(`updating role: ${role}`);
+            this._logger.trace(`updating role: ${role} in ${this.owner}/${this.name}`);
             return storeRoleBlob(content)
                 .then(content => this.setRawRole(role, content));
         }
