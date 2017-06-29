@@ -6,17 +6,18 @@ const ApiConsumer = require('../../../../../src/server/rpc/procedures/utils/api-
 
 describe('ApiConsumer', function(){
     describe('snap structure creation', function() {
-        let singleData = {name: 'Jack', age: '30', friends: ['Emily', 'Doug']};
-        let multipleData = [
+        const singleData = {name: 'Jack', age: '30', friends: ['Emily', 'Doug']};
+        const multipleData = [
             {name: 'Jack', age: '30', friends: ['Emily', 'Doug']},
             {name: 'Rosa', age: '23', friends: ['Emily', 'Doug']},
             {name: 'Melrose', age: '55', friends: ['Emily', 'Slim']}
         ];
-        let multipleData2 = [
+        const multipleData2 = [
             {name: 'Jack', age: '30', friends: ['Emily', 'Doug']},
             27,
             {name: 'Melrose', friends: ['Emily', 'Slim']}
         ];
+
         const stringJson = '{"name":"Lisa","age":"2","gholi":"foo","friends":[{"avtar":true},23,45,56]}';
 
 
@@ -39,6 +40,15 @@ describe('ApiConsumer', function(){
         it('should work on stringified json', function(){
             assert.deepEqual(apiConsumer._createSnapStructure(stringJson)[2][1], 'foo');
         });
+
+        it('should remove null items from the array', function(){
+            let arrayWithNull = multipleData;
+            arrayWithNull.push(null);
+            const nullArray = [null,null,false,undefined];
+            assert.equal(apiConsumer._createSnapStructure(arrayWithNull).length, 3);
+            assert.deepEqual(apiConsumer._createSnapStructure(nullArray),[])
+        });
+
     });
 
 
