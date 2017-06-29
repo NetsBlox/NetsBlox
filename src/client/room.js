@@ -183,7 +183,10 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     }
 
     // Update the roles, etc
-    this.ownerId = ownerId || this.ownerId;
+    if (ownerId) {
+        changed = changed || ownerId !== this.ownerId;
+        this.ownerId = ownerId;
+    }
 
     if (changed) {
         this.version = Date.now();
