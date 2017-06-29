@@ -1878,11 +1878,6 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     );
 };
 
-NetsBloxMorph.prototype.logout = function () {
-    NetsBloxMorph.uber.logout.call(this);
-    this.room.update();
-};
-
 // RPC import support (both custom blocks and message types)
 NetsBloxMorph.prototype.droppedText = function (aString, name) {
     if (aString.indexOf('<rpc') === 0) {
@@ -2396,6 +2391,23 @@ NetsBloxMorph.prototype.collabResponse = function (id, response) {
         },
         function(err){
             myself.showMessage(err, 2);
+        }
+    );
+};
+
+NetsBloxMorph.prototype.logout = function () {
+    var myself = this;
+    delete localStorage['-snap-user'];
+    SnapCloud.logout(
+        function () {
+            SnapCloud.clear();
+            myself.showMessage('disconnected.', 2);
+            myself.newProject();
+        },
+        function () {
+            SnapCloud.clear();
+            myself.showMessage('disconnected.', 2);
+            myself.newProject();
         }
     );
 };
