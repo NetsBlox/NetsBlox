@@ -341,6 +341,11 @@ NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
         if (values[index] instanceof List) {
             return toQueryString(values[index], name);
         }
+        // if a block is passed in serialize it and send it to the rpc
+        else if (values[index] instanceof Context) {
+            const blockXML = values[index].expression.toBlockXML(new NetsBloxSerializer);
+            return name + '=' + blockXML;
+        }
         return name + '=' + values[index];
     }).join('&');
     return this.getJSFromRPCDropdown(rpc, action, params);
