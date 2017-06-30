@@ -394,7 +394,8 @@ NetsBloxSocket.MessageHandlers = {
         // Check if the socket has changed locations
         const req = this._projectRequests[id];
         const roomName = this._room && this._room.name;
-        const hasMoved = this.roleId !== req.roleId || roomName !== req.roomName;
+        const hasMoved = this.roleId !== req.roleId || roomName !== req.roomName ||
+            json.ProjectName !== this.roleId;
         if (hasMoved) {
             err = `socket moved from ${req.roleId}/${req.roomName} to ${this.roleId}/${roomName}`;
             this._logger.log(`project request ${id} canceled: ${err}`);
