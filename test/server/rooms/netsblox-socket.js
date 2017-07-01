@@ -1,6 +1,7 @@
 describe('netsblox-socket', function() {
     var ROOT_DIR = '../../../',
         utils = require(ROOT_DIR + 'test/assets/utils'),
+        sUtils = utils.reqSrc('server-utils'),
         NBSocket = require(ROOT_DIR + 'src/server/rooms/netsblox-socket'),
         Logger = require(ROOT_DIR + 'src/server/logger'),
         Constants = require(ROOT_DIR + 'src/common/constants'),
@@ -128,6 +129,40 @@ describe('netsblox-socket', function() {
             const msg2 = steve._socket.message(-1);
             assert.equal(msg.content.msg, 'worked');
             assert.equal(msg2.content.msg, 'worked');
+        });
+    });
+
+    describe('getProjectJson', function() {
+        it('should fail if receiving mismatching project name', function(done) {
+            const socket = utils.createSocket('test-user');
+            socket.roleId = 'role1';
+            socket._socket.addResponse('project-request', function(msg) {
+                return {
+                    type: 'project-response',
+                    id: msg.id,
+                    project: sUtils.getEmptyRole('myRole')
+                };
+            });
+            socket.getProjectJson()
+                .then(() => done('failed!'))
+                .catch(() => done());
+        });
+
+        it('should fail if socket changed roles', function(done) {
+            const socket = utils.createSocket('test-user');
+            socket.roleId = 'role1';
+            socket._socket.addResponse('project-request', function(msg) {
+                return {
+                    type: 'project-response',
+                    id: msg.id,
+                    project: sUtils.getEmptyRole('myRole')
+                };
+            });
+            socket.getProjectJson()
+                .then(() => done('failed!'))
+                .catch(() => done());
+
+            socket.roleId = 'role2';
         });
     });
 });
