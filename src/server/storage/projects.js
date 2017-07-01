@@ -340,6 +340,18 @@
             });
     };
 
+    ProjectStorage.getTransientProject = function (username, projectName) {
+        return collection.findOne({owner: username, name: projectName, transient: true})
+            .then(data => {
+                var params = {
+                    logger: logger,
+                    db: collection,
+                    data
+                };
+                return data ? new Project(params) : null;
+            });
+    };
+
     ProjectStorage.getProject = function (username, projectName) {
         return ProjectStorage.get(username, projectName);
     };
@@ -415,15 +427,23 @@
         };
     };
 
-    ProjectStorage.new = function(user, activeRoom) {
-        const project = new Project({
-            logger: logger,
-            db: collection,
-            data: getDefaultProjectData(user, activeRoom),
-            room: activeRoom
-        });
+    ProjectStorage.new = function(user, room) {
+        return ProjectStorage.getTransientProject(user.username, room.name)
+            .then(project => {
+                if (project) {
+                    logger.trace(`loading transient project from database ${user.username}/${room.name}`);
+                    return project;
+                }
 
-        return project.create();
+                project = new Project({
+                    logger: logger,
+                    db: collection,
+                    data: getDefaultProjectData(user, room),
+                    room: room
+                });
+
+                return project.create();
+            });
     };
 
 })(exports);
