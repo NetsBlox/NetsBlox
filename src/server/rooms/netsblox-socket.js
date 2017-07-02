@@ -303,6 +303,7 @@ class NetsBloxSocket {
     }
 
     sendMessageTo (msg, dstId) {
+        dstId = dstId.replace(/^\s*/, '').replace(/\s*$/, '');
         msg.dstId = dstId;
         if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
             this._room.hasRole(dstId)) {  // local message
