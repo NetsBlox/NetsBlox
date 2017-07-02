@@ -1060,8 +1060,6 @@ NetsBloxMorph.prototype.createControlBar = function () {
 };
 
 NetsBloxMorph.prototype.loadNextRoom = function () {
-    // Check if the room has diverged and optionally fork
-    // TODO
     if (this.room.nextRoom) {
         var next = this.room.nextRoom;
         this.room._name = next.roomName;  // silent set

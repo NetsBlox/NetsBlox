@@ -82,7 +82,7 @@
         }
 
         setRole(role, content) {
-            this._logger.trace(`updating role: ${role}`);
+            this._logger.trace(`updating role: ${role} in ${this.owner}/${this.name}`);
             return storeRoleBlob(content)
                 .then(content => this.setRawRole(role, content));
         }
@@ -92,7 +92,9 @@
 
             return Q.all(roles.map(role => storeRoleBlob(role)))
                 .then(roles => {
+                    const names = roles.map(role => role.ProjectName);
                     roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
+                    this._logger.trace(`updating roles: ${names.join(',')} in ${this.owner}/${this.name}`);
                     return this._db.update(this.getStorageId(), query);
                 });
         }
@@ -205,9 +207,11 @@
         save() {
             const query = {$set: {}};
 
+            this._logger.trace(`saving project ${this.owner}/${this.name}`);
             return this.collectSaveableRoles()
                 .then(roles => {
-                    this._logger.trace('collected projects for ' + this.owner);
+                    const roleNames = roles.map(role => role.ProjectName);
+                    this._logger.trace(`updated roles are ${roleNames.join(',')}`);
                     roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
                     query.$set.lastUpdateAt = Date.now();
 

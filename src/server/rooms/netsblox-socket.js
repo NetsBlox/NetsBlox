@@ -285,12 +285,16 @@ class NetsBloxSocket {
             type: 'project-request',
             id: id
         });
-        this._projectRequests[id] = deferred;
+        this._projectRequests[id] = {
+            promise: deferred,
+            roleId: this.roleId,
+            roomName: this._room && this._room.name
+        };
 
         // Add the timeout for the project request
         setTimeout(() => {
             if (this._projectRequests[id]) {
-                this._projectRequests[id].reject('TIMEOUT');
+                this._projectRequests[id].promise.reject('TIMEOUT');
                 delete this._projectRequests[id];
             }
         }, REQUEST_TIMEOUT);
@@ -375,19 +379,35 @@ NetsBloxSocket.MessageHandlers = {
 
     'project-response': function(msg) {
         var id = msg.id,
-            json = msg.project;
+            json = msg.project,
+            err;
 
         const project = createSaveableProject(json);
         if (!project) {  // silent failure
-            var err = `Received falsey project! ${JSON.stringify(project)}`;
+            err = `Received falsey project! ${JSON.stringify(project)}`;
             this._logger.error(err);
-            this._projectRequests[id].reject(err);
+            this._projectRequests[id].promise.reject(err);
             delete this._projectRequests[id];
             return;
         }
 
-        this._logger.log('created saveable project for ' + this.roleId);
-        this._projectRequests[id].resolve(project);
+        // Check if the socket has changed locations
+        const req = this._projectRequests[id];
+        const roomName = this._room && this._room.name;
+        const hasMoved = this.roleId !== req.roleId || roomName !== req.roomName;
+        const oldProject = json.ProjectName !== this.roleId;
+        if (hasMoved || oldProject) {
+            err = hasMoved ?
+                `socket moved from ${req.roleId}/${req.roomName} to ${this.roleId}/${roomName}`:
+                `received old project ${json.ProjectName}. expected "${this.roleId}"`;
+            this._logger.log(`project request ${id} canceled: ${err}`);
+            req.promise.reject(err);
+            delete this._projectRequests[id];
+            return;
+        }
+
+        this._logger.log(`created saveable project for ${this.roleId} (${id})`);
+        req.promise.resolve(project);
         delete this._projectRequests[id];
     },
 
