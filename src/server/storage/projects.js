@@ -241,7 +241,7 @@
                     }
                     return Q();
                 })
-                .then(() => this._db.update(this.getStorageId(), query, {upsert: true}))
+                .then(() => this._db.update(this.getStorageId(), query))
                 .then(() => {
                     this._logger.trace(`saved project ${this.owner}/${this.name}`);
                     this.owner = query.$set.owner || this.owner;
@@ -255,7 +255,7 @@
 
         persist() {
             const query = {$set: {transient: false}};
-            return this._db.update(this.getStorageId(), query, {upsert: true})
+            return this._db.update(this.getStorageId(), query)
                 .then(() => this.save());
         }
 
@@ -266,7 +266,7 @@
 
         setPublic(isPublic) {
             const query = {$set: {Public: isPublic === true}};
-            return this._db.update(this.getStorageId(), query, {upsert: true});
+            return this._db.update(this.getStorageId(), query);
         }
 
         addCollaborator(username) {
@@ -291,7 +291,7 @@
 
         _updateCollaborators() {
             const query = {$set: {collaborators: this.collaborators}};
-            return this._db.update(this.getStorageId(), query, {upsert: true});
+            return this._db.update(this.getStorageId(), query);
         }
 
         getStorageId() {
