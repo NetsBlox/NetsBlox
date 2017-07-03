@@ -20,7 +20,7 @@ function getFieldName(data) {
     return result;
 }
 
-thingspeakIoT.publicChannel = function(tagString) {
+thingspeakIoT.searchPublicChannel = function(tagString) {
     let queryOptions = {
         queryString: tagString !== '' ? 'public.json?' +
             encodeQueryData({
@@ -65,6 +65,22 @@ thingspeakIoT.channelFeed = function(id, numResult) {
             }
             return resultObj;
         });
+    };
+    return this._sendStruct(queryOptions, parser);
+};
+
+thingspeakIoT.channelDetail = function(id) {
+    let queryOptions = {
+        queryString: id + '.json?'
+    };
+    let parser = item => {
+        return {
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            latitude: item.latitude,
+            longitude: item.longitude
+        };
     };
     return this._sendStruct(queryOptions, parser);
 };
