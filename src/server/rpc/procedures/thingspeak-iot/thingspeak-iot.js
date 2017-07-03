@@ -43,7 +43,7 @@ thingspeakIoT.publicChannel = function(tagString) {
             };
         });
     };
-    return thingspeakIoT._sendStruct(queryOptions, parser);
+    return this._sendStruct(queryOptions, parser);
 };
 
 thingspeakIoT.channelFeed = function(id, numResult) {
@@ -66,7 +66,7 @@ thingspeakIoT.channelFeed = function(id, numResult) {
             return resultObj;
         });
     };
-    return thingspeakIoT._sendStruct(queryOptions, parser);
+    return this._sendStruct(queryOptions, parser);
 };
 
 module.exports = thingspeakIoT;
