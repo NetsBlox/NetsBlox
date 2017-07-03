@@ -1,8 +1,20 @@
 const ChartNode = require('chartjs-node');
+const ApiConsumer = require('../utils/api-consumer');
+const test = require('../utils/dataset-test');
+const rpcUtils = require('../utils');
 
-let chart = {};
+let chart = new ApiConsumer('chart');
 let chartNode = new ChartNode(600, 600);
-let defaultColor = 'rgba(74, 108, 212, 0.8)';
+let defaultColor = ['rgba(74, 108, 212, 0.8)',
+                    'rgba(217, 77, 17, 0.8)',
+                    'rgba(207, 74, 217, 0.8)',
+                    'rgba(0, 161, 120, 0.8)',
+                    'rgba(143, 86, 227, 0.8)',
+                    'rgba(230, 168, 34, 0.8)',
+                    'rgba(4, 148, 220, 0.8)',
+                    'rgba(98, 194, 19, 0.8)',
+                    'rgba(243, 118, 29, 0.8)',
+                    'rgba(150, 150, 15, 0.8)'];
 
 let defaultOption = (xAxis, yAxis, title) => {
     return {
@@ -37,68 +49,84 @@ let defaultOption = (xAxis, yAxis, title) => {
     };
 };
 
-let getField = (input, fieldName) => {
-    return input.map((entry) => {
-        return entry.find((cur) => {
-            return cur[0] === fieldName;
-        });
-    }).reduce((acc, cur) => {
-        if (parseInt(cur[1]) && parseInt(cur[1]).toString().length === cur[1].length) {
-            return acc.concat(parseInt(cur[1]));
-        }
-        return acc.concat(cur[1]);
-    }, []);
-};
-
-chart._processDataset = function(rawArray, xAxis, yAxis, title, chartType) {
-    let data = {};
-    data.labels = getField(rawArray, xAxis);
-    data.datasets = [{
-        label: yAxis,
-        data: getField(rawArray, yAxis),
-        backgroundColor: defaultColor
-    }];
-    //data.datasets = yAxis.map((dataset) => {
-    //    return {
-    //        label: dataset,
-    //        data: getField(rawArray, dataset),
-    //        backgroundColor: defaultColor
-    //    };
-    //});
-    if (chartType === 'line') {
-        data.datasets.map((item) => {
-            item.fill = false;
-            item.borderColor = defaultColor;
-        });
-    }
+chart._processDataset = function(dataset, yAxis, datasetTag, code) {
     return {
-        type: chartType,
-        data: data,
-        options: defaultOption(xAxis, yAxis, title)
+        label: datasetTag,
+        data: test.getField(dataset, yAxis),
+        backgroundColor: defaultColor[code % 10]
     };
 };
 
-chart._drawChart = function (chartOptions) {
+chart._processData = function(dataset, numDataset, xAxisTag, yAxisTag, datasetTag) {
+    let data = {};
+    data.labels = test.getField(dataset, xAxisTag);
+    data.datasets = [chart._processDataset(dataset, yAxisTag, datasetTag, 0)];
+    return data;
+};
+
+chart._processMultipleData = function(dataset, numDataset, xAxisTag, yAxisTag, datasetTag) {
+    let data = {};
+    data.labels = test.getField(dataset[0], xAxisTag);
+    data.datasets = [];
+    dataset.forEach((set, index) => {
+        data.datasets.push(chart._processDataset(set, yAxisTag, datasetTag[index], index));
+    });
+    return data;
+};
+
+chart._testDataset = function(rawArray, numDataset, xAxis, yAxis) {
+    let testResult;
+    if (numDataset === 1) {
+        testResult = test.testValidDataset(rawArray, xAxis, yAxis);
+    } else if (numDataset >= 1) {
+        testResult = test.testMultipleDatasets(rawArray, xAxis, yAxis);
+    } else {
+        return 'Invalid number of datasets';
+    }
+    if (testResult !== '') {
+        return testResult;
+    }
+};
+
+chart._drawChart = function (dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title, chartType) {
+    numDataset = parseInt(numDataset);
+    let testResult = this._testDataset(dataset, numDataset, xAxisTag, yAxisTag);
+    if (testResult !== '') {
+        //this.response.status(404).send(testResult);
+        return '';
+    }
+    let data;
+    if (numDataset === 1) {
+        data = chart._processData(dataset, numDataset, xAxisTag, yAxisTag, datasetTag);
+    } else {
+        data = chart._processMultipleData(dataset, numDataset, xAxisTag, yAxisTag, datasetTag);
+    }
+    let chartOptions =  {
+        type: chartType,
+        data: data,
+        options: defaultOption(xAxisTag, yAxisTag, title)
+    };
+    
     return chartNode.drawChart(chartOptions).then(() => {
         return chartNode.getImageBuffer('image/png');
     }).then((imageBuffer) => {
-        this.response.set('cache-control', 'private, no-store, max-age=0');
-        this.response.set('content-type', 'image/png');
-        this.response.set('content-length', imageBuffer.length);
-        this.response.set('connection', 'close');
-        this.response.status(200).send(imageBuffer);
-        this._logger.trace('sent the image');
+        return imageBuffer;
+        //rpcUtils.sendImageBuffer(this.response, imageBuffer);
     }).catch(() => {
         this.response.status(404).send('');
     });
 };
 
-chart.drawBarChart = function(dataset, xAxisTag, yAxisTag, title) {
-    return this._drawChart(this._processDataset(dataset, xAxisTag, yAxisTag, title, 'bar'));
+chart.drawBarChart = function(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title) {
+    return this._drawChart(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title, 'bar');
 };
 
-chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, title) {
-    return this._drawChart(this._processDataset(dataset, xAxisTag, yAxisTag, title, 'line'));
+chart.drawLineChart = function(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title) {
+    return this._drawChart(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title, 'line');
 };
+
+var shit = [[['name', 'ellie'], ['age', '15']]];
+console.log('a');
+console.log(chart.drawBarChart(shit, -1, 'name', 'age', 'shit'));
 
 module.exports = chart;

@@ -37,5 +37,9 @@ describe('dataset-test', function() {
         it ('should detect valid multiple dataset', function() {
             assert.equal(test.testMultipleDatasets(dataset8, 'name', 'age'), '');
         });
+    
+        it ('should get the right field', function() {
+            console.log(test.getField(dataset1, 'age'));
+        });
     });
 });
