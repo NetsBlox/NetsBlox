@@ -258,7 +258,7 @@ class ActiveRoom {
         this.uuid = utils.uuid(this.owner, this.name);
 
         if (this.uuid !== oldUuid) {
-            this._logger.trace('Updating uuid to ' + this.uuid);
+            this._logger.trace('updating uuid to ' + this.uuid);
             this.onUuidChange(oldUuid);
         }
         if (name) {

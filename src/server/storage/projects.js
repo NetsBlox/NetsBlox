@@ -36,12 +36,13 @@
 
     class Project extends DataWrapper {
         constructor(params) {
-            params.data = _.extend(params.data || {});
+            params.data = params.data || {};
 
             super(params.db, params.data || {});
             this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
             this._room = params.room;
             this.collaborators = this.collaborators || [];
+            this.originTime = params.data.originTime;
         }
 
         fork(room) {
@@ -206,6 +207,7 @@
 
         save() {
             const query = {$set: {}};
+            const options = {};
 
             this._logger.trace(`saving project ${this.owner}/${this.name}`);
             return this.collectSaveableRoles()
@@ -230,9 +232,14 @@
                                 .then(project => {
                                     if (!project.transient) {  // create a copy
                                         this.name = query.$set.name;
+                                        // covert the roles keys to match expected format
+                                        Object.keys(project.roles).forEach(roleId => {
+                                            project[`roles.${roleId}`] = project.roles[roleId];
+                                        });
                                         delete project.roles;
                                         query.$set = _.extend({}, project, query.$set);
                                         this._logger.trace(`duplicating project (save as) ${this.name}->${this._room.name}`);
+                                        options.upsert = true;
                                     } else {
                                         this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
                                     }
@@ -241,7 +248,7 @@
                     }
                     return Q();
                 })
-                .then(() => this._db.update(this.getStorageId(), query))
+                .then(() => this._db.update(this.getStorageId(), query, options))
                 .then(() => {
                     this._logger.trace(`saved project ${this.owner}/${this.name}`);
                     this.owner = query.$set.owner || this.owner;

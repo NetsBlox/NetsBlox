@@ -242,11 +242,11 @@ module.exports = [
                         // If we overwrite, we don't want to change the originTime
                         if (rooms.stored) {
                             trace(`Found project with same name (${rooms.stored.name}) in database`);
-                            activeRoom.originTime = rooms.stored.originTime;
                             if (!rooms.areSame) {
                                 trace(`Projects are different: ${rooms.stored.originTime} ` +
                                     `vs ${rooms.active.originTime}`);
                             }
+                            activeRoom.originTime = rooms.stored.originTime;
                         } else {
                             trace(`saving first project named ${roomName} for ${username}`);
                         }
