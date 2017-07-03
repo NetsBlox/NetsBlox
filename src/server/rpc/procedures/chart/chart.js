@@ -16,6 +16,7 @@ let defaultColor = ['rgba(74, 108, 212, 0.8)',
                     'rgba(243, 118, 29, 0.8)',
                     'rgba(150, 150, 15, 0.8)'];
 
+let black = '#666';
 let defaultOption = (xAxis, yAxis, title) => {
     return {
         scales: {
@@ -23,14 +24,18 @@ let defaultOption = (xAxis, yAxis, title) => {
                 scaleLabel: {
                     display: true,
                     labelString: xAxis,
-                    fontSize: 16
+                    fontSize: 20,
+                    fontFamily: 'sans-serif',
+                    fontColor: '#666'
                 }
             }],
             yAxes: [{
                 scaleLabel: {
                     display: true,
                     labelString: yAxis,
-                    fontSize: 16
+                    fontSize: 20,
+                    fontFamily: 'sans-serif',
+                    fontColor: black
                 },
                 ticks: {
                     beginAtZero:true
@@ -41,10 +46,16 @@ let defaultOption = (xAxis, yAxis, title) => {
             display: true,
             text: title,
             fontSize: 20,
-            padding: 20
+            padding: 25
         },
         legend: {
             display: false
+        },
+        gridLines: {
+            color: black
+        },
+        tick: {
+            fontColor: black
         }
     };
 };
@@ -83,9 +94,7 @@ chart._testDataset = function(rawArray, numDataset, xAxis, yAxis) {
     } else {
         return 'Invalid number of datasets';
     }
-    if (testResult !== '') {
-        return testResult;
-    }
+    return testResult;
 };
 
 chart._drawChart = function (dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title, chartType) {
@@ -110,8 +119,7 @@ chart._drawChart = function (dataset, numDataset, xAxisTag, yAxisTag, datasetTag
     return chartNode.drawChart(chartOptions).then(() => {
         return chartNode.getImageBuffer('image/png');
     }).then((imageBuffer) => {
-        return imageBuffer;
-        //rpcUtils.sendImageBuffer(this.response, imageBuffer);
+        rpcUtils.sendImageBuffer(this.response, imageBuffer);
     }).catch(() => {
         this.response.status(404).send('');
     });
@@ -125,8 +133,5 @@ chart.drawLineChart = function(dataset, numDataset, xAxisTag, yAxisTag, datasetT
     return this._drawChart(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title, 'line');
 };
 
-var shit = [[['name', 'ellie'], ['age', '15']]];
-console.log('a');
-console.log(chart.drawBarChart(shit, -1, 'name', 'age', 'shit'));
 
 module.exports = chart;

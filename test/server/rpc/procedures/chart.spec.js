@@ -8,12 +8,4 @@ describe('chart', function() {
         ['drawBarChart', ['dataset', 'numDataset', 'xAxisTag', 'yAxisTag','datasetTag', 'title']],
         ['drawLineChart', ['dataset', 'numDataset', 'xAxisTag', 'yAxisTag','datasetTag', 'title']]
     ]);
-    
-    describe('shit', function() {
-        it('shit', function() {
-            var test = [[['name', 'ellie'], ['age', '15']]];
-            console.log('a');
-            console.log(chart.drawBarChart(test, -1, 'name', 'age', 'shit'));
-        });
-    });
 });
