@@ -40,13 +40,13 @@ var serialize = function(service) {
 };
 
 var serializeRole = (role, project) => {
-    const owner = project.owner;
-    const name = project.name;
+    const owner = encodeURIComponent(project.owner);
+    const name = encodeURIComponent(project.name);
     const src = role.SourceCode ? 
         `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
-    return `RoomName=${encodeURIComponent(name)}&` +
-        `Owner=${owner}&${serialize(R.omit(['SourceCode', 'Media'], role))}` + 
+    return `RoomName=${name}&Owner=${owner}&` +
+        serialize(R.omit(['SourceCode', 'Media'], role)) + 
         `&SourceCode=${src}`;
 };
 
@@ -57,7 +57,7 @@ var joinActiveProject = function(userId, room, res) {
     return room.getRole(openRole).then(role => {
         trace(`adding ${userId} to role "${openRole}" at "${room.name}"`);
         let serialized = serializeRole(role, room);
-        return res.send(`Owner=${room.owner}&${serialized}`);
+        return res.send(serialized);
     });
 };
 
