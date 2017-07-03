@@ -8,8 +8,8 @@ test.getField = (input, fieldName) => {
     }, []);
     
     let sample = stringResult[0];
-    if (parseInt(sample) && parseInt(sample).toString().length === sample.length) {
-        return stringResult.map(parseInt);
+    if (+sample && (+sample).toString().length === sample.length) {
+        return stringResult.map((input) => +input);
     }
     return stringResult;
 };
