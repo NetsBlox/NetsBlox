@@ -26,7 +26,6 @@ describe('dataset-test', function() {
         
         it ('should detect invalid dataset', function() {
             assert.equal(test.testValidDataset(dataset1, 'name', 'age'), '');
-            assert.equal(test.testValidDataset(dataset2, 'name', 'age'), msg4);
             assert.equal(test.testValidDataset(dataset3, 'name', 'age'), '');
             assert.equal(test.testValidDataset(dataset4, 'name', 'age'), msg1);
             assert.equal(test.testValidDataset(dataset5, 'name', 'age'), msg2);

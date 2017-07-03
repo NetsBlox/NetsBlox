@@ -75,15 +75,19 @@ chart._processDataset = function(dataset, yAxis, datasetTag, code, chartType) {
     return result;
 };
 
-chart._processData = function(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, chartType) {
+chart._processData = function(dataset, numDataset, datasetTag, chartType) {
     let data = {};
+    let xAxisTag = dataset[0][0][0];
+    let yAxisTag = dataset[0][1][0];
     data.labels = test.getField(dataset, xAxisTag);
     data.datasets = [chart._processDataset(dataset, yAxisTag, datasetTag, 0, chartType)];
     return data;
 };
 
-chart._processMultipleData = function(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, chartType) {
+chart._processMultipleData = function(dataset, numDataset, datasetTag, chartType) {
     let data = {};
+    let xAxisTag = dataset[0][0][0];
+    let yAxisTag = dataset[0][1][0];
     data.labels = test.getField(dataset[0], xAxisTag);
     data.datasets = [];
     dataset.forEach((set, index) => {
@@ -92,12 +96,12 @@ chart._processMultipleData = function(dataset, numDataset, xAxisTag, yAxisTag, d
     return data;
 };
 
-chart._testDataset = function(rawArray, numDataset, xAxis, yAxis) {
+chart._testDataset = function(rawArray, numDataset) {
     let testResult;
     if (numDataset === 1) {
-        testResult = test.testValidDataset(rawArray, xAxis, yAxis);
+        testResult = test.testValidDataset(rawArray);
     } else if (numDataset >= 1) {
-        testResult = test.testMultipleDatasets(rawArray, xAxis, yAxis);
+        testResult = test.testMultipleDatasets(rawArray);
     } else {
         return 'Invalid number of datasets';
     }
@@ -106,15 +110,15 @@ chart._testDataset = function(rawArray, numDataset, xAxis, yAxis) {
 
 chart._drawChart = function (dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title, chartType) {
     numDataset = parseInt(numDataset);
-    let testResult = this._testDataset(dataset, numDataset, xAxisTag, yAxisTag);
+    let testResult = this._testDataset(dataset, numDataset);
     if (testResult !== '') {
         this.response.status(404).send(testResult);
     } else {
         let data;
         if (numDataset === 1) {
-            data = chart._processData(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, chartType);
+            data = chart._processData(dataset, numDataset, datasetTag, chartType);
         } else {
-            data = chart._processMultipleData(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, chartType);
+            data = chart._processMultipleData(dataset, numDataset, datasetTag, chartType);
         }
         let chartOptions =  {
             type: chartType,

@@ -27,10 +27,12 @@ test.testValidArray = (rawArray) => {
     return false;
 };
 
-test.testValidDataset = (rawDataset, xAxis, yAxis) => {
+test.testValidDataset = (rawDataset) => {
     if (!(test.testValidArray(rawDataset))) {
         return 'The dataset is blank or has blank or invalid value';
     }
+    let xAxis = rawDataset[0][0][0];
+    let yAxis = rawDataset[0][1][0];
     for (let i = 0; i < rawDataset.length; i++) {
         let dataPoint = rawDataset[i];
         if (dataPoint.length !== 2) {
@@ -51,10 +53,10 @@ test.testValidDataset = (rawDataset, xAxis, yAxis) => {
     return '';
 };
 
-test.testMultipleDatasets = (rawDataset, xAxis, yAxis) => {
+test.testMultipleDatasets = (rawDataset) => {
     let returnedMsg;
     for (let i = 0; i < rawDataset.length; i++) {
-        returnedMsg = test.testValidDataset(rawDataset[i], xAxis, yAxis);
+        returnedMsg = test.testValidDataset(rawDataset[i]);
         if (returnedMsg !== '') {
             return returnedMsg;
         }
