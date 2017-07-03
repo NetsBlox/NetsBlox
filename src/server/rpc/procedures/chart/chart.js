@@ -5,16 +5,18 @@ const rpcUtils = require('../utils');
 
 let chart = new ApiConsumer('chart');
 let chartNode = new ChartNode(600, 600);
-let defaultColor = ['rgba(74, 108, 212, 0.8)',
-                    'rgba(217, 77, 17, 0.8)',
-                    'rgba(207, 74, 217, 0.8)',
-                    'rgba(0, 161, 120, 0.8)',
-                    'rgba(143, 86, 227, 0.8)',
-                    'rgba(230, 168, 34, 0.8)',
-                    'rgba(4, 148, 220, 0.8)',
-                    'rgba(98, 194, 19, 0.8)',
-                    'rgba(243, 118, 29, 0.8)',
-                    'rgba(150, 150, 15, 0.8)'];
+let defaultColor = [
+    'rgba(74, 108, 212, 0.8)',
+    'rgba(217, 77, 17, 0.8)',
+    'rgba(207, 74, 217, 0.8)',
+    'rgba(0, 161, 120, 0.8)',
+    'rgba(143, 86, 227, 0.8)',
+    'rgba(230, 168, 34, 0.8)',
+    'rgba(4, 148, 220, 0.8)',
+    'rgba(98, 194, 19, 0.8)',
+    'rgba(243, 118, 29, 0.8)',
+    'rgba(150, 150, 15, 0.8)'
+];
 
 let defaultBlack = '#666';
 let defaultFont = 'sans-serif';
