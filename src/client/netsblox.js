@@ -1605,16 +1605,16 @@ NetsBloxMorph.prototype.projectMenu = function () {
 
     // Netsblox addition: start
     menu.addItem(
-        'Services...',
+        'Network...',
         createMediaMenu(
             'rpc',
             function loadLib(file, name) {
                 var url = myself.resourceURL('rpc', file);
                 myself.droppedText(myself.getURL(url), name);
             },
-            localize('Import') + ' ' + localize('Service')
+            localize('Import') + ' ' + localize('Network') + ' ' + localize('Service')
         ),
-        'Select services to include in this project.'
+        'Select network services to include in this project.'
     );
     // Netsblox addition: end
 
