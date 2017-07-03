@@ -303,6 +303,7 @@ class NetsBloxSocket {
     }
 
     sendMessageTo (msg, dstId) {
+        dstId = dstId + ""; // make sure dstId is string
         dstId = dstId.replace(/^\s*/, '').replace(/\s*$/, '');
         msg.dstId = dstId;
         if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
@@ -464,7 +465,7 @@ NetsBloxSocket.MessageHandlers = {
                 // Check if the user is already at the room
                 return room.add(this, role);
             });
-        
+
     },
 
     'add-role': function(msg) {
@@ -558,7 +559,7 @@ NetsBloxSocket.MessageHandlers = {
             this._logger.warn(`Cannot req new name w/o a room! (${this.username})`);
         }
     },
-     
+
     'share-msg-type': function(msg) {
         this.sendToEveryone(msg);
     },
