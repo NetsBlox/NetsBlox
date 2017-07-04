@@ -289,7 +289,7 @@ describe('active-room', function() {
         describe('remove', function() {
             it('should remove a socket', function() {
                 room.remove(alice);
-                assert.equal(room.roles.role1.length, 0);
+                assert.deepEqual(room.getSocketsAt('role1'), []);
             });
         
             it('should receive update messages', function() {
@@ -351,7 +351,7 @@ describe('active-room', function() {
                 }).catch(() => done());
             });
         
-            it('should remove no collaborator if username is wrong', function(done) {
+            it('should not remove collaborator if username is wrong', function(done) {
                 r.addCollaborator('bob').then(() => {
                     r.removeCollaborator('wrong').then(() => {
                         assert.equal(r.getCollaborators().length, 1);
@@ -391,11 +391,6 @@ describe('active-room', function() {
         });
         
         describe('roles', function() {
-            it('should check whether has a role', function() {
-                assert(r.hasRole('role1'));
-                assert(!(r.hasRole('role3')));
-            });
-    
             it('should check whether has a role', function() {
                 assert(r.hasRole('role1'));
                 assert(!(r.hasRole('role3')));
