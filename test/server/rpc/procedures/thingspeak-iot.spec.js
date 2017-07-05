@@ -8,12 +8,9 @@ describe('thingspeak-iot', function() {
         thingspeak = new RPCMock(ThingSpeak);
     });
     
-    describe('interfaces', function() {
-        utils.verifyRPCInterfaces(thingspeak, [
-            ['searchPublicChannel', ['tagString']],
-            ['channelFeed', ['id', 'numResult']],
-            ['channelDetail', ['id']]
-        ]);
-    });
-    
+    utils.verifyRPCInterfaces(thingspeak, [
+        ['searchPublicChannel', ['tagString']],
+        ['channelFeed', ['id', 'numResult']],
+        ['channelDetail', ['id']]
+    ]);
 });

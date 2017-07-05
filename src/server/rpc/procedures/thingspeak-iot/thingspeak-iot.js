@@ -60,7 +60,6 @@ let feedParser = data => {
         return resultObj;
     });
 };
-return this._sendStruct(queryOptions, parser);
 
 thingspeakIoT.channelFeed = function(id, numResult) {
     let queryOptions = {
@@ -68,6 +67,7 @@ thingspeakIoT.channelFeed = function(id, numResult) {
             results: numResult,
         }),
     };
+    return feedParser
 };
 
 thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
@@ -78,6 +78,7 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
                 results: numResult,
             }),
         };
+        return this._sendStruct(queryOptions, feedParser);
     } else {
         this.response.status(404).send('API key is blank');
     }
