@@ -10,8 +10,9 @@ describe('thingspeak-iot', function() {
     
     describe('interfaces', function() {
         utils.verifyRPCInterfaces(thingspeak, [
-            ['publicChannel', ['tagString']],
-            ['channelFeed', ['id', 'numResult']]
+            ['searchPublicChannel', ['tagString']],
+            ['channelFeed', ['id', 'numResult']],
+            ['channelDetail', ['id']]
         ]);
     });
     

@@ -46,27 +46,41 @@ thingspeakIoT.searchPublicChannel = function(tagString) {
     return this._sendStruct(queryOptions, parser);
 };
 
+let feedParser = data => {
+    let fieldMap = getFieldName(data.channel);
+    return data.feeds.map(tag => {
+        let resultObj = {
+            created_at: tag.created_at,
+        };
+        for (let field in fieldMap) {
+            if (fieldMap.hasOwnProperty(field)) {
+                resultObj[fieldMap[field]] = tag[field];
+            }
+        }
+        return resultObj;
+    });
+};
+return this._sendStruct(queryOptions, parser);
+
 thingspeakIoT.channelFeed = function(id, numResult) {
     let queryOptions = {
         queryString: id + '/feeds.json?' + encodeQueryData({
             results: numResult,
         }),
     };
-    let parser = data => {
-        let fieldMap = getFieldName(data.channel);
-        return data.feeds.map(tag => {
-            let resultObj = {
-                created_at: tag.created_at,
-            };
-            for (let field in fieldMap) {
-                if (fieldMap.hasOwnProperty(field)) {
-                    resultObj[fieldMap[field]] = tag[field];
-                }
-            }
-            return resultObj;
-        });
-    };
-    return this._sendStruct(queryOptions, parser);
+};
+
+thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
+    if (apiKey !== '') {
+        let queryOptions = {
+            queryString: id + '/feeds.json?' + encodeQueryData({
+                api_key: apiKey,
+                results: numResult,
+            }),
+        };
+    } else {
+        this.response.status(404).send('API key is blank');
+    }
 };
 
 thingspeakIoT.channelDetail = function(id) {
