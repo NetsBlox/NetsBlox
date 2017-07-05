@@ -15,6 +15,9 @@ test.getField = (input, fieldName) => {
 };
 
 test.testValidArray = (rawArray) => {
+    if (rawArray === '') {
+        return false;
+    }
     if (typeof rawArray === 'string' || typeof rawArray === 'number') {
         return true;
     }
@@ -53,7 +56,10 @@ test.testValidDataset = (rawDataset) => {
     return '';
 };
 
-test.testMultipleDatasets = (rawDataset) => {
+test.testMultipleDatasets = (rawDataset, datasetTag) => {
+    if (typeof datasetTag !== 'object') {
+        return 'datasetTag should be a list of tags';
+    }
     let returnedMsg;
     for (let i = 0; i < rawDataset.length; i++) {
         returnedMsg = test.testValidDataset(rawDataset[i]);
@@ -63,5 +69,17 @@ test.testMultipleDatasets = (rawDataset) => {
     }
     return '';
 };
+
+test.isMultipleDataset = (rawArray) => {
+    let numLayers = (rawArray) => {
+        if (typeof rawArray !== 'object') {
+            return 0;
+        }
+        return numLayers(rawArray[0]) + 1;
+    };
+    
+    return numLayers(rawArray) === 4;
+};
+
 
 module.exports = test;

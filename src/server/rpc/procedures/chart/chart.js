@@ -52,9 +52,6 @@ let defaultOption = (xAxis, yAxis, title) => {
             fontSize: defaultFontSize[1],
             padding: 25
         },
-        legend: {
-            display: false
-        },
         gridLines: {
             color: defaultBlack
         },
@@ -77,7 +74,7 @@ chart._processDataset = function(dataset, yAxis, datasetTag, code, chartType) {
     return result;
 };
 
-chart._processData = function(dataset, numDataset, datasetTag, chartType) {
+chart._processData = function(dataset, datasetTag, chartType) {
     let data = {};
     let xAxisTag = dataset[0][0][0];
     let yAxisTag = dataset[0][1][0];
@@ -86,10 +83,10 @@ chart._processData = function(dataset, numDataset, datasetTag, chartType) {
     return data;
 };
 
-chart._processMultipleData = function(dataset, numDataset, datasetTag, chartType) {
+chart._processMultipleData = function(dataset, datasetTag, chartType) {
     let data = {};
-    let xAxisTag = dataset[0][0][0];
-    let yAxisTag = dataset[0][1][0];
+    let xAxisTag = dataset[0][0][0][0];
+    let yAxisTag = dataset[0][0][1][0];
     data.labels = test.getField(dataset[0], xAxisTag);
     data.datasets = [];
     dataset.forEach((set, index) => {
@@ -98,52 +95,52 @@ chart._processMultipleData = function(dataset, numDataset, datasetTag, chartType
     return data;
 };
 
-chart._testDataset = function(rawArray, numDataset) {
-    let testResult;
-    if (numDataset === 1) {
-        testResult = test.testValidDataset(rawArray);
-    } else if (numDataset >= 1) {
-        testResult = test.testMultipleDatasets(rawArray);
+chart._testDataset = function(rawArray, datasetTag) {
+    let multiple = test.isMultipleDataset(rawArray);
+    if (multiple) {
+        return test.testMultipleDatasets(rawArray, datasetTag);
     } else {
-        return 'Invalid number of datasets';
+        return test.testValidDataset(rawArray);
     }
-    return testResult;
 };
 
-chart._drawChart = function (dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title, chartType) {
-    numDataset = parseInt(numDataset);
-    let testResult = this._testDataset(dataset, numDataset);
-    if (testResult !== '') {
-        this.response.status(404).send(testResult);
+chart._drawChart = function (dataset, xAxisTag, yAxisTag, datasetTag, title, chartType) {
+    if (dataset === '') {
+        this.response.status(404).send('Dataset is blank');
     } else {
-        let data;
-        if (numDataset === 1) {
-            data = chart._processData(dataset, numDataset, datasetTag, chartType);
+        let testResult = this._testDataset(dataset, datasetTag);
+        if (testResult !== '') {
+            this.response.status(404).send(testResult);
         } else {
-            data = chart._processMultipleData(dataset, numDataset, datasetTag, chartType);
+            let data;
+            if (test.isMultipleDataset(dataset)) {
+                data = chart._processMultipleData(dataset, datasetTag, chartType);
+            } else {
+                data = chart._processData(dataset, datasetTag, chartType);
+            }
+            let chartOptions =  {
+                type: chartType,
+                data: data,
+                options: defaultOption(xAxisTag, yAxisTag, title)
+            };
+        
+            return chartNode.drawChart(chartOptions).then(() => {
+                return chartNode.getImageBuffer('image/png');
+            }).then((imageBuffer) => {
+                rpcUtils.sendImageBuffer(this.response, imageBuffer);
+            }).catch(() => {
+                this.response.status(404).send('Error with service');
+            });
         }
-        let chartOptions =  {
-            type: chartType,
-            data: data,
-            options: defaultOption(xAxisTag, yAxisTag, title)
-        };
-    
-        return chartNode.drawChart(chartOptions).then(() => {
-            return chartNode.getImageBuffer('image/png');
-        }).then((imageBuffer) => {
-            rpcUtils.sendImageBuffer(this.response, imageBuffer);
-        }).catch(() => {
-            this.response.status(404).send('Error with service');
-        });
     }
 };
 
-chart.drawBarChart = function(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title) {
-    return this._drawChart(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title, 'bar');
+chart.drawBarChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title) {
+    return this._drawChart(dataset, xAxisTag, yAxisTag, datasetTag, title, 'bar');
 };
 
-chart.drawLineChart = function(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title) {
-    return this._drawChart(dataset, numDataset, xAxisTag, yAxisTag, datasetTag, title, 'line');
+chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title) {
+    return this._drawChart(dataset, xAxisTag, yAxisTag, datasetTag, title, 'line');
 };
 
 

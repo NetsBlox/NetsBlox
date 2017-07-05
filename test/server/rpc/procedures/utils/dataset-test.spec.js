@@ -16,7 +16,7 @@ describe('dataset-test', function() {
     let msg3 = 'At least one point doesn\'t have both name and value';
     let msg4 = 'At least one point has name different from xAxis or yAxis';
     let msg5 = 'yAxis values are not valid number';
-    describe('test getField', function() {
+    describe('dataset test', function() {
         it('should detect invalid array (not blank or invalid values)', function() {
             assert(test.testValidArray(dataset1));
             assert(test.testValidArray(dataset2));
@@ -34,11 +34,16 @@ describe('dataset-test', function() {
         });
     
         it ('should detect valid multiple dataset', function() {
-            assert.equal(test.testMultipleDatasets(dataset8, 'name', 'age'), '');
+            assert.equal(test.testMultipleDatasets(dataset8, ['1', '2']), '');
         });
     
         it ('should get the right field', function() {
-            console.log(test.getField(dataset1, 'age'));
+            assert.deepEqual(test.getField(dataset1, 'age'), [15]);
+        });
+        
+        it('should get the right number of layers', function() {
+            assert.equal(test.isMultipleDataset(dataset8), true);
+            assert.equal(test.isMultipleDataset(dataset1), false)
         });
     });
 });
