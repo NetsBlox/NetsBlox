@@ -39,7 +39,18 @@ const jsonToSnapList = inputJson => {
     return keyVals;
 };
 
+
+
+// turns a tuple-like object into query friendly string
+const encodeQueryData = tuple => {
+    let ret = [];
+    for (let d in tuple)
+        ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(tuple[d]));
+    return ret.join('&');
+}
+
 module.exports = {
     sendImageBuffer,
+    encodeQueryData,
     jsonToSnapList
 };
