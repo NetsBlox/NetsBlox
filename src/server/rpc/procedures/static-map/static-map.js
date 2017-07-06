@@ -30,8 +30,9 @@ var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap',
     };
 
 var StaticMap = function(roomId) {
-    this.roomId = roomId;
-    this.userMaps = {};  // Store the state of the map for each user
+    this._state = {};
+    this._state.roomId = roomId;
+    this._state.userMaps = {};  // Store the state of the map for each user
 };
 
 StaticMap.getPath = function() {
@@ -56,7 +57,7 @@ StaticMap.prototype._getGoogleParams = function(options) {
 };
 
 StaticMap.prototype._getMapInfo = function(roleId) {
-    return getStorage().get(this.roomId)
+    return getStorage().get(this._state.roomId)
         .then(maps => {
             trace(`getting map for ${roleId}: ${JSON.stringify(maps)}`);
             return maps[roleId];
@@ -87,11 +88,11 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
             width: options.width
         };
 
-    return getStorage().get(this.roomId)
+    return getStorage().get(this._state.roomId)
         .then(maps => {
             maps = maps || {};
             maps[socket.roleId] = map;
-            getStorage().save(this.roomId, maps);
+            getStorage().save(this._state.roomId, maps);
         })
         .then(() => trace(`Stored map for ${socket.roleId}: ${JSON.stringify(map)}`));
 };

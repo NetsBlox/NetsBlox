@@ -152,12 +152,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         }
 
         // Add the netsblox socket for triggering network messages from an RPC
-        let ctx;
-        if (rpc instanceof ApiConsumer) {
-            ctx = Object.create(rpc);
-        }else {
-            ctx = rpc;
-        }
+        let ctx = Object.create(rpc);
         ctx.socket = SocketManager.getSocket(uuid);
         ctx.response = res;
         if (!ctx.socket) {
