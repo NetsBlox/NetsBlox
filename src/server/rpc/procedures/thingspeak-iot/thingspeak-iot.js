@@ -1,13 +1,7 @@
 const ApiConsumer = require('../utils/api-consumer');
 const thingspeakIoT = new ApiConsumer('thingspeakIoT',
     'https://api.thingspeak.com/channels/');
-
-function encodeQueryData(options) {
-    let ret = [];
-    for (let d in options)
-        ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(options[d]));
-    return ret.join('&');
-}
+const rpcUtils = require('../utils');
 
 let feedParser = data => {
     let fieldMap = {};
@@ -49,7 +43,7 @@ let detailParser = item => {
 thingspeakIoT.searchPublicChannel = function(tagString) {
     let queryOptions = {
         queryString: tagString !== '' ? 'public.json?' +
-            encodeQueryData({
+            rpcUtils.encodeQueryData({
                 tag: encodeURIComponent(tagString),
             }) : 'public.json',
     };
@@ -61,17 +55,17 @@ thingspeakIoT.searchPublicChannel = function(tagString) {
 
 thingspeakIoT.channelFeed = function(id, numResult) {
     let queryOptions = {
-        queryString: id + '/feeds.json?' + encodeQueryData({
+        queryString: id + '/feeds.json?' + rpcUtils.encodeQueryData({
             results: numResult,
         }),
     };
-    return this._sendStruct(queryOptions, feedParser)
+    return this._sendStruct(queryOptions, feedParser);
 };
 
 thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
     if (apiKey !== '') {
         let queryOptions = {
-            queryString: id + '/feeds.json?' + encodeQueryData({
+            queryString: id + '/feeds.json?' + rpcUtils.encodeQueryData({
                 api_key: apiKey,
                 results: numResult,
             }),
