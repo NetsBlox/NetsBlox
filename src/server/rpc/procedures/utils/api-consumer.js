@@ -74,7 +74,7 @@ class ApiConsumer {
             });
         }).catch(err => {
             this._logger.error('error in requesting data from', fullUrl, err);
-            return err;
+            throw err;
         });
     }
 
@@ -114,7 +114,7 @@ class ApiConsumer {
             });
             return deferred.promise.catch(err => {
                 this._logger.error('error in requesting the image',fullUrl, err);
-                return err;
+                throw err;
             });
         };
         if (queryOptions.cache === false) {
