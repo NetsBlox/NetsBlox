@@ -435,18 +435,14 @@ function acceptInvitation (invite, socketId) {
         throw 'project is no longer open';
     }
 
-    if (room.isOccupied(invite.role)) {
-        throw 'role is occupied';
+    if (!socket) {
+        warn(`could not find socket "${invite.room} ${JSON.stringify(invites)}`);
+        throw 'could not find connected user';
     }
 
     return room.getRole(invite.role)
         .then(project => {
-            if (socket) {
-                socket.join(room, invite.role);
-            } else {
-                room.onRolesChanged();
-            }
-
+            room.add(socket, invite.role);
             return Utils.serializeRole(project, room.name);
         });
 }

@@ -36,12 +36,13 @@
 
     class Project extends DataWrapper {
         constructor(params) {
-            params.data = _.extend(params.data || {});
+            params.data = params.data || {};
 
             super(params.db, params.data || {});
             this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
             this._room = params.room;
             this.collaborators = this.collaborators || [];
+            this.originTime = params.data.originTime;
         }
 
         fork(room) {
@@ -82,7 +83,7 @@
         }
 
         setRole(role, content) {
-            this._logger.trace(`updating role: ${role}`);
+            this._logger.trace(`updating role: ${role} in ${this.owner}/${this.name}`);
             return storeRoleBlob(content)
                 .then(content => this.setRawRole(role, content));
         }
@@ -92,7 +93,9 @@
 
             return Q.all(roles.map(role => storeRoleBlob(role)))
                 .then(roles => {
+                    const names = roles.map(role => role.ProjectName);
                     roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
+                    this._logger.trace(`updating roles: ${names.join(',')} in ${this.owner}/${this.name}`);
                     return this._db.update(this.getStorageId(), query);
                 });
         }
@@ -204,10 +207,13 @@
 
         save() {
             const query = {$set: {}};
+            const options = {};
 
+            this._logger.trace(`saving project ${this.owner}/${this.name}`);
             return this.collectSaveableRoles()
                 .then(roles => {
-                    this._logger.trace('collected projects for ' + this.owner);
+                    const roleNames = roles.map(role => role.ProjectName);
+                    this._logger.trace(`updated roles are ${roleNames.join(',')}`);
                     roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
                     query.$set.lastUpdateAt = Date.now();
 
@@ -226,9 +232,14 @@
                                 .then(project => {
                                     if (!project.transient) {  // create a copy
                                         this.name = query.$set.name;
+                                        // covert the roles keys to match expected format
+                                        Object.keys(project.roles).forEach(roleId => {
+                                            project[`roles.${roleId}`] = project.roles[roleId];
+                                        });
                                         delete project.roles;
                                         query.$set = _.extend({}, project, query.$set);
                                         this._logger.trace(`duplicating project (save as) ${this.name}->${this._room.name}`);
+                                        options.upsert = true;
                                     } else {
                                         this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
                                     }
@@ -237,7 +248,7 @@
                     }
                     return Q();
                 })
-                .then(() => this._db.update(this.getStorageId(), query, {upsert: true}))
+                .then(() => this._db.update(this.getStorageId(), query, options))
                 .then(() => {
                     this._logger.trace(`saved project ${this.owner}/${this.name}`);
                     this.owner = query.$set.owner || this.owner;
@@ -251,7 +262,7 @@
 
         persist() {
             const query = {$set: {transient: false}};
-            return this._db.update(this.getStorageId(), query, {upsert: true})
+            return this._db.update(this.getStorageId(), query)
                 .then(() => this.save());
         }
 
@@ -262,7 +273,7 @@
 
         setPublic(isPublic) {
             const query = {$set: {Public: isPublic === true}};
-            return this._db.update(this.getStorageId(), query, {upsert: true});
+            return this._db.update(this.getStorageId(), query);
         }
 
         addCollaborator(username) {
@@ -287,7 +298,7 @@
 
         _updateCollaborators() {
             const query = {$set: {collaborators: this.collaborators}};
-            return this._db.update(this.getStorageId(), query, {upsert: true});
+            return this._db.update(this.getStorageId(), query);
         }
 
         getStorageId() {
@@ -330,6 +341,18 @@
 
     ProjectStorage.get = function (username, projectName) {
         return collection.findOne({owner: username, name: projectName})
+            .then(data => {
+                var params = {
+                    logger: logger,
+                    db: collection,
+                    data
+                };
+                return data ? new Project(params) : null;
+            });
+    };
+
+    ProjectStorage.getTransientProject = function (username, projectName) {
+        return collection.findOne({owner: username, name: projectName, transient: true})
             .then(data => {
                 var params = {
                     logger: logger,
@@ -415,15 +438,23 @@
         };
     };
 
-    ProjectStorage.new = function(user, activeRoom) {
-        const project = new Project({
-            logger: logger,
-            db: collection,
-            data: getDefaultProjectData(user, activeRoom),
-            room: activeRoom
-        });
+    ProjectStorage.new = function(user, room) {
+        return ProjectStorage.getTransientProject(user.username, room.name)
+            .then(project => {
+                if (project) {
+                    logger.trace(`loading transient project from database ${user.username}/${room.name}`);
+                    return project;
+                }
 
-        return project.create();
+                project = new Project({
+                    logger: logger,
+                    db: collection,
+                    data: getDefaultProjectData(user, room),
+                    room: room
+                });
+
+                return project.create();
+            });
     };
 
 })(exports);

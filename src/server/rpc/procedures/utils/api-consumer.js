@@ -185,6 +185,7 @@ class ApiConsumer {
 
         let keyVals = [];
         if (Array.isArray(input)) {
+            input = input.filter(item => item);
             for (let i = 0; i < input.length; i++) {
                 keyVals.push(this._createSnapStructure(input[i]));
             }
