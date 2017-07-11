@@ -194,7 +194,7 @@
                         owner: this.owner,
                         transient: true,
                         lastUpdatedAt: Date.now(),
-                        originTime: Date.now(),
+                        originTime: this.originTime,
                         collaborators: this.collaborators,
                         roles: roleDict
                     };
