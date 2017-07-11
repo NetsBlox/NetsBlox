@@ -101,6 +101,8 @@ var getRoomsNamed = function(name, user, owner) {
 
         if (project) {
             trace(`found project ${uuid} for ${user.username}`);
+            console.log('room originTime:', activeRoom.originTime);
+            console.log('project originTime:', project.originTime);
         } else {
             trace(`no ${uuid} project found for ${user.username}`);
         }

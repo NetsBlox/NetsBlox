@@ -13,7 +13,7 @@ var RoomManager = function() {
         var room = this;
         // update the rooms dictionary
         self._logger.trace(`moving record from ${oldUuid} to ${room.uuid}`);
-        self.rooms[room.uuid] = room;
+        self.register(room);
         delete self.rooms[oldUuid];
     };
 
@@ -54,7 +54,7 @@ RoomManager.prototype.forkRoom = function(room, socket) {
 
     // Create the new room
     newRoom = room.fork(this._logger, socket);
-    this.rooms[newRoom.uuid] = newRoom;
+    this.register(newRoom);
     socket.join(newRoom);
 };
 
@@ -62,23 +62,20 @@ RoomManager.prototype.createRoom = function(socket, name, ownerId) {
     ownerId = ownerId || socket.username;
 
     this._logger.trace(`creating room ${name} for ${ownerId}`);
-    var uuid = utils.uuid(ownerId, name);
-    if (this.rooms[uuid]) {
-        this._logger.error('room already exists! (' + uuid + ')');
-    }
+    const room = new ActiveRoom(this._logger, name, ownerId);
+    this.register(room);
 
-    this.rooms[uuid] = new ActiveRoom(this._logger, name, ownerId);
-
-    return Projects.new(socket, this.rooms[uuid])
+    return Projects.new(socket, room)
         .then(project => {
-            this.rooms[uuid].setStorage(project);
-            return this.rooms[uuid];
+            room.setStorage(project);
+            return room;
         });
 };
 
 RoomManager.prototype.getRoom = function(socket, ownerId, name) {
     const uuid = utils.uuid(ownerId, name);
     this._logger.trace(`getting project ${uuid} for ${ownerId}`);
+    // TODO: what if the room is being created?
     if (!this.rooms[uuid]) {
         this._logger.trace(`retrieving project ${uuid} for ${ownerId}`);
         return this.storage.users.get(ownerId)
@@ -86,19 +83,15 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
             .then(project => {
                 if (!project) {
                     this._logger.error(`No project found for ${uuid}`);
-                    // If no project is found, create a new project for the user
-                    return this.createRoom(socket, name, ownerId)
-                        .then(project => {
-                            this.rooms[uuid] = project;
-                            return project;
-                        });
+                    // TODO: could I do this right away?
+                    return this.createRoom(socket, name, ownerId);
                 }
 
                 this._logger.trace(`retrieving project ${uuid} from database`);
                 return ActiveRoom.fromStore(this._logger, socket, project);
             })
             .then(activeRoom => {
-                this.rooms[uuid] = activeRoom;
+                this.register(activeRoom);
                 return activeRoom;
             });
 
@@ -116,6 +109,15 @@ RoomManager.prototype.checkRoom = function(room) {
         this._logger.trace('Removing empty room: ' + uuid);
         room.close().then(() => delete this.rooms[uuid]);
     }
+};
+
+RoomManager.prototype.register = function(room) {
+    if (this.rooms[room.muuid]) {
+        // TODO: what if the uuid is already taken?
+        this._logger.error('room already exists! (' + room.uuid + ')');
+    }
+
+    this.rooms[room.uuid] = room;
 };
 
 module.exports = new RoomManager();

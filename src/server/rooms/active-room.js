@@ -428,6 +428,7 @@ ActiveRoom.fromStore = function(logger, socket, project) {
 
     // Store the project
     room.setStorage(project);
+    console.log('<<< setting room originTime to', project.originTime);
     room.originTime = project.originTime;
 
     room.uuid = project.uuid || room.uuid;  // save over the old uuid even if it changes
