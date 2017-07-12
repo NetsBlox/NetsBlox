@@ -15,7 +15,7 @@ const Logger = require(PROJECT_ROOT + '/src/server/logger');
 const Storage = require(PROJECT_ROOT + '/src/server/storage/storage');
 const mainLogger = new Logger('netsblox:test');
 const storage = new Storage(mainLogger);
-const Projects = reqSrc('storage/projects');
+const serverUtils = reqSrc('server-utils');
 
 (function() {
     var clientDir = path.join(PROJECT_ROOT, 'src', 'client', 'Snap--Build-Your-Own-Blocks'),
@@ -95,6 +95,14 @@ const createRoom = function(config) {
     return room;
 };
 
+const sendEmptyRole = function(msg) {
+    return {
+        type: 'project-response',
+        id: msg.id,
+        project: serverUtils.getEmptyRole(this.roleId)
+    };
+};
+
 const connect = function() {
     const mongoUri = 'mongodb://127.0.0.1:27017/netsblox-tests';
     if (storage.connected) {
@@ -125,6 +133,7 @@ module.exports = {
     logger: mainLogger,
     createRoom: createRoom,
     createSocket: createSocket,
+    sendEmptyRole: sendEmptyRole,
 
     reqSrc
 };

@@ -15,8 +15,12 @@ describe('active-room', function() {
         },
         room;
 
-    before(function() {
+    const Users = utils.reqSrc('storage/users');
+    const Projects = require('../../../src/server/storage/projects');
+
+    before(function(done) {
         RoomManager.init(new Logger('active-room-test'), {}, ActiveRoom);
+        utils.connect().then(() => done()).catch(done);
     });
 
     describe('sendToEveryone', function() {
@@ -264,5 +268,56 @@ describe('active-room', function() {
             assert(!room.isEditableFor('eve'));
         });
 
+    });
+
+    describe.only('updating the name', function() {
+        let room = null;
+        const OWNER = 'owner-' + Date.now();
+        const PROJECT_NAME = 'proj-' + Date.now();
+
+        before(function(done) {
+            // Create the user
+            let user = Users.new(OWNER, 'test@dummy.com');
+
+            // create a room for the given user
+            room = utils.createRoom({
+                name: PROJECT_NAME,
+                owner: OWNER,
+                roles: {
+                    p1: [OWNER],
+                    p2: ['cassie'],
+                    third: null
+                }
+            });
+
+            const owner = room.getSocketsAt('p1')[0];
+            room.sockets().forEach(socket => {
+                socket._socket.addResponse('project-request', utils.sendEmptyRole.bind(socket));
+            });
+
+            // TODO: add the associated project
+
+            Projects.new(owner, room)
+                .then(project => {
+                    room.setStorage(project);
+                    return user.save()
+                        .then(() => project.save());
+                })
+                .then(() => done())
+                .catch(done);
+        });
+
+        it.only('should no-op if changing to current name', function(done) {
+            const project = room.getProject();
+            const name = room.name;
+
+            console.log('<<<', project.name);
+            room.changeName()
+                .then(() => {
+                    assert.equal(name, room.name);
+                    done();
+                })
+                .catch(done);
+        });
     });
 });

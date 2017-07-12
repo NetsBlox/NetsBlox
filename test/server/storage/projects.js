@@ -1,16 +1,7 @@
 describe('projects', function() {
     const utils = require('../../assets/utils');
     const assert = require('assert');
-    const serverUtils = utils.reqSrc('server-utils');
     const Projects = require('../../../src/server/storage/projects');
-    const sendEmptyRole = function(msg) {
-        return {
-            type: 'project-response',
-            id: msg.id,
-            project: serverUtils.getEmptyRole(this.roleId)
-        };
-    };
-
     const OWNER = 'brian';
     const PROJECT_NAME = 'test-projects-' + Date.now();
     const getRoom = function() {
@@ -28,7 +19,7 @@ describe('projects', function() {
 
         //  Add response capabilities
         room.sockets().forEach(socket => {
-            socket._socket.addResponse('project-request', sendEmptyRole.bind(socket));
+            socket._socket.addResponse('project-request', utils.sendEmptyRole.bind(socket));
         });
 
         return Projects.new(owner, room)
