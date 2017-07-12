@@ -59,7 +59,7 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance) {
             rpcUtils.encodeQueryData({
                 latitude: latitude,
                 longitude: longitude,
-                distance: distance
+                distance: distance === '' ? distance : 1000
             })
     };
     let parser = data => {
