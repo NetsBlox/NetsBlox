@@ -40,12 +40,27 @@ let detailParser = item => {
     };
 };
 
-thingspeakIoT.searchPublicChannel = function(tagString) {
+thingspeakIoT.searchByTag = function(tag) {
     let queryOptions = {
-        queryString: tagString !== '' ? 'public.json?' +
+        queryString: tag !== '' ? 'public.json?' +
             rpcUtils.encodeQueryData({
-                tag: encodeURIComponent(tagString),
+                tag: encodeURIComponent(tag),
             }) : 'public.json',
+    };
+    let parser = data => {
+        return data.channels.map(detailParser);
+    };
+    return this._sendStruct(queryOptions, parser);
+};
+
+thingspeakIoT.searchByLocation = function(latitude, longitude, distance) {
+    let queryOptions = {
+        queryString: 'public.json?' +
+            rpcUtils.encodeQueryData({
+                latitude: latitude,
+                longitude: longitude,
+                distance: distance
+            })
     };
     let parser = data => {
         return data.channels.map(detailParser);
