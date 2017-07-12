@@ -12,7 +12,7 @@ describe('projects', function() {
     };
 
     const OWNER = 'brian';
-    const PROJECT_NAME = 'test-projects';
+    const PROJECT_NAME = 'test-projects-' + Date.now();
     const getRoom = function() {
         // Get the room and attach a project
         const room = utils.createRoom({
@@ -124,6 +124,16 @@ describe('projects', function() {
         .catch(done);
     });
 
+    it('should remove the project from db on destroy', function(done) {
+        project.destroy()
+            .then(() => Projects.get(OWNER, PROJECT_NAME))
+            .then(data => {
+                assert(!data);
+                done();
+            })
+            .catch(done);
+    });
+
     it('should create copy if name changed after persist', function(done) {
         project.persist()
             .then(() => project.addCollaborator('spartacus'))
@@ -134,6 +144,19 @@ describe('projects', function() {
             .then(() => project.getRawProject())
             .then(data => {
                 assert(data.collaborators.includes('spartacus'));
+                return Projects.get(OWNER, PROJECT_NAME);
+            })
+            .then(original => original.destroy())
+            .then(() => {
+                done();
+            })
+            .catch(done);
+    });
+
+    it('should have the correct origin time', function(done) {
+        project.getRawProject()
+            .then(data => {
+                assert.equal(data.originTime, project.originTime);
                 done();
             })
             .catch(done);
