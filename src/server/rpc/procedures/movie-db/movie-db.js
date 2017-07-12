@@ -7,15 +7,7 @@ if(!process.env.TMDB_API_KEY) {
 } else {
 
     var mdb = require('moviedb')(process.env['TMDB_API_KEY']),
-        debug = require('debug'),
-        request = require('request'),
-        ApiConsumer = require('../utils/api-consumer'),
-        sendImageBuffer = require('../utils/').sendImageBuffer,
-        CacheManager = require('cache-manager'),
-        cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity}),
-        info = debug('netsblox:rpc:movie-db:info'),
-        trace = debug('netsblox:rpc:movie-db:trace');
-
+        ApiConsumer = require('../utils/api-consumer');
 
     // Retrieving static images
     var baseUrl = 'https://image.tmdb.org/t/p/w500';
