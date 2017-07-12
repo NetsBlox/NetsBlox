@@ -79,22 +79,6 @@ const createSocket = function(username) {
     return socket;
 };
 
-const createRoom = function(config) {
-    const room = new ActiveRoom(logger, config.name, config.owner);
-
-    Object.keys(config.roles).forEach(name => {
-        config.roles[name] = config.roles[name] || [];
-        room.silentCreateRole(name);
-        config.roles[name].forEach(username => {
-            const socket = createSocket(username);
-
-            room.silentAdd(socket, name);
-        });
-    });
-
-    return room;
-};
-
 const connect = function() {
     const mongoUri = 'mongodb://127.0.0.1:27017/netsblox-tests';
     if (storage.connected) {
@@ -102,6 +86,42 @@ const connect = function() {
     } else {
         return storage.connect(mongoUri);
     }
+};
+
+const createRoom = function(config) {
+    const serverUtils = reqSrc('server-utils');
+    const sendEmptyRole = function(msg) {
+        return {
+            type: 'project-response',
+            id: msg.id,
+            project: serverUtils.getEmptyRole(this.roleId)
+        };
+    };
+    // Get the room and attach a project
+    const room = new ActiveRoom(logger, config.name, config.owner);
+    
+    Object.keys(config.roles).forEach(name => {
+        config.roles[name] = config.roles[name] || [];
+        room.silentCreateRole(name);
+        config.roles[name].forEach(username => {
+            const socket = createSocket(username);
+            
+            room.silentAdd(socket, name);
+        });
+    });
+
+    const owner = room.getOwnerSockets()[0];
+    
+    //  Add response capabilities
+    room.sockets().forEach(socket => {
+        socket._socket.addResponse('project-request', sendEmptyRole.bind(socket));
+    });
+    
+    return Projects.new(owner, room)
+    .then(project => {
+        room.setStorage(project);
+        return room;
+    });
 };
 
 module.exports = {
@@ -125,6 +145,5 @@ module.exports = {
     logger: mainLogger,
     createRoom: createRoom,
     createSocket: createSocket,
-
     reqSrc
 };
