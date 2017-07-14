@@ -179,7 +179,7 @@ class ActiveRoom {
 
     setOwner(owner) {
         this.owner = owner;
-        this.changeName();
+        return this.changeName();
     }
 
     changeName(name) {
