@@ -7,7 +7,6 @@ var debug = require('debug'),
     trace = debug('netsblox:rpc:weather:trace'),
     tuc = require('temp-units-conv'),
     ApiConsumer = require('../utils/api-consumer'),
-    _ = require('lodash'),
     API_KEY = process.env.OPEN_WEATHER_MAP_KEY,
     MAX_DISTANCE = +process.env.WEATHER_MAX_DISTANCE || Infinity,  // miles
     geolib = require('geolib');
@@ -22,7 +21,7 @@ var isWithinMaxDistance = function(result, lat, lng) {
     distance *= 0.000621371;
     trace(`closest measurement is ${distance} miles from request`);
     if (distance > MAX_DISTANCE) {
-        error(`Nomeasurement within ${MAX_DISTANCE} miles of ${lat}, ${lng}`);
+        error(`No measurement within ${MAX_DISTANCE} miles of ${lat}, ${lng}`);
     }
     return distance < MAX_DISTANCE;
 };
@@ -104,32 +103,31 @@ weather.icon = function(latitude, longitude){
 };
 
 
-const compatibility = {
-    COMPATIBILITY: {
-        windAngle: {
-            latitude: 'lat',
-            longitude: 'lng'
-        },
-        windSpeed: {
-            latitude: 'lat',
-            longitude: 'lng'
-        },
-        temp: {
-            latitude: 'lat',
-            longitude: 'lng'
-        },
-        humidity: {
-            latitude: 'lat',
-            longitude: 'lng'
-        },
-        description: {
-            latitude: 'lat',
-            longitude: 'lng'
-        },
-        icon: {
-            latitude: 'lat',
-            longitude: 'lng'
-        }
+weather.COMPATIBILITY =  {
+    windAngle: {
+        latitude: 'lat',
+        longitude: 'lng'
+    },
+    windSpeed: {
+        latitude: 'lat',
+        longitude: 'lng'
+    },
+    temp: {
+        latitude: 'lat',
+        longitude: 'lng'
+    },
+    humidity: {
+        latitude: 'lat',
+        longitude: 'lng'
+    },
+    description: {
+        latitude: 'lat',
+        longitude: 'lng'
+    },
+    icon: {
+        latitude: 'lat',
+        longitude: 'lng'
     }
 };
-module.exports = _.merge(weather, compatibility);
+
+module.exports = weather;
