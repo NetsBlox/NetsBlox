@@ -12,9 +12,6 @@ var debug = require('debug'),
     MAX_DISTANCE = +process.env.WEATHER_MAX_DISTANCE || Infinity,  // miles
     geolib = require('geolib');
 
-const baseUrl = 'http://api.openweathermap.org/data/2.5/weather?APPID='+API_KEY,
-    baseIconUrl = 'http://openweathermap.org/img/w/';
-
 let weather = new ApiConsumer('Weather', 'http://api.openweathermap.org/data/2.5/weather?APPID='+API_KEY, {cache: {ttl: 60}});
 
 var isWithinMaxDistance = function(result, lat, lng) {
@@ -25,7 +22,7 @@ var isWithinMaxDistance = function(result, lat, lng) {
     distance *= 0.000621371;
     trace(`closest measurement is ${distance} miles from request`);
     if (distance > MAX_DISTANCE) {
-        error(`No temperature within ${MAX_DISTANCE} miles of ${lat}, ${lng}`);
+        error(`Nomeasurement within ${MAX_DISTANCE} miles of ${lat}, ${lng}`);
     }
     return distance < MAX_DISTANCE;
 };
@@ -101,7 +98,7 @@ weather.icon = function(latitude, longitude){
                 queryString: iconName,
                 baseUrl: 'http://openweathermap.org/img/w/',
                 cache: false
-            }
+            };
             return this._sendImage(queryOpts);
         });
 };
