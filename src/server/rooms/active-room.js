@@ -187,6 +187,7 @@ class ActiveRoom {
         // Check if this project is already saved for the owner.
         //   - If so, keep the same name
         //   - Else, request a new name
+        name = name || this.name;
         return this.getOwner()
             .then(_owner => {
                 owner = _owner;
@@ -196,14 +197,14 @@ class ActiveRoom {
                 return [];
             })
             .then(projects => {
-                const existing = projects.find(project => project.name === this.name);
+                const existing = projects.find(project => project.name === name);
                 if (existing && existing.originTime !== this.originTime) {
                     // make sure name is also unique to the existing rooms...
                     let activeRoomNames = this.getAllActiveFor(this.owner);
                     this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
-                    return owner.getNewName(this.name, activeRoomNames);
+                    return owner.getNewName(name, activeRoomNames);
                 }
-                return this.name;
+                return name;
             })
             .then(name => {
                 this.update(name);
