@@ -15,8 +15,12 @@ describe('active-room', function() {
         },
         room;
 
-    before(function() {
+    const Users = utils.reqSrc('storage/users');
+    const Projects = require('../../../src/server/storage/projects');
+
+    before(function(done) {
         RoomManager.init(new Logger('active-room-test'), {}, ActiveRoom);
+        utils.connect().then(() => done()).catch(done);
     });
 
     describe('sendToEveryone', function() {
@@ -264,5 +268,83 @@ describe('active-room', function() {
             assert(!room.isEditableFor('eve'));
         });
 
+    });
+
+    describe('updating the name', function() {
+        let room = null;
+        const OWNER = 'owner-' + Date.now();
+        const PROJECT_NAME = 'proj-' + Date.now();
+
+        before(function(done) {
+            // Create the user
+            let user = Users.new(OWNER, 'test@dummy.com');
+
+            // create a room for the given user
+            room = utils.createRoom({
+                name: PROJECT_NAME,
+                owner: OWNER,
+                roles: {
+                    p1: [OWNER],
+                    p2: ['cassie'],
+                    third: null
+                }
+            });
+
+            const owner = room.getSocketsAt('p1')[0];
+            room.sockets().forEach(socket => {
+                socket._socket.addResponse('project-request', utils.sendEmptyRole.bind(socket));
+            });
+
+            Projects.new(owner, room)
+                .then(project => {
+                    room.setStorage(project);
+                    return user.save()
+                        .then(() => project.create());
+                })
+                .then(() => done())
+                .catch(done);
+        });
+
+        it('should no-op if no collisions exist', function(done) {
+            const name = room.name;
+
+            room.changeName()
+                .then(() => {
+                    assert.equal(name, room.name);
+                    done();
+                })
+                .catch(done);
+        });
+
+        it('should append number to name if colliding with existing', function(done) {
+            // Create a room (no user)
+            let room = utils.createRoom({
+                name: PROJECT_NAME,
+                owner: '_netsblox_' + Date.now(),
+                roles: {
+                    p1: [OWNER],
+                    p2: ['cassie'],
+                    third: null
+                }
+            });
+
+            const owner = room.getSocketsAt('p1')[0];
+            room.sockets().forEach(socket => {
+                socket._socket.addResponse('project-request', utils.sendEmptyRole.bind(socket));
+            });
+
+            Projects.new(owner, room)
+                .then(project => {
+                    room.setStorage(project);
+                    return project.create();
+                })
+                // set the owner
+                .then(() => room.setOwner(OWNER))
+                .then(() => {
+                    assert.notEqual(room.name, PROJECT_NAME);
+                    done();
+                })
+                .catch(done);
+        });
     });
 });

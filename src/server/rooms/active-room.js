@@ -179,21 +179,36 @@ class ActiveRoom {
 
     setOwner(owner) {
         this.owner = owner;
-        this.changeName();
+        return this.changeName();
     }
 
     changeName(name) {
-        var promise = Q(name);
+        let promise = Q(name);
         if (!name) {
-            // make sure name is also unique to the existing rooms...
-            let activeRoomNames = this.getAllActiveFor(this.owner);
-            this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
-
-            // Get name unique to the owner
+            let owner = null;
+            // Check if this project is already saved for the owner.
+            //   - If so, keep the same name
+            //   - Else, request a new name
             promise = this.getOwner()
-                .then(owner => owner ?
-                    owner.getNewName(this.name, activeRoomNames) : this.name);
+                .then(_owner => {
+                    owner = _owner;
+                    if (owner) {
+                        return owner.getAllRawProjects();
+                    }
+                    return [];
+                })
+                .then(projects => {
+                    const existing = projects.find(project => project.name === this.name);
+                    if (existing && existing.originTime !== this.originTime) {
+                        // make sure name is also unique to the existing rooms...
+                        let activeRoomNames = this.getAllActiveFor(this.owner);
+                        this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
+                        return owner.getNewName(this.name, activeRoomNames);
+                    }
+                    return this.name;
+                });
         }
+
         return promise.then(name => {
             this.update(name);
             return name;
