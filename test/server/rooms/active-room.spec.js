@@ -316,6 +316,17 @@ describe('active-room', function() {
                 .catch(done);
         });
 
+        it('should set the room name to provided value', function(done) {
+            const name = `new name ${Date.now()}`;
+
+            room.changeName(name)
+                .then(() => {
+                    assert.equal(name, room.name);
+                    done();
+                })
+                .catch(done);
+        });
+
         it('should append number to name if colliding with existing', function(done) {
             // Create a room (no user)
             let room = utils.createRoom({
