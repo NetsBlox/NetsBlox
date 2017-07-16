@@ -133,18 +133,6 @@ var sendProjectTo = function(project, res) {
         .catch(err => res.status(500).send('ERROR: ' + err));
 };
 
-var createCopyFrom = function(user, project) {
-    var copy = _.cloneDeep(project);
-
-    // Create copy from the project and rename it
-    return user.getNewName(copy.name)
-        .then(name => {
-            copy.name = name;
-            copy.Public = false;
-            return copy;
-        });
-};
-
 var saveRoom = function (activeRoom, socket, user, res) {
     log(`saving entire room for ${socket.username}`);
     const getProject = Q(activeRoom.getProject()) || Projects.new(user, activeRoom);
@@ -438,7 +426,7 @@ module.exports = [
                         // Clone, change the room name, and send!
                         // Since they are the same, we assume the user wants to create
                         // a copy of the active room
-                        return createCopyFrom(user, rooms.stored)
+                        return rooms.stored.getCopy(user)
                             .then(copy => sendProjectTo(copy, res));
                     } else {
                         // not the same; simply change the name of the active room

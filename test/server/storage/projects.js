@@ -152,4 +152,36 @@ describe('projects', function() {
             })
             .catch(done);
     });
+
+    describe('deletion', function() {
+        beforeEach(function(done) {
+            getRoom().then(room => {
+                project = room.getProject();
+                project.destroy().then(() => done());
+            })
+            .catch(done);
+        });
+
+        [
+            'save',
+            'persist',
+            'setPublic',
+
+            'setRawRole',
+            'setRoles',
+            'removeRole',
+            'renameRole',
+
+            'addCollaborator'
+        ].forEach(action => {
+            it(`should stop ${action} if deleted`, function(done) {
+                project[action]()
+                    .then(() => done(`${action} completed...`))
+                    .catch(err => {
+                        assert(err.includes('project has been deleted'));
+                        done();
+                    });
+            });
+        });
+    });
 });
