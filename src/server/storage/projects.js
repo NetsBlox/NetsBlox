@@ -137,12 +137,36 @@
                 .then(roles => Q.all(roles.map(loadRoleContent)));
         }
 
+        getCopy(user) {
+            const owner = user.username;
+            return this.getRawProject()
+                .then(raw => {
+
+                    return user.getNewName(raw.name)
+                        .then(name => {
+                            raw.originTime = Date.now();
+                            raw.name = name;
+                            raw.owner = owner;
+                            raw.collaborators = [];
+                            raw.transient = true;
+
+                            const project = new Project({
+                                logger: this._logger,
+                                db: this._db,
+                                data: raw
+                            });
+                            return project.create(raw.roles);
+                        });
+                });
+        }
+
         cloneRole(role, newName) {
             return this.getRawRole(role)
                 .then(content => this.setRawRole(newName, content));
         }
 
         removeRole(role) {
+            if (this.isDeleted()) return Promise.reject(`project has been deleted!`);
             var query = {$unset: {}};
             query.$unset[`roles.${role}`] = '';
             this._logger.trace(`removing role: ${role}`);
@@ -190,10 +214,10 @@
         }
 
 
-        create() {  // initial save
+        create(roleDict) {  // initial save
             return this.collectSaveableRoles()
                 .then(roles => {
-                    const roleDict = {};
+                    roleDict = roleDict || {};
                     const data = {
                         name: this.name,
                         owner: this.owner,
