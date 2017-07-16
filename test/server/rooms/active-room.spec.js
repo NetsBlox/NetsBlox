@@ -319,6 +319,9 @@ describe('active-room', function() {
         it('should no-op if no collisions exist (explicit)', function(done) {
             const name = room.name;
 
+            // Add to room manager
+            // TODO
+
             room.changeName(name)
                 .then(() => {
                     assert.equal(name, room.name);
