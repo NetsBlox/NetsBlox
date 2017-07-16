@@ -316,6 +316,17 @@ describe('active-room', function() {
                 .catch(done);
         });
 
+        it('should no-op if no collisions exist (explicit)', function(done) {
+            const name = room.name;
+
+            room.changeName(name)
+                .then(() => {
+                    assert.equal(name, room.name);
+                    done();
+                })
+                .catch(done);
+        });
+
         it('should set the room name to provided value', function(done) {
             const name = `new name ${Date.now()}`;
 
