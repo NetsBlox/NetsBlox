@@ -298,7 +298,7 @@ NetCloud.prototype.socketId = function () {
 };
 
 // Override
-NetCloud.prototype.saveProject = function (ide, callBack, errorCall, overwrite) {
+NetCloud.prototype.saveProject = function (ide, callBack, errorCall, overwrite, name) {
     var myself = this;
     myself.reconnect(
         function () {
@@ -310,7 +310,8 @@ NetCloud.prototype.saveProject = function (ide, callBack, errorCall, overwrite) 
                 errorCall,
                 [
                     myself.socketId(),
-                    overwrite === true
+                    overwrite === true,
+                    name || ide.room.name
                 ]
             );
         },
