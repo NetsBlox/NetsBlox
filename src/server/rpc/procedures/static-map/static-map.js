@@ -1,44 +1,16 @@
-// This is an RPC to provide access to Google maps and map utilities
-//
-// For end-user convenience, it is stateful and remembers the map lat,lng and
-// size of the image for each user in the given group
-'use strict';
-
-var debug = require('debug'),
-    log = debug('netsblox:rpc:static-map:log'),
-    trace = debug('netsblox:rpc:static-map:trace'),
-    request = require('request'),
-    MercatorProjection = require('./mercator-projection'),
-    CacheManager = require('cache-manager'),
-    Storage = require('../../storage'),
-    // TODO: Change this cache to mongo or something (file?)
-    // This cache is shared among all StaticMap instances
-    cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity}),
+const ApiConsumer = require('../utils/api-consumer'),
+    SphericalMercator = require('sphericalmercator'),
+    Q = require('q'),
+    merc = new SphericalMercator({size:256}),
     key = process.env.GOOGLE_MAPS_KEY;
 
-// TODO: check that the env variable is defined
-var mercator = new MercatorProjection(),
-    storage;
+// TODO cleanup long lon lng longitude
 
-// Retrieving a static map image
-var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap',
-    getStorage = function() {
-        if (!storage) {
-            storage = Storage.create('static-map');
-        }
-        return storage;
-    };
+let GoogleMap = new ApiConsumer('staticmap', 'https://maps.googleapis.com/maps/api/staticmap?');
 
-var StaticMap = function(roomId) {
-    this.roomId = roomId;
-    this.userMaps = {};  // Store the state of the map for each user
-};
+GoogleMap._userMaps = {};
 
-StaticMap.getPath = function() {
-    return '/staticmap';
-};
-
-StaticMap.prototype._getGoogleParams = function(options) {
+GoogleMap._getGoogleParams = function(options) {
     // Create the params for Google
     var params = [];
     // Double the scale if the image is too large (half the dimensions)
@@ -55,52 +27,87 @@ StaticMap.prototype._getGoogleParams = function(options) {
     return params.join('&');
 };
 
-StaticMap.prototype._getMapInfo = function(roleId) {
-    return getStorage().get(this.roomId)
-        .then(maps => {
-            trace(`getting map for ${roleId}: ${JSON.stringify(maps)}`);
-            return maps[roleId];
-        });
+// returns coordinates based on a given pixelchange and existing map
+GoogleMap._coordsAt = function(x, y, map) {
+    this._logger.trace('getting lat, lon for ', x, y);
+    let centerLl = [map.center.lng, map.center.lat]
+    let centerPx = merc.px(centerLl, map.zoom);
+    let targetPx = [centerPx[0] + parseInt(x), centerPx[1] - parseInt(y)]
+    let targetLl = merc.ll(targetPx, map.zoom); // long lat
+    let coords = {lat: targetLl[1], lon: targetLl[0]};
+    this._logger.info('Target lat,long is:', coords);
+    return coords;
 };
 
-StaticMap.prototype._recordUserMap = function(socket, options) {
+GoogleMap._pixelsAt = function(lat, lon, map) {
+    this._logger.trace('getting (x,y) for ', lat, lon);
+    // current latlon in px
+    let curPx = merc.px([map.center.lng, map.center.lat], map.zoom);
+    // new latlon in px
+    let targetPx = merc.px([lon, lat], map.zoom);
+    // difference in px
+    let pixelsXY = {x: targetPx[0] - curPx[0], y: targetPx[1] - curPx[1]};
+    this._logger.info('Target x,y is:', pixelsXY);
+    return pixelsXY;
+};
+
+GoogleMap._getMapInfo = function(roleId) {
+    // TODO no need to pass in the roleId just use this.socket.roleId
+    let deferred = Q.defer();
+    console.log('roleId', roleId);
+    console.log('usermap', this._userMaps);
+    try {
+        let map = this._userMaps[this.socket._room.uuid][roleId];
+        console.log('the map', map);
+        // TODO If there is no map, it shouldn't be resolved
+        if (!map) {
+            this._logger.log('Map requested before creation from ' + this.socket.roleId);
+            deferred.reject('No user map found for', roleId);
+        } else {
+            this._logger.trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
+            deferred.resolve(map);
+        }
+    } catch (e) {
+        deferred.reject('No user map found for', roleId);
+    }
+    return deferred.promise;
+};
+
+GoogleMap._recordUserMap = function(socket, options) {
     // Store the user's new map settings
     var center = {
-            lat: options.lat,
-            lng: options.lon
+        lat: options.lat,
+        lng: options.lon
+    };
+    // get the corners of the image. We need to actully get both they are NOT "just opposite" of eachother.
+    let northEastCornerCoords = this._coordsAt(options.width/2, options.height/2 , {center, zoom:options.zoom});
+    let southWestCornerCoords = this._coordsAt(-options.width/2, -options.height/2 , {center, zoom:options.zoom});
+    let map = {
+        zoom: options.zoom,
+        center: center,
+        min: {
+            lat: southWestCornerCoords.lat,
+            lng: southWestCornerCoords.lon
         },
-        lngs = mercator.getLongitudes(center, options.zoom, options.width, options.height),
-        lats = mercator.getLatitudes(center, options.zoom, options.width, options.height),
-        map = {
-            zoom: options.zoom,
-            center: center,
-            min: {
-                lat: lats[0],
-                lng: lngs[0]
-            },
-            max: {
-                lat: lats[1],
-                lng: lngs[1]
-            },
-            // Image info
-            height: options.height,
-            width: options.width
-        };
-
-    return getStorage().get(this.roomId)
-        .then(maps => {
-            maps = maps || {};
-            maps[socket.roleId] = map;
-            getStorage().save(this.roomId, maps);
-        })
-        .then(() => trace(`Stored map for ${socket.roleId}: ${JSON.stringify(map)}`));
+        max: {
+            lat: northEastCornerCoords.lat,
+            lng: northEastCornerCoords.lon
+        },
+        // Image info
+        height: options.height,
+        width: options.width
+    };
+    let roomId = socket._room.uuid;
+    this._userMaps[roomId] = this._userMaps[roomId] || {};
+    this._userMaps[roomId][socket.roleId] = map;
+    console.log('usermap', this._userMaps);
+    return Promise.resolve();
 };
 
 
 
-StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom, mapType) {
-    var response = this.response,
-        options = {
+GoogleMap._getMap = function(latitude, longitude, width, height, zoom, mapType) {
+    var options = {
             lat: latitude,
             lon: longitude,
             width: width,
@@ -108,193 +115,87 @@ StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom,
             zoom: zoom,
             mapType: mapType || 'roadmap'
         },
-        params = this._getGoogleParams(options),
-        url = baseUrl+'?'+params;
+        params = this._getGoogleParams(options);
 
-    // Check the cache
-    this._recordUserMap(this.socket, options).then(() => {
-
-        cache.wrap(url, cacheCallback => {
-            // Get the image -> not in cache!
-            trace('request params:', options);
-            trace('url is '+url);
-            trace('Requesting new image from google!');
-            var mapResponse = request.get(url);
-            delete mapResponse.headers['cache-control'];
-
-            // Gather the data...
-            var result = new Buffer(0);
-            mapResponse.on('data', function(data) {
-                result = Buffer.concat([result, data]);
-            });
-            mapResponse.on('end', function() {
-                return cacheCallback(null, result);
-            });
-        }, (err, imageBuffer) => {
-            // Send the response to the user
-            trace('Sending the response!');
-            // Set the headers
-            response.set('cache-control', 'private, no-store, max-age=0');
-            response.set('content-type', 'image/png');
-            response.set('content-length', imageBuffer.length);
-            response.set('connection', 'close');
-
-            response.status(200).send(imageBuffer);
-            trace('Sent the response!');
-        });
-
+    return this._recordUserMap(this.socket, options).then(() => {
+        return this._sendImage({queryString: params});
     });
 };
 
-StaticMap.prototype.getMap = function(latitude, longitude, width, height, zoom){
-
-    // this._getMap.bind(this, latitude, longitude, width, height, zoom);
-    this._getMap(latitude, longitude, width, height, zoom, 'roadmap');
-
-    return null;
+GoogleMap.getMap = function(latitude, longitude, width, height, zoom){
+    return this._getMap(latitude, longitude, width, height, zoom, 'roadmap');
 };
 
-StaticMap.prototype.getSatelliteMap = function(latitude, longitude, width, height, zoom){
-
-    this._getMap(latitude, longitude, width, height, zoom, 'satellite');
-
-    return null;
+GoogleMap.getSatelliteMap = function(latitude, longitude, width, height, zoom){
+    return this._getMap(latitude, longitude, width, height, zoom, 'satellite');
 };
 
 
-StaticMap.prototype.getTerrainMap = function(latitude, longitude, width, height, zoom){
-
-    this._getMap(latitude, longitude, width, height, zoom, 'terrain');
-
-    return null;
+GoogleMap.getTerrainMap = function(latitude, longitude, width, height, zoom){
+    return this._getMap(latitude, longitude, width, height, zoom, 'terrain');
 };
 
-StaticMap.prototype.getLongitude = function(x) {
-    // Need lat, lng, width, zoom and x
-    return this._getUserMap().then(map => {
-        var center = map.center,
-            zoom = map.zoom,
-            width = map.width,
-            lngs = map ? [map.min.lng, map.max.lng] :
-                mercator.getLongitudes(center, zoom, width, 1),
-            lngWidth,
-            myLng;
 
-        x = +x + (width/2);  // translate x from center to edge
-        if (!map) {
-            log('Map requested before creation from ' + this.socket.roleId);
-        } else {
-            trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
-        }
-
-        // Just approximate here
-        trace('Longitudes are', lngs);
-        // FIXME: Fix the "roll over"
-        lngWidth = Math.abs(lngs[1] - lngs[0]);
-        trace('width:', lngWidth);
-        myLng = lngs[0] + (x/width)*lngWidth;
-        trace('longitude:', myLng);
-        return myLng;  // This may need to be made a little more accurate...
+GoogleMap.getLatLong = function(x, y) {
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let coords = this._coordsAt(x,y, mapInfo);
+        return [coords.lat, coords.lon];
     });
 };
 
-StaticMap.prototype.getLatitude = function(y) {
-    // Need lat, lng, height, zoom and x
-    return this._getUserMap().then(map => {
-        var center = map.center,
-            zoom = map.zoom,
-            height = map.height,
-            lats = map ? [map.min.lat, map.max.lat] :
-                mercator.getLatitudes(center, zoom, 1, height),
-            latWidth,
-            myLat;
 
-        y = +y + (height/2);  // translate y from center to edge
-        if (!map) {
-            log('Map requested before creation from ' + this.socket.roleId);
-        } else {
-            trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
-        }
-
-        // Just approximate here
-        trace('y is:', y);
-        trace('Latitude window is', lats);
-        latWidth = Math.abs(lats[1] - lats[0]);
-        trace('window width is', latWidth);
-        myLat = lats[0] + (y/height)*latWidth;
-        trace('latitude:', myLat);
-        return myLat;  // This may need to be made a little more accurate...
+GoogleMap.getXY = function(latitude, longitude) {
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let pixels = this._pixelsAt(latitude,longitude, mapInfo);
+        return [pixels.x, pixels.y];
     });
 };
 
-StaticMap.prototype.getXFromLongitude = function(longitude) {
-    var lng,
-        proportion,
-        x;
-
-    return this._getUserMap().then(map => {
-        lng = +longitude;
-        proportion = (lng - map.min.lng)/(map.max.lng - map.min.lng);
-        x = proportion*map.width - (map.width/2);  // Translate y to account for 0 in center
-
-        trace('x value is ' + x);
-        return x;
+//
+GoogleMap.getXFromLongitude = function(longitude) {
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let pixels = this._pixelsAt(latitude,longitude, mapInfo);
+        return pixels.x;
+    });
+};
+//
+GoogleMap.getYFromLatitude = function(latitude) {
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let pixels = this._pixelsAt(latitude,0, mapInfo);
+        return pixels.y;
     });
 };
 
-StaticMap.prototype.getYFromLatitude = function(latitude) {
-    var lat,
-        proportion,
-        y;
-
-    return this._getUserMap().then(map => {
-        lat = +latitude;
-        proportion = (lat - map.min.lat)/(map.max.lat - map.min.lat);
-        y = proportion*map.height - (map.height/2);  // Translate y to account for 0 in center
-
-        trace('y value is ' + y);
-        return y;
+GoogleMap.getLongitude = function(x){
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let coords = this._coordsAt(x,y, mapInfo);
+        return coords.lon;
     });
 };
 
-// Getting current map settings
-StaticMap.prototype._getUserMap = function() {
-    var response = this.response;
-
-    return this._getMapInfo(this.socket.roleId).then(map => {
-        if (!map) {
-            response.send('ERROR: No map found. Please request a map and try again.');
-            return null;
-        }
-        return map;
+GoogleMap.getLatitude = function(y){
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let coords = this._coordsAt(x,y, mapInfo);
+        return coords.lat;
     });
 };
 
 var mapGetter = function(minMax, attr) {
     return function() {
-        var response = this.response;
-
-        this._getMapInfo(this.socket.roleId).then(map => {
-
-            if (!map) {
-                response.send('ERROR: No map found. Please request a map and try again.');
-            } else {
-                response.json(map[minMax][attr]);
-            }
-
+        return this._getMapInfo(this.socket.roleId).then(map => {
+            return (map[minMax][attr]);
         });
-
-        return null;
     };
 };
 
-StaticMap.prototype.maxLongitude = mapGetter('max', 'lng');
-StaticMap.prototype.maxLatitude = mapGetter('max', 'lat');
-StaticMap.prototype.minLongitude = mapGetter('min', 'lng');
-StaticMap.prototype.minLatitude = mapGetter('min', 'lat');
+GoogleMap.maxLongitude = mapGetter('max', 'lng');
+GoogleMap.maxLatitude = mapGetter('max', 'lat');
+GoogleMap.minLongitude = mapGetter('min', 'lng');
+GoogleMap.minLatitude = mapGetter('min', 'lat');
+
 
 // Map of argument name to old field name
-StaticMap.COMPATIBILITY = {
+GoogleMap.COMPATIBILITY = {
     getMap: {
         latitude: 'lat',
         longitude: 'lon'
@@ -307,4 +208,4 @@ StaticMap.COMPATIBILITY = {
     }
 };
 
-module.exports = StaticMap;
+module.exports = GoogleMap;
