@@ -103,13 +103,20 @@ const sendEmptyRole = function(msg) {
     };
 };
 
+let connection = null;
 const connect = function() {
     const mongoUri = 'mongodb://127.0.0.1:27017/netsblox-tests';
-    if (storage.connected) {
-        return Q(storage._db);
-    } else {
-        return storage.connect(mongoUri);
+    if (!connection) {
+        connection = storage.connect(mongoUri);
     }
+    return connection;
+};
+
+const reset = function() {
+    return connect()
+        .then(db => db.collection('projects').drop())
+        .catch(() => mainLogger.trace())
+        .then(() => storage._db);
 };
 
 module.exports = {
@@ -130,6 +137,7 @@ module.exports = {
     canLoadXml: canLoadXml,
 
     connect: connect,
+    reset: reset,
     logger: mainLogger,
     createRoom: createRoom,
     createSocket: createSocket,

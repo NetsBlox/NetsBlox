@@ -323,6 +323,14 @@
             return this._db.update(this.getStorageId(), query);
         }
 
+        setName(name) {
+            if (this.isDeleted()) return Promise.reject('project has been deleted!');
+            const query = {$set: {name: name}};
+            this._logger.trace(`renaming project ${this.name}=>${name} for ${this.owner}`);
+            return this._db.update(this.getStorageId(), query)
+                .then(() => this.name = name);
+        }
+
         addCollaborator(username) {
             if (this.collaborators.includes(username)) return Q();
             this.collaborators.push(username);

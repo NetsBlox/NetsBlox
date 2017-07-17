@@ -353,7 +353,11 @@ RoomMorph.prototype.editRoomName = function () {
     var myself = this;
     this.ide.prompt('New Room Name', function (name) {
         if (name) {
-            myself.name = name;
+            myself.ide.sockets.sendMessage({
+                type: 'rename-room',
+                name: name,
+                inPlace: true
+            });
         }
     }, null, 'editRoomName');
 };

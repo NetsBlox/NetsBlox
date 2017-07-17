@@ -182,7 +182,7 @@ class ActiveRoom {
         return this.changeName();
     }
 
-    changeName(name, force) {
+    changeName(name, force, inPlace) {
         let owner = null;
         // Check if this project is already saved for the owner.
         //   - If so, keep the same name
@@ -207,7 +207,16 @@ class ActiveRoom {
                 }
                 return name;
             })
-            .then(name => this.update(name).then(() => name));
+            .then(name => {
+                const project = this.getProject();
+                if (inPlace && project) {
+                    this.name = name;
+                    return project.setName(name)
+                        .then(() => this.update(name));
+                } else {
+                    return this.update(name).then(() => name);
+                }
+            });
     }
 
     save() {
