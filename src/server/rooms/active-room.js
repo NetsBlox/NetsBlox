@@ -207,10 +207,7 @@ class ActiveRoom {
                 }
                 return name;
             })
-            .then(name => {
-                this.update(name);
-                return name;
-            });
+            .then(name => this.update(name).then(() => name));
     }
 
     save() {
@@ -275,8 +272,9 @@ class ActiveRoom {
             this.onUuidChange(oldUuid);
         }
         if (name) {
-            this.onRolesChanged();
+            return this.onRolesChanged();
         }
+        return Q();
     }
 
     /////////// Role Operations ///////////
