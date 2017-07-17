@@ -4,8 +4,6 @@ const ApiConsumer = require('../utils/api-consumer'),
     merc = new SphericalMercator({size:256}),
     key = process.env.GOOGLE_MAPS_KEY;
 
-// TODO cleanup long lon lng longitude
-
 let GoogleMap = new ApiConsumer('staticmap', 'https://maps.googleapis.com/maps/api/staticmap?');
 
 GoogleMap._userMaps = {};
@@ -29,37 +27,29 @@ GoogleMap._getGoogleParams = function(options) {
 
 // returns coordinates based on a given pixelchange and existing map
 GoogleMap._coordsAt = function(x, y, map) {
-    this._logger.trace('getting lat, lon for ', x, y);
-    let centerLl = [map.center.lng, map.center.lat]
+    let centerLl = [map.center.lon, map.center.lat];
     let centerPx = merc.px(centerLl, map.zoom);
-    let targetPx = [centerPx[0] + parseInt(x), centerPx[1] - parseInt(y)]
+    let targetPx = [centerPx[0] + parseInt(x), centerPx[1] - parseInt(y)];
     let targetLl = merc.ll(targetPx, map.zoom); // long lat
     let coords = {lat: targetLl[1], lon: targetLl[0]};
-    this._logger.info('Target lat,long is:', coords);
     return coords;
 };
 
 GoogleMap._pixelsAt = function(lat, lon, map) {
-    this._logger.trace('getting (x,y) for ', lat, lon);
     // current latlon in px
-    let curPx = merc.px([map.center.lng, map.center.lat], map.zoom);
+    let curPx = merc.px([map.center.lon, map.center.lat], map.zoom);
     // new latlon in px
     let targetPx = merc.px([lon, lat], map.zoom);
     // difference in px
     let pixelsXY = {x: targetPx[0] - curPx[0], y: targetPx[1] - curPx[1]};
-    this._logger.info('Target x,y is:', pixelsXY);
     return pixelsXY;
 };
 
 GoogleMap._getMapInfo = function(roleId) {
     // TODO no need to pass in the roleId just use this.socket.roleId
     let deferred = Q.defer();
-    console.log('roleId', roleId);
-    console.log('usermap', this._userMaps);
     try {
         let map = this._userMaps[this.socket._room.uuid][roleId];
-        console.log('the map', map);
-        // TODO If there is no map, it shouldn't be resolved
         if (!map) {
             this._logger.log('Map requested before creation from ' + this.socket.roleId);
             deferred.reject('No user map found for', roleId);
@@ -77,7 +67,7 @@ GoogleMap._recordUserMap = function(socket, options) {
     // Store the user's new map settings
     var center = {
         lat: options.lat,
-        lng: options.lon
+        lon: options.lon
     };
     // get the corners of the image. We need to actully get both they are NOT "just opposite" of eachother.
     let northEastCornerCoords = this._coordsAt(options.width/2, options.height/2 , {center, zoom:options.zoom});
@@ -87,11 +77,11 @@ GoogleMap._recordUserMap = function(socket, options) {
         center: center,
         min: {
             lat: southWestCornerCoords.lat,
-            lng: southWestCornerCoords.lon
+            lon: southWestCornerCoords.lon
         },
         max: {
             lat: northEastCornerCoords.lat,
-            lng: northEastCornerCoords.lon
+            lon: northEastCornerCoords.lon
         },
         // Image info
         height: options.height,
@@ -100,11 +90,8 @@ GoogleMap._recordUserMap = function(socket, options) {
     let roomId = socket._room.uuid;
     this._userMaps[roomId] = this._userMaps[roomId] || {};
     this._userMaps[roomId][socket.roleId] = map;
-    console.log('usermap', this._userMaps);
     return Promise.resolve();
 };
-
-
 
 GoogleMap._getMap = function(latitude, longitude, width, height, zoom, mapType) {
     var options = {
@@ -135,7 +122,6 @@ GoogleMap.getTerrainMap = function(latitude, longitude, width, height, zoom){
     return this._getMap(latitude, longitude, width, height, zoom, 'terrain');
 };
 
-
 GoogleMap.getLatLong = function(x, y) {
     return this._getMapInfo(this.socket.roleId).then(mapInfo => {
         let coords = this._coordsAt(x,y, mapInfo);
@@ -151,10 +137,9 @@ GoogleMap.getXY = function(latitude, longitude) {
     });
 };
 
-//
 GoogleMap.getXFromLongitude = function(longitude) {
     return this._getMapInfo(this.socket.roleId).then(mapInfo => {
-        let pixels = this._pixelsAt(latitude,longitude, mapInfo);
+        let pixels = this._pixelsAt(0,longitude, mapInfo);
         return pixels.x;
     });
 };
@@ -168,14 +153,14 @@ GoogleMap.getYFromLatitude = function(latitude) {
 
 GoogleMap.getLongitude = function(x){
     return this._getMapInfo(this.socket.roleId).then(mapInfo => {
-        let coords = this._coordsAt(x,y, mapInfo);
+        let coords = this._coordsAt(x,0, mapInfo);
         return coords.lon;
     });
 };
 
 GoogleMap.getLatitude = function(y){
     return this._getMapInfo(this.socket.roleId).then(mapInfo => {
-        let coords = this._coordsAt(x,y, mapInfo);
+        let coords = this._coordsAt(0,y, mapInfo);
         return coords.lat;
     });
 };
@@ -188,9 +173,9 @@ var mapGetter = function(minMax, attr) {
     };
 };
 
-GoogleMap.maxLongitude = mapGetter('max', 'lng');
+GoogleMap.maxLongitude = mapGetter('max', 'lon');
 GoogleMap.maxLatitude = mapGetter('max', 'lat');
-GoogleMap.minLongitude = mapGetter('min', 'lng');
+GoogleMap.minLongitude = mapGetter('min', 'lon');
 GoogleMap.minLatitude = mapGetter('min', 'lat');
 
 
