@@ -133,29 +133,7 @@ var sendProjectTo = function(project, res) {
         .catch(err => res.status(500).send('ERROR: ' + err));
 };
 
-var saveRoom = function (activeRoom, socket, user, res) {
-    log(`saving entire room for ${socket.username}`);
-    const getProject = Q(activeRoom.getProject()) || Projects.new(user, activeRoom);
-    const uuid = Utils.uuid(user.username, activeRoom.name);
-
-    return getProject
-        .then(project => {
-            activeRoom.setStorage(project);
-            project.setActiveRole(socket.roleId);
-            return project.persist();
-        })
-        .then(() => {
-            log(`room save successful for project "${uuid}"`);
-            return res.send('project saved!');
-        })
-        .catch(err => {
-            error(`project save failed for "${uuid}": ${err}`);
-            return res.status(500).send('ERROR: ' + err);
-        });
-};
-
 const TRANSPARENT = [0,0,0,0];
-
 
 var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
     var lwip = require('lwip');
@@ -198,61 +176,54 @@ var applyAspectRatio = function (thumbnail, aspectRatio) {
 module.exports = [
     {
         Service: 'saveProject',
-        Parameters: 'socketId,overwrite',
+        Parameters: 'socketId,overwrite,projectName',
         Method: 'Post',
         Note: '',
         middleware: ['hasSocket', 'isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
-                socketId = req.body.socketId,
+                {overwrite, socketId, projectName} = req.body,
                 socket = SocketManager.getSocket(socketId),
 
-                activeRoom = socket._room,
-                owner,
-                roomName;
+                activeRoom = socket._room;
 
             if (!activeRoom) {
                 error(`Could not find active room for "${username}" - cannot save!`);
                 return res.status(500).send('ERROR: active room not found');
             }
 
-            roomName = activeRoom.name;
-            const ownerName = activeRoom.owner;
-            return this.storage.users.get(ownerName)
-                .then(user => {
-                    owner = user;
-                    return getRoomsNamed.call(this, roomName, owner);
-                })
-                .then(rooms => {
-                    if (socket.isOwner() || socket.isCollaborator()) {
-                        info(`${username} initiating room save for ${activeRoom.uuid}`);
+            const saveAs = () => {
+                activeRoom.changeName(projectName)
+                    .then(() => activeRoom.getProject().persist())
+                    .then(() => res.status(200).send('saved'));
+            };
 
-                        // If we overwrite, we don't want to change the originTime
-                        if (rooms.stored) {
-                            trace(`Found project with same name (${rooms.stored.name}) in database`);
-                            if (!rooms.areSame) {
-                                trace(`Projects are different: ${rooms.stored.originTime} ` +
-                                    `vs ${rooms.active.originTime}`);
+            // If we are going to overwrite the project
+            //   - set the name
+            //   - if the other project is open, rename it
+            //   - ow, delete it
+            //
+            // If we are not overwriting the project, just name it and save!
+            if (overwrite && projectName !== activeRoom.name) {
+                trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
+                const uuid = Utils.uuid(username, projectName);
+                const otherRoom = RoomManager.rooms[uuid];
+                const isSame = otherRoom === activeRoom;
+                if (otherRoom && !isSame) {  // rename the existing, active room
+                    return otherRoom.changeName(projectName, true).then(saveAs);
+                } else {  // delete the existing
+                    return Projects.get(username, projectName)
+                        .then(project => {
+                            if (project) {
+                                return project.destroy();
                             }
-                            activeRoom.originTime = rooms.stored.originTime;
-                        } else {
-                            trace(`saving first project named ${roomName} for ${username}`);
-                        }
-
-                        if (rooms.areSame) {  // overwrite
-                            saveRoom.call(this, activeRoom, socket, owner, res);
-                        } else if (req.body.overwrite === 'true') {  // overwrite
-                            saveRoom.call(this, activeRoom, socket, owner, res);
-                        } else {  // rename
-                            activeRoom.changeName();
-                            activeRoom.originTime = Date.now();
-                            saveRoom.call(this, activeRoom, socket, owner, res);
-                        }
-                    } else {  // Save a copy for the given user and move to the given room
-                        RoomManager.forkRoom(activeRoom, socket);
-                        return res.status(200).send('saved own copy!');
-                    }
-                });
+                        })
+                        .then(saveAs);
+                }
+            } else {
+                trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
+                return saveAs();
+            }
         }
     },
     {

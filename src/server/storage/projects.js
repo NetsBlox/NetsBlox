@@ -263,14 +263,19 @@
                                     if (this.isDeleted()) throw 'project has been deleted!';
 
                                     if (!project.transient) {  // create a copy
+                                        this._logger.trace(`duplicating project (save as) ${this.name}->${this._room.name}`);
                                         this.name = query.$set.name;
                                         // covert the roles keys to match expected format
                                         Object.keys(project.roles).forEach(roleId => {
                                             project[`roles.${roleId}`] = project.roles[roleId];
                                         });
                                         delete project.roles;
+
+                                        this.originTime = Date.now();
+                                        project.originTime = this.originTime;
+                                        this._room.originTime = this.originTime;
+
                                         query.$set = _.extend({}, project, query.$set);
-                                        this._logger.trace(`duplicating project (save as) ${this.name}->${this._room.name}`);
                                         options.upsert = true;
                                     } else {
                                         this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
@@ -302,6 +307,7 @@
         persist() {
             if (this.isDeleted()) return Promise.reject('project has been deleted!');
             const query = {$set: {transient: false}};
+            this._logger.trace(`persisting project ${this.owner}/${this.name}`);
             return this._db.update(this.getStorageId(), query)
                 .then(() => this.save());
         }
