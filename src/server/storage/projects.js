@@ -49,7 +49,7 @@
             const params = {
                 room: room,
                 logger: this._logger,
-                lastUpdateAt: Date.now(),
+                lastUpdatedAt: Date.now(),
                 db: this._db
             };
             const data = this._saveable();
@@ -245,7 +245,7 @@
                     const roleNames = roles.map(role => role.ProjectName);
                     this._logger.trace(`updated roles are ${roleNames.join(',')}`);
                     roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
-                    query.$set.lastUpdateAt = Date.now();
+                    query.$set.lastUpdatedAt = Date.now();
 
                     if (this._room) {  // update if attached to a room
                         const nameChanged = this.name !== this._room.name;
