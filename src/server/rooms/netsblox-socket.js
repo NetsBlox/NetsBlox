@@ -415,7 +415,7 @@ NetsBloxSocket.MessageHandlers = {
 
     'rename-room': function(msg) {
         if (this.isOwner()) {
-            this._room.changeName(msg.name);
+            this._room.changeName(msg.name, false, !!msg.inPlace);
         }
     },
 
