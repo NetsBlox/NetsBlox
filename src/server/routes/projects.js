@@ -185,8 +185,7 @@ module.exports = [
                 {overwrite, socketId, projectName} = req.body,
                 socket = SocketManager.getSocket(socketId),
 
-                activeRoom = socket._room,
-                owner;
+                activeRoom = socket._room;
 
             if (!activeRoom) {
                 error(`Could not find active room for "${username}" - cannot save!`);
@@ -206,6 +205,7 @@ module.exports = [
             //
             // If we are not overwriting the project, just name it and save!
             if (overwrite && projectName !== activeRoom.name) {
+                trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
                 const uuid = Utils.uuid(username, projectName);
                 const otherRoom = RoomManager.rooms[uuid];
                 const isSame = otherRoom === activeRoom;
@@ -221,6 +221,7 @@ module.exports = [
                         .then(saveAs);
                 }
             } else {
+                trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
                 return saveAs();
             }
         }
