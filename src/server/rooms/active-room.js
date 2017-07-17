@@ -182,7 +182,7 @@ class ActiveRoom {
         return this.changeName();
     }
 
-    changeName(name) {
+    changeName(name, force) {
         let owner = null;
         // Check if this project is already saved for the owner.
         //   - If so, keep the same name
@@ -198,7 +198,8 @@ class ActiveRoom {
             })
             .then(projects => {
                 const existing = projects.find(project => project.name === name);
-                if (existing && existing.originTime !== this.originTime) {
+                const nameConflicts = existing && existing.originTime !== this.originTime;
+                if (nameConflicts || force) {
                     // make sure name is also unique to the existing rooms...
                     let activeRoomNames = this.getAllActiveFor(this.owner);
                     this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
