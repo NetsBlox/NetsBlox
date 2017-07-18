@@ -40,6 +40,10 @@ let detailParser = item => {
     };
 };
 
+let searchParser = data => {
+    return data.channels.map(detailParser);
+};
+
 thingspeakIoT.searchByTag = function(tag) {
     let queryOptions = {
         queryString: tag !== '' ? 'public.json?' +
@@ -47,10 +51,7 @@ thingspeakIoT.searchByTag = function(tag) {
                 tag: encodeURIComponent(tag),
             }) : 'public.json',
     };
-    let parser = data => {
-        return data.channels.map(detailParser);
-    };
-    return this._sendStruct(queryOptions, parser);
+    return this._sendStruct(queryOptions, searchParser);
 };
 
 thingspeakIoT.searchByLocation = function(latitude, longitude, distance) {
@@ -62,10 +63,20 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance) {
                 distance: distance === '' ? distance : 1000
             })
     };
-    let parser = data => {
-        return data.channels.map(detailParser);
+    return this._sendStruct(queryOptions, searchParser);
+};
+
+thingspeakIoT.searchByBoth= function(tag, latitude, longitude, distance) {
+    let queryOptions = {
+        queryString: 'public.json?' +
+        rpcUtils.encodeQueryData({
+            tag: encodeURIComponent(tag),
+            latitude: latitude,
+            longitude: longitude,
+            distance: distance === '' ? distance : 1000
+        })
     };
-    return this._sendStruct(queryOptions, parser);
+    return this._sendStruct(queryOptions, searchParser);
 };
 
 thingspeakIoT.channelFeed = function(id, numResult) {
