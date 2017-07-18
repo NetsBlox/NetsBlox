@@ -5,7 +5,6 @@
 'use strict';
 
 var debug = require('debug'),
-    log = debug('netsblox:rpc:static-map:log'),
     trace = debug('netsblox:rpc:static-map:trace'),
     request = require('request'),
     SphericalMercator = require('sphericalmercator'),
@@ -53,7 +52,7 @@ StaticMap.prototype._pixelsAt = function(lat, lon, map) {
     // new latlon in px
     let targetPx = merc.px([lon, lat], map.zoom);
     // difference in px
-    let pixelsXY = {x: targetPx[0] - curPx[0], y: targetPx[1] - curPx[1]};
+    let pixelsXY = {x: (targetPx[0] - curPx[0]), y: (targetPx[1] - curPx[1])};
     return pixelsXY;
 };
 
@@ -61,14 +60,9 @@ StaticMap.prototype._pixelsAt = function(lat, lon, map) {
 StaticMap.prototype._getGoogleParams = function(options) {
     // Create the params for Google
     var params = [];
-    // Double the scale if the image is too large (half the dimensions)
-    options.scale = options.width <= 640 && options.height <= 640 ? 1 : 2;
-    options.width = Math.ceil(options.width/options.scale);
-    options.height = Math.ceil(options.height/options.scale);
     params.push('size=' + options.width + 'x' + options.height);
     params.push('scale=' + options.scale);
-
-    params.push('center=' + options.lat + ',' + options.lon);
+    params.push('center=' + options.center.lat + ',' + options.center.lon);
     params.push('key=' + key);
     params.push('zoom='+(options.zoom || '12'));
     params.push('maptype='+(options.mapType));
@@ -83,31 +77,20 @@ StaticMap.prototype._getMapInfo = function(roleId) {
         });
 };
 
-StaticMap.prototype._recordUserMap = function(socket, options) {
+StaticMap.prototype._recordUserMap = function(socket, map) {
     // Store the user's new map settings
-    var center = {
-        lat: options.lat,
-        lon: options.lon
-    };
     // get the corners of the image. We need to actully get both they are NOT "just opposite" of eachother.
-    let northEastCornerCoords = this._coordsAt(options.width/2, options.height/2 , {center, zoom:options.zoom});
-    let southWestCornerCoords = this._coordsAt(-options.width/2, -options.height/2 , {center, zoom:options.zoom});
-    let map = {
-        zoom: options.zoom,
-        center: center,
-        min: {
-            lat: southWestCornerCoords.lat,
-            lon: southWestCornerCoords.lon
-        },
-        max: {
-            lat: northEastCornerCoords.lat,
-            lon: northEastCornerCoords.lon
-        },
-        // Image info
-        height: options.height,
-        width: options.width
-    };
+    let northEastCornerCoords = this._coordsAt(map.width/2, map.height/2 , map);
+    let southWestCornerCoords = this._coordsAt(-map.width/2, -map.height/2 , map);
 
+    map.min = {
+        lat: southWestCornerCoords.lat,
+        lon: southWestCornerCoords.lon
+    };
+    map.max = {
+        lat: northEastCornerCoords.lat,
+        lon: northEastCornerCoords.lon
+    };
     return getStorage().get(this.roomId)
         .then(maps => {
             maps = maps || {};
@@ -122,11 +105,14 @@ StaticMap.prototype._recordUserMap = function(socket, options) {
 StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom, mapType) {
     var response = this.response,
         options = {
-            lat: latitude,
-            lon: longitude,
+            center: {
+                lat: latitude,
+                lon: longitude,
+            },
             width: width,
             height: height,
             zoom: zoom,
+            scale: width <= 640 && height <= 640 ? 1 : 2,
             mapType: mapType || 'roadmap'
         },
         params = this._getGoogleParams(options),
