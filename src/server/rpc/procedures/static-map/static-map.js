@@ -8,7 +8,8 @@ var debug = require('debug'),
     log = debug('netsblox:rpc:static-map:log'),
     trace = debug('netsblox:rpc:static-map:trace'),
     request = require('request'),
-    MercatorProjection = require('./mercator-projection'),
+    SphericalMercator = require('sphericalmercator'),
+    merc = new SphericalMercator({size:256}),
     CacheManager = require('cache-manager'),
     Storage = require('../../storage'),
     // TODO: Change this cache to mongo or something (file?)
@@ -17,8 +18,7 @@ var debug = require('debug'),
     key = process.env.GOOGLE_MAPS_KEY;
 
 // TODO: check that the env variable is defined
-var mercator = new MercatorProjection(),
-    storage;
+var storage;
 
 // Retrieving a static map image
 var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap',
@@ -37,6 +37,26 @@ var StaticMap = function(roomId) {
 StaticMap.getPath = function() {
     return '/staticmap';
 };
+
+StaticMap.prototype._coordsAt = function(x, y, map) {
+    let centerLl = [map.center.lon, map.center.lat];
+    let centerPx = merc.px(centerLl, map.zoom);
+    let targetPx = [centerPx[0] + parseInt(x), centerPx[1] - parseInt(y)];
+    let targetLl = merc.ll(targetPx, map.zoom); // long lat
+    let coords = {lat: targetLl[1], lon: targetLl[0]};
+    return coords;
+};
+
+StaticMap.prototype._pixelsAt = function(lat, lon, map) {
+    // current latlon in px
+    let curPx = merc.px([map.center.lon, map.center.lat], map.zoom);
+    // new latlon in px
+    let targetPx = merc.px([lon, lat], map.zoom);
+    // difference in px
+    let pixelsXY = {x: targetPx[0] - curPx[0], y: targetPx[1] - curPx[1]};
+    return pixelsXY;
+};
+
 
 StaticMap.prototype._getGoogleParams = function(options) {
     // Create the params for Google
@@ -66,26 +86,27 @@ StaticMap.prototype._getMapInfo = function(roleId) {
 StaticMap.prototype._recordUserMap = function(socket, options) {
     // Store the user's new map settings
     var center = {
-            lat: options.lat,
-            lng: options.lon
+        lat: options.lat,
+        lon: options.lon
+    };
+    // get the corners of the image. We need to actully get both they are NOT "just opposite" of eachother.
+    let northEastCornerCoords = this._coordsAt(options.width/2, options.height/2 , {center, zoom:options.zoom});
+    let southWestCornerCoords = this._coordsAt(-options.width/2, -options.height/2 , {center, zoom:options.zoom});
+    let map = {
+        zoom: options.zoom,
+        center: center,
+        min: {
+            lat: southWestCornerCoords.lat,
+            lon: southWestCornerCoords.lon
         },
-        lngs = mercator.getLongitudes(center, options.zoom, options.width, options.height),
-        lats = mercator.getLatitudes(center, options.zoom, options.width, options.height),
-        map = {
-            zoom: options.zoom,
-            center: center,
-            min: {
-                lat: lats[0],
-                lng: lngs[0]
-            },
-            max: {
-                lat: lats[1],
-                lng: lngs[1]
-            },
-            // Image info
-            height: options.height,
-            width: options.width
-        };
+        max: {
+            lat: northEastCornerCoords.lat,
+            lon: northEastCornerCoords.lon
+        },
+        // Image info
+        height: options.height,
+        width: options.width
+    };
 
     return getStorage().get(this.roomId)
         .then(maps => {
@@ -168,92 +189,31 @@ StaticMap.prototype.getTerrainMap = function(latitude, longitude, width, height,
 
     return null;
 };
-
-StaticMap.prototype.getLongitude = function(x) {
-    // Need lat, lng, width, zoom and x
-    return this._getUserMap().then(map => {
-        var center = map.center,
-            zoom = map.zoom,
-            width = map.width,
-            lngs = map ? [map.min.lng, map.max.lng] :
-                mercator.getLongitudes(center, zoom, width, 1),
-            lngWidth,
-            myLng;
-
-        x = +x + (width/2);  // translate x from center to edge
-        if (!map) {
-            log('Map requested before creation from ' + this.socket.roleId);
-        } else {
-            trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
-        }
-
-        // Just approximate here
-        trace('Longitudes are', lngs);
-        // FIXME: Fix the "roll over"
-        lngWidth = Math.abs(lngs[1] - lngs[0]);
-        trace('width:', lngWidth);
-        myLng = lngs[0] + (x/width)*lngWidth;
-        trace('longitude:', myLng);
-        return myLng;  // This may need to be made a little more accurate...
-    });
-};
-
-StaticMap.prototype.getLatitude = function(y) {
-    // Need lat, lng, height, zoom and x
-    return this._getUserMap().then(map => {
-        var center = map.center,
-            zoom = map.zoom,
-            height = map.height,
-            lats = map ? [map.min.lat, map.max.lat] :
-                mercator.getLatitudes(center, zoom, 1, height),
-            latWidth,
-            myLat;
-
-        y = +y + (height/2);  // translate y from center to edge
-        if (!map) {
-            log('Map requested before creation from ' + this.socket.roleId);
-        } else {
-            trace('Map found for ' + this.socket.roleId + ': ' + JSON.stringify(map));
-        }
-
-        // Just approximate here
-        trace('y is:', y);
-        trace('Latitude window is', lats);
-        latWidth = Math.abs(lats[1] - lats[0]);
-        trace('window width is', latWidth);
-        myLat = lats[0] + (y/height)*latWidth;
-        trace('latitude:', myLat);
-        return myLat;  // This may need to be made a little more accurate...
-    });
-};
-
 StaticMap.prototype.getXFromLongitude = function(longitude) {
-    var lng,
-        proportion,
-        x;
-
-    return this._getUserMap().then(map => {
-        lng = +longitude;
-        proportion = (lng - map.min.lng)/(map.max.lng - map.min.lng);
-        x = proportion*map.width - (map.width/2);  // Translate y to account for 0 in center
-
-        trace('x value is ' + x);
-        return x;
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let pixels = this._pixelsAt(0,longitude, mapInfo);
+        return pixels.x;
+    });
+};
+//
+StaticMap.prototype.getYFromLatitude = function(latitude) {
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let pixels = this._pixelsAt(latitude,0, mapInfo);
+        return pixels.y;
     });
 };
 
-StaticMap.prototype.getYFromLatitude = function(latitude) {
-    var lat,
-        proportion,
-        y;
+StaticMap.prototype.getLongitude = function(x){
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let coords = this._coordsAt(x,0, mapInfo);
+        return coords.lon;
+    });
+};
 
-    return this._getUserMap().then(map => {
-        lat = +latitude;
-        proportion = (lat - map.min.lat)/(map.max.lat - map.min.lat);
-        y = proportion*map.height - (map.height/2);  // Translate y to account for 0 in center
-
-        trace('y value is ' + y);
-        return y;
+StaticMap.prototype.getLatitude = function(y){
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let coords = this._coordsAt(0,y, mapInfo);
+        return coords.lat;
     });
 };
 
