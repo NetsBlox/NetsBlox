@@ -34,7 +34,7 @@ weather.temp = function(latitude, longitude){
             if (body.main && isWithinMaxDistance(body, latitude, longitude)) {
                 temp = body.main.temp;
                 trace('Kelvin temp is '+temp+' fahrenheit is '+tuc.k2f(temp));
-                temp = tuc.k2f(temp).toFixed(3);
+                temp = tuc.k2f(temp).toFixed(1);
             }
             this.response.send(temp);
         });
