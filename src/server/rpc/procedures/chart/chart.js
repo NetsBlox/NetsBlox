@@ -19,7 +19,7 @@ let defaultColor = [
 ];
 
 let defaultBlack = '#666';
-let defaultFont = 'sans-serif';
+let defaultFont = 'Helvetica';
 let defaultFontSize = [18, 20];
 let defaultOption = (xAxis, yAxis, title) => {
     return {
@@ -42,7 +42,7 @@ let defaultOption = (xAxis, yAxis, title) => {
                     fontColor: defaultBlack
                 },
                 ticks: {
-                    beginAtZero:true
+                    beginAtZero:false
                 }
             }]
         },
@@ -134,7 +134,7 @@ chart._drawChart = function (dataset, xAxisTag, yAxisTag, datasetTag, title, cha
         }
     }
 };
-
+//
 chart.drawBarChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title) {
     return this._drawChart(dataset, xAxisTag, yAxisTag, datasetTag, title, 'bar');
 };
