@@ -60,7 +60,7 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance) {
             rpcUtils.encodeQueryData({
                 latitude: latitude,
                 longitude: longitude,
-                distance: distance === '' ? distance : 1000
+                distance: distance === '' ? 100 : distance
             })
     };
     return this._sendStruct(queryOptions, searchParser);
@@ -73,7 +73,7 @@ thingspeakIoT.searchByBoth= function(tag, latitude, longitude, distance) {
             tag: encodeURIComponent(tag),
             latitude: latitude,
             longitude: longitude,
-            distance: distance === '' ? distance : 1000
+            distance: distance === '' ? 100 : distance
         })
     };
     return this._sendStruct(queryOptions, searchParser);
