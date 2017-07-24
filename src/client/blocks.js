@@ -1132,8 +1132,7 @@ InputSlotMorph.prototype.rpcNames = function () {
         dict = {},
         name;
     for (var i = 0; i < rpcs.length; i++) {
-        name = rpcs[i].replace('/', '');
-        var label = name.charAt(0).toUpperCase() + name.slice(1);
+        var label = name;
         dict[label] = name;
     }
     return dict;
