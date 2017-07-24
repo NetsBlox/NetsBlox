@@ -26,6 +26,7 @@ let feedParser = data => {
 };
 
 let detailParser = item => {
+    if (!item.latitude || !item.longitude) return null;
     return {
         id: item.id,
         name: item.name,
@@ -40,21 +41,41 @@ let detailParser = item => {
     };
 };
 
-let searchParser = data => {
-    return data.channels.map(detailParser);
+let searchParser = responses => {
+    let searchResults = responses.map(data => data.channels.map(detailParser)).reduce((results, singleRes) => results.concat(singleRes));
+    return searchResults;
 };
 
-thingspeakIoT.searchByTag = function(tag) {
+thingspeakIoT._paginatedQueryOpts = function(queryOpts, limit) {
+    return this._requestData(queryOpts).then(resp => {
+        const perPage = resp.pagination.per_page;
+        const availablePages = Math.ceil(resp.pagination.total_entries / perPage);
+        const pages = Math.min(availablePages, Math.ceil(limit/perPage));
+        let queryOptsList = [];
+        for(let i = 1; i <= pages; i++){
+            queryOptsList.push({
+                queryString: queryOpts.queryString + `&page=${i}`
+            });
+        }
+        return queryOptsList;
+    });
+};
+
+thingspeakIoT.searchByTag = function(tag, limit) {
     let queryOptions = {
         queryString: tag !== '' ? 'public.json?' +
             rpcUtils.encodeQueryData({
                 tag: encodeURIComponent(tag),
             }) : 'public.json',
     };
-    return this._sendStruct(queryOptions, searchParser);
+    limit = limit || 15;
+    return this._paginatedQueryOpts(queryOptions, limit).then(queryOptsList => {
+        return this._sendStruct(queryOptsList, searchParser);
+    });
+
 };
 
-thingspeakIoT.searchByLocation = function(latitude, longitude, distance) {
+thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) {
     let queryOptions = {
         queryString: 'public.json?' +
             rpcUtils.encodeQueryData({
@@ -63,10 +84,12 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance) {
                 distance: distance === '' ? 100 : distance
             })
     };
-    return this._sendStruct(queryOptions, searchParser);
-};
+    limit = limit || 15;
+    return this._paginatedQueryOpts(queryOptions, limit).then(queryOptsList => {
+        return this._sendStruct(queryOptsList, searchParser);
+    });};
 
-thingspeakIoT.searchByBoth= function(tag, latitude, longitude, distance) {
+thingspeakIoT.searchByBoth= function(tag, latitude, longitude, distance, limit) {
     let queryOptions = {
         queryString: 'public.json?' +
         rpcUtils.encodeQueryData({
@@ -76,8 +99,10 @@ thingspeakIoT.searchByBoth= function(tag, latitude, longitude, distance) {
             distance: distance === '' ? 100 : distance
         })
     };
-    return this._sendStruct(queryOptions, searchParser);
-};
+    limit = limit || 15;
+    return this._paginatedQueryOpts(queryOptions, limit).then(queryOptsList => {
+        return this._sendStruct(queryOptsList, searchParser);
+    });};
 
 thingspeakIoT.channelFeed = function(id, numResult) {
     let queryOptions = {
