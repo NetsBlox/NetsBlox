@@ -321,7 +321,7 @@ NetsProcess.prototype.parseRPCResult = function (result) {
 
 
 function blockToText(block) {
-    const blockXML = block.expression.toBlockXML(new NetsBloxSerializer);
+    const blockXML = block.expression.toBlockXML(SnapActions.serializer);
     return blockXML;
 }
 
