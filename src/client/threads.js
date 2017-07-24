@@ -320,9 +320,9 @@ NetsProcess.prototype.parseRPCResult = function (result) {
 };
 
 
-var blockToText = block => {
+function blockToText(block) {
     const blockXML = block.expression.toBlockXML(new NetsBloxSerializer);
-    return name + '=' + blockXML;
+    return blockXML;
 }
 
 function toQueryString(list, prefix) {
@@ -343,17 +343,14 @@ NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
         argNames = methodSignature[1],
         values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
         params;
-    var blockToText = block => {
-        const blockXML = block.expression.toBlockXML(new NetsBloxSerializer);
-        return name + '=' + blockXML;
-    }
+
     params = argNames.map(function(name, index) {
         if (values[index] instanceof List) {
             return toQueryString(values[index], name);
         }
         // if a block is passed in serialize it and send it to the rpc
         else if (values[index] instanceof Context) {
-            return blockToText(values[index]);
+            return name + '=' + blockToText(values[index]);
         }
         return name + '=' + values[index];
     }).join('&');
