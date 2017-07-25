@@ -195,10 +195,11 @@ const order = (a, b, c) => {
 };
 
 const validateArgs = (latitude, longitude) => {
+    if (isNaN(+latitude)) return `Invalid latitude: ${latitude}`;
+    if (isNaN(+longitude)) return `Invalid longitude: ${longitude}`;
+
     latitude = +latitude;
     longitude = +longitude;
-    if (typeof latitude !== 'number') return `Invalid latitude: ${latitude}`;
-    if (typeof longitude !== 'number') return `Invalid longitude: ${longitude}`;
     if (!order(-90, latitude, 90)) return `latitude out of range: ${latitude}`;
     if (!order(-180, longitude, 180)) return `longitude out of range: ${longitude}`;
 };

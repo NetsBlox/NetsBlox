@@ -22,6 +22,7 @@ describe('weather', function() {
         it('should send error message if non-numeric inputs', function() {
             weather.temp('hello', 'world');
             assert(weather.response.response.includes('ERROR'));
+            assert(weather.response.response.includes('hello'));
         });
 
         it('should send error message if out of range lat', function() {
