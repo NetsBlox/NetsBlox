@@ -98,19 +98,20 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) 
         return this._sendStruct(queryOptsList, searchParser);
     });};
 
-thingspeakIoT.searchByBoth= function(tag, latitude, longitude, distance, limit) {
+thingspeakIoT.searchByBoth= function(tag, latitude, longitude, distance) {
     let queryOptions = {
         queryString: 'public.json?' +
         rpcUtils.encodeQueryData({
-            tag: encodeURIComponent(tag),
             latitude: latitude,
             longitude: longitude,
             distance: distance === '' ? 100 : distance
         })
     };
-    limit = limit || 15;
-    return this._paginatedQueryOpts(queryOptions, limit).then(queryOptsList => {
-        return this._sendStruct(queryOptsList, searchParser);
+    return this._paginatedQueryOpts(queryOptions, 10000).then(queryOptsList => {
+        return this._requestData(queryOptsList).then( resultsArr => {
+            let results = searchParser(resultsArr).filter(item => item.tags.includes(tag));
+            return rpcUtils.jsonToSnapList(results);
+        });
     });};
 
 thingspeakIoT.channelFeed = function(id, numResult) {
