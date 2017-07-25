@@ -15,6 +15,10 @@ describe('weather', function() {
     ]);
 
     describe('input validation', function() {
+        beforeEach(function() {
+            weather = new RPCMock(Weather);
+        });
+
         it('should send error message if non-numeric inputs', function() {
             weather.temp('hello', 'world');
             assert(weather.response.response.includes('ERROR'));
