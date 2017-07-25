@@ -52,7 +52,7 @@ StaticMap.prototype._pixelsAt = function(lat, lon, map) {
     // new latlon in px
     let targetPx = merc.px([lon, lat], map.zoom);
     // difference in px
-    let pixelsXY = {x: (targetPx[0] - curPx[0]), y: (targetPx[1] - curPx[1])};
+    let pixelsXY = {x: (targetPx[0] - curPx[0]), y: -(targetPx[1] - curPx[1])};
     return pixelsXY;
 };
 
