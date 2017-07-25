@@ -2,13 +2,12 @@
 'use strict';
 
 var R = require('ramda'),
-    Q = require('q'),
     assert = require('assert'),
     debug = require('debug'),
-    info = debug('netsblox:api:utils:info'),
     trace = debug('netsblox:api:utils:trace'),
-    error = debug('netsblox:api:utils:error'),
     version = require('../../package.json').version;
+
+const APP = `NetsBlox ${version}, http://netsblox.org`;
 
 var uuid = function(owner, name) {
     return owner + '/' + name;
@@ -24,7 +23,7 @@ var getRoomXML = function(project) {
             var roleXml = roles.map(role =>
                 `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
             ).join('');
-            var app = roleXml.match(APP_REGEX)[1] || `NetsBlox ${version}, http://netsblox.org`;
+            var app = roleXml.match(APP_REGEX)[1] || APP;
 
             return `<room name="${project.name}" app="${app}">${roleXml}</room>`;
         });
@@ -41,57 +40,24 @@ var serialize = function(service) {
 };
 
 var serializeRole = (role, project) => {
-    const owner = project.owner;
-    const name = project.name;
+    const owner = encodeURIComponent(project.owner);
+    const name = encodeURIComponent(project.name);
     const src = role.SourceCode ? 
         `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
-    return `RoomName=${encodeURIComponent(name)}&` +
-        `Owner=${owner}&${serialize(R.omit(['SourceCode', 'Media'], role))}` + 
+    return `RoomName=${name}&Owner=${owner}&` +
+        serialize(R.omit(['SourceCode', 'Media'], role)) + 
         `&SourceCode=${src}`;
 };
 
 var joinActiveProject = function(userId, room, res) {
-    var serialized,
-        createdNewRole = false;
-
-    let openRole = Object.keys(room.roles)
-        .filter(role => !room.roles[role])  // not occupied
-        .shift();
+    let openRole = room.getUnoccupiedRole();
 
     trace(`room "${room.name}" is already active`);
-
-    const getRoleContent = openRole ? room.getRole(openRole) : Q();
-
-    return getRoleContent.then(role => {
-        if (role) {  // Send an open role and add the user
-            trace(`adding ${userId} to open role "${openRole}" at "${room.name}"`);
-            serialized = serializeRole(role, room);
-            return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
-        } else {  // If no open role w/ cache -> make a new role
-            let i = 2,
-                base;
-
-            if (!openRole) {
-                createdNewRole = true;
-                openRole = base = 'new role';
-                while (room.hasOwnProperty(openRole)) {
-                    openRole = `${base} (${i++})`;
-                }
-                trace(`creating new role "${openRole}" at "${room.name}" ` +
-                    `for ${userId}`);
-            } else {
-                error(`Found open role "${openRole}" but it is not cached! May have lost data!!!`);
-            }
-
-            info(`adding ${userId} to new role "${openRole}" at "${room.name}"`);
-
-            role = getEmptyRole();
-            return room.setRole(openRole, role).then(() => {
-                serialized = serializeRole(role, room);
-                return res.send(`Owner=${room.owner}&NewRole=${createdNewRole}&${serialized}`);
-            });
-        }
+    return room.getRole(openRole).then(role => {
+        trace(`adding ${userId} to role "${openRole}" at "${room.name}"`);
+        let serialized = serializeRole(role, room);
+        return res.send(serialized);
     });
 };
 
@@ -154,9 +120,85 @@ var isSocketUuid = function(name) {
 var getEmptyRole = function(name) {
     return {
         ProjectName: name,
-        SourceCode: null,
-        SourceSize: 0
+        SourceCode: '',
+        SourceSize: 0,
+        Media: '',
+        MediaSize: 0
     };
+};
+
+var parseField = function(src, field) {
+    const startIndex = src.indexOf(`<${field}>`);
+    const endIndex = src.indexOf(`</${field}>`);
+    return src.substring(startIndex + field.length + 2, endIndex);
+};
+
+// Snap serialization functions
+const SnapXml = {};
+function isNil(thing) {
+    return thing === undefined || thing === null;
+}
+
+SnapXml.escape = function (string, ignoreQuotes) {
+    var src = isNil(string) ? '' : string.toString(),
+        result = '',
+        i,
+        ch;
+    for (i = 0; i < src.length; i += 1) {
+        ch = src[i];
+        switch (ch) {
+        case '\'':
+            result += '&apos;';
+            break;
+        case '\"':
+            result += ignoreQuotes ? ch : '&quot;';
+            break;
+        case '<':
+            result += '&lt;';
+            break;
+        case '>':
+            result += '&gt;';
+            break;
+        case '&':
+            result += '&amp;';
+            break;
+        case '\n': // escape CR b/c of export to URL feature
+            result += '&#xD;';
+            break;
+        case '~': // escape tilde b/c it's overloaded in serializer.store()
+            result += '&#126;';
+            break;
+        default:
+            result += ch;
+        }
+    }
+    return result;
+};
+
+SnapXml.format = function (string) {
+    // private
+    var i = -1,
+        values = arguments,
+        value;
+
+    return string.replace(/[@$%]([\d]+)?/g, function (spec, index) {
+        index = parseInt(index, 10);
+
+        if (isNaN(index)) {
+            i += 1;
+            value = values[i + 1];
+        } else {
+            value = values[index + 1];
+        }
+        // original line of code - now frowned upon by JSLint:
+        // value = values[(isNaN(index) ? (i += 1) : index) + 1];
+
+        return spec === '@' ?
+                SnapXml.escape(value)
+                    : spec === '$' ?
+                        SnapXml.escape(value, true)
+                            : value;
+    });
 };
 
 module.exports = {
@@ -169,5 +211,12 @@ module.exports = {
     extractRpcs,
     computeAspectRatioPadding,
     isSocketUuid,
-    getArgumentsFor
+    xml: {
+        thumbnail: src => parseField(src, 'thumbnail'),
+        notes: src => parseField(src, 'notes'),
+        format: SnapXml.format
+    },
+    getEmptyRole,
+    getArgumentsFor,
+    APP 
 };

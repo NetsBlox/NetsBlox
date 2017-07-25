@@ -115,12 +115,12 @@ StructInputSlotMorph.prototype.setContents = function(name, values) {
             input = children[--i],
             removed = [],
             scripts = this.parentThatIsA(ScriptsMorph),
-            inputs;
+            inputs = this.parent.inputs(),
+            myInpIndex = inputs.indexOf(this);
 
         // Remove the "i" fields after the current morph
-        inputs = this.parent.inputs();
         for (i = 0; i < this.fieldContent.length; i++) {
-            input = inputs[myIndex + 1 + i];
+            input = inputs[myInpIndex +1 + i];
             removed.push(input);
             this.parent.removeChild(input);
             // remove the field
@@ -280,11 +280,11 @@ function HintInputSlotMorph(text, hint, isNumeric) {
 
     // If the StringMorph gets clicked on when empty, the hint text
     // should be "ghostly"
-    this.contents().mouseDownLeft = function() {
+    this.contents().mouseClickLeft = function() {
         if (self.empty) {
             this.text = '';
         }
-        StringMorph.prototype.mouseDownLeft.apply(this, arguments);
+        StringMorph.prototype.mouseClickLeft.apply(this, arguments);
     };
 }
 

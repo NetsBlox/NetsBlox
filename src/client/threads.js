@@ -1,5 +1,6 @@
 /* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
    List, SnapActions*/
+
 ThreadManager.prototype.startProcess = function (
     block,
     isThreadSafe,
@@ -113,8 +114,87 @@ NetsProcess.prototype.doSocketMessage = function (msgInfo) {
     });
 };
 
+//request block
+NetsProcess.prototype.doSocketRequest = function (msgInfo) {
+    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
+        targetRole = arguments[arguments.length-1],
+        myRole = ide.projectName,  // same as seat name
+        roomName = ide.room._name,
+        ownerId = ide.room.ownerId,
+        name = msgInfo[0], //msg name | resource name
+        fieldNames = msgInfo[1],
+        fieldValues = Array.prototype.slice.call(arguments, 1, fieldNames.length + 1),
+        contents,
+        requestId;
+
+    // check if collaborating. If so, show a message but don't send
+    if (SnapActions.isCollaborating() && !SnapActions.isLeader) {
+        this.topBlock.showBubble('Cannot send message when collaborating');
+        return;
+    }
+
+    // If there is no name, return
+    if (!name) {
+        return;
+    }
+
+    // if there is no requestId then init the requestId
+    if (!this.requestId){
+        requestId= '__REQ' + Date.now();
+        //save the request id to check for later
+        this.requestId = requestId;
+
+        // Create the message
+        contents = {};
+        // Set the fields
+        for (var i = fieldNames.length; i--;) {
+            contents[fieldNames[i]] = fieldValues[i] || '';
+        }
+        ide.sockets.sendMessage({
+            type: 'message',
+            dstId: targetRole,
+            srcId: myRole+'@'+roomName+'@'+ownerId,
+            msgType: name,
+            requestId: requestId,
+            content: contents
+        });
+    }else if (this.reply ){
+        // request has already been made and we received the reply
+        requestId = this.requestId;
+        var reply = this.reply;
+
+        if (this.requestId === requestId ) {
+            this.requestId = null;
+            this.reply = null;
+        }
+        return reply.content.body;
+    }
+    this.pushContext('doYield');
+    this.pushContext();
+};
+
+// reply block
+NetsProcess.prototype.doSocketResponse = function (resource) {
+    var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
+        contents;
+
+    var requestId = this.context.variables.getVar('__requestId__');
+    var srcId = this.context.variables.getVar('__srcId__');
+
+    // Create the message
+    contents = {body: resource};
+    ide.sockets.sendMessage({
+        type: 'message',
+        dstId: srcId,
+        msgType: '__reply__',
+        requestId: requestId,
+        content: contents
+    });
+};
+
+
 /**
- * On socket message, unpack the message content into the variables in 
+ * On socket message, unpack the message content into the variables in
  * the list.
  *
  * @return {undefined}
@@ -128,7 +208,6 @@ NetsProcess.prototype.receiveSocketMessage = function (fields) {
     if (names.indexOf('__message__') === -1) {
         return;
     }
-
     // Check for the message type in the stage
     // FIXME: Provide an error message about how we must receive an actual msg
     content = this.context.variables.getVar('__message__');
@@ -240,13 +319,28 @@ NetsProcess.prototype.parseRPCResult = function (result) {
     return result;
 };
 
+function toQueryString(list, prefix) {
+    var array = list.contents;
+    var str = [], k, v;
+    for(var i = 0; i < array.length; i++) {
+        k = prefix + '[' + i + ']';
+        v = array[i];
+        str.push(typeof v === 'object' ?
+            toQueryString(v, k) :
+            k + '=' + v);
+    }
+    return str.join('&');
+}
+
 NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
     var action = methodSignature[0],
         argNames = methodSignature[1],
         values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
         params;
-
     params = argNames.map(function(name, index) {
+        if (values[index] instanceof List) {
+            return toQueryString(values[index], name);
+        }
         return name + '=' + values[index];
     }).join('&');
     return this.getJSFromRPCDropdown(rpc, action, params);
@@ -299,5 +393,3 @@ NetsProcess.prototype.reportStageHeight = function () {
     var stage = this.homeContext.receiver.parentThatIsA(StageMorph);
     return stage.dimensions.y;
 };
-
-

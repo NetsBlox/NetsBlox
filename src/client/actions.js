@@ -1,5 +1,5 @@
 /* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer,
-   HintInputSlotMorph, SnapCloud*/
+   HintInputSlotMorph, SnapCloud, Action*/
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
@@ -57,30 +57,35 @@ UndoManager.Invert.deleteMessageType = function() {
 
 SnapActions.serializer = new NetsBloxSerializer();
 SnapActions.__sessionId = Date.now();
-SnapActions.enableCollaboration = function() {};
-ActionManager.prototype.disableCollaboration = function() {
-    var msg = {
-        type: 'new-session'
-    };
-
-    if (this._ws !== null) {
-        this._ws.send(JSON.stringify(msg));
-    }
-};
-
+SnapActions.enableCollaboration =
+SnapActions.disableCollaboration = function() {};
 SnapActions.isCollaborating = function() {
-    return this.sessionUsersCount > 1;
+    return this.ide().room.getCurrentOccupants() > 1;
 };
 
 // Recording user actions
 SnapActions.send = function(event) {
+    // Netsblox addition: start
     var socket = this.ide().sockets;
 
     this._ws = socket.websocket;
-    ActionManager.prototype.send.apply(this, arguments);
+
+    // Netsblox addition: end
+    event.id = event.id || this.lastSeen + 1;
+    this.lastSent = event.id;
+    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+        // Netsblox addition: start
+        this._ws.send(JSON.stringify({
+            type: 'user-action',
+            action: event
+        }));
+        // Netsblox addition: end
+    }
+    // Netsblox addition: start
     this.recordActionNB(event);
 
     return event;
+    // Netsblox addition: end
 };
 
 SnapActions.onMessage = function(msg) {
@@ -135,10 +140,42 @@ SnapActions._applyEvent = function(event) {
     }
 };
 
-SnapActions.applyEvent = function() {
+SnapActions.applyEvent = function(event) {
     var ide = this.ide();
     if (ide.room.isEditable()) {
-        return ActionManager.prototype.applyEvent.apply(this, arguments);
+        event.user = this.id;
+        event.id = event.id || this.lastSeen + 1;
+        event.time = event.time || Date.now();
+
+        // Skip duplicate undo/redo events
+        if (event.replayType && this.lastSent === event.id) {
+            return;
+        }
+
+        // if in replay mode, check that the event is a replay event
+        var myself = this;
+
+        if (ide.isReplayMode && !event.isReplay) {
+            ide.promptExitReplay(function() {
+            // Netsblox addition: start
+                if (!myself.isCollaborating() || myself.isLeader) {
+            // Netsblox addition: end
+                    myself.acceptEvent(event);
+                } else {
+                    myself.send(event);
+                }
+            });
+        } else {
+            // Netsblox addition: start
+            if (!this.isCollaborating() || this.isLeader) {
+            // Netsblox addition: end
+                this.acceptEvent(event);
+            } else {
+                this.send(event);
+            }
+        }
+
+        return new Action(this, event);
     } else {
         // ask the user if he/she would like to request to be a collaborator
         // TODO: Add option for saving your own copy

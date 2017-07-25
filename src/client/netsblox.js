@@ -284,36 +284,30 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 onConnect = this.sockets.onConnect,
                 msg;
 
+            this.shield = new Morph();
+            this.shield.alpha = 0;
+            this.shield.setExtent(this.parent.extent());
+            this.parent.add(this.shield);
+
             this.sockets.onConnect = function() {
                 SnapCloud.passiveLogin(myself, function() {
-                    var response = SnapCloud.parseDict(myself.getURL('api/Examples/' + example +
-                        '?socketId=' + myself.sockets.uuid));
+                    var projectData = myself.getURL('api/Examples/' + example);
 
-                    myself.room.nextRoom = {
-                        ownerId: response.Owner,
-                        roomName: response.RoomName,
-                        roleId: response.ProjectName
-                    };
-
-                    // role name
                     myself.nextSteps([
                         function () {
-                            msg = this.showMessage('Opening ' + example + ' example...');
+                            msg = myself.showMessage('Opening ' + example + ' example...');
                         },
                         function () {nop(); }, // yield (bug in Chrome)
                         function () {
-                            if (response.SourceCode) {
-                                myself.rawOpenCloudDataString(
-                                    response.SourceCode
-                                );
-                            } else {
-                                myself.clearProject();
-                            }
-                            myself.loadNextRoom();
-                            myself.sockets.onConnect = onConnect;
+                            // Netsblox addition: start
+                            myself.openRoomString(projectData, true);
+                            // Netsblox addition: end
                             myself.hasChangedMedia = true;
                         },
                         function () {
+                            myself.shield.destroy();
+                            myself.shield = null;
+                            myself.sockets.onConnect = onConnect;
                             msg.destroy();
                             applyFlags(dict);
                         }
@@ -1066,8 +1060,6 @@ NetsBloxMorph.prototype.createControlBar = function () {
 };
 
 NetsBloxMorph.prototype.loadNextRoom = function () {
-    // Check if the room has diverged and optionally fork
-    // TODO
     if (this.room.nextRoom) {
         var next = this.room.nextRoom;
         this.room._name = next.roomName;  // silent set
@@ -1686,14 +1678,10 @@ NetsBloxMorph.prototype.exportProject = function () {
     });
 };
 
-NetsBloxMorph.prototype.exportRoom = function (roles) {
-    var //dataPrefix,
-        name = this.room.name,
-        str;
+NetsBloxMorph.prototype.exportRoom = function (str) {
+    var name = this.room.name;
 
     try {
-        str = this.serializer.serializeRoom(name, roles);
-        //this.setURL('#open:' + dataPrefix + encodeURIComponent(str));
         this.saveXMLAs(str, name);
         this.showMessage('Exported!', 1);
     } catch (err) {
@@ -1751,7 +1739,7 @@ NetsBloxMorph.prototype.openRoomString = function (str, isRaw) {
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
     var msg,
         myself = this,
-        str = parsed ? model : model.toString(),
+        str = parsed ? model.toString() : model,
         size = Math.round(str.length / 1024);
 
     this.exitReplayMode();
@@ -1784,14 +1772,12 @@ NetsBloxMorph.prototype.rawSaveProject = function (name) {
     });
 };
 
-NetsBloxMorph.prototype.saveRoomLocal = function (roles) {
-    var str,
-        name = this.room.name;
+NetsBloxMorph.prototype.saveRoomLocal = function (str) {
+    var name = this.room.name;
 
     if (Process.prototype.isCatchingErrors) {
         try {
-            localStorage['-snap-project-' + name]
-                = str = this.serializer.serializeRoom(name, roles);
+            localStorage['-snap-project-' + name] = str;
         
             this.setURL('#open:' + str);
             this.showMessage('Saved!', 1);
@@ -1799,8 +1785,7 @@ NetsBloxMorph.prototype.saveRoomLocal = function (roles) {
             this.showMessage('Save failed: ' + err);
         }
     } else {
-        localStorage['-snap-project-' + name]
-            = str = this.serializer.serializeRoom(name, roles);
+        localStorage['-snap-project-' + name] = str;
         this.setURL('#open:' + str);
         this.showMessage('Saved!', 1);
     }
@@ -1848,7 +1833,6 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     overwriteExisting = function(overwrite) {
         if (name) {
             myself.showMessage('Saving project\nto the cloud...');
-            myself.setProjectName(name);
             SnapCloud.saveProject(
                 myself,
                 function () {
@@ -1859,7 +1843,8 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
                     }
                 },
                 myself.cloudError(),
-                overwrite
+                overwrite,
+                name
             );
         }
     };
@@ -1889,11 +1874,6 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
         },
         myself.cloudError()
     );
-};
-
-NetsBloxMorph.prototype.logout = function () {
-    NetsBloxMorph.uber.logout.call(this);
-    this.room.update();
 };
 
 // RPC import support (both custom blocks and message types)
@@ -2409,6 +2389,23 @@ NetsBloxMorph.prototype.collabResponse = function (id, response) {
         },
         function(err){
             myself.showMessage(err, 2);
+        }
+    );
+};
+
+NetsBloxMorph.prototype.logout = function () {
+    var myself = this;
+    delete localStorage['-snap-user'];
+    SnapCloud.logout(
+        function () {
+            SnapCloud.clear();
+            myself.showMessage('disconnected.', 2);
+            myself.newProject();
+        },
+        function () {
+            SnapCloud.clear();
+            myself.showMessage('disconnected.', 2);
+            myself.newProject();
         }
     );
 };

@@ -261,6 +261,19 @@ SpriteMorph.prototype.initBlocks = function () {
     };
 
     // Network Messages
+    // request reply
+    SpriteMorph.prototype.blocks.doSocketRequest = {
+        type: 'reporter',
+        category: 'services',
+        spec: 'send msg %msgInput to %roles and wait'
+    };
+
+    SpriteMorph.prototype.blocks.doSocketResponse = {
+        type: 'command',
+        category: 'services',
+        spec: 'send response %s'
+    };
+
     SpriteMorph.prototype.blocks.doSocketMessage = {
         type: 'command',
         category: 'services',
@@ -273,7 +286,7 @@ SpriteMorph.prototype.initBlocks = function () {
         spec: 'when I receive %msgOutput'
     };
 
-    // Seat Reporters
+    // Role Reporters
     SpriteMorph.prototype.blocks.getProjectId = {
         type: 'reporter',
         category: 'services',
@@ -638,9 +651,11 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('receiveSocketMessage'));
         blocks.push(block('doSocketMessage'));
         blocks.push('-');
+        blocks.push(block('doSocketRequest'));
+        blocks.push(block('doSocketResponse'));
+        blocks.push('-');
         blocks.push(block('getProjectId'));
         blocks.push(block('getProjectIds'));
-        blocks.push('-');
 
         blocks.push(block('getJSFromRPCStruct'));
         if (this.world().isDevMode) {
@@ -1259,6 +1274,9 @@ StageMorph.prototype.blockTemplates = function (category) {
     } else if (cat === 'services') {
         blocks.push(block('receiveSocketMessage'));
         blocks.push(block('doSocketMessage'));
+        blocks.push('-');
+        blocks.push(block('doSocketRequest'));
+        blocks.push(block('doSocketResponse'));
         blocks.push('-');
         blocks.push(block('getProjectId'));
         blocks.push(block('getProjectIds'));

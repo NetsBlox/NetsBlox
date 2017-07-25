@@ -1,6 +1,6 @@
 /*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions,
   DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject, NetsBloxSerializer,
-  BlockMorph, localize*/
+  localize*/
 // WebSocket Manager
 
 var WebSocketManager = function (ide) {
@@ -28,6 +28,7 @@ WebSocketManager.MessageHandlers = {
     // Receive an assigned uuid
     'uuid': function(msg) {
         this.uuid = msg.body;
+        SnapActions.id = this.uuid;
         this.onConnect();
     },
 
@@ -40,15 +41,15 @@ WebSocketManager.MessageHandlers = {
         // filter for gameplay
         if (dstId === this.ide.projectName || dstId === 'others in room' || dstId === 'everyone in room') {
             content = this.deserializeMessage(msg);
-            this.onMessageReceived(messageType, content, 'role');
+            this.onMessageReceived(messageType, content, 'role', msg);
         }
     },
 
     'export-room': function(msg) {
         if (msg.action === 'export') {
-            this.ide.exportRoom(msg.roles);
+            this.ide.exportRoom(msg.content);
         } else if (msg.action === 'save') {
-            this.ide.saveRoomLocal(msg.roles);
+            this.ide.saveRoomLocal(msg.content);
         }
     },
 
@@ -135,15 +136,15 @@ WebSocketManager.MessageHandlers = {
                 this.ide.showMessage(msg.from + ' tried sending you message type \'' + msg.name + '\' when you already have it!', 2);
             } else {
                 // Prepare dialog & prompt user
-                var request = 
+                var request =
                     msg.from + ' requested to send you a message type:\n\'' +
-                    msg.name + '\' with ' + 
-                    msg.fields.length + 
+                    msg.name + '\' with ' +
+                    msg.fields.length +
                     (msg.fields.length !== 1 ? ' fields.' : ' field.') + '\n' +
                     'Would you like to accept?';
 
                 dialog.askYesNo('Message Share Request', request, myself.ide.root());
-                
+
                 // Accept the request
                 dialog.ok = function() {
                     var ide = myself.ide.root().children[0].parentThatIsA(IDE_Morph);
@@ -156,7 +157,7 @@ WebSocketManager.MessageHandlers = {
                             }
 
                             // format notification
-                            var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length + 
+                            var notification = 'Received message type \'' + msg.name + '\' with ' + msg.fields.length +
                                 (msg.fields.length === 0 ? ' fields.' : (msg.fields.length === 1 ? ' field: ' + msg.fields : ' fields: ' + msg.fields));
 
                             // notify
@@ -173,6 +174,9 @@ WebSocketManager.MessageHandlers = {
                 };
             }
         }
+    },
+    'user-action': function(msg) {
+        SnapActions.onMessage(msg.action);
     }
 };
 
@@ -217,14 +221,10 @@ WebSocketManager.prototype._connectWebSocket = function() {
         var msg = JSON.parse(rawMsg.data),
             type = msg.type;
 
-        if (msg.namespace === 'netsblox') {
-            if (WebSocketManager.MessageHandlers[type]) {
-                WebSocketManager.MessageHandlers[type].call(self, msg);
-            } else {
-                console.error('Unknown message:', msg);
-            }
+        if (WebSocketManager.MessageHandlers[type]) {
+            WebSocketManager.MessageHandlers[type].call(self, msg);
         } else {
-            SnapActions.onMessage(msg);
+            console.error('Unknown message:', msg);
         }
     };
 
@@ -237,7 +237,7 @@ WebSocketManager.prototype._connectWebSocket = function() {
         }
 
         if (!self.errored && Date.now() - self.version > 5000) {  // tried connecting for 5 seconds
-            errMsg = self.hasConnected ? 
+            errMsg = self.hasConnected ?
                 'Temporarily disconnected.\nSome network functionality may be ' +
                 'nonfunctional.\nTrying to reconnect...' :
 
@@ -265,85 +265,49 @@ WebSocketManager.prototype.sendMessage = function(message) {
 
 WebSocketManager.prototype.serializeMessage = function(message) {
     if (message.content) {
-        var myself = this,
-            fields = Object.keys(message.content),
-            definitions = [],
+        var fields = Object.keys(message.content),
             content;
 
+        this.serializer.flush();
+        this.serializer.isSavingHistory = false;
         for (var i = fields.length; i--;) {
             content = message.content[fields[i]];
             if (isObject(content)) {
-                if (content instanceof Context) {
-                    content.receiver = null;
-                    content.outerContext = null;
-                    definitions = definitions.concat(this.getRequiredDefinitions(content.expression));
-                }
-                message.content[fields[i]] = this.serializer.serialize(content);
+                message.content[fields[i]] = this.serializer.store(content);
             }
         }
-
-        // Attach the necessary definitions
-        message.definitions = definitions.map(function(definition) {
-            return myself.serializer.serialize(definition);
-        }).reverse();
+        this.serializer.isSavingHistory = true;
+        this.serializer.flush();
     }
 
     return JSON.stringify(message);
 };
 
-WebSocketManager.prototype.getRequiredDefinitions = function(block) {
-    var myself = this,
-        allDefinitions;
-
-    if (!(block instanceof BlockMorph)) {
-        return [];
-    }
-
-    allDefinitions = block.inputs().map(function(input) {
-        return myself.getRequiredDefinitions(input);
-    }).reduce(function(l1, l2) {
-        return l1.concat(l2);
-    }, []);
-
-    if (block.definition) {
-        allDefinitions.push(block.definition);
-        allDefinitions = allDefinitions.concat(
-            this.getRequiredDefinitions(block.definition.body.expression));
-    }
-
-    if (block.nextBlock && block.nextBlock()) {
-        allDefinitions = allDefinitions.concat(this.getRequiredDefinitions(block.nextBlock()));
-    }
-
-    return allDefinitions;
-};
-
 WebSocketManager.prototype.deserializeMessage = function(message) {
-    var myself = this,
-        content = message.content,
+    var content = message.content,
         fields = Object.keys(content),
-        definitions = message.definitions,
-        value;
+        value,
+        receiver,
+        project,
+        model;
 
-    // Load any provided block definitions first
-    if (definitions) {
-        definitions = definitions.map(function(definition) {
-            return myself.serializer.loadCustomBlock(
-                myself.serializer.parse(definition),
-                true
-            );
-        });
-        this.serializer.init();
-        this.serializer.project.stage = new StageMorph();
-        this.serializer.project.sprites = {};
-        this.serializer.project.stage.globalBlocks = definitions;
-    }
+    this.serializer.project = {
+        stage: new StageMorph(),
+        sprites: {}
+    };
 
     for (var i = fields.length; i--;) {
         value = content[fields[i]];
         if (value[0] === '<') {
             try {
-                content[fields[i]] = this.serializer.loadValue(this.serializer.parse(value));
+                model = this.serializer.parse(value);
+                receiver = model.childNamed('receiver');
+                project = receiver && receiver.childNamed('project');
+                // If the receiver is the project...
+                if (project) {
+                    this.serializer.rawLoadProjectModel(project);
+                }
+                content[fields[i]] = this.serializer.loadValue(model);
             } catch(e) {  // must not have been XML
                 console.error('Could not deserialize!', e);
             }
@@ -374,7 +338,7 @@ WebSocketManager.prototype.updateRoomInfo = function() {
             room: roomName,
             role: roleId
         };
-        
+
     if (owner) {
         msg.type = 'join-room';
         msg.owner = owner;
@@ -388,7 +352,7 @@ WebSocketManager.prototype.updateRoomInfo = function() {
  * @param {String} message
  * @return {undefined}
  */
-WebSocketManager.prototype.onMessageReceived = function (message, content, role) {
+WebSocketManager.prototype.onMessageReceived = function (message, content, role, msg) {
     var hats = [],
         context,
         idle = !this.processes.length,
@@ -397,6 +361,10 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
 
     content = content || [];
     if (message !== '') {
+        // if the message is for requestId
+        stage.threads.processes.forEach(function (p) {
+            if (message === '__reply__' && (p.requestId === msg.requestId) ) p.reply = msg;
+        });
         stage.children.concat(stage).forEach(function (morph) {
             if (morph instanceof SpriteMorph || morph instanceof StageMorph) {
                 hats = hats.concat(morph.allHatBlocksForSocket(message, role));  // FIXME
@@ -405,13 +373,15 @@ WebSocketManager.prototype.onMessageReceived = function (message, content, role)
 
         for (var h = hats.length; h--;) {
             block = hats[h];
-            // Initialize the variable frame with the message content for 
+            // Initialize the variable frame with the message content for
             // receiveSocketMessage blocks
             context = null;
             if (block.selector === 'receiveSocketMessage') {
                 // Create the network context
                 context = new Context();
                 context.variables.addVar('__message__', content);
+                context.variables.addVar('__requestId__', msg.requestId);
+                context.variables.addVar('__srcId__', msg.srcId);
             }
 
             // Find the process list for the given block
@@ -493,6 +463,7 @@ WebSocketManager.prototype.getSerializedProject = function() {
         pdata,
         media;
 
+    ide.serializer.flush();
     ide.serializer.isCollectingMedia = true;
     pdata = ide.serializer.serialize(ide.stage);
     media = ide.serializer.mediaXML(ide.projectName);
@@ -516,6 +487,7 @@ WebSocketManager.prototype.getSerializedProject = function() {
     }
     ide.serializer.isCollectingMedia = false;
     ide.serializer.flushMedia();
+    ide.serializer.flush();
 
     return {
         ProjectName: ide.projectName,

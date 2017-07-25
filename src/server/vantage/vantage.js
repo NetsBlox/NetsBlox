@@ -1,3 +1,4 @@
+/* eslint-disable no-console*/
 // Vantage support for the server object
 'use strict';
 
@@ -32,7 +33,6 @@ var NetsBloxVantage = function(server) {
         .option('-j, --json', 'Print as json')
         .option('-a, --admin', 'Toggle admin status')
         .option('-u, --update', 'Update the user\'s schema')
-        .option('-c, --clear', 'Clear the room info')
         .option('--delete', 'Delete the user')
         .option('--force', 'Force the given command')
         .option('-p, --password <password>', 'Set the user password')
@@ -69,10 +69,6 @@ var NetsBloxVantage = function(server) {
                         } else {
                             console.log(user.pretty().rooms);
                         }
-                    } else if (args.options.clear) {
-                        // TODO
-                        user.save();
-                        console.log('User updated!');
                     } else if (args.options.admin) {
                         user.admin = !user.admin;
                         user.save();
@@ -143,16 +139,13 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
             var header = '* * * * * * * Rooms * * * * * * * \n',
                 rooms = R.values(RoomManager.rooms),
                 text = rooms.map(function(room) {
-                    var clients = Object.keys(room.roles)
+                    var clients = room.getRoleNames()
                         .map(role => {
-                            let client = room.roles[role],
-                                username = client ? client.username : NO_USER_LABEL;
+                            let clients = room.getSocketsAt(role),
+                                names = clients.length ?
+                                    clients.map(c => c.username) : [NO_USER_LABEL];
 
-                            if (args.options.long && client) {
-                                username = `${username} (${client.uuid})`;
-                            }
-
-                            return `\t${role}: ${username}`;
+                            return `\t${role}: ${names.join(',')}`;
                         });
 
                     const collabs = room.getCollaborators().join(' ');
@@ -225,3 +218,4 @@ NetsBloxVantage.prototype.start = function(port) {
 };
 
 module.exports = NetsBloxVantage;
+/* eslint-enable no-console*/

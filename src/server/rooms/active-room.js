@@ -15,7 +15,6 @@ class ActiveRoom {
         this.name = name;
         this.originTime = Date.now();
 
-        // Seats
         this.roles = {};  // actual occupants
 
         this.owner = owner;
@@ -25,7 +24,6 @@ class ActiveRoom {
 
         // Saving
         // TODO: should I set this everytime?
-        // TODO: load the role names
         this._project = null;
 
         this.uuid = utils.uuid(owner, name);
@@ -40,17 +38,28 @@ class ActiveRoom {
         this.destroy();
 
         // If the owner is a socket uuid, then delete it from the database, too
-        if (this._project && this._project.isTransient()) {
-            this._logger.trace(`removing project ${this.uuid} as the room has closed`);
-            this._project.destroy();
+        if (this._project) {
+            return this._project.isTransient()
+                .then(isTrans => {
+                    if (isTrans) {
+                        this._logger.trace(`removing project ${this.uuid} as the room has closed`);
+                        this._project.destroy();
+                    }
+                });
+        } else {
+            return Q();
         }
+    }
+
+    isEditableFor (user) {
+        return user === this.owner || this.getCollaborators().includes(user);
     }
 
     // This should only be called by the RoomManager (otherwise, the room will not be recorded)
     fork (logger, socket) {
         // Create a copy of the room with the socket as the new owner
         var fork = new ActiveRoom(logger, this.name, socket.username),
-            roles = Object.keys(this.roles),
+            roles = this.getRoleNames(),
             data;
 
         // Clone the room storage data
@@ -75,20 +84,55 @@ class ActiveRoom {
     }
 
     add (socket, role) {
+        this.silentAdd(socket, role);
+        this.sendUpdateMsg();
+    }
+
+    silentAdd (socket, role) {
         this._logger.trace(`adding ${socket.uuid} to ${role}`);
-        this.roles[role] = socket;
+
+        const oldRoom = socket._room;
+        const oldRole = socket.roleId;
+        if (oldRoom && oldRole) {
+            this._logger.trace(`removing ${socket.uuid} from old role ${oldRole}`);
+            if (oldRoom === this) {
+                this.silentRemove(socket);
+            } else {
+                oldRoom.remove(socket);
+            }
+        }
+
+        this.roles[role].push(socket);
         socket.roleId = role;
-        this.onRolesChanged();  // Update all clients
+        socket._setRoom(this);
+    }
+
+    silentRemove (socket) {
+        const role = socket.roleId;
+        const sockets = this.roles[role] || [];
+        const index = sockets.indexOf(socket);
+
+        if (index > -1) {
+            sockets.splice(index, 1);
+            socket.roleId = null;
+        } else {
+            this._logger.warn(`could not remove socket ${socket.username} from ${this.uuid}. Not found`);
+        }
+    }
+
+    remove (socket) {
+        this.silentRemove(socket);
+        this.sendUpdateMsg();
+        this.check();
     }
 
     getStateMsg () {
         var occupants = {},
             msg;
 
-        Object.keys(this.roles)
-            .forEach(role => {
-                occupants[role] = this.roles[role] ? this.roles[role].username : null;
-            });
+        this.getRoleNames()
+            .forEach(role => occupants[role] =
+                this.getSocketsAt(role).map(socket => socket.username));
 
         msg = {
             type: 'room-roles',
@@ -135,70 +179,51 @@ class ActiveRoom {
 
     setOwner(owner) {
         this.owner = owner;
-        this.changeName();
+        return this.changeName();
     }
 
-    changeName(name) {
-        var promise = Q(name);
-        if (!name) {
-            // make sure name is also unique to the existing rooms...
-            let activeRoomNames = this.getAllActiveFor(this.owner);
-            this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
-
-            // Get name unique to the owner
-            promise = this.getOwner()
-                .then(owner => owner ?
-                    owner.getNewName(this.name, activeRoomNames) : this.name);
-        }
-        return promise.then(name => {
-            this.update(name);
-            return name;
-        });
+    changeName(name, force, inPlace) {
+        let owner = null;
+        // Check if this project is already saved for the owner.
+        //   - If so, keep the same name
+        //   - Else, request a new name
+        name = name || this.name;
+        return this.getOwner()
+            .then(_owner => {
+                owner = _owner;
+                if (owner) {
+                    return owner.getAllRawProjects();
+                }
+                return [];
+            })
+            .then(projects => {
+                const existing = projects.find(project => project.name === name);
+                const nameConflicts = existing && existing.originTime !== this.originTime;
+                if (nameConflicts || force) {
+                    // make sure name is also unique to the existing rooms...
+                    let activeRoomNames = this.getAllActiveFor(this.owner);
+                    this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
+                    return owner.getNewName(name, activeRoomNames);
+                }
+                return name;
+            })
+            .then(name => {
+                const project = this.getProject();
+                if (inPlace && project) {
+                    this.name = name;
+                    return project.setName(name)
+                        .then(() => this.update(name));
+                } else {
+                    return this.update(name).then(() => name);
+                }
+            });
     }
 
     save() {
         if (this._project) {  // has been saved
-            this._project.save();
+            return this._project.save();
         }
-    }
-
-    move (params) {
-        var src = params.src || params.socket.roleId,
-            socket = params.socket,
-            dst = params.dst;
-
-        if (socket) {
-            // socket should equal this.roles[src]!
-            if (socket !== this.roles[src]) {
-                var rolesList = Object.keys(this.roles)
-                    .map(role => `${role}: ${this.roles[role] && this.roles[role].username}`)
-                    .join('\n');
-
-                this._logger.error(`room "${this.name}" is out of sync! ${src} should have ` +
-                    `${socket.username} but has ${this.roles[src] && this.roles[src].username}` +
-                    `.\nPrinting all roles: ${rolesList}`);
-
-                if (this.roles[src]) {  // notify the socket of it's removal!
-                    var currSocket = this.roles[src];
-                    currSocket.newRoom();
-                    this._logger.error(`Moved ${this.roles[src].username} from ${this.name} (${src})` +
-                        ` to ${currSocket._room.name} (${currSocket.roleId})`);
-
-                    // Send message to currSocket to explain the move
-                    currSocket.send({
-                        type: 'notification',
-                        message: `${socket.username} has taken your spot.\nYou have been moved ` +
-                            ` to a new project.`
-                    });
-                }
-            }
-        }
-
-        socket = socket || this.roles[src];
-        this._logger.info(`moving from ${src} to ${dst}`);
-        this.roles[src] = null;
-        this.add(socket, dst);
-        this.check();
+        return Q();
     }
 
     sendFrom (socket, msg) {
@@ -215,10 +240,24 @@ class ActiveRoom {
         }
         this.sockets().forEach(socket => socket.send(msg));
     }
- 
+
     sockets () {
         return R.values(this.roles)
-            .filter(socket => !!socket);
+            .reduce((l1, l2) => l1.concat(l2), []);
+    }
+
+    isOccupied(role) {
+        return this.roles[role] && !!this.roles[role].length;
+    }
+
+    getUnoccupiedRole() {
+        return this.getRoleNames()
+            .sort((n1, n2) => this.roles[n1].length < this.roles[n2].length ? -1 : 1)
+            .shift();
+    }
+
+    getSocketsAt (role) {
+        return this.roles[role] && this.roles[role].slice();
     }
 
     ownerCount () {
@@ -229,16 +268,7 @@ class ActiveRoom {
     }
 
     contains (username) {
-        var roles = Object.keys(this.roles),
-            socket;
-
-        for (var i = roles.length; i--;) {
-            socket = this.roles[roles[i]];
-            if (socket && socket.username === username) {
-                return true;
-            }
-        }
-        return false;
+        return !!this.sockets().find(socket => socket.username === username);
     }
 
     update (name) {
@@ -247,26 +277,55 @@ class ActiveRoom {
         this.uuid = utils.uuid(this.owner, this.name);
 
         if (this.uuid !== oldUuid) {
-            this._logger.trace('Updating uuid to ' + this.uuid);
+            this._logger.trace('updating uuid to ' + this.uuid);
             this.onUuidChange(oldUuid);
         }
         if (name) {
-            this.onRolesChanged();
+            return this.onRolesChanged();
         }
+        return Q();
     }
 
     /////////// Role Operations ///////////
+    hasRole (name) {
+        return this.roles.hasOwnProperty(name);
+    }
+
     getRoleNames () {
         return Object.keys(this.roles);
     }
 
-    getRole(role) {
-        return this._project.getRole(role);
+    getRole(role, skipSave) {  // Get the project state for a given role
+        let socket = this.getSocketsAt(role)[0];
+
+        // request it from the role if occupied or get it from the database
+        if (socket) {
+            return socket.getProjectJson()
+                .then(content => {
+                    if (!skipSave) {
+                        return this.setRole(role, content)
+                            .then(() => content);
+                    }
+                    return content;
+                })
+                .catch(err => {
+                    this._logger.trace(`could not get project json for ${role} in ${this.name}: ${err}`);
+                    return this._project.getRole(role);
+                });
+        } else {
+            return this._project.getRole(role);
+        }
     }
 
     setRole(role, content) {
         this._logger.trace(`setting ${role} to ${content}`);
+        this.roles[role] = this.roles[role] || null;
         return this._project.setRole(role, content);
+    }
+
+    setRoles(roles) {  // bulk load - no update necessary
+        this._logger.trace(`saving all roles in ${this.uuid}`);
+        return this._project.setRoles(roles);
     }
 
     cloneRole(roleId) {
@@ -276,10 +335,11 @@ class ActiveRoom {
         while (this.roles.hasOwnProperty(newRole = `${roleId} (${count++})`));
 
         if (!this.roles[newRole]) {
-            this.roles[newRole] = null;
+            this.roles[newRole] = [];
         }
 
-        return this._project.cloneRole(roleId, newRole)
+        return this.saveRole(roleId)
+            .then(() => this._project.cloneRole(roleId, newRole))
             .then(() => this.onRolesChanged())
             .then(() => newRole);
     }
@@ -290,9 +350,9 @@ class ActiveRoom {
     }
 
     silentCreateRole (role, content) {
-        this._logger.trace(`Adding role ${role}`);
         if (!this.roles[role]) {
-            this.roles[role] = null;
+            this._logger.trace(`Adding role ${role}`);
+            this.roles[role] = [];
             if (content) {
                 return this.setRole(role, content || utils.getEmptyRole(role));
             }
@@ -305,7 +365,7 @@ class ActiveRoom {
     }
 
     saveRole(role) {
-        const socket = this.roles[role];
+        const socket = this.roles[role][0];
 
         if (!socket) {
             this._logger.warn(`cannot save unoccupied role: ${role}`);
@@ -329,18 +389,16 @@ class ActiveRoom {
     }
 
     renameRole (roleId, newId) {
-        var socket = this.roles[roleId];
-
         if (this.roles[newId]) {
             this._logger.warn(`Cannot rename role: "${newId}" is already taken`);
             return;
         }
-        if (socket) {  // update socket, too!
-            socket.roleId = newId;
-        }
+
+        let sockets = this.getSocketsAt(roleId);
+        sockets.forEach(socket => socket.roleId = newId);
+        this.roles[newId] = sockets;
 
         delete this.roles[roleId];
-        this.roles[newId] = socket;
 
         return this._project.renameRole(roleId, newId)
             .then(() => {
@@ -349,45 +407,39 @@ class ActiveRoom {
             });
     }
 
-    onRolesChanged () {
-        // This should be called when the room layout changes
-        // Send the room info to the socket
+    sendUpdateMsg () {
         var msg = this.getStateMsg();
 
         this.sockets().forEach(socket => socket.send(msg));
-
-        this.save();
     }
 
-    // Retrieve a dictionary of role => project content
-    collectProjects() {
-        // Collect the projects from the websockets
-        const sockets = this.sockets();
-        const projects = sockets.map(socket => socket.getProjectJson());
-
-        // Add saving the cached projects
-        return Q.all(projects).then(projects => {
-            // create the room from the projects
-            var roles = Object.keys(this.roles),
-                socket,
-                k,
-                content = {
-                };
-
-            for (var i = roles.length; i--;) {
-                socket = this.roles[roles[i]];
-
-                k = sockets.indexOf(socket);
-                if (k !== -1) {
-                    content[roles[i]] = projects[k];
-                } else {  // socket is closed -> use the cache
-                    content[roles[i]] = this.getRole(roles[i]);
-                }
-            }
-            return content;
-        });
+    onRolesChanged () {
+        // This should be called when the room layout changes in a way that
+        // effects the datamodel (eg, created role). Changes about clients
+        // moving around should call sendUpdateMsg
+        this.sendUpdateMsg();
+        return this.save();
     }
 
+    serialize() {  // Create project xml from the current room
+        return Q.all(this.getRoleNames().map(name => this.getRole(name, true)))
+            .then(roles => {
+                const roleContents = roles.map(content =>
+                    utils.xml.format('<role name="@">', content.ProjectName) +
+                        content.SourceCode + content.Media + '</role>'
+                );
+
+                // only save the ones that may have been updated
+                const updateRoles = this.getRoleNames()
+                    .filter(name => this.isOccupied(name))
+                    .map(name => roles.find(role => role.ProjectName === name))
+                    .filter(role => !!role);
+
+                return this.setRoles(updateRoles)
+                    .then(() => utils.xml.format('<room name="@" app="@">', this.name, utils.APP) +
+                    roleContents.join('') + '</room>');
+            });
+    }
 }
 
 // Factory method
@@ -398,12 +450,12 @@ ActiveRoom.fromStore = function(logger, socket, project) {
     room.setStorage(project);
     room.originTime = project.originTime;
 
-    room.uuid = project.uuid;  // save over the old uuid even if it changes
+    room.uuid = project.uuid || room.uuid;  // save over the old uuid even if it changes
                               // this should be reset if the room is forked TODO
 
     return project.getRoleNames().then(names => {
         names.filter(name => !room.roles.hasOwnProperty(name))
-            .forEach(newName => room.roles[newName] = null);
+            .forEach(newName => room.roles[newName] = []);
         room.onRolesChanged();
         return room;
     });

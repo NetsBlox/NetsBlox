@@ -6,7 +6,6 @@ var express = require('express'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
     SocketManager = require('./socket-manager'),
     RoomManager = require('./rooms/room-manager'),
-    //Collaboration = require('snap-collaboration'),
     RPCManager = require('./rpc/rpc-manager'),
     MobileManager = require('./mobile/mobile-manager'),
     Storage = require('./storage/storage'),
@@ -15,7 +14,7 @@ var express = require('express'),
     DEFAULT_OPTIONS = {
         port: 8080,
         vantagePort: 1234,
-        vantage: true
+        vantage: process.env.ENV !== 'production'
     },
 
     // Routes
@@ -80,22 +79,19 @@ Server.prototype.configureRoutes = function() {
             const room = RoomManager.rooms[uuid];
             const roles = {};
             const project = room.getProject();
-            let lastUpdateAt = null;
+            let lastUpdatedAt = null;
 
             if (project) {
-                lastUpdateAt = new Date(project.lastUpdateAt);
+                lastUpdatedAt = new Date(project.lastUpdatedAt);
             }
 
-            Object.keys(room.roles).forEach(roleId => {
-                const socket = room.roles[roleId];
-                if (socket) {
-                    roles[roleId] = {
+            room.getRoleNames().forEach(role => {
+                roles[role] = room.getSocketsAt(role).map(socket => {
+                    return {
                         username: socket.username,
                         uuid: socket.uuid
                     };
-                } else {
-                    roles[roleId] = null;
-                }
+                });
             });
 
             return {
@@ -103,7 +99,7 @@ Server.prototype.configureRoutes = function() {
                 name: room.name,
                 owner: room.owner,
                 collaborators: room.getCollaborators(),
-                lastUpdateAt: lastUpdateAt,
+                lastUpdatedAt: lastUpdatedAt,
                 roles: roles
             };
         });
@@ -128,10 +124,12 @@ Server.prototype.configureRoutes = function() {
     });
 
     // Initial page
-    this.app.get('/debug.html', (req, res) =>
-        res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html')));
-
     this.app.get('/', (req, res) => {
+        if(process.env.ENV !== 'production'){
+            res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html'));
+            return;
+        }
+        
         var baseUrl = `https://${req.get('host')}`,
             url = baseUrl + req.originalUrl,
             projectName = req.query.ProjectName,
@@ -202,8 +200,6 @@ Server.prototype.start = function(done) {
             this.configureRoutes();
             this._server = this.app.listen(this.opts.port, err => {
                 this._wss = new WebSocketServer({server: this._server});
-                //Collaboration.init(this._logger.fork('collaboration'));
-                //Collaboration.enable(this.app, this._wss, opts);
                 SocketManager.enable(this._wss);
                 // Enable Vantage
                 if (this.opts.vantage) {

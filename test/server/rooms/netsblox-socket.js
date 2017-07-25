@@ -1,5 +1,7 @@
 describe('netsblox-socket', function() {
     var ROOT_DIR = '../../../',
+        utils = require(ROOT_DIR + 'test/assets/utils'),
+        sUtils = utils.reqSrc('server-utils'),
         NBSocket = require(ROOT_DIR + 'src/server/rooms/netsblox-socket'),
         Logger = require(ROOT_DIR + 'src/server/logger'),
         Constants = require(ROOT_DIR + 'src/common/constants'),
@@ -25,9 +27,10 @@ describe('netsblox-socket', function() {
         });
 
         it('should resolve when the room is set', function(done) {
-            var testRoom = {},
+            var testRoom = {owner: 'abc'},
                 waited = false;
 
+            testRoom.getSocketsAt = () => [];
             socket.getRoom()
                 .then(room => {
                     assert.equal(room, testRoom);
@@ -89,23 +92,77 @@ describe('netsblox-socket', function() {
         });
     });
 
-    describe('message handlers', function() {
-        describe('message', function() {
-            var socket;
-            before(function() {
-                var rawSocket = {
-                    on: () => {},
-                    send: () => {},
-                    readyState: NBSocket.prototype.OPEN
-                };
-                socket = new NBSocket(logger, rawSocket);
+    describe('user messages', function() {
+        var alice, bob, steve;
+
+        before(function() {
+            let room = utils.createRoom({
+                name: 'add-test',
+                owner: 'first',
+                roles: {
+                    role1: ['alice'],
+                    role2: ['bob', 'steve'],
+                }
+            });
+            [alice] = room.getSocketsAt('role1');
+            [bob, steve] = room.getSocketsAt('role2');
+        });
+
+        it('should ignore bad dstId for interroom messages', function() {
+            var msg = {};
+            msg.dstId = 0;
+            NBSocket.MessageHandlers.message.call(alice, msg);
+        });
+
+        // Test local message routing
+        it('should route messages to local roles', function() {
+            alice._socket.receive({
+                type: 'message',
+                namespace: 'netsblox',
+                dstId: 'role2',
+                content: {
+                    msg: 'worked'
+                }
             });
 
-            it('should ignore bad dstId for interroom messages', function() {
-                var msg = {};
-                msg.dstId = 0;
-                NBSocket.MessageHandlers.message.call(socket, msg);
+            const msg = bob._socket.message(-1);
+            const msg2 = steve._socket.message(-1);
+            assert.equal(msg.content.msg, 'worked');
+            assert.equal(msg2.content.msg, 'worked');
+        });
+    });
+
+    describe('getProjectJson', function() {
+        it('should fail if receiving mismatching project name', function(done) {
+            const socket = utils.createSocket('test-user');
+            socket.roleId = 'role1';
+            socket._socket.addResponse('project-request', function(msg) {
+                return {
+                    type: 'project-response',
+                    id: msg.id,
+                    project: sUtils.getEmptyRole('myRole')
+                };
             });
+            socket.getProjectJson()
+                .then(() => done('failed!'))
+                .catch(() => done());
+        });
+
+        it('should fail if socket changed roles', function(done) {
+            const socket = utils.createSocket('test-user');
+            socket.roleId = 'role1';
+            socket._socket.addResponse('project-request', function(msg) {
+                return {
+                    type: 'project-response',
+                    id: msg.id,
+                    project: sUtils.getEmptyRole('myRole')
+                };
+            });
+            socket.getProjectJson()
+                .then(() => done('failed!'))
+                .catch(() => done());
+
+            socket.roleId = 'role2';
         });
     });
 });
