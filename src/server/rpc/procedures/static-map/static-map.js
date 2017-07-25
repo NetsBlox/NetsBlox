@@ -234,9 +234,9 @@ var mapGetter = function(minMax, attr) {
     };
 };
 
-StaticMap.prototype.maxLongitude = mapGetter('max', 'lng');
+StaticMap.prototype.maxLongitude = mapGetter('max', 'lon');
 StaticMap.prototype.maxLatitude = mapGetter('max', 'lat');
-StaticMap.prototype.minLongitude = mapGetter('min', 'lng');
+StaticMap.prototype.minLongitude = mapGetter('min', 'lon');
 StaticMap.prototype.minLatitude = mapGetter('min', 'lat');
 
 // Map of argument name to old field name
