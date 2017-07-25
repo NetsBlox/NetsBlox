@@ -14,6 +14,6 @@ describe('thingspeak-iot', function() {
         ['searchByBoth', ['tag','latitude', 'longitude', 'distance', 'limit']],
         ['channelFeed', ['id', 'numResult']],
         ['privateChannelFeed', ['id', 'numResult', 'apiKey']],
-        ['channelDetail', ['id']]
+        ['channelDetails', ['id']]
     ]);
 });

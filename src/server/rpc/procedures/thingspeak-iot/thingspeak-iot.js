@@ -137,7 +137,7 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
 };
 
 //put together the data from feeds and channel metadata
-thingspeakIoT.channelDetail = function(id) {
+thingspeakIoT.channelDetails = function(id) {
     return this._requestData({queryString: id + '.json?'}).then( data => {
         let details = detailParser(data);
         return this._requestData({queryString: id + '/feeds.json?results=10'})
@@ -150,7 +150,8 @@ thingspeakIoT.channelDetail = function(id) {
                     details[match] = resp.channel[match];
                 }
             }
-            this._logger.info('respondig with', details);
+            details.feeds = feedParser(resp);
+            this._logger.info('responding with', details);
             return rpcUtils.jsonToSnapList(details);
         });
     });
