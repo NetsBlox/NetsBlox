@@ -109,7 +109,7 @@ thingspeakIoT.searchByBoth= function(tag, latitude, longitude, distance) {
     };
     return this._paginatedQueryOpts(queryOptions, 10000).then(queryOptsList => {
         return this._requestData(queryOptsList).then( resultsArr => {
-            let results = searchParser(resultsArr).filter(item => item.tags.includes(tag));
+            let results = searchParser(resultsArr).filter(item => item.tags.some(item => item.toLowerCase().indexOf(tag) !== -1));
             return rpcUtils.jsonToSnapList(results);
         });
     });};
