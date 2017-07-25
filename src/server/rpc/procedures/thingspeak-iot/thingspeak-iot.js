@@ -12,13 +12,14 @@ let feedParser = data => {
             fieldMap[matchGroup] = channel[matchGroup];
         }
     }
-    return data.feeds.map(tag => {
+    return data.feeds.map(entry => {
+        let time = new Date(entry.created_at);
         let resultObj = {
-            Time: tag.created_at.match(/\d{2}:\d{2}/)[0],
+            Time: time.toISOString(),
         };
         for (let field in fieldMap) {
             if (fieldMap.hasOwnProperty(field)) {
-                resultObj[fieldMap[field]] = tag[field];
+                resultObj[fieldMap[field]] = entry[field];
             }
         }
         return resultObj;
@@ -26,11 +27,11 @@ let feedParser = data => {
 };
 
 let detailParser = item => {
-    if (!item.latitude || !item.longitude) return null;
-    return {
+    let metaData = {
         id: item.id,
         name: item.name,
         description: item.description,
+        created_at: new Date(item.created_at),
         latitude: item.latitude,
         longitude: item.longitude,
         tags: (function(data) {
@@ -39,10 +40,19 @@ let detailParser = item => {
             });
         })(item.tags),
     };
+    if (!metaData.latitude || !metaData.longitude || metaData.latitude == 0.0){
+        delete metaData.latitude;
+        delete metaData.longitude;
+    }
+    return metaData;
 };
 
 let searchParser = responses => {
-    let searchResults = responses.map(data => data.channels.map(detailParser)).reduce((results, singleRes) => results.concat(singleRes));
+    let searchResults = responses.map(data => data.channels.map( item => {
+        let details = detailParser(item);
+        if (!details.latitude) return null;
+        return details;
+    })).reduce((results, singleRes) => results.concat(singleRes));
     return searchResults;
 };
 
@@ -72,7 +82,6 @@ thingspeakIoT.searchByTag = function(tag, limit) {
     return this._paginatedQueryOpts(queryOptions, limit).then(queryOptsList => {
         return this._sendStruct(queryOptsList, searchParser);
     });
-
 };
 
 thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) {
@@ -127,11 +136,24 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
     }
 };
 
+//put together the data from feeds and channel metadata
 thingspeakIoT.channelDetail = function(id) {
-    let queryOptions = {
-        queryString: id + '.json?'
-    };
-    return this._sendStruct(queryOptions, detailParser);
+    return this._requestData({queryString: id + '.json?'}).then( data => {
+        let details = detailParser(data);
+        return this._requestData({queryString: id + '/feeds.json?results=10'})
+        .then( resp => {
+            details.updated_at = new Date(resp.channel.updated_at);
+            details.total_entries = resp.channel.last_entry_id;
+            for(var prop in resp.channel) {
+                if (resp.channel.hasOwnProperty(prop) && prop.match(/field\d/)) {
+                    let match = prop.match(/field\d/)[0];
+                    details[match] = resp.channel[match];
+                }
+            }
+            this._logger.info('respondig with', details);
+            return rpcUtils.jsonToSnapList(details);
+        });
+    });
 };
 
 module.exports = thingspeakIoT;
