@@ -13,9 +13,8 @@ let feedParser = data => {
         }
     }
     return data.feeds.map(entry => {
-        let time = new Date(entry.created_at);
         let resultObj = {
-            Time: time.toISOString(),
+            Time: new Date(entry.created_at),
         };
         for (let field in fieldMap) {
             if (fieldMap.hasOwnProperty(field)) {
