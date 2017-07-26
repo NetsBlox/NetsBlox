@@ -52,7 +52,7 @@ StaticMap.prototype._pixelsAt = function(lat, lon, map) {
     // new latlon in px
     let targetPx = merc.px([lon, lat], map.zoom);
     // difference in px
-    let pixelsXY = {x: (targetPx[0] - curPx[0]), y: (targetPx[1] - curPx[1])};
+    let pixelsXY = {x: (targetPx[0] - curPx[0]), y: -(targetPx[1] - curPx[1])};
     return pixelsXY;
 };
 
@@ -234,9 +234,9 @@ var mapGetter = function(minMax, attr) {
     };
 };
 
-StaticMap.prototype.maxLongitude = mapGetter('max', 'lng');
+StaticMap.prototype.maxLongitude = mapGetter('max', 'lon');
 StaticMap.prototype.maxLatitude = mapGetter('max', 'lat');
-StaticMap.prototype.minLongitude = mapGetter('min', 'lng');
+StaticMap.prototype.minLongitude = mapGetter('min', 'lon');
 StaticMap.prototype.minLatitude = mapGetter('min', 'lat');
 
 // Map of argument name to old field name
