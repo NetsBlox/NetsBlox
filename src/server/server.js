@@ -14,7 +14,7 @@ var express = require('express'),
     DEFAULT_OPTIONS = {
         port: 8080,
         vantagePort: 1234,
-        vantage: true
+        vantage: process.env.ENV !== 'production'
     },
 
     // Routes
