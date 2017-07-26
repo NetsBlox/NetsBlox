@@ -109,6 +109,7 @@ thingspeakIoT.searchByBoth= function(tag, latitude, longitude, distance) {
     return this._paginatedQueryOpts(queryOptions, 10000).then(queryOptsList => {
         return this._requestData(queryOptsList).then( resultsArr => {
             let results = searchParser(resultsArr).filter(item => item.tags.some(item => item.toLowerCase().indexOf(tag) !== -1));
+            this._logger.info('responding with', results.length, 'results');
             return rpcUtils.jsonToSnapList(results);
         });
     });};
@@ -144,14 +145,15 @@ thingspeakIoT.channelDetails = function(id) {
         .then( resp => {
             details.updated_at = new Date(resp.channel.updated_at);
             details.total_entries = resp.channel.last_entry_id;
+            details.fields = [];
             for(var prop in resp.channel) {
                 if (resp.channel.hasOwnProperty(prop) && prop.match(/field\d/)) {
                     let match = prop.match(/field\d/)[0];
-                    details[match] = resp.channel[match];
+                    details.fields.push(resp.channel[match]);
                 }
             }
             details.feeds = feedParser(resp);
-            this._logger.info('responding with', details);
+            this._logger.info(`channel ${id} details`, details)
             return rpcUtils.jsonToSnapList(details);
         });
     });
