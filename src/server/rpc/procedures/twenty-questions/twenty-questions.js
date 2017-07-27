@@ -97,7 +97,7 @@ TwentyQuestions.prototype.guess = function(guess) {
                 socket.send(msg);
             });
         }
-        return true;
+        return correct;
     }
     // correct guess, end the game
     this.socket._room.sockets()

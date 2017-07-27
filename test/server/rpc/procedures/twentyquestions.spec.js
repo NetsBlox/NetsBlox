@@ -72,11 +72,17 @@ describe('twentyquestions', function() {
                     twentyquestions.start('books');
                     twentyquestions.socket.roleId = 'guesser';
                 });
+
                 it ('should return an error when guessing as an answerer', function () {
                     assert.equal(twentyquestions.guess(''), 'Enter a guess!');
                 });
+
                 it ('should return an error when invalid answer', function () {
                     assert.equal(twentyquestions.answer('yes').response, 'You\'re not the answerer!');
+                });
+
+                it('should return false when incorrect guess', function () {
+                    assert(!twentyquestions.guess('wrong'));
                 });
             });
         });
@@ -101,9 +107,7 @@ describe('twentyquestions', function() {
 
             describe('for answerer', function () {
                 beforeEach(switchRole);
-                it('end guesser\'s turn', function () {
-                    assert.equal(twentyquestions.guess('book'), true);
-                });
+
                 it('get the right guessCount', function () {
                     for (let i = 1; i <= 5; i++) {
                         twentyquestions.guess('book');
