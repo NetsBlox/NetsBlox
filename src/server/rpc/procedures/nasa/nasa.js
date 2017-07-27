@@ -14,6 +14,7 @@ var debug = require('debug'),
 module.exports = {
 
     isStateless: true,
+    rpcName: 'NASA',
     getPath: () => '/NASA',
 
     // NASA's 'Astronomy Picture of the Day'

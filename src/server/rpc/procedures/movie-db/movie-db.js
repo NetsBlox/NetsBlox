@@ -200,16 +200,7 @@ if(!process.env.TMDB_API_KEY) {
 
         // This is very important => Otherwise it will try to instantiate this
         isStateless: true,
-
-        /**
-         * Return the path to the given RPC
-         *
-         * @return {String}
-         */
-        getPath: function() {
-            return '/MovieDB';
-        },
-
+        rpcName: 'MovieDB',
 
         searchMovie: function(title) {
             var rsp = this.response;

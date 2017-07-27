@@ -242,15 +242,18 @@ StaticMap.prototype.minLatitude = mapGetter('min', 'lat');
 
 // Map of argument name to old field name
 StaticMap.COMPATIBILITY = {
-    getMap: {
-        latitude: 'lat',
-        longitude: 'lon'
-    },
-    getXFromLongitude: {
-        longitude: 'lng'
-    },
-    getYFromLatitude: {
-        latitude: 'lat'
+    path: 'static-map',
+    methods: {
+        getMap: {
+            latitude: 'lat',
+            longitude: 'lon'
+        },
+        getXFromLongitude: {
+            longitude: 'lng'
+        },
+        getYFromLatitude: {
+            latitude: 'lat'
+        }
     }
 };
 
