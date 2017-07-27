@@ -49,8 +49,8 @@ function encodeQueryOptions(keywords, type, minHeight, self) {
     };
 });
 
-imageSearch.getImage = function(fullPath){
-    return this._sendImage({queryString: '', baseUrl:fullPath});
+imageSearch.getImage = function(url){
+    return this._sendImage({queryString: '', baseUrl:url});
 };
 
 if(!process.env.PIXABAY) {
