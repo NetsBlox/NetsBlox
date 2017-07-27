@@ -2,6 +2,8 @@ const ChartNode = require('chartjs-node');
 const ApiConsumer = require('../utils/api-consumer');
 const test = require('../utils/dataset-test');
 const rpcUtils = require('../utils');
+const Logger = require('../../../logger');
+const logger = new Logger('netsblox:rpc:chart');
 
 let chart = new ApiConsumer('chart');
 let chartNode = new ChartNode(600, 600);
@@ -128,7 +130,8 @@ chart._drawChart = function (dataset, xAxisTag, yAxisTag, datasetTag, title, cha
                 return chartNode.getImageBuffer('image/png');
             }).then((imageBuffer) => {
                 rpcUtils.sendImageBuffer(this.response, imageBuffer);
-            }).catch(() => {
+            }).catch(err => {
+                logger.warn(`chart drawing failed: ${err}`);
                 this.response.status(404).send('Error with service');
             });
         }
