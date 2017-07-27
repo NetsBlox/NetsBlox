@@ -36,7 +36,7 @@ weather.temp = function(latitude, longitude){
                 trace('Kelvin temp is '+temp+' fahrenheit is '+tuc.k2f(temp));
                 temp = tuc.k2f(temp).toFixed(1);
             }
-            this.response.send(temp);
+            return(temp);
         });
 };
 
@@ -47,7 +47,7 @@ weather.humidity = function(latitude, longitude){
             if (isWithinMaxDistance(body, latitude, longitude)) {
                 humidity = body.main.humidity;
             }
-            this.response.send(humidity);
+            return(humidity);
         });
 };
 
@@ -59,7 +59,7 @@ weather.description = function(latitude, longitude){
             if (isWithinMaxDistance(body, latitude, longitude)) {
                 description = body.weather[0].description;
             }
-            this.response.send(description);
+            return(description);
         });
 };
 
@@ -70,7 +70,7 @@ weather.windSpeed = function(latitude, longitude){
             if (isWithinMaxDistance(body, latitude, longitude)) {
                 speed = body.wind.speed || 'unknown';
             }
-            this.response.send(speed);
+            return(speed);
         });
 };
 
@@ -81,7 +81,7 @@ weather.windAngle = function(latitude, longitude){
             if (isWithinMaxDistance(body, latitude, longitude)) {
                 deg = body.wind.deg || 'unknown';
             }
-            this.response.send(deg);
+            return(deg);
         });
 };
 
@@ -96,7 +96,6 @@ weather.icon = function(latitude, longitude){
             let queryOpts = {
                 queryString: iconName,
                 baseUrl: 'http://openweathermap.org/img/w/',
-                cache: false
             };
             return this._sendImage(queryOpts);
         });
