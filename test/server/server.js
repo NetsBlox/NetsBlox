@@ -193,7 +193,8 @@ describe('Server Tests', function() {
 
         describe('RPC tests', function() {
             var socket,
-                host = 'ws://localhost:'+port;
+                host = 'ws://localhost:'+port,
+                uuid;
 
             // Connect a websocket
             before(function(done) {
@@ -204,7 +205,6 @@ describe('Server Tests', function() {
                     }));
 
                     socket.on('message', function(msg) {
-                        console.log(msg);
                         msg = JSON.parse(msg);
 
                         if (msg.type === 'uuid') {
