@@ -13,7 +13,6 @@ var fs = require('fs'),
     PROCEDURES_DIR = path.join(__dirname,'procedures'),
     SocketManager = require('../socket-manager'),
     utils = require('../server-utils'),
-    ApiConsumer = require('./procedures/utils/api-consumer'),
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
 /**
