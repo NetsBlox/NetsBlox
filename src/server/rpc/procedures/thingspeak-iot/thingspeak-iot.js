@@ -97,7 +97,7 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) 
         return this._sendStruct(queryOptsList, searchParser);
     });};
 
-thingspeakIoT.searchByBoth= function(tag, latitude, longitude, distance) {
+thingspeakIoT.searchByTagAndLocation= function(tag, latitude, longitude, distance) {
     let queryOptions = {
         queryString: 'public.json?' +
         rpcUtils.encodeQueryData({

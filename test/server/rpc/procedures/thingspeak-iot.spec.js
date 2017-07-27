@@ -11,7 +11,7 @@ describe('thingspeak-iot', function() {
     utils.verifyRPCInterfaces(thingspeak, [
         ['searchByTag', ['tag', 'limit']],
         ['searchByLocation', ['latitude', 'longitude', 'distance', 'limit']],
-        ['searchByBoth', ['tag','latitude', 'longitude', 'distance']],
+        ['searchByTagAndLocation', ['tag','latitude', 'longitude', 'distance']],
         ['channelFeed', ['id', 'numResult']],
         ['privateChannelFeed', ['id', 'numResult', 'apiKey']],
         ['channelDetails', ['id']]
