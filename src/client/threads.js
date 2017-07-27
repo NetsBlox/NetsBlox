@@ -319,18 +319,12 @@ NetsProcess.prototype.parseRPCResult = function (result) {
     return result;
 };
 
-
-function blockToText(block) {
-    const blockXML = block.expression.toBlockXML(SnapActions.serializer);
-    return blockXML;
-}
-
 function toQueryString(list, prefix) {
     var array = list.contents;
     var str = [], k, v;
     for(var i = 0; i < array.length; i++) {
         k = prefix + '[' + i + ']';
-        v = array[i] instanceof Context ? blockToText(array[i]) : array[i];
+        v = array[i] instanceof Context ? SnapActions.serializeBlock(array[i].expression, true) : array[i];
         str.push(typeof v === 'object' ?
             toQueryString(v, k) :
             k + '=' + v);
@@ -350,7 +344,7 @@ NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
         }
         // if a block is passed in serialize it and send it to the rpc
         else if (values[index] instanceof Context) {
-            return name + '=' + blockToText(values[index]);
+            return name + '=' + SnapActions.serializeBlock(values[index].expression, true);
         }
         return name + '=' + values[index];
     }).join('&');
