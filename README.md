@@ -64,6 +64,8 @@ RPCs that are using 3rd party API's often require getting an API key from the gi
   - `BING_TRAFFIC_KEY` should be set to an API key from [Bing Traffic](https://msdn.microsoft.com/en-us/library/hh441725.aspx)
 - Twitter
   - `TWITTER_BEARER_TOKEN` should be set to an API key from Twitter
+- Image Search
+  - `PIXABAY` should be set to an API key from Pixabay
 
 To simplify this process (and to keep your `~/.bashrc` clean), these values can be stored in a `.env` file in the project root directory and they will be loaded into the environment on starting NetsBlox.
 
