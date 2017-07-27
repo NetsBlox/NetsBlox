@@ -35,7 +35,7 @@ weather.temp = function(latitude, longitude){
                 trace('Kelvin temp is '+temp+' fahrenheit is '+tuc.k2f(temp));
                 temp = tuc.k2f(temp).toFixed(1);
             }
-            return(temp);
+            return temp;
         });
 };
 
@@ -46,7 +46,7 @@ weather.humidity = function(latitude, longitude){
             if (isWithinMaxDistance(body, latitude, longitude)) {
                 humidity = body.main.humidity;
             }
-            return(humidity);
+            return humidity;
         });
 };
 
@@ -58,7 +58,7 @@ weather.description = function(latitude, longitude){
             if (isWithinMaxDistance(body, latitude, longitude)) {
                 description = body.weather[0].description;
             }
-            return(description);
+            return description;
         });
 };
 
@@ -69,7 +69,7 @@ weather.windSpeed = function(latitude, longitude){
             if (isWithinMaxDistance(body, latitude, longitude)) {
                 speed = body.wind.speed || 'unknown';
             }
-            return(speed);
+            return speed;
         });
 };
 
@@ -80,7 +80,7 @@ weather.windAngle = function(latitude, longitude){
             if (isWithinMaxDistance(body, latitude, longitude)) {
                 deg = body.wind.deg || 'unknown';
             }
-            return(deg);
+            return deg;
         });
 };
 
