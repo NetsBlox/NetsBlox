@@ -15,7 +15,7 @@ var debug = require('debug'),
 var baseUrl = 'http://api.openweathermap.org/data/2.5/weather?APPID='+API_KEY,
     baseIconUrl = 'http://openweathermap.org/img/w/';
 
-var isWithinMaxDistance = function(result, lat, lng) {
+const isWithinMaxDistance = function(result, lat, lng) {
     var distance = geolib.getDistance(
         {latitude: lat, longitude: lng},
         {latitude: result.coord.lat, longitude: result.coord.lon}
@@ -28,7 +28,7 @@ var isWithinMaxDistance = function(result, lat, lng) {
     return distance < MAX_DISTANCE;
 };
 
-module.exports = {
+const WeatherService = {
 
     // This is very important => Otherwise it will try to instantiate this
     isStateless: true,
@@ -42,7 +42,6 @@ module.exports = {
         var url = baseUrl + '&lat=' + latitude + '&lon=' + longitude,
             response = this.response;
 
-        trace('temp request for ' + latitude + ', ' + longitude);
         request(url, (err, res, body) => {
             if (err || res.statusCode < 200 || res.statusCode > 299) {
                 log('ERROR: ', (err || body));
@@ -188,24 +187,35 @@ module.exports = {
             longitude: 'lng'
         }
     }
-
-    // Consider moving this to a map utils rpc FIXME
-    //name: function(req, res) {
-        //var lat = req.query.lat,
-            //lng = req.query.lng,
-            //url = baseUrl + '&lat=' + lat + '&lon=' + lng;
-
-        //request(url, function(err, response, body) {
-            //if (err || response.statusCode < 200 || response.statusCode > 299) {
-                //log('ERROR: ', (err || body));
-                //return res.status(500).send('ERROR: '+(err || body));
-            //}
-            //body = JSON.parse(body);
-            //var name = 'unknown';
-            //if (isWithinMaxDistance(body, lat, lng)) {
-                //name = body.name || 'unknown';
-            //}
-            //res.json(name);
-        //});
-    //}
 };
+
+// add argument validation for each rpc
+const order = (a, b, c) => {
+    return a <= b && b <= c;
+};
+
+const validateArgs = (latitude, longitude) => {
+    if (isNaN(+latitude)) return `Invalid latitude: ${latitude}`;
+    if (isNaN(+longitude)) return `Invalid longitude: ${longitude}`;
+
+    latitude = +latitude;
+    longitude = +longitude;
+    if (!order(-90, latitude, 90)) return `latitude out of range: ${latitude}`;
+    if (!order(-180, longitude, 180)) return `longitude out of range: ${longitude}`;
+};
+
+Object.keys(WeatherService)
+    .filter(method => typeof WeatherService[method] === 'function' && method !== 'getPath')
+    .forEach(method => {
+        var fn = WeatherService[method];
+        WeatherService[method] = function(latitude, longitude) {
+            var err = validateArgs(latitude, longitude);
+            if (err) {
+                trace(`invalid arguments: ${latitude}, ${longitude}`);
+                return this.response.send('ERROR: ' +  err);
+            }
+            return fn.call(this, latitude, longitude);
+        };
+    });
+
+module.exports = WeatherService;

@@ -183,7 +183,10 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     }
 
     // Update the roles, etc
-    this.ownerId = ownerId || this.ownerId;
+    if (ownerId) {
+        changed = changed || ownerId !== this.ownerId;
+        this.ownerId = ownerId;
+    }
 
     if (changed) {
         this.version = Date.now();
@@ -350,7 +353,11 @@ RoomMorph.prototype.editRoomName = function () {
     var myself = this;
     this.ide.prompt('New Room Name', function (name) {
         if (name) {
-            myself.name = name;
+            myself.ide.sockets.sendMessage({
+                type: 'rename-room',
+                name: name,
+                inPlace: true
+            });
         }
     }, null, 'editRoomName');
 };

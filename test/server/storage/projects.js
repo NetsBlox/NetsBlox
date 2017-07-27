@@ -1,21 +1,12 @@
 describe('projects', function() {
     const utils = require('../../assets/utils');
     const assert = require('assert');
-    const serverUtils = utils.reqSrc('server-utils');
     const Projects = require('../../../src/server/storage/projects');
-    const sendEmptyRole = function(msg) {
-        return {
-            type: 'project-response',
-            id: msg.id,
-            project: serverUtils.getEmptyRole(this.roleId)
-        };
-    };
-
     const OWNER = 'brian';
-    const PROJECT_NAME = 'test-projects';
+    const PROJECT_NAME = 'test-projects-' + Date.now();
     const getRoom = function() {
         // Get the room and attach a project
-        const room = utils.createRoom({
+        return utils.createRoom({
             name: PROJECT_NAME,
             owner: OWNER,
             roles: {
@@ -24,18 +15,6 @@ describe('projects', function() {
                 third: null
             }
         });
-        const owner = room.getSocketsAt('p1')[0];
-
-        //  Add response capabilities
-        room.sockets().forEach(socket => {
-            socket._socket.addResponse('project-request', sendEmptyRole.bind(socket));
-        });
-
-        return Projects.new(owner, room)
-            .then(project => {
-                room.setStorage(project);
-                return room;
-            });
     };
 
     before(function(done) {
@@ -124,6 +103,16 @@ describe('projects', function() {
         .catch(done);
     });
 
+    it('should remove the project from db on destroy', function(done) {
+        project.destroy()
+            .then(() => Projects.get(OWNER, PROJECT_NAME))
+            .then(data => {
+                assert(!data);
+                done();
+            })
+            .catch(done);
+    });
+
     it('should create copy if name changed after persist', function(done) {
         project.persist()
             .then(() => project.addCollaborator('spartacus'))
@@ -134,8 +123,53 @@ describe('projects', function() {
             .then(() => project.getRawProject())
             .then(data => {
                 assert(data.collaborators.includes('spartacus'));
+                return Projects.get(OWNER, PROJECT_NAME);
+            })
+            .then(original => original.destroy())
+            .then(() => {
                 done();
             })
             .catch(done);
+    });
+
+    it('should have the correct origin time', function(done) {
+        project.getRawProject()
+            .then(data => {
+                assert.equal(data.originTime, project.originTime);
+                done();
+            })
+            .catch(done);
+    });
+
+    describe('deletion', function() {
+        beforeEach(function(done) {
+            getRoom().then(room => {
+                project = room.getProject();
+                project.destroy().then(() => done());
+            })
+            .catch(done);
+        });
+
+        [
+            'save',
+            'persist',
+            'setPublic',
+
+            'setRawRole',
+            'setRoles',
+            'removeRole',
+            'renameRole',
+
+            'addCollaborator'
+        ].forEach(action => {
+            it(`should stop ${action} if deleted`, function(done) {
+                project[action]()
+                    .then(() => done(`${action} completed...`))
+                    .catch(err => {
+                        assert(err.includes('project has been deleted'));
+                        done();
+                    });
+            });
+        });
     });
 });

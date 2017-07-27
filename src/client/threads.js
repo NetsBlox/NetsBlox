@@ -1,5 +1,6 @@
 /* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
    List, SnapActions*/
+
 ThreadManager.prototype.startProcess = function (
     block,
     isThreadSafe,
@@ -318,13 +319,28 @@ NetsProcess.prototype.parseRPCResult = function (result) {
     return result;
 };
 
+function toQueryString(list, prefix) {
+    var array = list.contents;
+    var str = [], k, v;
+    for(var i = 0; i < array.length; i++) {
+        k = prefix + '[' + i + ']';
+        v = array[i];
+        str.push(typeof v === 'object' ?
+            toQueryString(v, k) :
+            k + '=' + v);
+    }
+    return str.join('&');
+}
+
 NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
     var action = methodSignature[0],
         argNames = methodSignature[1],
         values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
         params;
-
     params = argNames.map(function(name, index) {
+        if (values[index] instanceof List) {
+            return toQueryString(values[index], name);
+        }
         return name + '=' + values[index];
     }).join('&');
     return this.getJSFromRPCDropdown(rpc, action, params);
