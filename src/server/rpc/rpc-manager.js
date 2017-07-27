@@ -13,7 +13,6 @@ var fs = require('fs'),
     PROCEDURES_DIR = path.join(__dirname,'procedures'),
     SocketManager = require('../socket-manager'),
     utils = require('../server-utils'),
-    ApiConsumer = require('./procedures/utils/api-consumer'),
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
 /**
@@ -152,12 +151,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         }
 
         // Add the netsblox socket for triggering network messages from an RPC
-        let ctx;
-        if (rpc instanceof ApiConsumer) {
-            ctx = Object.create(rpc);
-        }else {
-            ctx = rpc;
-        }
+        let ctx = Object.create(rpc);
         ctx.socket = SocketManager.getSocket(uuid);
         ctx.response = res;
         if (!ctx.socket) {

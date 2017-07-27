@@ -115,12 +115,12 @@ StructInputSlotMorph.prototype.setContents = function(name, values) {
             input = children[--i],
             removed = [],
             scripts = this.parentThatIsA(ScriptsMorph),
-            inputs;
+            inputs = this.parent.inputs(),
+            myInpIndex = inputs.indexOf(this);
 
         // Remove the "i" fields after the current morph
-        inputs = this.parent.inputs();
         for (i = 0; i < this.fieldContent.length; i++) {
-            input = inputs[myIndex + 1 + i];
+            input = inputs[myInpIndex +1 + i];
             removed.push(input);
             this.parent.removeChild(input);
             // remove the field

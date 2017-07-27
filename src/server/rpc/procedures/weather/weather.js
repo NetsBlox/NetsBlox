@@ -13,7 +13,7 @@ var debug = require('debug'),
 
 let weather = new ApiConsumer('Weather', 'http://api.openweathermap.org/data/2.5/weather?APPID='+API_KEY, {cache: {ttl: 60}});
 
-var isWithinMaxDistance = function(result, lat, lng) {
+const isWithinMaxDistance = function(result, lat, lng) {
     var distance = geolib.getDistance(
         {latitude: lat, longitude: lng},
         {latitude: result.coord.lat, longitude: result.coord.lon}
@@ -25,7 +25,6 @@ var isWithinMaxDistance = function(result, lat, lng) {
     }
     return distance < MAX_DISTANCE;
 };
-
 
 weather.temp = function(latitude, longitude){
     return this._requestData({queryString: '&lat=' + latitude + '&lon=' + longitude})
@@ -128,5 +127,34 @@ weather.COMPATIBILITY =  {
         longitude: 'lng'
     }
 };
+
+// add argument validation for each rpc
+const order = (a, b, c) => {
+    return a <= b && b <= c;
+};
+
+const validateArgs = (latitude, longitude) => {
+    if (isNaN(+latitude)) return `Invalid latitude: ${latitude}`;
+    if (isNaN(+longitude)) return `Invalid longitude: ${longitude}`;
+
+    latitude = +latitude;
+    longitude = +longitude;
+    if (!order(-90, latitude, 90)) return `latitude out of range: ${latitude}`;
+    if (!order(-180, longitude, 180)) return `longitude out of range: ${longitude}`;
+};
+
+Object.keys(weather)
+    .filter(method => typeof weather[method] === 'function' && method !== 'getPath')
+    .forEach(method => {
+        var fn = weather[method];
+        weather[method] = function(latitude, longitude) {
+            var err = validateArgs(latitude, longitude);
+            if (err) {
+                trace(`invalid arguments: ${latitude}, ${longitude}`);
+                return this.response.send('ERROR: ' +  err);
+            }
+            return fn.call(this, latitude, longitude);
+        };
+    });
 
 module.exports = weather;

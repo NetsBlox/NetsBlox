@@ -14,7 +14,7 @@ var express = require('express'),
     DEFAULT_OPTIONS = {
         port: 8080,
         vantagePort: 1234,
-        vantage: true
+        vantage: process.env.ENV !== 'production'
     },
 
     // Routes
@@ -79,10 +79,10 @@ Server.prototype.configureRoutes = function() {
             const room = RoomManager.rooms[uuid];
             const roles = {};
             const project = room.getProject();
-            let lastUpdateAt = null;
+            let lastUpdatedAt = null;
 
             if (project) {
-                lastUpdateAt = new Date(project.lastUpdateAt);
+                lastUpdatedAt = new Date(project.lastUpdatedAt);
             }
 
             room.getRoleNames().forEach(role => {
@@ -99,7 +99,7 @@ Server.prototype.configureRoutes = function() {
                 name: room.name,
                 owner: room.owner,
                 collaborators: room.getCollaborators(),
-                lastUpdateAt: lastUpdateAt,
+                lastUpdatedAt: lastUpdatedAt,
                 roles: roles
             };
         });

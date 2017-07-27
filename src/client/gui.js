@@ -627,22 +627,35 @@ ProjectDialogMorph.prototype.saveProject = function () {
                     function () {
                         // NetsBlox changes - start
                         myself.ide.showMessage('Saving project\nto the cloud...');
-                        myself.ide.room.name = name;
                         SnapCloud.saveProject(
-                            myself,
+                            myself.ide,
                             function () {
+                                myself.ide.source = 'cloud';
                                 myself.ide.showMessage('saved.', 2);
                             },
                             myself.ide.cloudError(),
-                            true
+                            true,
+                            name
                         );
+                        myself.destroy();
                         // NetsBlox changes - end
-                        myself.saveCloudProject();
                     }
                 );
             } else {
-                myself.ide.room.name = name;
-                myself.saveCloudProject();
+                // NetsBlox changes - start
+                myself.ide.showMessage('Saving project\nto the cloud...');
+                SnapCloud.saveProject(
+                    myself.ide,
+                    function () {
+                        myself.ide.source = 'cloud';
+                        myself.ide.showMessage('saved.', 2);
+                    },
+                    myself.ide.cloudError(),
+                    true,
+                    name
+                );
+                myself.destroy();
+                // NetsBlox changes - end
             }
         } else { // 'local'
             if (detect(

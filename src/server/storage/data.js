@@ -7,6 +7,7 @@ var ObjectId = require('mongodb').ObjectId,
 class Data {
     constructor (db, data) {
         this._db = db;
+        this._deleted = false;
         // copy everything in "data" to the object
         var keys = Object.keys(data);
         for (var i = keys.length; i--;) {
@@ -50,7 +51,13 @@ class Data {
         return result;
     }
 
+    isDeleted() {
+        return this._deleted;
+    }
+
     destroy() {
+        this._deleted = true;
+        this._logger.info(`destroying data ${JSON.stringify(this.getStorageId())}`);
         return this._db.deleteOne(this.getStorageId());
     }
 
@@ -59,5 +66,5 @@ class Data {
     }
 }
 
-Data.prototype.IGNORE_KEYS = ['_db', '_logger'];
+Data.prototype.IGNORE_KEYS = ['_db', '_logger', '_deleted'];
 module.exports = Data;
