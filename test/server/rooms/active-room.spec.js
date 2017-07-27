@@ -16,7 +16,7 @@ describe('active-room', function() {
         room;
 
     const Users = utils.reqSrc('storage/users');
-    const Projects = require('../../../src/server/storage/projects');
+    const Projects = utils.reqSrc('storage/projects');
 
     before(function(done) {
         RoomManager.init(new Logger('active-room-test'), {}, ActiveRoom);
@@ -66,8 +66,8 @@ describe('active-room', function() {
     // Things to test:
     //   - add
     //   - getUnoccupiedRole
-    it('should return the unoccupied role', function() {
-        let room = utils.createRoom({
+    it('should return the unoccupied role', function(done) {
+        utils.createRoom({
             name: 'test-room',
             owner: 'brian',
             roles: {
@@ -75,15 +75,16 @@ describe('active-room', function() {
                 p2: ['todd', null],
                 third: null
             }
+        }).then(room => {
+            let name = room.getUnoccupiedRole();
+            assert.equal(name, 'third');
+            done();
         });
-
-        let name = room.getUnoccupiedRole();
-        assert.equal(name, 'third');
     });
 
     describe('close', function() {
-        it('should send "project-closed" message to all sockets', function() {
-            let room = utils.createRoom({
+        it('should send "project-closed" message to all sockets', function(done) {
+            utils.createRoom({
                 name: 'test-room',
                 owner: 'brian',
                 roles: {
@@ -91,16 +92,17 @@ describe('active-room', function() {
                     p2: ['todd', null],
                     third: null
                 }
+            }).then(room => {
+                const sockets = room.sockets();
+                room.close();
+
+                sockets.map(s => s._socket)
+                    .forEach(socket => {
+                        const msg = socket.message(-1);
+                        assert.equal(msg.type, 'project-closed');
+                    });
+                done();
             });
-
-            const sockets = room.sockets();
-            room.close();
-
-            sockets.map(s => s._socket)
-                .forEach(socket => {
-                    const msg = socket.message(-1);
-                    assert.equal(msg.type, 'project-closed');
-                });
         });
 
         it('should invoke "destroy"', function(done) {
@@ -108,19 +110,23 @@ describe('active-room', function() {
             room.destroy = done;
             room.close();
         });
+        
     });
 
     describe('get sockets at role', function() {
         let room = null;
 
-        before(function() {
-            room = utils.createRoom({
+        before(function(done) {
+            utils.createRoom({
                 name: 'move-test',
                 owner: 'first',
                 roles: {
                     role1: ['first'],
                     role2: [],
                 }
+            }).then(_room => {
+                room = _room;
+                done();
             });
         });
 
@@ -140,17 +146,20 @@ describe('active-room', function() {
         let room = null;
         let s1 = null;
 
-        before(function() {
-            room = utils.createRoom({
+        before(function(done) {
+            utils.createRoom({
                 name: 'move-test',
                 owner: 'first',
                 roles: {
                     role1: ['first'],
                     role2: [],
                 }
+            }).then(_room => {
+                room = _room;
+                s1 = room.getSocketsAt('role1')[0];
+                room.add(s1, 'role2');
+                done();
             });
-            s1 = room.getSocketsAt('role1')[0];
-            room.add(s1, 'role2');
         });
 
         it('should send update message on changing roles', function() {
@@ -171,19 +180,21 @@ describe('active-room', function() {
     describe('add', function() {
         var s1, s2;
 
-        before(function() {
-            let room = utils.createRoom({
+        before(function(done) {
+            utils.createRoom({
                 name: 'add-test',
                 owner: 'first',
                 roles: {
                     role1: [],
                     role2: [],
                 }
+            }).then(room => {
+                s1 = utils.createSocket('role1');
+                room.add(s1, 'role1');
+                s2 = utils.createSocket('role2');
+                room.add(s2, 'role2');
+                done();
             });
-            s1 = utils.createSocket('role1');
-            room.add(s1, 'role1');
-            s2 = utils.createSocket('role2');
-            room.add(s2, 'role2');
         });
 
         it('should update the roleId', function() {
@@ -213,8 +224,8 @@ describe('active-room', function() {
     describe('join role', function() {
         var alice, bob;
 
-        before(function() {
-            let room = utils.createRoom({
+        before(function(done) {
+            utils.createRoom({
                 name: 'add-test',
                 owner: 'alice',
                 collaborators: ['alice', 'bob'],
@@ -222,11 +233,13 @@ describe('active-room', function() {
                     role1: ['alice'],
                     role2: ['bob'],
                 }
-            });
-            alice = room.getSocketsAt('role1')[0];
-            bob = room.getSocketsAt('role2')[0];
+            }).then(room => {
+                alice = room.getSocketsAt('role1')[0];
+                bob = room.getSocketsAt('role2')[0];
 
-            room.add(alice, 'role2');
+                room.add(alice, 'role2');
+                done();
+            });
         });
 
         it('should both receive update messages', function() {
@@ -243,8 +256,8 @@ describe('active-room', function() {
 
     describe('editable', function() {
         let room = null;
-        before(function() {
-            room = utils.createRoom({
+        before(function(done) {
+            utils.createRoom({
                 name: 'add-test',
                 owner: 'alice',
                 collaborators: ['bob'],
@@ -252,6 +265,9 @@ describe('active-room', function() {
                     role1: ['alice'],
                     role2: ['bob', 'eve'],
                 }
+            }).then(r => {
+                room = r;
+                done();
             });
         });
 
@@ -269,13 +285,182 @@ describe('active-room', function() {
         });
 
     });
+    
+    let defaultConfig = {
+        name: 'test',
+        owner: 'alice',
+        roles: {
+            role1: ['alice'],
+            role2: ['bob', 'eve']
+        }
+    };
+    
+    describe('without projects', function() {
+        let room = null;
+        let alice, bob;
+        before(function(done) {
+            utils.createRoom(defaultConfig)
+                .then(_room => {
+                    room = _room;
+                    alice = room.getSocketsAt('role1')[0];
+                    bob = room.getSocketsAt('role2')[0];
+                    done();
+                });
+        });
+        
+        describe('remove', function() {
+            it('should remove a socket', function() {
+                room.remove(alice);
+                assert.deepEqual(room.getSocketsAt('role1'), []);
+            });
+        
+            it('should receive update messages', function() {
+                room.remove(bob);
+                assert(alice._socket.message(-1));
+            });
+        });
+        
+        describe('change name', function() {
+            it('should change name of the room', function(done) {
+                room.changeName('abc').then((name) => {
+                    assert.equal(name, 'abc');
+                    done();
+                });
+            });
+        });
+    
+        describe('owner', function() { //TODO: set up user storage
 
+        });
+    });
+    
+    describe('with projects', function() {
+        before(function(done) {
+            utils.connect().then(() => done()).catch(() => done());
+        });
+    
+        let project = null;
+        let r = null;
+        
+        beforeEach(function(done) {
+            utils.createRoom(defaultConfig).then(room => {
+                project = room.getProject();
+                r = room;
+                done();
+            }).catch(() => done());
+        });
+    
+        afterEach(function(done) {
+            project.destroy()
+            .then(() => done())
+            .catch(done);
+        });
+        
+        describe('collaborators', function() {
+            it('should add one collaborator', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    assert.equal(r.getCollaborators().length, 1);
+                    done();
+                }).catch(() => done());
+            });
+        
+            it('should remove one collaborator', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    r.removeCollaborator('bob').then(() => {
+                        assert.equal(r.getCollaborators().length, 0);
+                        done();
+                    }).catch(() => done());
+                }).catch(() => done());
+            });
+        
+            it('should not remove collaborator if username is wrong', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    r.removeCollaborator('wrong').then(() => {
+                        assert.equal(r.getCollaborators().length, 1);
+                        done();
+                    });
+                }).catch(() => done());
+            });
+        
+        });
+    
+        describe('collaborators', function() {
+            it('should add one collaborator', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    assert.equal(r.getCollaborators().length, 1);
+                    done();
+                }).catch(() => done());
+            });
+        
+            it('should remove one collaborator', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    r.removeCollaborator('bob').then(() => {
+                        assert.equal(r.getCollaborators().length, 0);
+                        done();
+                    }).catch(() => done());
+                }).catch(() => done());
+            });
+        
+            it('should remove no collaborator if username is wrong', function(done) {
+                r.addCollaborator('bob').then(() => {
+                    r.removeCollaborator('wrong').then(() => {
+                        assert.equal(r.getCollaborators().length, 1);
+                        done();
+                    });
+                }).catch(() => done());
+            });
+        
+        });
+        
+        describe('roles', function() {
+            it('should check whether has a role', function() {
+                assert(r.hasRole('role1'));
+                assert(!(r.hasRole('role3')));
+            });
+    
+            it('should return right roles array', function() {
+                assert.equal(r.getRoleNames().length, 2);
+            });
+    
+            it('should return a role', function(done) {
+                r.getRole('role1').then((data) => {
+                    assert.equal(data.ProjectName, 'role1');
+                    done();
+                }).catch(() => done());
+            });
+            
+            it('should create a role', function(done) {
+                r.createRole('role3').then(() => {
+                    assert.equal(r.getRoleNames().length, 3);
+                    done();
+                })
+                .catch(() => done());
+            });
+    
+            it('should remove a role', function(done) {
+                r.removeRole('role1').then(() => {
+                    assert.equal(r.getRoleNames().length, 2);
+                    done();
+                })
+                .catch(() => done());
+            });
+    
+            it('should rename a role', function(done) {
+                r.renameRole('role1', 'roleNew').then(() => {
+                    assert.equal(r.getRoleNames()[1], 'roleNew');
+                    done();
+                })
+                .catch(() => done());
+            });
+        });
+    });
+    
     describe('updating the name', function() {
         let room = null;
         const OWNER = 'owner-' + Date.now();
         const PROJECT_NAME = 'proj-' + Date.now();
         const createRoom = function(username, projectName) {
-            let room = utils.createRoom({
+            return utils.createRoom({
                 name: projectName,
                 owner: username,
                 roles: {
@@ -284,19 +469,6 @@ describe('active-room', function() {
                     third: null
                 }
             });
-
-            room.sockets().forEach(socket => {
-                socket._socket.addResponse('project-request', utils.sendEmptyRole.bind(socket));
-            });
-
-            // create a room for the given user
-            const owner = room.getSocketsAt('p1')[0];
-
-            return Projects.new(owner, room)
-                .then(project => {
-                    room.setStorage(project);
-                    return room;
-                });
         };
 
         beforeEach(function(done) {

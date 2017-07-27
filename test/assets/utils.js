@@ -4,10 +4,11 @@ const assert = require('assert');
 
 // load the *exact* XML_Serializer from Snap!... pretty hacky...
 const path = require('path');
-const Q = require('q');
 const fs = require('fs');
+const Q = require('q');
 const PROJECT_ROOT = path.join(__dirname, '..', '..');
 const reqSrc = p => require(PROJECT_ROOT + '/src/server/' + p);
+
 const ActiveRoom = require(PROJECT_ROOT + '/src/server/rooms/active-room');
 const NetsBloxSocket = require(PROJECT_ROOT + '/src/server/rooms/netsblox-socket');
 const Socket = require('./mock-websocket');
@@ -16,6 +17,7 @@ const Storage = require(PROJECT_ROOT + '/src/server/storage/storage');
 const mainLogger = new Logger('netsblox:test');
 const storage = new Storage(mainLogger);
 const serverUtils = reqSrc('server-utils');
+const Projects = reqSrc('storage/projects');
 
 (function() {
     var clientDir = path.join(PROJECT_ROOT, 'src', 'client', 'Snap--Build-Your-Own-Blocks'),
@@ -80,19 +82,35 @@ const createSocket = function(username) {
 };
 
 const createRoom = function(config) {
+    // Get the room and attach a project
     const room = new ActiveRoom(logger, config.name, config.owner);
-
+    
     Object.keys(config.roles).forEach(name => {
         config.roles[name] = config.roles[name] || [];
         room.silentCreateRole(name);
         config.roles[name].forEach(username => {
             const socket = createSocket(username);
-
+            
             room.silentAdd(socket, name);
         });
     });
 
-    return room;
+    const owner = room.getOwnerSockets()[0];
+    
+    //  Add response capabilities
+    room.sockets().forEach(socket => {
+        socket._socket.addResponse('project-request', sendEmptyRole.bind(socket));
+    });
+    
+    if (owner) {
+        return Projects.new(owner, room)
+            .then(project => {
+                room.setStorage(project);
+                return room;
+            });
+    } else {  // don't add a project if not occupied
+        return Q(room);
+    }
 };
 
 const sendEmptyRole = function(msg) {
