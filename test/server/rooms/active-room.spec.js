@@ -1,5 +1,4 @@
 describe('active-room', function() {
-    const Projects = require('../../../src/server/storage/projects');
     var ROOT_DIR = '../../../',
         _ = require('lodash'),
         RoomManager = require(ROOT_DIR + 'src/server/rooms/room-manager'),
@@ -15,9 +14,13 @@ describe('active-room', function() {
             send: msg => owner._messages.push(msg)
         },
         room;
-    
-    before(function() {
+
+    const Users = utils.reqSrc('storage/users');
+    const Projects = utils.reqSrc('storage/projects');
+
+    before(function(done) {
         RoomManager.init(new Logger('active-room-test'), {}, ActiveRoom);
+        utils.reset().then(() => done()).catch(done);
     });
 
     describe('sendToEveryone', function() {
@@ -63,8 +66,8 @@ describe('active-room', function() {
     // Things to test:
     //   - add
     //   - getUnoccupiedRole
-    it('should return the unoccupied role', function() {
-        let room = utils.createRoom({
+    it('should return the unoccupied role', function(done) {
+        utils.createRoom({
             name: 'test-room',
             owner: 'brian',
             roles: {
@@ -72,15 +75,16 @@ describe('active-room', function() {
                 p2: ['todd', null],
                 third: null
             }
+        }).then(room => {
+            let name = room.getUnoccupiedRole();
+            assert.equal(name, 'third');
+            done();
         });
-
-        let name = room.getUnoccupiedRole();
-        assert.equal(name, 'third');
     });
 
     describe('close', function() {
-        it('should send "project-closed" message to all sockets', function() {
-            let room = utils.createRoom({
+        it('should send "project-closed" message to all sockets', function(done) {
+            utils.createRoom({
                 name: 'test-room',
                 owner: 'brian',
                 roles: {
@@ -88,16 +92,17 @@ describe('active-room', function() {
                     p2: ['todd', null],
                     third: null
                 }
+            }).then(room => {
+                const sockets = room.sockets();
+                room.close();
+
+                sockets.map(s => s._socket)
+                    .forEach(socket => {
+                        const msg = socket.message(-1);
+                        assert.equal(msg.type, 'project-closed');
+                    });
+                done();
             });
-
-            const sockets = room.sockets();
-            room.close();
-
-            sockets.map(s => s._socket)
-                .forEach(socket => {
-                    const msg = socket.message(-1);
-                    assert.equal(msg.type, 'project-closed');
-                });
         });
 
         it('should invoke "destroy"', function(done) {
@@ -111,14 +116,17 @@ describe('active-room', function() {
     describe('get sockets at role', function() {
         let room = null;
 
-        before(function() {
-            room = utils.createRoom({
+        before(function(done) {
+            utils.createRoom({
                 name: 'move-test',
                 owner: 'first',
                 roles: {
                     role1: ['first'],
                     role2: [],
                 }
+            }).then(_room => {
+                room = _room;
+                done();
             });
         });
 
@@ -138,17 +146,20 @@ describe('active-room', function() {
         let room = null;
         let s1 = null;
 
-        before(function() {
-            room = utils.createRoom({
+        before(function(done) {
+            utils.createRoom({
                 name: 'move-test',
                 owner: 'first',
                 roles: {
                     role1: ['first'],
                     role2: [],
                 }
+            }).then(_room => {
+                room = _room;
+                s1 = room.getSocketsAt('role1')[0];
+                room.add(s1, 'role2');
+                done();
             });
-            s1 = room.getSocketsAt('role1')[0];
-            room.add(s1, 'role2');
         });
 
         it('should send update message on changing roles', function() {
@@ -169,19 +180,21 @@ describe('active-room', function() {
     describe('add', function() {
         var s1, s2;
 
-        before(function() {
-            let room = utils.createRoom({
+        before(function(done) {
+            utils.createRoom({
                 name: 'add-test',
                 owner: 'first',
                 roles: {
                     role1: [],
                     role2: [],
                 }
+            }).then(room => {
+                s1 = utils.createSocket('role1');
+                room.add(s1, 'role1');
+                s2 = utils.createSocket('role2');
+                room.add(s2, 'role2');
+                done();
             });
-            s1 = utils.createSocket('role1');
-            room.add(s1, 'role1');
-            s2 = utils.createSocket('role2');
-            room.add(s2, 'role2');
         });
 
         it('should update the roleId', function() {
@@ -211,8 +224,8 @@ describe('active-room', function() {
     describe('join role', function() {
         var alice, bob;
 
-        before(function() {
-            let room = utils.createRoom({
+        before(function(done) {
+            utils.createRoom({
                 name: 'add-test',
                 owner: 'alice',
                 collaborators: ['alice', 'bob'],
@@ -220,11 +233,13 @@ describe('active-room', function() {
                     role1: ['alice'],
                     role2: ['bob'],
                 }
-            });
-            alice = room.getSocketsAt('role1')[0];
-            bob = room.getSocketsAt('role2')[0];
+            }).then(room => {
+                alice = room.getSocketsAt('role1')[0];
+                bob = room.getSocketsAt('role2')[0];
 
-            room.add(alice, 'role2');
+                room.add(alice, 'role2');
+                done();
+            });
         });
 
         it('should both receive update messages', function() {
@@ -241,8 +256,8 @@ describe('active-room', function() {
 
     describe('editable', function() {
         let room = null;
-        before(function() {
-            room = utils.createRoom({
+        before(function(done) {
+            utils.createRoom({
                 name: 'add-test',
                 owner: 'alice',
                 collaborators: ['bob'],
@@ -250,6 +265,9 @@ describe('active-room', function() {
                     role1: ['alice'],
                     role2: ['bob', 'eve'],
                 }
+            }).then(r => {
+                room = r;
+                done();
             });
         });
 
@@ -280,10 +298,14 @@ describe('active-room', function() {
     describe('without projects', function() {
         let room = null;
         let alice, bob;
-        before(function() {
-            room = utils.createRoom(defaultConfig);
-            alice = room.getSocketsAt('role1')[0];
-            bob = room.getSocketsAt('role2')[0];
+        before(function(done) {
+            utils.createRoom(defaultConfig)
+                .then(_room => {
+                    room = _room;
+                    alice = room.getSocketsAt('role1')[0];
+                    bob = room.getSocketsAt('role2')[0];
+                    done();
+                });
         });
         
         describe('remove', function() {
@@ -321,7 +343,7 @@ describe('active-room', function() {
         let r = null;
         
         beforeEach(function(done) {
-            utils.getRoom(defaultConfig).then(room => {
+            utils.createRoom(defaultConfig).then(room => {
                 project = room.getProject();
                 r = room;
                 done();
@@ -433,4 +455,101 @@ describe('active-room', function() {
         });
     });
     
+    describe('updating the name', function() {
+        let room = null;
+        const OWNER = 'owner-' + Date.now();
+        const PROJECT_NAME = 'proj-' + Date.now();
+        const createRoom = function(username, projectName) {
+            return utils.createRoom({
+                name: projectName,
+                owner: username,
+                roles: {
+                    p1: [username],
+                    p2: ['cassie'],
+                    third: null
+                }
+            });
+        };
+
+        beforeEach(function(done) {
+            // Create the user
+            let user = Users.new(OWNER, 'test@dummy.com');
+            utils.reset()
+                .then(() => createRoom(OWNER, PROJECT_NAME))
+                .then(_room => {
+                    room = _room;
+                    return user.save();
+                })
+                .then(() => done())
+                .catch(done);
+
+        });
+
+        it('should no-op if no collisions exist', function(done) {
+            const name = room.name;
+
+            room.changeName()
+                .then(() => {
+                    assert.equal(name, room.name);
+                    done();
+                })
+                .catch(done);
+        });
+
+        it('should set the room name to provided value', function(done) {
+            const name = `new name ${Date.now()}`;
+
+            room.changeName(name)
+                .then(() => {
+                    assert.equal(name, room.name);
+                    done();
+                })
+                .catch(done);
+        });
+
+        it('should append number to name if colliding with existing', function(done) {
+            // Create a room (no user)
+            createRoom('_netsblox_' + Date.now(), PROJECT_NAME)
+                .then(_room => room = _room)
+                // set the owner
+                .then(() => room.setOwner(OWNER))
+                .then(() => {
+                    assert.notEqual(room.name, PROJECT_NAME);
+                    done();
+                })
+                .catch(done);
+        });
+
+        describe('persisted', function() {
+            beforeEach(function(done) {
+                room.getProject().persist().then(() => done());
+            });
+
+            it('should duplicate project if not inPlace', function(done) {
+                const name = `new name ${Date.now()}`;
+                const oldName = room.name;
+
+                room.changeName(name)
+                    .then(() => Projects.get(OWNER, oldName))
+                    .then(oldProject => {
+                        assert(oldProject);
+                        done();
+                    })
+                    .catch(done);
+            });
+
+            it('should not duplicate project if inPlace', function(done) {
+                const name = `new project name`;
+                const oldName = room.name;
+
+                room.changeName(name, false, true)
+                    .then(() => Projects.get(OWNER, oldName))
+                    .then(oldProject => {
+                        assert(!oldProject);
+                        done();
+                    })
+                    .catch(done);
+            });
+        });
+    });
 });

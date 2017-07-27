@@ -1060,8 +1060,6 @@ NetsBloxMorph.prototype.createControlBar = function () {
 };
 
 NetsBloxMorph.prototype.loadNextRoom = function () {
-    // Check if the room has diverged and optionally fork
-    // TODO
     if (this.room.nextRoom) {
         var next = this.room.nextRoom;
         this.room._name = next.roomName;  // silent set
@@ -1741,7 +1739,7 @@ NetsBloxMorph.prototype.openRoomString = function (str, isRaw) {
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
     var msg,
         myself = this,
-        str = parsed ? model : model.toString(),
+        str = parsed ? model.toString() : model,
         size = Math.round(str.length / 1024);
 
     this.exitReplayMode();
@@ -1835,7 +1833,6 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     overwriteExisting = function(overwrite) {
         if (name) {
             myself.showMessage('Saving project\nto the cloud...');
-            myself.setProjectName(name);
             SnapCloud.saveProject(
                 myself,
                 function () {
@@ -1846,7 +1843,8 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
                     }
                 },
                 myself.cloudError(),
-                overwrite
+                overwrite,
+                name
             );
         }
     };
@@ -1876,11 +1874,6 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
         },
         myself.cloudError()
     );
-};
-
-NetsBloxMorph.prototype.logout = function () {
-    NetsBloxMorph.uber.logout.call(this);
-    this.room.update();
 };
 
 // RPC import support (both custom blocks and message types)
@@ -2396,6 +2389,23 @@ NetsBloxMorph.prototype.collabResponse = function (id, response) {
         },
         function(err){
             myself.showMessage(err, 2);
+        }
+    );
+};
+
+NetsBloxMorph.prototype.logout = function () {
+    var myself = this;
+    delete localStorage['-snap-user'];
+    SnapCloud.logout(
+        function () {
+            SnapCloud.clear();
+            myself.showMessage('disconnected.', 2);
+            myself.newProject();
+        },
+        function () {
+            SnapCloud.clear();
+            myself.showMessage('disconnected.', 2);
+            myself.newProject();
         }
     );
 };

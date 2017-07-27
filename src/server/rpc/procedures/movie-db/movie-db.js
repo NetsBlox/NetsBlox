@@ -7,16 +7,11 @@ if(!process.env.TMDB_API_KEY) {
 } else {
 
     var mdb = require('moviedb')(process.env['TMDB_API_KEY']),
-        debug = require('debug'),
-        request = require('request'),    
-        CacheManager = require('cache-manager'),   
-        cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity}),
-        info = debug('netsblox:rpc:movie-db:info'),
-        trace = debug('netsblox:rpc:movie-db:trace');
-
+        ApiConsumer = require('../utils/api-consumer');
 
     // Retrieving static images
     var baseUrl = 'https://image.tmdb.org/t/p/w500';
+    let movieDB = new ApiConsumer('MovieDB', baseUrl);
 
     var movieInfo = function(id, field) {
         var rsp = this.response;
@@ -34,7 +29,7 @@ if(!process.env.TMDB_API_KEY) {
                         if(field == 'genres'
                             || field == 'production_companies'
                             || field == 'production_countries'
-                            || field == 'spoken_languages' ) { 
+                            || field == 'spoken_languages' ) {
                             rsp.status(200).send(res[field].map(g => g.name));
                         } else {
                             rsp.status(200).send(''+res[field]);
@@ -220,7 +215,7 @@ if(!process.env.TMDB_API_KEY) {
             var rsp = this.response;
 
             if(!title) {
-                rsp.status(400).send('Error: title is not defined');        
+                rsp.status(400).send('Error: title is not defined');
             } else {
                 mdb.searchMovie({ query: title }, (err,res) => {
                     if(!err) {
@@ -237,7 +232,7 @@ if(!process.env.TMDB_API_KEY) {
             var rsp = this.response;
 
             if(!name) {
-                rsp.status(400).send('Error: name is not defined');        
+                rsp.status(400).send('Error: name is not defined');
             } else {
                 mdb.searchPerson({ query: name }, (err,res) => {
                     if(!err) {
@@ -307,48 +302,9 @@ if(!process.env.TMDB_API_KEY) {
         personCrewReleaseDates: function(id) { return personCredits.call(this, id, 'crew', 'release_date'); },
         personCrewTitles: function(id) { return personCredits.call(this, id, 'crew', 'title'); },
 
-        getImage: function(path) {
-            var rsp = this.response;
-            var url;
-
-            if(!path) {
-                rsp.status(400).send('Error: path not specified');        
-            } else {
-                url = baseUrl+path;
-
-                info(`Getting image from URL ${url}`);
-
-                // Check the cache
-                cache.wrap(url, function(cacheCallback) {
-                    // Get the image -> not in cache!
-                    trace('Requesting new image from tmdb!');
-                    var response = request.get(url);
-                    delete response.headers['cache-control'];
-
-                    // Gather the data...
-                    var result = new Buffer(0);
-                    response.on('data', function(data) {
-                        result = Buffer.concat([result, data]);
-                    });
-                    response.on('end', function() {
-                        return cacheCallback(null, result);
-                    });
-                }, function(err, imageBuffer) {
-                    // Send the response to the user
-                    info('Sending the response!');
-                    // Set the headers
-                    rsp.set('cache-control', 'private, no-store, max-age=0');
-                    rsp.set('content-type', 'image/jpeg');
-                    rsp.set('content-length', imageBuffer.length);
-                    rsp.set('connection', 'close');
-
-                    rsp.status(200).send(imageBuffer);
-                    info('Sent the response!');
-                });
-            }
-
-            // explicitly state that we're async
-            return null;
+        getImage: function(path){
+            movieDB.response = this.response;
+            return movieDB._sendImage({queryString: path});
         }
     };
 }
