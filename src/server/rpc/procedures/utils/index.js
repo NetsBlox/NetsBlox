@@ -33,7 +33,10 @@ const jsonToSnapList = inputJson => {
     }else{
         const inputKeys = Object.keys(inputJson);
         for (let i = 0; i < inputKeys.length; i++) {
-            keyVals.push([inputKeys[i], jsonToSnapList(inputJson[inputKeys[i]]) ]);
+            let val = inputJson[inputKeys[i]];
+            // convert date objects to an string representation
+            if(val instanceof Date) val = val.toUTCString();
+            keyVals.push([inputKeys[i], jsonToSnapList(val) ]);
         }
     }
     return keyVals;
