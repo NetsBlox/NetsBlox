@@ -100,16 +100,17 @@ StaticMap.prototype._recordUserMap = function(socket, map) {
 
 
 StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom, mapType) {
+    let scale = width <= 640 && height <= 640 ? 1 : 2;
     var response = this.response,
         options = {
             center: {
                 lat: latitude,
                 lon: longitude,
             },
-            width: width,
-            height: height,
+            width: (width / scale),
+            height: (height / scale),
             zoom: zoom,
-            scale: width <= 640 && height <= 640 ? 1 : 2,
+            scale,
             mapType: mapType || 'roadmap'
         },
         params = this._getGoogleParams(options),
