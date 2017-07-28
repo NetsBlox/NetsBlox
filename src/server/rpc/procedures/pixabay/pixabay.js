@@ -1,5 +1,5 @@
 const ApiConsumer = require('../utils/api-consumer');
-const imageSearch = new ApiConsumer('imageSearch', 'https://pixabay.com/api/?');
+const pixabay = new ApiConsumer('Pixabay', 'https://pixabay.com/api/?');
 const KEY = process.env.PIXABAY;
 const rpcUtils = require('../utils');
 
@@ -44,17 +44,17 @@ function encodeQueryOptions(keywords, type, minHeight, self) {
 
 
 ['searchAll', 'searchPhoto', 'searchIllustration'].forEach(function (item) {
-    imageSearch[item] = function (keywords, maxHeight, minHeight) {
+    pixabay[item] = function (keywords, maxHeight, minHeight) {
         return this._sendStruct(encodeQueryOptions(keywords, null, minHeight, item), parserFnGen(maxHeight));
     };
 });
 
-imageSearch.getImage = function(url){
+pixabay.getImage = function(url){
     return this._sendImage({queryString: '', baseUrl:url});
 };
 
 if(!process.env.PIXABAY) {
     console.log('Warning: environment variable PIXABAY not defined, search-image RPC will not work.');
 } else {
-    module.exports = imageSearch;
+    module.exports = pixabay;
 }

@@ -1,5 +1,5 @@
 describe('imageSearch', function() {
-    var ImageSearch = require('../../../../src/server/rpc/procedures/search-image/search-image'),
+    var ImageSearch = require('../../../../src/server/rpc/procedures/pixabay/pixabay'),
         RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         imageSearch = new RPCMock(ImageSearch);
