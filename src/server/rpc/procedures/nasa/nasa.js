@@ -15,7 +15,6 @@ module.exports = {
 
     isStateless: true,
     rpcName: 'NASA',
-    getPath: () => '/NASA',
 
     // NASA's 'Astronomy Picture of the Day'
     apod: function() {

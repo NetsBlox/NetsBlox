@@ -23,15 +23,6 @@ var ConnectN = function() {
     this._state.lastMove = null;
 };
 
-/**
- * Return the path to the given RPC
- *
- * @return {String}
- */
-ConnectN.getPath = function() {
-    return '/connectn';
-};
-
 // Actions
 ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
     this._state.numRow = row || 3;

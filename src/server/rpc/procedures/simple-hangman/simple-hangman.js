@@ -33,10 +33,6 @@ var SimpleHangman = function() {
     this._restart();
 };
 
-SimpleHangman.getPath = function() {
-    return '/simplehangman';
-};
-
 // Actions
 SimpleHangman.prototype.restart = function() {
     this._restart();

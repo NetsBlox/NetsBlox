@@ -20,15 +20,6 @@ var NPlayer = function() {
     this._state.players = [];
 };
 
-/**
- * Return the path to the given RPC
- *
- * @return {String}
- */
-NPlayer.getPath = function() {
-    return '/NPlayer';
-};
-
 // start the game
 NPlayer.prototype.start = function() {
 

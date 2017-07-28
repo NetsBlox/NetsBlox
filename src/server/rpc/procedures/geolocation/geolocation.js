@@ -4,7 +4,6 @@ if(!process.env.GOOGLE_GEOCODING_API) {
 
     let GeoLocationRPC = {
         isStateless: true,
-        getPath: () => '/geolocation'
     };
 
     var debug = require('debug'),

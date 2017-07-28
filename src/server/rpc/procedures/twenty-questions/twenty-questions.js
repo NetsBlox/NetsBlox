@@ -17,8 +17,6 @@ let TwentyQuestions = function () {
     this.isStateless = false;
 };
 
-TwentyQuestions.getPath = () => '/twentyquestions';
-
 TwentyQuestions.prototype.start = function (answer) {
 
     // safeguard against starting in the middle of a game

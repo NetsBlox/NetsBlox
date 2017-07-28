@@ -12,10 +12,6 @@ var Hangman = function() {
     this._state.knownIndices = [];
 };
 
-Hangman.getPath = function() {
-    return '/hangman';
-};
-
 // Actions
 Hangman.prototype.setWord = function(word) {
     // TODO: Make sure the chooser is the only one calling this

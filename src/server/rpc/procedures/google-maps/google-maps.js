@@ -242,8 +242,8 @@ StaticMap.prototype.minLatitude = mapGetter('min', 'lat');
 
 // Map of argument name to old field name
 StaticMap.COMPATIBILITY = {
-    path: 'static-map',
-    methods: {
+    path: 'staticmap',
+    arguments: {
         getMap: {
             latitude: 'lat',
             longitude: 'lon'

@@ -163,7 +163,7 @@ var KeyValueStore = {
 };
 
 KeyValueStore.COMPATIBILITY = {
-    path: '/kv-store'
+    path: 'kv-store'
 };
 
 module.exports = KeyValueStore;
