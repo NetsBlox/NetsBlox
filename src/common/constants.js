@@ -6,7 +6,6 @@ module.exports = {
         RESERVED_FN_NAMES: [
             'init',
             'rpcName',
-            'getPath',
             'isStateless',
             'COMPATIBILITY'
         ]

@@ -34,10 +34,6 @@ var StaticMap = function(roomId) {
     this._state.userMaps = {};  // Store the state of the map for each user
 };
 
-StaticMap.getPath = function() {
-    return '/staticmap';
-};
-
 StaticMap.prototype._coordsAt = function(x, y, map) {
     let centerLl = [map.center.lon, map.center.lat];
     let centerPx = merc.px(centerLl, map.zoom);

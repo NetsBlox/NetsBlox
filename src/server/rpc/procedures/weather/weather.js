@@ -144,7 +144,7 @@ const validateArgs = (latitude, longitude) => {
 };
 
 Object.keys(weather)
-    .filter(method => typeof weather[method] === 'function' && method !== 'getPath')
+    .filter(method => typeof weather[method] === 'function')
     .forEach(method => {
         var fn = weather[method];
         weather[method] = function(latitude, longitude) {
