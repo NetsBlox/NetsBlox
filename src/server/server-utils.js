@@ -75,8 +75,6 @@ var getArgumentsFor = function(fn) {
     }
 
     fnText = fn.toString().replace(STRIP_COMMENTS, '');
-    if (!fnText.match(FN_ARGS))
-    console.log(fnText);
     args = fnText.match(FN_ARGS)[2].split(FN_ARG_SPLIT);
     return args
         .map(arg => arg.replace(/\s+/g, ''))
