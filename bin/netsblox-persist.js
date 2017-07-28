@@ -14,7 +14,7 @@ program
     .parse(process.argv);
 
 if (!program.args.length === 2) {
-    console.log('usage: netsblox untransient user project');
+    console.log('usage: netsblox persist <user> <project>');
     process.exit(1);
 }
 
