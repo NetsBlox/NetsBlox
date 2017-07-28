@@ -536,6 +536,13 @@ NetsBloxSerializer.prototype.loadInput = function (model, input, block) {
     }
 };
 
+NetsBloxSerializer.prototype.loadCustomBlock = function (element, isGlobal) {
+    if (element.attributes.category === 'services') {
+        element.attributes.category = 'network';
+    }
+    return SnapSerializer.prototype.loadCustomBlock.call(this, element, isGlobal);
+};
+
 NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     // private
     var myself = this,
