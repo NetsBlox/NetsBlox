@@ -95,17 +95,19 @@ describe('netsblox-socket', function() {
     describe('user messages', function() {
         var alice, bob, steve;
 
-        before(function() {
-            let room = utils.createRoom({
+        before(function(done) {
+            utils.createRoom({
                 name: 'add-test',
                 owner: 'first',
                 roles: {
                     role1: ['alice'],
                     role2: ['bob', 'steve'],
                 }
+            }).then(room => {
+                [alice] = room.getSocketsAt('role1');
+                [bob, steve] = room.getSocketsAt('role2');
+                done();
             });
-            [alice] = room.getSocketsAt('role1');
-            [bob, steve] = room.getSocketsAt('role2');
         });
 
         it('should ignore bad dstId for interroom messages', function() {

@@ -95,6 +95,4 @@ waterwatch.stop = function(){
     return null;
 };
 
-
-
 module.exports = waterwatch;

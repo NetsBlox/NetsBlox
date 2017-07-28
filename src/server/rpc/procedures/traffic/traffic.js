@@ -36,7 +36,6 @@ if (!process.env.BING_TRAFFIC_KEY) {
     module.exports = {
 
         isStateless: true,
-        getPath: () => '/traffic',
 
         search: function(westLongitude, northLatitude, eastLongitude, southLatitude) {
 

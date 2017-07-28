@@ -6,7 +6,7 @@ describe('projects', function() {
     const PROJECT_NAME = 'test-projects-' + Date.now();
     const getRoom = function() {
         // Get the room and attach a project
-        const room = utils.createRoom({
+        return utils.createRoom({
             name: PROJECT_NAME,
             owner: OWNER,
             roles: {
@@ -15,18 +15,6 @@ describe('projects', function() {
                 third: null
             }
         });
-        const owner = room.getSocketsAt('p1')[0];
-
-        //  Add response capabilities
-        room.sockets().forEach(socket => {
-            socket._socket.addResponse('project-request', utils.sendEmptyRole.bind(socket));
-        });
-
-        return Projects.new(owner, room)
-            .then(project => {
-                room.setStorage(project);
-                return room;
-            });
     };
 
     before(function(done) {
