@@ -1129,12 +1129,10 @@ InputSlotMorph.prototype.getURL = function (url) {
 
 InputSlotMorph.prototype.rpcNames = function () {
     var rpcs = JSON.parse(this.getURL('/rpc')),
-        dict = {},
-        name;
+        dict = {};
 
     for (var i = 0; i < rpcs.length; i++) {
-        name = rpcs[i].slice(1);
-        dict[name] = name;
+        dict[rpcs[i]] = rpcs[i];
     }
     return dict;
 };
