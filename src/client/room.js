@@ -497,10 +497,8 @@ RoomMorph.prototype.deleteRole = function(role) {
 RoomMorph.prototype.createRoleClone = function(role) {
     var myself = this;
     SnapCloud.cloneRole(
-        function(response) {
-            var newRole = Object.keys(response[0])[0];
-            myself.ide.showMessage('cloned ' + role + ' to ' +
-                newRole + ' !');
+        function() {
+            myself.ide.showMessage('created copy of ' + role);
         },
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
@@ -958,7 +956,7 @@ function EditRoleMorph(room, role) {
     this.addBody(txt);
 
     // Role Actions
-    this.addButton('createRoleClone', 'Clone');
+    this.addButton('createRoleClone', 'Duplicate');
 
     if (role.users.length) {  // occupied
         // owner can evict collaborators, collaborators can evict guests
@@ -975,7 +973,7 @@ function EditRoleMorph(room, role) {
         }
     } else {  // vacant
         this.addButton('moveToRole', 'Move to');
-        this.addButton('inviteUser', 'Invite Guest');
+        this.addButton('inviteUser', 'Invite User');
         this.addButton('deleteRole', 'Delete role');
     }
     this.addButton('cancel', 'Cancel');
