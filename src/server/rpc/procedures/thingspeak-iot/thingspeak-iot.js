@@ -153,7 +153,7 @@ thingspeakIoT.channelDetails = function(id) {
                 }
             }
             details.feeds = feedParser(resp);
-            this._logger.info(`channel ${id} details`, details)
+            this._logger.info(`channel ${id} details`, details);
             return rpcUtils.jsonToSnapList(details);
         });
     });
