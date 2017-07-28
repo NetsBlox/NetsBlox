@@ -15,6 +15,7 @@ var fs = require('fs'),
     utils = require('../server-utils'),
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
+const DEFAULT_COMPATIBILITY = {arguments: {}};
 /**
  * RPCManager
  *
@@ -35,16 +36,23 @@ var RPCManager = function() {
 RPCManager.prototype.loadRPCs = function() {
     // Load the rpcs from the __dirname+'/procedures' directory
     return fs.readdirSync(PROCEDURES_DIR)
-        .map(name => path.join(PROCEDURES_DIR, name, name+'.js'))
-        .filter(fs.existsSync.bind(fs))
-        .map(fullPath => require(fullPath))
-        .filter(rpc => !!rpc && !_.isEmpty(rpc))
-        .map(RPCConstructor => {
+        .map(name => [name, path.join(PROCEDURES_DIR, name, name+'.js')])
+        .filter(pair => fs.existsSync(pair[1]))
+        .map(pair => [pair[0], require(pair[1])])
+        .filter(pair => !!pair[1] && !_.isEmpty(pair[1]))
+        .map(pair => {
+            let [name, RPCConstructor] = pair;
             if (RPCConstructor.init) {
                 RPCConstructor.init(this._logger);
             }
 
             // Register the rpc actions, method signatures
+            RPCConstructor.rpcName = RPCConstructor.rpcName ||
+                name.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join('');
+
+            RPCConstructor.COMPATIBILITY = RPCConstructor.COMPATIBILITY || {};
+            _.merge(RPCConstructor.COMPATIBILITY, DEFAULT_COMPATIBILITY);
+
             this.registerRPC(RPCConstructor);
 
             return RPCConstructor;
@@ -53,10 +61,10 @@ RPCManager.prototype.loadRPCs = function() {
 
 RPCManager.prototype.registerRPC = function(rpc) {
     var fnObj = rpc,
-        rpcName = rpc.getPath(),
+        name = rpc.rpcName,
         fnNames;
 
-    this.rpcRegistry[rpcName] = {};
+    this.rpcRegistry[name] = {};
     if (typeof rpc === 'function') {
         fnObj = rpc.prototype;
     }
@@ -66,21 +74,26 @@ RPCManager.prototype.registerRPC = function(rpc) {
         .filter(name => !RESERVED_FN_NAMES.includes(name));
 
     for (var i = fnNames.length; i--;) {
-        this.rpcRegistry[rpcName][fnNames[i]] = utils.getArgumentsFor(fnObj[fnNames[i]]);
+        this.rpcRegistry[name][fnNames[i]] = utils.getArgumentsFor(fnObj[fnNames[i]]);
     }
 };
 
 RPCManager.prototype.createRouter = function() {
     var router = express.Router({mergeParams: true});
+    const ALL_RPC_NAMES = this.rpcs.map(rpc => rpc.rpcName).sort();
 
     // Create the index for the rpcs
-    router.route('/').get((req, res) =>
-        res.json(this.rpcs.map(rpc => rpc.getPath())));
+    router.route('/').get((req, res) => res.send(ALL_RPC_NAMES));
 
-    this.rpcs
-        .forEach(rpc => router.route(rpc.getPath())
-            .get((req, res) => res.json(this.rpcRegistry[rpc.getPath()]))
-        );
+    this.rpcs.forEach(rpc => {
+        router.route('/' + rpc.rpcName)
+            .get((req, res) => res.json(this.rpcRegistry[rpc.rpcName]));
+
+        if (rpc.COMPATIBILITY.path) {
+            router.route('/' + rpc.COMPATIBILITY.path)
+                .get((req, res) => res.json(this.rpcRegistry[rpc.rpcName]));
+        }
+    });
 
     // For each RPC, create the respective endpoints
     this.rpcs.forEach(this.addRoute.bind(this, router));
@@ -89,9 +102,14 @@ RPCManager.prototype.createRouter = function() {
 };
 
 RPCManager.prototype.addRoute = function(router, RPC) {
-    this._logger.info('Adding route for '+RPC.getPath());
-    router.route(RPC.getPath()+'/:action')
+    this._logger.info('Adding route for '+RPC.rpcName);
+    router.route('/' + RPC.rpcName + '/:action')
         .get(this.handleRPCRequest.bind(this, RPC));
+
+    if (RPC.COMPATIBILITY.path) {
+        router.route('/' + RPC.COMPATIBILITY.path + '/:action')
+            .get(this.handleRPCRequest.bind(this, RPC));
+    }
 };
 
 /**
@@ -120,27 +138,26 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
     rpcs = room.rpcs;
 
     // If the RPC hasn't been created for the given room, create one
-    if (!rpcs[RPC.getPath()]) {
-        this._logger.info(`Creating new RPC (${RPC.getPath()}) for ${room.uuid}`);
-        rpcs[RPC.getPath()] = new RPC(room.uuid);
+    if (!rpcs[RPC.rpcName]) {
+        this._logger.info(`Creating new RPC (${RPC.rpcName}) for ${room.uuid}`);
+        rpcs[RPC.rpcName] = new RPC(room.uuid);
     }
 
-    return rpcs[RPC.getPath()];
+    return rpcs[RPC.rpcName];
 
 };
 
 RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     var action,
         uuid = req.query.uuid,
-        supportedActions = this.rpcRegistry[RPC.getPath()],
-        compatDict = RPC.COMPATIBILITY || {},
+        supportedActions = this.rpcRegistry[RPC.rpcName],
         oldFieldNameFor,
         result,
         args,
         rpc;
 
     action = req.params.action;
-    this._logger.info('Received request to '+RPC.getPath()+' for '+action+' (from '+uuid+')');
+    this._logger.info(`Received request to ${RPC.rpcName} for ${action} (from ${uuid})`);
 
     // Then pass the call through
     if (supportedActions[action]) {
@@ -156,25 +173,25 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         ctx.response = res;
         if (!ctx.socket) {
             this._logger.error(`Could not find socket ${uuid} for rpc ` +
-                `${RPC.getPath()}:${action}. Will try to call it anyway...`);
+                `${RPC.rpcName}:${action}. Will try to call it anyway...`);
         }
 
         // Get the arguments
-        oldFieldNameFor = compatDict[action] || {};
+        oldFieldNameFor = RPC.COMPATIBILITY.arguments[action] || {};
         args = supportedActions[action].map(argName => {
             var oldName = oldFieldNameFor[argName];
             return req.query.hasOwnProperty(argName) ? req.query[argName] : req.query[oldName];
         });
         let prettyArgs = JSON.stringify(args);
         prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
-        this._logger.log(`calling ${RPC.getPath()}.${action}(${prettyArgs})`);
+        this._logger.log(`calling ${RPC.rpcName}.${action}(${prettyArgs})`);
         result = ctx[action].apply(ctx, args);
 
         this.sendRPCResult(res, result);
 
         return result;
     } else {
-        this._logger.log('Invalid action requested for '+RPC.getPath()+': '+action);
+        this._logger.log('Invalid action requested for '+RPC.rpcName+': '+action);
         return res.status(400).send('unrecognized action');
     }
 };

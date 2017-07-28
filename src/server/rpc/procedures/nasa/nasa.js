@@ -14,7 +14,7 @@ var debug = require('debug'),
 module.exports = {
 
     isStateless: true,
-    getPath: () => '/NASA',
+    rpcName: 'NASA',
 
     // NASA's 'Astronomy Picture of the Day'
     apod: function() {

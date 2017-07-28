@@ -139,7 +139,7 @@ const reset = function() {
 
 module.exports = {
     verifyRPCInterfaces: function(rpc, interfaces) {
-        describe(`${rpc.getPath()} interfaces`, function() {
+        describe(`${rpc.rpcName} interfaces`, function() {
             interfaces.forEach(interface => {
                 var name = interface[0],
                     expected = interface[1] || [];

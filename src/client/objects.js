@@ -236,28 +236,28 @@ SpriteMorph.prototype.initBlocks = function () {
         type: 'reporter',
         category: 'network',
         spec: 'call %s with %s',
-        defaults: ['weather']
+        defaults: ['GoogleMaps']
     };
 
     SpriteMorph.prototype.blocks.getJSFromRPCDropdown = {  // primitive JSON response
         type: 'reporter',
         category: 'network',
         spec: 'call %rpcNames / %rpcActions with %s',
-        defaults: ['weather']
+        defaults: ['GoogleMaps']
     };
 
     SpriteMorph.prototype.blocks.getJSFromRPCStruct = {  // primitive JSON response
         type: 'reporter',
         category: 'network',
         spec: 'call %rpcNames / %rpcMethod',
-        defaults: ['weather']
+        defaults: ['GoogleMaps']
     };
 
     SpriteMorph.prototype.blocks.getCostumeFromRPC = {
         type: 'reporter',
         category: 'network',
         spec: 'costume from %rpcNames / %rpcActions with %s',
-        defaults: ['staticmap', 'getMap']
+        defaults: ['GoogleMaps', 'getMap']
     };
 
     // Network Messages

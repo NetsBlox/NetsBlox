@@ -22,8 +22,6 @@ class Battleship extends TurnBased {
     }
 }
 
-Battleship.getPath = () => '/battleship';
-
 var isValidDim = dim => 0 <= dim && dim <= BOARD_SIZE;
 var checkRowCol = (row, col) => isValidDim(row) && isValidDim(col);
 

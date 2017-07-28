@@ -34,10 +34,6 @@ var StaticMap = function(roomId) {
     this._state.userMaps = {};  // Store the state of the map for each user
 };
 
-StaticMap.getPath = function() {
-    return '/staticmap';
-};
-
 StaticMap.prototype._coordsAt = function(x, y, map) {
     let centerLl = [map.center.lon, map.center.lat];
     let centerPx = merc.px(centerLl, map.zoom);
@@ -242,15 +238,18 @@ StaticMap.prototype.minLatitude = mapGetter('min', 'lat');
 
 // Map of argument name to old field name
 StaticMap.COMPATIBILITY = {
-    getMap: {
-        latitude: 'lat',
-        longitude: 'lon'
-    },
-    getXFromLongitude: {
-        longitude: 'lng'
-    },
-    getYFromLatitude: {
-        latitude: 'lat'
+    path: 'staticmap',
+    arguments: {
+        getMap: {
+            latitude: 'lat',
+            longitude: 'lon'
+        },
+        getXFromLongitude: {
+            longitude: 'lng'
+        },
+        getYFromLatitude: {
+            latitude: 'lat'
+        }
     }
 };
 
