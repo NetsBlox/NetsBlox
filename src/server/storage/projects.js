@@ -483,6 +483,10 @@
             });
     };
 
+    ProjectStorage.getCollection = function () {
+        return collection;
+    };
+
     // Create room from ActiveRoom (request projects from clients)
     const getDefaultProjectData = function(user, room) {
         return {
