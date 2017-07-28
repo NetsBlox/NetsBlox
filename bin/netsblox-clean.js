@@ -24,6 +24,7 @@ let url = `http://localhost:${process.env.PORT}/state/rooms`;
 const outputPath = `removed-projects-${new Date()}.jsonl`;
 const ids = [];
 let collection = null;
+let writeStream = null;
 storage.connect()
     .then(() => rp(url))
     .then(data => {
@@ -35,14 +36,14 @@ storage.connect()
             roomNamesByOwner[room.owner].push(room.name);
         });
 
-        const writeStream = fs.createWriteStream(outputPath, {flags: 'w'});
+        writeStream = fs.createWriteStream(outputPath, {flags: 'w'});
         const deferred = Q.defer();
 
         collection.find({transient: true}).forEach(doc => {
             var names = roomNamesByOwner[doc.owner] || [];
             if (!names.includes(doc.name)) {
                 console.log(`marked transient project for removal: ${doc.owner}/${doc.name}`);
-                writeStream.write(JSON.stringify(doc.name, null, 2) + '\n');
+                writeStream.write(JSON.stringify(doc, null, 2) + '\n');
                 ids.push(doc._id);
             } else {
                 console.log(`skipping open transient project: ${doc.owner}/${doc.name}`);
@@ -52,6 +53,7 @@ storage.connect()
         return deferred.promise;
     })
     .then(() => {
+        writeStream.end();
         if (ids.length) {
             console.log('about to remove', ids.length, 'transient projects');
             return collection.deleteMany({$or: ids.map(id => {
