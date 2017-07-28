@@ -200,7 +200,7 @@ if(!process.env.TMDB_API_KEY) {
 
         // This is very important => Otherwise it will try to instantiate this
         isStateless: true,
-        rpcName: 'MovieDB',
+        serviceName: 'MovieDB',
 
         searchMovie: function(title) {
             var rsp = this.response;

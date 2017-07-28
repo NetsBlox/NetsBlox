@@ -47,7 +47,7 @@ RPCManager.prototype.loadRPCs = function() {
             }
 
             // Register the rpc actions, method signatures
-            RPCConstructor.rpcName = RPCConstructor.rpcName ||
+            RPCConstructor.serviceName = RPCConstructor.serviceName ||
                 name.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join('');
 
             RPCConstructor.COMPATIBILITY = RPCConstructor.COMPATIBILITY || {};
@@ -61,7 +61,7 @@ RPCManager.prototype.loadRPCs = function() {
 
 RPCManager.prototype.registerRPC = function(rpc) {
     var fnObj = rpc,
-        name = rpc.rpcName,
+        name = rpc.serviceName,
         fnNames;
 
     this.rpcRegistry[name] = {};
@@ -80,18 +80,18 @@ RPCManager.prototype.registerRPC = function(rpc) {
 
 RPCManager.prototype.createRouter = function() {
     var router = express.Router({mergeParams: true});
-    const ALL_RPC_NAMES = this.rpcs.map(rpc => rpc.rpcName).sort();
+    const ALL_RPC_NAMES = this.rpcs.map(rpc => rpc.serviceName).sort();
 
     // Create the index for the rpcs
     router.route('/').get((req, res) => res.send(ALL_RPC_NAMES));
 
     this.rpcs.forEach(rpc => {
-        router.route('/' + rpc.rpcName)
-            .get((req, res) => res.json(this.rpcRegistry[rpc.rpcName]));
+        router.route('/' + rpc.serviceName)
+            .get((req, res) => res.json(this.rpcRegistry[rpc.serviceName]));
 
         if (rpc.COMPATIBILITY.path) {
             router.route('/' + rpc.COMPATIBILITY.path)
-                .get((req, res) => res.json(this.rpcRegistry[rpc.rpcName]));
+                .get((req, res) => res.json(this.rpcRegistry[rpc.serviceName]));
         }
     });
 
@@ -102,8 +102,8 @@ RPCManager.prototype.createRouter = function() {
 };
 
 RPCManager.prototype.addRoute = function(router, RPC) {
-    this._logger.info('Adding route for '+RPC.rpcName);
-    router.route('/' + RPC.rpcName + '/:action')
+    this._logger.info('Adding route for '+RPC.serviceName);
+    router.route('/' + RPC.serviceName + '/:action')
         .get(this.handleRPCRequest.bind(this, RPC));
 
     if (RPC.COMPATIBILITY.path) {
@@ -138,26 +138,26 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
     rpcs = room.rpcs;
 
     // If the RPC hasn't been created for the given room, create one
-    if (!rpcs[RPC.rpcName]) {
-        this._logger.info(`Creating new RPC (${RPC.rpcName}) for ${room.uuid}`);
-        rpcs[RPC.rpcName] = new RPC(room.uuid);
+    if (!rpcs[RPC.serviceName]) {
+        this._logger.info(`Creating new RPC (${RPC.serviceName}) for ${room.uuid}`);
+        rpcs[RPC.serviceName] = new RPC(room.uuid);
     }
 
-    return rpcs[RPC.rpcName];
+    return rpcs[RPC.serviceName];
 
 };
 
 RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     var action,
         uuid = req.query.uuid,
-        supportedActions = this.rpcRegistry[RPC.rpcName],
+        supportedActions = this.rpcRegistry[RPC.serviceName],
         oldFieldNameFor,
         result,
         args,
         rpc;
 
     action = req.params.action;
-    this._logger.info(`Received request to ${RPC.rpcName} for ${action} (from ${uuid})`);
+    this._logger.info(`Received request to ${RPC.serviceName} for ${action} (from ${uuid})`);
 
     // Then pass the call through
     if (supportedActions[action]) {
@@ -173,7 +173,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         ctx.response = res;
         if (!ctx.socket) {
             this._logger.error(`Could not find socket ${uuid} for rpc ` +
-                `${RPC.rpcName}:${action}. Will try to call it anyway...`);
+                `${RPC.serviceName}:${action}. Will try to call it anyway...`);
         }
 
         // Get the arguments
@@ -184,14 +184,14 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         });
         let prettyArgs = JSON.stringify(args);
         prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
-        this._logger.log(`calling ${RPC.rpcName}.${action}(${prettyArgs})`);
+        this._logger.log(`calling ${RPC.serviceName}.${action}(${prettyArgs})`);
         result = ctx[action].apply(ctx, args);
 
         this.sendRPCResult(res, result);
 
         return result;
     } else {
-        this._logger.log('Invalid action requested for '+RPC.rpcName+': '+action);
+        this._logger.log('Invalid action requested for '+RPC.serviceName+': '+action);
         return res.status(400).send('unrecognized action');
     }
 };
