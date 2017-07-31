@@ -16,13 +16,13 @@ SpriteMorph.prototype.categories =
         'operators',
         'pen',
         'variables',
-        'services',
+        'network',
         'custom',
         'lists',
         'other'
     ];
 
-SpriteMorph.prototype.blockColor.services = new Color(217, 77, 17);
+SpriteMorph.prototype.blockColor.network = new Color(217, 77, 17);
 SpriteMorph.prototype.blockColor.custom = new Color(120, 120, 120);
 
 SpriteMorph.prototype.freshPalette = function (category) {
@@ -234,68 +234,68 @@ SpriteMorph.prototype.initBlocks = function () {
     SpriteMorph.prototype._initBlocks();  // super
     SpriteMorph.prototype.blocks.getJSFromRPC = {  // primitive JSON response
         type: 'reporter',
-        category: 'services',
+        category: 'network',
         spec: 'call %s with %s',
-        defaults: ['weather']
+        defaults: ['GoogleMaps']
     };
 
     SpriteMorph.prototype.blocks.getJSFromRPCDropdown = {  // primitive JSON response
         type: 'reporter',
-        category: 'services',
+        category: 'network',
         spec: 'call %rpcNames / %rpcActions with %s',
-        defaults: ['weather']
+        defaults: ['GoogleMaps']
     };
 
     SpriteMorph.prototype.blocks.getJSFromRPCStruct = {  // primitive JSON response
         type: 'reporter',
-        category: 'services',
+        category: 'network',
         spec: 'call %rpcNames / %rpcMethod',
-        defaults: ['weather']
+        defaults: ['GoogleMaps']
     };
 
     SpriteMorph.prototype.blocks.getCostumeFromRPC = {
         type: 'reporter',
-        category: 'services',
+        category: 'network',
         spec: 'costume from %rpcNames / %rpcActions with %s',
-        defaults: ['staticmap', 'getMap']
+        defaults: ['GoogleMaps', 'getMap']
     };
 
     // Network Messages
     // request reply
     SpriteMorph.prototype.blocks.doSocketRequest = {
         type: 'reporter',
-        category: 'services',
+        category: 'network',
         spec: 'send msg %msgInput to %roles and wait'
     };
 
     SpriteMorph.prototype.blocks.doSocketResponse = {
         type: 'command',
-        category: 'services',
+        category: 'network',
         spec: 'send response %s'
     };
 
     SpriteMorph.prototype.blocks.doSocketMessage = {
         type: 'command',
-        category: 'services',
+        category: 'network',
         spec: 'send msg %msgInput to %roles'
     };
 
     SpriteMorph.prototype.blocks.receiveSocketMessage = {
         type: 'hat',
-        category: 'services',
+        category: 'network',
         spec: 'when I receive %msgOutput'
     };
 
     // Role Reporters
     SpriteMorph.prototype.blocks.getProjectId = {
         type: 'reporter',
-        category: 'services',
+        category: 'network',
         spec: 'role name'
     };
 
     SpriteMorph.prototype.blocks.getProjectIds = {
         type: 'reporter',
-        category: 'services',
+        category: 'network',
         spec: 'all role names'
     };
 
@@ -647,7 +647,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doPauseAll'));
 
-    } else if (cat === 'services') {
+    } else if (cat === 'network') {
         blocks.push(block('receiveSocketMessage'));
         blocks.push(block('doSocketMessage'));
         blocks.push('-');
@@ -1006,7 +1006,7 @@ StageMorph.prototype.deletableMessageNames = function() {
 SpriteMorph.prototype.deleteMessageType = function(name) {
     var ide = this.parentThatIsA(IDE_Morph),
         stage = ide.stage,
-        cat = 'services';
+        cat = 'network';
 
     stage.messageTypes.deleteMsgType(name);
 
@@ -1271,7 +1271,7 @@ StageMorph.prototype.blockTemplates = function (category) {
 
         blocks.push(block('clear'));
 
-    } else if (cat === 'services') {
+    } else if (cat === 'network') {
         blocks.push(block('receiveSocketMessage'));
         blocks.push(block('doSocketMessage'));
         blocks.push('-');

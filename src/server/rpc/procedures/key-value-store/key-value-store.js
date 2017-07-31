@@ -23,11 +23,6 @@ var KeyValueStore = {
     // This is very important => Otherwise it will try to instantiate this
     isStateless: true,
 
-    // These next two functions are the same from the stateful RPC's
-    getPath: function() {
-        return '/kv-store';
-    },
-
     get: function(key) {
         var keys = getKeys(key),
             response = this.response,
@@ -165,9 +160,10 @@ var KeyValueStore = {
 
         return null;
     }
+};
 
-    // dump/load data?
-    // TODO
+KeyValueStore.COMPATIBILITY = {
+    path: 'kv-store'
 };
 
 module.exports = KeyValueStore;

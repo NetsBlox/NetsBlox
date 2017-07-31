@@ -16,11 +16,6 @@ module.exports = {
     // This is very important => Otherwise it will try to instantiate this
     isStateless: true,
 
-    // These next two functions are the same from the stateful RPC's
-    getPath: function() {
-        return '/trivia';
-    },
-
     random: function() {
         var url = baseUrl + '/random',
             response = this.response,

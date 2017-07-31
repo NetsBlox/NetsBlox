@@ -26,7 +26,9 @@ class ApiConsumer {
         this._baseUrl = baseUrl;
         this._logger = new Logger('netsblox:rpc:'+this._name);
         // setup api endpoint
-        this.getPath = () => '/'+this._name;
+        this.COMPATIBILITY = {
+            path: this._name
+        };
         this.isStateless = true;
         this._remainingMsgs = {};
         // setup cache. maxsize is in bytes, ttl in seconds

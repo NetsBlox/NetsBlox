@@ -4,10 +4,11 @@ const assert = require('assert');
 
 // load the *exact* XML_Serializer from Snap!... pretty hacky...
 const path = require('path');
-const Q = require('q');
 const fs = require('fs');
+const Q = require('q');
 const PROJECT_ROOT = path.join(__dirname, '..', '..');
 const reqSrc = p => require(PROJECT_ROOT + '/src/server/' + p);
+
 const ActiveRoom = require(PROJECT_ROOT + '/src/server/rooms/active-room');
 const NetsBloxSocket = require(PROJECT_ROOT + '/src/server/rooms/netsblox-socket');
 const Socket = require('./mock-websocket');
@@ -15,6 +16,7 @@ const Logger = require(PROJECT_ROOT + '/src/server/logger');
 const Storage = require(PROJECT_ROOT + '/src/server/storage/storage');
 const mainLogger = new Logger('netsblox:test');
 const storage = new Storage(mainLogger);
+const serverUtils = reqSrc('server-utils');
 const Projects = reqSrc('storage/projects');
 
 (function() {
@@ -80,33 +82,64 @@ const createSocket = function(username) {
 };
 
 const createRoom = function(config) {
+    // Get the room and attach a project
     const room = new ActiveRoom(logger, config.name, config.owner);
-
+    
     Object.keys(config.roles).forEach(name => {
         config.roles[name] = config.roles[name] || [];
         room.silentCreateRole(name);
         config.roles[name].forEach(username => {
             const socket = createSocket(username);
-
+            
             room.silentAdd(socket, name);
         });
     });
 
-    return room;
+    const owner = room.getOwnerSockets()[0];
+    
+    //  Add response capabilities
+    room.sockets().forEach(socket => {
+        socket._socket.addResponse('project-request', sendEmptyRole.bind(socket));
+    });
+    
+    if (owner) {
+        return Projects.new(owner, room)
+            .then(project => {
+                room.setStorage(project);
+                return room;
+            });
+    } else {  // don't add a project if not occupied
+        return Q(room);
+    }
 };
 
+const sendEmptyRole = function(msg) {
+    return {
+        type: 'project-response',
+        id: msg.id,
+        project: serverUtils.getEmptyRole(this.roleId)
+    };
+};
+
+let connection = null;
 const connect = function() {
     const mongoUri = 'mongodb://127.0.0.1:27017/netsblox-tests';
-    if (storage.connected) {
-        return Q(storage._db);
-    } else {
-        return storage.connect(mongoUri);
+    if (!connection) {
+        connection = storage.connect(mongoUri);
     }
+    return connection;
+};
+
+const reset = function() {
+    return connect()
+        .then(db => db.collection('projects').drop())
+        .catch(() => mainLogger.trace())
+        .then(() => storage._db);
 };
 
 module.exports = {
     verifyRPCInterfaces: function(rpc, interfaces) {
-        describe(`${rpc.getPath()} interfaces`, function() {
+        describe(`${rpc.rpcName} interfaces`, function() {
             interfaces.forEach(interface => {
                 var name = interface[0],
                     expected = interface[1] || [];
@@ -122,9 +155,11 @@ module.exports = {
     canLoadXml: canLoadXml,
 
     connect: connect,
+    reset: reset,
     logger: mainLogger,
     createRoom: createRoom,
     createSocket: createSocket,
+    sendEmptyRole: sendEmptyRole,
 
     reqSrc
 };

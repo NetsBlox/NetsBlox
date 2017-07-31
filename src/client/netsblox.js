@@ -1833,7 +1833,6 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     overwriteExisting = function(overwrite) {
         if (name) {
             myself.showMessage('Saving project\nto the cloud...');
-            myself.setProjectName(name);
             SnapCloud.saveProject(
                 myself,
                 function () {
@@ -1844,7 +1843,8 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
                     }
                 },
                 myself.cloudError(),
-                overwrite
+                overwrite,
+                name
             );
         }
     };
