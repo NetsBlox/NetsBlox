@@ -7,7 +7,6 @@
     UserActionData.init = function(_logger, db) {
         logger = _logger.fork('user-actions');
         collection = db.collection('netsblox:storage:user-actions');
-        logger.trace('initialized!');
     };
 
     UserActionData.record = function(event) {
