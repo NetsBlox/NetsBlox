@@ -1,6 +1,7 @@
 (function(UserStorage) {
 
     const Q = require('q');
+    const Groups = require('./groups');
     var randomString = require('just.randomstring'),
         hash = require('../../common/sha512').hex_sha512,
         DataWrapper = require('./data'),
@@ -38,6 +39,19 @@
                     this._logger.error(`Could not load project ${name}: ${err}`);
                     throw err;
                 });
+        }
+
+        getGroup() {
+            if (this.groupId) {
+                return Groups.get(this.groupId);
+            }
+            return Q(null);
+        }
+
+        setGroupId(groupId) {
+            const query = {$set: {groupId: groupId}};
+            this.groupId = groupId;
+            return this._db.update(this.getStorageId(), query);
         }
 
         getSharedProject(owner, name) {

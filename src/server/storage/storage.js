@@ -3,6 +3,7 @@ var MongoClient = require('mongodb').MongoClient,
     RPCStore = require('../rpc/storage'),
     Users = require('./users'),
     Projects = require('./projects'),
+    Groups = require('./groups'),
     UserActions = require('./user-actions'),
     PublicProjects = require('./public-projects');
 
@@ -23,6 +24,7 @@ Storage.prototype.connect = function(mongoURI) {
             this.projects = Projects;
             Users.init(this._logger, db);
             Projects.init(this._logger, db);
+            Groups.init(this._logger, db);
             RPCStore.init(this._logger, db);
             UserActions.init(this._logger, db);
             PublicProjects.init(this._logger, db);

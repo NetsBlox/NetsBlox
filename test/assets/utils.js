@@ -131,9 +131,13 @@ const connect = function() {
 };
 
 const reset = function() {
+    let db = null;
     return connect()
-        .then(db => db.collection('projects').drop())
-        .catch(() => mainLogger.trace())
+        .then(_db => db = _db)
+        .then(() => db.collection('groups').drop())
+        .catch(() => db)
+        .then(() => db.collection('projects').drop())
+        .catch(() => db)
         .then(() => storage._db);
 };
 
