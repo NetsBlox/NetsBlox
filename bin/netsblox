@@ -22,6 +22,7 @@ program
     .command('persist', 'set project transient to false')
     .command('session [sessionId...]', 'display collected session info')
     .command('projects', 'list the user projects')
+    .command('groups', 'manage user groups')
     .command('users', 'list the usernames')
     .command('user [sessionId]', 'display user information')
     .parse(process.argv);

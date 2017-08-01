@@ -1,11 +1,4 @@
 (function(GroupStore) {
-    // Need:
-    //  - [ ] create
-    //  - [ ] delete
-    //
-    //  - [ ] add member
-    //  - [ ] rm member
-    //  - [ ] get members
     var logger, collection;
     const Data = require('./data');
 
@@ -78,6 +71,10 @@
     GroupStore.remove = function(name) {
         logger.info(`removing ${name}`);
         return collection.deleteOne({name});
+    };
+
+    GroupStore.all = function() {
+        return collection.find({}).toArray();
     };
 
 })(exports);
