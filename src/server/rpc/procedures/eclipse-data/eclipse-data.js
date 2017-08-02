@@ -1,5 +1,6 @@
 const Storage = require('../../../storage/storage'),
     Logger = require('../../../logger'),
+    rpcUtils = require('../utils'),
     logger = new Logger('netsblox:eclipse'),
     storage = new Storage(logger);
 
@@ -16,39 +17,53 @@ let dbConnect = () => {
     return connection;
 };
 
-function bestReading(lat, lon, time){
 
-    // TODO find the stations closest to the requested point. OR maybe find  stations whitin 10km, fails if none within limit kms
+// OPTIMIZE can be cached based on approximate coords n time
+function closestReading(lat, lon, time){
+    const MAX_DISTANCE = 10000, // in meters
+        MAX_AGE = 60 * 5;
 
-    // TODO whats the previous OR closest reading for the given time on that station.
-    //
+    time = new Date(time);
+
+    // TODO find stations within MAX_DISTANCE
+    let query = { coordinates: { $nearSphere: { $geometry: { type: "Point", coordinates: [longitude, latitude] }, $maxDistance: MAX_DISTANCE } } };
+
+    // TODO ask mongo for updates with the timelimit and specific stations.
+    let startTime = time;
+    startTime.setSeconds(startTime.getSeconds() - MAX_AGE);
+    query.readAt = {$gte: startTime, $lte: time}
+
+    // either ask mongo for readings with {pws: closestStation, dateRange} or give it an array of stations
+    console.log('query', query);
+    // readingsCol.find(query); // can be sorted by distance or time .?
+
+    return dbConnect().then(db => {
+        let readingsCol = db.collection(READINGS_COL);
+        return readingsCol.findOne();
+    })
 }
 
 let temp = function(latitude, longitude, time){
-
-    return dbConnect().then(db => {
-        let stationsCol = db.collection(STATIONS_COL);
-        let readingsCol = db.collection(READINGS_COL);
-
-        //find the best reading for the request
-        bestReading(latitude, longitude, time).then(reading => {
-
-        });
+    return closestReading(latitude, longitude, time).then(reading => {
+        return reading.temp;
+    });
+};
 
 
-
-        let query = {distance: {$lte: 50}};
-        return stationsCol.find(query).toArray().then(stations => {
-            return stations;
-        })
-
+let currentCondition = function(latitude, longitude, time){
+    return closestReading(latitude, longitude, time).then(reading => {
+        return rpcUtils.jsonToSnapList(reading);
     });
 };
 
 
 
+// TODO add arg validation like openWeather
+
+
 
 module.exports = {
     isStateless: true,
-    temp: temp
+    temp,
+    currentCondition
 };

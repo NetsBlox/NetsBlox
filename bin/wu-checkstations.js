@@ -17,7 +17,7 @@ const fs = require('fs'),
 
 const STATIONS_COL = 'wuStations',
     READINGS_COL = 'wuReadings';
-const WU_KEY = '28e87bc79bee2dd4',
+const WU_KEY = process.env.WEATHER_UNDERGROUND_KEY,
     INTERVAL = 61 * 1000,
     API_LIMIT = 900; //per min
 
@@ -69,7 +69,7 @@ function reqUpdates(stations){
     let fire = () => {
         let ids = stationChunks.shift();
         console.log('getting updates from stations ids', ids);
-        promises = promises.concat(ids.map(getStation));
+        promises = promises.concat(ids.map(reqUpdate));
         if (stationChunks.length > 0) {
             setTimeout(fire, INTERVAL);
         }else {
@@ -97,6 +97,7 @@ let seedDB = (fileName) => {
     loadStations(fileName).then(stations => {
         return dbConnect().then(db => {
             console.log('connected to db');
+            db.collection(READINGS_COL).createIndex({coordinates: "2dsphere"});
             let stationsCol = db.collection(STATIONS_COL);
             stationsCol.insertMany(stations).catch(console.log)
             return 'Loaded';
@@ -104,22 +105,23 @@ let seedDB = (fileName) => {
     });
 };
 
-// seedDB('wuStations.csv');
+// TODO a better solution?
+if (process.argv[2] === 'seed') seedDB('wuStations.csv');
 
+// TODO the script doesn't return.
 dbConnect().then(db => {
     let stationsCol = db.collection(STATIONS_COL);
     let readingsCol = db.collection(READINGS_COL);
-    console.log('finding');
     let query = {distance: {$lte: 50}};
-    // stationsCol.find(query).toArray().then(stations => {
-    //      stations = stations.map(item => item.pws);
-    return readingsCol.distinct('id').then(stations => {
+    stationsCol.find(query).toArray().then(stations => {
+        stations = stations.map(item => item.pws);
+    // return readingsCol.distinct('pws',query).then(stations => {
         console.log('this many stations', stations.length);
         return reqUpdates(stations).then(updates => {
             console.log(updates.length, 'updates');
-            let col = db.collection(READINGS_COL);
+            let readingsCol = db.collection(READINGS_COL);
             // updates = updates.map(update => {pws: update.pws, temp = })
-            return col.insertMany(updates).catch(console.log)
+            return readingsCol.insertMany(updates).catch(console.log)
         })
     })
 
@@ -134,9 +136,10 @@ function exportStations(stations) {
 }
 
 
-function getStation(id) {
+function reqUpdate(id) {
     let url = `http://api.wunderground.com/api/${WU_KEY}/conditions/q/pws:${id}.json`;
-    console.log('hitting api', apiCounter++, url);
+    // console.log('hitting api', apiCounter++, url);
+    process.stdout.write("#")
     return axios.get(url).then(resp => {
         if (resp.data.response.error) {
             throw resp.data.response.error.description;
@@ -144,16 +147,18 @@ function getStation(id) {
         const obs = resp.data.current_observation
 
         let distance = distanceToPath(obs.observation_location.latitude, obs.observation_location.longitude);
-
+        let latitude = parseFloat(obs.observation_location.latitude)
+        let longitude = parseFloat(obs.observation_location.longitude)
         return {
             distance,
-            id: obs.station_id,
+            pws: obs.station_id,
             city: obs.observation_location.city,
             state: obs.observation_location.state,
             elevation: obs.observation_location.elevation,
-            latitude: parseFloat(obs.observation_location.latitude),
-            humidity: obs.relative_humidity,
-            longitude: parseFloat(obs.observation_location.longitude),
+            latitude,
+            longitude,
+            coordinates: [longitude, latitude], // to use mongo's Geospatial Queries
+            humidity: parseInt(obs.relative_humidity),
             readAt: new Date(parseInt(obs.observation_epoch)*1000),
             iconUrl: obs.icon_url,
             readAtLocal: obs.observation_time_rfc822,
