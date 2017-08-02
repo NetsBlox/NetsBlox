@@ -138,6 +138,8 @@ const reset = function() {
         .catch(() => db)
         .then(() => db.collection('projects').drop())
         .catch(() => db)
+        .then(() => db.collection('users').drop())
+        .catch(() => db)
         .then(() => storage._db);
 };
 

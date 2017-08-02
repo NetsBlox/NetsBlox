@@ -425,26 +425,16 @@ module.exports = [
 function getFriendSockets(user) {
     log(`${user.username} requested friend list`);
 
-    // Check if user has a groupId. If so, only show the logged in group members
-    if (user.groupId) {
-        return user.getGroup()
-            .then(group => group.getMembers())
-            .then(usernames => {
-                let inGroup = {};
-                usernames.forEach(name => inGroup[name] = true);
-                return SocketManager.sockets()
-                    .filter(socket => {
-                        return socket.username !== user.username &&
-                            socket.loggedIn && inGroup[socket.username];
-                    });
-            });
-    } else {
-        warn('returning ALL active sockets');
-        var allSockets = SocketManager.sockets()
-            .filter(socket => socket.username !== user.username && socket.loggedIn);
-
-        return Q(allSockets);
-    }
+    return user.getGroupMembers()
+        .then(usernames => {
+            let inGroup = {};
+            usernames.forEach(name => inGroup[name] = true);
+            return SocketManager.sockets()
+                .filter(socket => {
+                    return socket.username !== user.username &&
+                        socket.loggedIn && inGroup[socket.username];
+                });
+        });
 }
 
 function acceptInvitation (invite, socketId) {
