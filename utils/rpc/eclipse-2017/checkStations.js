@@ -1,19 +1,15 @@
 const fs = require('fs'),
     geolib = require('geolib'),
-    axios = require('axios'),
+    request = require('request'),
+    rp = require('request-promise'),
     Q = require('q'),
     _ = require('lodash'),
     eclipsePath = require('./eclipsePathCenter'),
     csv = require('fast-csv'),
-    Storage = require('../src/server/storage/storage'),
-    Logger = require('../src/server/logger'),
+    Storage = require('../../../src/server/storage/storage'),
+    Logger = require('../../../src/server/logger'),
     logger = new Logger('netsblox:wu'),
-    storage = new Storage(logger),
-    csvWriter = require('csv-write-stream'),
-    writer = csvWriter({headers: ['id','location','latitude','longitude','distance','lastReadingAge','temp','weather','requestTime']});
-
-// TODO use other libraries for axios and csv read write
-// TODO handle seeding and path coordinates in a better way
+    storage = new Storage(logger);
 
 const STATIONS_COL = 'wuStations',
     READINGS_COL = 'wuReadings';
@@ -26,8 +22,8 @@ let apiCounter = 0, connection;
 // connect to nb database
 let dbConnect = () => {
     const mongoUri = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017/admin';
-    if (!connection) {
         connection = storage.connect(mongoUri);
+        if (!connection) {
     }
     return connection;
 };
@@ -112,10 +108,10 @@ if (process.argv[2] === 'seed') seedDB('wuStations.csv');
 dbConnect().then(db => {
     let stationsCol = db.collection(STATIONS_COL);
     let readingsCol = db.collection(READINGS_COL);
-    let query = {distance: {$lte: 50}};
-    stationsCol.find(query).toArray().then(stations => {
-        stations = stations.map(item => item.pws);
-    // return readingsCol.distinct('pws',query).then(stations => {
+    let query = {distance: {$lte: 2}};
+    // stationsCol.find(query).toArray().then(stations => {
+    //     stations = stations.map(item => item.pws);
+    return readingsCol.distinct('pws',query).then(stations => {
         console.log('this many stations', stations.length);
         return reqUpdates(stations).then(updates => {
             console.log(updates.length, 'updates');
@@ -127,24 +123,15 @@ dbConnect().then(db => {
 
 });
 
-
-function exportStations(stations) {
-    writer.pipe(fs.createWriteStream('levelNStations.csv', {flag: 'w'}));
-    stations.forEach(station => {
-        if(station.lastReadingAge < 61) writer.write(station);
-    });
-}
-
-
 function reqUpdate(id) {
     let url = `http://api.wunderground.com/api/${WU_KEY}/conditions/q/pws:${id}.json`;
     // console.log('hitting api', apiCounter++, url);
-    process.stdout.write("#")
-    return axios.get(url).then(resp => {
-        if (resp.data.response.error) {
-            throw resp.data.response.error.description;
+    process.stdout.write("#");
+    return rp({uri: url, json:true}).then(resp => {
+        if (resp.response.error) {
+            throw resp.response.error.description;
         }
-        const obs = resp.data.current_observation
+        const obs = resp.current_observation;
 
         let distance = distanceToPath(obs.observation_location.latitude, obs.observation_location.longitude);
         let latitude = parseFloat(obs.observation_location.latitude)
@@ -174,8 +161,6 @@ function reqUpdate(id) {
         throw(err);
     });
 }
-
-
 
 // closest distance to path
 const pathPoints = eclipsePath();

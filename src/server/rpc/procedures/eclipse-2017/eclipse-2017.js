@@ -27,6 +27,7 @@ function closestReading(lat, lon, time){
 
     // TODO find stations within MAX_DISTANCE
     let query = { coordinates: { $nearSphere: { $geometry: { type: "Point", coordinates: [longitude, latitude] }, $maxDistance: MAX_DISTANCE } } };
+    db.collection(STATIONS_COL)
 
     // TODO ask mongo for updates with the timelimit and specific stations.
     let startTime = time;
