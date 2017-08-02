@@ -20,42 +20,48 @@ module.exports = [
         Parameters: '',
         Method: 'Get',
         Note: '',
-        middleware: ['isLoggedIn'],
+        middleware: ['isLoggedIn', 'setUser'],
         Handler: function(req, res) {
-            var sockets = getFriendSockets(req.session.username),
-                resp = {};
+            return getFriendSockets(req.session.user)
+                .then(sockets => {
+                    var resp = {};
+                    sockets.forEach(socket => resp[socket.username] = socket.uuid);
 
-            sockets.forEach(socket => resp[socket.username] = socket.uuid);
-
-            log(Utils.serialize(resp));
-            return res.send(Utils.serialize(resp));
+                    log(Utils.serialize(resp));
+                    return res.send(Utils.serialize(resp));
+                });
         }
     },
     {
         Service: 'getCollaborators',
         Parameters: 'socketId',
         Method: 'post',
-        middleware: ['isLoggedIn', 'hasSocket'],
+        middleware: ['isLoggedIn', 'hasSocket', 'setUser'],
         Handler: function(req, res) {
             const socket = SocketManager.getSocket(req.body.socketId);
+            let room = null;
 
-            return socket.getRoom().then(room => {
-                const friends = getFriendSockets(req.session.username);
-                const collaborators = room.getCollaborators();
-                const resp = {};
-                let username;
+            return socket.getRoom()
+                .then(_room => {
+                    room = _room;
+                    return getFriendSockets(req.session.user);
+                })
+                .then(friends => {
+                    const collaborators = room.getCollaborators();
+                    const resp = {};
+                    let username;
 
-                friends.forEach(socket => {
-                    username = socket.username;
+                    friends.forEach(socket => {
+                        username = socket.username;
 
-                    if (collaborators.includes(username)) {
-                        resp[socket.username] = socket.uuid;
-                    } else {
-                        resp[socket.username] = false;
-                    }
+                        if (collaborators.includes(username)) {
+                            resp[socket.username] = socket.uuid;
+                        } else {
+                            resp[socket.username] = false;
+                        }
+                    });
+                    return res.send(Utils.serialize(resp));
                 });
-                return res.send(Utils.serialize(resp));
-            });
 
         }
     },
@@ -416,14 +422,19 @@ module.exports = [
     return api;
 });
 
-function getFriendSockets(username) {
-    log(username +' requested friend list');
-    warn('returning ALL active sockets');
+function getFriendSockets(user) {
+    log(`${user.username} requested friend list`);
 
-    var allSockets = SocketManager.sockets()
-        .filter(socket => socket.username !== username && socket.loggedIn);
-
-    return allSockets;
+    return user.getGroupMembers()
+        .then(usernames => {
+            let inGroup = {};
+            usernames.forEach(name => inGroup[name] = true);
+            return SocketManager.sockets()
+                .filter(socket => {
+                    return socket.username !== user.username &&
+                        socket.loggedIn && inGroup[socket.username];
+                });
+        });
 }
 
 function acceptInvitation (invite, socketId) {
