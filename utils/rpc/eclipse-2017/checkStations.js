@@ -21,7 +21,7 @@ let apiCounter = 0, connection;
 
 // connect to nb database
 let dbConnect = () => {
-    const mongoUri = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017/admin';
+    const mongoUri = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
         connection = storage.connect(mongoUri);
         if (!connection) {
     }
@@ -80,7 +80,7 @@ function reqUpdates(stations){
                 let stationsArr = responses.map(item => item.value);
                 deferred.resolve(stationsArr);
 
-            })
+            });
         }
     };
     fire();
@@ -93,33 +93,48 @@ let seedDB = (fileName) => {
     loadStations(fileName).then(stations => {
         return dbConnect().then(db => {
             console.log('connected to db');
+            // create index on pws instead of _id ? 
             db.collection(READINGS_COL).createIndex({coordinates: "2dsphere"});
+            db.collection(STATIONS_COL).createIndex({coordinates: "2dsphere"});
+            stations = stations.map(station => {
+                station.coordinates = [station.longitude, station.latitude];
+                return station;
+            });
             let stationsCol = db.collection(STATIONS_COL);
-            stationsCol.insertMany(stations).catch(console.log)
-            return 'Loaded';
+            let readingsCol = db.collection(READINGS_COL);
+            let query = {distance: {$lte: 10}};
+            stationsCol.insertMany(stations).then(() => {
+                stationsCol.find(query).toArray().then(stations => {
+                    stations = stations.map(item => item.pws);
+                    console.log('this many stations', stations.length);
+                    return reqUpdates(stations).then(updates => {
+                        console.log(updates.length, 'updates');
+                        let readingsCol = db.collection(READINGS_COL);
+                        // updates = updates.map(update => {pws: update.pws, temp = })
+                        return readingsCol.insertMany(updates).catch(console.log);
+                    });
+                });
+            });
         })
     });
 };
 
-// TODO a better solution?
 if (process.argv[2] === 'seed') seedDB('wuStations.csv');
 
 // TODO the script doesn't return.
 dbConnect().then(db => {
     let stationsCol = db.collection(STATIONS_COL);
     let readingsCol = db.collection(READINGS_COL);
-    let query = {distance: {$lte: 2}};
-    // stationsCol.find(query).toArray().then(stations => {
-    //     stations = stations.map(item => item.pws);
+    let query = {distance: {$lte: 10}};
     return readingsCol.distinct('pws',query).then(stations => {
         console.log('this many stations', stations.length);
         return reqUpdates(stations).then(updates => {
             console.log(updates.length, 'updates');
             let readingsCol = db.collection(READINGS_COL);
             // updates = updates.map(update => {pws: update.pws, temp = })
-            return readingsCol.insertMany(updates).catch(console.log)
-        })
-    })
+            return readingsCol.insertMany(updates).catch(console.log);
+        });
+    });
 
 });
 
@@ -134,8 +149,8 @@ function reqUpdate(id) {
         const obs = resp.current_observation;
 
         let distance = distanceToPath(obs.observation_location.latitude, obs.observation_location.longitude);
-        let latitude = parseFloat(obs.observation_location.latitude)
-        let longitude = parseFloat(obs.observation_location.longitude)
+        let latitude = parseFloat(obs.observation_location.latitude);
+        let longitude = parseFloat(obs.observation_location.longitude);
         return {
             distance,
             pws: obs.station_id,
@@ -146,7 +161,7 @@ function reqUpdate(id) {
             longitude,
             coordinates: [longitude, latitude], // to use mongo's Geospatial Queries
             humidity: parseInt(obs.relative_humidity),
-            readAt: new Date(parseInt(obs.observation_epoch)*1000),
+            readAt: new Date(parseInt(obs.observation_epoch)*1000), // consider the timezone?
             iconUrl: obs.icon_url,
             readAtLocal: obs.observation_time_rfc822,
             solarradiation: obs.solarradiation,
@@ -169,8 +184,8 @@ function distanceToPath(lat, lon){
     let poi = {latitude: lat, longitude: lon};
     for (var i = 0; i < pathPoints.length; i++) {
         let dist = geolib.getDistance(poi, {latitude: pathPoints[i][0], longitude: pathPoints[i][1]}) / 1000;
-        // if(dist > min) break; // performance boost
-        if (dist < min) min = dist;
+        if (dist > min) break; 
+        min = dist;
     }
     return min; //in KM
 }
