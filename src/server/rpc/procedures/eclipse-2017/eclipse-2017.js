@@ -1,5 +1,6 @@
 const Storage = require('../../../storage/storage'),
     Logger = require('../../../logger'),
+    eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePathCenter.js'),
     rpcUtils = require('../utils'),
     logger = new Logger('netsblox:eclipse'),
     storage = new Storage(logger);
@@ -8,11 +9,9 @@ const STATIONS_COL = 'wuStations',
     READINGS_COL = 'wuReadings';
 let connection;
 
-// TODO a service to return timezones based on location
-
 // connect to nb database
 let dbConnect = () => {
-    const mongoUri = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017/admin';
+    const mongoUri = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
     if (!connection) {
         connection = storage.connect(mongoUri);
     }
@@ -25,13 +24,14 @@ function closestReading(lat, lon, time){
     const MAX_DISTANCE = 50000, // in meters
         MAX_AGE = 60 * 500;
 
-    time = new Date(time);
+    time = new Date(time); // should be in iso format or epoch
     lat = parseFloat(lat);
     lon = parseFloat(lon);
 
     return dbConnect().then(db => {
-        // find stations within MAX_DISTANCE
+        // find stations uptodate stations within MAX_DISTANCE
         let closeStations = { coordinates: { $nearSphere: { $geometry: { type: "Point", coordinates: [lon, lat] }, $maxDistance: MAX_DISTANCE } } };
+        closeStations.readingAvg = {$ne: null, $lte: MAX_AGE};
         return db.collection(STATIONS_COL).find(closeStations).toArray().then(stations => {
             // sorted array of stations by closest first
             let stationIds = stations.map(station => station.pws);
@@ -51,7 +51,7 @@ function closestReading(lat, lon, time){
         });
     });
 
-}
+} // end of closestReading
 
 let temp = function(latitude, longitude, time){
     return closestReading(latitude, longitude, time).then(reading => {
@@ -67,6 +67,21 @@ let currentCondition = function(latitude, longitude, time){
 };
 
 
+let availableStations = function(maxReadingAvg, maxDistance){
+    maxReadingAvg = parseInt(maxReadingAvg) || 120;
+    maxDistance = parseInt(maxDistance) || 50;
+    let query = {readingAvg: {$ne:null, $lte: maxReadingAvg}, distance: {$lte: maxDistance}};
+    return dbConnect().then(db => {
+        return db.collection(STATIONS_COL).find(query).toArray().then(stations => {
+            return rpcUtils.jsonToSnapList(stations);
+        });
+    });
+};
+
+
+let eclipsePath = function(){
+    return eclipsePathCenter();
+};
 
 // TODO add arg validation like openWeather
 
@@ -75,5 +90,7 @@ let currentCondition = function(latitude, longitude, time){
 module.exports = {
     isStateless: true,
     temp,
-    currentCondition
+    currentCondition,
+    eclipsePath,
+    availableStations
 };

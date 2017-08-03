@@ -56,6 +56,7 @@ function loadStations(fileName){
 
 // gets a list of station ids
 function reqUpdates(stations){
+   if (stations[0] && stations[0].pws) stations = stations.map(item => item.pws);
     let promises = [];
     let deferred = Q.defer();
     let rounds = Math.ceil(stations.length / API_LIMIT);
@@ -105,38 +106,65 @@ let seedDB = (fileName) => {
             let query = {distance: {$lte: 10}};
             stationsCol.insertMany(stations).then(() => {
                 stationsCol.find(query).toArray().then(stations => {
-                    stations = stations.map(item => item.pws);
                     console.log('this many stations', stations.length);
                     return reqUpdates(stations).then(updates => {
                         console.log(updates.length, 'updates');
                         let readingsCol = db.collection(READINGS_COL);
-                        // updates = updates.map(update => {pws: update.pws, temp = })
                         return readingsCol.insertMany(updates).catch(console.log);
                     });
                 });
             });
-        })
+        });
+    });
+};
+
+// given enough readings in the readigsCollection calculates the average reading age for stations 
+let calcAvgReadingAge = () => {
+    dbConnect().then(db => {
+        let stationsCol = db.collection(STATIONS_COL);
+        let readingsCol = db.collection(READINGS_COL);
+        let aggregateQuery = {
+            $group: {
+                _id: {pws: "$pws"},
+                count: {$sum: 1},
+                readingAvg: {$avg: "$lastReadingAge"},
+                docs: {$push: "$_id"}
+            }
+        };
+        console.log(aggregateQuery);
+        return readingsCol.aggregate([aggregateQuery]).toArray().then(updates => {
+            console.log('this many aggregated results', updates.length);
+            updates.forEach(update => {
+                let query = {pws: update._id.pws};
+                let updateObj = {$set: {readingAvg: update.readingAvg, updates: update.count}};
+                stationsCol.update(query, updateObj).catch(console.log);
+            }); 
+        }).catch(console.log);
+    
+    });
+};
+
+let fireUpdates = () => {
+    // TODO the script doesn't return.
+    return dbConnect().then(db => {
+        let stationsCol = db.collection(STATIONS_COL);
+        let readingsCol = db.collection(READINGS_COL);
+        let query = {distance: {$lte: 50}};
+        return stationsCol.find(query).toArray().then(stations => {
+            console.log('this many stations', stations.length);
+            return reqUpdates(stations).then(updates => {
+                console.log(updates.length, 'updates');
+                let readingsCol = db.collection(READINGS_COL);
+                return readingsCol.insertMany(updates).catch(console.log);
+            });
+        });
     });
 };
 
 if (process.argv[2] === 'seed') seedDB('wuStations.csv');
-
-// TODO the script doesn't return.
-dbConnect().then(db => {
-    let stationsCol = db.collection(STATIONS_COL);
-    let readingsCol = db.collection(READINGS_COL);
-    let query = {distance: {$lte: 10}};
-    return readingsCol.distinct('pws',query).then(stations => {
-        console.log('this many stations', stations.length);
-        return reqUpdates(stations).then(updates => {
-            console.log(updates.length, 'updates');
-            let readingsCol = db.collection(READINGS_COL);
-            // updates = updates.map(update => {pws: update.pws, temp = })
-            return readingsCol.insertMany(updates).catch(console.log);
-        });
-    });
-
-});
+if (process.argv[2] === 'updateAverages') calcAvgReadingAge();
+if (process.argv[2] === 'pullUpdates') fireUpdates();
+if (process.argv.length < 3) console.log('pass in a command: seed, updateAverages or pullUpdates');
 
 function reqUpdate(id) {
     let url = `http://api.wunderground.com/api/${WU_KEY}/conditions/q/pws:${id}.json`;
