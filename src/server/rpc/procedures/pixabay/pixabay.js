@@ -54,7 +54,7 @@ pixabay.getImage = function(url){
 };
 
 if(!process.env.PIXABAY) {
-    console.log('Warning: environment variable PIXABAY not defined, search-image RPC will not work.');
+    console.log('Warning: environment variable PIXABAY not defined, Pixabay RPC will not work.');
 } else {
     module.exports = pixabay;
 }
