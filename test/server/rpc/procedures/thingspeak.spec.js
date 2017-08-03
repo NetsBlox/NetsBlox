@@ -1,5 +1,5 @@
-describe('thingspeak-iot', function() {
-    var ThingSpeak = require('../../../../src/server/rpc/procedures/thingspeak-iot/thingspeak-iot'),
+describe('thing-speak', function() {
+    var ThingSpeak = require('../../../../src/server/rpc/procedures/thing-speak/thing-speak'),
         RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         thingspeak = new RPCMock(ThingSpeak);
