@@ -191,7 +191,7 @@ describe('Server Tests', function() {
             });
         });
 
-        describe('RPC tests', function() {
+        describe.skip('RPC tests', function() {
             var socket,
                 host = 'ws://localhost:'+port,
                 uuid;
