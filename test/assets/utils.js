@@ -131,15 +131,21 @@ const connect = function() {
 };
 
 const reset = function() {
+    let db = null;
     return connect()
-        .then(db => db.collection('projects').drop())
-        .catch(() => mainLogger.trace())
+        .then(_db => db = _db)
+        .then(() => db.collection('groups').drop())
+        .catch(() => db)
+        .then(() => db.collection('projects').drop())
+        .catch(() => db)
+        .then(() => db.collection('users').drop())
+        .catch(() => db)
         .then(() => storage._db);
 };
 
 module.exports = {
     verifyRPCInterfaces: function(rpc, interfaces) {
-        describe(`${rpc.getPath()} interfaces`, function() {
+        describe(`${rpc.rpcName} interfaces`, function() {
             interfaces.forEach(interface => {
                 var name = interface[0],
                     expected = interface[1] || [];

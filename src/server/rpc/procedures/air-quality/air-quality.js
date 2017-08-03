@@ -65,6 +65,7 @@ var qualityIndex = function(latitude, longitude) {
     request(url, (err, res, body) => {
         var aqi = -1,
             code = err ? 500 : res.statusCode;
+
         try {
             body = JSON.parse(body).shift();
             if (body && body.AQI) {
@@ -87,15 +88,13 @@ module.exports = {
     // This is very important => Otherwise it will try to instantiate this
     isStateless: true,
     COMPATIBILITY: {
-        aqi: {
-            latitude: 'lat',
-            longitude: 'lng'
+        path: 'air',
+        arguments: {
+            aqi: {
+                latitude: 'lat',
+                longitude: 'lng'
+            }
         }
-    },
-
-    // These next two functions are the same from the stateful RPC's
-    getPath: function() {
-        return '/air';
     },
 
     // air quality index

@@ -29,15 +29,14 @@ var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap',
     };
 
 var StaticMap = function(roomId) {
-    this.roomId = roomId;
-    this.userMaps = {};  // Store the state of the map for each user
-};
-
-StaticMap.getPath = function() {
-    return '/staticmap';
+    this._state = {};
+    this._state.roomId = roomId;
+    this._state.userMaps = {};  // Store the state of the map for each user
 };
 
 StaticMap.prototype._coordsAt = function(x, y, map) {
+    x = Math.ceil(x / map.scale);
+    y = Math.ceil(y / map.scale);
     let centerLl = [map.center.lon, map.center.lat];
     let centerPx = merc.px(centerLl, map.zoom);
     let targetPx = [centerPx[0] + parseInt(x), centerPx[1] - parseInt(y)];
@@ -52,7 +51,9 @@ StaticMap.prototype._pixelsAt = function(lat, lon, map) {
     // new latlon in px
     let targetPx = merc.px([lon, lat], map.zoom);
     // difference in px
-    let pixelsXY = {x: (targetPx[0] - curPx[0]), y: (targetPx[1] - curPx[1])};
+    let pixelsXY = {x: (targetPx[0] - curPx[0]), y: -(targetPx[1] - curPx[1])};
+    // adjust it to map's scale
+    pixelsXY = {x: pixelsXY.x * map.scale, y: pixelsXY.y * map.scale};
     return pixelsXY;
 };
 
@@ -70,7 +71,7 @@ StaticMap.prototype._getGoogleParams = function(options) {
 };
 
 StaticMap.prototype._getMapInfo = function(roleId) {
-    return getStorage().get(this.roomId)
+    return getStorage().get(this._state.roomId)
         .then(maps => {
             trace(`getting map for ${roleId}: ${JSON.stringify(maps)}`);
             return maps[roleId];
@@ -80,8 +81,8 @@ StaticMap.prototype._getMapInfo = function(roleId) {
 StaticMap.prototype._recordUserMap = function(socket, map) {
     // Store the user's new map settings
     // get the corners of the image. We need to actully get both they are NOT "just opposite" of eachother.
-    let northEastCornerCoords = this._coordsAt(map.width/2, map.height/2 , map);
-    let southWestCornerCoords = this._coordsAt(-map.width/2, -map.height/2 , map);
+    let northEastCornerCoords = this._coordsAt(map.width/2*map.scale, map.height/2*map.scale , map);
+    let southWestCornerCoords = this._coordsAt(-map.width/2*map.scale, -map.height/2*map.scale , map);
 
     map.min = {
         lat: southWestCornerCoords.lat,
@@ -91,11 +92,11 @@ StaticMap.prototype._recordUserMap = function(socket, map) {
         lat: northEastCornerCoords.lat,
         lon: northEastCornerCoords.lon
     };
-    return getStorage().get(this.roomId)
+    return getStorage().get(this._state.roomId)
         .then(maps => {
             maps = maps || {};
             maps[socket.roleId] = map;
-            getStorage().save(this.roomId, maps);
+            getStorage().save(this._state.roomId, maps);
         })
         .then(() => trace(`Stored map for ${socket.roleId}: ${JSON.stringify(map)}`));
 };
@@ -103,16 +104,17 @@ StaticMap.prototype._recordUserMap = function(socket, map) {
 
 
 StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom, mapType) {
+    let scale = width <= 640 && height <= 640 ? 1 : 2;
     var response = this.response,
         options = {
             center: {
                 lat: latitude,
                 lon: longitude,
             },
-            width: width,
-            height: height,
+            width: (width / scale),
+            height: (height / scale),
             zoom: zoom,
-            scale: width <= 640 && height <= 640 ? 1 : 2,
+            scale,
             mapType: mapType || 'roadmap'
         },
         params = this._getGoogleParams(options),
@@ -241,15 +243,18 @@ StaticMap.prototype.minLatitude = mapGetter('min', 'lat');
 
 // Map of argument name to old field name
 StaticMap.COMPATIBILITY = {
-    getMap: {
-        latitude: 'lat',
-        longitude: 'lon'
-    },
-    getXFromLongitude: {
-        longitude: 'lng'
-    },
-    getYFromLatitude: {
-        latitude: 'lat'
+    path: 'staticmap',
+    arguments: {
+        getMap: {
+            latitude: 'lat',
+            longitude: 'lon'
+        },
+        getXFromLongitude: {
+            longitude: 'lng'
+        },
+        getYFromLatitude: {
+            latitude: 'lat'
+        }
     }
 };
 

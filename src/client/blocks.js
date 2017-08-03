@@ -5,7 +5,8 @@
    CommandSlotMorph, RingCommandSlotMorph, RingReporterSlotMorph, CSlotMorph,
    ColorSlotMorph, TemplateSlotMorph, FunctionSlotMorph, ReporterSlotMorph,
    SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume, ScriptsMorph,
-   MessageDefinitionBlock, RPCInputSlotMorph, SnapActions, MultiHintArgMorph
+   MessageDefinitionBlock, RPCInputSlotMorph, SnapActions, MultiHintArgMorph,
+   PrototypeHatBlockMorph
    */
 
 BlockMorph.prototype.setSpec = function (spec, silently) {
@@ -53,6 +54,31 @@ BlockMorph.prototype.setSpec = function (spec, silently) {
     this.blockSpec = spec;
     this.fixLayout(silently);
     this.cachedInputs = null;
+};
+
+BlockMorph.prototype.mouseClickLeft = function () {
+    var top = this.topBlock(),
+        receiver = top.receiver(),
+        shiftClicked = this.world().currentKey === 16,
+        stage;
+    if (shiftClicked && !this.isTemplate) {
+        return this.focus();
+    }
+    if (top instanceof PrototypeHatBlockMorph) {
+        return top.mouseClickLeft();
+    }
+    if (receiver) {
+        stage = receiver.parentThatIsA(StageMorph);
+        if (stage ) {
+            // NetsBlox addition: start
+            // Don't start message handler blocks
+            var active = stage.threads.findProcess(top);
+            if (!(top.selector === 'receiveSocketMessage' && !active)) {
+                stage.threads.toggleProcess(top);
+            }
+            // NetsBlox addition: end
+        }
+    }
 };
 
 InputSlotMorph.prototype.messageTypesMenu = function() {
@@ -1129,11 +1155,10 @@ InputSlotMorph.prototype.getURL = function (url) {
 
 InputSlotMorph.prototype.rpcNames = function () {
     var rpcs = JSON.parse(this.getURL('/rpc')),
-        dict = {},
-        name;
+        dict = {};
+
     for (var i = 0; i < rpcs.length; i++) {
-        var label = name;
-        dict[label] = name;
+        dict[rpcs[i]] = rpcs[i];
     }
     return dict;
 };
