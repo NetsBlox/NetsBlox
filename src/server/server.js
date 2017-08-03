@@ -249,7 +249,9 @@ Server.prototype.createRouter = function() {
         }
 
         router.route(api.URL)[method]((req, res) => {
-            logger.trace(`received ${api.Service} request`);
+            if (api.Service) {
+                logger.trace(`received ${api.Service} request`);
+            }
             return api.Handler.call(this, req, res);
         });
     });
