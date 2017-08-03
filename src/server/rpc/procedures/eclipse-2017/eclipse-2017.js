@@ -21,8 +21,8 @@ let dbConnect = () => {
 
 // OPTIMIZE can be cached based on approximate coords n time
 function closestReading(lat, lon, time){
-    const MAX_DISTANCE = 50000, // in meters
-        MAX_AGE = 60 * 500;
+    const MAX_DISTANCE = 25000, // in meters
+        MAX_AGE = 60 * 5; // in seconds
 
     time = new Date(time); // should be in iso format or epoch
     lat = parseFloat(lat);
@@ -31,7 +31,7 @@ function closestReading(lat, lon, time){
     return dbConnect().then(db => {
         // find stations uptodate stations within MAX_DISTANCE
         let closeStations = { coordinates: { $nearSphere: { $geometry: { type: "Point", coordinates: [lon, lat] }, $maxDistance: MAX_DISTANCE } } };
-        closeStations.readingAvg = {$ne: null, $lte: MAX_AGE};
+        closeStations.readingAvg = {$ne: null};
         return db.collection(STATIONS_COL).find(closeStations).toArray().then(stations => {
             // sorted array of stations by closest first
             let stationIds = stations.map(station => station.pws);

@@ -80,7 +80,6 @@ function reqUpdates(stations){
                 });
                 let stationsArr = responses.map(item => item.value);
                 deferred.resolve(stationsArr);
-
             });
         }
     };
