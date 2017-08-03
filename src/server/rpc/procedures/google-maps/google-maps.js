@@ -35,6 +35,8 @@ var StaticMap = function(roomId) {
 };
 
 StaticMap.prototype._coordsAt = function(x, y, map) {
+    x = Math.ceil(x / map.scale);
+    y = Math.ceil(y / map.scale);
     let centerLl = [map.center.lon, map.center.lat];
     let centerPx = merc.px(centerLl, map.zoom);
     let targetPx = [centerPx[0] + parseInt(x), centerPx[1] - parseInt(y)];
@@ -50,6 +52,8 @@ StaticMap.prototype._pixelsAt = function(lat, lon, map) {
     let targetPx = merc.px([lon, lat], map.zoom);
     // difference in px
     let pixelsXY = {x: (targetPx[0] - curPx[0]), y: -(targetPx[1] - curPx[1])};
+    // adjust it to map's scale
+    pixelsXY = {x: pixelsXY.x * map.scale, y: pixelsXY.y * map.scale};
     return pixelsXY;
 };
 
@@ -77,8 +81,8 @@ StaticMap.prototype._getMapInfo = function(roleId) {
 StaticMap.prototype._recordUserMap = function(socket, map) {
     // Store the user's new map settings
     // get the corners of the image. We need to actully get both they are NOT "just opposite" of eachother.
-    let northEastCornerCoords = this._coordsAt(map.width/2, map.height/2 , map);
-    let southWestCornerCoords = this._coordsAt(-map.width/2, -map.height/2 , map);
+    let northEastCornerCoords = this._coordsAt(map.width/2*map.scale, map.height/2*map.scale , map);
+    let southWestCornerCoords = this._coordsAt(-map.width/2*map.scale, -map.height/2*map.scale , map);
 
     map.min = {
         lat: southWestCornerCoords.lat,
@@ -100,16 +104,17 @@ StaticMap.prototype._recordUserMap = function(socket, map) {
 
 
 StaticMap.prototype._getMap = function(latitude, longitude, width, height, zoom, mapType) {
+    let scale = width <= 640 && height <= 640 ? 1 : 2;
     var response = this.response,
         options = {
             center: {
                 lat: latitude,
                 lon: longitude,
             },
-            width: width,
-            height: height,
+            width: (width / scale),
+            height: (height / scale),
             zoom: zoom,
-            scale: width <= 640 && height <= 640 ? 1 : 2,
+            scale,
             mapType: mapType || 'roadmap'
         },
         params = this._getGoogleParams(options),
