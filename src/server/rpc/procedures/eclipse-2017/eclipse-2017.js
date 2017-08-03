@@ -31,7 +31,7 @@ function closestReading(lat, lon, time){
     return dbConnect().then(db => {
         // find stations uptodate stations within MAX_DISTANCE
         let closeStations = { coordinates: { $nearSphere: { $geometry: { type: "Point", coordinates: [lon, lat] }, $maxDistance: MAX_DISTANCE } } };
-        closeStations.readingAvg = {$ne: null};
+        closeStations.readingAvg = {$ne: null, $lte: MAX_AGE*10};
         return db.collection(STATIONS_COL).find(closeStations).toArray().then(stations => {
             // sorted array of stations by closest first
             let stationIds = stations.map(station => station.pws);
