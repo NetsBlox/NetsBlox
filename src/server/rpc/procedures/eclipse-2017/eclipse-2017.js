@@ -18,7 +18,6 @@ let dbConnect = () => {
     return connection;
 };
 
-
 // OPTIMIZE can be cached based on approximate coords n time
 function closestReading(lat, lon, time){
     const MAX_DISTANCE = 25000, // in meters
@@ -67,10 +66,11 @@ let currentCondition = function(latitude, longitude, time){
 };
 
 
-let availableStations = function(maxReadingAvg, maxDistance){
+let availableStations = function(maxReadingAvg, maxDistanceFromCenter, latitude, longitude, maxDistanceFromPoint){
     maxReadingAvg = parseInt(maxReadingAvg) || 120;
-    maxDistance = parseInt(maxDistance) || 50;
-    let query = {readingAvg: {$ne:null, $lte: maxReadingAvg}, distance: {$lte: maxDistance}};
+    maxDistanceFromCenter = parseInt(maxDistanceFromCenter) || 50;
+    let query = {readingAvg: {$ne:null, $lte: maxReadingAvg}, distance: {$lte: maxDistanceFromCenter}};
+    if (latitude && longitude) query.coordinates = { $nearSphere: { $geometry: { type: "Point", coordinates: [longitude, latitude] }, $maxDistance: maxDistanceFromPoint } };
     return dbConnect().then(db => {
         return db.collection(STATIONS_COL).find(query).toArray().then(stations => {
             return rpcUtils.jsonToSnapList(stations);
