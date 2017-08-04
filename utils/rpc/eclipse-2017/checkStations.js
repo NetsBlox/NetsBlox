@@ -65,7 +65,7 @@ function reqUpdates(stations){
     let stationChunks = _.chunk(stations, callsPerRound);
     let fire = () => {
         let ids = stationChunks.shift();
-        console.log('getting updates from stations ids', ids);
+        console.log(`getting updates from ${ids.length} stations ids`, ids.join());
         promises = promises.concat(ids.map(reqUpdate));
         if (stationChunks.length > 0) {
             setTimeout(fire, INTERVAL);
@@ -93,7 +93,7 @@ let seedDB = (fileName) => {
     loadStations(fileName).then(stations => {
         return dbConnect().then(db => {
             console.log('connected to db');
-            // create index on pws instead of _id ? 
+            // create index on pws instead of _id ?
             db.collection(READINGS_COL).createIndex({coordinates: "2dsphere"});
             db.collection(STATIONS_COL).createIndex({coordinates: "2dsphere"});
             stations = stations.map(station => {
@@ -102,24 +102,14 @@ let seedDB = (fileName) => {
             });
             let stationsCol = db.collection(STATIONS_COL);
             let readingsCol = db.collection(READINGS_COL);
-            let query = {distance: {$lte: 10}};
-            stationsCol.insertMany(stations).then(() => {
-                stationsCol.find(query).toArray().then(stations => {
-                    console.log('this many stations', stations.length);
-                    return reqUpdates(stations).then(updates => {
-                        console.log(updates.length, 'updates');
-                        let readingsCol = db.collection(READINGS_COL);
-                        return readingsCol.insertMany(updates).catch(console.log);
-                    });
-                });
-            });
+            stationsCol.insertMany(stations)
         });
     });
 };
 
-// given enough readings in the readigsCollection calculates the average reading age for stations 
+// given enough readings in the readigsCollection calculates the average reading age for stations
 let calcAvgReadingAge = () => {
-    dbConnect().then(db => {
+    return dbConnect().then(db => {
         let stationsCol = db.collection(STATIONS_COL);
         let readingsCol = db.collection(READINGS_COL);
         let aggregateQuery = {
@@ -137,12 +127,24 @@ let calcAvgReadingAge = () => {
                 let query = {pws: update._id.pws};
                 let updateObj = {$set: {readingAvg: update.readingAvg, updates: update.count}};
                 stationsCol.update(query, updateObj).catch(console.log);
-            }); 
+            });
         }).catch(console.log);
-    
+
     });
 };
 
+let contextManager = fn => {
+   return dbConnect().then(db => {
+     let stationsCol = db.collection(STATIONS_COL);
+     let readingsCol = db.collection(READINGS_COL);
+     return fn();
+   }).then(()=>{
+      console.log('closing the database');
+      storage.disconnect();
+   })
+};
+
+//@contextManager
 let fireUpdates = () => {
     // TODO the script doesn't return.
     return dbConnect().then(db => {
@@ -150,7 +152,7 @@ let fireUpdates = () => {
         let readingsCol = db.collection(READINGS_COL);
         let query = {distance: {$lte: 50}};
         return stationsCol.find(query).toArray().then(stations => {
-            console.log('this many stations', stations.length);
+           console.log(`querying ${stations.length} stations`);
             return reqUpdates(stations).then(updates => {
                 console.log(updates.length, 'updates');
                 let readingsCol = db.collection(READINGS_COL);
@@ -159,10 +161,21 @@ let fireUpdates = () => {
         });
     });
 };
+//fireUpdates = contextManager(fireUpdates);
 
 if (process.argv[2] === 'seed') seedDB('wuStations.csv');
-if (process.argv[2] === 'updateAverages') calcAvgReadingAge();
-if (process.argv[2] === 'pullUpdates') fireUpdates();
+if (process.argv[2] === 'updateAverages'){
+    calcAvgReadingAge().then(() => {
+      console.log('gonna disc the db');
+      storage.disconnect();
+    });
+}
+if (process.argv[2] === 'pullUpdates') {
+    fireUpdates().then(() => {
+      console.log('gonna disc the db');
+      storage.disconnect();
+    });
+}
 if (process.argv.length < 3) console.log('pass in a command: seed, updateAverages or pullUpdates');
 
 function reqUpdate(id) {
@@ -171,13 +184,13 @@ function reqUpdate(id) {
     process.stdout.write("#");
     return rp({uri: url, json:true}).then(resp => {
         if (resp.response.error) {
-            throw resp.response.error.description;
+            throw resp.response.error.description || resp.response.error.type || 'wrong pws id';
         }
         const obs = resp.current_observation;
-
-        let distance = distanceToPath(obs.observation_location.latitude, obs.observation_location.longitude);
         let latitude = parseFloat(obs.observation_location.latitude);
         let longitude = parseFloat(obs.observation_location.longitude);
+        if (isNaN(latitude) || isNaN(longitude)) throw 'bad station coordinates';
+        let distance = distanceToPath(latitude, longitude);
         return {
             distance,
             pws: obs.station_id,
@@ -198,9 +211,6 @@ function reqUpdate(id) {
             weather: obs.weather,
             requestTime: new Date(),
         };
-    }).catch(err => {
-        console.error('station doesnt exists or pws is wrong:', id, err);
-        throw(err);
     });
 }
 
@@ -211,7 +221,7 @@ function distanceToPath(lat, lon){
     let poi = {latitude: lat, longitude: lon};
     for (var i = 0; i < pathPoints.length; i++) {
         let dist = geolib.getDistance(poi, {latitude: pathPoints[i][0], longitude: pathPoints[i][1]}) / 1000;
-        if (dist > min) break; 
+        if (dist > min) break;
         min = dist;
     }
     return min; //in KM
