@@ -56,7 +56,7 @@ function loadStations(fileName){
 
 // gets a list of station ids
 function reqUpdates(stations){
-   if (stations[0] && stations[0].pws) stations = stations.map(item => item.pws);
+    if (stations[0] && stations[0].pws) stations = stations.map(item => item.pws);
     let promises = [];
     let deferred = Q.defer();
     let rounds = Math.ceil(stations.length / API_LIMIT);
@@ -133,15 +133,25 @@ let calcAvgReadingAge = () => {
     });
 };
 
+function availableStations(db, maxDistance, maxReadingAvg){
+    if (!maxReadingAvg) maxReadingAvg = Infinity;
+    let query = {distance: {$lte: maxDistance}, readingAvg: {$ne: null, $lte: maxReadingAvg}};
+    return db.collection(STATIONS_COL).find(query).toArray()
+    .then(stations => {
+        console.log(`found ${stations.length} stations for query ${JSON.stringify(query)} `);
+        return stations;
+    });
+}
+
 let contextManager = fn => {
-   return dbConnect().then(db => {
-     let stationsCol = db.collection(STATIONS_COL);
-     let readingsCol = db.collection(READINGS_COL);
-     return fn();
-   }).then(()=>{
-      console.log('closing the database');
-      storage.disconnect();
-   })
+    return dbConnect().then(db => {
+        let stationsCol = db.collection(STATIONS_COL);
+        let readingsCol = db.collection(READINGS_COL);
+        return fn();
+    }).then(()=>{
+        console.log('closing the database');
+        storage.disconnect();
+    })
 };
 
 //@contextManager
@@ -150,9 +160,8 @@ let fireUpdates = () => {
     return dbConnect().then(db => {
         let stationsCol = db.collection(STATIONS_COL);
         let readingsCol = db.collection(READINGS_COL);
-        let query = {distance: {$lte: 50}};
-        return stationsCol.find(query).toArray().then(stations => {
-           console.log(`querying ${stations.length} stations`);
+        return availableStations(db, 50).then(stations => {
+            console.log(`querying ${stations.length} stations`);
             return reqUpdates(stations).then(updates => {
                 console.log(updates.length, 'updates');
                 let readingsCol = db.collection(READINGS_COL);
@@ -166,14 +175,14 @@ let fireUpdates = () => {
 if (process.argv[2] === 'seed') seedDB('wuStations.csv');
 if (process.argv[2] === 'updateAverages'){
     calcAvgReadingAge().then(() => {
-      console.log('gonna disc the db');
-      storage.disconnect();
+        console.log('gonna disc the db');
+        storage.disconnect();
     });
 }
 if (process.argv[2] === 'pullUpdates') {
     fireUpdates().then(() => {
-      console.log('gonna disc the db');
-      storage.disconnect();
+        console.log('gonna disc the db');
+        storage.disconnect();
     });
 }
 if (process.argv.length < 3) console.log('pass in a command: seed, updateAverages or pullUpdates');
@@ -225,4 +234,46 @@ function distanceToPath(lat, lon){
         min = dist;
     }
     return min; //in KM
+}
+
+// need a way to make sure that the whole path is covered.
+// divide the path into sections (using min max lon + distance should be fine)
+// best station finder for a given section
+// divide the path into n sections and return the stations for each section in a 2d array
+
+// returns a 2d array of sectioned available and rated stations
+function sectionStations(n){
+    const pathMinLon = -124.1,
+    pathMaxLon = -79.0,
+    delta = (pathMaxLon - pathMinLon) / n;
+    console.log('delta is', delta);
+    // returns the secion index
+    let findSection = lon => {
+        return Math.floor((lon - pathMinLon) / delta);
+    };
+    return dbConnect().then(db => {
+        // QUESTION what is the hard limit? can filter very obsolete stations here.
+        return availableStations(db, 50, 600).then(stations => {
+            let sections = new Array(n);
+            stations.forEach(station => {
+                let index = findSection(station.longitude);
+                if (!sections[index]) sections[index] = [];
+                sections[index].push(station);
+            })
+            return sections;
+        }).catch(console.log)
+    })
+} // end of sectioned stations
+
+// find best stations in each section
+function pickBestStations(stations, maxCount){
+    if (stations.length < maxCount) return stations;
+    stations = _.sortBy(stations, ['readingAvg','distance']);
+    return stations.slice(0,maxCount);
+}
+
+
+module.exports = {
+    sectionStations,
+    pickBestStations
 }

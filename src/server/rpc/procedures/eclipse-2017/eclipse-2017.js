@@ -2,6 +2,7 @@ const Storage = require('../../../storage/storage'),
     Logger = require('../../../logger'),
     eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePathCenter.js'),
     rpcUtils = require('../utils'),
+    { sectionStations, pickBestStations } = require('../../../../../utils/rpc/eclipse-2017/checkStations.js'),
     logger = new Logger('netsblox:eclipse'),
     storage = new Storage(logger);
 
@@ -81,6 +82,20 @@ let availableStations = function(maxReadingAvg, maxDistanceFromCenter, latitude,
     });
 };
 
+let selectedStations = function(numSections, perSection){
+    numSections = parseInt(numSections);
+    perSection = parseInt(perSection);
+    console.log(sectionStations)
+    return sectionStations(numSections).then(sections => {
+        sections = sections.map(stations => pickBestStations(stations, perSection));
+        sections.forEach(section => {
+            process.stdout.write(section.length+'');
+        })
+        let stations = sections.reduce((arr,val)=> arr.concat(val));
+        return rpcUtils.jsonToSnapList(stations);
+    });
+}
+
 
 let eclipsePath = function(){
     return eclipsePathCenter();
@@ -88,12 +103,11 @@ let eclipsePath = function(){
 
 // TODO add arg validation like openWeather
 
-
-
 module.exports = {
     isStateless: true,
     temp,
     currentCondition,
     eclipsePath,
-    availableStations
+    availableStations,
+    selectedStations
 };
