@@ -23,15 +23,14 @@ let dbConnect = () => {
 function closestReading(lat, lon, time){
     const MAX_DISTANCE = 25000, // in meters
         MAX_AGE = 60 * 5; // in seconds
-
-    time = new Date(time); // should be in iso format or epoch
+    time = time ? new Date(time) : new Date();// should be in iso format or epoch if there is no time past it means we want the temp for now! 
     lat = parseFloat(lat);
     lon = parseFloat(lon);
 
     return dbConnect().then(db => {
         // find stations uptodate stations within MAX_DISTANCE
         let closeStations = { coordinates: { $nearSphere: { $geometry: { type: "Point", coordinates: [lon, lat] }, $maxDistance: MAX_DISTANCE } } };
-        closeStations.readingMedian = {$ne: null, $lte: MAX_AGE*10};
+        closeStations.readingMedian = {$ne: null, $lte: MAX_AGE*10}; // lte: just to avoid getting slow stations
         return db.collection(STATIONS_COL).find(closeStations).toArray().then(stations => {
             // sorted array of stations by closest first
             let stationIds = stations.map(station => station.pws);
@@ -43,8 +42,8 @@ function closestReading(lat, lon, time){
             startTime.setSeconds(startTime.getSeconds() - MAX_AGE);
             let updatesQuery = {pws: { $in: stationIds }, readAt: {$gte: startTime, $lte: time}};
             console.log('readings query',updatesQuery);
-            return db.collection(READINGS_COL).find(updatesQuery).toArray().then(readings => {
-                // TODO pick the reading with closest location out of these available readings
+            return db.collection(READINGS_COL).find(updatesQuery).sort({readAt: -1, distance: 1}).toArray().then(readings => {
+                // QUESTION pick the closest or latest?!
                 console.log('replying with ',readings);
                 return readings[0];
             });
