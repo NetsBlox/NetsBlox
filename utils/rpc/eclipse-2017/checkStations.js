@@ -14,7 +14,7 @@ const fs = require('fs'),
 const STATIONS_COL = 'wuStations',
     READINGS_COL = 'wuReadings';
 const WU_KEY = process.env.WEATHER_UNDERGROUND_KEY,
-    INTERVAL = 61 * 1000,
+    INTERVAL = 61 * 1000, //in msec
     API_LIMIT = 900; //per min
 
 // parameters to config:
@@ -105,7 +105,7 @@ let seedDB = (fileName) => {
             });
             let stationsCol = db.collection(STATIONS_COL);
             let readingsCol = db.collection(READINGS_COL);
-            stationsCol.insertMany(stations)
+            stationsCol.insertMany(stations);
         });
     });
 };
@@ -137,7 +137,7 @@ let calcStationStats = () => {
                         // TODO trimmed median? 
                         let updateObj = {$set: {readingAvg: update.readingAvg, updates: update.count, readingMedian: median}};
                         stationsCol.update(query, updateObj).catch(console.log);
-                    })
+                    });
             });
         }).catch(console.log);
 
@@ -166,12 +166,11 @@ let contextManager = fn => {
 };
 
 //@contextManager
-let fireUpdates = () => {
-    // TODO the script doesn't return.
+let fireUpdates = maxDelay => {
     return dbConnect().then(db => {
         let stationsCol = db.collection(STATIONS_COL);
         let readingsCol = db.collection(READINGS_COL);
-        return availableStations(db, 50).then(stations => {
+        return availableStations(db, 50, maxDelay).then(stations => {
             console.log(`querying ${stations.length} stations`);
             return reqUpdates(stations).then(updates => {
                 console.log(updates.length, 'updates');
@@ -186,12 +185,12 @@ let fireUpdates = () => {
 if (process.argv[2] === 'seed') seedDB('wuStations.csv');
 if (process.argv[2] === 'updateStats') calcStationStats();
 if (process.argv[2] === 'pullUpdates') {
-    fireUpdates().then(() => {
+    fireUpdates(parseInt(process.argv[3])).then(() => {
         console.log('gonna disc the db');
         storage.disconnect();
     });
 }
-if (process.argv.length < 3) console.log('pass in a command: seed, updateAverages or pullUpdates');
+if (process.argv.length < 3) console.log('pass in a command: seed, updateStats or pullUpdates');
 
 function reqUpdate(id) {
     let url = `http://api.wunderground.com/api/${WU_KEY}/conditions/q/pws:${id}.json`;
