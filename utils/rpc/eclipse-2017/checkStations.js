@@ -17,6 +17,9 @@ const WU_KEY = process.env.WEATHER_UNDERGROUND_KEY,
     INTERVAL = 61 * 1000,
     API_LIMIT = 900; //per min
 
+// parameters to config:
+// 1. in fireUpdates: config available stations to poll, considering number of updates
+
 let apiCounter = 0, connection;
 
 // connect to nb database
@@ -108,7 +111,8 @@ let seedDB = (fileName) => {
 };
 
 // given enough readings in the readigsCollection calculates the average reading age for stations
-let calcAvgReadingAge = () => {
+// not returning proper promise
+let calcStationStats = () => {
     return dbConnect().then(db => {
         let stationsCol = db.collection(STATIONS_COL);
         let readingsCol = db.collection(READINGS_COL);
@@ -123,19 +127,26 @@ let calcAvgReadingAge = () => {
         console.log(aggregateQuery);
         return readingsCol.aggregate([aggregateQuery]).toArray().then(updates => {
             console.log('this many aggregated results', updates.length);
+            // TODO there must be a better way to update em at once instead of doing separate queries!
+            // or load it all in the RAM 
             updates.forEach(update => {
                 let query = {pws: update._id.pws};
-                let updateObj = {$set: {readingAvg: update.readingAvg, updates: update.count}};
-                stationsCol.update(query, updateObj).catch(console.log);
+                readingsCol.find(query).sort( {lastReadingAge:1} ).skip(update.count / 2 - 1).limit(1).toArray()
+                    .then(readings => {
+                        let median = readings[0].lastReadingAge;
+                        // TODO trimmed median? 
+                        let updateObj = {$set: {readingAvg: update.readingAvg, updates: update.count, readingMedian: median}};
+                        stationsCol.update(query, updateObj).catch(console.log);
+                    })
             });
         }).catch(console.log);
 
     });
 };
 
-function availableStations(db, maxDistance, maxReadingAvg){
-    if (!maxReadingAvg) maxReadingAvg = Infinity;
-    let query = {distance: {$lte: maxDistance}, readingAvg: {$ne: null, $lte: maxReadingAvg}};
+function availableStations(db, maxDistance, maxReadingMedian){
+    if (!maxReadingMedian) maxReadingMedian = Infinity;
+    let query = {distance: {$lte: maxDistance}, readingMedian: {$ne: null, $lte: maxReadingMedian}};
     return db.collection(STATIONS_COL).find(query).toArray()
     .then(stations => {
         console.log(`found ${stations.length} stations for query ${JSON.stringify(query)} `);
@@ -173,12 +184,7 @@ let fireUpdates = () => {
 //fireUpdates = contextManager(fireUpdates);
 
 if (process.argv[2] === 'seed') seedDB('wuStations.csv');
-if (process.argv[2] === 'updateAverages'){
-    calcAvgReadingAge().then(() => {
-        console.log('gonna disc the db');
-        storage.disconnect();
-    });
-}
+if (process.argv[2] === 'updateStats') calcStationStats();
 if (process.argv[2] === 'pullUpdates') {
     fireUpdates().then(() => {
         console.log('gonna disc the db');
@@ -243,7 +249,7 @@ function distanceToPath(lat, lon){
 
 // returns a 2d array of sectioned available and rated stations
 function sectionStations(n){
-    const pathMinLon = -124.1,
+    const pathMinLon = -124.2,
     pathMaxLon = -79.0,
     delta = (pathMaxLon - pathMinLon) / n;
     console.log('delta is', delta);
@@ -253,7 +259,7 @@ function sectionStations(n){
     };
     return dbConnect().then(db => {
         // QUESTION what is the hard limit? can filter very obsolete stations here.
-        return availableStations(db, 50, 600).then(stations => {
+        return availableStations(db, 50, 900).then(stations => {
             let sections = new Array(n);
             stations.forEach(station => {
                 let index = findSection(station.longitude);
@@ -268,7 +274,7 @@ function sectionStations(n){
 // find best stations in each section
 function pickBestStations(stations, maxCount){
     if (stations.length < maxCount) return stations;
-    stations = _.sortBy(stations, ['readingAvg','distance']);
+    stations = _.sortBy(stations, ['readingMedian','distance']);
     return stations.slice(0,maxCount);
 }
 

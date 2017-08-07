@@ -31,7 +31,7 @@ function closestReading(lat, lon, time){
     return dbConnect().then(db => {
         // find stations uptodate stations within MAX_DISTANCE
         let closeStations = { coordinates: { $nearSphere: { $geometry: { type: "Point", coordinates: [lon, lat] }, $maxDistance: MAX_DISTANCE } } };
-        closeStations.readingAvg = {$ne: null, $lte: MAX_AGE*10};
+        closeStations.readingMedian = {$ne: null, $lte: MAX_AGE*10};
         return db.collection(STATIONS_COL).find(closeStations).toArray().then(stations => {
             // sorted array of stations by closest first
             let stationIds = stations.map(station => station.pws);
@@ -67,13 +67,13 @@ let currentCondition = function(latitude, longitude, time){
 };
 
 
-let availableStations = function(maxReadingAvg, maxDistanceFromCenter, latitude, longitude, maxDistanceFromPoint){
-    maxReadingAvg = parseInt(maxReadingAvg) || 120;
+let availableStations = function(maxReadingMedian, maxDistanceFromCenter, latitude, longitude, maxDistanceFromPoint){
+    maxReadingMedian = parseInt(maxReadingMedian) || 120;
     maxDistanceFromCenter = parseInt(maxDistanceFromCenter) || 50;
     if (latitude) latitude = parseFloat(latitude);
     if (longitude) longitude = parseFloat(longitude);
     if (maxDistanceFromPoint) maxDistanceFromPoint = parseInt(maxDistanceFromPoint) * 1000;
-    let query = {readingAvg: {$ne:null, $lte: maxReadingAvg}, distance: {$lte: maxDistanceFromCenter}};
+    let query = {readingMedian: {$ne:null, $lte: maxReadingMedian}, distance: {$lte: maxDistanceFromCenter}};
     if (latitude && longitude) query.coordinates = { $nearSphere: { $geometry: { type: "Point", coordinates: [longitude, latitude] }, $maxDistance: maxDistanceFromPoint } };
     return dbConnect().then(db => {
         return db.collection(STATIONS_COL).find(query).toArray().then(stations => {
