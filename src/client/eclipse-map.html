@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Eclipse 2017 Map</title>
+  <script src="http://maps.google.com/maps/api/js"></script> 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gmaps.js/0.4.25/gmaps.min.js"></script> 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.2/axios.min.js"></script> 
+  <style type="text/css">
+    #map {
+      width: 100vw;
+      height: 100vh;
+    }
+  </style> 
+</head>
+<body>
+  method:<input type="text" id="method" value="selectPointBased"></input> args: <input type="text" id="args"></input> draw <button id="draw">draw</button>
+  <div id="map"></div>
+  <script>
+const nasaCenters = [
+[44.87, -124.84166667],
+[44.81, -123.205],
+[44.73333333, -121.63333333],
+[44.63833333, -120.12],
+[44.53, -118.65833333],
+[44.40666667, -117.24666667],
+[44.27166667, -115.88],
+[44.12333333, -114.555],
+[43.965, -113.27],
+[43.795, -112.02166667],
+[43.61666667, -110.80833333],
+[43.42666667, -109.62666667],
+[43.22833333, -108.475],
+[43.02166667, -107.35166667],
+[42.80833333, -106.25666667],
+[42.585, -105.18666667],
+[42.355, -104.14],
+[42.11833333, -103.11666667],
+[41.875, -102.115],
+[41.625, -101.135],
+[41.36833333, -100.17333333],
+[41.10666667, -99.23],
+[40.83833333, -98.305],
+[40.565, -97.395],
+[40.285, -96.50166667],
+[40, -95.62333333],
+[39.71, -94.76],
+[39.415, -93.90833333],
+[39.11666667, -93.07],
+[38.81166667, -92.24333333],
+[38.50166667, -91.42666667],
+[38.18833333, -90.62166667],
+[37.87, -89.82666667],
+[37.54666667, -89.04],
+[37.22, -88.26166667],
+[36.88833333, -87.49166667],
+[36.55166667, -86.72833333],
+[36.21166667, -85.97166667],
+[35.86833333, -85.22166667],
+[35.52, -84.47666667],
+[35.16666667, -83.735],
+[34.81, -82.99833333],
+[34.44833333, -82.265],
+[34.08333333, -81.535],
+[33.715, -80.80666667],
+[33.34166667, -80.07833333],
+[32.96333333, -79.35333333],
+[32.58166667, -78.62666667],
+[32.195, -77.9]];
+    var map = new GMaps({
+      el: '#map',
+      lat: 39.0277,
+      lng: -98.525,
+        zoom: 4
+    });
+    let path = (nasaCenters.map(point => {
+      return { lat: point[0], lng: point[1], title: 'pathIndicator'};
+    }));
+    map.addMarkers(path);
+    document.getElementById('draw').addEventListener('click', e => {
+      let method = document.getElementById('method').value;
+      let args = document.getElementById('args').value;
+      map.removeMarkers();
+      let url = `http://localhost:8080/rpc//Eclipse2017/${method}?uuid=_netsblox1502135148613&numSections=100&perSection=2&t=1502138638360`;
+      axios.get(url)
+          .then(resp => {
+              let stations = resp.data.filter(station => station);
+              stations.forEach(station => {
+                  map.addMarker({
+                    lat: station.latitude,
+                    lng: station.longitude,
+                    fillColor: 'green',
+                    title: station.pws,
+                    infoWindow: {
+                      content: `<p>readings median ${station.readingMedian} sec</p>`
+                    }
+                  }); //end of add marker
+              })
+          }).catch(console.error); // end of axios
+
+    });
+  </script> 
+</body>
+</html>
