@@ -16893,3 +16893,750 @@ ID,MTT346,Eastport,,3,48.86,-116.12,,,502.494
 ID,MHDLI1,Porthill,,7,48.89,-116.76,5038,,499.773
 ID,MITD74,Porthill,2 minutes,15,48.932,-116.331,2955,,507.901
 ID,MSADI1,Porthill,,7,48.939,-116.734,,,505.356
+KY,KKYFULTO2,Fulton,47,4,36.523,-88.713,452,,87.191
+KY,KKYHICKM3,Hickman,39,8,36.534,-89.057,361,Ambient Weather WS-2902,104.035
+KY,KKYHICKM2,Hickman,37,5,36.565,-89.186,400,Davis Vantage Pro2 (Cabled),109.715
+KY,KKYMURRA9,Murray,9,12,36.596,-88.341,538,Davis Vantage Pro 2,69.609
+KY,MYELK2,Middlesboro,20,35,36.604,-83.696,1088,,139.333
+KY,KKYHOLLA2,Holland,4400,9,36.605,-86.068,918,Netatmo,44.494
+KY,KKYMIDDL7,Middlesboro,4300,1,36.608,-83.737,1138,Kentucky DEP,137.893
+KY,KKYMURRA16,Murray,8,30,36.611,-88.332,556,AcuRite Pro Weather Center,67.874
+KY,MD6462,Murray,,9,36.618,-88.183,413,,67.174
+KY,MFCRT1,Fort Campbell,37,2,36.626,-87.537,544,,29.392
+KY,MSTRK2,Revelo,,3,36.627,-84.533,,,104.49
+KY,KKYWILLI3,Williamsburg,1,16,36.628,-84.192,1065,AcuRite Pro Weather Center,125.181
+KY,MSXTK2,Williamsburg,,2,36.634,-84.112,,,127.9
+KY,KKYWINGO2,Wingo,8,12,36.638,-88.728,499,Ambient Weather WS-1080,76.797
+KY,KKYCLINT2,Clinton,34,10,36.638,-88.966,341,Davis Vantage Pro2 Plus (Wireless),90.052
+KY,KKYMAYFI4,Mayfield,7,36,36.64,-88.659,499,Davis Vantage Pro2 Plus (Wireless),73.458
+KY,KKYMURRA14,Murray,7,15,36.647,-88.113,440,Ambient Weather WS-1001-WiFi (Wireless),61.6
+KY,KKYVANCL2,Van Cleave,2,13,36.661,-88.232,557,LaCrosse,62.092
+KY,KKYFORTC3,Fort Campbell,25,22,36.665,-87.455,571,AcuRite Pro Weather Center,24.999
+KY,MMDLK2,Middlesboro,,2,36.668,-83.689,,,145.8
+KY,MAP881,Almo,10,7,36.669,-88.331,556,,61.459
+KY,KKYHERND3,Herndon,3,11,36.67,-87.559,594,,24.964
+KY,KKYFRANK11,Franklin,4500,24,36.679,-86.568,689,Ambient Weather WS-1200-IP (Wireless),20.134
+KY,MC9304,Trenton,,2,36.681,-87.307,,,28.304
+KY,MKY021,Oak Grove,25,2,36.682,-87.405,547,,24.169
+KY,KKYADOLP2,Adolphus,43,7,36.69,-86.258,728,AcuRite Pro Weather Center,44.785
+KY,MD1540,Almo,,1,36.698,-88.377,,,58.833
+KY,KKYFRANK6,Franklin,4500,1,36.709,-86.566,728,Kentucky DEP,22.708
+KY,KKYTOMPK2,Tompkinsville,10,6,36.72,-85.512,740,AcuRite Pro Weather Center,69.852
+KY,KKYMURRA11,Murray,9,12,36.732,-88.132,489,Davis Vantage Pro2 (Wireless),55.374
+KY,MC2258,Herndon,,1,36.736,-87.599,,,19.43
+KY,MWLBK2,Williamsburg,,2,36.744,-84.158,,,136.262
+KY,MALBK2,Alpha,,2,36.747,-85.123,,,96.503
+KY,KKYFOUNT2,Fountain Run,19,21,36.747,-85.98,804,AcuRite Pro Weather Center,59.41
+KY,KKYFRANK14,Franklin,4500,4,36.749,-86.585,0,Netatmo,25.373
+KY,KKYFRANK17,Franklin,4500,8,36.749,-86.554,0,AcuRite Pro Weather Center,26.88
+KY,MMFLK2,Cawood,,16,36.752,-83.259,,,175.211
+KY,KKYRUSSE4,Russellville,60,12,36.755,-86.833,610,AcuRite Pro Weather Center,24.428
+KY,KKYBURKE5,Burkesville,8,2,36.771,-85.418,551,La Crosse Technology 330-2315 Professional Weather Station,79.457
+KY,KKYMONTI4,Monticello,1 hour,13,36.781,-84.96,997,AcuRite Pro Weather Center,103.964
+KY,KKYARLIN3,Arlington,7,7,36.781,-89.036,351,AcuRite Pro Weather Center,84.404
+KY,MEKTK2,Guthrie,,1,36.783,-87.167,,,31.231
+KY,KKYCADIZ3,Cadiz,34,1,36.784,-87.85,603,EPA Office of Atmospheric Programs,33.997
+KY,MTR889,Burkesville,4,4,36.796,-85.38,551,,83.75
+KY,KKYMAYFI3,Mayfield,9,10,36.804,-88.596,495,AcuRite Pro Weather Center,54.925
+KY,KKYCADIZ6,Cadiz,34,11,36.804,-87.968,377,Ambient Weather WS-2090 (Wireless),43.503
+KY,KKYBARBO6,Barbourville,28,22,36.815,-83.958,1007,AcuRite Pro Weather Center,151.083
+KY,KKYHARVE2,Harvey,3900,8,36.818,-88.434,0,LaCrosse,47.175
+KY,KKYHOPKI17,Hopkinsville,500,5,36.83,-87.48,528,other,6.557
+KY,KKYBARDW6,Bardwell,900,7,36.834,-88.922,400,Davis Vantage Pro2 Plus (Wireless),72.714
+KY,KKYHICKO4,Hickory,1000,13,36.835,-88.652,443,Davis Vantage Pro2 (Cabled),55.062
+KY,KKYALVAT3,Alvaton,7,5,36.837,-86.399,591,AcuRite Pro Weather Center,43.23
+KY,KKYCORBI6,Corbin,3,26,36.84,-84.214,1236,Davis Vantage Pro2 Plus (Wireless),140.732
+KY,KKYAUBUR1,Auburn,6,16,36.842,-86.776,650,Ambient Weather WS-2080,32.499
+KY,KKYALVAT2,Alvaton,7,8,36.842,-86.34,620,Davis Vantage Vue (Wireless),47.353
+KY,KKYBENTO2,Benton,4000,25,36.846,-88.35,456,Davis VantagePro2,42.243
+KY,KKYHOPKI10,Hopkinsville,500,14,36.85,-87.507,538,other,4.468
+KY,KKYWALLI2,Wallins Creek,4200,7,36.851,-83.379,1473,Netatmo,177.653
+KY,KKYHOPKI7,Hopkinsville,500,27,36.851,-87.507,554,Davis vantage vue,4.363
+KY,KKYCADIZ8,Cadiz,36,14,36.856,-87.962,365,AcuRite Pro Weather Center,42.088
+KY,KKYBENTO10,Benton,4000,6,36.857,-88.35,426,Netatmo,41.045
+KY,MAS521,Hopkinsville,1300,4,36.86,-87.511,557,,3.586
+KY,MBBVK2,Barbourville,,2,36.862,-83.887,,,158.074
+KY,MD1435,Hopkinsville,,1,36.865,-87.517,,,3.436
+KY,MAP232,Hopkinsville,,1,36.865,-87.518,,,3.495
+KY,KKYBOWLI20,Bowling Green,20,3,36.867,-86.488,587,AcuRite Pro Weather Center,41.057
+KY,MC9275,Bardwell,,1,36.868,-88.999,,,75.407
+KY,KKYHOPKI3,Hopkinsville,500,9,36.868,-87.536,545,Davis Vantage Vue,4.551
+KY,KKYBARDW5,Bardwell,900,10,36.872,-88.895,433,Davis Vantage Pro2 Plus (Wireless),68.306
+KY,KKYBOWLI8,Bowling Green,17,10,36.874,-86.413,630,Davis Vantage Pro2,45.533
+KY,MD3900,Elkton,100,3,36.878,-87.17,747,,28.699
+KY,MAT187,Bowling Green,,2,36.894,-86.449,,,45.452
+KY,MFNYK2,Lucas,,2,36.895,-86.134,,,65.349
+KY,KKYTEMPL1,Temple Hill,4300,38,36.9,-85.878,780,Davis Vantage Vue (Wireless),76.843
+KY,KKYBENTO8,Benton,4000,1,36.903,-88.453,486,other,39.08
+KY,KKYAUBUR5,Auburn,27,1,36.908,-86.789,712,Ambient Weather WS-1001-WiFi (Wireless),39.913
+KY,KKYBOWLI27,Bowling Green,3,5,36.918,-86.509,577,AcuRite Pro Weather Center,45.127
+KY,MAS588,Fairview,,2,36.921,-87.566,,,7.552
+KY,KKYAUBUR3,Auburn,6,4,36.921,-86.709,725,other,41.022
+KY,KKYAUBUR6,Auburn,7,1,36.923,-86.775,659,Bloomsky2 + Storm,41.418
+KY,KKYGILBE2,Gilbertsville,3,18,36.93,-88.223,369,Davis Vantage Vue,32.367
+KY,KKYBOWLI17,Bowling Green,22,4,36.935,-86.305,571,Ambient Weather WS-1001-WiFi (Wireless),56.913
+KY,KKYBOWLI39,Bowling Green,2,8,36.935,-86.446,554,LaCrosse,49.451
+KY,KKYJAMES6,Jamestown,22,29,36.936,-85.195,978,Ambient Weather WS-1001-WiFi (Wireless),106.269
+KY,KKYMEMPH2,Memphis Junction,31,3,36.937,-86.498,0,Netatmo,47.452
+KY,KKYRUSSE6,Russellville,60,18,36.939,-86.909,183,other,45.912
+KY,KKYBLAND2,Blandville,4,14,36.944,-88.964,463,Davis Vantage Vue (Wireless),67.224
+KY,KKYAUBUR4,Auburn,7,2,36.945,-86.786,696,AcuRite Pro Weather Center,43.952
+KY,MCORK2,Corbin,,2,36.951,-84.094,,,157.045
+KY,KKYGLASG7,Glasgow,4900,26,36.953,-85.975,770,Netatmo,80.679
+KY,KKYMONTI6,Monticello,1000,12,36.958,-84.824,682,Davis Vantage Vue (Wireless),126.067
+KY,MD2961,Fairview,,4,36.959,-87.405,754,,11.006
+KY,MC4311,Cerulean,,3,36.963,-87.709,,,21.062
+KY,MT51AX,Gray,,1,36.965,-83.945,,,167.088
+KY,MC2972,Browning,15,2,36.966,-86.525,656,,49.435
+KY,KKYBOWLI33,Bowling Green,2,9,36.966,-86.472,531,Wireless Vantage Pro 2 Plus,51.362
+KY,MCBNK2,Corbin,,2,36.97,-84.12,,,157.18
+KY,MKY010,Wickliffe,4,5,36.974,-89.096,318,,63.75
+KY,MCMBK2,Cumberland,,2,36.974,-82.994,,,209.255
+KY,KKYCALVE3,Calvert City,400,18,36.977,-88.479,410,Davis Vantage Vue,33.174
+KY,KKYBOWLI12,Bowling Green,300,1,36.982,-86.458,508,Netatmo,53.508
+KY,MCBBK2,Cerulean,,2,36.983,-87.767,,,26.684
+KY,KKYBOWLI31,Bowling Green,300,11,36.985,-86.459,501,Wireless Vantage Pro 2 Plus,53.765
+KY,KKYBOWLI23,Bowling Green,4,10,36.986,-86.466,0,Netatmo,53.589
+KY,KKYBOWLI16,Bowling Green,4,5,36.986,-86.466,501,AcuRite Pro Weather Center,53.589
+KY,KKYBOWLI34,Bowling Green,300,6,36.986,-86.45,606,Wireless Vantage Pro 2 Plus,54.228
+KY,MT47AX,Clifty,,2,36.988,-87.105,,,36.178
+KY,MD5841,Burnside,,1,36.989,-84.6,,,136.279
+KY,KKYBOWLI10,Bowling Green,7,7,36.991,-86.525,686,AcuRite Pro Weather Center,52.024
+KY,KKYPADUC21,Paducah,2,9,36.995,-88.529,410,Ambient Weather WS-1001-WiFi (Wireless),34.47
+KY,KKYPADUC22,Paducah,2,8,36.995,-88.601,354,AcuRite Pro Weather Center,39.157
+KY,KKYBOWLI32,Bowling Green,10,6,36.995,-86.529,663,Ambient Weather WS-1400-IP (Wireless),52.318
+KY,KKYLACEN3,La Center,12,24,36.997,-88.892,340,Davis Vantage Vue (Wireless),61.25
+KY,KKYSOMER14,Somerset,29,10,36.998,-84.662,965,AcuRite Pro Weather Center,135.027
+KY,MKY080,Bronston,39,4,37,-84.609,869,,137.067
+KY,KKYBOWLI28,Bowling Green,3,32,37,-86.467,500,Ambient Weather WS-1001-WiFi (Wireless),54.951
+KY,MBWGK2,Bowling Green,,1,37.001,-86.431,,,56.489
+KY,KKYPADUC23,Paducah,3,9,37.007,-88.673,462,La Crosse Technology 330-2315 Professional Weather Station,43.536
+KY,KKYKREBS2,Krebs,2,3,37.007,-88.642,377,LaCrosse,41.249
+KY,KKYWICKL2,Wickliffe,5,24,37.008,-89.032,443,Davis Vantage Pro2,59.787
+KY,KKYPADUC24,Paducah,23,7,37.01,-88.672,466,Davis Vantage Pro2 (Wireless),43.28
+KY,KKYSOMER6,Somerset,30,4,37.012,-84.688,1000,Bloomsky,135.629
+KY,KKYEDDYV3,Eddyville,24,23,37.017,-88.009,471,Rainwise MKIII,31.809
+KY,KKYHENDR2,Hendron,23,9,37.018,-88.629,347,LaCrosse,39.602
+KY,MT50AX,Nancy,,3,37.02,-84.838,,,132.345
+KY,MT45AX,Paducah,,2,37.02,-88.645,,,40.66
+KY,MBARK2,Burna,,2,37.021,-88.221,,,22.379
+KY,MKY031,Smiths Grove,56,3,37.039,-86.227,596,,70.191
+KY,MT46AX,Princeton,,2,37.042,-87.894,,,38.178
+KY,KKYWESTF2,West Future City,6,18,37.047,-88.812,433,LaCrosse,52.534
+KY,KKYBOWLI11,Bowling Green,5,8,37.049,-86.376,614,Oregon Scientific Professional Weather Center,63.52
+KY,KKYBOWLI24,Bowling Green,3,7,37.05,-86.387,591,AcuRite Pro Weather Center,63.136
+KY,MSOMK2,Ferguson,200,6,37.056,-84.615,918,,142.569
+KY,KKYFARIS2,Fariston,,9,37.056,-84.05,0,LaCrosse,168.516
+KY,KKYNANCY4,Nancy,1000,7,37.057,-84.694,989,Davis Vantage Pro2 Plus (Wireless),140.126
+KY,KKYPADUC20,Paducah,,1,37.058,-88.573,334,Kentucky DEP,32.991
+KY,MKY012,Grand Rivers,,4,37.06,-88.219,334,,18.157
+KY,KKYMANCH3,Manchester,3700,4,37.068,-83.687,912,Netatmo,185.841
+KY,KHJYKYLO1,London,46,83,37.068,-84.092,1163,Oregonal Scientific WMR-200,167.25
+KY,KKYPADUC17,Paducah,3,33,37.07,-88.624,351,AcuRite Pro Weather Center,36.24
+KY,KKYWESTP2,West Paducah,900,8,37.071,-88.805,395,Ambient Weather WS-1400-IP (Wireless),51.024
+KY,KKYAVOND2,Avondale Heights,33,15,37.071,-88.637,364,LaCrosse,37.22
+KY,KKYLONDO13,London,48,45,37.075,-84.079,1193,Ambient Weather WS-900-IP (Wireless),168.571
+KY,MKY120,Eolia,6,12,37.076,-82.81,2610,,227.636
+KY,MAT429,Green Road,,1,37.084,-83.917,,,178.514
+KY,KKYKENTU9,Kentucky,5,19,37.091,-87.017,545,AcuRite Pro Weather Center,47.869
+KY,MFTGV2,Thornton,,2,37.094,-82.699,,,233.303
+KY,MAR461,Green Road,,14,37.095,-83.886,,,181.255
+KY,KKYSOMER7,Somerset,400,1,37.098,-84.612,994,Kentucky DEP,146.983
+KY,MPTNK2,Princeton,,3,37.1,-87.83,,,38.195
+KY,KKYFERGU2,Ferguson,1100,16,37.1,-84.6,909,,147.591
+KY,MT49AX,Gradyville,,2,37.105,-85.533,,,106.61
+KY,KKYMANCH6,Manchester,1 hour,42,37.105,-83.752,956,other,187.532
+KY,KKYWESTP3,West Paducah,900,18,37.107,-88.78,390,Davis Vantage Vue (Wireless),47.716
+KY,MT52AX,Hallie,,1,37.108,-82.985,,,221.342
+KY,MT48AX,Bowling Green,,1,37.109,-86.394,,,68.665
+KY,MWHTK2,Whitesburg,,2,37.118,-82.825,,,231.165
+KY,ME4638,Acorn,300,7,37.118,-84.562,1088,,150.743
+KY,MPICV2,Jenkins,,1,37.124,-82.608,,,239.7
+KY,KKYSOMER10,Somerset,27,20,37.13,-84.611,1056,AcuRite Pro Weather Center,150.314
+KY,KKYROCKY2,Rocky Hill,4300,12,37.131,-86.148,767,National Park Service,82.54
+KY,MCDSK2,Rocky Hill,84 days,19,37.132,-86.148,695,,82.626
+KY,MHYDK2,Wendover,,2,37.137,-83.371,,,205.059
+KY,MCHTK2,Big Creek,3300,2,37.138,-83.58,938,,196.763
+KY,MKY112,Pittsburg,32,21,37.146,-84.11,1213,,173.257
+KY,MKY011,Smithland,,5,37.148,-88.4,390,,14.654
+KY,KKYCOLUM3,Columbia,21,11,37.149,-85.257,928,AcuRite Pro Weather Center,122.065
+KY,KKYHARDY2,Hardyville,4200,23,37.154,-85.764,702,Netatmo,106.207
+KY,KKYHORSE3,Horse Cave,4200,37,37.155,-85.763,705,AcuRite Pro Weather Center,106.332
+KY,KKYSMITH8,Smithland,1200,1,37.156,-88.393,344,Kentucky DEP,13.654
+KY,MWTNK2,Wooton,,2,37.165,-83.308,,,210.535
+KY,MBLWK2,Mount Vernon,,3,37.171,-84.296,,,166.642
+KY,KKYSCIEN1,SCIENCE HILL,8,19,37.187,-84.621,1076,davis,155.905
+KY,MMAMK2,Cub Run,,1,37.19,-86.04,,,93.727
+KY,KKYLIBER2,Liberty,26,14,37.191,-84.905,810,Davis Vantage Pro2 (Wireless),144.553
+KY,KKYGREEN3,Greenville,4200,2,37.205,-87.147,488,Netatmo,46.638
+KY,MD9920,Ashcamp,6,2,37.206,-82.443,1846,,254.38
+KY,MBRNK2,Brownsville,,2,37.207,-86.261,,,83.814
+KY,KKYLONDO14,London,0,1,37.209,-83.975,1119,AcuRite Pro Weather Center,185.994
+KY,ME0635,Fredonia,,2,37.212,-88.051,,,18.72
+KY,KKYJEFF2,Jeff,4400,10,37.215,-83.107,961,Netatmo,224.683
+KY,KKYGREEN7,Greensburg,6,6,37.218,-85.587,801,other,116.843
+KY,KKYGREEN18,Greensburg,7,13,37.221,-85.455,700,Ambient Weather WS-1001-WiFi (Wireless),121.146
+KY,KKYHARDY1,Hardyville,32,976,37.226,-85.775,721,Ambient Weather WS-1400-IP (Wireless),113.233
+KY,MCFLK2,Sassafras,,4,37.231,-83.036,,,229.689
+KY,KKYHUFF2,Huff,9,10,37.237,-86.374,581,Ambient Weather WS-1400-IP (Wireless),82.352
+KY,MHAZK2,Hazard,,1,37.247,-83.182,,,224.09
+KY,MBOWK2,Kyrock,,1,37.25,-86.232,787,,89.234
+KY,MGNSK2,Greensburg,,2,37.254,-85.503,,,123.012
+KY,KKYEUBAN2,Eubank,28,11,37.265,-84.64,1099,AcuRite Pro Weather Center,163.499
+KY,MGFSK2,Central City,3400,2,37.273,-87.202,551,,49.858
+KY,KKYMAMMO5,Mammoth Cave,3400,31,37.277,-86.21,623,Netatmo,92.805
+KY,MNOLK2,Sweeden,,2,37.278,-86.247,,,91.307
+KY,MKY026,Central City,,3,37.279,-87.124,495,,54.299
+KY,KKYMUNFO2,Munfordville,3,30,37.279,-85.9,559,Davis Vantage Pro2,109.377
+KY,KKYCOMBS2,Combs,4600,1,37.283,-83.22,1299,Kentucky DEP,225.782
+KY,KKYELKHO2,Elkhorn City,5,11,37.296,-82.353,1000,Ambient Weather WS-1400-IP (Wireless),266.942
+KY,MKY014,Marion,2,2,37.298,-88.079,600,,18.371
+KY,MELKK2,Belcher,,2,37.304,-82.343,,,268.144
+KY,KKYMOUNT11,Mount Vernon,8,32,37.31,-84.39,1181,Davis Vantage Vue (Wireless),176.444
+KY,KKYLIBER3,Liberty,24,11,37.317,-84.939,814,Davis Vantage Pro2 (Wireless),153.449
+KY,MLBYK2,Yosemite,,3,37.318,-84.941,,,153.43
+KY,KKYMADIS11,Madisonville,300,71,37.319,-87.511,509,Ambient Weather WS-900-IP (Wireless),47.826
+KY,KKYMADIS10,Madisonville,300,56,37.32,-87.525,440,Ambient Weather WS-1200-IP (Wireless),47.998
+KY,KKYMADIS7,Madisonville,300,9,37.33,-87.507,459,AcuRite Pro Weather Center,49.035
+KY,KKYLEITC12,Leitchfield,3700,9,37.33,-86.226,175,Bloomsky2,97.279
+KY,MVRGK2,Robinson Creek,,2,37.333,-82.585,,,261.657
+KY,KKYCAMPB13,Campbellsville,0,4,37.335,-85.349,843,Netatmo,136.492
+KY,KKYCAMPB7,Campbellsville,4600,10,37.335,-85.347,837,Vantage Vue,136.564
+KY,KKYCAMPB14,Campbellsville,4600,2,37.337,-85.346,814,AcuRite Pro Weather Center,136.803
+KY,MD7109,Pippa Passes,,2,37.338,-82.872,,,247.788
+KY,KKYMADIS4,MADISONVILLE,,4,37.341,-87.517,428,"Baro=Bosh BMP085, T/H= Sensirion SHT15,W/R=OS",50.287
+KY,KKYCLARK2,Wax,6,25,37.345,-86.116,540,Oregon Scientific WRM-200A,103.566
+KY,KKYSHELB14,Shelbiana,0,42,37.35,-82.495,1322,Ambient Weather WS-1001-WiFi (Wireless),266.663
+KY,KKYMADIS9,Madisonville,300,5,37.361,-87.506,446,AcuRite Pro Weather Center,52.472
+KY,KKYMADIS8,Madisonville,300,4,37.367,-87.506,492,Netatmo,53.138
+KY,MKY027,Cromwell,15,1,37.377,-86.827,429,,80.182
+KY,KKYMAGNO2,Magnolia,1,17,37.385,-85.774,863,Ambient Weather WS-1200-IP (Wireless),125.596
+KY,MGRHK2,Gray Hawk,,1,37.391,-83.936,,,204.383
+KY,MD0860,Campbellsville,3700,2,37.393,-85.368,862,,141.734
+KY,KKYCANEY2,Caneyville,13,14,37.402,-86.458,554,other,97.389
+KY,KKYKENTU2,Kentucky,14,9,37.404,-82.542,850,Ambient Weather WS-2090 (Wireless),270.403
+KY,MPRCK2,Hi Hat,,1,37.405,-82.745,,,260.46
+KY,MD1952,Whick,,7,37.412,-83.425,862,,230.135
+KY,KKYROSIN2,Rosine,15,14,37.42,-86.741,548,AcuRite Pro Weather Center,89.04
+KY,MFTLK2,Shelbiana,,2,37.433,-82.416,,,277.983
+KY,MTR652,Parrot,,3,37.434,-83.971,,,206.617
+KY,KKYCAMPB11,Campbellsville,4600,9,37.44,-85.36,955,Onset HOBO U30-NRC Weather Station Starter Kit,146.829
+KY,KKYCAMPB17,Campbellsville,4600,9,37.446,-85.512,948,AcuRite Pro Weather Center,142.985
+KY,KKYMAGNO3,Magnolia,35,8,37.448,-85.738,843,AcuRite Pro Weather Center,132.91
+KY,KKYPIKEV12,Pikeville,0,2,37.452,-82.476,758,AcuRite Pro Weather Center,277.649
+KY,MPKYK2,Pikeville,,2,37.464,-82.526,,,277.073
+KY,MKY043,Leitchfield,2,2,37.466,-86.283,659,,108.937
+KY,KKYCRABO2,Crab Orchard,16,9,37.473,-84.512,952,Oregon Scientific Professional Weather Center,189.033
+KY,MBOOK2,Booneville,,1,37.479,-83.677,,,225.852
+KY,KKYPIKEV1,Pikeville,11,40,37.479,-82.519,1080,Oregon Scientific Professional Weather Center,278.847
+KY,ME3375,Pikeville,,2,37.48,-82.527,,,278.669
+KY,KKYPIKEV8,Pikeville,2,1,37.483,-82.535,669,Kentucky DEP,278.696
+KY,KKYBOONE3,Booneville,2 hours,9,37.484,-83.67,825,AcuRite Pro Weather Center,226.671
+KY,MLVMK2,Livermore,,1,37.486,-87.136,,,73.464
+KY,KKYLEITC11,Leitchfield,5,31,37.494,-86.304,825,Davis Vantage Pro2 (Wireless),111.186
+KY,KKYLIVER3,Livermore,3,9,37.495,-87.129,436,Davis Vantage Pro2 Plus (Wireless),74.632
+KY,KKYLIVER4,Livermore,0,10,37.495,-87.134,433,LaCrosse,74.442
+KY,KKYPIKEV7,Pikeville,2,11,37.498,-82.525,699,WS-2090,280.574
+KY,KKYMCKEE4,McKee,1300,7,37.502,-83.94,1027,AcuRite Pro Weather Center,214.443
+KY,KKYDIXON2,Dixon,4,18,37.506,-87.708,561,Ambient Weather WS-1001-WiFi (Wireless),58.422
+KY,MCALK2,Rumsey,,2,37.534,-87.264,,,74.452
+KY,KKYBRADF2,Bradfordsville,400,3,37.534,-85.11,748,Ambient Weather WS-1001-WiFi (Wireless),165.638
+KY,KKYSONOR3,Sonora,,17,37.539,-85.885,725,AcuRite Pro Weather Center,132.793
+KY,KKYBEREA8,Berea,42,3,37.543,-84.328,1010,AcuRite Pro Weather Center,202.268
+KY,KKYPAINT4,Paint Lick,11,9,37.547,-84.389,1060,AcuRite Pro Weather Center,200.59
+KY,KKYLEBAN2,Lebanon,200,6,37.547,-85.297,781,Davis Vantage Vue (Wireless),159.929
+KY,MJKNK2,Jackson,,2,37.551,-83.385,,,245.661
+KY,MTLLK2,Lone,,1,37.555,-83.594,,,237.019
+KY,KKYHODGE2,Hodgenville,11,6,37.558,-85.716,794,Ambient Weather WS-1001-WiFi (Wireless),143.458
+KY,KKYBETSY2,Betsy Layne,1 hour,13,37.559,-82.63,720,other,280.236
+KY,KKYBEREA2,Berea,41,20,37.559,-84.277,1001,Ambient Weather WS-1400-IP (Wireless),205.724
+KY,KKYBEREA11,Berea,40,6,37.564,-84.276,982,AcuRite Pro Weather Center,206.265
+KY,KKYBEREA5,Berea,40,18,37.564,-84.273,1010,AcuRite Pro Weather Center,206.375
+KY,MC4294,Jackson,,8,37.573,-83.409,,,247.058
+KY,KKYLEITC8,Leitchfield,4,19,37.576,-86.343,670,Ambient Weather WS-1400-IP (Wireless),118.732
+KY,MKY025,Sebree,5,2,37.577,-87.481,419,,76.435
+KY,KKYUTICA3,Utica,6,66,37.584,-87.04,495,Ambient Weather WS-1200-IP (Wireless),86.989
+KY,KKYIVEL2,Ivel,5100,4,37.585,-82.64,689,AcuRite Pro Weather Center,282.031
+KY,KKYBEREA4,Berea,42,19,37.589,-84.269,925,AcuRite Pro Weather Center,209.048
+KY,KKYBEREA10,Berea,42,1,37.59,-84.266,1024,AcuRite Pro Weather Center,209.258
+KY,KKYBEATT2,Beattyville,100,9,37.59,-83.815,640,Davis Vantage Pro2 (Wireless),228.666
+KY,MJCAK2,Jackson,1 hour,8,37.592,-83.318,1387,,252.238
+KY,MS47AX,Rosine,,3,37.595,-86.878,,,95.475
+KY,KKYSPRIN5,Springfield,1200,8,37.617,-85.25,871,AcuRite Pro Weather Center,168.695
+KY,KKYRICHM18,Richmond,,8,37.617,-84.343,10,Ambient Weather WS-900-IP (Wireless),209.318
+KY,MD0721,Berea,,1,37.619,-84.246,,,212.919
+KY,MRRLK2,Falls Of Rough,,3,37.62,-86.499,,,119.786
+KY,KKYHARDY3,Hardy,200,6,37.625,-82.245,740,other,303.769
+KY,KKYELIZA14,Elizabethtown,14,20,37.629,-85.844,804,AcuRite Pro Weather Center,143.094
+KY,MS51AX,Primrose,,2,37.639,-83.593,,,244.454
+KY,KKYOWENS3,Owensboro,Station reported,13,37.64,-87.39,466,Oregon WMR968,83.908
+KY,KKYBEREA7,Berea,43,6,37.641,-84.285,935,AcuRite Pro Weather Center,213.758
+KY,MDNVK2,Lancaster,,1,37.642,-84.661,,,197.055
+KY,MC5257,Danville,300,3,37.65,-84.725,918,,194.456
+KY,KKYPREST6,Prestonsburg,800,10,37.653,-82.891,1089,La Crosse Technology 330-2315 Professional Weather Station,275.964
+KY,KKYPREST1,Prestonsburg,800,22,37.655,-82.829,760,Lacrossse 3610,279.044
+KY,MS48AX,Cecilia,,1,37.657,-86.057,,,136.413
+KY,KKYDANVI2,Danville,200,29,37.662,-84.789,980,Davis Vantage VUE,192.365
+KY,KKYELIZA22,Elizabethtown,2,9,37.667,-85.812,823,Ambient Weather WS-1400-IP (Wireless),148.17
+KY,KKYTUNNE2,Robards,800,37,37.668,-87.599,502,LaCrosse,76.882
+KY,KKYBELFR3,Belfry,24,7,37.672,-82.315,735,Ambient Weather WS-1200-IP (Wireless),305.778
+KY,MS50AX,Paint Lick,,2,37.679,-84.4,,,213.904
+KY,MS52AX,Carver,,1,37.679,-83.078,,,270.292
+KY,MKY040,Elizabethtown,9,18,37.682,-85.843,774,,148.077
+KY,MS46AX,Corydon,,1,37.685,-87.715,,,70.732
+KY,MKY023,Morganfield,12,665,37.688,-87.945,419,,59.017
+KY,KKYIRVIN4,Irvine,9,21,37.692,-83.962,719,Davis Vantage Vue (Wireless),231.513
+KY,KKYSPRIN3,Springfield,7,1,37.705,-85.049,954,EPA Office of Atmospheric Programs,184.976
+KY,KKYELIZA10,Elizabethtown,2,2,37.706,-85.852,816,Kentucky DEP,149.917
+KY,KKYCUSTE3,Custer,29,29,37.706,-86.208,875,AcuRite Pro Weather Center,136.196
+KY,MC9746,Winston,1100,6,37.71,-84.071,849,,228.726
+KY,MC5591,Winston,,2,37.711,-84.069,,,228.905
+KY,KKYNEWHA3,New Haven,16,11,37.713,-85.533,656,Davis Vantage Vue (Wireless),167.008
+KY,KKYIRVIN3,IRVINE,8,11,37.713,-84.069,830,Wireless Davis Vantage Pro 2,229.103
+KY,KKYIRVIN8,Irvine,10,1,37.713,-83.973,722,AcuRite Pro Weather Center,233.075
+KY,KKYRICHM19,Richmond,400,1,37.714,-84.319,890,AcuRite Pro Weather Center,220.093
+KY,KKYELIZA17,Elizabethtown,12,52,37.714,-85.883,810,Ambient Weather WS-1001-WiFi (Wireless),149.27
+KY,KKYROSEV4,Roseville,5,10,37.723,-86.748,0,LaCrosse,113.699
+KY,KKYRICHM20,Richmond,400,22,37.726,-84.267,922,La Crosse Technology 330-2315 Professional Weather Station,223.061
+KY,KKYELIZA13,Elizabethtown,4,3,37.726,-85.803,873,Ambient Weather WS-1001-WiFi (Wireless),154.091
+KY,KKYOWENS21,Owensboro,1,9,37.727,-87.062,433,AcuRite Pro Weather Center,100.57
+KY,KKYSPRIN2,Springfield,1200,26,37.729,-85.117,838,Ambient Weather WS-1001-WiFi (Wireless),184.786
+KY,KKYOWENS35,Owensboro,16,6,37.729,-87.15,124,AcuRite Pro Weather Center,98.093
+KY,KKYOWENS30,Owensboro,58,6,37.732,-87.137,0,Rainwise MK-III,98.771
+KY,KKYOWENS13,Owensboro,5,9,37.732,-87.127,384,Ambient Weather WS-2090 (Wireless),99.056
+KY,KKYOWENS40,Owensboro,2,12,37.734,-87.126,385,Ambient Weather WS-900-IP (Wireless),99.295
+KY,KKYOWENS4,"Owensboro, Scotty Lane",6,29,37.736,-87.07,477,LaCrosse WS 2317,101.231
+KY,MKY028,Owensboro,83 days,4,37.737,-87.068,462,,101.399
+KY,KKYCORYD3,Corydon,16,50,37.739,-87.687,344,Ambient Weather WS-900-IP (Wireless),76.821
+KY,KKYRINEY2,Rineyville,15,8,37.74,-85.918,876,La Crosse WS-2316,150.25
+KY,KKYRICHM9,Richmond,400,15,37.745,-84.216,948,Davis Vantage Pro2 (Cabled),226.77
+KY,KKYOWENS42,Owensboro,4,18,37.745,-87.056,410,Ambient Weather WS-900-IP (Wireless),102.619
+KY,KKYOWENS34,Owensboro,8,12,37.745,-87.138,394,AcuRite Pro Weather Center,100.111
+KY,KKYOWENS23,Owensboro,13,20,37.747,-87.144,404,Ambient Weather WS-1001-WiFi (Wireless),100.157
+KY,KKYOWENS10,Owensboro,14,66,37.747,-87.144,404,Ambient Weather WS-1400-IP (Wireless),100.157
+KY,KKYRICHM3,Richmond,400,51,37.748,-84.296,974,Davis Vantage Pro2 (Wireless),224.35
+KY,MKK22,Beauty,,1,37.75,-82.64,,,297.004
+KY,KKYOWENS38,Owensboro,5,25,37.751,-87.103,406,LaCrosse,101.751
+KY,MC3227,Elizabethtown,,2,37.755,-85.882,,,153.253
+KY,KKYSORGH2,Sorgho,29,18,37.755,-87.233,0,LaCrosse,98.88
+KY,KKYRICHM13,Richmond,400,15,37.758,-84.209,0,AcuRite Pro Weather Center,228.339
+KY,KKYRINEY9,Rineyville,12,6,37.759,-85.962,794,Ambient Weather WS-1001-WiFi (Wireless),150.29
+KY,KKYELIZA23,Elizabethtown,4,5,37.759,-85.851,868,AcuRite Pro Weather Center,155.005
+KY,KKYRICHM8,Richmond,400,15,37.764,-84.261,876,AcuRite Pro Weather Center,227.158
+KY,KKYRICHM6,Richmond,400,3,37.769,-84.343,908,Netatmo,225.02
+KY,KKYKNOTT2,Knottsville,17,10,37.772,-86.905,560,LaCrosse,111.002
+KY,MAS810,Pine Ridge,,16,37.773,-83.631,,,254.583
+KY,KKYOWENS37,Owensboro,7,4,37.774,-87.006,394,Ambient Weather WS-1200-IP (Wireless),107.305
+KY,KKYOWENS41,Owensboro,1,5,37.775,-87.154,400,Netatmo,102.855
+KY,KKYOWENS26,Owensboro,2,6,37.775,-87.154,0,Netatmo,102.855
+KY,MKY041,Bardstown,22,2,37.777,-85.521,583,,173.179
+KY,KKYENSOR3,Ensor,9,3,37.778,-87.007,475,LaCrosse,107.676
+KY,MKOMK2,Pine Ridge,100,15,37.781,-83.632,1141,,255.267
+KY,KKYOWENS45,Owensboro,0,1,37.781,-87.076,416,Kentucky DEP,105.698
+KY,MS49AX,Saint Catharine,,2,37.785,-85.287,,,184.934
+KY,ME6972,Hagerhill,,3,37.785,-82.801,,,292.604
+KY,KKYOWENS44,Owensboro,1,5,37.785,-87.027,377,AcuRite Pro Weather Center,107.698
+KY,KKYHENDE4,Henderson,1300,13,37.787,-87.656,344,AcuRite Pro Weather Center,82.632
+KY,MKY100,Pine Ridge,100,41,37.79,-83.648,1249,,255.306
+KY,KKYBARDS12,Bardstown,30,5,37.79,-85.431,607,AcuRite Pro Weather Center,179.335
+KY,KKYTHRUS2,Thruston,16,8,37.803,-87.017,420,LaCrosse,109.881
+KY,KKYVINEG3,Vine Grove,11,5,37.807,-86.032,719,Acurite 01055,152.423
+KY,KKYHENDE15,Henderson,1300,5,37.809,-87.484,468,LaCrosse Weather Pro Center Remote Monitoring 2800 Series,94.869
+KY,ME2402,Henderson,,3,37.81,-87.65,,,84.924
+KY,KKYVINE3,Vine Grove,8,45,37.813,-85.966,747,Davis Vantage Vue,155.491
+KY,KKYHENDE10,Henderson,1300,30,37.814,-87.557,374,Davis Vantage Pro2 Plus (Wireless),90.703
+KY,KKYHAGER2,Hagerhill,700,8,37.814,-82.853,0,Netatmo,293.03
+KY,KKYRICHM16,Richmond,400,2,37.815,-84.352,962,AcuRite Pro Weather Center,228.985
+KY,KKYSTAFF2,Staffordsville,100,3,37.816,-82.849,764,Netatmo Weather Station,293.399
+KY,MWBGK2,Salyersville,,2,37.817,-83.017,,,286.349
+KY,KKYSTANT3,Stanton,18,9,37.82,-83.782,735,Davis Vantage Vue (Wireless),251.781
+KY,MD2677,Paintsville,,2,37.822,-82.816,,,295.445
+KY,KKYIRVIN6,Irvine,5,4,37.83,-84.047,791,AcuRite Pro Weather Center,241.587
+KY,KKYSTANT4,Stanton,20,3,37.832,-83.862,846,AcuRite Pro Weather Center,249.377
+KY,KKYOWENS12,Owensboro,4,19,37.832,-87.022,387,Davis Vantage Pro2 (Cabled),112.694
+KY,KKYSTANT5,Stanton,18,1,37.835,-83.853,800,Ambient Weather WS-1400-IP (Wireless),250.057
+KY,KKYRADCL3,Radcliff,11,19,37.838,-85.944,741,Davis Vantage Pro2 (Cabled),158.836
+KY,KKYBARDS13,Bardstown,29,10,37.841,-85.46,646,AcuRite Pro Weather Center,182.081
+KY,KKYVINEG5,Vine Grove,9,7,37.845,-85.978,722,AcuRite Pro Weather Center,158.239
+KY,KKYBARDS6,Bardstown,30,596,37.846,-85.448,758,Ambient Weather WS-1400-IP (Wireless),183.175
+KY,KKYRICHM5,Richmond,400,4,37.852,-84.357,869,AcuRite Pro Weather Center,231.893
+KY,MKY020,Henderson,Station reported,3,37.856,-87.576,426,,93.032
+KY,KKYRICHM15,Richmond,400,3,37.856,-84.333,941,AcuRite Pro Weather Center,233.565
+KY,KKYHENDE16,Henderson,1300,2,37.857,-87.55,456,AcuRite Pro Weather Center,94.627
+KY,MD1749,Wilmore,,3,37.865,-84.66,,,217.443
+KY,MCYCK2,Clay City,,2,37.865,-83.934,,,249.554
+KY,KKYVINEG7,Vine Grove,9,18,37.871,-86.018,723,AcuRite Pro Weather Center,159.419
+KY,KKYCHAMB3,Chambers,1100,11,37.871,-86.815,449,LaCrosse,124.442
+KY,KKYBASKE4,Baskett,11,1,37.871,-87.463,400,Kentucky DEP,101.004
+KY,KKYWILMO3,Wilmore,1000,28,37.873,-84.664,935,Oregon Scientific Professional Weather Center,217.999
+KY,KKYNICHO9,Nicholasville,1200,21,37.881,-84.623,909,Ambient Weather WS-1400-IP (Wireless),220.708
+KY,MC9792,Vine Grove,,2,37.885,-86.068,,,159.158
+KY,MKY070,Lexington,Station reported,1,37.886,-84.342,770,,235.665
+KY,KKYHILLG2,Hillgrove,28,6,37.887,-86.157,680,LaCrosse,156.632
+KY,KKYCLERM3,Clermont,0,18,37.893,-85.646,627,Davis Vantage Pro2 (Wireless),177.162
+KY,MFODK2,Winchester,,3,37.895,-84.262,,,240.628
+KY,KKYBLOOM2,Bloomfield,1100,9,37.9,-85.323,771,Davis Vantage Pro2 Plus (Wireless),194.795
+KY,KKYVERSA7,Versailles,7,12,37.905,-84.771,892,Netatmo,216.142
+KY,KKYBLOOM3,Bloomfield,1100,12,37.909,-85.372,715,Ambient Weather WS-1200-IP (Wireless),192.815
+KY,KKYVERSA13,Versailles,4,3,37.911,-84.692,840,AcuRite Pro Weather Center,220.266
+KY,KKYSALVI4,Salvisa,25,14,37.915,-84.846,807,AcuRite Pro Weather Center,213.903
+KY,KKYWESTL2,West Liberty,21,1,37.921,-83.066,1240,EPA Office of Atmospheric Programs,294.734
+KY,KKYCHAPL4,Chaplin,1,8,37.922,-85.163,836,Ambient Weather WS-2902,202.976
+KY,KKYGUSTO2,Guston,8,24,37.924,-86.211,705,AcuRite Pro Weather Center,159.071
+KY,KKYPINCH2,Pinchem,31,12,37.929,-84.151,813,LaCrosse,247.791
+KY,KKYLEXIN8,Lexington,900,15,37.929,-84.399,1030,Rainwise WS-2000,236.388
+KY,MBNNK2,Lexington,,1,37.934,-84.502,,,231.543
+KY,KKYFAIRF2,Fairfield,10,11,37.934,-85.388,732,Davis Vantage Pro2 (Cabled),194.106
+KY,KKYSHEPH26,Shepherdsville,5,7,37.936,-85.55,610,AcuRite Pro Weather Center,185.831
+KY,KKYWINCH5,Winchester,24,3,37.938,-84.101,1007,Davis Vantage Pro2 (Wireless),250.454
+KY,KKYLEWIS5,Lewisport,14,1,37.939,-86.897,400,Kentucky DEP,127.94
+KY,KKYNICHO10,Nicholasville,10,10,37.941,-84.577,1035,AcuRite Pro Weather Center,228.495
+KY,MCLTK2,Lexington,,2,37.95,-84.455,,,235.372
+KY,KKYWINCH10,Winchester,26,5,37.95,-84.281,951,Ambient Weather WS-1000 (Wireless),244.564
+KY,KKYHIGHG2,Highgrove,34,3,37.955,-85.455,695,LaCrosse,192.394
+KY,KKYLEXIN105,Lexington,1000,37,37.959,-84.507,984,AcuRite Pro Weather Center,233.579
+KY,KKYKEATO2,Keaton,14,17,37.962,-82.978,850,AcuRite Pro Weather Center,302.236
+KY,KKYLEXIN24,Lexington,900,19,37.963,-84.506,922,Davis Vantage Pro 2,233.995
+KY,KKYLEXIN106,Lexington,6,8,37.963,-84.506,922,Davis Vantage Pro2 (Wireless),233.995
+KY,KKYLEXIN25,Lexington,2,66,37.97,-84.506,978,Vantage Pro2,234.638
+KY,KKYBRAND4,Brandenburg,30,7,37.971,-86.129,636,Davis Vantage Pro2 (Wireless),166.25
+KY,KKYLEXIN54,Lexington,1,4,37.972,-84.552,1010,Ambient Weather WS-1001-WiFi (Wireless),232.577
+KY,MD4109,Salvisa,,2,37.973,-84.815,,,220.865
+KY,MAT366,Salvisa,7,2,37.973,-84.815,531,,220.865
+KY,KKYVERSA5,Versailles,33,24,37.973,-84.815,548,AcuRite Pro Weather Center,220.865
+KY,KKYLEXIN84,Lexington,60,7,37.974,-84.547,988,AcuRite Pro Weather Center,233.004
+KY,KKYULYSS2,Ulysses,3800,14,37.975,-82.65,600,LaCrosse Wireless Professional Weather Center 1900 Series,317.526
+KY,KKYLEXIN61,Lexington,5,8,37.976,-84.566,997,AcuRite Pro Weather Center,232.277
+KY,MKY110,Winchester,,3,37.978,-84.11,,,254.208
+KY,KKYVERSA12,Versailles,31,8,37.981,-84.782,817,Ambient Weather WS-900-IP (Wireless),223.024
+KY,KKYWINCH9,Winchester,25,16,37.982,-84.217,961,Ambient Weather WS-1001-WiFi (Wireless),250.852
+KY,KKYLEXIN53,Lexington,100,9,37.983,-84.583,958,Ambient Weather WS-1001-WiFi (Wireless),232.122
+KY,MSHPK2,Shepherdsville,,2,37.985,-85.717,,,182.621
+KY,KKYLEXIN100,Lexington,900,1,37.985,-84.452,995,AcuRite Pro Weather Center,238.7
+KY,KKYSOUTH3,South Elkhorn,3,1,37.986,-84.588,0,Netatmo,232.167
+KY,KKYSHEPH25,Shepherdsville,4,3,37.986,-85.713,442,Kentucky DEP,182.892
+KY,KKYLEXIN81,Lexington,57,1,37.987,-84.567,951,Ambient Weather WS-1400-IP (Wireless),233.255
+KY,MC8506,Shepherdsville,,2,37.988,-85.715,,,182.997
+KY,KKYBRAND7,Brandenburg,29,6,37.992,-86.176,612,AcuRite Pro Weather Center,167.189
+KY,MCDTK2,Lexington,,1,37.997,-84.411,,,241.864
+KY,KKYLEXIN47,Lexington,3800,1,37.997,-84.475,941,Netatmo,238.648
+KY,KKYLEXIN22,Lexington,1,6,38.001,-84.461,1001,AcuRite 5 In 1,239.709
+KY,MGNBK2,Mount Eden,,2,38.002,-85.061,,,214.543
+KY,KKYLEXIN38,Lexington,3800,11,38.002,-84.494,994,Netatmo,238.171
+KY,KKYBRAND6,Brandenburg,30,12,38.002,-86.169,603,Ambient Weather WS-900-IP (Wireless),168.432
+KY,KKYLEXIN92,Lexington,3800,37,38.004,-84.463,968,AcuRite Pro Weather Center,239.884
+KY,KKYLEXIN26,Lexington,3,9,38.007,-84.54,1014,Davis Vantage Pro 2,236.407
+KY,KKYLEXIN74,Lexington,7,10,38.007,-84.378,1020,AcuRite Pro Weather Center,244.457
+KY,KKYLEXIN55,Lexington,53,8,38.008,-84.57,1003,Netatmo,235.076
+KY,KKYLEXIN62,Lexington,1,37,38.009,-84.574,978,Davis Vantage Pro2 (Wireless),234.982
+KY,MLOU5,Taylorsville,,3,38.01,-85.299,,,205.573
+KY,MAS012,Lawrenceburg,,2,38.012,-84.9,,,221.339
+KY,KKYSHEPH20,Shepherdsville,2,10,38.012,-85.663,554,Davis Vantage Pro2 Plus (Wireless),187.594
+KY,KKYLEXIN87,Lexington,5,9,38.012,-84.408,1030,AcuRite Pro Weather Center,243.374
+KY,KKYSHEPH28,Shepherdsville,4,1,38.018,-85.65,562,AcuRite Pro Weather Center,188.749
+KY,KKYLEXIN27,Lexington,14,10,38.018,-84.401,1017,other,244.273
+KY,KKYLEXIN98,Lexington,3800,6,38.02,-84.498,1030,other,239.637
+KY,KKYMOUNT30,Mount Washington,10,1,38.022,-85.605,613,other,191.179
+KY,KKYLEXIN95,Lexington,0,25,38.022,-84.564,976,Davis Vantage Pro2 Plus (Wireless),236.67
+KY,KKYLEXIN96,Lexington,3800,12,38.023,-84.494,1020,Ambient Weather WS-1001-WiFi (Wireless),240.109
+KY,KKYLAWRE4,Lawrenceburg,6,12,38.023,-84.908,827,Davis Vantage Pro2 Plus,222.135
+KY,KKYLEXIN99,Lexington,3800,4,38.026,-84.487,1010,AcuRite Pro Weather Center,240.727
+KY,KKYLEXIN77,Lexington,3800,18,38.027,-84.495,1024,Ambient Weather WS-1400-IP (Wireless),240.43
+KY,KKYLEXIN86,Lexington,15,7,38.028,-84.446,1007,AcuRite Pro Weather Center,242.926
+KY,KKYLEXIN94,Lexington,5,26,38.028,-84.332,975,AcuRite Pro Weather Center,248.721
+KY,MC3621,Mount Washington,,2,38.029,-85.561,,,193.895
+KY,KKYMOUNT5,Mount Washington,12,22,38.03,-85.581,666,,193.048
+KY,KKYMOUNT6,Mount Sterling,33,7,38.032,-83.971,1032,Vantage Vue,264.69
+KY,KKYWINCH6,Winchester,26,6,38.033,-84.284,1037,AcuRite Pro Weather Center,251.686
+KY,KKYLEXIN57,Lexington,36,10,38.033,-84.555,965,Ambient Weather WS-1001-WiFi (Wireless),238.125
+KY,KKYLEXIN36,Lexington,10,12,38.034,-84.425,955,AcuRite Pro Weather Center,244.519
+KY,KKYHEBRO8,Hebron Estates,12,7,38.036,-85.619,619,LaCrosse,191.863
+KY,MBRCK2,Taylorsville,,2,38.037,-85.341,,,205.679
+KY,KKYSHEPH27,Shepherdsville,6,15,38.039,-85.694,486,Ambient Weather WS-900-IP (Wireless),188.831
+KY,KKYLEXIN108,Lexington,3700,9,38.04,-84.476,991,Ambient Weather WS-1400-IP (Wireless),242.555
+KY,MFTSK2,Lexington,,1,38.043,-84.626,,,235.803
+KY,KKYLEXIN82,Lexington,16,5,38.043,-84.535,935,AcuRite Pro Weather Center,240.004
+KY,MAU161,Winchester,,4,38.047,-84.138,,,260.326
+KY,KKYLEXIN15,Lexington,900,17,38.048,-84.493,971,Davis Vantage Pro 2,242.473
+KY,KKYLEXIN16,Lexington,400,6,38.049,-84.624,910,Davis Vantage Pro,236.464
+KY,KKYLEXIN63,Lexington,900,5,38.05,-84.489,1003,Netatmo,242.851
+KY,KKYMOUNT25,Mount Sterling,36,11,38.056,-83.946,1001,AcuRite Pro Weather Center,268.038
+KY,KKYLEXIN21,Lexington,32,21,38.056,-84.435,988,,246.037
+KY,KKYVERSA9,Versailles,36,28,38.06,-84.736,892,Ambient Weather WS-1001-WiFi (Wireless),232.657
+KY,KKYLOUIS73,Louisville,19,1,38.061,-85.896,439,Louisville Metro Air Pollution Control District,183.041
+KY,KKYLEXIN32,Lexington,3700,1,38.065,-84.5,984,Kentucky DEP,243.719
+KY,KKYMOUNT21,Mount Washington,8,24,38.067,-85.558,673,Ambient Weather WS-1200-IP (Wireless),197.6
+KY,KKYMOUNT15,Mount Sterling,36,1,38.069,-83.938,971,Netatmo,269.642
+KY,ME2154,Lexington,,1,38.073,-84.462,,,246.287
+KY,KKYVERSA4,Versailles,40,3,38.073,-84.718,919,Ambient Weather WS-1000 (Wireless),234.68
+KY,KKYVERSA11,Versailles,40,7,38.073,-84.717,975,AcuRite Pro Weather Center,234.722
+KY,MBYSK2,Lexington,,1,38.076,-84.413,,,248.959
+KY,KKYWADDY2,Waddy,5400,25,38.081,-85.073,568,Ambient Weather WS-1001-WiFi (Wireless),222.288
+KY,KKYLEXIN111,Lexington,4900,2,38.083,-84.556,1010,Ambient Weather WS-900-IP (Wireless),242.786
+KY,KKYMOUNT31,Mount Washington,10,5,38.089,-85.567,662,Netatmo,199.261
+KY,KKYLOUIS177,Louisville,8,12,38.091,-85.564,665,Ambient Weather WS-1400-IP (Wireless),199.588
+KY,KKYLEXIN93,Lexington,4800,2,38.093,-84.55,0,Netatmo,244.007
+KY,MVSLK2,Grolier Books,,5,38.094,-84.746,865,,235.567
+KY,KKYLOUIS129,Louisville,2,52,38.094,-85.61,640,AcuRite Pro Weather Center,197.798
+KY,KKYLOUIS209,Louisville,18,21,38.099,-85.651,617,AcuRite Pro Weather Center,196.486
+KY,KKYTAYLO16,Taylorsville,26,10,38.1,-85.403,712,AcuRite Pro Weather Center,208.145
+KY,KKYKENTU10,Kentucky,0,29,38.1,-83.512,751,AcuRite Pro Weather Center,290.685
+KY,MYNTK2,Lexington,,1,38.104,-84.588,,,243.326
+KY,KKYLEXIN43,Lexington,400,11,38.106,-84.577,892,Netatmo,244.011
+KY,KKYKENTU11,Kentucky,4300,10,38.106,-85.409,722,AcuRite Pro Weather Center,208.394
+KY,KKYLOUIS165,Louisa,4200,2,38.107,-82.587,0,Netatmo,332.922
+KY,KKYFRANK9,Frankfort,,12,38.107,-84.932,784,Ambient Weather WS-1200-IP (Wireless),229.72
+KY,KKYKENTU4,Kentucky,4300,29,38.108,-85.384,728,Ambient Weather WS-1200-IP (Wireless),209.827
+KY,ME3564,Okolona,,2,38.115,-85.645,,,198.292
+KY,KKYLOUIS135,Louisville,14,3829,38.115,-85.645,640,Davis Vantage Pro2 (Cabled),198.292
+KY,KKYLOUIS167,Louisville,35,2,38.116,-85.821,486,AcuRite Pro Weather Center,191.329
+KY,KKYLOUIS123,Louisville,8,3852,38.117,-85.768,459,Davis Vantage Pro2 Plus (Wireless),193.449
+KY,KKYLEXIN59,Lexington,Station reported,6,38.119,-84.627,873,AcuRite Pro Weather Center,243.038
+KY,KKYLOUIS66,Louisville,31,20,38.126,-85.869,456,AcuRite Pro Weather Center,190.596
+KY,KKYWILSO4,Wilsonville,3700,26,38.134,-85.405,692,LaCrosse,211.158
+KY,KKYLOUIS194,Louisville,1300,2,38.135,-85.826,659,Bloomsky2,193.057
+KY,KKYLOUIS72,Louisville,2,1,38.137,-85.578,708,Louisville Metro Air Pollution Control District,203.335
+KY,MGRDK2,Lexington,,3,38.139,-84.517,,,249.872
+KY,MFRMK2,Farmers,,2,38.14,-83.557,,,292.407
+KY,KKYOWING2,Owingsville,8,18,38.144,-83.782,899,AcuRite Pro Weather Center,283.185
+KY,KKYLOUIS182,Louisville,4,31,38.144,-85.604,0,LaCrosse,202.864
+KY,KKYLOUIS30,Louisville,31,3861,38.156,-85.863,457,Davis Vantage Pro 2,193.857
+KY,KKYROUTT2,Routt,9,7,38.157,-85.478,570,LaCrosse,209.791
+KY,KKYOWING4,Owingsville,8,17,38.159,-83.689,840,Ambient Weather WS-1001-WiFi (Wireless),288.483
+KY,KKYLOUIS58,Louisville,1400,93,38.16,-85.777,541,Davis Vantage Pro2 (Wireless),197.394
+KY,KKYLOUIS69,Louisville,4,3829,38.161,-85.605,679,Davis Vantage Pro2 (Wireless),204.461
+KY,MKY052,Frankfort,3400,4,38.162,-84.851,619,,238.222
+KY,KKYLOUIS181,Louisville,4,9,38.163,-85.52,640,Ambient Weather WS-1001-WiFi (Wireless),208.42
+KY,KKYLOUIS86,Louisville,1400,13,38.164,-85.778,505,AcuRite Pro Weather Center,197.757
+KY,KKYLOUIS186,Louisville,1300,50,38.169,-85.775,481,AcuRite Pro Weather Center,198.371
+KY,KKYLOUIS211,Louisville,21,1,38.173,-85.526,721,LaCrosse,209.098
+KY,KKYLOUIS206,Louisville,,1,38.173,-85.526,721,LaCrosse,209.098
+KY,MTRMK2,Morehead,20,6,38.175,-83.408,1357,,302.601
+KY,MD9965,Louisville,600,3,38.175,-85.808,521,,197.75
+KY,KKYJEFFE4,Jeffersontown,5,8,38.178,-85.575,0,LaCrosse,207.402
+KY,KKYGEORG9,Georgetown,200,25,38.182,-84.6,860,Ambient Weather WS-1000 (Wireless),250.285
+KY,MWLLK2,Willard,,2,38.183,-82.893,,,327.527
+KY,MKY091,Farmers,8,3,38.183,-83.557,931,,296.51
+KY,KKYLOUIS91,Louisville,4100,2,38.187,-85.444,639,Netatmo,214.199
+KY,KKYMOREH6,Morehead,43,18,38.191,-83.458,1007,Ambient Weather WS-1001-WiFi (Wireless),301.76
+KY,KKYMOREH4,Morehead,43,16,38.191,-83.458,919,AcuRite Pro Weather Center,301.76
+KY,KKYOLIVE3,Olive Hill,14,18,38.192,-83.108,1070,Ambient Weather WS-2090 (Wireless),319.147
+KY,KKYPARIS5,Paris,25,14,38.193,-84.282,896,AcuRite Pro Weather Center,266.168
+KY,KKYOLIVE5,Olive Hill,7,21,38.193,-83.082,883,Ambient Weather WS-1400-IP (Wireless),320.604
+KY,KKYOLIVE2,Olive Hill,14,11,38.193,-83.081,883,Oregon Scientific WM918,320.656
+KY,KKYLOUIS76,Louisville,4700,1,38.194,-85.712,524,Louisville Metro Air Pollution Control District,203.288
+KY,MD3119,Louisville,,1,38.195,-85.798,,,200.133
+KY,KKYLOUIS216,Louisville,17,19,38.195,-85.583,688,Ambient Weather WS-1200-IP (Wireless),208.695
+KY,KKYFRANK15,Frankfort,,3,38.2,-84.834,800,other,242.675
+KY,KKYGEORG28,Georgetown,200,1,38.201,-84.503,899,Davis Vantage Pro2 (Wireless),256.39
+KY,MFFTK2,Frankfort,,1,38.202,-84.882,,,241.136
+KY,KKYLOUIS118,Louisville,8,6,38.202,-85.593,676,other,208.945
+KY,KKYLOUIS155,Louisville,100,17,38.205,-85.788,456,Bloomsky,201.507
+KY,KKYFRANK7,Frankfort,4200,4,38.205,-84.805,659,Netatmo,244.258
+KY,KKYLOUIS145,Louisville,1,3831,38.208,-85.662,495,Davis Vantage Pro2 (Wireless),206.664
+KY,KKYCARLI2,Carlisle,7,13,38.208,-84.093,899,Ambient Weather WS-900-IP (Wireless),277.288
+KY,KKYSHELB17,Shelbyville,23,20,38.209,-85.23,787,AcuRite Pro Weather Center,226.803
+KY,MD4281,Morehead,,2,38.21,-83.478,,,302.637
+KY,KKYSHARP2,Sharpsburg,4200,2,38.21,-83.945,0,Netatmo,283.602
+KY,KKYLOUIS113,Louisville,6,11,38.215,-85.646,499,AcuRite Pro Weather Center,208.003
+KY,MKY053,Fisherville,4100,2,38.217,-85.404,695,,218.892
+KY,KKYGEORG19,Georgetown,200,24,38.217,-84.543,830,AcuRite Pro Weather Center,256.138
+KY,KKYGEORG23,Georgetown,200,1,38.22,-84.526,850,other,257.176
+KY,ME1143,Louisville,1,10,38.221,-85.752,491,,204.45
+KY,MD5536,Frankfort,3400,1,38.221,-84.817,751,,245.416
+KY,MAP079,Louisville,Station reported,3,38.224,-85.703,,,206.62
+KY,MX3881,Louisville,,1,38.225,-85.699,,,206.875
+KY,KKYPARIS2,Paris,25,15,38.225,-84.252,794,AcuRite Pro Weather Center,270.585
+KY,KKYMIDDL9,Middletown,9,24,38.225,-85.519,680,LaCrosse,214.376
+KY,KKYLOUIS79,Louisville,4700,7,38.226,-85.73,465,Netatmo,205.781
+KY,KKYGEORG1,Georgetown,200,35,38.227,-84.551,817,Campbell Scientific GRWS100,256.75
+KY,KKYLOUIS84,Louisville,4,23,38.228,-85.614,574,Ambient Weather WS-1001-WiFi (Wireless),210.593
+KY,KKYLOUIS75,Louisville,3,1,38.229,-85.654,534,Louisville Metro Air Pollution Control District,209.056
+KY,KKYLOUIS46,Louisville,1,5,38.23,-85.627,531,AcuRite Pro Weather Center,210.252
+KY,KKYLOUIS122,Louisville,6,26,38.23,-85.573,686,Davis Vantage Pro2 Plus (Wireless),212.512
+KY,KKYOWING3,Owingsville,8,9,38.231,-83.768,984,Ambient Weather WS-1400-IP (Wireless),292.345
+KY,KKYLOUIS74,Louisville,200,2,38.232,-85.816,442,Louisville Metro Air Pollution Control District,203.236
+KY,KKYLOUIS148,Louisville,100,6,38.235,-85.733,469,Bloomsky,206.568
+KY,KKYLOUIS196,Louisville,100,6,38.235,-85.502,761,Bloomsky,216.087
+KY,KKYLOUIS54,Louisville,22,8,38.235,-85.62,534,Davis Intruments Vantage Pro2,211.03
+KY,KKYGEORG15,Georgetown,200,1,38.236,-84.521,879,Netatmo,258.93
+KY,KKYGRAYS2,Grayson,0,1,38.238,-82.988,669,Kentucky DEP,329.524
+KY,KKYEASTW2,Eastwood,300,1,38.238,-85.418,715,Netatmo,220.2
+KY,KKYLOUIS178,Louisville,400,2,38.239,-85.601,0,other,212.208
+KY,MC1295,Saint Matthews,,3,38.242,-85.651,,,210.458
+KY,KKYLOUIS9,Louisville,3800,9,38.242,-85.651,546,Vantage Pro,210.458
+KY,MCREK2,Millersburg,,4,38.243,-84.052,,,282.556
+KY,KKYLOUIS193,Louisville,8,72,38.243,-85.749,459,Davis Vantage Pro2 (Wireless),206.771
+KY,KKYGEORG11,Georgetown,200,5,38.243,-84.46,925,AcuRite Pro Weather Center,262.327
+KY,KKYNORBO2,Norbourne Estates,3700,5,38.251,-85.657,0,Netatmo,211.107
+KY,KKYLOUIS163,Louisville,33,6,38.251,-85.69,531,AcuRite Pro Weather Center,209.811
+KY,KKYGEORG24,Georgetown,200,5,38.253,-84.552,911,Texas Instruments WR-25-C,259.214
+KY,MGYLK2,Hitchins,,2,38.254,-82.991,,,330.819
+KY,KKYLOUIS34,Louisville,3800,17,38.254,-85.633,529,VantagePro 2,212.366
+KY,KKYSTAMP2,Stamping Ground,16,5,38.26,-84.677,807,AcuRite Pro Weather Center,254.701
+KY,KKYLOUIS164,Louisville,5,7,38.261,-85.704,518,AcuRite Pro Weather Center,210.269
+KY,KKYFRANK13,Frankfort,4200,7,38.261,-84.755,794,AcuRite Pro Weather Center,251.755
+KY,KKYLOUIS200,Louisville,8,19,38.262,-85.554,12,AcuRite Pro Weather Center,216.425
+KY,KKYLOUIS47,Louisville,1,3814,38.265,-85.553,699,,216.758
+KY,MD7482,Louisville,,3,38.266,-85.553,,,216.855
+KY,MC8273,Louisville,,1,38.266,-85.548,,,217.068
+KY,KKYLOUIS104,Louisville,400,4,38.267,-85.642,551,Netatmo,213.286
+KY,KKYLOUIS136,Louisville,42,10,38.268,-85.442,719,Davis Vantage Pro2 (Wireless),221.927
+KY,KKYLOUIS215,Louisville,2,8,38.269,-85.555,702,AcuRite Pro Weather Center,217.062
+KY,KKYLOUIS49,Louisville,31,20,38.27,-85.715,446,,210.752
+KY,KKYLOUIS152,Louisville,2,19,38.272,-85.577,653,AcuRite Pro Weather Center,216.43
+KY,ME2171,Louisville,,2,38.277,-85.531,,,218.86
+KY,KKYLOUIS32,Anchorage,11,10,38.277,-85.531,730,Davis Vantage Pro,218.86
+KY,MMLPK2,Louisville,,1,38.28,-85.799,,,208.714
+KY,MR50AX,Berry,,1,38.282,-84.327,,,272.177
+KY,KKYLOUIS159,Louisville,3800,7,38.285,-85.644,577,AcuRite Pro Weather Center,214.987
+KY,KKYLOUIS204,Louisville,400,12,38.286,-85.611,620,Netatmo,216.406
+KY,KKYLOUIS31,Louisville,12,7,38.286,-85.614,615,Davis Vantage Pro II,216.284
+KY,KKYSHELB16,Shelbyville,25,5,38.29,-85.111,750,LaCrosse Weather Pro Center Remote Monitoring 2800 Series,240.236
+KY,KKYLOUIS95,Louisville,3700,1,38.29,-85.551,695,Netatmo,219.273
+KY,KKYLOUIS68,Louisville,3700,4,38.291,-85.551,696,Netatmo Weather Station,219.37
+KY,MR49AX,Eminence,,1,38.292,-85.171,,,237.289
+KY,KKYSHELB15,Shelbyville,25,16,38.292,-85.198,824,Ambient Weather WS-2090 (Wireless),235.909
+KY,KKYSIMPS3,Simpsonville,4400,9,38.294,-85.359,791,Rainwise MKIII-RTI-LR,228.214
+KY,KKYSHELB13,Shelbyville,23,138,38.296,-85.243,817,AcuRite Pro Weather Center,234.01
+KY,MKY051,Louisville,3000,1,38.298,-85.547,708,,220.22
+KY,KKYLOUIS111,Louisville,5,7,38.299,-85.624,606,Netatmo,217.166
+KY,MR51AX,Plummers Landing,,2,38.3,-83.583,,,306.669
+KY,KKYLOUIS102,Louisville,3700,3,38.302,-85.571,672,Netatmo,219.61
+KY,KKYLOUIS139,Louisville,39,2,38.304,-85.518,768,Davis Vantage Pro2 (Cabled),222.031
+KY,KKYLOUIS197,Louisville,3700,6,38.305,-85.619,600,AcuRite Pro Weather Center,217.958
+KY,KKYLOUIS190,Louisville,,1,38.306,-85.554,581,AcuRite Pro Weather Center,220.706
+KY,KKYLOUIS141,Louisville,3700,1,38.307,-85.562,702,Bloomsky,220.472
+KY,KKYPEWEE2,Pewee Valley,6,6,38.31,-85.493,770,Ambient Weather WS-900-IP (Wireless),223.685
+KY,KKYLOUIS107,Louisville,,37,38.311,-85.632,577,Davis Vantage Pro2 (Cabled),218.037
+KY,KKYLOUIS133,Louisville,100,3,38.311,-85.524,768,AcuRite Pro Weather Center,222.454
+KY,KKYSHELB7,Shelbyville,27,8,38.313,-85.3,797,other,232.789
+KY,KKYCREST10,Crestwood,13,4,38.314,-85.439,712,Ambient Weather WS-1200-IP (Wireless),226.441
+KY,KKYLOUIS192,Louisville,3700,2,38.316,-85.608,587,Bloomsky,219.484
+KY,KKYLOUIS161,Louisville,3700,4,38.316,-85.562,463,AcuRite Pro Weather Center,221.352
+KY,KKYLOUIS183,Louisville,3700,1,38.316,-85.556,669,Bloomsky,221.6
+KY,KKYSHELB8,Shelbyville,23,9,38.318,-85.296,807,Acu-Rite 1050,233.445
+KY,ME9592,Crestwood,18,1,38.32,-85.397,2289,,228.905
+KY,KKYCREST23,Crestwood,12,9,38.322,-85.473,797,Ambient Weather WS-1001-WiFi (Wireless),225.71
+KY,MC7833,Harrods Creek,,1,38.323,-85.644,,,218.759
+KY,KKYPROSP19,Prospect,700,990,38.326,-85.57,472,AcuRite Pro Weather Center,222.004
+KY,KKYCREST9,Crestwood,10,4,38.326,-85.515,689,Ambient Weather WS-1001-WiFi (Wireless),224.292
+KY,KKYPROSP9,Prospect,700,4,38.327,-85.554,643,AcuRite Pro Weather Center,222.759
+KY,KKYCREST17,Crestwood,14,4,38.327,-85.393,766,Davis Vantage Pro2 (Wireless),229.75
+KY,KKYPLEAS2,Pleasureville,12,14,38.328,-85.128,873,Ambient Weather WS-1400-IP (Wireless),242.734
+KY,MGYNK2,Grayson,,2,38.33,-82.939,,,340.283
+KY,KKYRIVER2,Riverside Beach,700,1,38.331,-85.655,449,LaCrosse,219.132
+KY,MD7869,Prospect,,2,38.332,-85.616,,,220.748
+KY,KKYPROSP3,Prospect,700,8,38.332,-85.618,472,WS1000-CC,220.669
+KY,KKYCREST21,Crestwood,12,5,38.332,-85.431,755,AcuRite Pro Weather Center,228.517
+KY,KKYGRAYS3,Grayson,2,78,38.335,-82.953,663,Ambient Weather WS-2090 (Wireless),339.985
+KY,KKYCOLDS3,Coldstream,4000,1,38.336,-85.548,0,Netatmo,223.887
+KY,MR52AX,Catlettsburg,,1,38.337,-82.644,,,352.671
+KY,KKYCREST4,Crestwood,,5,38.337,-85.397,791,Davis Vantage Vue,230.518
+KY,KKYCATLE5,Catlettsburg,22,9,38.341,-82.607,584,Davis Vantage Pro2 Plus (Cabled),354.598
+KY,KKYGRAYS4,Grayson,2,44,38.349,-82.908,627,Ambient Weather WS-1001-WiFi (Wireless),343.604
+KY,KKYCREST6,Crestwood,10,24,38.354,-85.425,758,Davis Vantage Vue (Wireless),230.888
+KY,KKYCREST20,Crestwood,10,3,38.357,-85.434,686,AcuRite Pro Weather Center,230.779
+KY,KKYPROSP13,Prospect,700,51,38.358,-85.632,433,Davis Vantage Vue (Wireless),222.707
+KY,ME1220,Ashland,,1,38.377,-82.702,,,354.259
+KY,KKYCYNTH4,Cynthiana,5000,7,38.385,-84.274,0,Netatmo,284.301
+KY,KKYLAGRA11,La Grange,21,9,38.386,-85.447,794,Ambient Weather WS-1001-WiFi (Wireless),233.007
+KY,KKYLAGRA8,La Grange,23,10,38.386,-85.454,804,AcuRite Pro Weather Center,232.706
+KY,KKYPLEAS3,Pleasureville,8,9,38.398,-85.064,886,Davis Vantage Pro2 (Cabled),252.308
+KY,KKYLAGRA9,La Grange,16,1,38.399,-85.443,757,Kentucky DEP,234.435
+KY,KKYDEMPL2,Demplytown,Station reported,6,38.401,-85.451,0,LaCrosse,234.287
+KY,KKYLAGRA14,La Grange,25,226,38.403,-85.387,860,AcuRite Pro Weather Center,237.259
+KY,KKYASHLA13,Ashland,14,20,38.405,-82.787,875,Ambient Weather WS-1001-WiFi (Wireless),353.747
+KY,KKYLAGRA17,La Grange,19,7,38.407,-85.369,799,AcuRite Pro Weather Center,238.441
+KY,KKYLAGRA4,LaGrange,19,11,38.408,-85.37,807,Davis Vantage Vue,238.492
+KY,KKYSMITH7,Smithfield,1,16,38.415,-85.286,869,Ambient Weather WS-1001-WiFi (Wireless),242.976
+KY,MGSTK2,Lockport,,1,38.417,-84.881,,,263.153
+KY,KKYASHLA7,Ashland,17,15,38.442,-82.648,689,Davis,362.831
+KY,KKYASHLA8,Ashland,5000,11,38.444,-82.628,673,Davis Vantage Pro2 (Wireless),363.83
+KY,KKYASHLA5,Ashland,5000,20,38.449,-82.633,700,Davis Vantage Pro,364.122
+KY,KKYPLEAS4,Pleasureville,9,10,38.451,-85.06,860,AcuRite Pro Weather Center,257.281
+KY,KKYASHLA9,Ashland,100,1,38.459,-82.634,675,Kentucky DEP,365.069
+KY,MC7881,Westport,,4,38.465,-85.412,,,242.15
+KY,MC5211,Goshen,,2,38.467,-85.583,,,235.459
+KY,KKYDELVI2,Delville,9,3,38.481,-85.064,813,LaCrosse,259.799
+KY,KKYLAGRA15,La Grange,22,43,38.487,-85.422,750,Davis Vantage Pro2 Plus (Wireless),243.866
+KY,KKYFLATW3,Flatwoods,20,10,38.492,-82.738,656,AcuRite Pro Weather Center,364.304
+KY,KKYASHLA11,Ashland,26,1,38.492,-82.685,662,Netatmo,366.331
+KY,KKYGREEN8,Greenup,13,15,38.497,-83.021,896,Davis Vantage Pro2 Plus (Wireless),351.105
+KY,KKYASHLA14,Ashland,5000,1,38.508,-82.659,544,Ohio EPA-DAPC,368.932
+KY,KKYFLATW2,"Flatwoods,",20,17,38.523,-82.707,656,acu-rite,368.578
+KY,KKYBEDFO3,Bedford,22,14,38.531,-85.254,866,AcuRite Pro Weather Center,255.406
+KY,KKYOWENT2,Owenton,100,32,38.534,-84.838,958,LaCrosse Weather Pro Center 2800 Series,276.236
+KY,KKYMAYSV3,Maysville,33,13,38.536,-83.688,866,AcuRite Pro Weather Center,325.853
+KY,KKYBERRY2,Berry,700,26,38.546,-84.4,646,Davis Vantage Vue (Wireless),294.09
+KY,KKYWORTH3,Worthington,56,1,38.548,-82.732,656,Kentucky DEP,370.14
+KY,KKYGREEN10,Greenup,13,28,38.572,-82.831,540,Ambient Weather WS-1001-WiFi (Wireless),367.465
+KY,MMTOK2,Germantown,,2,38.595,-84.02,,,315.935
+KY,KKYTURNE2,Turners Station,60,28,38.595,-85.132,806,Bloomsky2 + Storm,267.043
+KY,ME8075,Greenup,,2,38.631,-82.866,580,,371.027
+KY,ME6237,Jonesville,5900,2,38.636,-84.784,865,,288.084
+KY,KKYMAYSV2,Maysville,31,19,38.639,-83.779,896,Oregon Scientific WMR-968,332.003
+KY,KKYMAYSV5,Maysville,36,8,38.64,-83.781,892,Davis Vantage Pro2 (Wireless),331.989
+KY,KKYCARRO4,Carrollton,8,5,38.671,-85.137,482,AcuRite Pro Weather Center,273.98
+KY,MD6908,Sanders,8,7,38.687,-84.94,767,,284.757
+KY,ME1792,Brooksville,,2,38.696,-84.05,908,,323.916
+KY,MKK62,Falmouth,2800,2,38.704,-84.392,898,,309.903
+KY,KKYSOUTH5,South Shore,200,1,38.755,-82.917,557,Ohio EPA-DAPC,379.936
+KY,MTR759,Crittenden,,1,38.769,-84.602,,,308.585
+KY,MCRIK2,Crittenden,9,21,38.769,-84.602,934,,308.585
+KY,KKYCRITT4,Crittenden,22,6,38.769,-84.622,892,LaCrosse Wireless Professional Weather Center 1900 Series,307.896
+KY,KKYCRITT3,Crittenden,20,3,38.773,-84.635,853,AcuRite Pro Weather Center,307.861
+KY,MMKLK2,Warsaw,,2,38.775,-84.964,,,291.751
+KY,MKY062,Glencoe,Station reported,8,38.779,-84.767,826,,301.742
+KY,KKYVERON5,Verona,3800,5,38.782,-84.696,817,AcuRite Pro Weather Center,305.643
+KY,KKYFOSTE1,Foster,600,11,38.803,-84.247,834,Davis Vantage Pro2,325.512
+KY,KKYVERON3,Verona,3800,2,38.831,-84.671,820,Netatmo,311.31
+KY,KKYBUTLE2,Butler,4300,17,38.836,-84.254,620,AcuRite Pro Weather Center,328.451
+KY,KKYPEACH2,Peach Grove,3700,1,38.857,-84.286,0,Netatmo,329.221
+KY,KKYALEXA6,Alexandria,2800,13,38.89,-84.377,758,Ambient Weather WS-1001-WiFi (Wireless),328.955
+KY,KKYUNION4,Union,800,14,38.909,-84.765,696,,313.686
+KY,KKYUNION5,Union,2,2,38.918,-84.853,557,Kentucky DEP,310.316
+KY,KKYWALTO6,Walton,18,11,38.922,-84.638,902,AcuRite Pro Weather Center,321.168
+KY,KKYUNION6,Union,800,5,38.926,-84.661,883,AcuRite Pro Weather Center,320.372
+KY,KKYUNION3,Union,800,10,38.926,-84.686,880,Davis Vantage Pro,319.125
+KY,KKYCALIF2,California,59,44,38.93,-84.289,833,Ws-1080,336.318
+KY,KKYALEXA9,Alexandria,2800,34,38.931,-84.385,751,Davis Vantage Vue (Wireless),332.759
+KY,KKYUNION11,Union,800,4,38.94,-84.649,921,AcuRite Pro Weather Center,322.242
+KY,KKYUNION9,Union,800,10,38.947,-84.658,257,AcuRite Pro Weather Center,322.427
+KY,KKYINDEP4,Independence,34,9,38.952,-84.51,856,Ambient Weather WS-1400-IP (Wireless),330.4
+KY,KKYFLORE11,Florence,34,22,38.956,-84.658,892,Davis Vantage Pro2 Plus (Wireless),323.245
+KY,MKY064,Florence,27,19,38.957,-84.635,908,,324.484
+KY,KKYALEXA4,Alexandria,2800,2,38.959,-84.379,839,Netatmo,335.791
+KY,KKYBURLI8,Burlington,6,17,38.966,-84.787,830,Davis Vantage Pro2 Plus (Wireless),317.9
+KY,KKYUNION7,Union,800,9,38.968,-84.701,833,AcuRite Pro Weather Center,322.222
+KY,KKYINDEP3,Independence,17,20,38.971,-84.598,892,Davis Vantage Pro 2,327.61
+KY,KKYFLORE14,Florence,35,34,38.971,-84.647,909,AcuRite Pro Weather Center,325.156
+KY,KKYFLORE12,Florence,33,1,38.981,-84.683,777,Netatmo,324.294
+KY,KKYFLORE13,Florence,35,4,38.981,-84.687,837,AcuRite Pro Weather Center,324.098
+KY,KKYERLAN7,Erlanger,12,6,38.984,-84.567,836,Netatmo,330.35
+KY,KKYERLAN6,Erlanger,13,18,38.988,-84.578,866,AcuRite Pro Weather Center,330.153
+KY,KKYFLORE9,Florence,35,19,38.99,-84.691,823,Davis Vantage Pro2 (Wireless),324.729
+KY,KKY1,Taylor Mill,35,6,38.993,-84.504,ft,Davis,334.381
+KY,MAP234,Newport,2900,4,38.994,-84.404,715,,338.401
+KY,ME0495,Campsprings,Station reported,1,39,-84.3,,,342.856
+KY,MC9717,Florence,,3,39.002,-84.688,,,325.978
+KY,KKYFLORE3,Florence,36,14,39.003,-84.689,843,Ambient Weather WS-1001-WiFi (Wireless),326.021
+KY,MQ49AX,Petersburg,,3,39.005,-84.896,,,316.533
+KY,KKYTAYLO9,Taylor Mill,36,6,39.009,-84.515,827,Ambient Weather WS-1000 (Wireless),335.245
+KY,KKYFLORE4,Florence,32,13,39.015,-84.684,863,Davis Vantage Pro2,327.367
+KY,KKYCREST14,Crestview Hills,36,9,39.018,-84.567,876,Ambient Weather WS-1001-WiFi (Wireless),333.416
+KY,KKYCOLDS2,Cold Spring,,1098,39.019,-84.412,823,Davis Vantage Vue (Wireless),340.64
+KY,KKYNEWPO7,Newport,,1,39.022,-84.474,810,Kentucky DEP,338.515
+KY,ME2856,Newport,,2,39.033,-84.466,,,339.908
+KY,KKYPETER3,Petersburg,5,2,39.034,-84.815,0,Netatmo,322.953
+KY,ME2507,Belleview,,3,39.038,-84.724,,,327.576
+KY,MC8356,Petersburg,,2,39.05,-84.918,,,319.845
+KY,ME6519,Covington,7,6,39.057,-84.536,849,,338.5
+KY,KKYVILLA6,Villa Hills,6,39,39.057,-84.606,866,AcuRite Pro Weather Center,335.024
+KY,KKYCOVIN6,Covington,12,15,39.06,-84.501,551,AcuRite Pro Weather Center,340.536
+KY,KKYBURLI9,Burlington,7,24,39.062,-84.771,798,Davis Vantage Pro2 (Wireless),327.613
+KY,KKYPETER2,Petersburg,5,3,39.065,-84.818,777,Netatmo,325.739
+KY,KKYSOUTH2,Southgate,5300,11,39.071,-84.472,0,LaCrosse,342.999
+KY,KKYNEWPO5,Newport,100,4,39.074,-84.471,708,Netatmo,343.319
+KY,KKYNEWPO6,Newport,100,5,39.088,-84.483,643,Netatmo,343.969
+KY,KKYNEWPO2,Newport,5600,25,39.095,-84.497,499,other,343.894

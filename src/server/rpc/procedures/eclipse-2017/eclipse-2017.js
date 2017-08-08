@@ -40,7 +40,7 @@ function nearbyStations(db, lat, lon,  maxDistance){
 function closestReading(lat, lon, time){
     const MAX_DISTANCE = 25000, // in meters
         MAX_AGE = 60 * 5; // in seconds
-    time = time ? new Date(time) : new Date();// should be in iso format or epoch if there is no time past it means we want the temp for now! 
+    time = time ? new Date(time) : new Date();// should be in iso format or epoch if there is no time past it means we want the temp for now!
 
     return dbConnect().then(db => {
         nearbyStations(db, lat, lon, MAX_DISTANCE).then(stations => {
@@ -77,8 +77,7 @@ let currentCondition = function(latitude, longitude, time){
     });
 };
 
-
-let availableStations = function(maxReadingMedian, maxDistanceFromCenter, latitude, longitude, maxDistanceFromPoint){
+let availableStationsJson = function(maxReadingMedian, maxDistanceFromCenter, latitude, longitude, maxDistanceFromPoint){
     maxReadingMedian = parseInt(maxReadingMedian) || 120;
     maxDistanceFromCenter = parseInt(maxDistanceFromCenter) || 50;
     if (latitude) latitude = parseFloat(latitude);
@@ -88,9 +87,14 @@ let availableStations = function(maxReadingMedian, maxDistanceFromCenter, latitu
     if (latitude && longitude) query.coordinates = { $nearSphere: { $geometry: { type: "Point", coordinates: [longitude, latitude] }, $maxDistance: maxDistanceFromPoint } };
     return dbConnect().then(db => {
         return db.collection(STATIONS_COL).find(query).toArray().then(stations => {
-            return rpcUtils.jsonToSnapList(stations);
+            return stations;
         });
     });
+};
+
+let availableStations = function(maxReadingMedian, maxDistanceFromCenter, latitude, longitude, maxDistanceFromPoint){
+    return availableStationsJson(maxReadingMedian, maxDistanceFromCenter, latitude, longitude, maxDistanceFromPoint)
+        .then(stations => rpcUtils.jsonToSnapList(stations));
 };
 
 let selectSectionBased = function(numSections, perSection){
@@ -149,5 +153,6 @@ module.exports = {
     selectedStations,
     selectedStations2,
     selectSectionBased,
-    selectPointBased
+    selectPointBased,
+    availableStationsJson
 };

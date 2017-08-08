@@ -104,7 +104,6 @@ let seedDB = (fileName) => {
                 return station;
             });
             let stationsCol = db.collection(STATIONS_COL);
-            let readingsCol = db.collection(READINGS_COL);
             stationsCol.insertMany(stations);
         });
     });
