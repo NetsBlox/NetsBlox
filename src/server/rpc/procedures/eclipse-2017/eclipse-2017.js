@@ -2,7 +2,7 @@ const Storage = require('../../../storage/storage'),
     Logger = require('../../../logger'),
     eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePathCenter.js'),
     rpcUtils = require('../utils'),
-    { sectionStations, pickBestStations } = require('../../../../../utils/rpc/eclipse-2017/checkStations.js'),
+    { selectSectionBased, pickBestStations } = require('../../../../../utils/rpc/eclipse-2017/checkStations.js'),
     logger = new Logger('netsblox:eclipse'),
     storage = new Storage(logger);
 
@@ -64,6 +64,23 @@ function closestReading(lat, lon, time){
 
 } // end of closestReading
 
+// if find the latest update before a point in time
+function stationReading(id, time){
+    time = time ? new Date(time) : new Date();
+    return dbConnect().then( db => {
+        // NOTE: it finds the latest available update on the database ( could be old if there is no new record!)
+        let query = {pws: id, readAt: {$lte: time}};
+        return db.collection(READINGS_COL).find(query).sort({readAt: -1}).limit(1).toArray().then(readings => {
+            let reading = readings[0];
+            reading.id = reading.pws;
+            delete reading._id;
+            delete reading.pws;
+            return reading;
+        });
+    })    
+}
+
+
 let temp = function(latitude, longitude, time){
     return closestReading(latitude, longitude, time).then(reading => {
         return reading.temp;
@@ -97,24 +114,10 @@ let availableStations = function(maxReadingMedian, maxDistanceFromCenter, latitu
         .then(stations => rpcUtils.jsonToSnapList(stations));
 };
 
-let selectSectionBased = function(numSections, perSection){
-    numSections = parseInt(numSections);
-    perSection = parseInt(perSection);
-    console.log(sectionStations)
-    return sectionStations(numSections).then(sections => {
-        sections = sections.map(stations => pickBestStations(stations, perSection));
-        sections.forEach(section => {
-            process.stdout.write(section.length+'');
-        })
-        let stations = sections.reduce((arr,val)=> arr.concat(val));
-        return stations;
-    });
-}
-
 let selectPointBased = function(){
     return dbConnect().then(db => {
         let pointToStation = point => {
-            return nearbyStations(db, point[0], point[1], 25000 )
+            return nearbyStations(db, point[0], point[1], 50000 )
                 .then(stations => {
                     return pickBestStations(stations,1)[0];
                 }).catch(console.log);
@@ -142,12 +145,51 @@ let selectedStations2 = function(){
     })
 }
 
+let stations = function(){
+    const numSections = 150;
+    const perSection = 1;
+    return selectSectionBased(numSections, perSection).then(stations => {
+        return stations.map(station => station.pws);
+    });
+}
+
+let temperature = function(stationId){
+    return stationReading(stationId).then(reading => {
+        return reading.temp;
+    });
+};
+
+
+let pastTemperature = function(stationId, time){
+    return stationReading(stationId, time).then(reading => {
+        return reading.temp;
+    });
+};
+
+
+let condition = function(stationId){
+    return stationReading(stationId).then(reading => {
+        return rpcUtils.jsonToSnapList(reading);
+    });
+};
+
+
+let pastCondition = function(stationId, time){
+    return stationReading(stationId, time).then(reading => {
+        return rpcUtils.jsonToSnapList(reading);
+    });
+};
+
+
 // TODO add arg validation like openWeather
 
 module.exports = {
     isStateless: true,
-    temp,
-    currentCondition,
+    stations,
+    temperature,
+    pastTemperature,
+    condition,
+    pastCondition,
     eclipsePath,
     availableStations,
     selectedStations,

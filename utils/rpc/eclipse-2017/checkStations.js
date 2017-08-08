@@ -165,17 +165,16 @@ let contextManager = fn => {
 };
 
 //@contextManager
-let fireUpdates = maxDelay => {
+// takes a list of stations
+let fireUpdates = stations => {
     return dbConnect().then(db => {
         let stationsCol = db.collection(STATIONS_COL);
         let readingsCol = db.collection(READINGS_COL);
-        return availableStations(db, 50, maxDelay).then(stations => {
-            console.log(`querying ${stations.length} stations`);
-            return reqUpdates(stations).then(updates => {
-                console.log(updates.length, 'updates');
-                let readingsCol = db.collection(READINGS_COL);
-                return readingsCol.insertMany(updates).catch(console.log);
-            });
+        console.log(`querying ${stations.length} stations`);
+        return reqUpdates(stations).then(updates => {
+            console.log(updates.length, 'updates');
+            let readingsCol = db.collection(READINGS_COL);
+            return readingsCol.insertMany(updates).catch(console.log);
         });
     });
 };
@@ -184,10 +183,15 @@ let fireUpdates = maxDelay => {
 if (process.argv[2] === 'seed') seedDB('wuStations.csv');
 if (process.argv[2] === 'updateStats') calcStationStats();
 if (process.argv[2] === 'pullUpdates') {
-    fireUpdates(parseInt(process.argv[3])).then(() => {
-        console.log('gonna disc the db');
-        storage.disconnect();
-    });
+    selectSectionBased(150,1).then( stations => {
+        // TODO this is stupid
+        storage.disconnect().then( () => {
+        fireUpdates(stations).then(() => {
+            console.log('gonna disc the db');
+            storage.disconnect();
+        });
+        })
+    })
 }
 if (process.argv.length < 3) console.log('pass in a command: seed, updateStats or pullUpdates');
 
@@ -277,7 +281,22 @@ function pickBestStations(stations, maxCount){
 }
 
 
+function selectSectionBased(numSections, perSection){
+    numSections = parseInt(numSections);
+    perSection = parseInt(perSection);
+    console.log(sectionStations)
+    return sectionStations(numSections).then(sections => {
+        sections = sections.map(stations => pickBestStations(stations, perSection));
+        sections.forEach(section => {
+            process.stdout.write(section.length+'');
+        })
+        let stations = sections.reduce((arr,val)=> arr.concat(val));
+        stations = _.sortBy(stations, ['longitude']); // sort it so that they are ordered from west to east
+        return stations;
+    });
+}
+
 module.exports = {
-    sectionStations,
+    selectSectionBased,
     pickBestStations
 }
