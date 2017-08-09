@@ -98,7 +98,7 @@ function loadLatestUpdates(numUpdates){
         })
     });
 } 
-setInterval(loadLatestUpdates, 10000);
+setInterval(loadLatestUpdates, 10000, 200);
 
 let temp = function(latitude, longitude, time){
     return closestReading(latitude, longitude, time).then(reading => {
