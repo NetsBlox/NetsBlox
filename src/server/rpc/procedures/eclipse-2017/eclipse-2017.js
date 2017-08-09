@@ -2,6 +2,8 @@ const Storage = require('../../../storage/storage'),
     Logger = require('../../../logger'),
     eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePathCenter.js'),
     rpcUtils = require('../utils'),
+    cacheManager = require('cache-manager'),
+    memoryCache = cacheManager.caching({store: 'memory', max:100, ttl: 24 * 3600}),
     { selectSectionBased, pickBestStations } = require('../../../../../utils/rpc/eclipse-2017/checkStations.js'),
     logger = new Logger('netsblox:eclipse'),
     storage = new Storage(logger);
@@ -148,8 +150,10 @@ let selectedStations2 = function(){
 let stations = function(){
     const numSections = 160;
     const perSection = 1;
-    return selectSectionBased(numSections, perSection).then(stations => {
-        return stations.map(station => station.pws);
+    return memoryCache.wrap('stations', function() {
+        return selectSectionBased(numSections, perSection).then(stations => {
+            return stations.map(station => station.pws);
+        })
     });
 }
 
