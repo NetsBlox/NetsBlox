@@ -1,3 +1,5 @@
+const _ = require('lodash');
+
 const nasaCenters = [
 [44.87, -124.84166667],
 [44.81, -123.205],
@@ -48,6 +50,28 @@ const nasaCenters = [
 [32.96333333, -79.35333333]];
 
 
+function addMidPoints(points){
+    // create mid points to increase the resolution
+    let midPoints = [];
+    for(let i = 0; i < points.length; i++){
+        // TODO insert as you are going through the array so there is no need for soritng later on
+        let point = points[i];
+        let nextPoint = points[i+1];
+        if (!nextPoint) break; // this is the last pair
+        function avg(a,b){
+            return (a+b)/2;
+        }
+        let midPoint = [avg(point[0],nextPoint[0]),avg(point[1],nextPoint[1])];
+        midPoints.push(midPoint);
+    }
+    let pathPoints = midPoints.concat(points);
+    pathPoints.sort((a,b) => a[1]-b[1]); // sort by ascending longitude
+    return pathPoints;
+}
 module.exports = () => {
-    return nasaCenters;
+    let pathPoints = addMidPoints(nasaCenters);
+    pathPoints = addMidPoints(pathPoints);
+    // pathPoints =  pathPoints.concat(addMidPoints(pathPoints.slice(0,30)));
+    // pathPoints.sort((a,b) => a[1]-b[1]); // sort by ascending longitude
+    return pathPoints;
 };

@@ -153,6 +153,25 @@ function availableStations(db, maxDistance, maxReadingMedian){
     });
 }
 
+function calcDistance(){
+    dbConnect().then(db => {
+        db.collection(STATIONS_COL).find().toArray().then(stations => {
+            //calculate the distance and update in the db 
+            let operations = [];
+            stations.forEach(station => {
+                let updateOne = {updateOne: {
+                    filter: {pws: station.pws},
+                    update: {$set: {distance: distanceToPath(station.latitude, station.longitude)} },
+                    upsert: false
+                }};
+                operations.push(updateOne);
+            })
+            db.collection(STATIONS_COL).bulkWrite(operations);
+        })
+    })
+} // end of calcDistance
+
+
 let contextManager = fn => {
     return dbConnect().then(db => {
         let stationsCol = db.collection(STATIONS_COL);
@@ -181,9 +200,10 @@ let fireUpdates = stations => {
 //fireUpdates = contextManager(fireUpdates);
 
 if (process.argv[2] === 'seed') seedDB('wuStations.csv');
+if (process.argv[2] === 'calcDistance') calcDistance();
 if (process.argv[2] === 'updateStats') calcStationStats();
 if (process.argv[2] === 'pullUpdates') {
-    selectSectionBased(150,1).then( stations => {
+    selectSectionBased(160,1).then( stations => {
         // TODO this is stupid
         storage.disconnect().then( () => {
         fireUpdates(stations).then(() => {
@@ -261,7 +281,7 @@ function sectionStations(n){
     };
     return dbConnect().then(db => {
         // QUESTION what is the hard limit? can filter very obsolete stations here.
-        return availableStations(db, 50, 900).then(stations => {
+        return availableStations(db, 50, 600).then(stations => {
             let sections = new Array(n);
             stations.forEach(station => {
                 let index = findSection(station.longitude);
