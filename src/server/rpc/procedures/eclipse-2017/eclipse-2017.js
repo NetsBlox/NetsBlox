@@ -68,11 +68,11 @@ function closestReading(lat, lon, time){
 
 // if find the latest update before a point in time
 function stationReading(id, time){
-    time = time ? new Date(time) : new Date();
     return dbConnect().then( db => {
         // NOTE: it finds the latest available update on the database ( could be old if there is no new record!)
-        let query = {pws: id, readAt: {$lte: time}};
-        return db.collection(READINGS_COL).find(query).sort({readAt: -1}).limit(1).toArray().then(readings => {
+        let query = {pws: id};
+        if(time) query.requestTime = {$lte: new Date(time)};
+        return db.collection(READINGS_COL).find(query).sort({requestTime: -1}).limit(1).toArray().then(readings => {
             let reading = readings[0];
             reading.id = reading.pws;
             delete reading._id;
