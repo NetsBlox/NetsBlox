@@ -146,7 +146,7 @@ let selectedStations2 = function(){
 }
 
 let stations = function(){
-    const numSections = 150;
+    const numSections = 160;
     const perSection = 1;
     return selectSectionBased(numSections, perSection).then(stations => {
         return stations.map(station => station.pws);
