@@ -10,7 +10,8 @@ const Storage = require('../../../storage/storage'),
 
 const STATIONS_COL = 'wuStations',
     READINGS_COL = 'wuReadings';
-let connection;
+var connection,
+    latestReadings = {};
 
 let eclipsePath = function(){
     return eclipsePathCenter();
@@ -66,22 +67,38 @@ function closestReading(lat, lon, time){
 
 } // end of closestReading
 
+function transformReading(update){
+        update.id = update.pws;
+        delete update._id;
+        delete update.pws;
+    return update;
+}
+
 // if find the latest update before a point in time
 function stationReading(id, time){
+    if (!time && latestReadings[id]) return Promise.resolve(transformReading(latestReadings[id]));
     return dbConnect().then( db => {
         // NOTE: it finds the latest available update on the database ( could be old if there is no new record!)
         let query = {pws: id};
         if(time) query.requestTime = {$lte: new Date(time)};
         return db.collection(READINGS_COL).find(query).sort({requestTime: -1}).limit(1).toArray().then(readings => {
             let reading = readings[0];
-            reading.id = reading.pws;
-            delete reading._id;
-            delete reading.pws;
-            return reading;
+            return transformReading(reading);
         });
     })    
 }
 
+function loadLatestUpdates(numUpdates){
+    dbConnect().then(db => {
+        db.collection(READINGS_COL).find().sort({requestTime: -1}).limit(numUpdates).toArray().then(readings => {
+            latestReadings = {};
+            readings.forEach(reading => {
+                if (!latestReadings[reading.pws] || latestReadings[reading.pws].requestTime < reading.requestTime ) latestReadings[reading.pws] = reading
+            })
+        })
+    });
+} 
+setInterval(loadLatestUpdates, 10000);
 
 let temp = function(latitude, longitude, time){
     return closestReading(latitude, longitude, time).then(reading => {
