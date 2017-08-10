@@ -144,7 +144,6 @@ let selectPointBased = function(){
                     return pickBestStations(stations,1)[0];
                 }).catch(console.log);
         };
-        // TODO generate more points
         let stationPromises = eclipsePathCenter().map(pointToStation);
         console.log(stationPromises)
         return Promise.all(stationPromises).then(stations => {
@@ -175,6 +174,15 @@ let stations = function(){
             return stations.map(station => station.pws);
         })
     });
+}
+
+let stationInfo = function(stationId){
+    return dbConnect().then(db => {
+        return db.collection(STATIONS_COL).findOne({pws: stationId})
+            .then(station => {
+                return rpcUtils.jsonToSnapList(station);
+            })
+    })
 }
 
 let temperature = function(stationId){
@@ -213,17 +221,28 @@ let temperatureHistory = function(stationId, limit){
     })
 }
 
+let conditionHistory = function(stationId, limit){
+    return dbConnect().then(db => {
+        return db.collection(READINGS_COL).find({pws: stationId}).sort({requestTime: -1})
+            .limit(parseInt(limit)).toArray().then(updates => {
+                return rpcUtils.jsonToSnapList(updates);
+            })
+    })
+}
+
 // TODO add arg validation like openWeather
 
 module.exports = {
     isStateless: true,
     stations,
+    stationInfo,
     eclipsePath,
     temperature,
     pastTemperature,
     temperatureHistory,
     condition,
     pastCondition,
+    conditionHistory,
     availableStations,
     selectedStations,
     selectedStations2,
