@@ -88,6 +88,7 @@ function stationReading(id, time){
     })    
 }
 
+// eager loading? 
 function loadLatestUpdates(numUpdates){
     dbConnect().then(db => {
         db.collection(READINGS_COL).find().sort({requestTime: -1}).limit(numUpdates).toArray().then(readings => {
@@ -95,10 +96,12 @@ function loadLatestUpdates(numUpdates){
             readings.forEach(reading => {
                 if (!latestReadings[reading.pws] || latestReadings[reading.pws].requestTime < reading.requestTime ) latestReadings[reading.pws] = reading
             })
+            logger.trace('preloaded latest updates');
         })
     });
 } 
-setInterval(loadLatestUpdates, 10000, 200);
+// lacking a databasetrigger we load the latest updates every n seconds
+setInterval(loadLatestUpdates, 5000, 200);
 
 let temp = function(latitude, longitude, time){
     return closestReading(latitude, longitude, time).then(reading => {
