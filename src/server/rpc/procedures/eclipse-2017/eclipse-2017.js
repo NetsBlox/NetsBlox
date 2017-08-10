@@ -4,7 +4,7 @@ const Storage = require('../../../storage/storage'),
     rpcUtils = require('../utils'),
     cacheManager = require('cache-manager'),
     memoryCache = cacheManager.caching({store: 'memory', max:100, ttl: 24 * 3600}),
-    { selectSectionBased, pickBestStations } = require('../../../../../utils/rpc/eclipse-2017/checkStations.js'),
+    stationUtils = require('./stations.js'),
     logger = new Logger('netsblox:eclipse'),
     storage = new Storage(logger);
 
@@ -141,7 +141,7 @@ let selectPointBased = function(){
         let pointToStation = point => {
             return nearbyStations(db, point[0], point[1], 50000 )
                 .then(stations => {
-                    return pickBestStations(stations,1)[0];
+                    return stationUtils.pickBestStations(stations,1)[0];
                 }).catch(console.log);
         };
         let stationPromises = eclipsePathCenter().map(pointToStation);
@@ -154,7 +154,7 @@ let selectPointBased = function(){
 }
 
 let selectedStations = function(numSections, perSection){
-    return selectSectionBased(numSections, perSection).then(stations => {
+    return stationUtils.selectSectionBased(numSections, perSection).then(stations => {
         return rpcUtils.jsonToSnapList(stations);
     })
 }
@@ -167,13 +167,7 @@ let selectedStations2 = function(){
 }
 
 let stations = function(){
-    const numSections = 160;
-    const perSection = 1;
-    return memoryCache.wrap('stations', function() {
-        return selectSectionBased(numSections, perSection).then(stations => {
-            return stations.map(station => station.pws);
-        })
-    });
+    return stationUtils.selected();
 }
 
 let stationInfo = function(stationId){
@@ -246,7 +240,7 @@ module.exports = {
     availableStations,
     selectedStations,
     selectedStations2,
-    selectSectionBased,
+    selectSectionBased: stationUtils.selectSectionBased,
     selectPointBased,
     availableStationsJson
 };

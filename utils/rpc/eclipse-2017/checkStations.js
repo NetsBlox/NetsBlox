@@ -5,6 +5,7 @@ const fs = require('fs'),
     Q = require('q'),
     _ = require('lodash'),
     eclipsePath = require('./eclipsePathCenter'),
+    stationUtils = require('../../../src/server/rpc/procedures/eclipse-2017/stations.js'),
     csv = require('fast-csv'),
     Storage = require('../../../src/server/storage/storage'),
     Logger = require('../../../src/server/logger'),
@@ -145,16 +146,6 @@ let calcStationStats = () => {
     });
 };
 
-function availableStations(db, maxDistance, maxReadingMedian){
-    if (!maxReadingMedian) maxReadingMedian = Infinity;
-    let query = {distance: {$lte: maxDistance}, readingMedian: {$ne: null, $lte: maxReadingMedian}};
-    return db.collection(STATIONS_COL).find(query).toArray()
-    .then(stations => {
-        console.log(`found ${stations.length} stations for query ${JSON.stringify(query)} `);
-        return stations;
-    });
-}
-
 function calcDistance(){
     dbConnect().then(db => {
         db.collection(STATIONS_COL).find().toArray().then(stations => {
@@ -191,6 +182,7 @@ let fireUpdates = stations => {
     return dbConnect().then(db => {
         let stationsCol = db.collection(STATIONS_COL);
         let readingsCol = db.collection(READINGS_COL);
+        console.log('stations are', stations)
         console.log(`querying ${stations.length} stations`);
         return reqUpdates(stations).then(updates => {
             console.log(updates.length, 'updates');
@@ -205,15 +197,12 @@ if (process.argv[2] === 'seed') seedDB('wuStations.csv');
 if (process.argv[2] === 'calcDistance') calcDistance();
 if (process.argv[2] === 'updateStats') calcStationStats();
 if (process.argv[2] === 'pullUpdates') {
-    selectSectionBased(160,1).then( stations => {
-        // TODO this is stupid
-        storage.disconnect().then( () => {
+    stationUtils.selected().then(stations => {
         fireUpdates(stations).then(() => {
             console.log('gonna disc the db');
             storage.disconnect();
         });
-        })
-    })
+    });
 }
 if (process.argv.length < 3) console.log('pass in a command: seed, updateStats or pullUpdates');
 
@@ -264,61 +253,4 @@ function distanceToPath(lat, lon){
         min = dist;
     }
     return min; //in KM
-}
-
-// need a way to make sure that the whole path is covered.
-// divide the path into sections (using min max lon + distance should be fine)
-// best station finder for a given section
-// divide the path into n sections and return the stations for each section in a 2d array
-
-// returns a 2d array of sectioned available and rated stations
-function sectionStations(n){
-    const pathMinLon = -124.2,
-    pathMaxLon = -79.0,
-    delta = (pathMaxLon - pathMinLon) / n;
-    console.log('delta is', delta);
-    // returns the secion index
-    let findSection = lon => {
-        return Math.floor((lon - pathMinLon) / delta);
-    };
-    return dbConnect().then(db => {
-        // QUESTION what is the hard limit? can filter very obsolete stations here.
-        return availableStations(db, 50, 600).then(stations => {
-            let sections = new Array(n);
-            stations.forEach(station => {
-                let index = findSection(station.longitude);
-                if (!sections[index]) sections[index] = [];
-                sections[index].push(station);
-            })
-            return sections;
-        }).catch(console.log)
-    })
-} // end of sectioned stations
-
-// find best stations in each section
-function pickBestStations(stations, maxCount){
-    if (stations.length < maxCount) return stations;
-    stations = _.sortBy(stations, ['readingMedian','distance']);
-    return stations.slice(0,maxCount);
-}
-
-
-function selectSectionBased(numSections, perSection){
-    numSections = parseInt(numSections);
-    perSection = parseInt(perSection);
-    console.log(sectionStations)
-    return sectionStations(numSections).then(sections => {
-        sections = sections.map(stations => pickBestStations(stations, perSection));
-        sections.forEach(section => {
-            process.stdout.write(section.length+'');
-        })
-        let stations = sections.reduce((arr,val)=> arr.concat(val));
-        stations = _.sortBy(stations, ['longitude']); // sort it so that they are ordered from west to east
-        return stations;
-    });
-}
-
-module.exports = {
-    selectSectionBased,
-    pickBestStations
 }
