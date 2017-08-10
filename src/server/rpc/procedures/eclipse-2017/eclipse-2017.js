@@ -204,17 +204,26 @@ let pastCondition = function(stationId, time){
     });
 };
 
+let temperatureHistory = function(stationId, limit){
+    return dbConnect().then(db => {
+        return db.collection(READINGS_COL).find({pws: stationId}).sort({requestTime: -1})
+            .limit(parseInt(limit)).toArray().then(updates => {
+                return updates.map(update => update.temp);
+            })
+    })
+}
 
 // TODO add arg validation like openWeather
 
 module.exports = {
     isStateless: true,
     stations,
+    eclipsePath,
     temperature,
     pastTemperature,
+    temperatureHistory,
     condition,
     pastCondition,
-    eclipsePath,
     availableStations,
     selectedStations,
     selectedStations2,

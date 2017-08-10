@@ -96,9 +96,11 @@ let seedDB = (fileName) => {
     loadStations(fileName).then(stations => {
         return dbConnect().then(db => {
             console.log('connected to db');
-            // create index on pws instead of _id ?
-            db.collection(READINGS_COL).createIndex({coordinates: "2dsphere"});
+            // create index on pws instead of _id ? // TODO remove id index?! or use it
+            db.collection(READINGS_COL).createIndex({coordinates: "2dsphere"}); // this is not needed if we are not going to lookup reading based on lat lon
             db.collection(STATIONS_COL).createIndex({coordinates: "2dsphere"});
+            db.collection(READINGS_COL).createIndex({pws: 1});
+            db.collection(READINGS_COL).createIndex({requestTime: -1});
             stations = stations.map(station => {
                 station.coordinates = [station.longitude, station.latitude];
                 return station;

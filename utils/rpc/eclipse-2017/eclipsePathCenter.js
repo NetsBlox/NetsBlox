@@ -1,5 +1,3 @@
-const _ = require('lodash');
-
 const nasaCenters = [
 [44.87, -124.84166667, '17:16'],
 [44.81, -123.205, '17:18'],
@@ -92,7 +90,6 @@ module.exports = () => {
     })
     let pathPoints = addMidPoints(nasa2);
     pathPoints = addMidPoints(pathPoints);
-    // pathPoints =  pathPoints.concat(addMidPoints(pathPoints.slice(0,30)));
     // pathPoints.sort((a,b) => a[1]-b[1]); // sort by ascending longitude
     return pathPoints.map(p=>{
         return [p[0],p[1],secondsToClock(p[2])];
