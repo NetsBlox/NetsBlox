@@ -100,7 +100,7 @@ let seedDB = (fileName) => {
             db.collection(READINGS_COL).createIndex({coordinates: "2dsphere"}); // this is not needed if we are not going to lookup reading based on lat lon
             db.collection(STATIONS_COL).createIndex({coordinates: "2dsphere"});
             db.collection(READINGS_COL).createIndex({pws: 1});
-            db.collection(READINGS_COL).createIndex({requestTime: -1});
+            db.collection(READINGS_COL).createIndex({readAt: -1});
             stations = stations.map(station => {
                 station.coordinates = [station.longitude, station.latitude];
                 return station;

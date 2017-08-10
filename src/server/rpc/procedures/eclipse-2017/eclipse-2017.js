@@ -80,8 +80,8 @@ function stationReading(id, time){
     return dbConnect().then( db => {
         // NOTE: it finds the latest available update on the database ( could be old if there is no new record!)
         let query = {pws: id};
-        if(time) query.requestTime = {$lte: new Date(time)};
-        return db.collection(READINGS_COL).find(query).sort({requestTime: -1}).limit(1).toArray().then(readings => {
+        if(time) query.readAt = {$lte: new Date(time)};
+        return db.collection(READINGS_COL).find(query).sort({readAt: -1}).limit(1).toArray().then(readings => {
             let reading = readings[0];
             return transformReading(reading);
         });
@@ -91,10 +91,10 @@ function stationReading(id, time){
 // eager loading? 
 function loadLatestUpdates(numUpdates){
     dbConnect().then(db => {
-        db.collection(READINGS_COL).find().sort({requestTime: -1}).limit(numUpdates).toArray().then(readings => {
+        db.collection(READINGS_COL).find().sort({readAt: -1}).limit(numUpdates).toArray().then(readings => {
             latestReadings = {};
             readings.forEach(reading => {
-                if (!latestReadings[reading.pws] || latestReadings[reading.pws].requestTime < reading.requestTime ) latestReadings[reading.pws] = reading
+                if (!latestReadings[reading.pws] || latestReadings[reading.pws].readAt < reading.readAt ) latestReadings[reading.pws] = reading
             })
             logger.trace('preloaded latest updates');
         })
@@ -214,7 +214,7 @@ let pastCondition = function(stationId, time){
 
 let temperatureHistory = function(stationId, limit){
     return dbConnect().then(db => {
-        return db.collection(READINGS_COL).find({pws: stationId}).sort({requestTime: -1})
+        return db.collection(READINGS_COL).find({pws: stationId}).sort({readAt: -1})
             .limit(parseInt(limit)).toArray().then(updates => {
                 return updates.map(update => update.temp);
             })
@@ -223,7 +223,7 @@ let temperatureHistory = function(stationId, limit){
 
 let conditionHistory = function(stationId, limit){
     return dbConnect().then(db => {
-        return db.collection(READINGS_COL).find({pws: stationId}).sort({requestTime: -1})
+        return db.collection(READINGS_COL).find({pws: stationId}).sort({readAt: -1})
             .limit(parseInt(limit)).toArray().then(updates => {
                 return rpcUtils.jsonToSnapList(updates);
             })
