@@ -150,8 +150,20 @@ const stationIds = [
 "KSCCHARL86",
 "KSCMOUNT15",
 "KSCGEORG8",
-"KSCGEORG15k"
+"KSCGEORG15"
 ];
+
+function handPickStations(stations){
+    let rules = {
+        add: [],
+        remove: ["KSCEASLE23","KWYMORAN2"],
+    }
+    // remove blacklists
+    stations = stations.filter(station => !rules.remove.includes(station.pws))    
+    // add whitelist
+    // sort if added anything
+    return stations;
+}
 
 function availableStations(db, maxDistance, maxReadingMedian){
     if (!maxReadingMedian) maxReadingMedian = Infinity;
@@ -167,9 +179,7 @@ function dynamicStations(){
     const numSections = 160;
     const perSection = 1;
     return selectSectionBased(numSections, perSection).then(stations => {
-        let stationIds = stations.map(station => station.pws);
-        console.log(stationIds.join())
-        return stationIds;
+        return stations.map(station => station.pws);
     })
 }
 
@@ -221,6 +231,7 @@ function selectSectionBased(numSections, perSection){
         })
         let stations = sections.reduce((arr,val)=> arr.concat(val));
         stations = _.sortBy(stations, ['longitude']); // sort it so that they are ordered from west to east
+        stations = handPickStations(stations);
         return stations;
     });
 }
