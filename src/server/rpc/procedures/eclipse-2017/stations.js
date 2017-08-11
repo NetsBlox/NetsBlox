@@ -159,7 +159,11 @@ function handPickStations(stations){
         remove: ["KSCEASLE23","KWYMORAN2"],
     }
     // remove blacklists
-    stations = stations.filter(station => !rules.remove.includes(station.pws))    
+    stations = stations.filter(station => {
+        // to support function input both as list of ids and station objects
+        let stationId = station.pws || station;
+        return !rules.remove.includes(station.pws);
+    })
     // add whitelist
     // sort if added anything
     return stations;
