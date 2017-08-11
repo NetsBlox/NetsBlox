@@ -1,4 +1,5 @@
 const _ = require('lodash'),
+    eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePathCenter.js'),
     Storage = require('../../../storage/storage.js'),
     Logger = require('../../../logger.js'),
     logger = new Logger('netsblox:wu'),
@@ -55,7 +56,7 @@ const stationIds = [
 "KIDBATES2",
 "KIDDRIGG3",
 "KWYRAFTE2",
-// "KWYMORAN2",
+"KWYMORAN2",
 "KWYBONDU4",
 "KWYCORA2",
 "KWYDUBOI4",
@@ -138,7 +139,7 @@ const stationIds = [
 "KGACLAYT12",
 "KGAFLATS2",
 "KSCLIBER2",
-// "KSCEASLE23",
+"KSCEASLE23",
 "KSCGREER47",
 "KSCEDGEF1",
 "KSCSALUD5",
@@ -153,17 +154,20 @@ const stationIds = [
 "KSCGEORG15"
 ];
 
+// gets in a clean list of valid stations 
 function handPickStations(stations){
     let rules = {
         add: [],
         remove: ["KSCEASLE23","KWYMORAN2"],
     }
     // remove blacklists
+    console.log('handpicking from stations', stations);
     stations = stations.filter(station => {
         // to support function input both as list of ids and station objects
+        console.log(station)
         let stationId = station.pws || station;
-        return !rules.remove.includes(station.pws);
-    })
+        return !rules.remove.includes(stationId);
+    });
     // add whitelist
     // sort if added anything
     return stations;
@@ -179,11 +183,25 @@ function availableStations(db, maxDistance, maxReadingMedian){
     });
 }
 
+
+function nearbyStations(db, lat, lon,  maxDistance){
+    lat = parseFloat(lat);
+    lon = parseFloat(lon);
+    // find stations uptodate stations within MAX_DISTANCE
+    let closeStations = { coordinates: { $nearSphere: { $geometry: { type: "Point", coordinates: [lon, lat] }, $maxDistance: maxDistance } } };
+    closeStations.readingMedian = {$ne: null, $lte: 1800}; // lte: just to avoid getting slow stations
+    return db.collection(STATIONS_COL).find(closeStations).sort({readingMedian: 1}).toArray().then(stations => {
+        // sorted array of stations by closest first
+        console.log(`found ${stations.length} stations within ${maxDistance/1000} of ${lat}, ${lon}`);
+        return stations
+    });
+} // end of nearbyStations
+
 function dynamicStations(){
     const numSections = 160;
     const perSection = 1;
     return selectSectionBased(numSections, perSection).then(stations => {
-        return stations.map(station => station.pws);
+        return stations;
     })
 }
 
@@ -223,6 +241,11 @@ function pickBestStations(stations, maxCount){
     return stations.slice(0,maxCount);
 }
 
+function idsToStations(ids){
+   return dbConnect().then(db => {
+       return db.collection(STATIONS_COL).find({pws: {$in: ids}}).sort({longitude: 1}).toArray();
+   }) 
+}
 
 function selectSectionBased(numSections, perSection){
     numSections = parseInt(numSections);
@@ -240,9 +263,29 @@ function selectSectionBased(numSections, perSection){
     });
 }
 
+let selectPointBased = function(){
+    return dbConnect().then(db => {
+        let pointToStation = point => {
+            return nearbyStations(db, point[0], point[1], 50000 )
+                .then(stations => {
+                    return pickBestStations(stations,1)[0];
+                }).catch(console.log);
+        };
+        let stationPromises = eclipsePathCenter().map(pointToStation);
+        console.log(stationPromises)
+        return Promise.all(stationPromises).then(stations => {
+            stations = stations.filter(station => station);
+            stations = handPickStations(stations);
+            return stations;
+        });
+    })
+}
+
 module.exports = {
-    selected: ()=> Promise.resolve(stationIds),
+    selected: ()=> idsToStations(handPickStations(stationIds)),
     // selected: dynamicStations,
     selectSectionBased,
-    pickBestStations
-}
+    selectPointBased,
+    pickBestStations,
+    nearbyStations
+};

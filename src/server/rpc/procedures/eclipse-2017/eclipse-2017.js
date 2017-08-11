@@ -26,19 +26,6 @@ let dbConnect = () => {
     return connection;
 };
 
-function nearbyStations(db, lat, lon,  maxDistance){
-    lat = parseFloat(lat);
-    lon = parseFloat(lon);
-    // find stations uptodate stations within MAX_DISTANCE
-    let closeStations = { coordinates: { $nearSphere: { $geometry: { type: "Point", coordinates: [lon, lat] }, $maxDistance: maxDistance } } };
-    closeStations.readingMedian = {$ne: null, $lte: 1800}; // lte: just to avoid getting slow stations
-    return db.collection(STATIONS_COL).find(closeStations).sort({readingMedian: 1}).toArray().then(stations => {
-        // sorted array of stations by closest first
-        console.log(`found ${stations.length} stations within ${maxDistance/1000} of ${lat}, ${lon}`);
-        return stations
-    });
-} // end of nearbyStations
-
 // OPTIMIZE can be cached based on approximate coords n time
 function closestReading(lat, lon, time){
     const MAX_DISTANCE = 25000, // in meters
@@ -46,7 +33,7 @@ function closestReading(lat, lon, time){
     time = time ? new Date(time) : new Date();// should be in iso format or epoch if there is no time past it means we want the temp for now!
 
     return dbConnect().then(db => {
-        nearbyStations(db, lat, lon, MAX_DISTANCE).then(stations => {
+        stationUtils.nearbyStations(db, lat, lon, MAX_DISTANCE).then(stations => {
             let stationIds = stations.map(station => station.pws);
             // ask mongo for updates with the timelimit and specific stations.
             // QUESTION could lookup for a single stations instead here.. will lead to more calls to the database and more promises
@@ -76,14 +63,14 @@ function transformReading(update){
 
 // if find the latest update before a point in time
 function stationReading(id, time){
-    if (!time && latestReadings[id]) return Promise.resolve(transformReading(latestReadings[id]));
+    if (!time && latestReadings[id]) return Promise.resolve(latestReadings[id]);
     return dbConnect().then( db => {
         // NOTE: it finds the latest available update on the database ( could be old if there is no new record!)
         let query = {pws: id};
         if(time) query.readAt = {$lte: new Date(time)};
         return db.collection(READINGS_COL).find(query).sort({readAt: -1}).limit(1).toArray().then(readings => {
             let reading = readings[0];
-            return transformReading(reading);
+            return reading;
         });
     })    
 }
@@ -136,39 +123,10 @@ let availableStations = function(maxReadingMedian, maxDistanceFromCenter, latitu
         .then(stations => rpcUtils.jsonToSnapList(stations));
 };
 
-let selectPointBased = function(){
-    return dbConnect().then(db => {
-        let pointToStation = point => {
-            return nearbyStations(db, point[0], point[1], 50000 )
-                .then(stations => {
-                    return stationUtils.pickBestStations(stations,1)[0];
-                }).catch(console.log);
-        };
-        let stationPromises = eclipsePathCenter().map(pointToStation);
-        console.log(stationPromises)
-        return Promise.all(stationPromises).then(stations => {
-            console.log(stations)
-            return stations;
-        });
-    })
-}
-
-let selectedStations = function(numSections, perSection){
-    return stationUtils.selectSectionBased(numSections, perSection).then(stations => {
-        return rpcUtils.jsonToSnapList(stations);
-    })
-}
-
-
-let selectedStations2 = function(){
-    return selectPointBased().then(stations => {
-        return rpcUtils.jsonToSnapList(stations);
-    })
-}
 
 let stations = function(){
-    return stationUtils.selected();
-}
+    return stationUtils.selected().then(stations => stations.map(station => station.pws));
+};
 
 let stationInfo = function(stationId){
     return dbConnect().then(db => {
@@ -177,7 +135,7 @@ let stationInfo = function(stationId){
                 return rpcUtils.jsonToSnapList(station);
             })
     })
-}
+};
 
 let temperature = function(stationId){
     return stationReading(stationId).then(reading => {
@@ -238,9 +196,8 @@ module.exports = {
     pastCondition,
     conditionHistory,
     availableStations,
-    selectedStations,
-    selectedStations2,
+    selectedStationsJson: stationUtils.selected,
     selectSectionBased: stationUtils.selectSectionBased,
-    selectPointBased,
+    selectPointBased: stationUtils.selectPointBased,
     availableStationsJson
 };
