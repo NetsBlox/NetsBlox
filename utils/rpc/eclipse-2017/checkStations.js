@@ -131,18 +131,29 @@ let calcStationStats = () => {
             console.log('this many aggregated results', updates.length);
             // TODO there must be a better way to update em at once instead of doing separate queries!
             // or load it all in the RAM 
+            let operationsPromise = [];
             updates.forEach(update => {
                 let query = {pws: update._id.pws};
-                readingsCol.find(query).sort( {lastReadingAge:1} ).skip(update.count / 2 - 1).limit(1).toArray()
+                // this is the most time consuming part. 
+                let opPromise = readingsCol.find(query).sort( {lastReadingAge:1} ).skip(update.count / 2 - 1).limit(1).toArray()
                     .then(readings => {
                         let median = readings[0].lastReadingAge;
                         // TODO trimmed median? 
                         let updateObj = {$set: {readingAvg: update.readingAvg, updates: update.count, readingMedian: median}};
-                        stationsCol.update(query, updateObj).catch(console.log);
+                        let updateOne = {updateOne: {
+                            filter: query,
+                            update: updateObj,
+                            upsert: false
+                        }};
+                        return updateOne;
                     });
+                operationsPromise.push(opPromise);
             });
+            return Promise.all(operationsPromise);
+        }).then(operations => {
+            console.log('operations', operations);
+            return db.collection(STATIONS_COL).bulkWrite(operations);
         }).catch(console.log);
-
     });
 };
 
