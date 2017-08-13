@@ -1,6 +1,5 @@
 const fs = require('fs'),
     geolib = require('geolib'),
-    request = require('request'),
     rp = require('request-promise'),
     Q = require('q'),
     _ = require('lodash'),
@@ -39,7 +38,7 @@ function loadStations(fileName){
     let stream = fs.createReadStream(fileName);
     var csvStream = csv
         .parse({headers:true, objectMode:true})
-        .on("data", function(data){
+        .on('data', function(data){
             data.latitude = parseFloat(data.latitude);
             data.longitude = parseFloat(data.longitude);
             data.distance = parseFloat(data.distance);
@@ -48,8 +47,8 @@ function loadStations(fileName){
             delete data.updatedAt;
             stations.push(data);
         })
-        .on("end", function(){
-            logger.info("done loading stations");
+        .on('end', function(){
+            logger.info('done loading stations');
             deferred.resolve(stations);
         });
 
@@ -97,9 +96,9 @@ let seedDB = (fileName) => {
     loadStations(fileName).then(stations => {
         return dbConnect().then(db => {
             logger.info('connected to db');
-            // create index on pws instead of _id ? // TODO remove id index?! or use it
-            db.collection(READINGS_COL).createIndex({coordinates: "2dsphere"}); // this is not needed if we are not going to lookup reading based on lat lon
-            db.collection(STATIONS_COL).createIndex({coordinates: "2dsphere"});
+            // create index on pws instead of _id ? // OPTIMIZE remove id index?! or use it
+            db.collection(READINGS_COL).createIndex({coordinates: '2dsphere'}); // this is not needed if we are not going to lookup reading based on lat lon
+            db.collection(STATIONS_COL).createIndex({coordinates: '2dsphere'});
             db.collection(READINGS_COL).createIndex({pws: 1});
             db.collection(READINGS_COL).createIndex({readAt: -1});
             stations = stations.map(station => {
@@ -116,29 +115,28 @@ let seedDB = (fileName) => {
 // not returning proper promise
 let calcStationStats = () => {
     return dbConnect().then(db => {
-        let stationsCol = db.collection(STATIONS_COL);
         let readingsCol = db.collection(READINGS_COL);
         let aggregateQuery = {
             $group: {
-                _id: {pws: "$pws"},
+                _id: {pws: '$pws'},
                 count: {$sum: 1},
-                readingAvg: {$avg: "$lastReadingAge"},
-                docs: {$push: "$_id"}
+                readingAvg: {$avg: '$lastReadingAge'},
+                docs: {$push: '$_id'}
             }
         };
         logger.info(aggregateQuery);
         return readingsCol.aggregate([aggregateQuery]).toArray().then(updates => {
             logger.info('this many aggregated results', updates.length);
             // TODO there must be a better way to update em at once instead of doing separate queries!
-            // or load it all in the RAM 
+            // or load it all in the RAM
             let operationsPromise = [];
             updates.forEach(update => {
                 let query = {pws: update._id.pws};
-                // this is the most time consuming part. 
+                // this is the most time consuming part.
                 let opPromise = readingsCol.find(query).sort( {lastReadingAge:1} ).skip(update.count / 2 - 1).limit(1).toArray()
                     .then(readings => {
                         let median = readings[0].lastReadingAge;
-                        // could also do trimmed median? 
+                        // could also do trimmed median?
                         let updateObj = {$set: {readingAvg: update.readingAvg, updates: update.count, readingMedian: median}};
                         let updateOne = {updateOne: {
                             filter: query,
@@ -160,7 +158,7 @@ let calcStationStats = () => {
 function calcDistance(){
     dbConnect().then(db => {
         db.collection(STATIONS_COL).find().toArray().then(stations => {
-            //calculate the distance and update in the db 
+            //calculate the distance and update in the db
             let operations = [];
             stations.forEach(station => {
                 let updateOne = {updateOne: {
@@ -178,9 +176,7 @@ function calcDistance(){
 
 let contextManager = fn => {
     return dbConnect().then(db => {
-        let stationsCol = db.collection(STATIONS_COL);
-        let readingsCol = db.collection(READINGS_COL);
-        return fn();
+        return fn(db);
     }).then(()=>{
         logger.info('closing the database');
         storage.disconnect();
@@ -191,8 +187,6 @@ let contextManager = fn => {
 // takes a list of stations
 let fireUpdates = stations => {
     return dbConnect().then(db => {
-        let stationsCol = db.collection(STATIONS_COL);
-        let readingsCol = db.collection(READINGS_COL);
         logger.info(`querying ${stations.length} stations`);
         return reqUpdates(stations).then(updates => {
             logger.info(updates.length, 'updates');
@@ -205,11 +199,11 @@ let fireUpdates = stations => {
 
 // pre: interval in seconds
 let scheduleUpdates = (stations, interval) => {
-   fireUpdates(stations).then(() => {
-       setTimeout(scheduleUpdates, interval, stations, interval);
-   }).catch(() => {
-       setTimeout(scheduleUpdates, interval, stations, interval);
-   });
+    fireUpdates(stations).then(() => {
+        setTimeout(scheduleUpdates, interval, stations, interval);
+    }).catch(() => {
+        setTimeout(scheduleUpdates, interval, stations, interval);
+    });
 };
 
 if (process.argv[2] === 'seed') seedDB('wuStations.csv');
@@ -237,7 +231,7 @@ if (process.argv.length < 3) logger.info('pass in a command: seed, updateStats o
 function reqUpdate(id) {
     let url = `http://api.wunderground.com/api/${WU_KEY}/conditions/q/pws:${id}.json`;
     // logger.info('hitting api', apiCounter++, url);
-    process.stdout.write("#");
+    process.stdout.write('#');
     return rp({uri: url, json:true}).then(resp => {
         if (resp.response.error) {
             throw resp.response.error.description || resp.response.error.type || 'wrong pws id';

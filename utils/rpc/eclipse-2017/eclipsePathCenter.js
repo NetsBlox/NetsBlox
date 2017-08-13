@@ -63,17 +63,18 @@ function secondsToClock(seconds){
     return time.join(':');
 }
 
+function avg(a,b){
+    return (a+b)/2;
+}
+
 function addMidPoints(points){
     // create mid points to increase the resolution
     let midPoints = [];
     for(let i = 0; i < points.length; i++){
-        // TODO insert as you are going through the array so there is no need for soritng later on
+        // OPTIMIZE insert as you are going through the array so there is no need for soritng later on
         let point = points[i];
         let nextPoint = points[i+1];
         if (!nextPoint) break; // this is the last pair
-        function avg(a,b){
-            return (a+b)/2;
-        }
         let midPoint = [avg(point[0],nextPoint[0]),avg(point[1],nextPoint[1]), avg(point[2],nextPoint[2])];
         midPoints.push(midPoint);
     }
@@ -87,7 +88,7 @@ module.exports = () => {
         return [p[0],p[1],clockToSeconds(p[2])];
         // p[2] = clockToSeconds(p[2]); // wasted an hour here :'( TODO WHY
         // return p;
-    })
+    });
     let pathPoints = addMidPoints(nasa2);
     pathPoints = addMidPoints(pathPoints);
     // pathPoints.sort((a,b) => a[1]-b[1]); // sort by ascending longitude

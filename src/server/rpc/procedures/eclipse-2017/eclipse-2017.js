@@ -2,8 +2,6 @@ const Storage = require('../../../storage/storage'),
     Logger = require('../../../logger'),
     eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePathCenter.js'),
     rpcUtils = require('../utils'),
-    cacheManager = require('cache-manager'),
-    memoryCache = cacheManager.caching({store: 'memory', max:100, ttl: 24 * 3600}),
     stationUtils = require('./stations.js'),
     logger = new Logger('netsblox:eclipse'),
     storage = new Storage(logger);
@@ -39,7 +37,6 @@ function closestReading(lat, lon, time){
             // ask mongo for updates with the timelimit and specific stations.
             // QUESTION could lookup for a single stations instead here.. will lead to more calls to the database and more promises
             // either ask mongo for readings with {pws: closestStation, dateRange} or give it an array of stations
-            // TODO timezone problems, when saving and converting dates. here and also where you are saving em to database for the first time
             let startTime = new Date(time);
             startTime.setSeconds(startTime.getSeconds() - MAX_AGE);
             let updatesQuery = {pws: { $in: stationIds }, readAt: {$gte: startTime, $lte: time}};
@@ -56,9 +53,9 @@ function closestReading(lat, lon, time){
 } // end of closestReading
 
 function transformReading(update){
-        update.id = update.pws;
-        delete update._id;
-        delete update.pws;
+    update.id = update.pws;
+    delete update._id;
+    delete update.pws;
     return update;
 }
 
@@ -76,7 +73,7 @@ function stationReading(id, time){
     });
 }
 
-// eager loading? 
+// eager loading?
 function loadLatestUpdates(numUpdates){
     dbConnect().then(db => {
         db.collection(READINGS_COL).find().sort({readAt: -1}).limit(numUpdates).toArray().then(readings => {
@@ -87,7 +84,7 @@ function loadLatestUpdates(numUpdates){
             logger.trace('preloaded latest updates');
         });
     });
-} 
+}
 // lacking a databasetrigger we load the latest updates every n seconds
 setInterval(loadLatestUpdates, 5000, 200);
 
@@ -111,7 +108,7 @@ let availableStationsJson = function(maxReadingMedian, maxDistanceFromCenter, la
     if (longitude) longitude = parseFloat(longitude);
     if (maxDistanceFromPoint) maxDistanceFromPoint = parseInt(maxDistanceFromPoint) * 1000;
     let query = {readingMedian: {$ne:null, $lte: maxReadingMedian}, distance: {$lte: maxDistanceFromCenter}};
-    if (latitude && longitude) query.coordinates = { $nearSphere: { $geometry: { type: "Point", coordinates: [longitude, latitude] }, $maxDistance: maxDistanceFromPoint } };
+    if (latitude && longitude) query.coordinates = { $nearSphere: { $geometry: { type: 'Point', coordinates: [longitude, latitude] }, $maxDistance: maxDistanceFromPoint } };
     return dbConnect().then(db => {
         return db.collection(STATIONS_COL).find(query).toArray().then(stations => {
             return stations;
