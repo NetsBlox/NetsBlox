@@ -1192,9 +1192,6 @@ CommandBlockMorph.prototype.isStop = function () {
         'doStopAll',
         'doForever',
         'doReport',
-        // Netsblox addition: start
-        'doSocketResponse',
-        // Netsblox addition: end
         'removeClone'
     ].indexOf(this.selector) > -1);
 };
