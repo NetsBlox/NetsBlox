@@ -21,14 +21,14 @@ const WU_KEY = process.env.WEATHER_UNDERGROUND_KEY,
 // parameters to config:
 // 1. in fireUpdates: config available stations to poll, considering number of updates
 
-let apiCounter = 0, connection;
+let connection;
 
 // connect to nb database
 let dbConnect = () => {
-    const mongoUri = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
-        connection = storage.connect(mongoUri);
-        if (!connection) {
+    if (!connection) {
+        connection = storage.connect();
     }
+    // connection is a promise of db connection
     return connection;
 };
 
@@ -211,7 +211,7 @@ if (process.argv[2] === 'pullUpdates') {
     stationUtils.selected().then(stations => {
         fireUpdates(stations).then(() => {
             logger.info('gonna disc the db');
-            storage.disconnect();
+            storage.disconnect().then(logger.info);
         });
     });
 }

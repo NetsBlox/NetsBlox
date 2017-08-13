@@ -10,10 +10,11 @@ const STATIONS_COL = 'wuStations',
     READINGS_COL = 'wuReadings';
 let connection;
 
+// connect to nb database
 let dbConnect = () => {
     const mongoUri = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
+    if (!connection) {
         connection = storage.connect(mongoUri);
-        if (!connection) {
     }
     return connection;
 };

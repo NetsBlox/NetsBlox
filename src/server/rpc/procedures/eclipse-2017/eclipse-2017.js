@@ -19,12 +19,13 @@ let eclipsePath = function(){
 
 // connect to nb database
 let dbConnect = () => {
-    const mongoUri = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
     if (!connection) {
-        connection = storage.connect(mongoUri);
+        connection = storage.connect();
     }
+    // connection is a promise of db connection
     return connection;
 };
+
 
 // OPTIMIZE can be cached based on approximate coords n time
 function closestReading(lat, lon, time){
