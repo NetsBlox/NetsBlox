@@ -49,7 +49,7 @@ function loadStations(fileName){
             stations.push(data);
         })
         .on("end", function(){
-            console.log("done loading stations");
+            logger.info("done loading stations");
             deferred.resolve(stations);
         });
 
@@ -69,7 +69,7 @@ function reqUpdates(stations){
     let stationChunks = _.chunk(stations, callsPerRound);
     let fire = () => {
         let ids = stationChunks.shift();
-        console.log(`getting updates from ${ids.length} stations ids`, ids.join());
+        logger.info(`getting updates from ${ids.length} stations ids`, ids.join());
         promises = promises.concat(ids.map(reqUpdate));
         if (stationChunks.length > 0) {
             setTimeout(fire, INTERVAL);
@@ -77,7 +77,7 @@ function reqUpdates(stations){
             Q.allSettled(promises).done(responses => {
                 responses = responses.filter(item => {
                     if (item.state === 'rejected') {
-                        console.log('failed', item.reason);
+                        logger.info('failed', item.reason);
                         return false;
                     }
                     return true;
@@ -96,7 +96,7 @@ function reqUpdates(stations){
 let seedDB = (fileName) => {
     loadStations(fileName).then(stations => {
         return dbConnect().then(db => {
-            console.log('connected to db');
+            logger.info('connected to db');
             // create index on pws instead of _id ? // TODO remove id index?! or use it
             db.collection(READINGS_COL).createIndex({coordinates: "2dsphere"}); // this is not needed if we are not going to lookup reading based on lat lon
             db.collection(STATIONS_COL).createIndex({coordinates: "2dsphere"});
@@ -126,9 +126,9 @@ let calcStationStats = () => {
                 docs: {$push: "$_id"}
             }
         };
-        console.log(aggregateQuery);
+        logger.info(aggregateQuery);
         return readingsCol.aggregate([aggregateQuery]).toArray().then(updates => {
-            console.log('this many aggregated results', updates.length);
+            logger.info('this many aggregated results', updates.length);
             // TODO there must be a better way to update em at once instead of doing separate queries!
             // or load it all in the RAM 
             let operationsPromise = [];
@@ -138,7 +138,7 @@ let calcStationStats = () => {
                 let opPromise = readingsCol.find(query).sort( {lastReadingAge:1} ).skip(update.count / 2 - 1).limit(1).toArray()
                     .then(readings => {
                         let median = readings[0].lastReadingAge;
-                        // TODO trimmed median? 
+                        // could also do trimmed median? 
                         let updateObj = {$set: {readingAvg: update.readingAvg, updates: update.count, readingMedian: median}};
                         let updateOne = {updateOne: {
                             filter: query,
@@ -151,9 +151,9 @@ let calcStationStats = () => {
             });
             return Promise.all(operationsPromise);
         }).then(operations => {
-            console.log('operations', operations);
+            logger.info('operations', operations);
             return db.collection(STATIONS_COL).bulkWrite(operations);
-        }).catch(console.log);
+        }).catch(logger.info);
     });
 };
 
@@ -169,10 +169,10 @@ function calcDistance(){
                     upsert: false
                 }};
                 operations.push(updateOne);
-            })
+            });
             db.collection(STATIONS_COL).bulkWrite(operations);
-        })
-    })
+        });
+    });
 } // end of calcDistance
 
 
@@ -182,9 +182,9 @@ let contextManager = fn => {
         let readingsCol = db.collection(READINGS_COL);
         return fn();
     }).then(()=>{
-        console.log('closing the database');
+        logger.info('closing the database');
         storage.disconnect();
-    })
+    });
 };
 
 //@contextManager
@@ -193,12 +193,12 @@ let fireUpdates = stations => {
     return dbConnect().then(db => {
         let stationsCol = db.collection(STATIONS_COL);
         let readingsCol = db.collection(READINGS_COL);
-        console.log('stations are', stations)
-        console.log(`querying ${stations.length} stations`);
+        logger.info('stations are', stations);
+        logger.info(`querying ${stations.length} stations`);
         return reqUpdates(stations).then(updates => {
-            console.log(updates.length, 'updates');
+            logger.info(updates.length, 'updates');
             let readingsCol = db.collection(READINGS_COL);
-            return readingsCol.insertMany(updates).catch(console.log);
+            return readingsCol.insertMany(updates).catch(logger.info);
         });
     });
 };
@@ -210,16 +210,16 @@ if (process.argv[2] === 'updateStats') calcStationStats();
 if (process.argv[2] === 'pullUpdates') {
     stationUtils.selected().then(stations => {
         fireUpdates(stations).then(() => {
-            console.log('gonna disc the db');
+            logger.info('gonna disc the db');
             storage.disconnect();
         });
     });
 }
-if (process.argv.length < 3) console.log('pass in a command: seed, updateStats or pullUpdates');
+if (process.argv.length < 3) logger.info('pass in a command: seed, updateStats or pullUpdates');
 
 function reqUpdate(id) {
     let url = `http://api.wunderground.com/api/${WU_KEY}/conditions/q/pws:${id}.json`;
-    // console.log('hitting api', apiCounter++, url);
+    // logger.info('hitting api', apiCounter++, url);
     process.stdout.write("#");
     return rp({uri: url, json:true}).then(resp => {
         if (resp.response.error) {

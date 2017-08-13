@@ -42,11 +42,11 @@ function closestReading(lat, lon, time){
             let startTime = new Date(time);
             startTime.setSeconds(startTime.getSeconds() - MAX_AGE);
             let updatesQuery = {pws: { $in: stationIds }, readAt: {$gte: startTime, $lte: time}};
-            console.log('readings query',updatesQuery);
+            logger.info('readings query',updatesQuery);
             return db.collection(READINGS_COL).find(updatesQuery).sort({readAt: -1, distance: 1}).toArray().then(readings => {
                 // QUESTION pick the closest or latest?!
                 // sth like pickBestStations but on readings
-                console.log('replying with ',readings);
+                logger.info('replying with ',readings);
                 return readings[0];
             });
         });
@@ -72,7 +72,7 @@ function stationReading(id, time){
             let reading = readings[0];
             return reading;
         });
-    })    
+    });
 }
 
 // eager loading? 
@@ -81,10 +81,10 @@ function loadLatestUpdates(numUpdates){
         db.collection(READINGS_COL).find().sort({readAt: -1}).limit(numUpdates).toArray().then(readings => {
             latestReadings = {};
             readings.forEach(reading => {
-                if (!latestReadings[reading.pws] || latestReadings[reading.pws].readAt < reading.readAt ) latestReadings[reading.pws] = reading
-            })
+                if (!latestReadings[reading.pws] || latestReadings[reading.pws].readAt < reading.readAt ) latestReadings[reading.pws] = reading;
+            });
             logger.trace('preloaded latest updates');
-        })
+        });
     });
 } 
 // lacking a databasetrigger we load the latest updates every n seconds
@@ -133,8 +133,8 @@ let stationInfo = function(stationId){
         return db.collection(STATIONS_COL).findOne({pws: stationId})
             .then(station => {
                 return rpcUtils.jsonToSnapList(station);
-            })
-    })
+            });
+    });
 };
 
 let temperature = function(stationId){
@@ -169,18 +169,18 @@ let temperatureHistory = function(stationId, limit){
         return db.collection(READINGS_COL).find({pws: stationId}).sort({readAt: -1})
             .limit(parseInt(limit)).toArray().then(updates => {
                 return updates.map(update => update.temp);
-            })
-    })
-}
+            });
+    });
+};
 
 let conditionHistory = function(stationId, limit){
     return dbConnect().then(db => {
         return db.collection(READINGS_COL).find({pws: stationId}).sort({readAt: -1})
             .limit(parseInt(limit)).toArray().then(updates => {
                 return rpcUtils.jsonToSnapList(updates);
-            })
-    })
-}
+            });
+    });
+};
 
 // TODO add arg validation like openWeather
 
