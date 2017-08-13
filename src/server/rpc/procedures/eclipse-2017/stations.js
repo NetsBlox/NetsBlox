@@ -162,10 +162,8 @@ function handPickStations(stations){
         remove: ["KSCEASLE23","KWYMORAN2"],
     };
     // remove blacklists
-    logger.info('handpicking from stations', stations);
     stations = stations.filter(station => {
         // to support function input both as list of ids and station objects
-        logger.info(station);
         let stationId = station.pws || station;
         return !rules.remove.includes(stationId);
     });

@@ -82,8 +82,8 @@ function reqUpdates(stations){
                     }
                     return true;
                 });
-                let stationsArr = responses.map(item => item.value);
-                deferred.resolve(stationsArr);
+                let updatesArr = responses.map(item => item.value);
+                deferred.resolve(updatesArr);
             });
         }
     };
@@ -193,7 +193,6 @@ let fireUpdates = stations => {
     return dbConnect().then(db => {
         let stationsCol = db.collection(STATIONS_COL);
         let readingsCol = db.collection(READINGS_COL);
-        logger.info('stations are', stations);
         logger.info(`querying ${stations.length} stations`);
         return reqUpdates(stations).then(updates => {
             logger.info(updates.length, 'updates');
@@ -204,6 +203,15 @@ let fireUpdates = stations => {
 };
 //fireUpdates = contextManager(fireUpdates);
 
+// pre: interval in seconds
+let scheduleUpdates = (stations, interval) => {
+   fireUpdates(stations).then(() => {
+       setTimeout(scheduleUpdates, interval, stations, interval);
+   }).catch(() => {
+       setTimeout(scheduleUpdates, interval, stations, interval);
+   });
+};
+
 if (process.argv[2] === 'seed') seedDB('wuStations.csv');
 if (process.argv[2] === 'calcDistance') calcDistance();
 if (process.argv[2] === 'updateStats') calcStationStats();
@@ -211,10 +219,19 @@ if (process.argv[2] === 'pullUpdates') {
     stationUtils.selected().then(stations => {
         fireUpdates(stations).then(() => {
             logger.info('gonna disc the db');
-            storage.disconnect().then(logger.info);
+            storage.disconnect();
         });
     });
 }
+
+if (process.argv[2] === 'scheduleUpdates') {
+    let interval = parseInt(process.argv[3])*1000;
+    if(interval < 30000) return;
+    stationUtils.selected().then(stations => {
+        scheduleUpdates(stations, interval);
+    });
+}
+
 if (process.argv.length < 3) logger.info('pass in a command: seed, updateStats or pullUpdates');
 
 function reqUpdate(id) {
