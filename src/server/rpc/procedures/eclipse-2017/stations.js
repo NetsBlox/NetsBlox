@@ -1,21 +1,18 @@
 const _ = require('lodash'),
     eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePathCenter.js'),
-    Storage = require('../../../storage/storage.js'),
+    rpcStorage = require('../../storage'),
     Logger = require('../../../logger.js'),
-    logger = new Logger('netsblox:wu:stations'),
-    storage = new Storage(logger);
+    logger = new Logger('netsblox:wu:stations');
 
 
-const STATIONS_COL = 'wuStations';
-let connection;
+let stationsCol;
 
 // connect to nb database
-let dbConnect = () => {
-    const mongoUri = process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
-    if (!connection) {
-        connection = storage.connect(mongoUri);
+let getStationsCol = () => {
+    if (!stationsCol) {
+        stationsCol = rpcStorage.create('wu:stations').collection;
     }
-    return connection;
+    return stationsCol;
 };
 
 // handpicked stations
@@ -170,10 +167,10 @@ function handPickStations(stations){
     return stations;
 }
 
-function availableStations(db, maxDistance, maxReadingMedian){
+function availableStations(maxDistance, maxReadingMedian){
     if (!maxReadingMedian) maxReadingMedian = Infinity;
     let query = {distance: {$lte: maxDistance}, readingMedian: {$ne: null, $lte: maxReadingMedian}};
-    return db.collection(STATIONS_COL).find(query).toArray()
+    return getStationsCol().find(query).toArray()
     .then(stations => {
         logger.info(`found ${stations.length} stations for query ${JSON.stringify(query)} `);
         return stations;
@@ -181,13 +178,13 @@ function availableStations(db, maxDistance, maxReadingMedian){
 }
 
 
-function nearbyStations(db, lat, lon,  maxDistance){
+function nearbyStations(lat, lon,  maxDistance){
     lat = parseFloat(lat);
     lon = parseFloat(lon);
     // find stations uptodate stations within MAX_DISTANCE
     let closeStations = { coordinates: { $nearSphere: { $geometry: { type: 'Point', coordinates: [lon, lat] }, $maxDistance: maxDistance } } };
     closeStations.readingMedian = {$ne: null, $lte: 1800}; // lte: just to avoid getting slow stations
-    return db.collection(STATIONS_COL).find(closeStations).sort({readingMedian: 1}).toArray().then(stations => {
+    return getStationsCol().find(closeStations).sort({readingMedian: 1}).toArray().then(stations => {
         // sorted array of stations by closest first
         logger.info(`found ${stations.length} stations within ${maxDistance/1000} of ${lat}, ${lon}`);
         return stations;
@@ -210,25 +207,23 @@ function dynamicStations(){
 // returns a 2d array of sectioned available and rated stations
 function sectionStations(n){
     const pathMinLon = -124.2,
-    pathMaxLon = -79.0,
-    delta = (pathMaxLon - pathMinLon) / n;
+        pathMaxLon = -79.0,
+        delta = (pathMaxLon - pathMinLon) / n;
     logger.info('delta is', delta);
     // returns the secion index
     let findSection = lon => {
         return Math.floor((lon - pathMinLon) / delta);
     };
-    return dbConnect().then(db => {
-        // can filter very obsolete stations here.
-        return availableStations(db, 50, 600).then(stations => {
-            let sections = new Array(n);
-            stations.forEach(station => {
-                let index = findSection(station.longitude);
-                if (!sections[index]) sections[index] = [];
-                sections[index].push(station);
-            });
-            return sections;
-        }).catch(logger.info);
-    });
+    // can filter very obsolete stations here.
+    return availableStations(50, 600).then(stations => {
+        let sections = new Array(n);
+        stations.forEach(station => {
+            let index = findSection(station.longitude);
+            if (!sections[index]) sections[index] = [];
+            sections[index].push(station);
+        });
+        return sections;
+    }).catch(logger.info);
 } // end of sectioned stations
 
 // find best stations in each section
@@ -239,9 +234,7 @@ function pickBestStations(stations, maxCount){
 }
 
 function idsToStations(ids){
-    return dbConnect().then(db => {
-        return db.collection(STATIONS_COL).find({pws: {$in: ids}}).sort({longitude: 1}).toArray();
-    });
+    return getStationsCol().find({pws: {$in: ids}}).sort({longitude: 1}).toArray();
 }
 
 function selectSectionBased(numSections, perSection){
@@ -261,20 +254,18 @@ function selectSectionBased(numSections, perSection){
 }
 
 let selectPointBased = function(){
-    return dbConnect().then(db => {
-        let pointToStation = point => {
-            return nearbyStations(db, point[0], point[1], 50000 )
-                .then(stations => {
-                    return pickBestStations(stations,1)[0];
-                }).catch(logger.info);
-        };
-        let stationPromises = eclipsePathCenter().map(pointToStation);
-        logger.info(stationPromises);
-        return Promise.all(stationPromises).then(stations => {
-            stations = stations.filter(station => station);
-            stations = handPickStations(stations);
-            return stations;
-        });
+    let pointToStation = point => {
+        return nearbyStations(point[0], point[1], 50000 )
+            .then(stations => {
+                return pickBestStations(stations,1)[0];
+            }).catch(logger.info);
+    };
+    let stationPromises = eclipsePathCenter().map(pointToStation);
+    logger.info(stationPromises);
+    return Promise.all(stationPromises).then(stations => {
+        stations = stations.filter(station => station);
+        stations = handPickStations(stations);
+        return stations;
     });
 };
 

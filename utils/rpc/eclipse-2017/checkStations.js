@@ -9,26 +9,29 @@ const fs = require('fs'),
     Storage = require('../../../src/server/storage/storage'),
     Logger = require('../../../src/server/logger'),
     logger = new Logger('netsblox:wu'),
-    storage = new Storage(logger);
+    storage = new Storage(logger),
+    rpcStorage = require('../../../src/server/rpc/storage.js');
 
-const STATIONS_COL = 'wuStations',
-    READINGS_COL = 'wuReadings';
 const WU_KEY = process.env.WEATHER_UNDERGROUND_KEY,
     INTERVAL = 61 * 1000, //in msec
     API_LIMIT = 900; //per min
 
 // parameters to config:
 // 1. in fireUpdates: config available stations to poll, considering number of updates
+let stationsCol, readingsCol;
 
-let connection;
-
-// connect to nb database
-let dbConnect = () => {
-    if (!connection) {
-        connection = storage.connect();
+let getStationsCol = () => {
+    if (!stationsCol) {
+        stationsCol = rpcStorage.create('wu:stations').collection;
     }
-    // connection is a promise of db connection
-    return connection;
+    return stationsCol;
+};
+
+let getReadingsCol = () => {
+    if (!readingsCol) {
+        readingsCol = rpcStorage.create('wu:readings').collection;
+    }
+    return readingsCol;
 };
 
 
@@ -84,7 +87,7 @@ function reqUpdates(stations){
                 let updatesArr = responses.map(item => item.value);
                 // change falsy updates' temp to 0
                 updatesArr = updatesArr.map(up => {
-                    if ( up && up.temp < 0 ) up.temp = 0; 
+                    if ( up && up.temp < 0 ) up.temp = 0;
                     return up;
                 });
                 deferred.resolve(updatesArr);
@@ -99,137 +102,112 @@ function reqUpdates(stations){
 // loads the stations collection for the first time
 let seedDB = (fileName) => {
     loadStations(fileName).then(stations => {
-        return dbConnect().then(db => {
-            logger.info('connected to db');
-            // create index on pws instead of _id ? // OPTIMIZE remove id index?! or use it
-            db.collection(READINGS_COL).createIndex({coordinates: '2dsphere'}); // this is not needed if we are not going to lookup reading based on lat lon
-            db.collection(STATIONS_COL).createIndex({coordinates: '2dsphere'});
-            db.collection(READINGS_COL).createIndex({pws: 1});
-            db.collection(READINGS_COL).createIndex({readAt: -1});
-            stations = stations.map(station => {
-                station.coordinates = [station.longitude, station.latitude];
-                return station;
-            });
-            let stationsCol = db.collection(STATIONS_COL);
-            stationsCol.insertMany(stations);
+        // create index on pws instead of _id ? // OPTIMIZE remove id index?! or use it
+        getReadingsCol().createIndex({coordinates: '2dsphere'}); // this is not needed if we are not going to lookup reading based on lat lon
+        getStationsCol().createIndex({coordinates: '2dsphere'});
+        getReadingsCol().createIndex({pws: 1});
+        getReadingsCol().createIndex({readAt: -1});
+        stations = stations.map(station => {
+            station.coordinates = [station.longitude, station.latitude];
+            return station;
         });
+        getStationsCol().insertMany(stations);
     });
 };
 
 // given enough readings in the readigsCollection calculates the average reading age for stations
 // not returning proper promise
 let calcStationStats = () => {
-    return dbConnect().then(db => {
-        let readingsCol = db.collection(READINGS_COL);
-        let aggregateQuery = {
-            $group: {
-                _id: {pws: '$pws'},
-                count: {$sum: 1},
-                readingAvg: {$avg: '$lastReadingAge'},
-                docs: {$push: '$_id'}
-            }
-        };
-        logger.info(aggregateQuery);
-        return readingsCol.aggregate([aggregateQuery]).toArray().then(updates => {
-            logger.info('this many aggregated results', updates.length);
-            // TODO there must be a better way to update em at once instead of doing separate queries!
-            // or load it all in the RAM
-            let operationsPromise = [];
-            updates.forEach(update => {
-                let query = {pws: update._id.pws};
-                // this is the most time consuming part.
-                let opPromise = readingsCol.find(query).sort( {lastReadingAge:1} ).skip(update.count / 2 - 1).limit(1).toArray()
-                    .then(readings => {
-                        let median = readings[0].lastReadingAge;
-                        // could also do trimmed median?
-                        let updateObj = {$set: {readingAvg: update.readingAvg, updates: update.count, readingMedian: median}};
-                        let updateOne = {updateOne: {
-                            filter: query,
-                            update: updateObj,
-                            upsert: false
-                        }};
-                        return updateOne;
-                    });
-                operationsPromise.push(opPromise);
-            });
-            return Promise.all(operationsPromise);
-        }).then(operations => {
-            logger.info('operations', operations);
-            return db.collection(STATIONS_COL).bulkWrite(operations);
-        }).catch(logger.info);
-    });
+    let aggregateQuery = {
+        $group: {
+            _id: {pws: '$pws'},
+            count: {$sum: 1},
+            readingAvg: {$avg: '$lastReadingAge'},
+            docs: {$push: '$_id'}
+        }
+    };
+    logger.info(aggregateQuery);
+    return getReadingsCol().aggregate([aggregateQuery]).toArray().then(updates => {
+        logger.info('this many aggregated results', updates.length);
+        // TODO there must be a better way to update em at once instead of doing separate queries!
+        // or load it all in the RAM
+        let operationsPromise = [];
+        updates.forEach(update => {
+            let query = {pws: update._id.pws};
+            // this is the most time consuming part.
+            let opPromise = getReadingsCol().find(query).sort( {lastReadingAge:1} ).skip(update.count / 2 - 1).limit(1).toArray()
+                .then(readings => {
+                    let median = readings[0].lastReadingAge;
+                    // could also do trimmed median?
+                    let updateObj = {$set: {readingAvg: update.readingAvg, updates: update.count, readingMedian: median}};
+                    let updateOne = {updateOne: {
+                        filter: query,
+                        update: updateObj,
+                        upsert: false
+                    }};
+                    return updateOne;
+                });
+            operationsPromise.push(opPromise);
+        });
+        return Promise.all(operationsPromise);
+    }).then(operations => {
+        logger.info('operations', operations);
+        return getStationsCol().bulkWrite(operations);
+    }).catch(logger.info);
 };
 
 function calcDistance(){
-    dbConnect().then(db => {
-        db.collection(STATIONS_COL).find().toArray().then(stations => {
-            //calculate the distance and update in the db
-            let operations = [];
-            stations.forEach(station => {
-                let updateOne = {updateOne: {
-                    filter: {pws: station.pws},
-                    update: {$set: {distance: distanceToPath(station.latitude, station.longitude)} },
-                    upsert: false
-                }};
-                operations.push(updateOne);
-            });
-            db.collection(STATIONS_COL).bulkWrite(operations);
+    getStationsCol().find().toArray().then(stations => {
+        //calculate the distance and update in the db
+        let operations = [];
+        stations.forEach(station => {
+            let updateOne = {updateOne: {
+                filter: {pws: station.pws},
+                update: {$set: {distance: distanceToPath(station.latitude, station.longitude)} },
+                upsert: false
+            }};
+            operations.push(updateOne);
         });
+        getStationsCol().bulkWrite(operations);
     });
 } // end of calcDistance
 
-
-let contextManager = fn => {
-    return dbConnect().then(db => {
-        return fn(db);
-    }).then(()=>{
-        logger.info('closing the database');
-        storage.disconnect();
-    });
-};
-
 //@contextManager
 // takes a list of stations
-let fireUpdates = stations => {
-    return dbConnect().then(db => {
-        logger.info(`querying ${stations.length} stations`);
-        return reqUpdates(stations).then(updates => {
-            logger.info(updates.length, 'updates');
-            let readingsCol = db.collection(READINGS_COL);
-            return readingsCol.insertMany(updates).catch(logger.info);
-        });
+let fireUpdates = getStations => {
+    return getStations().then(reqUpdates).then(updates => {
+        logger.info(updates.length, 'updates');
+        return getReadingsCol().insertMany(updates).catch(logger.info);
     });
 };
 //fireUpdates = contextManager(fireUpdates);
 
 // pre: interval in seconds
-let scheduleUpdates = (stations, interval) => {
-    fireUpdates(stations).then(() => {
-        setTimeout(scheduleUpdates, interval, stations, interval);
+let scheduleUpdates = (getStationsFn, interval) => {
+    fireUpdates(getStationsFn).then(() => {
+        setTimeout(scheduleUpdates, interval, getStationsFn, interval);
     }).catch(() => {
-        setTimeout(scheduleUpdates, interval, stations, interval);
+        setTimeout(scheduleUpdates, interval, getStationsFn, interval);
     });
 };
 
-if (process.argv[2] === 'seed') seedDB('wuStations.csv');
-if (process.argv[2] === 'calcDistance') calcDistance();
-if (process.argv[2] === 'updateStats') calcStationStats();
-if (process.argv[2] === 'pullUpdates') {
-    stationUtils.selected().then(stations => {
-        fireUpdates(stations).then(() => {
+storage.connect().then(() => {
+    if (process.argv[2] === 'seed') seedDB('wuStations.csv');
+    if (process.argv[2] === 'calcDistance') calcDistance();
+    if (process.argv[2] === 'updateStats') calcStationStats();
+    if (process.argv[2] === 'pullUpdates') {
+        fireUpdates(stationUtils.selected).then(() => {
             logger.info('gonna disc the db');
             storage.disconnect();
         });
-    });
-}
+    }
 
-if (process.argv[2] === 'scheduleUpdates') {
-    let interval = parseInt(process.argv[3])*1000;
-    if(interval < 30000) return;
-    stationUtils.selected().then(stations => {
-        scheduleUpdates(stations, interval);
-    });
-}
+    if (process.argv[2] === 'scheduleUpdates') {
+        let interval = parseInt(process.argv[3])*1000;
+        if(interval < 30000) return;
+        scheduleUpdates(stationUtils.selected, interval);
+    }
+});
 
 if (process.argv.length < 3) logger.info('pass in a command: seed, updateStats or pullUpdates');
 
