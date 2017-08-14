@@ -82,6 +82,11 @@ function reqUpdates(stations){
                     return true;
                 });
                 let updatesArr = responses.map(item => item.value);
+                // change falsy updates' temp to 0
+                updatesArr = updatesArr.map(up => {
+                    if ( up && up.temp < 0 ) up.temp = 0; 
+                    return up;
+                });
                 deferred.resolve(updatesArr);
             });
         }
