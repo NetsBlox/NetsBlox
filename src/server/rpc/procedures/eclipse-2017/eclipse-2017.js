@@ -157,20 +157,22 @@ let pastCondition = function(stationId, time){
 };
 
 let temperatureHistory = function(stationId, limit){
-        return getReadingsCol().find({pws: stationId}).sort({readAt: -1})
-            .limit(parseInt(limit)).toArray().then(updates => {
-                return updates.map(update => update.temp);
-            });
+    limit = parseInt(limit);
+    if (limit > 3000) limit = 3000;
+    return getReadingsCol().find({pws: stationId}).sort({readAt: -1})
+        .limit(limit).toArray().then(updates => {
+            return updates.map(update => update.temp);
+        });
 };
 
 let conditionHistory = function(stationId, limit){
-        return getReadingsCol().find({pws: stationId}).sort({readAt: -1})
-            .limit(parseInt(limit)).toArray().then(updates => {
-                return rpcUtils.jsonToSnapList(updates);
-            });
+    limit = parseInt(limit);
+    if (limit > 3000) limit = 3000;
+    return getReadingsCol().find({pws: stationId}).sort({readAt: -1})
+        .limit(limit).toArray().then(updates => {
+            return rpcUtils.jsonToSnapList(updates);
+        });
 };
-
-// TODO add arg validation like openWeather
 
 module.exports = {
     isStateless: true,
