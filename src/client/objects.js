@@ -1752,6 +1752,7 @@ SpriteMorph.prototype.thumbnail = function (extentPoint) {
 ReplayControls.prototype.update = function() {
     var myself = this,
         originalEvent,
+        sliderTime = this.getTimeFromPosition(this.slider.value),
         diff,
         dir,
         index,
@@ -1761,8 +1762,8 @@ ReplayControls.prototype.update = function() {
         return setTimeout(this.update.bind(this), 100);
     }
 
-    if (this.actionTime !== this.slider.value && this.actions && !this.isApplyingAction) {
-        diff = this.slider.value - this.actionTime;
+    if (this.actionTime !== sliderTime && this.actions && !this.isApplyingAction) {
+        diff = sliderTime - this.actionTime;
         dir = diff/Math.abs(diff);
 
         // Since actionIndex is the last applied action, the reverse direction
@@ -1772,12 +1773,12 @@ ReplayControls.prototype.update = function() {
             index = this.actionIndex + dir;
             originalEvent = this.actions[index];
             action = copy(originalEvent);
-            if (!originalEvent || originalEvent.time >= this.slider.value) {
+            if (!originalEvent || originalEvent.time >= sliderTime) {
                 return setTimeout(this.update.bind(this), 100);
             }
         } else {  // "rewind"
             originalEvent = this.actions[this.actionIndex];
-            if (!originalEvent || originalEvent.time <= this.slider.value) {
+            if (!originalEvent || originalEvent.time <= sliderTime) {
                 return setTimeout(this.update.bind(this), 100);
             }
             action = this.getInverseEvent(originalEvent);
