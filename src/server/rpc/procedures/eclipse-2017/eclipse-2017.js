@@ -118,6 +118,7 @@ let stations = function(){
 let stationInfo = function(stationId){
         return getStationsCol().findOne({pws: stationId})
             .then(station => {
+                delete station._id;
                 return rpcUtils.jsonToSnapList(station);
             });
 };
@@ -138,6 +139,7 @@ let pastTemperature = function(stationId, time){
 
 let condition = function(stationId){
     return stationReading(stationId).then(reading => {
+        delete reading._id;
         return rpcUtils.jsonToSnapList(reading);
     });
 };
@@ -145,6 +147,7 @@ let condition = function(stationId){
 
 let pastCondition = function(stationId, time){
     return stationReading(stationId, time).then(reading => {
+        delete reading._id;
         return rpcUtils.jsonToSnapList(reading);
     });
 };
@@ -179,6 +182,7 @@ module.exports = {
     pastCondition,
     conditionHistory,
     availableStations,
+    _stationReading: stationReading,
     selectedStationsJson: stationUtils.selected,
     selectSectionBased: stationUtils.selectSectionBased,
     selectPointBased: stationUtils.selectPointBased,

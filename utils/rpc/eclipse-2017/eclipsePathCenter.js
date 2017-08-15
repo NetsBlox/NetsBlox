@@ -86,7 +86,7 @@ function addMidPoints(points){
 module.exports = () => {
     let nasa2 = nasaCenters.map(p => {
         return [p[0],p[1],clockToSeconds(p[2])];
-        // p[2] = clockToSeconds(p[2]); // wasted an hour here :'( TODO WHY
+        // p[2] = clockToSeconds(p[2]); // wasted so much time here
         // return p;
     });
     let pathPoints = addMidPoints(nasa2);
