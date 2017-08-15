@@ -102,7 +102,6 @@ function reqUpdates(stations){
 // loads the stations collection for the first time
 let seedDB = (fileName) => {
     loadStations(fileName).then(stations => {
-        // create index on pws instead of _id ? // OPTIMIZE remove id index?! or use it
         getReadingsCol().createIndex({coordinates: '2dsphere'}); // this is not needed if we are not going to lookup reading based on lat lon
         getStationsCol().createIndex({coordinates: '2dsphere'});
         getReadingsCol().createIndex({pws: 1});
@@ -129,7 +128,6 @@ let calcStationStats = () => {
     logger.info(aggregateQuery);
     return getReadingsCol().aggregate([aggregateQuery]).toArray().then(updates => {
         logger.info('this many aggregated results', updates.length);
-        // TODO there must be a better way to update em at once instead of doing separate queries!
         // or load it all in the RAM
         let operationsPromise = [];
         updates.forEach(update => {
