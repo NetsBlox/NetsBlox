@@ -8,7 +8,7 @@ NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
 SnapSerializer.prototype.thumbnailSize = new Point(640, 480);
 
-NetsBloxSerializer.prototype.app = 'NetsBlox 1.0.0, http://netsblox.org';  // Make this version automatic
+NetsBloxSerializer.prototype.app = 'NetsBlox 1.0.1, http://netsblox.org';  // Make this version automatic
 
 function NetsBloxSerializer() {
     this.init();
