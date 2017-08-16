@@ -31,7 +31,12 @@ let getReadingsCol = () => {
     return readingsCol;
 };
 
-
+function hideDBAttrs(station){
+    //cleanup stations
+    delete station._id;
+    delete station.coordinates;
+    return station
+}
 
 // OPTIMIZE can be cached based on approximate coords n time
 function closestReading(lat, lon, time){
@@ -133,8 +138,7 @@ let stations = function(){
 let stationInfo = function(stationId){
     return getStationsCol().findOne({pws: stationId})
         .then(station => {
-            delete station._id;
-            return rpcUtils.jsonToSnapList(station);
+            return rpcUtils.jsonToSnapList(hideDBAttrs(station));
         });
 };
 
@@ -154,16 +158,14 @@ let pastTemperature = function(stationId, time){
 
 let condition = function(stationId){
     return stationReading(stationId).then(reading => {
-        delete reading._id;
-        return rpcUtils.jsonToSnapList(reading);
+        return rpcUtils.jsonToSnapList(hideDBAttrs(reading));
     });
 };
 
 
 let pastCondition = function(stationId, time){
     return stationReading(stationId, time).then(reading => {
-        delete reading._id;
-        return rpcUtils.jsonToSnapList(reading);
+        return rpcUtils.jsonToSnapList(hideDBAttrs(reading));
     });
 };
 
@@ -181,12 +183,12 @@ let conditionHistory = function(stationId, limit){
     if (limit > 3000) limit = 3000;
     return getReadingsCol().find({pws: stationId}).sort({readAt: -1})
         .limit(limit).toArray().then(updates => {
-            return rpcUtils.jsonToSnapList(updates);
+            return rpcUtils.jsonToSnapList(updates.map(update => hideDBAttrs(update)));
         });
 };
 
 let stationsInfo = function(){
-    return stationUtils.selected().then(stations => rpcUtils.jsonToSnapList(stations));
+    return stationUtils.selected().then(stations => rpcUtils.jsonToSnapList(stations.map(s => hideDBAttrs(s))));
 };
 
 module.exports = {
