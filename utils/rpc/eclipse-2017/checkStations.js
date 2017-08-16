@@ -101,7 +101,7 @@ function reqUpdates(stations){
 
 // loads the stations collection for the first time
 let seedDB = (fileName) => {
-    loadStations(fileName).then(stations => {
+    return loadStations(fileName).then(stations => {
         getReadingsCol().createIndex({coordinates: '2dsphere'}); // this is not needed if we are not going to lookup reading based on lat lon
         getStationsCol().createIndex({coordinates: '2dsphere'});
         getReadingsCol().createIndex({pws: 1});
@@ -110,7 +110,7 @@ let seedDB = (fileName) => {
             station.coordinates = [station.longitude, station.latitude];
             return station;
         });
-        getStationsCol().insertMany(stations);
+        return getStationsCol().insertMany(stations);
     });
 };
 
@@ -190,13 +190,12 @@ let scheduleUpdates = (getStationsFn, interval) => {
 };
 
 storage.connect().then(() => {
-    if (process.argv[2] === 'seed') seedDB('wuStations.csv');
-    if (process.argv[2] === 'calcDistance') calcDistance();
-    if (process.argv[2] === 'updateStats') calcStationStats();
+    if (process.argv[2] === 'seed') return seedDB('wuStations.csv');
+    if (process.argv[2] === 'calcDistance') return calcDistance();
+    if (process.argv[2] === 'updateStats') return calcStationStats();
     if (process.argv[2] === 'pullUpdates') {
-        fireUpdates(stationUtils.selected).then(() => {
+        return fireUpdates(stationUtils.selected).then(() => {
             logger.info('gonna disc the db');
-            storage.disconnect();
         });
     }
 
@@ -205,7 +204,8 @@ storage.connect().then(() => {
         if(interval < 30000) return;
         scheduleUpdates(stationUtils.selected, interval);
     }
-});
+})
+.then(() => storage.disconnect());
 
 if (process.argv.length < 3) logger.info('pass in a command: seed, updateStats or pullUpdates');
 
