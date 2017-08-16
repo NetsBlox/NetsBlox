@@ -3,11 +3,15 @@ const Logger = require('../../../logger'),
     rpcUtils = require('../utils'),
     stationUtils = require('./stations.js'),
     logger = new Logger('netsblox:eclipse'),
+    schedule = require('node-schedule'),
     rpcStorage = require('../../storage');
 
 var readingsCol,
     stationsCol,
     latestReadings = {};
+
+// how often are we polling  wu servers?
+updateInterval = parseInt(process.env.WU_UPDATE_INTERVAL); // in seconds
 
 let eclipsePath = function(){
     return eclipsePathCenter();
@@ -76,7 +80,18 @@ function loadLatestUpdates(numUpdates){
     });
 }
 // lacking a databasetrigger we load the latest updates every n seconds
-setInterval(loadLatestUpdates, 5000, 200);
+// setInterval(loadLatestUpdates, 5000, 200);
+function scheduleLoading(interval){
+    const wuResponseDelay = 10; // max delay time between requesting for updates and getting em.
+    interval = interval + wuResponseDelay;
+    let minutes = Math.floor(interval/60);
+    let secs = interval%60 + wuResponseDelay;
+    minutes = minutes === 0 ? '*' : `*/${minutes}`;
+    schedule.scheduleJob(`${secs} ${minutes} * * * *`,()=>loadLatestUpdates(200));
+}
+
+// setup the scheduler so that it runs immediately after and update is pulled from the server
+scheduleLoading(updateInterval);
 
 // lookup temp based on location
 let temp = function(latitude, longitude, time){
