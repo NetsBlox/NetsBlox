@@ -185,9 +185,14 @@ let conditionHistory = function(stationId, limit){
         });
 };
 
+let stationsInfo = function(){
+    return stationUtils.selected().then(stations => rpcUtils.jsonToSnapList(stations));
+};
+
 module.exports = {
     isStateless: true,
     stations,
+    stationsInfo,
     stationInfo,
     eclipsePath,
     temperature,
@@ -198,8 +203,6 @@ module.exports = {
     conditionHistory,
     availableStations,
     _stationReading: stationReading,
-    selectedStationsJson: stationUtils.selected,
     selectSectionBased: stationUtils.selectSectionBased,
-    selectPointBased: stationUtils.selectPointBased,
-    availableStationsJson
+    selectPointBased: stationUtils.selectPointBased
 };

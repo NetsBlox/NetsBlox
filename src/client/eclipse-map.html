@@ -15,10 +15,10 @@
 <body>
     method:
     <select id="method">
-        <option value="selectedStationsJson">selectedStations</option>
+        <option value="stationsInfo">selectedStations</option>
         <option value="selectSectionBased">selectSectionBased</option>
         <option value="selectPointBased">selectPointBased</option>
-        <option value="availableStationsJson">availableStations</option>
+        <option value="availableStations">availableStations</option>
     </select> args: <input type="text" value="numSections=160&perSection=1" id="args"></input> <button id="draw">draw</button>
     <span>availableStations args: maxReadingMedian=500&maxDistanceFromCenter=50</span>
     <div id="map"></div>
@@ -29,6 +29,15 @@
             lng: -98.525,
             zoom: 5
         });
+
+        // converts a snapified json to json
+        function kvListToJson(kvList){
+            let obj = {};
+            kvList.forEach(keyVal => {
+                obj[keyVal[0]] = keyVal[1];
+            });
+            return obj;
+        }
 
         axios.get('/rpc/Eclipse2017/eclipsePath').then(resp => {
             nasaCenters = resp.data;
@@ -48,6 +57,8 @@
                 let stations = resp.data.filter(station => station);
                 alert(`${stations.length} stations`)
                 stations.forEach(station => {
+                    // check if what we are getting is in json or snapStructure format
+                    if (station[0]) station = kvListToJson(station); 
                     map.addMarker({
                         lat: station.latitude,
                         lng: station.longitude,
