@@ -116,11 +116,11 @@ let stations = function(){
 };
 
 let stationInfo = function(stationId){
-        return getStationsCol().findOne({pws: stationId})
-            .then(station => {
-                delete station._id;
-                return rpcUtils.jsonToSnapList(station);
-            });
+    return getStationsCol().findOne({pws: stationId})
+        .then(station => {
+            delete station._id;
+            return rpcUtils.jsonToSnapList(station);
+        });
 };
 
 let temperature = function(stationId){
