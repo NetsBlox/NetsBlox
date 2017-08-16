@@ -1,5 +1,5 @@
 const Logger = require('../../../logger'),
-    eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePathCenter.js'),
+    eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePath.js').center,
     rpcUtils = require('../utils'),
     stationUtils = require('./stations.js'),
     logger = new Logger('netsblox:eclipse'),

@@ -4,7 +4,7 @@ const Eclipse = require('../../../../src/server/rpc/procedures/eclipse-2017/ecli
     utils = require('../../../assets/utils'),
     stationUtils = require('../../../../src/server/rpc/procedures/eclipse-2017/stations.js'),
     checkStations = require('../../../../utils/rpc/eclipse-2017/checkStations.js'),
-    eclipsePath = require('../../../../utils/rpc/eclipse-2017/eclipsePathCenter.js'),
+    eclipsePath = require('../../../../utils/rpc/eclipse-2017/eclipsePath.js'),
     eclipse = new RPCMock(Eclipse);
 
 utils.verifyRPCInterfaces(eclipse, [
@@ -19,27 +19,22 @@ utils.verifyRPCInterfaces(eclipse, [
     ['pastCondition', ['stationId', 'time']]
 ]);
 
-
-describe('sa', function() {
-    beforeEach(function() {
-    });
-
-    it('should', function() {
-        eclipse.stations();
-        console.log('resp was', eclipse.response )
-    });
-
-});
-
-
 describe('eclipsePath', function() {
     it('should have more than 100 points', function() {
-        assert(eclipsePath().length > 100);
+        assert(eclipsePath.center().length > 100);
     });
 
     it('should have time as third item', function() {
-        assert(eclipsePath()[0][2] = '17:16');
+        assert(eclipsePath.center()[0][2] = '17:16');
     });
+
+    it('should be able to work with clock strings', function(){
+        const start = '3:48',
+            end = '4:10:0';
+        let seconds = eclipsePath.clockToSeconds(start)+ 22*60;
+        assert.equal(eclipsePath.secondsToClock(seconds), end);
+    });
+
 });
 
 
