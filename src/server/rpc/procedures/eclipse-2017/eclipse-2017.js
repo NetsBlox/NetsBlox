@@ -70,7 +70,7 @@ function stationReading(id, time){
     let query = {pws: id};
     if(time) query.readAt = {$lte: new Date(time)};
     return getReadingsCol().find(query).sort({requestTime: -1}).limit(1).toArray().then(readings => {
-        let reading = readings[0];
+        let [ reading ] = readings;
         return reading;
     });
 }
