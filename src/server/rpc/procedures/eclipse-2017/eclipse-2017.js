@@ -4,6 +4,7 @@ const Logger = require('../../../logger'),
     stationUtils = require('./stations.js'),
     logger = new Logger('netsblox:eclipse'),
     schedule = require('node-schedule'),
+    { cronString } = require('./utils'),
     rpcStorage = require('../../storage');
 
 var readingsCol,
@@ -86,17 +87,8 @@ function loadLatestUpdates(numUpdates){
 }
 // lacking a databasetrigger we load the latest updates every n seconds
 // setInterval(loadLatestUpdates, 5000, 200);
-function scheduleLoading(interval){
-    const wuResponseDelay = 10; // max delay time between requesting for updates and getting em.
-    interval = interval + wuResponseDelay;
-    let minutes = Math.floor(interval/60);
-    let secs = interval%60 + wuResponseDelay;
-    minutes = minutes === 0 ? '*' : `*/${minutes}`;
-    schedule.scheduleJob(`${secs} ${minutes} * * * *`,()=>loadLatestUpdates(200));
-}
-
 // setup the scheduler so that it runs immediately after and update is pulled from the server
-scheduleLoading(updateInterval);
+schedule.scheduleJob(cronString(updateInterval, 10),()=>loadLatestUpdates(200));
 
 // lookup temp based on location
 let temp = function(latitude, longitude, time){

@@ -1,4 +1,5 @@
 const Eclipse = require('../../../../src/server/rpc/procedures/eclipse-2017/eclipse-2017.js'),
+    { cronString } = require('../../../../src/server/rpc/procedures/eclipse-2017/utils.js'),
     assert = require('assert'),
     RPCMock = require('../../../assets/mock-rpc'),
     utils = require('../../../assets/utils'),
@@ -37,6 +38,18 @@ describe('eclipsePath', function() {
 
 });
 
+
+describe('eclipse utils', function() {
+    let delay = 10;    
+    it('cronString should convert 300 secs correctly', function() {
+        assert.equal(cronString(300, delay), `10 */5 * * * *`);
+    });
+
+    it('cronString should convert 30 secs correctly', function() {
+        assert.equal(cronString(30, delay), `40 * * * * *`);
+    });
+
+});
 
 // describe('station utils', function() {
 //     it('should export selected stations', function() {
