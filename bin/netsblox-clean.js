@@ -14,13 +14,13 @@ const fs = require('fs');
 const Q = require('q');
 
 program
-    .arguments('<roomUrl>')
     .parse(process.argv);
 
 // Go through the database and get all the transient projects that don't have corresponding rooms
 //   - Get the currently open rooms
 //   - Get all ids of transient projects that are not open
-let url = `http://localhost:${process.env.PORT}/state/rooms`;
+const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
+let url = `http://localhost:${process.env.PORT}/${stateEndpoint}/rooms`;
 const outputPath = `removed-projects-${new Date()}.jsonl`;
 const ids = [];
 let collection = null;
@@ -63,7 +63,12 @@ storage.connect()
             console.log('no projects to remove');
         }
     })
-    .then(() => storage.disconnect())
+    .then(() => {
+        if (ids.length) {
+            console.log(`removed ${ids.length} transient projects`);
+        }
+        return storage.disconnect();
+    })
     .catch(err => {
         console.error(err);
         return storage.disconnect();
