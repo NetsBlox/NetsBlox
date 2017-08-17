@@ -45,6 +45,10 @@
             this.originTime = params.data.originTime;
         }
 
+        uuid() {
+            return utils.uuid(this.owner, this.name);
+        }
+
         fork(room) {
             const params = {
                 room: room,
@@ -308,6 +312,14 @@
             if (this.isDeleted()) return Promise.reject('project has been deleted!');
             const query = {$set: {transient: false}};
             this._logger.trace(`persisting project ${this.owner}/${this.name}`);
+            return this._db.update(this.getStorageId(), query)
+                .then(() => this.save());
+        }
+
+        unpersist() {
+            if (this.isDeleted()) return Promise.reject('project has been deleted!');
+            const query = {$set: {transient: true}};
+            this._logger.trace(`unpersisting project ${this.owner}/${this.name}`);
             return this._db.update(this.getStorageId(), query)
                 .then(() => this.save());
         }
