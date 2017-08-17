@@ -9,4 +9,4 @@ function cronString(interval, wuResponseDelay){
 
 module.exports = {
     cronString
-}
+};
