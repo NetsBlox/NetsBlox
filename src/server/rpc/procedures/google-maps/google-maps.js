@@ -10,12 +10,13 @@ const ApiConsumer = require('../utils/api-consumer'),
     merc = new SphericalMercator({size:256}),
     KEY = process.env.GOOGLE_MAPS_KEY;
 
-let GoogleMap = new ApiConsumer('GoogleMap', 'https://maps.googleapis.com/maps/api/staticmap?');
+let GoogleMap = new ApiConsumer('GoogleMaps', 'https://maps.googleapis.com/maps/api/staticmap?');
 
 var storage;
 
+// TODO set these in the constructor for GoogleMap which probably requires changes in apiConsumer to accomodate for that
+GoogleMap.isStateless = false;
 GoogleMap._state = {};
-GoogleMap._state.userMaps = {};
 GoogleMap._state.roomId = {};
 
 var getStorage = function() {
@@ -80,6 +81,7 @@ GoogleMap._recordUserMap = function(socket, map) {
         lat: northEastCornerCoords.lat,
         lon: northEastCornerCoords.lon
     };
+    // if (!this._state.roomId) this._state.roomId = socket.roleId projectname username;
     return getStorage().get(this._state.roomId)
         .then(maps => {
             maps = maps || {};
