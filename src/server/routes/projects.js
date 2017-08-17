@@ -55,33 +55,30 @@ var setProjectPublic = function(name, user, value) {
 // Select a preview from a project (retrieve them from the roles)
 var getPreview = function(project) {
 
-    return project.getRawRoles()
-        .then(roles => {
+    const roles = project.roles;
+    const preview = {
+        ProjectName: project.name,
+        Public: !!project.public
+    };
 
-            const preview = {
-                ProjectName: project.name,
-                Public: !!project.public
-            };
+    let role;
+    for (var i = roles.length; i--;) {
+        role = roles[i];
+        // Get the most recent time
+        preview.Updated = Math.max(
+            preview.Updated || 0,
+            new Date(role.Updated).getTime()
+        );
 
-            let role;
-            for (var i = roles.length; i--;) {
-                role = roles[i];
-                // Get the most recent time
-                preview.Updated = Math.max(
-                    preview.Updated || 0,
-                    new Date(role.Updated).getTime()
-                );
-
-                // Notes
-                preview.Notes = preview.Notes || role.Notes;
-                preview.Thumbnail = preview.Thumbnail ||
-                    role.Thumbnail;
-            }
-            preview.Updated = new Date(preview.Updated);  // to string
-            preview.Public = project.Public;
-            preview.Owner = project.owner;
-            return preview;
-        });
+        // Notes
+        preview.Notes = preview.Notes || role.Notes;
+        preview.Thumbnail = preview.Thumbnail ||
+            role.Thumbnail;
+    }
+    preview.Updated = new Date(preview.Updated);
+    preview.Public = project.Public;
+    preview.Owner = project.owner;
+    return preview;
 };
 
 ////////////////////// Project Helpers //////////////////////
@@ -277,6 +274,7 @@ module.exports = [
             var username = req.session.username;
             log(username +' requested project list');
 
+            const startTime = Date.now();
             return this.storage.users.get(username)
                 .then(user => {
                     if (user) {
@@ -294,6 +292,7 @@ module.exports = [
                                     )}`
                                 );
 
+                                console.log('project list retrieved duration:' + (Date.now()-startTime));
                                 if (req.query.format === 'json') {
                                     return res.json(previews);
                                 } else {
