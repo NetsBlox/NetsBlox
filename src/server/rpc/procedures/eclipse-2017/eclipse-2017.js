@@ -85,6 +85,7 @@ function loadLatestUpdates(numUpdates){
         logger.trace('preloaded latest updates');
     });
 }
+
 // lacking a databasetrigger we load the latest updates every n seconds
 // setInterval(loadLatestUpdates, 5000, 200);
 // setup the scheduler so that it runs immediately after and update is pulled from the server
