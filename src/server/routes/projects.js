@@ -55,7 +55,7 @@ var setProjectPublic = function(name, user, value) {
 // Select a preview from a project (retrieve them from the roles)
 var getPreview = function(project) {
 
-    const roles = project.roles;
+    const roles = Object.keys(project.roles).map(k => project.roles[k]);
     const preview = {
         ProjectName: project.name,
         Public: !!project.public
