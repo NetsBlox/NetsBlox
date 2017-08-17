@@ -10,7 +10,7 @@ const ApiConsumer = require('../utils/api-consumer'),
     merc = new SphericalMercator({size:256}),
     KEY = process.env.GOOGLE_MAPS_KEY;
 
-let GoogleMap = new ApiConsumer('staticmap', 'https://maps.googleapis.com/maps/api/staticmap?');
+let GoogleMap = new ApiConsumer('GoogleMap', 'https://maps.googleapis.com/maps/api/staticmap?');
 
 var storage;
 
