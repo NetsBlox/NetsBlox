@@ -450,9 +450,6 @@ ActiveRoom.fromStore = function(logger, socket, project) {
     room.setStorage(project);
     room.originTime = project.originTime;
 
-    room.uuid = project.uuid || room.uuid;  // save over the old uuid even if it changes
-                              // this should be reset if the room is forked TODO
-
     return project.getRoleNames().then(names => {
         names.filter(name => !room.roles.hasOwnProperty(name))
             .forEach(newName => room.roles[newName] = []);
