@@ -53,7 +53,7 @@ function closestReading(lat, lon, time){
         startTime.setSeconds(startTime.getSeconds() - MAX_AGE);
         let updatesQuery = {pws: { $in: stationIds }, readAt: {$gte: startTime, $lte: time}};
         logger.info('readings query',updatesQuery);
-        return getReadingsCol().find(updatesQuery).sort({readAt: -1, distance: 1}).toArray().then(readings => {
+        return getReadingsCol().find(updatesQuery).sort({requestTime: -1, distance: 1}).toArray().then(readings => {
             // QUESTION pick the closest or latest?!
             // sth like pickBestStations but on readings
             logger.info('replying with ',readings);
@@ -69,7 +69,7 @@ function stationReading(id, time){
     // NOTE: it finds the latest available update on the database ( could be old if there is no new record!)
     let query = {pws: id};
     if(time) query.readAt = {$lte: new Date(time)};
-    return getReadingsCol().find(query).sort({readAt: -1}).limit(1).toArray().then(readings => {
+    return getReadingsCol().find(query).sort({requestTime: -1}).limit(1).toArray().then(readings => {
         let reading = readings[0];
         return reading;
     });
@@ -77,10 +77,10 @@ function stationReading(id, time){
 
 // eager loading?
 function loadLatestUpdates(numUpdates){
-    getReadingsCol().find().sort({readAt: -1}).limit(numUpdates).toArray().then(readings => {
+    getReadingsCol().find().sort({requestTime: -1}).limit(numUpdates).toArray().then(readings => {
         latestReadings = {};
         readings.forEach(reading => {
-            if (!latestReadings[reading.pws] || latestReadings[reading.pws].readAt < reading.readAt ) latestReadings[reading.pws] = reading;
+            if (!latestReadings[reading.pws] || latestReadings[reading.pws].requestTime < reading.requestTime ) latestReadings[reading.pws] = reading;
         });
         logger.trace('preloaded latest updates');
     });
@@ -164,7 +164,7 @@ let pastCondition = function(stationId, time){
 let temperatureHistory = function(stationId, limit){
     limit = parseInt(limit);
     if (limit > 3000) limit = 3000;
-    return getReadingsCol().find({pws: stationId}).sort({readAt: -1})
+    return getReadingsCol().find({pws: stationId}).sort({requestTime: -1})
         .limit(limit).toArray().then(updates => {
             return updates.map(update => update.temp);
         });
@@ -173,7 +173,7 @@ let temperatureHistory = function(stationId, limit){
 let conditionHistory = function(stationId, limit){
     limit = parseInt(limit);
     if (limit > 3000) limit = 3000;
-    return getReadingsCol().find({pws: stationId}).sort({readAt: -1})
+    return getReadingsCol().find({pws: stationId}).sort({requestTime: -1})
         .limit(limit).toArray().then(updates => {
             return rpcUtils.jsonToSnapList(updates.map(update => hideDBAttrs(update)));
         });
