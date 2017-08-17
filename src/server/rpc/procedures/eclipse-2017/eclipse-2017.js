@@ -12,7 +12,7 @@ var readingsCol,
     latestReadings = {};
 
 // how often are we polling  wu servers?
-updateInterval = parseInt(process.env.WU_UPDATE_INTERVAL); // in seconds
+const updateInterval = parseInt(process.env.WU_UPDATE_INTERVAL); // in seconds
 
 let eclipsePath = function(){
     return eclipsePathCenter();
