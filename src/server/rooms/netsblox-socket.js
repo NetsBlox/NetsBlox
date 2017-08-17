@@ -79,11 +79,12 @@ class NetsBloxSocket {
         return this._room;
     }
 
-    updateRoom () {
+    updateRoom (isOwner) {
         const room = this._room;
         if (!room) return;
 
-        if (this.isOwner()) {
+        isOwner = isOwner || this.isOwner();
+        if (isOwner) {
             if (Utils.isSocketUuid(this._room.owner)) {
                 this._room.setOwner(this.username);
             }
@@ -174,13 +175,15 @@ class NetsBloxSocket {
     }
 
     onLogin (user) {
+        let isOwner = this.isOwner();
+
         this._logger.log(`logged in as ${user.username} (from ${this.username})`);
         // Update the room if we are the owner (and not already logged in)
         this.username = user.username;
         this.user = user;
         this.loggedIn = true;
 
-        this.updateRoom();
+        this.updateRoom(isOwner);
     }
 
     join (room, role) {
