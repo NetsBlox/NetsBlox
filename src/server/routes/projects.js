@@ -427,17 +427,30 @@ module.exports = [
                 project = req.body.ProjectName;
 
             log(user.username +' trying to delete "' + project + '"');
+
             // Get the project and call "destroy" on it
             return user.getProject(project)
                 .then(project => {
-                    if (project) {
-                        project.destroy();
-                        trace(`project ${project.name} deleted`);
-                        return res.send('project deleted!');
+                    if (!project) {
+                        error(`project ${project} not found`);
+                        return res.status(400).send(`${project} not found!`);
                     }
 
-                    error(`project ${project} not found`);
-                    res.status(400).send(`${project} not found!`);
+                    const active = !!RoomManager.rooms[project.uuid()];
+
+                    if (active) {
+                        return project.unpersist()
+                            .then(() => {
+                                trace(`project ${project.name} set to transient. will be deleted on users exit`);
+                                return res.send('project deleted!');
+                            });
+                    } else {
+                        return project.destroy()
+                            .then(() => {
+                                trace(`project ${project.name} deleted`);
+                                return res.send('project deleted!');
+                            });
+                    }
                 });
         }
     },
