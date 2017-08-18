@@ -193,11 +193,7 @@ storage.connect().then(() => {
     if (process.argv[2] === 'seed') return seedDB('wuStations.csv');
     if (process.argv[2] === 'calcDistance') return calcDistance();
     if (process.argv[2] === 'updateStats') return calcStationStats();
-    if (process.argv[2] === 'pullUpdates') {
-        return fireUpdates(stationUtils.selected).then(() => {
-            console.log('gonna disc the db');
-        });
-    }
+    if (process.argv[2] === 'pullUpdates') return fireUpdates(stationUtils.selected);
 
     if (process.argv[2] === 'scheduleUpdates') {
         let interval = parseInt(process.argv[3])*1000;
@@ -222,7 +218,7 @@ function reqUpdate(id) {
         let longitude = parseFloat(obs.observation_location.longitude);
         if (isNaN(latitude) || isNaN(longitude)) throw 'bad station coordinates';
         let distance = distanceToPath(latitude, longitude);
-        return {
+        let reading = {
             distance,
             pws: obs.station_id,
             city: obs.observation_location.city,
@@ -242,6 +238,11 @@ function reqUpdate(id) {
             weather: obs.weather,
             requestTime: new Date(),
         };
+
+        const now = Date.now();
+        const delay = (now - reading.readAt.getTime())/(60*1000);  // in min
+        if (delay > 30) console.error(`${id} reporting old reading from ${reading.readAt.toISOString()}`);
+        return reading;
     });
 }
 
