@@ -112,33 +112,55 @@ describe('database', function(){
                 done();
             }).catch(done);
         });
-    })
+    });
     
-    it('should get the latest update', function(done){
+    it('_stationReading should get the latest update', function(done){
         return Eclipse._stationReading('si').then(reading => {
             assert.equal(reading.id, 1);
             done();
         }).catch(done);
-    })
+    });
 
-    it('should get the proper update from history', function(done){
-        return Eclipse._stationReading('si',new Date("2017-08-17T18:18:39.357Z")).then(reading => {
+    it('_stationReading should get the proper update from history', function(done){
+        return Eclipse._stationReading('si',"2017-08-17T18:18:39.357Z").then(reading => {
             assert.equal(reading.id, 3);
             done();
         }).catch(done);
-    })
+    });
 
-    it('should get the proper update from history', function(done){
-        return Eclipse._stationReading('si',new Date("2017-08-17T18:19:19.357Z")).then(reading => {
+    it('_stationReading should get the proper update from history', function(done){
+        return Eclipse._stationReading('si',"2017-08-17T18:19:19.357Z").then(reading => {
             assert.equal(reading.id, 2);
             done();
         }).catch(done);
-    })
+    });
+
+    it('_stationReadings should handle only startTime', function(done){
+        return Eclipse._stationReadings('si',"2017-08-17T18:16:39.357Z").then(readings => {
+            assert.deepEqual(readings.map(r=>r.id),[1,2,3,4]);
+            done();
+        }).catch(done);
+    });
+
+    it('_stationReadings should handle only endTime', function(done){
+        return Eclipse._stationReadings('si',null,"2017-08-17T18:18:39.357Z").then(readings => {
+            assert.deepEqual(readings.map(r=>r.id),[3,4,6]);
+            done();
+        }).catch(done);
+    });
+
+    it('_stationReadings should handle a range', function(done){
+        return Eclipse._stationReadings('si',"2017-08-17T18:18:39.357Z","2017-08-17T18:22:19.357Z").then(readings => {
+            assert.deepEqual(readings.map(r=>r.id),[1,2]);
+            done();
+        }).catch(done);
+    });
 
     after(function(){
         getReadingsCol().drop();
-    })
-})
+    });
+
+});
 
 // describe('station utils', function() {
 //     it('should export selected stations', function() {

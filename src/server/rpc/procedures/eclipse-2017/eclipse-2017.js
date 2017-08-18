@@ -64,7 +64,7 @@ function closestReading(lat, lon, time){
 } // end of closestReading
 
 // if find the latest update before a point in time
-function stationReading(id, time){
+function _stationReading(id, time){
     if (!time && latestReadings[id]) return Promise.resolve(latestReadings[id]);
     // NOTE: it finds the latest available update on the database ( could be old if there is no new record!)
     let query = {pws: id};
@@ -73,6 +73,25 @@ function stationReading(id, time){
         let [ reading ] = readings;
         return reading;
     });
+}
+
+// find a range of readings (by time)
+function _stationReadings(id, startTime, endTime){
+    let query = {pws: id};
+    if (startTime || endTime) query.readAt = {};
+    if (startTime){
+        startTime = new Date(startTime);
+        query.readAt.$gte = startTime;
+    }
+    if (endTime){
+        endTime = new Date(endTime);
+        query.readAt.$lte = endTime;
+    }
+    return getReadingsCol().find(query).sort({requestTime: -1}).limit(1000).toArray()
+        .then(readings => {
+            logger.info(`found ${readings.length} readings for station ${id}`);
+            return readings;
+        });
 }
 
 // eager loading?
@@ -136,28 +155,28 @@ let stationInfo = function(stationId){
 };
 
 let temperature = function(stationId){
-    return stationReading(stationId).then(reading => {
+    return _stationReading(stationId).then(reading => {
         return reading.temp;
     });
 };
 
 
 let pastTemperature = function(stationId, time){
-    return stationReading(stationId, time).then(reading => {
+    return _stationReading(stationId, time).then(reading => {
         return reading.temp;
     });
 };
 
 
 let condition = function(stationId){
-    return stationReading(stationId).then(reading => {
+    return _stationReading(stationId).then(reading => {
         return rpcUtils.jsonToSnapList(hideDBAttrs(reading));
     });
 };
 
 
 let pastCondition = function(stationId, time){
-    return stationReading(stationId, time).then(reading => {
+    return _stationReading(stationId, time).then(reading => {
         return rpcUtils.jsonToSnapList(hideDBAttrs(reading));
     });
 };
@@ -180,6 +199,12 @@ let conditionHistory = function(stationId, limit){
         });
 };
 
+let temperatureHistoryRange = function(stationId, startTime, endTime){
+    return _stationReadings(stationId, startTime, endTime).then(readings => {
+        return readings.map(r => r.temp);
+    });
+};
+
 let stationsInfo = function(){
     return stationUtils.selected().then(stations => rpcUtils.jsonToSnapList(stations.map(s => hideDBAttrs(s))));
 };
@@ -196,8 +221,10 @@ module.exports = {
     condition,
     pastCondition,
     conditionHistory,
+    temperatureHistoryRange,
     availableStations,
-    _stationReading: stationReading,
+    _stationReading,
+    _stationReadings,
     selectSectionBased: stationUtils.selectSectionBased,
     selectPointBased: stationUtils.selectPointBased
 };
