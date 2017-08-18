@@ -207,8 +207,6 @@ if (process.argv.length < 3) console.log('pass in a command: seed, updateStats o
 
 function reqUpdate(id) {
     let url = `http://api.wunderground.com/api/${WU_KEY}/conditions/q/pws:${id}.json`;
-    // console.log('hitting api', apiCounter++, url);
-    process.stdout.write('#');
     return rp({uri: url, json:true}).then(resp => {
         if (resp.response.error) {
             throw resp.response.error.description || resp.response.error.type || 'wrong pws id';
