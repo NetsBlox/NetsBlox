@@ -145,8 +145,8 @@ function MessageDefinitionBlock() {
 MessageDefinitionBlock.prototype.init = function() {
     MessageDefinitionBlock.uber.init.call(this);
 
-    this.color = SpriteMorph.prototype.blockColor.services;
-    this.category = 'services';
+    this.color = SpriteMorph.prototype.blockColor.network;
+    this.category = 'network';
     this.setSpec('name: %hintname fields: %mhintfield');
     this.drawNew();
 };
