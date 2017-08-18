@@ -55,6 +55,13 @@ describe('eclipse utils', function() {
 describe('database', function(){
     const sampleUpdates = [
         {
+            id: 0,
+            pws: 'si',
+            requestTime: new Date("2017-08-17T18:20:59.357Z"),
+            readAt: new Date("2017-08-17T18:20:19.357Z"),
+            temp: 98
+        },
+        {
             id: 1,
             pws: 'si',
             requestTime: new Date("2017-08-17T18:21:39.357Z"),
@@ -137,7 +144,7 @@ describe('database', function(){
 
     it('_stationReadings should handle only startTime', function(done){
         return Eclipse._stationReadings('si',"2017-08-17T18:16:39.357Z").then(readings => {
-            assert.deepEqual(readings.map(r=>r.id),[1,2,3,4]);
+            assert.deepEqual(readings.map(r=>r.id),[1,0,2,3,4]);
             done();
         }).catch(done);
     });
@@ -151,7 +158,7 @@ describe('database', function(){
 
     it('_stationReadings should handle a range', function(done){
         return Eclipse._stationReadings('si',"2017-08-17T18:18:39.357Z","2017-08-17T18:22:19.357Z").then(readings => {
-            assert.deepEqual(readings.map(r=>r.id),[1,2]);
+            assert.deepEqual(readings.map(r=>r.id),[1,0,2]);
             done();
         }).catch(done);
     });
