@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const fs = require('fs'),
     geolib = require('geolib'),
     rp = require('request-promise'),
@@ -256,3 +257,4 @@ function distanceToPath(lat, lon){
     }
     return min; //in KM
 }
+/* eslint-enable no-console */

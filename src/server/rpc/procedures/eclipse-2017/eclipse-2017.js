@@ -36,32 +36,8 @@ function hideDBAttrs(station){
     //cleanup stations
     delete station._id;
     delete station.coordinates;
-    return station
+    return station;
 }
-
-// OPTIMIZE can be cached based on approximate coords n time
-function closestReading(lat, lon, time){
-    const MAX_DISTANCE = 25000, // in meters
-        MAX_AGE = 60 * 5; // in seconds
-    time = time ? new Date(time) : new Date();// should be in iso format or epoch if there is no time past it means we want the temp for now!
-    stationUtils.nearbyStations(lat, lon, MAX_DISTANCE).then(stations => {
-        let stationIds = stations.map(station => station.pws);
-        // ask mongo for updates with the timelimit and specific stations.
-        // QUESTION could lookup for a single stations instead here.. will lead to more calls to the database and more promises
-        // either ask mongo for readings with {pws: closestStation, dateRange} or give it an array of stations
-        let startTime = new Date(time);
-        startTime.setSeconds(startTime.getSeconds() - MAX_AGE);
-        let updatesQuery = {pws: { $in: stationIds }, readAt: {$gte: startTime, $lte: time}};
-        logger.info('readings query',updatesQuery);
-        return getReadingsCol().find(updatesQuery).sort({requestTime: -1, distance: 1}).toArray().then(readings => {
-            // QUESTION pick the closest or latest?!
-            // sth like pickBestStations but on readings
-            logger.info('replying with ',readings);
-            return readings[0];
-        });
-    });
-
-} // end of closestReading
 
 // if find the latest update before a point in time
 function _stationReading(id, time){
@@ -109,20 +85,6 @@ function loadLatestUpdates(numUpdates){
 // setInterval(loadLatestUpdates, 5000, 200);
 // setup the scheduler so that it runs immediately after and update is pulled from the server
 schedule.scheduleJob(cronString(updateInterval, 10),()=>loadLatestUpdates(200));
-
-// lookup temp based on location
-let temp = function(latitude, longitude, time){
-    return closestReading(latitude, longitude, time).then(reading => {
-        return reading.temp;
-    });
-};
-
-
-let currentCondition = function(latitude, longitude, time){
-    return closestReading(latitude, longitude, time).then(reading => {
-        return rpcUtils.jsonToSnapList(reading);
-    });
-};
 
 let availableStationsJson = function(maxReadingMedian, maxDistanceFromCenter, latitude, longitude, maxDistanceFromPoint){
     maxReadingMedian = parseInt(maxReadingMedian) || 120;
