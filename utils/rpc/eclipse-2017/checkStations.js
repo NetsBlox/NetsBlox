@@ -51,7 +51,7 @@ function loadStations(fileName){
             stations.push(data);
         })
         .on('end', function(){
-            logger.info('done loading stations');
+            console.log('done loading stations');
             deferred.resolve(stations);
         });
 
@@ -71,7 +71,7 @@ function reqUpdates(stations){
     let stationChunks = _.chunk(stations, callsPerRound);
     let fire = () => {
         let ids = stationChunks.shift();
-        logger.info(`getting updates from ${ids.length} stations ids`, ids.join());
+        console.log(`getting updates from ${ids.length} stations ids`, ids.join());
         promises = promises.concat(ids.map(reqUpdate));
         if (stationChunks.length > 0) {
             setTimeout(fire, INTERVAL);
@@ -79,7 +79,7 @@ function reqUpdates(stations){
             Q.allSettled(promises).done(responses => {
                 responses = responses.filter(item => {
                     if (item.state === 'rejected') {
-                        logger.info('failed', item.reason);
+                        console.log('failed', item.reason);
                         return false;
                     }
                     return true;
@@ -105,7 +105,7 @@ let seedDB = (fileName) => {
         getReadingsCol().createIndex({coordinates: '2dsphere'}); // this is not needed if we are not going to lookup reading based on lat lon
         getStationsCol().createIndex({coordinates: '2dsphere'});
         getReadingsCol().createIndex({pws: 1});
-        getReadingsCol().createIndex({readAt: -1});
+        getReadingsCol().createIndex({requestTime: -1});
         stations = stations.map(station => {
             station.coordinates = [station.longitude, station.latitude];
             return station;
@@ -125,9 +125,9 @@ let calcStationStats = () => {
             docs: {$push: '$_id'}
         }
     };
-    logger.info(aggregateQuery);
+    console.log(aggregateQuery);
     return getReadingsCol().aggregate([aggregateQuery]).toArray().then(updates => {
-        logger.info('this many aggregated results', updates.length);
+        console.log('this many aggregated results', updates.length);
         // or load it all in the RAM
         let operationsPromise = [];
         updates.forEach(update => {
@@ -149,9 +149,9 @@ let calcStationStats = () => {
         });
         return Promise.all(operationsPromise);
     }).then(operations => {
-        logger.info('operations', operations);
+        console.log('operations', operations);
         return getStationsCol().bulkWrite(operations);
-    }).catch(logger.info);
+    }).catch(console.error);
 };
 
 function calcDistance(){
@@ -174,8 +174,8 @@ function calcDistance(){
 // takes a list of stations
 let fireUpdates = getStations => {
     return getStations().then(reqUpdates).then(updates => {
-        logger.info(updates.length, 'updates');
-        return getReadingsCol().insertMany(updates).catch(logger.info);
+        console.log(updates.length, 'updates');
+        return getReadingsCol().insertMany(updates).catch(console.error);
     });
 };
 //fireUpdates = contextManager(fireUpdates);
@@ -203,11 +203,11 @@ storage.connect().then(() => {
 })
 .then(() => storage.disconnect());
 
-if (process.argv.length < 3) logger.info('pass in a command: seed, updateStats or pullUpdates');
+if (process.argv.length < 3) console.log('pass in a command: seed, updateStats or pullUpdates');
 
 function reqUpdate(id) {
     let url = `http://api.wunderground.com/api/${WU_KEY}/conditions/q/pws:${id}.json`;
-    // logger.info('hitting api', apiCounter++, url);
+    // console.log('hitting api', apiCounter++, url);
     process.stdout.write('#');
     return rp({uri: url, json:true}).then(resp => {
         if (resp.response.error) {
