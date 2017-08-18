@@ -20,7 +20,7 @@ let getStationsCol = () => {
 function handPickStations(stations){
     let rules = {
         add: [],
-        remove: ['KSCEASLE23','KWYMORAN2'],
+        remove: ['KSCEASLE23','KWYMORAN2','KGAFLATS2', 'KORSPRAY3', 'KIDGARDE3', 'KSCLEXIN29', 'KMOBLACK2'],
     };
     // remove blacklists
     stations = stations.filter(station => {
