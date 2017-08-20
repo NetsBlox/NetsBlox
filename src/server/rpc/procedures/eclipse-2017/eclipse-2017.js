@@ -146,7 +146,7 @@ let pastCondition = function(stationId, time){
 let temperatureHistory = function(stationId, limit){
     limit = parseInt(limit);
     if (limit > 3000) limit = 3000;
-    return getReadingsCol().find({pws: stationId}).sort({requestTime: -1})
+    return getReadingsCol().find({pws: stationId}).sort({readAt: -1, requestTime: -1})
         .limit(limit).toArray().then(updates => {
             return updates.map(update => update.temp);
         });
@@ -155,7 +155,7 @@ let temperatureHistory = function(stationId, limit){
 let conditionHistory = function(stationId, limit){
     limit = parseInt(limit);
     if (limit > 3000) limit = 3000;
-    return getReadingsCol().find({pws: stationId}).sort({requestTime: -1})
+    return getReadingsCol().find({pws: stationId}).sort({readAt: -1, requestTime: -1})
         .limit(limit).toArray().then(updates => {
             return rpcUtils.jsonToSnapList(updates.map(update => hideDBAttrs(update)));
         });
