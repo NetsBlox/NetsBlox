@@ -55,33 +55,30 @@ var setProjectPublic = function(name, user, value) {
 // Select a preview from a project (retrieve them from the roles)
 var getPreview = function(project) {
 
-    return project.getRawRoles()
-        .then(roles => {
+    const roles = Object.keys(project.roles).map(k => project.roles[k]);
+    const preview = {
+        ProjectName: project.name,
+        Public: !!project.public
+    };
 
-            const preview = {
-                ProjectName: project.name,
-                Public: !!project.public
-            };
+    let role;
+    for (var i = roles.length; i--;) {
+        role = roles[i];
+        // Get the most recent time
+        preview.Updated = Math.max(
+            preview.Updated || 0,
+            new Date(role.Updated).getTime()
+        );
 
-            let role;
-            for (var i = roles.length; i--;) {
-                role = roles[i];
-                // Get the most recent time
-                preview.Updated = Math.max(
-                    preview.Updated || 0,
-                    new Date(role.Updated).getTime()
-                );
-
-                // Notes
-                preview.Notes = preview.Notes || role.Notes;
-                preview.Thumbnail = preview.Thumbnail ||
-                    role.Thumbnail;
-            }
-            preview.Updated = new Date(preview.Updated);  // to string
-            preview.Public = project.Public;
-            preview.Owner = project.owner;
-            return preview;
-        });
+        // Notes
+        preview.Notes = preview.Notes || role.Notes;
+        preview.Thumbnail = preview.Thumbnail ||
+            role.Thumbnail;
+    }
+    preview.Updated = new Date(preview.Updated);
+    preview.Public = project.Public;
+    preview.Owner = project.owner;
+    return preview;
 };
 
 ////////////////////// Project Helpers //////////////////////
@@ -244,9 +241,7 @@ module.exports = [
                                 trace(`found shared project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                return Q.all(projects.map(getPreview));
-                            })
-                            .then(previews => {
+                                const previews = projects.map(getPreview);
                                 const names = JSON.stringify(previews.map(preview =>
                                     preview.ProjectName));
 
@@ -285,10 +280,7 @@ module.exports = [
                                 trace(`found project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                return Q.all(projects.map(getPreview));
-                            })
-                            .then(previews => {
-
+                                const previews = projects.map(getPreview);
                                 info(`Projects for ${username} are ${JSON.stringify(
                                     previews.map(preview => preview.ProjectName)
                                     )}`
@@ -518,23 +510,20 @@ module.exports = [
                 return user.getProject(name)
                     .then(project => {
                         if (project) {
-                            return getPreview(project)
-                                .then(preview => {
-                                    if (!preview || !preview.Thumbnail) {
-                                        const err = `could not find thumbnail for ${name}`;
-                                        this._logger.error(err);
-                                        return res.status(400).send(err);
-                                    }
-                                    this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
-                                    return applyAspectRatio(
-                                        preview.Thumbnail[0],
-                                        aspectRatio
-                                    );
-                                })
-                                .then(buffer => {
-                                    res.contentType('image/png');
-                                    res.end(buffer, 'binary');
-                                });
+                            const preview = getPreview(project);
+                            if (!preview || !preview.Thumbnail) {
+                                const err = `could not find thumbnail for ${name}`;
+                                this._logger.error(err);
+                                return res.status(400).send(err);
+                            }
+                            this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
+                            return applyAspectRatio(
+                                preview.Thumbnail[0],
+                                aspectRatio
+                            ).then(buffer => {
+                                res.contentType('image/png');
+                                res.end(buffer, 'binary');
+                            });
                         } else {
                             const err = `could not find project ${name}`;
                             this._logger.error(err);

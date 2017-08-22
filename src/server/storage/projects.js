@@ -34,6 +34,16 @@
         });
     };
 
+    const clean = function(project, logger) {
+        if (!project.roles) {
+            logger.warn(`PROJECT FOUND WITH NO ROLES ${project.owner}/${project.name}`);
+            project.roles = {};
+            project.roles.myRole = utils.getEmptyRole('myRole');
+        }
+        delete project._id;
+        return project;
+    };
+
     class Project extends DataWrapper {
         constructor(params) {
             params.data = params.data || {};
@@ -67,12 +77,7 @@
         getRawProject() {
             return this._db.findOne(this.getStorageId())
                 .then(project => {
-                    if (!project.roles) {
-                        this._logger.warn(`PROJECT FOUND WITH NO ROLES ${project.name}/${project.owner}`);
-                        project.roles = {};
-                        project.roles.myRole = utils.getEmptyRole('myRole');
-                    }
-                    delete project._id;
+                    clean(project, this._logger);
                     return project;
                 });
         }
@@ -456,7 +461,7 @@
                     logger.warn(`Found invalid project for ${username}. Removing...`);
                 }
 
-                return projects;
+                return projects.map(project => clean(project, logger));
             });
     };
 
