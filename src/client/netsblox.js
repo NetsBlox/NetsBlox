@@ -4,7 +4,7 @@
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
    NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo,
    ScrollFrameMorph, SnapUndo, LibraryImportDialogMorph, CollaboratorDialogMorph,
-   BooleanSlotMorph, isRetinaSupported, isRetinaEnabled, useBlurredShadows,
+   SnapSerializer, isRetinaSupported, isRetinaEnabled, useBlurredShadows,
    BlockMorph, SyntaxElementMorph, ScriptsMorph, InputSlotDialogMorph, ArgMorph,
    BlockLabelPlaceHolderMorph, TableMorph*/
 // Netsblox IDE (subclass of IDE_Morph)
@@ -900,6 +900,16 @@ NetsBloxMorph.prototype.settingsMenu = function () {
         'check to enable replay mode',
         false
     );
+    addPreference(
+        'Save replay history',
+        function() {
+            SnapSerializer.prototype.isSavingHistory = !SnapSerializer.prototype.isSavingHistory;
+        },
+        SnapSerializer.prototype.isSavingHistory,
+        'uncheck to only save project',
+        'check to save replay with project',
+        false
+    );
     menu.addLine(); // everything below this line is stored in the project
     addPreference(
         'Thread safe scripts',
@@ -925,16 +935,6 @@ NetsBloxMorph.prototype.settingsMenu = function () {
         SpriteMorph.prototype.useFlatLineEnds,
         'uncheck for round ends of lines',
         'check for flat ends of lines'
-    );
-    addPreference(
-        'Ternary Boolean slots',
-        function () {
-            BooleanSlotMorph.prototype.isTernary =
-                !BooleanSlotMorph.prototype.isTernary;
-        },
-        BooleanSlotMorph.prototype.isTernary,
-        'uncheck to only\ntoggle true / false\noutside of rings',
-        'check to enable toggling\nBoolean slots to empty'
     );
     addPreference(
         'Codification support',
@@ -1060,8 +1060,6 @@ NetsBloxMorph.prototype.createControlBar = function () {
 };
 
 NetsBloxMorph.prototype.loadNextRoom = function () {
-    // Check if the room has diverged and optionally fork
-    // TODO
     if (this.room.nextRoom) {
         var next = this.room.nextRoom;
         this.room._name = next.roomName;  // silent set
@@ -1835,7 +1833,6 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     overwriteExisting = function(overwrite) {
         if (name) {
             myself.showMessage('Saving project\nto the cloud...');
-            myself.setProjectName(name);
             SnapCloud.saveProject(
                 myself,
                 function () {
@@ -1846,7 +1843,8 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
                     }
                 },
                 myself.cloudError(),
-                overwrite
+                overwrite,
+                name
             );
         }
     };

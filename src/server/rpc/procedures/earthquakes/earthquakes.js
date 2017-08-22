@@ -62,11 +62,6 @@ Earthquakes._sendNext = function(socket) {
 // This is very important => Otherwise it will try to instantiate this
 Earthquakes.isStateless = true;
 
-// These next two functions are the same from the stateful RPC's
-Earthquakes.getPath = function() {
-    return '/earthquakes';
-};
-
 Earthquakes.stop = function() {
     var uuid = this.socket.uuid;
     delete Earthquakes._remainingMsgs[uuid];

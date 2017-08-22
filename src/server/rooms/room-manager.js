@@ -79,11 +79,17 @@ RoomManager.prototype.createRoom = function(socket, name, ownerId) {
 RoomManager.prototype.getRoom = function(socket, ownerId, name) {
     const uuid = utils.uuid(ownerId, name);
     this._logger.trace(`getting project ${uuid} for ${ownerId}`);
+    
     if (!this.rooms[uuid]) {
         this._logger.trace(`retrieving project ${uuid} for ${ownerId}`);
         return this.storage.users.get(ownerId)
-            .then(user => user.getProject(name))
-            .then(project => {
+            .then((user) => {
+                if (user === null) {
+                    this._logger.warn('Invalid/guest username try to get a room');
+                    return null;
+                }
+                return user.getProject(name);
+            }).then(project => {
                 if (!project) {
                     this._logger.error(`No project found for ${uuid}`);
                     // If no project is found, create a new project for the user
@@ -93,7 +99,6 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
                             return project;
                         });
                 }
-
                 this._logger.trace(`retrieving project ${uuid} from database`);
                 return ActiveRoom.fromStore(this._logger, socket, project);
             })

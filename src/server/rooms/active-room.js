@@ -179,25 +179,44 @@ class ActiveRoom {
 
     setOwner(owner) {
         this.owner = owner;
-        this.changeName();
+        return this.changeName();
     }
 
-    changeName(name) {
-        var promise = Q(name);
-        if (!name) {
-            // make sure name is also unique to the existing rooms...
-            let activeRoomNames = this.getAllActiveFor(this.owner);
-            this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
-
-            // Get name unique to the owner
-            promise = this.getOwner()
-                .then(owner => owner ?
-                    owner.getNewName(this.name, activeRoomNames) : this.name);
-        }
-        return promise.then(name => {
-            this.update(name);
-            return name;
-        });
+    changeName(name, force, inPlace) {
+        let owner = null;
+        // Check if this project is already saved for the owner.
+        //   - If so, keep the same name
+        //   - Else, request a new name
+        name = name || this.name;
+        return this.getOwner()
+            .then(_owner => {
+                owner = _owner;
+                if (owner) {
+                    return owner.getAllRawProjects();
+                }
+                return [];
+            })
+            .then(projects => {
+                const existing = projects.find(project => project.name === name);
+                const nameConflicts = existing && existing.originTime !== this.originTime;
+                if (nameConflicts || force) {
+                    // make sure name is also unique to the existing rooms...
+                    let activeRoomNames = this.getAllActiveFor(this.owner);
+                    this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
+                    return owner.getNewName(name, activeRoomNames);
+                }
+                return name;
+            })
+            .then(name => {
+                const project = this.getProject();
+                if (inPlace && project) {
+                    this.name = name;
+                    return project.setName(name)
+                        .then(() => this.update(name));
+                } else {
+                    return this.update(name).then(() => name);
+                }
+            });
     }
 
     save() {
@@ -258,12 +277,13 @@ class ActiveRoom {
         this.uuid = utils.uuid(this.owner, this.name);
 
         if (this.uuid !== oldUuid) {
-            this._logger.trace('Updating uuid to ' + this.uuid);
+            this._logger.trace('updating uuid to ' + this.uuid);
             this.onUuidChange(oldUuid);
         }
         if (name) {
-            this.onRolesChanged();
+            return this.onRolesChanged();
         }
+        return Q();
     }
 
     /////////// Role Operations ///////////
@@ -429,9 +449,6 @@ ActiveRoom.fromStore = function(logger, socket, project) {
     // Store the project
     room.setStorage(project);
     room.originTime = project.originTime;
-
-    room.uuid = project.uuid || room.uuid;  // save over the old uuid even if it changes
-                              // this should be reset if the room is forked TODO
 
     return project.getRoleNames().then(names => {
         names.filter(name => !room.roles.hasOwnProperty(name))

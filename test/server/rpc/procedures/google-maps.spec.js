@@ -1,5 +1,5 @@
 describe('staticmap', function() {
-    var StaticMap = require('../../../../src/server/rpc/procedures/static-map/static-map'),
+    var StaticMap = require('../../../../src/server/rpc/procedures/google-maps/google-maps'),
         RPCMock = require('../../../assets/mock-rpc'),
         utils = require('../../../assets/utils'),
         staticmap = new RPCMock(StaticMap);

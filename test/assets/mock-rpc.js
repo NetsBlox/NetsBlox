@@ -16,8 +16,7 @@ var MockRPC = function(RPC, raw) {
     this.response = new MockResponse();
     this._rpc.socket = this.socket;
     this._rpc.response = this.response;
-
-    this.getPath  = () => RPC.getPath();
+    this.rpcName = this._rpc.rpcName;
 };
 
 MockRPC.prototype.createMethods = function(RPC) {

@@ -1,16 +1,18 @@
 (function(UserStorage) {
 
     const Q = require('q');
+    const Groups = require('./groups');
     var randomString = require('just.randomstring'),
         hash = require('../../common/sha512').hex_sha512,
         DataWrapper = require('./data'),
         Projects = require('./projects'),
-        mailer = require('../mailer');
+        mailer = require('../mailer'),
+        collection;
 
     class User extends DataWrapper {
 
-        constructor(logger, db, data) {
-            super(db, data);
+        constructor(logger, data) {
+            super(collection, data);
             this._logger = logger.fork(data.username);
         }
 
@@ -38,6 +40,30 @@
                     this._logger.error(`Could not load project ${name}: ${err}`);
                     throw err;
                 });
+        }
+
+        getGroup() {
+            if (this.groupId) {
+                return Groups.get(this.groupId);
+            }
+            return Q(null);
+        }
+
+        setGroupId(groupId) {
+            this._logger.trace(`setting groupId of ${this.username} to ${groupId}`);
+            const query = {$set: {groupId: groupId}};
+            this.groupId = groupId;
+            return this._db.update(this.getStorageId(), query);
+        }
+
+        getStorageId() {
+            return {username: this.username};
+        }
+
+        getGroupMembers() {
+            this._logger.trace(`getting group members of ${this.groupId}`);
+            return collection.find({groupId: this.groupId}, {username: 1}).toArray()
+                .then(data => data.map(d => d.username));
         }
 
         getSharedProject(owner, name) {
@@ -110,16 +136,18 @@
 
     UserStorage.init = function (logger, db) {
         this._logger = logger.fork('users');
-        this._users = db.collection('users');
+        collection = db.collection('users');
     };
 
     UserStorage.get = function (username) {
         // Retrieve the user
-        return this._users.findOne({username})
+        return collection.findOne({username})
             .then(data => {
                 let user = null;
                 if (data) {
-                    user = new User(this._logger, this._users, data);
+                    user = new User(this._logger, data);
+                } else {
+                    this._logger.warn('Invalid username when get users from storage');
                 }
                 return user;
             })
@@ -130,14 +158,14 @@
     };
 
     UserStorage.names = function () {
-        return this._users.find().toArray()
+        return collection.find().toArray()
             .then(users => users.map(user => user.username))
             .catch(e => this._logger.error('Could not get the user names!', e));
     };
 
     UserStorage.forEach = function (fn) {
         const deferred = Q.defer();
-        const stream = this._users.find().stream();
+        const stream = collection.find().stream();
 
         stream.on('data', function(user) {
             fn(user);
@@ -153,7 +181,7 @@
     UserStorage.new = function (username, email) {
         var createdAt = Date.now();
 
-        return new User(this._logger, this._users, {
+        return new User(this._logger, {
             username,
             email,
             createdAt

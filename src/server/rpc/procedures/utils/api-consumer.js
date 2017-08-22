@@ -7,6 +7,7 @@ const Logger = require('../../../logger'),
     request = require('request'),
     rp = require('request-promise'),
     jsonQuery = require('json-query'),
+    utils = require('./index'),
     MSG_SENDING_DELAY = 250;
 
 class ApiConsumer {
@@ -25,7 +26,9 @@ class ApiConsumer {
         this._baseUrl = baseUrl;
         this._logger = new Logger('netsblox:rpc:'+this._name);
         // setup api endpoint
-        this.getPath = () => '/'+this._name;
+        this.COMPATIBILITY = {
+            path: this._name
+        };
         this.isStateless = true;
         this._remainingMsgs = {};
         // setup cache. maxsize is in bytes, ttl in seconds
@@ -74,6 +77,7 @@ class ApiConsumer {
             });
         }).catch(err => {
             this._logger.error('error in requesting data from', fullUrl, err);
+            throw err;
         });
     }
 
@@ -112,7 +116,8 @@ class ApiConsumer {
                 deferred.reject(err);
             });
             return deferred.promise.catch(err => {
-                this._logger.error('error in requesting the image', err);
+                this._logger.error('error in requesting the image',fullUrl, err);
+                throw err;
             });
         };
         if (queryOptions.cache === false) {
@@ -170,32 +175,7 @@ class ApiConsumer {
 
     // creates snap friendly structure out of an array ofsimple keyValue json object or just single on of them.
     _createSnapStructure(input){
-        // if an string is passed check to see if it can be parsed to json
-        if (typeof input === 'string') {
-            try {
-                input =  JSON.parse(input);
-            } catch (e) {
-                return input;
-            }
-        }
-
-        // if it's not an obj(json or array)
-        if (input === null || input === undefined) return [];
-        if (typeof input !== 'object') return input;
-
-        let keyVals = [];
-        if (Array.isArray(input)) {
-            input = input.filter(item => item);
-            for (let i = 0; i < input.length; i++) {
-                keyVals.push(this._createSnapStructure(input[i]));
-            }
-        }else{
-            const inputKeys = Object.keys(input);
-            for (let i = 0; i < inputKeys.length; i++) {
-                keyVals.push([inputKeys[i], this._createSnapStructure(input[inputKeys[i]]) ]);
-            }
-        }
-        return keyVals;
+        return utils.jsonToSnapList(input);
     }
 
     /**
@@ -274,11 +254,7 @@ class ApiConsumer {
     _sendImage(queryOptions){
         return this._requestImage(queryOptions)
             .then(imageBuffer => {
-                this.response.set('cache-control', 'private, no-store, max-age=0');
-                this.response.set('content-type', 'image/png');
-                this.response.set('content-length', imageBuffer.length);
-                this.response.set('connection', 'close');
-                this.response.status(200).send(imageBuffer);
+                utils.sendImageBuffer(this.response, imageBuffer);
                 this._logger.trace('sent the image');
             }).catch(() => {
                 this.response.status(404).send('');

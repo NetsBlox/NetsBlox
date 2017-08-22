@@ -6,9 +6,11 @@
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
-SnapSerializer.prototype.thumbnailSize = new Point(640, 480);
 
-NetsBloxSerializer.prototype.app = 'NetsBlox 0.15.4, http://netsblox.org';  // Make this version automatic
+SnapSerializer.prototype.thumbnailSize = new Point(640, 480);
+SnapSerializer.prototype.isSavingHistory = true;
+
+NetsBloxSerializer.prototype.app = 'NetsBlox 1.1.2, http://netsblox.org';  // Make this version automatic
 
 function NetsBloxSerializer() {
     this.init();
@@ -534,6 +536,13 @@ NetsBloxSerializer.prototype.loadInput = function (model, input, block) {
             // NetsBlox addition: end
         }
     }
+};
+
+NetsBloxSerializer.prototype.loadCustomBlock = function (element, isGlobal) {
+    if (element.attributes.category === 'services') {
+        element.attributes.category = 'network';
+    }
+    return SnapSerializer.prototype.loadCustomBlock.call(this, element, isGlobal);
 };
 
 NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {

@@ -55,33 +55,30 @@ var setProjectPublic = function(name, user, value) {
 // Select a preview from a project (retrieve them from the roles)
 var getPreview = function(project) {
 
-    return project.getRawRoles()
-        .then(roles => {
+    const roles = Object.keys(project.roles).map(k => project.roles[k]);
+    const preview = {
+        ProjectName: project.name,
+        Public: !!project.public
+    };
 
-            const preview = {
-                ProjectName: project.name,
-                Public: !!project.public
-            };
+    let role;
+    for (var i = roles.length; i--;) {
+        role = roles[i];
+        // Get the most recent time
+        preview.Updated = Math.max(
+            preview.Updated || 0,
+            new Date(role.Updated).getTime()
+        );
 
-            let role;
-            for (var i = roles.length; i--;) {
-                role = roles[i];
-                // Get the most recent time
-                preview.Updated = Math.max(
-                    preview.Updated || 0,
-                    new Date(role.Updated).getTime()
-                );
-
-                // Notes
-                preview.Notes = preview.Notes || role.Notes;
-                preview.Thumbnail = preview.Thumbnail ||
-                    role.Thumbnail;
-            }
-            preview.Updated = new Date(preview.Updated);  // to string
-            preview.Public = project.Public;
-            preview.Owner = project.owner;
-            return preview;
-        });
+        // Notes
+        preview.Notes = preview.Notes || role.Notes;
+        preview.Thumbnail = preview.Thumbnail ||
+            role.Thumbnail;
+    }
+    preview.Updated = new Date(preview.Updated);
+    preview.Public = project.Public;
+    preview.Owner = project.owner;
+    return preview;
 };
 
 ////////////////////// Project Helpers //////////////////////
@@ -133,41 +130,7 @@ var sendProjectTo = function(project, res) {
         .catch(err => res.status(500).send('ERROR: ' + err));
 };
 
-var createCopyFrom = function(user, project) {
-    var copy = _.cloneDeep(project);
-
-    // Create copy from the project and rename it
-    return user.getNewName(copy.name)
-        .then(name => {
-            copy.name = name;
-            copy.Public = false;
-            return copy;
-        });
-};
-
-var saveRoom = function (activeRoom, socket, user, res) {
-    log(`saving entire room for ${socket.username}`);
-    const getProject = Q(activeRoom.getProject()) || Projects.new(user, activeRoom);
-    const uuid = Utils.uuid(user.username, activeRoom.name);
-
-    return getProject
-        .then(project => {
-            activeRoom.setStorage(project);
-            project.setActiveRole(socket.roleId);
-            return project.persist();
-        })
-        .then(() => {
-            log(`room save successful for project "${uuid}"`);
-            return res.send('project saved!');
-        })
-        .catch(err => {
-            error(`project save failed for "${uuid}": ${err}`);
-            return res.status(500).send('ERROR: ' + err);
-        });
-};
-
 const TRANSPARENT = [0,0,0,0];
-
 
 var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
     var lwip = require('lwip');
@@ -210,61 +173,54 @@ var applyAspectRatio = function (thumbnail, aspectRatio) {
 module.exports = [
     {
         Service: 'saveProject',
-        Parameters: 'socketId,overwrite',
+        Parameters: 'socketId,overwrite,projectName',
         Method: 'Post',
         Note: '',
         middleware: ['hasSocket', 'isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
-                socketId = req.body.socketId,
+                {overwrite, socketId, projectName} = req.body,
                 socket = SocketManager.getSocket(socketId),
 
-                activeRoom = socket._room,
-                owner,
-                roomName;
+                activeRoom = socket._room;
 
             if (!activeRoom) {
                 error(`Could not find active room for "${username}" - cannot save!`);
                 return res.status(500).send('ERROR: active room not found');
             }
 
-            roomName = activeRoom.name;
-            const ownerName = activeRoom.owner;
-            return this.storage.users.get(ownerName)
-                .then(user => {
-                    owner = user;
-                    return getRoomsNamed.call(this, roomName, owner);
-                })
-                .then(rooms => {
-                    if (socket.isOwner() || socket.isCollaborator()) {
-                        info(`${username} initiating room save for ${activeRoom.uuid}`);
+            const saveAs = () => {
+                activeRoom.changeName(projectName)
+                    .then(() => activeRoom.getProject().persist())
+                    .then(() => res.status(200).send('saved'));
+            };
 
-                        // If we overwrite, we don't want to change the originTime
-                        if (rooms.stored) {
-                            trace(`Found project with same name (${rooms.stored.name}) in database`);
-                            activeRoom.originTime = rooms.stored.originTime;
-                            if (!rooms.areSame) {
-                                trace(`Projects are different: ${rooms.stored.originTime} ` +
-                                    `vs ${rooms.active.originTime}`);
+            // If we are going to overwrite the project
+            //   - set the name
+            //   - if the other project is open, rename it
+            //   - ow, delete it
+            //
+            // If we are not overwriting the project, just name it and save!
+            if (overwrite && projectName !== activeRoom.name) {
+                trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
+                const uuid = Utils.uuid(username, projectName);
+                const otherRoom = RoomManager.rooms[uuid];
+                const isSame = otherRoom === activeRoom;
+                if (otherRoom && !isSame) {  // rename the existing, active room
+                    return otherRoom.changeName(projectName, true).then(saveAs);
+                } else {  // delete the existing
+                    return Projects.get(username, projectName)
+                        .then(project => {
+                            if (project) {
+                                return project.destroy();
                             }
-                        } else {
-                            trace(`saving first project named ${roomName} for ${username}`);
-                        }
-
-                        if (rooms.areSame) {  // overwrite
-                            saveRoom.call(this, activeRoom, socket, owner, res);
-                        } else if (req.body.overwrite === 'true') {  // overwrite
-                            saveRoom.call(this, activeRoom, socket, owner, res);
-                        } else {  // rename
-                            activeRoom.changeName();
-                            activeRoom.originTime = Date.now();
-                            saveRoom.call(this, activeRoom, socket, owner, res);
-                        }
-                    } else {  // Save a copy for the given user and move to the given room
-                        RoomManager.forkRoom(activeRoom, socket);
-                        return res.status(200).send('saved own copy!');
-                    }
-                });
+                        })
+                        .then(saveAs);
+                }
+            } else {
+                trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
+                return saveAs();
+            }
         }
     },
     {
@@ -285,9 +241,7 @@ module.exports = [
                                 trace(`found shared project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                return Q.all(projects.map(getPreview));
-                            })
-                            .then(previews => {
+                                const previews = projects.map(getPreview);
                                 const names = JSON.stringify(previews.map(preview =>
                                     preview.ProjectName));
 
@@ -326,10 +280,7 @@ module.exports = [
                                 trace(`found project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                return Q.all(projects.map(getPreview));
-                            })
-                            .then(previews => {
-
+                                const previews = projects.map(getPreview);
                                 info(`Projects for ${username} are ${JSON.stringify(
                                     previews.map(preview => preview.ProjectName)
                                     )}`
@@ -438,7 +389,7 @@ module.exports = [
                         // Clone, change the room name, and send!
                         // Since they are the same, we assume the user wants to create
                         // a copy of the active room
-                        return createCopyFrom(user, rooms.stored)
+                        return rooms.stored.getCopy(user)
                             .then(copy => sendProjectTo(copy, res));
                     } else {
                         // not the same; simply change the name of the active room
@@ -468,17 +419,30 @@ module.exports = [
                 project = req.body.ProjectName;
 
             log(user.username +' trying to delete "' + project + '"');
+
             // Get the project and call "destroy" on it
             return user.getProject(project)
                 .then(project => {
-                    if (project) {
-                        project.destroy();
-                        trace(`project ${project.name} deleted`);
-                        return res.send('project deleted!');
+                    if (!project) {
+                        error(`project ${project} not found`);
+                        return res.status(400).send(`${project} not found!`);
                     }
 
-                    error(`project ${project} not found`);
-                    res.status(400).send(`${project} not found!`);
+                    const active = !!RoomManager.rooms[project.uuid()];
+
+                    if (active) {
+                        return project.unpersist()
+                            .then(() => {
+                                trace(`project ${project.name} set to transient. will be deleted on users exit`);
+                                return res.send('project deleted!');
+                            });
+                    } else {
+                        return project.destroy()
+                            .then(() => {
+                                trace(`project ${project.name} deleted`);
+                                return res.send('project deleted!');
+                            });
+                    }
                 });
         }
     },
@@ -546,23 +510,20 @@ module.exports = [
                 return user.getProject(name)
                     .then(project => {
                         if (project) {
-                            return getPreview(project)
-                                .then(preview => {
-                                    if (!preview || !preview.Thumbnail) {
-                                        const err = `could not find thumbnail for ${name}`;
-                                        this._logger.error(err);
-                                        return res.status(400).send(err);
-                                    }
-                                    this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
-                                    return applyAspectRatio(
-                                        preview.Thumbnail[0],
-                                        aspectRatio
-                                    );
-                                })
-                                .then(buffer => {
-                                    res.contentType('image/png');
-                                    res.end(buffer, 'binary');
-                                });
+                            const preview = getPreview(project);
+                            if (!preview || !preview.Thumbnail) {
+                                const err = `could not find thumbnail for ${name}`;
+                                this._logger.error(err);
+                                return res.status(400).send(err);
+                            }
+                            this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
+                            return applyAspectRatio(
+                                preview.Thumbnail[0],
+                                aspectRatio
+                            ).then(buffer => {
+                                res.contentType('image/png');
+                                res.end(buffer, 'binary');
+                            });
                         } else {
                             const err = `could not find project ${name}`;
                             this._logger.error(err);
