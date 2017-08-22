@@ -1,4 +1,5 @@
-const nasaCenters = require('./centerPoints.json');
+const nasaCenters = require('./centerPoints.json'),
+    turf = require('turf');
 
 function clockToSeconds(clockStr){
     let holder = clockStr.split(':');
@@ -27,7 +28,10 @@ function addMidPoints(points){
         let point = points[i];
         let nextPoint = points[i+1];
         if (!nextPoint) break; // this is the last pair
-        let midPoint = [avg(point[0],nextPoint[0]),avg(point[1],nextPoint[1]), avg(point[2],nextPoint[2])];
+        let loc1 = point.slice(0,2);
+        let loc2 = nextPoint.slice(0,2);
+        let midLoc = turf.midpoint(turf.point([loc1[1],loc1[0]]),turf.point([loc2[1],loc2[0]])).geometry.coordinates;
+        let midPoint = [midLoc[1], midLoc[0], avg(point[2],nextPoint[2])];
         midPoints.push(midPoint);
     }
     let pathPoints = midPoints.concat(points);
@@ -50,5 +54,6 @@ module.exports = {
         });
     },
     clockToSeconds,
-    secondsToClock
+    secondsToClock,
+    addMidPoints
 };

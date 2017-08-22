@@ -73,6 +73,7 @@
     "socket.io": "^1.3.5",
     "sphericalmercator": "^1.0.5",
     "temp-units-conv": "^0.1.1",
+    "turf": "^3.0.14",
     "urlencode": "^1.1.0",
     "vantage": "^1.5.1",
     "vantage-repl": "^1.1.4",

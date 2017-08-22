@@ -37,6 +37,15 @@ describe('eclipsePath', function() {
         assert.equal(eclipsePath.secondsToClock(seconds), end);
     });
 
+    it('should calculate correct midpoints', function(){
+
+        const basePoints = [[42.11833333, -103.11666667, 10000], [41.875, -102.115, 11000]];
+        let interpolated = eclipsePath.addMidPoints(basePoints);
+        // do this without changing basePoints
+        basePoints.splice(1,0,[41.99775513804161, -102.61487583112805, 10500]);
+        assert.deepEqual(interpolated, basePoints);
+    });
+
 });
 
 
