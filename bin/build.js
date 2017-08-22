@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 'use strict';
 
 const isDevEnv = process.env.ENV === 'dev';
@@ -37,9 +38,10 @@ if (isDevEnv) {  // don't minify in dev
 } else {
     console.log('dev src length:', src.length);
 
-    var final_code = ugly.minify(srcFiles, {outSourceMap: path.join(srcPath, 'netsblox-build.js.map')}).code;
+    final_code = ugly.minify(srcFiles, {outSourceMap: path.join(srcPath, 'netsblox-build.js.map')}).code;
     console.log('output length:', final_code.length);
     console.log('compression ratio:', 1-(final_code.length/src.length));
 }
 
 fs.writeFileSync(path.join(srcPath, 'dist', 'netsblox-build.js'), final_code);
+/* eslint-enable no-console */
