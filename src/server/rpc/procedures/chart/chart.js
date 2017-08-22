@@ -150,12 +150,12 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title) {
     return this._drawChart(dataset, xAxisTag, yAxisTag, datasetTag, title, 'line');
 };
 
-chart.testGnuChart = function(lines, lineTitles, chartTitle, xRange, yRange){
+chart.testGnuChart = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLabel){
     let data = lines.map((pts, idx) => {
         return {title: lineTitles[idx], points: pts};
     });
     
-    let opts = {title: chartTitle};
+    let opts = {title: chartTitle, xLabel, yLabel};
     if (xRange) opts.xRange = {min: xRange[0], max: xRange[1]};
     if (yRange) opts.yRange = {min: yRange[0], max: yRange[1]};
     let chartStream =  gnuPlot.draw(data, opts);

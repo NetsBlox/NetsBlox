@@ -12,6 +12,8 @@ const lineDefaults = {
 const optsDefautls = {
     xRange: undefined,
     yRange: undefined,
+    xLabel: undefined,
+    yLabel: undefined,
     title: null,
     outputName: false
 };
@@ -60,7 +62,6 @@ let draw = (data, opts) => {
         .set(`style line 6 lt 1 lc rgb "#E6AB02"`)  // dark banana
         .set(`style line 7 lt 1 lc rgb "#A6761D"`)  // dark tan
         .set(`style line 8 lt 1 lc rgb "#666666"`)  // dark gray
-
         // palette
         .set(`palette maxcolors 8`)
         .set(`palette defined ( 0 "#1B9E77", 1 "#D95F02", 2 "#7570B3", 3 "#E7298A", 4 "#66A61E", 5 "#E6AB02", 6 "#A6761D",7 "#666666" )`)
@@ -72,6 +73,8 @@ let draw = (data, opts) => {
     if (opts.xRange) graph.set(`xrange [${opts.xRange.min}:${opts.xRange.max}]`)
     if (opts.yRange) graph.set(`yrange [${opts.yRange.min}:${opts.yRange.max}]`)
     if (opts.outputName) graph.set(`output "${opts.outputName}"`);
+    if (opts.xLabel) graph.set(`xlabel "${opts.xLabel}"`);
+    if (opts.yLabel) graph.set(`ylabel "${opts.yLabel}"`);
 
     graph.plot(dataToPlot(data));
 
