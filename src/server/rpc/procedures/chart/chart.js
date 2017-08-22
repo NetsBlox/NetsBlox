@@ -4,6 +4,10 @@ const test = require('../utils/dataset-test');
 const rpcUtils = require('../utils');
 const Logger = require('../../../logger');
 const logger = new Logger('netsblox:rpc:chart');
+const gnuPlot = require('./node-gnuplot.js');
+const fs = require('fs-extra');
+const stream = require('stream');
+const Q = require('q');
 
 let chart = new ApiConsumer('chart');
 let chartNode = new ChartNode(600, 600);
@@ -137,7 +141,7 @@ chart._drawChart = function (dataset, xAxisTag, yAxisTag, datasetTag, title, cha
         }
     }
 };
-//
+
 chart.drawBarChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title) {
     return this._drawChart(dataset, xAxisTag, yAxisTag, datasetTag, title, 'bar');
 };
@@ -146,5 +150,19 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title) {
     return this._drawChart(dataset, xAxisTag, yAxisTag, datasetTag, title, 'line');
 };
 
+chart.testGnuChart = function(lines, lineTitles, chartTitle, xRange, yRange){
+    let data = lines.map((pts, idx) => {
+        return {title: lineTitles[idx], points: pts};
+    });
+    
+    let opts = {title: chartTitle};
+    if (xRange) opts.xRange = {min: xRange[0], max: xRange[1]};
+    if (yRange) opts.yRange = {min: yRange[0], max: yRange[1]};
+    let chartStream =  gnuPlot.draw(data, opts);
+    chartStream.end();  
+    return rpcUtils.collectStream(chartStream).then( buffer => {
+        rpcUtils.sendImageBuffer(this.response, buffer);
+    })
+}
 
 module.exports = chart;
