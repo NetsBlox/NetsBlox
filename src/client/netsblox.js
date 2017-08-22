@@ -4,7 +4,7 @@
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
    NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo,
    ScrollFrameMorph, SnapUndo, LibraryImportDialogMorph, CollaboratorDialogMorph,
-   BooleanSlotMorph, isRetinaSupported, isRetinaEnabled, useBlurredShadows,
+   SnapSerializer, isRetinaSupported, isRetinaEnabled, useBlurredShadows,
    BlockMorph, SyntaxElementMorph, ScriptsMorph, InputSlotDialogMorph, ArgMorph,
    BlockLabelPlaceHolderMorph, TableMorph*/
 // Netsblox IDE (subclass of IDE_Morph)
