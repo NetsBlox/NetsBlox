@@ -1,4 +1,5 @@
 // a set of utilities to be used by rpcs
+const Q = require('q');
 
 // sets up the headers and send an image
 const sendImageBuffer = (response, imageBuffer) => {
@@ -8,6 +9,21 @@ const sendImageBuffer = (response, imageBuffer) => {
     response.set('connection', 'close');
     response.status(200).send(imageBuffer);
 };
+
+const collectStream = stream => {
+    let deferred = Q.defer();
+    var imageBuffer = new Buffer(0);
+    stream.on('data', function(data) {
+        imageBuffer = Buffer.concat([imageBuffer, data]);
+    });
+    stream.on('end', function() {
+        deferred.resolve(imageBuffer);
+    });
+    stream.on('error', err => {
+        deferred.reject(err);
+    });
+    return deferred.promise;
+}
 
 // creates snap friendly structure out of an array ofsimple keyValue json object or just single on of them.
 const jsonToSnapList = inputJson => {
@@ -55,5 +71,6 @@ const encodeQueryData = tuple => {
 module.exports = {
     sendImageBuffer,
     encodeQueryData,
+    collectStream,
     jsonToSnapList
 };
