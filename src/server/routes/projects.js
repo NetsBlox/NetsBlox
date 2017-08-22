@@ -241,9 +241,7 @@ module.exports = [
                                 trace(`found shared project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                return Q.all(projects.map(getPreview));
-                            })
-                            .then(previews => {
+                                const previews = projects.map(getPreview);
                                 const names = JSON.stringify(previews.map(preview =>
                                     preview.ProjectName));
 
@@ -274,7 +272,6 @@ module.exports = [
             var username = req.session.username;
             log(username +' requested project list');
 
-            const startTime = Date.now();
             return this.storage.users.get(username)
                 .then(user => {
                     if (user) {
@@ -283,16 +280,12 @@ module.exports = [
                                 trace(`found project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                return Q.all(projects.map(getPreview));
-                            })
-                            .then(previews => {
-
+                                const previews = projects.map(getPreview);
                                 info(`Projects for ${username} are ${JSON.stringify(
                                     previews.map(preview => preview.ProjectName)
                                     )}`
                                 );
 
-                                console.log('project list retrieved duration:' + (Date.now()-startTime));
                                 if (req.query.format === 'json') {
                                     return res.json(previews);
                                 } else {
@@ -517,23 +510,20 @@ module.exports = [
                 return user.getProject(name)
                     .then(project => {
                         if (project) {
-                            return getPreview(project)
-                                .then(preview => {
-                                    if (!preview || !preview.Thumbnail) {
-                                        const err = `could not find thumbnail for ${name}`;
-                                        this._logger.error(err);
-                                        return res.status(400).send(err);
-                                    }
-                                    this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
-                                    return applyAspectRatio(
-                                        preview.Thumbnail[0],
-                                        aspectRatio
-                                    );
-                                })
-                                .then(buffer => {
-                                    res.contentType('image/png');
-                                    res.end(buffer, 'binary');
-                                });
+                            const preview = getPreview(project);
+                            if (!preview || !preview.Thumbnail) {
+                                const err = `could not find thumbnail for ${name}`;
+                                this._logger.error(err);
+                                return res.status(400).send(err);
+                            }
+                            this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
+                            return applyAspectRatio(
+                                preview.Thumbnail[0],
+                                aspectRatio
+                            ).then(buffer => {
+                                res.contentType('image/png');
+                                res.end(buffer, 'binary');
+                            });
                         } else {
                             const err = `could not find project ${name}`;
                             this._logger.error(err);
