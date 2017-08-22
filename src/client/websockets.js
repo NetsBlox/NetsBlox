@@ -283,37 +283,49 @@ WebSocketManager.prototype.serializeMessage = function(message) {
     return JSON.stringify(message);
 };
 
+WebSocketManager.prototype.serialize = function(value) {
+    this.serializer.flush();
+    this.serializer.isSavingHistory = false;
+    var result = this.serializer.store(value);
+    this.serializer.isSavingHistory = true;
+    this.serializer.flush();
+
+    return result;
+};
+
 WebSocketManager.prototype.deserializeMessage = function(message) {
     var content = message.content,
         fields = Object.keys(content),
-        value,
-        receiver,
-        project,
-        model;
-
-    this.serializer.project = {
-        stage: new StageMorph(),
-        sprites: {}
-    };
+        value;
 
     for (var i = fields.length; i--;) {
         value = content[fields[i]];
         if (value[0] === '<') {
             try {
-                model = this.serializer.parse(value);
-                receiver = model.childNamed('receiver');
-                project = receiver && receiver.childNamed('project');
-                // If the receiver is the project...
-                if (project) {
-                    this.serializer.rawLoadProjectModel(project);
-                }
-                content[fields[i]] = this.serializer.loadValue(model);
+                content[fields[i]] = this.deserialize(value);
             } catch(e) {  // must not have been XML
                 console.error('Could not deserialize!', e);
             }
         }
     }
     return content;
+};
+
+WebSocketManager.prototype.deserialize = function(value) {
+    var model = this.serializer.parse(value);
+    var receiver = model.childNamed('receiver');
+    var project = receiver && receiver.childNamed('project');
+
+    this.serializer.project = {
+        stage: new StageMorph(),
+        sprites: {}
+    };
+
+    // If the receiver is the project...
+    if (project) {
+        this.serializer.rawLoadProjectModel(project);
+    }
+    return this.serializer.loadValue(model);
 };
 
 WebSocketManager.prototype.onConnect = function() {

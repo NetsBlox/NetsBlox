@@ -313,41 +313,55 @@ NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
 };
 
 NetsProcess.prototype.parseRPCResult = function (result) {
+    var sockets = this.homeContext.receiver.parentThatIsA(IDE_Morph).sockets;
+
     if (result instanceof Array) {
         return new List(result.map(this.parseRPCResult.bind(this)));
+    } else if (typeof result === 'string' && result[0] === '<') {  // serialized snap object
+        try {
+            result = sockets.deserialize(result);
+        } catch(e) {
+            console.log(e);
+        }
     }
     return result;
 };
 
-function toQueryString(list, prefix) {
+NetsProcess.prototype.toQueryString = function (list, prefix) {
+    var sockets = this.homeContext.receiver.parentThatIsA(IDE_Morph).sockets;
     var array = list.contents;
     var str = [], k, v;
+
     for(var i = 0; i < array.length; i++) {
         k = prefix + '[' + i + ']';
-        v = array[i] instanceof Context ? SnapActions.serializeBlock(array[i].expression, true) : array[i];
-        str.push(typeof v === 'object' ?
-            toQueryString(v, k) :
-            k + '=' + v);
+        v = isObject(array[i]) ? sockets.serialize(array[i]) : array[i];
+        str.push(typeof v === 'object' ? this.toQueryString(v, k) :
+            k + '=' + encodeURIComponent(v));
     }
+
     return str.join('&');
-}
+};
 
 NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
-    var action = methodSignature[0],
+    var myself = this,
+        action = methodSignature[0],
         argNames = methodSignature[1],
         values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
         params;
 
+    var sockets = this.homeContext.receiver.parentThatIsA(IDE_Morph).sockets;
+
     params = argNames.map(function(name, index) {
         if (values[index] instanceof List) {
-            return toQueryString(values[index], name);
+            return myself.toQueryString(values[index], name);
         }
         // if a block is passed in serialize it and send it to the rpc
-        else if (values[index] instanceof Context) {
-            return name + '=' + SnapActions.serializeBlock(values[index].expression, true);
+        else if (isObject(values[index])) {
+            return name + '=' + encodeURIComponent(sockets.serialize(values[index]));
         }
-        return name + '=' + values[index];
+        return name + '=' + encodeURIComponent(values[index]);
     }).join('&');
+
     return this.getJSFromRPCDropdown(rpc, action, params);
 };
 
