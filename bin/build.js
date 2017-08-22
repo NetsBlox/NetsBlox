@@ -24,9 +24,14 @@ var src = srcFiles
 var ugly = require('uglify-js');
 
 console.log('dev src length:', src.length);
-var final_code = ugly.minify(srcFiles, {outSourceMap: path.join(srcPath, 'netsblox-build.js.map')});
 
-console.log('output length:', final_code.code.length);
-console.log('compression ratio:', 1-(final_code.code.length/src.length));
+var final_code = src;
 
-fs.writeFileSync(path.join(srcPath, 'dist', 'netsblox-build.js'), final_code.code);
+if (process.env.ENV !== 'dev') {  // don't minify in dev
+    var final_code = ugly.minify(srcFiles, {outSourceMap: path.join(srcPath, 'netsblox-build.js.map')}).code;
+}
+
+console.log('output length:', final_code.length);
+console.log('compression ratio:', 1-(final_code.length/src.length));
+
+fs.writeFileSync(path.join(srcPath, 'dist', 'netsblox-build.js'), final_code);
