@@ -82,7 +82,7 @@ describe('database', function(){
             id: 1,
             pws: 'si',
             requestTime: rDate(160),
-            readAt: rDate(110),
+            readAt: rDate(115),
             temp: 98
         },
         {
@@ -96,7 +96,7 @@ describe('database', function(){
             id: 3,
             pws: 'si',
             requestTime: rDate(130),
-            readAt: rDate(105),
+            readAt: rDate(95),
             temp: 98
         },
         {
@@ -140,42 +140,42 @@ describe('database', function(){
     
     it('_stationReading should get the latest update', function(done){
         return Eclipse._stationReading('si').then(reading => {
-            assert.equal(reading.id, 0);
+            assert.equal(reading.id, 1);
             done();
         }).catch(done);
     });
 
     it('_stationReading should get the proper update from history', function(done){
         return Eclipse._stationReading('si', rDate(106).toISOString()).then(reading => {
-            assert.equal(reading.id, 3);
+            assert.equal(reading.id, 4);
             done();
         }).catch(done);
     });
 
     it('_stationReading should get the proper update from history 2', function(done){
         return Eclipse._stationReading('si', rDate(110).toISOString()).then(reading => {
-            assert.equal(reading.id, 1);
+            assert.equal(reading.id, 2);
             done();
         }).catch(done);
     });
 
     it('_stationReadings should handle only startTime', function(done){
         return Eclipse._stationReadings('si',rDate(105).toISOString()).then(readings => {
-            assert.deepEqual(readings.map(r=>r.id),[0,1,2,3,4]);
+            assert.deepEqual(readings.map(r=>r.id),[1,0,2,4]);
             done();
         }).catch(done);
     });
 
     it('_stationReadings should handle only endTime', function(done){
         return Eclipse._stationReadings('si',null, rDate(106).toISOString()).then(readings => {
-            assert.deepEqual(readings.map(r=>r.id),[3,4,6]);
+            assert.deepEqual(readings.map(r=>r.id),[4,6,3]);
             done();
         }).catch(done);
     });
 
     it('_stationReadings should handle a range', function(done){
         return Eclipse._stationReadings('si', rDate(109).toISOString(), rDate(130).toISOString()).then(readings => {
-            assert.deepEqual(readings.map(r=>r.id),[0,1,2]);
+            assert.deepEqual(readings.map(r=>r.id),[1,0,2]);
             done();
         }).catch(done);
     });
