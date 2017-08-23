@@ -62,54 +62,62 @@ describe('eclipse utils', function() {
 });
 
 describe('database', function(){
+
+    const baseSeconds = new Date("2017-08-23T11:00:30.000Z").getTime();
+    // returns a date relative to a predefined base
+    function rDate(delta){
+        mSeconds = baseSeconds + (delta * 1000);
+        return new Date(mSeconds);
+    }
+
     const sampleUpdates = [
         {
             id: 0,
             pws: 'si',
-            requestTime: new Date("2017-08-17T18:20:59.357Z"),
-            readAt: new Date("2017-08-17T18:20:19.357Z"),
+            requestTime: rDate(150),
+            readAt: rDate(115),
             temp: 98
         },
         {
             id: 1,
             pws: 'si',
-            requestTime: new Date("2017-08-17T18:21:39.357Z"),
-            readAt: new Date("2017-08-17T18:20:19.357Z"),
+            requestTime: rDate(160),
+            readAt: rDate(110),
             temp: 98
         },
         {
             id: 2,
             pws: 'si',
-            requestTime: new Date("2017-08-17T18:20:39.357Z"),
-            readAt: new Date("2017-08-17T18:19:19.357Z"),
+            requestTime: rDate(140),
+            readAt: rDate(110),
             temp: 98
         },
         {
             id: 3,
             pws: 'si',
-            requestTime: new Date("2017-08-17T18:19:39.357Z"),
-            readAt: new Date("2017-08-17T18:16:39.357Z"),
+            requestTime: rDate(130),
+            readAt: rDate(105),
             temp: 98
         },
         {
             id: 4,
             pws: 'si',
-            requestTime: new Date("2017-08-17T18:18:39.357Z"),
-            readAt: new Date("2017-08-17T18:16:39.357Z"),
+            requestTime: rDate(120),
+            readAt: rDate(105),
             temp: 98
         },
         {
             id: 5,
             pws: 'asdf',
-            requestTime: new Date("2017-08-17T18:17:39.357Z"),
-            readAt: new Date("2017-08-17T18:15:39.357Z"),
+            requestTime: rDate(110),
+            readAt: rDate(100),
             temp: 98
         },
         {
             id: 6,
             pws: 'si',
-            requestTime: new Date("2017-08-17T18:17:39.357Z"),
-            readAt: new Date("2017-08-17T18:15:39.357Z"),
+            requestTime: rDate(110),
+            readAt: rDate(100),
             temp: 98
         }
     ];
@@ -132,42 +140,42 @@ describe('database', function(){
     
     it('_stationReading should get the latest update', function(done){
         return Eclipse._stationReading('si').then(reading => {
-            assert.equal(reading.id, 1);
+            assert.equal(reading.id, 0);
             done();
         }).catch(done);
     });
 
     it('_stationReading should get the proper update from history', function(done){
-        return Eclipse._stationReading('si',"2017-08-17T18:18:39.357Z").then(reading => {
+        return Eclipse._stationReading('si', rDate(106).toISOString()).then(reading => {
             assert.equal(reading.id, 3);
             done();
         }).catch(done);
     });
 
-    it('_stationReading should get the proper update from history', function(done){
-        return Eclipse._stationReading('si',"2017-08-17T18:19:19.357Z").then(reading => {
-            assert.equal(reading.id, 2);
+    it('_stationReading should get the proper update from history 2', function(done){
+        return Eclipse._stationReading('si', rDate(110).toISOString()).then(reading => {
+            assert.equal(reading.id, 1);
             done();
         }).catch(done);
     });
 
     it('_stationReadings should handle only startTime', function(done){
-        return Eclipse._stationReadings('si',"2017-08-17T18:16:39.357Z").then(readings => {
-            assert.deepEqual(readings.map(r=>r.id),[1,0,2,3,4]);
+        return Eclipse._stationReadings('si',rDate(105).toISOString()).then(readings => {
+            assert.deepEqual(readings.map(r=>r.id),[0,1,2,3,4]);
             done();
         }).catch(done);
     });
 
     it('_stationReadings should handle only endTime', function(done){
-        return Eclipse._stationReadings('si',null,"2017-08-17T18:18:39.357Z").then(readings => {
+        return Eclipse._stationReadings('si',null, rDate(106).toISOString()).then(readings => {
             assert.deepEqual(readings.map(r=>r.id),[3,4,6]);
             done();
         }).catch(done);
     });
 
     it('_stationReadings should handle a range', function(done){
-        return Eclipse._stationReadings('si',"2017-08-17T18:18:39.357Z","2017-08-17T18:22:19.357Z").then(readings => {
-            assert.deepEqual(readings.map(r=>r.id),[1,0,2]);
+        return Eclipse._stationReadings('si', rDate(109).toISOString(), rDate(130).toISOString()).then(readings => {
+            assert.deepEqual(readings.map(r=>r.id),[0,1,2]);
             done();
         }).catch(done);
     });
