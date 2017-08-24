@@ -7,7 +7,6 @@ var express = require('express'),
     SocketManager = require('./socket-manager'),
     RoomManager = require('./rooms/room-manager'),
     RPCManager = require('./rpc/rpc-manager'),
-    MobileManager = require('./mobile/mobile-manager'),
     Storage = require('./storage/storage'),
     EXAMPLES = require('./examples'),
     Vantage = require('./vantage/vantage'),
@@ -40,8 +39,6 @@ var Server = function(opts) {
     this.rpcManager = RPCManager;
     RoomManager.init(this._logger, this.storage);
     SocketManager.init(this._logger, this.storage);
-
-    this.mobileManager = new MobileManager();
 };
 
 Server.prototype.configureRoutes = function() {
