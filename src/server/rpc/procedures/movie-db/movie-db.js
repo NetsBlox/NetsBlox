@@ -196,106 +196,103 @@ if(!process.env.TMDB_API_KEY) {
     };
 
 
-    module.exports = {
+    movieDB.isStateless = true;
+    movieDB.serviceName = 'MovieDB';
 
-        // This is very important => Otherwise it will try to instantiate this
-        isStateless: true,
-        serviceName: 'MovieDB',
+    movieDB.searchMovie = function(title) {
+        var rsp = this.response;
 
-        searchMovie: function(title) {
-            var rsp = this.response;
-
-            if(!title) {
-                rsp.status(400).send('Error: title is not defined');
-            } else {
-                mdb.searchMovie({ query: title }, (err,res) => {
-                    if(!err) {
-                        rsp.send(res.results.map(e=>e.id));
-                    } else {
-                        rsp.send(`${err}`);
-                    }
-                });
-            }
-            return null;
-        },
-
-        searchPerson: function(name) {
-            var rsp = this.response;
-
-            if(!name) {
-                rsp.status(400).send('Error: name is not defined');
-            } else {
-                mdb.searchPerson({ query: name }, (err,res) => {
-                    if(!err) {
-                        rsp.status(200).send(res.results.map(e=>e.id));
-                    } else {
-                        rsp.status(400).send(`${err}`);
-                    }
-                });
-            }
-            // explicitly state that we're async
-            return null;
-        },
-
-        movieBackdropPath: function(id) { return movieInfo.call(this, id, 'backdrop_path'); },
-        movieBudget: function(id) { return movieInfo.call(this, id, 'budget'); },
-        movieGenres: function(id) { return movieInfo.call(this, id, 'genres'); },
-        movieOriginalLanguage: function(id) { return movieInfo.call(this, id, 'original_language'); },
-        movieOriginalTitle: function(id) { return movieInfo.call(this, id, 'original_title'); },
-        movieOverview: function(id) { return movieInfo.call(this, id, 'overview'); },
-        moviePopularity: function(id) { return movieInfo.call(this, id, 'popularity'); },
-        moviePosterPath: function(id) { return movieInfo.call(this, id, 'poster_path'); },
-        movieProductionCompanies: function(id) { return movieInfo.call(this, id, 'production_companies'); },
-        movieProductionCountries: function(id) { return movieInfo.call(this, id, 'production_countries'); },
-        movieReleaseDate: function(id) { return movieInfo.call(this, id, 'release_date'); },
-        movieRevenue: function(id) { return movieInfo.call(this, id, 'revenue'); },
-        movieRuntime: function(id) { return movieInfo.call(this, id, 'runtime'); },
-        movieSpokenLanguages: function(id) { return movieInfo.call(this, id, 'spoken_languages'); },
-        movieTagline: function(id) { return movieInfo.call(this, id, 'tagline'); },
-        movieTitle: function(id) { return movieInfo.call(this, id, 'title'); },
-        movieVoteAverage: function(id) { return movieInfo.call(this, id, 'vote_average'); },
-        movieVoteCount: function(id) { return movieInfo.call(this, id, 'vote_count'); },
-
-        personBiography: function(id) { return personInfo.call(this, id, 'biography'); },
-        personBirthday: function(id) { return personInfo.call(this, id, 'birthday'); },
-        personDeathday: function(id) { return personInfo.call(this, id, 'deathday'); },
-        personGender: function(id) { return personInfo.call(this, id, 'gender'); },
-        personName: function(id) { return personInfo.call(this, id, 'name'); },
-        personPlaceOfBirth: function(id) { return personInfo.call(this, id, 'place_of_birth'); },
-        personPopularity: function(id) { return personInfo.call(this, id, 'popularity'); },
-        personProfilePath: function(id) { return personInfo.call(this, id, 'profile_path'); },
-
-        movieCastCharacters: function(id) { return movieCredits.call(this, id, 'cast', 'character'); },
-        movieCastNames: function(id) { return movieCredits.call(this, id, 'cast', 'name'); },
-        movieCastPersonIDs: function(id) { return movieCredits.call(this, id, 'cast', 'id'); },
-        movieCastProfilePaths: function(id) { return movieCredits.call(this, id, 'cast', 'profile_path'); },
-        movieCrewNames: function(id) { return movieCredits.call(this, id, 'crew', 'name'); },
-        movieCrewJobs: function(id) { return movieCredits.call(this, id, 'crew', 'job'); },
-        movieCrewPersonIDs: function(id) { return movieCredits.call(this, id, 'crew', 'id'); },
-        movieCrewProfilePaths: function(id) { return movieCredits.call(this, id, 'crew', 'profile_path'); },
-
-        personImageFilePaths: function(id) { return personImages.call(this, id, 'profiles', 'file_path'); },
-        personImageAspectRatios: function(id) { return personImages.call(this, id, 'profiles', 'aspect_ratio'); },
-        personImageHeights: function(id) { return personImages.call(this, id, 'profiles', 'height'); },
-        personImageWidths: function(id) { return personImages.call(this, id, 'profiles', 'width'); },
-        personImageVoteCounts: function(id) { return personImages.call(this, id, 'profiles', 'vote_count'); },
-
-        personCastCharacters: function(id) { return personCredits.call(this, id, 'cast', 'character'); },
-        personCastMovieIDs: function(id) { return personCredits.call(this, id, 'cast', 'id'); },
-        personCastOriginalTitles: function(id) { return personCredits.call(this, id, 'cast', 'original_title'); },
-        personCastPosterPaths: function(id) { return personCredits.call(this, id, 'cast', 'poster_path'); },
-        personCastReleaseDates: function(id) { return personCredits.call(this, id, 'cast', 'release_date'); },
-        personCastTitles: function(id) { return personCredits.call(this, id, 'cast', 'title'); },
-        personCrewMovieIDs: function(id) { return personCredits.call(this, id, 'crew', 'id'); },
-        personCrewJobs: function(id) { return personCredits.call(this, id, 'crew', 'job'); },
-        personCrewOriginalTitles: function(id) { return personCredits.call(this, id, 'crew', 'original_title'); },
-        personCrewPosterPaths: function(id) { return personCredits.call(this, id, 'crew', 'poster_path'); },
-        personCrewReleaseDates: function(id) { return personCredits.call(this, id, 'crew', 'release_date'); },
-        personCrewTitles: function(id) { return personCredits.call(this, id, 'crew', 'title'); },
-
-        getImage: function(path){
-            movieDB.response = this.response;
-            return movieDB._sendImage({queryString: path});
+        if(!title) {
+            rsp.status(400).send('Error: title is not defined');
+        } else {
+            mdb.searchMovie({ query: title }, (err,res) => {
+                if(!err) {
+                    rsp.send(res.results.map(e=>e.id));
+                } else {
+                    rsp.send(`${err}`);
+                }
+            });
         }
+        return null;
     };
+
+    movieDB.searchPerson = function(name) {
+        var rsp = this.response;
+
+        if(!name) {
+            rsp.status(400).send('Error: name is not defined');
+        } else {
+            mdb.searchPerson({ query: name }, (err,res) => {
+                if(!err) {
+                    rsp.status(200).send(res.results.map(e=>e.id));
+                } else {
+                    rsp.status(400).send(`${err}`);
+                }
+            });
+        }
+        // explicitly state that we're async
+        return null;
+    };
+
+    movieDB.movieBackdropPath = function(id) { return movieInfo.call(this, id, 'backdrop_path'); };
+    movieDB.movieBudget = function(id) { return movieInfo.call(this, id, 'budget'); };
+    movieDB.movieGenres = function(id) { return movieInfo.call(this, id, 'genres'); };
+    movieDB.movieOriginalLanguage = function(id) { return movieInfo.call(this, id, 'original_language'); };
+    movieDB.movieOriginalTitle = function(id) { return movieInfo.call(this, id, 'original_title'); };
+    movieDB.movieOverview = function(id) { return movieInfo.call(this, id, 'overview'); };
+    movieDB.moviePopularity = function(id) { return movieInfo.call(this, id, 'popularity'); };
+    movieDB.moviePosterPath = function(id) { return movieInfo.call(this, id, 'poster_path'); };
+    movieDB.movieProductionCompanies = function(id) { return movieInfo.call(this, id, 'production_companies'); };
+    movieDB.movieProductionCountries = function(id) { return movieInfo.call(this, id, 'production_countries'); };
+    movieDB.movieReleaseDate = function(id) { return movieInfo.call(this, id, 'release_date'); };
+    movieDB.movieRevenue = function(id) { return movieInfo.call(this, id, 'revenue'); };
+    movieDB.movieRuntime = function(id) { return movieInfo.call(this, id, 'runtime'); };
+    movieDB.movieSpokenLanguages = function(id) { return movieInfo.call(this, id, 'spoken_languages'); };
+    movieDB.movieTagline = function(id) { return movieInfo.call(this, id, 'tagline'); };
+    movieDB.movieTitle = function(id) { return movieInfo.call(this, id, 'title'); };
+    movieDB.movieVoteAverage = function(id) { return movieInfo.call(this, id, 'vote_average'); };
+    movieDB.movieVoteCount = function(id) { return movieInfo.call(this, id, 'vote_count'); };
+
+    movieDB.personBiography = function(id) { return personInfo.call(this, id, 'biography'); };
+    movieDB.personBirthday = function(id) { return personInfo.call(this, id, 'birthday'); };
+    movieDB.personDeathday = function(id) { return personInfo.call(this, id, 'deathday'); };
+    movieDB.personGender = function(id) { return personInfo.call(this, id, 'gender'); };
+    movieDB.personName = function(id) { return personInfo.call(this, id, 'name'); };
+    movieDB.personPlaceOfBirth = function(id) { return personInfo.call(this, id, 'place_of_birth'); };
+    movieDB.personPopularity = function(id) { return personInfo.call(this, id, 'popularity'); };
+    movieDB.personProfilePath = function(id) { return personInfo.call(this, id, 'profile_path'); };
+
+    movieDB.movieCastCharacters = function(id) { return movieCredits.call(this, id, 'cast', 'character'); };
+    movieDB.movieCastNames = function(id) { return movieCredits.call(this, id, 'cast', 'name'); };
+    movieDB.movieCastPersonIDs = function(id) { return movieCredits.call(this, id, 'cast', 'id'); };
+    movieDB.movieCastProfilePaths = function(id) { return movieCredits.call(this, id, 'cast', 'profile_path'); };
+    movieDB.movieCrewNames = function(id) { return movieCredits.call(this, id, 'crew', 'name'); };
+    movieDB.movieCrewJobs = function(id) { return movieCredits.call(this, id, 'crew', 'job'); };
+    movieDB.movieCrewPersonIDs = function(id) { return movieCredits.call(this, id, 'crew', 'id'); };
+    movieDB.movieCrewProfilePaths = function(id) { return movieCredits.call(this, id, 'crew', 'profile_path'); };
+
+    movieDB.personImageFilePaths = function(id) { return personImages.call(this, id, 'profiles', 'file_path'); };
+    movieDB.personImageAspectRatios = function(id) { return personImages.call(this, id, 'profiles', 'aspect_ratio'); };
+    movieDB.personImageHeights = function(id) { return personImages.call(this, id, 'profiles', 'height'); };
+    movieDB.personImageWidths = function(id) { return personImages.call(this, id, 'profiles', 'width'); };
+    movieDB.personImageVoteCounts = function(id) { return personImages.call(this, id, 'profiles', 'vote_count'); };
+
+    movieDB.personCastCharacters = function(id) { return personCredits.call(this, id, 'cast', 'character'); };
+    movieDB.personCastMovieIDs = function(id) { return personCredits.call(this, id, 'cast', 'id'); };
+    movieDB.personCastOriginalTitles = function(id) { return personCredits.call(this, id, 'cast', 'original_title'); };
+    movieDB.personCastPosterPaths = function(id) { return personCredits.call(this, id, 'cast', 'poster_path'); };
+    movieDB.personCastReleaseDates = function(id) { return personCredits.call(this, id, 'cast', 'release_date'); };
+    movieDB.personCastTitles = function(id) { return personCredits.call(this, id, 'cast', 'title'); };
+    movieDB.personCrewMovieIDs = function(id) { return personCredits.call(this, id, 'crew', 'id'); };
+    movieDB.personCrewJobs = function(id) { return personCredits.call(this, id, 'crew', 'job'); };
+    movieDB.personCrewOriginalTitles = function(id) { return personCredits.call(this, id, 'crew', 'original_title'); };
+    movieDB.personCrewPosterPaths = function(id) { return personCredits.call(this, id, 'crew', 'poster_path'); };
+    movieDB.personCrewReleaseDates = function(id) { return personCredits.call(this, id, 'crew', 'release_date'); };
+    movieDB.personCrewTitles = function(id) { return personCredits.call(this, id, 'crew', 'title'); };
+
+    movieDB.getImage = function(path){
+        return this._sendImage({queryString: path});
+    };
+
+    module.exports = movieDB;
 }
