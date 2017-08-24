@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 'use strict';
 
-const isDevEnv = process.env.ENV === 'dev';
+const isDevEnv = process.env.ENV !== 'production';
 var fs = require('fs'),
     path = require('path'),
     srcPath = path.join(__dirname, '..', 'src', 'client');
