@@ -150,7 +150,7 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title) {
     return this._drawChart(dataset, xAxisTag, yAxisTag, datasetTag, title, 'line');
 };
 
-chart.testGnuChart = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLabel){
+chart.draw = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLabel){
     let data = lines.map((pts, idx) => {
         return {title: lineTitles[idx], points: pts};
     });
@@ -158,6 +158,28 @@ chart.testGnuChart = function(lines, lineTitles, chartTitle, xRange, yRange, xLa
     let opts = {title: chartTitle, xLabel, yLabel};
     if (xRange) opts.xRange = {min: xRange[0], max: xRange[1]};
     if (yRange) opts.yRange = {min: yRange[0], max: yRange[1]};
+    let chartStream =  gnuPlot.draw(data, opts);
+    chartStream.end();  
+    return rpcUtils.collectStream(chartStream).then( buffer => {
+        rpcUtils.sendImageBuffer(this.response, buffer);
+    })
+}
+
+chart.timeSeries = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLabel, timeInputFormat, timeOutputFormat){
+    let data = lines.map((pts, idx) => {
+        return {title: lineTitles[idx], points: pts};
+    });
+
+    timeInputFormat = timeInputFormat || '%s';
+    timeOutputFormat = timeOutputFormat || '%d/%m';
+    
+    let opts = {title: chartTitle, yLabel, timeSeries: {}};
+    if (yRange) opts.yRange = {min: yRange[0], max: yRange[1]};
+    opts.timeSeries = {
+        axis: 'x',
+        inputFormat: timeInputFormat,
+        outputFormat: timeOutputFormat
+    };
     let chartStream =  gnuPlot.draw(data, opts);
     chartStream.end();  
     return rpcUtils.collectStream(chartStream).then( buffer => {

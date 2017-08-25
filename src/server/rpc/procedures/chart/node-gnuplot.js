@@ -4,7 +4,7 @@ const gnuplot = require(`gnuplot`),
 
 const lineDefaults = {
     title: undefined,
-    type: 'line',
+    type: 'lines',
     points: []
 };
 
@@ -14,6 +14,11 @@ const optsDefautls = {
     yRange: undefined,
     xLabel: undefined,
     yLabel: undefined,
+    timeSeries: {
+        axis: undefined,
+        inputFormat: undefined,
+        outputFormat: undefined
+    },
     title: null,
     outputName: false
 };
@@ -29,7 +34,7 @@ function dataToPlot(data){
     let settings = [],
         points = '';
     data.forEach(line => {
-        settings.push(`"-" title "${line.title}" with ${line.type}`);
+        settings.push(`"-" using 1:2 title "${line.title}" with ${line.type}`);
         points += pointsToInlineData(line.points);
     })
     let cmdString = settings.join(', ') + points;
@@ -40,9 +45,9 @@ function dataToPlot(data){
 
 let draw = (data, opts) => {
     // apply the defaults
-    graph = gnuplot();
+    let graph = gnuplot();
     data = data.map(line => _.merge(line, lineDefaults));
-    _.merge(optsDefautls, opts);
+    opts = _.merge(optsDefautls, opts);
     graph.set(`term pngcairo`)
         .set(`loadpath "${__dirname}"`)
         .set(`load "xyborder.cfg"`)
@@ -75,6 +80,11 @@ let draw = (data, opts) => {
     if (opts.outputName) graph.set(`output "${opts.outputName}"`);
     if (opts.xLabel) graph.set(`xlabel "${opts.xLabel}"`);
     if (opts.yLabel) graph.set(`ylabel "${opts.yLabel}"`);
+    if (opts.timeSeries.axis) {
+        graph.set(`${opts.timeSeries.axis}data time`);
+        graph.set(`timefmt "${opts.timeSeries.inputFormat}"`);
+        graph.set(`format ${opts.timeSeries.axis} "${opts.timeSeries.outputFormat}"`);
+    }
 
     graph.plot(dataToPlot(data));
 
@@ -97,7 +107,25 @@ let data = [
     }
 ];
 
-let opts = {};
+let timeSeriesData = [
+    {
+        type: 'line',
+        points: [[1503692220,2], [1503690220, 3]]
+    }
+];
+
+let opts = {
+    timeSeries: {
+        axis: 'x',
+        inputFormat: '%s',
+        outputFormat: '%H/%M'
+    },
+    title: 'testTime',
+    outputName: 'timePlot.png'
+};
+
+// let graph = draw(timeSeriesData, opts);
+// graph.end();
 
 module.exports = {
     draw,
