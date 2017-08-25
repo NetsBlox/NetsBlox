@@ -169,7 +169,7 @@ let temperatureHistoryRange = function(stationId, startTime, endTime){
 
 let conditionHistoryRange = function(stationId, startTime, endTime){
     return _stationReadings(stationId, startTime, endTime).then(readings => {
-        return readings;
+        return rpcUtils.jsonToSnapList(readings);
     });
 };
 
