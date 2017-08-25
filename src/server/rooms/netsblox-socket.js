@@ -467,7 +467,8 @@ NetsBloxSocket.MessageHandlers = {
 
                 // Check if the user is already at the room
                 return room.add(this, role);
-            });
+            })
+            .catch(err => this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
 
     },
 
