@@ -474,7 +474,7 @@ module.exports = [
 
             log(`${user.username} is unpublishing project ${name}`);
 
-            return setProjectPublic(name, user, true)
+            return setProjectPublic(name, user, false)
                 .then(() => res.send(`"${name}" is no longer shared`))
                 .catch(err => res.send(`ERROR: ${err}`));
         }
