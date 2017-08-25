@@ -517,22 +517,14 @@
     };
 
     ProjectStorage.new = function(user, room) {
-        return ProjectStorage.getTransientProject(user.username, room.name)
-            .then(project => {
-                if (project) {
-                    logger.trace(`loading transient project from database ${user.username}/${room.name}`);
-                    return project;
-                }
+        const project = new Project({
+            logger: logger,
+            db: collection,
+            data: getDefaultProjectData(user, room),
+            room: room
+        });
 
-                project = new Project({
-                    logger: logger,
-                    db: collection,
-                    data: getDefaultProjectData(user, room),
-                    room: room
-                });
-
-                return project.create();
-            });
+        return project.create();
     };
 
 })(exports);
