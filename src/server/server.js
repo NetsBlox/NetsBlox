@@ -10,10 +10,11 @@ var express = require('express'),
     Storage = require('./storage/storage'),
     EXAMPLES = require('./examples'),
     Vantage = require('./vantage/vantage'),
+    isDevMode = process.env.ENV !== 'production',
     DEFAULT_OPTIONS = {
         port: 8080,
         vantagePort: 1234,
-        vantage: process.env.ENV !== 'production'
+        vantage: isDevMode
     },
 
     // Routes
@@ -120,9 +121,14 @@ Server.prototype.configureRoutes = function() {
         res.json(sockets);
     });
 
+    // Add dev endpoints
+    if (isDevMode) {
+        this.app.use('/dev/', express.static(__dirname + '/../../test/client/'));
+    }
+
     // Initial page
     this.app.get('/', (req, res) => {
-        if(process.env.ENV !== 'production'){
+        if(isDevMode) {
             res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html'));
             return;
         }
