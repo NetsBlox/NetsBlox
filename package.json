@@ -9,7 +9,7 @@
     "start": "node bin/netsblox-start.js",
     "dev": "node node_modules/nodemon/bin/nodemon -w src src/server.js",
     "testmon": "node node_modules/nodemon/bin/nodemon -w src -w test node_modules/mocha/bin/mocha --recursive test/server test/client",
-    "test": "node node_modules/mocha/bin/mocha --recursive test/server test/client",
+    "test": "node node_modules/mocha/bin/mocha --recursive test/server test/client/serialization.spec.js",
     "test-client": "node test/client/integration.js",
     "test-cover": "node node_modules/istanbul/lib/cli.js --hook-run-in-context cover node_modules/mocha/bin/_mocha -- -R spec test/server/*.js",
     "postinstall": "node bin/build.js"

@@ -120,6 +120,9 @@ Server.prototype.configureRoutes = function() {
         res.json(sockets);
     });
 
+    // Add dev endpoints
+    this.app.use('/dev/', express.static(__dirname + '/../../test/client/'));
+
     // Initial page
     this.app.get('/', (req, res) => {
         if(process.env.ENV !== 'production'){
