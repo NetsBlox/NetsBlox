@@ -13,10 +13,6 @@ utils.verifyRPCInterfaces(eclipse, [
     ['stations', []],
     ['eclipsePath', []],
     ['stationInfo', ['stationId']],
-    ['temperature', ['stationId']],
-    ['temperatureHistory', ['stationId', 'limit']],
-    ['condition', ['stationId']],
-    ['conditionHistory', ['stationId', 'limit']],
     ['pastTemperature', ['stationId', 'time']],
     ['pastCondition', ['stationId', 'time']]
 ]);

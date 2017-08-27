@@ -116,23 +116,9 @@ let stationInfo = function(stationId){
         });
 };
 
-let temperature = function(stationId){
-    return _stationReading(stationId).then(reading => {
-        return reading.temp;
-    });
-};
-
-
 let pastTemperature = function(stationId, time){
     return _stationReading(stationId, time).then(reading => {
         return reading.temp;
-    });
-};
-
-
-let condition = function(stationId){
-    return _stationReading(stationId).then(reading => {
-        return rpcUtils.jsonToSnapList(hideDBAttrs(reading));
     });
 };
 
@@ -141,24 +127,6 @@ let pastCondition = function(stationId, time){
     return _stationReading(stationId, time).then(reading => {
         return rpcUtils.jsonToSnapList(hideDBAttrs(reading));
     });
-};
-
-let temperatureHistory = function(stationId, limit){
-    limit = parseInt(limit);
-    if (limit > 3000) limit = 3000;
-    return getReadingsCol().find({pws: stationId}).sort({readAt: -1, requestTime: -1})
-        .limit(limit).toArray().then(updates => {
-            return updates.map(update => update.temp);
-        });
-};
-
-let conditionHistory = function(stationId, limit){
-    limit = parseInt(limit);
-    if (limit > 3000) limit = 3000;
-    return getReadingsCol().find({pws: stationId}).sort({readAt: -1, requestTime: -1})
-        .limit(limit).toArray().then(updates => {
-            return rpcUtils.jsonToSnapList(updates.map(update => hideDBAttrs(update)));
-        });
 };
 
 let temperatureHistoryRange = function(stationId, startTime, endTime){
@@ -177,12 +145,8 @@ module.exports = {
     stationsInfo,
     stationInfo,
     eclipsePath,
-    temperature,
     pastTemperature,
-    temperatureHistory,
-    condition,
     pastCondition,
-    conditionHistory,
     temperatureHistoryRange,
     availableStations,
     _stationReading,
