@@ -28,6 +28,13 @@ SnapDriver.prototype.reset = function() {
 SnapDriver.prototype.newProject = function() {
     this.ide().exitReplayMode();
     this.ide().newProject();
+
+    // NetsBlox specific things
+    var room = this.ide().room;
+    var uuid = this.ide().sockets.uuid;
+    room.ownerId = uuid;
+    room.roles = {};
+    room.roles[this.ide().projectName] = [uuid];
 };
 
 SnapDriver.prototype.selectCategory = function(cat) {
@@ -36,4 +43,11 @@ SnapDriver.prototype.selectCategory = function(cat) {
 
     category.mouseClickLeft();
     return category;
+};
+
+SnapDriver.prototype.addBlock = function(spec, position) {
+    var block = SpriteMorph.prototype.blockForSelector(spec, true);
+    var sprite = this.ide().currentSprite;
+
+    return SnapActions.addBlock(block, sprite.scripts, position);
 };
