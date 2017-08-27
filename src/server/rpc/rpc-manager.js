@@ -39,8 +39,14 @@ RPCManager.prototype.loadRPCs = function() {
         .map(name => [name, path.join(PROCEDURES_DIR, name, name+'.js')])
         .filter(pair => fs.existsSync(pair[1]))
         .map(pair => [pair[0], require(pair[1])])
-        .filter(pair => typeof pair[1] === 'function' ||
-            (!!pair[1] && !_.isEmpty(pair[1])))
+        .filter(pair => {
+            let service = pair[1];
+            if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
+                if(typeof service.isSupported === 'function') return service.isSupported();
+                return true;
+            }
+            return false;
+        })
         .map(pair => {
             let [name, RPCConstructor] = pair;
             if (RPCConstructor.init) {
