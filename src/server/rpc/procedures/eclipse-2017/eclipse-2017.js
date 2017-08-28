@@ -167,6 +167,12 @@ let temperatureHistoryRange = function(stationId, startTime, endTime){
     });
 };
 
+let conditionHistoryRange = function(stationId, startTime, endTime){
+    return _stationReadings(stationId, startTime, endTime).then(readings => {
+        return rpcUtils.jsonToSnapList(readings);
+    });
+};
+
 let stationsInfo = function(){
     return stationUtils.selected().then(stations => rpcUtils.jsonToSnapList(stations.map(s => hideDBAttrs(s))));
 };
@@ -184,6 +190,7 @@ module.exports = {
     pastCondition,
     conditionHistory,
     temperatureHistoryRange,
+    conditionHistoryRange,
     availableStations,
     _stationReading,
     _stationReadings,
