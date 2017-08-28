@@ -71,8 +71,10 @@ class ApiConsumer {
         return this._cache.wrap(fullUrl, ()=>{
             this._logger.trace('request is not cached, calling external endpoint');
             return rp({
+                method: queryOptions.method || 'GET',
                 uri: fullUrl,
                 headers: queryOptions.headers,
+                body: queryOptions.body,
                 json: queryOptions.json !== undefined ? queryOptions.json : true
             });
         }).catch(err => {
