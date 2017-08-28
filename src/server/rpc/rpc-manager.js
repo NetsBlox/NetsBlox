@@ -39,8 +39,19 @@ RPCManager.prototype.loadRPCs = function() {
         .map(name => [name, path.join(PROCEDURES_DIR, name, name+'.js')])
         .filter(pair => fs.existsSync(pair[1]))
         .map(pair => [pair[0], require(pair[1])])
-        .filter(pair => typeof pair[1] === 'function' ||
-            (!!pair[1] && !_.isEmpty(pair[1])))
+        .filter(pair => {
+            let [name, service] = pair;
+            if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
+                if(service.isSupported && !service.isSupported()){
+                    /* eslint-disable no-console*/
+                    console.error(`${name} is not supported in this deployment. Skipping...`);
+                    /* eslint-enable no-console*/
+                    return false;
+                }
+                return true;
+            }
+            return false;
+        })
         .map(pair => {
             let [name, RPCConstructor] = pair;
             if (RPCConstructor.init) {

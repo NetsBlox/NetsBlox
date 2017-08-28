@@ -6,6 +6,7 @@ module.exports = {
         RESERVED_FN_NAMES: [
             'init',
             'serviceName',
+            'isSupported',
             'COMPATIBILITY'
         ]
     }
