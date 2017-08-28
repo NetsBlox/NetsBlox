@@ -19,11 +19,15 @@ describe('blocks', function() {
     });
 
     it('should relabel if-else block to if', function(done) {
+        var fail = () => done('action rejected!');
         driver.addBlock('doIfElse', position)
-            .accept(block => {
-                SnapActions.setSelector(block, 'doIf');
-                done();
-            })
-            .reject(err => done(err));
+            .accept(block => SnapActions.setSelector(block, 'doIf')
+                .accept(() => {
+                    console.log('accept called!');
+                    done();
+                })
+                .reject(fail)
+            )
+            .reject(fail);
     });
 });
