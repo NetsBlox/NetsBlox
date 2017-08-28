@@ -73,36 +73,34 @@ Server.prototype.configureRoutes = function() {
     // Add deployment state endpoint info
     const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
     this.app.get(`/${stateEndpoint}/rooms`, function(req, res) {
-        const rooms = Object.keys(RoomManager.rooms).map(uuid => {
-            const room = RoomManager.rooms[uuid];
-            const roles = {};
-            const project = room.getProject();
-            let lastUpdatedAt = null;
+        return RoomManager.getActiveRooms()
+            .then(rooms => res.json(rooms.map(room => {
+                const roles = {};
+                const project = room.getProject();
+                let lastUpdatedAt = null;
 
-            if (project) {
-                lastUpdatedAt = new Date(project.lastUpdatedAt);
-            }
+                if (project) {
+                    lastUpdatedAt = new Date(project.lastUpdatedAt);
+                }
 
-            room.getRoleNames().forEach(role => {
-                roles[role] = room.getSocketsAt(role).map(socket => {
-                    return {
-                        username: socket.username,
-                        uuid: socket.uuid
-                    };
+                room.getRoleNames().forEach(role => {
+                    roles[role] = room.getSocketsAt(role).map(socket => {
+                        return {
+                            username: socket.username,
+                            uuid: socket.uuid
+                        };
+                    });
                 });
-            });
 
-            return {
-                uuid: uuid,
-                name: room.name,
-                owner: room.owner,
-                collaborators: room.getCollaborators(),
-                lastUpdatedAt: lastUpdatedAt,
-                roles: roles
-            };
-        });
-
-        return res.json(rooms);
+                return {
+                    uuid: room.uuid,
+                    name: room.name,
+                    owner: room.owner,
+                    collaborators: room.getCollaborators(),
+                    lastUpdatedAt: lastUpdatedAt,
+                    roles: roles
+                };
+            })));
     });
 
     this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {

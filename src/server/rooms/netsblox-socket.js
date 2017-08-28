@@ -323,23 +323,25 @@ class NetsBloxSocket {
                 ownerId = idChunks.pop(),
                 roomName = idChunks.pop(),
                 roleId = idChunks.pop(),
-                roomId = Utils.uuid(ownerId, roomName),
-                room = RoomManager.rooms[roomId];
+                roomId = Utils.uuid(ownerId, roomName);
 
-            if (room) {
-                if (roleId) {
-                    if (room.hasRole(roleId)) {
-                        sockets = sockets.concat(room.getSocketsAt(roleId));
+            return RoomManager.getExistingRoom(roomId)
+                .then(room => {
+                    if (room) {
+                        if (roleId) {
+                            if (room.hasRole(roleId)) {
+                                sockets = sockets.concat(room.getSocketsAt(roleId));
+                            }
+                        } else {
+                            sockets = room.sockets();
+                        }
+
+                        sockets.forEach(socket => {
+                            msg.dstId = Constants.EVERYONE;
+                            socket.send(msg);
+                        });
                     }
-                } else {
-                    sockets = room.sockets();
-                }
-
-                sockets.forEach(socket => {
-                    msg.dstId = Constants.EVERYONE;
-                    socket.send(msg);
                 });
-            }
         }
     }
 }
