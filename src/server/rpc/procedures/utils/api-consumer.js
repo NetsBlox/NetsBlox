@@ -29,7 +29,6 @@ class ApiConsumer {
         this.COMPATIBILITY = {
             path: this._name
         };
-        this.isStateless = true;
         this._remainingMsgs = {};
         // setup cache. maxsize is in bytes, ttl in seconds
         this._cache = CacheManager.caching({

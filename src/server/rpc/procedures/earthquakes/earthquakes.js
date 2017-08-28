@@ -59,9 +59,6 @@ Earthquakes._sendNext = function(socket) {
     }
 };
 
-// This is very important => Otherwise it will try to instantiate this
-Earthquakes.isStateless = true;
-
 Earthquakes.stop = function() {
     var uuid = this.socket.uuid;
     delete Earthquakes._remainingMsgs[uuid];
