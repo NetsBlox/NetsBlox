@@ -76,13 +76,21 @@ RoomManager.prototype.createRoom = function(socket, name, ownerId) {
         });
 };
 
+RoomManager.prototype.isActiveRoom = function(uuid) {
+    return !!this.rooms[uuid];
+};
+
+RoomManager.prototype.getExistingRoom = function(uuid) {
+    return this.rooms[uuid];
+};
+
 RoomManager.prototype.getRoom = function(socket, ownerId, name) {
     const uuid = utils.uuid(ownerId, name);
     this._logger.trace(`getting project ${uuid} for ${ownerId}`);
     
     if (!this.rooms[uuid]) {
         this._logger.trace(`retrieving project ${uuid} for ${ownerId}`);
-        return Projects.getProject(ownerId, name)
+        return this.rooms[uuid] = Projects.getProject(ownerId, name)
             .then(project => {
                 if (!project) {
                     this._logger.error(`No project found for ${uuid}`);
@@ -95,15 +103,15 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
                 }
                 this._logger.trace(`retrieving project ${uuid} from database`);
                 return ActiveRoom.fromStore(this._logger, socket, project);
-            })
-            .then(activeRoom => {
-                this.rooms[uuid] = activeRoom;
-                return activeRoom;
             });
 
     } else {
         return Q(this.rooms[uuid]);
     }
+};
+
+RoomManager.prototype.getActiveRooms = function() {
+    return Q.all(Object.keys(this.rooms).map(uuid => this.rooms[uuid]));
 };
 
 RoomManager.prototype.checkRoom = function(room) {

@@ -92,31 +92,33 @@ module.exports = [
                 roomName = req.body.roomName,
                 ownerId = req.body.ownerId,
                 roomId = Utils.uuid(ownerId, roomName),
-                userId = req.body.userId,
-                room = RoomManager.rooms[roomId];
+                userId = req.body.userId;
 
-            // Get the socket at the given room role
-            log(`roomId is ${roomId}`);
-            log(`roleId is ${roleId}`);
-            log(`userId is ${userId}`);
+            return RoomManager.getExistingRoom(roomId)
+                .then(room => {
+                    // Get the socket at the given room role
+                    log(`roomId is ${roomId}`);
+                    log(`roleId is ${roleId}`);
+                    log(`userId is ${userId}`);
 
-            const socket = room.getSocketsAt(roleId)
-                .find(socket => socket.username === userId);
+                    const socket = room.getSocketsAt(roleId)
+                        .find(socket => socket.username === userId);
 
-            if (!socket) {  // user is not online
-                var err = `${userId} is not at ${roleId} at room ${roomId}`;
-                this._logger.warn(err);
-                return res.send('user has been evicted!');
-            }
+                    if (!socket) {  // user is not online
+                        var err = `${userId} is not at ${roleId} at room ${roomId}`;
+                        this._logger.warn(err);
+                        return res.send('user has been evicted!');
+                    }
 
-            // Remove the user from the room!
-            log(`${userId} is evicted from room ${roomId}`);
-            if (userId === ownerId) {  // removing another instance of self
-                socket.newRoom();
-            } else {  // Fork the room
-                RoomManager.forkRoom(room, socket);
-            }
-            room.onRolesChanged();
+                    // Remove the user from the room!
+                    log(`${userId} is evicted from room ${roomId}`);
+                    if (userId === ownerId) {  // removing another instance of self
+                        socket.newRoom();
+                    } else {  // Fork the room
+                        RoomManager.forkRoom(room, socket);
+                    }
+                    room.onRolesChanged();
+                });
         }
     },
     {
@@ -227,31 +229,32 @@ module.exports = [
                 roleId = req.body.roleId,
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName,
-                roomId = utils.uuid(ownerId, roomName),
-                room = RoomManager.rooms[roomId];
+                roomId = utils.uuid(ownerId, roomName);
+            return RoomManager.getExistingRoom(roomId)
+                .then(room => {
+                    //  Get the room
+                    if (!room) {
+                        this._logger.error(`Could not find room ${roomId} for ${username}`);
+                        return res.status(404).send('ERROR: Could not find room');
+                    }
+                    
+                    //  Verify that the username is either the ownerId
+                    this._logger.trace(`ownerId is ${room.owner.username} and username is ${username}`);
+                    if (!room.isEditableFor(username)) {
+                        this._logger.error(`${username} does not have permission to edit ${roleId} at ${roomId}`);
+                        return res.status(403).send(`ERROR: You do not have permission to delete ${roleId}`);
+                    }
 
-            //  Get the room
-            if (!room) {
-                this._logger.error(`Could not find room ${roomId} for ${username}`);
-                return res.status(404).send('ERROR: Could not find room');
-            }
-            
-            //  Verify that the username is either the ownerId
-            this._logger.trace(`ownerId is ${room.owner.username} and username is ${username}`);
-            if (!room.isEditableFor(username)) {
-                this._logger.error(`${username} does not have permission to edit ${roleId} at ${roomId}`);
-                return res.status(403).send(`ERROR: You do not have permission to delete ${roleId}`);
-            }
+                    // Disallow deleting roles without evicting the users first
+                    const sockets = room.getSocketsAt(roleId) || [];
+                    if (sockets.length) {
+                        return res.status(403).send('ERROR: Cannot delete occupied role. Remove the occupants first.');
+                    }
 
-            // Disallow deleting roles without evicting the users first
-            const sockets = room.getSocketsAt(roleId) || [];
-            if (sockets.length) {
-                return res.status(403).send('ERROR: Cannot delete occupied role. Remove the occupants first.');
-            }
-
-            //  Remove the given role
-            return room.removeRole(roleId)
-                .then(() => res.send('ok'));
+                    //  Remove the given role
+                    return room.removeRole(roleId)
+                        .then(() => res.send('ok'));
+                });
         }
     },
     {
@@ -267,32 +270,34 @@ module.exports = [
                 dstId = req.body.dstId,
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName,
-                roomId = Utils.uuid(ownerId, roomName),
-                room = RoomManager.rooms[roomId];
+                roomId = Utils.uuid(ownerId, roomName);
 
-            if (!socket) {
-                this._logger.error('Could not find socket for ' + socketId);
-                return res.status(404).send('ERROR: Not fully connected... Please try again or try a different browser (and report this issue to the netsblox maintainers!)');
-            }
-
-            if (!socket.canEditRoom()) {
-                return res.status(403).send('ERROR: permission denied');
-            }
-
-            //  Cache the current state in the active room
-            return room.saveRole(roleId)
-                .then(() => {
-                    // Reply w/ the new role code
-                    return room.getRole(dstId);
-                })
-                .then(project => {
-                    if (project) {
-                        project = Utils.serializeRole(project, room.name);
+            return RoomManager.getExistingRoom(roomId)
+                .then(room => {
+                    if (!socket) {
+                        this._logger.error('Could not find socket for ' + socketId);
+                        return res.status(404).send('ERROR: Not fully connected... Please try again or try a different browser (and report this issue to the netsblox maintainers!)');
                     }
-                    // Update the room state
-                    room.add(socket, dstId);
 
-                    res.send(project);
+                    if (!socket.canEditRoom()) {
+                        return res.status(403).send('ERROR: permission denied');
+                    }
+
+                    //  Cache the current state in the active room
+                    return room.saveRole(roleId)
+                        .then(() => {
+                            // Reply w/ the new role code
+                            return room.getRole(dstId);
+                        })
+                        .then(project => {
+                            if (project) {
+                                project = Utils.serializeRole(project, room.name);
+                            }
+                            // Update the room state
+                            room.add(socket, dstId);
+
+                            res.send(project);
+                        });
                 })
                 .catch(err => res.status(500).send('ERROR: ' + err));
         }
@@ -403,16 +408,17 @@ module.exports = [
                 // TODO: update the inviter...
                 // Add the given user as a collaborator
                 const uuid = Utils.uuid(invite.owner, invite.project);
-                let project = RoomManager.rooms[uuid];
-
-                if (!project) {
-                    // TODO: Look up the room
-                    warn(`room no longer exists "${uuid}`);
-                    return Projects.getProject(invite.owner, invite.project)
-                        .then(project => project.addCollaborator(username))
-                        .then(() => res.sendStatus(200));
-                }
-                project.addCollaborator(username).then(() => res.sendStatus(200));
+                return RoomManager.getExistingRoom(uuid)
+                    .then(project => {
+                        if (!project) {
+                            // TODO: Look up the room
+                            warn(`room no longer exists "${uuid}`);
+                            return Projects.getProject(invite.owner, invite.project)
+                                .then(project => project.addCollaborator(username))
+                                .then(() => res.sendStatus(200));
+                        }
+                        project.addCollaborator(username).then(() => res.sendStatus(200));
+                    });
             }
         }
     }
@@ -439,22 +445,23 @@ function getFriendSockets(user) {
 
 function acceptInvitation (invite, socketId) {
     const socket = SocketManager.getSocket(socketId);
-    const room = RoomManager.rooms[invite.room];
+    return RoomManager.getExistingRoom(invite.room)
+        .then(room => {
+            if (!room) {
+                warn(`room no longer exists "${invite.room} ${JSON.stringify(invites)}`);
+                throw 'project is no longer open';
+            }
 
-    if (!room) {
-        warn(`room no longer exists "${invite.room} ${JSON.stringify(invites)}`);
-        throw 'project is no longer open';
-    }
+            if (!socket) {
+                warn(`could not find socket "${invite.room} ${JSON.stringify(invites)}`);
+                throw 'could not find connected user';
+            }
 
-    if (!socket) {
-        warn(`could not find socket "${invite.room} ${JSON.stringify(invites)}`);
-        throw 'could not find connected user';
-    }
-
-    return room.getRole(invite.role)
-        .then(project => {
-            room.add(socket, invite.role);
-            return Utils.serializeRole(project, room.name);
+            return room.getRole(invite.role)
+                .then(project => {
+                    room.add(socket, invite.role);
+                    return Utils.serializeRole(project, room.name);
+                });
         });
 }
 
