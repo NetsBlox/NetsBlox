@@ -2,7 +2,7 @@ const ApiConsumer = require('../utils/api-consumer'),
     osmosis = require('osmosis'),
     urlencode = require('urlencode');
 
-let britishmuseum = new ApiConsumer('britishmuseum','http://collection.britishmuseum.org/',{cache: {ttl: 3600*24*30*6}});
+let britishmuseum = new ApiConsumer('britishmuseum','https://collection.britishmuseum.org/',{cache: {ttl: 3600*24*30*6}});
 
 
 const prefix = `PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
@@ -73,7 +73,7 @@ britishmuseum._htmlSearchHandler = function(html, response) {
 
 
 
-britishmuseum._search = function(label, type, material, limit) {
+britishmuseum.search = function(label, type, material, limit) {
     if (!(label || type || material)) return 'Please pass in a query';
     limit = limit || DEFAULT_LIMIT;
     let response = this.response;
@@ -106,15 +106,27 @@ britishmuseum._search = function(label, type, material, limit) {
     let combinedQuery =  queryInjector(baseQ, queries);
 
     let queryOptions = {
-        queryString: 'sparql?query=' + urlencode( prefix + combinedQuery, 'utf-8'),
+        // queryString: 'sparql?query=' + urlencode( prefix + combinedQuery, 'utf-8'),
+        headers: {
+            'content-type': 'application/sparql-results+json;charset=UTF-8',
+            origin: 'https://collection.britishmuseum.org',
+            referer: 'https://collection.britishmuseum.org/sparql',
+            authority: 'collection.britishmuseum.org',
+            accept: 'application/sparql-results+json',
+            'accept-encoding': 'gzip, deflate, br',
+            'accept-language': 'en,fa;q=0.8'
+        },
+        method: 'POST',
+        queryString: 'sparql?',
+        // body: prefix + combinedQuery,
+        body: `SELECT * WHERE { ?sub ?pred ?obj. }
+LIMIT 10`,
         json: false
     };
 
 
     this._requestData(queryOptions)
-        .then(html => {
-            this._htmlSearchHandler(html,response);
-        });
+        .then(console.log);
     return null;
     // or send use sendStruct if hitting the json endpoint.
     // return this._sendStruct(queryOptions,searchParser);
