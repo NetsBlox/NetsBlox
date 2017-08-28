@@ -29,8 +29,6 @@ function rateCheck(response, res) {
 
 module.exports = {
 
-    isStateless: true,
-
     // returns a list of a user's recent tweets
     recentTweets: function(screenName, count) {
         var results = [],

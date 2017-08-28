@@ -2,9 +2,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
     console.log('Warning: environment variable GOOGLE_GEOCODING_API not defined, Geolocation RPC will not work.');
 } else {
 
-    let GeoLocationRPC = {
-        isStateless: true,
-    };
+    let GeoLocationRPC = {};
 
     var debug = require('debug'),
         error = debug('netsblox:rpc:geolocation:error'),

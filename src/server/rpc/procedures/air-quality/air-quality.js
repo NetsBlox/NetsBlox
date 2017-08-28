@@ -84,9 +84,6 @@ var qualityIndex = function(latitude, longitude) {
 };
 
 module.exports = {
-
-    // This is very important => Otherwise it will try to instantiate this
-    isStateless: true,
     COMPATIBILITY: {
         path: 'air',
         arguments: {
