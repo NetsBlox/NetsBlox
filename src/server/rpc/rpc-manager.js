@@ -125,7 +125,7 @@ RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
     var socket,
         rpcs;
 
-    if (RPC.isStateless) {
+    if (typeof RPC !== 'function') {  // stateless rpc
         return RPC;
     }
 

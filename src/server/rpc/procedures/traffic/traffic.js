@@ -35,8 +35,6 @@ if (!process.env.BING_TRAFFIC_KEY) {
 }else{   
     module.exports = {
 
-        isStateless: true,
-
         search: function(westLongitude, northLatitude, eastLongitude, southLatitude) {
 
             // for bounding box

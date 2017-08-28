@@ -178,7 +178,6 @@ let stationsInfo = function(){
 };
 
 module.exports = {
-    isStateless: true,
     stations,
     stationsInfo,
     stationInfo,

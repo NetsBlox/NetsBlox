@@ -14,7 +14,6 @@ let TwentyQuestions = function () {
     this._state.guessCount = null;
     this._state.answerer = null;
     this._state.started = false;
-    this.isStateless = false;
 };
 
 TwentyQuestions.prototype.start = function (answer) {

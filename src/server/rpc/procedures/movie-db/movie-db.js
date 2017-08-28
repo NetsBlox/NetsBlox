@@ -196,7 +196,6 @@ if(!process.env.TMDB_API_KEY) {
     };
 
 
-    movieDB.isStateless = true;
     movieDB.serviceName = 'MovieDB';
 
     movieDB.searchMovie = function(title) {

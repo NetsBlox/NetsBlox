@@ -1,6 +1,4 @@
-let TrendsRPC = {
-    isStateless: true
-};
+let TrendsRPC = {};
 
 var debug = require('debug'),
     request = require('request'),
