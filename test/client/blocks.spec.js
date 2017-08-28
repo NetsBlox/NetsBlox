@@ -22,10 +22,7 @@ describe('blocks', function() {
         var fail = () => done('action rejected!');
         driver.addBlock('doIfElse', position)
             .accept(block => SnapActions.setSelector(block, 'doIf')
-                .accept(() => {
-                    console.log('accept called!');
-                    done();
-                })
+                .accept(() => done())
                 .reject(fail)
             )
             .reject(fail);
