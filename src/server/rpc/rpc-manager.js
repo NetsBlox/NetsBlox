@@ -42,7 +42,10 @@ RPCManager.prototype.loadRPCs = function() {
         .filter(pair => {
             let service = pair[1];
             if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
-                if(typeof service.isSupported === 'function') return service.isSupported();
+                if(service.isSupported && ! service.isSupported()){
+                    console.error('service ', pair[0], 'is not supported');
+                    return false;
+                }
                 return true;
             }
             return false;
