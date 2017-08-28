@@ -40,10 +40,12 @@ RPCManager.prototype.loadRPCs = function() {
         .filter(pair => fs.existsSync(pair[1]))
         .map(pair => [pair[0], require(pair[1])])
         .filter(pair => {
-            let service = pair[1];
+            let [name, service] = pair;
             if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
-                if(service.isSupported && ! service.isSupported()){
-                    console.error('service ', pair[0], 'is not supported');
+                if(service.isSupported && !service.isSupported()){
+                    /* eslint-disable no-console*/
+                    console.error(`${name} is not supported in this deployment. Skipping...`);
+                    /* eslint-enable no-console*/
                     return false;
                 }
                 return true;
