@@ -81,7 +81,7 @@ RoomManager.prototype.isActiveRoom = function(uuid) {
 };
 
 RoomManager.prototype.getExistingRoom = function(uuid) {
-    return this.rooms[uuid];
+    return Q(this.rooms[uuid]);
 };
 
 RoomManager.prototype.getRoom = function(socket, ownerId, name) {
