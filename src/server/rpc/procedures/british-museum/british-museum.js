@@ -8,7 +8,7 @@ let britishmuseum = new ApiConsumer('britishmuseum','https://collection.britishm
 const prefix = `PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX crm: <http://erlangen-crm.org/current/>
 PREFIX fts: <http://www.ontotext.com/owlim/fts#>
-PREFIX btm: <http://collection.britishmuseum.org/id/ontology/>
+PREFIX btm: <http://www.researchspace.org/ontology/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>`;
 
 const DEFAULT_LIMIT = 5;
@@ -226,10 +226,10 @@ britishmuseum.itemDetails = function(itemId){
     let resourceParser = sparqlJson => {
         try {
             sparqlJson = sparqlJson[Object.keys(sparqlJson)[0]];
-            let mainImages = sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_has_main_representation'] || [];
+            let mainImages = sparqlJson['http://www.researchspace.org/ontology/PX_has_main_representation'] || [];
             let otherImages = sparqlJson['http://erlangen-crm.org/current/P138i_has_representation'] || [];
             let images = mainImages.concat(otherImages);
-            let info = sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_display_wrap'].map(item => item.value).map(info => {
+            let info = sparqlJson['http://www.researchspace.org/ontology/PX_display_wrap'].map(item => item.value).map(info => {
                 return info.split('::').slice(0,2).map(str => str.trim());
             });
 
@@ -240,7 +240,7 @@ britishmuseum.itemDetails = function(itemId){
             let promisedLabel = sparqlJson['http://www.w3.org/2000/01/rdf-schema#label'];
             idealObj.label =  promisedLabel ? promisedLabel[0].value : '';
 
-            let promisedDesc =sparqlJson['http://collection.britishmuseum.org/id/ontology/PX_physical_description'];
+            let promisedDesc =sparqlJson['http://www.researchspace.org/ontology/PX_physical_description'];
             idealObj.physicalDescription =  promisedDesc ? promisedDesc[0].value : '';
 
             info.forEach(keyVal => {
