@@ -18,7 +18,7 @@ ActionManager.prototype.onAddMessageType = function(name, fields) {
         name: name,
         fields: fields
     });
-    ide.flushBlocksCache('services');  //  b/c of inheritance
+    ide.flushBlocksCache('network');  //  b/c of inheritance
     ide.refreshPalette();
     this.completeAction();
 };
@@ -26,7 +26,7 @@ ActionManager.prototype.onAddMessageType = function(name, fields) {
 ActionManager.prototype.onDeleteMessageType = function(name) {
     var ide = this.ide();
     ide.stage.deleteMessageType(name);
-    ide.flushBlocksCache('services');  //  b/c of inheritance
+    ide.flushBlocksCache('network');  //  b/c of inheritance
     ide.refreshPalette();
     this.completeAction();
 };
