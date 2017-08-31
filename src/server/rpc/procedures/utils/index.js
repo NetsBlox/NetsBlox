@@ -12,7 +12,7 @@ const sendImageBuffer = (response, imageBuffer, logger) => {
     if (logger) logger.trace('sent the image');
 };
 
-const collectStream = stream => {
+const collectStream = (stream, logger) => {
     let deferred = Q.defer();
     var imageBuffer = new Buffer(0);
     stream.on('data', function(data) {
@@ -23,6 +23,7 @@ const collectStream = stream => {
     });
     stream.on('error', err => {
         deferred.reject(err);
+        if (logger) logger.error('errored', err);
     });
     return deferred.promise;
 }

@@ -5,6 +5,7 @@ const rpcUtils = require('../utils');
 const Logger = require('../../../logger');
 const logger = new Logger('netsblox:rpc:chart');
 const gnuPlot = require('./node-gnuplot.js');
+const _ = require('lodash');
 const Q = require('q');
 
 let chart = new ApiConsumer('chart');
@@ -148,10 +149,22 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title) {
     return this._drawChart(dataset, xAxisTag, yAxisTag, datasetTag, title, 'line');
 };
 
-chart.draw = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLabel){
-    let data = lines.map((pts, idx) => {
+function prepareData(lines, lineTitles){
+    return lines.map((pts, idx) => {
+        // shouldn't be needed! Temp fix
+        if (!Array.isArray(pts)) {
+            logger.warn(`input is not an array!`);
+            pts = _.map(pts, function(value, index) {
+                return value;
+            });
+        }
         return {title: lineTitles[idx], points: pts};
     });
+}
+
+chart.draw = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLabel){
+
+    let data = prepareData(lines, lineTitles);
     
     let opts = {title: chartTitle, xLabel, yLabel};
     if (xRange) opts.xRange = {min: xRange[0], max: xRange[1]};
@@ -163,14 +176,14 @@ chart.draw = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLa
 };
 
 chart.timeSeries = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLabel, timeInputFormat, timeOutputFormat){
-    let data = lines.map((pts, idx) => {
-        return {title: lineTitles[idx], points: pts};
-    });
+
+    let data = prepareData(lines, lineTitles);
 
     timeInputFormat = timeInputFormat || '%s';
     timeOutputFormat = timeOutputFormat || '%d/%m';
     
-    let opts = {title: chartTitle, yLabel, timeSeries: {}};
+    let opts = {title: chartTitle, timeSeries: {}};
+    if (xRange) opts.xRange = {min: xRange[0], max: xRange[1]};
     if (yRange) opts.yRange = {min: yRange[0], max: yRange[1]};
     opts.timeSeries = {
         axis: 'x',
@@ -178,7 +191,7 @@ chart.timeSeries = function(lines, lineTitles, chartTitle, xRange, yRange, xLabe
         outputFormat: timeOutputFormat
     };
     let chartStream =  gnuPlot.draw(data, opts);
-    return rpcUtils.collectStream(chartStream).then( buffer => {
+    return rpcUtils.collectStream(chartStream, logger).then( buffer => {
         rpcUtils.sendImageBuffer(this.response, buffer, logger);
     }).catch(logger.error);
 };

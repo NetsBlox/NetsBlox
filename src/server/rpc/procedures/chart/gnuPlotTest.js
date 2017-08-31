@@ -36,7 +36,7 @@ let lines = timeSData
         })
     );
 
-let data = lines.map((pts, idx) => {
+let weatherData = lines.map((pts, idx) => {
     return {title: 'lineTitle', points: pts};
 });
 
@@ -49,7 +49,7 @@ opts.timeSeries = {
     inputFormat: timeInputFormat,
     outputFormat: timeOutputFormat
 };
-let chartStream =  gnuPlot.draw(data, opts);
+let chartStream =  gnuPlot.draw(weatherData, opts);
 let writeSt = fs.createWriteStream('plotTest.png');
 chartStream.pipe(writeSt);
 
