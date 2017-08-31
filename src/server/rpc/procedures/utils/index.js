@@ -2,12 +2,14 @@
 const Q = require('q');
 
 // sets up the headers and send an image
-const sendImageBuffer = (response, imageBuffer) => {
+const sendImageBuffer = (response, imageBuffer, logger) => {
+    if (imageBuffer.length < 1) throw 'empty image buffer';
     response.set('cache-control', 'private, no-store, max-age=0');
     response.set('content-type', 'image/png');
     response.set('content-length', imageBuffer.length);
     response.set('connection', 'close');
     response.status(200).send(imageBuffer);
+    if (logger) logger.trace('sent the image');
 };
 
 const collectStream = stream => {
