@@ -5,8 +5,6 @@ const rpcUtils = require('../utils');
 const Logger = require('../../../logger');
 const logger = new Logger('netsblox:rpc:chart');
 const gnuPlot = require('./node-gnuplot.js');
-const fs = require('fs-extra');
-const stream = require('stream');
 const Q = require('q');
 
 let chart = new ApiConsumer('chart');
@@ -159,11 +157,10 @@ chart.draw = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLa
     if (xRange) opts.xRange = {min: xRange[0], max: xRange[1]};
     if (yRange) opts.yRange = {min: yRange[0], max: yRange[1]};
     let chartStream =  gnuPlot.draw(data, opts);
-    chartStream.end();  
     return rpcUtils.collectStream(chartStream).then( buffer => {
-        rpcUtils.sendImageBuffer(this.response, buffer);
-    })
-}
+        rpcUtils.sendImageBuffer(this.response, buffer, logger);
+    }).catch(logger.error);
+};
 
 chart.timeSeries = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLabel, timeInputFormat, timeOutputFormat){
     let data = lines.map((pts, idx) => {
@@ -181,10 +178,9 @@ chart.timeSeries = function(lines, lineTitles, chartTitle, xRange, yRange, xLabe
         outputFormat: timeOutputFormat
     };
     let chartStream =  gnuPlot.draw(data, opts);
-    chartStream.end();  
     return rpcUtils.collectStream(chartStream).then( buffer => {
-        rpcUtils.sendImageBuffer(this.response, buffer);
-    })
-}
+        rpcUtils.sendImageBuffer(this.response, buffer, logger);
+    }).catch(logger.error);
+};
 
 module.exports = chart;
