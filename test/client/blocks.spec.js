@@ -1,11 +1,9 @@
-/* globals SnapActions, expect, driver, Point */
+/* globals SnapActions, expect, driver, Point, CustomBlockDefinition */
 describe('blocks', function() {
     var position = new Point(400, 400);
 
     beforeEach(function() {
         driver.reset();
-
-        // create an if-else block
         driver.selectCategory('control');
     });
 
@@ -26,5 +24,27 @@ describe('blocks', function() {
                 .reject(fail)
             )
             .reject(fail);
+    });
+
+    describe('custom', function() {
+        beforeEach(() => {
+            driver.reset();
+            driver.selectCategory('custom');
+        });
+
+        it('should create (sprite) custom block', function(done) {
+            // Create a custom block definition
+            var sprite = driver.ide().currentSprite,
+                spec = 'sprite block %s',
+                definition = new CustomBlockDefinition(spec, sprite);
+
+            // Get the sprite
+            definition.category = 'motion';
+            SnapActions.addCustomBlock(definition, sprite)
+                .accept(() => {
+                    driver.addBlock(definition.blockInstance(), position)
+                        .accept(() => done());
+                });
+        });
     });
 });
