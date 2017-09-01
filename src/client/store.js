@@ -2,7 +2,8 @@
    CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
    WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame,
    MessageInputSlotMorph, HintInputSlotMorph, InputSlotMorph, SnapActions,
-   normalizeCanvas, StructInputSlotMorph, BooleanSlotMorph, SVG_Costume, Costume*/
+   normalizeCanvas, StructInputSlotMorph, BooleanSlotMorph, SVG_Costume, Costume,
+   newCanvas, MorphicPreferences, Context, BlockMorph, MultiArgMorph, Sound*/
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
@@ -59,6 +60,9 @@ SnapSerializer.prototype.loadValue = function (model) {
                 'mediaID'
             )) {
             return this.mediaDict[model.attributes.mediaID];
+        }
+        if (Object.prototype.hasOwnProperty.call(model.attributes, 'actionID')) {
+            return SnapActions.getOwnerFromId(model.attributes.actionID);
         }
         throw new Error('expecting a reference id');
     case 'l':
@@ -242,10 +246,10 @@ SnapSerializer.prototype.loadValue = function (model) {
                 v = new SVG_Costume(null, name, center);
                 image.onload = function () {
                     v.contents = image;
-                    v.version = +new Date();
                     // NetsBlox addition: start
                     v.imageData = null;
                     // NetsBlox addition: end
+                    v.version = +new Date();
                     if (typeof v.loaded === 'function') {
                         v.loaded();
                     } else {
@@ -262,10 +266,10 @@ SnapSerializer.prototype.loadValue = function (model) {
                         context = canvas.getContext('2d');
                     context.drawImage(image, 0, 0);
                     v.contents = canvas;
-                    v.version = +new Date();
                     // NetsBlox addition: start
                     v.imageData = null;
                     // NetsBlox addition: end
+                    v.version = +new Date();
                     if (typeof v.loaded === 'function') {
                         v.loaded();
                     } else {
