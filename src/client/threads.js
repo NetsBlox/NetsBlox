@@ -320,7 +320,7 @@ NetsProcess.prototype.parseRPCResult = function (result) {
 };
 
 function toQueryString(list, prefix) {
-    var array = list.contents;
+    var array = list.asArray();
     var str = [], k, v;
     for(var i = 0; i < array.length; i++) {
         k = prefix + '[' + i + ']';
