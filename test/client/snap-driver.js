@@ -46,7 +46,8 @@ SnapDriver.prototype.selectCategory = function(cat) {
 };
 
 SnapDriver.prototype.addBlock = function(spec, position) {
-    var block = SpriteMorph.prototype.blockForSelector(spec, true);
+    var block = typeof spec === 'string' ?
+        SpriteMorph.prototype.blockForSelector(spec, true) : spec;
     var sprite = this.ide().currentSprite;
 
     return SnapActions.addBlock(block, sprite.scripts, position);
