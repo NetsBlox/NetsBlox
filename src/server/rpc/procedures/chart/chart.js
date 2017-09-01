@@ -182,7 +182,7 @@ chart.timeSeries = function(lines, lineTitles, chartTitle, xRange, yRange, xLabe
     timeInputFormat = timeInputFormat || '%s';
     timeOutputFormat = timeOutputFormat || '%d/%m';
     
-    let opts = {title: chartTitle, timeSeries: {}};
+    let opts = {title: chartTitle, xLabel, yLabel, timeSeries: {}};
     if (xRange) opts.xRange = {min: xRange[0], max: xRange[1]};
     if (yRange) opts.yRange = {min: yRange[0], max: yRange[1]};
     opts.timeSeries = {
