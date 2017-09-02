@@ -66,8 +66,9 @@ class ApiConsumer {
             return Promise.all(promises);
         }
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
-        this._logger.trace('requesting data for',fullUrl);
-        return this._cache.wrap(fullUrl, ()=>{
+        this._logger.trace('requesting data for', fullUrl);
+        if (queryOptions.body) this._logger.trace('with the body', queryOptions.body);
+        return this._cache.wrap(JSON.stringify(queryOptions), ()=>{
             this._logger.trace('request is not cached, calling external endpoint');
             return rp({
                 uri: fullUrl,
