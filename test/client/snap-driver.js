@@ -46,6 +46,19 @@ SnapDriver.prototype.selectCategory = function(cat) {
     return category;
 };
 
+SnapDriver.prototype.selectStage = function() {
+    var ide = this.ide();
+
+    return ide.selectSprite(ide.stage);
+};
+
+SnapDriver.prototype.selectSprite = function(name) {
+    var ide = this.ide(),
+        sprite = ide.sprites.find(sprite => sprite.name === name);
+
+    return ide.selectSprite(sprite);
+};
+
 SnapDriver.prototype.addBlock = function(spec, position) {
     var block = typeof spec === 'string' ?
         SpriteMorph.prototype.blockForSelector(spec, true) : spec;
