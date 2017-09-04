@@ -1,3 +1,4 @@
+/* globals SpriteMorph, SnapActions */
 function SnapDriver(world) {
     this._world = world;
 }
