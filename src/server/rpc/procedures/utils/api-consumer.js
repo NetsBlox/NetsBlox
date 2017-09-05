@@ -53,6 +53,8 @@ class ApiConsumer {
     /**
         queryOptions = {
             queryString,
+            method,
+            body,
             baseUrl,
             headers,
             json: boolean to show indicate if the response is json or not. default: true
@@ -60,6 +62,7 @@ class ApiConsumer {
      */
     _requestData(queryOptions){
         // when extending use urlencoding such as 'urlencode' to encode the query parameters
+        // TODO implement a defaults object
         if (Array.isArray(queryOptions)) {
             this._logger.trace('requesting data from', queryOptions.length, 'sources');
             let promises = queryOptions.map( qo => this._requestData(qo));
@@ -68,9 +71,10 @@ class ApiConsumer {
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
         this._logger.trace('requesting data for', fullUrl);
         if (queryOptions.body) this._logger.trace('with the body', queryOptions.body);
-        return this._cache.wrap(JSON.stringify(queryOptions), ()=>{
+        return this._cache.wrap(this._getCacheKey(queryOptions), ()=>{
             this._logger.trace('request is not cached, calling external endpoint');
             return rp({
+                method: queryOptions.method || 'GET',
                 uri: fullUrl,
                 headers: queryOptions.headers,
                 json: queryOptions.json !== undefined ? queryOptions.json : true
@@ -79,6 +83,15 @@ class ApiConsumer {
             this._logger.error('error in requesting data from', fullUrl, err);
             throw err;
         });
+    }
+
+    _getCacheKey(queryOptions){
+        let parameters = [];
+        parameters.push(queryOptions.method || 'GET');
+        let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
+        parameters.push(fullUrl);
+        if (queryOptions.body) parameters.push(queryOptions.body);
+        return parameters.join('&');
     }
 
     /**
