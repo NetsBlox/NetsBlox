@@ -87,7 +87,7 @@ class ApiConsumer {
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
         parameters.push(fullUrl);
         if (queryOptions.body) parameters.push(queryOptions.body);
-        return parameters.join('&');
+        return parameters.join(' ');
     }
 
     /**
