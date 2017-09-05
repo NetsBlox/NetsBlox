@@ -55,6 +55,8 @@ class ApiConsumer {
         queryOptions = {
             queryString,
             baseUrl,
+            method,
+            body,
             headers,
             json: boolean to show indicate if the response is json or not. default: true
         }
