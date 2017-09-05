@@ -11,6 +11,7 @@ const Eclipse = require('../../../../src/server/rpc/procedures/eclipse-2017/ecli
 
 utils.verifyRPCInterfaces(eclipse, [
     ['stations', []],
+    ['stationsInfo', []],
     ['eclipsePath', []],
     ['stationInfo', ['stationId']],
     ['temperature', ['stationId']],
@@ -18,7 +19,9 @@ utils.verifyRPCInterfaces(eclipse, [
     ['condition', ['stationId']],
     ['conditionHistory', ['stationId', 'limit']],
     ['pastTemperature', ['stationId', 'time']],
-    ['pastCondition', ['stationId', 'time']]
+    ['pastCondition', ['stationId', 'time']],
+    ['temperatureHistoryRange', ['stationId', 'startTime', 'endTime']],
+    ['conditionHistoryRange', ['stationId', 'startTime', 'endTime']],
 ]);
 
 describe('eclipsePath', function() {

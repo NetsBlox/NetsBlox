@@ -6,9 +6,6 @@ var debug = require('debug'),
 
 module.exports = {
 
-    // This is very important => Otherwise it will try to instantiate this
-    isStateless: true,
-
     requestPublicRoleId: function() {
         var socket = this.socket;
 

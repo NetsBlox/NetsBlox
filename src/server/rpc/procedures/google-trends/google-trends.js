@@ -1,6 +1,4 @@
-let TrendsRPC = {
-    isStateless: true
-};
+let TrendsRPC = {};
 
 var debug = require('debug'),
     request = require('request'),
@@ -29,7 +27,7 @@ TrendsRPC.byLocation = function (latitude, longitude) {
         trace('detected country: ', countryInfo.countryName, countryInfo, 'long', longitude, 'lat', latitude);
         if (typeof countryInfo.countryCode != 'undefined') {
             // Improve: google does not use official country codes for trends see VN vs VE
-            TrendsRPC.byCountryCode(countryInfo.countryCode);
+            TrendsRPC.byCountryCode.call(this, countryInfo.countryCode);
         } else {
             showError('Failed to detect the country.', response);
         }
