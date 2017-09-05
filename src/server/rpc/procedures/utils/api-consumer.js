@@ -54,6 +54,8 @@ class ApiConsumer {
         queryOptions = {
             queryString,
             baseUrl,
+            method,
+            body,
             headers,
             json: boolean to show indicate if the response is json or not. default: true
         }
@@ -73,6 +75,8 @@ class ApiConsumer {
             this._logger.trace('request is not cached, calling external endpoint');
             return rp({
                 uri: fullUrl,
+                method: queryOptions.method || 'GET',
+                body: queryOptions.body,
                 headers: queryOptions.headers,
                 json: queryOptions.json !== undefined ? queryOptions.json : true
             });
@@ -84,6 +88,7 @@ class ApiConsumer {
 
     _getCacheKey(queryOptions){
         let parameters = [];
+        parameters.push(queryOptions.method || 'GET');
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
         parameters.push(fullUrl);
         if (queryOptions.body) parameters.push(queryOptions.body);
