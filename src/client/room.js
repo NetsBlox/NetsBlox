@@ -108,7 +108,7 @@ RoomMorph.prototype.myUuid = function() {
 };
 
 RoomMorph.prototype.myUserId = function() {
-    return SnapCloud.username || 'guest';
+    return SnapCloud.username || localize('guest');
 };
 
 RoomMorph.prototype._onNameChanged = function(newName) {
@@ -891,7 +891,7 @@ RoleLabelMorph.prototype.init = function() {
     var usrTxt = '<empty>';
     if (this.users.length) {
         usrTxt = this.users.map(function(user){
-            return user.username || 'guest';
+            return user.username || localize('guest');
         }).join(', ');
     }
 
