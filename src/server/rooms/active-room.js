@@ -132,7 +132,13 @@ class ActiveRoom {
 
         this.getRoleNames()
             .forEach(role => occupants[role] =
-                this.getSocketsAt(role).map(socket => socket.username));
+                this.getSocketsAt(role).map(socket => {
+                    return {
+                        uuid: socket.uuid,
+                        username: utils.isSocketUuid(socket.username) ?
+                            null : socket.username
+                    };
+                }));
 
         msg = {
             type: 'room-roles',
