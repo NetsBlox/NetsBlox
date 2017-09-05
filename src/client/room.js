@@ -978,7 +978,9 @@ function EditRoleMorph(room, role) {
     if (role.users.length) {  // occupied
         // owner can evict collaborators, collaborators can evict guests
 
-        this.addButton('moveToRole', 'Move to');
+        if (role.name !== this.room.role()) {
+            this.addButton('moveToRole', 'Move to');
+        }
 
         if (role.name !== this.room.role() &&  // can't evict own role
             (this.room.isOwner() || this.room.isGuest(role.user))) {
