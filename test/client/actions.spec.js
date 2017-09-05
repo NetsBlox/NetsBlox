@@ -40,8 +40,11 @@ describe('actions', function() {
 
     it('should only animate if focused', function() {
         var stage = driver.ide().stage;
-        expect(SnapActions.canAnimate(stage)).to.be(false);
+
+        SnapActions.currentEvent = {replayType: 1};
+        driver.selectSprite('Sprite');
+        expect(!!SnapActions.canAnimate(stage)).to.be(false);
         driver.selectStage();
-        expect(SnapActions.canAnimate(stage)).to.be(true);
+        expect(!!SnapActions.canAnimate(stage)).to.be(true);
     });
 });

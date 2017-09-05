@@ -54,7 +54,7 @@ SnapDriver.prototype.selectStage = function() {
 
 SnapDriver.prototype.selectSprite = function(name) {
     var ide = this.ide(),
-        sprite = ide.sprites.find(sprite => sprite.name === name);
+        sprite = ide.sprites.asArray().find(sprite => sprite.name === name);
 
     return ide.selectSprite(sprite);
 };
