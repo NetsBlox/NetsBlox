@@ -34,8 +34,7 @@ SnapDriver.prototype.newProject = function() {
     var room = this.ide().room;
     var uuid = this.ide().sockets.uuid;
     room.ownerId = uuid;
-    room.roles = {};
-    room.roles[this.ide().projectName] = [uuid];
+    room.roles = room.getDefaultRoles();
 };
 
 SnapDriver.prototype.selectCategory = function(cat) {

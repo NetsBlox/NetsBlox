@@ -1,4 +1,4 @@
-/* globals driver, SnapActions, Point, SnapUndo, expect */
+/* globals driver, SnapActions, Point, SnapUndo, expect, SnapCloud */
 describe('actions', function() {
     var position = new Point(600, 600);
 
@@ -50,15 +50,26 @@ describe('actions', function() {
 
     describe('collaboration', function() {
         it('should detect collaboration if multiple users in role', function() {
-            var ide = driver.ide(),
-                uuid = ide.sockets.uuid;
+            var ide = driver.ide();
 
-            ide.room.roles[ide.projectName] = ['test', uuid];
+            ide.room.roles[ide.projectName].push({username: 'test', uuid: 'ad'});
             expect(SnapActions.isCollaborating()).to.be(true);
         });
 
         it('should detect not collaborating if only user in role', function() {
             expect(SnapActions.isCollaborating()).to.be(false);
+        });
+
+        it('should detect leader by default', function() {
+            expect(driver.ide().room.isLeader()).to.be(true);
+        });
+
+        it('should detect leader based off of uuid', function() {
+            var ide = driver.ide();
+
+            SnapCloud.username = 'test';
+            ide.room.roles[ide.projectName].unshift({username: SnapCloud.username, uuid: 'ad'});
+            expect(ide.room.isLeader()).to.be(false);
         });
     });
 });
