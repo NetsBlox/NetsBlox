@@ -44,4 +44,18 @@ describe('actions', function() {
         driver.selectStage();
         expect(SnapActions.canAnimate(stage)).to.be(true);
     });
+
+    describe('collaboration', function() {
+        it('should detect collaboration if multiple users in role', function() {
+            var ide = driver.ide(),
+                uuid = ide.sockets.uuid;
+
+            ide.room.roles[ide.projectName] = ['test', uuid];
+            expect(SnapActions.isCollaborating()).to.be(true);
+        });
+
+        it('should detect not collaborating if only user in role', function() {
+            expect(SnapActions.isCollaborating()).to.be(false);
+        });
+    });
 });
