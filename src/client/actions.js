@@ -60,7 +60,7 @@ SnapActions.__sessionId = Date.now();
 SnapActions.enableCollaboration =
 SnapActions.disableCollaboration = function() {};
 SnapActions.isCollaborating = function() {
-    return this.ide().room.getCurrentOccupants() > 1;
+    return this.ide().room.getCurrentOccupants().length > 1;
 };
 
 // Recording user actions
