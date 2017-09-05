@@ -53,7 +53,7 @@ const queryOptions = {
     json: false
 };
 
-britishmuseum.search = function(label, type, material, limit) {
+britishmuseum._search = function(label, type, material, limit) {
     if (!(label || type || material)) return 'Please pass in a query';
     limit = limit || DEFAULT_LIMIT;
     let baseQ = [
