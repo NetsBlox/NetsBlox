@@ -1634,6 +1634,9 @@ NetsBloxMorph.prototype.projectMenu = function () {
     );
 
     menu.popup(world, pos);
+    // Netsblox addition: start
+    return menu;
+    // Netsblox addition: end
 };
 
 NetsBloxMorph.prototype.requestAndroidApp = function(name) {

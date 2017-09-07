@@ -466,7 +466,8 @@ NetCloud.prototype.logout = function (callBack, errorCall) {
     this.callService(
         'logout',
         callBack,
-        errorCall
+        errorCall,
+        [this.socketId()]
     );
     this.clear();
 };
