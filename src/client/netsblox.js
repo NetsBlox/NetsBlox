@@ -2183,14 +2183,15 @@ NetsBloxMorph.prototype.reportBug = function () {
     text.edit();
 };
 
-NetsBloxMorph.prototype.submitBugReport = function (desc, silent) {
+NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     var myself = this,
         canvas = document.getElementsByTagName('canvas')[0],
+        silent = !!error,
         report = {};
 
     // Add the description
     report.description = desc;
-    report.timestamp = Date.now();
+    report.timestamp = new Date();
     report.userAgent = navigator.userAgent;
     report.version = NetsBloxSerializer.prototype.app;
 
@@ -2203,7 +2204,21 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, silent) {
 
     // Add username (if logged in)
     report.user = SnapCloud.username;
-    report.isAutoReport = !!silent;
+    report.isAutoReport = !!error;
+
+    if (report.isAutoReport) {
+        var event = SnapActions.currentEvent;
+        report.description = [
+            '## Auto-report',
+            'Error:',
+            error.stack,
+            '---',
+            'Failing Event:',
+            JSON.stringify(event, null, 2)
+        ].join('\n');
+        report.error = error;
+        report.event = event;
+    }
 
     // Report to the server
     var request = new XMLHttpRequest(),

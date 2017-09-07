@@ -72,4 +72,15 @@ describe('actions', function() {
             expect(ide.room.isLeader()).to.be(false);
         });
     });
+
+    describe('bug reporting', function() {
+        it('should report bugs if completeAction is called with error', function(done) {
+            var ide = driver.ide();
+            ide.submitBugReport = () => {
+                delete ide.submitBugReport;
+                done();
+            };
+            SnapActions.completeAction('testError');
+        });
+    });
 });

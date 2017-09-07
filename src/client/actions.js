@@ -121,23 +121,11 @@ SnapActions.loadProject = function() {
     return event;
 };
 
-SnapActions._applyEvent = function(event) {
-    try {
-        return ActionManager.prototype._applyEvent.apply(this, arguments);
-    } catch (e) {
-        var msg = [
-            '## Auto-report',
-            'Error:',
-            e.stack,
-            '---',
-            'Failing Event:',
-            JSON.stringify(event, null, 2)
-        ].join('\n');
-
-        // Report the error!
-        this.ide().submitBugReport(msg, true);
-        throw e;
+SnapActions.completeAction = function(error) {
+    if (error) {
+        this.ide().submitBugReport(null, error);
     }
+    return ActionManager.prototype.completeAction.apply(this, arguments);
 };
 
 SnapActions.applyEvent = function(event) {
