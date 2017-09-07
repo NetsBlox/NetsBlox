@@ -1,5 +1,6 @@
 var express = require('express'),
     bodyParser = require('body-parser'),
+    qs = require('qs'),
     WebSocketServer = require('ws').Server,
     _ = require('lodash'),
     dot = require('dot'),
@@ -31,6 +32,9 @@ var Server = function(opts) {
     this._logger = new Logger('netsblox');
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
+    this.app.set('query parser', string => {
+        return qs.parse(string, {parameterLimit: 10000, arrayLimit: 20000});
+    });
 
     // Mongo variables
     this.storage = new Storage(this._logger, opts);
