@@ -631,7 +631,7 @@ ProjectDialogMorph.prototype.saveProject = function () {
                             myself.ide,
                             function () {
                                 myself.ide.source = 'cloud';
-                                myself.ide.showMessage('saved.', 2);
+                                myself.ide.showMessage('Saved to cloud!', 2);
                             },
                             myself.ide.cloudError(),
                             true,
@@ -648,7 +648,7 @@ ProjectDialogMorph.prototype.saveProject = function () {
                     myself.ide,
                     function () {
                         myself.ide.source = 'cloud';
-                        myself.ide.showMessage('saved.', 2);
+                        myself.ide.showMessage('Saved to cloud!', 2);
                     },
                     myself.ide.cloudError(),
                     true,
