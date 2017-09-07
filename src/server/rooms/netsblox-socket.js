@@ -186,6 +186,17 @@ class NetsBloxSocket {
         this.updateRoom(isOwner);
     }
 
+    onLogout () {
+        let isOwner = this.isOwner();
+
+        this._logger.log(`${this.username} is logging out!`);
+        this.username = this.uuid;
+        this.user = null;
+        this.loggedIn = false;
+
+        this.updateRoom(isOwner);
+    }
+
     join (room, role) {
         role = role || this.roleId;
         this._logger.log(`joining ${room.uuid}/${role} from ${this.roleId}`);
