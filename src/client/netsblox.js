@@ -1809,13 +1809,17 @@ NetsBloxMorph.prototype.save = function () {
     if (this.source === 'examples') {
         this.source = 'local'; // cannot save to examples
     }
-    if (this.projectName) {
+    // NetsBlox changes - start
+    if (this.room.name) {
+    // NetsBlox changes - end
         if (this.source === 'local') { // as well as 'examples'
             // NetsBlox changes - start
             this.saveProject(this.room.name);
             // NetsBlox changes - end
         } else { // 'cloud'
-            this.saveProjectToCloud(this.projectName);
+            // NetsBlox changes - start
+            this.saveProjectToCloud(this.room.name);
+            // NetsBlox changes - end
         }
     } else {
         this.saveProjectsBrowser();
@@ -1826,7 +1830,9 @@ IDE_Morph.prototype.saveProjectToCloud = function (name) {
     var myself = this;
     if (name) {
         this.showMessage('Saving project\nto the cloud...');
-        this.setProjectName(name);
+        // Netsblox addition: start
+        this.room.name = name;
+        // Netsblox addition: end
         SnapCloud.saveProject(
             this,
             // Netsblox addition: start
