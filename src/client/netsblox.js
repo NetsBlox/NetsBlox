@@ -1780,14 +1780,14 @@ NetsBloxMorph.prototype.saveRoomLocal = function (str) {
             localStorage['-snap-project-' + name] = str;
         
             this.setURL('#open:' + str);
-            this.showMessage('Saved!', 1);
+            this.showMessage('Saved to the browser.', 1);
         } catch (err) {
             this.showMessage('Save failed: ' + err);
         }
     } else {
         localStorage['-snap-project-' + name] = str;
         this.setURL('#open:' + str);
-        this.showMessage('Saved!', 1);
+        this.showMessage('Saved to the browser.', 1);
     }
 };
 
@@ -1822,6 +1822,21 @@ NetsBloxMorph.prototype.save = function () {
     }
 };
 
+IDE_Morph.prototype.saveProjectToCloud = function (name) {
+    var myself = this;
+    if (name) {
+        this.showMessage('Saving project\nto the cloud...');
+        this.setProjectName(name);
+        SnapCloud.saveProject(
+            this,
+            // Netsblox addition: start
+            function () {myself.showMessage('Saved to cloud!', 2); },
+            // Netsblox addition: end
+            this.cloudError()
+        );
+    }
+};
+
 NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
     var myself = this,
         overwriteExisting;
@@ -1837,9 +1852,9 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
                 myself,
                 function () {
                     if (overwrite) {
-                        myself.showMessage('saved.', 2);
+                        myself.showMessage('Saved to cloud!', 2);
                     } else {
-                        myself.showMessage('saved as ' + myself.room.name, 2);
+                        myself.showMessage('Saved as ' + myself.room.name, 2);
                     }
                 },
                 myself.cloudError(),
