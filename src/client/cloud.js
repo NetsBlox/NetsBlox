@@ -419,7 +419,7 @@ NetCloud.prototype.passiveLogin = function (ide, callback, callOnFail) {
         request.withCredentials = true;
         request.onreadystatechange = function () {
             if (request.readyState === 4) {
-                if (199 < request.status && request.status < 300) {
+                if (request.status === 200) {  // 204 means not logged in (No Content)
                     response = JSON.parse(request.responseText);
                     myself.api = myself.parseAPI(response.api);
                     myself.username = response.username;
