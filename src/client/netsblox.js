@@ -1815,9 +1815,7 @@ NetsBloxMorph.prototype.save = function () {
             this.saveProject(this.room.name);
             // NetsBlox changes - end
         } else { // 'cloud'
-            // NetsBlox changes - start
-            this.saveProjectToCloud(this.room.name);
-            // NetsBlox changes - end
+            this.saveProjectToCloud(this.projectName);
         }
     } else {
         this.saveProjectsBrowser();
