@@ -8,27 +8,57 @@ const Q = require('q');
 
 let chart = new ApiConsumer('chart');
 
-chart.draw = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLabel){
+const defaults = {
+    title: undefined,
+    labels: [],
+    types: [],
+    xRange: undefined,
+    yRange: undefined,
+    xLabel: undefined,
+    yLabel: undefined,
+    timeSeriesAxis: undefined,
+    timeInputFormat: '%s',
+    timeOutputFormat: '%d/%m'
+}
 
-    let data = prepareData(lines, lineTitles);
+function prepareData(lines, lineTitles, lineTypes){
+    return lines.map((pts, idx) => {
+        // shouldn't be needed! Temp fix
+        if (!Array.isArray(pts)) {
+            logger.warn(`input is not an array!`);
+            pts = _.map(pts, function(value, index) {
+                return value;
+            });
+        }
+        return {title: lineTitles[idx], type: lineTypes[idx], points: pts};
+    });
+}
+
+chart.draw = function(lines, options){
+    options = rpcUtils.kvListToJson(options);
+    console.log('passed options', options);
+    options = _.merge({}, defaults, options || {});
+    console.log('merged options', options);
+
+    let data = prepareData(lines, options.labels, options.types);
     
-    let opts = {title: chartTitle, xLabel, yLabel};
-    if (xRange) opts.xRange = {min: xRange[0], max: xRange[1]};
-    if (yRange) opts.yRange = {min: yRange[0], max: yRange[1]};
+    let opts = {title: options.title, type: options.type, xLabel: options.xLabel, yLabel: options.yLabel};
+    if (options.xRange) opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
+    if (options.yRange) opts.yRange = {min: options.yRange[0], max: options.yRange[1]};
     let chartStream =  gnuPlot.draw(data, opts);
     return rpcUtils.collectStream(chartStream).then( buffer => {
         rpcUtils.sendImageBuffer(this.response, buffer, logger);
     }).catch(logger.error);
 };
 
-chart.timeSeries = function(lines, lineTitles, chartTitle, xRange, yRange, xLabel, yLabel, timeInputFormat, timeOutputFormat){
+chart.timeSeries = function(lines, labels, title, xRange, yRange, xLabel, yLabel, timeInputFormat, timeOutputFormat){
 
-    let data = prepareData(lines, lineTitles);
+    let data = prepareData(lines, labels);
 
     timeInputFormat = timeInputFormat || '%s';
     timeOutputFormat = timeOutputFormat || '%d/%m';
     
-    let opts = {title: chartTitle, xLabel, yLabel, timeSeries: {}};
+    let opts = {title: title, xLabel, yLabel, timeSeries: {}};
     if (xRange) opts.xRange = {min: xRange[0], max: xRange[1]};
     if (yRange) opts.yRange = {min: yRange[0], max: yRange[1]};
     opts.timeSeries = {
@@ -41,5 +71,9 @@ chart.timeSeries = function(lines, lineTitles, chartTitle, xRange, yRange, xLabe
         rpcUtils.sendImageBuffer(this.response, buffer, logger);
     }).catch(logger.error);
 };
+
+chart.defaultOptions = function(){
+    return rpcUtils.jsonToSnapList(defaults);
+}
 
 module.exports = chart;
