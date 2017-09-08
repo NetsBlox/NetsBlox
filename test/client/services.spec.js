@@ -1,5 +1,9 @@
 /* globals expect, driver, MessageCreatorMorph, PushButtonMorph, NetsProcess*/
 describe('services', function() {
+
+    var service = 'Dev',
+        rpcSignature = ['echo', ['arg']];
+
     before(function() {
         driver.selectCategory('network');
     });
@@ -10,8 +14,6 @@ describe('services', function() {
         });
 
         it('should serialize lists properly', function() {
-            var service = 'Dev',
-                rpcSignature = ['echo', ['arg']];
             var listInput = new List([new List([2,3]),new List([3,4])]);
             var process = new NetsProcess();
             process.getJSFromRPCDropdown = (service, rpc, params)=> params;
@@ -20,8 +22,6 @@ describe('services', function() {
         });
 
         it('should serialize linked lists properly', function() {
-            var service = 'Dev',
-                rpcSignature = ['echo', ['arg']];
             var linkedList = List.prototype.cons(2, new List([3,4,5]));
             var process = new NetsProcess();
             process.getJSFromRPCDropdown = (service, rpc, params)=> params;
