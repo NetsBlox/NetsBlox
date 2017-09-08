@@ -1,4 +1,5 @@
 const utils = require('../../../../../src/server/rpc/procedures/utils/index'),
+    _ = require('lodash'),
     assert = require('assert');
 
 describe('encodeQueryData', () => {
@@ -26,8 +27,8 @@ describe('snap structure creation', function() {
 
 
     it('should accept falsy values', function() {
-        assert.deepEqual(utils.jsonToSnapList(null), []);
-        assert.deepEqual(utils.jsonToSnapList(undefined), []);
+        assert.deepEqual(utils.jsonToSnapList(null), undefined);
+        assert.deepEqual(utils.jsonToSnapList(undefined), undefined);
         assert.deepEqual(utils.jsonToSnapList({}), []);
         assert.deepEqual(utils.jsonToSnapList([]), []);
     });
@@ -56,4 +57,21 @@ describe('snap structure creation', function() {
     it('should convert date objects to GMT datestring', function(){
         assert(utils.jsonToSnapList(multipleData)[2][3][1] === 'Tue, 25 Jul 2017 22:49:04 GMT');
     });
+});
+
+describe('snap list parser', function() {
+    const keyValList = [
+        ['name', 'Jhon'],
+        ['age', 33],
+        ['dob', new Date('2017-09-08T20:17:02.839Z')]
+    ]
+    const keyValJson = {
+        name: 'Jhon',
+        age: 33,
+        dob: new Date('2017-09-08T20:17:02.839Z')
+    };
+    it('should convert keyvalue list to simple json object', function(){
+        let obj = utils.kvListToJson(keyValList); 
+        assert(_.isEqual(keyValJson, obj), 'parsed json is not as expected');
+    })
 });
