@@ -321,7 +321,7 @@ NetsProcess.prototype.parseRPCResult = function (result) {
 
 function toQueryString(list, prefix) {
     var str = [], k, v;
-    if (list === null) return str.push(`${prefix}`);
+    if (list === null) return str.push(`${prefix}=null`);
     var array = list.asArray();
     for(var i = 0; i < array.length; i++) {
         k = prefix + '[' + i + ']';
