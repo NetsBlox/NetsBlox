@@ -3,7 +3,7 @@ const gnuplot = require(`gnuplot`),
     _ = require('lodash');
 
 const lineDefaults = {
-    title: undefined,
+    title: '',
     type: 'lines',
     points: []
 };
@@ -46,13 +46,13 @@ function dataToPlot(data){
 let draw = (data, opts) => {
     // apply the defaults
     let graph = gnuplot();
-    data = data.map(line => _.merge(line, lineDefaults));
-    opts = _.merge(optsDefautls, opts);
+    data = data.map(line => _.merge({}, lineDefaults, line));
+    opts = _.merge({}, optsDefautls, opts);
+    // TODO smart x & y range if not defined. it needs some padding.
     graph.set(`term pngcairo`)
         .set(`loadpath '${__dirname}'`)
         .set(`load 'xyborder.cfg'`)
         .set(`load 'grid.cfg'`)
-        .set(`title '${opts.title}'`)
         // .set(`zeroaxis`)
 
         // add grid
@@ -75,6 +75,7 @@ let draw = (data, opts) => {
 
     // if (data.length > 1) graph.set(`multiplot layout 1,2`) // this option is for drawing multiple charts
     
+    if (opts.title) graph.set(`title '${opts.title}'`)
     if (opts.xRange) graph.set(`xrange [${opts.xRange.min}:${opts.xRange.max}]`);
     if (opts.yRange) graph.set(`yrange [${opts.yRange.min}:${opts.yRange.max}]`);
     if (opts.outputName) graph.set(`output '${opts.outputName}'`);
