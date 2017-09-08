@@ -2190,13 +2190,18 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     var myself = this,
         canvas = document.getElementsByTagName('canvas')[0],
         silent = !!error,
+        version,
         report = {};
 
     // Add the description
+    version = NetsBloxSerializer.prototype.app
+        .replace('NetsBlox ', '')
+        .replace(/,.*$/, '');
+
     report.description = desc;
     report.timestamp = new Date();
     report.userAgent = navigator.userAgent;
-    report.version = NetsBloxSerializer.prototype.app;
+    report.version = version;
 
     // Add screenshot
     report.screenshot = canvas.toDataURL();

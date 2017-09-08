@@ -423,7 +423,7 @@ module.exports = [
                         report.description + '\n\n---\n\n',
                     attachments: [
                         {
-                            filename: 'bug-report.json',
+                            filename: `bug-report-v${report.version}.json`,
                             content: JSON.stringify(report)
                         }
                     ]
