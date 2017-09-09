@@ -1674,11 +1674,48 @@ NetsBloxMorph.prototype.exportRole = NetsBloxMorph.prototype.exportProject;
 NetsBloxMorph.prototype.exportProject = function () {
     this.showMessage('Exporting...', 3);
 
-    // Trigger server export of all roles
+    if (this.room.getRoleCount() === 1) {
+        // If only one role, we should just create the room xml locally
+        this.exportSingleRoleXml();
+    } else {  // Trigger server export of all roles
+        this.exportMultiRoleXml();
+    }
+};
+
+NetsBloxMorph.prototype.exportMultiRoleXml = function () {
     this.sockets.sendMessage({
         type: 'export-room',
         action: 'export'
     });
+};
+
+NetsBloxMorph.prototype.getSerializedRole = function () {
+    var data = this.sockets.getSerializedProject();
+    return this.serializer.format(
+        '<role name="@">%</role>',
+        this.room.getCurrentRoleName(),
+        data.SourceCode + data.Media
+    );
+
+};
+
+NetsBloxMorph.prototype.exportSingleRoleXml = function () {
+    // Get the role xml
+    try {
+        var str = this.serializer.format(
+            '<room name="@" app="@">%</room>',
+            this.room.name,
+            this.serializer.app,
+            this.getSerializedRole()
+        );
+        this.exportRoom(str);
+    } catch (err) {
+        if (Process.prototype.isCatchingErrors) {
+            this.showMessage('Export failed: ' + err);
+        } else {
+            throw err;
+        }
+    }
 };
 
 NetsBloxMorph.prototype.exportRoom = function (str) {
