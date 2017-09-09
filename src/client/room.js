@@ -94,6 +94,14 @@ RoomMorph.prototype.getDefaultRoles = function() {
     return roles;
 };
 
+RoomMorph.prototype.getCurrentRoleName = function() {
+    return this.ide.projectName;
+};
+
+RoomMorph.prototype.getRoleCount = function() {
+    return Object.keys(this.roles).length;
+};
+
 RoomMorph.prototype.getCurrentOccupants = function() {
     return this.roles[this.ide.projectName].slice();
 };
