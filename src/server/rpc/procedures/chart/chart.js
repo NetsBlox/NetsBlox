@@ -39,15 +39,26 @@ function prepareData(lines, lineTitles, lineTypes){
 
 chart.draw = function(lines, options){
     options = rpcUtils.kvListToJson(options);
-    console.log('passed options', options);
+    Object.keys(options).forEach(key => {
+        if (options.key === "null" || options.key === ''){
+            delete options.key;
+        }
+    });
     options = _.merge({}, defaults, options || {});
-    console.log('merged options', options);
 
+    console.log(options);
     let data = prepareData(lines, options.labels, options.types);
     
-    let opts = {title: options.title, type: options.type, xLabel: options.xLabel, yLabel: options.yLabel};
+    let opts = {title: options.title, xLabel: options.xLabel, yLabel: options.yLabel};
     if (options.xRange) opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
     if (options.yRange) opts.yRange = {min: options.yRange[0], max: options.yRange[1]};
+    if (options.timeSeriesAxis) {
+        opts.timeSeries = {
+            axis: options.timeSeriesAxis,
+            inputFormat: options.timeInputFormat,
+            outputFormat: options.timeOutputFormat
+        };
+    }
     let chartStream =  gnuPlot.draw(data, opts);
     return rpcUtils.collectStream(chartStream).then( buffer => {
         rpcUtils.sendImageBuffer(this.response, buffer, logger);
