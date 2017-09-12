@@ -12,13 +12,22 @@ const defaults = {
     title: undefined,
     labels: [],
     types: [],
-    xRange: undefined,
-    yRange: undefined,
+    xRange: [],
+    yRange: [],
     xLabel: undefined,
     yLabel: undefined,
     timeSeriesAxis: undefined,
     timeInputFormat: '%s',
     timeOutputFormat: '%d/%m'
+}
+
+function sortByA(a,b){
+    if (a[0] === b[0]) {
+        return 0;
+    }
+    else {
+        return (a[0] < b[0]) ? -1 : 1;
+    }
 }
 
 function prepareData(lines, lineTitles, lineTypes){
@@ -30,6 +39,7 @@ function prepareData(lines, lineTitles, lineTypes){
                 return value;
             });
         }
+        pts.sort(sortByA);
         let lineObj = {points: pts};
         if (lineTypes) lineObj.type = lineTypes[idx];
         if (lineTitles) lineObj.title = lineTitles[idx];
