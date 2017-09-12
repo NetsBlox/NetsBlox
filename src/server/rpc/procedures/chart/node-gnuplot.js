@@ -14,6 +14,7 @@ const optsDefautls = {
     yRange: undefined,
     xLabel: undefined,
     yLabel: undefined,
+    xTicks: undefined,
     timeSeries: {
         axis: undefined,
         inputFormat: undefined,
@@ -82,6 +83,7 @@ let draw = (data, opts) => {
     if (opts.outputName) graph.set(`output '${opts.outputName}'`);
     if (opts.xLabel) graph.set(`xlabel '${opts.xLabel}'`);
     if (opts.yLabel) graph.set(`ylabel '${opts.yLabel}'`);
+    if (opts.xTicks) graph.set(`xtics ${opts.xTicks.join(', ')}`)
     if (opts.timeSeries.axis) {
         graph.set(`${opts.timeSeries.axis}data time`);
         graph.set(`timefmt '${opts.timeSeries.inputFormat}'`);
