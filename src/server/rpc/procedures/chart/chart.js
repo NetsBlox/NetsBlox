@@ -30,7 +30,10 @@ function prepareData(lines, lineTitles, lineTypes){
                 return value;
             });
         }
-        return {title: lineTitles[idx], type: lineTypes[idx], points: pts};
+        let lineObj = {points: pts};
+        if (lineTypes) lineObj.type = lineTypes[idx];
+        if (lineTitles) lineObj.title = lineTitles[idx];
+        return lineObj;
     });
 }
 
