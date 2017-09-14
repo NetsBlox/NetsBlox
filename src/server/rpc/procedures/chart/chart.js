@@ -57,19 +57,18 @@ function prepareData(input) {
         chart._logger.trace('one line input detected');
         input = [input];
     };
+    input.forEach( line => {
+        if (!Array.isArray(line)) {
+            chart._logger.warn(`input is not an array!`, line);
+            throw `chart input is not an array`;
+        };
+    })
     return input;
 }
 
 // generate gnuplot friendly line objects
 function genGnuData(lines, lineTitles, lineTypes){
     return lines.map((pts, idx) => {
-        // shouldn't be needed! Temp fix
-        if (!Array.isArray(pts)) {
-            chart._logger.warn(`input is not an array!`);
-            pts = _.map(pts, function(value, index) {
-                return value;
-            });
-        }
         pts = _.sortBy(pts, (pt => pt[0]));
         let lineObj = {points: pts};
         if (lineTypes) lineObj.type = lineTypes[idx];
@@ -86,7 +85,14 @@ chart.draw = function(lines, options){
         }
     });
     options = _.merge({}, defaults, options || {});
-    lines = prepareData(lines);
+
+    // prepare and check for errors in data
+    try {
+        lines = prepareData(lines);
+    } catch (e) {
+        // TODO make the block show it's broken, setting status 500 doesn't cut it.
+        return e;
+    }
 
     let stats = calcRanges(lines);
     this._logger.info('data stats:', stats);
