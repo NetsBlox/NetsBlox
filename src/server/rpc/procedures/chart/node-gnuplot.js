@@ -36,7 +36,7 @@ function dataToPlot(data){
         points = '';
     data.forEach(line => {
         // adding 'smooth unique' at the end of this line sorts the points but needs unique Xs or averages em
-        settings.push(`'-' using 1:2 title '${line.title}' with ${line.type}`);
+        settings.push(`'-' using 1:2 title '${line.title}' with ${line.type} smooth csplines`);
         points += pointsToInlineData(line.points);
     });
     let cmdString = settings.join(', ') + points;
