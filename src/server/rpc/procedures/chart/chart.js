@@ -37,10 +37,13 @@ function calcRanges(lines){
         // min max of y
         line = _.sortBy(line, (pt => pt[1]));
         let {0 : ymin , [l - 1] : ymax} = line.map(pt => pt[1]);
-        if( xmin < stats.x.min ) stats.x.min = xmin;
-        if( xmax > stats.x.max ) stats.x.max = xmax;
-        if( ymin < stats.y.min ) stats.y.min = ymin;
-        if( ymax > stats.y.max ) stats.y.max = ymax;
+        if( xmin < stats.x.min ) stats.x.min = parseFloat(xmin);
+        if( xmax > stats.x.max ) stats.x.max = parseFloat(xmax);
+        if( ymin < stats.y.min ) stats.y.min = parseFloat(ymin);
+        if( ymax > stats.y.max ) stats.y.max = parseFloat(ymax);
+    })
+    Object.keys(stats).forEach( key => {
+        stats[key].range = stats[key].max - stats[key].min;
     })
     return stats;
 }
@@ -80,12 +83,18 @@ chart.draw = function(lines, options){
     });
     options = _.merge({}, defaults, options || {});
 
+    let stats = calcRanges(lines);
+    this._logger.info('data stats:', stats);
+    const relativePadding = {
+        x: stats.x.range * 0.05,
+        y: stats.y.range * 0.05
+    };
     let data = prepareData(lines, options.labels, options.types);
-
-    
     let opts = {title: options.title, xLabel: options.xLabel, yLabel: options.yLabel};
-    if (options.xRange) opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
-    if (options.yRange) opts.yRange = {min: options.yRange[0], max: options.yRange[1]};
+    opts.xRange = {min: stats.x.min - relativePadding.x, max: stats.x.max + relativePadding.x};
+    opts.yRange = {min: stats.y.min - relativePadding.y, max: stats.y.max + relativePadding.y};
+    if (options.xRange.length === 2) opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
+    if (options.yRange.length === 2) opts.yRange = {min: options.yRange[0], max: options.yRange[1]};
     if (options.timeSeriesAxis) {
         opts.timeSeries = {
             axis: options.timeSeriesAxis,
@@ -96,11 +105,11 @@ chart.draw = function(lines, options){
     
     // if a specific number of ticks are requested
     if (options.xTicks) {
-        let ranges = calcRanges(lines);
-        let tickStep = (ranges.x.max - ranges.x.min)/options.xTicks
-        opts.xTicks = [ranges.x.min, tickStep, ranges.x.max]
+        let tickStep = (stats.x.max - stats.x.min)/options.xTicks
+        opts.xTicks = [stats.x.min, tickStep, stats.x.max]
     };
-
+    
+    this._logger.trace('charting with options', opts, options);
     let chartStream =  gnuPlot.draw(data, opts);
     return rpcUtils.collectStream(chartStream).then( buffer => {
         rpcUtils.sendImageBuffer(this.response, buffer, this._logger);
