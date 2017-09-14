@@ -1,10 +1,8 @@
-const ApiConsumer = require('../utils/api-consumer');
-const rpcUtils = require('../utils');
-const Logger = require('../../../logger');
-const logger = new Logger('netsblox:rpc:chart');
-const gnuPlot = require('./node-gnuplot.js');
-const _ = require('lodash');
-const Q = require('q');
+const ApiConsumer = require('../utils/api-consumer'),
+    rpcUtils = require('../utils'),
+    gnuPlot = require('./node-gnuplot.js'),
+    _ = require('lodash'),
+    Q = require('q');
 
 let chart = new ApiConsumer('chart');
 
@@ -47,11 +45,20 @@ function calcRanges(lines){
     return stats;
 }
 
+let setupLineInput = (input) => {
+}
+
 function prepareData(lines, lineTitles, lineTypes){
+    // if the input is one line convert it to appropriate format
+    if (! Array.isArray(lines[0][0])){
+        chart._logger.trace('one line input detected');
+        lines = [lines];
+    };
+
     return lines.map((pts, idx) => {
         // shouldn't be needed! Temp fix
         if (!Array.isArray(pts)) {
-            logger.warn(`input is not an array!`);
+            chart._logger.warn(`input is not an array!`);
             pts = _.map(pts, function(value, index) {
                 return value;
             });
@@ -96,8 +103,8 @@ chart.draw = function(lines, options){
 
     let chartStream =  gnuPlot.draw(data, opts);
     return rpcUtils.collectStream(chartStream).then( buffer => {
-        rpcUtils.sendImageBuffer(this.response, buffer, logger);
-    }).catch(logger.error);
+        rpcUtils.sendImageBuffer(this.response, buffer, this._logger);
+    }).catch(this._logger.error);
 };
 
 chart.timeSeries = function(lines, labels, title, xRange, yRange, xLabel, yLabel, timeInputFormat, timeOutputFormat){
@@ -116,9 +123,9 @@ chart.timeSeries = function(lines, labels, title, xRange, yRange, xLabel, yLabel
         outputFormat: timeOutputFormat
     };
     let chartStream =  gnuPlot.draw(data, opts);
-    return rpcUtils.collectStream(chartStream, logger).then( buffer => {
-        rpcUtils.sendImageBuffer(this.response, buffer, logger);
-    }).catch(logger.error);
+    return rpcUtils.collectStream(chartStream, this._logger).then( buffer => {
+        rpcUtils.sendImageBuffer(this.response, buffer, this._logger);
+    }).catch(this._logger.error);
 };
 
 chart.defaultOptions = function(){
