@@ -51,13 +51,17 @@ function calcRanges(lines){
 let setupLineInput = (input) => {
 }
 
-function prepareData(lines, lineTitles, lineTypes){
+function prepareData(input) {
     // if the input is one line convert it to appropriate format
-    if (! Array.isArray(lines[0][0])){
+    if (! Array.isArray(input[0][0])){
         chart._logger.trace('one line input detected');
-        lines = [lines];
+        input = [input];
     };
+    return input;
+}
 
+// generate gnuplot friendly line objects
+function genGnuData(lines, lineTitles, lineTypes){
     return lines.map((pts, idx) => {
         // shouldn't be needed! Temp fix
         if (!Array.isArray(pts)) {
@@ -82,6 +86,7 @@ chart.draw = function(lines, options){
         }
     });
     options = _.merge({}, defaults, options || {});
+    lines = prepareData(lines);
 
     let stats = calcRanges(lines);
     this._logger.info('data stats:', stats);
@@ -89,7 +94,7 @@ chart.draw = function(lines, options){
         x: stats.x.range * 0.05,
         y: stats.y.range * 0.05
     };
-    let data = prepareData(lines, options.labels, options.types);
+    let data = genGnuData(lines, options.labels, options.types);
     let opts = {title: options.title, xLabel: options.xLabel, yLabel: options.yLabel};
     opts.xRange = {min: stats.x.min - relativePadding.x, max: stats.x.max + relativePadding.x};
     opts.yRange = {min: stats.y.min - relativePadding.y, max: stats.y.max + relativePadding.y};
