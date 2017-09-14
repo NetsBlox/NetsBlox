@@ -23,19 +23,6 @@ const defaults = {
     timeOutputFormat: '%d/%m'
 }
 
-// sort 2d arr by col
-function sortByCol(col){
-    return (a,b) => {
-        if (a[col] === b[col]) {
-            return 0;
-        }
-        else {
-            return (a[col] < b[col]) ? -1 : 1;
-        }
-    }
-}
-
-
 function calcRanges(lines){
     let stats = {
         x: {
@@ -47,10 +34,10 @@ function calcRanges(lines){
     };
     lines.forEach(line => {
         // min max of x
-        line.sort(sortByCol(0))
+        line = _.sortBy(line, (pt => pt[0]));
         let {0 : xmin ,length : l, [l - 1] : xmax} = line.map(pt => pt[0]);
         // min max of y
-        line.sort(sortByCol(1))
+        line = _.sortBy(line, (pt => pt[1]));
         let {0 : ymin , [l - 1] : ymax} = line.map(pt => pt[1]);
         if( xmin < stats.x.min ) stats.x.min = xmin;
         if( xmax > stats.x.max ) stats.x.max = xmax;
@@ -69,7 +56,7 @@ function prepareData(lines, lineTitles, lineTypes){
                 return value;
             });
         }
-        pts.sort(sortByCol(0));
+        pts = _.sortBy(pts, (pt => pt[0]));
         let lineObj = {points: pts};
         if (lineTypes) lineObj.type = lineTypes[idx];
         if (lineTitles) lineObj.title = lineTitles[idx];
@@ -86,7 +73,6 @@ chart.draw = function(lines, options){
     });
     options = _.merge({}, defaults, options || {});
 
-    let ranges = calcRanges(lines);
     let data = prepareData(lines, options.labels, options.types);
 
     
@@ -103,6 +89,7 @@ chart.draw = function(lines, options){
     
     // if a specific number of ticks are requested
     if (options.xTicks) {
+        let ranges = calcRanges(lines);
         let tickStep = (ranges.x.max - ranges.x.min)/options.xTicks
         opts.xTicks = [ranges.x.min, tickStep, ranges.x.max]
     };
