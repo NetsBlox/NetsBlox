@@ -5,6 +5,7 @@ const gnuplot = require(`gnuplot`),
 const lineDefaults = {
     title: '',
     type: 'lines',
+    smoothing: undefined,
     points: []
 };
 
@@ -35,8 +36,8 @@ function dataToPlot(data){
     let settings = [],
         points = '';
     data.forEach(line => {
-        // adding 'smooth unique' at the end of this line sorts the points but needs unique Xs or averages em
-        settings.push(`'-' using 1:2 title '${line.title}' with ${line.type} smooth csplines`);
+        let smoothing = line.smoothing ? `smooth ${line.smoothing}` : '';
+        settings.push(`'-' using 1:2 title '${line.title}' with ${line.type} ${smoothing}`);
         points += pointsToInlineData(line.points);
     });
     let cmdString = settings.join(', ') + points;

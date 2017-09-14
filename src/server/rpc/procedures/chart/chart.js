@@ -16,6 +16,7 @@ const defaults = {
     xLabel: undefined,
     yLabel: undefined,
     xTicks: undefined,
+    smooth: 'false',
     timeSeriesAxis: undefined,
     timeInputFormat: '%s',
     timeOutputFormat: '%d/%m'
@@ -67,12 +68,13 @@ function prepareData(input) {
 }
 
 // generate gnuplot friendly line objects
-function genGnuData(lines, lineTitles, lineTypes){
+function genGnuData(lines, lineTitles, lineTypes, smoothing){
     return lines.map((pts, idx) => {
         pts = _.sortBy(pts, (pt => pt[0]));
         let lineObj = {points: pts};
         if (lineTypes) lineObj.type = lineTypes[idx];
         if (lineTitles) lineObj.title = lineTitles[idx];
+        if (smoothing) lineObj.smoothing = 'csplines';
         return lineObj;
     });
 }
@@ -100,7 +102,7 @@ chart.draw = function(lines, options){
         x: stats.x.range * 0.05,
         y: stats.y.range * 0.05
     };
-    let data = genGnuData(lines, options.labels, options.types);
+    let data = genGnuData(lines, options.labels, options.types, options.smooth === 'true');
     let opts = {title: options.title, xLabel: options.xLabel, yLabel: options.yLabel};
     opts.xRange = {min: stats.x.min - relativePadding.x, max: stats.x.max + relativePadding.x};
     opts.yRange = {min: stats.y.min - relativePadding.y, max: stats.y.max + relativePadding.y};
