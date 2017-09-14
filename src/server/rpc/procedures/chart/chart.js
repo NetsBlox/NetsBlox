@@ -116,27 +116,6 @@ chart.draw = function(lines, options){
     }).catch(this._logger.error);
 };
 
-chart.timeSeries = function(lines, labels, title, xRange, yRange, xLabel, yLabel, timeInputFormat, timeOutputFormat){
-
-    let data = prepareData(lines, labels);
-
-    timeInputFormat = timeInputFormat || '%s';
-    timeOutputFormat = timeOutputFormat || '%d/%m';
-    
-    let opts = {title: title, xLabel, yLabel, timeSeries: {}};
-    if (xRange) opts.xRange = {min: xRange[0], max: xRange[1]};
-    if (yRange) opts.yRange = {min: yRange[0], max: yRange[1]};
-    opts.timeSeries = {
-        axis: 'x',
-        inputFormat: timeInputFormat,
-        outputFormat: timeOutputFormat
-    };
-    let chartStream =  gnuPlot.draw(data, opts);
-    return rpcUtils.collectStream(chartStream, this._logger).then( buffer => {
-        rpcUtils.sendImageBuffer(this.response, buffer, this._logger);
-    }).catch(this._logger.error);
-};
-
 chart.defaultOptions = function(){
     return rpcUtils.jsonToSnapList(defaults);
 }
