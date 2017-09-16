@@ -43,7 +43,7 @@ describe('services', function() {
         });
 
         it('should serialize [0,"null"]', function() {
-            var listInput = new List([0,"null"]);
+            var listInput = new List([0,'null']);
             expect(serialize(listInput)).to.be('arg[0]=0&arg[1]=null');
         });
 

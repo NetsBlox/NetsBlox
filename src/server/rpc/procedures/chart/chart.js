@@ -5,7 +5,6 @@ const ApiConsumer = require('../utils/api-consumer'),
 
 let chart = new ApiConsumer('chart');
 
-// TODO import this from nodegnuplot and overwrite
 const defaults = {
     title: undefined,
     labels: [],
@@ -56,7 +55,7 @@ function prepareData(input) {
     }
     input.forEach( line => {
         if (!Array.isArray(line)) {
-            chart._logger.warn(`input is not an array!`, line);
+            chart._logger.warn('input is not an array!', line);
             throw 'chart input is not an array';
         }
     });
