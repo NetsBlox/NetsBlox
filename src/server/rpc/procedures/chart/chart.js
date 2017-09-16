@@ -1,8 +1,7 @@
 const ApiConsumer = require('../utils/api-consumer'),
     rpcUtils = require('../utils'),
     gnuPlot = require('./node-gnuplot.js'),
-    _ = require('lodash'),
-    Q = require('q');
+    _ = require('lodash');
 
 let chart = new ApiConsumer('chart');
 
@@ -20,7 +19,7 @@ const defaults = {
     timeSeriesAxis: undefined,
     timeInputFormat: '%s',
     timeOutputFormat: '%d/%m'
-}
+};
 
 function calcRanges(lines){
     let stats = {
@@ -42,14 +41,11 @@ function calcRanges(lines){
         if( xmax > stats.x.max ) stats.x.max = parseFloat(xmax);
         if( ymin < stats.y.min ) stats.y.min = parseFloat(ymin);
         if( ymax > stats.y.max ) stats.y.max = parseFloat(ymax);
-    })
+    });
     Object.keys(stats).forEach( key => {
         stats[key].range = stats[key].max - stats[key].min;
-    })
+    });
     return stats;
-}
-
-let setupLineInput = (input) => {
 }
 
 function prepareData(input) {
@@ -57,13 +53,13 @@ function prepareData(input) {
     if (! Array.isArray(input[0][0])){
         chart._logger.trace('one line input detected');
         input = [input];
-    };
+    }
     input.forEach( line => {
         if (!Array.isArray(line)) {
             chart._logger.warn(`input is not an array!`, line);
-            throw `chart input is not an array`;
-        };
-    })
+            throw 'chart input is not an array';
+        }
+    });
     return input;
 }
 
@@ -82,7 +78,7 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
 chart.draw = function(lines, options){
     options = rpcUtils.kvListToJson(options);
     Object.keys(options).forEach(key => {
-        if (options.key === "null" || options.key === ''){
+        if (options.key === 'null' || options.key === ''){
             delete options.key;
         }
     });
@@ -118,9 +114,9 @@ chart.draw = function(lines, options){
     
     // if a specific number of ticks are requested
     if (options.xTicks) {
-        let tickStep = (stats.x.max - stats.x.min)/options.xTicks
-        opts.xTicks = [stats.x.min, tickStep, stats.x.max]
-    };
+        let tickStep = (stats.x.max - stats.x.min)/options.xTicks;
+        opts.xTicks = [stats.x.min, tickStep, stats.x.max];
+    }
     
     this._logger.trace('charting with options', opts, options);
     let chartStream =  gnuPlot.draw(data, opts);
@@ -131,6 +127,6 @@ chart.draw = function(lines, options){
 
 chart.defaultOptions = function(){
     return rpcUtils.jsonToSnapList(defaults);
-}
+};
 
 module.exports = chart;

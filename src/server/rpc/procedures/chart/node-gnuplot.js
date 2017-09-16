@@ -1,5 +1,4 @@
 const gnuplot = require(`gnuplot`),
-    Q = require('q'),
     _ = require('lodash');
 
 const lineDefaults = {
@@ -78,13 +77,13 @@ let draw = (data, opts) => {
 
     // if (data.length > 1) graph.set(`multiplot layout 1,2`) // this option is for drawing multiple charts
     
-    if (opts.title) graph.set(`title '${opts.title}'`)
+    if (opts.title) graph.set(`title '${opts.title}'`);
     if (opts.xRange) graph.set(`xrange [${opts.xRange.min}:${opts.xRange.max}]`);
     if (opts.yRange) graph.set(`yrange [${opts.yRange.min}:${opts.yRange.max}]`);
     if (opts.outputName) graph.set(`output '${opts.outputName}'`);
     if (opts.xLabel) graph.set(`xlabel '${opts.xLabel}'`);
     if (opts.yLabel) graph.set(`ylabel '${opts.yLabel}'`);
-    if (opts.xTicks) graph.set(`xtics ${opts.xTicks.join(', ')}`)
+    if (opts.xTicks) graph.set(`xtics ${opts.xTicks.join(', ')}`);
     if (opts.timeSeries.axis) {
         graph.set(`${opts.timeSeries.axis}data time`);
         graph.set(`timefmt '${opts.timeSeries.inputFormat}'`);
