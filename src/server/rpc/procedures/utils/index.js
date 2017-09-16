@@ -26,7 +26,7 @@ const collectStream = (stream, logger) => {
         if (logger) logger.error('errored', err);
     });
     return deferred.promise;
-}
+};
 
 // creates snap friendly structure out of an array ofsimple keyValue json object or just single on of them.
 const jsonToSnapList = inputJson => {
@@ -61,31 +61,16 @@ const jsonToSnapList = inputJson => {
     return keyVals;
 };
 
-// converts snap friendly  key value array to json object
-// parses 1 level only!
-const kvListToJson = snapArray => {
-    let parsedObj = {};
-    if (snapArray.length === 0) return {};
-    snapArray.forEach(kv => {
-        let [k,v] = kv;
-        if (parsedObj[k] !== undefined) throw 'duplicate key in input list found';
-        parsedObj[k] = v;
-    })
-    return parsedObj;
-} 
-
-
 // turns a tuple-like object into query friendly string
 const encodeQueryData = tuple => {
     let ret = [];
     for (let d in tuple)
         ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(tuple[d]));
     return ret.join('&');
-}
+};
 
 module.exports = {
     sendImageBuffer,
-    kvListToJson,
     encodeQueryData,
     collectStream,
     jsonToSnapList

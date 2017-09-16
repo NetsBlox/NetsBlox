@@ -58,20 +58,3 @@ describe('snap structure creation', function() {
         assert(utils.jsonToSnapList(multipleData)[2][3][1] === 'Tue, 25 Jul 2017 22:49:04 GMT');
     });
 });
-
-describe('snap list parser', function() {
-    const keyValList = [
-        ['name', 'Jhon'],
-        ['age', 33],
-        ['dob', new Date('2017-09-08T20:17:02.839Z')]
-    ]
-    const keyValJson = {
-        name: 'Jhon',
-        age: 33,
-        dob: new Date('2017-09-08T20:17:02.839Z')
-    };
-    it('should convert keyvalue list to simple json object', function(){
-        let obj = utils.kvListToJson(keyValList); 
-        assert(_.isEqual(keyValJson, obj), 'parsed json is not as expected');
-    })
-});
