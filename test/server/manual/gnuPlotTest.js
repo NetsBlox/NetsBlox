@@ -1,4 +1,4 @@
-const gnuPlot = require('./node-gnuplot.js'),
+const gnuPlot = require('./../../../src/server/rpc/procedures/chart/node-gnuplot.js'),
     fs = require('fs'),
     timeSData = require('./testLines.json');
 
@@ -49,7 +49,6 @@ opts.timeSeries = {
     inputFormat: timeInputFormat,
     outputFormat: timeOutputFormat
 };
-let chartStream =  gnuPlot.draw(weatherData, opts);
-let writeSt = fs.createWriteStream('plotTest.png');
-chartStream.pipe(writeSt);
-
+// let chartStream =  gnuPlot.draw(weatherData, opts);
+// let writeSt = fs.createWriteStream('plotTest.png');
+// chartStream.pipe(writeSt);
