@@ -320,8 +320,7 @@ NetsProcess.prototype.parseRPCResult = function (result) {
 };
 
 function listToArray(list) {
-    if (! list instanceof List){
-        console.log(list, 'is not a list');
+    if (! (list instanceof List)){
         return list;
     }
     var combinedArray = [], v;
