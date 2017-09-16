@@ -6,7 +6,7 @@ describe('services', function() {
         driver.selectCategory('network');
     });
 
-    describe.only('rpc inputs', function() {
+    describe('rpc inputs', function() {
         var service, rpcSignature, process;
         beforeEach(function() {
             driver.reset();
@@ -27,36 +27,33 @@ describe('services', function() {
             expect(serialize(listInput)).to.be(expectedOutput);
         });
 
-        it('should serialize [[0,1],[1,"null"],[2,null],[3],null,"null"]', function() {
-        })
-
         // we are not gonna have undefined in snaplists
         it('should serialize [0,undefined]', function() {
             var listInput = new List([0,undefined]);
             expect(serialize(listInput)).to.be('arg[0]=0');
-        })
+        });
 
         it('should serialize [0,null]', function() {
             var listInput = new List([0,null]);
             expect(serialize(listInput)).to.be('arg[0]=0&arg[1]=');
-        })
+        });
 
         it('should serialize [0,""]', function() {
             var listInput = new List([0,'']);
             expect(serialize(listInput)).to.be('arg[0]=0&arg[1]=');
-        })
+        });
 
         it('should serialize [0,"null"]', function() {
             var listInput = new List([0,"null"]);
             expect(serialize(listInput)).to.be('arg[0]=0&arg[1]=null');
-        })
+        });
 
         it('should serialize []', function() {
             var listInput = new List([]);
             // effectively sending an array with no element = not sending the array. 
             // but sending name: null doesn't work like this.
             expect(serialize(listInput)).to.be('');
-        })
+        });
 
 
         it('should serialize linked lists properly', function() {
