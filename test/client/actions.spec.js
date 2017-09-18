@@ -2,8 +2,8 @@
 describe('actions', function() {
     var position = new Point(600, 600);
 
-    beforeEach(function() {
-        driver.reset();
+    beforeEach(function(done) {
+        driver.reset(done);
     });
 
     it('should have default color w/ setColorField', function(done) {
@@ -49,6 +49,16 @@ describe('actions', function() {
     });
 
     describe('collaboration', function() {
+        var username;
+
+        before(function() {
+            username = SnapCloud.username;
+        });
+
+        after(function() {
+            SnapCloud.username = username;
+        });
+
         it('should detect collaboration if multiple users in role', function() {
             var ide = driver.ide();
 
