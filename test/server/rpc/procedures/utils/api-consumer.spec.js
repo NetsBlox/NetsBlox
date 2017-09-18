@@ -42,7 +42,7 @@ describe('ApiConsumer', function(){
                 json: false
             };
 
-            let requestCacheKey = queryOpts.baseUrl + queryOpts.queryString;
+            let requestCacheKey = testRpc._rpc._getCacheKey(queryOpts);
             // cache the key for this request to 'response'
             cache.set(requestCacheKey, 'response', function(err) {
                 if (err) { throw err; }

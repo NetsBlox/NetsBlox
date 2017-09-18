@@ -20,9 +20,6 @@ var saveStore = function(store) {
 
 var KeyValueStore = {
 
-    // This is very important => Otherwise it will try to instantiate this
-    isStateless: true,
-
     get: function(key) {
         var keys = getKeys(key),
             response = this.response,

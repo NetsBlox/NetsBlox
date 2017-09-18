@@ -1634,6 +1634,9 @@ NetsBloxMorph.prototype.projectMenu = function () {
     );
 
     menu.popup(world, pos);
+    // Netsblox addition: start
+    return menu;
+    // Netsblox addition: end
 };
 
 NetsBloxMorph.prototype.requestAndroidApp = function(name) {
@@ -1671,11 +1674,48 @@ NetsBloxMorph.prototype.exportRole = NetsBloxMorph.prototype.exportProject;
 NetsBloxMorph.prototype.exportProject = function () {
     this.showMessage('Exporting...', 3);
 
-    // Trigger server export of all roles
+    if (this.room.getRoleCount() === 1) {
+        // If only one role, we should just create the room xml locally
+        this.exportSingleRoleXml();
+    } else {  // Trigger server export of all roles
+        this.exportMultiRoleXml();
+    }
+};
+
+NetsBloxMorph.prototype.exportMultiRoleXml = function () {
     this.sockets.sendMessage({
         type: 'export-room',
         action: 'export'
     });
+};
+
+NetsBloxMorph.prototype.getSerializedRole = function () {
+    var data = this.sockets.getSerializedProject();
+    return this.serializer.format(
+        '<role name="@">%</role>',
+        this.room.getCurrentRoleName(),
+        data.SourceCode + data.Media
+    );
+
+};
+
+NetsBloxMorph.prototype.exportSingleRoleXml = function () {
+    // Get the role xml
+    try {
+        var str = this.serializer.format(
+            '<room name="@" app="@">%</room>',
+            this.room.name,
+            this.serializer.app,
+            this.getSerializedRole()
+        );
+        this.exportRoom(str);
+    } catch (err) {
+        if (Process.prototype.isCatchingErrors) {
+            this.showMessage('Export failed: ' + err);
+        } else {
+            throw err;
+        }
+    }
 };
 
 NetsBloxMorph.prototype.exportRoom = function (str) {
@@ -1780,14 +1820,14 @@ NetsBloxMorph.prototype.saveRoomLocal = function (str) {
             localStorage['-snap-project-' + name] = str;
         
             this.setURL('#open:' + str);
-            this.showMessage('Saved!', 1);
+            this.showMessage('Saved to the browser.', 1);
         } catch (err) {
             this.showMessage('Save failed: ' + err);
         }
     } else {
         localStorage['-snap-project-' + name] = str;
         this.setURL('#open:' + str);
-        this.showMessage('Saved!', 1);
+        this.showMessage('Saved to the browser.', 1);
     }
 };
 
@@ -1809,16 +1849,37 @@ NetsBloxMorph.prototype.save = function () {
     if (this.source === 'examples') {
         this.source = 'local'; // cannot save to examples
     }
-    if (this.projectName) {
+    // NetsBlox changes - start
+    if (this.room.name) {
+    // NetsBlox changes - end
         if (this.source === 'local') { // as well as 'examples'
             // NetsBlox changes - start
             this.saveProject(this.room.name);
             // NetsBlox changes - end
         } else { // 'cloud'
-            this.saveProjectToCloud(this.projectName);
+            // NetsBlox changes - start
+            this.saveProjectToCloud(this.room.name);
+            // NetsBlox changes - end
         }
     } else {
         this.saveProjectsBrowser();
+    }
+};
+
+IDE_Morph.prototype.saveProjectToCloud = function (name) {
+    var myself = this;
+    if (name) {
+        this.showMessage('Saving project\nto the cloud...');
+        // Netsblox addition: start
+        this.room.name = name;
+        // Netsblox addition: end
+        SnapCloud.saveProject(
+            this,
+            // Netsblox addition: start
+            function () {myself.showMessage('Saved to cloud!', 2); },
+            // Netsblox addition: end
+            this.cloudError()
+        );
     }
 };
 
@@ -1837,9 +1898,9 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
                 myself,
                 function () {
                     if (overwrite) {
-                        myself.showMessage('saved.', 2);
+                        myself.showMessage('Saved to cloud!', 2);
                     } else {
-                        myself.showMessage('saved as ' + myself.room.name, 2);
+                        myself.showMessage('Saved as ' + myself.room.name, 2);
                     }
                 },
                 myself.cloudError(),
@@ -2162,16 +2223,22 @@ NetsBloxMorph.prototype.reportBug = function () {
     text.edit();
 };
 
-NetsBloxMorph.prototype.submitBugReport = function (desc, silent) {
+NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     var myself = this,
         canvas = document.getElementsByTagName('canvas')[0],
+        silent = !!error,
+        version,
         report = {};
 
     // Add the description
+    version = NetsBloxSerializer.prototype.app
+        .replace('NetsBlox ', '')
+        .replace(/,.*$/, '');
+
     report.description = desc;
-    report.timestamp = Date.now();
+    report.timestamp = new Date();
     report.userAgent = navigator.userAgent;
-    report.version = NetsBloxSerializer.prototype.app;
+    report.version = version;
 
     // Add screenshot
     report.screenshot = canvas.toDataURL();
@@ -2182,7 +2249,21 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, silent) {
 
     // Add username (if logged in)
     report.user = SnapCloud.username;
-    report.isAutoReport = !!silent;
+    report.isAutoReport = !!error;
+
+    if (report.isAutoReport) {
+        var event = SnapActions.currentEvent;
+        report.description = [
+            '## Auto-report',
+            'Error:',
+            error.stack,
+            '---',
+            'Failing Event:',
+            JSON.stringify(event, null, 2)
+        ].join('\n');
+        report.error = error;
+        report.event = event;
+    }
 
     // Report to the server
     var request = new XMLHttpRequest(),

@@ -18,7 +18,7 @@ ActionManager.prototype.onAddMessageType = function(name, fields) {
         name: name,
         fields: fields
     });
-    ide.flushBlocksCache('services');  //  b/c of inheritance
+    ide.flushBlocksCache('network');  //  b/c of inheritance
     ide.refreshPalette();
     this.completeAction();
 };
@@ -26,7 +26,7 @@ ActionManager.prototype.onAddMessageType = function(name, fields) {
 ActionManager.prototype.onDeleteMessageType = function(name) {
     var ide = this.ide();
     ide.stage.deleteMessageType(name);
-    ide.flushBlocksCache('services');  //  b/c of inheritance
+    ide.flushBlocksCache('network');  //  b/c of inheritance
     ide.refreshPalette();
     this.completeAction();
 };
@@ -60,7 +60,7 @@ SnapActions.__sessionId = Date.now();
 SnapActions.enableCollaboration =
 SnapActions.disableCollaboration = function() {};
 SnapActions.isCollaborating = function() {
-    return this.ide().room.getCurrentOccupants() > 1;
+    return this.ide().room.getCurrentOccupants().length > 1;
 };
 
 // Recording user actions
@@ -121,23 +121,11 @@ SnapActions.loadProject = function() {
     return event;
 };
 
-SnapActions._applyEvent = function(event) {
-    try {
-        return ActionManager.prototype._applyEvent.apply(this, arguments);
-    } catch (e) {
-        var msg = [
-            '## Auto-report',
-            'Error:',
-            e.stack,
-            '---',
-            'Failing Event:',
-            JSON.stringify(event, null, 2)
-        ].join('\n');
-
-        // Report the error!
-        this.ide().submitBugReport(msg, true);
-        throw e;
+SnapActions.completeAction = function(error) {
+    if (error) {
+        this.ide().submitBugReport(null, error);
     }
+    return ActionManager.prototype.completeAction.apply(this, arguments);
 };
 
 SnapActions.applyEvent = function(event) {

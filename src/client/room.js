@@ -84,9 +84,22 @@ function RoomMorph(ide) {
 }
 
 RoomMorph.prototype.getDefaultRoles = function() {
-    var roles = {};
-    roles[this.ide.projectName] = [this.myUserId()];
+    var roles = {},
+        myRoleInfo = {
+            uuid: this.myUuid(),
+            username: SnapCloud.username || 'me'
+        };
+
+    roles[this.ide.projectName] = [myRoleInfo];
     return roles;
+};
+
+RoomMorph.prototype.getCurrentRoleName = function() {
+    return this.ide.projectName;
+};
+
+RoomMorph.prototype.getRoleCount = function() {
+    return Object.keys(this.roles).length;
 };
 
 RoomMorph.prototype.getCurrentOccupants = function() {
@@ -95,11 +108,15 @@ RoomMorph.prototype.getCurrentOccupants = function() {
 
 RoomMorph.prototype.isLeader = function() {
     var leader = this.roles[this.ide.projectName][0];
-    return leader === this.myUserId();
+    return leader && leader.uuid === this.myUuid();
+};
+
+RoomMorph.prototype.myUuid = function() {
+    return this.ide.sockets.uuid;
 };
 
 RoomMorph.prototype.myUserId = function() {
-    return SnapCloud.username || this.ide.sockets.uuid;
+    return SnapCloud.username || localize('guest');
 };
 
 RoomMorph.prototype._onNameChanged = function(newName) {
@@ -134,9 +151,22 @@ RoomMorph.prototype.isEditable = function() {
 };
 
 RoomMorph.sameOccupants = function(roles, otherRoles) {
-    var names = Object.keys(roles);
+    var names = Object.keys(roles),
+        uuids,
+        usernames,
+        otherUuids,
+        otherUsernames,
+        getUuid = function(role) {return role.uuid;},
+        getUsername = function(role) {return role.uuid;};
+
     for (var i = names.length; i--;) {
-        if (!RoomMorph.equalLists(roles[names[i]], otherRoles[names[i]])) return false;
+        uuids = roles[names[i]].map(getUuid);
+        otherUuids = otherRoles[names[i]].map(getUuid);
+        if (!RoomMorph.equalLists(uuids, otherUuids)) return false;
+
+        usernames = roles[names[i]].map(getUsername);
+        otherUsernames = otherRoles[names[i]].map(getUsername);
+        if (!RoomMorph.equalLists(usernames, otherUsernames)) return false;
     }
     return true;
 };
@@ -866,9 +896,11 @@ function RoleLabelMorph(name, users) {
 }
 
 RoleLabelMorph.prototype.init = function() {
-    var usrTxt = this.users.length ? this.users.join(', ') : '<empty>';
-    if (this.isMine()) {
-        usrTxt = 'me';
+    var usrTxt = '<empty>';
+    if (this.users.length) {
+        usrTxt = this.users.map(function(user){
+            return user.username || localize('guest');
+        }).join(', ');
     }
 
     this._roleLabel = new StringMorph(
@@ -899,13 +931,6 @@ RoleLabelMorph.prototype.init = function() {
     this.add(this._roleLabel);
     this.add(this._userLabel);
     this.drawNew();
-};
-
-RoleLabelMorph.prototype.isMine = function() {
-    if (!SnapCloud.username) {
-        return !!this.users.length;
-    }
-    return this.users.indexOf(SnapCloud.username) !== -1;
 };
 
 RoleLabelMorph.prototype.drawNew = function() {
@@ -961,9 +986,7 @@ function EditRoleMorph(room, role) {
     if (role.users.length) {  // occupied
         // owner can evict collaborators, collaborators can evict guests
 
-        // Check if we are occupying that role already. If not, give the
-        // option for collaborative editing
-        if (role.users.indexOf(this.room.myUserId()) === -1) {
+        if (role.name !== this.room.role()) {
             this.addButton('moveToRole', 'Move to');
         }
 

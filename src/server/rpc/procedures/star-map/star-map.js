@@ -15,8 +15,6 @@ var baseUrl = 'http://skyserver.sdss.org/dr13/SkyserverWS';
 
 module.exports = {
 
-    // This is very important => Otherwise it will try to instantiate this
-    isStateless: true,
     COMPATIBILITY: {
         path: 'sky-map'
     },

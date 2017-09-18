@@ -13,9 +13,6 @@ var baseUrl = 'http://jservice.io/api';
 
 module.exports = {
 
-    // This is very important => Otherwise it will try to instantiate this
-    isStateless: true,
-
     random: function() {
         var url = baseUrl + '/random',
             response = this.response,

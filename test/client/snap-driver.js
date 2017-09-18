@@ -1,3 +1,4 @@
+/* globals SpriteMorph, SnapActions */
 function SnapDriver(world) {
     this._world = world;
 }
@@ -28,6 +29,12 @@ SnapDriver.prototype.reset = function() {
 SnapDriver.prototype.newProject = function() {
     this.ide().exitReplayMode();
     this.ide().newProject();
+
+    // NetsBlox specific things
+    var room = this.ide().room;
+    var uuid = this.ide().sockets.uuid;
+    room.ownerId = uuid;
+    room.roles = room.getDefaultRoles();
 };
 
 SnapDriver.prototype.selectCategory = function(cat) {
@@ -36,4 +43,25 @@ SnapDriver.prototype.selectCategory = function(cat) {
 
     category.mouseClickLeft();
     return category;
+};
+
+SnapDriver.prototype.selectStage = function() {
+    var ide = this.ide();
+
+    return ide.selectSprite(ide.stage);
+};
+
+SnapDriver.prototype.selectSprite = function(name) {
+    var ide = this.ide(),
+        sprite = ide.sprites.asArray().find(sprite => sprite.name === name);
+
+    return ide.selectSprite(sprite);
+};
+
+SnapDriver.prototype.addBlock = function(spec, position) {
+    var block = typeof spec === 'string' ?
+        SpriteMorph.prototype.blockForSelector(spec, true) : spec;
+    var sprite = this.ide().currentSprite;
+
+    return SnapActions.addBlock(block, sprite.scripts, position);
 };

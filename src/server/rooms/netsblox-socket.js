@@ -186,6 +186,17 @@ class NetsBloxSocket {
         this.updateRoom(isOwner);
     }
 
+    onLogout () {
+        let isOwner = this.isOwner();
+
+        this._logger.log(`${this.username} is logging out!`);
+        this.username = this.uuid;
+        this.user = null;
+        this.loggedIn = false;
+
+        this.updateRoom(isOwner);
+    }
+
     join (room, role) {
         role = role || this.roleId;
         this._logger.log(`joining ${room.uuid}/${role} from ${this.roleId}`);
@@ -323,23 +334,25 @@ class NetsBloxSocket {
                 ownerId = idChunks.pop(),
                 roomName = idChunks.pop(),
                 roleId = idChunks.pop(),
-                roomId = Utils.uuid(ownerId, roomName),
-                room = RoomManager.rooms[roomId];
+                roomId = Utils.uuid(ownerId, roomName);
 
-            if (room) {
-                if (roleId) {
-                    if (room.hasRole(roleId)) {
-                        sockets = sockets.concat(room.getSocketsAt(roleId));
+            return RoomManager.getExistingRoom(roomId)
+                .then(room => {
+                    if (room) {
+                        if (roleId) {
+                            if (room.hasRole(roleId)) {
+                                sockets = sockets.concat(room.getSocketsAt(roleId));
+                            }
+                        } else {
+                            sockets = room.sockets();
+                        }
+
+                        sockets.forEach(socket => {
+                            msg.dstId = Constants.EVERYONE;
+                            socket.send(msg);
+                        });
                     }
-                } else {
-                    sockets = room.sockets();
-                }
-
-                sockets.forEach(socket => {
-                    msg.dstId = Constants.EVERYONE;
-                    socket.send(msg);
                 });
-            }
         }
     }
 }

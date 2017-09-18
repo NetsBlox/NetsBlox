@@ -132,7 +132,13 @@ class ActiveRoom {
 
         this.getRoleNames()
             .forEach(role => occupants[role] =
-                this.getSocketsAt(role).map(socket => socket.username));
+                this.getSocketsAt(role).map(socket => {
+                    return {
+                        uuid: socket.uuid,
+                        username: utils.isSocketUuid(socket.username) ?
+                            null : socket.username
+                    };
+                }));
 
         msg = {
             type: 'room-roles',
@@ -201,7 +207,9 @@ class ActiveRoom {
                 const nameConflicts = existing && existing.originTime !== this.originTime;
                 if (nameConflicts || force) {
                     // make sure name is also unique to the existing rooms...
-                    let activeRoomNames = this.getAllActiveFor(this.owner);
+                    let activeRoomNames = this.getAllActiveFor(this.owner)
+                        .filter(room => room !== this)
+                        .map(room => room.name);
                     this._logger.trace(`all active rooms for ${this.owner} are ${activeRoomNames}`);
                     return owner.getNewName(name, activeRoomNames);
                 }
