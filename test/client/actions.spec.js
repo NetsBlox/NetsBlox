@@ -2,8 +2,8 @@
 describe('actions', function() {
     var position = new Point(600, 600);
 
-    beforeEach(function() {
-        driver.reset();
+    beforeEach(function(done) {
+        driver.reset(done);
     });
 
     it('should have default color w/ setColorField', function(done) {
