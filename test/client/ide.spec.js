@@ -30,4 +30,25 @@ describe('ide', function() {
             ide.exportMultiRoleXml();
         });
     });
+
+    describe('lang', function() {
+        it('should not change replay length on lang change', function(done) {
+            SnapActions.addVariable('testVar', true)
+                .accept(() => {
+                    var len = SnapUndo.allEvents.length;
+                    var err;
+
+                    driver.ide().setLanguage('en');
+                    setTimeout(function() {  // give the project time to load
+                        try {
+                            expect(SnapUndo.allEvents.length).to.be(len);
+                        } catch(e) {
+                            err = e;
+                        } finally {
+                            done(err);
+                        }
+                    }, 100);
+                });
+        });
+    });
 });
