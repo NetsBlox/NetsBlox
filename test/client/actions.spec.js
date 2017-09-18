@@ -49,6 +49,16 @@ describe('actions', function() {
     });
 
     describe('collaboration', function() {
+        var username;
+
+        before(function() {
+            username = SnapCloud.username;
+        });
+
+        after(function() {
+            SnapCloud.username = username;
+        });
+
         it('should detect collaboration if multiple users in role', function() {
             var ide = driver.ide();
 
