@@ -1,7 +1,7 @@
-/*globals driver, expect*/
+/*globals driver, expect, SnapActions, SnapUndo */
 describe('ide', function() {
-    before(function() {
-        driver.reset();
+    before(function(done) {
+        driver.reset(done);
     });
 
     describe('export', function() {

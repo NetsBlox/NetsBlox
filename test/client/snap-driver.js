@@ -1,4 +1,4 @@
-/* globals SpriteMorph, SnapActions */
+/* globals SpriteMorph, SnapActions, nop */
 function SnapDriver(world) {
     this._world = world;
 }
@@ -15,7 +15,7 @@ SnapDriver.prototype.palette = function() {
     return this.world().children[0].palette;
 };
 
-SnapDriver.prototype.reset = function() {
+SnapDriver.prototype.reset = function(cb) {
     var world = this.world();
 
     // Close all open dialogs
@@ -24,6 +24,8 @@ SnapDriver.prototype.reset = function() {
     }
 
     this.newProject();
+    cb = cb || nop;
+    setTimeout(cb);
 };
 
 SnapDriver.prototype.newProject = function() {

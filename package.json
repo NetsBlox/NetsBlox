@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start": "node bin/netsblox-start.js",
-    "dev": "node node_modules/nodemon/bin/nodemon -w src src/server.js",
+    "dev": "node node_modules/nodemon/bin/nodemon --ignore src/client/dist -w src -w test --exec 'npm run postinstall && npm start'",
     "testmon": "node node_modules/nodemon/bin/nodemon -w src -w test node_modules/mocha/bin/mocha --recursive test/server test/client/serialization.spec.js",
     "test": "node node_modules/mocha/bin/mocha --recursive test/server test/client/serialization.spec.js",
     "test-client": "node test/client/integration.js",
