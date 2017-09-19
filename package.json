@@ -24,7 +24,7 @@
   "author": "Brian Broll",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/NetsBlox/server/issues"
+    "url": "https://github.com/NetsBlox/NetsBlox/issues"
   },
   "homepage": "https://github.com/NetsBlox/NetsBlox",
   "dependencies": {
