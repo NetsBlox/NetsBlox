@@ -77,8 +77,8 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
 chart.draw = function(lines, options){
     options = _.fromPairs(options);
     Object.keys(options).forEach(key => {
-        if (options.key === 'null' || options.key === ''){
-            delete options.key;
+        if (options[key] === 'null' || options[key] === ''){
+            delete options[key];
         }
     });
     options = _.merge({}, defaults, options || {});

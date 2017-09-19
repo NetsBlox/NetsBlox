@@ -51,7 +51,6 @@ let draw = (data, opts) => {
     let graph = gnuplot();
     data = data.map(line => _.merge({}, lineDefaults, line));
     opts = _.merge({}, optsDefaults, opts);
-    // TODO smart x & y range if not defined. it needs some padding.
     graph.set(`term pngcairo`)
         .set(`loadpath '${__dirname}'`)
         .set(`load 'xyborder.cfg'`)
