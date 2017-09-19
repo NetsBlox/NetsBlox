@@ -3,9 +3,7 @@ const Eclipse = require('../../../../src/server/rpc/procedures/eclipse-2017/ecli
     assert = require('assert'),
     RPCMock = require('../../../assets/mock-rpc'),
     utils = require('../../../assets/utils'),
-    stationUtils = require('../../../../src/server/rpc/procedures/eclipse-2017/stations.js'),
     rpcStorage = require('../../../../src/server/rpc/storage.js'),
-    checkStations = require('../../../../utils/rpc/eclipse-2017/checkStations.js'),
     eclipsePath = require('../../../../utils/rpc/eclipse-2017/eclipsePath.js'),
     eclipse = new RPCMock(Eclipse);
 
@@ -69,7 +67,7 @@ describe('database', function(){
     const baseSeconds = new Date('2017-08-23T11:00:30.000Z').getTime();
     // returns a date relative to a predefined base
     function rDate(delta){
-        mSeconds = baseSeconds + (delta * 1000);
+        let mSeconds = baseSeconds + (delta * 1000);
         return new Date(mSeconds);
     }
 

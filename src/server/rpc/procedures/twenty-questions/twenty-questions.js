@@ -2,11 +2,7 @@
 
 'use strict';
 
-var debug = require('debug'),
-    log = debug('netsblox:rpc:twenty-questions:log'),
-    error = debug('netsblox:rpc:twenty-questions:error'),
-    trace = debug('netsblox:rpc:twenty-questions:trace'),
-    Constants = require('../../../../common/constants');
+var Constants = require('../../../../common/constants');
 
 let TwentyQuestions = function () {
     this._state = {};

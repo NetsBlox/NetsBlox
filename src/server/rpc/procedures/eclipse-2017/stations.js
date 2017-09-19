@@ -57,14 +57,6 @@ function nearbyStations(lat, lon,  maxDistance){
     });
 } // end of nearbyStations
 
-function dynamicStations(){
-    const numSections = 160;
-    const perSection = 1;
-    return selectSectionBased(numSections, perSection).then(stations => {
-        return stations;
-    });
-}
-
 // need a way to make sure that the whole path is covered.
 // divide the path into sections (using min max lon + distance should be fine)
 // best station finder for a given section
