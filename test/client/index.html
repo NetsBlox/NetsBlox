@@ -42,7 +42,6 @@
 
           // start the tests
           driver = new SnapDriver(world);
-          mocha.globals(['jQuery']);
           mocha.run();
       };
       function loop() {
@@ -55,6 +54,7 @@
   <script>
     $(document).ready(function(){
       $('.modal').modal();
+      $('.modal').modal('open');
     });
   </script>
 </body>
