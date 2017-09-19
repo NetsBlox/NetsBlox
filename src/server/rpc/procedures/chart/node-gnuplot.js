@@ -1,4 +1,3 @@
-/* eslint-disable quotes */
 const gnuplot = require(`gnuplot`),
     _ = require('lodash');
 
