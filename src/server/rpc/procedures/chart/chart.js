@@ -20,6 +20,7 @@ const defaults = {
     timeOutputFormat: '%d/%m'
 };
 
+// calculates data stats
 function calcRanges(lines){
     let stats = {
         x: {
@@ -58,6 +59,13 @@ function prepareData(input) {
             chart._logger.warn('input is not an array!', line);
             throw 'chart input is not an array';
         }
+        line.forEach( pt => {
+            let [x,y] = pt;
+            if (!Array.isArray(pt) || ! x || ! y) {
+                chart._logger.warn('input is not an array!', pt);
+                throw 'all input points should be in [x,y] form.';
+            }
+        })
     });
     return input;
 }
@@ -87,8 +95,8 @@ chart.draw = function(lines, options){
     try {
         lines = prepareData(lines);
     } catch (e) {
-        // TODO make the block show it's broken, setting status 500 doesn't cut it.
-        return e;
+        this.response.status(500).send(e);
+        return null;
     }
 
     let stats = calcRanges(lines);
@@ -118,7 +126,14 @@ chart.draw = function(lines, options){
     }
     
     this._logger.trace('charting with options', opts);
-    let chartStream =  gnuPlot.draw(data, opts);
+
+    try {
+        var chartStream =  gnuPlot.draw(data, opts);
+    } catch (e) {
+        this.response.status(500).send('error in drawing the plot. bad input.');
+        return null;
+    }
+
     return rpcUtils.collectStream(chartStream).then( buffer => {
         rpcUtils.sendImageBuffer(this.response, buffer, this._logger);
     }).catch(this._logger.error);
