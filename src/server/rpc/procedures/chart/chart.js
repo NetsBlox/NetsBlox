@@ -65,7 +65,7 @@ function prepareData(input) {
                 chart._logger.warn('input is not an array!', pt);
                 throw 'all input points should be in [x,y] form.';
             }
-        })
+        });
     });
     return input;
 }
