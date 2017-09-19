@@ -13,6 +13,7 @@ var fs = require('fs'),
     PROCEDURES_DIR = path.join(__dirname,'procedures'),
     SocketManager = require('../socket-manager'),
     utils = require('../server-utils'),
+    JsonToSnapList = require('./procedures/utils').jsonToSnapList ,
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
 const DEFAULT_COMPATIBILITY = {arguments: {}};
@@ -218,8 +219,10 @@ RPCManager.prototype.sendRPCResult = function(response, result) {
                         this._logger.error(`Uncaught exception: ${err.toString()}`);
                         response.status(500).send('Error occurred!');
                     });
-            } else {
+            } else if (Array.isArray(result)) {
                 return response.json(result);
+            } else {  // arbitrary JSON
+                return response.json(JsonToSnapList(result));
             }
         } else if (result !== undefined) {
             return response.send(result.toString());
