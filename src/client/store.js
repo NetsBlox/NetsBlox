@@ -38,15 +38,15 @@ SnapSerializer.prototype.loadValue = function (model) {
 
     function record() {
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'id'
-            )) {
+            model.attributes,
+            'id'
+        )) {
             myself.objects[model.attributes.id] = v;
         }
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'mediaID'
-            )) {
+            model.attributes,
+            'mediaID'
+        )) {
             myself.mediaDict[model.attributes.mediaID] = v;
         }
     }
@@ -56,9 +56,9 @@ SnapSerializer.prototype.loadValue = function (model) {
             return this.objects[model.attributes.id];
         }
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'mediaID'
-            )) {
+            model.attributes,
+            'mediaID'
+        )) {
             return this.mediaDict[model.attributes.mediaID];
         }
         if (Object.prototype.hasOwnProperty.call(model.attributes, 'actionID')) {
@@ -219,27 +219,27 @@ SnapSerializer.prototype.loadValue = function (model) {
     case 'costume':
         center = new Point();
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'center-x'
-            )) {
+            model.attributes,
+            'center-x'
+        )) {
             center.x = parseFloat(model.attributes['center-x']);
         }
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'center-y'
-            )) {
+            model.attributes,
+            'center-y'
+        )) {
             center.y = parseFloat(model.attributes['center-y']);
         }
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'name'
-            )) {
+            model.attributes,
+            'name'
+        )) {
             name = model.attributes.name;
         }
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'image'
-            )) {
+            model.attributes,
+            'image'
+        )) {
             image = new Image();
             if (model.attributes.image.indexOf('data:image/svg+xml') === 0
                     && !MorphicPreferences.rasterizeSVGs) {
@@ -290,9 +290,9 @@ SnapSerializer.prototype.loadValue = function (model) {
         audio.src = model.attributes.sound;
         v = new Sound(audio, model.attributes.name);
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'mediaID'
-            )) {
+            model.attributes,
+            'mediaID'
+        )) {
             myself.mediaDict[model.attributes.mediaID] = v;
         }
         v.id = model.attributes.collabId;
@@ -362,9 +362,9 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
     var block, info, inputs, isGlobal, rm, receiver;
     if (model.tag === 'block') {
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'var'
-            )) {
+            model.attributes,
+            'var'
+        )) {
             block = SpriteMorph.prototype.variableBlock(
                 model.attributes['var']
             );
@@ -597,9 +597,9 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     }
     project.stage = new StageMorph(project.globalVariables);
     if (Object.prototype.hasOwnProperty.call(
-            model.stage.attributes,
-            'id'
-        )) {
+        model.stage.attributes,
+        'id'
+    )) {
         this.objects[model.stage.attributes.id] = project.stage;
     }
     if (model.stage.attributes.name) {
@@ -753,9 +753,9 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
         ) && (model.attributes.hidden !== 'false');
 
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'var'
-            )) {
+            model.attributes,
+            'var'
+        )) {
             watcher = new WatcherMorph(
                 model.attributes['var'],
                 color,
@@ -898,14 +898,14 @@ StageMorph.prototype.toXML = function (serializer) {
         serializer.store(this.scripts),
         serializer.store(this.children),
         Object.keys(StageMorph.prototype.hiddenPrimitives).reduce(
-                function (a, b) {return a + ' ' + b; },
-                ''
-            ),
+            function (a, b) {return a + ' ' + b; },
+            ''
+        ),
         code('codeHeaders'),
         code('codeMappings'),
         serializer.store(this.globalBlocks),
         (ide && ide.globalVariables) ?
-                    serializer.store(ide.globalVariables) : '',
+            serializer.store(ide.globalVariables) : '',
         serializer.isSavingHistory ? serializer.historyXML(this.id): '',
         serializer.isSavingHistory ? serializer.replayHistory() : ''
     );

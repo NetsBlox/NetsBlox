@@ -223,9 +223,9 @@ InputSlotDialogMorph.prototype.createSlotTypeButtons = function () {
     defLabel.setColor(new Color(255, 255, 255));
     defLabel.refresh = function () {
         if (myself.isExpanded && contains(
-                ['%s', '%n', '%txt', '%anyUE'],
-                myself.fragment.type
-            )) {
+            ['%s', '%n', '%txt', '%anyUE'],
+            myself.fragment.type
+        )) {
             defLabel.show();
         } else {
             defLabel.hide();
@@ -394,7 +394,7 @@ BlockExportDialogMorph.prototype.buildContents = function (stage) {
         checkBox.setPosition(new Point(
             x,
             y + (checkBox.top() - checkBox.toggleElement.top())
-            ));
+        ));
         palette.addContents(checkBox);
         y += checkBox.fullBounds().height() + padding;
     }.bind(this));

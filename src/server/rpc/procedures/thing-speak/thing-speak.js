@@ -142,20 +142,20 @@ thingspeakIoT.channelDetails = function(id) {
     return this._requestData({queryString: id + '.json?'}).then( data => {
         let details = detailParser(data);
         return this._requestData({queryString: id + '/feeds.json?results=10'})
-        .then( resp => {
-            details.updated_at = new Date(resp.channel.updated_at);
-            details.total_entries = resp.channel.last_entry_id;
-            details.fields = [];
-            for(var prop in resp.channel) {
-                if (resp.channel.hasOwnProperty(prop) && prop.match(/field\d/)) {
-                    let match = prop.match(/field\d/)[0];
-                    details.fields.push(resp.channel[match]);
+            .then( resp => {
+                details.updated_at = new Date(resp.channel.updated_at);
+                details.total_entries = resp.channel.last_entry_id;
+                details.fields = [];
+                for(var prop in resp.channel) {
+                    if (resp.channel.hasOwnProperty(prop) && prop.match(/field\d/)) {
+                        let match = prop.match(/field\d/)[0];
+                        details.fields.push(resp.channel[match]);
+                    }
                 }
-            }
-            details.feeds = feedParser(resp);
-            this._logger.info(`channel ${id} details`, details);
-            return rpcUtils.jsonToSnapList(details);
-        });
+                details.feeds = feedParser(resp);
+                this._logger.info(`channel ${id} details`, details);
+                return rpcUtils.jsonToSnapList(details);
+            });
     });
 };
 

@@ -1274,8 +1274,8 @@ UserDialogMorph.prototype.fixLayout = function () {
         ));
 
         inputField.setWidth(
-                this.body.width() -  this.padding * 6
-            );
+            this.body.width() -  this.padding * 6
+        );
         inputField.setLeft(this.body.left() + this.padding * 3);
         inputField.drawNew();
 
@@ -1342,7 +1342,7 @@ UserDialogMorph.prototype.buildFilterField = function () {
             myself.userList.filter(function (username) {
                 return username.toLowerCase().indexOf(text.toLowerCase()) > -1;
             });
-            // Netsblox addition: end
+        // Netsblox addition: end
 
         if (myself.listField.elements.length === 0) {
             myself.listField.elements.push('(no matches)');
@@ -1397,9 +1397,9 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.listField = new ListMorph(
         this.userList,
         this.userList.length > 0 ?
-                function (element) {
-                    return element.username || element;
-                } : null,
+            function (element) {
+                return element.username || element;
+            } : null,
         [ // format: display shared project names bold
             [
                 'bold',

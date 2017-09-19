@@ -66,7 +66,7 @@ describe('eclipse utils', function() {
 
 describe('database', function(){
 
-    const baseSeconds = new Date("2017-08-23T11:00:30.000Z").getTime();
+    const baseSeconds = new Date('2017-08-23T11:00:30.000Z').getTime();
     // returns a date relative to a predefined base
     function rDate(delta){
         mSeconds = baseSeconds + (delta * 1000);

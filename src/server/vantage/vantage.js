@@ -16,10 +16,10 @@ var vantage = require('vantage')(),
 // Set the banner
 banner = ['\n'+
     '#####################################################',
-    '#                                                   #',
-    '#                 NetsBlox Server                   #',
-    '#                                                   #',
-    '#####################################################']
+'#                                                   #',
+'#                 NetsBlox Server                   #',
+'#                                                   #',
+'#####################################################']
     .join('\n');
 
 var NetsBloxVantage = function(server) {
@@ -94,7 +94,7 @@ var NetsBloxVantage = function(server) {
                     }
                     cb();
                 })
-                .catch(err => cb(err));
+                    .catch(err => cb(err));
             }
         });
 
@@ -202,10 +202,10 @@ NetsBloxVantage.checkSocket = function(args, nbSocket) {
 NetsBloxVantage.prettyPrintGroup = function(group) {
     var text = group.name+':\n'+
         group.groups
-        .map(function(group) {
-            return '  '+group.join(' ');
-        })
-        .join('\n');
+            .map(function(group) {
+                return '  '+group.join(' ');
+            })
+            .join('\n');
     return text;
 };
 

@@ -37,10 +37,10 @@ function availableStations(maxDistance, maxReadingMedian){
     if (!maxReadingMedian) maxReadingMedian = Infinity;
     let query = {distance: {$lte: maxDistance}, readingMedian: {$ne: null, $lte: maxReadingMedian}};
     return getStationsCol().find(query).toArray()
-    .then(stations => {
-        logger.info(`found ${stations.length} stations for query ${JSON.stringify(query)} `);
-        return stations;
-    });
+        .then(stations => {
+            logger.info(`found ${stations.length} stations for query ${JSON.stringify(query)} `);
+            return stations;
+        });
 }
 
 

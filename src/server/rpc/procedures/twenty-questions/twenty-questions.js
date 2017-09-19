@@ -78,21 +78,21 @@ TwentyQuestions.prototype.guess = function(guess) {
         // guesses are up! guesser loses...
         if (this._state.guessCount === 20) {
             this.socket._room.sockets()
-            .forEach(socket => {
-                let msg = msgSocket;
-                msg.msgType = 'EndGame';
-                msg.content.GuesserWin = false;
-                socket.send(msg);
-            });
+                .forEach(socket => {
+                    let msg = msgSocket;
+                    msg.msgType = 'EndGame';
+                    msg.content.GuesserWin = false;
+                    socket.send(msg);
+                });
         // wait for answerer to answer the question
         } else {
             this.socket._room.sockets()
-            .forEach(socket => {
-                let msg = msgSocket;
-                msg.msgType = 'EndGuesserTurn';
-                msg.content.guess = guess;
-                socket.send(msg);
-            });
+                .forEach(socket => {
+                    let msg = msgSocket;
+                    msg.msgType = 'EndGuesserTurn';
+                    msg.content.guess = guess;
+                    socket.send(msg);
+                });
         }
         return correct;
     }
