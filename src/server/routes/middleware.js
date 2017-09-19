@@ -35,7 +35,7 @@ var tryLogIn = function(req, res, cb, skipRefresh) {
     req.session = req.session || new Session(res);
     if (cookie) {
         // verify the cookie is valid
-        logger.trace(`validating cookie`);
+        logger.trace('validating cookie');
         jwt.verify(cookie, sessionSecret, (err, token) => {
             if (err) {
                 logger.error(`Error verifying jwt: ${err}`);
@@ -80,7 +80,7 @@ var saveLogin = function(res, user, remember) {
     if (typeof remember === 'boolean') {
         cookie.remember = remember;
     }
-	refreshCookie(res, cookie);
+    refreshCookie(res, cookie);
 };
 
 var refreshCookie = function(res, cookie) {

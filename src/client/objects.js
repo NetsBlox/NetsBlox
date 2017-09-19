@@ -7,20 +7,20 @@
    SnapUndo, newCanvas, ReplayControls, copy*/
 
 SpriteMorph.prototype.categories =
-    [
-        'motion',
-        'control',
-        'looks',
-        'sensing',
-        'sound',
-        'operators',
-        'pen',
-        'variables',
-        'network',
-        'custom',
-        'lists',
-        'other'
-    ];
+[
+    'motion',
+    'control',
+    'looks',
+    'sensing',
+    'sound',
+    'operators',
+    'pen',
+    'variables',
+    'network',
+    'custom',
+    'lists',
+    'other'
+];
 
 SpriteMorph.prototype.blockColor.network = new Color(217, 77, 17);
 SpriteMorph.prototype.blockColor.custom = new Color(120, 120, 120);
@@ -55,19 +55,19 @@ SpriteMorph.prototype.freshPalette = function (category) {
                 control:
                     ['doWarp'],
                 variables:
-                    [
-                        'doDeclareVariables',
-                        'reportNewList',
-                        'reportCONS',
-                        'reportListItem',
-                        'reportCDR',
-                        'reportListLength',
-                        'reportListContainsItem',
-                        'doAddToList',
-                        'doDeleteFromList',
-                        'doInsertInList',
-                        'doReplaceInList'
-                    ]
+                [
+                    'doDeclareVariables',
+                    'reportNewList',
+                    'reportCONS',
+                    'reportListItem',
+                    'reportCDR',
+                    'reportListLength',
+                    'reportListContainsItem',
+                    'doAddToList',
+                    'doDeleteFromList',
+                    'doInsertInList',
+                    'doReplaceInList'
+                ]
             };
 
         function hasHiddenPrimitives() {

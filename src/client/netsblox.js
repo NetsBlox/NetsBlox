@@ -96,7 +96,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
         }
     }
 
-	function applyFlags(dict) {
+    function applyFlags(dict) {
         if (dict.editMode) {
             myself.toggleAppMode(false);
         } else {
@@ -112,7 +112,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
         if (dict.noExitWarning) {
             window.onbeforeunload = nop;
         }
-	}
+    }
 
     // dynamic notifications from non-source text files
     // has some issues, commented out for now
@@ -157,7 +157,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
             }
         } else if (location.hash.substr(0, 5) === '#run:') {
             hash = location.hash.substr(5);
-            idx = hash.indexOf("&");
+            idx = hash.indexOf('&');
             if (idx > 0) {
                 hash = hash.slice(0, idx);
             }
@@ -1395,9 +1395,9 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addPair('New', 'createNewProject', '^N');
     menu.addPair('Open...', 'openProjectsBrowser', '^O');
     if (!this.room.isGuest()) {
-        menu.addPair('Save', "save", '^S');
+        menu.addPair('Save', 'save', '^S');
     } else {
-        menu.addPair('Save a Copy', "save", '^S');
+        menu.addPair('Save a Copy', 'save', '^S');
     }
     menu.addItem('Save As...', function() {
         if (myself.isPreviousVersion()) {
@@ -1432,15 +1432,15 @@ NetsBloxMorph.prototype.projectMenu = function () {
                     myself.filePicker = null;
                 }
                 inp.type = 'file';
-                inp.style.color = "transparent";
-                inp.style.backgroundColor = "transparent";
-                inp.style.border = "none";
-                inp.style.outline = "none";
-                inp.style.position = "absolute";
-                inp.style.top = "0px";
-                inp.style.left = "0px";
-                inp.style.width = "0px";
-                inp.style.height = "0px";
+                inp.style.color = 'transparent';
+                inp.style.backgroundColor = 'transparent';
+                inp.style.border = 'none';
+                inp.style.outline = 'none';
+                inp.style.position = 'absolute';
+                inp.style.top = '0px';
+                inp.style.left = '0px';
+                inp.style.width = '0px';
+                inp.style.height = '0px';
                 inp.addEventListener(
                     'change',
                     function () {
@@ -1473,18 +1473,18 @@ NetsBloxMorph.prototype.projectMenu = function () {
                 myself.filePicker = null;
             }
             inp.type = 'file';
-            inp.style.color = "transparent";
-            inp.style.backgroundColor = "transparent";
-            inp.style.border = "none";
-            inp.style.outline = "none";
-            inp.style.position = "absolute";
-            inp.style.top = "0px";
-            inp.style.left = "0px";
-            inp.style.width = "0px";
-            inp.style.height = "0px";
-            inp.style.display = "none";
+            inp.style.color = 'transparent';
+            inp.style.backgroundColor = 'transparent';
+            inp.style.border = 'none';
+            inp.style.outline = 'none';
+            inp.style.position = 'absolute';
+            inp.style.top = '0px';
+            inp.style.left = '0px';
+            inp.style.width = '0px';
+            inp.style.height = '0px';
+            inp.style.display = 'none';
             inp.addEventListener(
-                "change",
+                'change',
                 function () {
                     document.body.removeChild(inp);
                     myself.filePicker = null;

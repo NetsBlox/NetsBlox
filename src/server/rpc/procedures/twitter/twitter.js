@@ -3,7 +3,6 @@
 'use strict';
 
 var debug = require('debug'),
-    log = debug('netsblox:rpc:twitter:log'),
     error = debug('netsblox:rpc:twitter:error'),
     trace = debug('netsblox:rpc:twitter:trace'),
     request = require('request'),

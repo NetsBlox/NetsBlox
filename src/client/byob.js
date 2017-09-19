@@ -191,7 +191,7 @@ InputSlotDialogMorph.prototype.createSlotTypeButtons = function () {
         function () {
             myself.setSlotArity('single');
         },
-        "Single input.",
+        'Single input.',
         function () {
             return myself.fragment.isSingleInput();
         }
@@ -208,12 +208,12 @@ InputSlotDialogMorph.prototype.createSlotTypeButtons = function () {
 
     this.addSlotArityButton(
         function () {myself.setSlotArity('multiple'); },
-        "Multiple inputs (value is list of inputs)",
+        'Multiple inputs (value is list of inputs)',
         function () {return myself.fragment.isMultipleInput(); }
     );
     this.addSlotArityButton(
         function () {myself.setSlotArity('upvar'); },
-        "Upvar - make internal variable visible to caller",
+        'Upvar - make internal variable visible to caller',
         function () {return myself.fragment.isUpvar(); }
     );
 

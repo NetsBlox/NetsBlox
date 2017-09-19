@@ -317,7 +317,7 @@ class NetsBloxSocket {
     }
 
     sendMessageTo (msg, dstId) {
-        dstId = dstId + ""; // make sure dstId is string
+        dstId = dstId + ''; // make sure dstId is string
         dstId = dstId.replace(/^\s*/, '').replace(/\s*$/, '');
         msg.dstId = dstId;
         if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
