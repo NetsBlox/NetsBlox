@@ -117,7 +117,7 @@ chart.draw = function(lines, options){
         opts.xTicks = [stats.x.min, tickStep, stats.x.max];
     }
     
-    this._logger.trace('charting with options', opts, options);
+    this._logger.trace('charting with options', opts);
     let chartStream =  gnuPlot.draw(data, opts);
     return rpcUtils.collectStream(chartStream).then( buffer => {
         rpcUtils.sendImageBuffer(this.response, buffer, this._logger);
