@@ -81,8 +81,8 @@ module.exports = [
         }
     }
 ]
-.map(function(api) {
+    .map(function(api) {
     // Set the URL to be the service name
-    api.URL = api.Service;
-    return api;
-});
+        api.URL = api.Service;
+        return api;
+    });

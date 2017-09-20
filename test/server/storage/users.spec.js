@@ -30,7 +30,7 @@ describe('users', function() {
                 }
                 return user.setGroupId(groupId);
             })))
-            .nodeify(done);
+                .nodeify(done);
         });
 
         it('should not include users in groups from outside', function(done) {

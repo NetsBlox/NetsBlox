@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // migration for converting nested projects to their own collection
 
 // Backup the database first!

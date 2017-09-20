@@ -194,10 +194,10 @@ SnapXml.format = function (string) {
         // value = values[(isNaN(index) ? (i += 1) : index) + 1];
 
         return spec === '@' ?
-                SnapXml.escape(value)
-                    : spec === '$' ?
-                        SnapXml.escape(value, true)
-                            : value;
+            SnapXml.escape(value)
+            : spec === '$' ?
+                SnapXml.escape(value, true)
+                : value;
     });
 };
 

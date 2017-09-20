@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // migration for replicating published projects to a separate collection
 
 const MongoClient = require('mongodb').MongoClient;

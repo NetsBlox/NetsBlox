@@ -61,17 +61,17 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         cache.wrap(lat + ', ' + lon + query, cacheCallback => {
             trace('Geocoding (not cached)', lat, lon);
             geocoder.reverse({lat, lon})
-            .then(function(res) {
+                .then(function(res) {
                 // only intereseted in the first match
-                res = queryJson(res[0], query);
-                if (res === null) return cacheCallback('not found', null);
-                // send the response to user
-                return cacheCallback(null, res);
-            })
-            .catch((err) => {
-                error(err);
-                return cacheCallback('Error in reverse geocoding', null);
-            });
+                    res = queryJson(res[0], query);
+                    if (res === null) return cacheCallback('not found', null);
+                    // send the response to user
+                    return cacheCallback(null, res);
+                })
+                .catch((err) => {
+                    error(err);
+                    return cacheCallback('Error in reverse geocoding', null);
+                });
         }, (err, results) => {
             if(results){
                 trace('answering with',results);
