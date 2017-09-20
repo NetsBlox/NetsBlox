@@ -1016,7 +1016,9 @@ SpriteMorph.prototype.deleteMessageType = function(name) {
         if (ide && ide.currentTab === 'room') {
             ide.spriteBar.tabBar.tabTo('room');
         }
-    } catch(e) {}
+    } catch(e) {
+        //do nothing
+    }
 
     ide.flushBlocksCache(cat); // b/c of inheritance
     ide.refreshPalette();
@@ -1055,7 +1057,9 @@ StageMorph.prototype.addMessageType = function (messageType) {
         if (ide && ide.currentTab === 'room') {
             ide.spriteBar.tabBar.tabTo('room');
         }
-    } catch(e) {}
+    } catch(e) {
+        // do nothing
+    }
 };
 
 StageMorph.prototype.processKeyEvent = function (event, action) {

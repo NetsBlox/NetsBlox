@@ -6,7 +6,7 @@
    ColorSlotMorph, TemplateSlotMorph, FunctionSlotMorph, ReporterSlotMorph,
    SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume, ScriptsMorph,
    MessageDefinitionBlock, RPCInputSlotMorph, SnapActions, MultiHintArgMorph,
-   PrototypeHatBlockMorph
+   PrototypeHatBlockMorph, CommandBlockMorph
    */
 
 BlockMorph.prototype.setSpec = function (spec, silently) {
