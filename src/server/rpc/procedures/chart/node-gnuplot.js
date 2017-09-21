@@ -1,4 +1,4 @@
-const gnuplot = require(`gnuplot`),
+const gnuplot = require('gnuplot'),
     _ = require('lodash');
 
 const lineDefaults = {
@@ -50,7 +50,7 @@ let draw = (data, opts) => {
     let graph = gnuplot();
     data = data.map(line => _.merge({}, lineDefaults, line));
     opts = _.merge({}, optsDefaults, opts);
-    graph.set(`term pngcairo`)
+    graph.set('term pngcairo')
         .set(`loadpath '${__dirname}'`)
         .set(`load 'xyborder.cfg'`)
         .set(`load 'grid.cfg'`)
@@ -58,7 +58,7 @@ let draw = (data, opts) => {
 
         // add grid
         .set(`style line 102 lc rgb '#d6d7d9' lt 0 lw 1`)
-        .set(`grid back ls 102`)
+        .set('grid back ls 102')
         // add colors
         .set(`style line 1 lt 1 lc rgb '#1B9E77'`)  // dark teal
         .set(`style line 2 lt 1 lc rgb '#D95F02'`)  // dark orange
@@ -69,7 +69,7 @@ let draw = (data, opts) => {
         .set(`style line 7 lt 1 lc rgb '#A6761D'`)  // dark tan
         .set(`style line 8 lt 1 lc rgb '#666666'`)  // dark gray
         // palette
-        .set(`palette maxcolors 8`)
+        .set('palette maxcolors 8')
         .set(`palette defined ( 0 '#1B9E77', 1 '#D95F02', 2 '#7570B3', 3 '#E7298A', 4 '#66A61E', 5 '#E6AB02', 6 '#A6761D',7 '#666666' )`)
 
         .set(`datafile separator ','`);
