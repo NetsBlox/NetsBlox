@@ -139,6 +139,57 @@ chart.draw = function(lines, options){
     }).catch(this._logger.error);
 };
 
+chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
+    let lines = [];
+
+    // testMultipleDataset credit to Dung
+    let isMultipleDataset = rawArray => {
+        let numLayers = (rawArray) => {
+            if (typeof rawArray !== 'object') {
+                return 0;
+            }
+            return numLayers(rawArray[0]) + 1;
+        };
+
+        return numLayers(rawArray) === 4;
+    };
+
+    if (!isMultipleDataset(dataset)){
+        this._logger.trace('oneline input detected');
+        dataset = [dataset];
+    }
+
+    dataset.forEach(line => {
+        line = line.map(pt => {
+            let newPt = [];
+            newPt.push(pt[0][1]);
+            newPt.push(pt[1][1]);
+            return newPt;
+        })
+        console.log('line is', line);
+        lines.push(line);
+    });
+
+    // account for list or string datasettag
+    if (!Array.isArray(datasetTag)){
+        datasetTag = [datasetTag];
+    }
+
+    let opts = {
+        xLabel: xAxisTag,
+        yLabel: yAxisTag,
+        title: title,
+        smooth: true,
+        labels: datasetTag
+    };
+
+    return chart.draw.call(this, lines, _.toPairs(opts));
+}
+
+chart.drawBarChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
+    return chart.drawLineChart.apply(this, arguments);
+}
+
 chart.defaultOptions = function(){
     return rpcUtils.jsonToSnapList(defaults);
 };
