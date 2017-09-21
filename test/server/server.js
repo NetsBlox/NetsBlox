@@ -115,7 +115,7 @@ describe('Server Tests', function() {
                 assert.deepEqual(res.body.timeOutputFormat, '%H:%M');
                 done();
             });
-        }).catch(done)
+        }).catch(done);
     });
 
     describe('login tests', function() {
@@ -313,8 +313,8 @@ describe('Server Tests', function() {
                         .expect(200)
                         .end(function() {
                             //api.get('/restart?uuid='+username2)
-                                //.expect(200)
-                                //.end(done);
+                            //.expect(200)
+                            //.end(done);
                             done();
                         });
                 });

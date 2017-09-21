@@ -288,7 +288,7 @@ module.exports = [
                                 const previews = projects.map(getPreview);
                                 info(`Projects for ${username} are ${JSON.stringify(
                                     previews.map(preview => preview.ProjectName)
-                                    )}`
+                                )}`
                                 );
 
                                 if (req.query.format === 'json') {

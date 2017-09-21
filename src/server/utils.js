@@ -4,7 +4,7 @@
 // "not")
 'use strict';
 
-var inherit = function(child, parents) {
+var inherit = function(child/*, parents*/) {
     for (var i = 1; i < arguments.length; i++) {
         for (var key in arguments[i]) {
             child[key] = arguments[i][key];

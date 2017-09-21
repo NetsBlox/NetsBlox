@@ -147,7 +147,7 @@ SnapActions.applyEvent = function(event) {
             ide.promptExitReplay(function() {
             // Netsblox addition: start
                 if (!myself.isCollaborating() || myself.isLeader) {
-            // Netsblox addition: end
+                    // Netsblox addition: end
                     myself.acceptEvent(event);
                 } else {
                     myself.send(event);

@@ -50,7 +50,7 @@ const encodeQueryData = tuple => {
     for (let d in tuple)
         ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(tuple[d]));
     return ret.join('&');
-}
+};
 
 module.exports = {
     sendImageBuffer,

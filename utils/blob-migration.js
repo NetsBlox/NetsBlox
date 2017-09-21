@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // migration for converting projects to be stored in the blob...
 
 // Backup the database first!

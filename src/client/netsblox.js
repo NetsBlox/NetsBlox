@@ -6,7 +6,7 @@
    ScrollFrameMorph, SnapUndo, LibraryImportDialogMorph, CollaboratorDialogMorph,
    SnapSerializer, isRetinaSupported, isRetinaEnabled, useBlurredShadows,
    BlockMorph, SyntaxElementMorph, ScriptsMorph, InputSlotDialogMorph, ArgMorph,
-   BlockLabelPlaceHolderMorph, TableMorph*/
+   BlockLabelPlaceHolderMorph, TableMorph, contains*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -96,7 +96,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
         }
     }
 
-	function applyFlags(dict) {
+    function applyFlags(dict) {
         if (dict.editMode) {
             myself.toggleAppMode(false);
         } else {
@@ -112,7 +112,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
         if (dict.noExitWarning) {
             window.onbeforeunload = nop;
         }
-	}
+    }
 
     // dynamic notifications from non-source text files
     // has some issues, commented out for now
@@ -144,20 +144,20 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 hash = decodeURIComponent(hash);
             }
             if (contains(
-                    ['project', 'blocks', 'sprites', 'snapdata'].map(
-                        function (each) {
-                            return hash.substr(0, 8).indexOf(each);
-                        }
-                    ),
-                    1
-                )) {
+                ['project', 'blocks', 'sprites', 'snapdata'].map(
+                    function (each) {
+                        return hash.substr(0, 8).indexOf(each);
+                    }
+                ),
+                1
+            )) {
                 this.droppedText(hash);
             } else {
                 this.droppedText(getURL(hash));
             }
         } else if (location.hash.substr(0, 5) === '#run:') {
             hash = location.hash.substr(5);
-            idx = hash.indexOf("&");
+            idx = hash.indexOf('&');
             if (idx > 0) {
                 hash = hash.slice(0, idx);
             }
@@ -1032,7 +1032,7 @@ NetsBloxMorph.prototype.createControlBar = function () {
         var suffix = ' @ ' + myself.room.name;
 
         suffix += myself.world().isDevMode ?
-                ' - ' + localize('development mode') : '';
+            ' - ' + localize('development mode') : '';
 
         if (this.label) {
             this.label.destroy();
@@ -1169,7 +1169,7 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
         button.setPosition(myself.spriteBar.position().add(2));
         button.setTop(button.top()
             + ((rotationStyleButtons.length - 1) * (button.height() + 2))
-            );
+        );
         myself.spriteBar.add(button);
         if (myself.currentSprite instanceof StageMorph) {
             button.hide();
@@ -1237,7 +1237,7 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
     padlock.pressColor = tabColors[1];
 
     padlock.tick.shadowOffset = MorphicPreferences.isFlat ?
-            new Point() : new Point(-1, -1);
+        new Point() : new Point(-1, -1);
     padlock.tick.shadowColor = new Color(); // black
     padlock.tick.color = this.buttonLabelColor;
     padlock.tick.isBold = false;
@@ -1361,7 +1361,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
         world = this.world(),
         pos = this.controlBar.projectButton.bottomLeft(),
         graphicsName = this.currentSprite instanceof SpriteMorph ?
-                'Costumes' : 'Backgrounds',
+            'Costumes' : 'Backgrounds',
         shiftClicked = (world.currentKey === 16);
 
     // Netsblox addition: start
@@ -1395,9 +1395,9 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addPair('New', 'createNewProject', '^N');
     menu.addPair('Open...', 'openProjectsBrowser', '^O');
     if (!this.room.isGuest()) {
-        menu.addPair('Save', "save", '^S');
+        menu.addPair('Save', 'save', '^S');
     } else {
-        menu.addPair('Save a Copy', "save", '^S');
+        menu.addPair('Save a Copy', 'save', '^S');
     }
     menu.addItem('Save As...', function() {
         if (myself.isPreviousVersion()) {
@@ -1432,15 +1432,15 @@ NetsBloxMorph.prototype.projectMenu = function () {
                     myself.filePicker = null;
                 }
                 inp.type = 'file';
-                inp.style.color = "transparent";
-                inp.style.backgroundColor = "transparent";
-                inp.style.border = "none";
-                inp.style.outline = "none";
-                inp.style.position = "absolute";
-                inp.style.top = "0px";
-                inp.style.left = "0px";
-                inp.style.width = "0px";
-                inp.style.height = "0px";
+                inp.style.color = 'transparent';
+                inp.style.backgroundColor = 'transparent';
+                inp.style.border = 'none';
+                inp.style.outline = 'none';
+                inp.style.position = 'absolute';
+                inp.style.top = '0px';
+                inp.style.left = '0px';
+                inp.style.width = '0px';
+                inp.style.height = '0px';
                 inp.addEventListener(
                     'change',
                     function () {
@@ -1473,18 +1473,18 @@ NetsBloxMorph.prototype.projectMenu = function () {
                 myself.filePicker = null;
             }
             inp.type = 'file';
-            inp.style.color = "transparent";
-            inp.style.backgroundColor = "transparent";
-            inp.style.border = "none";
-            inp.style.outline = "none";
-            inp.style.position = "absolute";
-            inp.style.top = "0px";
-            inp.style.left = "0px";
-            inp.style.width = "0px";
-            inp.style.height = "0px";
-            inp.style.display = "none";
+            inp.style.color = 'transparent';
+            inp.style.backgroundColor = 'transparent';
+            inp.style.border = 'none';
+            inp.style.outline = 'none';
+            inp.style.position = 'absolute';
+            inp.style.top = '0px';
+            inp.style.left = '0px';
+            inp.style.width = '0px';
+            inp.style.height = '0px';
+            inp.style.display = 'none';
             inp.addEventListener(
-                "change",
+                'change',
                 function () {
                     document.body.removeChild(inp);
                     myself.filePicker = null;
@@ -1521,7 +1521,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
     }
     menu.addItem(
         shiftClicked ?
-                'Export project as plain text...' : 'Export project...',
+            'Export project as plain text...' : 'Export project...',
         function () {
             if (myself.projectName) {
                 myself.exportProject(myself.projectName, shiftClicked);
@@ -1543,7 +1543,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
             'show global custom block definitions/message types as XML' +
                 '\nin a new browser window'
         );
-    // Netsblox addition: end
+        // Netsblox addition: end
         menu.addItem(
             'Unused blocks...',
             function () {myself.removeUnusedBlocks(); },

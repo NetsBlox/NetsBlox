@@ -357,8 +357,8 @@ describe('active-room', function() {
     
         afterEach(function(done) {
             project.destroy()
-            .then(() => done())
-            .catch(done);
+                .then(() => done())
+                .catch(done);
         });
         
         describe('collaborators', function() {
@@ -439,7 +439,7 @@ describe('active-room', function() {
                     assert.equal(r.getRoleNames().length, 3);
                     done();
                 })
-                .catch(() => done());
+                    .catch(() => done());
             });
     
             it('should remove a role', function(done) {
@@ -447,7 +447,7 @@ describe('active-room', function() {
                     assert.equal(r.getRoleNames().length, 2);
                     done();
                 })
-                .catch(() => done());
+                    .catch(() => done());
             });
     
             it('should rename a role', function(done) {
@@ -455,7 +455,7 @@ describe('active-room', function() {
                     assert.equal(r.getRoleNames()[1], 'roleNew');
                     done();
                 })
-                .catch(() => done());
+                    .catch(() => done());
             });
         });
     });

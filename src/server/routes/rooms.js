@@ -165,7 +165,7 @@ module.exports = [
                     };
                     socket.send(msg);
                 }
-            );
+                );
             res.send('ok');
         }
     },
@@ -211,8 +211,8 @@ module.exports = [
 
             if (response) {
                 return Q(acceptInvitation(invite, socketId))
-                .then(project => res.status(200).send(project))
-                .fail(err => res.status(500).send(`ERROR: ${err}`));
+                    .then(project => res.status(200).send(project))
+                    .fail(err => res.status(500).send(`ERROR: ${err}`));
             } else {
                 res.sendStatus(200);
             }
@@ -366,7 +366,7 @@ module.exports = [
                     };
                     socket.send(msg);
                 }
-            );
+                );
             res.send('ok');
         }
     },

@@ -37,10 +37,10 @@ function availableStations(maxDistance, maxReadingMedian){
     if (!maxReadingMedian) maxReadingMedian = Infinity;
     let query = {distance: {$lte: maxDistance}, readingMedian: {$ne: null, $lte: maxReadingMedian}};
     return getStationsCol().find(query).toArray()
-    .then(stations => {
-        logger.info(`found ${stations.length} stations for query ${JSON.stringify(query)} `);
-        return stations;
-    });
+        .then(stations => {
+            logger.info(`found ${stations.length} stations for query ${JSON.stringify(query)} `);
+            return stations;
+        });
 }
 
 
@@ -56,14 +56,6 @@ function nearbyStations(lat, lon,  maxDistance){
         return stations;
     });
 } // end of nearbyStations
-
-function dynamicStations(){
-    const numSections = 160;
-    const perSection = 1;
-    return selectSectionBased(numSections, perSection).then(stations => {
-        return stations;
-    });
-}
 
 // need a way to make sure that the whole path is covered.
 // divide the path into sections (using min max lon + distance should be fine)

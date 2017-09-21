@@ -1,4 +1,4 @@
-/* globals expect, driver, MessageCreatorMorph, PushButtonMorph, NetsProcess*/
+/* globals expect, driver, NetsProcess, List*/
 describe('services', function() {
 
 

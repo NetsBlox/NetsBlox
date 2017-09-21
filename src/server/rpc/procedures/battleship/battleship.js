@@ -39,11 +39,11 @@ Battleship.prototype.start = function() {
         board;
 
     if (this._state._STATE !== BattleshipConstants.PLACING) {
-        return `Game has already started!`;
+        return 'Game has already started!';
     }
 
     if (!roles.length) {
-        return `Waiting on everyone! Place some ships!`;
+        return 'Waiting on everyone! Place some ships!';
     }
 
     for (var i = roles.length; i--;) {
@@ -73,7 +73,7 @@ Battleship.prototype.placeShip = function(ship, row, column, facing) {
     column--;
 
     if (this._state._STATE !== BattleshipConstants.PLACING) {
-        return `Cannot move ships after game has started`;
+        return 'Cannot move ships after game has started';
     }
 
     if (!DIRS[facing]) {

@@ -12,13 +12,13 @@
             blob.store(content.SourceCode),
             blob.store(content.Media)
         ])
-        .then(hashes => {
-            const [srcHash, mediaHash] = hashes;
+            .then(hashes => {
+                const [srcHash, mediaHash] = hashes;
 
-            content.SourceCode = srcHash;
-            content.Media = mediaHash;
-            return content;
-        });
+                content.SourceCode = srcHash;
+                content.Media = mediaHash;
+                return content;
+            });
     };
 
     const loadRoleContent = function(role) {
@@ -26,12 +26,12 @@
             blob.get(role.SourceCode),
             blob.get(role.Media)
         ])
-        .then(data => {
-            const [code, media] = data;
-            role.SourceCode = code;
-            role.Media = media;
-            return role;
-        });
+            .then(data => {
+                const [code, media] = data;
+                role.SourceCode = code;
+                role.Media = media;
+                return role;
+            });
     };
 
     const clean = function(project, logger) {

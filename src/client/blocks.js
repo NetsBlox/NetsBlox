@@ -6,7 +6,7 @@
    ColorSlotMorph, TemplateSlotMorph, FunctionSlotMorph, ReporterSlotMorph,
    SymbolMorph, MorphicPreferences, contains, IDE_Morph, Costume, ScriptsMorph,
    MessageDefinitionBlock, RPCInputSlotMorph, SnapActions, MultiHintArgMorph,
-   PrototypeHatBlockMorph
+   PrototypeHatBlockMorph, CommandBlockMorph
    */
 
 BlockMorph.prototype.setSpec = function (spec, silently) {
@@ -802,7 +802,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part = new ReporterSlotMorph(true);
             break;
 
-    // code mapping (experimental)
+            // code mapping (experimental)
 
         case '%codeListPart':
             part = new InputSlotMorph(
@@ -829,7 +829,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             );
             break;
 
-    // symbols:
+            // symbols:
 
         case '%turtle':
             part = new SymbolMorph('turtle');
@@ -837,7 +837,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.color = new Color(255, 255, 255);
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                new Point() : this.embossing;
             part.drawNew();
             break;
         case '%turtleOutline':
@@ -847,7 +847,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isProtectedLabel = true; // doesn't participate in zebraing
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                new Point() : this.embossing;
             part.drawNew();
             break;
         case '%clockwise':
@@ -857,7 +857,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isProtectedLabel = false; // zebra colors
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                new Point() : this.embossing;
             part.drawNew();
             break;
         case '%counterclockwise':
@@ -867,7 +867,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isProtectedLabel = false; // zebra colors
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                new Point() : this.embossing;
             part.drawNew();
             break;
         case '%greenflag':
@@ -877,7 +877,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isProtectedLabel = true; // doesn't participate in zebraing
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                new Point() : this.embossing;
             part.drawNew();
             break;
         case '%stop':
@@ -887,7 +887,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isProtectedLabel = true; // doesn't participate in zebraing
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                new Point() : this.embossing;
             part.drawNew();
             break;
         case '%pause':
@@ -897,7 +897,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isProtectedLabel = true; // doesn't participate in zebraing
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                new Point() : this.embossing;
             part.drawNew();
             break;
         default:
@@ -906,7 +906,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
     } else if (spec[0] === '$' &&
             spec.length > 1 &&
             this.selector !== 'reportGetVar') {
-/*
+        /*
         // allow costumes as label symbols
         // has issues when loading costumes (asynchronously)
         // commented out for now
@@ -938,7 +938,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isBold = true;
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                new Point() : this.embossing;
             part.drawNew();
             return part;
         }
@@ -952,7 +952,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         part.isProtectedLabel = tokens.length > 2; // zebra colors
         part.shadowColor = this.color.darker(this.labelContrast);
         part.shadowOffset = MorphicPreferences.isFlat ?
-                new Point() : this.embossing;
+            new Point() : this.embossing;
         part.drawNew();
     } else {
         part = new StringMorph(
@@ -963,7 +963,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             false, // italic
             false, // isNumeric
             MorphicPreferences.isFlat ?
-                    new Point() : this.embossing, // shadowOffset
+                new Point() : this.embossing, // shadowOffset
             this.color.darker(this.labelContrast), // shadowColor
             new Color(255, 255, 255), // color
             this.labelFontName // fontName
