@@ -165,8 +165,7 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
             newPt.push(pt[0][1]);
             newPt.push(pt[1][1]);
             return newPt;
-        })
-        console.log('line is', line);
+        });
         lines.push(line);
     });
 
@@ -184,11 +183,11 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
     };
 
     return chart.draw.call(this, lines, _.toPairs(opts));
-}
+};
 
 chart.drawBarChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
     return chart.drawLineChart.apply(this, arguments);
-}
+};
 
 chart.defaultOptions = function(){
     return rpcUtils.jsonToSnapList(defaults);
