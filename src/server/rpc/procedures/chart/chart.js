@@ -15,9 +15,9 @@ const defaults = {
     yLabel: undefined,
     xTicks: undefined,
     smooth: 'false',
-    timeSeriesAxis: undefined,
+    isTimeSeries: 'false',
     timeInputFormat: '%s',
-    timeOutputFormat: '%d/%m'
+    timeDisplayFormat: '%H:%M'
 };
 
 // calculates data stats
@@ -111,11 +111,11 @@ chart.draw = function(lines, options){
     opts.yRange = {min: stats.y.min - relativePadding.y, max: stats.y.max + relativePadding.y};
     if (options.xRange.length === 2) opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
     if (options.yRange.length === 2) opts.yRange = {min: options.yRange[0], max: options.yRange[1]};
-    if (options.timeSeriesAxis) {
+    if (options.isTimeSeries == 'true') {
         opts.timeSeries = {
-            axis: options.timeSeriesAxis,
+            axis: 'x',
             inputFormat: options.timeInputFormat,
-            outputFormat: options.timeOutputFormat
+            outputFormat: options.timeDisplayFormat
         };
     }
     
