@@ -101,6 +101,8 @@
 
         setRoles(roles) {
             if (this.isDeleted()) return Promise.reject('project has been deleted!');
+            if (!roles.length) return Q();
+
             const query = {$set: {}};
 
             return Q.all(roles.map(role => storeRoleBlob(role)))
