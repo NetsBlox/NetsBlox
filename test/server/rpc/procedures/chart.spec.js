@@ -7,7 +7,10 @@ describe('chart', function() {
     
     utils.verifyRPCInterfaces(chart,[
         ['draw', ['lines', 'options']],
-        ['defaultOptions', []]
+        ['defaultOptions', []],
+        ['drawBarChart', ['dataset', 'xAxisTag', 'yAxisTag','datasetTag', 'title']],
+        ['drawLineChart', ['dataset', 'xAxisTag', 'yAxisTag','datasetTag', 'title']]
+
     ]);
 
     it('should have stable options objects', function(){
@@ -22,9 +25,9 @@ describe('chart', function() {
             'yLabel',
             'xTicks',
             'smooth',
-            'timeSeriesAxis',
+            'isTimeSeries',
             'timeInputFormat',
-            'timeOutputFormat'
+            'timeDisplayFormat'
         ];
         assert.deepEqual(opts.map(i => i[0]), expectedOpts);
     });
