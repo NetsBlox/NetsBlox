@@ -1,25 +1,25 @@
 /* eslint-disable no-console*/
-var Storage = require('../src/server/storage/storage'),
+require('epipebomb')();  // Allow piping to 'head'
+
+var Command = require('commander').Command,
+    Storage = require('../src/server/storage/storage'),
     Logger = require('../src/server/logger'),
     extractRpcs = require('../src/server/server-utils.js').extractRpcs,
     Q = require('q'),
     blob = require('../src/server/storage/blob-storage.js'),
     Projects = require('../src/server/storage/projects'),
     logger = new Logger('netsblox:cli:projects'),
+    program = new Command(),
     storage = new Storage(logger);
+
+program
+    .arguments('')
+    .parse(process.argv)
 
 // in: project obj
 // out: promise of used services
 const checkForServices = project => {
     
-    // project.betterRoles = Object.keys(project.roles).map(roleName => {
-    //     let role = project.roles[roleName];
-    //     role.Thumbnail = null; // remove thumbnails TEMP
-    //     role.name = roleName;
-    //     return role;
-    // })
-    // console.log(Object.keys(project));
-
     return project.getRoles().then(roles => {
         // find services
         let services = roles.map(role => {
@@ -37,7 +37,6 @@ const checkForServices = project => {
         return triple;
     });
 };
-
 
 storage.connect()
     .then(() => {
