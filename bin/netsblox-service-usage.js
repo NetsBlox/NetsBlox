@@ -25,7 +25,7 @@ const checkForServices = project => {
         let services = roles.map(role => {
             return extractRpcs(role.SourceCode);
         });
-        services = services.reduce((agr, cur) => agr.concat(cur));
+        services = services.reduce((agr, cur) => agr.concat(cur), []);
 
         let triple = {
             projectName: project.name,
