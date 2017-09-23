@@ -37,10 +37,10 @@ function calcRanges(lines){
         // min max of y
         line = _.sortBy(line, (pt => pt[1]));
         let {0 : ymin , [l - 1] : ymax} = line.map(pt => pt[1]);
-        if( xmin < stats.x.min ) stats.x.min = parseFloat(xmin);
-        if( xmax > stats.x.max ) stats.x.max = parseFloat(xmax);
-        if( ymin < stats.y.min ) stats.y.min = parseFloat(ymin);
-        if( ymax > stats.y.max ) stats.y.max = parseFloat(ymax);
+        if( xmin < stats.x.min ) stats.x.min = xmin;
+        if( xmax > stats.x.max ) stats.x.max = xmax;
+        if( ymin < stats.y.min ) stats.y.min = ymin;
+        if( ymax > stats.y.max ) stats.y.max = ymax;
     });
     Object.keys(stats).forEach( key => {
         stats[key].range = stats[key].max - stats[key].min;
@@ -54,21 +54,27 @@ function prepareData(input) {
         chart._logger.trace('one line input detected');
         input = [input];
     }
-    input.forEach( line => {
+    input = input.map( line => {
         if (!Array.isArray(line)) {
             chart._logger.warn('input is not an array!', line);
             throw 'chart input is not an array';
         }
-        line.forEach( pt => {
+        line.map(pt => {
             let [x,y] = pt;
-            if (!Array.isArray(pt) || ! x || ! y) {
+            if (!Array.isArray(pt)) {
                 chart._logger.warn('input is not an array!', pt);
                 throw 'all input points should be in [x,y] form.';
             }
+            pt[0] = parseFloat(pt[0]);
+            pt[1] = parseFloat(pt[1]);
+            if ( !x || !y || isNaN(x) || isNaN(y) ) throw 'all [x,y] pairs should be numbers';
+            return pt;
         });
+        return line;
     });
     return input;
 }
+
 
 // generate gnuplot friendly line objects
 function genGnuData(lines, lineTitles, lineTypes, smoothing){
