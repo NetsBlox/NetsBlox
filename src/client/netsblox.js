@@ -357,7 +357,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
 };
 
 NetsBloxMorph.prototype.resourceURL = function () {
-    return 'api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
+    return '/api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
 };
 
 NetsBloxMorph.prototype.clearProject = function () {
