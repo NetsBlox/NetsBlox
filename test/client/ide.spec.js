@@ -37,6 +37,10 @@ describe('ide', function() {
             driver.reset(done);
         });
 
+        afterEach(function() {
+            driver.ide().saveSetting('language', 'en');
+        });
+
         it('should not change replay length on lang change', function(done) {
             SnapActions.addVariable('testVar', true)
                 .accept(() => {
@@ -92,6 +96,27 @@ describe('ide', function() {
                         }
                     }, 50);
                 });
+        });
+
+        it.only('should have unique sprite ids after changing the lang', function(done) {
+            var ide = driver.ide();
+
+            // Change the language and create a sprite
+            ide.setLanguage('hu');
+            var validate = function() {
+                var spriteIds = ide.sprites.asArray().map(sprite => sprite.id);
+                try {
+                    expect(spriteIds[0]).to.not.be(spriteIds[1]);
+                    done();
+                } catch (e) {
+                    done('Duplicate sprite ids after changing the language!');
+                }
+            };
+
+            setTimeout(() => {
+                ide.addNewSprite();
+                setTimeout(validate, 100);
+            }, 150);
         });
     });
 });
