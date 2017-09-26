@@ -11,7 +11,7 @@ const Storage = require('../src/server/storage/storage'),
     Command = require('commander').Command,
     program = new Command();
 
-program.arguments('<group>');
+program.arguments('<name> <email> <password>');
 program.parse(process.argv);
 
 if (program.args.length !== 3) {
