@@ -109,4 +109,8 @@
         return collection.deleteMany({});
     };
 
+    UserActionData.getCollection = function() {
+        return collection;
+    };
+
 })(exports);
