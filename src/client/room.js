@@ -436,8 +436,7 @@ RoomMorph.prototype.validateRoleName = function (name, cb) {
 
 RoomMorph.prototype.createNewRole = function () {
     // Ask for a new role name
-    var myself = this,
-        world = this.world();
+    var myself = this;
 
     this.ide.prompt('New Role Name', function (roleName) {
         myself.validateRoleName(roleName, function() {
