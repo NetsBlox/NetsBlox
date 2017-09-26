@@ -76,6 +76,7 @@ SnapDriver.prototype.selectSprite = function(name) {
 SnapDriver.prototype.selectTab = function(category) {
     this.ide().spriteBar.tabBar.tabTo(category);
 };
+
 // Add block by spec
 SnapDriver.prototype.addBlock = function(spec, position) {
     var block = typeof spec === 'string' ?
@@ -83,4 +84,9 @@ SnapDriver.prototype.addBlock = function(spec, position) {
     var sprite = this.ide().currentSprite;
 
     return SnapActions.addBlock(block, sprite.scripts, position);
+};
+
+// morphic interactions
+SnapDriver.prototype.click = function(morph) {
+    morph.mouseClickLeft();
 };

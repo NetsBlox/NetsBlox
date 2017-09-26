@@ -100,9 +100,43 @@ describe('ide', function() {
             driver.reset();
         });
 
+        describe('naming project with .', function() {
+            it('should not allow from room tab', function() {
+                driver.selectTab('room');
+                var roomEditor = driver.ide().spriteEditor.room;
+                var name = 'my.project';
+                driver.click(roomEditor.titleBox);
+
+                var dialog = driver.dialog();
+                dialog.body.setContents(name);
+                dialog.ok();
+
+                dialog = driver.dialog();
+                expect(dialog).to.not.be(null);
+
+                setTimeout(() => {
+                    expect(driver.ide().projectName).to.not.be(name);
+                }, 50);
+            });
+        });
+
         describe('naming project with @ symbol', function() {
             it('should not allow from room tab', function() {
-                // TODO
+                driver.selectTab('room');
+                var roomEditor = driver.ide().spriteEditor.room;
+                var name = 'my@project';
+                driver.click(roomEditor.titleBox);
+
+                var dialog = driver.dialog();
+                dialog.body.setContents(name);
+                dialog.ok();
+
+                dialog = driver.dialog();
+                expect(dialog).to.not.be(null);
+
+                setTimeout(() => {
+                    expect(driver.ide().projectName).to.not.be(name);
+                }, 50);
             });
 
             it('should not allow using "save as"', function() {
@@ -110,40 +144,47 @@ describe('ide', function() {
             });
         });
 
-        it('should not allow naming role with @ symbol', function() {
-            driver.selectTab('room');
-            var roleLabel = driver.ide().spriteEditor.room.roleLabels.myRole._label;
-            var name = 'role@name';
+        ['.', '@'].forEach(badChar => {
+            it('should not allow renaming role with ' + badChar, function() {
+                driver.selectTab('room');
+                var roleLabel = driver.ide().spriteEditor.room.roleLabels.myRole._label;
+                var name = 'role' + badChar + 'name';
 
-            roleLabel.mouseClickLeft();
-            var dialog = driver.dialog();
-            dialog.body.setContents(name);
-            dialog.ok();
+                roleLabel.mouseClickLeft();
+                var dialog = driver.dialog();
+                dialog.body.setContents(name);
+                dialog.ok();
 
-            dialog = driver.dialog();
-            expect(dialog).to.not.be(null);
-            // verify that the role name didn't change
-            setTimeout(() => {
-                expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
-            }, 50);
+                dialog = driver.dialog();
+                expect(dialog).to.not.be(null);
+                // verify that the role name didn't change
+                setTimeout(() => {
+                    expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+                }, 50);
+            });
         });
 
-        it('should not allow naming role with .', function() {
-            driver.selectTab('room');
-            var roleLabel = driver.ide().spriteEditor.room.roleLabels.myRole._label;
-            var name = 'role.name';
+        describe('creating role', function() {
+            ['.', '@'].forEach(badChar => {
+                it('should not allow naming role with ' + badChar, function() {
+                    driver.selectTab('room');
 
-            roleLabel.mouseClickLeft();
-            var dialog = driver.dialog();
-            dialog.body.setContents(name);
-            dialog.ok();
+                    var addRoleBtn = driver.ide().spriteEditor.addRoleBtn;
+                    var name = 'role' + badChar + 'name';
+                    driver.click(addRoleBtn);
 
-            dialog = driver.dialog();
-            expect(dialog).to.not.be(null);
-            // verify that the role name didn't change
-            setTimeout(() => {
-                expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
-            }, 50);
+                    var dialog = driver.dialog();
+                    dialog.body.setContents(name);
+                    dialog.ok();
+
+                    dialog = driver.dialog();
+                    expect(dialog).to.not.be(null);
+                    // verify that the role name didn't change
+                    setTimeout(() => {
+                        expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+                    }, 50);
+                });
+            });
         });
     });
 });
