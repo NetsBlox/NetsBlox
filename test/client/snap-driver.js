@@ -3,6 +3,7 @@ function SnapDriver(world) {
     this._world = world;
 }
 
+// Convenience Getters
 SnapDriver.prototype.world = function() {
     return this._world;
 };
@@ -15,6 +16,15 @@ SnapDriver.prototype.palette = function() {
     return this.world().children[0].palette;
 };
 
+SnapDriver.prototype.dialog = function() {
+    var len = this.world().children.length;
+    if (len > 1) {
+        return this.world().children[len-1];
+    }
+    return null;
+};
+
+// Controlling the IDE
 SnapDriver.prototype.reset = function(cb) {
     var world = this.world();
 
@@ -37,6 +47,9 @@ SnapDriver.prototype.newProject = function() {
     var uuid = this.ide().sockets.uuid;
     room.ownerId = uuid;
     room.roles = room.getDefaultRoles();
+
+    var dialogs = this.world().children.slice(1);
+    dialogs.forEach(dialog => dialog.destroy());
 };
 
 SnapDriver.prototype.selectCategory = function(cat) {
@@ -60,6 +73,10 @@ SnapDriver.prototype.selectSprite = function(name) {
     return ide.selectSprite(sprite);
 };
 
+SnapDriver.prototype.selectTab = function(category) {
+    this.ide().spriteBar.tabBar.tabTo(category);
+};
+// Add block by spec
 SnapDriver.prototype.addBlock = function(spec, position) {
     var block = typeof spec === 'string' ?
         SpriteMorph.prototype.blockForSelector(spec, true) : spec;

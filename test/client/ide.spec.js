@@ -94,4 +94,56 @@ describe('ide', function() {
                 });
         });
     });
+
+    describe.only('name', function() {
+        beforeEach(function() {
+            driver.reset();
+        });
+
+        describe('naming project with @ symbol', function() {
+            it('should not allow from room tab', function() {
+                // TODO
+            });
+
+            it('should not allow using "save as"', function() {
+                // TODO
+            });
+        });
+
+        it('should not allow naming role with @ symbol', function() {
+            driver.selectTab('room');
+            var roleLabel = driver.ide().spriteEditor.room.roleLabels.myRole._label;
+            var name = 'role@name';
+
+            roleLabel.mouseClickLeft();
+            var dialog = driver.dialog();
+            dialog.body.setContents(name);
+            dialog.ok();
+
+            dialog = driver.dialog();
+            expect(dialog).to.not.be(null);
+            // verify that the role name didn't change
+            setTimeout(() => {
+                expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+            }, 50);
+        });
+
+        it('should not allow naming role with .', function() {
+            driver.selectTab('room');
+            var roleLabel = driver.ide().spriteEditor.room.roleLabels.myRole._label;
+            var name = 'role.name';
+
+            roleLabel.mouseClickLeft();
+            var dialog = driver.dialog();
+            dialog.body.setContents(name);
+            dialog.ok();
+
+            dialog = driver.dialog();
+            expect(dialog).to.not.be(null);
+            // verify that the role name didn't change
+            setTimeout(() => {
+                expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+            }, 50);
+        });
+    });
 });
