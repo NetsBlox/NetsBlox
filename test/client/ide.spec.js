@@ -95,57 +95,59 @@ describe('ide', function() {
         });
     });
 
-    describe.only('name', function() {
+    describe('name', function() {
+        const BAD_CHARS = ['.', '@'];
         beforeEach(function() {
             driver.reset();
         });
 
-        describe('naming project with .', function() {
-            it('should not allow from room tab', function() {
-                driver.selectTab('room');
-                var roomEditor = driver.ide().spriteEditor.room;
-                var name = 'my.project';
-                driver.click(roomEditor.titleBox);
+        BAD_CHARS.forEach(badChar => {
+            describe('naming project with ' + badChar + ' symbol', function() {
+                it('should not allow from room tab', function(done) {
+                    driver.selectTab('room');
+                    var roomEditor = driver.ide().spriteEditor.room;
+                    var name = 'my' + badChar + 'project';
+                    driver.click(roomEditor.titleBox);
 
-                var dialog = driver.dialog();
-                dialog.body.setContents(name);
-                dialog.ok();
+                    var dialog = driver.dialog();
+                    dialog.body.setContents(name);
+                    dialog.ok();
 
-                dialog = driver.dialog();
-                expect(dialog).to.not.be(null);
+                    dialog = driver.dialog();
+                    expect(dialog).to.not.be(null);
 
-                setTimeout(() => {
-                    expect(driver.ide().projectName).to.not.be(name);
-                }, 50);
+                    setTimeout(() => {
+                        try {
+                            expect(driver.ide().room.name).to.not.be(name);
+                            done();
+                        } catch (e) {
+                            done(e);
+                        }
+                    }, 50);
+                });
+
+                it('should not allow using "save as"', function(done) {
+                    driver.ide().saveProjectsBrowser();
+                    var dialog = driver.dialog();
+                    var name = 'my' + badChar + 'project';
+                    dialog.nameField.setContents(name);
+                    dialog.accept();
+
+                    dialog = driver.dialog();
+                    expect(dialog).to.not.be(null);
+
+                    setTimeout(() => {
+                        try {
+                            expect(driver.ide().room.name).to.not.be(name);
+                            done();
+                        } catch (e) {
+                            done(e);
+                        }
+                    }, 50);
+                });
             });
-        });
 
-        describe('naming project with @ symbol', function() {
-            it('should not allow from room tab', function() {
-                driver.selectTab('room');
-                var roomEditor = driver.ide().spriteEditor.room;
-                var name = 'my@project';
-                driver.click(roomEditor.titleBox);
-
-                var dialog = driver.dialog();
-                dialog.body.setContents(name);
-                dialog.ok();
-
-                dialog = driver.dialog();
-                expect(dialog).to.not.be(null);
-
-                setTimeout(() => {
-                    expect(driver.ide().projectName).to.not.be(name);
-                }, 50);
-            });
-
-            it('should not allow using "save as"', function() {
-                // TODO
-            });
-        });
-
-        ['.', '@'].forEach(badChar => {
-            it('should not allow renaming role with ' + badChar, function() {
+            it('should not allow renaming role with ' + badChar, function(done) {
                 driver.selectTab('room');
                 var roleLabel = driver.ide().spriteEditor.room.roleLabels.myRole._label;
                 var name = 'role' + badChar + 'name';
@@ -159,14 +161,19 @@ describe('ide', function() {
                 expect(dialog).to.not.be(null);
                 // verify that the role name didn't change
                 setTimeout(() => {
-                    expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+                    try {
+                        expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+                        done();
+                    } catch (e) {
+                        done(e);
+                    }
                 }, 50);
             });
         });
 
         describe('creating role', function() {
-            ['.', '@'].forEach(badChar => {
-                it('should not allow naming role with ' + badChar, function() {
+            BAD_CHARS.forEach(badChar => {
+                it('should not allow naming role with ' + badChar, function(done) {
                     driver.selectTab('room');
 
                     var addRoleBtn = driver.ide().spriteEditor.addRoleBtn;
@@ -181,7 +188,12 @@ describe('ide', function() {
                     expect(dialog).to.not.be(null);
                     // verify that the role name didn't change
                     setTimeout(() => {
-                        expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+                        try {
+                            expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+                            done();
+                        } catch (e) {
+                            done(e);
+                        }
                     }, 50);
                 });
             });
