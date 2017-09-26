@@ -1,4 +1,5 @@
 const utils = require('../../../../../src/server/rpc/procedures/utils/index'),
+    _ = require('lodash'),
     assert = require('assert');
 
 describe('encodeQueryData', () => {
@@ -26,8 +27,8 @@ describe('snap structure creation', function() {
 
 
     it('should accept falsy values', function() {
-        assert.deepEqual(utils.jsonToSnapList(null), []);
-        assert.deepEqual(utils.jsonToSnapList(undefined), []);
+        assert.deepEqual(utils.jsonToSnapList(null), undefined);
+        assert.deepEqual(utils.jsonToSnapList(undefined), undefined);
         assert.deepEqual(utils.jsonToSnapList({}), []);
         assert.deepEqual(utils.jsonToSnapList([]), []);
     });
