@@ -36,8 +36,6 @@ storage.connect()
 
             var roles = Object.keys(doc.roles).map(r => doc.roles[r]).filter(role => !!role);
             var hashes = roles.map(role => role.SourceCode).concat(roles.map(role => role.Media));
-            // TODO: handle duplicates?
-            //hashes.forEach(hash => console.log(hash));
             hashes.forEach(hash => count(hash));
         }, () => {
             // Check the recorded actions...
