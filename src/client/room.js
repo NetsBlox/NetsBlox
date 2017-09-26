@@ -552,17 +552,16 @@ RoomMorph.prototype.setRoleName = function(role) {
     }
 };
 
-// FIXME: create ide.confirm
 RoomMorph.prototype.evictUser = function (user, role) {
     var myself = this;
     SnapCloud.evictUser(
-        function(err) {
-            myself.ide.showMessage(err || 'evicted ' + user + '!');
+        function() {
+            myself.ide.showMessage('evicted ' + user.username + '!');
         },
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         },
-        [user, role, this.ownerId, this.name]
+        [user.uuid, role, this.ownerId, this.name]
     );
 };
 
