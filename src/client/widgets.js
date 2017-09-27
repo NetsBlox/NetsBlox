@@ -1,4 +1,6 @@
-/* globals DialogBoxMorph, TextMorph, MorphicPreferences, Color, Point*/
+/* globals DialogBoxMorph, TextMorph, MorphicPreferences, Color, Point,
+   InputFieldMorph, detect, localize, AlignmentMorph, PushButtonMorph,
+   ToggleMorph, SpeechBubbleMorph*/
 DialogBoxMorph.prototype.ask = function (
     title,
     textString,
