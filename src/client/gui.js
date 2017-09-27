@@ -613,6 +613,17 @@ ProjectDialogMorph.prototype.saveProject = function () {
         myself = this;
 
     this.ide.projectNotes = notes || this.ide.projectNotes;
+    // NetsBlox changes - start
+    if (/[\.@]+/.test(name)) {
+        this.ide.inform(
+            'Invalid Project Name',
+            'Could not save project because\n' +
+            'the provided name contains illegal characters.',
+            this.world()
+        );
+        return;
+    }
+    // NetsBlox changes - end
     if (name) {
         if (this.source === 'cloud') {
             if (detect(
