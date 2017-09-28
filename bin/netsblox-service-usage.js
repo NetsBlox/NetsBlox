@@ -6,7 +6,6 @@ var Command = require('commander').Command,
     Logger = require('../src/server/logger'),
     extractRpcs = require('../src/server/server-utils.js').extractRpcs,
     Q = require('q'),
-    blob = require('../src/server/storage/blob-storage.js'),
     Projects = require('../src/server/storage/projects'),
     logger = new Logger('netsblox:cli:projects'),
     program = new Command(),
@@ -14,7 +13,7 @@ var Command = require('commander').Command,
 
 program
     .arguments('')
-    .parse(process.argv)
+    .parse(process.argv);
 
 // in: project obj
 // out: promise of used services
