@@ -130,7 +130,6 @@ if(!process.env.GOOGLE_GEOCODING_API) {
             requestOptions.qs.keyword = keyword;
         }
 
-        trace('Doing a nearby search', requestOptions);
         return rp(requestOptions).then(res=>{
             let places = res.results;
             places = places.map(place => {
