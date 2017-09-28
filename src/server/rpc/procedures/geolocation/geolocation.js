@@ -9,6 +9,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         CacheManager = require('cache-manager'),
         NodeGeocoder = require('node-geocoder'),
         rp = require('request-promise'),
+        jsonQuery = require('json-query'),
         trace = debug('netsblox:rpc:geolocation:trace');
 
     // init
@@ -23,33 +24,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
 
     // helper to filter json down
     function queryJson(json, query){
-        // assuming that there is no digit in attribute names
-        if (typeof(json) === 'string') {
-            json = JSON.parse(json);
-        }
-
-        if (!query) return json;
-
-        let queryComponents = [];
-        let res = json;
-
-        query.split('.').forEach(item => {
-            let searchRes = /\d+/g.exec(item);
-            if (searchRes) {
-                queryComponents.push(item.substring(0,searchRes.index -1));
-                queryComponents.push(searchRes[0]);
-            }else {
-                queryComponents.push(item);
-            }
-        });
-        queryComponents.shift(); // remove the first item which is always empty
-        queryComponents.forEach(q=>{
-            if (res[q]){
-                res = res[q];
-            } else {
-                res = null;
-            }
-        });
+        let res =  jsonQuery(query, {data: json}).value;
         if (typeof(res) === 'object') {
             res = JSON.stringify(res);
         }
