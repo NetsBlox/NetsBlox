@@ -415,8 +415,12 @@
         collection = db.collection('projects');
     };
 
+    ProjectStorage.getRawProject = function (username, projectName) {
+        return collection.findOne({owner: username, name: projectName});
+    };
+
     ProjectStorage.get = function (username, projectName) {
-        return collection.findOne({owner: username, name: projectName})
+        return ProjectStorage.getRawProject(username, projectName)
             .then(data => {
                 var params = {
                     logger: logger,
