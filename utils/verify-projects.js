@@ -13,20 +13,16 @@ var Command = require('commander').Command,
     program = new Command();
 
 program
+    .option('-q, --quiet', 'print only missing hashes')
+    .option('-a, --all', 'check projects and recorded actions')
     .parse(process.argv);
-
-let counts = {};
-const count = function(hash) {
-    counts[hash] = counts[hash] || 0;
-    counts[hash]++;
-};
 
 const isHash = val => typeof val === 'string' && val.length === 128;
 
 let missingBlobData = true;
 storage.connect()
     .then(() => {
-        // Check the project hashes
+        // Check the project quiet
         let collection = Projects.getCollection();
         return collection.find({}).forEach(doc => {
             if (!doc.roles) {
@@ -39,11 +35,19 @@ storage.connect()
             // Check the blob data exists
             roles.forEach(role => {
                 if (!blob.dataExists(role.SourceCode)) {
-                    console.log(`${role.ProjectName}@${doc.name}@${doc.owner} has invalid role source: ${role.SourceCode}`);
+                    if (program.quiet) {
+                        console.log(role.SourceCode);
+                    } else {
+                        console.log(`${role.ProjectName}@${doc.name}@${doc.owner} has invalid role source: ${role.SourceCode}`);
+                    }
                     missingBlobData = true;
                 }
                 if (!blob.dataExists(role.Media)) {
-                    console.log(`${doc.name}@${doc.owner} has invalid role media: ${role.ProjectName}`);
+                    if (program.quiet) {
+                        console.log(role.Media);
+                    } else {
+                        console.log(`${doc.name}@${doc.owner} has invalid role media: ${role.ProjectName}`);
+                    }
                     missingBlobData = true;
                 }
             });
@@ -54,13 +58,16 @@ storage.connect()
                 'action.args': {$gt: []}
             };
             return Actions.getCollection().find(query).forEach(doc => {
+                if (!program.all) return;
                 if (doc.action.args && doc.action.args.length && isHash(doc.action.args[0])) {
-                    console.log(`replay action missing blob data: ${doc.action.args[0]}`);
+                    if (program.quiet) {
+                        console.log(doc.action.args[0]);
+                    } else {
+                        console.log(`replay action missing blob data: ${doc.action.args[0]}`);
+                    }
                     missingBlobData = true;
-                    count(doc.action.args[0]);
                 }
             }, () => {
-                // print the counts
                 storage.disconnect();
                 if (!missingBlobData) console.log('no errors!');
                 process.exit(missingBlobData ? 1 : 0);
