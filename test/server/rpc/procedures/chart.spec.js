@@ -25,6 +25,7 @@ describe('chart', function() {
             'yLabel',
             'xTicks',
             'smooth',
+            'grid',
             'isTimeSeries',
             'timeInputFormat',
             'timeDisplayFormat'
