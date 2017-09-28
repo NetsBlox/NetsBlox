@@ -20,6 +20,10 @@ const optsDefaults = {
         inputFormat: undefined,
         outputFormat: undefined
     },
+    grid: {
+        lineType: 0,
+        lineWidth: 2
+    },
     title: null,
     outputName: false
 };

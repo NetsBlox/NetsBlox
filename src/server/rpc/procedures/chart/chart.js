@@ -15,6 +15,7 @@ const defaults = {
     yLabel: undefined,
     xTicks: undefined,
     smooth: 'false',
+    grid: 'line',
     isTimeSeries: 'false',
     timeInputFormat: '%s',
     timeDisplayFormat: '%H:%M'
@@ -122,6 +123,18 @@ chart.draw = function(lines, options){
             axis: 'x',
             inputFormat: options.timeInputFormat,
             outputFormat: options.timeDisplayFormat
+        };
+    }
+    // setup grid
+    if (options.grid === 'line'){
+        opts.grid = {
+            lineType: 1,
+            lineWidth: 1
+        };
+    }else if (options.grid === 'dot'){
+        opts.grid = {
+            lineType: 0,
+            lineWidth: 2
         };
     }
     
