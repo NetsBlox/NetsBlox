@@ -82,6 +82,20 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         return null;
     };
 
+    GeoLocationRPC.county = function (latitude, longitude) {
+        reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level2long');
+        return null;
+    };
+
+    GeoLocationRPC.state = function (latitude, longitude) {
+        reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level1long');
+        return null;
+    };
+
+    GeoLocationRPC.stateCode = function (latitude, longitude) {
+        reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level1short');
+        return null;
+    };
 
     // reverse geocode and send back a specific detail
     GeoLocationRPC.country = function (latitude, longitude) {
