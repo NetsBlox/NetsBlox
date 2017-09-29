@@ -29,14 +29,7 @@ SnapDriver.prototype.reset = function(cb) {
 };
 
 SnapDriver.prototype.newProject = function() {
-    this.ide().exitReplayMode();
-    this.ide().newProject();
-
-    // NetsBlox specific things
-    var room = this.ide().room;
-    var uuid = this.ide().sockets.uuid;
-    room.ownerId = uuid;
-    room.roles = room.getDefaultRoles();
+    return SnapActions.openProject();
 };
 
 SnapDriver.prototype.selectCategory = function(cat) {
