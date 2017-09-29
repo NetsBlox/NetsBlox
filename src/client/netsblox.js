@@ -1396,16 +1396,20 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addPair('Open...', 'openProjectsBrowser', '^O');
     if (!this.room.isGuest()) {
         menu.addPair('Save', 'save', '^S');
-    } else {
-        menu.addPair('Save a Copy', 'save', '^S');
+    } else if (SnapCloud.username) {  // save a copy option if logged in
+        menu.addPair('Save a Copy', 'saveACopy');
     }
-    menu.addItem('Save As...', function() {
-        if (myself.isPreviousVersion()) {
-            return myself.showMessage('Please exit replay mode before saving');
-        }
+    if (this.room.isOwner()) {
+        menu.addItem('Save As...', function() {
+            if (myself.isPreviousVersion()) {
+                return myself.showMessage('Please exit replay mode before saving');
+            }
 
-        myself.saveProjectsBrowser();
-    });
+            myself.saveProjectsBrowser();
+        });
+    } else if (this.room.isCollaborator()) {
+        menu.addPair('Save a Copy', 'saveACopy');
+    }
     if (shiftClicked) {
         menu.addItem(
             localize('Download replay events'),
@@ -1864,6 +1868,18 @@ NetsBloxMorph.prototype.save = function () {
     } else {
         this.saveProjectsBrowser();
     }
+};
+
+NetsBloxMorph.prototype.saveACopy = function () {
+    var myself = this;
+    if (this.isPreviousVersion()) {
+        return this.showMessage('Please exit replay mode before saving');
+    }
+
+    // Save the project!
+    SnapCloud.saveProjectCopy(function() {
+        myself.showMessage('Made your own copy and saved it to the cloud!', 2);
+    }, this.cloudError());
 };
 
 IDE_Morph.prototype.saveProjectToCloud = function (name) {
