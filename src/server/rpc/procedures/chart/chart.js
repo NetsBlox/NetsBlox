@@ -91,10 +91,13 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
 
 chart.draw = function(lines, options){
     options = _.fromPairs(options);
+    // process the options
     Object.keys(options).forEach(key => {
         if (options[key] === 'null' || options[key] === ''){
             delete options[key];
         }
+        if (options[key] === 'true') options[key] = true;
+        if (options[key] === 'false') options[key] = false;
     });
     options = _.merge({}, defaults, options || {});
 
@@ -102,6 +105,7 @@ chart.draw = function(lines, options){
     try {
         lines = prepareData(lines);
     } catch (e) {
+        this._logger.error(e)
         this.response.status(500).send(e);
         return null;
     }
