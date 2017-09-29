@@ -1783,7 +1783,9 @@ NetsBloxMorph.prototype.openRoomString = function (str) {
     });
 
     // load the given project
-    SnapActions.openProject(room.children[0].toString());
+    role = room.children[0];
+    var projectXml = role.children[0].toString() + role.children[1].toString();
+    SnapActions.openProject(projectXml);
 };
 
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
