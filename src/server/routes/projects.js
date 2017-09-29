@@ -247,13 +247,14 @@ module.exports = [
                 return res.status(500).send('ERROR: active room not found');
             }
 
-            // TODO: make a copy of the project for the given user and save it!
+            // make a copy of the project for the given user and save it!
             return Users.get(username)
                 .then(user => {
                     let name = `Copy of ${activeRoom.name}`;
                     let project = null;
                     return user.getNewName(name)
                         .then(_name => name = _name)
+                        .then(() => activeRoom.save())
                         .then(() => activeRoom.getProject().getCopy(user))
                         .then(_project => project = _project)
                         .then(() => project.setName(name))
