@@ -111,15 +111,19 @@ if(!process.env.GOOGLE_GEOCODING_API) {
     };
 
     // administrative levels
-    GeoLocationRPC.areaLevels = function (latitude, longitude) {
+    GeoLocationRPC.info = function (latitude, longitude) {
         return geocoder.reverse({lat: latitude, lon: longitude})
             .then( res => {
                 let levels = [];
+                res = res[0]; // we only care about the top result
                 // find and pull out all the provided admin levels
-                Object.keys(res[0].administrativeLevels).forEach(lvl => {
-                    levels.push(res[0].administrativeLevels[lvl])
+                levels.push(res.city);
+                Object.keys(res.administrativeLevels).forEach(lvl => {
+                    levels.push(res.administrativeLevels[lvl])
                 })
-                _.reverse(levels);
+                levels.push(res.country);
+                levels.push(res.countryCode);
+                _.reverse(levels); // reverse so that it's big to small
                 return levels;
             }).catch(err => {
                 error(err);

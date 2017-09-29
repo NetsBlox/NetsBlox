@@ -11,7 +11,7 @@ describe('geolocation', function() {
         ['state*', ['latitude', 'longitude']],
         ['stateCode*', ['latitude', 'longitude']],
         ['county*', ['latitude', 'longitude']],
-        ['areaLevels', ['latitude', 'longitude']],
+        ['info', ['latitude', 'longitude']],
         ['geolocate', ['address']]
     ]);
 });
