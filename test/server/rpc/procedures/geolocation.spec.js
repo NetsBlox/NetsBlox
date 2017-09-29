@@ -8,9 +8,10 @@ describe('geolocation', function() {
         ['city', ['latitude', 'longitude']],
         ['country', ['latitude', 'longitude']],
         ['countryCode', ['latitude', 'longitude']],
-        ['state', ['latitude', 'longitude']],
-        ['stateCode', ['latitude', 'longitude']],
-        ['county', ['latitude', 'longitude']],
+        ['state*', ['latitude', 'longitude']],
+        ['stateCode*', ['latitude', 'longitude']],
+        ['county*', ['latitude', 'longitude']],
+        ['areaLevels', ['latitude', 'longitude']],
         ['geolocate', ['address']]
     ]);
 });
