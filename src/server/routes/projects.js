@@ -7,6 +7,7 @@ var _ = require('lodash'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
     PublicProjects = require('../storage/public-projects'),
+    Users = require('../storage/users'),
     EXAMPLES = require('../examples'),
     debug = require('debug'),
     log = debug('netsblox:api:projects:log'),
@@ -226,6 +227,42 @@ module.exports = [
                 trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
                 return saveAs();
             }
+        }
+    },
+    {
+        Service: 'saveProjectCopy',
+        Parameters: 'socketId',
+        Method: 'Post',
+        Note: '',
+        middleware: ['hasSocket', 'isLoggedIn'],
+        Handler: function(req, res) {
+            var username = req.session.username,
+                {socketId} = req.body,
+                socket = SocketManager.getSocket(socketId),
+
+                activeRoom = socket._room;
+
+            if (!activeRoom) {
+                error(`Could not find active room for "${username}" - cannot save!`);
+                return res.status(500).send('ERROR: active room not found');
+            }
+
+            // TODO: make a copy of the project for the given user and save it!
+            return Users.get(username)
+                .then(user => {
+                    let name = `Copy of ${activeRoom.name}`;
+                    let project = null;
+                    return user.getNewName(name)
+                        .then(_name => name = _name)
+                        .then(() => activeRoom.getProject().getCopy(user))
+                        .then(_project => project = _project)
+                        .then(() => project.setName(name))
+                        .then(() => project.persist())
+                        .then(() => {
+                            trace(`${username} saved a copy of project: ${name}`);
+                            res.sendStatus(200);
+                        });
+                });
         }
     },
     {
