@@ -109,17 +109,18 @@ SnapActions.recordActionNB = function(action) {
     socket.sendMessage(msg);
 };
 
-SnapActions.loadProject = function() {
-    var event;
+// TODO: change this...
+//SnapActions.loadProject = function() {
+    //var event;
 
-    this.__sessionId = Date.now();
+    //this.__sessionId = Date.now();
 
-    // Send the project state
-    event = ActionManager.prototype.loadProject.apply(this, arguments);
-    this.recordActionNB(event);
+    //// Send the project state
+    //event = ActionManager.prototype.loadProject.apply(this, arguments);
+    //this.recordActionNB(event);
 
-    return event;
-};
+    //return event;
+//};
 
 SnapActions.completeAction = function(error) {
     if (error) {
