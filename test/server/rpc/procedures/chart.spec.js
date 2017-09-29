@@ -24,6 +24,7 @@ describe('chart', function() {
             'xLabel',
             'yLabel',
             'xTicks',
+            'isCategorical',
             'smooth',
             'grid',
             'isTimeSeries',
