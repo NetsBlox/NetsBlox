@@ -83,14 +83,15 @@ var getArgumentsFor = function(fn) {
 
 // given a project source code returns an array of used services as tags.
 var extractRpcs = function(projectXml){
-    let rpcs = [];
+    let services = [];
     let foundRpcs = projectXml.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/g);
     if (foundRpcs) {
         foundRpcs.forEach(txt=>{
-            rpcs.push(txt.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/)[1]);
+            let match = txt.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/);
+            services.push(match[1]);
         });                
     }
-    return rpcs;
+    return services;
 };
 
 var computeAspectRatioPadding = function(width, height, ratio){
