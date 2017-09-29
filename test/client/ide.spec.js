@@ -1,4 +1,4 @@
-/*globals driver, expect, SnapUndo, SnapActions */
+/*globals driver, expect, SnapUndo, SnapActions, SnapCloud */
 describe('ide', function() {
     before(function(done) {
         driver.reset(done);
@@ -198,5 +198,36 @@ describe('ide', function() {
                 });
             });
         });
+    });
+
+    describe.only('saveACopy', function() {
+        let username;
+        before(function(done) {
+            driver.reset(function() {
+                var ide = driver.ide();
+                username = SnapCloud.username;
+                SnapCloud.username = 'test';
+
+                ide.room.collaborators.push(SnapCloud.username);
+                ide.room.ownerId = 'otherUser';
+                done();
+            });
+        });
+
+        after(function() {
+            SnapCloud.username = username;
+        });
+
+        it('should have option to saveACopy if collaborator', function() {
+            var ide = driver.ide();
+
+            // Click the project menu
+            driver.click(ide.controlBar.projectButton);
+            var dialog = driver.dialog();
+            var saveACopyBtn = dialog.items.find(item => item[1] === 'saveACopy');
+            expect(saveACopyBtn).to.not.be(undefined);
+        });
+
+        // TODO
     });
 });
