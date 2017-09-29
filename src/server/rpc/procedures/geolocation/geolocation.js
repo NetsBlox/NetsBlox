@@ -119,8 +119,8 @@ if(!process.env.GOOGLE_GEOCODING_API) {
                 // find and pull out all the provided admin levels
                 levels.push(res.city);
                 Object.keys(res.administrativeLevels).forEach(lvl => {
-                    levels.push(res.administrativeLevels[lvl])
-                })
+                    levels.push(res.administrativeLevels[lvl]);
+                });
                 levels.push(res.country);
                 levels.push(res.countryCode);
                 _.reverse(levels); // reverse so that it's big to small
@@ -128,7 +128,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
             }).catch(err => {
                 error(err);
                 throw(err);
-            })
+            });
     };
 
     // find places near a coordinate (20 reults max)
