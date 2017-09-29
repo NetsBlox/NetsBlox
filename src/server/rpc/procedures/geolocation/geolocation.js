@@ -9,6 +9,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         CacheManager = require('cache-manager'),
         NodeGeocoder = require('node-geocoder'),
         rp = require('request-promise'),
+        _ = require('lodash'),
         jsonQuery = require('json-query'),
         trace = debug('netsblox:rpc:geolocation:trace');
 
@@ -82,17 +83,17 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         return null;
     };
 
-    GeoLocationRPC.county = function (latitude, longitude) {
+    GeoLocationRPC['county*'] = function (latitude, longitude) {
         reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level2long');
         return null;
     };
 
-    GeoLocationRPC.state = function (latitude, longitude) {
+    GeoLocationRPC['state*'] = function (latitude, longitude) {
         reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level1long');
         return null;
     };
 
-    GeoLocationRPC.stateCode = function (latitude, longitude) {
+    GeoLocationRPC['stateCode*'] = function (latitude, longitude) {
         reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level1short');
         return null;
     };
@@ -107,6 +108,23 @@ if(!process.env.GOOGLE_GEOCODING_API) {
     GeoLocationRPC.countryCode = function (latitude, longitude) {
         reverseGeocode(latitude, longitude, this.response, '.countryCode');
         return null;
+    };
+
+    // administrative levels
+    GeoLocationRPC.areaLevels = function (latitude, longitude) {
+        return geocoder.reverse({lat: latitude, lon: longitude})
+            .then( res => {
+                let levels = [];
+                // find and pull out all the provided admin levels
+                Object.keys(res[0].administrativeLevels).forEach(lvl => {
+                    levels.push(res[0].administrativeLevels[lvl])
+                })
+                _.reverse(levels);
+                return levels;
+            }).catch(err => {
+                error(err);
+                throw(err);
+            })
     };
 
     // find places near a coordinate (20 reults max)
