@@ -167,7 +167,6 @@ SnapActions.applyEvent = function(event) {
         return new Action(this, event);
     } else {
         // ask the user if he/she would like to request to be a collaborator
-        // TODO: Add option for saving your own copy
         ide.confirm(
             'Edits cannot be made on projects by guests.\n\nWould ' +
             'you like to request to be made a collaborator?',
