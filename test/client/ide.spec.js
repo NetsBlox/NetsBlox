@@ -106,10 +106,11 @@ describe('ide', function() {
             var validate = function() {
                 var spriteIds = ide.sprites.asArray().map(sprite => sprite.id);
                 try {
+                    expect(spriteIds.length).to.be(2);
                     expect(spriteIds[0]).to.not.be(spriteIds[1]);
                     done();
                 } catch (e) {
-                    done('Duplicate sprite ids after changing the language!');
+                    done(e);
                 }
             };
 
