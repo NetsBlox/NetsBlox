@@ -112,7 +112,7 @@ chart.draw = function(lines, options){
     try {
         lines = prepareData(lines, options.isCategorical);
     } catch (e) {
-        this._logger.error(e)
+        this._logger.error(e);
         this.response.status(500).send(e);
         return null;
     }
