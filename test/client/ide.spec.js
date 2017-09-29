@@ -200,7 +200,7 @@ describe('ide', function() {
         });
     });
 
-    describe.only('saveACopy', function() {
+    describe('saveACopy', function() {
         let username;
         before(function(done) {
             driver.reset(function() {
@@ -227,7 +227,5 @@ describe('ide', function() {
             var saveACopyBtn = dialog.items.find(item => item[1] === 'saveACopy');
             expect(saveACopyBtn).to.not.be(undefined);
         });
-
-        // TODO
     });
 });
