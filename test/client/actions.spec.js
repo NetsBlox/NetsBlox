@@ -78,8 +78,10 @@ describe('actions', function() {
             var ide = driver.ide();
 
             SnapCloud.username = 'test';
-            ide.room.roles[ide.projectName].unshift({username: SnapCloud.username, uuid: 'ad'});
-            expect(ide.room.isLeader()).to.be(false);
+            setTimeout(() => {
+                ide.room.roles[ide.projectName].unshift({username: SnapCloud.username, uuid: 'ad'});
+                expect(ide.room.isLeader()).to.be(false);
+            }, 50);
         });
     });
 

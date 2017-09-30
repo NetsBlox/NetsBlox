@@ -14,7 +14,7 @@ describe('ide', function() {
             ide.exportProject();
         });
 
-        it('should export correct xml locally', function(done) {
+        it.only('should export correct xml locally', function(done) {
             var ide = driver.ide();
             var local = null;
             ide.exportRoom = function(str) {
@@ -22,8 +22,8 @@ describe('ide', function() {
                     return local = str;
                 }
 
-                expect(local).to.be(str);
                 delete ide.exportRoom;
+                expect(local).to.be(str);
                 done();
             };
             ide.exportSingleRoleXml();

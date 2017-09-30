@@ -2,9 +2,11 @@
 describe('blocks', function() {
     var position = new Point(400, 400);
 
-    beforeEach(function() {
-        driver.reset();
-        driver.selectCategory('control');
+    beforeEach(function(done) {
+        driver.reset(() => {
+            driver.selectCategory('control');
+            done();
+        });
     });
 
     it('should create block', function(done) {
