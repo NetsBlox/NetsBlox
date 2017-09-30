@@ -98,7 +98,7 @@ describe('ide', function() {
                 });
         });
 
-        it.only('should have unique sprite ids after changing the lang', function(done) {
+        it('should have unique sprite ids after changing the lang', function(done) {
             var ide = driver.ide();
 
             // Change the language and create a sprite
