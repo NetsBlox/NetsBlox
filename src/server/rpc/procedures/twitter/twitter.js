@@ -47,6 +47,12 @@ module.exports = {
         // repeat as many times as necessary
         var getTweets = () => { 
             request(options, (err, res, body) => {
+                // check if user has any tweets
+                if ( body.length < 1 ) {
+                    // we should set an error status and send a null array
+                    response.send(results);
+                    return;
+                }
                 if (rateCheck(res, response)) {
                     return;
                 }
