@@ -1,4 +1,4 @@
-/*globals driver, expect, SnapUndo, SnapActions */
+/*globals driver, expect, SnapUndo, SnapActions, SnapCloud */
 describe('ide', function() {
     before(function(done) {
         driver.reset(done);
@@ -118,6 +118,140 @@ describe('ide', function() {
                 ide.addNewSprite();
                 setTimeout(validate, 100);
             }, 150);
+        });
+    });
+
+    describe('name', function() {
+        const BAD_CHARS = ['.', '@'];
+        beforeEach(function() {
+            driver.reset();
+        });
+
+        BAD_CHARS.forEach(badChar => {
+            describe('naming project with ' + badChar + ' symbol', function() {
+                it('should not allow from room tab', function(done) {
+                    driver.selectTab('room');
+                    var roomEditor = driver.ide().spriteEditor.room;
+                    var name = 'my' + badChar + 'project';
+                    driver.click(roomEditor.titleBox);
+
+                    var dialog = driver.dialog();
+                    dialog.body.setContents(name);
+                    dialog.ok();
+
+                    dialog = driver.dialog();
+                    expect(dialog).to.not.be(null);
+
+                    setTimeout(() => {
+                        try {
+                            expect(driver.ide().room.name).to.not.be(name);
+                            done();
+                        } catch (e) {
+                            done(e);
+                        }
+                    }, 50);
+                });
+
+                it('should not allow using "save as"', function(done) {
+                    driver.ide().saveProjectsBrowser();
+                    var dialog = driver.dialog();
+                    var name = 'my' + badChar + 'project';
+                    dialog.nameField.setContents(name);
+                    dialog.accept();
+
+                    dialog = driver.dialog();
+                    expect(dialog).to.not.be(null);
+
+                    setTimeout(() => {
+                        try {
+                            expect(driver.ide().room.name).to.not.be(name);
+                            done();
+                        } catch (e) {
+                            done(e);
+                        }
+                    }, 50);
+                });
+            });
+
+            it('should not allow renaming role with ' + badChar, function(done) {
+                driver.selectTab('room');
+                var roleLabel = driver.ide().spriteEditor.room.roleLabels.myRole._label;
+                var name = 'role' + badChar + 'name';
+
+                roleLabel.mouseClickLeft();
+                var dialog = driver.dialog();
+                dialog.body.setContents(name);
+                dialog.ok();
+
+                dialog = driver.dialog();
+                expect(dialog).to.not.be(null);
+                // verify that the role name didn't change
+                setTimeout(() => {
+                    try {
+                        expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+                        done();
+                    } catch (e) {
+                        done(e);
+                    }
+                }, 50);
+            });
+        });
+
+        describe('creating role', function() {
+            BAD_CHARS.forEach(badChar => {
+                it('should not allow naming role with ' + badChar, function(done) {
+                    driver.selectTab('room');
+
+                    var addRoleBtn = driver.ide().spriteEditor.addRoleBtn;
+                    var name = 'role' + badChar + 'name';
+                    driver.click(addRoleBtn);
+
+                    var dialog = driver.dialog();
+                    dialog.body.setContents(name);
+                    dialog.ok();
+
+                    dialog = driver.dialog();
+                    expect(dialog).to.not.be(null);
+                    // verify that the role name didn't change
+                    setTimeout(() => {
+                        try {
+                            expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+                            done();
+                        } catch (e) {
+                            done(e);
+                        }
+                    }, 50);
+                });
+            });
+        });
+    });
+
+    describe('saveACopy', function() {
+        let username;
+        before(function(done) {
+            driver.reset(function() {
+                var ide = driver.ide();
+                username = SnapCloud.username;
+                SnapCloud.username = 'test';
+
+                ide.room.collaborators.push(SnapCloud.username);
+                ide.room.ownerId = 'otherUser';
+                done();
+            });
+        });
+
+        after(function() {
+            SnapCloud.username = username;
+        });
+
+        it('should have option to saveACopy if collaborator', function() {
+            var ide = driver.ide();
+
+            // Click the project menu
+            driver.click(ide.controlBar.projectButton);
+            var dialog = driver.dialog();
+            var saveACopyBtn = dialog.items.find(item => item[1] === 'saveACopy');
+            expect(saveACopyBtn).to.not.be(undefined);
         });
     });
 });

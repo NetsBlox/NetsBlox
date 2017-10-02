@@ -86,11 +86,11 @@ var saveLogin = function(res, user, remember) {
 var refreshCookie = function(res, cookie) {
     var token = jwt.sign(cookie, sessionSecret),
         options = {
-            domain: '.netsblox.org',
             httpOnly: true
         },
         date;
 
+    if (process.env.HOST !== undefined) options.domain = process.env.HOST;
     if (cookie.remember) {
         date = new Date();
         date.setDate(date.getDate() + 14);  // valid for 2 weeks

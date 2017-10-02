@@ -102,7 +102,7 @@ module.exports = [
                     log(`userId is ${userId}`);
 
                     const socket = room.getSocketsAt(roleId)
-                        .find(socket => socket.username === userId);
+                        .find(socket => socket.uuid === userId);
 
                     if (!socket) {  // user is not online
                         var err = `${userId} is not at ${roleId} at room ${roomId}`;
@@ -112,12 +112,13 @@ module.exports = [
 
                     // Remove the user from the room!
                     log(`${userId} is evicted from room ${roomId}`);
-                    if (userId === ownerId) {  // removing another instance of self
+                    if (socket.username === ownerId) {  // removing another instance of self
                         socket.newRoom();
                     } else {  // Fork the room
                         RoomManager.forkRoom(room, socket);
                     }
                     room.onRolesChanged();
+                    return res.sendStatus(200);
                 });
         }
     },
