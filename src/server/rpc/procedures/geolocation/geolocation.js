@@ -82,17 +82,17 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         return null;
     };
 
-    GeoLocationRPC.county = function (latitude, longitude) {
+    GeoLocationRPC['county*'] = function (latitude, longitude) {
         reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level2long');
         return null;
     };
 
-    GeoLocationRPC.state = function (latitude, longitude) {
+    GeoLocationRPC['state*'] = function (latitude, longitude) {
         reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level1long');
         return null;
     };
 
-    GeoLocationRPC.stateCode = function (latitude, longitude) {
+    GeoLocationRPC['stateCode*'] = function (latitude, longitude) {
         reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level1short');
         return null;
     };
@@ -107,6 +107,27 @@ if(!process.env.GOOGLE_GEOCODING_API) {
     GeoLocationRPC.countryCode = function (latitude, longitude) {
         reverseGeocode(latitude, longitude, this.response, '.countryCode');
         return null;
+    };
+
+    // administrative levels
+    GeoLocationRPC.info = function (latitude, longitude) {
+        return geocoder.reverse({lat: latitude, lon: longitude})
+            .then( res => {
+                let levels = [];
+                res = res[0]; // we only care about the top result
+                // find and pull out all the provided admin levels
+                levels.push(res.city);
+                Object.keys(res.administrativeLevels).forEach(lvl => {
+                    levels.push(res.administrativeLevels[lvl]);
+                });
+                levels.push(res.country);
+                levels.push(res.countryCode);
+                levels = levels.reverse(); // reverse so that it's big to small
+                return levels;
+            }).catch(err => {
+                error(err);
+                throw(err);
+            });
     };
 
     // find places near a coordinate (20 reults max)
