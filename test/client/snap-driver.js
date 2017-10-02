@@ -29,20 +29,14 @@ SnapDriver.prototype.reset = function(cb) {
     var world = this.world();
 
     // Close all open dialogs
-    for (var i = 1; i < world.children.length; i++) {
-        world.children[i].destroy();
-    }
-
-    this.newProject();
-    cb = cb || nop;
-    setTimeout(cb);
-};
-
-SnapDriver.prototype.newProject = function() {
-    var dialogs = this.world().children.slice(1);
+    var dialogs = world.children.slice(1);
     dialogs.forEach(dialog => dialog.destroy());
 
-    return SnapActions.openProject();
+    cb = cb || nop;
+    return SnapActions.openProject()
+        .accept(() => {
+            cb();
+        });
 };
 
 SnapDriver.prototype.selectCategory = function(cat) {
