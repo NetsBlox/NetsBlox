@@ -229,15 +229,7 @@ describe('ide', function() {
     describe('saveACopy', function() {
         let username;
         before(function(done) {
-            driver.reset(function() {
-                var ide = driver.ide();
-                username = SnapCloud.username;
-                SnapCloud.username = 'test';
-
-                ide.room.collaborators.push(SnapCloud.username);
-                ide.room.ownerId = 'otherUser';
-                done();
-            });
+            driver.reset(done);
         });
 
         after(function() {
@@ -246,6 +238,13 @@ describe('ide', function() {
 
         it('should have option to saveACopy if collaborator', function() {
             var ide = driver.ide();
+
+            // make the user a collaborator
+            username = SnapCloud.username;
+            SnapCloud.username = 'test';
+
+            ide.room.collaborators.push(SnapCloud.username);
+            ide.room.ownerId = 'otherUser';
 
             // Click the project menu
             driver.click(ide.controlBar.projectButton);
