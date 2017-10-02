@@ -14,7 +14,7 @@ describe('ide', function() {
             ide.exportProject();
         });
 
-        it.only('should export correct xml locally', function(done) {
+        it('should export correct xml locally', function(done) {
             var ide = driver.ide();
             var local = null;
             ide.exportRoom = function(str) {

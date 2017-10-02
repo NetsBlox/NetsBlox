@@ -379,7 +379,7 @@ NetsBloxMorph.prototype.clearProject = function () {
     StageMorph.prototype.enableSublistIDs = false;
     SpriteMorph.prototype.useFlatLineEnds = false;
     Process.prototype.enableLiveCoding = false;
-    this.setProjectName('');
+    this.silentSetProjectName('');
     this.projectNotes = '';
     this.createStage();
     this.add(this.stage);
