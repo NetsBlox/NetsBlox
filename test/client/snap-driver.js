@@ -17,11 +17,9 @@ SnapDriver.prototype.palette = function() {
 };
 
 SnapDriver.prototype.dialog = function() {
-    var len = this.world().children.length;
-    if (len > 1) {
-        return this.world().children[len-1];
-    }
-    return null;
+    var dialogs = this.world().children.slice(1);
+    var len = dialogs.length;
+    return dialogs[len-1];
 };
 
 // Controlling the IDE
