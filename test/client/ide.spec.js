@@ -115,8 +115,11 @@ describe('ide', function() {
             };
 
             setTimeout(() => {
-                ide.addNewSprite();
-                setTimeout(validate, 100);
+                ide.addNewSprite()
+                    .accept(() => {
+                        validate();
+                    })
+                    .reject(() => done('addNewSprite action rejected!'));
             }, 150);
         });
     });
