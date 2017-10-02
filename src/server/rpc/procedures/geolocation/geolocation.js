@@ -9,7 +9,6 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         CacheManager = require('cache-manager'),
         NodeGeocoder = require('node-geocoder'),
         rp = require('request-promise'),
-        _ = require('lodash'),
         jsonQuery = require('json-query'),
         trace = debug('netsblox:rpc:geolocation:trace');
 
@@ -123,7 +122,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
                 });
                 levels.push(res.country);
                 levels.push(res.countryCode);
-                _.reverse(levels); // reverse so that it's big to small
+                levels = levels.reverse(); // reverse so that it's big to small
                 return levels;
             }).catch(err => {
                 error(err);
