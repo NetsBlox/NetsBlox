@@ -144,7 +144,7 @@ SnapActions.applyEvent = function(event) {
         // if in replay mode, check that the event is a replay event
         var myself = this;
 
-        if (ide.isReplayMode && !event.isReplay) {
+        if (ide.isReplayMode && !event.isReplay && event.type !== 'openProject') {
             ide.promptExitReplay(function() {
             // Netsblox addition: start
                 if (!myself.isCollaborating() || myself.isLeader) {

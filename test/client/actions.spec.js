@@ -95,4 +95,25 @@ describe('actions', function() {
             SnapActions.completeAction('testError');
         });
     });
+
+    describe('replay', function() {
+        before(function(done) {
+            driver.reset(done);
+        });
+
+        it('should allow opening projects from replay mode', function(done) {
+            // Enter replay mode
+            SnapActions.setStageSize(500, 500)
+                .accept(function() {
+                    driver.ide().replayEvents();
+
+                    // try to open a new project...
+                    SnapActions.openProject();
+
+                    var dialog = driver.dialog();
+                    if (dialog) return done('openProject action blocked during replay!');
+                    done();
+                });
+        });
+    });
 });
