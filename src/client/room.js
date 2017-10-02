@@ -23,7 +23,7 @@ function RoomMorph(ide) {
     // Get the users at the room
     this.ide = ide;
 
-    this.roles = null;
+    this.roles = this.getDefaultRoles();
     this.roleLabels = {};
     this.invitations = {};  // open invitations
 
