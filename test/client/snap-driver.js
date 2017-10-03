@@ -1,7 +1,15 @@
-/* globals SpriteMorph, SnapActions, nop */
+/* globals SpriteMorph, SnapActions */
 function SnapDriver(world) {
     this._world = world;
 }
+
+// Wait for the client to have a websocket id
+SnapDriver.prototype.waitUntilReady = function(cb) {
+    if (this.ide().sockets.uuid) {
+        return setTimeout(cb);
+    }
+    setTimeout(this.waitUntilReady.bind(this, cb));
+};
 
 // Convenience Getters
 SnapDriver.prototype.world = function() {
@@ -30,11 +38,11 @@ SnapDriver.prototype.reset = function(cb) {
     var dialogs = world.children.slice(1);
     dialogs.forEach(dialog => dialog.destroy());
 
-    cb = cb || nop;
-    return SnapActions.openProject()
-        .accept(() => {
-            cb();
-        });
+    this.waitUntilReady(function() {
+        return SnapActions.openProject()
+            .accept(() => cb())
+            .reject(err => console.error(`could not reset ide: ${err}`));
+    });
 };
 
 SnapDriver.prototype.selectCategory = function(cat) {
