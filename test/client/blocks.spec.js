@@ -29,9 +29,11 @@ describe('blocks', function() {
     });
 
     describe('custom', function() {
-        beforeEach(() => {
-            driver.reset();
-            driver.selectCategory('custom');
+        beforeEach(done => {
+            driver.reset(() => {
+                driver.selectCategory('custom');
+                done();
+            });
         });
 
         it('should create (sprite) custom block', function(done) {
