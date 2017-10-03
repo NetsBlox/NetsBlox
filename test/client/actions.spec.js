@@ -101,6 +101,10 @@ describe('actions', function() {
             driver.reset(done);
         });
 
+        afterEach(function() {
+            driver.ide().exitReplayMode();
+        });
+
         it('should allow opening projects from replay mode', function(done) {
             // Enter replay mode
             SnapActions.setStageSize(500, 500)
