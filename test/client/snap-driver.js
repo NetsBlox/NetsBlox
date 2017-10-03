@@ -38,6 +38,7 @@ SnapDriver.prototype.reset = function(cb) {
     var dialogs = world.children.slice(1);
     dialogs.forEach(dialog => dialog.destroy());
 
+    this.ide().exitReplayMode();
     this.waitUntilReady(function() {
         return SnapActions.openProject()
             .accept(() => cb())
