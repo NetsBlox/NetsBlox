@@ -131,7 +131,7 @@ SnapActions.completeAction = function(error) {
 
 SnapActions.applyEvent = function(event) {
     var ide = this.ide();
-    if (ide.room.isEditable()) {
+    if (ide.room.isEditable() || event.type === 'openProject') {
         event.user = this.id;
         event.id = event.id || this.lastSeen + 1;
         event.time = event.time || Date.now();

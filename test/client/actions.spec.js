@@ -96,8 +96,8 @@ describe('actions', function() {
         });
     });
 
-    describe('replay', function() {
-        before(function(done) {
+    describe('openProject', function() {
+        beforeEach(function(done) {
             driver.reset(done);
         });
 
@@ -114,6 +114,17 @@ describe('actions', function() {
                     if (dialog) return done('openProject action blocked during replay!');
                     done();
                 });
+        });
+
+        it('should allow opening projects if room not editable', function(done) {
+            var room = driver.ide().room;
+            var isEditable = room.isEditable;
+
+            room.isEditable = () => false;
+            var action = SnapActions.openProject();
+            room.isEditable = isEditable;
+            if (action) return action.accept(done);
+            done('Could not openProject');
         });
     });
 });
