@@ -126,8 +126,8 @@ describe('ide', function() {
 
     describe('name', function() {
         const BAD_CHARS = ['.', '@'];
-        beforeEach(function() {
-            driver.reset();
+        beforeEach(function(done) {
+            driver.reset(done);
         });
 
         BAD_CHARS.forEach(badChar => {

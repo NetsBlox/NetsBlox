@@ -8,8 +8,8 @@ describe('services', function() {
 
     describe('rpc inputs', function() {
         var service, rpcSignature, process;
-        beforeEach(function() {
-            driver.reset();
+        beforeEach(function(done) {
+            driver.reset(done);
         });
 
         function serialize(input, expectedOutput){
