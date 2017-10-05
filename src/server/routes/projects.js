@@ -74,7 +74,7 @@ var getPreview = function(project) {
         // Notes
         preview.Notes = preview.Notes || role.Notes;
         preview.Thumbnail = preview.Thumbnail ||
-            role.Thumbnail;
+            role.Thumbnail instanceof Array ? role.Thumbnail[0] : role.Thumbnail;
     }
     preview.Updated = new Date(preview.Updated);
     preview.Public = project.Public;
