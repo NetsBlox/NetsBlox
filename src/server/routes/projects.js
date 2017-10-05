@@ -560,7 +560,7 @@ module.exports = [
                         }
                         this._logger.trace(`Applying aspect ratio for ${req.params.owner}'s ${name}`);
                         return applyAspectRatio(
-                            preview.Thumbnail[0],
+                            preview.Thumbnail,
                             aspectRatio
                         ).then(buffer => {
                             this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
