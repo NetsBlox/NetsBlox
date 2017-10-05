@@ -74,7 +74,7 @@ var getPreview = function(project) {
         // Notes
         preview.Notes = preview.Notes || role.Notes;
         preview.Thumbnail = preview.Thumbnail ||
-            role.Thumbnail;
+            role.Thumbnail instanceof Array ? role.Thumbnail[0] : role.Thumbnail;
     }
     preview.Updated = new Date(preview.Updated);
     preview.Public = project.Public;
@@ -549,37 +549,34 @@ module.exports = [
                 aspectRatio = +req.query.aspectRatio || 0;
 
             // return the names of all projects owned by :owner
-            middleware.loadUser(req.params.owner, res, user => {
-                return user.getProject(name)
-                    .then(project => {
-                        if (project) {
-                            const preview = getPreview(project);
-                            if (!preview || !preview.Thumbnail) {
-                                const err = `could not find thumbnail for ${name}`;
-                                this._logger.error(err);
-                                return res.status(400).send(err);
-                            }
-                            this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
-                            return applyAspectRatio(
-                                preview.Thumbnail[0],
-                                aspectRatio
-                            ).then(buffer => {
-                                res.contentType('image/png');
-                                res.end(buffer, 'binary');
-                            });
-                        } else {
-                            const err = `could not find project ${name}`;
+            return Projects.getRawProject(req.params.owner, name)
+                .then(project => {
+                    if (project) {
+                        const preview = getPreview(project);
+                        if (!preview || !preview.Thumbnail) {
+                            const err = `could not find thumbnail for ${name}`;
                             this._logger.error(err);
                             return res.status(400).send(err);
                         }
-                    })
-                    .fail(err => {
-                        this._logger.error(`padding image failed: ${err}`);
-                        res.serverError(err);
-                    });
-
-            });
-
+                        this._logger.trace(`Applying aspect ratio for ${req.params.owner}'s ${name}`);
+                        return applyAspectRatio(
+                            preview.Thumbnail,
+                            aspectRatio
+                        ).then(buffer => {
+                            this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
+                            res.contentType('image/png');
+                            res.end(buffer, 'binary');
+                        });
+                    } else {
+                        const err = `could not find project ${name}`;
+                        this._logger.error(err);
+                        return res.status(400).send(err);
+                    }
+                })
+                .catch(err => {
+                    this._logger.error(`padding image failed: ${err}`);
+                    res.serverError(err);
+                });
         }
     },
     {
