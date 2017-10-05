@@ -1396,16 +1396,20 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addPair('Open...', 'openProjectsBrowser', '^O');
     if (!this.room.isGuest()) {
         menu.addPair('Save', 'save', '^S');
-    } else {
-        menu.addPair('Save a Copy', 'save', '^S');
+    } else if (SnapCloud.username) {  // save a copy option if logged in
+        menu.addPair('Save a Copy', 'saveACopy');
     }
-    menu.addItem('Save As...', function() {
-        if (myself.isPreviousVersion()) {
-            return myself.showMessage('Please exit replay mode before saving');
-        }
+    if (this.room.isOwner()) {
+        menu.addItem('Save As...', function() {
+            if (myself.isPreviousVersion()) {
+                return myself.showMessage('Please exit replay mode before saving');
+            }
 
-        myself.saveProjectsBrowser();
-    });
+            myself.saveProjectsBrowser();
+        });
+    } else if (this.room.isCollaborator()) {
+        menu.addPair('Save a Copy', 'saveACopy');
+    }
     if (shiftClicked) {
         menu.addItem(
             localize('Download replay events'),
@@ -1864,6 +1868,18 @@ NetsBloxMorph.prototype.save = function () {
     } else {
         this.saveProjectsBrowser();
     }
+};
+
+NetsBloxMorph.prototype.saveACopy = function () {
+    var myself = this;
+    if (this.isPreviousVersion()) {
+        return this.showMessage('Please exit replay mode before saving');
+    }
+
+    // Save the project!
+    SnapCloud.saveProjectCopy(function() {
+        myself.showMessage('Made your own copy and saved it to the cloud!', 2);
+    }, this.cloudError());
 };
 
 IDE_Morph.prototype.saveProjectToCloud = function (name) {
@@ -2490,3 +2506,45 @@ NetsBloxMorph.prototype.logout = function () {
         }
     );
 };
+
+NetsBloxMorph.prototype.createCloudAccount = function () {
+    var myself = this,
+        world = this.world();
+/*
+    // force-logout, commented out for now:
+    delete localStorage['-snap-user'];
+    SnapCloud.clear();
+*/
+    new DialogBoxMorph(
+        null,
+        function (user) {
+            SnapCloud.signup(
+                user.username,
+                user.email,
+                function (txt, title) {
+                    new DialogBoxMorph().inform(
+                        title,
+                        txt +
+                            '.\n\nAn e-mail with your password\n' +
+                            'has been sent to the address provided',
+                        world,
+                        myself.cloudIcon(null, new Color(0, 180, 0))
+                    );
+                },
+                myself.cloudError()
+            );
+        }
+    ).withKey('cloudsignup').promptCredentials(
+        'Sign up',
+        'signup',
+        '/tos.html',
+        'Terms of Service...',
+        '/privacy.html',
+        'Privacy...',
+        'I have read and agree\nto the Terms of Service',
+        world,
+        myself.cloudIcon(),
+        myself.cloudMsg
+    );
+};
+

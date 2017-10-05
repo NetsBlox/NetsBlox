@@ -510,6 +510,21 @@
         return collection;
     };
 
+    ProjectStorage.map = function(query, fn){
+        let deferred = Q.defer();
+        let results = [];
+        collection.find(query).forEach(doc => {
+            let params = {
+                logger: logger,
+                db: collection,
+                data: doc,
+            };
+            let project = new Project(params);
+            results.push(fn(project));
+        }, () => deferred.resolve(results));
+        return deferred.promise;
+    };
+
     // Create room from ActiveRoom (request projects from clients)
     const getDefaultProjectData = function(user, room) {
         return {
