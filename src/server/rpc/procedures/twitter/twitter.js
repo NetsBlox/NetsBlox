@@ -9,6 +9,9 @@ var debug = require('debug'),
     baseURL = 'https://api.twitter.com/1.1/',
     KEY = process.env.TWITTER_BEARER_TOKEN;
 
+// make sure key starts with bearer
+if ( KEY && !KEY.startsWith('Bearer ')) KEY = 'Bearer ' + KEY;
+
 var options = {
     url: baseURL,
     headers: { 
@@ -27,6 +30,15 @@ function rateCheck(response, res) {
 }
 
 module.exports = {
+
+    isSupported: () => {
+        if(!KEY){
+            /* eslint-disable no-console*/
+            console.error('TWITTER_BEARER_TOKEN is missing.');
+            /* eslint-enable no-console*/
+        }
+        return KEY;
+    },
 
     // returns a list of a user's recent tweets
     recentTweets: function(screenName, count) {
