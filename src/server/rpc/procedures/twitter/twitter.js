@@ -32,13 +32,12 @@ function rateCheck(response, res) {
 module.exports = {
 
     isSupported: () => {
-        if(!process.env.TWITTER_BEARER_TOKEN){
+        if(!KEY){
             /* eslint-disable no-console*/
             console.error('TWITTER_BEARER_TOKEN is missing.');
             /* eslint-enable no-console*/
-            return false;
         }
-        return true;
+        return KEY;
     },
 
     // returns a list of a user's recent tweets
