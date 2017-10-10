@@ -205,19 +205,40 @@ StaticMap.prototype.getLatitude = function(y){
     });
 };
 
-StaticMap.prototype.getLatitutdeLongitude = function(x, y){
+StaticMap.prototype.getEarthCoordinate = function(x, y){
     return this._getMapInfo(this.socket.roleId).then(mapInfo => {
         let coords = this._coordsAt(x,y, mapInfo);
         return [coords.lat, coords.lon];
     });
 };
 
-StaticMap.prototype.getXY = function(latitude, longitude){
+StaticMap.prototype.getEarthCoordinates = function(xys){
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        return xys.map(xy => {
+            let [x, y] = xy;
+            let coords = this._coordsAt(x,y, mapInfo);
+            return [coords.lat, coords.lon];
+        });
+    });
+};
+
+StaticMap.prototype.getScreenCoordinate = function(latitude, longitude){
     return this._getMapInfo(this.socket.roleId).then(mapInfo => {
         let pixels = this._pixelsAt(latitude, longitude, mapInfo);
         return [pixels.x, pixels.y];
     });
 };
+
+StaticMap.prototype.getScreenCoordinates = function(latLons){
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        return latLons.map( latLon => {
+            let [latitude, longitude] = latLons;
+            let pixels = this._pixelsAt(latitude, longitude, mapInfo);
+            return [pixels.x, pixels.y];
+        })
+    });
+};
+
 // Getting current map settings
 StaticMap.prototype._getUserMap = function() {
     var response = this.response;
