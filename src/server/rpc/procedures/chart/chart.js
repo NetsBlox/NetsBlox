@@ -220,6 +220,7 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
         xLabel: xAxisTag,
         yLabel: yAxisTag,
         title: title,
+        isCategorical: true,
         smooth: true,
         labels: datasetTag
     };
