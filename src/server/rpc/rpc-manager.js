@@ -98,13 +98,19 @@ RPCManager.prototype.createRouter = function() {
     // Create the index for the rpcs
     router.route('/').get((req, res) => res.send(ALL_RPC_NAMES));
 
+    function tagWithCompatibility(rpc) {
+        let methods = this.rpcRegistry[rpc.serviceName];
+        methods._compatiblity = rpc.COMPATIBILITY;
+        return methods;
+    }
+
     this.rpcs.forEach(rpc => {
         router.route('/' + rpc.serviceName)
-            .get((req, res) => res.json(this.rpcRegistry[rpc.serviceName]));
+            .get((req, res) => res.json(tagWithCompatibility.call(this, rpc)));
 
         if (rpc.COMPATIBILITY.path) {
             router.route('/' + rpc.COMPATIBILITY.path)
-                .get((req, res) => res.json(this.rpcRegistry[rpc.serviceName]));
+                .get((req, res) => res.json(tagWithCompatibility.call(this, rpc)));
         }
     });
 
