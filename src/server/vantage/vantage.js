@@ -6,21 +6,11 @@ var vantage = require('vantage')(),
     chalk = require('chalk'),
     repl = require('vantage-repl'),
     Query = require('../../common/data-query'),
-    banner,
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
     ],
     RoomManager = require('../rooms/room-manager'),
     NO_USER_LABEL = '<vacant>';
-
-// Set the banner
-banner = ['\n'+
-    '#####################################################',
-    '#                                                   #',
-    '#                 NetsBlox Server                   #',
-    '#                                                   #',
-    '#####################################################']
-    .join('\n');
 
 var NetsBloxVantage = function(server) {
     this.initRoomManagement(server);
@@ -94,7 +84,7 @@ var NetsBloxVantage = function(server) {
                     }
                     cb();
                 })
-                .catch(err => cb(err));
+                    .catch(err => cb(err));
             }
         });
 
@@ -202,16 +192,15 @@ NetsBloxVantage.checkSocket = function(args, nbSocket) {
 NetsBloxVantage.prettyPrintGroup = function(group) {
     var text = group.name+':\n'+
         group.groups
-        .map(function(group) {
-            return '  '+group.join(' ');
-        })
-        .join('\n');
+            .map(function(group) {
+                return '  '+group.join(' ');
+            })
+            .join('\n');
     return text;
 };
 
 NetsBloxVantage.prototype.start = function(port) {
     vantage
-        .banner(banner)
         .delimiter(chalk.white('netsblox~$'))
         .listen(port || 1234)
         .use(repl)

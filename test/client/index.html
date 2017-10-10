@@ -30,6 +30,7 @@
   <script src="./actions.spec.js"></script>
   <script src="./accounts.spec.js"></script>
   <script src="./ide.spec.js"></script>
+  <script src="./variables.spec.js"></script>
   <script type="text/javascript">
       var world;
       var driver;
@@ -41,7 +42,6 @@
 
           // start the tests
           driver = new SnapDriver(world);
-          mocha.globals(['jQuery']);
           mocha.run();
       };
       function loop() {
@@ -54,6 +54,7 @@
   <script>
     $(document).ready(function(){
       $('.modal').modal();
+      $('.modal').modal('open');
     });
   </script>
 </body>

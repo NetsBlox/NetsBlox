@@ -2,11 +2,7 @@
 
 'use strict';
 
-var debug = require('debug'),
-    log = debug('netsblox:rpc:nasa:log'),
-    error = debug('netsblox:rpc:nasa:error'),
-    trace = debug('netsblox:rpc:nasa:trace'),
-    request = require('request'),
+var request = require('request'),
     KEY = process.env.NASA_KEY,
     APOD_URL = 'https://api.nasa.gov/planetary/apod?api_key=' + KEY,
     MARS_URL = 'http://marsweather.ingenology.com/v1/latest/';

@@ -35,6 +35,7 @@ Storage.prototype.connect = function(mongoURI) {
             return db;
         })
         .catch(err => {
+            /* eslint-disable no-console */
             console.error(`Could not connect to mongodb at ${mongoURI}.`);
             console.error('To connect to a different mongo instance, set MONGO_URI to the mongo uri and try again:');
             console.error('');
@@ -44,6 +45,7 @@ Storage.prototype.connect = function(mongoURI) {
             console.error('');
             console.error('    MONGO_URI=mongodb://some.ip.address:27017/ ./bin/netsblox start');
             console.error('');
+            /* eslint-enable no-console */
             throw err;
         });
 };

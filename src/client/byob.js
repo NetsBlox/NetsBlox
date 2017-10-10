@@ -191,7 +191,7 @@ InputSlotDialogMorph.prototype.createSlotTypeButtons = function () {
         function () {
             myself.setSlotArity('single');
         },
-        "Single input.",
+        'Single input.',
         function () {
             return myself.fragment.isSingleInput();
         }
@@ -208,12 +208,12 @@ InputSlotDialogMorph.prototype.createSlotTypeButtons = function () {
 
     this.addSlotArityButton(
         function () {myself.setSlotArity('multiple'); },
-        "Multiple inputs (value is list of inputs)",
+        'Multiple inputs (value is list of inputs)',
         function () {return myself.fragment.isMultipleInput(); }
     );
     this.addSlotArityButton(
         function () {myself.setSlotArity('upvar'); },
-        "Upvar - make internal variable visible to caller",
+        'Upvar - make internal variable visible to caller',
         function () {return myself.fragment.isUpvar(); }
     );
 
@@ -223,9 +223,9 @@ InputSlotDialogMorph.prototype.createSlotTypeButtons = function () {
     defLabel.setColor(new Color(255, 255, 255));
     defLabel.refresh = function () {
         if (myself.isExpanded && contains(
-                ['%s', '%n', '%txt', '%anyUE'],
-                myself.fragment.type
-            )) {
+            ['%s', '%n', '%txt', '%anyUE'],
+            myself.fragment.type
+        )) {
             defLabel.show();
         } else {
             defLabel.hide();
@@ -394,7 +394,7 @@ BlockExportDialogMorph.prototype.buildContents = function (stage) {
         checkBox.setPosition(new Point(
             x,
             y + (checkBox.top() - checkBox.toggleElement.top())
-            ));
+        ));
         palette.addContents(checkBox);
         y += checkBox.fullBounds().height() + padding;
     }.bind(this));

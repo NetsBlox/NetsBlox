@@ -17,6 +17,14 @@ RoomMorph.isSocketUuid = function(name) {
     return name && name[0] === '_';
 };
 
+RoomMorph.isValidName = function(name) {
+    return !/[@\.]+/.test(name);
+};
+
+RoomMorph.isEmptyName = function(name) {
+    return /^\s*$/.test(name);
+};
+
 var white = new Color(224, 224, 224);
 
 function RoomMorph(ide) {
@@ -382,7 +390,17 @@ RoomMorph.prototype.renderRoomTitle = function(center) {
 RoomMorph.prototype.editRoomName = function () {
     var myself = this;
     this.ide.prompt('New Room Name', function (name) {
-        if (name) {
+        if (RoomMorph.isEmptyName(name)) return;  // empty name = cancel
+
+        if (!RoomMorph.isValidName(name)) {
+            // Error! name has a . or @
+            new DialogBoxMorph().inform(
+                'Invalid Project Name',
+                'Could not set the project name because\n' +
+                'the provided name is invalid',
+                myself.world()
+            );
+        } else {
             myself.ide.sockets.sendMessage({
                 type: 'rename-room',
                 name: name,
@@ -392,32 +410,38 @@ RoomMorph.prototype.editRoomName = function () {
     }, null, 'editRoomName');
 };
 
+RoomMorph.prototype.validateRoleName = function (name, cb) {
+    if (RoomMorph.isEmptyName(name)) return;  // empty role name = cancel
+
+    if (this.roles.hasOwnProperty(name)) {
+        // Error! Role exists
+        new DialogBoxMorph().inform(
+            'Existing Role Name',
+            'Could not rename role because\n' +
+            'the provided name already exists.',
+            this.world()
+        );
+    } else if (!RoomMorph.isValidName(name)) {
+        // Error! name has a . or @
+        new DialogBoxMorph().inform(
+            'Invalid Role Name',
+            'Could not change the role name because\n' +
+            'the provided name is invalid',
+            this.world()
+        );
+    } else {
+        cb();
+    }
+};
+
 RoomMorph.prototype.createNewRole = function () {
     // Ask for a new role name
-    var myself = this,
-        world = this.world();
+    var myself = this;
 
     this.ide.prompt('New Role Name', function (roleName) {
-        if (myself.roles.hasOwnProperty(roleName)) {
-            // Error! Role exists
-            new DialogBoxMorph().inform(
-                'Existing Role Name',
-                'Could not create a new role because\n' +
-                'the provided name already exists.',
-                world
-            );
-        } else if (roleName.indexOf('.') !== -1) {
-            // Error! Role has a dot
-            new DialogBoxMorph().inform(
-                'Invalid Role Name',
-                'Could not create a new role because\n' +
-                'the provided name is invalid',
-                world
-            );
-        } else {
+        myself.validateRoleName(roleName, function() {
             myself._createNewRole(roleName);
-        }
-        
+        });
     }, null, 'createNewRole');
 };
 
@@ -451,33 +475,15 @@ RoomMorph.prototype.editRoleName = function(role) {
     // Ask for a new role name
     var myself = this;
     this.ide.prompt('New Role Name', function (roleName) {
-        if (/^\s*$/.test(roleName)) {  // empty role name = cancel
-            return;
-        }
-
-        if (myself.roles.hasOwnProperty(roleName)) {
-            // Error! Role exists
-            new DialogBoxMorph().inform(
-                'Existing Role Name',
-                'Could not rename role because\n' +
-                'the provided name already exists.',
-                myself.world()
-            );
-        } else if (roleName.indexOf('.') !== -1) {
-            // Error! Role has a dot
-            new DialogBoxMorph().inform(
-                'Invalid Role Name',
-                'Could not create a new role because\n' +
-                'the provided name is invalid',
-                myself.world()
-            );
-        } else if (role !== roleName){
-            myself.ide.sockets.sendMessage({
-                type: 'rename-role',
-                roleId: role,
-                name: roleName
-            });
-        }
+        myself.validateRoleName(roleName, function() {
+            if (role !== roleName){
+                myself.ide.sockets.sendMessage({
+                    type: 'rename-role',
+                    roleId: role,
+                    name: roleName
+                });
+            }
+        });
     }, null, 'editRoleName');
 };
 
@@ -552,17 +558,16 @@ RoomMorph.prototype.setRoleName = function(role) {
     }
 };
 
-// FIXME: create ide.confirm
 RoomMorph.prototype.evictUser = function (user, role) {
     var myself = this;
     SnapCloud.evictUser(
-        function(err) {
-            myself.ide.showMessage(err || 'evicted ' + user + '!');
+        function() {
+            myself.ide.showMessage('evicted ' + user.username + '!');
         },
         function (err, lbl) {
             myself.ide.cloudError().call(null, err, lbl);
         },
-        [user, role, this.ownerId, this.name]
+        [user.uuid, role, this.ownerId, this.name]
     );
 };
 
@@ -1087,7 +1092,7 @@ ProjectsMorph.prototype.updateRoom = function() {
 
     // Draw the "new role" button
     if (this.room.isEditable()) {
-        this._addButton({
+        this.addRoleBtn = this._addButton({
             selector: 'createNewRole',
             icon: 'plus',
             hint: 'Add a role to the room',
@@ -1274,8 +1279,8 @@ UserDialogMorph.prototype.fixLayout = function () {
         ));
 
         inputField.setWidth(
-                this.body.width() -  this.padding * 6
-            );
+            this.body.width() -  this.padding * 6
+        );
         inputField.setLeft(this.body.left() + this.padding * 3);
         inputField.drawNew();
 
@@ -1342,7 +1347,7 @@ UserDialogMorph.prototype.buildFilterField = function () {
             myself.userList.filter(function (username) {
                 return username.toLowerCase().indexOf(text.toLowerCase()) > -1;
             });
-            // Netsblox addition: end
+        // Netsblox addition: end
 
         if (myself.listField.elements.length === 0) {
             myself.listField.elements.push('(no matches)');
@@ -1397,9 +1402,9 @@ CollaboratorDialogMorph.prototype.buildContents = function() {
     this.listField = new ListMorph(
         this.userList,
         this.userList.length > 0 ?
-                function (element) {
-                    return element.username || element;
-                } : null,
+            function (element) {
+                return element.username || element;
+            } : null,
         [ // format: display shared project names bold
             [
                 'bold',

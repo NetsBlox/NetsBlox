@@ -36,7 +36,7 @@ module.exports = [
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            log(`received logout request!`);
+            log('received logout request!');
             middleware.tryLogIn(req, res, err => {
                 if (err) {
                     return res.status(400).send(err);
@@ -81,8 +81,8 @@ module.exports = [
         }
     }
 ]
-.map(function(api) {
+    .map(function(api) {
     // Set the URL to be the service name
-    api.URL = api.Service;
-    return api;
-});
+        api.URL = api.Service;
+        return api;
+    });

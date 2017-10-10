@@ -2,6 +2,7 @@ describe('rpc-manager', function() {
     var RPCManager = require('../../../src/server/rpc/rpc-manager'),
         MockResponse = require('../../assets/mock-response'),
         assert = require('assert'),
+        _ = require('lodash'),
         Q = require('q');
 
     describe('sendRPCResult', function() {
@@ -9,6 +10,16 @@ describe('rpc-manager', function() {
 
         beforeEach(function() {
             response = new MockResponse();
+        });
+
+        it('should convert JS object to list of pairs', function() {
+            var data = {
+                name: 'brian',
+                test: true
+            };
+            RPCManager.sendRPCResult(response, data);
+            assert(Array.isArray(response.response));
+            assert.deepEqual(data, _.fromPairs(response.response));
         });
 
         it('should not auto-send if returned "null"', function() {

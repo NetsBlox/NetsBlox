@@ -35,7 +35,7 @@ var tryLogIn = function(req, res, cb, skipRefresh) {
     req.session = req.session || new Session(res);
     if (cookie) {
         // verify the cookie is valid
-        logger.trace(`validating cookie`);
+        logger.trace('validating cookie');
         jwt.verify(cookie, sessionSecret, (err, token) => {
             if (err) {
                 logger.error(`Error verifying jwt: ${err}`);
@@ -80,17 +80,17 @@ var saveLogin = function(res, user, remember) {
     if (typeof remember === 'boolean') {
         cookie.remember = remember;
     }
-	refreshCookie(res, cookie);
+    refreshCookie(res, cookie);
 };
 
 var refreshCookie = function(res, cookie) {
     var token = jwt.sign(cookie, sessionSecret),
         options = {
-            domain: '.netsblox.org',
             httpOnly: true
         },
         date;
 
+    if (process.env.HOST !== undefined) options.domain = process.env.HOST;
     if (cookie.remember) {
         date = new Date();
         date.setDate(date.getDate() + 14);  // valid for 2 weeks

@@ -12,13 +12,13 @@
             blob.store(content.SourceCode),
             blob.store(content.Media)
         ])
-        .then(hashes => {
-            const [srcHash, mediaHash] = hashes;
+            .then(hashes => {
+                const [srcHash, mediaHash] = hashes;
 
-            content.SourceCode = srcHash;
-            content.Media = mediaHash;
-            return content;
-        });
+                content.SourceCode = srcHash;
+                content.Media = mediaHash;
+                return content;
+            });
     };
 
     const loadRoleContent = function(role) {
@@ -26,12 +26,12 @@
             blob.get(role.SourceCode),
             blob.get(role.Media)
         ])
-        .then(data => {
-            const [code, media] = data;
-            role.SourceCode = code;
-            role.Media = media;
-            return role;
-        });
+            .then(data => {
+                const [code, media] = data;
+                role.SourceCode = code;
+                role.Media = media;
+                return role;
+            });
     };
 
     const clean = function(project, logger) {
@@ -101,6 +101,8 @@
 
         setRoles(roles) {
             if (this.isDeleted()) return Promise.reject('project has been deleted!');
+            if (!roles.length) return Q();
+
             const query = {$set: {}};
 
             return Q.all(roles.map(role => storeRoleBlob(role)))
@@ -413,8 +415,12 @@
         collection = db.collection('projects');
     };
 
+    ProjectStorage.getRawProject = function (username, projectName) {
+        return collection.findOne({owner: username, name: projectName});
+    };
+
     ProjectStorage.get = function (username, projectName) {
-        return collection.findOne({owner: username, name: projectName})
+        return ProjectStorage.getRawProject(username, projectName)
             .then(data => {
                 var params = {
                     logger: logger,
@@ -502,6 +508,21 @@
 
     ProjectStorage.getCollection = function () {
         return collection;
+    };
+
+    ProjectStorage.map = function(query, fn){
+        let deferred = Q.defer();
+        let results = [];
+        collection.find(query).forEach(doc => {
+            let params = {
+                logger: logger,
+                db: collection,
+                data: doc,
+            };
+            let project = new Project(params);
+            results.push(fn(project));
+        }, () => deferred.resolve(results));
+        return deferred.promise;
     };
 
     // Create room from ActiveRoom (request projects from clients)

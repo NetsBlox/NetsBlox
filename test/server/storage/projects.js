@@ -27,7 +27,7 @@ describe('projects', function() {
             project = room.getProject();
             done();
         })
-        .catch(done);
+            .catch(done);
     });
 
     afterEach(function(done) {
@@ -100,7 +100,7 @@ describe('projects', function() {
                 assert.equal(role.ProjectName, 'clone1');
                 done();
             })
-        .catch(done);
+            .catch(done);
     });
 
     it('should remove the project from db on destroy', function(done) {
@@ -147,7 +147,7 @@ describe('projects', function() {
                 project = room.getProject();
                 project.destroy().then(() => done());
             })
-            .catch(done);
+                .catch(done);
         });
 
         [

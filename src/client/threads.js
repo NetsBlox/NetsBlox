@@ -1,5 +1,5 @@
 /* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
-   List, SnapActions*/
+   Qs, List, SnapActions*/
 
 ThreadManager.prototype.startProcess = function (
     block,
@@ -319,30 +319,36 @@ NetsProcess.prototype.parseRPCResult = function (result) {
     return result;
 };
 
-function toQueryString(list, prefix) {
-    var array = list.asArray();
-    var str = [], k, v;
-    for(var i = 0; i < array.length; i++) {
-        k = prefix + '[' + i + ']';
-        v = array[i];
-        str.push(typeof v === 'object' ?
-            toQueryString(v, k) :
-            k + '=' + v);
+function listToArray(list) {
+    if (! (list instanceof List)){
+        return list;
     }
-    return str.join('&');
+    var combinedArray = [], v;
+    if (list === null) return null;
+    var array = list.asArray();
+    for(var i = 0; i < array.length; i++) {
+        v = array[i];
+        combinedArray.push(typeof v === 'object' ?  listToArray(v) : v);
+    }
+    return combinedArray;
 }
 
 NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
     var action = methodSignature[0],
         argNames = methodSignature[1],
         values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
+        query= {},
         params;
-    params = argNames.map(function(name, index) {
+    //build a json obj
+    argNames.forEach(function(name, index) {
         if (values[index] instanceof List) {
-            return toQueryString(values[index], name);
+            query[name] = listToArray(values[index]);
+        }else{
+            query[name] = values[index];
         }
-        return name + '=' + values[index];
-    }).join('&');
+    });
+    // call stringify
+    params = Qs.stringify(query, {encodeValuesOnly: true});
     return this.getJSFromRPCDropdown(rpc, action, params);
 };
 

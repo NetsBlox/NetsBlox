@@ -1,3 +1,4 @@
+/* eslint-disable */
 /*
 
 	sha512.js

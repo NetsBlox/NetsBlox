@@ -43,7 +43,7 @@ describe('dataset-test', function() {
         
         it('should get the right number of layers', function() {
             assert.equal(test.isMultipleDataset(dataset8), true);
-            assert.equal(test.isMultipleDataset(dataset1), false)
+            assert.equal(test.isMultipleDataset(dataset1), false);
         });
     });
 });

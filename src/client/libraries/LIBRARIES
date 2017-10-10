@@ -15,3 +15,4 @@ time-utils.xml	Time conversion utility	Convert between different time
 formats.
 struct-utils.xml	Structured data	Provide getters and setters for working with structured data using keys.
 costume-loader.xml	Costume loader	Get a costume from an image url
+matrix-operations.xml	Matrix Operations	Use MATLAB-like syntax for creating and working with vectors and matrices

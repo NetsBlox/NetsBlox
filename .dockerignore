@@ -7,6 +7,7 @@ scratch/
 node_modules/
 coverage/
 scratch/
+cache/
 .env
 src/client/netsblox-build.js
 src/client/dist/

@@ -45,6 +45,11 @@ BlobStorage.prototype.getDirectoryAndFile = function(hash) {
     return [dirname, filename];
 };
 
+BlobStorage.prototype.dataExists = function(id) {
+    let [, filename] = this.getDirectoryAndFile(id);
+    return exists.sync(filename);
+};
+
 BlobStorage.prototype.store = function(data) {
     var id = hash(data),
         [dirname, filename] = this.getDirectoryAndFile(id);

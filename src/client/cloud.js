@@ -1,4 +1,4 @@
-/* global localize, nop, IDE_Morph, Cloud, detect, SnapActions*/
+/* global localize, nop, IDE_Morph, Cloud, detect, SnapActions, world*/
 NetCloud.prototype = new Cloud();
 
 function NetCloud(url) {
@@ -579,6 +579,26 @@ NetCloud.prototype.getSharedProjectList = function(callBack, errorCall) {
                     myself.disconnect();
                 },
                 errorCall
+            );
+        },
+        errorCall
+    );
+};
+
+NetCloud.prototype.saveProjectCopy = function(callBack, errorCall) {
+    var myself = this;
+    this.reconnect(
+        function () {
+            myself.callService(
+                'saveProjectCopy',
+                function (response, url) {
+                    callBack.call(null, response, url);
+                    myself.disconnect();
+                },
+                errorCall,
+                [
+                    myself.socketId()
+                ]
             );
         },
         errorCall

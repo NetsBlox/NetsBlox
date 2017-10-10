@@ -203,7 +203,7 @@ storage.connect().then(() => {
         scheduleUpdates(stationUtils.selected, interval);
     }
 })
-.then(() => storage.disconnect());
+    .then(() => storage.disconnect());
 
 if (process.argv.length < 3) console.log('pass in a command: seed, updateStats or pullUpdates');
 
