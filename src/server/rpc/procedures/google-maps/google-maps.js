@@ -205,6 +205,19 @@ StaticMap.prototype.getLatitude = function(y){
     });
 };
 
+StaticMap.prototype.getLatitutdeLongitude = function(x, y){
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let coords = this._coordsAt(x,y, mapInfo);
+        return [coords.lat, coords.lon];
+    });
+};
+
+StaticMap.prototype.getXY = function(latitude, longitude){
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let pixels = this._pixelsAt(latitude, longitude, mapInfo);
+        return [pixels.x, pixels.y];
+    });
+};
 // Getting current map settings
 StaticMap.prototype._getUserMap = function() {
     var response = this.response;
