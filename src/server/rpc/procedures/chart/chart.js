@@ -14,32 +14,40 @@ const defaults = {
     xLabel: undefined,
     yLabel: undefined,
     xTicks: undefined,
-    smooth: 'false',
+    isCategorical: false,
+    smooth: false,
     grid: 'line',
-    isTimeSeries: 'false',
+    isTimeSeries: false,
     timeInputFormat: '%s',
     timeDisplayFormat: '%H:%M'
 };
 
 // calculates data stats
-function calcRanges(lines){
+// TODO refactor so it process one axis (one array) at a time. con: lose some performance
+function calcRanges(lines, isCategorical){
     let stats = {
-        x: {
-            min: Number.MAX_VALUE, max: -1 * Number.MAX_VALUE
-        }, 
         y: {
             min: Number.MAX_VALUE, max: -1 * Number.MAX_VALUE
         }
     };
+    if (! isCategorical){
+        stats.x = {
+            min: Number.MAX_VALUE, max: -1 * Number.MAX_VALUE
+        }; 
+    }
     lines.forEach(line => {
-        // min max of x
-        line = _.sortBy(line, (pt => pt[0]));
-        let {0 : xmin ,length : l, [l - 1] : xmax} = line.map(pt => pt[0]);
+
+        if (! isCategorical){
+            // min max of x
+            line = _.sortBy(line, (pt => pt[0]));
+            let {0 : xmin ,length : l, [l - 1] : xmax} = line.map(pt => pt[0]);
+            if( xmin < stats.x.min ) stats.x.min = xmin;
+            if( xmax > stats.x.max ) stats.x.max = xmax;
+        }
+
         // min max of y
         line = _.sortBy(line, (pt => pt[1]));
-        let {0 : ymin , [l - 1] : ymax} = line.map(pt => pt[1]);
-        if( xmin < stats.x.min ) stats.x.min = xmin;
-        if( xmax > stats.x.max ) stats.x.max = xmax;
+        let {0 : ymin ,length : l, [l - 1] : ymax} = line.map(pt => pt[1]);
         if( ymin < stats.y.min ) stats.y.min = ymin;
         if( ymax > stats.y.max ) stats.y.max = ymax;
     });
@@ -49,7 +57,7 @@ function calcRanges(lines){
     return stats;
 }
 
-function prepareData(input) {
+function prepareData(input, isCategorical) {
     // if the input is one line convert it to appropriate format
     if (! Array.isArray(input[0][0])){
         chart._logger.trace('one line input detected');
@@ -66,9 +74,9 @@ function prepareData(input) {
                 chart._logger.warn('input is not an array!', pt);
                 throw 'all input points should be in [x,y] form.';
             }
-            pt[0] = parseFloat(pt[0]);
+            if (! isCategorical) pt[0] = parseFloat(pt[0]);
             pt[1] = parseFloat(pt[1]);
-            if ( !x || !y || isNaN(x) || isNaN(y) ) throw 'all [x,y] pairs should be numbers';
+            if ( !x || !y || (! isCategorical && isNaN(x)) || isNaN(y) ) throw 'all [x,y] pairs should be numbers';
             return pt;
         });
         return line;
@@ -80,7 +88,6 @@ function prepareData(input) {
 // generate gnuplot friendly line objects
 function genGnuData(lines, lineTitles, lineTypes, smoothing){
     return lines.map((pts, idx) => {
-        pts = _.sortBy(pts, (pt => pt[0]));
         let lineObj = {points: pts};
         if (lineTypes) lineObj.type = lineTypes[idx];
         if (lineTitles) lineObj.title = lineTitles[idx];
@@ -91,34 +98,49 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
 
 chart.draw = function(lines, options){
     options = _.fromPairs(options);
+    // process the options
     Object.keys(options).forEach(key => {
         if (options[key] === 'null' || options[key] === ''){
             delete options[key];
         }
+        if (options[key] === 'true') options[key] = true;
+        if (options[key] === 'false') options[key] = false;
     });
     options = _.merge({}, defaults, options || {});
 
     // prepare and check for errors in data
     try {
-        lines = prepareData(lines);
+        lines = prepareData(lines, options.isCategorical);
     } catch (e) {
+        this._logger.error(e);
         this.response.status(500).send(e);
         return null;
     }
-
-    let stats = calcRanges(lines);
+    let stats = calcRanges(lines, options.isCategorical);
     this._logger.info('data stats:', stats);
     const relativePadding = {
-        x: stats.x.range * 0.05,
         y: stats.y.range * 0.05
     };
-    let data = genGnuData(lines, options.labels, options.types, options.smooth === 'true');
-    let opts = {title: options.title, xLabel: options.xLabel, yLabel: options.yLabel};
-    opts.xRange = {min: stats.x.min - relativePadding.x, max: stats.x.max + relativePadding.x};
+
+    //TODO auto set to boxes if categorical? 
+
+    let opts = {title: options.title, xLabel: options.xLabel, yLabel: options.yLabel, isCategorical: options.isCategorical};
     opts.yRange = {min: stats.y.min - relativePadding.y, max: stats.y.max + relativePadding.y};
-    if (options.xRange.length === 2) opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
     if (options.yRange.length === 2) opts.yRange = {min: options.yRange[0], max: options.yRange[1]};
-    if (options.isTimeSeries == 'true') {
+
+    if (! options.isCategorical){
+        relativePadding.x = stats.x.range * 0.05;
+        opts.xRange = {min: stats.x.min - relativePadding.x, max: stats.x.max + relativePadding.x};
+        if (options.xRange.length === 2) opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
+
+        // sort lines
+        lines = lines.map(pts => {
+            pts = _.sortBy(pts, (pt => pt[0]));
+            return pts;
+        });
+    }
+
+    if (options.isTimeSeries) {
         opts.timeSeries = {
             axis: 'x',
             inputFormat: options.timeInputFormat,
@@ -140,12 +162,13 @@ chart.draw = function(lines, options){
     
     // if a specific number of ticks are requested
     if (options.xTicks) {
+        if (options.isCategorical) throw 'can\'t change the number of xTicks in categorical charting';
         let tickStep = (stats.x.max - stats.x.min)/options.xTicks;
         opts.xTicks = [stats.x.min, tickStep, stats.x.max];
     }
     
+    let data = genGnuData(lines, options.labels, options.types, options.smooth);
     this._logger.trace('charting with options', opts);
-
     try {
         var chartStream =  gnuPlot.draw(data, opts);
     } catch (e) {
@@ -197,6 +220,7 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
         xLabel: xAxisTag,
         yLabel: yAxisTag,
         title: title,
+        isCategorical: true,
         smooth: true,
         labels: datasetTag
     };
