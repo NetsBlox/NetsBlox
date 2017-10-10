@@ -236,4 +236,8 @@ chart.defaultOptions = function(){
     return rpcUtils.jsonToSnapList(defaults);
 };
 
+chart.COMPATIBILITY = {
+    deprecatedMethods: ['drawBarChart', 'drawLineChart']
+};
+
 module.exports = chart;
