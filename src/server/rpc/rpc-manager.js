@@ -100,7 +100,7 @@ RPCManager.prototype.createRouter = function() {
 
     function tagWithCompatibility(rpc) {
         let methods = this.rpcRegistry[rpc.serviceName];
-        methods._compatiblity = rpc.COMPATIBILITY;
+        methods._compability = rpc.COMPATIBILITY;
         return methods;
     }
 
