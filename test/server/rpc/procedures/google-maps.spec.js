@@ -27,6 +27,7 @@ describe('staticmap', function() {
             ['maxLongitude'],
             ['maxLatitude'],
             ['minLongitude'],
+            ['getDistance', ['startLatitude', 'startLongitude', 'endLatitude', 'endLongitude']],
             ['minLatitude']
         ]);
     });
