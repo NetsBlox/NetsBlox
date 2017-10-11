@@ -1,5 +1,5 @@
 /* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
-   Qs, List, SnapActions*/
+   Qs, List, SnapActions, isObject*/
 
 ThreadManager.prototype.startProcess = function (
     block,
@@ -315,6 +315,9 @@ NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
 NetsProcess.prototype.parseRPCResult = function (result) {
     if (result instanceof Array) {
         return new List(result.map(this.parseRPCResult.bind(this)));
+    } else if (typeof result === 'string' && result[0] === '<') {
+        var sockets = this.homeContext.receiver.parentThatIsA(IDE_Morph).sockets;
+        return sockets.deserializeData([result])[0];
     }
     return result;
 };
