@@ -968,3 +968,33 @@ Costume.prototype.toXML = function (serializer) {
     );
 };
 
+// TODO: Create portable serializations
+CustomCommandBlockMorph.prototype.toBlockXML = function (serializer) {
+    var scope = this.definition.isGlobal ? undefined
+        : this.definition.receiver.name;
+    return serializer.format(
+        '<custom-block collabId="@" s="@"%>%%%%</custom-block>',
+        this.id,
+        this.blockSpec,
+        this.definition.isGlobal ?
+                '' : serializer.format(' scope="@"', scope),
+        serializer.store(this.inputs()),
+        this.definition.variableNames.length ?
+                '<variables>' +
+                    this.variables.toXML(serializer) +
+                    '</variables>'
+                        : '',
+        this.comment ? this.comment.toXML(serializer) : '',
+        (serializer.isSavingPortable || scope) && !this.definition.receiver[serializer.idProperty] ?
+                '<receiver>' +
+                    (serializer.isSavingCustomBlockOwners ?
+                    serializer.store(this.definition.receiver) :
+                    '<ref actionID="' + this.definition.receiver.id +'"/>') +
+                    '</receiver>'
+                        : ''
+    );
+};
+
+CustomReporterBlockMorph.prototype.toBlockXML
+    = CustomCommandBlockMorph.prototype.toBlockXML;
+

@@ -339,16 +339,30 @@ NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
         values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
         query= {},
         params;
-    //build a json obj
+
+    // build a json obj
+    var isPortable = SnapActions.serializer.isSavingPortable;
+    SnapActions.serializer.flush();
+    SnapActions.serializer.isSavingHistory = false;
+    SnapActions.serializer.isSavingPortable = true;
     argNames.forEach(function(name, index) {
         if (values[index] instanceof List) {
             query[name] = listToArray(values[index]);
-        }else{
+        } else if (isObject(values[index])) {
+            query[name] = SnapActions.serializer.store(values[index]);
+            console.log(query[name]);
+            console.log(SnapActions.serializer.idProperty);
+        } else {
             query[name] = values[index];
         }
     });
+    SnapActions.serializer.isSavingHistory = true;
+    SnapActions.serializer.isSavingPortable = isPortable;
+    SnapActions.serializer.flush();
+
     // call stringify
     params = Qs.stringify(query, {encodeValuesOnly: true});
+
     return this.getJSFromRPCDropdown(rpc, action, params);
 };
 
