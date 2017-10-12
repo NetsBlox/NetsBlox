@@ -232,10 +232,10 @@ StaticMap.prototype.getScreenCoordinate = function(latitude, longitude){
 StaticMap.prototype.getScreenCoordinates = function(latLons){
     return this._getMapInfo(this.socket.roleId).then(mapInfo => {
         return latLons.map( latLon => {
-            let [latitude, longitude] = latLons;
+            let [latitude, longitude] = latLon;
             let pixels = this._pixelsAt(latitude, longitude, mapInfo);
             return [pixels.x, pixels.y];
-        })
+        });
     });
 };
 
