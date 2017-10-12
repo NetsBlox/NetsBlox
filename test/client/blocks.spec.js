@@ -47,4 +47,27 @@ describe('blocks', function() {
                 });
         });
     });
+
+    describe('rpc', function() {
+        before(done => {
+            driver.reset(done);
+        });
+
+        it('should populate method with `setField`', function(done) {
+            // create rpc block
+            driver.addBlock('getJSFromRPCStruct').accept(block => {
+                var serviceField = block.inputs()[0];
+                // set the service to weather
+                SnapActions.setField(serviceField, 'Weather').accept(() => {
+                    var methodField = block.inputs()[1];
+                    // set the method to `humidity`
+                    SnapActions.setField(methodField, 'humidity').accept(() => {
+                        var err = null;
+                        if (block.inputs().length < 3) err = `argument inputs not created!`;
+                        done(err);
+                    });
+                });
+            });
+        });
+    });
 });
