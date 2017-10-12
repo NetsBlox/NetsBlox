@@ -228,4 +228,29 @@ describe('ide', function() {
             expect(saveACopyBtn).to.not.be(undefined);
         });
     });
+
+    describe('replay', function() {
+        before(function(done) {
+            driver.reset(done);
+        });
+
+        describe('bug reports', function() {
+            it('should play the openProject event', function(done) {
+                var ide = driver.ide();
+                var checkAtEnd = function() {
+                    var err = null;
+                    if (ide.replayControls.actionIndex === -1) err = `did not apply openProject!`;
+                    done(err);
+                };
+                driver.addBlock('forward').accept(() => {
+                    var events = SnapUndo.allEvents;
+                    driver.reset(() => {
+                        ide.replayEvents(events);
+                        ide.replayControls.jumpToEnd();
+                        setTimeout(checkAtEnd, 100);
+                    });
+                });
+            });
+        });
+    });
 });
