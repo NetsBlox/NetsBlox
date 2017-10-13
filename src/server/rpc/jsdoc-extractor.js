@@ -8,20 +8,9 @@ const MARKER_START = '/**',
     MARKER_START_SKIP = '/***',
     MARKER_END = '*/';
 
-let parse = (filePath, searchScope = 5) => {
+let parseSync = (filePath, searchScope = 5) => {
     let source = fse.readFileSync(filePath, 'UTF8');
     return parseSource(source, searchScope);
-};
-
-let parseAsync = (filePath, searchScope = 5) => {
-    return fse.readFile(filePath, 'UTF8')
-        .then(source => {
-            return parseSource(source, searchScope);
-        })
-        .catch(err => {
-            logger.error(err);
-            throw err;
-        });
 };
 
 function parseSource(source, searchScope){
@@ -174,5 +163,5 @@ if (FILE) parse();
 module.exports = {
     extractDocBlocks,
     _findFn:  findFn,
-    parse: parse
+    parse: parseSync
 };
