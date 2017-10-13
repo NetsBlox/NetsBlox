@@ -8,38 +8,52 @@ const MARKER_START = '/**',
     MARKER_START_SKIP = '/***',
     MARKER_END = '*/';
 
-let parse = (filePath, SEARCH_SIZE = 5) => {
-    return fse.readFile(FILE, 'UTF8')
+let parse = (filePath, searchScope = 5) => {
+    let source = fse.readFileSync(filePath, 'UTF8');
+    return parseSource(source, searchScope);
+};
+
+let parseAsync = (filePath, searchScope = 5) => {
+    return fse.readFile(filePath, 'UTF8')
         .then(source => {
-            let lines = source.split(/\n/);
-            let blocks = extractDocBlocks(source);
-            blocks = blocks.map(block => {
-                let src = block.lines.join('\n');
-                block.parsed = doctrine.parse(src, {unwrap: true});
-                delete block.lines;
-                return block;
-            });
-            blocks.forEach(block => {
-                let linesToSearch = lines.slice(block.endLine, block.endLine + SEARCH_SIZE);
-                // if @name is set jsut use that and save a few cycles
-                if (block.parsed.tags.some(tag => tag.title === 'name')) {
-                    block.fnName  = block.parsed.tags.find(tag => tag.title === 'name').name;
-                    logger.info('fn name set through @name', block.fnName);
-                } else {
-                    let fnName = findFn(linesToSearch);
-                    if (!fnName){
-                        throw `can't associate ${block} with any function`;
-                        // TODO filter / ignore this one and keep going
-                    }
-                    block.fnName = fnName;
-                }
-            });
-            logger.log(blocks.map(b => b.parsed.tags));
+            return parseSource(source, searchScope);
         })
         .catch(err => {
             logger.error(err);
+            throw err;
         });
 };
+
+function parseSource(source, searchScope){
+    let lines = source.split(/\n/);
+    let blocks = extractDocBlocks(source);
+    blocks = blocks.map(block => {
+        let src = block.lines.join('\n');
+        block.parsed = doctrine.parse(src, {unwrap: true});
+        return block;
+    });
+
+    blocks = blocks.filter(block => {
+        let linesToSearch = lines.slice(block.endLine, block.endLine + searchScope);
+        let fnName;
+        // if @name is set jsut use that and save a few cycles
+        if (block.parsed.tags.some(tag => tag.title === 'name')) {
+            fnName  = block.parsed.tags.find(tag => tag.title === 'name').name;
+            logger.info('fn name set through @name', fnName);
+        } else {
+            fnName = findFn(linesToSearch);
+            if (!fnName){
+                logger.error(`can't associate ${block.lines} with any function. # Fix it at line ${block.beginLine}, column ${block.column}`);
+                return false;
+                // TODO filter / ignore this one and keep going
+            }
+        }
+        block.fnName = fnName;
+        return true;
+    });
+
+    return blocks;
+}
 
 // returns the first function found the a line or an array of lines
 function findFn(line){
