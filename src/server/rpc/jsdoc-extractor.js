@@ -25,14 +25,15 @@ function parseSource(source, searchScope){
     blocks = blocks.filter(block => {
         let linesToSearch = lines.slice(block.endLine, block.endLine + searchScope);
         let fnName;
-        // if @name is set jsut use that and save a few cycles
-        if (block.parsed.tags.some(tag => tag.title === 'name')) {
-            fnName  = block.parsed.tags.find(tag => tag.title === 'name').name;
+        // if @name is set just use that and save a few cycles
+        let nameTag = block.parsed.tags.find(tag => tag.title === 'name');
+        if (nameTag) {
+            fnName  = nameTag.name;
             logger.info('fn name set through @name', fnName);
         } else {
             fnName = findFn(linesToSearch);
             if (!fnName){
-                logger.error(`can't associate ${block.lines} with any function. # Fix it at line ${block.beginLine}, column ${block.column}`);
+                logger.warn(`can't associate ${block.lines} with any function. # Fix it at line ${block.beginLine}, column ${block.column}`);
                 return false;
             }
         }
