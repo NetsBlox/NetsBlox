@@ -1,4 +1,6 @@
 const fse = require('fs-extra'),
+    Logger = require('../logger.js'),
+    logger = new Logger('netsblox:jsdoc'),
     doctrine = require('doctrine');
 
 
@@ -22,7 +24,7 @@ let parse = (filePath, SEARCH_SIZE = 5) => {
                 // if @name is set jsut use that and save a few cycles
                 if (block.parsed.tags.some(tag => tag.title === 'name')) {
                     block.fnName  = block.parsed.tags.find(tag => tag.title === 'name').name;
-                    console.log('fn name set through @name', block.fnName);
+                    logger.info('fn name set through @name', block.fnName);
                 } else {
                     let fnName = findFn(linesToSearch);
                     if (!fnName){
@@ -32,10 +34,10 @@ let parse = (filePath, SEARCH_SIZE = 5) => {
                     block.fnName = fnName;
                 }
             });
-            console.log(blocks.map(b => b.parsed.tags));
+            logger.log(blocks.map(b => b.parsed.tags));
         })
         .catch(err => {
-            console.error(err);
+            logger.error(err);
         });
 };
 
