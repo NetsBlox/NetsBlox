@@ -58,7 +58,11 @@ if(!process.env.GOOGLE_GEOCODING_API) {
     };
 
 
-    // geocode an address and send back the details
+    /**
+     * geolocate and address and send back the details
+     * @param {string} address target address
+     */
+
     GeoLocationRPC.geolocate = function (address) {
         let response = this.response;
 
