@@ -4,7 +4,7 @@ const assert = require('assert'),
 
 describe('jsdoc-extractor', () => {
 
-    describe.only('fnFinder', () => {
+    describe('fnFinder', () => {
         let testText = `let doStuff = a => a*2;
     function doStuff(){}
     GoogleMap.doStuff = function
@@ -21,7 +21,12 @@ describe('jsdoc-extractor', () => {
             assert.deepEqual(jp._findFn(line), 'reverseGeocode');
         });
 
-        it('should fiind obj.ojb = function', () => {
+        it('should find let fn = arg => ', () => {
+            let line = 'let reverseGeocode = arg=>{';
+            assert.deepEqual(jp._findFn(line), 'reverseGeocode');
+        });
+
+        it('should find obj.obj = function', () => {
             let line = '    GeoLocationRPC.geolocate = function (address) {';
             assert.deepEqual(jp._findFn(line), 'geolocate');
         });

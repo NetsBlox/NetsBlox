@@ -59,8 +59,9 @@ if(!process.env.GOOGLE_GEOCODING_API) {
 
 
     /**
-     * geolocate and address and send back the details
+     * Geolocates the address and sends back the coordinates
      * @param {string} address target address
+     * @returns {structuredData}
      */
 
     GeoLocationRPC.geolocate = function (address) {

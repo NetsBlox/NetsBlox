@@ -34,7 +34,6 @@ function parseSource(source, searchScope){
             if (!fnName){
                 logger.error(`can't associate ${block.lines} with any function. # Fix it at line ${block.beginLine}, column ${block.column}`);
                 return false;
-                // TODO filter / ignore this one and keep going
             }
         }
         block.fnName = fnName;
@@ -124,7 +123,6 @@ function mkextract () {
 
             // figure out if we slice from opening marker pos
             // or line start is shifted to the left
-            // TODO check for tabs?
             var nonSpaceChar = line.match(/\S/);
 
             // skip for the first line starting with /** (fresh chunk)
@@ -155,9 +153,6 @@ function mkextract () {
         return result;
     };
 }
-
-const FILE= process.argv[2];
-if (FILE) parse();
 
 // public interface
 module.exports = {

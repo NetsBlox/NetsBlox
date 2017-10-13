@@ -60,8 +60,6 @@ RPCManager.prototype.loadRPCs = function() {
         })
         .map(pair => {
             let [name, RPCConstructor] = pair;
-            // console.log(RPCConstructor._docs);
-            // console.log(Object.keys(RPCConstructor));
             if (RPCConstructor.init) {
                 RPCConstructor.init(this._logger);
             }
