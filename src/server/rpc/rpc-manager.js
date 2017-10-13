@@ -92,7 +92,18 @@ RPCManager.prototype.registerRPC = function(rpc) {
         .filter(name => !RESERVED_FN_NAMES.includes(name));
 
     for (var i = fnNames.length; i--;) {
-        this.rpcRegistry[name][fnNames[i]] = utils.getArgumentsFor(fnObj[fnNames[i]]);
+        let args;
+        // find the associated doc
+        let doc = rpc._docs.find(doc => doc.fnName === fnNames[i]);
+        // get the argument names ( starting from doc )
+        if (doc) {
+            args = doc.parsed.tags
+                .filter(tag => tag.title === 'param')
+                .map(tag => tag.name);
+        }else{
+            args = utils.getArgumentsFor(fnObj[fnNames[i]]);
+        }
+        this.rpcRegistry[name][fnNames[i]] = args;
     }
 };
 
