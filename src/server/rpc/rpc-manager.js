@@ -14,6 +14,7 @@ var fs = require('fs'),
     SocketManager = require('../socket-manager'),
     utils = require('../server-utils'),
     JsonToSnapList = require('./procedures/utils').jsonToSnapList ,
+    jsdocExtractor = require('./jsdoc-extractor.js'),
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
 const DEFAULT_COMPATIBILITY = {arguments: {}};
@@ -39,7 +40,11 @@ RPCManager.prototype.loadRPCs = function() {
     return fs.readdirSync(PROCEDURES_DIR)
         .map(name => [name, path.join(PROCEDURES_DIR, name, name+'.js')])
         .filter(pair => fs.existsSync(pair[1]))
-        .map(pair => [pair[0], require(pair[1])])
+        .map(pair => {
+            let service = require(pair[1]);
+            service._docs = jsdocExtractor.parse(pair[1]);
+            return [pair[0], service];
+        })
         .filter(pair => {
             let [name, service] = pair;
             if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
@@ -55,6 +60,8 @@ RPCManager.prototype.loadRPCs = function() {
         })
         .map(pair => {
             let [name, RPCConstructor] = pair;
+            // console.log(RPCConstructor._docs);
+            // console.log(Object.keys(RPCConstructor));
             if (RPCConstructor.init) {
                 RPCConstructor.init(this._logger);
             }
