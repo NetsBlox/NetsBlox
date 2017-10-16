@@ -96,7 +96,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
         }
     }
 
-	function applyFlags(dict) {
+    function applyFlags(dict) {
         if (dict.editMode) {
             myself.toggleAppMode(false);
         } else {
@@ -112,7 +112,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
         if (dict.noExitWarning) {
             window.onbeforeunload = nop;
         }
-	}
+    }
 
     // dynamic notifications from non-source text files
     // has some issues, commented out for now
@@ -160,7 +160,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
             }
         } else if (location.hash.substr(0, 5) === '#run:') {
             hash = location.hash.substr(5);
-            idx = hash.indexOf("&");
+            idx = hash.indexOf('&');
             if (idx > 0) {
                 hash = hash.slice(0, idx);
             }
