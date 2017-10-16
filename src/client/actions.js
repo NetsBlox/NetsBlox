@@ -1,5 +1,5 @@
 /* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer,
-   HintInputSlotMorph, SnapCloud, Action*/
+   HintInputSlotMorph, SnapCloud, Action, copy*/
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
@@ -82,11 +82,11 @@ SnapActions.send = function(event) {
         }));
         // Netsblox addition: end
     }
-    // Netsblox addition: start
-    this.recordActionNB(event);
+};
 
-    return event;
-    // Netsblox addition: end
+SnapActions.submitAction = function(action) {
+    this.recordActionNB(copy(action));
+    return ActionManager.prototype.submitAction.call(this, action);
 };
 
 SnapActions.onMessage = function(msg) {
@@ -109,19 +109,6 @@ SnapActions.recordActionNB = function(action) {
     msg.action = action;
     socket.sendMessage(msg);
 };
-
-// TODO: change this...
-//SnapActions.loadProject = function() {
-    //var event;
-
-    //this.__sessionId = Date.now();
-
-    //// Send the project state
-    //event = ActionManager.prototype.loadProject.apply(this, arguments);
-    //this.recordActionNB(event);
-
-    //return event;
-//};
 
 SnapActions.completeAction = function(error) {
     if (error) {
