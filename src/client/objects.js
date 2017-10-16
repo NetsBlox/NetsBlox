@@ -1800,11 +1800,14 @@ ReplayControls.prototype.update = function() {
         }
 
         // Netsblox addition: start
-        // Ignore openProject actions
+        // Ignore openProject actions as we are just replaying the role history
+        // and not the entire project (openProject would change the project/room)
         if (action.type === 'openProject') {
             if (this.isShowingCaptions) {
                 this.displayCaption(action, originalEvent);
             }
+            this.actionIndex += dir;
+            this.actionTime = originalEvent.time;
             return setTimeout(myself.update.bind(myself), 10);
 
         }

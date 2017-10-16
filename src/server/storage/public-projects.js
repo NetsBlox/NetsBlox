@@ -32,16 +32,24 @@ let extractRpcs = require('../server-utils').extractRpcs;
         sourceCodes.forEach(srcCode => {
             services = services.concat(extractRpcs(srcCode));
         });
+
         var activeRole = project.roles[project.activeRole],
             metadata = {
                 owner: project.owner,
                 projectName: project.name,
                 primaryRoleName: project.activeRole,
                 roleNames: Object.keys(project.roles),
-                thumbnail: activeRole && activeRole.Thumbnail[0],
-                notes: activeRole && activeRole.Notes[0],
+                thumbnail: null,
+                notes: null,
                 services: _.uniq(services)
             };
+
+        if (activeRole) {
+            metadata.thumbnail = activeRole.Thumbnail instanceof Array ?
+                activeRole.Thumbnail[0] : activeRole.Thumbnail;
+            metadata.notes = activeRole.notes instanceof Array ?
+                activeRole.notes[0] : activeRole.notes;
+        }
 
         logger.trace(`Publishing project ${project.name} from ${project.owner}`);
 

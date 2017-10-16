@@ -77,6 +77,7 @@ SnapDriver.prototype.addBlock = function(spec, position) {
         SpriteMorph.prototype.blockForSelector(spec, true) : spec;
     var sprite = this.ide().currentSprite;
 
+    position = position || new Point(400, 400);
     return SnapActions.addBlock(block, sprite.scripts, position);
 };
 

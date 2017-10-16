@@ -15,6 +15,7 @@ const optsDefaults = {
     xLabel: undefined,
     yLabel: undefined,
     xTicks: undefined,
+    isCategorical: false,
     timeSeries: {
         axis: undefined,
         inputFormat: undefined,
@@ -35,12 +36,13 @@ function pointsToInlineData(points){
 
 // if sharing a column, using can be used to select which columns relate (x & y)
 // returns a plot command string
-function dataToPlot(data){ 
+function dataToPlot(data, opts){ 
     let settings = [],
         points = '';
     data.forEach(line => {
         let smoothing = line.smoothing ? `smooth ${line.smoothing}` : '';
-        settings.push(`'-' using 1:2 title '${line.title}' with ${line.type} ${smoothing}`);
+        let columnSelection = opts.isCategorical ? '2:xtic(1)' : '1:2';
+        settings.push(`'-' using ${columnSelection} title '${line.title}' with ${line.type} ${smoothing}`);
         points += pointsToInlineData(line.points);
     });
     let cmdString = settings.join(', ') + points;
@@ -75,7 +77,8 @@ let draw = (data, opts) => {
         // palette
         .set('palette maxcolors 8')
         .set('palette defined ( 0 \'#1B9E77\', 1 \'#D95F02\', 2 \'#7570B3\', 3 \'#E7298A\', 4 \'#66A61E\', 5 \'#E6AB02\', 6 \'#A6761D\',7 \'#666666\' )')
-
+        .set('boxwidth 0.5')
+        .set('style fill solid')
         .set('datafile separator \',\'');
 
     // if (data.length > 1) graph.set(`multiplot layout 1,2`) // this option is for drawing multiple charts
@@ -93,7 +96,7 @@ let draw = (data, opts) => {
         graph.set(`format ${opts.timeSeries.axis} '${opts.timeSeries.outputFormat}'`);
     }
 
-    graph.plot(dataToPlot(data),{end: true});
+    graph.plot(dataToPlot(data, opts),{end: true});
 
     return graph;
 };

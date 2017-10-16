@@ -2382,8 +2382,15 @@ NetsBloxMorph.prototype.loadBugReport = function () {
                         for (var i = keys.length; i--;) {
                             SnapUndo[keys[i]] = report.undoState[keys[i]];
                         }
+                        myself.confirm(
+                            'Would you like to apply the failing event?',
+                            'Apply Failing Event?',
+                            function() {
+                                SnapActions.applyEvent(report.event);
+                            }
+                        );
                         myself.showMessage('Loaded bug report!');
-                    }, 10);
+                    }, 100);
                     dialog.destroy();
                 };
 
