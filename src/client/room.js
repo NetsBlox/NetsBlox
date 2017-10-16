@@ -30,7 +30,8 @@ var white = new Color(224, 224, 224);
 function RoomMorph(ide) {
     // Get the users at the room
     this.ide = ide;
-    this.roles = null;
+
+    this.roles = this.getDefaultRoles();
     this.roleLabels = {};
     this.invitations = {};  // open invitations
 
@@ -38,6 +39,7 @@ function RoomMorph(ide) {
     this.collaborators = [];
     this.roomLabel = null;
     this.init(true);
+
     // Set up the room name
     this._name = localize(RoomMorph.DEFAULT_ROOM);
     Object.defineProperty(this, 'name', {
@@ -111,11 +113,15 @@ RoomMorph.prototype.getRoleCount = function() {
 };
 
 RoomMorph.prototype.getCurrentOccupants = function() {
-    return this.roles[this.ide.projectName].slice();
+    if (this.roles && this.roles[this.ide.projectName]) {
+        return this.roles[this.ide.projectName].slice();
+    } else {
+        return this.getDefaultRoles()[this.ide.projectName];
+    }
 };
 
 RoomMorph.prototype.isLeader = function() {
-    var leader = this.roles[this.ide.projectName][0];
+    var leader = this.getCurrentOccupants()[0];
     return leader && leader.uuid === this.myUuid();
 };
 
@@ -140,6 +146,8 @@ RoomMorph.prototype.isOwner = function(user) {
     if (RoomMorph.isSocketUuid(this.ownerId) && !user) {
         return this.ide.sockets.uuid === this.ownerId;
     }
+
+    if (!user && this.ownerId === null) return true;
 
     user = user || SnapCloud.username;
     return this.ownerId && this.ownerId === user;

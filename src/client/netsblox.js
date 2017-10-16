@@ -50,9 +50,9 @@ NetsBloxMorph.prototype.openIn = function (world) {
     }
 
     this.buildPanes();
+    SnapActions.configure(this);
     SnapActions.disableCollaboration();
     SnapUndo.reset();
-    SnapActions.loadProject(this);
     world.add(this);
     world.userMenu = this.userMenu;
 
@@ -124,10 +124,14 @@ NetsBloxMorph.prototype.openIn = function (world) {
     }
     */
 
+    // Netsblox addition: start
+    this.projectName = 'myRole';
+    // Netsblox addition: end
     function interpretUrlAnchors() {
-        var dict = {}, idx;
+        var dict, idx;
 
         // Netsblox addition: start
+        dict = {};
         if (location.href.indexOf('?') > -1) {
             var querystring = location.href
                 .replace(/^.*\?/, '')
@@ -136,7 +140,6 @@ NetsBloxMorph.prototype.openIn = function (world) {
             dict = SnapCloud.parseDict(querystring);
         }
         // Netsblox addition: end
-
         if (location.hash.substr(0, 6) === '#open:') {
             hash = location.hash.substr(6);
             if (hash.charAt(0) === '%'
@@ -144,13 +147,13 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 hash = decodeURIComponent(hash);
             }
             if (contains(
-                ['project', 'blocks', 'sprites', 'snapdata'].map(
-                    function (each) {
-                        return hash.substr(0, 8).indexOf(each);
-                    }
-                ),
-                1
-            )) {
+                    ['project', 'blocks', 'sprites', 'snapdata'].map(
+                        function (each) {
+                            return hash.substr(0, 8).indexOf(each);
+                        }
+                    ),
+                    1
+                )) {
                 this.droppedText(hash);
             } else {
                 this.droppedText(getURL(hash));
@@ -166,9 +169,9 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 hash = decodeURIComponent(hash);
             }
             if (hash.substr(0, 8) === '<project>') {
-                this.rawOpenProjectString(hash);
+                SnapActions.openProject(hash);
             } else {
-                this.rawOpenProjectString(getURL(hash));
+                SnapActions.openProject(getURL(hash));
             }
             applyFlags(SnapCloud.parseDict(location.hash.substr(5)));
         // Netsblox addition: start
@@ -197,6 +200,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                         },
                         function () {nop(); }, // yield (bug in Chrome)
                         function () {
+                            //SnapActions.openProject(projectData);
                             // Netsblox addition: start
                             myself.openRoomString(projectData, true);
                             // Netsblox addition: end
@@ -233,13 +237,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                         },
                         function () {nop(); }, // yield (bug in Chrome)
                         function () {
-                            if (projectData.indexOf('<snapdata') === 0) {
-                                myself.rawOpenCloudDataString(projectData);
-                            } else if (
-                                projectData.indexOf('<project') === 0
-                            ) {
-                                myself.rawOpenProjectString(projectData);
-                            }
+                            SnapActions.openProject(projectData);
                             myself.hasChangedMedia = true;
                         },
                         function () {
@@ -277,7 +275,6 @@ NetsBloxMorph.prototype.openIn = function (world) {
             // Get the session id and join it!
             SnapActions.enableCollaboration();
             SnapActions.joinSession(sessionId, this.cloudError());
-
         // Netsblox addition: start
         } else if (location.hash.substr(0, 9) === '#example:' || dict.action === 'example') {
             var example = dict ? dict.ProjectName : location.hash.substr(9),
@@ -334,7 +331,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                             SnapCloud.callService(
                                 'getProject',
                                 function (response) {
-                                    myself.rawLoadCloudProject(response[0], dict.Public);
+                                    SnapActions.openProject(response[0], dict.Public);
                                 },
                                 myself.cloudError(),
                                 [SnapCloud.username, dict.ProjectName, SnapCloud.socketId()]
@@ -345,6 +342,8 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 myself.sockets.onConnect = onConnect;
             };
         // Netsblox addition: end
+        } else {
+            SnapActions.openProject();
         }
     }
 
@@ -357,7 +356,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
 };
 
 NetsBloxMorph.prototype.resourceURL = function () {
-    return 'api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
+    return '/api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
 };
 
 NetsBloxMorph.prototype.clearProject = function () {
@@ -377,16 +376,18 @@ NetsBloxMorph.prototype.clearProject = function () {
     StageMorph.prototype.codeHeaders = {};
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
+    StageMorph.prototype.enableSublistIDs = false;
     SpriteMorph.prototype.useFlatLineEnds = false;
+    Process.prototype.enableLiveCoding = false;
+    this.silentSetProjectName('');
     this.projectNotes = '';
     this.createStage();
     this.add(this.stage);
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
-    SnapActions.disableCollaboration();
-    SnapUndo.reset();
-    SnapActions.loadProject(this);
+    //SnapActions.disableCollaboration();
+    //SnapUndo.reset();
 };
 
 NetsBloxMorph.prototype.cloudMenu = function () {
@@ -419,6 +420,9 @@ NetsBloxMorph.prototype.cloudMenu = function () {
             'Reset Password...',
             'resetCloudPassword'
         );
+    // Netsblox addition: start
+    // (remove collaboration url stuff)
+    // Netsblox addition: end
     } else {
         menu.addItem(
             localize('Logout') + ' ' + SnapCloud.username,
@@ -428,6 +432,7 @@ NetsBloxMorph.prototype.cloudMenu = function () {
             'Change Password...',
             'changeCloudPassword'
         );
+        // Netsblox addition: start
         if (this.room.isOwner()) {
             menu.addLine();
             menu.addItem(
@@ -435,6 +440,7 @@ NetsBloxMorph.prototype.cloudMenu = function () {
                 'manageCollaborators'
             );
         }
+        // Netsblox addition: end
     }
     if (shiftClicked) {
         menu.addLine();
@@ -510,9 +516,7 @@ NetsBloxMorph.prototype.cloudMenu = function () {
                                     },
                                     function () {nop(); }, // yield (Chrome)
                                     function () {
-                                        myself.rawOpenCloudDataString(
-                                            projectData
-                                        );
+                                        SnapActions.openProject(projectData);
                                     },
                                     function () {
                                         msg.destroy();
@@ -1080,10 +1084,15 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
     StageMorph.prototype.codeHeaders = {};
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
+    StageMorph.prototype.enableSublistIDs = false;
+    Process.prototype.enableLiveCoding = false;
+    SnapActions.disableCollaboration();
     SnapUndo.reset();
     if (Process.prototype.isCatchingErrors) {
         try {
+            // NetsBlox addition: start
             model = parsed ? model : this.serializer.parse(model);
+            // NetsBlox addition: end
             this.serializer.loadMediaModel(model.childNamed('media'));
             project = this.serializer.openProject(
                 this.serializer.loadProjectModel(
@@ -1092,13 +1101,17 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
                 ),
                 this
             );
+            // NetsBlox addition: start
             // Join the room
             this.loadNextRoom();
+            // NetsBlox addition: end
         } catch (err) {
             this.showMessage('Load failed: ' + err);
         }
     } else {
+        // NetsBlox addition: start
         model = parsed ? model : this.serializer.parse(model);
+        // NetsBlox addition: end
         this.serializer.loadMediaModel(model.childNamed('media'));
         project = this.serializer.openProject(
             this.serializer.loadProjectModel(
@@ -1107,10 +1120,13 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
             ),
             this
         );
+        // NetsBlox addition: start
+        // Join the room
         this.loadNextRoom();
+        // NetsBlox addition: end
     }
-    SnapActions.loadProject(this, project.collabStartIndex, model.toString());
     this.stopFastTracking();
+    return project;
 };
 
 NetsBloxMorph.prototype.createSpriteBar = function () {
@@ -1738,7 +1754,7 @@ NetsBloxMorph.prototype.exportRoom = function (str) {
 };
 
 // Open the room
-NetsBloxMorph.prototype.openRoomString = function (str, isRaw) {
+NetsBloxMorph.prototype.openRoomString = function (str) {
     var room = this.serializer.parse(str),
         roles = {},
         role;
@@ -1773,17 +1789,17 @@ NetsBloxMorph.prototype.openRoomString = function (str, isRaw) {
     });
 
     // load the given project
-    if (isRaw) {
-        this.rawOpenCloudDataString(room.children[0], true);
-    } else {
-        this.openCloudDataString(room.children[0], true);
-    }
+    role = room.children[0];
+    var projectXml = role.children[0].toString() + role.children[1].toString();
+    SnapActions.openProject(projectXml);
 };
 
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
     var msg,
         myself = this,
+        // Netsblox addition: start
         str = parsed ? model.toString() : model,
+        // Netsblox addition: end
         size = Math.round(str.length / 1024);
 
     this.exitReplayMode();
@@ -1793,7 +1809,7 @@ NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
         },
         function () {nop(); }, // yield (bug in Chrome)
         function () {
-            myself.rawOpenCloudDataString(model, parsed);
+            SnapActions.openProject(str);
         },
         function () {
             msg.destroy();

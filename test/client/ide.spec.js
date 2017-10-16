@@ -22,8 +22,8 @@ describe('ide', function() {
                     return local = str;
                 }
 
-                expect(local).to.be(str);
                 delete ide.exportRoom;
+                expect(local).to.be(str);
                 done();
             };
             ide.exportSingleRoleXml();
@@ -35,6 +35,10 @@ describe('ide', function() {
 
         beforeEach(function(done) {
             driver.reset(done);
+        });
+
+        afterEach(function() {
+            driver.ide().saveSetting('language', 'en');
         });
 
         it('should not change replay length on lang change', function(done) {
@@ -93,12 +97,37 @@ describe('ide', function() {
                     }, 50);
                 });
         });
+
+        it('should have unique sprite ids after changing the lang', function(done) {
+            var ide = driver.ide();
+
+            // Change the language and create a sprite
+            ide.setLanguage('hu');
+            var validate = function() {
+                var spriteIds = ide.sprites.asArray().map(sprite => sprite.id);
+                try {
+                    expect(spriteIds.length).to.be(2);
+                    expect(spriteIds[0]).to.not.be(spriteIds[1]);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            };
+
+            setTimeout(() => {
+                ide.addNewSprite()
+                    .accept(() => {
+                        validate();
+                    })
+                    .reject(() => done('addNewSprite action rejected!'));
+            }, 150);
+        });
     });
 
     describe('name', function() {
         const BAD_CHARS = ['.', '@'];
-        beforeEach(function() {
-            driver.reset();
+        beforeEach(function(done) {
+            driver.reset(done);
         });
 
         BAD_CHARS.forEach(badChar => {
@@ -203,15 +232,7 @@ describe('ide', function() {
     describe('saveACopy', function() {
         let username;
         before(function(done) {
-            driver.reset(function() {
-                var ide = driver.ide();
-                username = SnapCloud.username;
-                SnapCloud.username = 'test';
-
-                ide.room.collaborators.push(SnapCloud.username);
-                ide.room.ownerId = 'otherUser';
-                done();
-            });
+            driver.reset(done);
         });
 
         after(function() {
@@ -220,6 +241,13 @@ describe('ide', function() {
 
         it('should have option to saveACopy if collaborator', function() {
             var ide = driver.ide();
+
+            // make the user a collaborator
+            username = SnapCloud.username;
+            SnapCloud.username = 'test';
+
+            ide.room.collaborators.push(SnapCloud.username);
+            ide.room.ownerId = 'otherUser';
 
             // Click the project menu
             driver.click(ide.controlBar.projectButton);
@@ -247,7 +275,7 @@ describe('ide', function() {
                     driver.reset(() => {
                         ide.replayEvents(events);
                         ide.replayControls.jumpToEnd();
-                        setTimeout(checkAtEnd, 100);
+                        setTimeout(checkAtEnd, 400);
                     });
                 });
             });

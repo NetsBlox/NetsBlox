@@ -1,12 +1,12 @@
 /* globals expect, driver, SnapActions, MessageCreatorMorph, PushButtonMorph */
 describe('messages', function() {
-    before(function() {
-        driver.selectCategory('network');
-    });
 
     describe('message type', function() {
-        beforeEach(function() {
-            driver.reset();
+        beforeEach(function(done) {
+            driver.reset(() => {
+                driver.selectCategory('network');
+                done();
+            });
         });
 
         it('should be able to open the msg type dialog', function() {
@@ -32,7 +32,8 @@ describe('messages', function() {
 
                 expect(!!btn).to.be(true);
                 done();
-            });
+            })
+            .reject(err => done(err));
         });
     });
 });
