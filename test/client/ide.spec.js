@@ -275,7 +275,7 @@ describe('ide', function() {
                     driver.reset(() => {
                         ide.replayEvents(events);
                         ide.replayControls.jumpToEnd();
-                        setTimeout(checkAtEnd, 100);
+                        setTimeout(checkAtEnd, 400);
                     });
                 });
             });
