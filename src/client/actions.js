@@ -147,22 +147,10 @@ SnapActions.applyEvent = function(event) {
 
         if (ide.isReplayMode && !event.isReplay && event.type !== 'openProject') {
             ide.promptExitReplay(function() {
-            // Netsblox addition: start
-                if (!myself.isCollaborating() || myself.isLeader) {
-                    // Netsblox addition: end
-                    myself.acceptEvent(event);
-                } else {
-                    myself.send(event);
-                }
+                myself.submitAction(event);
             });
         } else {
-            // Netsblox addition: start
-            if (!this.isCollaborating() || this.isLeader) {
-            // Netsblox addition: end
-                this.acceptEvent(event);
-            } else {
-                this.send(event);
-            }
+            myself.submitAction(event);
         }
 
         return new Action(this, event);
