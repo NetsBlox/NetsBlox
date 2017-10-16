@@ -1,6 +1,6 @@
 {
   "name": "netsblox",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Visual programming environment with networking support",
   "bin": {
     "netsblox": "./bin/netsblox"
@@ -88,6 +88,6 @@
     "mocha": "^2.2.1",
     "nodemon": "^1.3.7",
     "supertest": "^3.0.0",
-    "uglify-js": "^2.6.2"
+    "uglify-js": "^2.8.29"
   }
 }
