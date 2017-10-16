@@ -257,7 +257,7 @@ RPCInputSlotMorph.prototype.methodSignature = function () {
         this.fieldsFor = JSON.parse(this.getURL('/rpc/' + rpc));
 
         // grab the list of deprecated methods
-        let deprecatedMethods = this.fieldsFor._compability.deprecatedMethods || [];
+        var deprecatedMethods = this.fieldsFor._compability.deprecatedMethods || [];
         delete this.fieldsFor._compability;
 
         actions = Object.keys(this.fieldsFor);
