@@ -1078,6 +1078,7 @@ NetsBloxMorph.prototype.loadNextRoom = function () {
 };
 
 NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
+    var project;
     StageMorph.prototype.hiddenPrimitives = {};
     StageMorph.prototype.codeMappings = {};
     StageMorph.prototype.codeHeaders = {};
@@ -1093,7 +1094,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
             model = parsed ? model : this.serializer.parse(model);
             // NetsBlox addition: end
             this.serializer.loadMediaModel(model.childNamed('media'));
-            this.serializer.openProject(
+            project = this.serializer.openProject(
                 this.serializer.loadProjectModel(
                     model.childNamed('project'),
                     this
@@ -1112,7 +1113,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
         model = parsed ? model : this.serializer.parse(model);
         // NetsBlox addition: end
         this.serializer.loadMediaModel(model.childNamed('media'));
-        this.serializer.openProject(
+        project = this.serializer.openProject(
             this.serializer.loadProjectModel(
                 model.childNamed('project'),
                 this
@@ -1125,6 +1126,7 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
         // NetsBlox addition: end
     }
     this.stopFastTracking();
+    return project;
 };
 
 NetsBloxMorph.prototype.createSpriteBar = function () {
