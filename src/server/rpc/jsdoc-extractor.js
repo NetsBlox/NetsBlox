@@ -181,5 +181,19 @@ function mkextract () {
 module.exports = {
     extractDocBlocks,
     _findFn:  findFn,
-    parse: parseSync
+    _parseSource: parseSource,
+    _simplify: simplify,
+    parse: function(path, scope){
+        return parseSync(path, scope)
+            .filter(md => {
+                try {
+                    md.parsed = simplify(md.parsed, md.fnName);
+                    return true;
+                } catch (e) {
+                    logger.warn('invalid rpc jsdoc block', md);
+                    // TODO throw the error if you want to enforce this structure on added jdoc blocks
+                    return false;
+                }
+            });
+    }
 };
