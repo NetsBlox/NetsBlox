@@ -51,6 +51,7 @@ function parseSource(source, searchScope){
         let nameTag = block.parsed.tags.find(tag => tag.title === 'name');
         if (nameTag) {
             fnName  = nameTag.name;
+            block.parsed.tags = block.parsed.tags.filter(tag => tag.title !== 'name');
             logger.info('fn name set through @name', fnName);
         } else {
             fnName = findFn(linesToSearch);
