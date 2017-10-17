@@ -41,6 +41,11 @@ describe('jsdoc-extractor', () => {
             let line = '    GeoLocationRPC.geolocate = function (address) {';
             assert.deepEqual(jp._findFn(line), 'geolocate');
         });
+
+        it('should know prototype is not the fn name', () => {
+            let line = 'Googlemap.prototype.doStuff = function';
+            assert.deepEqual(jp._findFn(line), 'doStuff');
+        });
     });
 
 

@@ -83,7 +83,7 @@ function findFn(line){
     // regexlist to find the fn name in format of [regex string, mathgroup]
     const regexList = [
         [/function (\w+)\(/, 1],
-        [/\w+\.(\w+).*=.*(function|=>)/, 1],
+        [/\w+\.(\w+)[\w\s]*=.*(function|=>)/, 1],
         [/(let|var) (\w+) *= *(\w|\().*=>/, 2]
     ];
 
