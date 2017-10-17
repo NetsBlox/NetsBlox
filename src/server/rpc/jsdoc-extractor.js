@@ -14,8 +14,7 @@ let parseSync = (filePath, searchScope = 5) => {
 };
 
 //simplifies a single metadata returned by doctrine to be used within netsblox
-function simplify(metadata, associatedFn) {
-    // TODO attach @name or @fnName
+function simplify(metadata) {
     let simplifyParam = tag => {
         let {name, type, description} = tag;
         return {name, type: type.name, description};
@@ -188,7 +187,7 @@ module.exports = {
         return parseSync(path, scope)
             .filter(md => {
                 try {
-                    md.parsed = simplify(md.parsed, md.fnName);
+                    md.parsed = simplify(md.parsed);
                     return true;
                 } catch (e) {
                     logger.warn('invalid rpc jsdoc block', md);
