@@ -15,9 +15,11 @@ let parseSync = (filePath, searchScope = 5) => {
 
 //simplifies a single metadata returned by doctrine to be used within netsblox
 function simplify(metadata) {
-    let simplifyParam = tag => {
-        let {name, type, description} = tag;
-        return {name, type: type.name, description};
+    let simplifyParam = param => {
+        let {name, type, description} = param;
+        let simpleParam = {name, description};
+        simpleParam.type = type ? type.name : null;
+        return simpleParam;
     };
     let {description, tags} = metadata;
     let args = tags
@@ -185,15 +187,9 @@ module.exports = {
     _simplify: simplify,
     parse: function(path, scope){
         return parseSync(path, scope)
-            .filter(md => {
-                try {
+            .map(md => {
                     md.parsed = simplify(md.parsed);
-                    return true;
-                } catch (e) {
-                    logger.warn('invalid rpc jsdoc block', md);
-                    // TODO throw the error if you want to enforce this structure on added jdoc blocks
-                    return false;
-                }
-            });
+                    return md;
+                });
     }
 };
