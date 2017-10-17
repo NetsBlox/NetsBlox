@@ -11,6 +11,7 @@ describe('jsdoc-extractor', () => {
      * @param {string} address target address
      * @param {number} limit the results limit
      * @param {Object} options
+     * @name doStuff
      * @returns {string}
      * @name associatedFnName
      */
@@ -60,6 +61,7 @@ describe('jsdoc-extractor', () => {
         it('should simplify the metadata', () => {
             let simpleMetadata = jp._simplify(metadata.parsed);
             assert.deepEqual(simpleMetadata, {
+                name: 'doStuff',
                 description: metadata.parsed.description,
                 args: [
                     {

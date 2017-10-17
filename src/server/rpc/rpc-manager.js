@@ -94,7 +94,7 @@ RPCManager.prototype.registerRPC = function(rpc) {
     for (var i = fnNames.length; i--;) {
         let args;
         // find the associated doc
-        let doc = rpc._docs.find(doc => doc.fnName === fnNames[i]);
+        let doc = rpc._docs.find(doc => doc.parsed.name === fnNames[i]);
         // get the argument names ( starting from doc )
         if (doc) {
             args = doc.parsed.args.map(arg => arg.name);
