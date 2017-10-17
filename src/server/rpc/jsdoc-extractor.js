@@ -13,6 +13,28 @@ let parseSync = (filePath, searchScope = 5) => {
     return parseSource(source, searchScope);
 };
 
+//simplifies a single metadata returned by doctrine to be used within netsblox
+function simplify(metadata, associatedFn) {
+    // TODO attach @name or @fnName
+    let simplifyParam = tag => {
+        let {name, type, description} = tag;
+        return {name, type: type.name, description};
+    };
+    let {description, tags} = metadata;
+    let args = tags
+        .filter(tag => tag.title === 'param')
+        .map(simplifyParam);
+
+    // find and simplify the return doc
+    let returns = tags.find(tag => tag.title === 'returns');
+    if (returns) returns = {type: returns.type.name, description: returns.description};
+
+    let simplified = {description, args, returns};
+    if (associatedFn) simplified.fnName = associatedFn;
+
+    return simplified;
+}
+
 function parseSource(source, searchScope){
     let lines = source.split(/\n/);
     let blocks = extractDocBlocks(source);
