@@ -97,9 +97,7 @@ RPCManager.prototype.registerRPC = function(rpc) {
         let doc = rpc._docs.find(doc => doc.fnName === fnNames[i]);
         // get the argument names ( starting from doc )
         if (doc) {
-            args = doc.parsed.tags
-                .filter(tag => tag.title === 'param')
-                .map(tag => tag.name);
+            args = doc.parsed.args.map(arg => arg.name);
         }else{
             args = utils.getArgumentsFor(fnObj[fnNames[i]]);
         }
