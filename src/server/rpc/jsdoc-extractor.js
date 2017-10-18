@@ -15,13 +15,21 @@ let parseSync = (filePath, searchScope = 5) => {
 
 //simplifies a single metadata returned by doctrine to be used within netsblox
 function simplify(metadata) {
+    let {description, tags} = metadata;
+    let fnName = tags.find(tag => tag.title === 'name').name;
+
     let simplifyParam = param => {
         let {name, type, description} = param;
         let simpleParam = {name, description};
-        simpleParam.type = type ? type.name : null;
+        if (type) {
+            simpleParam.type = type.name;
+        } else {
+            simpleParam.type = null;
+            logger.warn(`rpc ${fnName}, parameter ${name} is missing the type attribute`);
+        }
         return simpleParam;
     };
-    let {description, tags} = metadata;
+
     let args = tags
         .filter(tag => tag.title === 'param')
         .map(simplifyParam);
@@ -30,9 +38,8 @@ function simplify(metadata) {
     let returns = tags.find(tag => tag.title === 'returns');
     if (returns) returns = {type: returns.type.name, description: returns.description};
 
-    let name = tags.find(tag => tag.title === 'name').name;
 
-    let simplified = {name, description, args, returns};
+    let simplified = {name: fnName, description, args, returns};
     return simplified;
 }
 
@@ -188,8 +195,8 @@ module.exports = {
     parse: function(path, scope){
         return parseSync(path, scope)
             .map(md => {
-                    md.parsed = simplify(md.parsed);
-                    return md;
-                });
+                md.parsed = simplify(md.parsed);
+                return md;
+            });
     }
 };
