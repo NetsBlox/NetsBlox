@@ -353,8 +353,6 @@ NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
             query[name] = listToArray(values[index]);
         } else if (isObject(values[index])) {
             query[name] = SnapActions.serializer.store(values[index]);
-            console.log(query[name]);
-            console.log(SnapActions.serializer.idProperty);
         } else {
             query[name] = values[index];
         }
