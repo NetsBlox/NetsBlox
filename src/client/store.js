@@ -377,7 +377,10 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
         receiver = isGlobal ? this.project.stage
             : this.project.sprites[model.attributes.scope];
         rm = model.childNamed('receiver');
-        if (rm && rm.children[0]) {
+        if (rm && rm.children[0]
+        // NetsBlox addition: start
+            && rm.children[0].tag !== 'project') {
+        // NetsBlox addition: end
             receiver = this.loadValue(
                 model.childNamed('receiver').children[0]
             );
