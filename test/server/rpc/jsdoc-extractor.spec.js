@@ -8,11 +8,11 @@ describe('jsdoc-extractor', () => {
     /**
      * this is the description
      * next line of description
-     * @param {string} address target address
-     * @param {number} limit the results limit
+     * @param {String} address target address
+     * @param {Number} limit the results limit
      * @param {Object} options
      * @name doStuff
-     * @returns {string}
+     * @returns {String}
      * @name associatedFnName
      */
     `;
@@ -66,12 +66,12 @@ describe('jsdoc-extractor', () => {
                 args: [
                     {
                         name: 'address',
-                        type: 'string',
+                        type: 'String',
                         description: 'target address'
                     },
                     {
                         name: 'limit',
-                        type: 'number',
+                        type: 'Number',
                         description: 'the results limit'
                     },
                     {
@@ -80,7 +80,7 @@ describe('jsdoc-extractor', () => {
                         description: null
                     }
                 ],
-                returns: {type: 'string', description: null}
+                returns: {type: 'String', description: null}
             });
         });
     });
