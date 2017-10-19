@@ -137,7 +137,12 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
     }
 };
 
-//put together the data from feeds and channel metadata
+/**
+ * put together the data from feeds and channel metadata
+ * @param {Number} id channel ID
+ * @returns {Object}
+ */
+
 thingspeakIoT.channelDetails = function(id) {
     return this._requestData({queryString: id + '.json?'}).then( data => {
         let details = detailParser(data);

@@ -81,7 +81,12 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         return null;
     };
 
-    // reverse geocode and send back a specific detail
+    /** reverse geocode and returns a specific detail
+     * @param {Latitude} latitude latitude of the target location
+     * @param {Longitude} longitude longitude of the target location
+     * @returns {String} city name
+     */
+
     GeoLocationRPC.city = function (latitude, longitude) {
         reverseGeocode(latitude, longitude, this.response, '.city');
         return null;
@@ -135,7 +140,14 @@ if(!process.env.GOOGLE_GEOCODING_API) {
             });
     };
 
-    // find places near a coordinate (20 reults max)
+    /**
+     * find places near a coordinate (20 reults max)
+     * @param {Latitude} latitude 
+     * @param {Longitude} longitude
+     * @param keyword
+     * @param {Number} radius search radius in meters
+     */
+
     GeoLocationRPC.nearbySearch = function (latitude, longitude, keyword, radius) {
         let response = this.response;
         radius = radius || 50000; // default to 50KM

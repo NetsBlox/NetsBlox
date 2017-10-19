@@ -96,6 +96,12 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
     });
 }
 
+/**
+ * draw charts and histograms
+ * @param {Array} lines a single line or list of lines. Each line should be in form of [[x1,y1], [x2,y2]]
+ * @param {Array=} options optional options
+ */
+
 chart.draw = function(lines, options){
     options = _.fromPairs(options);
     // process the options
