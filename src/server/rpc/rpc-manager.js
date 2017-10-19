@@ -17,6 +17,45 @@ var fs = require('fs'),
     Docs = require('./jsdoc-extractor.js').Docs,
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
+// TODO move this fn and maybe Docs class?
+// in: arg obj and input value
+// out: [parsedInput, msg]
+function parseArgValue(arg, input) {
+    let errorMsg;
+    const genericErr = `${arg.name} = ${input} is not a valid ${arg.type}. `;
+    // TODO add check for optional
+    switch (arg.type) {
+    case 'Number':
+        input = parseFloat(input);
+        if (isNaN(input)) errorMsg = 'Pass in a number.';
+        break;
+    case 'Date':
+        input = new Date(input);
+        if (isNaN(input.valueOf())) errorMsg = 'Pass in a valid date.';
+        break;
+    case 'Array':
+        try {
+            input = JSON.parse(input);
+        } catch (e) {
+            /* handle error */
+            errorMsg = 'Make sure you are sending a list.';
+        }
+        break;
+    case 'Latitude':
+        input = parseFloat(input);
+        if (isNaN(input)) errorMsg = ' ';
+        if (input < -90 || input > 90) errorMsg = 'must be between -90 and 90.';
+        break;
+    case 'Longitude':
+        input = parseFloat(input);
+        if (isNaN(input)) errorMsg = ' ';
+        if (input < -180 || input > 180) errorMsg = 'must be between -180 and 180.';
+        break;
+    }
+    if (errorMsg) errorMsg = genericErr + errorMsg;
+    return [input, errorMsg];
+}
+
 const DEFAULT_COMPATIBILITY = {arguments: {}};
 /**
  * RPCManager
