@@ -21,8 +21,15 @@ function simplify(metadata) {
     let simplifyParam = param => {
         let {name, type, description} = param;
         let simpleParam = {name, description};
+        // if type is defined
         if (type) {
-            simpleParam.type = type.name;
+            if (type.type === 'OptionalType') {
+                simpleParam.isOptional = true;
+                simpleParam.type = type.expression.name;
+            } else {
+                simpleParam.isOptional = false;
+                simpleParam.type = type.name;
+            }
         } else {
             simpleParam.type = null;
             logger.warn(`rpc ${fnName}, parameter ${name} is missing the type attribute`);
