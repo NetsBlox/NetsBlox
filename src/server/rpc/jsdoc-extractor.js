@@ -193,17 +193,34 @@ function mkextract () {
     };
 }
 
+function parseService(path, scope) {
+    return parseSync(path, scope)
+        .map(md => {
+            md.parsed = simplify(md.parsed);
+            return md;
+        });
+}
+
+// netsblox docs container
+let Docs = function(servicePath) {
+    this._docs = parseService(servicePath).map(doc => doc.parsed);
+};
+
+// get a doc for an action
+Docs.prototype.getDocFor = function(actionName) {
+    if (!this._docs || this._docs.length === 0) return undefined;
+    // TODO can preprocess and separate docs for different actions here;
+    // TODO check for doc validity? if the input types are known or not
+    let doc = this._docs.find(doc => doc.name === actionName);
+    return doc;
+};
+
 // public interface
 module.exports = {
     extractDocBlocks,
     _findFn:  findFn,
     _parseSource: parseSource,
     _simplify: simplify,
-    parse: function(path, scope){
-        return parseSync(path, scope)
-            .map(md => {
-                md.parsed = simplify(md.parsed);
-                return md;
-            });
-    }
+    parse: parseService,
+    Docs
 };

@@ -14,7 +14,7 @@ var fs = require('fs'),
     SocketManager = require('../socket-manager'),
     utils = require('../server-utils'),
     JsonToSnapList = require('./procedures/utils').jsonToSnapList ,
-    jsdocExtractor = require('./jsdoc-extractor.js'),
+    Docs = require('./jsdoc-extractor.js').Docs,
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
 const DEFAULT_COMPATIBILITY = {arguments: {}};
@@ -42,7 +42,7 @@ RPCManager.prototype.loadRPCs = function() {
         .filter(pair => fs.existsSync(pair[1]))
         .map(pair => {
             let service = require(pair[1]);
-            service._docs = jsdocExtractor.parse(pair[1]);
+            service._docs = new Docs(pair[1]);
             return [pair[0], service];
         })
         .filter(pair => {
@@ -83,6 +83,7 @@ RPCManager.prototype.registerRPC = function(rpc) {
         fnNames;
 
     this.rpcRegistry[name] = {};
+    this.rpcRegistry[name]._docs = rpc._docs;
     if (typeof rpc === 'function') {
         fnObj = rpc.prototype;
     }
@@ -94,10 +95,10 @@ RPCManager.prototype.registerRPC = function(rpc) {
     for (var i = fnNames.length; i--;) {
         let args;
         // find the associated doc
-        let doc = rpc._docs.find(doc => doc.parsed.name === fnNames[i]);
+        let doc = rpc._docs.getDocFor(fnNames[i]);
         // get the argument names ( starting from doc )
         if (doc) {
-            args = doc.parsed.args.map(arg => arg.name);
+            args = doc.args.map(arg => arg.name);
         }else{
             args = utils.getArgumentsFor(fnObj[fnNames[i]]);
         }
@@ -187,9 +188,11 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         oldFieldNameFor,
         result,
         args,
+        doc,
         rpc;
 
     action = req.params.action;
+    if (RPC._docs) doc = RPC._docs.getDocFor(action);
     this._logger.info(`Received request to ${RPC.serviceName} for ${action} (from ${uuid})`);
 
     // Then pass the call through
