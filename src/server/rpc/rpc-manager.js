@@ -218,6 +218,32 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
             var oldName = oldFieldNameFor[argName];
             return req.query.hasOwnProperty(argName) ? req.query[argName] : req.query[oldName];
         });
+
+        // validate and enforce types in RPC manager.
+        // parse the inputs to correct types
+        // provide feedback to the user
+
+        if (doc) {
+            let errors = []; // mostly
+            // assuming doc params are defined in order!
+            doc.args.forEach((arg, idx) => {
+                if (arg.type) {
+                    // QUESTION pass by reference?
+                    let [parsedInput, errorMsg] = parseArgValue(arg, args[idx]);
+                    // if there was no errors update the arg with the parsed input
+                    if (!errorMsg) {
+                        args[idx] = parsedInput;
+                    } else {
+                        // handle the error
+                        this._logger.error(errorMsg);
+                        errors.push(errorMsg);
+                    }
+                }
+            });
+            // provide user feedback if there was an error
+            if (errors.length > 0) return res.status(500).send(errors.join('& '));
+        }
+
         let prettyArgs = JSON.stringify(args);
         prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
         this._logger.log(`calling ${RPC.serviceName}.${action}(${prettyArgs})`);
