@@ -23,6 +23,13 @@ var fs = require('fs'),
 function parseArgValue(arg, input) {
     let errorMsg;
     const genericErr = `${arg.name} = ${input} is not a valid ${arg.type}. `;
+    if (input === '') {
+        if (!arg.isOptional) {
+            errorMsg = `${arg.name} is required.`;
+        }
+        input = undefined;
+        return [input, errorMsg];
+    }
     // TODO add check for optional
     switch (arg.type) {
     case 'Number':
@@ -280,7 +287,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
                 }
             });
             // provide user feedback if there was an error
-            if (errors.length > 0) return res.status(500).send(errors.join('& '));
+            if (errors.length > 0) return res.status(500).send(errors.join(' '));
         }
 
         let prettyArgs = JSON.stringify(args);
