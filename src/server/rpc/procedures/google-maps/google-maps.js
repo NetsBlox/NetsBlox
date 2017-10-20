@@ -205,37 +205,31 @@ StaticMap.prototype.getLatitude = function(y){
     });
 };
 
-StaticMap.prototype.getEarthCoordinate = function(x, y){
+/**
+ * converts image coordinates to earth coordinates.
+ * @param {Number} x x position of the point on the stage
+ * @param {Number} y y position of the point on the stage
+ * @returns {Array} latitude longitude of the point as a list.
+ */
+
+StaticMap.prototype.getEarthCoordinates = function(x, y){
     return this._getMapInfo(this.socket.roleId).then(mapInfo => {
         let coords = this._coordsAt(x,y, mapInfo);
         return [coords.lat, coords.lon];
     });
 };
 
-StaticMap.prototype.getEarthCoordinates = function(xys){
-    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
-        return xys.map(xy => {
-            let [x, y] = xy;
-            let coords = this._coordsAt(x,y, mapInfo);
-            return [coords.lat, coords.lon];
-        });
-    });
-};
+/**
+ * converts earth coordinates to image coordinates.
+ * @param {Latitude} latitude latitude of the point on the stage
+ * @param {Longitude} longitude longitude of the point on the stage
+ * @returns {Array} x,y poisition of the point relative to center of the stage.
+ */
 
-StaticMap.prototype.getScreenCoordinate = function(latitude, longitude){
+StaticMap.prototype.getImageCoordinates = function(latitude, longitude){
     return this._getMapInfo(this.socket.roleId).then(mapInfo => {
         let pixels = this._pixelsAt(latitude, longitude, mapInfo);
         return [pixels.x, pixels.y];
-    });
-};
-
-StaticMap.prototype.getScreenCoordinates = function(latLons){
-    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
-        return latLons.map( latLon => {
-            let [latitude, longitude] = latLon;
-            let pixels = this._pixelsAt(latitude, longitude, mapInfo);
-            return [pixels.x, pixels.y];
-        });
     });
 };
 
