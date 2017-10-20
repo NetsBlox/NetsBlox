@@ -265,7 +265,8 @@ class ActiveRoom {
     }
 
     getSocketsAt (role) {
-        return this.roles[role] && this.roles[role].slice();
+        if (!this.roles[role]) return [];
+        return this.roles[role].slice();
     }
 
     ownerCount () {

@@ -78,8 +78,10 @@ describe('actions', function() {
             var ide = driver.ide();
 
             SnapCloud.username = 'test';
-            ide.room.roles[ide.projectName].unshift({username: SnapCloud.username, uuid: 'ad'});
-            expect(ide.room.isLeader()).to.be(false);
+            setTimeout(() => {
+                ide.room.roles[ide.projectName].unshift({username: SnapCloud.username, uuid: 'ad'});
+                expect(ide.room.isLeader()).to.be(false);
+            }, 50);
         });
     });
 
@@ -91,6 +93,42 @@ describe('actions', function() {
                 done();
             };
             SnapActions.completeAction('testError');
+        });
+    });
+
+    describe('openProject', function() {
+        beforeEach(function(done) {
+            driver.reset(done);
+        });
+
+        afterEach(function() {
+            driver.ide().exitReplayMode();
+        });
+
+        it('should allow opening projects from replay mode', function(done) {
+            // Enter replay mode
+            SnapActions.setStageSize(500, 500)
+                .accept(function() {
+                    driver.ide().replayEvents();
+
+                    // try to open a new project...
+                    SnapActions.openProject();
+
+                    var dialog = driver.dialog();
+                    if (dialog) return done('openProject action blocked during replay!');
+                    done();
+                });
+        });
+
+        it('should allow opening projects if room not editable', function(done) {
+            var room = driver.ide().room;
+            var isEditable = room.isEditable;
+
+            room.isEditable = () => false;
+            var action = SnapActions.openProject();
+            room.isEditable = isEditable;
+            if (action) return action.accept(done);
+            done('Could not openProject');
         });
     });
 });

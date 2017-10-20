@@ -223,7 +223,7 @@ function RPCInputSlotMorph() {
         false,
         'methodSignature',
         function(rpcMethod) {
-            if (!this.fieldsFor) {
+            if (!this.fieldsFor || !this.fieldsFor[rpcMethod]) {
                 this.methodSignature();
             }
             return this.fieldsFor[rpcMethod] || [];
@@ -256,9 +256,13 @@ RPCInputSlotMorph.prototype.methodSignature = function () {
     if (rpc) {
         this.fieldsFor = JSON.parse(this.getURL('/rpc/' + rpc));
 
+        // grab the list of deprecated methods
+        var deprecatedMethods = this.fieldsFor._compability.deprecatedMethods || [];
+        delete this.fieldsFor._compability;
+
         actions = Object.keys(this.fieldsFor);
         for (var i = actions.length; i--;) {
-            dict[actions[i]] = actions[i];
+            if ( !deprecatedMethods.includes(actions[i]) ) dict[actions[i]] = actions[i];
         }
     }
     return dict;

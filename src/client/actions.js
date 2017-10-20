@@ -1,5 +1,5 @@
 /* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer,
-   HintInputSlotMorph, SnapCloud, Action*/
+   HintInputSlotMorph, SnapCloud, Action, copy*/
 // NetsBlox Specific Actions
 SnapActions.addActions(
     'addMessageType',
@@ -65,6 +65,7 @@ SnapActions.isCollaborating = function() {
 
 // Recording user actions
 SnapActions.send = function(event) {
+    var canSend = this._ws && this._ws.readyState === WebSocket.OPEN;
     // Netsblox addition: start
     var socket = this.ide().sockets;
 
@@ -73,7 +74,7 @@ SnapActions.send = function(event) {
     // Netsblox addition: end
     event.id = event.id || this.lastSeen + 1;
     this.lastSent = event.id;
-    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+    if (this.isCollaborating() && event.type !== 'openProject' && canSend) {
         // Netsblox addition: start
         this._ws.send(JSON.stringify({
             type: 'user-action',
@@ -81,11 +82,11 @@ SnapActions.send = function(event) {
         }));
         // Netsblox addition: end
     }
-    // Netsblox addition: start
-    this.recordActionNB(event);
+};
 
-    return event;
-    // Netsblox addition: end
+SnapActions.submitAction = function(action) {
+    this.recordActionNB(copy(action));
+    return ActionManager.prototype.submitAction.call(this, action);
 };
 
 SnapActions.onMessage = function(msg) {
@@ -109,18 +110,6 @@ SnapActions.recordActionNB = function(action) {
     socket.sendMessage(msg);
 };
 
-SnapActions.loadProject = function() {
-    var event;
-
-    this.__sessionId = Date.now();
-
-    // Send the project state
-    event = ActionManager.prototype.loadProject.apply(this, arguments);
-    this.recordActionNB(event);
-
-    return event;
-};
-
 SnapActions.completeAction = function(error) {
     if (error) {
         this.ide().submitBugReport(null, error);
@@ -130,7 +119,7 @@ SnapActions.completeAction = function(error) {
 
 SnapActions.applyEvent = function(event) {
     var ide = this.ide();
-    if (ide.room.isEditable()) {
+    if (ide.room.isEditable() || event.type === 'openProject') {
         event.user = this.id;
         event.id = event.id || this.lastSeen + 1;
         event.time = event.time || Date.now();
@@ -143,30 +132,17 @@ SnapActions.applyEvent = function(event) {
         // if in replay mode, check that the event is a replay event
         var myself = this;
 
-        if (ide.isReplayMode && !event.isReplay) {
+        if (ide.isReplayMode && !event.isReplay && event.type !== 'openProject') {
             ide.promptExitReplay(function() {
-            // Netsblox addition: start
-                if (!myself.isCollaborating() || myself.isLeader) {
-                    // Netsblox addition: end
-                    myself.acceptEvent(event);
-                } else {
-                    myself.send(event);
-                }
+                myself.submitAction(event);
             });
         } else {
-            // Netsblox addition: start
-            if (!this.isCollaborating() || this.isLeader) {
-            // Netsblox addition: end
-                this.acceptEvent(event);
-            } else {
-                this.send(event);
-            }
+            myself.submitAction(event);
         }
 
         return new Action(this, event);
     } else {
         // ask the user if he/she would like to request to be a collaborator
-        // TODO: Add option for saving your own copy
         ide.confirm(
             'Edits cannot be made on projects by guests.\n\nWould ' +
             'you like to request to be made a collaborator?',

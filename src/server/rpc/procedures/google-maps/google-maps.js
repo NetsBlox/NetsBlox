@@ -8,6 +8,7 @@ var debug = require('debug'),
     trace = debug('netsblox:rpc:static-map:trace'),
     request = require('request'),
     SphericalMercator = require('sphericalmercator'),
+    geolib = require('geolib'),
     merc = new SphericalMercator({size:256}),
     CacheManager = require('cache-manager'),
     Storage = require('../../storage'),
@@ -231,6 +232,14 @@ StaticMap.prototype.getImageCoordinates = function(latitude, longitude){
         let pixels = this._pixelsAt(latitude, longitude, mapInfo);
         return [pixels.x, pixels.y];
     });
+};
+
+
+StaticMap.prototype.getDistance = function(startLatitude, startLongitude, endLatitude, endLongitude){
+    return geolib.getDistance(
+        {latitude: startLatitude, longitude: startLongitude},
+        {latitude: endLatitude, longitude: endLongitude}
+    );
 };
 
 // Getting current map settings
