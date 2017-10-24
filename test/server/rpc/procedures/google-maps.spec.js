@@ -44,4 +44,28 @@ describe('staticmap', function() {
         });
     });
 
+    describe('x,y to lat, lon', function() {
+        // create a map near boundaries
+        const map = {
+            center: {
+                lat: 36.152,
+                lon: -150,
+            },
+            width: 480,
+            height: 360,
+            zoom: 2,
+            scale: 1,
+            mapType: 'roadmap'
+        };
+
+        it('handle wraparound at map boundaries', function(){
+            let coords = staticmap._rpc._coordsAt(-170, 90, map);
+            assert(coords.lon > -180 && coords.lon < 180);
+            map.center.lon = +150;
+            coords = staticmap._rpc._coordsAt(170, 90, map);
+            assert(coords.lon > -180 && coords.lon < 180);
+        });
+
+    });
+
 });
