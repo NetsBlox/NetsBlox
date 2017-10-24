@@ -207,7 +207,7 @@ StaticMap.prototype.getLatitude = function(y){
 };
 
 /**
- * Get the given earth coordinates (latitude, longitude) of a given point in the last requested map image (x, y).
+ * Get the earth coordinates (latitude, longitude) of a given point in the last requested map image (x, y).
  * @param {Number} x x position of the point
  * @param {Number} y y position of the point
  * @returns {Array} A list containing the latitude and longitude of the given point.
@@ -222,8 +222,8 @@ StaticMap.prototype.getEarthCoordinates = function(x, y){
 
 /**
  * Get the image coordinates (x, y) of a given location on the earth (latitude, longitude).
- * @param {Latitude} latitude latitude of the point on the stage
- * @param {Longitude} longitude longitude of the point on the stage
+ * @param {Latitude} latitude latitude of the point
+ * @param {Longitude} longitude longitude of the point
  * @returns {Array} A list containing (x, y) position of the given point.
  */
 
