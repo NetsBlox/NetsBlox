@@ -30,9 +30,13 @@ function parseArgValue(arg, input) {
         }
     } else {
         if (inputTypes.hasOwnProperty(arg.type)) { // if we have the type handler
-            inputStatus = inputTypes[arg.type](input);
-            const genericErr = `${arg.name} = ${input} is not a valid ${arg.type}. `;
-            if (!inputStatus.isValid) inputStatus.msg = genericErr + inputStatus.msg;
+            try {
+                inputStatus.value = inputTypes[arg.type](input);
+            } catch (e) {
+                inputStatus.isValid = false;
+                const genericErr = `${arg.name} = ${input} is not a valid ${arg.type}. `;
+                inputStatus.msg = genericErr + e;
+            }
         }
     }
     return inputStatus;

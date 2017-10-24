@@ -1,89 +1,49 @@
 // handles the incoming input arguments for the RPCs. Parses and validates the inputs based on the code docs for the functions
 
-function validate(input, fn) {
-    let msg, isValid = true;
-    fn(input);
-    return {
-        value: input,
-        isValid: isValid,
-        msg: msg
-    };
-}
-
 const types = {
     'Number': input => {
-        let msg = '', isValid = true;
         input = parseFloat(input);
         if (isNaN(input)) {
-            msg = 'Pass in a number.';
-            isValid = false;
+            throw 'Pass in a number.';
         }
-        return {
-            value: input,
-            isValid,
-            msg: msg
-        };
+        return input;
     },
 
     'Date': input => {
-        let msg = '', isValid = true;
         input = new Date(input);
         if (isNaN(input.valueOf())) {
-            msg = 'Pass in a isValid date.';
-            isValid = false;
+            throw 'Pass in a isValid date.';
         }
-        return {
-            value: input,
-            isValid: isValid,
-            msg: msg
-        };
+        return input;
     },
 
     'Array': input => {
-        let msg = '', isValid = true;
         try {
             input = JSON.parse(input);
         } catch (e) {
-            msg = 'Make sure you are sending a list.';
-            isValid = false;
+            throw 'Make sure you are sending a list.';
         }
-        return {
-            value: input,
-            isValid,
-            msg: msg
-        };
+        return input;
     },
 
     'Latitude': input => {
-        let msg = '', isValid = true;
         input = parseFloat(input);
         if (isNaN(input)) {
-            isValid = false;
+            throw '';
         } else if (input < -90 || input > 90) {
-            msg = 'must be between -90 and 90.';
-            isValid = false;
+            throw 'must be between -90 and 90.';
         }
-        return {
-            value: input,
-            isValid,
-            msg: msg
-        };
+        return input;
     },
 
     'Longitude': input => {
-        let msg = '', isValid = true;
         input = parseFloat(input);
         if (isNaN(input)) {
-            isValid = false;
+            throw '';
         } else if (input < -180 || input > 180) {
-            msg = 'must be between -180 and 180.';
-            isValid = false;
+            throw 'must be between -180 and 180.';
         }
-        return {
-            value: input,
-            isValid,
-            msg: msg
-        };
+        return input;
     },
 };
 

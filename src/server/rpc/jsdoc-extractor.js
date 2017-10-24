@@ -209,8 +209,7 @@ let Docs = function(servicePath) {
 // get a doc for an action
 Docs.prototype.getDocFor = function(actionName) {
     if (!this._docs || this._docs.length === 0) return undefined;
-    // TODO can preprocess and separate docs for different actions here;
-    // TODO check for doc validity? if the input types are known or not
+    // can preprocess and separate docs for different actions here;
     let doc = this._docs.find(doc => doc.name === actionName);
     return doc;
 };
