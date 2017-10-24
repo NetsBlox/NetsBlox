@@ -43,6 +43,8 @@ StaticMap.prototype._coordsAt = function(x, y, map) {
     let targetPx = [centerPx[0] + parseInt(x), centerPx[1] - parseInt(y)];
     let targetLl = merc.ll(targetPx, map.zoom); // long lat
     let coords = {lat: targetLl[1], lon: targetLl[0]};
+    if (coords.lon < -180) coords.lon = coords.lon + 360;
+    if (coords.lon > 180) coords.lon = coords.lon - 360;
     return coords;
 };
 
