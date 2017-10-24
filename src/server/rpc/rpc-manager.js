@@ -15,52 +15,27 @@ var fs = require('fs'),
     utils = require('../server-utils'),
     JsonToSnapList = require('./procedures/utils').jsonToSnapList ,
     Docs = require('./jsdoc-extractor.js').Docs,
+    inputTypes = require('./input-types.js'),
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
-// TODO move this fn and maybe Docs class?
 // in: arg obj and input value
-// out: [parsedInput, msg]
+// out: {isValid: boolean, value, msg}
 function parseArgValue(arg, input) {
-    let errorMsg;
-    const genericErr = `${arg.name} = ${input} is not a valid ${arg.type}. `;
+    let inputStatus = {isValid: true, msg: '', value: undefined};
+    // is the argument provided or not? 
     if (input === '') {
         if (!arg.isOptional) {
-            errorMsg = `${arg.name} is required.`;
+            inputStatus.msg = `${arg.name} is required.`;
+            inputStatus.isValid = false;
         }
-        input = undefined;
-        return [input, errorMsg];
-    }
-    // TODO add check for optional
-    switch (arg.type) {
-    case 'Number':
-        input = parseFloat(input);
-        if (isNaN(input)) errorMsg = 'Pass in a number.';
-        break;
-    case 'Date':
-        input = new Date(input);
-        if (isNaN(input.valueOf())) errorMsg = 'Pass in a valid date.';
-        break;
-    case 'Array':
-        try {
-            input = JSON.parse(input);
-        } catch (e) {
-            /* handle error */
-            errorMsg = 'Make sure you are sending a list.';
+    } else {
+        if (inputTypes.hasOwnProperty(arg.type)) { // if we have the type handler
+            inputStatus = inputTypes[arg.type](input);
+            const genericErr = `${arg.name} = ${input} is not a valid ${arg.type}. `;
+            if (!inputStatus.isValid) inputStatus.msg = genericErr + inputStatus.msg;
         }
-        break;
-    case 'Latitude':
-        input = parseFloat(input);
-        if (isNaN(input)) errorMsg = ' ';
-        if (input < -90 || input > 90) errorMsg = 'must be between -90 and 90.';
-        break;
-    case 'Longitude':
-        input = parseFloat(input);
-        if (isNaN(input)) errorMsg = ' ';
-        if (input < -180 || input > 180) errorMsg = 'must be between -180 and 180.';
-        break;
     }
-    if (errorMsg) errorMsg = genericErr + errorMsg;
-    return [input, errorMsg];
+    return inputStatus;
 }
 
 const DEFAULT_COMPATIBILITY = {arguments: {}};
@@ -275,14 +250,14 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
             doc.args.forEach((arg, idx) => {
                 if (arg.type) {
                     // QUESTION pass by reference?
-                    let [parsedInput, errorMsg] = parseArgValue(arg, args[idx]);
+                    let input = parseArgValue(arg, args[idx]);
                     // if there was no errors update the arg with the parsed input
-                    if (!errorMsg) {
-                        args[idx] = parsedInput;
+                    if (input.isValid) {
+                        args[idx] = input.value;
                     } else {
                         // handle the error
-                        this._logger.error(errorMsg);
-                        errors.push(errorMsg);
+                        this._logger.warn(`${rpc.serviceName} -> ${action} input error:`, input.msg);
+                        if (input.msg) errors.push(input.msg);
                     }
                 }
             });
