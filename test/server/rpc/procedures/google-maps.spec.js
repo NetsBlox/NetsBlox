@@ -14,9 +14,6 @@ describe('staticmap', function() {
     });
 
     describe('interfaces', function() {
-    });
-
-    describe('interfaces', function() {
         utils.verifyRPCInterfaces(staticmap, [
             ['getMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
             ['getSatelliteMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
@@ -58,7 +55,7 @@ describe('staticmap', function() {
             mapType: 'roadmap'
         };
 
-        it('handle wraparound at map boundaries', function(){
+        it('should handle wraparound at map boundaries', function(){
             let coords = staticmap._rpc._coordsAt(-170, 90, map);
             assert(coords.lon > -180 && coords.lon < 180);
             map.center.lon = +150;
