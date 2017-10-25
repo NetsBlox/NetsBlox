@@ -14,9 +14,6 @@ describe('staticmap', function() {
     });
 
     describe('interfaces', function() {
-    });
-
-    describe('interfaces', function() {
         utils.verifyRPCInterfaces(staticmap, [
             ['getMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
             ['getSatelliteMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
@@ -42,6 +39,30 @@ describe('staticmap', function() {
             let distance = staticmap.getDistance(36, -86, 36, -87);
             assert.deepEqual(distance, 90163);
         });
+    });
+
+    describe('x,y to lat, lon', function() {
+        // create a map near boundaries
+        const map = {
+            center: {
+                lat: 36.152,
+                lon: -150,
+            },
+            width: 480,
+            height: 360,
+            zoom: 2,
+            scale: 1,
+            mapType: 'roadmap'
+        };
+
+        it('should handle wraparound at map boundaries', function(){
+            let coords = staticmap._rpc._coordsAt(-170, 90, map);
+            assert(coords.lon > -180 && coords.lon < 180);
+            map.center.lon = +150;
+            coords = staticmap._rpc._coordsAt(170, 90, map);
+            assert(coords.lon > -180 && coords.lon < 180);
+        });
+
     });
 
 });
