@@ -22,6 +22,8 @@ describe('staticmap', function() {
             ['getLatitude', ['y']],
             ['getXFromLongitude', ['longitude']],
             ['getYFromLatitude', ['latitude']],
+            ['getImageCoordinates', ['latitude', 'longitude']],
+            ['getEarthCoordinates', ['x', 'y']],
             ['maxLongitude'],
             ['maxLatitude'],
             ['minLongitude'],

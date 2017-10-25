@@ -208,9 +208,39 @@ StaticMap.prototype.getLatitude = function(y){
     });
 };
 
+/**
+ * Get the earth coordinates (latitude, longitude) of a given point in the last requested map image (x, y).
+ * @param {Number} x x position of the point
+ * @param {Number} y y position of the point
+ * @returns {Array} A list containing the latitude and longitude of the given point.
+ */
+
+StaticMap.prototype.getEarthCoordinates = function(x, y){
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let coords = this._coordsAt(x,y, mapInfo);
+        return [coords.lat, coords.lon];
+    });
+};
+
+/**
+ * Get the image coordinates (x, y) of a given location on the earth (latitude, longitude).
+ * @param {Latitude} latitude latitude of the point
+ * @param {Longitude} longitude longitude of the point
+ * @returns {Array} A list containing (x, y) position of the given point.
+ */
+
+StaticMap.prototype.getImageCoordinates = function(latitude, longitude){
+    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+        let pixels = this._pixelsAt(latitude, longitude, mapInfo);
+        return [pixels.x, pixels.y];
+    });
+};
+
+
 StaticMap.prototype.getDistance = function(startLatitude, startLongitude, endLatitude, endLongitude){
     return geolib.getDistance(
-        {latitude: startLatitude, longitude: startLongitude}, { latitude: endLatitude, longitude: endLongitude}
+        {latitude: startLatitude, longitude: startLongitude},
+        {latitude: endLatitude, longitude: endLongitude}
     );
 };
 
