@@ -21,12 +21,13 @@ var fs = require('fs'),
 // in: arg obj and input value
 // out: {isValid: boolean, value, msg}
 function parseArgValue(arg, input) {
-    let inputStatus = {isValid: true, msg: '', value: undefined};
+    let inputStatus = {isValid: true, msg: '', value: input};
     // is the argument provided or not? 
     if (input === '') {
         if (!arg.isOptional) {
             inputStatus.msg = `${arg.name} is required.`;
             inputStatus.isValid = false;
+            inputStatus.value = undefined;
         }
     } else {
         if (inputTypes.hasOwnProperty(arg.type)) { // if we have the type handler
