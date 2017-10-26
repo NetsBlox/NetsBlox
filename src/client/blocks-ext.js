@@ -256,9 +256,18 @@ RPCInputSlotMorph.prototype.methodSignature = function () {
     if (rpc) {
         this.fieldsFor = JSON.parse(this.getURL('/rpc/' + rpc));
 
+        var privateFields = {};
+
+        // hide/extract private attributes
+        for (let key in this.fieldsFor) {
+            if (key.indexOf('_') === 0) {
+                privateFields[key] = this.fieldsFor[key];
+                delete this.fieldsFor[key];
+            }
+        }
+
         // grab the list of deprecated methods
-        var deprecatedMethods = this.fieldsFor._compability.deprecatedMethods || [];
-        delete this.fieldsFor._compability;
+        var deprecatedMethods = privateFields._compability.deprecatedMethods || [];
 
         actions = Object.keys(this.fieldsFor);
         for (var i = actions.length; i--;) {
