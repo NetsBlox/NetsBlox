@@ -81,7 +81,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         return null;
     };
 
-    /** reverse geocode and returns a specific detail
+    /** Get the name of the city nearest to the given latitude and longitude.
      * @param {Latitude} latitude latitude of the target location
      * @param {Longitude} longitude longitude of the target location
      * @returns {String} city name
@@ -141,11 +141,11 @@ if(!process.env.GOOGLE_GEOCODING_API) {
     };
 
     /**
-     * find places near an earth coordinate (latitude, longitude) (maximum of 10 results)
+     * Find places near an earth coordinate (latitude, longitude) (maximum of 10 results)
      * @param {Latitude} latitude 
      * @param {Longitude} longitude
      * @param {String=} keyword the keyword you want to search for, like pizza or cinema.
-     * @param {Number=} radius search radius in meters
+     * @param {Number=} radius search radius in meters (50km)
      */
 
     GeoLocationRPC.nearbySearch = function (latitude, longitude, keyword, radius) {

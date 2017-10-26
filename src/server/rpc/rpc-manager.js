@@ -34,7 +34,7 @@ function parseArgValue(arg, input) {
                 inputStatus.value = inputTypes[arg.type](input);
             } catch (e) {
                 inputStatus.isValid = false;
-                const genericErr = `${arg.name} = ${input} is not a valid ${arg.type}. `;
+                const genericErr = `${arg.name} is not a valid ${arg.type}. `;
                 inputStatus.msg = genericErr + e;
             }
         }
@@ -253,7 +253,6 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
             // assuming doc params are defined in order!
             doc.args.forEach((arg, idx) => {
                 if (arg.type) {
-                    // QUESTION pass by reference?
                     let input = parseArgValue(arg, args[idx]);
                     // if there was no errors update the arg with the parsed input
                     if (input.isValid) {
@@ -266,7 +265,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
                 }
             });
             // provide user feedback if there was an error
-            if (errors.length > 0) return res.status(500).send(errors.join(' '));
+            if (errors.length > 0) return res.status(500).send(errors.join('\n'));
         }
 
         let prettyArgs = JSON.stringify(args);
