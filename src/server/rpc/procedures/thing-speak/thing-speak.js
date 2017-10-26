@@ -138,9 +138,9 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
 };
 
 /**
- * put together the data from feeds and channel metadata
+ * get various details about the channel, including location, fields, tags and name.
  * @param {Number} id channel ID
- * @returns {Object}
+ * @returns {Object} list of details.
  */
 
 thingspeakIoT.channelDetails = function(id) {

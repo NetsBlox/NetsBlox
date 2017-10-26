@@ -141,11 +141,11 @@ if(!process.env.GOOGLE_GEOCODING_API) {
     };
 
     /**
-     * find places near a coordinate (20 reults max)
+     * find places near an earth coordinate (latitude, longitude) (maximum of 10 results)
      * @param {Latitude} latitude 
      * @param {Longitude} longitude
-     * @param keyword
-     * @param {Number} radius search radius in meters
+     * @param {String=} keyword the keyword you want to search for, like pizza or cinema.
+     * @param {Number=} radius search radius in meters
      */
 
     GeoLocationRPC.nearbySearch = function (latitude, longitude, keyword, radius) {
