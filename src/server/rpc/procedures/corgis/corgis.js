@@ -21,15 +21,26 @@ let loadDataset = dsName => {
     });
 };
 
+/**
+ * Search CORGIS' datasets as provided by https://think.cs.vt.edu/corgis/
+ * @param {String} name dataset name
+ * @param {String=} query json search query
+ * @returns {Object} search results
+ */
+
 corgis.searchDataset = function(name,query){
     return loadDataset(name)
         .then( data => {
-            this._logger.trace(data.length, 'rows loaded');
+            this._logger.trace(data.length, 'results loaded');
+            if (!query) {
+                let sample = data[0];
+                return this._createSnapStructure(sample);
+            }
             let queryRes = jsonQuery(query,{data}).value;
             this._logger.trace(queryRes);
             this.response.send(this._createSnapStructure(queryRes));
         })
-        .catch(err => this._logger.error);
+        .catch(this._logger.error);
 };
 
 
