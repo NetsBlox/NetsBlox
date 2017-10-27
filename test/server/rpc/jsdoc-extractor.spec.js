@@ -66,19 +66,19 @@ describe('jsdoc-extractor', () => {
                 args: [
                     {
                         name: 'address',
-                        isOptional: false,
+                        optional: false,
                         type: 'String',
                         description: 'target address'
                     },
                     {
                         name: 'limit',
-                        isOptional: false,
+                        optional: false,
                         type: 'Number',
                         description: 'the results limit'
                     },
                     {
                         name: 'options',
-                        isOptional: false,
+                        optional: false,
                         type: 'Object',
                         description: null
                     }

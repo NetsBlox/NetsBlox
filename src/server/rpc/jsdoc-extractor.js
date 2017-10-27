@@ -24,10 +24,10 @@ function simplify(metadata) {
         // if type is defined
         if (type) {
             if (type.type === 'OptionalType') {
-                simpleParam.isOptional = true;
+                simpleParam.optional = true;
                 simpleParam.type = type.expression.name;
             } else {
-                simpleParam.isOptional = false;
+                simpleParam.optional = false;
                 simpleParam.type = type.name;
             }
         } else {

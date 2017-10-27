@@ -24,7 +24,7 @@ function parseArgValue(arg, input) {
     let inputStatus = {isValid: true, msg: '', value: input};
     // is the argument provided or not? 
     if (input === '') {
-        if (!arg.isOptional) {
+        if (!arg.optional) {
             inputStatus.msg = `${arg.name} is required.`;
             inputStatus.isValid = false;
             inputStatus.value = undefined;
