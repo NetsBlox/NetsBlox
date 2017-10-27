@@ -10,11 +10,7 @@ const NB_TYPES = {
 
 // converts a javascript type name into netsblox type name
 function getNBType(jsType) {
-    if (NB_TYPES.hasOwnProperty(jsType)) {
-        return NB_TYPES[jsType];
-    } else {
-        return jsType;
-    }
+    return NB_TYPES[jsType] || jsType;
 }
 
 const types = {
