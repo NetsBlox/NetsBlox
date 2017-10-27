@@ -47,9 +47,10 @@ const types = {
     // all Object types are going to be structured data (simplified json for snap environment)
     'Object': input => {
         // check if it has the form of structured data
-        let isArray = Array.isArray(input),
-            hasPairs = input.every(pair => pair.length === 2 || pair.length === 1);
-        if (!isArray || !hasPairs) throw new Error('It should be a list of (key, value) pairs.');
+        let isArray = Array.isArray(input);
+        if (!isArray || !input.every(pair => pair.length === 2 || pair.length === 1)) {
+            throw new Error('It should be a list of (key, value) pairs.');
+        }
         input = _.fromPairs(input);
         return input;
     },
