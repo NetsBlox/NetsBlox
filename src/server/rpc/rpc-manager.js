@@ -35,8 +35,12 @@ function parseArgValue(arg, input) {
                 inputStatus.value = inputTypes[arg.type](input);
             } catch (e) {
                 inputStatus.isValid = false;
-                const genericErr = `${arg.name} is not a valid ${arg.type}. `;
-                inputStatus.msg = genericErr + e.message;
+                inputStatus.msg = `"${arg.name}" is not a valid ${arg.type}.`;
+                if (e.message.includes(arg.type)) {
+                    inputStatus.msg = `"${arg.name}" is not valid. ` + e.message;
+                } else if (e.message) {
+                    inputStatus.msg += ' ' + e.message;
+                }
             }
         }
     }
