@@ -259,7 +259,7 @@ RPCInputSlotMorph.prototype.methodSignature = function () {
         var privateFields = {};
 
         // hide/extract private attributes
-        for (let key in this.fieldsFor) {
+        for (var key in this.fieldsFor) {
             if (key.indexOf('_') === 0) {
                 privateFields[key] = this.fieldsFor[key];
                 delete this.fieldsFor[key];
