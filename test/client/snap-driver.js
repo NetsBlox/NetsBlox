@@ -1,7 +1,15 @@
-/* globals SpriteMorph, SnapActions, nop */
+/* globals SpriteMorph, SnapActions */
 function SnapDriver(world) {
     this._world = world;
 }
+
+// Wait for the client to have a websocket id
+SnapDriver.prototype.waitUntilReady = function(cb) {
+    if (this.ide().sockets.uuid) {
+        return setTimeout(cb);
+    }
+    setTimeout(this.waitUntilReady.bind(this, cb));
+};
 
 // Convenience Getters
 SnapDriver.prototype.world = function() {
@@ -17,11 +25,9 @@ SnapDriver.prototype.palette = function() {
 };
 
 SnapDriver.prototype.dialog = function() {
-    var len = this.world().children.length;
-    if (len > 1) {
-        return this.world().children[len-1];
-    }
-    return null;
+    var dialogs = this.world().children.slice(1);
+    var len = dialogs.length;
+    return dialogs[len-1];
 };
 
 // Controlling the IDE
@@ -29,27 +35,15 @@ SnapDriver.prototype.reset = function(cb) {
     var world = this.world();
 
     // Close all open dialogs
-    for (var i = 1; i < world.children.length; i++) {
-        world.children[i].destroy();
-    }
-
-    this.newProject();
-    cb = cb || nop;
-    setTimeout(cb);
-};
-
-SnapDriver.prototype.newProject = function() {
-    this.ide().exitReplayMode();
-    this.ide().newProject();
-
-    // NetsBlox specific things
-    var room = this.ide().room;
-    var uuid = this.ide().sockets.uuid;
-    room.ownerId = uuid;
-    room.roles = room.getDefaultRoles();
-
-    var dialogs = this.world().children.slice(1);
+    var dialogs = world.children.slice(1);
     dialogs.forEach(dialog => dialog.destroy());
+
+    this.ide().exitReplayMode();
+    this.waitUntilReady(function() {
+        return SnapActions.openProject()
+            .accept(() => cb())
+            .reject(err => console.error(`could not reset ide: ${err}`));
+    });
 };
 
 SnapDriver.prototype.selectCategory = function(cat) {
@@ -83,6 +77,7 @@ SnapDriver.prototype.addBlock = function(spec, position) {
         SpriteMorph.prototype.blockForSelector(spec, true) : spec;
     var sprite = this.ide().currentSprite;
 
+    position = position || new Point(400, 400);
     return SnapActions.addBlock(block, sprite.scripts, position);
 };
 

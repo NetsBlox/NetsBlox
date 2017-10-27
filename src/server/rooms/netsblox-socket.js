@@ -132,7 +132,7 @@ class NetsBloxSocket {
         }
 
         const sockets = this._room.getSocketsAt(this.roleId);
-        if (sockets.length === 1) {
+        if (sockets.length <= 1) {
             this._logger.warn(`Socket incorrectly thinks it is collaborating... ${this.uuid}`);
             return this._room.sendUpdateMsg();
         }

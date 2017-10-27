@@ -14,6 +14,7 @@ var fs = require('fs'),
     SocketManager = require('../socket-manager'),
     utils = require('../server-utils'),
     JsonToSnapList = require('./procedures/utils').jsonToSnapList ,
+    jsdocExtractor = require('./jsdoc-extractor.js'),
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
 const DEFAULT_COMPATIBILITY = {arguments: {}};
@@ -39,7 +40,11 @@ RPCManager.prototype.loadRPCs = function() {
     return fs.readdirSync(PROCEDURES_DIR)
         .map(name => [name, path.join(PROCEDURES_DIR, name, name+'.js')])
         .filter(pair => fs.existsSync(pair[1]))
-        .map(pair => [pair[0], require(pair[1])])
+        .map(pair => {
+            let service = require(pair[1]);
+            service._docs = jsdocExtractor.parse(pair[1]);
+            return [pair[0], service];
+        })
         .filter(pair => {
             let [name, service] = pair;
             if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
@@ -87,7 +92,16 @@ RPCManager.prototype.registerRPC = function(rpc) {
         .filter(name => !RESERVED_FN_NAMES.includes(name));
 
     for (var i = fnNames.length; i--;) {
-        this.rpcRegistry[name][fnNames[i]] = utils.getArgumentsFor(fnObj[fnNames[i]]);
+        let args;
+        // find the associated doc
+        let doc = rpc._docs.find(doc => doc.parsed.name === fnNames[i]);
+        // get the argument names ( starting from doc )
+        if (doc) {
+            args = doc.parsed.args.map(arg => arg.name);
+        }else{
+            args = utils.getArgumentsFor(fnObj[fnNames[i]]);
+        }
+        this.rpcRegistry[name][fnNames[i]] = args;
     }
 };
 
@@ -98,13 +112,19 @@ RPCManager.prototype.createRouter = function() {
     // Create the index for the rpcs
     router.route('/').get((req, res) => res.send(ALL_RPC_NAMES));
 
+    function tagWithCompatibility(rpc) {
+        let methods = this.rpcRegistry[rpc.serviceName];
+        methods._compability = rpc.COMPATIBILITY;
+        return methods;
+    }
+
     this.rpcs.forEach(rpc => {
         router.route('/' + rpc.serviceName)
-            .get((req, res) => res.json(this.rpcRegistry[rpc.serviceName]));
+            .get((req, res) => res.json(tagWithCompatibility.call(this, rpc)));
 
         if (rpc.COMPATIBILITY.path) {
             router.route('/' + rpc.COMPATIBILITY.path)
-                .get((req, res) => res.json(this.rpcRegistry[rpc.serviceName]));
+                .get((req, res) => res.json(tagWithCompatibility.call(this, rpc)));
         }
     });
 

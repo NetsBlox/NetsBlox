@@ -2,9 +2,11 @@
 describe('blocks', function() {
     var position = new Point(400, 400);
 
-    beforeEach(function() {
-        driver.reset();
-        driver.selectCategory('control');
+    beforeEach(function(done) {
+        driver.reset(() => {
+            driver.selectCategory('control');
+            done();
+        });
     });
 
     it('should create block', function(done) {
@@ -27,9 +29,11 @@ describe('blocks', function() {
     });
 
     describe('custom', function() {
-        beforeEach(() => {
-            driver.reset();
-            driver.selectCategory('custom');
+        beforeEach(done => {
+            driver.reset(() => {
+                driver.selectCategory('custom');
+                done();
+            });
         });
 
         it('should create (sprite) custom block', function(done) {
@@ -45,6 +49,29 @@ describe('blocks', function() {
                     driver.addBlock(definition.blockInstance(), position)
                         .accept(() => done());
                 });
+        });
+    });
+
+    describe('rpc', function() {
+        before(done => {
+            driver.reset(done);
+        });
+
+        it('should populate method with `setField`', function(done) {
+            // create rpc block
+            driver.addBlock('getJSFromRPCStruct').accept(block => {
+                var serviceField = block.inputs()[0];
+                // set the service to weather
+                SnapActions.setField(serviceField, 'Weather').accept(() => {
+                    var methodField = block.inputs()[1];
+                    // set the method to `humidity`
+                    SnapActions.setField(methodField, 'humidity').accept(() => {
+                        var err = null;
+                        if (block.inputs().length < 3) err = `argument inputs not created!`;
+                        done(err);
+                    });
+                });
+            });
         });
     });
 });
