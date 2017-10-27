@@ -81,7 +81,9 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         return null;
     };
 
-    /** Get the name of the city nearest to the given latitude and longitude.
+    /** 
+     * Get the name of the city nearest to the given latitude and longitude.
+     *
      * @param {Latitude} latitude latitude of the target location
      * @param {Longitude} longitude longitude of the target location
      * @returns {String} city name
