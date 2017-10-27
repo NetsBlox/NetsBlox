@@ -15,7 +15,7 @@ var fs = require('fs'),
     utils = require('../server-utils'),
     JsonToSnapList = require('./procedures/utils').jsonToSnapList ,
     Docs = require('./jsdoc-extractor.js').Docs,
-    inputTypes = require('./input-types.js'),
+    types = require('./input-types.js'),
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
 // in: arg obj and input value
@@ -30,12 +30,12 @@ function parseArgValue(arg, input) {
             inputStatus.value = undefined;
         }
     } else {
-        if (inputTypes.hasOwnProperty(arg.type)) { // if we have the type handler
+        if (types.parse.hasOwnProperty(arg.type)) { // if we have the type handler
             try {
-                inputStatus.value = inputTypes[arg.type](input);
+                inputStatus.value = types.parse[arg.type](input);
             } catch (e) {
                 inputStatus.isValid = false;
-                inputStatus.msg = `"${arg.name}" is not a valid ${arg.type}.`;
+                inputStatus.msg = `"${arg.name}" is not a valid ${types.getNBType(arg.type)}.`;
                 if (e.message.includes(arg.type)) {
                     inputStatus.msg = `"${arg.name}" is not valid. ` + e.message;
                 } else if (e.message) {
