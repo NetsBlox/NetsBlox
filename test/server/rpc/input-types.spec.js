@@ -28,26 +28,26 @@ describe('RPC Input Types', function() {
         it('should validate structured data', () => {
             let rawInput = [['a', 234],['name', 'Hamid', 'Z'], ['connections', ['b','c','d']], ['children']];
             let type = 'Object';
-            assert.throws(() => typesParser[type](rawInput));
+            assert.throws(() => typesParser[type](rawInput), /It should be a list of/);
 
             rawInput = [[],['name', 'Hamid'], ['connections', ['b','c','d']], ['children']];
-            assert.throws(() => typesParser[type](rawInput));
+            assert.throws(() => typesParser[type](rawInput), /It should be a list of/);
         });
 
         it('should validate latitude', () => {
             let rawInput = '91',
                 type = 'Latitude';
-            assert.throws(() => typesParser[type](rawInput));
+            assert.throws(() => typesParser[type](rawInput), /Latitude/);
             rawInput = '-91';
-            assert.throws(() => typesParser[type](rawInput));
+            assert.throws(() => typesParser[type](rawInput), /Latitude/);
         });
 
         it('should validate longitude', () => {
             let rawInput = '181',
                 type = 'Longitude';
-            assert.throws(() => typesParser[type](rawInput));
+            assert.throws(() => typesParser[type](rawInput), /Longitude/);
             rawInput = '-180.1';
-            assert.throws(() => typesParser[type](rawInput));
+            assert.throws(() => typesParser[type](rawInput), /Longitude/);
         });
     });
 
