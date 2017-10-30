@@ -35,30 +35,56 @@ describe('RPC Input Types', function() {
             });
         });
 
-        it('should validate structured data', () => {
-            let rawInput = [['a', 234],['name', 'Hamid', 'Z'], ['connections', ['b','c','d']], ['children']];
-            let type = 'Object';
-            assert.throws(() => typesParser[type](rawInput), /It should be a list of/);
+        describe('Structured Data', function() {
+            it('should throw error if input has a pair of size 0', () => {
+                let rawInput = [[], ['a', 234],['name', 'Hamid'], ['connections', ['b','c','d']]];
+                let type = 'Object';
+                assert.throws(() => typesParser[type](rawInput), /It should be a list of/);
+            });
 
-            rawInput = [[],['name', 'Hamid'], ['connections', ['b','c','d']], ['children']];
-            assert.throws(() => typesParser[type](rawInput), /It should be a list of/);
+            it('should throw error if input has a pair of length more than 2', () => {
+                let rawInput = [['a', 234],['name', 'Hamid', 'Z'], ['connections', ['b','c','d']]];
+                let type = 'Object';
+                assert.throws(() => typesParser[type](rawInput), /It should be a list of/);
+            });
+
+            it('should not throw if input has a pair of length 1', () => {
+                let rawInput = [['a', 234],['name', 'Hamid'], ['connections', ['b','c','d']], ['children']];
+                let type = 'Object';
+                assert(typesParser[type](rawInput));
+            });
         });
 
-        it('should validate latitude', () => {
-            let rawInput = '91',
-                type = 'Latitude';
-            assert.throws(() => typesParser[type](rawInput), /Latitude/);
-            rawInput = '-91';
-            assert.throws(() => typesParser[type](rawInput), /Latitude/);
+        describe('Latitude', function() {
+            const type = 'Latitude';
+
+            it('should throw on latitudes less than -90', () => {
+                let rawInput = '-91';
+                assert.throws(() => typesParser[type](rawInput), /Latitude/);
+            });
+
+            it('should throw on latitudes more than 90', () => {
+                let rawInput = '91';
+                assert.throws(() => typesParser[type](rawInput), /Latitude/);
+            });
+
         });
 
-        it('should validate longitude', () => {
-            let rawInput = '181',
-                type = 'Longitude';
-            assert.throws(() => typesParser[type](rawInput), /Longitude/);
-            rawInput = '-180.1';
-            assert.throws(() => typesParser[type](rawInput), /Longitude/);
+        describe('Longitude', function() {
+            const type = 'Longitude';
+
+            it('should throw on longitude less than -180', () => {
+                let rawInput = '-181';
+                assert.throws(() => typesParser[type](rawInput), /Longitude/);
+            });
+
+            it('should throw on longitude more than 180', () => {
+                let rawInput = '181';
+                assert.throws(() => typesParser[type](rawInput), /Longitude/);
+            });
+
         });
+
     });
 
 });
