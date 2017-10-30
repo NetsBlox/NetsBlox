@@ -143,19 +143,40 @@ RPCManager.prototype.createRouter = function() {
     // Create the index for the rpcs
     router.route('/').get((req, res) => res.send(ALL_RPC_NAMES));
 
-    function tagWithCompatibility(rpc) {
+    function createServiceMetadata(rpc) {
         let methods = this.rpcRegistry[rpc.serviceName];
-        methods._compability = rpc.COMPATIBILITY;
-        return methods;
+        let rpcs = {}; // stores info about service's methods
+        Object.keys(methods)
+            .filter(key => !key.startsWith('_'))
+            .forEach(name => {
+                let info; // a single rpc info
+                if (rpc._docs && rpc._docs.getDocFor(name)) {
+                    info = rpc._docs.getDocFor(name);
+                } else {
+                    // if the method has no docs build up sth similar
+                    info = {
+                        args: methods[name].map(argName => {
+                            return {name: argName};
+                        }),
+                    };
+                }
+                delete info.name;
+                info.deprecated = false;
+                // check for deprecation
+                if (rpc.COMPATIBILITY && rpc.COMPATIBILITY.deprecatedMethods
+                    && rpc.COMPATIBILITY.deprecatedMethods.includes(name)) info.deprecated = true;
+                rpcs[name] = info; 
+            });
+        return rpcs;
     }
 
     this.rpcs.forEach(rpc => {
         router.route('/' + rpc.serviceName)
-            .get((req, res) => res.json(tagWithCompatibility.call(this, rpc)));
+            .get((req, res) => res.json(createServiceMetadata.call(this, rpc)));
 
         if (rpc.COMPATIBILITY.path) {
             router.route('/' + rpc.COMPATIBILITY.path)
-                .get((req, res) => res.json(tagWithCompatibility.call(this, rpc)));
+                .get((req, res) => res.json(createServiceMetadata.call(this, rpc)));
         }
     });
 
