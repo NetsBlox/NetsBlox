@@ -1,4 +1,4 @@
-const typesParser = require('../../../src/server/rpc/input-types.js').parse,
+const typesParser = require('../../../src/server/rpc/input-types').parse,
     assert = require('assert');
 
 describe('RPC Input Types', function() {
@@ -17,12 +17,22 @@ describe('RPC Input Types', function() {
         });
     });
 
-    describe('validate', () => {
+    describe('validation', () => {
 
-        it('should validate arrays', () => {
-            let rawInput = '181',
-                type = 'Array';
-            assert.throws(() => typesParser[type](rawInput));
+        describe('Array', function() {
+            it('should throw error w/ numeric input', () => {
+                let rawInput = '181',
+                    type = 'Array';
+
+                assert.throws(() => typesParser[type](rawInput));
+            });
+
+            it('should throw error w/ string input', () => {
+                let rawInput = 'cat',
+                    type = 'Array';
+
+                assert.throws(() => typesParser[type](rawInput));
+            });
         });
 
         it('should validate structured data', () => {
