@@ -194,5 +194,8 @@ module.exports = {
     _stationReading,
     _stationReadings,
     selectSectionBased: stationUtils.selectSectionBased,
-    selectPointBased: stationUtils.selectPointBased
+    selectPointBased: stationUtils.selectPointBased,
+    COMPATIBILITY: {
+        deprecatedMethods: ['temperature', 'condition']
+    }
 };
