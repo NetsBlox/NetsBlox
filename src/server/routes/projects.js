@@ -193,8 +193,17 @@ module.exports = [
             }
 
             const saveAs = () => {
+                let project = activeRoom.getProject();
                 activeRoom.changeName(projectName)
-                    .then(() => activeRoom.getProject().persist())
+                    .then(() => project.persist())
+                    // update the public project metadata (if public)...
+                    .then(() => project.isPublic())
+                    .then(isPublic => {
+                        if (isPublic) {
+                            trace(`Updating public project: ${project.uuid()}`);
+                            return PublicProjects.update(project);
+                        }
+                    })
                     .then(() => res.status(200).send('saved'));
             };
 
