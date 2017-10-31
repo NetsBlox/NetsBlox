@@ -342,6 +342,11 @@
             return this._db.update(this.getStorageId(), query);
         }
 
+        isPublic() {
+            return this.getRawProject()
+                .then(project => !!project.Public);
+        }
+
         setName(name) {
             if (this.isDeleted()) return Promise.reject('project has been deleted!');
             const query = {$set: {name: name}};

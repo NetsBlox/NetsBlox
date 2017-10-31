@@ -36,6 +36,19 @@ describe('projects', function() {
             .catch(done);
     });
 
+    it('should return false for isPublic (default)', function(done) {
+        project.isPublic()
+            .then(isPublic => assert(!isPublic))
+            .then(() => done());
+    });
+
+    it('should return true for isPublic (if public)', function(done) {
+        project.setPublic(true)
+            .then(() => project.isPublic())
+            .then(isPublic => assert(isPublic))
+            .then(() => done());
+    });
+
     it('should return undefined for non-existent role', function(done) {
         project.getRole('i-am-not-real')
             .then(role => assert.equal(role, undefined))
