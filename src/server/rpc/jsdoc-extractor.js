@@ -211,7 +211,8 @@ Docs.prototype.getDocFor = function(actionName) {
     if (!this._docs || this._docs.length === 0) return undefined;
     // can preprocess and separate docs for different actions here;
     let doc = this._docs.find(doc => doc.name === actionName);
-    return doc;
+    if (doc) return Object.assign({}, doc);
+    return undefined;
 };
 
 // public interface
