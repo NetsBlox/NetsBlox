@@ -1790,7 +1790,12 @@ NetsBloxMorph.prototype.openRoomString = function (str) {
 
     // load the given project
     role = room.children[0];
-    var projectXml = role.children[0].toString() + role.children[1].toString();
+    var projectXml = [
+        '<snapdata>',
+        role.childNamed('project').toString(),
+        role.childNamed('media').toString(),
+        '</snapdata>'
+    ].join('');
     SnapActions.openProject(projectXml);
 };
 
