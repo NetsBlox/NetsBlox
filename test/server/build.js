@@ -19,6 +19,7 @@ describe('build', function() {
 
         srcFiles.forEach(filename => {
             it(`should use es5 in ${filename}`, function() {
+                this.timeout(5000);
                 ugly.minify(path.join(srcPath, filename)).code;
             });
         });
