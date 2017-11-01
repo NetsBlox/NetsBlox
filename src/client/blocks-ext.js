@@ -227,7 +227,9 @@ function RPCInputSlotMorph() {
                 this.methodSignature();
             }
             if (this.fieldsFor[rpcMethod]) {
-                return this.fieldsFor[rpcMethod].args.map(arg => arg.name);
+                return this.fieldsFor[rpcMethod].args.map(function(arg) {
+                    return arg.name;
+                });
             } else { // the requested action is undefined
                 return [];
             }
