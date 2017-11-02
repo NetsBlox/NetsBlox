@@ -236,6 +236,7 @@
                         lastUpdatedAt: Date.now(),
                         originTime: this.originTime,
                         collaborators: this.collaborators,
+                        activeRole: this.activeRole,
                         roles: roleDict
                     };
 
