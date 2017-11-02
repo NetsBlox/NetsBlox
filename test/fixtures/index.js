@@ -15,7 +15,7 @@ function seed(storage) {
         user.hash = hash(data.password);
         return user.save();
     }))
-    .then(Q.all(projects.map(data => {
+    .then(() => Q.all(projects.map(data => {
         // Load the project
         let project = null;
         const room = new ActiveRoom(logger, data.name, data.owner);
