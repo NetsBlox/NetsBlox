@@ -48,7 +48,7 @@ function addDefaults(project) {
 
     loadProjectData(project);
 
-    project.activeRole = project.activeRole || Object.keys(project.roles).pop();
+    project.activeRole = project.activeRole || project.roles[0].ProjectName;
 
     return project;
 }
