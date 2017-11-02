@@ -973,7 +973,6 @@ Costume.prototype.toXML = function (serializer) {
     );
 };
 
-// TODO: Create portable serializations
 CustomCommandBlockMorph.prototype.toBlockXML = function (serializer) {
     var scope = this.definition.isGlobal ? undefined
         : this.definition.receiver.name;

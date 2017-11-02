@@ -298,8 +298,7 @@ WebSocketManager.prototype.deserializeMessage = function(message) {
 };
 
 WebSocketManager.prototype.deserializeData = function(dataList) {
-    var myself = this,
-        receiver,
+    var receiver,
         project,
         nodes,
         model;
