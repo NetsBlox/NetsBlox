@@ -1,6 +1,7 @@
 /*global Client*/
 const  _ = require('lodash');
 const assert = require('assert');
+const fixtures = require('../fixtures');
 
 // load the *exact* XML_Serializer from Snap!... pretty hacky...
 const path = require('path');
@@ -132,6 +133,7 @@ const connect = function() {
 
 const reset = function() {
     let db = null;
+    // TODO: load the seed data
     return connect()
         .then(_db => db = _db)
         .then(() => db.collection('groups').drop())
@@ -140,6 +142,7 @@ const reset = function() {
         .catch(() => db)
         .then(() => db.collection('users').drop())
         .catch(() => db)
+        .then(() => fixtures.init(storage))
         .then(() => storage._db);
 };
 
