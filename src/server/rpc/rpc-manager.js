@@ -14,8 +14,38 @@ var fs = require('fs'),
     SocketManager = require('../socket-manager'),
     utils = require('../server-utils'),
     JsonToSnapList = require('./procedures/utils').jsonToSnapList ,
-    jsdocExtractor = require('./jsdoc-extractor.js'),
+    Docs = require('./jsdoc-extractor.js').Docs,
+    types = require('./input-types.js'),
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
+
+// in: arg obj and input value
+// out: {isValid: boolean, value, msg}
+function parseArgValue(arg, input) {
+    let inputStatus = {isValid: true, msg: '', value: input};
+    // is the argument provided or not? 
+    if (input === '') {
+        if (!arg.optional) {
+            inputStatus.msg = `${arg.name} is required.`;
+            inputStatus.isValid = false;
+            inputStatus.value = undefined;
+        }
+    } else {
+        if (types.parse.hasOwnProperty(arg.type)) { // if we have the type handler
+            try {
+                inputStatus.value = types.parse[arg.type](input);
+            } catch (e) {
+                inputStatus.isValid = false;
+                inputStatus.msg = `"${arg.name}" is not a valid ${types.getNBType(arg.type)}.`;
+                if (e.message.includes(arg.type)) {
+                    inputStatus.msg = `"${arg.name}" is not valid. ` + e.message;
+                } else if (e.message) {
+                    inputStatus.msg += ' ' + e.message;
+                }
+            }
+        }
+    }
+    return inputStatus;
+}
 
 const DEFAULT_COMPATIBILITY = {arguments: {}};
 /**
@@ -42,7 +72,7 @@ RPCManager.prototype.loadRPCs = function() {
         .filter(pair => fs.existsSync(pair[1]))
         .map(pair => {
             let service = require(pair[1]);
-            service._docs = jsdocExtractor.parse(pair[1]);
+            service._docs = new Docs(pair[1]);
             return [pair[0], service];
         })
         .filter(pair => {
@@ -83,6 +113,7 @@ RPCManager.prototype.registerRPC = function(rpc) {
         fnNames;
 
     this.rpcRegistry[name] = {};
+    this.rpcRegistry[name]._docs = rpc._docs;
     if (typeof rpc === 'function') {
         fnObj = rpc.prototype;
     }
@@ -94,10 +125,10 @@ RPCManager.prototype.registerRPC = function(rpc) {
     for (var i = fnNames.length; i--;) {
         let args;
         // find the associated doc
-        let doc = rpc._docs.find(doc => doc.parsed.name === fnNames[i]);
+        let doc = rpc._docs.getDocFor(fnNames[i]);
         // get the argument names ( starting from doc )
         if (doc) {
-            args = doc.parsed.args.map(arg => arg.name);
+            args = doc.args.map(arg => arg.name);
         }else{
             args = utils.getArgumentsFor(fnObj[fnNames[i]]);
         }
@@ -112,19 +143,40 @@ RPCManager.prototype.createRouter = function() {
     // Create the index for the rpcs
     router.route('/').get((req, res) => res.send(ALL_RPC_NAMES));
 
-    function tagWithCompatibility(rpc) {
+    function createServiceMetadata(rpc) {
         let methods = this.rpcRegistry[rpc.serviceName];
-        methods._compability = rpc.COMPATIBILITY;
-        return methods;
+        let rpcs = {}; // stores info about service's methods
+        Object.keys(methods)
+            .filter(key => !key.startsWith('_'))
+            .forEach(name => {
+                let info; // a single rpc info
+                if (rpc._docs && rpc._docs.getDocFor(name)) {
+                    info = rpc._docs.getDocFor(name);
+                } else {
+                    // if the method has no docs build up sth similar
+                    info = {
+                        args: methods[name].map(argName => {
+                            return {name: argName};
+                        }),
+                    };
+                }
+                delete info.name;
+                info.deprecated = false;
+                // check for deprecation
+                if (rpc.COMPATIBILITY && rpc.COMPATIBILITY.deprecatedMethods
+                    && rpc.COMPATIBILITY.deprecatedMethods.includes(name)) info.deprecated = true;
+                rpcs[name] = info; 
+            });
+        return rpcs;
     }
 
     this.rpcs.forEach(rpc => {
         router.route('/' + rpc.serviceName)
-            .get((req, res) => res.json(tagWithCompatibility.call(this, rpc)));
+            .get((req, res) => res.json(createServiceMetadata.call(this, rpc)));
 
         if (rpc.COMPATIBILITY.path) {
             router.route('/' + rpc.COMPATIBILITY.path)
-                .get((req, res) => res.json(tagWithCompatibility.call(this, rpc)));
+                .get((req, res) => res.json(createServiceMetadata.call(this, rpc)));
         }
     });
 
@@ -187,9 +239,11 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         oldFieldNameFor,
         result,
         args,
+        doc,
         rpc;
 
     action = req.params.action;
+    if (RPC._docs) doc = RPC._docs.getDocFor(action);
     this._logger.info(`Received request to ${RPC.serviceName} for ${action} (from ${uuid})`);
 
     // Then pass the call through
@@ -215,6 +269,31 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
             var oldName = oldFieldNameFor[argName];
             return req.query.hasOwnProperty(argName) ? req.query[argName] : req.query[oldName];
         });
+
+        // validate and enforce types in RPC manager.
+        // parse the inputs to correct types
+        // provide feedback to the user
+
+        if (doc) {
+            let errors = []; // mostly
+            // assuming doc params are defined in order!
+            doc.args.forEach((arg, idx) => {
+                if (arg.type) {
+                    let input = parseArgValue(arg, args[idx]);
+                    // if there was no errors update the arg with the parsed input
+                    if (input.isValid) {
+                        args[idx] = input.value;
+                    } else {
+                        // handle the error
+                        this._logger.warn(`${rpc.serviceName} -> ${action} input error:`, input.msg);
+                        if (input.msg) errors.push(input.msg);
+                    }
+                }
+            });
+            // provide user feedback if there was an error
+            if (errors.length > 0) return res.status(500).send(errors.join('\n'));
+        }
+
         let prettyArgs = JSON.stringify(args);
         prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
         this._logger.log(`calling ${RPC.serviceName}.${action}(${prettyArgs})`);

@@ -66,21 +66,38 @@ describe('jsdoc-extractor', () => {
                 args: [
                     {
                         name: 'address',
+                        optional: false,
                         type: 'String',
                         description: 'target address'
                     },
                     {
                         name: 'limit',
+                        optional: false,
                         type: 'Number',
                         description: 'the results limit'
                     },
                     {
                         name: 'options',
+                        optional: false,
                         type: 'Object',
                         description: null
                     }
                 ],
                 returns: {type: 'String', description: null}
+            });
+        });
+    });
+
+    describe('Docs', () => {
+
+        describe('getDocFor', () => {
+            it('should return a copy', () => {
+                let Docs = jp.Docs;
+                let sampleDocs = {_docs: [{name: 'rpcName', description: 'original description'}]};
+                let targetDoc = Docs.prototype.getDocFor.call(sampleDocs, 'rpcName');
+                targetDoc.description = 'mutated description';
+                let secondGet = Docs.prototype.getDocFor.call(sampleDocs, 'rpcName');
+                assert.deepEqual(secondGet.description, 'original description');
             });
         });
     });

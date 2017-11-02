@@ -21,8 +21,15 @@ function simplify(metadata) {
     let simplifyParam = param => {
         let {name, type, description} = param;
         let simpleParam = {name, description};
+        // if type is defined
         if (type) {
-            simpleParam.type = type.name;
+            if (type.type === 'OptionalType') {
+                simpleParam.optional = true;
+                simpleParam.type = type.expression.name;
+            } else {
+                simpleParam.optional = false;
+                simpleParam.type = type.name;
+            }
         } else {
             simpleParam.type = null;
             logger.warn(`rpc ${fnName}, parameter ${name} is missing the type attribute`);
@@ -186,17 +193,34 @@ function mkextract () {
     };
 }
 
+function parseService(path, scope) {
+    return parseSync(path, scope)
+        .map(md => {
+            md.parsed = simplify(md.parsed);
+            return md;
+        });
+}
+
+// netsblox docs container
+let Docs = function(servicePath) {
+    this._docs = parseService(servicePath).map(doc => doc.parsed);
+};
+
+// get a doc for an action
+Docs.prototype.getDocFor = function(actionName) {
+    if (!this._docs || this._docs.length === 0) return undefined;
+    // can preprocess and separate docs for different actions here;
+    let doc = this._docs.find(doc => doc.name === actionName);
+    if (doc) return Object.assign({}, doc);
+    return undefined;
+};
+
 // public interface
 module.exports = {
     extractDocBlocks,
     _findFn:  findFn,
     _parseSource: parseSource,
     _simplify: simplify,
-    parse: function(path, scope){
-        return parseSync(path, scope)
-            .map(md => {
-                md.parsed = simplify(md.parsed);
-                return md;
-            });
-    }
+    parse: parseService,
+    Docs
 };
