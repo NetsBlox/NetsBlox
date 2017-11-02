@@ -331,7 +331,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                             SnapCloud.callService(
                                 'getProject',
                                 function (response) {
-                                    SnapActions.openProject(response[0], dict.Public);
+                                    SnapActions.openProject(response[0].SourceCode, dict.Public);
                                 },
                                 myself.cloudError(),
                                 [SnapCloud.username, dict.ProjectName, SnapCloud.socketId()]
