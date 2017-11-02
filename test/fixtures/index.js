@@ -32,6 +32,11 @@ function seed(storage) {
                 if (data.Public) {
                     return PublicProjects.publish(project);
                 }
+            })
+            .then(() => {
+                if (!data.transient) {
+                    return project.persist();
+                }
             });
     })));
 }
