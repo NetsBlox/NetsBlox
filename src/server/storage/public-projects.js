@@ -26,37 +26,41 @@ let extractRpcs = require('../server-utils').extractRpcs;
     };
 
     PublicProjectStore.publish = function(project) {
-        // grab all the sourcecodes for diff roles and extracts rpcs for each
-        let sourceCodes = Object.keys(project.roles).map(rId => project.roles[rId].SourceCode);
-        let services = [];
-        sourceCodes.forEach(srcCode => {
-            services = services.concat(extractRpcs(srcCode));
-        });
+        return project.getRoles()
+            .then(roles => {
+                // parse the service usage
+                let sourceCodes = roles.map(role => role.SourceCode);
+                let services = [];
+                sourceCodes.forEach(srcCode => {
+                    services = services.concat(extractRpcs(srcCode));
+                });
 
-        var activeRole = project.roles[project.activeRole],
-            metadata = {
-                owner: project.owner,
-                projectName: project.name,
-                primaryRoleName: project.activeRole,
-                roleNames: Object.keys(project.roles),
-                thumbnail: null,
-                notes: null,
-                services: _.uniq(services)
-            };
+                // collect the rest of the metadata
+                var activeRole = roles.find(role => role.ProjectName === project.activeRole),
+                    metadata = {
+                        owner: project.owner,
+                        projectName: project.name,
+                        primaryRoleName: project.activeRole,
+                        roleNames: Object.keys(project.roles),
+                        thumbnail: null,
+                        notes: null,
+                        services: _.uniq(services)
+                    };
 
-        if (activeRole) {
-            metadata.thumbnail = activeRole.Thumbnail instanceof Array ?
-                activeRole.Thumbnail[0] : activeRole.Thumbnail;
-            metadata.notes = activeRole.notes instanceof Array ?
-                activeRole.notes[0] : activeRole.notes;
-        }
+                if (activeRole) {
+                    metadata.thumbnail = activeRole.Thumbnail instanceof Array ?
+                        activeRole.Thumbnail[0] : activeRole.Thumbnail;
+                    metadata.notes = activeRole.notes instanceof Array ?
+                        activeRole.notes[0] : activeRole.notes;
+                }
 
-        logger.trace(`Publishing project ${project.name} from ${project.owner}`);
+                logger.trace(`Publishing project ${project.name} from ${project.owner}`);
 
-        return collection.update({
-            owner: project.owner,
-            projectName: project.name
-        }, metadata, {upsert: true});
+                return collection.update({
+                    owner: project.owner,
+                    projectName: project.name
+                }, metadata, {upsert: true});
+            });
     };
 
     PublicProjectStore.update = PublicProjectStore.publish;
