@@ -313,8 +313,16 @@ NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
 };
 
 NetsProcess.prototype.parseRPCResult = function (result) {
+    var sockets = this.homeContext.receiver.parentThatIsA(IDE_Morph).sockets;
+
     if (result instanceof Array) {
         return new List(result.map(this.parseRPCResult.bind(this)));
+    } else if (typeof result === 'string' && result[0] === '<') {  // serialized snap object
+        try {
+            result = sockets.deserialize(result);
+        } catch(e) {
+            console.log(e);
+        }
     }
     return result;
 };
@@ -334,7 +342,8 @@ function listToArray(list) {
 }
 
 NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
-    var action = methodSignature[0],
+    var myself = this,
+        action = methodSignature[0],
         argNames = methodSignature[1],
         values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
         query= {},
