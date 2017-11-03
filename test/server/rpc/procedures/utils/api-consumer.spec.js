@@ -42,16 +42,16 @@ describe('ApiConsumer', function(){
                 json: false
             };
 
-            let requestCacheKey = queryOpts.baseUrl + queryOpts.queryString;
+            let requestCacheKey = testRpc._rpc._getCacheKey(queryOpts);
             // cache the key for this request to 'response'
             cache.set(requestCacheKey, 'response', function(err) {
                 if (err) { throw err; }
                 testRpc._rpc._requestData(queryOpts)
-                .then(data => {
+                    .then(data => {
                     // requesting for the same key should return 'response' as data
-                    assert.deepEqual(data,'response');
-                    done();
-                });
+                        assert.deepEqual(data,'response');
+                        done();
+                    });
             });
         });
     });

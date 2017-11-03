@@ -107,6 +107,7 @@ let seedDB = (fileName) => {
         getStationsCol().createIndex({coordinates: '2dsphere'});
         getReadingsCol().createIndex({pws: 1});
         getReadingsCol().createIndex({requestTime: -1});
+        getReadingsCol().createIndex({readAt: -1});
         stations = stations.map(station => {
             station.coordinates = [station.longitude, station.latitude];
             return station;
@@ -202,7 +203,7 @@ storage.connect().then(() => {
         scheduleUpdates(stationUtils.selected, interval);
     }
 })
-.then(() => storage.disconnect());
+    .then(() => storage.disconnect());
 
 if (process.argv.length < 3) console.log('pass in a command: seed, updateStats or pullUpdates');
 

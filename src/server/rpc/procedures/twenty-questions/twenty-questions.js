@@ -2,11 +2,7 @@
 
 'use strict';
 
-var debug = require('debug'),
-    log = debug('netsblox:rpc:twenty-questions:log'),
-    error = debug('netsblox:rpc:twenty-questions:error'),
-    trace = debug('netsblox:rpc:twenty-questions:trace'),
-    Constants = require('../../../../common/constants');
+var Constants = require('../../../../common/constants');
 
 let TwentyQuestions = function () {
     this._state = {};
@@ -14,7 +10,6 @@ let TwentyQuestions = function () {
     this._state.guessCount = null;
     this._state.answerer = null;
     this._state.started = false;
-    this.isStateless = false;
 };
 
 TwentyQuestions.prototype.start = function (answer) {
@@ -79,21 +74,21 @@ TwentyQuestions.prototype.guess = function(guess) {
         // guesses are up! guesser loses...
         if (this._state.guessCount === 20) {
             this.socket._room.sockets()
-            .forEach(socket => {
-                let msg = msgSocket;
-                msg.msgType = 'EndGame';
-                msg.content.GuesserWin = false;
-                socket.send(msg);
-            });
+                .forEach(socket => {
+                    let msg = msgSocket;
+                    msg.msgType = 'EndGame';
+                    msg.content.GuesserWin = false;
+                    socket.send(msg);
+                });
         // wait for answerer to answer the question
         } else {
             this.socket._room.sockets()
-            .forEach(socket => {
-                let msg = msgSocket;
-                msg.msgType = 'EndGuesserTurn';
-                msg.content.guess = guess;
-                socket.send(msg);
-            });
+                .forEach(socket => {
+                    let msg = msgSocket;
+                    msg.msgType = 'EndGuesserTurn';
+                    msg.content.guess = guess;
+                    socket.send(msg);
+                });
         }
         return correct;
     }

@@ -1,5 +1,7 @@
+/* eslint-disable no-console */
 'use strict';
 
+const isDevEnv = process.env.ENV !== 'production';
 var fs = require('fs'),
     path = require('path'),
     srcPath = path.join(__dirname, '..', 'src', 'client');
@@ -15,7 +17,9 @@ while (match) {
     devHtml = devHtml.substring(match.index + match[0].length);
     match = devHtml.match(re);
 }
-console.log('concatting and minifying:', srcFiles);
+
+if (!isDevEnv) console.log('concatting and minifying:', srcFiles);
+
 srcFiles = srcFiles.map(file => path.join(srcPath, file));
 var src = srcFiles
     .map(file => fs.readFileSync(file, 'utf8'))
@@ -23,10 +27,21 @@ var src = srcFiles
 
 var ugly = require('uglify-js');
 
-console.log('dev src length:', src.length);
-var final_code = ugly.minify(srcFiles, {outSourceMap: path.join(srcPath, 'netsblox-build.js.map')});
+var final_code = src;
 
-console.log('output length:', final_code.code.length);
-console.log('compression ratio:', 1-(final_code.code.length/src.length));
+if (isDevEnv) {  // don't minify in dev
+    console.log('Dev environment detected - skipping build optimizations. If you ' +
+        'change to a production env, be sure to rebuild with:');
+    console.log('');
+    console.log('    npm run postinstall');
+    console.log('');
+} else {
+    console.log('dev src length:', src.length);
 
-fs.writeFileSync(path.join(srcPath, 'dist', 'netsblox-build.js'), final_code.code);
+    final_code = ugly.minify(srcFiles, {outSourceMap: path.join(srcPath, 'netsblox-build.js.map')}).code;
+    console.log('output length:', final_code.length);
+    console.log('compression ratio:', 1-(final_code.length/src.length));
+}
+
+fs.writeFileSync(path.join(srcPath, 'dist', 'netsblox-build.js'), final_code);
+/* eslint-enable no-console */

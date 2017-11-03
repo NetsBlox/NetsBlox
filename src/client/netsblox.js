@@ -6,7 +6,7 @@
    ScrollFrameMorph, SnapUndo, LibraryImportDialogMorph, CollaboratorDialogMorph,
    SnapSerializer, isRetinaSupported, isRetinaEnabled, useBlurredShadows,
    BlockMorph, SyntaxElementMorph, ScriptsMorph, InputSlotDialogMorph, ArgMorph,
-   BlockLabelPlaceHolderMorph, TableMorph*/
+   BlockLabelPlaceHolderMorph, TableMorph, contains*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -50,9 +50,9 @@ NetsBloxMorph.prototype.openIn = function (world) {
     }
 
     this.buildPanes();
+    SnapActions.configure(this);
     SnapActions.disableCollaboration();
     SnapUndo.reset();
-    SnapActions.loadProject(this);
     world.add(this);
     world.userMenu = this.userMenu;
 
@@ -96,7 +96,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
         }
     }
 
-	function applyFlags(dict) {
+    function applyFlags(dict) {
         if (dict.editMode) {
             myself.toggleAppMode(false);
         } else {
@@ -112,7 +112,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
         if (dict.noExitWarning) {
             window.onbeforeunload = nop;
         }
-	}
+    }
 
     // dynamic notifications from non-source text files
     // has some issues, commented out for now
@@ -124,10 +124,14 @@ NetsBloxMorph.prototype.openIn = function (world) {
     }
     */
 
+    // Netsblox addition: start
+    this.projectName = 'myRole';
+    // Netsblox addition: end
     function interpretUrlAnchors() {
-        var dict = {}, idx;
+        var dict, idx;
 
         // Netsblox addition: start
+        dict = {};
         if (location.href.indexOf('?') > -1) {
             var querystring = location.href
                 .replace(/^.*\?/, '')
@@ -136,7 +140,6 @@ NetsBloxMorph.prototype.openIn = function (world) {
             dict = SnapCloud.parseDict(querystring);
         }
         // Netsblox addition: end
-
         if (location.hash.substr(0, 6) === '#open:') {
             hash = location.hash.substr(6);
             if (hash.charAt(0) === '%'
@@ -157,7 +160,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
             }
         } else if (location.hash.substr(0, 5) === '#run:') {
             hash = location.hash.substr(5);
-            idx = hash.indexOf("&");
+            idx = hash.indexOf('&');
             if (idx > 0) {
                 hash = hash.slice(0, idx);
             }
@@ -166,9 +169,9 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 hash = decodeURIComponent(hash);
             }
             if (hash.substr(0, 8) === '<project>') {
-                this.rawOpenProjectString(hash);
+                SnapActions.openProject(hash);
             } else {
-                this.rawOpenProjectString(getURL(hash));
+                SnapActions.openProject(getURL(hash));
             }
             applyFlags(SnapCloud.parseDict(location.hash.substr(5)));
         // Netsblox addition: start
@@ -197,6 +200,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                         },
                         function () {nop(); }, // yield (bug in Chrome)
                         function () {
+                            //SnapActions.openProject(projectData);
                             // Netsblox addition: start
                             myself.openRoomString(projectData, true);
                             // Netsblox addition: end
@@ -233,13 +237,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                         },
                         function () {nop(); }, // yield (bug in Chrome)
                         function () {
-                            if (projectData.indexOf('<snapdata') === 0) {
-                                myself.rawOpenCloudDataString(projectData);
-                            } else if (
-                                projectData.indexOf('<project') === 0
-                            ) {
-                                myself.rawOpenProjectString(projectData);
-                            }
+                            SnapActions.openProject(projectData);
                             myself.hasChangedMedia = true;
                         },
                         function () {
@@ -277,7 +275,6 @@ NetsBloxMorph.prototype.openIn = function (world) {
             // Get the session id and join it!
             SnapActions.enableCollaboration();
             SnapActions.joinSession(sessionId, this.cloudError());
-
         // Netsblox addition: start
         } else if (location.hash.substr(0, 9) === '#example:' || dict.action === 'example') {
             var example = dict ? dict.ProjectName : location.hash.substr(9),
@@ -334,7 +331,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                             SnapCloud.callService(
                                 'getProject',
                                 function (response) {
-                                    myself.rawLoadCloudProject(response[0], dict.Public);
+                                    SnapActions.openProject(response[0].SourceCode, dict.Public);
                                 },
                                 myself.cloudError(),
                                 [SnapCloud.username, dict.ProjectName, SnapCloud.socketId()]
@@ -345,6 +342,8 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 myself.sockets.onConnect = onConnect;
             };
         // Netsblox addition: end
+        } else {
+            SnapActions.openProject();
         }
     }
 
@@ -357,7 +356,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
 };
 
 NetsBloxMorph.prototype.resourceURL = function () {
-    return 'api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
+    return '/api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
 };
 
 NetsBloxMorph.prototype.clearProject = function () {
@@ -377,16 +376,18 @@ NetsBloxMorph.prototype.clearProject = function () {
     StageMorph.prototype.codeHeaders = {};
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
+    StageMorph.prototype.enableSublistIDs = false;
     SpriteMorph.prototype.useFlatLineEnds = false;
+    Process.prototype.enableLiveCoding = false;
+    this.silentSetProjectName('');
     this.projectNotes = '';
     this.createStage();
     this.add(this.stage);
     this.createCorral();
     this.selectSprite(this.stage.children[0]);
     this.fixLayout();
-    SnapActions.disableCollaboration();
-    SnapUndo.reset();
-    SnapActions.loadProject(this);
+    //SnapActions.disableCollaboration();
+    //SnapUndo.reset();
 };
 
 NetsBloxMorph.prototype.cloudMenu = function () {
@@ -419,6 +420,9 @@ NetsBloxMorph.prototype.cloudMenu = function () {
             'Reset Password...',
             'resetCloudPassword'
         );
+    // Netsblox addition: start
+    // (remove collaboration url stuff)
+    // Netsblox addition: end
     } else {
         menu.addItem(
             localize('Logout') + ' ' + SnapCloud.username,
@@ -428,6 +432,7 @@ NetsBloxMorph.prototype.cloudMenu = function () {
             'Change Password...',
             'changeCloudPassword'
         );
+        // Netsblox addition: start
         if (this.room.isOwner()) {
             menu.addLine();
             menu.addItem(
@@ -435,6 +440,7 @@ NetsBloxMorph.prototype.cloudMenu = function () {
                 'manageCollaborators'
             );
         }
+        // Netsblox addition: end
     }
     if (shiftClicked) {
         menu.addLine();
@@ -510,9 +516,7 @@ NetsBloxMorph.prototype.cloudMenu = function () {
                                     },
                                     function () {nop(); }, // yield (Chrome)
                                     function () {
-                                        myself.rawOpenCloudDataString(
-                                            projectData
-                                        );
+                                        SnapActions.openProject(projectData);
                                     },
                                     function () {
                                         msg.destroy();
@@ -1032,7 +1036,7 @@ NetsBloxMorph.prototype.createControlBar = function () {
         var suffix = ' @ ' + myself.room.name;
 
         suffix += myself.world().isDevMode ?
-                ' - ' + localize('development mode') : '';
+            ' - ' + localize('development mode') : '';
 
         if (this.label) {
             this.label.destroy();
@@ -1080,10 +1084,15 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
     StageMorph.prototype.codeHeaders = {};
     StageMorph.prototype.enableCodeMapping = false;
     StageMorph.prototype.enableInheritance = false;
+    StageMorph.prototype.enableSublistIDs = false;
+    Process.prototype.enableLiveCoding = false;
+    SnapActions.disableCollaboration();
     SnapUndo.reset();
     if (Process.prototype.isCatchingErrors) {
         try {
+            // NetsBlox addition: start
             model = parsed ? model : this.serializer.parse(model);
+            // NetsBlox addition: end
             this.serializer.loadMediaModel(model.childNamed('media'));
             project = this.serializer.openProject(
                 this.serializer.loadProjectModel(
@@ -1092,13 +1101,17 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
                 ),
                 this
             );
+            // NetsBlox addition: start
             // Join the room
             this.loadNextRoom();
+            // NetsBlox addition: end
         } catch (err) {
             this.showMessage('Load failed: ' + err);
         }
     } else {
+        // NetsBlox addition: start
         model = parsed ? model : this.serializer.parse(model);
+        // NetsBlox addition: end
         this.serializer.loadMediaModel(model.childNamed('media'));
         project = this.serializer.openProject(
             this.serializer.loadProjectModel(
@@ -1107,10 +1120,13 @@ NetsBloxMorph.prototype.rawOpenCloudDataString = function (model, parsed) {
             ),
             this
         );
+        // NetsBlox addition: start
+        // Join the room
         this.loadNextRoom();
+        // NetsBlox addition: end
     }
-    SnapActions.loadProject(this, project.collabStartIndex, model.toString());
     this.stopFastTracking();
+    return project;
 };
 
 NetsBloxMorph.prototype.createSpriteBar = function () {
@@ -1169,7 +1185,7 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
         button.setPosition(myself.spriteBar.position().add(2));
         button.setTop(button.top()
             + ((rotationStyleButtons.length - 1) * (button.height() + 2))
-            );
+        );
         myself.spriteBar.add(button);
         if (myself.currentSprite instanceof StageMorph) {
             button.hide();
@@ -1237,7 +1253,7 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
     padlock.pressColor = tabColors[1];
 
     padlock.tick.shadowOffset = MorphicPreferences.isFlat ?
-            new Point() : new Point(-1, -1);
+        new Point() : new Point(-1, -1);
     padlock.tick.shadowColor = new Color(); // black
     padlock.tick.color = this.buttonLabelColor;
     padlock.tick.isBold = false;
@@ -1361,7 +1377,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
         world = this.world(),
         pos = this.controlBar.projectButton.bottomLeft(),
         graphicsName = this.currentSprite instanceof SpriteMorph ?
-                'Costumes' : 'Backgrounds',
+            'Costumes' : 'Backgrounds',
         shiftClicked = (world.currentKey === 16);
 
     // Netsblox addition: start
@@ -1395,17 +1411,21 @@ NetsBloxMorph.prototype.projectMenu = function () {
     menu.addPair('New', 'createNewProject', '^N');
     menu.addPair('Open...', 'openProjectsBrowser', '^O');
     if (!this.room.isGuest()) {
-        menu.addPair('Save', "save", '^S');
-    } else {
-        menu.addPair('Save a Copy', "save", '^S');
+        menu.addPair('Save', 'save', '^S');
+    } else if (SnapCloud.username) {  // save a copy option if logged in
+        menu.addPair('Save a Copy', 'saveACopy');
     }
-    menu.addItem('Save As...', function() {
-        if (myself.isPreviousVersion()) {
-            return myself.showMessage('Please exit replay mode before saving');
-        }
+    if (this.room.isOwner()) {
+        menu.addItem('Save As...', function() {
+            if (myself.isPreviousVersion()) {
+                return myself.showMessage('Please exit replay mode before saving');
+            }
 
-        myself.saveProjectsBrowser();
-    });
+            myself.saveProjectsBrowser();
+        });
+    } else if (this.room.isCollaborator()) {
+        menu.addPair('Save a Copy', 'saveACopy');
+    }
     if (shiftClicked) {
         menu.addItem(
             localize('Download replay events'),
@@ -1432,15 +1452,15 @@ NetsBloxMorph.prototype.projectMenu = function () {
                     myself.filePicker = null;
                 }
                 inp.type = 'file';
-                inp.style.color = "transparent";
-                inp.style.backgroundColor = "transparent";
-                inp.style.border = "none";
-                inp.style.outline = "none";
-                inp.style.position = "absolute";
-                inp.style.top = "0px";
-                inp.style.left = "0px";
-                inp.style.width = "0px";
-                inp.style.height = "0px";
+                inp.style.color = 'transparent';
+                inp.style.backgroundColor = 'transparent';
+                inp.style.border = 'none';
+                inp.style.outline = 'none';
+                inp.style.position = 'absolute';
+                inp.style.top = '0px';
+                inp.style.left = '0px';
+                inp.style.width = '0px';
+                inp.style.height = '0px';
                 inp.addEventListener(
                     'change',
                     function () {
@@ -1473,18 +1493,18 @@ NetsBloxMorph.prototype.projectMenu = function () {
                 myself.filePicker = null;
             }
             inp.type = 'file';
-            inp.style.color = "transparent";
-            inp.style.backgroundColor = "transparent";
-            inp.style.border = "none";
-            inp.style.outline = "none";
-            inp.style.position = "absolute";
-            inp.style.top = "0px";
-            inp.style.left = "0px";
-            inp.style.width = "0px";
-            inp.style.height = "0px";
-            inp.style.display = "none";
+            inp.style.color = 'transparent';
+            inp.style.backgroundColor = 'transparent';
+            inp.style.border = 'none';
+            inp.style.outline = 'none';
+            inp.style.position = 'absolute';
+            inp.style.top = '0px';
+            inp.style.left = '0px';
+            inp.style.width = '0px';
+            inp.style.height = '0px';
+            inp.style.display = 'none';
             inp.addEventListener(
-                "change",
+                'change',
                 function () {
                     document.body.removeChild(inp);
                     myself.filePicker = null;
@@ -1521,7 +1541,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
     }
     menu.addItem(
         shiftClicked ?
-                'Export project as plain text...' : 'Export project...',
+            'Export project as plain text...' : 'Export project...',
         function () {
             if (myself.projectName) {
                 myself.exportProject(myself.projectName, shiftClicked);
@@ -1543,7 +1563,7 @@ NetsBloxMorph.prototype.projectMenu = function () {
             'show global custom block definitions/message types as XML' +
                 '\nin a new browser window'
         );
-    // Netsblox addition: end
+        // Netsblox addition: end
         menu.addItem(
             'Unused blocks...',
             function () {myself.removeUnusedBlocks(); },
@@ -1634,6 +1654,9 @@ NetsBloxMorph.prototype.projectMenu = function () {
     );
 
     menu.popup(world, pos);
+    // Netsblox addition: start
+    return menu;
+    // Netsblox addition: end
 };
 
 NetsBloxMorph.prototype.requestAndroidApp = function(name) {
@@ -1671,11 +1694,48 @@ NetsBloxMorph.prototype.exportRole = NetsBloxMorph.prototype.exportProject;
 NetsBloxMorph.prototype.exportProject = function () {
     this.showMessage('Exporting...', 3);
 
-    // Trigger server export of all roles
+    if (this.room.getRoleCount() === 1) {
+        // If only one role, we should just create the room xml locally
+        this.exportSingleRoleXml();
+    } else {  // Trigger server export of all roles
+        this.exportMultiRoleXml();
+    }
+};
+
+NetsBloxMorph.prototype.exportMultiRoleXml = function () {
     this.sockets.sendMessage({
         type: 'export-room',
         action: 'export'
     });
+};
+
+NetsBloxMorph.prototype.getSerializedRole = function () {
+    var data = this.sockets.getSerializedProject();
+    return this.serializer.format(
+        '<role name="@">%</role>',
+        this.room.getCurrentRoleName(),
+        data.SourceCode + data.Media
+    );
+
+};
+
+NetsBloxMorph.prototype.exportSingleRoleXml = function () {
+    // Get the role xml
+    try {
+        var str = this.serializer.format(
+            '<room name="@" app="@">%</room>',
+            this.room.name,
+            this.serializer.app,
+            this.getSerializedRole()
+        );
+        this.exportRoom(str);
+    } catch (err) {
+        if (Process.prototype.isCatchingErrors) {
+            this.showMessage('Export failed: ' + err);
+        } else {
+            throw err;
+        }
+    }
 };
 
 NetsBloxMorph.prototype.exportRoom = function (str) {
@@ -1694,7 +1754,7 @@ NetsBloxMorph.prototype.exportRoom = function (str) {
 };
 
 // Open the room
-NetsBloxMorph.prototype.openRoomString = function (str, isRaw) {
+NetsBloxMorph.prototype.openRoomString = function (str) {
     var room = this.serializer.parse(str),
         roles = {},
         role;
@@ -1729,17 +1789,22 @@ NetsBloxMorph.prototype.openRoomString = function (str, isRaw) {
     });
 
     // load the given project
-    if (isRaw) {
-        this.rawOpenCloudDataString(room.children[0], true);
-    } else {
-        this.openCloudDataString(room.children[0], true);
-    }
+    role = room.children[0];
+    var projectXml = [
+        '<snapdata>',
+        role.childNamed('project').toString(),
+        role.childNamed('media').toString(),
+        '</snapdata>'
+    ].join('');
+    SnapActions.openProject(projectXml);
 };
 
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
     var msg,
         myself = this,
+        // Netsblox addition: start
         str = parsed ? model.toString() : model,
+        // Netsblox addition: end
         size = Math.round(str.length / 1024);
 
     this.exitReplayMode();
@@ -1749,7 +1814,7 @@ NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
         },
         function () {nop(); }, // yield (bug in Chrome)
         function () {
-            myself.rawOpenCloudDataString(model, parsed);
+            SnapActions.openProject(str);
         },
         function () {
             msg.destroy();
@@ -1780,14 +1845,14 @@ NetsBloxMorph.prototype.saveRoomLocal = function (str) {
             localStorage['-snap-project-' + name] = str;
         
             this.setURL('#open:' + str);
-            this.showMessage('Saved!', 1);
+            this.showMessage('Saved to the browser.', 1);
         } catch (err) {
             this.showMessage('Save failed: ' + err);
         }
     } else {
         localStorage['-snap-project-' + name] = str;
         this.setURL('#open:' + str);
-        this.showMessage('Saved!', 1);
+        this.showMessage('Saved to the browser.', 1);
     }
 };
 
@@ -1809,16 +1874,49 @@ NetsBloxMorph.prototype.save = function () {
     if (this.source === 'examples') {
         this.source = 'local'; // cannot save to examples
     }
-    if (this.projectName) {
+    // NetsBlox changes - start
+    if (this.room.name) {
+    // NetsBlox changes - end
         if (this.source === 'local') { // as well as 'examples'
             // NetsBlox changes - start
             this.saveProject(this.room.name);
             // NetsBlox changes - end
         } else { // 'cloud'
-            this.saveProjectToCloud(this.projectName);
+            // NetsBlox changes - start
+            this.saveProjectToCloud(this.room.name);
+            // NetsBlox changes - end
         }
     } else {
         this.saveProjectsBrowser();
+    }
+};
+
+NetsBloxMorph.prototype.saveACopy = function () {
+    var myself = this;
+    if (this.isPreviousVersion()) {
+        return this.showMessage('Please exit replay mode before saving');
+    }
+
+    // Save the project!
+    SnapCloud.saveProjectCopy(function() {
+        myself.showMessage('Made your own copy and saved it to the cloud!', 2);
+    }, this.cloudError());
+};
+
+IDE_Morph.prototype.saveProjectToCloud = function (name) {
+    var myself = this;
+    if (name) {
+        this.showMessage('Saving project\nto the cloud...');
+        // Netsblox addition: start
+        this.room.name = name;
+        // Netsblox addition: end
+        SnapCloud.saveProject(
+            this,
+            // Netsblox addition: start
+            function () {myself.showMessage('Saved to cloud!', 2); },
+            // Netsblox addition: end
+            this.cloudError()
+        );
     }
 };
 
@@ -1837,9 +1935,9 @@ NetsBloxMorph.prototype.saveProjectToCloud = function (name) {
                 myself,
                 function () {
                     if (overwrite) {
-                        myself.showMessage('saved.', 2);
+                        myself.showMessage('Saved to cloud!', 2);
                     } else {
-                        myself.showMessage('saved as ' + myself.room.name, 2);
+                        myself.showMessage('Saved as ' + myself.room.name, 2);
                     }
                 },
                 myself.cloudError(),
@@ -2162,16 +2260,22 @@ NetsBloxMorph.prototype.reportBug = function () {
     text.edit();
 };
 
-NetsBloxMorph.prototype.submitBugReport = function (desc, silent) {
+NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     var myself = this,
         canvas = document.getElementsByTagName('canvas')[0],
+        silent = !!error,
+        version,
         report = {};
 
     // Add the description
+    version = NetsBloxSerializer.prototype.app
+        .replace('NetsBlox ', '')
+        .replace(/,.*$/, '');
+
     report.description = desc;
-    report.timestamp = Date.now();
+    report.timestamp = new Date();
     report.userAgent = navigator.userAgent;
-    report.version = NetsBloxSerializer.prototype.app;
+    report.version = version;
 
     // Add screenshot
     report.screenshot = canvas.toDataURL();
@@ -2182,7 +2286,21 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, silent) {
 
     // Add username (if logged in)
     report.user = SnapCloud.username;
-    report.isAutoReport = !!silent;
+    report.isAutoReport = !!error;
+
+    if (report.isAutoReport) {
+        var event = SnapActions.currentEvent;
+        report.description = [
+            '## Auto-report',
+            'Error:',
+            error.stack,
+            '---',
+            'Failing Event:',
+            JSON.stringify(event, null, 2)
+        ].join('\n');
+        report.error = error;
+        report.event = event;
+    }
 
     // Report to the server
     var request = new XMLHttpRequest(),
@@ -2271,8 +2389,15 @@ NetsBloxMorph.prototype.loadBugReport = function () {
                         for (var i = keys.length; i--;) {
                             SnapUndo[keys[i]] = report.undoState[keys[i]];
                         }
+                        myself.confirm(
+                            'Would you like to apply the failing event?',
+                            'Apply Failing Event?',
+                            function() {
+                                SnapActions.applyEvent(report.event);
+                            }
+                        );
                         myself.showMessage('Loaded bug report!');
-                    }, 10);
+                    }, 100);
                     dialog.destroy();
                 };
 
@@ -2409,3 +2534,45 @@ NetsBloxMorph.prototype.logout = function () {
         }
     );
 };
+
+NetsBloxMorph.prototype.createCloudAccount = function () {
+    var myself = this,
+        world = this.world();
+/*
+    // force-logout, commented out for now:
+    delete localStorage['-snap-user'];
+    SnapCloud.clear();
+*/
+    new DialogBoxMorph(
+        null,
+        function (user) {
+            SnapCloud.signup(
+                user.username,
+                user.email,
+                function (txt, title) {
+                    new DialogBoxMorph().inform(
+                        title,
+                        txt +
+                            '.\n\nAn e-mail with your password\n' +
+                            'has been sent to the address provided',
+                        world,
+                        myself.cloudIcon(null, new Color(0, 180, 0))
+                    );
+                },
+                myself.cloudError()
+            );
+        }
+    ).withKey('cloudsignup').promptCredentials(
+        'Sign up',
+        'signup',
+        '/tos.html',
+        'Terms of Service...',
+        '/privacy.html',
+        'Privacy...',
+        'I have read and agree\nto the Terms of Service',
+        world,
+        myself.cloudIcon(),
+        myself.cloudMsg
+    );
+};
+

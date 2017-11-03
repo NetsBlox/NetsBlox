@@ -1,5 +1,6 @@
 var express = require('express'),
     bodyParser = require('body-parser'),
+    qs = require('qs'),
     WebSocketServer = require('ws').Server,
     _ = require('lodash'),
     dot = require('dot'),
@@ -7,14 +8,14 @@ var express = require('express'),
     SocketManager = require('./socket-manager'),
     RoomManager = require('./rooms/room-manager'),
     RPCManager = require('./rpc/rpc-manager'),
-    MobileManager = require('./mobile/mobile-manager'),
     Storage = require('./storage/storage'),
     EXAMPLES = require('./examples'),
     Vantage = require('./vantage/vantage'),
+    isDevMode = process.env.ENV !== 'production',
     DEFAULT_OPTIONS = {
         port: 8080,
         vantagePort: 1234,
-        vantage: process.env.ENV !== 'production'
+        vantage: isDevMode
     },
 
     // Routes
@@ -31,6 +32,9 @@ var Server = function(opts) {
     this._logger = new Logger('netsblox');
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
+    this.app.set('query parser', string => {
+        return qs.parse(string, {parameterLimit: 10000, arrayLimit: 20000});
+    });
 
     // Mongo variables
     this.storage = new Storage(this._logger, opts);
@@ -40,8 +44,6 @@ var Server = function(opts) {
     this.rpcManager = RPCManager;
     RoomManager.init(this._logger, this.storage);
     SocketManager.init(this._logger, this.storage);
-
-    this.mobileManager = new MobileManager();
 };
 
 Server.prototype.configureRoutes = function() {
@@ -75,36 +77,34 @@ Server.prototype.configureRoutes = function() {
     // Add deployment state endpoint info
     const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
     this.app.get(`/${stateEndpoint}/rooms`, function(req, res) {
-        const rooms = Object.keys(RoomManager.rooms).map(uuid => {
-            const room = RoomManager.rooms[uuid];
-            const roles = {};
-            const project = room.getProject();
-            let lastUpdatedAt = null;
+        return RoomManager.getActiveRooms()
+            .then(rooms => res.json(rooms.map(room => {
+                const roles = {};
+                const project = room.getProject();
+                let lastUpdatedAt = null;
 
-            if (project) {
-                lastUpdatedAt = new Date(project.lastUpdatedAt);
-            }
+                if (project) {
+                    lastUpdatedAt = new Date(project.lastUpdatedAt);
+                }
 
-            room.getRoleNames().forEach(role => {
-                roles[role] = room.getSocketsAt(role).map(socket => {
-                    return {
-                        username: socket.username,
-                        uuid: socket.uuid
-                    };
+                room.getRoleNames().forEach(role => {
+                    roles[role] = room.getSocketsAt(role).map(socket => {
+                        return {
+                            username: socket.username,
+                            uuid: socket.uuid
+                        };
+                    });
                 });
-            });
 
-            return {
-                uuid: uuid,
-                name: room.name,
-                owner: room.owner,
-                collaborators: room.getCollaborators(),
-                lastUpdatedAt: lastUpdatedAt,
-                roles: roles
-            };
-        });
-
-        return res.json(rooms);
+                return {
+                    uuid: room.uuid,
+                    name: room.name,
+                    owner: room.owner,
+                    collaborators: room.getCollaborators(),
+                    lastUpdatedAt: lastUpdatedAt,
+                    roles: roles
+                };
+            })));
     });
 
     this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {
@@ -123,9 +123,14 @@ Server.prototype.configureRoutes = function() {
         res.json(sockets);
     });
 
+    // Add dev endpoints
+    if (isDevMode) {
+        this.app.use('/dev/', express.static(__dirname + '/../../test/client/'));
+    }
+
     // Initial page
     this.app.get('/', (req, res) => {
-        if(process.env.ENV !== 'production'){
+        if(isDevMode) {
             res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html'));
             return;
         }

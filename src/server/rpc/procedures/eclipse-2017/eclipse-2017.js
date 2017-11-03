@@ -45,7 +45,7 @@ function _stationReading(id, time){
     // NOTE: it finds the latest available update on the database ( could be old if there is no new record!)
     let query = {pws: id};
     if(time) query.readAt = {$lte: new Date(time)};
-    return getReadingsCol().find(query).sort({requestTime: -1}).limit(1).toArray().then(readings => {
+    return getReadingsCol().find(query).sort({readAt:-1, requestTime: -1}).limit(1).toArray().then(readings => {
         let [ reading ] = readings;
         return reading;
     });
@@ -63,7 +63,7 @@ function _stationReadings(id, startTime, endTime){
         endTime = new Date(endTime);
         query.readAt.$lte = endTime;
     }
-    return getReadingsCol().find(query).sort({requestTime: -1}).limit(1000).toArray()
+    return getReadingsCol().find(query).sort({readAt: -1, requestTime: -1}).limit(1000).toArray()
         .then(readings => {
             logger.info(`found ${readings.length} readings for station ${id}`);
             return readings;
@@ -75,7 +75,7 @@ function loadLatestUpdates(numUpdates){
     getReadingsCol().find().sort({requestTime: -1}).limit(numUpdates).toArray().then(readings => {
         latestReadings = {};
         readings.forEach(reading => {
-            if (!latestReadings[reading.pws] || latestReadings[reading.pws].requestTime < reading.requestTime ) latestReadings[reading.pws] = reading;
+            if (!latestReadings[reading.pws] || (latestReadings[reading.pws].readAt <= reading.readAt && latestReadings[reading.pws].requestTime < reading.requestTime) ) latestReadings[reading.pws] = reading;
         });
         logger.trace('preloaded latest updates');
     });
@@ -167,12 +167,17 @@ let temperatureHistoryRange = function(stationId, startTime, endTime){
     });
 };
 
+let conditionHistoryRange = function(stationId, startTime, endTime){
+    return _stationReadings(stationId, startTime, endTime).then(readings => {
+        return rpcUtils.jsonToSnapList(readings);
+    });
+};
+
 let stationsInfo = function(){
     return stationUtils.selected().then(stations => rpcUtils.jsonToSnapList(stations.map(s => hideDBAttrs(s))));
 };
 
 module.exports = {
-    isStateless: true,
     stations,
     stationsInfo,
     stationInfo,
@@ -184,9 +189,13 @@ module.exports = {
     pastCondition,
     conditionHistory,
     temperatureHistoryRange,
+    conditionHistoryRange,
     availableStations,
     _stationReading,
     _stationReadings,
     selectSectionBased: stationUtils.selectSectionBased,
-    selectPointBased: stationUtils.selectPointBased
+    selectPointBased: stationUtils.selectPointBased,
+    COMPATIBILITY: {
+        deprecatedMethods: ['temperature', 'condition']
+    }
 };

@@ -2,15 +2,14 @@ if(!process.env.GOOGLE_GEOCODING_API) {
     console.log('Warning: environment variable GOOGLE_GEOCODING_API not defined, Geolocation RPC will not work.');
 } else {
 
-    let GeoLocationRPC = {
-        isStateless: true,
-    };
+    let GeoLocationRPC = {};
 
     var debug = require('debug'),
         error = debug('netsblox:rpc:geolocation:error'),
         CacheManager = require('cache-manager'),
         NodeGeocoder = require('node-geocoder'),
         rp = require('request-promise'),
+        jsonQuery = require('json-query'),
         trace = debug('netsblox:rpc:geolocation:trace');
 
     // init
@@ -25,33 +24,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
 
     // helper to filter json down
     function queryJson(json, query){
-        // assuming that there is no digit in attribute names
-        if (typeof(json) === 'string') {
-            json = JSON.parse(json);
-        }
-
-        if (!query) return json;
-
-        let queryComponents = [];
-        let res = json;
-
-        query.split('.').forEach(item => {
-            let searchRes = /\d+/g.exec(item);
-            if (searchRes) {
-                queryComponents.push(item.substring(0,searchRes.index -1));
-                queryComponents.push(searchRes[0]);
-            }else {
-                queryComponents.push(item);
-            }
-        });
-        queryComponents.shift(); // remove the first item which is always empty
-        queryComponents.forEach(q=>{
-            if (res[q]){
-                res = res[q];
-            } else {
-                res = null;
-            }
-        });
+        let res =  jsonQuery(query, {data: json}).value;
         if (typeof(res) === 'object') {
             res = JSON.stringify(res);
         }
@@ -63,17 +36,17 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         cache.wrap(lat + ', ' + lon + query, cacheCallback => {
             trace('Geocoding (not cached)', lat, lon);
             geocoder.reverse({lat, lon})
-            .then(function(res) {
+                .then(function(res) {
                 // only intereseted in the first match
-                res = queryJson(res[0], query);
-                if (res === null) return cacheCallback('not found', null);
-                // send the response to user
-                return cacheCallback(null, res);
-            })
-            .catch((err) => {
-                error(err);
-                return cacheCallback('Error in reverse geocoding', null);
-            });
+                    res = queryJson(res[0], query);
+                    if (res === null) return cacheCallback('not found', null);
+                    // send the response to user
+                    return cacheCallback(null, res);
+                })
+                .catch((err) => {
+                    error(err);
+                    return cacheCallback('Error in reverse geocoding', null);
+                });
         }, (err, results) => {
             if(results){
                 trace('answering with',results);
@@ -85,7 +58,12 @@ if(!process.env.GOOGLE_GEOCODING_API) {
     };
 
 
-    // geocode an address and send back the details
+    /**
+     * Geolocates the address and returns the coordinates
+     * @param {String} address target address
+     * @returns {Object}
+     */
+
     GeoLocationRPC.geolocate = function (address) {
         let response = this.response;
 
@@ -103,12 +81,33 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         return null;
     };
 
-    // reverse geocode and send back a specific detail
+    /** 
+     * Get the name of the city nearest to the given latitude and longitude.
+     *
+     * @param {Latitude} latitude latitude of the target location
+     * @param {Longitude} longitude longitude of the target location
+     * @returns {String} city name
+     */
+
     GeoLocationRPC.city = function (latitude, longitude) {
         reverseGeocode(latitude, longitude, this.response, '.city');
         return null;
     };
 
+    GeoLocationRPC['county*'] = function (latitude, longitude) {
+        reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level2long');
+        return null;
+    };
+
+    GeoLocationRPC['state*'] = function (latitude, longitude) {
+        reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level1long');
+        return null;
+    };
+
+    GeoLocationRPC['stateCode*'] = function (latitude, longitude) {
+        reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level1short');
+        return null;
+    };
 
     // reverse geocode and send back a specific detail
     GeoLocationRPC.country = function (latitude, longitude) {
@@ -122,7 +121,35 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         return null;
     };
 
-    // find places near a coordinate (20 reults max)
+    // administrative levels
+    GeoLocationRPC.info = function (latitude, longitude) {
+        return geocoder.reverse({lat: latitude, lon: longitude})
+            .then( res => {
+                let levels = [];
+                res = res[0]; // we only care about the top result
+                // find and pull out all the provided admin levels
+                levels.push(res.city);
+                Object.keys(res.administrativeLevels).forEach(lvl => {
+                    levels.push(res.administrativeLevels[lvl]);
+                });
+                levels.push(res.country);
+                levels.push(res.countryCode);
+                levels = levels.reverse(); // reverse so that it's big to small
+                return levels;
+            }).catch(err => {
+                error(err);
+                throw(err);
+            });
+    };
+
+    /**
+     * Find places near an earth coordinate (latitude, longitude) (maximum of 10 results)
+     * @param {Latitude} latitude 
+     * @param {Longitude} longitude
+     * @param {String=} keyword the keyword you want to search for, like pizza or cinema.
+     * @param {Number=} radius search radius in meters (50km)
+     */
+
     GeoLocationRPC.nearbySearch = function (latitude, longitude, keyword, radius) {
         let response = this.response;
         radius = radius || 50000; // default to 50KM
@@ -143,7 +170,6 @@ if(!process.env.GOOGLE_GEOCODING_API) {
             requestOptions.qs.keyword = keyword;
         }
 
-        trace('Doing a nearby search', requestOptions);
         return rp(requestOptions).then(res=>{
             let places = res.results;
             places = places.map(place => {

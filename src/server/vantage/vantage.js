@@ -5,23 +5,12 @@
 var vantage = require('vantage')(),
     chalk = require('chalk'),
     repl = require('vantage-repl'),
-    R = require('ramda'),
     Query = require('../../common/data-query'),
-    banner,
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
     ],
     RoomManager = require('../rooms/room-manager'),
     NO_USER_LABEL = '<vacant>';
-
-// Set the banner
-banner = ['\n'+
-    '#####################################################',
-    '#                                                   #',
-    '#                 NetsBlox Server                   #',
-    '#                                                   #',
-    '#####################################################']
-    .join('\n');
 
 var NetsBloxVantage = function(server) {
     this.initRoomManagement(server);
@@ -95,7 +84,7 @@ var NetsBloxVantage = function(server) {
                     }
                     cb();
                 })
-                .catch(err => cb(err));
+                    .catch(err => cb(err));
             }
         });
 
@@ -136,28 +125,30 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
         //.option('--with-names', 'Include the group names')
         .action(function(args, cb) {
             // Get all groups
-            var header = '* * * * * * * Rooms * * * * * * * \n',
-                rooms = R.values(RoomManager.rooms),
-                text = rooms.map(function(room) {
-                    var clients = room.getRoleNames()
-                        .map(role => {
-                            let clients = room.getSocketsAt(role),
-                                names = clients.length ?
-                                    clients.map(c => c.username) : [NO_USER_LABEL];
+            var header = '* * * * * * * Rooms * * * * * * * \n';
+            return RoomManager.getActiveRooms()
+                .then(rooms => {
+                    let text = rooms.map(function(room) {
+                        var clients = room.getRoleNames()
+                            .map(role => {
+                                let clients = room.getSocketsAt(role),
+                                    names = clients.length ?
+                                        clients.map(c => c.username) : [NO_USER_LABEL];
 
-                            return `\t${role}: ${names.join(',')}`;
-                        });
+                                return `\t${role}: ${names.join(',')}`;
+                            });
 
-                    const collabs = room.getCollaborators().join(' ');
-                    return `${room.uuid}:\n   collabs: ${collabs}\n` +
-                        `   roles:\n${clients.join('\n')}\n`;
-                }).join('\n');
+                        const collabs = room.getCollaborators().join(' ');
+                        return `${room.uuid}:\n   collabs: ${collabs}\n` +
+                            `   roles:\n${clients.join('\n')}\n`;
+                    }).join('\n');
 
-            if (args.options.entries) {
-                text = Object.keys(RoomManager.rooms).join('\n');
-            }
-            console.log(header+text);
-            return cb();
+                    if (args.options.entries) {
+                        text = rooms.map(room => room.uuid).join('\n');
+                    }
+                    console.log(header+text);
+                    return cb();
+                });
         });
 
     vantage
@@ -201,16 +192,15 @@ NetsBloxVantage.checkSocket = function(args, nbSocket) {
 NetsBloxVantage.prettyPrintGroup = function(group) {
     var text = group.name+':\n'+
         group.groups
-        .map(function(group) {
-            return '  '+group.join(' ');
-        })
-        .join('\n');
+            .map(function(group) {
+                return '  '+group.join(' ');
+            })
+            .join('\n');
     return text;
 };
 
 NetsBloxVantage.prototype.start = function(port) {
     vantage
-        .banner(banner)
         .delimiter(chalk.white('netsblox~$'))
         .listen(port || 1234)
         .use(repl)

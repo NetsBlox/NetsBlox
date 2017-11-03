@@ -3,6 +3,7 @@
 'use strict';
 
 var middleware = require('./middleware'),
+    SocketManager = require('../socket-manager'),
     debug = require('debug'),
     log = debug('netsblox:api:Users:log'),
     info = debug('netsblox:api:Users:info');
@@ -31,17 +32,24 @@ module.exports = [
     },
     {
         Service: 'logout',
-        Parameters: '',
-        Method: 'Get',
+        Parameters: 'socketId',
+        Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            log(`received logout request!`);
+            log('received logout request!');
             middleware.tryLogIn(req, res, err => {
                 if (err) {
                     return res.status(400).send(err);
                 }
 
-                log(req.session.username+' has logged out');
+                // get the socket and call onLogout
+                const socketId = req.body.socketId;
+                const socket = SocketManager.getSocket(socketId);
+                if (socket) {
+                    socket.onLogout();
+                }
+
+                log(`${req.session.username} has logged out`);
                 // Delete the cookie
                 req.session.destroy();
                 return res.status(200).send('you have been logged out');
@@ -73,8 +81,8 @@ module.exports = [
         }
     }
 ]
-.map(function(api) {
+    .map(function(api) {
     // Set the URL to be the service name
-    api.URL = api.Service;
-    return api;
-});
+        api.URL = api.Service;
+        return api;
+    });

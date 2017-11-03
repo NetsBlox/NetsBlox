@@ -1,5 +1,5 @@
 /* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
-   List, SnapActions*/
+   Qs, List, SnapActions*/
 
 ThreadManager.prototype.startProcess = function (
     block,
@@ -327,41 +327,37 @@ NetsProcess.prototype.parseRPCResult = function (result) {
     return result;
 };
 
-NetsProcess.prototype.toQueryString = function (list, prefix) {
-    var sockets = this.homeContext.receiver.parentThatIsA(IDE_Morph).sockets;
-    var array = list.contents;
-    var str = [], k, v;
-
-    for(var i = 0; i < array.length; i++) {
-        k = prefix + '[' + i + ']';
-        v = isObject(array[i]) ? sockets.serialize(array[i]) : array[i];
-        str.push(typeof v === 'object' ? this.toQueryString(v, k) :
-            k + '=' + encodeURIComponent(v));
+function listToArray(list) {
+    if (! (list instanceof List)){
+        return list;
     }
-
-    return str.join('&');
-};
+    var combinedArray = [], v;
+    if (list === null) return null;
+    var array = list.asArray();
+    for(var i = 0; i < array.length; i++) {
+        v = array[i];
+        combinedArray.push(typeof v === 'object' ?  listToArray(v) : v);
+    }
+    return combinedArray;
+}
 
 NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
     var myself = this,
         action = methodSignature[0],
         argNames = methodSignature[1],
         values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
+        query= {},
         params;
-
-    var sockets = this.homeContext.receiver.parentThatIsA(IDE_Morph).sockets;
-
-    params = argNames.map(function(name, index) {
+    //build a json obj
+    argNames.forEach(function(name, index) {
         if (values[index] instanceof List) {
-            return myself.toQueryString(values[index], name);
+            query[name] = listToArray(values[index]);
+        }else{
+            query[name] = values[index];
         }
-        // if a block is passed in serialize it and send it to the rpc
-        else if (isObject(values[index])) {
-            return name + '=' + encodeURIComponent(sockets.serialize(values[index]));
-        }
-        return name + '=' + encodeURIComponent(values[index]);
-    }).join('&');
-
+    });
+    // call stringify
+    params = Qs.stringify(query, {encodeValuesOnly: true});
     return this.getJSFromRPCDropdown(rpc, action, params);
 };
 

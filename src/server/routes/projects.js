@@ -7,6 +7,7 @@ var _ = require('lodash'),
     RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
     PublicProjects = require('../storage/public-projects'),
+    Users = require('../storage/users'),
     EXAMPLES = require('../examples'),
     debug = require('debug'),
     log = debug('netsblox:api:projects:log'),
@@ -73,7 +74,7 @@ var getPreview = function(project) {
         // Notes
         preview.Notes = preview.Notes || role.Notes;
         preview.Thumbnail = preview.Thumbnail ||
-            role.Thumbnail;
+            (role.Thumbnail instanceof Array ? role.Thumbnail[0] : role.Thumbnail);
     }
     preview.Updated = new Date(preview.Updated);
     preview.Public = project.Public;
@@ -91,26 +92,28 @@ var getRoomsNamed = function(name, user, owner) {
         user.getSharedProject(owner, name);
 
     return getProject.then(project => {
-        const activeRoom = RoomManager.rooms[Utils.uuid(owner, name)];
-        const areSame = !!activeRoom && !!project &&
-            activeRoom.originTime === project.originTime;
+        return RoomManager.getExistingRoom(Utils.uuid(owner, name))
+            .then(activeRoom => {
+                const areSame = !!activeRoom && !!project &&
+                    activeRoom.originTime === project.originTime;
 
 
-        if (project) {
-            trace(`found project ${uuid} for ${user.username}`);
-        } else {
-            trace(`no ${uuid} project found for ${user.username}`);
-        }
+                if (project) {
+                    trace(`found project ${uuid} for ${user.username}`);
+                } else {
+                    trace(`no ${uuid} project found for ${user.username}`);
+                }
 
-        if (areSame) {
-            project = activeRoom.getProject() || project;
-        }
+                if (areSame) {
+                    project = activeRoom.getProject() || project;
+                }
 
-        return {
-            active: activeRoom,
-            stored: project,
-            areSame: areSame
-        };
+                return {
+                    active: activeRoom,
+                    stored: project,
+                    areSame: areSame
+                };
+            });
     });
 };
 
@@ -204,23 +207,63 @@ module.exports = [
             if (overwrite && projectName !== activeRoom.name) {
                 trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
                 const uuid = Utils.uuid(username, projectName);
-                const otherRoom = RoomManager.rooms[uuid];
-                const isSame = otherRoom === activeRoom;
-                if (otherRoom && !isSame) {  // rename the existing, active room
-                    return otherRoom.changeName(projectName, true).then(saveAs);
-                } else {  // delete the existing
-                    return Projects.get(username, projectName)
-                        .then(project => {
-                            if (project) {
-                                return project.destroy();
-                            }
-                        })
-                        .then(saveAs);
-                }
+
+                return RoomManager.getExistingRoom(uuid)
+                    .then(otherRoom => {
+                        const isSame = otherRoom === activeRoom;
+                        if (otherRoom && !isSame) {  // rename the existing, active room
+                            return otherRoom.changeName(projectName, true).then(saveAs);
+                        } else {  // delete the existing
+                            return Projects.get(username, projectName)
+                                .then(project => {
+                                    if (project) {
+                                        return project.destroy();
+                                    }
+                                })
+                                .then(saveAs);
+                        }
+                    });
             } else {
                 trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
                 return saveAs();
             }
+        }
+    },
+    {
+        Service: 'saveProjectCopy',
+        Parameters: 'socketId',
+        Method: 'Post',
+        Note: '',
+        middleware: ['hasSocket', 'isLoggedIn'],
+        Handler: function(req, res) {
+            var username = req.session.username,
+                {socketId} = req.body,
+                socket = SocketManager.getSocket(socketId),
+
+                activeRoom = socket._room;
+
+            if (!activeRoom) {
+                error(`Could not find active room for "${username}" - cannot save!`);
+                return res.status(500).send('ERROR: active room not found');
+            }
+
+            // make a copy of the project for the given user and save it!
+            return Users.get(username)
+                .then(user => {
+                    let name = `Copy of ${activeRoom.name}`;
+                    let project = null;
+                    return user.getNewName(name)
+                        .then(_name => name = _name)
+                        .then(() => activeRoom.save())
+                        .then(() => activeRoom.getProject().getCopy(user))
+                        .then(_project => project = _project)
+                        .then(() => project.setName(name))
+                        .then(() => project.persist())
+                        .then(() => {
+                            trace(`${username} saved a copy of project: ${name}`);
+                            res.sendStatus(200);
+                        });
+                });
         }
     },
     {
@@ -283,7 +326,7 @@ module.exports = [
                                 const previews = projects.map(getPreview);
                                 info(`Projects for ${username} are ${JSON.stringify(
                                     previews.map(preview => preview.ProjectName)
-                                    )}`
+                                )}`
                                 );
 
                                 if (req.query.format === 'json') {
@@ -428,7 +471,7 @@ module.exports = [
                         return res.status(400).send(`${project} not found!`);
                     }
 
-                    const active = !!RoomManager.rooms[project.uuid()];
+                    const active = RoomManager.isActiveRoom(project.uuid());
 
                     if (active) {
                         return project.unpersist()
@@ -474,7 +517,7 @@ module.exports = [
 
             log(`${user.username} is unpublishing project ${name}`);
 
-            return setProjectPublic(name, user, true)
+            return setProjectPublic(name, user, false)
                 .then(() => res.send(`"${name}" is no longer shared`))
                 .catch(err => res.send(`ERROR: ${err}`));
         }
@@ -506,37 +549,34 @@ module.exports = [
                 aspectRatio = +req.query.aspectRatio || 0;
 
             // return the names of all projects owned by :owner
-            middleware.loadUser(req.params.owner, res, user => {
-                return user.getProject(name)
-                    .then(project => {
-                        if (project) {
-                            const preview = getPreview(project);
-                            if (!preview || !preview.Thumbnail) {
-                                const err = `could not find thumbnail for ${name}`;
-                                this._logger.error(err);
-                                return res.status(400).send(err);
-                            }
-                            this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
-                            return applyAspectRatio(
-                                preview.Thumbnail[0],
-                                aspectRatio
-                            ).then(buffer => {
-                                res.contentType('image/png');
-                                res.end(buffer, 'binary');
-                            });
-                        } else {
-                            const err = `could not find project ${name}`;
+            return Projects.getRawProject(req.params.owner, name)
+                .then(project => {
+                    if (project) {
+                        const preview = getPreview(project);
+                        if (!preview || !preview.Thumbnail) {
+                            const err = `could not find thumbnail for ${name}`;
                             this._logger.error(err);
                             return res.status(400).send(err);
                         }
-                    })
-                    .fail(err => {
-                        this._logger.error(`padding image failed: ${err}`);
-                        res.serverError(err);
-                    });
-
-            });
-
+                        this._logger.trace(`Applying aspect ratio for ${req.params.owner}'s ${name}`);
+                        return applyAspectRatio(
+                            preview.Thumbnail,
+                            aspectRatio
+                        ).then(buffer => {
+                            this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
+                            res.contentType('image/png');
+                            res.end(buffer, 'binary');
+                        });
+                    } else {
+                        const err = `could not find project ${name}`;
+                        this._logger.error(err);
+                        return res.status(400).send(err);
+                    }
+                })
+                .catch(err => {
+                    this._logger.error(`padding image failed: ${err}`);
+                    res.serverError(err);
+                });
         }
     },
     {

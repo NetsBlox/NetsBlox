@@ -1,13 +1,13 @@
 describe('active-room', function() {
     var ROOT_DIR = '../../../',
         _ = require('lodash'),
+        utils = require(ROOT_DIR + 'test/assets/utils'),
         RoomManager = require(ROOT_DIR + 'src/server/rooms/room-manager'),
         ActiveRoom = require(ROOT_DIR + 'src/server/rooms/active-room'),
         Constants = require(ROOT_DIR + 'src/common/constants'),
         assert = require('assert'),
         Logger = require(ROOT_DIR + 'src/server/logger'),
         logger = new Logger('active-room'),
-        utils = require(ROOT_DIR + 'test/assets/utils'),
         owner = {
             username: 'test',
             _messages: [],
@@ -165,7 +165,7 @@ describe('active-room', function() {
         it('should send update message on changing roles', function() {
             const msg = s1._socket.message(-1);
             assert.equal(msg.type, 'room-roles');
-            assert.equal(msg.occupants.role2[0], 'first');
+            assert.equal(msg.occupants.role2[0].username, 'first');
         });
 
         it('should remove the socket from the original role', function() {
@@ -217,6 +217,10 @@ describe('active-room', function() {
                 role2: [s2.username]
             };
             const actual = s1._socket.message(-1).occupants;
+
+            // We only care about the usernames
+            actual.role1 = actual.role1.map(info => info.username);
+            actual.role2 = actual.role2.map(info => info.username);
             assert(_.isEqual(actual, expected));
         });
     });
@@ -248,7 +252,8 @@ describe('active-room', function() {
         });
 
         it('should send correct update message', function() {
-            const usersAtRole2 = alice._socket.message(-1).occupants.role2;
+            const msg = alice._socket.message(-1);
+            const usersAtRole2 = msg.occupants.role2.map(info => info.username);
             assert(_.isEqual(usersAtRole2, ['bob', 'alice']));
         });
 
@@ -352,8 +357,8 @@ describe('active-room', function() {
     
         afterEach(function(done) {
             project.destroy()
-            .then(() => done())
-            .catch(done);
+                .then(() => done())
+                .catch(done);
         });
         
         describe('collaborators', function() {
@@ -434,7 +439,7 @@ describe('active-room', function() {
                     assert.equal(r.getRoleNames().length, 3);
                     done();
                 })
-                .catch(() => done());
+                    .catch(() => done());
             });
     
             it('should remove a role', function(done) {
@@ -442,7 +447,7 @@ describe('active-room', function() {
                     assert.equal(r.getRoleNames().length, 2);
                     done();
                 })
-                .catch(() => done());
+                    .catch(() => done());
             });
     
             it('should rename a role', function(done) {
@@ -450,7 +455,7 @@ describe('active-room', function() {
                     assert.equal(r.getRoleNames()[1], 'roleNew');
                     done();
                 })
-                .catch(() => done());
+                    .catch(() => done());
             });
         });
     });
@@ -539,7 +544,7 @@ describe('active-room', function() {
             });
 
             it('should not duplicate project if inPlace', function(done) {
-                const name = `new project name`;
+                const name = 'new project name';
                 const oldName = room.name;
 
                 room.changeName(name, false, true)

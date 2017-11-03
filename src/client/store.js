@@ -2,7 +2,8 @@
    CustomReporterBlockMorph, nop, VariableFrame, StageMorph, Point, isNil,
    WatcherMorph, localize, XML_Element, IDE_Morph, MessageType, MessageFrame,
    MessageInputSlotMorph, HintInputSlotMorph, InputSlotMorph, SnapActions,
-   normalizeCanvas, StructInputSlotMorph, BooleanSlotMorph, SVG_Costume, Costume*/
+   normalizeCanvas, StructInputSlotMorph, BooleanSlotMorph, SVG_Costume, Costume,
+   newCanvas, MorphicPreferences, Context, BlockMorph, MultiArgMorph, Sound*/
 NetsBloxSerializer.prototype = new SnapSerializer();
 NetsBloxSerializer.prototype.constructor = NetsBloxSerializer;
 NetsBloxSerializer.uber = SnapSerializer.prototype;
@@ -10,7 +11,7 @@ NetsBloxSerializer.uber = SnapSerializer.prototype;
 SnapSerializer.prototype.thumbnailSize = new Point(640, 480);
 SnapSerializer.prototype.isSavingHistory = true;
 
-NetsBloxSerializer.prototype.app = 'NetsBlox 1.1.2, http://netsblox.org';  // Make this version automatic
+NetsBloxSerializer.prototype.app = 'NetsBlox 1.6.2, http://netsblox.org';  // Make this version automatic
 
 function NetsBloxSerializer() {
     this.init();
@@ -37,15 +38,15 @@ SnapSerializer.prototype.loadValue = function (model) {
 
     function record() {
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'id'
-            )) {
+            model.attributes,
+            'id'
+        )) {
             myself.objects[model.attributes.id] = v;
         }
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'mediaID'
-            )) {
+            model.attributes,
+            'mediaID'
+        )) {
             myself.mediaDict[model.attributes.mediaID] = v;
         }
     }
@@ -55,10 +56,13 @@ SnapSerializer.prototype.loadValue = function (model) {
             return this.objects[model.attributes.id];
         }
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'mediaID'
-            )) {
+            model.attributes,
+            'mediaID'
+        )) {
             return this.mediaDict[model.attributes.mediaID];
+        }
+        if (Object.prototype.hasOwnProperty.call(model.attributes, 'actionID')) {
+            return SnapActions.getOwnerFromId(model.attributes.actionID);
         }
         throw new Error('expecting a reference id');
     case 'l':
@@ -215,37 +219,37 @@ SnapSerializer.prototype.loadValue = function (model) {
     case 'costume':
         center = new Point();
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'center-x'
-            )) {
+            model.attributes,
+            'center-x'
+        )) {
             center.x = parseFloat(model.attributes['center-x']);
         }
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'center-y'
-            )) {
+            model.attributes,
+            'center-y'
+        )) {
             center.y = parseFloat(model.attributes['center-y']);
         }
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'name'
-            )) {
+            model.attributes,
+            'name'
+        )) {
             name = model.attributes.name;
         }
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'image'
-            )) {
+            model.attributes,
+            'image'
+        )) {
             image = new Image();
             if (model.attributes.image.indexOf('data:image/svg+xml') === 0
                     && !MorphicPreferences.rasterizeSVGs) {
                 v = new SVG_Costume(null, name, center);
                 image.onload = function () {
                     v.contents = image;
-                    v.version = +new Date();
                     // NetsBlox addition: start
                     v.imageData = null;
                     // NetsBlox addition: end
+                    v.version = +new Date();
                     if (typeof v.loaded === 'function') {
                         v.loaded();
                     } else {
@@ -262,10 +266,10 @@ SnapSerializer.prototype.loadValue = function (model) {
                         context = canvas.getContext('2d');
                     context.drawImage(image, 0, 0);
                     v.contents = canvas;
-                    v.version = +new Date();
                     // NetsBlox addition: start
                     v.imageData = null;
                     // NetsBlox addition: end
+                    v.version = +new Date();
                     if (typeof v.loaded === 'function') {
                         v.loaded();
                     } else {
@@ -286,9 +290,9 @@ SnapSerializer.prototype.loadValue = function (model) {
         audio.src = model.attributes.sound;
         v = new Sound(audio, model.attributes.name);
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'mediaID'
-            )) {
+            model.attributes,
+            'mediaID'
+        )) {
             myself.mediaDict[model.attributes.mediaID] = v;
         }
         v.id = model.attributes.collabId;
@@ -345,8 +349,8 @@ NetsBloxSerializer.prototype.openProject = function (project, ide) {
     //  watcher.onNextStep = function () {this.currentValue = null;};
     //})
 
-    SnapActions.loadProject(ide, project.collabStartIndex);
     ide.world().keyboardReceiver = project.stage;
+
     return project;
 };
 
@@ -358,9 +362,9 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
     var block, info, inputs, isGlobal, rm, receiver;
     if (model.tag === 'block') {
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'var'
-            )) {
+            model.attributes,
+            'var'
+        )) {
             block = SpriteMorph.prototype.variableBlock(
                 model.attributes['var']
             );
@@ -593,9 +597,9 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     }
     project.stage = new StageMorph(project.globalVariables);
     if (Object.prototype.hasOwnProperty.call(
-            model.stage.attributes,
-            'id'
-        )) {
+        model.stage.attributes,
+        'id'
+    )) {
         this.objects[model.stage.attributes.id] = project.stage;
     }
     if (model.stage.attributes.name) {
@@ -609,9 +613,11 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
     if (model.pentrails) {
         project.pentrails = new Image();
         project.pentrails.onload = function () {
-            var context = project.stage.trailsCanvas.getContext('2d');
-            context.drawImage(project.pentrails, 0, 0);
-            project.stage.changed();
+            if (project.stage.trailsCanvas) {
+                var context = project.stage.trailsCanvas.getContext('2d');
+                context.drawImage(project.pentrails, 0, 0);
+                project.stage.changed();
+            }
         };
         project.pentrails.src = model.pentrails.contents;
     }
@@ -749,9 +755,9 @@ NetsBloxSerializer.prototype.rawLoadProjectModel = function (xmlNode) {
         ) && (model.attributes.hidden !== 'false');
 
         if (Object.prototype.hasOwnProperty.call(
-                model.attributes,
-                'var'
-            )) {
+            model.attributes,
+            'var'
+        )) {
             watcher = new WatcherMorph(
                 model.attributes['var'],
                 color,
@@ -894,14 +900,14 @@ StageMorph.prototype.toXML = function (serializer) {
         serializer.store(this.scripts),
         serializer.store(this.children),
         Object.keys(StageMorph.prototype.hiddenPrimitives).reduce(
-                function (a, b) {return a + ' ' + b; },
-                ''
-            ),
+            function (a, b) {return a + ' ' + b; },
+            ''
+        ),
         code('codeHeaders'),
         code('codeMappings'),
         serializer.store(this.globalBlocks),
         (ide && ide.globalVariables) ?
-                    serializer.store(ide.globalVariables) : '',
+            serializer.store(ide.globalVariables) : '',
         serializer.isSavingHistory ? serializer.historyXML(this.id): '',
         serializer.isSavingHistory ? serializer.replayHistory() : ''
     );

@@ -1,4 +1,4 @@
-/* global localize, nop, IDE_Morph, Cloud, detect, SnapActions*/
+/* global localize, nop, IDE_Morph, Cloud, detect, SnapActions, world*/
 NetCloud.prototype = new Cloud();
 
 function NetCloud(url) {
@@ -419,7 +419,7 @@ NetCloud.prototype.passiveLogin = function (ide, callback, callOnFail) {
         request.withCredentials = true;
         request.onreadystatechange = function () {
             if (request.readyState === 4) {
-                if (request.status === 200) {
+                if (request.status === 200) {  // 204 means not logged in (No Content)
                     response = JSON.parse(request.responseText);
                     myself.api = myself.parseAPI(response.api);
                     myself.username = response.username;
@@ -466,7 +466,8 @@ NetCloud.prototype.logout = function (callBack, errorCall) {
     this.callService(
         'logout',
         callBack,
-        errorCall
+        errorCall,
+        [this.socketId()]
     );
     this.clear();
 };
@@ -578,6 +579,26 @@ NetCloud.prototype.getSharedProjectList = function(callBack, errorCall) {
                     myself.disconnect();
                 },
                 errorCall
+            );
+        },
+        errorCall
+    );
+};
+
+NetCloud.prototype.saveProjectCopy = function(callBack, errorCall) {
+    var myself = this;
+    this.reconnect(
+        function () {
+            myself.callService(
+                'saveProjectCopy',
+                function (response, url) {
+                    callBack.call(null, response, url);
+                    myself.disconnect();
+                },
+                errorCall,
+                [
+                    myself.socketId()
+                ]
             );
         },
         errorCall

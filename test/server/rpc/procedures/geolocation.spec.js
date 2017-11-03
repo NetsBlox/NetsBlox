@@ -5,9 +5,13 @@ describe('geolocation', function() {
         geocoding = new RPCMock(Geocoding);
 
     utils.verifyRPCInterfaces(geocoding, [
-      ['city', ['latitude', 'longitude']],
-      ['country', ['latitude', 'longitude']],
-      ['countryCode', ['latitude', 'longitude']],
-      ['geolocate', ['address']]
+        ['city', ['latitude', 'longitude']],
+        ['country', ['latitude', 'longitude']],
+        ['countryCode', ['latitude', 'longitude']],
+        ['state*', ['latitude', 'longitude']],
+        ['stateCode*', ['latitude', 'longitude']],
+        ['county*', ['latitude', 'longitude']],
+        ['info', ['latitude', 'longitude']],
+        ['geolocate', ['address']]
     ]);
 });

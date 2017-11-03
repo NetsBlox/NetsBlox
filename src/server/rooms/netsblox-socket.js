@@ -132,7 +132,7 @@ class NetsBloxSocket {
         }
 
         const sockets = this._room.getSocketsAt(this.roleId);
-        if (sockets.length === 1) {
+        if (sockets.length <= 1) {
             this._logger.warn(`Socket incorrectly thinks it is collaborating... ${this.uuid}`);
             return this._room.sendUpdateMsg();
         }
@@ -182,6 +182,17 @@ class NetsBloxSocket {
         this.username = user.username;
         this.user = user;
         this.loggedIn = true;
+
+        this.updateRoom(isOwner);
+    }
+
+    onLogout () {
+        let isOwner = this.isOwner();
+
+        this._logger.log(`${this.username} is logging out!`);
+        this.username = this.uuid;
+        this.user = null;
+        this.loggedIn = false;
 
         this.updateRoom(isOwner);
     }
@@ -306,7 +317,7 @@ class NetsBloxSocket {
     }
 
     sendMessageTo (msg, dstId) {
-        dstId = dstId + ""; // make sure dstId is string
+        dstId = dstId + ''; // make sure dstId is string
         dstId = dstId.replace(/^\s*/, '').replace(/\s*$/, '');
         msg.dstId = dstId;
         if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
@@ -323,23 +334,25 @@ class NetsBloxSocket {
                 ownerId = idChunks.pop(),
                 roomName = idChunks.pop(),
                 roleId = idChunks.pop(),
-                roomId = Utils.uuid(ownerId, roomName),
-                room = RoomManager.rooms[roomId];
+                roomId = Utils.uuid(ownerId, roomName);
 
-            if (room) {
-                if (roleId) {
-                    if (room.hasRole(roleId)) {
-                        sockets = sockets.concat(room.getSocketsAt(roleId));
+            return RoomManager.getExistingRoom(roomId)
+                .then(room => {
+                    if (room) {
+                        if (roleId) {
+                            if (room.hasRole(roleId)) {
+                                sockets = sockets.concat(room.getSocketsAt(roleId));
+                            }
+                        } else {
+                            sockets = room.sockets();
+                        }
+
+                        sockets.forEach(socket => {
+                            msg.dstId = Constants.EVERYONE;
+                            socket.send(msg);
+                        });
                     }
-                } else {
-                    sockets = room.sockets();
-                }
-
-                sockets.forEach(socket => {
-                    msg.dstId = Constants.EVERYONE;
-                    socket.send(msg);
                 });
-            }
         }
     }
 }
@@ -467,7 +480,8 @@ NetsBloxSocket.MessageHandlers = {
 
                 // Check if the user is already at the room
                 return room.add(this, role);
-            });
+            })
+            .catch(err => this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
 
     },
 

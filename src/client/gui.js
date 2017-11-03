@@ -284,16 +284,16 @@ ProjectDialogMorph.prototype.installShareCloudProjectList = function (pl) {
     this.projectList = pl || [];
     this.projectList.sort(function (x, y) {
         return x.ProjectName.toLowerCase() < y.ProjectName.toLowerCase() ?
-                 -1 : 1;
+            -1 : 1;
     });
 
     this.listField.destroy();
     this.listField = new ListMorph(
         this.projectList,
         this.projectList.length > 0 ?
-                function (element) {
-                    return element.ProjectName || element;
-                } : null,
+            function (element) {
+                return element.ProjectName || element;
+            } : null,
         [ // format: display shared project names bold
             [
                 'bold',
@@ -327,7 +327,7 @@ ProjectDialogMorph.prototype.installShareCloudProjectList = function (pl) {
             // Netsblox addition: start
                 localize('owner') + ': ' + item.Owner + '\n' +
                 localize('last changed') + '\n' + item.Updated,
-            // Netsblox addition: end
+                // Netsblox addition: end
                 null,
                 null,
                 null,
@@ -417,9 +417,9 @@ ProjectDialogMorph.prototype.setSource = function (source) {
     this.listField = new ListMorph(
         this.projectList,
         this.projectList.length > 0 ?
-                function (element) {
-                    return element.name;
-                } : null,
+            function (element) {
+                return element.name;
+            } : null,
         null,
         function () {myself.ok(); }
     );
@@ -613,12 +613,23 @@ ProjectDialogMorph.prototype.saveProject = function () {
         myself = this;
 
     this.ide.projectNotes = notes || this.ide.projectNotes;
+    // NetsBlox changes - start
+    if (/[\.@]+/.test(name)) {
+        this.ide.inform(
+            'Invalid Project Name',
+            'Could not save project because\n' +
+            'the provided name contains illegal characters.',
+            this.world()
+        );
+        return;
+    }
+    // NetsBlox changes - end
     if (name) {
         if (this.source === 'cloud') {
             if (detect(
-                    this.projectList,
-                    function (item) {return item.ProjectName === name; }
-                )) {
+                this.projectList,
+                function (item) {return item.ProjectName === name; }
+            )) {
                 this.ide.confirm(
                     localize(
                         'Are you sure you want to replace'
@@ -631,7 +642,7 @@ ProjectDialogMorph.prototype.saveProject = function () {
                             myself.ide,
                             function () {
                                 myself.ide.source = 'cloud';
-                                myself.ide.showMessage('saved.', 2);
+                                myself.ide.showMessage('Saved to cloud!', 2);
                             },
                             myself.ide.cloudError(),
                             true,
@@ -648,7 +659,7 @@ ProjectDialogMorph.prototype.saveProject = function () {
                     myself.ide,
                     function () {
                         myself.ide.source = 'cloud';
-                        myself.ide.showMessage('saved.', 2);
+                        myself.ide.showMessage('Saved to cloud!', 2);
                     },
                     myself.ide.cloudError(),
                     true,
@@ -659,9 +670,9 @@ ProjectDialogMorph.prototype.saveProject = function () {
             }
         } else { // 'local'
             if (detect(
-                    this.projectList,
-                    function (item) {return item.name === name; }
-                )) {
+                this.projectList,
+                function (item) {return item.name === name; }
+            )) {
                 this.ide.confirm(
                     localize(
                         'Are you sure you want to replace'

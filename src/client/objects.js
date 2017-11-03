@@ -7,20 +7,20 @@
    SnapUndo, newCanvas, ReplayControls, copy*/
 
 SpriteMorph.prototype.categories =
-    [
-        'motion',
-        'control',
-        'looks',
-        'sensing',
-        'sound',
-        'operators',
-        'pen',
-        'variables',
-        'network',
-        'custom',
-        'lists',
-        'other'
-    ];
+[
+    'motion',
+    'control',
+    'looks',
+    'sensing',
+    'sound',
+    'operators',
+    'pen',
+    'variables',
+    'network',
+    'custom',
+    'lists',
+    'other'
+];
 
 SpriteMorph.prototype.blockColor.network = new Color(217, 77, 17);
 SpriteMorph.prototype.blockColor.custom = new Color(120, 120, 120);
@@ -55,19 +55,19 @@ SpriteMorph.prototype.freshPalette = function (category) {
                 control:
                     ['doWarp'],
                 variables:
-                    [
-                        'doDeclareVariables',
-                        'reportNewList',
-                        'reportCONS',
-                        'reportListItem',
-                        'reportCDR',
-                        'reportListLength',
-                        'reportListContainsItem',
-                        'doAddToList',
-                        'doDeleteFromList',
-                        'doInsertInList',
-                        'doReplaceInList'
-                    ]
+                [
+                    'doDeclareVariables',
+                    'reportNewList',
+                    'reportCONS',
+                    'reportListItem',
+                    'reportCDR',
+                    'reportListLength',
+                    'reportListContainsItem',
+                    'doAddToList',
+                    'doDeleteFromList',
+                    'doInsertInList',
+                    'doReplaceInList'
+                ]
             };
 
         function hasHiddenPrimitives() {
@@ -523,7 +523,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('comeToFront'));
         blocks.push(block('goBack'));
 
-    // for debugging: ///////////////
+        // for debugging: ///////////////
 
         if (this.world().isDevMode) {
             blocks.push('-');
@@ -559,7 +559,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(watcherToggle('getTempo'));
         blocks.push(block('getTempo'));
 
-    // for debugging: ///////////////
+        // for debugging: ///////////////
 
         if (this.world().isDevMode) {
             blocks.push('-');
@@ -618,7 +618,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doReport'));
         blocks.push('-');
-    /*
+        /*
     // old STOP variants, migrated to a newer version, now redundant
         blocks.push(block('doStopBlock'));
         blocks.push(block('doStop'));
@@ -631,7 +631,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('fork'));
         blocks.push(block('evaluate'));
         blocks.push('-');
-    /*
+        /*
     // list variants commented out for now (redundant)
         blocks.push(block('doRunWithInputList'));
         blocks.push(block('forkWithInputList'));
@@ -740,7 +740,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportStageHeight'));
         blocks.push(block('reportStageWidth'));
 
-    // for debugging: ///////////////
+        // for debugging: ///////////////
 
         if (this.world().isDevMode) {
 
@@ -800,7 +800,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('reportJSFunction'));
 
-    // for debugging: ///////////////
+        // for debugging: ///////////////
 
         if (this.world().isDevMode) {
             blocks.push('-');
@@ -878,14 +878,14 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doHideVar'));
         blocks.push(block('doDeclareVariables'));
 
-    // inheritance:
+        // inheritance:
 
         if (StageMorph.prototype.enableInheritance) {
             blocks.push('-');
             blocks.push(block('doDeleteAttr'));
         }
 
-    ///////////////////////////////
+        ///////////////////////////////
 
         blocks.push('=');
 
@@ -903,7 +903,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doInsertInList'));
         blocks.push(block('doReplaceInList'));
 
-    // for debugging: ///////////////
+        // for debugging: ///////////////
 
         if (this.world().isDevMode) {
             blocks.push('-');
@@ -920,7 +920,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('doShowTable'));
         }
 
-    /////////////////////////////////
+        /////////////////////////////////
 
         blocks.push('=');
 
@@ -1016,7 +1016,9 @@ SpriteMorph.prototype.deleteMessageType = function(name) {
         if (ide && ide.currentTab === 'room') {
             ide.spriteBar.tabBar.tabTo('room');
         }
-    } catch(e) {}
+    } catch(e) {
+        //do nothing
+    }
 
     ide.flushBlocksCache(cat); // b/c of inheritance
     ide.refreshPalette();
@@ -1055,7 +1057,9 @@ StageMorph.prototype.addMessageType = function (messageType) {
         if (ide && ide.currentTab === 'room') {
             ide.spriteBar.tabBar.tabTo('room');
         }
-    } catch(e) {}
+    } catch(e) {
+        // do nothing
+    }
 };
 
 StageMorph.prototype.processKeyEvent = function (event, action) {
@@ -1217,7 +1221,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('show'));
         blocks.push(block('hide'));
 
-    // for debugging: ///////////////
+        // for debugging: ///////////////
 
         if (this.world().isDevMode) {
             blocks.push('-');
@@ -1253,7 +1257,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(watcherToggle('getTempo'));
         blocks.push(block('getTempo'));
 
-    // for debugging: ///////////////
+        // for debugging: ///////////////
 
         if (this.world().isDevMode) {
             blocks.push('-');
@@ -1350,7 +1354,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('doReport'));
         blocks.push('-');
-    /*
+        /*
     // old STOP variants, migrated to a newer version, now redundant
         blocks.push(block('doStopBlock'));
         blocks.push(block('doStop'));
@@ -1363,7 +1367,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('fork'));
         blocks.push(block('evaluate'));
         blocks.push('-');
-    /*
+        /*
     // list variants commented out for now (redundant)
         blocks.push(block('doRunWithInputList'));
         blocks.push(block('forkWithInputList'));
@@ -1411,7 +1415,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('reportStageHeight'));
         blocks.push(block('reportStageWidth'));
 
-    // for debugging: ///////////////
+        // for debugging: ///////////////
 
         if (this.world().isDevMode) {
 
@@ -1473,7 +1477,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('reportJSFunction'));
 
-    // for debugging: ///////////////
+        // for debugging: ///////////////
 
         if (this.world().isDevMode) {
             blocks.push('-');
@@ -1559,7 +1563,7 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('doInsertInList'));
         blocks.push(block('doReplaceInList'));
 
-    // for debugging: ///////////////
+        // for debugging: ///////////////
 
         if (this.world().isDevMode) {
             blocks.push('-');
@@ -1576,7 +1580,7 @@ StageMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('doShowTable'));
         }
 
-    /////////////////////////////////
+        /////////////////////////////////
 
         blocks.push('=');
 
@@ -1653,7 +1657,7 @@ StageMorph.prototype.thumbnail = function (extentPoint, excludedSprite) {
             (extentPoint.x / src.width),
             (extentPoint.y / src.height)
         ),
-    // Netsblox addition: start
+        // Netsblox addition: start
         trg,
         ctx,
         fb,
@@ -1703,7 +1707,7 @@ SpriteMorph.prototype.thumbnail = function (extentPoint) {
             (extentPoint.x / src.width),
             (extentPoint.y / src.height)
         ),
-    // Netsblox addition: start
+        // Netsblox addition: start
         xOffset,
         yOffset,
         trg,
@@ -1796,11 +1800,14 @@ ReplayControls.prototype.update = function() {
         }
 
         // Netsblox addition: start
-        // Ignore openProject actions
+        // Ignore openProject actions as we are just replaying the role history
+        // and not the entire project (openProject would change the project/room)
         if (action.type === 'openProject') {
             if (this.isShowingCaptions) {
                 this.displayCaption(action, originalEvent);
             }
+            this.actionIndex += dir;
+            this.actionTime = originalEvent.time;
             return setTimeout(myself.update.bind(myself), 10);
 
         }

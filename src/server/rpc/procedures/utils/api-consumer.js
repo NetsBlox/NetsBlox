@@ -29,7 +29,6 @@ class ApiConsumer {
         this.COMPATIBILITY = {
             path: this._name
         };
-        this.isStateless = true;
         this._remainingMsgs = {};
         // setup cache. maxsize is in bytes, ttl in seconds
         this._cache = CacheManager.caching({
@@ -55,23 +54,29 @@ class ApiConsumer {
         queryOptions = {
             queryString,
             baseUrl,
+            method,
+            body,
             headers,
             json: boolean to show indicate if the response is json or not. default: true
         }
      */
     _requestData(queryOptions){
         // when extending use urlencoding such as 'urlencode' to encode the query parameters
+        // TODO implement a defaults object
         if (Array.isArray(queryOptions)) {
             this._logger.trace('requesting data from', queryOptions.length, 'sources');
             let promises = queryOptions.map( qo => this._requestData(qo));
             return Promise.all(promises);
         }
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
-        this._logger.trace('requesting data for',fullUrl);
-        return this._cache.wrap(fullUrl, ()=>{
+        this._logger.trace('requesting data for', fullUrl);
+        if (queryOptions.body) this._logger.trace('with the body', queryOptions.body);
+        return this._cache.wrap(this._getCacheKey(queryOptions), ()=>{
             this._logger.trace('request is not cached, calling external endpoint');
             return rp({
                 uri: fullUrl,
+                method: queryOptions.method || 'GET',
+                body: queryOptions.body,
                 headers: queryOptions.headers,
                 json: queryOptions.json !== undefined ? queryOptions.json : true
             });
@@ -79,6 +84,15 @@ class ApiConsumer {
             this._logger.error('error in requesting data from', fullUrl, err);
             throw err;
         });
+    }
+
+    _getCacheKey(queryOptions){
+        let parameters = [];
+        parameters.push(queryOptions.method || 'GET');
+        let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
+        parameters.push(fullUrl);
+        if (queryOptions.body) parameters.push(queryOptions.body);
+        return parameters.join(' ');
     }
 
     /**
