@@ -131,9 +131,27 @@ const connect = function() {
     return connection;
 };
 
+const clearCache = function() {
+    var args = Array.prototype.slice.call(arguments);
+    args.forEach(arg => {
+        try {
+            let fullName = require.resolve(arg);
+            delete require.cache[fullName];
+        } catch(e) {
+            throw `${arg}: ${e}`;
+        }
+    });
+};
+
 const reset = function() {
     let db = null;
     // TODO: load the seed data
+    // Reload the server and the paths
+    let routes = fs.readdirSync(path.join(__dirname, '..', '..', 'src', 'server', 'routes'))
+        .map(file => `../../src/server/routes/${file}`);
+    let modulesToRefresh = routes.concat('../../src/server/server');
+    clearCache.apply(null, modulesToRefresh);
+
     return connect()
         .then(_db => db = _db)
         .then(() => db.collection('groups').drop())
@@ -143,6 +161,7 @@ const reset = function() {
         .then(() => db.collection('users').drop())
         .catch(() => db)
         .then(() => fixtures.init(storage))
+        .then(() => logger.info('Finished loading test fixtures!'))
         .then(() => storage._db);
 };
 

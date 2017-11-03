@@ -12,19 +12,22 @@ describe('Server Tests', function() {
         },
         api,
         index,
-        Server = require('../../src/server/server'),
 
         basicRoutes = require('../../src/server/routes/basic-routes'),
         userRoutes = require('../../src/server/routes/users'),
 
         username = 'test',
+        utils = require('../assets/utils'),
         server;
 
     before(function(done) {
-        server = new Server(options);
-        server.start(done);
-        api = supertest('http://localhost:'+port+'/api');
-        index = supertest('http://localhost:'+port);
+        utils.reset().then(() => {
+            const Server = require('../../src/server/server');
+            server = new Server(options);
+            server.start(done);
+            api = supertest('http://localhost:'+port+'/api');
+            index = supertest('http://localhost:'+port);
+        });
     });
 
     after(function(done) {
@@ -40,10 +43,6 @@ describe('Server Tests', function() {
                 })
                 .end(done);
         });
-    });
-
-    describe('SignUp tests', function() {
-        // FIXME: Unauthorized stream readable error
     });
 
     it('should provide lang files', function(done) {
