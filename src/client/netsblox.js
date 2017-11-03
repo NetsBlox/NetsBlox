@@ -2356,6 +2356,7 @@ NetsBloxMorph.prototype.loadBugReport = function () {
 
                 choices['Replay All Events'] = function() {
                     // Replay from 'allEvents'
+                    allEvents.push(report.event);
                     myself.replayEvents(allEvents);
                     dialog.destroy();
                 };
