@@ -1,7 +1,8 @@
 describe('projects', function() {
     const utils = require('../../assets/utils');
     const assert = require('assert');
-    const Projects = require('../../../src/server/storage/projects');
+    const Projects = utils.reqSrc('storage/projects');
+    const PublicProjects = utils.reqSrc('storage/public-projects');
     const OWNER = 'brian';
     const PROJECT_NAME = 'test-projects-' + Date.now();
     const getRoom = function() {
@@ -18,7 +19,7 @@ describe('projects', function() {
     };
 
     before(function(done) {
-        utils.connect().then(() => done());
+        utils.reset().then(() => done());
     });
 
     let project = null;
@@ -170,6 +171,30 @@ describe('projects', function() {
                         done();
                     });
             });
+        });
+    });
+
+    describe('setName', function() {
+        // setName should change the name in place and not create a copy
+
+        before(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(project => project.setName('MyNewProject'))
+                .then(() => done());
+        });
+
+        it('should not create a copy of saved project', function(done) {
+            // check for the old version
+            Projects.get('brian', 'PublicProject')
+                .then(project => assert(!project))
+                .then(() => done());
+        });
+
+        it('should update the project version in public-projects', function(done) {
+            PublicProjects.get('brian', 'MyNewProject')
+                .then(project => assert(project))
+                .nodeify(done);
         });
     });
 });

@@ -1,6 +1,7 @@
 let extractRpcs = require('../server-utils').extractRpcs;
 
 (function(PublicProjectStore) {
+    const Q = require('q');
     var _ = require('lodash'),
         logger, collection;
 
@@ -10,7 +11,7 @@ let extractRpcs = require('../server-utils').extractRpcs;
     };
 
     PublicProjectStore.get = function(username, projectName) {
-        return collection.findOne({owner: username, projectName: projectName});
+        return Q(collection.findOne({owner: username, projectName: projectName}));
     };
 
     PublicProjectStore.list = function(start, end) {
