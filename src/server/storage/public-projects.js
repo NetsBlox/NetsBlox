@@ -66,6 +66,14 @@ let extractRpcs = require('../server-utils').extractRpcs;
 
     PublicProjectStore.update = PublicProjectStore.publish;
 
+    PublicProjectStore.rename = function(owner, name, newName) {
+        const query = {$set: {projectName: newName}};
+        return collection.update({
+            owner: owner,
+            projectName: name
+        }, query);
+    };
+
     PublicProjectStore.unpublish = function(project) {
         logger.trace(`Unpublishing project ${project.name} from ${project.owner}`);
         return collection.deleteOne({owner: project.owner, projectName: project.name});

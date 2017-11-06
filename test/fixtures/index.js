@@ -30,7 +30,8 @@ function seed(storage) {
             .then(() => project.setRoles(data.roles))
             .then(() => {
                 if (data.Public) {
-                    return PublicProjects.publish(project);
+                    return project.setPublic(true)
+                        .then(() => PublicProjects.publish(project));
                 }
             })
             .then(() => {
