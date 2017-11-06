@@ -2,6 +2,7 @@
 var MongoClient = require('mongodb').MongoClient,
     RPCStore = require('../rpc/storage'),
     Users = require('./users'),
+    Q = require('q'),
     Projects = require('./projects'),
     Groups = require('./groups'),
     UserActions = require('./user-actions'),
@@ -17,7 +18,7 @@ var Storage = function(logger) {
 
 Storage.prototype.connect = function(mongoURI) {
     mongoURI = mongoURI || process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
-    return MongoClient.connect(mongoURI)
+    return Q(MongoClient.connect(mongoURI))
         .then(db => {
             this.connected = true;
             this.users = Users;

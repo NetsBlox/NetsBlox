@@ -5,6 +5,7 @@
     const _ = require('lodash');
     const blob = require('./blob-storage');
     const utils = require('../server-utils');
+    const PublicProjects = require('./public-projects');
 
     const storeRoleBlob = function(role) {
         const content = _.clone(role);
@@ -347,7 +348,14 @@
             if (this.isDeleted()) return Promise.reject('project has been deleted!');
             const query = {$set: {name: name}};
             this._logger.trace(`renaming project ${this.name}=>${name} for ${this.owner}`);
-            return this._db.update(this.getStorageId(), query)
+            return this.getRawProject()
+                .then(project => {
+                    const isPublic = project.Public === true;
+                    if (isPublic) {
+                        return PublicProjects.rename(this.owner, this.name, name);
+                    }
+                })
+                .then(() => this._db.update(this.getStorageId(), query))
                 .then(() => this.name = name);
         }
 
