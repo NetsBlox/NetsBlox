@@ -125,7 +125,7 @@ chart.draw = function(lines, options){
     let stats = calcRanges(lines, options.isCategorical);
     this._logger.info('data stats:', stats);
     const relativePadding = {
-        y: stats.y.range * 0.05
+        y: stats.y.range !== 0 ? stats.y.range * 0.05 : 1
     };
 
     //TODO auto set to boxes if categorical? 
@@ -135,7 +135,7 @@ chart.draw = function(lines, options){
     if (options.yRange.length === 2) opts.yRange = {min: options.yRange[0], max: options.yRange[1]};
 
     if (! options.isCategorical){
-        relativePadding.x = stats.x.range * 0.05;
+        relativePadding.x = stats.x.range !== 0 ? stats.x.range * 0.05 : 1;
         opts.xRange = {min: stats.x.min - relativePadding.x, max: stats.x.max + relativePadding.x};
         if (options.xRange.length === 2) opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
 
