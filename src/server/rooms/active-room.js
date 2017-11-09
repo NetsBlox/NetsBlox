@@ -452,7 +452,7 @@ class ActiveRoom {
 }
 
 // Factory method
-ActiveRoom.fromStore = function(logger, socket, project) {
+ActiveRoom.fromStore = function(logger, project) {
     var room = new ActiveRoom(logger, project.name, project.owner);
 
     // Store the project

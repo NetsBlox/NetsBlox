@@ -100,7 +100,7 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
                         });
                 }
                 this._logger.trace(`retrieving project ${uuid} from database`);
-                return ActiveRoom.fromStore(this._logger, socket, project);
+                return ActiveRoom.fromStore(this._logger, project);
             });
 
     } else {
