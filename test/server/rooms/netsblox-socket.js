@@ -7,12 +7,13 @@ describe('netsblox-socket', function() {
         Constants = require(ROOT_DIR + 'src/common/constants'),
         assert = require('assert'),
         logger = new Logger('netsblox-socket'),
+        MockWebSocket = require(ROOT_DIR + 'test/assets/mock-websocket'),
         socket;
 
     describe('getNewName', function() {
 
         before(function() {
-            socket = new NBSocket(logger, {on: () => {}});
+            socket = new NBSocket(logger, new MockWebSocket());
         });
 
         it('should generate new project names', function() {
@@ -23,7 +24,7 @@ describe('netsblox-socket', function() {
 
     describe('getRoom', function() {
         before(function() {
-            socket = new NBSocket(logger, {on: () => {}});
+            socket = new NBSocket(logger, new MockWebSocket());
         });
 
         it('should resolve when the room is set', function(done) {
@@ -54,11 +55,7 @@ describe('netsblox-socket', function() {
                 type: 'uuid', 
                 dstId: 'fred'
             };
-            rawSocket = {
-                on: () => {},
-                send: () => {},
-                readyState: NBSocket.prototype.OPEN
-            };
+            rawSocket = new MockWebSocket();
             socket = new NBSocket(logger, rawSocket);
         });
 
@@ -165,6 +162,23 @@ describe('netsblox-socket', function() {
                 .catch(() => done());
 
             socket.roleId = 'role2';
+        });
+    });
+
+    describe('broken connections', function() {
+        before(() => NBSocket.setHeartBeatInterval(25));
+        after(() => NBSocket.resetHeartBeatInterval());
+
+        it('should detect and close broken connections', function(done) {
+            // Create a socket
+            let ws = new MockWebSocket();
+            let socket = new NBSocket(logger, ws);
+
+            // Verify that 'onclose' is called
+            socket.onclose.push(done);
+
+            // Disable 'pong' response
+            ws.ping = () => {};
         });
     });
 });
