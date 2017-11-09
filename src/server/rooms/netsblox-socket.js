@@ -156,8 +156,6 @@ class NetsBloxSocket {
             var msg = JSON.parse(data),
                 type = msg.type;
 
-            if (msg.type === 'beat') return;
-
             this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message`);
             if (NetsBloxSocket.MessageHandlers[type]) {
                 NetsBloxSocket.MessageHandlers[type].call(this, msg);
@@ -380,8 +378,6 @@ NetsBloxSocket.prototype.CLOSING = 2;
 NetsBloxSocket.prototype.CLOSED = 3;
 
 NetsBloxSocket.MessageHandlers = {
-    'beat': function() {},
-
     'set-uuid': function(msg) {
         this.uuid = msg.body;
         this.username = this.username || this.uuid;
