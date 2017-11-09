@@ -13,6 +13,6 @@ addons:
 services:
     - mongodb
 node_js:
-- '6.5.0'
+- '8.9.0'
 install:
 - npm install
