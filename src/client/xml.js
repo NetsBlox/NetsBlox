@@ -1,3 +1,4 @@
+/*globals XML_Element*/
 XML_Element.prototype.toString = function (isFormatted, indentationLevel) {
     var result = '',
         indent = '',
