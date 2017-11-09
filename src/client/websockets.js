@@ -13,7 +13,6 @@ var WebSocketManager = function (ide) {
         'wss:' : 'ws:';
     this.url = this._protocol + '//' + window.location.host;
     this._connectWebSocket();
-    this._heartbeat();
     this.version = Date.now();
 
     this.errored = false;
@@ -21,8 +20,6 @@ var WebSocketManager = function (ide) {
     this.connected = false;
     this.serializer = new NetsBloxSerializer();
 };
-
-WebSocketManager.HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
 
 WebSocketManager.MessageHandlers = {
     // Receive an assigned uuid
@@ -510,12 +507,4 @@ WebSocketManager.prototype.destroy = function () {
 WebSocketManager.prototype._destroy = function () {
     this.websocket.onclose = nop;
     this.websocket.close();
-};
-
-// Heartbeat
-WebSocketManager.prototype._heartbeat = function () {
-    this.sendMessage({
-        type: 'beat'
-    });
-    setTimeout(this._heartbeat.bind(this), WebSocketManager.HEARTBEAT_INTERVAL);
 };
