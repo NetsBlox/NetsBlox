@@ -56,6 +56,7 @@ UndoManager.Invert.deleteMessageType = function() {
 };
 
 SnapActions.serializer = new NetsBloxSerializer();
+SnapActions.serializer.idProperty = 'actionSerializationID';
 SnapActions.__sessionId = Date.now();
 SnapActions.enableCollaboration =
 SnapActions.disableCollaboration = function() {};

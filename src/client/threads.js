@@ -1,5 +1,5 @@
 /* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
-   Qs, List, SnapActions*/
+   Qs, List, SnapActions, isObject*/
 
 ThreadManager.prototype.startProcess = function (
     block,
@@ -315,6 +315,9 @@ NetsProcess.prototype.getJSFromRPC = function (rpc, params) {
 NetsProcess.prototype.parseRPCResult = function (result) {
     if (result instanceof Array) {
         return new List(result.map(this.parseRPCResult.bind(this)));
+    } else if (typeof result === 'string' && result[0] === '<') {
+        var sockets = this.homeContext.receiver.parentThatIsA(IDE_Morph).sockets;
+        return sockets.deserializeData([result])[0];
     }
     return result;
 };
@@ -339,16 +342,28 @@ NetsProcess.prototype.getJSFromRPCStruct = function (rpc, methodSignature) {
         values = Array.prototype.slice.call(arguments, 2, argNames.length + 2),
         query= {},
         params;
-    //build a json obj
+
+    // build a json obj
+    var isPortable = SnapActions.serializer.isSavingPortable;
+    SnapActions.serializer.flush();
+    SnapActions.serializer.isSavingHistory = false;
+    SnapActions.serializer.isSavingPortable = true;
     argNames.forEach(function(name, index) {
         if (values[index] instanceof List) {
             query[name] = listToArray(values[index]);
-        }else{
+        } else if (isObject(values[index])) {
+            query[name] = SnapActions.serializer.store(values[index]);
+        } else {
             query[name] = values[index];
         }
     });
+    SnapActions.serializer.isSavingHistory = true;
+    SnapActions.serializer.isSavingPortable = isPortable;
+    SnapActions.serializer.flush();
+
     // call stringify
     params = Qs.stringify(query, {encodeValuesOnly: true});
+
     return this.getJSFromRPCDropdown(rpc, action, params);
 };
 

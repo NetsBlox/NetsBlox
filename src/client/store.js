@@ -377,7 +377,10 @@ NetsBloxSerializer.prototype.loadBlock = function (model, isReporter) {
         receiver = isGlobal ? this.project.stage
             : this.project.sprites[model.attributes.scope];
         rm = model.childNamed('receiver');
-        if (rm && rm.children[0]) {
+        if (rm && rm.children[0]
+        // NetsBlox addition: start
+            && rm.children[0].tag !== 'project') {
+        // NetsBlox addition: end
             receiver = this.loadValue(
                 model.childNamed('receiver').children[0]
             );
@@ -969,4 +972,33 @@ Costume.prototype.toXML = function (serializer) {
         // Netsblox addition: end
     );
 };
+
+CustomCommandBlockMorph.prototype.toBlockXML = function (serializer) {
+    var scope = this.definition.isGlobal ? undefined
+        : this.definition.receiver.name;
+    return serializer.format(
+        '<custom-block collabId="@" s="@"%>%%%%</custom-block>',
+        this.id,
+        this.blockSpec,
+        this.definition.isGlobal ?
+                '' : serializer.format(' scope="@"', scope),
+        serializer.store(this.inputs()),
+        this.definition.variableNames.length ?
+                '<variables>' +
+                    this.variables.toXML(serializer) +
+                    '</variables>'
+                        : '',
+        this.comment ? this.comment.toXML(serializer) : '',
+        (serializer.isSavingPortable || scope) && !this.definition.receiver[serializer.idProperty] ?
+                '<receiver>' +
+                    (serializer.isSavingCustomBlockOwners ?
+                    serializer.store(this.definition.receiver) :
+                    '<ref actionID="' + this.definition.receiver.id +'"/>') +
+                    '</receiver>'
+                        : ''
+    );
+};
+
+CustomReporterBlockMorph.prototype.toBlockXML
+    = CustomCommandBlockMorph.prototype.toBlockXML;
 
