@@ -22,7 +22,8 @@ var counter = 0,
     PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/,
     SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
 
-const REQUEST_TIMEOUT = 10*60*1000;
+const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
+const HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
 
 var createSaveableProject = function(json) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -50,9 +51,10 @@ class NetsBloxSocket {
         this.username = this.uuid;
         this._socket = socket;
         this._projectRequests = {};  // saving
-        this._initialize();
+        this.isAlive = true;
 
         this.onclose = [];
+        this._initialize();
 
         this._logger.trace('created');
     }
@@ -172,6 +174,20 @@ class NetsBloxSocket {
             this.onclose.forEach(fn => fn.call(this));
             this.onClose(this.uuid);
         });
+
+        // change the heartbeat to use ping/pong from the ws spec
+        this.checkAlive();
+        this._socket.on('pong', () => this.isAlive = true);
+    }
+
+    checkAlive() {
+        if (!this.isAlive) {
+            this._socket.terminate();
+        } else {
+            this._socket.ping('', false, true);
+            this.isAlive = false;
+            setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
+        }
     }
 
     onLogin (user) {
@@ -598,5 +614,10 @@ NetsBloxSocket.MessageHandlers = {
         UserActions.record(record);  // Store action in the database by sessionId
     }
 };
+
+// Utilities for testing
+NetsBloxSocket.HEARTBEAT_INTERVAL = HEARTBEAT_INTERVAL;
+NetsBloxSocket.setHeartBeatInterval = time => NetsBloxSocket.HEARTBEAT_INTERVAL = time;
+NetsBloxSocket.resetHeartBeatInterval = () => NetsBloxSocket.setHeartBeatInterval(HEARTBEAT_INTERVAL);
 
 module.exports = NetsBloxSocket;
