@@ -5,7 +5,7 @@ ENV ENV production
 ENV DEBUG netsblox*
 ENV NETSBLOX_BLOB_DIR /blob-data
 
-RUN apt-get update && apt-get install build-essential libgd-dev libcairo2-dev libcairo2-dev libpango1.0-dev libgd2-dev -y
+RUN apt-get update && apt-get install build-essential libgif-dev libgd-dev libcairo2-dev libcairo2-dev libpango1.0-dev libgd2-dev -y
 
 RUN echo compile and install gnuplot
 
