@@ -26,8 +26,8 @@
 
         <!-- Snap overrides -->
         <script type="text/javascript" >
-            const SERVER_ADDRESS = 'https://editor.netsblox.org',
-                SERVER_HOST = SERVER_ADDRESS.replace(/^.*\/\//, '');
+            const SERVER_URL = window.location.origin,
+                SERVER_ADDRESS = SERVER_URL.replace(/^.*\/\//, '');
         </script>
         <script type="text/javascript" src="widgets.js"></script>
         <script type="text/javascript" src="objects.js"></script>
