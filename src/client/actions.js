@@ -1,4 +1,4 @@
-/* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer,
+/* globals UndoManager, SERVER_HOST, ActionManager, SnapActions, NetsBloxSerializer,
    HintInputSlotMorph, SnapCloud, Action, copy*/
 // NetsBlox Specific Actions
 SnapActions.addActions(
@@ -6,7 +6,7 @@ SnapActions.addActions(
     'deleteMessageType'
 );
 
-ActionManager.URL = 'ws://' + window.location.host + '/collaboration';
+ActionManager.URL = 'ws://' + SERVER_HOST + '/collaboration';
 ActionManager.prototype._deleteMessageType = function(name) {
     var fields = this.ide().stage.messageTypes.getMsgType(name).fields;
     return [name, fields];

@@ -1,4 +1,4 @@
-/*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions,
+/*globals nop, SnapCloud, SERVER_HOST, Context, SpriteMorph, StageMorph, SnapActions,
   DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject, NetsBloxSerializer,
   localize*/
 // WebSocket Manager
@@ -11,7 +11,7 @@ var WebSocketManager = function (ide) {
     this.processes = [];  // Queued processes to start
     this._protocol = window.location.protocol === 'https:' ?
         'wss:' : 'ws:';
-    this.url = this._protocol + '//' + window.location.host;
+    this.url = this._protocol + '//' + SERVER_HOST;
     this._connectWebSocket();
     this.version = Date.now();
 

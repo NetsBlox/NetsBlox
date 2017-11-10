@@ -1,4 +1,4 @@
-/* global RoomMorph, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
+/* global RoomMorph, SERVER_ADDRESS, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
@@ -147,13 +147,13 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 hash = decodeURIComponent(hash);
             }
             if (contains(
-                    ['project', 'blocks', 'sprites', 'snapdata'].map(
-                        function (each) {
-                            return hash.substr(0, 8).indexOf(each);
-                        }
-                    ),
-                    1
-                )) {
+                ['project', 'blocks', 'sprites', 'snapdata'].map(
+                    function (each) {
+                        return hash.substr(0, 8).indexOf(each);
+                    }
+                ),
+                1
+            )) {
                 this.droppedText(hash);
             } else {
                 this.droppedText(getURL(hash));
@@ -1673,7 +1673,7 @@ NetsBloxMorph.prototype.requestAndroidApp = function(name) {
         projectXml,
         req,
         params,
-        baseURL = window.location.origin + '/';
+        baseURL = SERVER_ADDRESS + '/';
 
     // FIXME: this baseURL stuff could cause problems
     if (name !== this.projectName) {
@@ -2586,7 +2586,7 @@ NetsBloxMorph.prototype.logout = function () {
 NetsBloxMorph.prototype.createCloudAccount = function () {
     var myself = this,
         world = this.world();
-/*
+    /*
     // force-logout, commented out for now:
     delete localStorage['-snap-user'];
     SnapCloud.clear();
