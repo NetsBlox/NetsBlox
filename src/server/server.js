@@ -130,11 +130,12 @@ Server.prototype.configureRoutes = function() {
             return;
         }
         
-        var baseUrl = `https://${req.get('host')}`,
+        var baseUrl = process.env.SERVER_URL || 'https://editor.netsblox.org',
             url = baseUrl + req.originalUrl,
             projectName = req.query.ProjectName,
             metaInfo = {
                 googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
+                baseUrl,
                 url: url
             };
 
