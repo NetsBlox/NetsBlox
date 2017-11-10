@@ -23,7 +23,13 @@ describe('ide', function() {
                 }
 
                 delete ide.exportRoom;
-                expect(local).to.be(str);
+                if (local !== str) {
+                    var index = getFirstDiffChar(local, str);
+                    var start = Math.max(index-10, 0);
+                    var end = Math.min(index+10, local.length);
+                    var msg = `xml mismatch: "${local.slice(start, end)}" and "${str.slice(start, end)}"`;
+                    return done(msg)
+                }
                 done();
             };
             ide.exportSingleRoleXml();
@@ -56,7 +62,7 @@ describe('ide', function() {
                         } finally {
                             done(err);
                         }
-                    }, 50);
+                    }, 200);
                 });
         });
 
@@ -75,7 +81,7 @@ describe('ide', function() {
                         } finally {
                             done(err);
                         }
-                    }, 50);
+                    }, 200);
                 });
         });
 
@@ -94,7 +100,7 @@ describe('ide', function() {
                         } finally {
                             done(err);
                         }
-                    }, 50);
+                    }, 200);
                 });
         });
 
@@ -281,4 +287,14 @@ describe('ide', function() {
             });
         });
     });
+
+    function getFirstDiffChar (str1, str2) {
+        for (var i = 0; i < str1.length; i++) {
+            if (str1[i] !== str2[i]) {
+                return i;
+            }
+        }
+        return -1;
+    };
 });
+
