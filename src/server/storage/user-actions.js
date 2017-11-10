@@ -1,7 +1,7 @@
 (function(UserActionData) {
     var Q = require('q'),
         logger,
-        blob = require('./blob-storage'),
+        blob = require('./blob'),
         collection;
 
     UserActionData.init = function(_logger, db) {
@@ -30,10 +30,11 @@
                     code = xml.substring(11, endOfCode),
                     media = xml.substring(endOfCode).replace('</snapdata>', '');
 
-                preprocess = Q.all([code, media].map(data => blob.store(data)))
+                // TODO: update this...
+                preprocess = Q.all([code, media].map(data => blob.put(data)))
                     .then(hashes => event.action.args[0] = hashes);
             } else if (xml) {  // store the xml in one chunk in the blob
-                preprocess = Q.all([xml].map(data => blob.store(data)))
+                preprocess = Q.all([xml].map(data => blob.put(data)))
                     .then(hashes => event.action.args[0] = hashes);
             }
         }

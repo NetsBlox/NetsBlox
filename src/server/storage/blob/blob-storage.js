@@ -6,6 +6,14 @@
 //    - they should all be "promisified"
 //  - create should return id (hash - probably sha256)
 
+// The blob will have a "backend" such as fs or s3
+// The blob will store data by...
+//   - projects:
+//     - in projects/
+//       - src@role@project@owner.xml
+//       - media@role@project@owner.xml
+//   - user-actions:
+//
 const Logger = require('../logger'),
     logger = new Logger('netsblox:blob-storage'),
     hash = require('../../common/sha512').hex_sha512,

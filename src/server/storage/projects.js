@@ -3,15 +3,15 @@
     const DataWrapper = require('./data');
     const Q = require('q');
     const _ = require('lodash');
-    const blob = require('./blob-storage');
+    const blob = require('./blob');
     const utils = require('../server-utils');
     const PublicProjects = require('./public-projects');
 
     const storeRoleBlob = function(role) {
         const content = _.clone(role);
         return Q.all([
-            blob.store(content.SourceCode),
-            blob.store(content.Media)
+            blob.put(content.SourceCode),
+            blob.put(content.Media)
         ])
             .then(hashes => {
                 const [srcHash, mediaHash] = hashes;
@@ -311,6 +311,12 @@
                     this._logger.warn(`project not saved: ${err}`);
                     throw err;
                 });
+        }
+
+        destroy() {
+            // TODO
+            return DataWrapper.prototype.destroy.call(this)
+                .then(() => /*REMOVE DATA FROM BLOB*/);
         }
 
         setActiveRole(role) {
