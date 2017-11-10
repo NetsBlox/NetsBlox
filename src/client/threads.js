@@ -1,4 +1,4 @@
-/* global ThreadManager, SERVER_ADDRESS, Process, Context, IDE_Morph, Costume, StageMorph,
+/* global ThreadManager, SERVER_URL, Process, Context, IDE_Morph, Costume, StageMorph,
    Qs, List, SnapActions*/
 
 ThreadManager.prototype.startProcess = function (
@@ -226,7 +226,7 @@ NetsProcess.prototype.createRPCUrl = function (rpc, params) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
         uuid = ide.sockets.uuid;
 
-    return SERVER_ADDRESS + '/rpc/'+rpc+'?uuid='+uuid+'&'+params;
+    return SERVER_URL + '/rpc/'+rpc+'?uuid='+uuid+'&'+params;
 };
 
 NetsProcess.prototype.callRPC = function (rpc, params, noCache) {

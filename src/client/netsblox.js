@@ -1,4 +1,4 @@
-/* global RoomMorph, SERVER_ADDRESS, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
+/* global RoomMorph, SERVER_URL, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
@@ -1673,7 +1673,7 @@ NetsBloxMorph.prototype.requestAndroidApp = function(name) {
         projectXml,
         req,
         params,
-        baseURL = SERVER_ADDRESS + '/';
+        baseURL = SERVER_URL + '/';
 
     // FIXME: this baseURL stuff could cause problems
     if (name !== this.projectName) {
