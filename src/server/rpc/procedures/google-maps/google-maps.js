@@ -280,6 +280,14 @@ StaticMap.prototype.maxLatitude = mapGetter('max', 'lat');
 StaticMap.prototype.minLongitude = mapGetter('min', 'lon');
 StaticMap.prototype.minLatitude = mapGetter('min', 'lat');
 
+StaticMap.isSupported = () => {
+    if(!key){
+        /* eslint-disable no-console*/
+        console.error('GOOGLE_MAPS_KEY is missing.');
+        /* eslint-enable no-console*/
+    }
+    return !!key;
+};
 // Map of argument name to old field name
 StaticMap.COMPATIBILITY = {
     path: 'staticmap',
