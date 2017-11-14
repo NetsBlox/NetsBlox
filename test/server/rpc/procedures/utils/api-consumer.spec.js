@@ -67,7 +67,7 @@ describe('ApiConsumer', function(){
                 // we shouldn't get here, fail the test if we get here
                 throw new Error(errorMsg);
             }).catch(e => {
-                assert.deepEqual(e.name, 'RequestError'); // if this line throws we get a timeout
+                assert.deepEqual(e.name, 'RequestError');
                 done();
             });
         });
@@ -81,7 +81,6 @@ describe('ApiConsumer', function(){
             apiConsumer._requestData(queryOpts).catch( () => {
                 // check if it is cached or not
                 testRpc._rpc._cache.get(queryOpts.baseUrl + queryOpts.queryString, function(err, result) {
-                    // if one of these assertions fail, the exception will be catched by the wrapping func thus we'll get a timeout
                     assert.equal(err,null);
                     assert.equal(result,null);
                     done();
