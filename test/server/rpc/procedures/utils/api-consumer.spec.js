@@ -20,6 +20,7 @@ describe('ApiConsumer', function(){
     });
 
     describe('requestData', ()=>{
+
         it('should get correct data from the endpoint', done => {
             let queryOpts = {
                 queryString: '/',
@@ -54,5 +55,38 @@ describe('ApiConsumer', function(){
                     });
             });
         });
+
+        it('should throw when requesting a nonexisintg resource', done => {
+            const queryOpts = {
+                queryString: '/',
+                baseUrl: 'http://AAnonexistingdomainadslfjazxcvsadf.com',
+                json: false
+            };
+            const errorMsg = 'this request shouldn\'t resolve';
+            apiConsumer._requestData(queryOpts).then(() => {
+                // we shouldn't get here, fail the test if we get here
+                throw new Error(errorMsg);
+            }).catch(e => {
+                assert.deepEqual(e.name, 'RequestError');
+                done();
+            });
+        });
+
+        it('should not cache rejected promises', done => {
+            const queryOpts = {
+                queryString: '/',
+                baseUrl: 'http://BBnonexistingdomainadslfjazxcvsadf.com',
+                json: false
+            };
+            apiConsumer._requestData(queryOpts).catch( () => {
+                // check if it is cached or not
+                testRpc._rpc._cache.get(queryOpts.baseUrl + queryOpts.queryString, function(err, result) {
+                    assert.equal(err,null);
+                    assert.equal(result,null);
+                    done();
+                });
+            });
+        });
+
     });
 }); // end of ApiConsumer describe
