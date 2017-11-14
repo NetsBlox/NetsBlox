@@ -286,6 +286,11 @@
         }
 
         destroy() {
+            if (this.isDeleted()) {
+                this._logger.trace(`project ${this.uuid()} already destroyed`);
+                return Q();
+            }
+
             return this.getRawRoles()
                 .then(roles => Q.all(roles.map(role => blob.deleteRole(role, this))))
                 .then(() => DataWrapper.prototype.destroy.call(this));
