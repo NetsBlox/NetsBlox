@@ -14,16 +14,16 @@
 //       - media@role@project@owner.xml
 //   - user-actions:
 //
-const Logger = require('../logger'),
+const Logger = require('../../logger'),
     logger = new Logger('netsblox:blob-storage'),
-    hash = require('../../common/sha512').hex_sha512,
+    hash = require('../../../common/sha512').hex_sha512,
     path = require('path'),
     fse = require('fs-extra'),
     fs = require('fs'),
     Q = require('q'),
     exists = require('exists-file'),
     BASE_DIR = process.env.NETSBLOX_BLOB_DIR ||
-        path.join(__dirname, '..', '..', '..', 'blob-storage');
+        path.join(__dirname, '..', '..', '..', '..', 'blob-storage');
 
 var BlobStorage = function() {
     // create the given directory, if needed

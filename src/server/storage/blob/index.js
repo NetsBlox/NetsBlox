@@ -83,29 +83,26 @@ BlobStorage.prototype.getRoleUuid = function(role, project) {
     ].join('@');
 };
 
+BlobStorage.prototype.getActionUuid = function(event) {
+    return [
+        event.sessionId.replace(/\//g, '@'),
+        `${event.action.time}-${INDEX}`
+    ].join('@');
+};
+
 BlobStorage.prototype.putUserAction = function(event) {
     let type = 'user-actions';
-    let preprocess = Q();
 
     // If openProject, store the project in the blob
-    if (event.action.type === 'openProject' && event.action.args.length) {
+    if (event.action && event.action.type === 'openProject' && event.action.args.length) {
         var xml = event.action.args[0];
-        if (xml && xml.substring(0, 10) === 'snapdata') {
-            // split the media, source code
-            var endOfCode = xml.lastIndexOf('</project>') + 10,
-                code = xml.substring(11, endOfCode),
-                media = xml.substring(endOfCode).replace('</snapdata>', '');
-
-            preprocess = Q.all([code, media].map(data => blob.put(data)))
-                .then(hashes => event.action.args[0] = hashes);
-        } else if (xml) {  // store the xml in one chunk in the blob
-            preprocess = Q.all([xml].map(data => blob.put(data)))
-                .then(hashes => event.action.args[0] = hashes);
+        if (xml) {
+            let uuid = this.getActionUuid(event);
+            return this.backend.put(type, uuid);
         }
     }
 
-    return preprocess()
-        .then(event => event);
+    return Q();
 };
 
 module.exports = new BlobStorage();

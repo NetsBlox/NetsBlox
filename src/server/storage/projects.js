@@ -22,7 +22,7 @@
             params.data = params.data || {};
 
             super(params.db, params.data || {});
-            this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
+            this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid()));
             this._room = params.room;
             this.collaborators = this.collaborators || [];
             this.originTime = params.data.originTime;
