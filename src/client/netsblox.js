@@ -290,7 +290,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
 
             this.sockets.onConnect = function() {
                 SnapCloud.passiveLogin(myself, function() {
-                    var projectData = myself.getURL('api/Examples/' + example);
+                    var projectData = myself.getURL('/api/Examples/' + example);
 
                     myself.nextSteps([
                         function () {
@@ -1689,7 +1689,7 @@ NetsBloxMorph.prototype.requestAndroidApp = function(name) {
         SnapCloud.username + '&xml=' + projectXml +
         '&baseURL=' + encodeURIComponent(baseURL);
 
-    req.open('post', baseURL + 'api/mobile/compile', true);
+    req.open('post', baseURL + '/api/mobile/compile', true);
     req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     req.onload = function() {
         myself.showMessage(req.responseText);
