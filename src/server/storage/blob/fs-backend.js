@@ -23,11 +23,11 @@ class FsBackend extends BlobBackend {
             .then(() => path.join(type, uuid));
     }
 
-    get(type, uuid) {
-        let filename = path.join(this.baseDir, type, uuid);
+    get(uuid) {
+        let filename = path.join(this.baseDir, uuid);
         return fse.readFile(filename, 'utf8')
             .catch(err => {
-                logger.error(`Could not read from ${filename}: ${err}`);
+                this.logger.error(`Could not read from ${filename}: ${err}`);
                 throw err;
             });
     }

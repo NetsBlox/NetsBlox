@@ -1,17 +1,13 @@
 describe('blob-storage', function() {
     const utils = require('../../../assets/utils');
-    const blob = utils.reqSrc('storage/blob'),
-        assert = require('assert'),
-        path = require('path'),
-        projects = utils.reqSrc('storage/projects'),
-        BLOB_DIR = path.join(__dirname, '..', '..', '..', 'test-blob-storage'),
-        rm_rf = require('rimraf');
+    const blob = utils.reqSrc('storage/blob');
+    const assert = require('assert');
+    const path = require('path');
+    const BLOB_DIR = path.join(__dirname, '..', '..', '..', 'test-blob-storage');
+    const rm_rf = require('rimraf');
 
-    before(function(/*done*/) {
-        blob.configure(BLOB_DIR)
-        //utils.reset()
-            //.then(() => blob.configure(BLOB_DIR))
-            //.nodeify(done);
+    before(function() {
+        blob.configure(BLOB_DIR);
     });
 
     after(function() {
@@ -76,37 +72,17 @@ describe('blob-storage', function() {
                         assert(!role);
                         done();
                     })
-                    .catch(err => done());
+                    .catch(() => done());
+            });
+        });
+
+        describe('uuid', function() {
+            it('should generate unique uuids', function() {
+                let id1 = blob.getRoleUuid(role, project);
+                let id2 = blob.getRoleUuid(role, project);
+                assert.notEqual(id1, id2);
             });
         });
     });
 
-    describe('user-actions', () => {
-    });
-
-    describe.only('project integration', () => {
-        let project = null;
-        let role = null;
-        before(done => {
-            utils.reset()
-                .then(() => console.log('about to get project...'))
-                .then(projects.get('brian', 'PublicProject'))
-                .then(result => {
-                    project = result;
-                    return project.getRoles();
-                })
-                .then(roles => role = roles[0])
-                .nodeify(done);
-        });
-
-        it('should remove the role data on role destroy', done => {
-            project.removeRole(role.ProjectName)
-                .then(() => blob.getRole(role, project))
-                .catch(() => done());
-        });
-
-        it('should remove the role data on project destroy', done => {
-        });
-
-    });
 });

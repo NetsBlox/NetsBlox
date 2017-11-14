@@ -14,12 +14,14 @@
 //       - media@role@project@owner.xml
 //   - user-actions:
 
-const Logger = require('../../logger'),
-    logger = new Logger('netsblox:blob'),
-    _ = require('lodash'),
-    Q = require('q');
-
+const Logger = require('../../logger');
+const logger = new Logger('netsblox:blob');
+const _ = require('lodash');
+const Q = require('q');
 const FsBackend = require('./fs-backend');
+
+let INDEX = 1;  // used to guarantee uniqueness in uuids
+
 var BlobStorage = function() {
     // create the given directory, if needed
     this.backend = new FsBackend(logger);
@@ -31,11 +33,11 @@ BlobStorage.prototype.configure = function(options) {
 
 BlobStorage.prototype.putRole = function(role, project) {
     // store the source code and media and return the metadata object
-    const basename = this.getRoleUuid(role, project);
+    const uuid = this.getRoleUuid(role, project);
     const content = _.clone(role);
     return Q.all([
-            this.backend.put('projects', `src@${basename}`, content.SourceCode),
-            this.backend.put('projects', `media@${basename}`, content.Media),
+            this.backend.put('projects', `src@${uuid}`, content.SourceCode),
+            this.backend.put('projects', `media@${uuid}`, content.Media),
         ])
         .then(ids => {
             const [srcId, mediaId] = ids;
@@ -46,11 +48,16 @@ BlobStorage.prototype.putRole = function(role, project) {
         });
 };
 
+BlobStorage.prototype.exists = function(role, project) {
+    const uuid = this.getRoleUuid(role, project);
+    return this.backend.exists('projects', uuid);
+};
+
 BlobStorage.prototype.getRole = function(role, project) {
     const content = _.clone(role);
     return Q.all([
-            this.backend.get('projects', role.SourceCode),
-            this.backend.get('projects', role.Media),
+            this.backend.get(role.SourceCode),
+            this.backend.get(role.Media),
         ])
         .then(data => {
             const [src, media] = data;
@@ -62,8 +69,8 @@ BlobStorage.prototype.getRole = function(role, project) {
 };
 
 BlobStorage.prototype.deleteRole = function(role, project) {
-    const basename = this.getRoleUuid(role, project);
-    return this.backend.delete('projects', basename);
+    const uuid = this.getRoleUuid(role, project);
+    return this.backend.delete('projects', uuid);
 };
 
 BlobStorage.prototype.getRoleUuid = function(role, project) {
@@ -71,10 +78,12 @@ BlobStorage.prototype.getRoleUuid = function(role, project) {
     // TODO: what if the project/role is renamed? Then we should use the ids from the role...
     // could I just make ids that I guarantee to be unique? add some counter?
     // I could add a timestamp and server name?
-    return this.backend.getName() + '-blob://' + [
+    INDEX++;
+    return [
         role.ProjectName,
         project.name,
-        project.owner
+        project.owner,
+        `${Date.now()}-${INDEX}`
     ].join('@');
 };
 

@@ -13,7 +13,7 @@ class BlobBackend {
         // abstract
     }
 
-    get(type, uuid) {
+    get(uuid) {
         // abstract
     }
 
