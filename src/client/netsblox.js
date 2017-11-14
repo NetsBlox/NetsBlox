@@ -8,6 +8,17 @@
    BlockMorph, SyntaxElementMorph, ScriptsMorph, InputSlotDialogMorph, ArgMorph,
    BlockLabelPlaceHolderMorph, TableMorph, contains, newCanvas*/
 // Netsblox IDE (subclass of IDE_Morph)
+
+// TODO move to a better location
+function ensureFullUrl(url) {
+    // if it's not a full path attach serverURL to the front
+    // regex is checking to see if the protocol is there (eg http://, ws://)
+    if(url.match(/^\w+:\/\//) === null) {
+        url = SERVER_URL + url;
+    }
+    return url;
+}
+
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
 NetsBloxMorph.uber = IDE_Morph.prototype;
@@ -83,6 +94,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
 
     function getURL(url) {
         try {
+            url = ensureFullUrl(url);
             var request = new XMLHttpRequest();
             request.open('GET', url, false);
             request.send();

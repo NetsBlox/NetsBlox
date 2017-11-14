@@ -1,4 +1,4 @@
-/* globals ProjectDialogMorph, Morph, AlignmentMorph, InputFieldMorph, localize,
+/* globals ProjectDialogMorph, ensureFullUrl, Morph, AlignmentMorph, InputFieldMorph, localize,
    Point, TextMorph, Color, nop, ListMorph, IDE_Morph, Process, BlockImportDialogMorph,
    BlockExportDialogMorph, detect, SnapCloud, SnapSerializer, ScrollFrameMorph,
    DialogBoxMorph, SnapActions, SpeechBubbleMorph
@@ -717,6 +717,13 @@ IDE_Morph.prototype.exportGlobalBlocks = function () {
                 + 'custom global blocks or message types yet'
         );
     }
+};
+
+
+var getURL = IDE_Morph.prototype.getURL;
+IDE_Morph.prototype.getURL = function (url, callback) {
+    url = ensureFullUrl(url);
+    return getURL(url, callback);
 };
 
 IDE_Morph.prototype.rawOpenBlocksString = function (str, name, silently) {
