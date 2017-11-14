@@ -50,7 +50,9 @@
         getRawProject() {
             return this._db.findOne(this.getStorageId())
                 .then(project => {
-                    clean(project, this._logger);
+                    if (project) {
+                        clean(project, this._logger);
+                    }
                     return project;
                 });
         }
