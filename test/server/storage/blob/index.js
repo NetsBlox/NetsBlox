@@ -32,7 +32,6 @@ describe('blob-storage', function() {
             it('should replace source, media with ids', function(done) {
                 blob.putRole(role, project)
                     .then(content => {
-                        console.log('content', content);
                         assert.notEqual(content.SourceCode, role.SourceCode);
                         assert.notEqual(content.Media, role.Media);
                         done();

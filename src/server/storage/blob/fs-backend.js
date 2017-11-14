@@ -4,7 +4,6 @@ const path = require('path');
 const BASE_DIR = process.env.NETSBLOX_BLOB_DIR ||
         path.join(__dirname, '..', '..', '..', '..', 'blob-storage');
 
-// TODO: create the logger
 class FsBackend extends BlobBackend {
 
     configure(baseDir) {
