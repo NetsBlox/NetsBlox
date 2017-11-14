@@ -71,7 +71,7 @@ BlobStorage.prototype.getRoleUuid = function(role, project) {
     // TODO: what if the project/role is renamed? Then we should use the ids from the role...
     // could I just make ids that I guarantee to be unique? add some counter?
     // I could add a timestamp and server name?
-    return [
+    return this.backend.getName() + '-blob://' + [
         role.ProjectName,
         project.name,
         project.owner
