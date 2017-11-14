@@ -20,7 +20,7 @@ const Projects = require('../storage/projects');
 
 try {
     info('trying to load lwip');
-    var lwip = require('lwip');
+    var lwip = require('@mcph/lwip');
 } catch (e) {
     error('Could not load lwip:');
     error('aspectRatio for image thumbnails will not be supported');
@@ -136,7 +136,7 @@ var sendProjectTo = function(project, res) {
 const TRANSPARENT = [0,0,0,0];
 
 var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
-    var lwip = require('lwip');
+    var lwip = require('@mcph/lwip');
     return Q.ninvoke(lwip, 'open', buffer, 'png')
         .then(image => {
             var width = image.width(),

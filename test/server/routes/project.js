@@ -50,7 +50,7 @@ describe('project routes', function() {
             api.get(`/projects/brian/PublicProject/thumbnail?aspectRatio=1.61`)
                 .expect(200)
                 .expect('content-type', 'image/png')
-                .expect(res => assert.equal(res.body.toString(), thumbnail161.toString()))
+                .expect(res => assert.equal(res.body.toString(), thumbnail161.toString(), 'Aspect ratio not applied to image (image contents does not match expected)'))
                 .end(done);
         });
 

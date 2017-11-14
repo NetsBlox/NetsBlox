@@ -9,11 +9,12 @@ addons:
     sources:
     - ubuntu-toolchain-r-test
     packages:
+    - libgif-dev
     - g++-4.8
 services:
     - mongodb
 node_js:
-- '6.5.0'
+- '8.9.0'
 install:
 - npm install
 before_script:
