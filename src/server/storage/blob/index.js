@@ -6,87 +6,101 @@
 //    - they should all be "promisified"
 //  - create should return id (hash - probably sha256)
 
-const Logger = require('../logger'),
-    logger = new Logger('netsblox:blob-storage'),
-    hash = require('../../common/sha512').hex_sha512,
-    path = require('path'),
-    fse = require('fs-extra'),
-    fs = require('fs'),
-    Q = require('q'),
-    exists = require('exists-file'),
-    BASE_DIR = process.env.NETSBLOX_BLOB_DIR ||
-        path.join(__dirname, '..', '..', '..', 'blob-storage');
+// The blob will have a "backend" such as fs or s3
+// The blob will store data by...
+//   - projects:
+//     - in projects/
+//       - src@role@project@owner.xml
+//       - media@role@project@owner.xml
+//   - user-actions:
 
+const Logger = require('../../logger'),
+    logger = new Logger('netsblox:blob'),
+    _ = require('lodash'),
+    Q = require('q');
+
+const FsBackend = require('./fs-backend');
 var BlobStorage = function() {
     // create the given directory, if needed
-    logger.info(`blob directory is ${BASE_DIR}`);
-    this.configure(BASE_DIR);
+    this.backend = new FsBackend(logger);
 };
 
-BlobStorage.prototype.store = function(data) {
-    var id = hash(data),
-        [dirname, filename] = this.getDirectoryAndFile(id);
+BlobStorage.prototype.configure = function(options) {
+    return this.backend.configure(options);
+};
 
-    logger.info(`storing data in the blob: ${id}`);
+BlobStorage.prototype.putRole = function(role, project) {
+    // store the source code and media and return the metadata object
+    const basename = this.getRoleUuid(role, project);
+    const content = _.clone(role);
+    return Q.all([
+            this.backend.put('projects', `src@${basename}`, content.SourceCode),
+            this.backend.put('projects', `media@${basename}`, content.Media),
+        ])
+        .then(ids => {
+            const [srcId, mediaId] = ids;
 
-    // store the data and return the hash
-    this._verifyExists();
-    return Q.nfcall(fse.ensureDir, dirname)
-        .then(() => {
-            if (!exists.sync(filename)) {
-                return Q.nfcall(fs.writeFile, filename, data);
-            } else {
-                logger.trace(`data already stored. skipping write ${id}`);
-                return Q();
-            }
-        })
-        .then(() => id)
-        .fail(err => {
-            logger.error(`Could not write to ${filename}: ${err}`);
-            throw err;
+            content.SourceCode = srcId;
+            content.Media = mediaId;
+            return content;
         });
 };
 
-BlobStorage.prototype.get = function(id) {
-    var filename = this.getDirectoryAndFile(id)[1];
+BlobStorage.prototype.getRole = function(role, project) {
+    const content = _.clone(role);
+    return Q.all([
+            this.backend.get('projects', role.SourceCode),
+            this.backend.get('projects', role.Media),
+        ])
+        .then(data => {
+            const [src, media] = data;
 
-    // get the data from the given hash
-    return Q.nfcall(fs.readFile, filename, 'utf8')
-        .fail(err => {
-            logger.error(`Could not read from ${filename}: ${err}`);
-            throw err;
+            content.SourceCode = src;
+            content.Media = media;
+            return content;
         });
 };
 
-BlobStorage.prototype.delete = function(id) {
-    // TODO
+BlobStorage.prototype.deleteRole = function(role, project) {
+    const basename = this.getRoleUuid(role, project);
+    return this.backend.delete('projects', basename);
 };
 
-BlobStorage.prototype._verifyExists = function() {
-    if (!exists.sync(this.baseDir)) {
-        logger.info(`created blob directory at ${this.baseDir}`);
-        fse.ensureDirSync(this.baseDir);
+BlobStorage.prototype.getRoleUuid = function(role, project) {
+    // TODO: escape existing @ symbols?
+    // TODO: what if the project/role is renamed? Then we should use the ids from the role...
+    // could I just make ids that I guarantee to be unique? add some counter?
+    // I could add a timestamp and server name?
+    return [
+        role.ProjectName,
+        project.name,
+        project.owner
+    ].join('@');
+};
+
+BlobStorage.prototype.putUserAction = function(event) {
+    let type = 'user-actions';
+    let preprocess = Q();
+
+    // If openProject, store the project in the blob
+    if (event.action.type === 'openProject' && event.action.args.length) {
+        var xml = event.action.args[0];
+        if (xml && xml.substring(0, 10) === 'snapdata') {
+            // split the media, source code
+            var endOfCode = xml.lastIndexOf('</project>') + 10,
+                code = xml.substring(11, endOfCode),
+                media = xml.substring(endOfCode).replace('</snapdata>', '');
+
+            preprocess = Q.all([code, media].map(data => blob.put(data)))
+                .then(hashes => event.action.args[0] = hashes);
+        } else if (xml) {  // store the xml in one chunk in the blob
+            preprocess = Q.all([xml].map(data => blob.put(data)))
+                .then(hashes => event.action.args[0] = hashes);
+        }
     }
-};
 
-BlobStorage.prototype.configure = function(dir) {
-    this.baseDir = dir;
-};
-
-BlobStorage.prototype.getDirectoryAndFile = function(hash) {
-    if (!hash || !hash.substring) {
-        throw Error(`Invalid hash "${hash}"`);
-    }
-
-    const dirname = path.join(this.baseDir, hash.substring(0, 2));
-    const filename = path.join(dirname, hash.substring(2));
-
-    return [dirname, filename];
-};
-
-BlobStorage.prototype.dataExists = function(id) {
-    let [, filename] = this.getDirectoryAndFile(id);
-    return exists.sync(filename);
+    return preprocess()
+        .then(event => event);
 };
 
 module.exports = new BlobStorage();

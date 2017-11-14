@@ -7,34 +7,6 @@
     const utils = require('../server-utils');
     const PublicProjects = require('./public-projects');
 
-    const storeRoleBlob = function(role) {
-        const content = _.clone(role);
-        return Q.all([
-            blob.put(content.SourceCode),
-            blob.put(content.Media)
-        ])
-            .then(hashes => {
-                const [srcHash, mediaHash] = hashes;
-
-                content.SourceCode = srcHash;
-                content.Media = mediaHash;
-                return content;
-            });
-    };
-
-    const loadRoleContent = function(role) {
-        return Q.all([
-            blob.get(role.SourceCode),
-            blob.get(role.Media)
-        ])
-            .then(data => {
-                const [code, media] = data;
-                role.SourceCode = code;
-                role.Media = media;
-                return role;
-            });
-    };
-
     const clean = function(project, logger) {
         if (!project.roles) {
             logger.warn(`PROJECT FOUND WITH NO ROLES ${project.owner}/${project.name}`);
@@ -83,7 +55,7 @@
                 });
         }
 
-        ///////////////////////// Roles ///////////////////////// 
+        ///////////////////////// Roles /////////////////////////
         setRawRole(role, content) {
             if (this.isDeleted()) return Promise.reject('project has been deleted!');
 
@@ -96,7 +68,7 @@
 
         setRole(role, content) {
             this._logger.trace(`updating role: ${role} in ${this.owner}/${this.name}`);
-            return storeRoleBlob(content)
+            return blob.putRole(content, this)
                 .then(content => this.setRawRole(role, content));
         }
 
@@ -106,7 +78,7 @@
 
             const query = {$set: {}};
 
-            return Q.all(roles.map(role => storeRoleBlob(role)))
+            return Q.all(roles.map(role => blob.putRole(role, this)))
                 .then(roles => {
                     if (this.isDeleted()) throw 'project has been deleted!';
                     const names = roles.map(role => role.ProjectName);
@@ -129,7 +101,7 @@
 
         getRole(role) {
             return this.getRawRole(role)
-                .then(content => content && loadRoleContent(content));
+                .then(content => content && blob.getRole(content, this));
         }
 
         getRawRoles() {
@@ -146,7 +118,7 @@
 
         getRoles() {
             return this.getRawRoles()
-                .then(roles => Q.all(roles.map(loadRoleContent)));
+                .then(roles => Q.all(roles.map(role => blob.getRole(role, this))));
         }
 
         getCopy(user) {
@@ -199,7 +171,7 @@
                 .then(project => Object.keys(project.roles));
         }
 
-        ///////////////////////// End Roles ///////////////////////// 
+        ///////////////////////// End Roles /////////////////////////
         collectProjects() {
             var sockets = this._room ?
                 this._room.getRoleNames()
@@ -222,7 +194,7 @@
 
         collectSaveableRoles() {
             return this.collectProjects()
-                .then(roles => Q.all(roles.map(role => storeRoleBlob(role))));
+                .then(roles => Q.all(roles.map(role => blob.putRole(role, this))));
         }
 
 
@@ -314,9 +286,9 @@
         }
 
         destroy() {
-            // TODO
-            return DataWrapper.prototype.destroy.call(this)
-                .then(() => /*REMOVE DATA FROM BLOB*/);
+            return this.getRawRoles()
+                .then(roles => Q.all(roles.map(role => blob.deleteRole(role, this))))
+                .then(() => DataWrapper.prototype.destroy.call(this));
         }
 
         setActiveRole(role) {

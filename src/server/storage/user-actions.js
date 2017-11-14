@@ -10,7 +10,6 @@
     };
 
     UserActionData.record = function(event) {
-        var preprocess = Q();
         if (!event.sessionId) {
             logger.error('No sessionId found for event:', event);
         }
@@ -21,25 +20,8 @@
         }
         logger.trace(`about to store event from session: ${event.sessionId}`);
 
-        // If openProject, store the project in the blob
-        if (event.action.type === 'openProject' && event.action.args.length) {
-            var xml = event.action.args[0];
-            if (xml && xml.substring(0, 10) === 'snapdata') {
-                // split the media, source code
-                var endOfCode = xml.lastIndexOf('</project>') + 10,
-                    code = xml.substring(11, endOfCode),
-                    media = xml.substring(endOfCode).replace('</snapdata>', '');
-
-                // TODO: update this...
-                preprocess = Q.all([code, media].map(data => blob.put(data)))
-                    .then(hashes => event.action.args[0] = hashes);
-            } else if (xml) {  // store the xml in one chunk in the blob
-                preprocess = Q.all([xml].map(data => blob.put(data)))
-                    .then(hashes => event.action.args[0] = hashes);
-            }
-        }
-
-        return preprocess.then(() => collection.save(event))
+        return blob.putUserAction(event)
+            .then(() => collection.save(event))
             .then(() => logger.trace(`successfully recorded event from session ${event.sessionId}`));
     };
 
