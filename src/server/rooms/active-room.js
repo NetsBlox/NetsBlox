@@ -5,6 +5,7 @@
 
 var R = require('ramda'),
     Q = require('q'),
+    _ = require('lodash'),
     utils = require('../server-utils'),
     Users = require('../storage/users'),
     Constants = require('../../common/constants');
@@ -27,6 +28,12 @@ class ActiveRoom {
         this._project = null;
 
         this.uuid = utils.uuid(owner, name);
+        this._onRolesChanged = _.debounce(
+            this.sendUpdateAndSave.bind(this),
+            250,
+            {maxWait: 1500}
+        );
+
         this._logger = logger.fork('active-room:' + this.uuid);
         this._logger.log('created!');
     }
@@ -422,7 +429,11 @@ class ActiveRoom {
         this.sockets().forEach(socket => socket.send(msg));
     }
 
-    onRolesChanged () {
+    onRolesChanged() {
+        return Q(this._onRolesChanged());
+    }
+
+    sendUpdateAndSave () {
         // This should be called when the room layout changes in a way that
         // effects the datamodel (eg, created role). Changes about clients
         // moving around should call sendUpdateMsg
