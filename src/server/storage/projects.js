@@ -254,10 +254,7 @@
             this._logger.trace(`saving project ${this.owner}/${this.name}`);
             return this.collectSaveableRoles()
                 .then(roles => {
-                    if (this.isDeleted()) {
-                        this._logger.trace(`project has been deleted while saving: ${this.uuid()}`);
-                        return;
-                    }
+                    if (this.isDeleted()) return;
                     const roleNames = roles.map(role => role.ProjectName);
                     this._logger.trace(`updated roles are ${roleNames.join(',')}`);
                     roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
@@ -276,10 +273,7 @@
                             query.$set.name = this._room.name;
                             return this.getRawProject()
                                 .then(project => {
-                                    if (this.isDeleted()) {
-                                        this._logger.trace(`project has been deleted while saving: ${this.uuid()}`);
-                                        return;
-                                    }
+                                    if (this.isDeleted()) return;
 
                                     if (!project.transient) {  // create a copy
                                         this._logger.trace(`duplicating project (save as) ${this.name}->${this._room.name}`);
@@ -305,13 +299,14 @@
                     return Q();
                 })
                 .then(() => {
+                    if (this.isDeleted()) return;
+                    this._db.update(this.getStorageId(), query, options);
+                })
+                .then(() => {
                     if (this.isDeleted()) {
                         this._logger.trace(`project has been deleted while saving: ${this.uuid()}`);
                         return;
                     }
-                    this._db.update(this.getStorageId(), query, options);
-                })
-                .then(() => {
                     this._logger.trace(`saved project ${this.owner}/${this.name}`);
                     this.owner = query.$set.owner || this.owner;
                     this.name = query.$set.name || this.name;
