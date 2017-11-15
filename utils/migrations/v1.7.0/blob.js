@@ -19,7 +19,11 @@ if (process.argv.length < 3) {
 
 let Counts = {};
 Counts.projects = 0;
-Counts.actions = {in: 0, out: 0};
+Counts.actions = {
+    failed: 0,
+    in: 0,
+    out: 0
+};
 let FINISHED = false;
 
 LegacyBlob.configure(process.argv[2]);
@@ -47,8 +51,9 @@ storage.connect()
             if (result) {
                 result = result.catch(err => {
                     console.error(`ERROR: ${err}`);
-                    console.error(`failing action is ${JSON.stringify(err, null, 2)}`);
-                    deferred.reject(err);
+                    console.error(`failing action is ${JSON.stringify(action, null, 2)}`);
+                    Counts.actions.failed++;
+                    //deferred.reject(err);
                 });
                 ops.push(result);
             }
@@ -104,7 +109,7 @@ function updateActionBlob(event, collection) {
 
         // load the event back into the database
         return transform
-            .then(() => data._id && collection.deleteOne({_id: data._id}))
+            .then(() => event._id && collection.deleteOne({_id: event._id}))
             .then(() => UserActions.record(event))
             .then(() => Counts.actions.out++);
     }
@@ -139,6 +144,7 @@ function generateHeapDumpAndStats(){
   //2. Output Heap stats
   let heapUsed = process.memoryUsage().heapUsed;
   console.log(`Completed ${Counts.actions.out} actions. ${Counts.actions.in-Counts.actions.out} pending...`);
+  console.log(`${Counts.actions.failed} failures...`);
   console.log("Program is using " + heapUsed + " bytes of Heap.")
 
   //heapdump.writeSnapshot(`./${Date.now()}.heapsnapshot`);
