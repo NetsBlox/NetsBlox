@@ -152,8 +152,8 @@ describe('projects', function() {
         });
 
         [
-            'save',
             'persist',
+            'unpersist',
             'setPublic',
 
             'setRawRole',
@@ -171,6 +171,17 @@ describe('projects', function() {
                         done();
                     });
             });
+        });
+
+        it('should log on save when deleted but continue', function(done) {
+            let traceFn = project._logger.trace;  // mock this out for the test
+            project._logger.trace = msg => {
+                if (msg.includes('project has been deleted')) {
+                    done();
+                    project._logger.trace = traceFn;
+                }
+            };
+            project.save();
         });
     });
 
