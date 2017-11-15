@@ -84,6 +84,7 @@ BlobStorage.prototype.getRoleUuid = function(role, project) {
 };
 
 BlobStorage.prototype.getActionUuid = function(event) {
+    INDEX++;
     return [
         event.sessionId.replace(/\//g, '@'),
         `${event.action.time}-${INDEX}`
