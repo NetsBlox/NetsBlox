@@ -153,6 +153,7 @@ describe('projects', function() {
 
         [
             'persist',
+            'unpersist',
             'setPublic',
 
             'setRawRole',
