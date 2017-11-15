@@ -101,7 +101,7 @@
         }
 
         setRoles(roles) {
-            if (this.isDeleted()) return Promise.reject(`cannot call setRoles: project has been deleted!`);
+            if (this.isDeleted()) return Promise.reject('cannot call setRoles: project has been deleted!');
             if (!roles.length) return Q();
 
             const query = {$set: {}};
@@ -255,7 +255,7 @@
             return this.collectSaveableRoles()
                 .then(roles => {
                     if (this.isDeleted()) {
-                        this._logger.trace(`project has been deleted while saving: ${this.uuid()}`)
+                        this._logger.trace(`project has been deleted while saving: ${this.uuid()}`);
                         return;
                     }
                     const roleNames = roles.map(role => role.ProjectName);
@@ -277,7 +277,7 @@
                             return this.getRawProject()
                                 .then(project => {
                                     if (this.isDeleted()) {
-                                        this._logger.trace(`project has been deleted while saving: ${this.uuid()}`)
+                                        this._logger.trace(`project has been deleted while saving: ${this.uuid()}`);
                                         return;
                                     }
 
@@ -306,7 +306,7 @@
                 })
                 .then(() => {
                     if (this.isDeleted()) {
-                        this._logger.trace(`project has been deleted while saving: ${this.uuid()}`)
+                        this._logger.trace(`project has been deleted while saving: ${this.uuid()}`);
                         return;
                     }
                     this._db.update(this.getStorageId(), query, options);
