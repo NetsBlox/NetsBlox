@@ -74,6 +74,7 @@
     "rimraf": "^2.4.3",
     "socket.io": "^1.3.5",
     "sphericalmercator": "^1.0.5",
+    "tar": "^4.0.2",
     "temp-units-conv": "^0.1.1",
     "turf": "^3.0.14",
     "urlencode": "^1.1.0",
