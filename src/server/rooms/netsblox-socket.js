@@ -334,11 +334,8 @@ class NetsBloxSocket {
         dstId = dstId + ''; // make sure dstId is string
         dstId = dstId.replace(/^\s*/, '').replace(/\s*$/, '');
         msg.dstId = dstId;
-        if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
-            this._room.hasRole(dstId)) {  // local message
-
-            dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
-        } else if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
+        let room = this._room;
+        if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
             // Look up the socket matching
             //
             //     <role>@<project>@<owner> or <project>@<owner>
@@ -365,8 +362,27 @@ class NetsBloxSocket {
                             msg.dstId = Constants.EVERYONE;
                             socket.send(msg);
                         });
+
+                        // record message (including successful delivery)
+                        msg.dstId = dstId;
+                        msg.delivered = sockets.length > 0;
+                        Messages.save(msg);
                     }
                 });
+        } else if (room) {
+            msg.delivered = false;
+            if (dstId === 'others in room') {
+                this.sendToOthers(msg);
+                msg.delivered = room.sockets().length > 1;
+            } else if (dstId === Constants.EVERYONE) {
+                this.sendToEveryone(msg);
+                msg.delivered = room.sockets().length > 1;
+            } else if (room.hasRole(dstId)) {
+                let sockets = room.getSocketsAt(dstId);
+                sockets.forEach(socket => socket.send(msg));
+                msg.delivered = sockets.length > 0;
+            }
+            Messages.save(msg);
         }
     }
 }
