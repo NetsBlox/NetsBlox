@@ -261,7 +261,11 @@ RPCInputSlotMorph.prototype.methodSignature = function () {
     rpc = this.getRPCName();
     if (rpc) {
         // stores information on a specific service's rpcs
-        this.fieldsFor = JSON.parse(this.getURL('/rpc/' + rpc));
+        try {
+            this.fieldsFor = JSON.parse(this.getURL('/rpc/' + rpc));
+        } catch (e) {
+            throw new Error('Service "' + rpc + '" is not available');
+        }
 
         actionNames = Object.keys(this.fieldsFor);
         for (var i = actionNames.length; i--;) {
