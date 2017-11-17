@@ -1,7 +1,47 @@
-/* global nop, ScriptsMorph, BlockMorph, InputSlotMorph, StringMorph, Color
+/* global nop, DialogBoxMorph, ScriptsMorph, BlockMorph, InputSlotMorph, StringMorph, Color
    ReporterBlockMorph, CommandBlockMorph, MultiArgMorph, SnapActions, isNil,
    ReporterSlotMorph, RingMorph, SyntaxElementMorph*/
 // Extensions to the Snap blocks
+
+
+// support for help dialogbox on service blocks
+var showHelp = BlockMorph.prototype.showHelp;
+BlockMorph.prototype.showHelp = function() {
+    var isServiceBlock = this.selector === 'getJSFromRPCStruct';
+    if (!isServiceBlock) return showHelp.apply(this, arguments);
+    // else we have a getJSFromRPCStruct block
+    var myself = this,
+        help,
+        block,
+        inputs = this.inputs(),
+        serviceName = inputs[0].evaluate(),
+        methodName = inputs[1].evaluate()[0],
+        metadata = JSON.parse(RPCInputSlotMorph.prototype.getURL.call(this, '/rpc/' + serviceName));
+
+    // build the help message
+    if (serviceName !== '') {
+        // TODO add service description here
+        help = 'available rpcs' + JSON.stringify(Object.keys(metadata));
+        // TODO if a method is selected append rpc specific description
+        if (methodName !== '') {
+            help += ` ${methodName}: ` + JSON.stringify(metadata[methodName]);
+        }
+    } else {
+        help = `Get information from different providers,
+            save information and more. To get more help select one of the services:
+        ` + metadata.slice(0,3).join(', ') + ' ...';
+    }
+    
+    block = this.fullCopy();
+    block.addShadow();
+    new DialogBoxMorph().inform(
+        'Help',
+        help,
+        myself.world(),
+        block.fullImage()
+    );
+};
+
 MultiHintArgMorph.prototype = new MultiArgMorph();
 MultiHintArgMorph.prototype.constructor = MultiHintArgMorph;
 MultiHintArgMorph.uber = MultiArgMorph.prototype;
