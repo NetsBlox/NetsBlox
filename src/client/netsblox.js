@@ -202,15 +202,17 @@ NetsBloxMorph.prototype.openIn = function (world) {
                         function () {
                             //SnapActions.openProject(projectData);
                             // Netsblox addition: start
-                            myself.openRoomString(projectData, true);
+                            var action = myself.openRoomString(projectData, true);
+                            if (action) {
+                                action.accept(function () {
+                                    myself.hasChangedMedia = true;
+                                    myself.shield.destroy();
+                                    myself.shield = null;
+                                    msg.destroy();
+                                    applyFlags(dict);
+                                });
+                            }
                             // Netsblox addition: end
-                            myself.hasChangedMedia = true;
-                        },
-                        function () {
-                            myself.shield.destroy();
-                            myself.shield = null;
-                            msg.destroy();
-                            applyFlags(dict);
                         }
                     ]);
                 },
@@ -297,16 +299,18 @@ NetsBloxMorph.prototype.openIn = function (world) {
                         function () {nop(); }, // yield (bug in Chrome)
                         function () {
                             // Netsblox addition: start
-                            myself.openRoomString(projectData, true);
+                            var action = myself.openRoomString(projectData, true);
+                            if (action) {
+                                action.accept(function () {
+                                    myself.hasChangedMedia = true;
+                                    myself.shield.destroy();
+                                    myself.shield = null;
+                                    myself.sockets.onConnect = onConnect;
+                                    msg.destroy();
+                                    applyFlags(dict);
+                                });
+                            }
                             // Netsblox addition: end
-                            myself.hasChangedMedia = true;
-                        },
-                        function () {
-                            myself.shield.destroy();
-                            myself.shield = null;
-                            myself.sockets.onConnect = onConnect;
-                            msg.destroy();
-                            applyFlags(dict);
                         }
                     ]);
                 }, true);
@@ -1796,7 +1800,7 @@ NetsBloxMorph.prototype.openRoomString = function (str) {
         role.childNamed('media').toString(),
         '</snapdata>'
     ].join('');
-    SnapActions.openProject(projectXml);
+    return SnapActions.openProject(projectXml);
 };
 
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
