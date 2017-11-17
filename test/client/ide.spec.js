@@ -288,7 +288,7 @@ describe('ide', function() {
         });
     });
 
-    describe.only('tools', function() {
+    describe('tools', function() {
         beforeEach(done => driver.reset(done));
 
         it('should be able to run the label block', function(done) {
