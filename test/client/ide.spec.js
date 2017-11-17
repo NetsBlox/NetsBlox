@@ -288,6 +288,48 @@ describe('ide', function() {
         });
     });
 
+    describe.only('tools', function() {
+        beforeEach(done => driver.reset(done));
+
+        it('should be able to run the label block', function(done) {
+            this.timeout(10000);
+            // Import the tools
+            var ide = driver.ide();
+
+            // Click the project menu
+            driver.click(ide.controlBar.projectButton);
+            var dialog = driver.dialog();
+            var importBtn = dialog.children.find(child => child.labelString === 'Import tools');
+
+            driver.click(importBtn);
+            expect(importBtn).to.not.be(undefined);
+
+            // Try to run the "label" block?
+            var runLabel = () => {
+                driver.selectCategory('Custom');
+                var labelBlock = driver.palette().children[0].children
+                    .find(item => item.blockSpec === 'label %txt of size %n')
+
+                if (!labelBlock) return done(`Could not find label block!`);
+
+                driver.click(labelBlock);
+
+                // Wait for some sort of result
+                driver.dialog().destroy();
+                var sprite = driver.ide().sprites.at(1);
+                var startX = sprite.xPosition();
+                driver.waitUntil(
+                    () => driver.dialog() || sprite.xPosition() !== startX,
+                    () => {
+                        if (driver.dialog()) return done('label block failed to execute');
+                        done();
+                    }
+                );
+            };
+            driver.waitUntil(() => driver.dialog(), runLabel, 5000);
+        });
+    });
+
     function getFirstDiffChar (str1, str2) {
         for (var i = 0; i < str1.length; i++) {
             if (str1[i] !== str2[i]) {
