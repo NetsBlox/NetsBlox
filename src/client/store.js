@@ -11,7 +11,7 @@ NetsBloxSerializer.uber = SnapSerializer.prototype;
 SnapSerializer.prototype.thumbnailSize = new Point(640, 480);
 SnapSerializer.prototype.isSavingHistory = true;
 
-NetsBloxSerializer.prototype.app = 'NetsBlox 1.6.3, http://netsblox.org';  // Make this version automatic
+NetsBloxSerializer.prototype.app = 'NetsBlox 1.6.4, http://netsblox.org';  // Make this version automatic
 
 function NetsBloxSerializer() {
     this.init();
