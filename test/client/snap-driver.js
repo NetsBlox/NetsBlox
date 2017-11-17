@@ -85,3 +85,16 @@ SnapDriver.prototype.addBlock = function(spec, position) {
 SnapDriver.prototype.click = function(morph) {
     morph.mouseClickLeft();
 };
+
+SnapDriver.prototype.waitUntil = function(fn, callback, maxWait) {
+    var startTime = Date.now();
+    var check = function() {
+        if (fn() || Date.now()-startTime > maxWait) {
+            callback(fn());
+        } else {
+            setTimeout(check, 25);
+        }
+    };
+    maxWait = maxWait || 2000;
+    check();
+};
