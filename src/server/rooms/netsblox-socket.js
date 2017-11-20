@@ -381,7 +381,6 @@ class NetsBloxSocket {
                     }
                 });
         } else if (room) {
-            msg.delivered = false;
             if (dstId === 'others in room') {
                 msg.recipients = this.sendToOthers(msg);
             } else if (dstId === Constants.EVERYONE) {
