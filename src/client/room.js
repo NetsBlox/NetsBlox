@@ -1211,36 +1211,16 @@ ProjectsMorph.prototype.exitReplayMode = function() {
 };
 
 ProjectsMorph.prototype.enterReplayMode = function() {
+    var ide = this.parentThatIsA(IDE_Morph);
+    var url = ide.resourceURL('socket', 'messages', ide.sockets.uuid);
+    var messages = [];
 
-    // Get the messages
-    // TODO
-    var myRoleId = [
-        this.room.getCurrentRoleName(),
-        this.room.name,
-        this.room.ownerId
-    ].join('@');
-    var messages = [
-        {
-            dstId: 'everyone in room',
-            srcId: myRoleId,
-            time: Date.now()-8000
-        },
-        {
-            dstId: 'everyone in room',
-            srcId: myRoleId,
-            time: Date.now()-6000
-        },
-        {
-            dstId: 'everyone in room',
-            srcId: myRoleId,
-            time: Date.now()-4000
-        },
-        {
-            dstId: 'everyone in room',
-            srcId: myRoleId,
-            time: Date.now()-2000
-        }
-    ];
+    try {
+        messages = JSON.parse(ide.getURL(url));
+    } catch(e) {
+        console.error(e);
+        // TODO: show an error message
+    }
 
     this.replayControls.enable();
     this.replayControls.setMessages(messages);
