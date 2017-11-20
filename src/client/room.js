@@ -2,7 +2,8 @@
  Color, nop, InputFieldMorph, ListMorph, IDE_Morph, TurtleIconMorph,
  TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph, ReporterBlockMorph
  MessageOutputSlotMorph, MessageInputSlotMorph, SymbolMorph, PushButtonMorph, MenuMorph,
- SpeechBubbleMorph, ProjectDialogMorph, HandleMorph, Rectangle, fontHeight, SnapActions*/
+ SpeechBubbleMorph, ProjectDialogMorph, HandleMorph, Rectangle, fontHeight, SnapActions,
+ AlignmentMorph, copy*/
 /* * * * * * * * * RoomMorph * * * * * * * * */
 RoomMorph.prototype = new Morph();
 RoomMorph.prototype.constructor = RoomMorph;
@@ -28,6 +29,10 @@ RoomMorph.isEmptyName = function(name) {
 var white = new Color(224, 224, 224);
 
 function RoomMorph(ide) {
+    this.init(ide);
+}
+
+RoomMorph.prototype.init = function(ide) {
     // Get the users at the room
     this.ide = ide;
 
@@ -38,7 +43,7 @@ function RoomMorph(ide) {
     this.ownerId = null;
     this.collaborators = [];
     this.roomLabel = null;
-    this.init(true);
+    RoomMorph.uber.init.call(this, true);
 
     // Set up the room name
     this._name = localize(RoomMorph.DEFAULT_ROOM);
@@ -89,9 +94,7 @@ function RoomMorph(ide) {
     // Set the initial values
     // Shared messages array for when messages are sent to unoccupied roles
     this.sharedMsgs = [];
-
-    //this.drawNew();
-}
+};
 
 RoomMorph.prototype.getDefaultRoles = function() {
     var roles = {},
@@ -255,8 +258,19 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     SnapActions.isLeader = this.isLeader();
 };
 
+RoomMorph.prototype.fixLayout = function() {
+    console.log('fixing layout...');
+    RoomMorph.uber.fixLayout.call(this);
+};
+
+RoomMorph.prototype.setExtent = function() {
+    console.log('calling setExtent...', arguments);
+    RoomMorph.uber.setExtent.apply(this, arguments);
+};
+
 RoomMorph.prototype.drawNew = function() {
     var oldBound = this.bounds;
+
     this.bounds = new Rectangle(- this.bounds.corner.x * 1.5,  - this.bounds.corner.y * 1.5,  - this.bounds.origin.x,  - this.bounds.origin.y);
     var label,
         padding = 4,
@@ -271,7 +285,7 @@ RoomMorph.prototype.drawNew = function() {
         this.roleLabels[roles[i]].destroy();
         delete this.roleLabels[roles[i]];
     }
-    
+
     this.setPosition(new Point(0, 0));  // Shift the room to the right
     this.image = newCanvas(this.extent());
     // Draw the roles
@@ -748,6 +762,34 @@ RoomMorph.prototype.checkForSharedMsgs = function(role) {
     }
 };
 
+//////////// Network Replay Controls ////////////
+NetworkReplayControls.prototype = Object.create(ReplayControls.prototype);
+NetworkReplayControls.prototype.constructor = NetworkReplayControls;
+NetworkReplayControls.uber = ReplayControls.prototype;
+
+function NetworkReplayControls() {
+    this.init();
+}
+
+NetworkReplayControls.prototype.displayCaption = function() {
+    // TODO: what should captions look like?
+};
+
+NetworkReplayControls.prototype.setMessages = function(messages) {
+    return this.setActions(messages);
+};
+
+NetworkReplayControls.prototype.applyEvent = function(event) {
+    // TODO: animate the message sending
+    console.log('applying', event);
+};
+
+NetworkReplayControls.prototype.getInverseEvent = function(event) {
+    var inverseEvent = copy(event);
+    inverseEvent.isInverse = true;
+    return inverseEvent;
+};
+
 RoleMorph.prototype = new Morph();
 RoleMorph.prototype.constructor = RoleMorph;
 RoleMorph.uber = Morph.prototype;
@@ -817,13 +859,13 @@ RoleMorph.prototype.drawNew = function() {
     } else {
         circleSize = radius * 0.2;
     }
-    
+
     // Draw the role
     cxt.fillStyle = RoleMorph.COLORS[this.index%len].toString();
     cxt.beginPath();
     cxt.arc(center + x - 0.06 * radius, center + y - 0.04 * radius, circleSize, 0, 2 * Math.PI, false);
     cxt.fill();
-    
+
     pos = new Point(x, y).translateBy(this.center());
     this.acceptsDrops = true;
     if (this._label) {
@@ -863,7 +905,7 @@ RoleMorph.prototype.reactToDropOf = function(drop) {
                 break;
             }
         }
-        
+
         if (msgMorph.children[0].text !== '') {  // make sure there is a message type to send...
             shareMsgType(this, msgMorph.children[0].text, msgMorph.msgFields);
         }
@@ -1061,6 +1103,8 @@ EditRoleMorph.prototype.evictUser = function() {
     this.destroy();
 };
 
+// FIXME: rename this morph. It has a really horrible name
+// Should it be merged with the room?
 ProjectsMorph.prototype = new ScrollFrameMorph();
 ProjectsMorph.prototype.constructor = ProjectsMorph;
 ProjectsMorph.uber = ScrollFrameMorph.prototype;
@@ -1081,10 +1125,106 @@ function ProjectsMorph(room, sliderColor) {
         myself.updateRoom();
     };
     this.updateRoom();
-    
+
     // Check for queried shared messages
     this.room.checkForSharedMsgs(this.room.ide.projectName);
+
+    // Replay Controls
+    this.replayControls = new NetworkReplayControls(this);
+    this.add(this.replayControls);
+    this.replayControls.drawNew();
+    this.replayControls.hide();
+    this.updateControlButtons();
 }
+
+ProjectsMorph.prototype.updateControlButtons = function() {
+    var sf = this.parentThatIsA(ScrollFrameMorph);
+
+    if (!sf) {return; }
+
+    if (!sf.toolBar) {
+        sf.toolBar = this.addToggleReplay();
+        sf.add(sf.toolBar);
+    }
+
+    //sf.toolBar.isVisible = !this.replayControls.enabled;
+    sf.toolBar.drawNew();
+    sf.toolBar.changed();
+
+    sf.adjustToolBar();
+};
+
+ProjectsMorph.prototype.addToggleReplay = function() {
+    var myself = this,
+        toolBar = new AlignmentMorph(),
+        shade = (new Color(140, 140, 140));
+
+    // TODO: add "exit replay mode" button
+    // This should be added to the replay control slider
+    toolBar.replayButton = new PushButtonMorph(
+        this,
+        function() {
+            // FIXME: change this when we have an exit button on the replay slider
+            if (this.replayControls.enabled) {
+                myself.exitReplayMode();
+            } else {
+                myself.enterReplayMode();
+            }
+            myself.updateControlButtons();
+        },
+        new SymbolMorph('pointRight', 12)
+    );
+    toolBar.replayButton.alpha = 0.2;
+    toolBar.replayButton.labelShadowColor = shade;
+    toolBar.replayButton.drawNew();
+    toolBar.replayButton.fixLayout();
+    toolBar.add(toolBar.replayButton);
+
+    return toolBar;
+};
+
+ProjectsMorph.prototype.fixLayout = function() {
+    this.replayControls.setWidth(this.width()-40);
+    this.replayControls.setHeight(80);
+    this.replayControls.setCenter(new Point(this.center().x, 0));
+    this.replayControls.setBottom(this.bottom());
+    this.replayControls.fixLayout();
+};
+
+ProjectsMorph.prototype.setExtent = function(point) {
+    ProjectsMorph.uber.setExtent.call(this, point);
+    this.fixLayout();
+};
+
+ProjectsMorph.prototype.exitReplayMode = function() {
+    this.replayControls.disable();
+};
+
+ProjectsMorph.prototype.enterReplayMode = function() {
+
+    // Get the messages
+    // TODO
+    var myRoleId = [
+        this.room.getCurrentRoleName(),
+        this.room.name,
+        this.room.ownerId
+    ].join('@');
+    var messages = [
+        {
+            dstId: 'everyone in room',
+            srcId: myRoleId,
+            time: Date.now()-2000
+        },
+        {
+            dstId: 'everyone in room',
+            srcId: myRoleId,
+            time: Date.now()-1000
+        }
+    ];
+
+    this.replayControls.enable();
+    this.replayControls.setMessages(messages);
+};
 
 ProjectsMorph.prototype.updateRoom = function() {
     // Receive updates about the room from the server
@@ -1100,7 +1240,7 @@ ProjectsMorph.prototype.updateRoom = function() {
 
     // Draw the "new role" button
     if (this.room.isEditable()) {
-        this.addRoleBtn = this._addButton({
+        this.addRoleBtn = this.addButton({
             selector: 'createNewRole',
             icon: 'plus',
             hint: 'Add a role to the room',
@@ -1174,7 +1314,7 @@ ProjectsMorph.prototype.destroy = function() {
     ProjectsMorph.uber.destroy.call(this);
 };
 
-ProjectsMorph.prototype._addButton = function(params) {
+ProjectsMorph.prototype.addButton = function(params) {
     var selector = params.selector,
         icon = params.icon,
         hint = params.hint,

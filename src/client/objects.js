@@ -1809,28 +1809,23 @@ ReplayControls.prototype.update = function() {
             this.actionIndex += dir;
             this.actionTime = originalEvent.time;
             return setTimeout(myself.update.bind(myself), 10);
-
         }
         // Netsblox addition: end
 
         // Apply the given event
         this.isApplyingAction = true;
         action.isReplay = true;
-        SnapActions.applyEvent(action)
-            .accept(function() {
-                myself.actionIndex += dir;
-                myself.actionTime = originalEvent.time;
-                myself.isApplyingAction = false;
+        this.applyEvent(action, function() {
+            myself.actionIndex += dir;
+            myself.actionTime = originalEvent.time;
+            myself.isApplyingAction = false;
 
-                if (myself.isShowingCaptions) {
-                    myself.displayCaption(action, originalEvent);
-                }
+            if (myself.isShowingCaptions) {
+                myself.displayCaption(action, originalEvent);
+            }
 
-                setTimeout(myself.update.bind(myself), 10);
-            })
-            .reject(function() {
-                throw Error('Could not apply event: ' + JSON.stringify(action, null, 2));
-            });
+            setTimeout(myself.update.bind(myself), 10);
+        });
     } else {
         setTimeout(this.update.bind(this), 100);
     }
