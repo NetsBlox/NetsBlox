@@ -345,6 +345,7 @@ class NetsBloxSocket {
         dstId = dstId.replace(/^\s*/, '').replace(/\s*$/, '');
         msg.dstId = dstId;
         let room = this._room;
+        msg.srcProjectId = room.getProjectId();
         if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
             // Look up the socket matching
             //

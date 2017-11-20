@@ -27,6 +27,7 @@ class ActiveRoom {
         // TODO: should I set this everytime?
         this._project = null;
 
+        this._id = null;
         this.uuid = utils.uuid(owner, name);
         this._onRolesChanged = _.debounce(
             this.sendUpdateAndSave.bind(this),
@@ -160,6 +161,7 @@ class ActiveRoom {
     setStorage(store) {
         this._project = store;
         store._room = store._room || this;
+        this._id = store._id;
     }
 
     addCollaborator(username) {
@@ -174,6 +176,10 @@ class ActiveRoom {
     removeCollaborator(username) {
         return this._project.removeCollaborator(username)
             .then(() => this.onRolesChanged());
+    }
+
+    getProjectId() {
+        return this._project && this._project._id;
     }
 
     getProject() {

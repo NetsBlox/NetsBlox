@@ -244,6 +244,10 @@
                     roles.forEach(role => roleDict[role.ProjectName] = role);
                     return this._db.save(data);
                 })
+                .then(result => {
+                    let id = result.ops[0]._id;
+                    this._id = id;
+                })
                 .then(() => this);
         }
 

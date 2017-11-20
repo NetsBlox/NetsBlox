@@ -3,9 +3,16 @@ const Messages = {};
 let logger = null;
 let collection = null;
 
+Messages.MAX_MESSAGE_COUNT = 150;
 Messages.init = (_logger, db) => {
     logger = _logger.fork('messages');
     collection = db.collection('messages');
+};
+
+Messages.get = projectId => {
+    return collection.find({srcProjectId: projectId})
+        .limit(Messages.MAX_MESSAGE_COUNT)
+        .toArray();
 };
 
 Messages.save = message => {

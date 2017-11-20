@@ -39,6 +39,8 @@ var R = require('ramda'),
         'tools.xml'
     ];
 
+const Messages = require('../storage/messages');
+
 // merge netsblox libraries with Snap libraries
 var snapLibRoot = path.join(SNAP_ROOT, 'libraries');
 var snapLibs = fs.readdirSync(snapLibRoot).map(filename => 'libraries/' + filename);
@@ -376,6 +378,29 @@ module.exports = [
 
             return room.getRole(role)
                 .then(content => res.send(content.SourceCode));
+        }
+    },
+    // get recent messages from the given room
+    {
+        Method: 'get',
+        URL: 'socket/messages/:socketId',
+        Handler: function(req, res) {
+            // TODO: get the messages
+            let {socketId} = req.params;
+            let socket = SocketManager.getSocket(socketId);
+            let room = socket.getRawRoom();
+
+            if (!room) {
+                this._logger.error(`Could not find active room for "${username}" - cannot get messages!`);
+                return res.status(500).send('ERROR: room not found');
+            }
+
+            let projectId = room.getProjectId();
+            return Messages.get(projectId)
+                .then(messages => {
+                    this._logger.trace(`Retrieved ${messages.length} network messages for ${projectId}`);
+                    return res.json(messages);
+                });
         }
     },
     // public projects
