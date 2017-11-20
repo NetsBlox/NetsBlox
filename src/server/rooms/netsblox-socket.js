@@ -22,6 +22,7 @@ var counter = 0,
     PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/,
     SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
 
+const Messages = require('../storage/messages');
 const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
 const HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
 
@@ -279,11 +280,11 @@ class NetsBloxSocket {
     }
 
     sendToOthers (msg) {
-        this._room.sendFrom(this, msg);
+        return this._room.sendFrom(this, msg);
     }
 
     sendToEveryone (msg) {
-        this._room.sendToEveryone(msg);
+        return this._room.sendToEveryone(msg);
     }
 
     send (msg) {
@@ -330,6 +331,15 @@ class NetsBloxSocket {
         return deferred.promise;
     }
 
+    getPublicId () {
+        let room = this.getRawRoom();
+        let publicRoleId = null;
+        if (room) {
+            publicRoleId = `${this.roleId}@${room.name}@${room.owner}`;
+        }
+        return publicRoleId;
+    }
+
     sendMessageTo (msg, dstId) {
         dstId = dstId + ''; // make sure dstId is string
         dstId = dstId.replace(/^\s*/, '').replace(/\s*$/, '');
@@ -365,22 +375,21 @@ class NetsBloxSocket {
 
                         // record message (including successful delivery)
                         msg.dstId = dstId;
-                        msg.delivered = sockets.length > 0;
+                        // TODO: get the public id of each socket
+                        msg.recipients = sockets.map(socket => socket.getPublicId());
                         Messages.save(msg);
                     }
                 });
         } else if (room) {
             msg.delivered = false;
             if (dstId === 'others in room') {
-                this.sendToOthers(msg);
-                msg.delivered = room.sockets().length > 1;
+                msg.recipients = this.sendToOthers(msg);
             } else if (dstId === Constants.EVERYONE) {
-                this.sendToEveryone(msg);
-                msg.delivered = room.sockets().length > 1;
+                msg.recipients = this.sendToEveryone(msg);
             } else if (room.hasRole(dstId)) {
                 let sockets = room.getSocketsAt(dstId);
                 sockets.forEach(socket => socket.send(msg));
-                msg.delivered = sockets.length > 0;
+                msg.recipients = sockets.map(socket => socket.getPublicId());
             }
             Messages.save(msg);
         }

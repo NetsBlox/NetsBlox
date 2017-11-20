@@ -242,18 +242,25 @@ class ActiveRoom {
     }
 
     sendFrom (socket, msg) {
-        this.sockets()
-            .filter(s => s !== socket)  // Don't send to origin
-            .forEach(socket => socket.send(msg));
+        let sockets = this.sockets()
+            .filter(s => s !== socket);  // Don't send to origin
+
+        sockets.forEach(socket => socket.send(msg));
+
+        return sockets.map(socket => socket.getPublicId());
     }
 
     // Send to everyone, including the origin socket
     sendToEveryone (msg) {
+        let sockets = this.sockets();
+
         // Set the dstId to CONSTANTS.EVERYONE if not already set
         if (!msg.dstId) {
             msg.dstId = Constants.EVERYONE;
         }
-        this.sockets().forEach(socket => socket.send(msg));
+        sockets.forEach(socket => socket.send(msg));
+
+        return sockets.map(socket => socket.getPublicId());
     }
 
     sockets () {
