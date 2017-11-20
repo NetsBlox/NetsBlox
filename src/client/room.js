@@ -779,9 +779,10 @@ NetworkReplayControls.prototype.setMessages = function(messages) {
     return this.setActions(messages);
 };
 
-NetworkReplayControls.prototype.applyEvent = function(event) {
+NetworkReplayControls.prototype.applyEvent = function(event, next) {
     // TODO: animate the message sending
     console.log('applying', event);
+    next();
 };
 
 NetworkReplayControls.prototype.getInverseEvent = function(event) {
@@ -1165,7 +1166,7 @@ ProjectsMorph.prototype.addToggleReplay = function() {
         this,
         function() {
             // FIXME: change this when we have an exit button on the replay slider
-            if (this.replayControls.enabled) {
+            if (this.isReplayMode()) {
                 myself.exitReplayMode();
             } else {
                 myself.enterReplayMode();
@@ -1183,6 +1184,11 @@ ProjectsMorph.prototype.addToggleReplay = function() {
     return toolBar;
 };
 
+ProjectsMorph.prototype.animateSendMsg = function(msg) {
+    // TODO: animate the sending of a message
+    // Should this be here or on the room morph?
+};
+
 ProjectsMorph.prototype.fixLayout = function() {
     this.replayControls.setWidth(this.width()-40);
     this.replayControls.setHeight(80);
@@ -1194,6 +1200,10 @@ ProjectsMorph.prototype.fixLayout = function() {
 ProjectsMorph.prototype.setExtent = function(point) {
     ProjectsMorph.uber.setExtent.call(this, point);
     this.fixLayout();
+};
+
+ProjectsMorph.prototype.isReplayMode = function() {
+    return this.replayControls.enabled;
 };
 
 ProjectsMorph.prototype.exitReplayMode = function() {
@@ -1213,12 +1223,22 @@ ProjectsMorph.prototype.enterReplayMode = function() {
         {
             dstId: 'everyone in room',
             srcId: myRoleId,
-            time: Date.now()-2000
+            time: Date.now()-8000
         },
         {
             dstId: 'everyone in room',
             srcId: myRoleId,
-            time: Date.now()-1000
+            time: Date.now()-6000
+        },
+        {
+            dstId: 'everyone in room',
+            srcId: myRoleId,
+            time: Date.now()-4000
+        },
+        {
+            dstId: 'everyone in room',
+            srcId: myRoleId,
+            time: Date.now()-2000
         }
     ];
 
