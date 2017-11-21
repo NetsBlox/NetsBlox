@@ -35,7 +35,7 @@ function RoomMorph(ide) {
 RoomMorph.prototype.init = function(ide) {
     // Get the users at the room
     this.ide = ide;
-
+    this.displayedMsgMorphs = [];
     this.roles = this.getDefaultRoles();
     this.roleLabels = {};
     this.invitations = {};  // open invitations
@@ -313,6 +313,10 @@ RoomMorph.prototype.drawNew = function() {
     this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.15 * radius)));
     this.showCollaborators(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.25 * radius)));
     this.bounds = oldBound;
+
+    this.displayedMsgMorphs.forEach(function(morph) {
+        morph.drawNew();
+    });
 };
 
 RoomMorph.prototype.showOwnerName = function(center) {
@@ -762,6 +766,110 @@ RoomMorph.prototype.checkForSharedMsgs = function(role) {
     }
 };
 
+RoomMorph.prototype.showMessage = function(msg) {
+    // TODO: add acceleration of animations?
+    var myself = this;
+
+    // Clear the last message(s)
+    this.hideSentMsgs();
+
+    // Get the source role
+    var address = msg.srcId.split('@');
+    var relSrcId = address.shift();
+    var projectId = address.join('@');
+
+    // This will have problems if the role name has been changed...
+
+    // Get the target role(s)
+    var relDstIds = msg.recipients
+        .filter(function(id) {  // in the current project
+            var address = id.split('@');
+            var roleId = address.shift();
+            var inCurrentProject = address.join('@') === projectId;
+            var stillExists = !!myself.roles[roleId];
+            return inCurrentProject && stillExists;
+        })
+        .map(function(id) {
+            return id.split('@').shift();
+        });
+
+    // If they are both in the room and they both exist, animate the message
+    if (!!this.roles[relSrcId]) {
+        relDstIds.forEach(function(dstId) {
+            myself.showSentMsg(msg, relSrcId, dstId);
+        });
+    }
+};
+
+RoomMorph.prototype.showSentMsg = function(msg, srcId, dstId) {
+    var srcPoint = this.roleLabels[srcId]._label.center();
+    var dstPoint = this.roleLabels[dstId]._label.center();
+    var relEndpoint = dstPoint.subtract(srcPoint);
+    var msgMorph = new SentMessageMorph(msg, relEndpoint);
+
+    this.add(msgMorph);
+    msgMorph.setPosition(srcPoint.min(dstPoint));
+    msgMorph.drawNew();
+
+    this.displayedMsgMorphs.push(msgMorph);
+};
+
+RoomMorph.prototype.hideSentMsgs = function() {
+    this.displayedMsgMorphs.forEach(function(msgMorph) {
+        msgMorph.destroy();
+    });
+    this.displayedMsgs = [];
+};
+
+//////////// SentMessageMorph ////////////
+// Should:
+//  - draw an arrow from the source to the destination
+//  - not be draggable
+SentMessageMorph.prototype = new Morph();
+SentMessageMorph.prototype.constructor = SentMessageMorph;
+SentMessageMorph.uber = Morph.prototype;
+
+function SentMessageMorph(msg, endpoint) {
+    this.init(msg, endpoint);
+}
+
+SentMessageMorph.prototype.init = function(msg, endpoint) {
+    this.message = msg;
+    this.padding = 10;
+    var size = endpoint.abs().add(2*this.padding);
+    this.endpoint = endpoint;
+    SentMessageMorph.uber.init.call(this);
+    this.silentSetExtent(size);
+};
+
+SentMessageMorph.prototype.drawNew = function() {
+    this.image = newCanvas(this.extent());
+    var context = this.image.getContext('2d'),
+        isRight = this.endpoint.x > 0,
+        isDownwards = this.endpoint.y > 0,
+        startX = isRight ? 0 : -this.endpoint.x,
+        startY = isDownwards ? 0 : -this.endpoint.y,
+        start = new Point(startX, startY);
+
+    // Get the startpoint (depends on the sign of the x,y values)
+    start.add(this.padding);
+
+    // Draw a line from the current position to the endpoint
+    context.strokeStyle = '#000000';
+    context.lineWidth = 7;
+    context.beginPath();
+
+    // TODO: change this to an arc
+    context.setLineDash([10, 10]);
+    context.moveTo(start.x, start.y);
+    context.lineTo(start.x + this.endpoint.x, start.y + this.endpoint.y);
+
+    console.log('drawing line from (' + startX + ',' + startY + ') to (' +
+        this.endpoint.x + ', ' + this.endpoint.y + ')');
+    console.log('size is', this.extent());
+    context.stroke();
+};
+
 //////////// Network Replay Controls ////////////
 NetworkReplayControls.prototype = Object.create(ReplayControls.prototype);
 NetworkReplayControls.prototype.constructor = NetworkReplayControls;
@@ -771,7 +879,7 @@ function NetworkReplayControls() {
     this.init();
 }
 
-NetworkReplayControls.prototype.displayCaption = function() {
+NetworkReplayControls.prototype.displayCaption = function(event) {
     // TODO: what should captions look like?
 };
 
@@ -780,8 +888,11 @@ NetworkReplayControls.prototype.setMessages = function(messages) {
 };
 
 NetworkReplayControls.prototype.applyEvent = function(event, next) {
+    var ide = this.parentThatIsA(IDE_Morph);
+    var room = ide.room;
+
     // TODO: animate the message sending
-    console.log('applying', event);
+    room.showMessage(event);
     next();
 };
 
@@ -1217,13 +1328,12 @@ ProjectsMorph.prototype.enterReplayMode = function() {
 
     try {
         messages = JSON.parse(ide.getURL(url));
+        this.replayControls.enable();
+        this.replayControls.setMessages(messages);
     } catch(e) {
         console.error(e);
         // TODO: show an error message
     }
-
-    this.replayControls.enable();
-    this.replayControls.setMessages(messages);
 };
 
 ProjectsMorph.prototype.updateRoom = function() {
