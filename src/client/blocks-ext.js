@@ -20,12 +20,16 @@ BlockMorph.prototype.showHelp = function() {
 
     // build the help message
     if (serviceName !== '') {
-        // TODO add service description here
-        help = 'available rpcs' + JSON.stringify(Object.keys(metadata));
-        // TODO if a method is selected append rpc specific description
+        // service description will go here
+        // if a method is selected append rpc specific description
         if (methodName !== '') {
-            help += ` ${methodName}: ` + JSON.stringify(metadata[methodName]);
+            help = metadata[methodName].description;
+            // check if argument description is availabe
+            metadata[methodName].args.filter(arg => arg.description).forEach(arg => {
+                help += `\n${arg.name}: ${arg.description} ${arg.optional ? '[optional]' : ''}`;
+            });
         }
+        if (!help) help = 'Description not available';
     } else {
         help = `Get information from different providers,
             save information and more. To get more help select one of the services:
