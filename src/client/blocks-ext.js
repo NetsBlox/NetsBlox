@@ -5,10 +5,10 @@
 
 
 // support for help dialogbox on service blocks
-var showHelp = BlockMorph.prototype.showHelp;
+BlockMorph.prototype._showHelp = BlockMorph.prototype.showHelp;
 BlockMorph.prototype.showHelp = function() {
     var isServiceBlock = this.selector === 'getJSFromRPCStruct';
-    if (!isServiceBlock) return showHelp.apply(this, arguments);
+    if (!isServiceBlock) return this._showHelp();
     // else we have a getJSFromRPCStruct block
     var myself = this,
         help,
