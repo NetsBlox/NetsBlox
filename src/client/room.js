@@ -1334,6 +1334,7 @@ ProjectsMorph.prototype.isReplayMode = function() {
 };
 
 ProjectsMorph.prototype.exitReplayMode = function() {
+    this.room.hideSentMsgs();
     this.replayControls.disable();
 };
 
