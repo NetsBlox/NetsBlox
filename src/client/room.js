@@ -1328,6 +1328,10 @@ ProjectsMorph.prototype.enterReplayMode = function() {
 
     try {
         messages = JSON.parse(ide.getURL(url));
+        if (messages.length === 0) {
+            ide.showMessage('No messages to replay', 2);
+            return;
+        }
         this.replayControls.enable();
         this.replayControls.setMessages(messages);
     } catch(e) {
