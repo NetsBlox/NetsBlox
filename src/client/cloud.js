@@ -1,4 +1,4 @@
-/* global localize, SERVER_ADDRESS, nop, IDE_Morph, Cloud, detect, SnapActions, world*/
+/* global localize, SERVER_URL, nop, IDE_Morph, Cloud, detect, SnapActions, world*/
 NetCloud.prototype = new Cloud();
 
 function NetCloud(url) {
@@ -605,4 +605,4 @@ NetCloud.prototype.saveProjectCopy = function(callBack, errorCall) {
     );
 };
 
-var SnapCloud = new NetCloud(window.location.protocol + '//' + SERVER_ADDRESS+'/api/');
+var SnapCloud = new NetCloud(SERVER_URL + '/api/');

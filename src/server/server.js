@@ -130,7 +130,7 @@ Server.prototype.configureRoutes = function() {
             return;
         }
         
-        var baseUrl = process.env.SERVER_URL || 'https://editor.netsblox.org',
+        var baseUrl = process.env.SERVER_URL,
             url = baseUrl + req.originalUrl,
             projectName = req.query.ProjectName,
             metaInfo = {

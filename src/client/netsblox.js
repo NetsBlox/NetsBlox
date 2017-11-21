@@ -9,7 +9,6 @@
    BlockLabelPlaceHolderMorph, TableMorph, contains, newCanvas*/
 // Netsblox IDE (subclass of IDE_Morph)
 
-// TODO move to a better location
 function ensureFullUrl(url) {
     // if it's not a full path attach serverURL to the front
     // regex is checking to see if the protocol is there (eg http://, ws://)
@@ -1685,7 +1684,7 @@ NetsBloxMorph.prototype.requestAndroidApp = function(name) {
         projectXml,
         req,
         params,
-        baseURL = SERVER_URL + '/';
+        baseURL = ensureFullUrl('/');
 
     // FIXME: this baseURL stuff could cause problems
     if (name !== this.projectName) {

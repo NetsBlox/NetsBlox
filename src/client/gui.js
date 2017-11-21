@@ -720,10 +720,10 @@ IDE_Morph.prototype.exportGlobalBlocks = function () {
 };
 
 
-var getURL = IDE_Morph.prototype.getURL;
+IDE_Morph.prototype._getURL = IDE_Morph.prototype.getURL;
 IDE_Morph.prototype.getURL = function (url, callback) {
     url = ensureFullUrl(url);
-    return getURL(url, callback);
+    return this._getURL(url, callback);
 };
 
 IDE_Morph.prototype.rawOpenBlocksString = function (str, name, silently) {
