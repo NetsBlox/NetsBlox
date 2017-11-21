@@ -6,16 +6,24 @@
 //    - they should all be "promisified"
 //  - create should return id (hash - probably sha256)
 
-const Logger = require('../logger'),
+// The blob will have a "backend" such as fs or s3
+// The blob will store data by...
+//   - projects:
+//     - in projects/
+//       - src@role@project@owner.xml
+//       - media@role@project@owner.xml
+//   - user-actions:
+//
+const Logger = require('../../logger'),
     logger = new Logger('netsblox:blob-storage'),
-    hash = require('../../common/sha512').hex_sha512,
+    hash = require('../../../common/sha512').hex_sha512,
     path = require('path'),
     fse = require('fs-extra'),
     fs = require('fs'),
     Q = require('q'),
     exists = require('exists-file'),
     BASE_DIR = process.env.NETSBLOX_BLOB_DIR ||
-        path.join(__dirname, '..', '..', '..', 'blob-storage');
+        path.join(__dirname, '..', '..', '..', '..', 'blob-storage');
 
 var BlobStorage = function() {
     // create the given directory, if needed

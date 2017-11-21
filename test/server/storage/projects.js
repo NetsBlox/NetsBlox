@@ -1,5 +1,6 @@
 describe('projects', function() {
     const utils = require('../../assets/utils');
+    const blob = utils.reqSrc('storage/blob');
     const assert = require('assert');
     const Projects = utils.reqSrc('storage/projects');
     const PublicProjects = utils.reqSrc('storage/public-projects');
@@ -207,5 +208,41 @@ describe('projects', function() {
                 .then(project => assert(project))
                 .nodeify(done);
         });
+    });
+
+    describe('blob data', () => {
+        let project = null;
+        let role = null;
+        before(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(result => {
+                    project = result;
+                    return project.getRoles();
+                })
+                .then(roles => role = roles[0])
+                .nodeify(done);
+        });
+
+        it('should remove the role data on role destroy', done => {
+            project.removeRole(role.ProjectName)
+                .then(() => blob.exists(role, project))
+                .then(exists => {
+                    assert(!exists);
+                    done();
+                })
+                .catch(() => done());
+        });
+
+        it('should remove the role data on project destroy', done => {
+            project.destroy()
+                .then(() => blob.exists(role, project))
+                .then(exists => {
+                    assert(!exists);
+                    done();
+                })
+                .catch(() => done());
+        });
+
     });
 });
