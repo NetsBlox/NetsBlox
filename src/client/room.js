@@ -808,7 +808,7 @@ RoomMorph.prototype.showSentMsg = function(msg, srcId, dstId) {
     var msgMorph = new SentMessageMorph(msg, relEndpoint);
 
     this.add(msgMorph);
-    msgMorph.setPosition(srcPoint.min(dstPoint));
+    msgMorph.setPosition(srcPoint.min(dstPoint).subtract(msgMorph.padding));
     msgMorph.drawNew();
 
     this.displayedMsgMorphs.push(msgMorph);
@@ -849,25 +849,41 @@ SentMessageMorph.prototype.drawNew = function() {
         isDownwards = this.endpoint.y > 0,
         startX = isRight ? 0 : -this.endpoint.x,
         startY = isDownwards ? 0 : -this.endpoint.y,
-        start = new Point(startX, startY);
+        start = new Point(startX, startY),
+        end;
 
     // Get the startpoint (depends on the sign of the x,y values)
-    start.add(this.padding);
+    start = start.add(this.padding);
+    end = start.add(this.endpoint);
 
     // Draw a line from the current position to the endpoint
     context.strokeStyle = '#000000';
-    context.lineWidth = 7;
-    context.beginPath();
+    context.lineWidth = 3;
 
-    // TODO: change this to an arc
+    context.beginPath();
     context.setLineDash([10, 10]);
     context.moveTo(start.x, start.y);
-    context.lineTo(start.x + this.endpoint.x, start.y + this.endpoint.y);
-
-    console.log('drawing line from (' + startX + ',' + startY + ') to (' +
-        this.endpoint.x + ', ' + this.endpoint.y + ')');
-    console.log('size is', this.extent());
+    context.lineTo(end.x, end.y);
     context.stroke();
+
+    context.beginPath();
+    context.setLineDash([]);
+
+    // Draw an arrow at the end
+    var da = Math.PI/6,
+        angle = Math.atan2(this.endpoint.y, this.endpoint.x) + Math.PI,
+        size = 10,
+        relLeftPoint = new Point(Math.cos(angle-da), Math.sin(angle-da)).multiplyBy(size),
+        relRightPoint = new Point(Math.cos(angle+da), Math.sin(angle+da)).multiplyBy(size),
+        leftPoint = end.add(relLeftPoint),
+        rightPoint = end.add(relRightPoint);
+
+    context.moveTo(end.x, end.y);
+    context.lineTo(leftPoint.x, leftPoint.y);
+    context.lineTo(rightPoint.x, rightPoint.y);
+    context.lineTo(end.x, end.y);
+    context.stroke();
+    context.fill();
 };
 
 //////////// Network Replay Controls ////////////
