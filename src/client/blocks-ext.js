@@ -24,16 +24,20 @@ BlockMorph.prototype.showHelp = function() {
         // if a method is selected append rpc specific description
         if (methodName !== '') {
             help = metadata[methodName].description;
-            // check if argument description is availabe
-            metadata[methodName].args.filter(arg => arg.description).forEach(arg => {
-                help += `\n${arg.name}: ${arg.description} ${arg.optional ? '[optional]' : ''}`;
-            });
+            // add argument descriptions, if available
+            var args = metadata[methodName].args;
+            for (var i = 0; i < args.length; i++) {
+                var arg = args[i];
+                if (arg.description) {
+                    var optionalStr = arg.optional ? '[optional]' : '';
+                    help += '\n' + arg.name + ': ' + arg.description + ' ' + optionalStr;
+                }
+            }
         }
         if (!help) help = 'Description not available';
     } else {
-        help = `Get information from different providers,
-            save information and more. To get more help select one of the services:
-        ` + metadata.slice(0,3).join(', ') + ' ...';
+        help = 'Get information from different providers, save information and more. \nTo get more help select one of the services:'
+            + metadata.slice(0,3).join(', ') + ' ...';
     }
     
     block = this.fullCopy();
