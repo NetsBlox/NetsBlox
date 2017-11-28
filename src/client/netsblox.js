@@ -1235,7 +1235,9 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
             safeName = myself.newSpriteName(newName, myself.currentSprite);
 
         if (safeName !== currentName) {
-            SnapActions.renameSprite(myself.currentSprite, safeName);
+            return SnapActions.renameSprite(myself.currentSprite, safeName);
+        } else {
+            nameField.setContents(safeName);
         }
     };
     this.spriteBar.nameField = nameField;
