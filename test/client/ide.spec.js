@@ -114,8 +114,10 @@ describe('ide', function() {
                 try {
                     expect(spriteIds.length).to.be(2);
                     expect(spriteIds[0]).to.not.be(spriteIds[1]);
+                    ide.setLanguage('en');
                     done();
                 } catch (e) {
+                    ide.setLanguage('en');
                     done(e);
                 }
             };
