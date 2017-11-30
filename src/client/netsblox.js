@@ -6,7 +6,7 @@
    ScrollFrameMorph, SnapUndo, LibraryImportDialogMorph, CollaboratorDialogMorph,
    SnapSerializer, isRetinaSupported, isRetinaEnabled, useBlurredShadows,
    BlockMorph, SyntaxElementMorph, ScriptsMorph, InputSlotDialogMorph, ArgMorph,
-   BlockLabelPlaceHolderMorph, TableMorph, contains*/
+   BlockLabelPlaceHolderMorph, TableMorph, contains, newCanvas*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -877,7 +877,7 @@ NetsBloxMorph.prototype.settingsMenu = function () {
                 if (myself.isPreviousVersion()) {
                     myself.confirm(
                         'Exiting replay mode now will revert the project to\n' +
-                        'the current point in history (losing any unapplied ' + 
+                        'the current point in history (losing any unapplied ' +
                         'changes)\n\nAre you sure you want to exit replay mode?',
                         'Exit Replay Mode?',
                         function () {
@@ -1852,7 +1852,7 @@ NetsBloxMorph.prototype.saveRoomLocal = function (str) {
     if (Process.prototype.isCatchingErrors) {
         try {
             localStorage['-snap-project-' + name] = str;
-        
+
             this.setURL('#open:' + str);
             this.showMessage('Saved to the browser.', 1);
         } catch (err) {
@@ -2205,7 +2205,7 @@ NetsBloxMorph.prototype.aboutNetsBlox = function () {
         + 'NetsBlox extends Snap!, from the University of California, Berkeley and \n'
         + 'is influenced and inspired by Scratch, from the Lifelong Kindergarten\n'
         + 'group at the MIT Media Lab\n\n'
-        
+
         + 'for more information see https://netsblox.org,\nhttp://snap.berkeley.edu '
         + 'and http://scratch.mit.edu';
 
@@ -2271,7 +2271,7 @@ NetsBloxMorph.prototype.reportBug = function () {
 
 NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     var myself = this,
-        canvas = document.getElementsByTagName('canvas')[0],
+        canvas = this.world().worldCanvas,
         silent = !!error,
         version,
         report = {};
@@ -2287,7 +2287,7 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     report.version = version;
 
     // Add screenshot
-    report.screenshot = canvas.toDataURL();
+    report.screenshot = canvas.toDataURL('image/png');
 
     // Add project state
     report.project = this.serializer.serialize(this.stage);
@@ -2330,6 +2330,39 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     request.send(JSON.stringify(report));
 };
 
+NetsBloxMorph.prototype.showBugReportScreenshot = function (report) {
+    var myself = this,
+        pic = new Image();
+
+    pic.onload = function () {
+        var maxSize = myself.extent().divideBy(1.50),
+            ratio = Math.min(maxSize.x/pic.width, maxSize.y/pic.height),
+            scaledSize = new Point(pic.width, pic.height).multiplyBy(ratio),
+            screenshot = newCanvas(scaledSize),
+            context = screenshot.getContext('2d');
+
+        context.drawImage(
+            pic,
+            0,
+            0,
+            pic.width,
+            pic.height,
+            0,
+            0,
+            scaledSize.x,
+            scaledSize.y
+        );
+        new DialogBoxMorph().inform(
+            'Screenshot',
+            null,
+            myself.world(),
+            screenshot
+        );
+    };
+    pic.src = report.screenshot;
+    return;
+};
+
 NetsBloxMorph.prototype.loadBugReport = function () {
     var myself = this,
         inp = document.createElement('input');
@@ -2362,6 +2395,10 @@ NetsBloxMorph.prototype.loadBugReport = function () {
                     date,
                     msg,
                     choices = {};
+
+                choices['Show Screenshot'] = function() {
+                    myself.showBugReportScreenshot(report);
+                };
 
                 choices['Replay All Events'] = function() {
                     // Replay from 'allEvents'
@@ -2422,6 +2459,7 @@ NetsBloxMorph.prototype.loadBugReport = function () {
                 ].join('\n');
 
                 choices['Cancel'] = 'cancel';
+
                 dialog.ask(
                     localize('Bug Report'),
                     msg,
@@ -2518,7 +2556,7 @@ NetsBloxMorph.prototype.collabResponse = function (id, response) {
 
     SnapCloud.collabResponse(
         id,
-        response, 
+        response,
         function() {
             myself.showMessage('Added to the project!', 2);
         },
