@@ -65,7 +65,6 @@ SnapActions.isCollaborating = function() {
 
 // Recording user actions
 SnapActions.send = function(event) {
-    var canSend = this._ws && this._ws.readyState === WebSocket.OPEN;
     // Netsblox addition: start
     var socket = this.ide().sockets;
 
@@ -74,9 +73,9 @@ SnapActions.send = function(event) {
     // Netsblox addition: end
     event.id = event.id || this.lastSeen + 1;
     this.lastSent = event.id;
-    if (this.isCollaborating() && event.type !== 'openProject' && canSend) {
+    if (event.type !== 'openProject') {
         // Netsblox addition: start
-        this._ws.send(JSON.stringify({
+        socket.send(JSON.stringify({
             type: 'user-action',
             action: event
         }));
