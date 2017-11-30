@@ -57,7 +57,7 @@
         return group.create();
     };
 
-    GroupStore.get = function(name) {
+    GroupStore.findOne = function(name) {
         logger.trace(`getting ${name}`);
         return collection.findOne({name})
             .then(data => {
@@ -65,6 +65,17 @@
                     return new Group(data);
                 }
                 return null;
+            });
+    };
+
+    GroupStore.get = function(name) {
+        logger.trace(`getting ${name}`);
+        return collection.findOne({name})
+            .then(data => {
+                if (data) {
+                    return new Group(data);
+                }
+                throw new Error('group not found');
             });
     };
 
