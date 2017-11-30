@@ -1,6 +1,7 @@
 // Dictionary of all middleware functions for netsblox routes.
 var server,
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
+    Groups = require('../storage/groups'),
     COOKIE_ID = 'netsblox-cookie',
     jwt = require('jsonwebtoken'),
     SocketManager = require('../socket-manager'),
@@ -135,6 +136,25 @@ var setUser = function(req, res, next) {
     });
 };
 
+// check group write access
+let isGroupOwner = function(req, res, next) {
+    let groupName = req.params.name;
+    Groups.get(groupName)
+        .then( group => {
+            let owner = group.getOwner();
+            if (owner === req.session.username) {
+                next();
+            } else {
+                res.status(401).send('Unauthorized write attempt');
+            }
+        })
+        .catch(err => {
+            logger.error(err);
+            res.status(404).send(`Group not found: ${groupName}`);
+        });
+};
+
+
 var setUsername = function(req, res, cb) {
     return tryLogIn(req, res, cb, true);
 };
@@ -148,6 +168,7 @@ module.exports = {
     loadUser,
     setUser,
     setUsername,
+    isGroupOwner,
 
     // additional
     init: _server => {
