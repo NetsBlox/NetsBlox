@@ -24,7 +24,27 @@ describe('groups', function() {
         const name = 'my-old-group';
         Groups.new(name)
             .then(() => Groups.remove(name))
-            .then(() => Groups.get(name))
+            .then(() => Groups.findOne(name))
+            .then(found => {
+                assert(!found);
+                done();
+            })
+            .catch(done);
+    });
+    
+    it('should throw when finding non-existing groups', function(done) {
+        const name = 'non-existing';
+        Groups.get(name)
+            .catch(err => {
+                assert(err.message === 'group not found');
+                done();
+            });
+    });
+
+
+    it('should return null when finding non-existing groups', function(done) {
+        const name = 'non-existing';
+        Groups.findOne(name)
             .then(found => {
                 assert(!found);
                 done();
