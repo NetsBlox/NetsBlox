@@ -17,6 +17,11 @@
                 .then(() => user.setGroupId(this.name));
         }
 
+        // returns the group owner
+        getOwner() {
+            return this.owner;
+        }
+
         removeMember (user) {
             const op = {$pull: {members: user.username}};
             return this._db.update(this.getStorageId(), op)
@@ -34,8 +39,9 @@
         create () {
             return this._db.save({
                 name: this.name,
+                owner: this.owner,
                 members: []
-            }).then(() => this);
+            });
         }
 
         getStorageId () {
@@ -48,10 +54,13 @@
         collection = db.collection('groups');
     };
 
-    GroupStore.new = function(name) {
+    // in: groupName and owner's username
+    GroupStore.new = function(name, ownerName) {
         logger.trace(`creating new group: ${name}`);
+        // TODO ensure unique groupname
         let group = new Group({
             name: name,
+            owner: ownerName,
             members: []
         });
         return group.create();
