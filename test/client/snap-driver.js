@@ -83,7 +83,35 @@ SnapDriver.prototype.addBlock = function(spec, position) {
 
 // morphic interactions
 SnapDriver.prototype.click = function(morph) {
-    morph.mouseClickLeft();
+    let hand = this.world().hand;
+    hand.setPosition(morph.center());
+    hand.processMouseDown({button: 1});
+    hand.processMouseUp();
+};
+
+SnapDriver.prototype.rightClick = function(morph) {
+    let hand = this.world().hand;
+    hand.setPosition(morph.center());
+    hand.processMouseDown({button: 2});
+    hand.processMouseUp();
+};
+
+SnapDriver.prototype.mouseDown = function(position) {
+    let hand = this.world().hand;
+    hand.setPosition(position);
+    hand.processMouseDown({button: 1});
+};
+
+SnapDriver.prototype.mouseUp = function(position) {
+    let hand = this.world().hand;
+    hand.setPosition(position);
+    hand.processMouseUp();
+};
+
+SnapDriver.prototype.dragAndDrop = function(srcMorph, position) {
+    this.mouseDown(srcMorph.center());
+    this.world().hand.grab(srcMorph);
+    this.mouseUp(position);
 };
 
 SnapDriver.prototype.waitUntil = function(fn, callback, maxWait) {
