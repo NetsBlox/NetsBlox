@@ -42,11 +42,11 @@ var serialize = function(service) {
 var serializeRole = (role, project) => {
     const owner = encodeURIComponent(project.owner);
     const name = encodeURIComponent(project.name);
-    const src = role.SourceCode ? 
+    const src = role.SourceCode ?
         `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
     return `RoomName=${name}&Owner=${owner}&` +
-        serialize(R.omit(['SourceCode', 'Media'], role)) + 
+        serialize(R.omit(['SourceCode', 'Media'], role)) +
         `&SourceCode=${src}`;
 };
 
@@ -89,7 +89,7 @@ var extractRpcs = function(projectXml){
         foundRpcs.forEach(txt=>{
             let match = txt.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/);
             services.push(match[1]);
-        });                
+        });
     }
     return services;
 };
@@ -126,6 +126,14 @@ var getEmptyRole = function(name) {
         Media: '',
         MediaSize: 0
     };
+};
+
+var parseActionId = function(src) {
+    const startString = 'collabStartIndex="';
+    const startIndex = src.indexOf(startString);
+    const offset = startIndex + startString.length+1;
+    const endIndex = src.substring(offset).indexOf('"') + offset;
+    return +src.substring(offset-1, endIndex) || 0;
 };
 
 var parseField = function(src, field) {
@@ -215,9 +223,10 @@ module.exports = {
     xml: {
         thumbnail: src => parseField(src, 'thumbnail'),
         notes: src => parseField(src, 'notes'),
+        actionId: parseActionId,
         format: SnapXml.format
     },
     getEmptyRole,
     getArgumentsFor,
-    APP 
+    APP
 };
