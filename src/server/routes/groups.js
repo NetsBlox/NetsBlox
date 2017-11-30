@@ -2,21 +2,22 @@
 'use strict';
 
 const Logger = require('../logger'),
-    middleware = require('./middleware'),
     logger = new Logger('netsblox:api:Groups'),
     // Storage = require('../src/server/storage/storage'),
     // storage = new Storage(logger),
     Users = require('../storage/users'),
     Groups = require('../storage/groups');
 
+// assuming group names are unique (id)
 // TODO check if user has access to the group
+// TODO group-user association as admin or teacher
 
 module.exports = [
     {
         URL: 'groups',
         Method: 'GET',
         middleware: ['isLoggedIn'],
-        Handler: function(req, res) {
+        Handler: function(req) {
             // gets a list of groups
             logger.trace('About to print all groups');
             return Groups.all();
@@ -26,7 +27,7 @@ module.exports = [
         URL: 'groups/:name',
         Method: 'GET',
         middleware: ['isLoggedIn'],
-        Handler: function(req, res) {
+        Handler: function(req) {
             // a specific group's details: (which only include members)
             let groupName = req.params.name;
             return Groups.get(groupName).then( group => {
@@ -38,31 +39,24 @@ module.exports = [
         URL: 'groups',
         Method: 'POST',
         middleware: ['isLoggedIn'],
-        Handler: function(req, res) {
+        Handler: function(req) {
             // create a new group
-            let groupName = req.query.name;
-            logger.info('removing group', groupName);
-            return Groups.new(groupName);
+            // console.log(req);
+            let groupName = req.body.name;
+            let owner = req.session.username;
+            logger.info('creating group', groupName, 'with owner', owner);
+            return Groups.new(groupName, owner);
         }
     },
     {
-        URL: 'groups/:name',
-        Method: 'PUT',
-        middleware: ['isLoggedIn'],
-        Handler: function(req, res) {
-            // update a group (overriding)
-        }
-    },
-    {
-        URL: 'groups/:name',
-        Method: 'PATCH',
-        middleware: ['isLoggedIn'],
-        Handler: function(req, res) {
-            // not that RESTy..
-            // update a add or remove user
-            // TODO add member removal
-            let username = req.query.username,
-                groupName = req.params.query,
+        // TODO add member removal
+        // add new members
+        URL: 'groups/:name/members',
+        Method: 'POST',
+        middleware: ['isLoggedIn', 'isGroupOwner'],
+        Handler: function(req) {
+            let username = req.body.username,
+                groupName = req.params.name,
                 user;
             return Users.get(username)
                 .then(_user => {
@@ -81,10 +75,10 @@ module.exports = [
     {
         URL: 'groups/:name',
         Method: 'DELETE',
-        middleware: ['isLoggedIn'],
-        Handler: function(req, res) {
+        middleware: ['isLoggedIn', 'isGroupOwner'],
+        Handler: function(req) {
             // delete a group
-            let groupName = req.query.name;
+            let groupName = req.params.name;
             logger.info('removing group', groupName);
             return Groups.remove(groupName);
         }
