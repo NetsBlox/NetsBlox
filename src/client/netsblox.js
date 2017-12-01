@@ -2624,3 +2624,17 @@ NetsBloxMorph.prototype.createCloudAccount = function () {
     );
 };
 
+NetsBloxMorph.prototype.showUpdateNotification = function () {
+    var msgText = 'Newer Version of NetsBlox Available: Please Save and Refresh';
+    var notification = new MenuMorph(null, msgText);
+    var world = this.world();
+
+    notification.drawNew();
+
+    var point = this.spriteBar.center()
+        .subtract(new Point(notification.width()/2, notification.height()/2));
+    notification.setPosition(point);
+    notification.addShadow(new Point(2, 2), 80);
+
+    world.add(notification);
+};

@@ -22,9 +22,8 @@ var WebSocketManager = function (ide) {
 };
 
 WebSocketManager.MessageHandlers = {
-    'new-version-available': function(msg) {
-        console.log('new version available:', msg.version);
-        // TODO: Show the user that he/she should update
+    'new-version-available': function() {
+        this.ide.showUpdateNotification();
     },
 
     // Receive an assigned uuid
