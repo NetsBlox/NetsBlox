@@ -228,5 +228,6 @@ module.exports = {
     },
     getEmptyRole,
     getArgumentsFor,
-    APP
+    APP,
+    version
 };
