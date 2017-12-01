@@ -470,7 +470,7 @@ ProjectDialogMorph.prototype.setSource = function (source) {
                 myself.nameField.setContents(item.name || '');
             }
             src = myself.ide.getURL(
-                '/api/Examples/' + item.name + '?&preview=true'
+                'api/Examples/' + item.name + '?&preview=true'
             );
 
             xml = myself.ide.serializer.parse(src);
@@ -508,7 +508,7 @@ ProjectDialogMorph.prototype.openProject = function () {
 
     if (this.source === 'examples') {
         this.destroy();
-        response = this.ide.getURL('/api/Examples/' + proj.name);
+        response = this.ide.getURL('api/Examples/' + proj.name);
         this.ide.droppedText(response);
         // role name
         this.ide.updateUrlQueryString(proj.name, false, true);
