@@ -133,22 +133,23 @@ class NetsBloxSocket {
             return;
         }
 
-        const sockets = this._room.getSocketsAt(this.roleId);
-        if (sockets.length <= 1) {
-            this._logger.warn(`Socket incorrectly thinks it is collaborating... ${this.uuid}`);
-            return this._room.sendUpdateMsg();
-        }
+        // accept the event here and broadcast to everyone
+        return this.canApplyAction(msg.action)
+            .then(canApply => {
+                const sockets = this._room.getSocketsAt(this.roleId);
+                if (canApply) {
+                    if (sockets.length > 1) {
+                        sockets.forEach(socket => socket.send(msg));
+                    }
+                    return this._room.setRoleActionId(this.roleId, msg.action.id);
+                }
+            });
+    }
 
-        // send the message to leader if the user is the leader.
-        // ow, send it to everyone else
-        const isLeader = sockets.indexOf(this) === 0;
-        if (isLeader) {
-            for (var i = 1; i < sockets.length; i++) {
-                sockets[i].send(msg);
-            }
-        } else {
-            sockets[0].send(msg);
-        }
+    canApplyAction(action) {
+        const startRole = this.roleId;
+        return this._room.getRoleActionId(this.roleId)
+            .then(actionId => actionId < action.id && this.roleId === startRole);
     }
 
     _initialize () {

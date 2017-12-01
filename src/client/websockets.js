@@ -249,15 +249,19 @@ WebSocketManager.prototype._connectWebSocket = function() {
     };
 };
 
-WebSocketManager.prototype.sendMessage = function(message) {
+WebSocketManager.prototype.send = function(message) {
     var state = this.websocket.readyState;
-    message.namespace = 'netsblox';
-    message = this.serializeMessage(message);
     if (state === this.websocket.OPEN) {
         this.websocket.send(message);
     } else {
         this.messages.push(message);
     }
+};
+
+WebSocketManager.prototype.sendMessage = function(message) {
+    message.namespace = 'netsblox';
+    message = this.serializeMessage(message);
+    this.send(message);
 };
 
 WebSocketManager.prototype.serializeMessage = function(message) {

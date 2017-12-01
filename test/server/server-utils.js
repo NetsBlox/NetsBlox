@@ -34,4 +34,11 @@ describe('server-utils', function() {
             });
         });
     });
+
+    describe('xml', function() {
+        it('should be able to parse action id', function () {
+            const test = '<project collabStartIndex="10">';
+            assert.equal(utils.xml.actionId(test), 10);
+        });
+    });
 });
