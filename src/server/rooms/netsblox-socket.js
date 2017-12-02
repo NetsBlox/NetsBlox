@@ -379,6 +379,16 @@ NetsBloxSocket.prototype.CLOSING = 2;
 NetsBloxSocket.prototype.CLOSED = 3;
 
 NetsBloxSocket.MessageHandlers = {
+    'report-version': function(msg) {
+        // Check if the client is out-of-date
+        if (msg.version !== Utils.version) {
+            this.send({
+                type: 'new-version-available',
+                version: Utils.version
+            });
+        }
+    },
+
     'set-uuid': function(msg) {
         this.uuid = msg.body;
         this.username = this.username || this.uuid;

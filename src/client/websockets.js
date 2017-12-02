@@ -22,6 +22,10 @@ var WebSocketManager = function (ide) {
 };
 
 WebSocketManager.MessageHandlers = {
+    'new-version-available': function() {
+        this.ide.showUpdateNotification();
+    },
+
     // Receive an assigned uuid
     'uuid': function(msg) {
         this.uuid = msg.body;
@@ -328,6 +332,16 @@ WebSocketManager.prototype.onConnect = function() {
     while (this.messages.length) {
         this.websocket.send(this.messages.shift());
     }
+
+    this.reportClientVersion();
+};
+
+WebSocketManager.prototype.reportClientVersion = function() {
+    var msg = JSON.stringify({
+        type: 'report-version',
+        version: NetsBloxSerializer.prototype.version
+    });
+    this.send(msg);
 };
 
 WebSocketManager.prototype.updateRoomInfo = function() {
