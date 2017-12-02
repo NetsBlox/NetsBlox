@@ -380,7 +380,6 @@ NetsBloxSocket.prototype.CLOSED = 3;
 
 NetsBloxSocket.MessageHandlers = {
     'report-version': function(msg) {
-        console.log(msg.version);
         // Check if the client is out-of-date
         if (msg.version !== Utils.version) {
             this.send({
