@@ -177,6 +177,10 @@ class ActiveRoom {
             .then(() => this.onRolesChanged());
     }
 
+    getProjectId() {
+        return this._project && this._project._id;
+    }
+
     getProject() {
         return this._project;
     }

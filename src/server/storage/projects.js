@@ -41,7 +41,6 @@
             project.roles = {};
             project.roles.myRole = utils.getEmptyRole('myRole');
         }
-        delete project._id;
         return project;
     };
 
@@ -244,6 +243,10 @@
                     roles.forEach(role => roleDict[role.ProjectName] = role);
                     return this._db.save(data);
                 })
+                .then(result => {
+                    const id = result.ops[0]._id;
+                    this._id = id;
+                })
                 .then(() => this);
         }
 
@@ -283,6 +286,7 @@
                                             project[`roles.${roleId}`] = project.roles[roleId];
                                         });
                                         delete project.roles;
+                                        delete project._id;
 
                                         this.originTime = Date.now();
                                         project.originTime = this.originTime;
