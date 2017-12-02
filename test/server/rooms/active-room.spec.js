@@ -460,6 +460,23 @@ describe('active-room', function() {
         });
     });
     
+    describe('getProjectId', function() {
+        it('should be able to get the project id', function(done) {
+            utils.createRoom({
+                name: 'test-room-id',
+                owner: 'brian',
+                roles: {
+                    p1: ['brian', 'cassie'],
+                    p2: ['todd', null],
+                    third: null
+                }
+            }).then(room => {
+                assert(room.getProjectId());
+                done();
+            });
+        });
+    });
+
     describe('updating the name', function() {
         let room = null;
         const OWNER = 'owner-' + Date.now();

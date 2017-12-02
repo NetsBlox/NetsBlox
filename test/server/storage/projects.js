@@ -208,4 +208,18 @@ describe('projects', function() {
                 .nodeify(done);
         });
     });
+
+    describe('id', function() {
+        it('should have an _id field on create', function() {
+            assert(project._id);
+        });
+
+        it('should have an _id field on get from database', function(done) {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(project => assert(project._id))
+                .nodeify(done);
+        });
+    });
+
 });
