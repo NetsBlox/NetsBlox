@@ -181,4 +181,18 @@ describe('netsblox-socket', function() {
             ws.ping = () => {};
         });
     });
+
+    describe('version checking', function() {
+        it('should send new-version-available message', function() {
+            let ws = new MockWebSocket();
+            let socket = new NBSocket(logger, ws);
+            socket._socket.receive({
+                type: 'report-version',
+                version: '0.0.1'
+            });
+
+            let msg = socket._socket.message(-1);
+            assert.equal(msg.type, 'new-version-available');
+        });
+    });
 });
