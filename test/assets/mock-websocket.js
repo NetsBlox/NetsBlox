@@ -22,7 +22,7 @@ MockSocket.prototype.send = function(msg) {
 MockSocket.prototype.emit = function(event) {
     if (this._events[event]) {
         let args = Array.prototype.slice.call(arguments, 1);
-        this._events[event].apply(null, args);
+        return this._events[event].apply(null, args);
     }
 };
 
@@ -41,7 +41,7 @@ MockSocket.prototype.addResponse = function(type, fn) {
 
 MockSocket.prototype.receive = function(json) {
     var msg = JSON.stringify(json);
-    this.emit('message', msg);
+    return this.emit('message', msg);
 };
 
 MockSocket.prototype.message = function(index) {
