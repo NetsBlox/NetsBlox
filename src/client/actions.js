@@ -103,7 +103,8 @@ SnapActions._applyEvent = function(msg) {
     // request the commits up until our current commit
     var missingActions = this.lastSeen !== (msg.id - 1);
     if (missingActions) {
-        return this.sendJSON({
+        var socket = this.ide().sockets;
+        return socket.sendJSON({
             type: 'request-actions',
             actionId: this.lastSeen
         });
