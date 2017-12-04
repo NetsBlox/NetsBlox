@@ -326,18 +326,22 @@ WebSocketManager.prototype.deserializeMessage = function(message) {
 };
 
 WebSocketManager.prototype.onConnect = function() {
-    if (SnapCloud.username) {  // Reauthenticate if needed
-        var updateRoom = this.updateRoomInfo.bind(this);
-        SnapCloud.reconnect(updateRoom, updateRoom);
-    } else {
-        SnapCloud.passiveLogin(this.ide);
-        this.updateRoomInfo();
-    }
-    while (this.messages.length) {
-        this.websocket.send(this.messages.shift());
-    }
+    var myself = this,
+        afterConnect = function() {
+            myself.updateRoomInfo();
+            while (myself.messages.length) {
+                myself.websocket.send(myself.messages.shift());
+            }
 
-    this.reportClientVersion();
+            myself.reportClientVersion();
+            SnapActions.requestMissingActions();
+        };
+
+    if (SnapCloud.username) {  // Reauthenticate if needed
+        SnapCloud.reconnect(afterConnect, afterConnect);
+    } else {
+        SnapCloud.passiveLogin(this.ide, afterConnect, true);
+    }
 };
 
 WebSocketManager.prototype.reportClientVersion = function() {
