@@ -340,5 +340,14 @@ describe('ide', function() {
         }
         return -1;
     };
+
+    describe('getActiveEntity', function() {
+        it('should return a string starting with the id', function() {
+            let entityId = driver.ide().getActiveEntity();
+            let ownerId = entityId.split('/').shift();
+            let owner = SnapActions.getOwnerFromId(ownerId);
+            expect(owner).to.not.be(undefined);
+        });
+    });
 });
 
