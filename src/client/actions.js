@@ -98,19 +98,27 @@ SnapActions.onMessage = function(msg) {
     }
 };
 
-SnapActions._applyEvent = function(msg) {
+SnapActions.requestMissingActions = function() {
+    var socket = this.ide().sockets;
+    return socket.sendJSON({
+        type: 'request-actions',
+        actionId: this.lastSeen
+    });
+};
+
+SnapActions.onReceiveAction = function(msg) {
     // If the message is not building on the current commit, then
     // request the commits up until our current commit
-    var missingActions = this.lastSeen !== (msg.id - 1);
+    var lastId = this.lastSeen;
+    if (this.queuedActions.length) {
+        lastId = this.queuedActions[this.queuedActions.length-1].id;
+    }
+    var missingActions = lastId < (msg.id - 1);
     if (missingActions) {
-        var socket = this.ide().sockets;
-        return socket.sendJSON({
-            type: 'request-actions',
-            actionId: this.lastSeen
-        });
+        return this.requestMissingActions();
     }
 
-    ActionManager.prototype._applyEvent.apply(this, arguments);
+    ActionManager.prototype.onReceiveAction.apply(this, arguments);
 };
 
 SnapActions.recordActionNB = function(action) {
