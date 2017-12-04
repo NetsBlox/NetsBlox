@@ -253,6 +253,10 @@ WebSocketManager.prototype._connectWebSocket = function() {
     };
 };
 
+WebSocketManager.prototype.sendJSON = function(message) {
+    return this.send(JSON.stringify(message));
+};
+
 WebSocketManager.prototype.send = function(message) {
     var state = this.websocket.readyState;
     if (state === this.websocket.OPEN) {

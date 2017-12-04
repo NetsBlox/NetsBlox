@@ -98,6 +98,20 @@ SnapActions.onMessage = function(msg) {
     }
 };
 
+SnapActions._applyEvent = function(msg) {
+    // If the message is not building on the current commit, then
+    // request the commits up until our current commit
+    var missingActions = this.lastSeen !== (msg.id - 1);
+    if (missingActions) {
+        return this.sendJSON({
+            type: 'request-actions',
+            actionId: this.lastSeen
+        });
+    }
+
+    ActionManager.prototype._applyEvent.apply(this, arguments);
+};
+
 SnapActions.recordActionNB = function(action) {
     var socket = this.ide().sockets,
         msg = {};

@@ -22,6 +22,7 @@ var counter = 0,
     PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/,
     SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
 
+const ProjectActions = require('../storage/project-actions');
 const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
 const HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
 
@@ -134,6 +135,7 @@ class NetsBloxSocket {
         }
 
         // accept the event here and broadcast to everyone
+        let projectId = this._room.getProjectId();
         return this.canApplyAction(msg.action)
             .then(canApply => {
                 const sockets = this._room.getSocketsAt(this.roleId);
@@ -141,7 +143,9 @@ class NetsBloxSocket {
                     if (sockets.length > 1) {
                         sockets.forEach(socket => socket.send(msg));
                     }
-                    return this._room.setRoleActionId(this.roleId, msg.action.id);
+                    msg.projectId = projectId;
+                    return this._room.setRoleActionId(this.roleId, msg.action.id)
+                        .then(() => ProjectActions.store(msg));
                 }
             });
     }
@@ -159,10 +163,11 @@ class NetsBloxSocket {
 
             this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message`);
             if (NetsBloxSocket.MessageHandlers[type]) {
-                NetsBloxSocket.MessageHandlers[type].call(this, msg);
+                return NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
             } else {
                 this._logger.warn('message "' + data + '" not recognized');
             }
+            return Q();
         });
 
         this._socket.on('close', () => {
@@ -619,6 +624,17 @@ NetsBloxSocket.MessageHandlers = {
         record.action = msg.action;
 
         UserActions.record(record);  // Store action in the database by sessionId
+    },
+
+    'request-actions': function(msg) {
+        if (!this.hasRoom()) {
+            this._logger.error(`User requested actions without room: ${this.username}`);
+            return;
+        }
+
+        let projectId = this._room.getProjectId();
+        return ProjectActions.getActionsAfter(projectId, msg.actionId)
+            .then(actions => actions.forEach(action => this.send(action)));
     }
 };
 
