@@ -340,5 +340,43 @@ describe('ide', function() {
         }
         return -1;
     };
+
+    describe('getActiveEntity', function() {
+        it('should return a string starting with the id', function() {
+            let entityId = driver.ide().getActiveEntity();
+            let ownerId = entityId.split('/').shift();
+            let owner = SnapActions.getOwnerFromId(ownerId);
+            expect(owner).to.not.be(undefined);
+        });
+
+        it('should return a string starting with the custom block id', function(done) {
+            // Create a custom block definition
+            var sprite = driver.ide().currentSprite,
+                spec = 'sprite block %s',
+                definition = new CustomBlockDefinition(spec, sprite);
+
+            // Get the sprite
+            definition.category = 'motion';
+            SnapActions.addCustomBlock(definition, sprite).accept(function() {
+                driver.selectCategory('custom');
+                let block = driver.palette().contents.children
+                .find(item => item instanceof CustomCommandBlockMorph);
+
+                // Edit the custom block
+                driver.rightClick(block);
+                let editBtn = driver.dialog().children.find(item => item.action === 'edit');
+                driver.click(editBtn);
+
+                let editor = driver.dialog();
+                driver.click(editor);
+
+                let entityId = driver.ide().getActiveEntity();
+                let ownerId = entityId.split('/').shift();
+                let customBlock = SnapActions.getBlockFromId(ownerId);
+                expect(customBlock).to.not.be(undefined);
+                done();
+            });
+        });
+    });
 });
 
