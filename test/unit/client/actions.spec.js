@@ -130,5 +130,11 @@ describe('actions', function() {
             if (action) return action.accept(done);
             done('Could not openProject');
         });
+
+        it('should get unique id with newId', function() {
+            let id = SnapActions.newId();
+            let owner = SnapActions.getOwnerFromId(id);
+            expect(owner).to.be(undefined);
+        });
     });
 });
