@@ -55,15 +55,23 @@ describe('collaboration', function() {
 
         let requests = actions.reduce((a, b) => a.then(p1._socket.receive(b)), Q());
         let messageCount = 0;
+        const TIMEOUT = Date.now() + 2000;
         requests.then(() => {
                 messageCount = p2._socket.messages().length;
                 return p2._socket.receive({type: 'request-actions', actionId: 9});
             })
             .then(() => {
-                let msgs = p2._socket.messages().slice(messageCount)
-                    .filter(msg => msg.type === 'user-action');
-                assert.equal(msgs.length, 10);
-            })
-            .nodeify(done);
+                let checkMsgs = function() {
+                    let msgs = p2._socket.messages().slice(messageCount)
+                        .filter(msg => msg.type === 'user-action');
+
+                    if (msgs.length === 10) {
+                        done();
+                    } else if (Date.now() < TIMEOUT) {
+                        setTimeout(checkMsgs, 50);
+                    }
+                };
+                checkMsgs();
+            });
     });
 });
