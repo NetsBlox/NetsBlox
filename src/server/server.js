@@ -120,7 +120,7 @@ Server.prototype.configureRoutes = function() {
 
     // Add dev endpoints
     if (isDevMode) {
-        this.app.use('/dev/', express.static(__dirname + '/../../test/client/'));
+        this.app.use('/dev/', express.static(__dirname + '/../../test/unit/client/'));
     }
 
     // Initial page
