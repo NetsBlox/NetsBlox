@@ -131,4 +131,16 @@ describe('actions', function() {
             done('Could not openProject');
         });
     });
+
+    describe('accept/reject', function() {
+        beforeEach(done => driver.reset(done));
+
+        it('should clear reject handler on accepted action', function(done) {
+            SnapActions.setStageSize(500, 500)
+                .reject(() => done('Called reject handler'));
+
+            setTimeout(() => SnapActions.setStageSize(400, 400), 0);
+            setTimeout(done, 100);
+        });
+    });
 });
