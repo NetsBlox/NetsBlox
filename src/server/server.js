@@ -130,7 +130,7 @@ Server.prototype.configureRoutes = function() {
             return;
         }
         
-        var baseUrl = process.env.SERVER_URL,
+        var baseUrl = `https://${req.get('host')}`,
             url = baseUrl + req.originalUrl,
             projectName = req.query.ProjectName,
             metaInfo = {
