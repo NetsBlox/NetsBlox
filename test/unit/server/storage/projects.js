@@ -222,4 +222,91 @@ describe('projects', function() {
         });
     });
 
+    describe.only('getRoleId', function() {
+        let project = null;
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should get the role id', function(done) {
+            project.getRoleId('role')
+                .then(id => assert(id))
+                .nodeify(done);
+        });
+
+        it('should preserve the role id on rename', function(done) {
+            let firstId = null;
+
+            project.getRoleId('role')
+                .then(id => firstId = id)
+                .then(() => project.renameRole('role', 'role2'))
+                .then(() => project.getRoleId('role2'))
+                .then(id => assert.equal(firstId, id))
+                .nodeify(done);
+        });
+
+        it('should preserve the role id on setRawRole', function(done) {
+            let firstId = null;
+
+            project.getRawRole('role')
+                .then(role => {
+                    content = role;
+                    content.ProjectName = 'NewName';
+                })
+                .then(() => project.getRoleId('role'))
+                .then(id => firstId = id)
+                .then(() => project.setRawRoleById('role', content))
+                .then(() => project.getRoleId('NewName'))
+                .then(id => assert.equal(firstId, id))
+                .nodeify(done);
+        });
+
+        it('should get diff role id for cloned role', function(done) {
+            project.getRoleId('role')
+                .then(id => firstId = id)
+                .then(() => project.cloneRole('role', 'clonedRole'))
+                .then(() => project.getRoleId('role2'))
+                .then(id => assert.notEqual(firstId, id))
+                .nodeify(done);
+        });
+    });
+
+    describe('setRole', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should update the ProjectName field', function() {
+        });
+    });
+
+    describe('cloneRole', function() {
+        it('should create a new role name', function() {
+        });
+
+        it('should create a new role id', function() {
+        });
+    });
+
+    describe('getRoleIds', function() {
+        // TODO
+    });
+
+    describe.skip('getRoleNames', function() {
+        it('should be able to get role names', function() {
+            // TODO
+        });
+
+        it('should update when role name changes', function() {
+            // TODO
+        });
+    });
+
+
 });
