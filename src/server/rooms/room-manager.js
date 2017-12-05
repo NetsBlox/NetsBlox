@@ -100,11 +100,15 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
                         });
                 }
                 this._logger.trace(`retrieving project ${uuid} from database`);
-                return ActiveRoom.fromStore(this._logger, project);
+
+                // Check for a room which already references the given project
+                return this.getActiveRooms()
+                    .then(rooms => rooms.find(room => room.getProjectId() === project._id))
+                    .then(room => room || ActiveRoom.fromStore(this._logger, project));
             });
 
     } else {
-        return Q(this.rooms[uuid]);
+        return this.getExistingRoom(uuid);
     }
 };
 
