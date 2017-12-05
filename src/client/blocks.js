@@ -1,4 +1,4 @@
-/* global StringMorph, localize, newCanvas, Point, Morph, InputSlotMorph
+/* global StringMorph, ensureFullUrl, localize, newCanvas, Point, Morph, InputSlotMorph
    Color, nop, BlockMorph, StageMorph, MultiArgMorph, SyntaxElementMorph,
    HintInputSlotMorph, RingMorph, SpriteMorph, ReporterBlockMorph, TextSlotMorph,
    ArgMorph, MessageInputSlotMorph, MessageOutputSlotMorph, BooleanSlotMorph,
@@ -1141,6 +1141,7 @@ SymbolMorph.prototype.drawSymbolPlus = function (canvas, color) {
 // InputSlotMorph
 InputSlotMorph.prototype.getURL = function (url) {
     try {
+        url = ensureFullUrl(url);
         var request = new XMLHttpRequest();
         request.open('GET', url, false);
         request.send();

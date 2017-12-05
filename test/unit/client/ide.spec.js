@@ -1,4 +1,4 @@
-/*globals driver, expect, SnapUndo, SnapActions, SnapCloud */
+/*globals driver, expect, SERVER_URL, SERVER_ADDRESS, ensureFullUrl, NetsBloxMorph, SnapUndo, SnapActions, SnapCloud */
 describe('ide', function() {
     before(function(done) {
         driver.reset(done);
@@ -28,7 +28,7 @@ describe('ide', function() {
                     var start = Math.max(index-10, 0);
                     var end = Math.min(index+10, local.length);
                     var msg = `xml mismatch: "${local.slice(start, end)}" and "${str.slice(start, end)}"`;
-                    return done(msg)
+                    return done(msg);
                 }
                 done();
             };
@@ -290,6 +290,47 @@ describe('ide', function() {
         });
     });
 
+    describe('server connection', () => {
+        const EXPECTED_SURL = 'http://localhost:8080';
+        beforeEach(done => driver.reset(done));
+
+        describe('SERVER_URL', () => {
+
+            it('should be set', () => {
+                expect(SERVER_URL).to.not.be(undefined);
+            });
+
+            it('should be set to localhost', () => {
+                expect(SERVER_URL.substring(0,10)).to.be(EXPECTED_SURL.substring(0,10));
+            });
+
+            it('should set server address', () => {
+                expect(SERVER_ADDRESS).to.be(EXPECTED_SURL.match(/:\/\/(.*)$/)[1]);
+            });
+
+        });
+
+        describe('ensureFullUrl', () => {
+            it('should convert relative path', () => {
+                const url = 'api/hello';
+                expect(ensureFullUrl(url)).to.be(`${EXPECTED_SURL}/api/hello`);
+            });
+
+            it('should convert absolute path', () => {
+                const url = '/api/hello';
+                expect(ensureFullUrl(url)).to.be(`${EXPECTED_SURL}/api/hello`);
+            });
+        });
+
+        describe('getURL', () => {
+            it('should support relative addresses', () => {
+                let response = NetsBloxMorph.prototype.getURL('dev/index.html');
+                expect(response.startsWith('<html')).to.be(true);
+            });
+        });
+
+    });
+
     describe('tools', function() {
         beforeEach(done => driver.reset(done));
 
@@ -310,7 +351,7 @@ describe('ide', function() {
             var runLabel = () => {
                 driver.selectCategory('Custom');
                 var labelBlock = driver.palette().children[0].children
-                    .find(item => item.blockSpec === 'label %txt of size %n')
+                    .find(item => item.blockSpec === 'label %txt of size %n');
 
                 if (!labelBlock) return done(`Could not find label block!`);
 

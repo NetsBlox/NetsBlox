@@ -1,4 +1,4 @@
-/* global RoomMorph, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
+/* global RoomMorph, SERVER_URL, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
    WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
@@ -8,6 +8,20 @@
    BlockMorph, SyntaxElementMorph, ScriptsMorph, InputSlotDialogMorph, ArgMorph,
    BlockLabelPlaceHolderMorph, TableMorph, contains, newCanvas*/
 // Netsblox IDE (subclass of IDE_Morph)
+
+function ensureFullUrl(url) {
+    // if it's not a full path attach serverURL to the front
+    // regex is checking to see if the protocol is there (eg http://, ws://)
+    if(url.match(/^\w+:\/\//) === null) {
+        if (url.substring(0,1)[0] === '/') {
+            url = SERVER_URL + url;
+        } else {
+            url = SERVER_URL + '/' + url;
+        }
+    }
+    return url;
+}
+
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
 NetsBloxMorph.uber = IDE_Morph.prototype;
@@ -83,6 +97,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
 
     function getURL(url) {
         try {
+            url = ensureFullUrl(url);
             var request = new XMLHttpRequest();
             request.open('GET', url, false);
             request.send();
@@ -147,13 +162,13 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 hash = decodeURIComponent(hash);
             }
             if (contains(
-                    ['project', 'blocks', 'sprites', 'snapdata'].map(
-                        function (each) {
-                            return hash.substr(0, 8).indexOf(each);
-                        }
-                    ),
-                    1
-                )) {
+                ['project', 'blocks', 'sprites', 'snapdata'].map(
+                    function (each) {
+                        return hash.substr(0, 8).indexOf(each);
+                    }
+                ),
+                1
+            )) {
                 this.droppedText(hash);
             } else {
                 this.droppedText(getURL(hash));
@@ -1673,7 +1688,7 @@ NetsBloxMorph.prototype.requestAndroidApp = function(name) {
         projectXml,
         req,
         params,
-        baseURL = window.location.origin + '/';
+        baseURL = ensureFullUrl('/');
 
     // FIXME: this baseURL stuff could cause problems
     if (name !== this.projectName) {
@@ -2586,7 +2601,7 @@ NetsBloxMorph.prototype.logout = function () {
 NetsBloxMorph.prototype.createCloudAccount = function () {
     var myself = this,
         world = this.world();
-/*
+    /*
     // force-logout, commented out for now:
     delete localStorage['-snap-user'];
     SnapCloud.clear();

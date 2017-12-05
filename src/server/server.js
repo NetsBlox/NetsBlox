@@ -135,6 +135,7 @@ Server.prototype.configureRoutes = function() {
             projectName = req.query.ProjectName,
             metaInfo = {
                 googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
+                baseUrl,
                 url: url
             };
 
