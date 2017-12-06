@@ -53,7 +53,7 @@ describe('collaboration', function() {
             };
         });
 
-        let requests = actions.reduce((a, b) => a.then(p1._socket.receive(b)), Q());
+        let requests = actions.reduce((a, b) => a.then(() => p1._socket.receive(b)), Q());
         let messageCount = 0;
         const TIMEOUT = Date.now() + 2000;
         requests.then(() => {
