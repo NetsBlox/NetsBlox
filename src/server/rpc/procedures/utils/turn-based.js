@@ -15,7 +15,7 @@ class TurnBased {
                 success;
 
             // Filter
-            if (this._state._lastRoleToAct === socket.roleId) {
+            if (this._state._lastRoleToAct === socket.role) {
                 return this.response.status(403).send('It\'s not your turn!');
             }
 
@@ -29,7 +29,7 @@ class TurnBased {
                     msgType: 'your turn',
                     dstId: this._state._lastRoleToAct
                 }));
-                this._state._lastRoleToAct = socket.roleId;
+                this._state._lastRoleToAct = socket.role;
             }
         };
         this[action].args = getArgs(this._rawAction);

@@ -134,7 +134,7 @@ describe('netsblox-socket', function() {
     describe('getProjectJson', function() {
         it('should fail if receiving mismatching project name', function(done) {
             const socket = utils.createSocket('test-user');
-            socket.roleId = 'role1';
+            socket.role = 'role1';
             socket._socket.addResponse('project-request', function(msg) {
                 return {
                     type: 'project-response',
@@ -149,7 +149,7 @@ describe('netsblox-socket', function() {
 
         it('should fail if socket changed roles', function(done) {
             const socket = utils.createSocket('test-user');
-            socket.roleId = 'role1';
+            socket.role = 'role1';
             socket._socket.addResponse('project-request', function(msg) {
                 return {
                     type: 'project-response',
@@ -161,7 +161,7 @@ describe('netsblox-socket', function() {
                 .then(() => done('failed!'))
                 .catch(() => done());
 
-            socket.roleId = 'role2';
+            socket.role = 'role2';
         });
     });
 

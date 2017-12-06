@@ -270,7 +270,7 @@
                 socket.getProjectJson()
                     .catch(err => {
                         this._logger.warn('could not save project at ' +
-                            `${socket.roleId} in ${this.owner}/${this.name}: ${err}`);
+                            `${socket.role} in ${this.owner}/${this.name}: ${err}`);
                         return null;
                     })
             );
@@ -616,7 +616,7 @@
             owner: user.username,
             name: room.name,
             originTime: room.originTime,
-            activeRole: user.roleId,
+            activeRole: user.role,
             collaborators: room.getCollaborators(),
             roles: {}
         };

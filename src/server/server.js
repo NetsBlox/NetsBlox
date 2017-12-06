@@ -111,7 +111,7 @@ Server.prototype.configureRoutes = function() {
                 uuid: socket.uuid,
                 username: socket.username,
                 room: roomName,
-                roleId: socket.roleId
+                role: socket.role
             };
         });
 

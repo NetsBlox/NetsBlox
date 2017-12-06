@@ -71,13 +71,15 @@ describe('projects', function() {
     });
 
     it('should get role', function(done) {
-        project.getRole('p1')
+        project.getRoleNames()
+            .then(names => console.log(names))
+            .then(() => project.getRole('p1'))
             .then(role => {
+                console.log('role');
                 assert.equal(role.ProjectName, 'p1');
                 assert.notEqual(role.SourceCode.length, 128);
-                done();
             })
-            .catch(done);
+            .nodeify(done);
     });
 
     it('should rename role', function(done) {

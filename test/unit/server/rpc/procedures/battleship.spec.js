@@ -75,7 +75,7 @@ describe('Battleship Tests', function() {
                 col = 2;
 
             beforeEach(function() {
-                battleship.socket.roleId = 'test';
+                battleship.socket.role = 'test';
                 battleship.placeShip('destroyer', row, col, 'north');
                 // Check the spots!
                 board = battleship._rpc._state._boards.test;
