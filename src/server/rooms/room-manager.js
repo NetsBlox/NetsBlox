@@ -102,8 +102,8 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
                 this._logger.trace(`retrieving project ${uuid} from database`);
 
                 // Check for a room which already references the given project
-                return this.getActiveRooms()
-                    .then(rooms => rooms.find(room => room.getProjectId() === project._id))
+                return this.getActiveRooms([uuid])
+                    .then(rooms => rooms.find(room => room.getProjectId().equals(project._id)))
                     .then(room => room || ActiveRoom.fromStore(this._logger, project));
             });
 
@@ -112,8 +112,11 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
     }
 };
 
-RoomManager.prototype.getActiveRooms = function() {
-    return Q.all(Object.keys(this.rooms).map(uuid => this.rooms[uuid]));
+RoomManager.prototype.getActiveRooms = function(skip) {
+    skip = skip || [];
+    let uuids = Object.keys(this.rooms).filter(uuid => !skip.includes(uuid));
+    let rooms = uuids.map(uuid => this.rooms[uuid]);
+    return Q.all(rooms);
 };
 
 RoomManager.prototype.checkRoom = function(room) {
