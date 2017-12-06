@@ -19,7 +19,7 @@ describe('projects', function() {
     };
 
     before(function(done) {
-        utils.reset().then(() => done());
+        utils.reset().nodeify(done);
     });
 
     let project = null;
@@ -222,7 +222,83 @@ describe('projects', function() {
         });
     });
 
-    describe.only('getRoleId', function() {
+    describe('setRawRoleById', function() {
+        let roleName = 'role';
+        let roleId = null;
+        beforeEach(done => {
+            let content = null;
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .then(() => project.getRawRole('role'))
+                .then(role => {
+                    content = role;
+                    content.ProjectName = 'NewName';
+                    return project.getRoleId(roleName)
+                        .then(id => roleId = id);
+                })
+                .then(() => project.setRawRoleById(roleId, content))
+                .nodeify(done);
+        });
+
+        it('should add new role name', function(done) {
+            project.getRoleNames()
+                .then(names => assert(names.includes('NewName')))
+                .nodeify(done);
+        });
+
+        it('should not keep old role name', function(done) {
+            project.getRawProject()
+                .then(() => project.getRoleNames())
+                .then(names => assert(!names.includes('role')))
+                .nodeify(done);
+        });
+
+        it('should not change the role id', function(done) {
+            project.getRoleId('NewName')
+                .then(id => assert.equal(id, roleId))
+                .nodeify(done);
+        });
+
+        it.skip('should get new role id', function(done) {
+            project.getRoleId('NewName')
+                .then(id => assert(id))
+                .nodeify(done);
+        });
+
+        it('should add new role id', function(done) {
+            project.getRoleIds()
+                .then(ids => assert.equal(ids.length, 1, `expected one id but got: ${ids.join(',')}`))
+                .nodeify(done);
+        });
+    });
+
+    describe('renameRole', function() {
+        let firstId = null;
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .then(() => project.getRoleId('role'))
+                .then(id => firstId = id)
+                .then(() => project.renameRole('role', 'role2'))
+                .nodeify(done);
+        });
+
+        it('should preserve the role id on rename', function(done) {
+            project.getRoleId('role2')
+                .then(id => assert.equal(firstId, id))
+                .nodeify(done);
+        });
+
+        it('should remove the old role', function(done) {
+            project.getRoleNames()
+                .then(names => assert(!names.includes('role')))
+                .nodeify(done);
+        });
+    });
+
+    describe('getRoleId', function() {
         let project = null;
         beforeEach(done => {
             utils.reset()
@@ -237,17 +313,6 @@ describe('projects', function() {
                 .nodeify(done);
         });
 
-        it('should preserve the role id on rename', function(done) {
-            let firstId = null;
-
-            project.getRoleId('role')
-                .then(id => firstId = id)
-                .then(() => project.renameRole('role', 'role2'))
-                .then(() => project.getRoleId('role2'))
-                .then(id => assert.equal(firstId, id))
-                .nodeify(done);
-        });
-
         it('should preserve the role id on setRawRole', function(done) {
             let firstId = null;
 
@@ -258,7 +323,7 @@ describe('projects', function() {
                 })
                 .then(() => project.getRoleId('role'))
                 .then(id => firstId = id)
-                .then(() => project.setRawRoleById('role', content))
+                .then(() => project.setRawRoleById(firstId, content))
                 .then(() => project.getRoleId('NewName'))
                 .then(id => assert.equal(firstId, id))
                 .nodeify(done);
@@ -274,7 +339,55 @@ describe('projects', function() {
         });
     });
 
-    describe('setRole', function() {
+    describe('setRawRole', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .then(() => project.getRawRole('role'))
+                .then(content => project.setRawRole('r2', content))
+                .nodeify(done);
+        });
+
+        it('should update the role name', function(done) {
+            project.getRoleNames()
+                .then(names => assert(names.includes('r2')))
+                .nodeify(done);
+        });
+
+        it('should update the role id', function(done) {
+            let firstId = null;
+            project.getRoleId('role')
+                .then(id => firstId = id)
+                .then(() => project.getRoleId('r2'))
+                .then(secondId => assert.notEqual(firstId, secondId))
+                .nodeify(done);
+        });
+    });
+
+    describe('cloneRole', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .then(() => project.cloneRole('role', 'clonedRole'))
+                .nodeify(done);
+        });
+
+        it('should create a new role name', function(done) {
+            project.getRoleNames()
+                .then(names => assert.equal(names.length, 2))
+                .nodeify(done);
+        });
+
+        it('should create a new role id', function(done) {
+            project.getRoleIds()
+                .then(ids => assert.notEqual(ids[0], ids[1]))
+                .nodeify(done);
+        });
+    });
+
+    describe('getRoleIds', function() {
         beforeEach(done => {
             utils.reset()
                 .then(() => Projects.get('brian', 'PublicProject'))
@@ -282,29 +395,25 @@ describe('projects', function() {
                 .nodeify(done);
         });
 
-        it('should update the ProjectName field', function() {
+        it('should return role id(s)', function(done) {
+            project.getRoleIds()
+                .then(ids => assert.equal(ids.length, 1))
+                .nodeify(done);
         });
     });
 
-    describe('cloneRole', function() {
-        it('should create a new role name', function() {
+    describe('getRoleNames', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .nodeify(done);
         });
 
-        it('should create a new role id', function() {
-        });
-    });
-
-    describe('getRoleIds', function() {
-        // TODO
-    });
-
-    describe.skip('getRoleNames', function() {
-        it('should be able to get role names', function() {
-            // TODO
-        });
-
-        it('should update when role name changes', function() {
-            // TODO
+        it('should be able to get role names', function(done) {
+            project.getRoleNames()
+                .then(names => assert.equal(names[0], 'role'))
+                .nodeify(done);
         });
     });
 
