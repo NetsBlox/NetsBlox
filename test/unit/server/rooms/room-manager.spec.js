@@ -17,7 +17,20 @@ describe('room-manager', () => {
                 .then(() => done());
         });
 
-        it('should return a room with the correct project', function() {
+        it('should only return one room for a project', function(done) {
+            let newName = 'newName';
+            let room = null;
+            Rooms.getRoom(null, 'brian', 'PublicProject')
+                .then(firstRoom => {
+                    // request a project with the new name
+                    room = firstRoom;
+                    return room.getProject().setName(newName);
+                })
+                .then(() => {
+                    return Rooms.getRoom(null, 'brian', newName)
+                })
+                .then(newRoom => assert(room === newRoom))
+                .nodeify(done);
         });
     });
 });

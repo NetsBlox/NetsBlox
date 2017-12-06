@@ -75,7 +75,7 @@
         }
 
         getRawProject() {
-            return this._db.findOne(this.getStorageId())
+            return Q(this._db.findOne(this.getStorageId()))
                 .then(project => {
                     clean(project, this._logger);
                     return project;
@@ -433,7 +433,7 @@
     };
 
     ProjectStorage.getRawProject = function (username, projectName) {
-        return collection.findOne({owner: username, name: projectName});
+        return Q(collection.findOne({owner: username, name: projectName}));
     };
 
     ProjectStorage.get = function (username, projectName) {
