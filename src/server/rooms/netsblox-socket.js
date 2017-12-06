@@ -159,15 +159,17 @@ class NetsBloxSocket {
     _initialize () {
         this._socket.on('message', data => {
             var msg = JSON.parse(data),
-                type = msg.type;
+                type = msg.type,
+                result = Q();
 
             this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message`);
             if (NetsBloxSocket.MessageHandlers[type]) {
-                return NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
+                result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
             } else {
                 this._logger.warn('message "' + data + '" not recognized');
             }
-            return Q();
+            return result.catch(err =>
+                this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
         });
 
         this._socket.on('close', () => {
