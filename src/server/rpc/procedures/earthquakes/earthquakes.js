@@ -40,12 +40,12 @@ Earthquakes._sendNext = function(socket) {
         // send an earthquake message
         var msg = msgs.shift();
 
-        while (msgs.length && msg.dstId !== socket.roleId) {
+        while (msgs.length && msg.dstId !== socket.role) {
             msg = msgs.shift();
         }
 
         // check that the socket is still at the role receiving the messages
-        if (msg && msg.dstId === socket.roleId) {
+        if (msg && msg.dstId === socket.role) {
             socket.send(msg);
         }
 
@@ -115,7 +115,7 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
             // For now, I will send lat, lng, size, date
             msg = {
                 type: 'message',
-                dstId: socket.roleId,
+                dstId: socket.role,
                 msgType: 'Earthquake',
                 content: {
                     latitude: earthquakes[i].geometry.coordinates[1],

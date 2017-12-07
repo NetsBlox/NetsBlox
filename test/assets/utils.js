@@ -118,7 +118,7 @@ const sendEmptyRole = function(msg) {
     return {
         type: 'project-response',
         id: msg.id,
-        project: serverUtils.getEmptyRole(this.roleId)
+        project: serverUtils.getEmptyRole(this.role)
     };
 };
 

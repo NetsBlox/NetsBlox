@@ -1,6 +1,6 @@
 // This will use the jservice.io API to retrieve trivia questions.
 //
-// This is a static rpc collection. That is, it does not maintain state and is 
+// This is a static rpc collection. That is, it does not maintain state and is
 // shared across groups
 'use strict';
 
@@ -42,7 +42,7 @@ module.exports = {
             for (var i = questions.length; i--;) {
                 msg = {
                     type: 'message',
-                    dstId: socket.roleId,
+                    dstId: socket.role,
                     msgType: 'Trivia',
                     content: {
                         question: questions[i].question,

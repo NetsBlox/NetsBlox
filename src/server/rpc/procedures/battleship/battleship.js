@@ -66,7 +66,7 @@ Battleship.prototype.start = function() {
 };
 
 Battleship.prototype.placeShip = function(ship, row, column, facing) {
-    var role = this.socket.roleId,
+    var role = this.socket.role,
         len = SHIPS[ship];
 
     row--;
@@ -107,7 +107,7 @@ Battleship.prototype.placeShip = function(ship, row, column, facing) {
 
 Battleship.prototype.fire = function(row, column) {
     var socket = this.socket,
-        role = socket.roleId,
+        role = socket.role,
         roles,
         target = null;  // could be used to set the target role
 
@@ -170,7 +170,7 @@ Battleship.prototype.fire = function(row, column) {
 };
 
 Battleship.prototype.remainingShips = function(roleId) {
-    var role = roleId || this.socket.roleId;
+    var role = roleId || this.socket.role;
 
     if (!this._state._boards[role]) {
         error(`board doesn't exist for "${role}"`);

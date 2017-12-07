@@ -100,7 +100,7 @@ class ActiveRoom {
         this._logger.trace(`adding ${socket.uuid} to ${role}`);
 
         const oldRoom = socket._room;
-        const oldRole = socket.roleId;
+        const oldRole = socket.role;
         if (oldRoom && oldRole) {
             this._logger.trace(`removing ${socket.uuid} from old role ${oldRole}`);
             if (oldRoom === this) {
@@ -111,18 +111,18 @@ class ActiveRoom {
         }
 
         this.roles[role].push(socket);
-        socket.roleId = role;
+        socket.role = role;
         socket._setRoom(this);
     }
 
     silentRemove (socket) {
-        const role = socket.roleId;
+        const role = socket.role;
         const sockets = this.roles[role] || [];
         const index = sockets.indexOf(socket);
 
         if (index > -1) {
             sockets.splice(index, 1);
-            socket.roleId = null;
+            socket.role = null;
         } else {
             this._logger.warn(`could not remove socket ${socket.username} from ${this.uuid}. Not found`);
         }
@@ -438,7 +438,7 @@ class ActiveRoom {
         }
 
         let sockets = this.getSocketsAt(roleId);
-        sockets.forEach(socket => socket.roleId = newId);
+        sockets.forEach(socket => socket.role = newId);
         this.roles[newId] = sockets;
 
         delete this.roles[roleId];
