@@ -21,7 +21,7 @@ function seed(storage) {
         const room = new ActiveRoom(logger, data.name, data.owner);
         const userData = {
             username: data.owner,
-            roleId: data.activeRole
+            role: data.activeRole
         };
 
         // create, set role data, publish!

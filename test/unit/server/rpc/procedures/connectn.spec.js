@@ -41,12 +41,12 @@ describe('ConnectN Tests', function() {
             connectn.newGame();
         });
         beforeEach(function() {
-            connectn.socket.roleId = 'test';
+            connectn.socket.role = 'test';
             connectn.newGame();
         });
 
         it('should not play in bad position', function() {
-            connectn.socket.roleId = 'p1';
+            connectn.socket.role = 'p1';
             var result = connectn.play(3, -1);
             assert.notEqual(result.indexOf('invalid position'), -1);
         });
@@ -55,7 +55,7 @@ describe('ConnectN Tests', function() {
             var result;
 
             connectn._rpc._state._winner = 'cat';
-            connectn.socket.roleId = 'p1';
+            connectn.socket.role = 'p1';
 
             result = connectn.play(3, -1);
             assert.notEqual(result.indexOf('game is over'), -1);
@@ -65,7 +65,7 @@ describe('ConnectN Tests', function() {
             var error;
 
             connectn.newGame(3, 5);
-            connectn.socket.roleId = 'p1';
+            connectn.socket.role = 'p1';
             error = connectn.play(1, 1);
 
             assert(!error);

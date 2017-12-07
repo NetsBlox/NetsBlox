@@ -38,7 +38,7 @@ ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
 
     this._state.numDotsToConnect = Math.min(Math.max(this._state.numRow, this._state.numCol), this._state.numDotsToConnect);
 
-    info(this.socket.roleId+' is clearing board and creating a new one with size: ', this._state.numRow, ', ', this._state.numCol);
+    info(this.socket.role+' is clearing board and creating a new one with size: ', this._state.numRow, ', ', this._state.numCol);
     this._state.board = ConnectN.getNewBoard(this._state.numRow, this._state.numCol);
 
     this.socket._room.sockets()
@@ -65,7 +65,7 @@ ConnectN.prototype.play = function(row, column) {
         return 'The game is over!';
     }
 
-    var roleId = this.socket.roleId,
+    var roleId = this.socket.role,
         open = false,
         isOnBoard = false;
 

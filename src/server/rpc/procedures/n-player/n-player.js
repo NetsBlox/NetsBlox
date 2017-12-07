@@ -27,11 +27,11 @@ NPlayer.prototype.start = function() {
     this._state.players = [];
 
     this._state.players = this.socket._room.sockets().map(socket => {
-        return {role: socket.roleId, socket: socket};
+        return {role: socket.role, socket: socket};
     });
 
     // set the active player to the current one
-    this._state.active = R.findIndex(R.propEq('role', this.socket.roleId))(this._state.players);
+    this._state.active = R.findIndex(R.propEq('role', this.socket.role))(this._state.players);
 
     info(`Player #${this._state.active} (${this._state.players[this._state.active].role}) is (re)starting a ${this._state.players.length} player game`);
 
@@ -83,7 +83,7 @@ NPlayer.prototype.getNext = function() {
 // signal end of turn
 NPlayer.prototype.endTurn = function(next) {
 
-    if(this._state.active === null || this.socket.roleId != this._state.players[this._state.active].role ) {
+    if(this._state.active === null || this.socket.role != this._state.players[this._state.active].role ) {
         // bail out if there's no game yet, or if it's somebody else's turn
         return false;
     } else {

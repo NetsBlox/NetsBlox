@@ -21,7 +21,7 @@ module.exports = {
             var msg = {
                 type: 'message',
                 msgType: 'Astronomy Pic of the Day',
-                dstId: socket.roleId,
+                dstId: socket.role,
                 content: {
                     date: body.date,
                     title: body.title,
