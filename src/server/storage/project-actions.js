@@ -8,12 +8,20 @@
     };
 
     ProjectActions.store = function(action) {
-        return Q(collection.save(action));
+        return Q(collection.save(action))
+            .catch(err => {
+                action = JSON.stringify(action);
+                logger.error(`Could not save action ${action}: ${err}`);
+            });
     };
 
-    ProjectActions.getActionsAfter = function(projectId, actionId) {
-        logger.trace(`getting actions after ${actionId} in ${projectId}`);
-        let cursor = collection.find({projectId: projectId, 'action.id': {$gt: actionId}});
+    ProjectActions.getActionsAfter = function(projectId, roleId, actionId) {
+        logger.trace(`getting actions after ${actionId} in ${projectId} at role: ${roleId}`);
+        let cursor = collection.find({
+            projectId: projectId,
+            roleId: roleId,
+            'action.id': {$gt: actionId}
+        });
         return Q(cursor.sort({'action.id': 1}).toArray());
     };
 

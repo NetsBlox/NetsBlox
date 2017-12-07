@@ -136,16 +136,22 @@ class NetsBloxSocket {
 
         // accept the event here and broadcast to everyone
         let projectId = this._room.getProjectId();
+        let room = this._room;
+        let role = this.role;
         return this.canApplyAction(msg.action)
             .then(canApply => {
-                const sockets = this._room.getSocketsAt(this.role);
+                const sockets = this._room.getSocketsAt(role);
                 if (canApply) {
                     if (sockets.length > 1) {
                         sockets.forEach(socket => socket.send(msg));
                     }
                     msg.projectId = projectId;
-                    return this._room.setRoleActionId(this.role, msg.action.id)
-                        .then(() => ProjectActions.store(msg));
+                    return room.setRoleActionId(role, msg.action.id)
+                        .then(() => room.getProject().getRoleId(role))
+                        .then(roleId => {
+                            msg.roleId = roleId;
+                            return ProjectActions.store(msg);
+                        });
                 }
             });
     }
@@ -634,8 +640,10 @@ NetsBloxSocket.MessageHandlers = {
             return;
         }
 
-        let projectId = this._room.getProjectId();
-        return ProjectActions.getActionsAfter(projectId, msg.actionId)
+        let project = this._room.getProject();
+        let projectId = project.getId();
+        return project.getRoleId(this.role)
+            .then(roleId => ProjectActions.getActionsAfter(projectId, roleId, msg.actionId))
             .then(actions => actions.forEach(action => this.send(action)));
     }
 };
