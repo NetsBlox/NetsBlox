@@ -1,7 +1,7 @@
-let extractRpcs = require('../server-utils').extractRpcs;
 
 (function(PublicProjectStore) {
     const Q = require('q');
+    const utils = require('../server-utils');
     var _ = require('lodash'),
         logger, collection;
 
@@ -27,33 +27,33 @@ let extractRpcs = require('../server-utils').extractRpcs;
     };
 
     PublicProjectStore.publish = function(project) {
+        let roles = null;
         return project.getRoles()
             .then(roles => {
                 // parse the service usage
+                roles = utils.sortByDateField(roles, 'Updated', -1);
+                let activeRole = roles[0];
                 let sourceCodes = roles.map(role => role.SourceCode);
                 let services = [];
                 sourceCodes.forEach(srcCode => {
-                    services = services.concat(extractRpcs(srcCode));
+                    services = services.concat(utils.extractRpcs(srcCode));
                 });
 
                 // collect the rest of the metadata
-                var activeRole = roles.find(role => role.ProjectName === project.activeRole),
-                    metadata = {
-                        owner: project.owner,
-                        projectName: project.name,
-                        primaryRoleName: project.activeRole,
-                        roleNames: Object.keys(project.roles),
-                        thumbnail: null,
-                        notes: null,
-                        services: _.uniq(services)
-                    };
+                let metadata = {
+                    owner: project.owner,
+                    projectName: project.name,
+                    primaryRoleName: activeRole.ProjectName,
+                    roleNames: Object.keys(project.roles),
+                    thumbnail: null,
+                    notes: null,
+                    services: _.uniq(services)
+                };
 
-                if (activeRole) {
-                    metadata.thumbnail = activeRole.Thumbnail instanceof Array ?
-                        activeRole.Thumbnail[0] : activeRole.Thumbnail;
-                    metadata.notes = activeRole.notes instanceof Array ?
-                        activeRole.notes[0] : activeRole.notes;
-                }
+                metadata.thumbnail = activeRole.Thumbnail instanceof Array ?
+                    activeRole.Thumbnail[0] : activeRole.Thumbnail;
+                metadata.notes = activeRole.notes instanceof Array ?
+                    activeRole.notes[0] : activeRole.notes;
 
                 logger.trace(`Publishing project ${project.name} from ${project.owner}`);
 

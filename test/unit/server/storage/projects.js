@@ -224,6 +224,68 @@ describe('projects', function() {
         });
     });
 
+    describe('getLastUpdatedRoleName', function() {
+        let project = null;
+        before(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'MultiRoles'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should return a name', done => {
+            project.getLastUpdatedRoleName()
+                .then(name => assert.equal(typeof name, 'string'))
+                .nodeify(done);
+        });
+
+        it('should return the last role based on the "Updated" field', done => {
+            project.getRawRole('r2')
+                .then(role => {
+                    let time = new Date(role.Updated).getTime();
+                    role.Updated = new Date(time + 100000);
+                    return project.setRawRole('r1', role);
+                })
+                .then(() => project.getLastUpdatedRoleName())
+                .then(name => assert.equal(name, 'r1'))
+                .nodeify(done);
+        });
+    });
+
+    describe('getLastUpdatedRole', function() {
+        let project = null;
+        before(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'MultiRoles'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should return a role', done => {
+            project.getLastUpdatedRole()
+                .then(role => assert(role.ProjectName))
+                .nodeify(done);
+        });
+
+        it('should not return a raw role', done => {
+            project.getLastUpdatedRole()
+                .then(role => assert.equal(role.SourceCode[0], '<'))
+                .nodeify(done);
+        });
+
+        it('should return the last role based on the "Updated" field', done => {
+            project.getRawRole('r2')
+                .then(role => {
+                    let time = new Date(role.Updated).getTime();
+                    role.Updated = new Date(time + 100000);
+                    return project.setRawRole('r1', role);
+                })
+                .then(() => project.getLastUpdatedRole())
+                .then(role => assert.equal(role.ProjectName, 'r1'))
+                .nodeify(done);
+        });
+    });
+
     describe('setRawRoleById', function() {
         let roleName = 'role';
         let roleId = null;
