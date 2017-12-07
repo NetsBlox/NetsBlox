@@ -121,9 +121,7 @@ var sendProjectTo = function(project, res) {
     var serialized,
         openRole;
 
-    // If room is not active, pick a role arbitrarily
-    openRole = project.activeRole || Object.keys(project.roles)[0];
-    return project.getRole(openRole)
+    return project.getLastUpdatedRole()
         .then(role => {
             const uuid = Utils.uuid(project.owner, project.name);
             trace(`project ${uuid} is not active. Selected role "${openRole}"`);

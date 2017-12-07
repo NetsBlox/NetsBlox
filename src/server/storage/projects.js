@@ -236,7 +236,6 @@
                         lastUpdatedAt: Date.now(),
                         originTime: this.originTime,
                         collaborators: this.collaborators,
-                        activeRole: this.activeRole,
                         roles: roleDict
                     };
 
@@ -321,8 +320,13 @@
                 });
         }
 
-        setActiveRole(role) {
-            this.activeRole = role;
+        getLastUpdatedRoleName() {
+            return this.getRawRoles()
+                .then(roles => utils.sortByDateField(roles, 'Updated', -1).shift().ProjectName);
+        }
+
+        getLastUpdatedRole() {
+            return this.getLastUpdatedRoleName().then(name => this.getRole(name));
         }
 
         persist() {
@@ -548,7 +552,6 @@
             owner: user.username,
             name: room.name,
             originTime: room.originTime,
-            activeRole: user.roleId,
             collaborators: room.getCollaborators(),
             roles: {}
         };
