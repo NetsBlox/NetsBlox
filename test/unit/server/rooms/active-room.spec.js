@@ -535,12 +535,8 @@ describe('active-room', function() {
                 .then(_room => room = _room)
                 // set the owner
                 .then(() => room.setOwner(OWNER))
-                .then(() => {
-                    setTimeout(() => {
-                        assert.notEqual(room.name, PROJECT_NAME);
-                        done();
-                    }, ActiveRoom.SAVE_BATCH_DURATION);
-                });
+                .then(name => assert.notEqual(name, PROJECT_NAME))
+                .nodeify(done);
         });
 
         describe('persisted', function() {

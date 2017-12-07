@@ -60,6 +60,10 @@
             return utils.uuid(this.owner, this.name);
         }
 
+        getId() {
+            return this._id;
+        }
+
         fork(room) {
             const params = {
                 room: room,

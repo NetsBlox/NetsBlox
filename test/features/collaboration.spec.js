@@ -15,7 +15,8 @@ describe('collaboration', function() {
                 name: 'test-room',
                 owner: 'brian',
                 roles: {
-                    role: ['brian', 'cassie']
+                    role: ['brian', 'cassie'],
+                    role2: []
                 }
             }))
             .then(room => [p1, p2] = room.getSocketsAt('role'))
@@ -72,6 +73,33 @@ describe('collaboration', function() {
                     }
                 };
                 checkMsgs();
+            });
+    });
+
+    it('should not return actions from old roles', function(done) {
+        let actions = _.range(20).map(i => {
+            return {
+                type: 'user-action',
+                action: {id: i}
+            };
+        });
+
+        let requests = actions.reduce((a, b) => a.then(p1._socket.receive(b)), Q());
+        let messageCount = 0;
+        requests.then(() => {
+                messageCount = p2._socket.messages().length;
+                p2.role = 'role2';
+                return p2._socket.receive({type: 'request-actions', actionId: 9});
+            })
+            .then(() => {
+                let checkMsgs = function() {
+                    let msgs = p2._socket.messages().slice(messageCount)
+                        .filter(msg => msg.type === 'user-action');
+
+                    assert.equal(msgs.length, 0);
+                    done();
+                };
+                setTimeout(checkMsgs, 100);
             });
     });
 });

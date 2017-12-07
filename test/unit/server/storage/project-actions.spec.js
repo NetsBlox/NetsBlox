@@ -5,10 +5,12 @@ describe('project-actions', function() {
     const assert = require('assert');
     const ProjectActions = utils.reqSrc('storage/project-actions');
     const PROJECT_ID = 'testProjectId';
+    const ROLE_ID = 'testRoleId';
     const actions = _.range(20).map((e, i) => {
         return {
             type: 'user-action',
             projectId: PROJECT_ID,
+            roleId: ROLE_ID,
             action: {id: i}
         };
     });
@@ -17,7 +19,7 @@ describe('project-actions', function() {
     before(done => {
         utils.reset()
             .then(() => Q.all(actions.map(action => ProjectActions.store(action))))
-            .then(() => ProjectActions.getActionsAfter(PROJECT_ID, 9))
+            .then(() => ProjectActions.getActionsAfter(PROJECT_ID, ROLE_ID, 9))
             .then(_actions => requestedActions = _actions)
             .nodeify(done);
     });
