@@ -167,6 +167,22 @@ describe('actions', function() {
             SnapActions.requestMissingActions();
         });
 
+        it('should queue actions in order', function() {
+            SnapActions.addActionToQueue({id: 1});
+            SnapActions.addActionToQueue({id: 0});
+            SnapActions.addActionToQueue({id: 3});
+            SnapActions.addActionToQueue({id: 2});
+            SnapActions.queuedActions.forEach((action, index) => {
+                expect(action.id).to.be(index);
+            });
+        });
+
+        it('should ignore old actions', function() {
+            sockets._applyEvent = () => {
+                throw Error('applying old action!');
+            };
+            SnapActions.onReceiveAction({id: -1});
+        });
     });
 
     describe('accept/reject', function() {
