@@ -644,7 +644,10 @@ NetsBloxSocket.MessageHandlers = {
         let projectId = project.getId();
         return project.getRoleId(this.role)
             .then(roleId => ProjectActions.getActionsAfter(projectId, roleId, msg.actionId))
-            .then(actions => actions.forEach(action => this.send(action)));
+            .then(actions => {
+                actions.forEach(action => this.send(action));
+                this.send({type: 'request-actions-complete'});
+            });
     }
 };
 

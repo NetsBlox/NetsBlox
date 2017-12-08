@@ -100,20 +100,25 @@ SnapActions.onMessage = function(msg) {
 
 SnapActions.requestMissingActions = function() {
     var socket = this.ide().sockets;
-    return socket.sendJSON({
-        type: 'request-actions',
-        actionId: this.lastSeen
-    });
+    if (!socket.inActionRequest) {
+        socket.inActionRequest = true;
+        return socket.sendJSON({
+            type: 'request-actions',
+            actionId: this.lastSeen
+        });
+    }
 };
 
 SnapActions.onReceiveAction = function(msg) {
     // If the message is not building on the current commit, then
     // request the commits up until our current commit
+
     var lastId = this.lastSeen;
     if (this.queuedActions.length) {
         lastId = this.queuedActions[this.queuedActions.length-1].id;
     }
     var missingActions = lastId < (msg.id - 1);
+
     if (missingActions) {
         return this.requestMissingActions();
     }
