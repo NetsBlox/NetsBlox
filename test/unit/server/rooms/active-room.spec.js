@@ -197,9 +197,9 @@ describe('active-room', function() {
             });
         });
 
-        it('should update the roleId', function() {
-            assert.equal(s1.roleId, 'role1');
-            assert.equal('role2', s2.roleId);
+        it('should update the role name', function() {
+            assert.equal(s1.role, 'role1');
+            assert.equal('role2', s2.role);
         });
 
         it('should send update messages to each socket', function() {
@@ -535,12 +535,8 @@ describe('active-room', function() {
                 .then(_room => room = _room)
                 // set the owner
                 .then(() => room.setOwner(OWNER))
-                .then(() => {
-                    setTimeout(() => {
-                        assert.notEqual(room.name, PROJECT_NAME);
-                        done();
-                    }, ActiveRoom.SAVE_BATCH_DURATION);
-                });
+                .then(name => assert.notEqual(name, PROJECT_NAME))
+                .nodeify(done);
         });
 
         describe('persisted', function() {

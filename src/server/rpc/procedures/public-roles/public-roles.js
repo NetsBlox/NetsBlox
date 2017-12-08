@@ -12,7 +12,7 @@ module.exports = {
         return this.socket.getRoom().then(room => {
             var owner = room.owner,
                 roomName = room.name,
-                roleId = socket.roleId;
+                roleId = socket.role;
 
             trace(`${this.socket.username} has requested public id`);
             return [

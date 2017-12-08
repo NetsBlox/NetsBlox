@@ -84,28 +84,25 @@ module.exports = [
     },
     {
         Service: 'evictUser',
-        Parameters: 'userId,roleId,ownerId,roomName',
+        Parameters: 'userId,role,ownerId,roomName',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            var roleId = req.body.roleId,
-                roomName = req.body.roomName,
-                ownerId = req.body.ownerId,
-                roomId = Utils.uuid(ownerId, roomName),
-                userId = req.body.userId;
+            let {role, roomName, ownerId, userId} = req.body,
+                roomId = Utils.uuid(ownerId, roomName);
 
             return RoomManager.getExistingRoom(roomId)
                 .then(room => {
                     // Get the socket at the given room role
                     log(`roomId is ${roomId}`);
-                    log(`roleId is ${roleId}`);
+                    log(`role is ${role}`);
                     log(`userId is ${userId}`);
 
-                    const socket = room.getSocketsAt(roleId)
+                    const socket = room.getSocketsAt(role)
                         .find(socket => socket.uuid === userId);
 
                     if (!socket) {  // user is not online
-                        var err = `${userId} is not at ${roleId} at room ${roomId}`;
+                        var err = `${userId} is not at ${role} at room ${roomId}`;
                         this._logger.warn(err);
                         return res.send('user has been evicted!');
                     }
@@ -124,7 +121,7 @@ module.exports = [
     },
     {
         Service: 'inviteGuest',
-        Parameters: 'socketId,invitee,ownerId,roomName,roleId',
+        Parameters: 'socketId,invitee,ownerId,roomName,role',
         middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
         Note: '',
@@ -133,21 +130,21 @@ module.exports = [
             //  inviter
             //  invitee
             //  roomId
-            //  roleId
+            //  role
             var inviter = req.session.username,
                 invitee = req.body.invitee,
                 roomName = req.body.roomName,
                 roomId = utils.uuid(req.body.ownerId, roomName),
-                roleId = req.body.roleId,
-                inviteId = ['room', inviter, invitee, roomId, roleId].join('-'),
+                role = req.body.role,
+                inviteId = ['room', inviter, invitee, roomId, role].join('-'),
                 inviteeSockets = SocketManager.socketsFor(invitee);
 
-            log(`${inviter} is inviting ${invitee} to ${roleId} at ${roomId}`);
+            log(`${inviter} is inviting ${invitee} to ${role} at ${roomId}`);
 
             // Record the invitation
             invites[inviteId] = {
                 room: roomId,
-                role: roleId,
+                role: role,
                 invitee
             };
 
@@ -162,7 +159,7 @@ module.exports = [
                         roomName: roomName,
                         room: roomId,
                         inviter,
-                        role: roleId
+                        role: role
                     };
                     socket.send(msg);
                 }
@@ -181,7 +178,7 @@ module.exports = [
             //  inviter
             //  invitee
             //  roomId
-            //  roleId
+            //  role
             var username = req.session.username,
                 id = req.body.inviteId,
                 response = req.body.response === 'true',
@@ -221,13 +218,13 @@ module.exports = [
     },
     {
         Service: 'deleteRole',
-        Parameters: 'roleId,ownerId,roomName',
+        Parameters: 'role,ownerId,roomName',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
-                roleId = req.body.roleId,
+                role = req.body.role,
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName,
                 roomId = utils.uuid(ownerId, roomName);
@@ -238,36 +235,36 @@ module.exports = [
                         this._logger.error(`Could not find room ${roomId} for ${username}`);
                         return res.status(404).send('ERROR: Could not find room');
                     }
-                    
+
                     //  Verify that the username is either the ownerId
                     this._logger.trace(`ownerId is ${room.owner.username} and username is ${username}`);
                     if (!room.isEditableFor(username)) {
-                        this._logger.error(`${username} does not have permission to edit ${roleId} at ${roomId}`);
-                        return res.status(403).send(`ERROR: You do not have permission to delete ${roleId}`);
+                        this._logger.error(`${username} does not have permission to edit ${role} at ${roomId}`);
+                        return res.status(403).send(`ERROR: You do not have permission to delete ${role}`);
                     }
 
                     // Disallow deleting roles without evicting the users first
-                    const sockets = room.getSocketsAt(roleId) || [];
+                    const sockets = room.getSocketsAt(role) || [];
                     if (sockets.length) {
                         return res.status(403).send('ERROR: Cannot delete occupied role. Remove the occupants first.');
                     }
 
                     //  Remove the given role
-                    return room.removeRole(roleId)
+                    return room.removeRole(role)
                         .then(() => res.send('ok'));
                 });
         }
     },
     {
         Service: 'moveToRole',
-        Parameters: 'dstId,roleId,ownerId,roomName,socketId',
+        Parameters: 'dstId,role,ownerId,roomName,socketId',
         middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             var socketId = req.body.socketId;
             var socket = SocketManager.getSocket(socketId),
-                roleId = req.body.roleId,
+                role = req.body.role,
                 dstId = req.body.dstId,
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName,
@@ -285,7 +282,7 @@ module.exports = [
                     }
 
                     //  Cache the current state in the active room
-                    return room.saveRole(roleId)
+                    return room.saveRole(role)
                         .then(() => {
                             // Reply w/ the new role code
                             return room.getRole(dstId);
@@ -305,14 +302,14 @@ module.exports = [
     },
     {  // Create a new role and copy this project's blocks to it
         Service: 'cloneRole',
-        Parameters: 'roleId,socketId',
+        Parameters: 'role,socketId',
         middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             // Check that the requestor is the owner
             var socket = SocketManager.getSocket(req.body.socketId),
-                roleId = req.body.roleId,
+                role = req.body.role,
                 room = socket._room;
 
             if (!socket.canEditRoom()) {
@@ -320,7 +317,7 @@ module.exports = [
                 return res.status(403).send('ERROR: Guests can\'t clone roles');
             }
 
-            return room.cloneRole(roleId)
+            return room.cloneRole(role)
                 .then(newRole => res.send(encodeURIComponent(newRole)))
                 .catch(err => {
                     this._logger.error(`Clone role failed: ${err}`);
@@ -339,8 +336,8 @@ module.exports = [
                 invitee = req.body.invitee,
                 roomName = req.body.roomName,
                 roomId = utils.uuid(req.body.ownerId, roomName),
-                roleId = req.body.roleId,
-                inviteId = ['collab', inviter, invitee, roomId, roleId].join('-'),
+                role = req.body.role,
+                inviteId = ['collab', inviter, invitee, roomId, role].join('-'),
                 inviteeSockets = SocketManager.socketsFor(invitee);
 
             log(`${inviter} is inviting ${invitee} to ${roomId}`);
@@ -363,7 +360,7 @@ module.exports = [
                         roomName: roomName,
                         room: roomId,
                         inviter,
-                        role: roleId
+                        role: role
                     };
                     socket.send(msg);
                 }

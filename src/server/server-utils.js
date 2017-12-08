@@ -16,9 +16,9 @@ var uuid = function(owner, name) {
 // Helpers for routes
 var APP_REGEX = /app="([^"]+)"/;
 var getRoomXML = function(project) {
-    return project.getRoles()
+    return project.getSortedRoles()
         .then(roles => {
-            roles.sort(role => role.ProjectName === project.activeRole ? -1 : 1);
+            roles = sortByDateField(roles, 'Updated', -1);
 
             var roleXml = roles.map(role =>
                 `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
@@ -210,6 +210,15 @@ SnapXml.format = function (string) {
     });
 };
 
+const sortByDateField = function(list, field, dir) {
+    dir = dir || 1;
+    return list.sort((r1, r2) => {
+        let [aTime, bTime] = [r1[field], r2[field]];
+        let [aDate, bDate] = [new Date(aTime), new Date(bTime)];
+        return aDate < bDate ? -dir : dir;
+    });
+};
+
 module.exports = {
     serialize,
     serializeArray,
@@ -229,5 +238,6 @@ module.exports = {
     getEmptyRole,
     getArgumentsFor,
     APP,
-    version
+    version,
+    sortByDateField
 };
