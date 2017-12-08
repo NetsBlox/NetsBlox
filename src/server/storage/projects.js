@@ -121,6 +121,11 @@
             return query;
         }
 
+        getRoleActionIdById(roleId) {
+            return this.getRoleById(roleId)
+                .then(role => utils.xml.actionId(role.SourceCode))
+        }
+
         getRoleIds() {
             return this.getRawProject()
                 .then(project => Object.keys(project.roles || {}));
