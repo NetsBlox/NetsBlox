@@ -138,6 +138,53 @@ describe('actions', function() {
         });
     });
 
+    describe('action queue', function() {
+        let oldSendJSON = null;
+        let oldApplyEvent = null;
+        let sockets = null;
+
+        before(function() {
+            sockets = driver.ide().sockets;
+            oldSendJSON = sockets.sendJSON;
+            oldApplyEvent = sockets._applyEvent;
+        });
+
+        afterEach(function() {
+            sockets.sendJSON = oldSendJSON;
+            sockets._applyEvent = oldApplyEvent;
+            SnapActions.queuedActions = [];
+        });
+
+        it('should not request-actions if already requested', function() {
+            sockets.sendJSON = () => {
+                // first request
+                sockets.sendJSON = () => {
+                    throw Error('Requested actions twice!');
+                };
+                SnapActions.requestMissingActions();
+            };
+
+            SnapActions.requestMissingActions();
+        });
+
+        it('should queue actions in order', function() {
+            SnapActions.addActionToQueue({id: 1});
+            SnapActions.addActionToQueue({id: 0});
+            SnapActions.addActionToQueue({id: 3});
+            SnapActions.addActionToQueue({id: 2});
+            SnapActions.queuedActions.forEach((action, index) => {
+                expect(action.id).to.be(index);
+            });
+        });
+
+        it('should ignore old actions', function() {
+            sockets._applyEvent = () => {
+                throw Error('applying old action!');
+            };
+            SnapActions.onReceiveAction({id: -1});
+        });
+    });
+
     describe('accept/reject', function() {
         beforeEach(done => driver.reset(done));
 
