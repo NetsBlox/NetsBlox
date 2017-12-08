@@ -3,12 +3,13 @@
 
 'use strict';
 
-var R = require('ramda'),
-    Q = require('q'),
-    _ = require('lodash'),
-    utils = require('../server-utils'),
-    Users = require('../storage/users'),
-    Constants = require('../../common/constants');
+const R = require('ramda');
+const Q = require('q');
+const _ = require('lodash');
+const utils = require('../server-utils');
+const Users = require('../storage/users');
+const Constants = require('../../common/constants');
+const ProjectActions = require('../storage/project-actions');
 
 class ActiveRoom {
 
@@ -119,13 +120,27 @@ class ActiveRoom {
         const role = socket.role;
         const sockets = this.roles[role] || [];
         const index = sockets.indexOf(socket);
+        let result = Q();
 
         if (index > -1) {
             sockets.splice(index, 1);
             socket.role = null;
+
+            // if this is the last one, remove unsaved project-actions for the given role
+            if (sockets.length === 0) {
+                let timestamp = new Date();
+                let project = this.getProject();
+                let roleId = null;
+                let projectId = project.getId();
+                result = project.getRoleId(role)
+                    .then(id => roleId = id)
+                    .then(() => project.getRoleActionIdById(roleId))
+                    .then(actionId => ProjectActions.clearActionsAfter(projectId, roleId, actionId, timestamp));
+            }
         } else {
             this._logger.warn(`could not remove socket ${socket.username} from ${this.uuid}. Not found`);
         }
+        return result;
     }
 
     remove (socket) {
