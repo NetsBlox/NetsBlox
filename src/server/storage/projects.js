@@ -167,13 +167,18 @@
             if (!roles.length) return Q();
 
             const query = {$set: {}};
+            let rawRoles = null;
             return Q.all(roles.map(role => storeRoleBlob(role)))
                 .then(roles => {
-                    if (this.isDeleted()) throw new Error('cannot complete setRoles: project has been deleted!');
-                    const names = roles.map(role => role.ProjectName);
-                    const ids = this.getRoleIdsFor(roles);
-                    roles.forEach((role, i) => this.addSetRoleToQuery(ids[i], role, query));
+                    if (this.isDeleted()) return;
+                    rawRoles = roles;
+                    const names = rawRoles.map(role => role.ProjectName);
                     this._logger.trace(`updating roles: ${names.join(',')} in ${this.owner}/${this.name}`);
+                    return this.getRoleIdsFor(names);
+                })
+                .then(ids => {
+                    if (this.isDeleted()) throw new Error('cannot complete setRoles: project has been deleted!');
+                    rawRoles.forEach((role, i) => this.addSetRoleToQuery(ids[i], role, query));
                     return this._db.update(this.getStorageId(), query);
                 });
         }
@@ -320,15 +325,20 @@
         save() {
             const query = {$set: {}};
             const options = {};
+            let roles = null;
 
             this._logger.trace(`saving project ${this.owner}/${this.name}`);
             return this.collectSaveableRoles()
-                .then(roles => {
+                .then(saveableRoles => {
                     if (this.isDeleted()) return;
+                    roles = saveableRoles;
                     const roleNames = roles.map(role => role.ProjectName);
                     this._logger.trace(`updated roles are ${roleNames.join(',')}`);
 
-                    let ids = this.getRoleIdsFor(roles);
+                    return this.getRoleIdsFor(roleNames);
+                })
+                .then(ids => {
+                    if (this.isDeleted()) return;
                     roles.forEach((role, i) => this.addSetRoleToQuery(ids[i], role, query));
                     query.$set.lastUpdatedAt = Date.now();
 
