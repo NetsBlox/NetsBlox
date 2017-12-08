@@ -18,7 +18,12 @@ var counter = 0,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
     RoomManager = require('./room-manager'),
-    CONDENSED_MSGS = ['project-response', 'import-room', 'record-action'],
+    CONDENSED_MSGS = [
+        'project-response',
+        'import-room',
+        'record-action',
+        'user-action'
+    ],
     PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/,
     SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
 
@@ -168,7 +173,7 @@ class NetsBloxSocket {
                 type = msg.type,
                 result = Q();
 
-            this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message`);
+            this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message from ${this.username} (${this.uuid})`);
             if (NetsBloxSocket.MessageHandlers[type]) {
                 result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
             } else {
@@ -644,7 +649,10 @@ NetsBloxSocket.MessageHandlers = {
         let projectId = project.getId();
         return project.getRoleId(this.role)
             .then(roleId => ProjectActions.getActionsAfter(projectId, roleId, msg.actionId))
-            .then(actions => actions.forEach(action => this.send(action)));
+            .then(actions => {
+                actions.forEach(action => this.send(action));
+                this.send({type: 'request-actions-complete'});
+            });
     }
 };
 
