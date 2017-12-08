@@ -95,6 +95,17 @@ describe('collaboration', function() {
                 });
         });
 
+        it('should send request-actions-complete', function(done) {
+            let messageCount = user._socket.messages().length;
+            user._socket.receive({type: 'request-actions', actionId: 9})
+                .then(() => {
+                    let msgs = user._socket.messages().slice(messageCount);
+                    let completeMsg = msgs.find(msg => msg.type === 'request-actions-complete');
+                    assert(completeMsg);
+                })
+                .nodeify(done);
+        });
+
         it('should not return actions from old roles', function(done) {
             let messageCount = user._socket.messages().length;
             user.role = 'role2';
