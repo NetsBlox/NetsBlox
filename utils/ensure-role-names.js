@@ -22,6 +22,7 @@ storage.connect()
         let Counts = {};
         Counts.badProjects = 0;
         Counts.missingRoles = 0;
+        Counts.noRoles = 0;
         Counts.wrongNameRoles = 0;
         return collection.find({}).forEach(doc => {
             let query = {_id: doc._id};
@@ -68,6 +69,7 @@ storage.connect()
 
             // If it has no remaining roles, remove!
             if (roleCount === 0) {
+                Counts.noRoles++;
                 let msg = `${humanId} has no valid roles.`;
                 console.log(msg);
                 if (!program.dryRun) {
@@ -80,6 +82,7 @@ storage.connect()
             console.log('\n-------------- summary --------------');
             console.log(`${action} ${Counts.badProjects} malformed projects`);
             console.log(`${action} ${Counts.missingRoles} missing roles`);
+            console.log(`${action} ${Counts.noRoles} without any roles`);
             console.log(`${action} ${Counts.wrongNameRoles} incorrectly named roles`);
             return operation.then(() => storage.disconnect());
         });
