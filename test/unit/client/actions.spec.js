@@ -124,11 +124,19 @@ describe('actions', function() {
             var room = driver.ide().room;
             var isEditable = room.isEditable;
 
-            room.isEditable = () => false;
-            var action = SnapActions.openProject();
-            room.isEditable = isEditable;
-            if (action) return action.accept(done);
-            done('Could not openProject');
+            driver.addBlock('forward').accept(() => {
+                room.isEditable = () => false;
+                var action = SnapActions.openProject();
+
+                setTimeout(function() {
+                    room.isEditable = isEditable;
+                    // make sure there is no block
+                    let sprite = driver.ide().currentSprite;
+                    let blocks = sprite.scripts.children;
+                    if (blocks.length) return done('Could not openProject');
+                    done();
+                }, 150);
+            });
         });
 
         it('should get unique id with newId', function() {
