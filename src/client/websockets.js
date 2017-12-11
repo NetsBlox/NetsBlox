@@ -18,10 +18,15 @@ var WebSocketManager = function (ide) {
     this.errored = false;
     this.hasConnected = false;
     this.connected = false;
+    this.inActionRequest = false;
     this.serializer = new NetsBloxSerializer();
 };
 
 WebSocketManager.MessageHandlers = {
+    'request-actions-complete': function() {
+        this.inActionRequest = false;
+    },
+
     'new-version-available': function() {
         this.ide.showUpdateNotification();
     },
@@ -342,6 +347,7 @@ WebSocketManager.prototype.onConnect = function() {
     } else {
         SnapCloud.passiveLogin(this.ide, afterConnect, true);
     }
+    this.inActionRequest = false;
 };
 
 WebSocketManager.prototype.reportClientVersion = function() {
