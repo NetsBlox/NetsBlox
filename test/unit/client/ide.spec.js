@@ -108,13 +108,12 @@ describe('ide', function() {
             var ide = driver.ide();
 
             // Change the language and create a sprite
-            ide.setLanguage('hu');
+            ide.setLanguage('en');
             var validate = function() {
                 var spriteIds = ide.sprites.asArray().map(sprite => sprite.id);
                 try {
                     expect(spriteIds.length).to.be(2);
                     expect(spriteIds[0]).to.not.be(spriteIds[1]);
-                    ide.setLanguage('en');
                     done();
                 } catch (e) {
                     ide.setLanguage('en');
