@@ -32,8 +32,8 @@ describe('ide', function() {
                 }
                 done();
             };
-            ide.exportSingleRoleXml();
             ide.exportMultiRoleXml();
+            ide.exportSingleRoleXml();
         });
     });
 
