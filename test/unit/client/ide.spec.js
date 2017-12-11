@@ -316,7 +316,6 @@ describe('ide', function() {
                 driver.click(labelBlock);
 
                 // Wait for some sort of result
-                driver.dialog().destroy();
                 var sprite = driver.ide().sprites.at(1);
                 var startX = sprite.xPosition();
                 driver.waitUntil(
