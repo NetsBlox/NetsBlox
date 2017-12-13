@@ -1,8 +1,223 @@
-/* globals ProjectDialogMorph, ensureFullUrl, Morph, AlignmentMorph, InputFieldMorph, localize,
+/* globals ProjectDialogMorph, world, colors, ensureFullUrl, Morph, AlignmentMorph, InputFieldMorph, localize,
    Point, TextMorph, Color, nop, ListMorph, IDE_Morph, Process, BlockImportDialogMorph,
    BlockExportDialogMorph, detect, SnapCloud, SnapSerializer, ScrollFrameMorph,
    DialogBoxMorph, SnapActions, SpeechBubbleMorph
    */
+const NUM_BUTTONS = 2,
+    BUTTON_SIZE = {
+        width: 200,
+        height: 100
+    },
+    GAP = 50;
+// TODO move var definitions 
+
+function getNbMorph() {
+    return world.children[0];
+}
+
+function controlBarButtons() {
+    var cb = getNbMorph().controlBar;
+    var buttons = [];
+    for (var key in cb) {
+        var val = cb[key];
+        if (val instanceof ToggleButtonMorph || val instanceof PushButtonMorph) buttons.push(val);
+    }
+    return buttons;
+}
+
+var mobileMode = {
+    // assuming top pos for horizontal alignment and right for vertical
+    _stackMode: 'h' // stack controls horizontally or vertically
+};
+
+// activate mobilemode
+mobileMode.init = function() {
+
+    getNbMorph().toggleAppMode(true);
+    this.hideButtons();
+    this.transformButtons();
+};
+
+mobileMode.hideButtons = function() {
+    controlBarButtons().forEach(btn => btn.hide());
+};
+
+mobileMode.emptySpaces = function() {
+    const h = window.innerHeight,
+        w = window.innerWidth,
+        bounds = world.children[0].stage.bounds;
+    const spaces = {
+        top: bounds.origin.y,
+        left: bounds.origin.x,
+        right: w - bounds.corner.x,
+        bottom: h - bounds.corner.y
+    };
+    return spaces;
+};
+
+
+mobileMode.optimalRectangle = function(spaces) {
+    // assuming stage is centered
+    // WARN stage could fill up the whole window
+    let bestSide,
+        stage = world.children[0].stage;
+    let rect = {
+        topRight: {
+            x: window.innerWidth,
+            y: 0
+        },
+        bottomLeft: {}
+    };
+
+    if (spaces.top > spaces.right) {
+        this._stackMode = 'h';
+        bestSide = 'top';
+    } else {
+        this._stackMode = 'v';
+        bestSide = 'right';
+    }
+    if (spaces[bestSide] < 50) throw new Error('no optimal side.');
+    switch(bestSide) {
+    case 'right':
+        rect.bottomLeft.x = stage.bounds.corner.x;
+        rect.bottomLeft.y = window.innerHeight;
+        break;
+    case 'top':
+        rect.bottomLeft.x = 0;
+        rect.bottomLeft.y = stage.bounds.origin.y;
+        break;
+    }
+    rect.height = Math.abs(rect.topRight.y - rect.bottomLeft.y);
+    rect.width = Math.abs(rect.topRight.x - rect.bottomLeft.x);
+    return rect;
+};
+
+mobileMode.computeControlPos = function() {
+    let totalH = window.innerHeight,
+        totalW = window.innerWidth,
+        stageBounds = getNbMorph().stage.bounds,
+        spaces = this.emptySpaces(),
+        controls;
+
+    let targetRect = this.optimalRectangle(spaces);
+    // stack button vertically or horizontally
+    if  (this._stackMode === 'v') {
+        // stack vertically
+        controls = {
+            origin: {},
+            height: NUM_BUTTONS * BUTTON_SIZE.height + (NUM_BUTTONS-1) * GAP,
+            width: BUTTON_SIZE.width,
+        };
+        controls.origin.y = (totalH - controls.height) / 2;
+        controls.origin.x = targetRect.bottomLeft.x + (targetRect.width - controls.width) / 2;
+
+    } else if (this._stackMode === 'h') {
+        //stack vertically
+        controls = {
+            origin: {},
+            width: NUM_BUTTONS * BUTTON_SIZE.width + (NUM_BUTTONS-1) * GAP,
+            height: BUTTON_SIZE.height,
+        };
+        controls.origin.x = (totalW - controls.width) / 2;
+        controls.origin.y = (targetRect.bottomLeft.y - controls.height)/2;
+    }
+    return controls;
+};
+
+mobileMode.createButtons = function(box) {
+    let controlBar = new Morph();
+    // controlBar.color = this.frameColor;
+    // TODO fluid dimensions?
+    controlBar.setHeight(box.height); // height is fixed
+    controlBar.setWidth(box.width); // width is fixed
+
+    // stopButton
+    var stopButton = new ToggleButtonMorph(
+        null, // colors
+        this, // the IDE is the target
+        'stopAllScripts',
+        [
+            new SymbolMorph('octagon', 14),
+            new SymbolMorph('square', 14)
+        ],
+        function () {  // query
+            return getNbMorph().stage ?
+                getNbMorph().stage.enableCustomHatBlocks &&
+                        getNbMorph().stage.threads.pauseCustomHatBlocks
+                : true;
+        }
+    );
+    stopButton.corner = 12;
+    stopButton.color = colors[0];
+    stopButton.highlightColor = colors[1];
+    stopButton.pressColor = colors[2];
+    stopButton.labelMinExtent = new Point(36, 18);
+    stopButton.padding = 0;
+    stopButton.labelShadowOffset = new Point(-1, -1);
+    stopButton.labelShadowColor = colors[1];
+    stopButton.labelColor = new Color(200, 0, 0);
+    stopButton.contrast = this.buttonContrast;
+    stopButton.drawNew();
+    stopButton.fixLayout();
+    stopButton.refresh();
+
+    var startButton = new PushButtonMorph(
+        this,
+        'pressStart',
+        new SymbolMorph('flag', 14)
+    );
+    startButton.corner = 12;
+    startButton.color = colors[0];
+    startButton.highlightColor = colors[1];
+    startButton.pressColor = colors[2];
+    startButton.labelMinExtent = new Point(36, 18);
+    startButton.padding = 0;
+    startButton.labelShadowOffset = new Point(-1, -1);
+    startButton.labelShadowColor = colors[1];
+    startButton.labelColor = new Color(0, 200, 0);
+    startButton.contrast = this.buttonContrast;
+    startButton.drawNew();
+    // startButton.hint = 'start green\nflag scripts';
+    startButton.fixLayout();
+
+    controlBar.add(startButton, stopButton);
+};
+
+mobileMode.transformButtons = function() {
+    const controls = this.computeControlPos(),
+        cb = getNbMorph().controlBar,
+        buttons = [
+            cb.startButton,
+            cb.stopButton
+        ];
+    // cb.hide();
+    // resize
+    buttons.forEach(but => {
+        but.setWidth(BUTTON_SIZE.width);
+        but.setHeight(BUTTON_SIZE.height);
+    });
+
+    // cb.setWidth(controls.width);
+    // cb.setHeight(controls.height);
+    // cb.setPosition(new Point(controls.origin.x, controls.origin.y));
+    // cb.fixLayout();
+
+    // set button positions manually
+    buttons.forEach( (button, idx) => {
+        let x,y;
+        if (this._stackMode === 'v') {
+            x = controls.origin.x;
+            y = controls.origin.y + idx * BUTTON_SIZE.height + idx * GAP;
+        } else if (this._stackMode === 'h') {
+            y = controls.origin.y;
+            x = controls.origin.x + idx * BUTTON_SIZE.width + idx * GAP;
+        }
+        button.setPosition(new Point(x, y));
+        button.show();
+    });
+
+};
+
 ProjectDialogMorph.prototype.buildContents = function () {
     var thumbnail, notification;
 
