@@ -1,13 +1,8 @@
-/* globals ProjectDialogMorph, world, colors, ensureFullUrl, Morph, AlignmentMorph, InputFieldMorph, localize,
+/* globals ProjectDialogMorph, world, SymbolMorph, PushButtonMorph, ToggleButtonMorph, ensureFullUrl, Morph, AlignmentMorph, InputFieldMorph, localize,
    Point, TextMorph, Color, nop, ListMorph, IDE_Morph, Process, BlockImportDialogMorph,
    BlockExportDialogMorph, detect, SnapCloud, SnapSerializer, ScrollFrameMorph,
    DialogBoxMorph, SnapActions, SpeechBubbleMorph
    */
-
-function getNbMorph() {
-    return world.children[0];
-}
-
 
 function isMobileDevice() {
     return (typeof window.orientation !== 'undefined') || (navigator.userAgent.indexOf('Mobile') !== -1);
@@ -19,7 +14,6 @@ IDE_Morph.prototype.toggleAppMode = function() {
     var ideMorphIns = world.children[0];
     toggleAppMode.apply(ideMorphIns, arguments);
     if (isMobileDevice()) {
-        console.log('detected a mobile device');
         mobileMode.init();
     }
 };
@@ -69,9 +63,9 @@ mobileMode.emptySpaces = function() {
 mobileMode.optimalRectangle = function(spaces) {
     // assuming stage is centered
     // WARN stage could fill up the whole window
-    let bestSide,
+    var bestSide,
         stage = world.children[0].stage;
-    let rect = {
+    var rect = {
         topRight: {
             x: window.innerWidth,
             y: 0
@@ -86,7 +80,7 @@ mobileMode.optimalRectangle = function(spaces) {
         this._stackMode = 'v';
         bestSide = 'right';
     }
-    if (spaces[bestSide] < 50) throw new Error('no optimal side.');
+    if (spaces[bestSide] < 50) throw new Error('no space on the sides.');
     switch(bestSide) {
     case 'right':
         rect.bottomLeft.x = stage.bounds.corner.x;
@@ -103,7 +97,7 @@ mobileMode.optimalRectangle = function(spaces) {
 };
 
 mobileMode.computeControlPos = function(targetRect) {
-    let totalH = window.innerHeight,
+    var totalH = window.innerHeight,
         totalW = window.innerWidth,
         numButtons = this.buttons.length,
         btnHeight = this.buttons[0].height(),
@@ -138,9 +132,9 @@ mobileMode.createButtons = function() {
     var SYM_SIZE = 40,
         BTN_PAD = SYM_SIZE * 0.8;
     var colors = [
-        new Color(20, 20, 20),
-        new Color(30, 30, 30),
         new Color(50, 50, 50),
+        new Color(70, 70, 70),
+        new Color(90, 90, 90),
     ];
     var self = this;
     var buttons = [];
@@ -205,12 +199,12 @@ mobileMode.positionButtons = function(buttons, controls) {
         btnWidth = buttons[0].width();
 
     // position buttons
-    buttons.forEach( (button, idx) => {
-        let x,y;
-        if (this._stackMode === 'v') {
+    buttons.forEach( function(button, idx) {
+        var x,y;
+        if (self._stackMode === 'v') {
             x = controls.origin.x;
             y = controls.origin.y + idx * btnHeight + idx * self.buttonsGap;
-        } else if (this._stackMode === 'h') {
+        } else if (self._stackMode === 'h') {
             y = controls.origin.y;
             x = controls.origin.x + idx * btnWidth + idx * self.buttonsGap;
         }
