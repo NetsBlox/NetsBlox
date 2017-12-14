@@ -291,45 +291,51 @@ RoomMorph.prototype.updateLabels = function() {
         this.add(label);
         this.roleMorphs[roles[i]] = label;
     }
+};
 
+RoomMorph.prototype.getRadius = function() {
+    return Math.min(this.width(), this.height())/2;
+};
+
+RoomMorph.prototype.getRoleSize = function() {
+    var radius = Math.min(this.width(), this.height())/2;
+
+    if (this.getRoleMorphs().length < 3) {
+        // These values should be computed...
+        // FIXME
+        return radius * 0.25;
+    } else {
+        return radius * 0.2;
+    }
 };
 
 RoomMorph.prototype.fixLayout = function() {
     // Position the roles
     this.roles = this.roles || this.getDefaultRoles();
 
-    var roles = Object.keys(this.roles),
+    var roles = this.getRoleMorphs(),
         angleSize = 2*Math.PI/roles.length,
         angle = -Math.PI / 2 + this.index*angleSize,
         len = RoleMorph.COLORS.length,
-        color,
-        x,y, circleSize;
+        radius = this.getRadius(),
+        position,
+        circleSize = this.getRoleSize(),
+        x,y,
+        role;
 
-    if (roles.length < 3) {
-        circleSize = radius * 0.25;
-    } else {
-        circleSize = radius * 0.2;
-    }
-
-    //// Draw the role
-    //cxt.beginPath();
-    //cxt.arc(center + x - 0.06 * radius, center + y - 0.04 * radius, circleSize, 0, 2 * Math.PI, false);
+    // Draw the role
     for (var i = 0; i < roles.length; i++) {
         // position the label
-        angle = -Math.PI / 2 + this.index*angleSize,
+        role = roles[i];
+        angle = -Math.PI / 2 + i*angleSize,
         x = 0.65 * radius * Math.cos(angle);
         y = 0.65 * radius * Math.sin(angle);
+        position = this.center().add(new Point(x, y));
         color = RoleMorph.COLORS[i%len].toString();
 
-        label = this.roleMorphs[roles[i]];
-        // TODO: get the size
-        // TODO: get the center
-        label.setExtent(this.extent());
-        label.setCenter(this.center());
-        label.setColor(color);
+        role.setCenter(position);
+        role.setExtent(new Point(circleSize, circleSize));
     }
-
-
 };
 
 RoomMorph.prototype.drawNew = function() {
@@ -1001,10 +1007,11 @@ RoleMorph.prototype.destroy = function() {
 RoleMorph.prototype.drawNew = function() {
     var radius = Math.min(this.width(), this.height())/2,
         center = new Point(this.width()/2-radius, this.height()/2-radius).add(radius),
-        pos,
         cxt;
 
     // Create the image
+    console.log('width', this.width());
+    console.log('height', this.height());
     this.image = newCanvas(this.extent());
     cxt = this.image.getContext('2d');
 
@@ -1048,7 +1055,7 @@ RoleMorph.prototype.drawNew = function() {
 
     this.label = new RoleLabelMorph(this.name, this.users);
     this.add(this.label);
-    this.label.setCenter(pos);
+    this.label.setCenter(this.center());
 };
 
 RoleMorph.prototype.mouseClickLeft = function() {
@@ -1274,16 +1281,15 @@ EditRoleMorph.prototype.evictUser = function() {
 };
 
 // FIXME: rename this morph. It has a really horrible name
-// Should it be merged with the room?
-ProjectsMorph.prototype = new ScrollFrameMorph();
-ProjectsMorph.prototype.constructor = ProjectsMorph;
-ProjectsMorph.uber = ScrollFrameMorph.prototype;
+RoomEditorMorph.prototype = new ScrollFrameMorph();
+RoomEditorMorph.prototype.constructor = RoomEditorMorph;
+RoomEditorMorph.uber = ScrollFrameMorph.prototype;
 
-function ProjectsMorph(room, sliderColor) {
+function RoomEditorMorph(room, sliderColor) {
     var myself = this;
 
     // TODO: Get the room info and update when websockets do stuff
-    ProjectsMorph.uber.init.call(this, null, null, sliderColor);
+    RoomEditorMorph.uber.init.call(this, null, null, sliderColor);
     this.acceptsDrops = false;
     this.room = room;
     this.add(room);
@@ -1300,14 +1306,14 @@ function ProjectsMorph(room, sliderColor) {
     this.replayControls.hide();
     this.updateControlButtons();
 
-    // Update the ProjectsMorph when the room changes
+    // Update the RoomEditorMorph when the room changes
     this.room.changed = function() {
         myself.updateRoom();
     };
     this.updateRoom();
 }
 
-ProjectsMorph.prototype.updateControlButtons = function() {
+RoomEditorMorph.prototype.updateControlButtons = function() {
     var sf = this.parentThatIsA(ScrollFrameMorph);
 
     if (!sf) {return; }
@@ -1324,7 +1330,7 @@ ProjectsMorph.prototype.updateControlButtons = function() {
     sf.adjustToolBar();
 };
 
-ProjectsMorph.prototype.addToggleReplay = function() {
+RoomEditorMorph.prototype.addToggleReplay = function() {
     var myself = this,
         toolBar = new AlignmentMorph(),
         shade = (new Color(140, 140, 140));
@@ -1353,7 +1359,9 @@ ProjectsMorph.prototype.addToggleReplay = function() {
     return toolBar;
 };
 
-ProjectsMorph.prototype.fixLayout = function() {
+RoomEditorMorph.prototype.fixLayout = function() {
+    this.room.fixLayout();
+
     this.replayControls.setWidth(this.width()-40);
     this.replayControls.setHeight(80);
     this.replayControls.setCenter(new Point(this.center().x, 0));
@@ -1361,21 +1369,21 @@ ProjectsMorph.prototype.fixLayout = function() {
     this.replayControls.fixLayout();
 };
 
-ProjectsMorph.prototype.setExtent = function(point) {
-    ProjectsMorph.uber.setExtent.call(this, point);
+RoomEditorMorph.prototype.setExtent = function(point) {
+    RoomEditorMorph.uber.setExtent.call(this, point);
     this.fixLayout();
 };
 
-ProjectsMorph.prototype.isReplayMode = function() {
+RoomEditorMorph.prototype.isReplayMode = function() {
     return this.replayControls.enabled;
 };
 
-ProjectsMorph.prototype.exitReplayMode = function() {
+RoomEditorMorph.prototype.exitReplayMode = function() {
     this.room.hideSentMsgs();
     this.replayControls.disable();
 };
 
-ProjectsMorph.prototype.enterReplayMode = function() {
+RoomEditorMorph.prototype.enterReplayMode = function() {
     var ide = this.parentThatIsA(IDE_Morph);
     var url = ide.resourceURL('socket', 'messages', ide.sockets.uuid);
     var messages = [];
@@ -1395,7 +1403,7 @@ ProjectsMorph.prototype.enterReplayMode = function() {
     }
 };
 
-ProjectsMorph.prototype.updateRoom = function() {
+RoomEditorMorph.prototype.updateRoom = function() {
     // Draw the room
     this.room.drawNew();
     this.drawMsgPalette();  // Draw the message palette
@@ -1415,7 +1423,7 @@ ProjectsMorph.prototype.updateRoom = function() {
 };
 
 // TODO: Update this...
-ProjectsMorph.prototype.drawMsgPalette = function() {
+RoomEditorMorph.prototype.drawMsgPalette = function() {
     var width = 0,  // default width
         stage = this.room.ide.stage;
 
@@ -1474,12 +1482,12 @@ ProjectsMorph.prototype.drawMsgPalette = function() {
     this.vBar.hide();
 };
 
-ProjectsMorph.prototype.destroy = function() {
+RoomEditorMorph.prototype.destroy = function() {
     this.room.changed = nop;
-    ProjectsMorph.uber.destroy.call(this);
+    RoomEditorMorph.uber.destroy.call(this);
 };
 
-ProjectsMorph.prototype.addButton = function(params) {
+RoomEditorMorph.prototype.addButton = function(params) {
     var selector = params.selector,
         icon = params.icon,
         hint = params.hint,

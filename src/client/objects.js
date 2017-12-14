@@ -3,7 +3,7 @@
    localize, BlockEditorMorph, BlockDialogMorph, TextMorph, PushButtonMorph,
    MessageFrame, BlockMorph, ToggleMorph, MessageCreatorMorph,
    VariableDialogMorph, SnapCloud, contains, List, CommandBlockMorph,
-   MessageType, isNil, RingMorph, SnapActions, ProjectsMorph, NetsBloxMorph,
+   MessageType, isNil, RingMorph, SnapActions, RoomEditorMorph, NetsBloxMorph,
    SnapUndo, newCanvas, ReplayControls, copy*/
 
 SpriteMorph.prototype.categories =
@@ -1012,7 +1012,7 @@ SpriteMorph.prototype.deleteMessageType = function(name) {
 
     // Refresh message palette if possible in case the user is already on the 'Room' tab
     try {
-        ide.room.parentThatIsA(ProjectsMorph).updateRoom();
+        ide.room.parentThatIsA(RoomEditorMorph).updateRoom();
         if (ide && ide.currentTab === 'room') {
             ide.spriteBar.tabBar.tabTo('room');
         }
@@ -1053,7 +1053,7 @@ StageMorph.prototype.addMessageType = function (messageType) {
     // Refresh message palette if possible in case the user is already on the 'Room' tab
     try {
         var ide = this.parentThatIsA(NetsBloxMorph);
-        ide.room.parentThatIsA(ProjectsMorph).updateRoom();
+        ide.room.parentThatIsA(RoomEditorMorph).updateRoom();
         if (ide && ide.currentTab === 'room') {
             ide.spriteBar.tabBar.tabTo('room');
         }

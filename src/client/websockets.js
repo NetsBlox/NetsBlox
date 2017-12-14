@@ -1,5 +1,5 @@
 /*globals nop, SnapCloud, SERVER_URL, SERVER_ADDRESS, Context, SpriteMorph, StageMorph, SnapActions,
-  DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject, NetsBloxSerializer,
+  DialogBoxMorph, IDE_Morph, RoomEditorMorph, isObject, NetsBloxSerializer,
   localize*/
 // WebSocket Manager
 
@@ -171,7 +171,7 @@ WebSocketManager.MessageHandlers = {
                             myself.ide.showMessage(notification, 2);
 
                             // refresh message palette
-                            ide.room.parentThatIsA(ProjectsMorph).updateRoom();
+                            ide.room.parentThatIsA(RoomEditorMorph).updateRoom();
                             if (ide && ide.currentTab === 'room') {
                                 ide.spriteBar.tabBar.tabTo('room');
                             }

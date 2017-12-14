@@ -1,5 +1,5 @@
 /* global RoomMorph, SERVER_URL, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
-   WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
+   WebSocketManager, SpriteMorph, Point, RoomEditorMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
    NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo,
@@ -1032,7 +1032,7 @@ NetsBloxMorph.prototype.createSpriteEditor = function() {
             this.spriteEditor.destroy();
         }
 
-        this.spriteEditor = new ProjectsMorph(this.room, this.sliderColor);
+        this.spriteEditor = new RoomEditorMorph(this.room, this.sliderColor);
         this.spriteEditor.color = this.groupColor;
         this.add(this.spriteEditor);
     } else {
