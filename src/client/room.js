@@ -1397,7 +1397,11 @@ RoomEditorMorph.prototype.addToggleReplay = function() {
 };
 
 RoomEditorMorph.prototype.fixLayout = function() {
-    this.room.setExtent(this.extent());
+    var controlsHeight = 80,
+        roomSize = this.extent();
+
+    roomSize.y = roomSize.y - (controlsHeight + 35);
+    this.room.setExtent(roomSize);
     this.room.setCenter(this.center());
     this.room.fixLayout();
 
@@ -1405,7 +1409,7 @@ RoomEditorMorph.prototype.fixLayout = function() {
     this.addRoleBtn.setTop(this.room.roomName.bottom() + 5);
 
     this.replayControls.setWidth(this.width()-40);
-    this.replayControls.setHeight(80);
+    this.replayControls.setHeight(controlsHeight);
     this.replayControls.setCenter(new Point(this.center().x, 0));
     this.replayControls.setBottom(this.bottom());
     this.replayControls.fixLayout();
