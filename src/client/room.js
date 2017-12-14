@@ -255,6 +255,14 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
 
     // Update collaborative editing
     SnapActions.isLeader = this.isLeader();
+    this.updateLabels();
+};
+
+RoomMorph.prototype.getRoleMorphs = function() {
+    var self = this;
+    return Object.keys(this.roleMorphs).map(function(id) {
+        return self.roleMorphs[id];
+    });
 };
 
 RoomMorph.prototype.updateLabels = function() {
@@ -339,6 +347,11 @@ RoomMorph.prototype.drawNew = function() {
     // Owner name
     this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.15 * radius)));
     this.showCollaborators(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.25 * radius)));
+
+
+    this.getRoleMorphs().forEach(function(morph) {
+        morph.drawNew();
+    });
 
     this.displayedMsgMorphs.forEach(function(morph) {
         morph.drawNew();
