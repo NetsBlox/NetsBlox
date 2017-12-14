@@ -96,14 +96,6 @@ RoomMorph.prototype.init = function(ide) {
 
     this.isDraggable = false;
 
-    // Set up callback(s) for RoleMorphs
-    RoleMorph.prototype.editRole = RoomMorph.prototype.editRole.bind(this);
-    RoleLabelMorph.prototype.mouseClickLeft = function() {
-        if (myself.isEditable()) {
-            myself.editRoleName(this.name);
-        }
-    };
-
     // update on login (changing room name if default)
     // TODO: this should be on the server...?
     SnapCloud.onLogin = function() {
@@ -155,11 +147,12 @@ RoomMorph.prototype.getRoleCount = function() {
     return Object.keys(this.roles).length;
 };
 
-RoomMorph.prototype.getCurrentOccupants = function() {
-    if (this.roles && this.roles[this.ide.projectName]) {
-        return this.roles[this.ide.projectName].slice();
+RoomMorph.prototype.getCurrentOccupants = function(name) {
+    name = name || this.getCurrentRoleName();
+    if (this.roles && this.roles[name]) {
+        return this.roles[name].slice();
     } else {
-        return this.getDefaultRoles()[this.ide.projectName];
+        return this.getDefaultRoles()[this.getCurrentRoleName()];
     }
 };
 
@@ -504,7 +497,7 @@ RoomMorph.prototype._createNewRole = function (name) {
     });
 };
 
-RoomMorph.prototype.editRole = function(role) {
+RoomMorph.prototype.editRole = function(name) {
     // Show a dialog of options
     //   + rename role
     //   + delete role
@@ -512,7 +505,8 @@ RoomMorph.prototype.editRole = function(role) {
     //   + transfer ownership (if occupied)
     //   + evict user (if occupied)
     //   + change role (if owned by self)
-    var dialog = new EditRoleMorph(this, role, !!this.roles[role.name].length),
+    var users = this.getCurrentOccupants(name),
+        dialog = new EditRoleMorph(this, name, users),
         world = this.world();
 
     dialog.fixLayout();
@@ -982,6 +976,12 @@ RoleMorph.prototype.init = function(name, users) {
         null,
         white
     );
+    this.label.mouseClickLeft = function() {
+        var room = this.parentThatIsA(RoomMorph);
+        if (room.isEditable()) {
+            room.editRoleName(this.text);
+        }
+    };
     this.caption = new StringMorph(
         '',
         14,
@@ -1057,8 +1057,9 @@ RoleMorph.prototype.fixLayout = function() {
 };
 
 RoleMorph.prototype.mouseClickLeft = function() {
-    if (this.parent.isEditable()) {
-        this.editRole(this.label);
+    var room = this.parentThatIsA(RoomMorph);
+    if (room.isEditable()) {
+        room.editRole(this.name);
     } else {
         this.escalateEvent('mouseClickLeft');
     }
@@ -1189,10 +1190,15 @@ RoleLabelMorph.prototype.fixLayout = function() {
 EditRoleMorph.prototype = new DialogBoxMorph();
 EditRoleMorph.prototype.constructor = EditRoleMorph;
 EditRoleMorph.uber = DialogBoxMorph.prototype;
-function EditRoleMorph(room, role) {
-    DialogBoxMorph.call(this);
+function EditRoleMorph(room, name, users) {
+    this.init(room, name, users);
+}
+
+EditRoleMorph.prototype.init = function(room, name, users) {
+    EditRoleMorph.uber.init.call(this);
     this.room = room;
-    this.role = role;
+    this.name = name;
+    this.users = users;
 
     var txt = new TextMorph(
         'What would you like to do?',
@@ -1207,22 +1213,22 @@ function EditRoleMorph(room, role) {
         white
     );
 
-    this.labelString = 'Edit ' + role.name;
+    this.labelString = localize('Edit') + ' ' + name;
     this.createLabel();
     this.addBody(txt);
 
     // Role Actions
     this.addButton('createRoleClone', 'Duplicate');
 
-    if (role.users.length) {  // occupied
+    if (users.length) {  // occupied
         // owner can evict collaborators, collaborators can evict guests
 
-        if (role.name !== this.room.role()) {
+        if (name !== this.room.role()) {
             this.addButton('moveToRole', 'Move to');
         }
 
-        if (role.name !== this.room.role() &&  // can't evict own role
-            (this.room.isOwner() || this.room.isGuest(role.user))) {
+        if (name !== this.room.role() &&  // can't evict own role
+            (this.room.isOwner() || this.room.isGuest(users))) {
             this.addButton('evictUser', 'Evict User');
         }
     } else {  // vacant
@@ -1231,10 +1237,10 @@ function EditRoleMorph(room, role) {
         this.addButton('deleteRole', 'Delete role');
     }
     this.addButton('cancel', 'Cancel');
-}
+};
 
 EditRoleMorph.prototype.inviteUser = function() {
-    this.room.inviteUser(this.role.name);
+    this.room.inviteUser(this.name);
     this.destroy();
 };
 
@@ -1253,29 +1259,30 @@ EditRoleMorph.prototype.fixLayout = function() {
 };
 
 EditRoleMorph.prototype.editRoleName = function() {
-    this.room.editRoleName(this.role.name);
+    this.room.editRoleName(this.name);
     this.destroy();
 };
 
 EditRoleMorph.prototype.createRoleClone = function() {
-    this.room.createRoleClone(this.role.name);
+    this.room.createRoleClone(this.name);
     this.destroy();
 };
 
 EditRoleMorph.prototype.deleteRole = function() {
-    this.room.deleteRole(this.role.name);
+    this.room.deleteRole(this.name);
     this.destroy();
 };
 
 EditRoleMorph.prototype.moveToRole = function() {
-    this.room.moveToRole(this.role.name);
+    this.room.moveToRole(this.name);
     this.destroy();
 };
 
 EditRoleMorph.prototype.evictUser = function() {
     // TODO: which user?
     // FIXME: ask which user
-    this.room.evictUser(this.role.users[0], this.role.name);
+    // This could be moved to clicking on the username
+    this.room.evictUser(this.users[0], this.name);
     this.destroy();
 };
 
