@@ -29,15 +29,21 @@ var mobileMode = {
 // activate mobilemode
 mobileMode.init = function() {
     this.ideMorph = world.children[0];
+    var self = this;
     // this.ideMorph.toggleAppMode(true);
     this.hideExtra();
-
     this.buttons = this.createButtons();
+    this.fixLayout();
+    window.addEventListener('orientationchange', function() {
+        self.fixLayout();
+    });
+};
+
+mobileMode.fixLayout = function() {
     let spaces = this.emptySpaces();
     let optRect = this.optimalRectangle(spaces);
     // compute wrapper box details for the buttons
     let targetBox = this.computeControlPos(optRect);
-
     this.positionButtons(this.buttons, targetBox);
 };
 
@@ -73,13 +79,8 @@ mobileMode.optimalRectangle = function(spaces) {
         bottomLeft: {}
     };
 
-    if (spaces.top > spaces.right) {
-        this._stackMode = 'h';
-        bestSide = 'top';
-    } else {
-        this._stackMode = 'v';
-        bestSide = 'right';
-    }
+    bestSide = (spaces.top > spaces.right) ? 'top' : 'right';
+
     if (spaces[bestSide] < 50) throw new Error('no space on the sides.');
     switch(bestSide) {
     case 'right':
@@ -91,8 +92,11 @@ mobileMode.optimalRectangle = function(spaces) {
         rect.bottomLeft.y = stage.bounds.origin.y;
         break;
     }
+
     rect.height = Math.abs(rect.topRight.y - rect.bottomLeft.y);
     rect.width = Math.abs(rect.topRight.x - rect.bottomLeft.x);
+
+    this._stackMode = (rect.height > rect.width) ? 'v' : 'h';
     return rect;
 };
 
