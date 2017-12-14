@@ -3,10 +3,6 @@
    BlockExportDialogMorph, detect, SnapCloud, SnapSerializer, ScrollFrameMorph,
    DialogBoxMorph, SnapActions, SpeechBubbleMorph
    */
-const SYM_SIZE = 40,
-    BTN_PAD = SYM_SIZE * 0.8,
-    GAP = 50;
-// TODO move var definitions 
 
 function getNbMorph() {
     return world.children[0];
@@ -26,11 +22,14 @@ var mobileMode = {
     // assuming top pos for horizontal alignment and right for vertical
     _stackMode: 'h', // stack controls horizontally or vertically
     buttons: [],
+    buttonsGap: 50,
+    ideMorph: undefined,
 };
 
 // activate mobilemode
 mobileMode.init = function() {
-    getNbMorph().toggleAppMode(true);
+    this.ideMorph = world.children[0];
+    this.ideMorph.toggleAppMode(true);
     this.hideExtra();
 
     this.buttons = this.createButtons();
@@ -39,12 +38,12 @@ mobileMode.init = function() {
     // compute wrapper box details for the buttons
     let targetBox = this.computeControlPos(optRect);
 
-    this.transformButtons(this.buttons, targetBox);
+    this.positionButtons(this.buttons, targetBox);
 };
 
 mobileMode.hideExtra = function() {
     // controlBarButtons().forEach(btn => btn.hide());
-    getNbMorph().controlBar.hide();
+    this.ideMorph.controlBar.hide();
 };
 
 mobileMode.emptySpaces = function() {
@@ -110,7 +109,7 @@ mobileMode.computeControlPos = function(targetRect) {
         // stack vertically
         controls = {
             origin: {},
-            height: numButtons * btnHeight + (numButtons-1) * GAP,
+            height: numButtons * btnHeight + (numButtons-1) * this.buttonsGap,
             width: btnWidth,
         };
         controls.origin.y = (totalH - controls.height) / 2;
@@ -120,7 +119,7 @@ mobileMode.computeControlPos = function(targetRect) {
         //stack vertically
         controls = {
             origin: {},
-            width: numButtons * btnWidth + (numButtons-1) * GAP,
+            width: numButtons * btnWidth + (numButtons-1) * this.buttonsGap,
             height: btnHeight,
         };
         controls.origin.x = (totalW - controls.width) / 2;
@@ -130,33 +129,36 @@ mobileMode.computeControlPos = function(targetRect) {
 };
 
 mobileMode.createButtons = function() {
+    var SYM_SIZE = 40,
+        BTN_PAD = SYM_SIZE * 0.8;
     var colors = [
         new Color(20, 20, 20),
         new Color(30, 30, 30),
         new Color(50, 50, 50),
     ];
+    var self = this;
     var buttons = [];
 
     // stopButton
     var stopButton = new ToggleButtonMorph(
         null, // colors
-        getNbMorph(), // the IDE is the target
+        this.ideMorph, // the IDE is the target
         'stopAllScripts',
         [
             new SymbolMorph('octagon', SYM_SIZE),
             new SymbolMorph('square', SYM_SIZE)
         ],
         function () {  // query
-            return getNbMorph().stage ?
-                getNbMorph().stage.enableCustomHatBlocks &&
-                getNbMorph().stage.threads.pauseCustomHatBlocks
+            return self.ideMorph.stage ?
+                self.ideMorph.stage.enableCustomHatBlocks &&
+                self.ideMorph.stage.threads.pauseCustomHatBlocks
                 : true;
         }
     );
     stopButton.labelColor = new Color(200, 0, 0);
 
     var startButton = new PushButtonMorph(
-        getNbMorph(),
+        this.ideMorph,
         'pressStart',
         new SymbolMorph('flag', SYM_SIZE)
     );
@@ -170,7 +172,7 @@ mobileMode.createButtons = function() {
         btn.hide();
         btn.fixLayout();
         btn.drawNew();
-        getNbMorph().add(btn);
+        self.ideMorph.add(btn);
         btn.corner = 12;
         btn.color = colors[0];
         btn.highlightColor = colors[1];
@@ -193,6 +195,7 @@ mobileMode.createButtons = function() {
 // position and show buttons
 mobileMode.positionButtons = function(buttons, controls) {
     const btnHeight = buttons[0].height(),
+        self = this,
         btnWidth = buttons[0].width();
 
     // position buttons
@@ -200,10 +203,10 @@ mobileMode.positionButtons = function(buttons, controls) {
         let x,y;
         if (this._stackMode === 'v') {
             x = controls.origin.x;
-            y = controls.origin.y + idx * btnHeight + idx * GAP;
+            y = controls.origin.y + idx * btnHeight + idx * self.buttonsGap;
         } else if (this._stackMode === 'h') {
             y = controls.origin.y;
-            x = controls.origin.x + idx * btnWidth + idx * GAP;
+            x = controls.origin.x + idx * btnWidth + idx * self.buttonsGap;
         }
         button.setPosition(new Point(x, y));
         button.show();
