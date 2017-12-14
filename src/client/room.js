@@ -969,25 +969,71 @@ function RoleMorph(name, user) {
 RoleMorph.prototype.init = function(name, users) {
     RoleMorph.uber.init.call(this, true);
     this.name = name;
-    this.users = users;
+    this.users = [];
 
-    this.label = new RoleLabelMorph(name, users);
+    this.label = new StringMorph(
+        this.name,
+        15,
+        null,
+        true,
+        false,
+        false,
+        null,
+        null,
+        white
+    );
+    this.caption = new StringMorph(
+        '',
+        14,
+        null,
+        false,
+        true,
+        false,
+        null,
+        null,
+        white
+    );
     this.add(this.label);
+    this.add(this.caption);
     this.acceptsDrops = true;
+    this.setOccupants(users);
     this.drawNew();
 };
 
-RoleMorph.prototype.destroy = function() {
-    for (var i = this.children.length; i--;) {
-        this.children[i].destroy();
+RoleMorph.prototype.setOccupants = function(users) {
+    this.users = users;
+    // Update the contents of the caption
+    var userText = '<empty>';
+    if (this.users.length) {
+        userText = this.users.map(function(user){
+            return user.username || localize('guest');
+        }).join(', ');
     }
-    RoleMorph.uber.destroy.call(this);
+
+    this.caption.text = userText;
+    this.caption.changed();
+    this.caption.drawNew();
+    this.caption.changed();
+};
+
+RoleMorph.prototype.setName = function(name) {
+    this.name = name;
+    this.label.text = name;
+    this.label.changed();
+    this.label.drawNew();
+    this.label.changed();
 };
 
 RoleMorph.prototype.drawNew = function() {
-    var radius = Math.min(this.width(), this.height())/2,
-        center = new Point(this.width()/2-radius, this.height()/2-radius).add(radius),
+    var center,
+        height,
+        radius,
         cxt;
+
+    this.fixLayout();
+    height = Math.max(this.height() - this.caption.height(), 0);
+    radius = Math.min(this.width(), height)/2;
+    center = new Point(this.width()/2-radius, height/2-radius).add(radius),
 
     // Create the image
     this.image = newCanvas(this.extent());
@@ -996,19 +1042,18 @@ RoleMorph.prototype.drawNew = function() {
     cxt.beginPath();
     cxt.fillStyle = this.color.toString();
     cxt.arc(center.x, center.y, radius, 0, 2 * Math.PI, false);
+    cxt.closePath();
     cxt.fill();
+    cxt.stroke();
 
-    if (this.label) {
-        this.label.destroy();
-    }
+    this.changed();
+};
 
-    if (this.ownerLabel) {
-        this.ownerLabel.destroy();
-    }
-
-    this.label = new RoleLabelMorph(this.name, this.users);
-    this.add(this.label);
-    this.label.setCenter(this.center());
+RoleMorph.prototype.fixLayout = function() {
+    var center = this.center();
+    this.label.setCenter(new Point(center.x, center.y - this.caption.height()/2));
+    this.caption.setCenter(center);
+    this.caption.setBottom(this.bottom());
 };
 
 RoleMorph.prototype.mouseClickLeft = function() {
@@ -1075,12 +1120,13 @@ RoleLabelMorph.uber = Morph.prototype;
 
 // Label containing the role & user names
 function RoleLabelMorph(name, users) {
-    this.name = name;
-    this.users = users;
     this.init();
 }
 
-RoleLabelMorph.prototype.init = function() {
+RoleLabelMorph.prototype.init = function(name, users) {
+    this.name = name;
+    this.users = users;
+
     var usrTxt = '<empty>';
     if (this.users.length) {
         usrTxt = this.users.map(function(user){
