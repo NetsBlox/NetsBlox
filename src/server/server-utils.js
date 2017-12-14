@@ -16,7 +16,7 @@ var uuid = function(owner, name) {
 // Helpers for routes
 var APP_REGEX = /app="([^"]+)"/;
 var getRoomXML = function(project) {
-    return project.getSortedRoles()
+    return project.getRoles()
         .then(roles => {
             roles = sortByDateField(roles, 'Updated', -1);
 
