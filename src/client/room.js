@@ -1295,16 +1295,16 @@ RoomEditorMorph.prototype.constructor = RoomEditorMorph;
 RoomEditorMorph.uber = ScrollFrameMorph.prototype;
 
 function RoomEditorMorph(room, sliderColor) {
-    var myself = this;
+    this.init(room, sliderColor);
+}
 
-    // TODO: Get the room info and update when websockets do stuff
+RoomEditorMorph.prototype.init = function(room, sliderColor) {
     RoomEditorMorph.uber.init.call(this, null, null, sliderColor);
     this.acceptsDrops = false;
+
     this.room = room;
     this.add(room);
     this.room.drawNew();
-    // Reset the position
-    //this.room.silentSetPosition(new Point(0,0));
 
     // Check for queried shared messages
     //this.room.checkForSharedMsgs(this.room.ide.projectName);
@@ -1314,8 +1314,33 @@ function RoomEditorMorph(room, sliderColor) {
     this.add(this.replayControls);
     this.replayControls.drawNew();
     this.replayControls.hide();
+
+    var button = new PushButtonMorph(
+        this.room,
+        'createNewRole',
+        new SymbolMorph('plus', 12)
+    );
+    button.padding = 0;
+    button.corner = 12;
+    button.color = IDE_Morph.prototype.groupColor;
+    button.highlightColor = IDE_Morph.prototype.frameColor.darker(50);
+    button.pressColor = button.highlightColor;
+    button.labelMinExtent = new Point(36, 18);
+    button.labelShadowOffset = new Point(-1, -1);
+    button.labelShadowColor = button.highlightColor;
+    button.labelColor = TurtleIconMorph.prototype.labelColor;
+    button.contrast = this.buttonContrast;
+    button.drawNew();
+
+    button.hint = 'Add a role to the room';
+
+    button.fixLayout();
+
+    this.add(button);
+    this.addRoleBtn = button;
+
     this.updateControlButtons();
-}
+};
 
 RoomEditorMorph.prototype.step = function() {
     if (this.version !== this.room.version) {
@@ -1376,6 +1401,9 @@ RoomEditorMorph.prototype.fixLayout = function() {
     this.room.setCenter(this.center());
     this.room.fixLayout();
 
+    this.addRoleBtn.setCenter(this.room.center());
+    this.addRoleBtn.setTop(this.room.roomName.bottom() + 5);
+
     this.replayControls.setWidth(this.width()-40);
     this.replayControls.setHeight(80);
     this.replayControls.setCenter(new Point(this.center().x, 0));
@@ -1425,15 +1453,9 @@ RoomEditorMorph.prototype.updateRoomControls = function() {
 
     // Draw the "new role" button
     if (this.room.isEditable() && !this.isReplayMode()) {
-        //if (this.addRoleBtn) this.addRoleBtn.destroy();
-
-        //this.addRoleBtn = this.addButton({
-            //selector: 'createNewRole',
-            //icon: 'plus',
-            //hint: 'Add a role to the room',
-            //left: this.room.center().x + 42,
-            //top: this.room.center().y + 100
-        //});
+        this.addRoleBtn.show();
+    } else {
+        this.addRoleBtn.hide();
     }
 };
 
@@ -1499,40 +1521,6 @@ RoomEditorMorph.prototype.drawMsgPalette = nop;
 //};
 
 RoomEditorMorph.prototype.addButton = function(params) {
-    var selector = params.selector,
-        icon = params.icon,
-        hint = params.hint,
-        left = params.left || this.room.center().x,
-        top = params.top || this.room.center().y,
-        newButton;
-
-    newButton = new PushButtonMorph(
-        this.room,
-        selector,
-        new SymbolMorph(icon, 12)
-    );
-    newButton.padding = 0;
-    newButton.corner = 12;
-    newButton.color = IDE_Morph.prototype.groupColor;
-    newButton.highlightColor = IDE_Morph.prototype.frameColor.darker(50);
-    newButton.pressColor = newButton.highlightColor;
-    newButton.labelMinExtent = new Point(36, 18);
-    newButton.labelShadowOffset = new Point(-1, -1);
-    newButton.labelShadowColor = newButton.highlightColor;
-    newButton.labelColor = TurtleIconMorph.prototype.labelColor;
-    newButton.contrast = this.buttonContrast;
-    newButton.drawNew();
-
-    if (hint) {
-        newButton.hint = hint;
-    }
-
-    newButton.fixLayout();
-    newButton.setLeft(left);
-    newButton.setTop(top);
-
-    this.addContents(newButton);
-    return newButton;
 };
 
 // UserDialogMorph ////////////////////////////////////////////////////
