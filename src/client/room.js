@@ -63,6 +63,31 @@ RoomMorph.prototype.init = function(ide) {
         myself.editRoomName();
     };
 
+    this.ownerLabel = new StringMorph(
+        localize('Owner: myself'),
+        false,
+        false,
+        true,
+        true,
+        false,
+        null,
+        null,
+        white
+    );
+    this.add(this.ownerLabel);
+
+    this.collabList = new StringMorph(
+        localize('No collaborators'),
+        false,
+        false,
+        true,
+        true,
+        false,
+        null,
+        null,
+        white
+    );
+    this.add(this.collabList);
     this.nextRoom = null;  // next room info
     // The projectName is used for the roleId
     if (!this.ide.projectName) {
@@ -241,7 +266,7 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
 
     if (collaborators) {
         changed = changed || !RoomMorph.equalLists(collaborators, this.collaborators);
-        this.collaborators = collaborators || this.collaborators;
+        this.setCollaborators(collaborators || this.collaborators);
     }
 
     // Update the roles, etc
@@ -354,21 +379,14 @@ RoomMorph.prototype.fixLayout = function() {
     }
 
     this.roomName.setCenter(this.center());
+    this.collabList.setCenter(this.center());
+    this.collabList.setBottom(this.bottom() - 25);
+    this.ownerLabel.setCenter(this.center());
+    this.ownerLabel.setBottom(this.collabList.top() - 10);
 };
 
 RoomMorph.prototype.drawNew = function() {
-    var label,
-        padding = 4,
-        radius = (Math.min(this.width(), this.height())-padding)/2,
-        center = padding + radius,
-        roles;
-
     this.image = newCanvas(this.extent());
-
-    // Owner name
-    this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.15 * radius)));
-    this.showCollaborators(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.25 * radius)));
-
 
     this.getRoleMorphs().forEach(function(morph) {
         morph.drawNew();
@@ -379,49 +397,27 @@ RoomMorph.prototype.drawNew = function() {
     });
 };
 
-RoomMorph.prototype.showOwnerName = function(center) {
-    // TODO: fix this so it doesn't keep deleting and re-creating the label
-    if (this.ownerLabel) {
-        this.ownerLabel.destroy();
-    }
-
-    var owner = RoomMorph.isSocketUuid(this.ownerId) ?
-        'myself' : this.ownerId;
-
-    this.ownerLabel = new StringMorph(
-        'Owner: ' + owner,
-        false,
-        false,
-        true,
-        true,
-        false,
-        null,
-        null,
-        white
-    );
-    this.ownerLabel.setCenter(center);
-
-    this.add(this.ownerLabel);
+RoomMorph.prototype.setOwner = function(owner) {
+    this.ownerId = owner;
+    this.ownerLabel.text = RoomMorph.isSocketUuid(this.ownerId) ?
+        localize('myself') : this.ownerId;
+    this.ownerLabel.changed();
+    this.ownerLabel.drawNew();
+    this.ownerLabel.changed();
 };
 
-RoomMorph.prototype.showCollaborators = function(top) {
-    // TODO: fix this so it doesn't keep deleting and re-creating the label
-    if (this.collabList) {
-        this.collabList.destroy();
-    }
-
+RoomMorph.prototype.setCollaborators = function(collaborators) {
+    this.collaborators = collaborators;
     if (this.collaborators.length) {
-        this.collabList = new StringMorph('Collaborators:\n' +
-            this.collaborators.join('\n'), false, false, true);
+        this.collabList.text = localize('Collaborators') + ':\n' +
+            this.collaborators.join('\n');
     } else {
-        this.collabList = new StringMorph('No collaborators', false, false,
-            true, true, false, null, null, white);
+        this.collabList.text = 'No collaborators';
     }
+    this.collabList.changed();
+    this.collabList.drawNew();
+    this.collabList.changed();
 
-    this.collabList.setCenter(top);
-    this.collabList.setTop(top.y);
-
-    this.add(this.collabList);
 };
 
 RoomMorph.prototype.mouseClickLeft = function() {
