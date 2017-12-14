@@ -1,4 +1,4 @@
-/* globals UndoManager, ActionManager, SnapActions, NetsBloxSerializer,
+/* globals UndoManager, SERVER_ADDRESS, ActionManager, SnapActions, NetsBloxSerializer,
    HintInputSlotMorph, SnapCloud, Action, copy*/
 // NetsBlox Specific Actions
 SnapActions.addActions(
@@ -6,7 +6,7 @@ SnapActions.addActions(
     'deleteMessageType'
 );
 
-ActionManager.URL = 'ws://' + window.location.host + '/collaboration';
+ActionManager.URL = 'ws://' + SERVER_ADDRESS + '/collaboration';
 ActionManager.prototype._deleteMessageType = function(name) {
     var fields = this.ide().stage.messageTypes.getMsgType(name).fields;
     return [name, fields];
@@ -65,7 +65,6 @@ SnapActions.isCollaborating = function() {
 
 // Recording user actions
 SnapActions.send = function(event) {
-    var canSend = this._ws && this._ws.readyState === WebSocket.OPEN;
     // Netsblox addition: start
     var socket = this.ide().sockets;
 
@@ -74,9 +73,9 @@ SnapActions.send = function(event) {
     // Netsblox addition: end
     event.id = event.id || this.lastSeen + 1;
     this.lastSent = event.id;
-    if (this.isCollaborating() && event.type !== 'openProject' && canSend) {
+    if (event.type !== 'openProject') {
         // Netsblox addition: start
-        this._ws.send(JSON.stringify({
+        socket.send(JSON.stringify({
             type: 'user-action',
             action: event
         }));
@@ -97,6 +96,34 @@ SnapActions.onMessage = function(msg) {
     if (msg.type === 'session-user-count') {
         this.sessionUsersCount = msg.value;
     }
+};
+
+SnapActions.requestMissingActions = function() {
+    var socket = this.ide().sockets;
+    if (!socket.inActionRequest) {
+        socket.inActionRequest = true;
+        return socket.sendJSON({
+            type: 'request-actions',
+            actionId: this.lastSeen
+        });
+    }
+};
+
+SnapActions.onReceiveAction = function(msg) {
+    // If the message is not building on the current commit, then
+    // request the commits up until our current commit
+
+    var lastId = this.lastSeen;
+    if (this.queuedActions.length) {
+        lastId = this.queuedActions[this.queuedActions.length-1].id;
+    }
+    var missingActions = lastId < (msg.id - 1);
+
+    if (missingActions) {
+        return this.requestMissingActions();
+    }
+
+    ActionManager.prototype.onReceiveAction.apply(this, arguments);
 };
 
 SnapActions.recordActionNB = function(action) {

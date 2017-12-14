@@ -124,8 +124,7 @@ RoomMorph.prototype.getCurrentOccupants = function() {
 };
 
 RoomMorph.prototype.isLeader = function() {
-    var leader = this.getCurrentOccupants()[0];
-    return leader && leader.uuid === this.myUuid();
+    return this.getCurrentOccupants().length === 1;
 };
 
 RoomMorph.prototype.myUuid = function() {

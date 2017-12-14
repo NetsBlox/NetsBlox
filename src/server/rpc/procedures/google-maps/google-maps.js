@@ -98,10 +98,10 @@ GoogleMaps.prototype._recordUserMap = function(socket, map) {
     return getStorage().get(this._state.roomId)
         .then(maps => {
             maps = maps || {};
-            maps[socket.roleId] = map;
+            maps[socket.role] = map;
             getStorage().save(this._state.roomId, maps);
         })
-        .then(() => trace(`Stored map for ${socket.roleId}: ${JSON.stringify(map)}`));
+        .then(() => trace(`Stored map for ${socket.role}: ${JSON.stringify(map)}`));
 };
 
 
@@ -181,28 +181,28 @@ GoogleMaps.prototype.getTerrainMap = function(latitude, longitude, width, height
     return null;
 };
 GoogleMaps.prototype.getXFromLongitude = function(longitude) {
-    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+    return this._getMapInfo(this.socket.role).then(mapInfo => {
         let pixels = this._pixelsAt(0,longitude, mapInfo);
         return pixels.x;
     });
 };
 //
 GoogleMaps.prototype.getYFromLatitude = function(latitude) {
-    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+    return this._getMapInfo(this.socket.role).then(mapInfo => {
         let pixels = this._pixelsAt(latitude,0, mapInfo);
         return pixels.y;
     });
 };
 
 GoogleMaps.prototype.getLongitude = function(x){
-    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+    return this._getMapInfo(this.socket.role).then(mapInfo => {
         let coords = this._coordsAt(x,0, mapInfo);
         return coords.lon;
     });
 };
 
 GoogleMaps.prototype.getLatitude = function(y){
-    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+    return this._getMapInfo(this.socket.role).then(mapInfo => {
         let coords = this._coordsAt(0,y, mapInfo);
         return coords.lat;
     });
@@ -216,7 +216,7 @@ GoogleMaps.prototype.getLatitude = function(y){
  */
 
 GoogleMaps.prototype.getEarthCoordinates = function(x, y){
-    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+    return this._getMapInfo(this.socket.role).then(mapInfo => {
         let coords = this._coordsAt(x,y, mapInfo);
         return [coords.lat, coords.lon];
     });
@@ -230,7 +230,7 @@ GoogleMaps.prototype.getEarthCoordinates = function(x, y){
  */
 
 GoogleMaps.prototype.getImageCoordinates = function(latitude, longitude){
-    return this._getMapInfo(this.socket.roleId).then(mapInfo => {
+    return this._getMapInfo(this.socket.role).then(mapInfo => {
         let pixels = this._pixelsAt(latitude, longitude, mapInfo);
         return [pixels.x, pixels.y];
     });
@@ -248,7 +248,7 @@ GoogleMaps.prototype.getDistance = function(startLatitude, startLongitude, endLa
 GoogleMaps.prototype._getUserMap = function() {
     var response = this.response;
 
-    return this._getMapInfo(this.socket.roleId).then(map => {
+    return this._getMapInfo(this.socket.role).then(map => {
         if (!map) {
             response.send('ERROR: No map found. Please request a map and try again.');
             return null;
@@ -261,7 +261,7 @@ var mapGetter = function(minMax, attr) {
     return function() {
         var response = this.response;
 
-        this._getMapInfo(this.socket.roleId).then(map => {
+        this._getMapInfo(this.socket.role).then(map => {
 
             if (!map) {
                 response.send('ERROR: No map found. Please request a map and try again.');

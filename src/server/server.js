@@ -111,7 +111,7 @@ Server.prototype.configureRoutes = function() {
                 uuid: socket.uuid,
                 username: socket.username,
                 room: roomName,
-                roleId: socket.roleId
+                role: socket.role
             };
         });
 
@@ -120,7 +120,7 @@ Server.prototype.configureRoutes = function() {
 
     // Add dev endpoints
     if (isDevMode) {
-        this.app.use('/dev/', express.static(__dirname + '/../../test/client/'));
+        this.app.use('/dev/', express.static(__dirname + '/../../test/unit/client/'));
     }
 
     // Initial page
@@ -135,6 +135,7 @@ Server.prototype.configureRoutes = function() {
             projectName = req.query.ProjectName,
             metaInfo = {
                 googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
+                baseUrl,
                 url: url
             };
 

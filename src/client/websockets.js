@@ -1,4 +1,4 @@
-/*globals nop, SnapCloud, Context, SpriteMorph, StageMorph, SnapActions,
+/*globals nop, SnapCloud, SERVER_URL, SERVER_ADDRESS, Context, SpriteMorph, StageMorph, SnapActions,
   DialogBoxMorph, IDE_Morph, ProjectsMorph, isObject, NetsBloxSerializer,
   localize*/
 // WebSocket Manager
@@ -9,19 +9,28 @@ var WebSocketManager = function (ide) {
     this.websocket = null;
     this.messages = [];
     this.processes = [];  // Queued processes to start
-    this._protocol = window.location.protocol === 'https:' ?
+    this._protocol = SERVER_URL === 'https:' ?
         'wss:' : 'ws:';
-    this.url = this._protocol + '//' + window.location.host;
+    this.url = this._protocol + '//' + SERVER_ADDRESS;
     this._connectWebSocket();
     this.version = Date.now();
 
     this.errored = false;
     this.hasConnected = false;
     this.connected = false;
+    this.inActionRequest = false;
     this.serializer = new NetsBloxSerializer();
 };
 
 WebSocketManager.MessageHandlers = {
+    'request-actions-complete': function() {
+        this.inActionRequest = false;
+    },
+
+    'new-version-available': function() {
+        this.ide.showUpdateNotification();
+    },
+
     // Receive an assigned uuid
     'uuid': function(msg) {
         this.uuid = msg.body;
@@ -249,15 +258,23 @@ WebSocketManager.prototype._connectWebSocket = function() {
     };
 };
 
-WebSocketManager.prototype.sendMessage = function(message) {
+WebSocketManager.prototype.sendJSON = function(message) {
+    return this.send(JSON.stringify(message));
+};
+
+WebSocketManager.prototype.send = function(message) {
     var state = this.websocket.readyState;
-    message.namespace = 'netsblox';
-    message = this.serializeMessage(message);
     if (state === this.websocket.OPEN) {
         this.websocket.send(message);
     } else {
         this.messages.push(message);
     }
+};
+
+WebSocketManager.prototype.sendMessage = function(message) {
+    message.namespace = 'netsblox';
+    message = this.serializeMessage(message);
+    this.send(message);
 };
 
 WebSocketManager.prototype.serializeMessage = function(message) {
@@ -314,16 +331,31 @@ WebSocketManager.prototype.deserializeMessage = function(message) {
 };
 
 WebSocketManager.prototype.onConnect = function() {
+    var myself = this,
+        afterConnect = function() {
+            myself.updateRoomInfo();
+            while (myself.messages.length) {
+                myself.websocket.send(myself.messages.shift());
+            }
+
+            myself.reportClientVersion();
+            SnapActions.requestMissingActions();
+        };
+
     if (SnapCloud.username) {  // Reauthenticate if needed
-        var updateRoom = this.updateRoomInfo.bind(this);
-        SnapCloud.reconnect(updateRoom, updateRoom);
+        SnapCloud.reconnect(afterConnect, afterConnect);
     } else {
-        SnapCloud.passiveLogin(this.ide);
-        this.updateRoomInfo();
+        SnapCloud.passiveLogin(this.ide, afterConnect, true);
     }
-    while (this.messages.length) {
-        this.websocket.send(this.messages.shift());
-    }
+    this.inActionRequest = false;
+};
+
+WebSocketManager.prototype.reportClientVersion = function() {
+    var msg = JSON.stringify({
+        type: 'report-version',
+        version: NetsBloxSerializer.prototype.version
+    });
+    this.send(msg);
 };
 
 WebSocketManager.prototype.updateRoomInfo = function() {

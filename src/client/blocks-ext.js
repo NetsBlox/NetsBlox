@@ -1,7 +1,55 @@
-/* global nop, ScriptsMorph, BlockMorph, InputSlotMorph, StringMorph, Color
+/* global nop, DialogBoxMorph, ScriptsMorph, BlockMorph, InputSlotMorph, StringMorph, Color
    ReporterBlockMorph, CommandBlockMorph, MultiArgMorph, SnapActions, isNil,
    ReporterSlotMorph, RingMorph, SyntaxElementMorph*/
 // Extensions to the Snap blocks
+
+
+// support for help dialogbox on service blocks
+BlockMorph.prototype._showHelp = BlockMorph.prototype.showHelp;
+BlockMorph.prototype.showHelp = function() {
+    var isServiceBlock = this.selector === 'getJSFromRPCStruct';
+    if (!isServiceBlock) return this._showHelp();
+    // else we have a getJSFromRPCStruct block
+    var myself = this,
+        help,
+        block,
+        inputs = this.inputs(),
+        serviceName = inputs[0].evaluate(),
+        methodName = inputs[1].evaluate()[0],
+        metadata = JSON.parse(RPCInputSlotMorph.prototype.getURL.call(this, '/rpc/' + serviceName));
+
+    // build the help message
+    if (serviceName !== '') {
+        // service description will go here
+        // if a method is selected append rpc specific description
+        if (methodName !== '') {
+            help = metadata[methodName].description;
+            // add argument descriptions, if available
+            var args = metadata[methodName].args;
+            for (var i = 0; i < args.length; i++) {
+                var arg = args[i];
+                if (arg.description) {
+                    var optionalStr = arg.optional ? '[optional]' : '';
+                    help += '\n' + arg.name + ': ' + arg.description + ' ' + optionalStr;
+                }
+            }
+        }
+        if (!help) help = 'Description not available';
+    } else {
+        help = 'Get information from different providers, save information and more. \nTo get more help select one of the services:'
+            + metadata.slice(0,3).join(', ') + ' ...';
+    }
+    
+    block = this.fullCopy();
+    block.addShadow();
+    new DialogBoxMorph().inform(
+        'Help',
+        help,
+        myself.world(),
+        block.fullImage()
+    );
+};
+
 MultiHintArgMorph.prototype = new MultiArgMorph();
 MultiHintArgMorph.prototype.constructor = MultiHintArgMorph;
 MultiHintArgMorph.uber = MultiArgMorph.prototype;
@@ -261,7 +309,11 @@ RPCInputSlotMorph.prototype.methodSignature = function () {
     rpc = this.getRPCName();
     if (rpc) {
         // stores information on a specific service's rpcs
-        this.fieldsFor = JSON.parse(this.getURL('/rpc/' + rpc));
+        try {
+            this.fieldsFor = JSON.parse(this.getURL('/rpc/' + rpc));
+        } catch (e) {
+            throw new Error('Service "' + rpc + '" is not available');
+        }
 
         actionNames = Object.keys(this.fieldsFor);
         for (var i = actionNames.length; i--;) {
