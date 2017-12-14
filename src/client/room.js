@@ -1349,6 +1349,13 @@ RoomEditorMorph.prototype.step = function() {
     }
 };
 
+RoomEditorMorph.prototype.show = function() {
+    RoomEditorMorph.uber.show.call(this);
+    if (!this.isReplayMode()) {
+        this.replayControls.hide();
+    }
+};
+
 RoomEditorMorph.prototype.updateControlButtons = function() {
     var sf = this.parentThatIsA(ScrollFrameMorph);
 
