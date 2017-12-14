@@ -348,8 +348,8 @@ RoomMorph.prototype.fixLayout = function() {
         position = this.center().add(new Point(x, y));
         color = RoleMorph.COLORS[i%len];
 
-        role.setCenter(position);
         role.setExtent(new Point(circleSize, circleSize));
+        role.setCenter(position);
         role.setColor(color);
     }
 
@@ -1323,13 +1323,9 @@ RoomEditorMorph.prototype.addToggleReplay = function() {
 };
 
 RoomEditorMorph.prototype.fixLayout = function() {
-    console.log('1. room size', this.room.extent());
     this.room.setExtent(this.extent());
-    console.log('2. room size', this.room.extent());
-    this.room.fixLayout();
-    console.log('3. room size', this.room.extent());
     this.room.setCenter(this.center());
-    console.log('4. room size', this.room.extent());
+    this.room.fixLayout();
 
     this.replayControls.setWidth(this.width()-40);
     this.replayControls.setHeight(80);
