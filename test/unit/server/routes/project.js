@@ -62,4 +62,12 @@ describe('project routes', function() {
                 .end(done);
         });
     });
+
+    describe('RawPublic', function() {
+        it('should return project xml', function(done) {
+            api.get(`/RawPublic?action=present&Username=brian&ProjectName=PublicProject`)
+                .expect(200)
+                .end(done);
+        });
+    });
 });
