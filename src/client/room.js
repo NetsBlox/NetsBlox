@@ -69,9 +69,6 @@ RoomMorph.prototype.init = function(ide) {
         this.ide.projectName = RoomMorph.DEFAULT_ROLE;
     }
 
-    this.silentSetWidth(RoomMorph.SIZE);
-    this.silentSetHeight(RoomMorph.SIZE);
-
     this.isDraggable = false;
 
     // Set up callback(s) for RoleMorphs
@@ -260,14 +257,14 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
         // We need to force-update & refresh to fix the layout after drawing the message palette
         // We can do this by "clicking" the room tab
         // FIXME: find a better way to refresh...
-        for (var i = 0; i < this.ide.children.length; i++) {
-            if (this.ide.children[i] instanceof Morph) {
-                if (this.ide.children[i].tabBar) {  // found the tab morph
-                    this.ide.children[i].tabBar.children[3].mouseClickLeft();  // simulate clicking the room tab
-                    return;
-                }
-            }
-        }
+        //for (var i = 0; i < this.ide.children.length; i++) {
+            //if (this.ide.children[i] instanceof Morph) {
+                //if (this.ide.children[i].tabBar) {  // found the tab morph
+                    //this.ide.children[i].tabBar.children[3].mouseClickLeft();  // simulate clicking the room tab
+                    //return;
+                //}
+            //}
+        //}
     }
 
     // Update collaborative editing
@@ -383,6 +380,7 @@ RoomMorph.prototype.drawNew = function() {
 };
 
 RoomMorph.prototype.showOwnerName = function(center) {
+    // TODO: fix this so it doesn't keep deleting and re-creating the label
     if (this.ownerLabel) {
         this.ownerLabel.destroy();
     }
@@ -407,6 +405,7 @@ RoomMorph.prototype.showOwnerName = function(center) {
 };
 
 RoomMorph.prototype.showCollaborators = function(top) {
+    // TODO: fix this so it doesn't keep deleting and re-creating the label
     if (this.collabList) {
         this.collabList.destroy();
     }
@@ -1254,11 +1253,12 @@ function RoomEditorMorph(room, sliderColor) {
     this.acceptsDrops = false;
     this.room = room;
     this.add(room);
+    this.room.drawNew();
     // Reset the position
-    this.room.silentSetPosition(new Point(0,0));
+    //this.room.silentSetPosition(new Point(0,0));
 
     // Check for queried shared messages
-    this.room.checkForSharedMsgs(this.room.ide.projectName);
+    //this.room.checkForSharedMsgs(this.room.ide.projectName);
 
     // Replay Controls
     this.replayControls = new NetworkReplayControls(this);
@@ -1323,9 +1323,13 @@ RoomEditorMorph.prototype.addToggleReplay = function() {
 };
 
 RoomEditorMorph.prototype.fixLayout = function() {
-    this.room.setCenter(this.center());
+    console.log('1. room size', this.room.extent());
     this.room.setExtent(this.extent());
+    console.log('2. room size', this.room.extent());
     this.room.fixLayout();
+    console.log('3. room size', this.room.extent());
+    this.room.setCenter(this.center());
+    console.log('4. room size', this.room.extent());
 
     this.replayControls.setWidth(this.width()-40);
     this.replayControls.setHeight(80);
@@ -1336,6 +1340,7 @@ RoomEditorMorph.prototype.fixLayout = function() {
 
 RoomEditorMorph.prototype.setExtent = function(point) {
     RoomEditorMorph.uber.setExtent.call(this, point);
+
     this.fixLayout();
 };
 
@@ -1361,91 +1366,92 @@ RoomEditorMorph.prototype.enterReplayMode = function() {
         }
         this.replayControls.enable();
         this.replayControls.setMessages(messages);
-        this.updateRoom();
+        this.updateRoomControls();
     } catch(e) {
         console.error(e);
         // TODO: show an error message
     }
 };
 
-RoomEditorMorph.prototype.updateRoom = function() {
+RoomEditorMorph.prototype.updateRoomControls = function() {
     // Draw the room
     this.room.drawNew();
     this.drawMsgPalette();  // Draw the message palette
 
     // Draw the "new role" button
     if (this.room.isEditable() && !this.isReplayMode()) {
-        if (this.addRoleBtn) this.addRoleBtn.destroy();
+        //if (this.addRoleBtn) this.addRoleBtn.destroy();
 
-        this.addRoleBtn = this.addButton({
-            selector: 'createNewRole',
-            icon: 'plus',
-            hint: 'Add a role to the room',
-            left: this.room.center().x + 42,
-            top: this.room.center().y + 100
-        });
+        //this.addRoleBtn = this.addButton({
+            //selector: 'createNewRole',
+            //icon: 'plus',
+            //hint: 'Add a role to the room',
+            //left: this.room.center().x + 42,
+            //top: this.room.center().y + 100
+        //});
     }
 };
 
 // TODO: Update this...
-RoomEditorMorph.prototype.drawMsgPalette = function() {
-    var width = 0,  // default width
-        stage = this.room.ide.stage;
+RoomEditorMorph.prototype.drawMsgPalette = nop;
+//RoomEditorMorph.prototype.drawMsgPalette = function() {
+    //var width = 0,  // default width
+        //stage = this.room.ide.stage;
 
-    // Create and style the message palette
-    var palette = new ScrollFrameMorph();
-    palette.owner = this;
-    palette.setColor(new Color(71, 71, 71, 1));
-    palette.setWidth(width);
-    palette.setHeight(this.room.center().y * 2);
-    palette.bounds = palette.bounds.insetBy(10);
-    palette.padding = 12;
+    //// Create and style the message palette
+    //var palette = new ScrollFrameMorph();
+    //palette.owner = this;
+    //palette.setColor(new Color(71, 71, 71, 1));
+    //palette.setWidth(width);
+    //palette.setHeight(this.room.center().y * 2);
+    //palette.bounds = palette.bounds.insetBy(10);
+    //palette.padding = 12;
 
-    // Build list of sharable message types
-    for (var i = 0; i < stage.deletableMessageNames().length; i++) {
-        // Build block morph
-        var msg = new ReporterBlockMorph();
-        msg.blockSpec = stage.deletableMessageNames()[i];
-        msg.setSpec(stage.deletableMessageNames()[i]);
-        msg.setWidth(.75 * width);
-        msg.setHeight(50);
-        msg.forMsg = true;
-        msg.isTemplate = true;
-        msg.setColor(new Color(217,77,17));
-        msg.setPosition(new Point(palette.bounds.origin.x + 10, palette.bounds.origin.y + 24 * i + 6));
-        msg.category = 'services';
-        msg.hint = new StringMorph('test');
-        // Don't allow multiple instances of the block to exist at once
-        msg.justDropped = function() {
-            this.destroy();
-        };
-        // Display fields of the message type when clicked
-        msg.mouseClickLeft = function() {
-            var fields = stage.messageTypes.msgTypes[this.blockSpec].fields.length === 0 ?
-                'This message type has no fields.' :
-                stage.messageTypes.msgTypes[this.blockSpec].fields;
-            new SpeechBubbleMorph(fields, null, null, 2).popUp(this.world(), new Point(0, 0).add(this.bounds.corner));
-        };
+    //// Build list of sharable message types
+    //for (var i = 0; i < stage.deletableMessageNames().length; i++) {
+        //// Build block morph
+        //var msg = new ReporterBlockMorph();
+        //msg.blockSpec = stage.deletableMessageNames()[i];
+        //msg.setSpec(stage.deletableMessageNames()[i]);
+        //msg.setWidth(.75 * width);
+        //msg.setHeight(50);
+        //msg.forMsg = true;
+        //msg.isTemplate = true;
+        //msg.setColor(new Color(217,77,17));
+        //msg.setPosition(new Point(palette.bounds.origin.x + 10, palette.bounds.origin.y + 24 * i + 6));
+        //msg.category = 'services';
+        //msg.hint = new StringMorph('test');
+        //// Don't allow multiple instances of the block to exist at once
+        //msg.justDropped = function() {
+            //this.destroy();
+        //};
+        //// Display fields of the message type when clicked
+        //msg.mouseClickLeft = function() {
+            //var fields = stage.messageTypes.msgTypes[this.blockSpec].fields.length === 0 ?
+                //'This message type has no fields.' :
+                //stage.messageTypes.msgTypes[this.blockSpec].fields;
+            //new SpeechBubbleMorph(fields, null, null, 2).popUp(this.world(), new Point(0, 0).add(this.bounds.corner));
+        //};
 
-        // Custom menu
-        var menu = new MenuMorph(this, null);
-        menu.addItem('Send to...', function() {this.room.promptShare(msg.blockSpec);});
-        msg.children[0].customContextMenu = menu;
-        msg.customContextMenu = menu;
+        //// Custom menu
+        //var menu = new MenuMorph(this, null);
+        //menu.addItem('Send to...', function() {this.room.promptShare(msg.blockSpec);});
+        //msg.children[0].customContextMenu = menu;
+        //msg.customContextMenu = menu;
 
-        palette.addContents(msg);
-    }
+        //palette.addContents(msg);
+    //}
 
-    // After adding all the sharable message types, resize the container if necessary
-    if (palette.contents.width() > palette.width()) {
-        palette.setWidth(palette.contents.width());
-        this.room.setPosition(new Point(palette.width() + 15, 0));  // Shift the room accordingly
-    }
+    //// After adding all the sharable message types, resize the container if necessary
+    //if (palette.contents.width() > palette.width()) {
+        //palette.setWidth(palette.contents.width());
+        //this.room.setPosition(new Point(palette.width() + 15, 0));  // Shift the room accordingly
+    //}
 
-    // Display message palette with no scroll bar until it overflows
-    this.addContents(palette);
-    this.vBar.hide();
-};
+    //// Display message palette with no scroll bar until it overflows
+    //this.addContents(palette);
+    //this.vBar.hide();
+//};
 
 RoomEditorMorph.prototype.addButton = function(params) {
     var selector = params.selector,
