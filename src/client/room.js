@@ -1237,9 +1237,9 @@ EditRoleMorph.prototype.evictUser = function() {
 
 // I am an editor for the RoomMorph and network debugger
 
-RoomEditorMorph.prototype = new Morph();
+RoomEditorMorph.prototype = new ScrollFrameMorph();
 RoomEditorMorph.prototype.constructor = RoomEditorMorph;
-RoomEditorMorph.uber = Morph.prototype;
+RoomEditorMorph.uber = ScrollFrameMorph.prototype;
 
 function RoomEditorMorph(room, sliderColor) {
     var myself = this;
