@@ -8,15 +8,21 @@ function getNbMorph() {
     return world.children[0];
 }
 
-function controlBarButtons() {
-    var cb = getNbMorph().controlBar;
-    var buttons = [];
-    for (var key in cb) {
-        var val = cb[key];
-        if (val instanceof ToggleButtonMorph || val instanceof PushButtonMorph) buttons.push(val);
-    }
-    return buttons;
+
+function isMobileDevice() {
+    return (typeof window.orientation !== 'undefined') || (navigator.userAgent.indexOf('Mobile') !== -1);
 }
+
+
+var toggleAppMode = IDE_Morph.prototype.toggleAppMode;
+IDE_Morph.prototype.toggleAppMode = function() {
+    var ideMorphIns = world.children[0];
+    toggleAppMode.apply(ideMorphIns, arguments);
+    if (isMobileDevice()) {
+        console.log('detected a mobile device');
+        mobileMode.init();
+    }
+};
 
 var mobileMode = {
     // assuming top pos for horizontal alignment and right for vertical
@@ -29,7 +35,7 @@ var mobileMode = {
 // activate mobilemode
 mobileMode.init = function() {
     this.ideMorph = world.children[0];
-    this.ideMorph.toggleAppMode(true);
+    // this.ideMorph.toggleAppMode(true);
     this.hideExtra();
 
     this.buttons = this.createButtons();
