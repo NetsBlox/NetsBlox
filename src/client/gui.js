@@ -3,11 +3,8 @@
    BlockExportDialogMorph, detect, SnapCloud, SnapSerializer, ScrollFrameMorph,
    DialogBoxMorph, SnapActions, SpeechBubbleMorph
    */
-const NUM_BUTTONS = 2,
-    BUTTON_SIZE = {
-        width: 200,
-        height: 100
-    },
+const SYM_SIZE = 40,
+    BTN_PAD = SYM_SIZE * 0.8,
     GAP = 50;
 // TODO move var definitions 
 
@@ -27,19 +24,27 @@ function controlBarButtons() {
 
 var mobileMode = {
     // assuming top pos for horizontal alignment and right for vertical
-    _stackMode: 'h' // stack controls horizontally or vertically
+    _stackMode: 'h', // stack controls horizontally or vertically
+    buttons: [],
 };
 
 // activate mobilemode
 mobileMode.init = function() {
-
     getNbMorph().toggleAppMode(true);
-    this.hideButtons();
-    this.transformButtons();
+    this.hideExtra();
+
+    this.buttons = this.createButtons();
+    let spaces = this.emptySpaces();
+    let optRect = this.optimalRectangle(spaces);
+    // compute wrapper box details for the buttons
+    let targetBox = this.computeControlPos(optRect);
+
+    this.transformButtons(this.buttons, targetBox);
 };
 
-mobileMode.hideButtons = function() {
-    controlBarButtons().forEach(btn => btn.hide());
+mobileMode.hideExtra = function() {
+    // controlBarButtons().forEach(btn => btn.hide());
+    getNbMorph().controlBar.hide();
 };
 
 mobileMode.emptySpaces = function() {
@@ -92,21 +97,21 @@ mobileMode.optimalRectangle = function(spaces) {
     return rect;
 };
 
-mobileMode.computeControlPos = function() {
+mobileMode.computeControlPos = function(targetRect) {
     let totalH = window.innerHeight,
         totalW = window.innerWidth,
-        stageBounds = getNbMorph().stage.bounds,
-        spaces = this.emptySpaces(),
+        numButtons = this.buttons.length,
+        btnHeight = this.buttons[0].height(),
+        btnWidth = this.buttons[0].width(),
         controls;
 
-    let targetRect = this.optimalRectangle(spaces);
     // stack button vertically or horizontally
     if  (this._stackMode === 'v') {
         // stack vertically
         controls = {
             origin: {},
-            height: NUM_BUTTONS * BUTTON_SIZE.height + (NUM_BUTTONS-1) * GAP,
-            width: BUTTON_SIZE.width,
+            height: numButtons * btnHeight + (numButtons-1) * GAP,
+            width: btnWidth,
         };
         controls.origin.y = (totalH - controls.height) / 2;
         controls.origin.x = targetRect.bottomLeft.x + (targetRect.width - controls.width) / 2;
@@ -115,8 +120,8 @@ mobileMode.computeControlPos = function() {
         //stack vertically
         controls = {
             origin: {},
-            width: NUM_BUTTONS * BUTTON_SIZE.width + (NUM_BUTTONS-1) * GAP,
-            height: BUTTON_SIZE.height,
+            width: numButtons * btnWidth + (numButtons-1) * GAP,
+            height: btnHeight,
         };
         controls.origin.x = (totalW - controls.width) / 2;
         controls.origin.y = (targetRect.bottomLeft.y - controls.height)/2;
@@ -124,93 +129,81 @@ mobileMode.computeControlPos = function() {
     return controls;
 };
 
-mobileMode.createButtons = function(box) {
-    let controlBar = new Morph();
-    // controlBar.color = this.frameColor;
-    // TODO fluid dimensions?
-    controlBar.setHeight(box.height); // height is fixed
-    controlBar.setWidth(box.width); // width is fixed
+mobileMode.createButtons = function() {
+    var colors = [
+        new Color(20, 20, 20),
+        new Color(30, 30, 30),
+        new Color(50, 50, 50),
+    ];
+    var buttons = [];
 
     // stopButton
     var stopButton = new ToggleButtonMorph(
         null, // colors
-        this, // the IDE is the target
+        getNbMorph(), // the IDE is the target
         'stopAllScripts',
         [
-            new SymbolMorph('octagon', 14),
-            new SymbolMorph('square', 14)
+            new SymbolMorph('octagon', SYM_SIZE),
+            new SymbolMorph('square', SYM_SIZE)
         ],
         function () {  // query
             return getNbMorph().stage ?
                 getNbMorph().stage.enableCustomHatBlocks &&
-                        getNbMorph().stage.threads.pauseCustomHatBlocks
+                getNbMorph().stage.threads.pauseCustomHatBlocks
                 : true;
         }
     );
-    stopButton.corner = 12;
-    stopButton.color = colors[0];
-    stopButton.highlightColor = colors[1];
-    stopButton.pressColor = colors[2];
-    stopButton.labelMinExtent = new Point(36, 18);
-    stopButton.padding = 0;
-    stopButton.labelShadowOffset = new Point(-1, -1);
-    stopButton.labelShadowColor = colors[1];
     stopButton.labelColor = new Color(200, 0, 0);
-    stopButton.contrast = this.buttonContrast;
-    stopButton.drawNew();
-    stopButton.fixLayout();
-    stopButton.refresh();
 
     var startButton = new PushButtonMorph(
-        this,
+        getNbMorph(),
         'pressStart',
-        new SymbolMorph('flag', 14)
+        new SymbolMorph('flag', SYM_SIZE)
     );
-    startButton.corner = 12;
-    startButton.color = colors[0];
-    startButton.highlightColor = colors[1];
-    startButton.pressColor = colors[2];
-    startButton.labelMinExtent = new Point(36, 18);
-    startButton.padding = 0;
-    startButton.labelShadowOffset = new Point(-1, -1);
-    startButton.labelShadowColor = colors[1];
     startButton.labelColor = new Color(0, 200, 0);
-    startButton.contrast = this.buttonContrast;
-    startButton.drawNew();
-    // startButton.hint = 'start green\nflag scripts';
-    startButton.fixLayout();
 
-    controlBar.add(startButton, stopButton);
-};
+    buttons.push(startButton);
+    buttons.push(stopButton);
 
-mobileMode.transformButtons = function() {
-    const controls = this.computeControlPos(),
-        cb = getNbMorph().controlBar,
-        buttons = [
-            cb.startButton,
-            cb.stopButton
-        ];
-    // cb.hide();
-    // resize
-    buttons.forEach(but => {
-        but.setWidth(BUTTON_SIZE.width);
-        but.setHeight(BUTTON_SIZE.height);
+
+    buttons.forEach(function(btn){
+        btn.hide();
+        btn.fixLayout();
+        btn.drawNew();
+        getNbMorph().add(btn);
+        btn.corner = 12;
+        btn.color = colors[0];
+        btn.highlightColor = colors[1];
+        btn.pressColor = colors[2];
+        btn.labelMinExtent = new Point(36, 18);
+        btn.labelShadowOffset = new Point(-1, -1);
+        btn.labelShadowColor = colors[1];
+        btn.contrast = this.buttonContrast;
+        btn.padding = BTN_PAD;
+        // btn.setWidth(btnWidth);
+        // btn.setHeight(BUTTON_SIZE.height);
+        // fix layout will shrink width to paddings
+        btn.fixLayout();
+        if (btn.refresh) btn.refresh();
     });
 
-    // cb.setWidth(controls.width);
-    // cb.setHeight(controls.height);
-    // cb.setPosition(new Point(controls.origin.x, controls.origin.y));
-    // cb.fixLayout();
+    return buttons;
+};
 
-    // set button positions manually
+// position and show buttons
+mobileMode.positionButtons = function(buttons, controls) {
+    const btnHeight = buttons[0].height(),
+        btnWidth = buttons[0].width();
+
+    // position buttons
     buttons.forEach( (button, idx) => {
         let x,y;
         if (this._stackMode === 'v') {
             x = controls.origin.x;
-            y = controls.origin.y + idx * BUTTON_SIZE.height + idx * GAP;
+            y = controls.origin.y + idx * btnHeight + idx * GAP;
         } else if (this._stackMode === 'h') {
             y = controls.origin.y;
-            x = controls.origin.x + idx * BUTTON_SIZE.width + idx * GAP;
+            x = controls.origin.x + idx * btnWidth + idx * GAP;
         }
         button.setPosition(new Point(x, y));
         button.show();
