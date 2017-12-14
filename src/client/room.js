@@ -33,6 +33,7 @@ function RoomMorph(ide) {
 }
 
 RoomMorph.prototype.init = function(ide) {
+    var self = this;
     // Get the users at the room
     this.ide = ide;
     this.displayedMsgMorphs = [];
@@ -42,17 +43,25 @@ RoomMorph.prototype.init = function(ide) {
 
     this.ownerId = null;
     this.collaborators = [];
-    this.roomLabel = null;
     RoomMorph.uber.init.call(this, true);
 
     // Set up the room name
-    this._name = localize(RoomMorph.DEFAULT_ROOM);
-    Object.defineProperty(this, 'name', {
-        get: function() {
-            return this._name;
-        },
-        set: this._onNameChanged.bind(this)
-    });
+    this.name = localize(RoomMorph.DEFAULT_ROOM);
+    this.roomName = new StringMorph(
+        this.name,
+        18,
+        null,
+        true,
+        false,
+        false,
+        null,
+        null,
+        white
+    );
+    this.add(this.roomName);
+    this.roomName.mouseClickLeft = function() {
+        self.editRoomName();
+    };
 
     this.nextRoom = null;  // next room info
     // The projectName is used for the roleId
@@ -94,6 +103,16 @@ RoomMorph.prototype.init = function(ide) {
     // Set the initial values
     // Shared messages array for when messages are sent to unoccupied roles
     this.sharedMsgs = [];
+};
+
+RoomMorph.prototype.setRoomName = function(name) {
+    this.name = name;
+    this.roomName.text = name;
+    this.roomName.changed();
+    this.roomName.drawNew();
+    this.roomName.changed();
+
+    this.ide.controlBar.updateLabel();
 };
 
 RoomMorph.prototype.getDefaultRoles = function() {
@@ -205,8 +224,7 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
 
     changed = name && this.name !== name;
     if (changed) {
-        this._name = name;
-        this.ide.controlBar.updateLabel();
+        this.setRoomName(name);
     }
 
     // Check if it has changed in a meaningful way
@@ -320,6 +338,7 @@ RoomMorph.prototype.fixLayout = function() {
         radius = this.getRadius(),
         position,
         circleSize = this.getRoleSize(),
+        color,
         x,y,
         role;
 
@@ -331,11 +350,14 @@ RoomMorph.prototype.fixLayout = function() {
         x = 0.65 * radius * Math.cos(angle);
         y = 0.65 * radius * Math.sin(angle);
         position = this.center().add(new Point(x, y));
-        color = RoleMorph.COLORS[i%len].toString();
+        color = RoleMorph.COLORS[i%len];
 
         role.setCenter(position);
         role.setExtent(new Point(circleSize, circleSize));
+        role.setColor(color);
     }
+
+    this.roomName.setCenter(this.center());
 };
 
 RoomMorph.prototype.drawNew = function() {
@@ -346,9 +368,6 @@ RoomMorph.prototype.drawNew = function() {
         roles;
 
     this.image = newCanvas(this.extent());
-
-    // Room name
-    this.renderRoomTitle(new Point(center - 12, center).translateBy(this.topLeft()));
 
     // Owner name
     this.showOwnerName(new Point(center, center).translateBy(this.topLeft()).translateBy(new Point(0, 1.15 * radius)));
@@ -422,44 +441,11 @@ RoomMorph.prototype.mouseClickLeft = function() {
     }
 };
 
-RoomMorph.prototype.renderRoomTitle = function(center) {
-    var width = 100,
-        height = 25;
-
-    if (this.roomLabel) {
-        this.roomLabel.destroy();
-        this.titleBox.destroy();
-    }
-
-    // Create the background box
-    this.titleBox = new Morph();
-    this.titleBox.image = newCanvas(this.extent());
-    this.titleBox.color = new Color(158, 158, 158, 0);
-    this.add(this.titleBox);
-    this.titleBox.setExtent(new Point(width, height));
-    this.titleBox.setCenter(center);
-    if (this.isEditable()) {
-        this.titleBox.mouseClickLeft = this.editRoomName.bind(this);
-    }
-
-    // Add the room name text
-    this.roomLabel = new StringMorph(
-        this.name,
-        18,
-        null,
-        true,
-        false,
-        false,
-        null,
-        null,
-        white
-    );
-    this.titleBox.add(this.roomLabel);
-    this.roomLabel.setCenter(center);
-};
-
 RoomMorph.prototype.editRoomName = function () {
     var myself = this;
+    if (!this.isEditable()) {
+        return;
+    }
     this.ide.prompt('New Room Name', function (name) {
         if (RoomMorph.isEmptyName(name)) return;  // empty name = cancel
 
@@ -1010,41 +996,14 @@ RoleMorph.prototype.drawNew = function() {
         cxt;
 
     // Create the image
-    console.log('width', this.width());
-    console.log('height', this.height());
     this.image = newCanvas(this.extent());
     cxt = this.image.getContext('2d');
 
     cxt.beginPath();
+    cxt.fillStyle = this.color.toString();
     cxt.arc(center.x, center.y, radius, 0, 2 * Math.PI, false);
     cxt.fill();
 
-    // Draw the roles
-    // FIXME: move the position stuff elsewhere
-    // This should just draw a circle of the correct size
-    //var angleSize = 2*Math.PI/this.total,
-        //angle = -Math.PI / 2 + this.index*angleSize,
-        //len = RoleMorph.COLORS.length,
-        //x,y, circleSize;
-
-    //cxt.textAlign = 'center';
-
-    //// Write the role name on the role
-    //x = 0.65 * radius * Math.cos(angle);
-    //y = 0.65 * radius * Math.sin(angle);
-    //if (this.total < 3) {
-        //circleSize = radius * 0.25;
-    //} else {
-        //circleSize = radius * 0.2;
-    //}
-
-    //// Draw the role
-    //cxt.fillStyle = RoleMorph.COLORS[this.index%len].toString();
-    //cxt.beginPath();
-    //cxt.arc(center + x - 0.06 * radius, center + y - 0.04 * radius, circleSize, 0, 2 * Math.PI, false);
-    //cxt.fill();
-
-    //pos = new Point(x, y).translateBy(this.center());
     if (this.label) {
         this.label.destroy();
     }
