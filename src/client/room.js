@@ -1239,10 +1239,13 @@ EditRoleMorph.prototype.evictUser = function() {
     this.destroy();
 };
 
-// FIXME: rename this morph. It has a really horrible name
-RoomEditorMorph.prototype = new ScrollFrameMorph();
+// RoomEditorMorph ////////////////////////////////////////////////////////////
+
+// I am an editor for the RoomMorph and network debugger
+
+RoomEditorMorph.prototype = new Morph();
 RoomEditorMorph.prototype.constructor = RoomEditorMorph;
-RoomEditorMorph.uber = ScrollFrameMorph.prototype;
+RoomEditorMorph.uber = Morph.prototype;
 
 function RoomEditorMorph(room, sliderColor) {
     var myself = this;
@@ -1319,6 +1322,8 @@ RoomEditorMorph.prototype.addToggleReplay = function() {
 };
 
 RoomEditorMorph.prototype.fixLayout = function() {
+    this.room.setCenter(this.center());
+    this.room.setExtent(this.extent());
     this.room.fixLayout();
 
     this.replayControls.setWidth(this.width()-40);
