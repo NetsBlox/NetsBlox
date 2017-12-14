@@ -33,7 +33,7 @@ function RoomMorph(ide) {
 }
 
 RoomMorph.prototype.init = function(ide) {
-    var self = this;
+    var myself = this;
     // Get the users at the room
     this.ide = ide;
     this.displayedMsgMorphs = [];
@@ -60,7 +60,7 @@ RoomMorph.prototype.init = function(ide) {
     );
     this.add(this.roomName);
     this.roomName.mouseClickLeft = function() {
-        self.editRoomName();
+        myself.editRoomName();
     };
 
     this.nextRoom = null;  // next room info
@@ -76,7 +76,6 @@ RoomMorph.prototype.init = function(ide) {
 
     // Set up callback(s) for RoleMorphs
     RoleMorph.prototype.editRole = RoomMorph.prototype.editRole.bind(this);
-    var myself = this;
     RoleLabelMorph.prototype.mouseClickLeft = function() {
         if (myself.isEditable()) {
             myself.editRoleName(this.name);
@@ -84,17 +83,17 @@ RoomMorph.prototype.init = function(ide) {
     };
 
     // update on login (changing room name if default)
+    // TODO: this should be on the server...?
     SnapCloud.onLogin = function() {
         myself.update();
-        // FIXME: This has problems if opening default project
-        if (myself._name === localize(RoomMorph.DEFAULT_ROOM)) {
+        if (myself.name === localize(RoomMorph.DEFAULT_ROOM)) {
             myself.ide.sockets.sendMessage({type: 'request-new-name'});
         }
     };
 
     // change room name if default on passive login
     SnapCloud.onPassiveLogin = function() {
-        if (myself._name === localize(RoomMorph.DEFAULT_ROOM)) {
+        if (myself.name === localize(RoomMorph.DEFAULT_ROOM)) {
             myself.ide.sockets.sendMessage({type: 'request-new-name'});
         }
         myself.update();
