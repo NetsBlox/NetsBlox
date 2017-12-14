@@ -615,7 +615,6 @@ module.exports = [
                 projectName = req.query.ProjectName;
 
             this._logger.trace(`Retrieving the public project: ${projectName} from ${username}`);
-
             return this.storage.users.get(username)
                 .then(user => {
                     if (!user) {
@@ -631,7 +630,8 @@ module.exports = [
                     } else {
                         return res.status(400).send('ERROR: Project not available');
                     }
-                });
+                })
+                .catch(err => res.status(500).send(`ERROR: ${err}`));
         }
     }
 
