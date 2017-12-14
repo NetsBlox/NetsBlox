@@ -1266,13 +1266,14 @@ function RoomEditorMorph(room, sliderColor) {
     this.replayControls.drawNew();
     this.replayControls.hide();
     this.updateControlButtons();
-
-    // Update the RoomEditorMorph when the room changes
-    this.room.changed = function() {
-        myself.updateRoom();
-    };
-    this.updateRoom();
 }
+
+RoomEditorMorph.prototype.step = function() {
+    if (this.version !== this.room.version) {
+        this.updateControlButtons();
+        this.version = this.room.version;
+    }
+};
 
 RoomEditorMorph.prototype.updateControlButtons = function() {
     var sf = this.parentThatIsA(ScrollFrameMorph);
@@ -1289,6 +1290,7 @@ RoomEditorMorph.prototype.updateControlButtons = function() {
     sf.toolBar.changed();
 
     sf.adjustToolBar();
+    this.updateRoomControls();
 };
 
 RoomEditorMorph.prototype.addToggleReplay = function() {
@@ -1443,11 +1445,6 @@ RoomEditorMorph.prototype.drawMsgPalette = function() {
     // Display message palette with no scroll bar until it overflows
     this.addContents(palette);
     this.vBar.hide();
-};
-
-RoomEditorMorph.prototype.destroy = function() {
-    this.room.changed = nop;
-    RoomEditorMorph.uber.destroy.call(this);
 };
 
 RoomEditorMorph.prototype.addButton = function(params) {
