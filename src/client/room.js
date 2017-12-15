@@ -864,6 +864,7 @@ RoomMorph.prototype.updateDisplayedMsg = function(msg) {
     msg.setExtent(size);
     msg.setCenter(dstPoint.add(srcPoint).divideBy(2));
     msg.endpoint = relEndpoint;
+    msg.message.setColor(srcRole.color.darker());
     msg.drawNew();
 };
 
@@ -900,12 +901,13 @@ function SentMessageMorph(msg, srcId, dstId, endpoint) {
 SentMessageMorph.prototype.init = function(msg, srcId, dstId, endpoint) {
     this.srcRoleName = srcId;
     this.dstRoleName = dstId;
-    this.message = msg;
     this.padding = 10;
 
     this.endpoint = endpoint;
+    this.message = new MessageMorph(msg);
     SentMessageMorph.uber.init.call(this);
     this.color = IDE_Morph.prototype.frameColor.darker(50);
+    this.add(this.message);
 };
 
 SentMessageMorph.prototype.drawNew = function() {
@@ -951,6 +953,28 @@ SentMessageMorph.prototype.drawNew = function() {
     context.lineTo(end.x, end.y);
     context.stroke();
     context.fill();
+
+    this.fixLayout();
+};
+
+SentMessageMorph.prototype.fixLayout = function() {
+    // position the message icon
+    this.message.setCenter(this.center());
+};
+
+MessageMorph.prototype = new SymbolMorph();
+MessageMorph.prototype.constructor = MessageMorph;
+MessageMorph.uber = SymbolMorph.prototype;
+
+function MessageMorph(message) {
+    this.init(message);
+}
+
+MessageMorph.prototype.init = function (message) {
+    MessageMorph.uber.init.call(this, 'mail', 25);
+    this.setHeight(15);
+    this.drawNew();
+    this.message = message;
 };
 
 //////////// Network Replay Controls ////////////

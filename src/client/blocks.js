@@ -1014,6 +1014,8 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     // NetsBlox addition: start
     case 'plus':
         return this.drawSymbolPlus(canvas, aColor);
+    case 'mail':
+        return this.drawSymbolMail(canvas, aColor);
     // NetsBlox addition: end
     case 'pointRight':
         return this.drawSymbolPointRight(canvas, aColor);
@@ -1116,6 +1118,26 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     default:
         return canvas;
     }
+};
+
+SymbolMorph.prototype.drawSymbolMail = function(canvas, color) {
+    var ctx = canvas.getContext('2d'),
+        w = canvas.width,
+        l = Math.max(w / 12, 1),
+        h = canvas.height;
+
+    ctx.lineWidth = l;
+    ctx.fillStyle = color.toString();
+    ctx.strokeStyle = color.darker(50).toString();
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.rect(0, 0, w, h);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(w/2, 2*h/3);
+    ctx.lineTo(w, 0);
+    ctx.stroke();
+
+    return canvas;
 };
 
 SymbolMorph.prototype.drawSymbolPlus = function (canvas, color) {
