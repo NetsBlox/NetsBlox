@@ -903,6 +903,7 @@ SentMessageMorph.prototype.init = function(msg, srcId, dstId, endpoint) {
 
     this.endpoint = endpoint;
     SentMessageMorph.uber.init.call(this);
+    this.color = IDE_Morph.prototype.frameColor.darker(50);
 };
 
 SentMessageMorph.prototype.drawNew = function() {
@@ -920,11 +921,12 @@ SentMessageMorph.prototype.drawNew = function() {
     end = start.add(this.endpoint);
 
     // Draw a line from the current position to the endpoint
-    context.strokeStyle = '#000000';
-    context.lineWidth = 3;
+    context.strokeStyle = this.color.toString();
+    context.fillStyle = this.color.toString();
+    context.lineWidth = 2.5;
 
     context.beginPath();
-    context.setLineDash([10, 10]);
+    context.setLineDash([5, 5]);
     context.moveTo(start.x, start.y);
     context.lineTo(end.x, end.y);
     context.stroke();
@@ -935,7 +937,7 @@ SentMessageMorph.prototype.drawNew = function() {
     // Draw an arrow at the end
     var da = Math.PI/6,
         angle = Math.atan2(this.endpoint.y, this.endpoint.x) + Math.PI,
-        size = 10,
+        size = 7.5,
         relLeftPoint = new Point(Math.cos(angle-da), Math.sin(angle-da)).multiplyBy(size),
         relRightPoint = new Point(Math.cos(angle+da), Math.sin(angle+da)).multiplyBy(size),
         leftPoint = end.add(relLeftPoint),
