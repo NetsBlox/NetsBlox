@@ -354,7 +354,7 @@ class NetsBloxSocket {
         let room = this.getRawRoom();
         let publicRoleId = null;
         if (room) {
-            publicRoleId = `${this.roleId}@${room.name}@${room.owner}`;
+            publicRoleId = `${this.role}@${room.name}@${room.owner}`;
         }
         return publicRoleId;
     }
