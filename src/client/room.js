@@ -848,11 +848,20 @@ RoomMorph.prototype.updateDisplayedMsg = function(msg) {
         dstRole = this.getRole(msg.dstRoleName),
         srcPoint = srcRole.center(),
         dstPoint = dstRole.center(),
-        size = dstPoint.subtract(srcPoint).abs().add(2*msg.padding);
+        relEndpoint = dstPoint.subtract(srcPoint),
+        roleRadius = this.getRoleSize()/2,
+        size;
 
+    // move the relEndpoint so that it doesn't overlap the roles
+    var dist = dstPoint.distanceTo(srcPoint),
+        targetDist = dist - 2*roleRadius;
+
+    relEndpoint = relEndpoint.scaleBy(targetDist/dist);
+
+    size = relEndpoint.abs().add(2*msg.padding);
     msg.setExtent(size);
     msg.setCenter(dstPoint.add(srcPoint).divideBy(2));
-    msg.setStartEndpoint(srcPoint, dstPoint);
+    msg.endpoint = relEndpoint;
     msg.drawNew();
 };
 
@@ -938,10 +947,6 @@ SentMessageMorph.prototype.drawNew = function() {
     context.lineTo(end.x, end.y);
     context.stroke();
     context.fill();
-};
-
-SentMessageMorph.prototype.setStartEndpoint = function(start, end) {
-    this.endpoint = end.subtract(start);
 };
 
 //////////// Network Replay Controls ////////////
