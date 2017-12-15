@@ -38,8 +38,7 @@ RoomMorph.prototype.init = function(ide) {
     this.isReadOnly = false;
     this.ide = ide;
     this.displayedMsgMorphs = [];
-    this.roles = this.getDefaultRoles();
-    this.roleMorphs = {};
+    this.roles = [];
     this.invitations = {};  // open invitations
 
     this.ownerId = null;
@@ -59,7 +58,6 @@ RoomMorph.prototype.init = function(ide) {
         null,
         white
     );
-    this.add(this.roomName);
     this.roomName.mouseClickLeft = function() {
         myself.editRoomName();
     };
@@ -75,7 +73,6 @@ RoomMorph.prototype.init = function(ide) {
         null,
         white
     );
-    this.add(this.ownerLabel);
 
     this.collabList = new StringMorph(
         localize('No collaborators'),
@@ -88,12 +85,17 @@ RoomMorph.prototype.init = function(ide) {
         null,
         white
     );
-    this.add(this.collabList);
     this.nextRoom = null;  // next room info
     // The projectName is used for the roleId
     if (!this.ide.projectName) {
         this.ide.projectName = RoomMorph.DEFAULT_ROLE;
     }
+
+    RoomMorph.uber.init.call(this);
+    this.updateRoles(this.getDefaultRoles());
+    this.add(this.roomName);
+    this.add(this.ownerLabel);
+    this.add(this.collabList);
 
     this.isDraggable = false;
 
@@ -137,14 +139,15 @@ RoomMorph.prototype.setRoomName = function(name) {
 };
 
 RoomMorph.prototype.getDefaultRoles = function() {
-    var roles = {},
+    var roleInfo = {},
+        name = this.getCurrentRoleName(),
         myRoleInfo = {
             uuid: this.myUuid(),
             username: SnapCloud.username || 'me'
         };
 
-    roles[this.ide.projectName] = [myRoleInfo];
-    return roles;
+    roleInfo[name] = [myRoleInfo];
+    return roleInfo;
 };
 
 RoomMorph.prototype.getCurrentRoleName = function() {
@@ -157,11 +160,9 @@ RoomMorph.prototype.getRoleCount = function() {
 
 RoomMorph.prototype.getCurrentOccupants = function(name) {
     name = name || this.getCurrentRoleName();
-    if (this.roles && this.roles[name]) {
-        return this.roles[name].slice();
-    } else {
-        return this.getDefaultRoles()[this.getCurrentRoleName()];
-    }
+    var role = this.getRole(name);
+
+    return role.users.slice();
 };
 
 RoomMorph.prototype.isLeader = function() {
@@ -209,24 +210,21 @@ RoomMorph.prototype.isEditable = function() {
     return !this.isReadOnly && (this.isOwner() || this.isCollaborator());
 };
 
-RoomMorph.sameOccupants = function(roles, otherRoles) {
-    var names = Object.keys(roles),
-        uuids,
+RoomMorph.sameOccupants = function(list1, list2) {
+    var uuids,
         usernames,
         otherUuids,
         otherUsernames,
         getUuid = function(role) {return role.uuid;},
         getUsername = function(role) {return role.uuid;};
 
-    for (var i = names.length; i--;) {
-        uuids = roles[names[i]].map(getUuid);
-        otherUuids = otherRoles[names[i]].map(getUuid);
-        if (!RoomMorph.equalLists(uuids, otherUuids)) return false;
+    uuids = list1.map(getUuid);
+    otherUuids = list2.map(getUuid);
+    if (!RoomMorph.equalLists(uuids, otherUuids)) return false;
 
-        usernames = roles[names[i]].map(getUsername);
-        otherUsernames = otherRoles[names[i]].map(getUsername);
-        if (!RoomMorph.equalLists(usernames, otherUsernames)) return false;
-    }
+    usernames = list1.map(getUsername);
+    otherUsernames = list2.map(getUsername);
+    if (!RoomMorph.equalLists(usernames, otherUsernames)) return false;
     return true;
 };
 
@@ -254,17 +252,8 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
         wasEditable !== this.isEditable();
 
     if (roles) {
-        names = Object.keys(roles);
-        oldNames = Object.keys(this.roles || {});
-
-        changed = changed || !RoomMorph.equalLists(oldNames, names) ||
-            !RoomMorph.sameOccupants(this.roles, roles);
-
-        this.roles = roles || this.roles;
-    } else {
-        this.roles = this.roles || this.getDefaultRoles();
+        changed = this.updateRoles(roles) || changed;
     }
-    this.updateLabels();
 
     if (collaborators) {
         changed = changed || !RoomMorph.equalLists(collaborators, this.collaborators);
@@ -289,50 +278,54 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
 };
 
 RoomMorph.prototype.getRoleNames = function() {
-    return this.getRoleMorphs().map(function(role) {
+    return this.getRoles().map(function(role) {
         return role.name;
     });
 };
 
-RoomMorph.prototype.getRoleMorphs = function() {
-    var myself = this;
-    return Object.keys(this.roleMorphs).map(function(id) {
-        return myself.roleMorphs[id];
-    });
+RoomMorph.prototype.getRoles = function() {
+    return this.roles;
 };
 
 RoomMorph.prototype.getRole = function(name) {
-    return this.getRoleMorphs().find(function(role) {
+    return this.getRoles().find(function(role) {
         return role.name === name;
     });
 };
 
-RoomMorph.prototype.updateLabels = function() {
+RoomMorph.prototype.updateRoles = function(roleInfo) {
     // TODO: change this to update `roles`?
-    var roles,
-        i;
+    var myself = this,
+        roles = this.getRoles(),
+        changed = false,
+        names;
 
-    // Remove the old roleMorphs
-    roles = Object.keys(this.roleMorphs);
-    for (i = roles.length; i--;) {
-        this.roleMorphs[roles[i]].destroy();
-        delete this.roleMorphs[roles[i]];
-    }
+    roles.forEach(function(role) {
+        if (!roleInfo[role.name]) {
+            console.log('removing role', role.name);
+            role.destroy();
+            changed = true;
+        }
 
-    // Draw the roles
-    var label;
-    this.roles = this.roles || this.getDefaultRoles();
-    roles = Object.keys(this.roles);
+        // Update the occupants
+        if (!RoomMorph.sameOccupants(role.users, roleInfo[role.name])) {
+            role.setOccupants(roleInfo[role.name]);
+        }
+        delete roleInfo[role.name];
+    });
 
-    for (i = 0; i < roles.length; i++) {
-        // Create the label
-        label = new RoleMorph(
-            localize(roles[i]),
-            localize(this.roles[roles[i]])
+    names = Object.keys(roleInfo);
+    names.forEach(function(name) {
+        var role = new RoleMorph(
+            name,
+            roleInfo[name]
         );
-        this.add(label);
-        this.roleMorphs[roles[i]] = label;
-    }
+        myself.roles.push(role);
+        myself.add(role);
+        changed = true;
+    });
+
+    return changed;
 };
 
 RoomMorph.prototype.getRadius = function() {
@@ -342,7 +335,7 @@ RoomMorph.prototype.getRadius = function() {
 RoomMorph.prototype.getRoleSize = function() {
     // Compute the max size based on the angle
     // Given the angle, compute the distance between the points
-    var roleCount = this.getRoleMorphs().length,
+    var roleCount = this.getRoles().length,
         angle = (2*Math.PI)/roleCount,
         radius = Math.min(this.width(), this.height())/2,
         maxRoleSize = 150,
@@ -367,10 +360,8 @@ RoomMorph.prototype.getRoleSize = function() {
 
 RoomMorph.prototype.fixLayout = function() {
     // Position the roles
-    this.roles = this.roles || this.getDefaultRoles();
-
     var myself = this,
-        roles = this.getRoleMorphs(),
+        roles = this.getRoles(),
         angleSize = 2*Math.PI/roles.length,
         angle = -Math.PI / 2 + this.index*angleSize,
         len = RoleMorph.COLORS.length,
@@ -418,7 +409,7 @@ RoomMorph.prototype.drawNew = function() {
         this.roomName.show();
     }
 
-    this.getRoleMorphs().forEach(function(morph) {
+    this.getRoles().forEach(function(morph) {
         morph.drawNew();
     });
 
@@ -494,7 +485,7 @@ RoomMorph.prototype.editRoomName = function () {
 RoomMorph.prototype.validateRoleName = function (name, cb) {
     if (RoomMorph.isEmptyName(name)) return;  // empty role name = cancel
 
-    if (this.roles.hasOwnProperty(name)) {
+    if (this.getRole(name)) {
         // Error! Role exists
         new DialogBoxMorph().inform(
             'Existing Role Name',
@@ -678,7 +669,7 @@ RoomMorph.prototype.inviteUser = function (role) {
 
 // Accessed from right-clicking the TextMorph
 RoomMorph.prototype.promptShare = function(name) {
-    var roles = Object.keys(this.roles),
+    var roles = this.getRoleNames(),
         choices = {},
         world = this.world(),
         myself = this;
@@ -842,7 +833,7 @@ RoomMorph.prototype.showMessage = function(msg) {
             var address = id.split('@');
             var roleId = address.shift();
             var inCurrentProject = address.join('@') === projectId;
-            var stillExists = !!myself.roles[roleId];
+            var stillExists = !!myself.getRole(roleId);
             return inCurrentProject && stillExists;
         })
         .map(function(id) {
@@ -850,7 +841,7 @@ RoomMorph.prototype.showMessage = function(msg) {
         });
 
     // If they are both in the room and they both exist, animate the message
-    if (!!this.roles[relSrcId]) {
+    if (this.getRole(relSrcId)) {
         relDstIds.forEach(function(dstId) {
             myself.showSentMsg(msg, relSrcId, dstId);
         });
