@@ -1071,10 +1071,17 @@ RoleMorph.prototype.setName = function(name) {
 };
 
 RoleMorph.prototype.drawNew = function() {
-    var center,
+    var editor = this.parentThatIsA(RoomEditorMorph),
+        center,
         height,
         radius,
         cxt;
+
+    if (editor && editor.isReplayMode()) {
+        this.caption.hide();
+    } else {
+        this.caption.show();
+    }
 
     this.fixLayout();
     height = Math.max(this.height() - this.caption.height(), 0);
@@ -1351,7 +1358,6 @@ RoomEditorMorph.prototype.init = function(room, sliderColor) {
 
     this.room = room;
     this.add(room);
-    this.room.drawNew();
 
     // Check for queried shared messages
     //this.room.checkForSharedMsgs(this.room.ide.projectName);
@@ -1386,6 +1392,7 @@ RoomEditorMorph.prototype.init = function(room, sliderColor) {
     this.add(button);
     this.addRoleBtn = button;
 
+    this.room.drawNew();
     this.updateControlButtons();
 };
 
@@ -1480,8 +1487,9 @@ RoomEditorMorph.prototype.isReplayMode = function() {
 };
 
 RoomEditorMorph.prototype.exitReplayMode = function() {
-    this.room.hideSentMsgs();
     this.replayControls.disable();
+    this.room.hideSentMsgs();
+    this.room.drawNew();
 };
 
 RoomEditorMorph.prototype.enterReplayMode = function() {
@@ -1497,6 +1505,7 @@ RoomEditorMorph.prototype.enterReplayMode = function() {
         }
         this.replayControls.enable();
         this.replayControls.setMessages(messages);
+        this.room.drawNew();
         this.updateRoomControls();
     } catch(e) {
         console.error(e);
