@@ -1054,6 +1054,17 @@ RoleMorph.prototype.init = function(name, users) {
             room.editRoleName(this.text);
         }
     };
+
+    this.label.mouseEnter = function() {
+        var room = this.parentThatIsA(RoomMorph);
+        if (room.isEditable()) {
+            this.setFontSize(17);
+        }
+    };
+    this.label.mouseLeave = function() {
+        this.setFontSize(15);
+    };
+
     this.caption = new StringMorph(
         '',
         14,
