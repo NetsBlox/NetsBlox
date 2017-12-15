@@ -8,8 +8,6 @@
 RoomMorph.prototype = new Morph();
 RoomMorph.prototype.constructor = RoomMorph;
 RoomMorph.uber = Morph.prototype;
-Rectangle.prototype = new Rectangle();
-Rectangle.prototype.constructor = Rectangle;
 
 RoomMorph.SIZE = 300;
 RoomMorph.DEFAULT_ROLE = 'myRole';
@@ -295,7 +293,6 @@ RoomMorph.prototype.getRole = function(name) {
 };
 
 RoomMorph.prototype.updateRoles = function(roleInfo) {
-    // TODO: change this to update `roles`?
     var myself = this,
         roles = this.getRoles(),
         changed = false,
