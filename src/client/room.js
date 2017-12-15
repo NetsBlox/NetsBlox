@@ -321,15 +321,29 @@ RoomMorph.prototype.getRadius = function() {
 };
 
 RoomMorph.prototype.getRoleSize = function() {
-    var radius = Math.min(this.width(), this.height())/2;
+    // Compute the max size based on the angle
+    // Given the angle, compute the distance between the points
+    var roleCount = this.getRoleMorphs().length,
+        angle = (2*Math.PI)/roleCount,
+        radius = Math.min(this.width(), this.height())/2,
+        maxRoleSize = 150,
+        minRoleGapSize = 10,
+        startPoint,
+        endPoint,
+        roleSliceSize,  // given the number of roles
+        quadrantSize,
+        roleSize;
 
-    if (this.getRoleMorphs().length < 3) {
-        // These values should be computed...
-        // FIXME
-        return radius * 0.25;
-    } else {
-        return radius * 0.2;
+    startPoint = new Point(radius/2, 0);
+    endPoint = (new Point(Math.cos(angle), Math.sin(angle))).multiplyBy(radius/2);
+    roleSliceSize = startPoint.distanceTo(endPoint) - minRoleGapSize;
+    quadrantSize = startPoint.distanceTo(new Point(0, radius/2)),
+
+    roleSize = quadrantSize;
+    if (angle < Math.PI/2) {
+        roleSize = roleSliceSize;
     }
+    return Math.min(roleSize, maxRoleSize);
 };
 
 RoomMorph.prototype.fixLayout = function() {
