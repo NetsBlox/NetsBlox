@@ -871,7 +871,7 @@ RoomMorph.prototype.showSentMsg = function(msg, srcId, dstId) {
         relEndpoint = dstRole.center().subtract(srcRole.center()),
         msgMorph = new SentMessageMorph(msg, srcId, dstId, relEndpoint);
 
-    this.add(msgMorph);
+    this.addBack(msgMorph);
     this.displayedMsgMorphs.push(msgMorph);
     this.updateDisplayedMsg(msgMorph);
 };
