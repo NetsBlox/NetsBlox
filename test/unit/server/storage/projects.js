@@ -72,10 +72,8 @@ describe('projects', function() {
 
     it('should get role', function(done) {
         project.getRoleNames()
-            .then(names => console.log(names))
             .then(() => project.getRole('p1'))
             .then(role => {
-                console.log('role');
                 assert.equal(role.ProjectName, 'p1');
                 assert.notEqual(role.SourceCode.length, 128);
             })
@@ -93,6 +91,16 @@ describe('projects', function() {
                 done();
             })
             .catch(done);
+    });
+
+    it('should not change id on rename role', function(done) {
+        let roleId = null;
+        project.getRoleId('p1')
+            .then(id => roleId = id)
+            .then(() => project.renameRole('p1', 'newName'))
+            .then(() => project.getRoleId('newName'))
+            .then(id => assert.equal(id, roleId))
+            .nodeify(done);
     });
 
     it('should create cloned role', function(done) {

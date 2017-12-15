@@ -486,7 +486,7 @@ RoomMorph.prototype.editRoleName = function(role) {
             if (role !== roleName){
                 myself.ide.sockets.sendMessage({
                     type: 'rename-role',
-                    roleId: role,
+                    role: role,
                     name: roleName
                 });
             }
@@ -556,10 +556,10 @@ RoomMorph.prototype.role = function() {
 
 RoomMorph.prototype.setRoleName = function(role) {
     role = role || 'untitled';
-    if (role !== this.ide.projectName) {
+    if (role !== this.getCurrentRoleName()) {
         this.ide.sockets.sendMessage({
             type: 'rename-role',
-            roleId: this.ide.projectName,
+            role: this.ide.projectName,
             name: role
         });
     }
