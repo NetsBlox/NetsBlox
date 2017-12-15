@@ -256,6 +256,7 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     } else {
         this.roles = this.roles || this.getDefaultRoles();
     }
+    this.updateLabels();
 
     if (collaborators) {
         changed = changed || !RoomMorph.equalLists(collaborators, this.collaborators);
@@ -271,33 +272,23 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     if (changed) {
         this.version = Date.now();
         this.drawNew();
+        this.fixLayout();
         this.changed();
-        // We need to force-update & refresh to fix the layout after drawing the message palette
-        // We can do this by "clicking" the room tab
-        // FIXME: find a better way to refresh...
-        //for (var i = 0; i < this.ide.children.length; i++) {
-            //if (this.ide.children[i] instanceof Morph) {
-                //if (this.ide.children[i].tabBar) {  // found the tab morph
-                    //this.ide.children[i].tabBar.children[3].mouseClickLeft();  // simulate clicking the room tab
-                    //return;
-                //}
-            //}
-        //}
     }
 
     // Update collaborative editing
     SnapActions.isLeader = this.isLeader();
-    this.updateLabels();
 };
 
 RoomMorph.prototype.getRoleMorphs = function() {
-    var self = this;
+    var myself = this;
     return Object.keys(this.roleMorphs).map(function(id) {
-        return self.roleMorphs[id];
+        return myself.roleMorphs[id];
     });
 };
 
 RoomMorph.prototype.updateLabels = function() {
+    // TODO: change this to update `roles`?
     var roles,
         i;
 
