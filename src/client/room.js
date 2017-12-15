@@ -1035,6 +1035,7 @@ RoleMorph.prototype.drawNew = function() {
     cxt.arc(center.x, center.y, radius, 0, 2 * Math.PI, false);
     cxt.closePath();
     cxt.fill();
+    cxt.strokeStyle = this.color.darker(50).toString();
     cxt.stroke();
 
     this.changed();
