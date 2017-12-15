@@ -38,7 +38,6 @@ RoomMorph.prototype.init = function(ide) {
     this.isReadOnly = false;
     this.ide = ide;
     this.displayedMsgMorphs = [];
-    this.roles = [];
     this.invitations = {};  // open invitations
 
     this.ownerId = null;
@@ -155,7 +154,7 @@ RoomMorph.prototype.getCurrentRoleName = function() {
 };
 
 RoomMorph.prototype.getRoleCount = function() {
-    return Object.keys(this.roles).length;
+    return this.getRoles().length;
 };
 
 RoomMorph.prototype.getCurrentOccupants = function(name) {
@@ -284,7 +283,9 @@ RoomMorph.prototype.getRoleNames = function() {
 };
 
 RoomMorph.prototype.getRoles = function() {
-    return this.roles;
+    return this.children.filter(function(child) {
+        return child instanceof RoleMorph;
+    });
 };
 
 RoomMorph.prototype.getRole = function(name) {
@@ -302,16 +303,15 @@ RoomMorph.prototype.updateRoles = function(roleInfo) {
 
     roles.forEach(function(role) {
         if (!roleInfo[role.name]) {
-            console.log('removing role', role.name);
             role.destroy();
             changed = true;
+        } else {
+            // Update the occupants
+            if (!RoomMorph.sameOccupants(role.users, roleInfo[role.name])) {
+                role.setOccupants(roleInfo[role.name]);
+            }
+            delete roleInfo[role.name];
         }
-
-        // Update the occupants
-        if (!RoomMorph.sameOccupants(role.users, roleInfo[role.name])) {
-            role.setOccupants(roleInfo[role.name]);
-        }
-        delete roleInfo[role.name];
     });
 
     names = Object.keys(roleInfo);
@@ -320,7 +320,6 @@ RoomMorph.prototype.updateRoles = function(roleInfo) {
             name,
             roleInfo[name]
         );
-        myself.roles.push(role);
         myself.add(role);
         changed = true;
     });
@@ -687,7 +686,7 @@ RoomMorph.prototype.promptShare = function(name) {
         dialog.accept = function() {
             var choice = dialog.getInput();
             if (roles.indexOf(choice) !== -1) {
-                if (myself.roles[choice]) {  // occupied
+                if (myself.getRole(choice)) {  // occupied
                     myself.ide.sockets.sendMessage({
                         type: 'share-msg-type',
                         roleId: choice,
