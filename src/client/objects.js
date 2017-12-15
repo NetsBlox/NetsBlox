@@ -343,7 +343,7 @@ SpriteMorph.prototype.getProjectId = function () {
 
 SpriteMorph.prototype.getProjectIds = function () {
     var ide = this.parentThatIsA(IDE_Morph),
-        roles = Object.keys(ide.room.roles);
+        roles = ide.room.getRoleNames();
     return new List(roles);
 };
 

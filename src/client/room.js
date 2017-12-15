@@ -280,6 +280,12 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     SnapActions.isLeader = this.isLeader();
 };
 
+RoomMorph.prototype.getRoleNames = function() {
+    return this.getRoleMorphs().map(function(role) {
+        return role.name;
+    });
+};
+
 RoomMorph.prototype.getRoleMorphs = function() {
     var myself = this;
     return Object.keys(this.roleMorphs).map(function(id) {

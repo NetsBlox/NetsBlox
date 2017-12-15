@@ -535,9 +535,9 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
         function () {
             SnapCloud.reconnect(function() {
                 var isReopen = project.ProjectName === myself.ide.room.name,
-                    roles = Object.keys(myself.ide.room.roles),
+                    roles = myself.ide.room.getRoleNames(),
                     onlyMe = roles.filter(function(roleName) {
-                        return !!myself.ide.room.roles[roleName];
+                        return !!myself.ide.room.getCurrentOccupants(roleName);
                     }).length === 1;
 
                 if (isReopen && onlyMe) {  // reopening own project

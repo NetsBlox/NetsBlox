@@ -986,7 +986,7 @@ InputSlotMorph.prototype.messageTypes = function () {
 
 InputSlotMorph.prototype.roleNames = function () {
     var ide = this.root().children[0],
-        roles = Object.keys(ide.room.roles),
+        roles = ide.room.getRoleNames(),
         dict = {};
 
     for (var i = roles.length; i--;) {
