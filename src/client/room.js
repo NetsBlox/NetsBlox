@@ -293,6 +293,12 @@ RoomMorph.prototype.getRoleMorphs = function() {
     });
 };
 
+RoomMorph.prototype.getRole = function(name) {
+    return this.getRoleMorphs().find(function(role) {
+        return role.name === name;
+    });
+};
+
 RoomMorph.prototype.updateLabels = function() {
     // TODO: change this to update `roles`?
     var roles,
@@ -316,7 +322,6 @@ RoomMorph.prototype.updateLabels = function() {
             localize(roles[i]),
             localize(this.roles[roles[i]])
         );
-        // FIXME: this should not be in drawNew...
         this.add(label);
         this.roleMorphs[roles[i]] = label;
     }
@@ -356,7 +361,8 @@ RoomMorph.prototype.fixLayout = function() {
     // Position the roles
     this.roles = this.roles || this.getDefaultRoles();
 
-    var roles = this.getRoleMorphs(),
+    var myself = this,
+        roles = this.getRoleMorphs(),
         angleSize = 2*Math.PI/roles.length,
         angle = -Math.PI / 2 + this.index*angleSize,
         len = RoleMorph.COLORS.length,
@@ -387,6 +393,11 @@ RoomMorph.prototype.fixLayout = function() {
     this.collabList.setBottom(this.bottom() - 25);
     this.ownerLabel.setCenter(this.center());
     this.ownerLabel.setBottom(this.collabList.top() - 10);
+
+    // Update the positions of the message morphs
+    this.displayedMsgMorphs.forEach(function(morph) {
+        myself.updateDisplayedMsg(morph);
+    });
 };
 
 RoomMorph.prototype.drawNew = function() {
@@ -831,17 +842,29 @@ RoomMorph.prototype.showMessage = function(msg) {
     }
 };
 
+RoomMorph.prototype.updateDisplayedMsg = function(msg) {
+    // Update the msg morph position and size
+    var srcRole = this.getRole(msg.srcRoleName),
+        dstRole = this.getRole(msg.dstRoleName),
+        srcPoint = srcRole.center(),
+        dstPoint = dstRole.center(),
+        size = dstPoint.subtract(srcPoint).abs().add(2*msg.padding);
+
+    msg.setExtent(size);
+    msg.setCenter(dstPoint.add(srcPoint).divideBy(2));
+    msg.setStartEndpoint(srcPoint, dstPoint);
+    msg.drawNew();
+};
+
 RoomMorph.prototype.showSentMsg = function(msg, srcId, dstId) {
-    var srcPoint = this.roleMorphs[srcId].label.center();
-    var dstPoint = this.roleMorphs[dstId].label.center();
-    var relEndpoint = dstPoint.subtract(srcPoint);
-    var msgMorph = new SentMessageMorph(msg, relEndpoint);
+    var srcRole = this.getRole(srcId),
+        dstRole = this.getRole(dstId),
+        relEndpoint = dstRole.center().subtract(srcRole.center()),
+        msgMorph = new SentMessageMorph(msg, srcId, dstId, relEndpoint);
 
     this.add(msgMorph);
-    msgMorph.setPosition(srcPoint.min(dstPoint).subtract(msgMorph.padding));
-    msgMorph.drawNew();
-
     this.displayedMsgMorphs.push(msgMorph);
+    this.updateDisplayedMsg(msgMorph);
 };
 
 RoomMorph.prototype.hideSentMsgs = function() {
@@ -859,17 +882,18 @@ SentMessageMorph.prototype = new Morph();
 SentMessageMorph.prototype.constructor = SentMessageMorph;
 SentMessageMorph.uber = Morph.prototype;
 
-function SentMessageMorph(msg, endpoint) {
-    this.init(msg, endpoint);
+function SentMessageMorph(msg, srcId, dstId, endpoint) {
+    this.init(msg, srcId, dstId, endpoint);
 }
 
-SentMessageMorph.prototype.init = function(msg, endpoint) {
+SentMessageMorph.prototype.init = function(msg, srcId, dstId, endpoint) {
+    this.srcRoleName = srcId;
+    this.dstRoleName = dstId;
     this.message = msg;
     this.padding = 10;
-    var size = endpoint.abs().add(2*this.padding);
+
     this.endpoint = endpoint;
     SentMessageMorph.uber.init.call(this);
-    this.silentSetExtent(size);
 };
 
 SentMessageMorph.prototype.drawNew = function() {
@@ -914,6 +938,10 @@ SentMessageMorph.prototype.drawNew = function() {
     context.lineTo(end.x, end.y);
     context.stroke();
     context.fill();
+};
+
+SentMessageMorph.prototype.setStartEndpoint = function(start, end) {
+    this.endpoint = end.subtract(start);
 };
 
 //////////// Network Replay Controls ////////////
