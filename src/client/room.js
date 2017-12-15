@@ -35,6 +35,7 @@ function RoomMorph(ide) {
 RoomMorph.prototype.init = function(ide) {
     var myself = this;
     // Get the users at the room
+    this.isReadOnly = false;
     this.ide = ide;
     this.displayedMsgMorphs = [];
     this.roles = this.getDefaultRoles();
@@ -118,6 +119,13 @@ RoomMorph.prototype.init = function(ide) {
     this.sharedMsgs = [];
 };
 
+RoomMorph.prototype.setReadOnly = function(value) {
+    if (value !== this.isReadOnly) {
+        this.isReadOnly = value;
+        this.drawNew();
+    }
+};
+
 RoomMorph.prototype.setRoomName = function(name) {
     this.name = name;
     this.roomName.text = name;
@@ -198,7 +206,7 @@ RoomMorph.prototype.isGuest = function(user) {
 };
 
 RoomMorph.prototype.isEditable = function() {
-    return this.isOwner() || this.isCollaborator();
+    return !this.isReadOnly && (this.isOwner() || this.isCollaborator());
 };
 
 RoomMorph.sameOccupants = function(roles, otherRoles) {
@@ -403,6 +411,13 @@ RoomMorph.prototype.fixLayout = function() {
 RoomMorph.prototype.drawNew = function() {
     this.image = newCanvas(this.extent());
 
+    // Update the title. Hide it if in replay mode
+    if (this.isReadOnly) {
+        this.roomName.hide();
+    } else {
+        this.roomName.show();
+    }
+
     this.getRoleMorphs().forEach(function(morph) {
         morph.drawNew();
     });
@@ -436,7 +451,7 @@ RoomMorph.prototype.setCollaborators = function(collaborators) {
 };
 
 RoomMorph.prototype.mouseClickLeft = function() {
-    if (!this.isEditable()) {
+    if (!this.isEditable() && !this.isReadOnly) {
         // If logged in, prompt about leaving the room
         if (SnapCloud.username) {
             this.ide.confirm(
@@ -1071,13 +1086,13 @@ RoleMorph.prototype.setName = function(name) {
 };
 
 RoleMorph.prototype.drawNew = function() {
-    var editor = this.parentThatIsA(RoomEditorMorph),
+    var room = this.parentThatIsA(RoomMorph),
         center,
         height,
         radius,
         cxt;
 
-    if (editor && editor.isReplayMode()) {
+    if (room && room.isReadOnly) {
         this.caption.hide();
     } else {
         this.caption.show();
@@ -1489,7 +1504,7 @@ RoomEditorMorph.prototype.isReplayMode = function() {
 RoomEditorMorph.prototype.exitReplayMode = function() {
     this.replayControls.disable();
     this.room.hideSentMsgs();
-    this.room.drawNew();
+    this.room.setReadOnly(false);
 };
 
 RoomEditorMorph.prototype.enterReplayMode = function() {
@@ -1505,7 +1520,7 @@ RoomEditorMorph.prototype.enterReplayMode = function() {
         }
         this.replayControls.enable();
         this.replayControls.setMessages(messages);
-        this.room.drawNew();
+        this.room.setReadOnly(true);
         this.updateRoomControls();
     } catch(e) {
         console.error(e);
