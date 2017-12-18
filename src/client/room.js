@@ -213,7 +213,7 @@ RoomMorph.sameOccupants = function(list1, list2) {
         otherUuids,
         otherUsernames,
         getUuid = function(role) {return role.uuid;},
-        getUsername = function(role) {return role.uuid;};
+        getUsername = function(role) {return role.username;};
 
     uuids = list1.map(getUuid);
     otherUuids = list2.map(getUuid);
