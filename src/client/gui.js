@@ -18,6 +18,16 @@ IDE_Morph.prototype.toggleAppMode = function() {
     }
 };
 
+var _ideFixLayout = IDE_Morph.prototype.fixLayout;
+IDE_Morph.prototype.fixLayout = function() {
+    var ideMorphIns = world.children[0];
+    _ideFixLayout.apply(ideMorphIns, arguments);
+    if (ideMorphIns.isAppMode &&  isMobileDevice()) {
+        // if mobilemode is fully initialized
+        if (mobileMode.buttons.length !== 0) mobileMode.fixLayout();
+    }
+};
+
 var mobileMode = {
     // assuming top pos for horizontal alignment and right for vertical
     _stackMode: 'h', // stack controls horizontally or vertically
@@ -29,14 +39,9 @@ var mobileMode = {
 // activate mobilemode
 mobileMode.init = function() {
     this.ideMorph = world.children[0];
-    var self = this;
-    // this.ideMorph.toggleAppMode(true);
     this.hideExtra();
     this.buttons = this.createButtons();
     this.fixLayout();
-    window.addEventListener('orientationchange', function() {
-        self.fixLayout();
-    });
 };
 
 mobileMode.fixLayout = function() {
