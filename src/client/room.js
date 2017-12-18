@@ -235,8 +235,6 @@ RoomMorph.equalLists = function(first, second) {
 
 RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     var wasEditable = this.isEditable(),
-        oldNames,
-        names,
         changed;
 
     changed = name && this.name !== name;
@@ -1233,79 +1231,6 @@ RoleMorph.prototype.reactToDropOf = function(drop) {
         }
     }
     drop.destroy();
-};
-
-
-RoleLabelMorph.prototype = new Morph();
-RoleLabelMorph.prototype.constructor = RoleLabelMorph;
-RoleLabelMorph.uber = Morph.prototype;
-
-// Label containing the role & user names
-function RoleLabelMorph(name, users) {
-    this.init();
-}
-
-RoleLabelMorph.prototype.init = function(name, users) {
-    this.name = name;
-    this.users = users;
-
-    var usrTxt = '<empty>';
-    if (this.users.length) {
-        usrTxt = this.users.map(function(user){
-            return user.username || localize('guest');
-        }).join(', ');
-    }
-
-    this._roleLabel = new StringMorph(
-        this.name,
-        15,
-        null,
-        true,
-        false,
-        false,
-        null,
-        null,
-        white
-    );
-    this._userLabel = new StringMorph(
-        usrTxt,
-        14,
-        null,
-        false,
-        true,
-        false,
-        null,
-        null,
-        white
-    );
-
-    RoleLabelMorph.uber.init.call(this);
-
-    this.add(this._roleLabel);
-    this.add(this._userLabel);
-    this.drawNew();
-};
-
-RoleLabelMorph.prototype.drawNew = function() {
-    this.image = newCanvas(new Point(1, 1));
-    this.fixLayout();
-};
-
-RoleLabelMorph.prototype.fixLayout = function() {
-    var center = this.center(),
-        height;
-
-    height = this._roleLabel.height();
-    this._roleLabel.setCenter(new Point(
-        center.x/2,
-        center.y - height/2
-    ));
-
-    height = this._userLabel.height();
-    this._userLabel.setCenter(new Point(
-        center.x/2,
-        center.y + height * 3.5
-    ));
 };
 
 EditRoleMorph.prototype = new DialogBoxMorph();
