@@ -1,8 +1,8 @@
 /* global SnapCloud, StringMorph, DialogBoxMorph, localize, newCanvas, Point, Morph,
- Color, nop, InputFieldMorph, ListMorph, IDE_Morph, TurtleIconMorph,
- TextMorph, MorphicPreferences, ScrollFrameMorph, FrameMorph, ReporterBlockMorph
+ Color, nop, InputFieldMorph, ListMorph, IDE_Morph, TurtleIconMorph, SnapActions,
+ TextMorph, MorphicPreferences, ScrollFrameMorph, ReporterBlockMorph,
  MessageOutputSlotMorph, MessageInputSlotMorph, SymbolMorph, PushButtonMorph, MenuMorph,
- SpeechBubbleMorph, ProjectDialogMorph, HandleMorph, Rectangle, fontHeight, SnapActions,
+ SpeechBubbleMorph, ProjectDialogMorph, HandleMorph, ReplayControls, fontHeight,
  AlignmentMorph, copy*/
 /* * * * * * * * * RoomMorph * * * * * * * * */
 RoomMorph.prototype = new Morph();
@@ -1014,7 +1014,7 @@ function NetworkReplayControls() {
     this.init();
 }
 
-NetworkReplayControls.prototype.displayCaption = function(event) {
+NetworkReplayControls.prototype.displayCaption = function(/*event*/) {
     // TODO: what should captions look like?
 };
 
@@ -1026,7 +1026,6 @@ NetworkReplayControls.prototype.applyEvent = function(event, next) {
     var ide = this.parentThatIsA(IDE_Morph);
     var room = ide.room;
 
-    // TODO: animate the message sending
     room.showMessage(event);
     next();
 };
@@ -1436,8 +1435,6 @@ RoomEditorMorph.prototype.addToggleReplay = function() {
         enterSymbol = new SymbolMorph('pointRight', 12),
         exitSymbol = new SymbolMorph('square', 12);
 
-    // TODO: add "exit replay mode" button
-    // This should be added to the replay control slider
     var replayButton = new PushButtonMorph(
         this,
         function() {
@@ -1517,8 +1514,8 @@ RoomEditorMorph.prototype.enterReplayMode = function() {
         this.room.setReadOnly(true);
         this.updateRoomControls();
     } catch(e) {
-        console.error(e);
-        // TODO: show an error message
+        ide.showMessage('Failed to retrieve messages', 2);
+        throw e;
     }
 };
 
@@ -1584,24 +1581,6 @@ RoomEditorMorph.prototype.updateMsgPalette = function() {
         palette.addContents(msg);
     }
 
-};
-
-RoomEditorMorph.prototype.drawMsgPalette = function() {
-    //var width = 0;  // default width
-
-    // Create and style the message palette
-    // Build list of sharable message types
-    // After adding all the sharable message types, resize the container if necessary
-    //if (palette.contents.width() > palette.width()) {
-        //palette.setWidth(palette.contents.width());
-        //this.room.setPosition(new Point(palette.width() + 15, 0));  // Shift the room accordingly
-    //}
-
-    // Display message palette with no scroll bar until it overflows
-    //this.vBar.hide();
-};
-
-RoomEditorMorph.prototype.addButton = function(params) {
 };
 
 // UserDialogMorph ////////////////////////////////////////////////////

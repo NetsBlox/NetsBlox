@@ -391,7 +391,7 @@ module.exports = [
             let room = socket.getRawRoom();
 
             if (!room) {
-                this._logger.error(`Could not find active room for "${username}" - cannot get messages!`);
+                this._logger.error(`Could not find active room for "${socket.username}" - cannot get messages!`);
                 return res.status(500).send('ERROR: room not found');
             }
 
