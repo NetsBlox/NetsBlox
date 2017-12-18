@@ -8,11 +8,10 @@ function isMobileDevice() {
     return (typeof window.orientation !== 'undefined') || (navigator.userAgent.indexOf('Mobile') !== -1);
 }
 
-
-var toggleAppMode = IDE_Morph.prototype.toggleAppMode;
+var _toggleAppMode = IDE_Morph.prototype.toggleAppMode;
 IDE_Morph.prototype.toggleAppMode = function() {
     var ideMorphIns = world.children[0];
-    toggleAppMode.apply(ideMorphIns, arguments);
+    _toggleAppMode.apply(ideMorphIns, arguments);
     if (isMobileDevice()) {
         mobileMode.init();
     }
@@ -33,7 +32,7 @@ var mobileMode = {
     _stackMode: 'h', // stack controls horizontally or vertically
     buttons: [],
     buttonsGap: 50,
-    ideMorph: undefined,
+    ideMorph: undefined, // TODO replace me
 };
 
 // activate mobilemode
@@ -45,15 +44,14 @@ mobileMode.init = function() {
 };
 
 mobileMode.fixLayout = function() {
-    let spaces = this.emptySpaces();
-    let optRect = this.optimalRectangle(spaces);
+    var spaces = this.emptySpaces();
+    var optRect = this.optimalRectangle(spaces);
     // compute wrapper box details for the buttons
-    let targetBox = this.computeControlPos(optRect);
+    var targetBox = this.computeControlPos(optRect);
     this.positionButtons(this.buttons, targetBox);
 };
 
 mobileMode.hideExtra = function() {
-    // controlBarButtons().forEach(btn => btn.hide());
     this.ideMorph.controlBar.hide();
 };
 
