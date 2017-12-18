@@ -16,7 +16,6 @@ Messages.get = projectId => {
 };
 
 Messages.save = message => {
-    // TODO: store the given message in the database
     // It may be better to batch the writes...
     message.time = Date.now();
 

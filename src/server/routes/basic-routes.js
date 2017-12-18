@@ -385,7 +385,6 @@ module.exports = [
         Method: 'get',
         URL: 'socket/messages/:socketId',
         Handler: function(req, res) {
-            // TODO: get the messages
             let {socketId} = req.params;
             let socket = SocketManager.getSocket(socketId);
             let room = socket.getRawRoom();

@@ -808,7 +808,6 @@ RoomMorph.prototype.checkForSharedMsgs = function(role) {
 };
 
 RoomMorph.prototype.showMessage = function(msg) {
-    // TODO: add acceleration of animations?
     var myself = this;
 
     // Clear the last message(s)
@@ -1015,7 +1014,7 @@ function NetworkReplayControls() {
 }
 
 NetworkReplayControls.prototype.displayCaption = function(/*event*/) {
-    // TODO: what should captions look like?
+    // for now, we will not display any captions
 };
 
 NetworkReplayControls.prototype.setMessages = function(messages) {
