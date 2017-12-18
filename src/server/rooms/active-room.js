@@ -29,6 +29,7 @@ class ActiveRoom {
         // TODO: should I set this everytime?
         this._project = null;
 
+        this._id = null;
         this.uuid = utils.uuid(owner, name);
         this._onRolesChanged = _.debounce(
             this.sendUpdateAndSave.bind(this),
@@ -176,6 +177,7 @@ class ActiveRoom {
     setStorage(store) {
         this._project = store;
         store._room = store._room || this;
+        this._id = store._id;
     }
 
     addCollaborator(username) {
@@ -262,18 +264,25 @@ class ActiveRoom {
     }
 
     sendFrom (socket, msg) {
-        this.sockets()
-            .filter(s => s !== socket)  // Don't send to origin
-            .forEach(socket => socket.send(msg));
+        let sockets = this.sockets()
+            .filter(s => s !== socket);  // Don't send to origin
+
+        sockets.forEach(socket => socket.send(msg));
+
+        return sockets.map(socket => socket.getPublicId());
     }
 
     // Send to everyone, including the origin socket
     sendToEveryone (msg) {
+        let sockets = this.sockets();
+
         // Set the dstId to CONSTANTS.EVERYONE if not already set
         if (!msg.dstId) {
             msg.dstId = Constants.EVERYONE;
         }
-        this.sockets().forEach(socket => socket.send(msg));
+        sockets.forEach(socket => socket.send(msg));
+
+        return sockets.map(socket => socket.getPublicId());
     }
 
     sockets () {

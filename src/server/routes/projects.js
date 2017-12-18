@@ -183,7 +183,7 @@ module.exports = [
                 {overwrite, socketId, projectName} = req.body,
                 socket = SocketManager.getSocket(socketId),
 
-                activeRoom = socket._room;
+                activeRoom = socket.getRawRoom();
 
             if (!activeRoom) {
                 error(`Could not find active room for "${username}" - cannot save!`);

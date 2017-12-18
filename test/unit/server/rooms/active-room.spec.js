@@ -24,7 +24,7 @@ describe('active-room', function() {
     });
 
     describe('sendToEveryone', function() {
-        var socket = {},
+        var socket = {getPublicId: () => 'test@myRole@sendToEveryoneTest'},
             msg;
 
         beforeEach(function() {

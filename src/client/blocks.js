@@ -986,7 +986,7 @@ InputSlotMorph.prototype.messageTypes = function () {
 
 InputSlotMorph.prototype.roleNames = function () {
     var ide = this.root().children[0],
-        roles = Object.keys(ide.room.roles),
+        roles = ide.room.getRoleNames(),
         dict = {};
 
     for (var i = roles.length; i--;) {
@@ -998,6 +998,43 @@ InputSlotMorph.prototype.roleNames = function () {
     dict['others in room'] = 'others in room';
     dict['everyone in room'] = 'everyone in room';
     return dict;
+};
+
+SymbolMorph.prototype.symbolWidth = function () {
+    // private
+    var size = this.size;
+
+    if (this.name instanceof Costume) {
+        return (size / this.name.height()) * this.name.width();
+    }
+    switch (this.name) {
+    case 'pointRight':
+        return Math.sqrt(size * size - Math.pow(size / 2, 2));
+    case 'flash':
+    case 'file':
+        return size * 0.8;
+    case 'smallStage':
+    case 'normalStage':
+        return size * 1.2;
+    case 'turtle':
+    case 'turtleOutline':
+    case 'stage':
+    // NetsBlox addition: start
+    case 'mail':
+    // NetsBlox addition: end
+        return size * 1.3;
+    case 'cloud':
+    case 'cloudGradient':
+    case 'cloudOutline':
+    case 'turnBack':
+    case 'turnForward':
+        return size * 1.6;
+    case 'turnRight':
+    case 'turnLeft':
+        return size / 3 * 2;
+    default:
+        return size;
+    }
 };
 
 SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
@@ -1014,6 +1051,8 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     // NetsBlox addition: start
     case 'plus':
         return this.drawSymbolPlus(canvas, aColor);
+    case 'mail':
+        return this.drawSymbolMail(canvas, aColor);
     // NetsBlox addition: end
     case 'pointRight':
         return this.drawSymbolPointRight(canvas, aColor);
@@ -1116,6 +1155,26 @@ SymbolMorph.prototype.symbolCanvasColored = function (aColor) {
     default:
         return canvas;
     }
+};
+
+SymbolMorph.prototype.drawSymbolMail = function(canvas, color) {
+    var ctx = canvas.getContext('2d'),
+        w = canvas.width,
+        l = Math.max(w / 12, 1),
+        h = canvas.height;
+
+    ctx.lineWidth = l;
+    ctx.fillStyle = color.toString();
+    ctx.strokeStyle = color.darker(50).toString();
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.rect(0, 0, w, h);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(w/2, 2*h/3);
+    ctx.lineTo(w, 0);
+    ctx.stroke();
+
+    return canvas;
 };
 
 SymbolMorph.prototype.drawSymbolPlus = function (canvas, color) {
