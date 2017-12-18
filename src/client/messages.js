@@ -48,10 +48,12 @@ Message.prototype.toString = function() {
 // MessageFrame
 function MessageFrame() {
     this.msgTypes = {};
+    this.version = Date.now();
 }
 
 MessageFrame.prototype.addMsgType = function(messageType) {
     this.msgTypes[messageType.name] = messageType;
+    this.version = Date.now();
 };
 
 MessageFrame.prototype.getMsgType = function(name) {
@@ -60,6 +62,7 @@ MessageFrame.prototype.getMsgType = function(name) {
 
 MessageFrame.prototype.deleteMsgType = function(name) {
     delete this.msgTypes[name];
+    this.version = Date.now();
 };
 
 MessageFrame.prototype.names = function() {

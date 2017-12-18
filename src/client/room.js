@@ -1471,6 +1471,11 @@ RoomEditorMorph.prototype.step = function() {
         this.updateControlButtons();
         this.version = this.room.version;
     }
+
+    var stage = this.room.ide.stage;
+    if (this.palette.version !== stage.messageTypes.version) {
+        this.updateMsgPalette();
+    }
 };
 
 RoomEditorMorph.prototype.show = function() {
@@ -1610,6 +1615,7 @@ RoomEditorMorph.prototype.createMsgPalette = function() {
 RoomEditorMorph.prototype.updateMsgPalette = function() {
     var stage = this.room.ide.stage,
         palette = this.palette,
+        msgs = stage.deletableMessageNames(),
         msg;
 
 
@@ -1617,12 +1623,12 @@ RoomEditorMorph.prototype.updateMsgPalette = function() {
         palette.contents.removeChild(child);
     });
 
-    for (var i = 0; i < stage.deletableMessageNames().length; i++) {
+    for (var i = 0; i < msgs.length; i++) {
         // Build block morph
         msg = new ReporterBlockMorph();
         msg.category = 'network';
-        msg.blockSpec = stage.deletableMessageNames()[i];
-        msg.setSpec(stage.deletableMessageNames()[i]);
+        msg.blockSpec = msgs[i];
+        msg.setSpec(msgs[i]);
         msg.forMsg = true;
         msg.isTemplate = true;
         msg.setColor(new Color(217,77,17));
