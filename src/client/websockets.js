@@ -9,8 +9,7 @@ var WebSocketManager = function (ide) {
     this.websocket = null;
     this.messages = [];
     this.processes = [];  // Queued processes to start
-    this._protocol = SERVER_URL === 'https:' ?
-        'wss:' : 'ws:';
+    this._protocol = SERVER_URL.substring(0,5) === 'https' ? 'wss:' : 'ws:';
     this.url = this._protocol + '//' + SERVER_ADDRESS;
     this._connectWebSocket();
     this.version = Date.now();
