@@ -864,7 +864,7 @@ RoomMorph.prototype.updateDisplayedMsg = function(msg) {
     msg.setExtent(size);
     msg.setCenter(dstPoint.add(srcPoint).divideBy(2));
     msg.endpoint = relEndpoint;
-    msg.message.setColor(srcRole.color.darker());
+    msg.setMessageColor(srcRole.color.darker());
     msg.drawNew();
 };
 
@@ -904,7 +904,7 @@ SentMessageMorph.prototype.init = function(msg, srcId, dstId, endpoint) {
     this.padding = 10;
 
     this.endpoint = endpoint;
-    this.message = new MessageMorph(msg);
+    this.message = new MessageMorph(msg.type, msg.content);
     SentMessageMorph.uber.init.call(this);
     this.color = IDE_Morph.prototype.frameColor.darker(50);
     this.add(this.message);
@@ -962,19 +962,49 @@ SentMessageMorph.prototype.fixLayout = function() {
     this.message.setCenter(this.center());
 };
 
-MessageMorph.prototype = new SymbolMorph();
-MessageMorph.prototype.constructor = MessageMorph;
-MessageMorph.uber = SymbolMorph.prototype;
+SentMessageMorph.prototype.setMessageColor = function(color) {
+    this.message.icon.setColor(color);
+};
 
-function MessageMorph(message) {
-    this.init(message);
+MessageMorph.prototype = new Morph();
+MessageMorph.prototype.constructor = MessageMorph;
+MessageMorph.uber = Morph.prototype;
+
+function MessageMorph(type, contents) {
+    this.init(type, contents);
 }
 
-MessageMorph.prototype.init = function (message) {
-    MessageMorph.uber.init.call(this, 'mail', 25);
-    this.setHeight(15);
-    this.drawNew();
-    this.message = message;
+MessageMorph.prototype.init = function (type, contents) {
+    this.msgType = type;
+    this.contents = contents;
+
+    MessageMorph.uber.init.call(this);
+    this.setColor(IDE_Morph.prototype.groupColor);
+    this.icon = new SymbolMorph('mail', 25);
+    this.icon.setHeight(15);
+    this.icon.drawNew();
+
+    this.label = new StringMorph(
+        type,
+        12,
+        null,
+        null,
+        true
+    );
+    this.label.drawNew();
+
+    this.add(this.label);
+    this.add(this.icon);
+
+    this.fixLayout();
+};
+
+MessageMorph.prototype.fixLayout = function () {
+    this.icon.setCenter(this.center());
+    this.icon.setTop(this.top());
+
+    this.label.setCenter(this.center());
+    this.label.setBottom(this.bottom());
 };
 
 //////////// Network Replay Controls ////////////
