@@ -1530,7 +1530,7 @@ RoomEditorMorph.prototype.fixLayout = function() {
 
     roomSize.y = roomSize.y - (controlsHeight + 35);
     this.room.setExtent(roomSize);
-    this.room.setCenter(this.center());
+    this.room.setCenter(this.center().subtract(controlsHeight/2));
     this.room.fixLayout();
 
     this.addRoleBtn.setCenter(this.room.center());
