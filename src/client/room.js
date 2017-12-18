@@ -1423,11 +1423,14 @@ RoomEditorMorph.prototype.init = function(room, sliderColor) {
     RoomEditorMorph.uber.init.call(this, null, null, sliderColor);
     this.acceptsDrops = false;
 
+    this.palette = this.createMsgPalette();
+    this.add(this.palette);
+
     this.room = room;
     this.add(room);
 
     // Check for queried shared messages
-    //this.room.checkForSharedMsgs(this.room.ide.projectName);
+    this.room.checkForSharedMsgs(this.room.getCurrentRoleName());
 
     // Replay Controls
     this.replayControls = new NetworkReplayControls(this);
@@ -1533,6 +1536,10 @@ RoomEditorMorph.prototype.fixLayout = function() {
     this.room.setCenter(this.center().subtract(controlsHeight/2));
     this.room.fixLayout();
 
+    this.updateMsgPalette();
+    this.palette.setWidth(this.width()/2);
+    this.palette.setHeight(this.center().y);
+
     this.addRoleBtn.setCenter(this.room.center());
     this.addRoleBtn.setTop(this.room.roomName.bottom() + 5);
 
@@ -1583,7 +1590,6 @@ RoomEditorMorph.prototype.enterReplayMode = function() {
 RoomEditorMorph.prototype.updateRoomControls = function() {
     // Draw the room
     this.room.drawNew();
-    this.drawMsgPalette();  // Draw the message palette
 
     // Draw the "new role" button
     if (this.room.isEditable() && !this.isReplayMode()) {
@@ -1593,66 +1599,71 @@ RoomEditorMorph.prototype.updateRoomControls = function() {
     }
 };
 
-// TODO: Update this...
-RoomEditorMorph.prototype.drawMsgPalette = nop;
-//RoomEditorMorph.prototype.drawMsgPalette = function() {
-    //var width = 0,  // default width
-        //stage = this.room.ide.stage;
+RoomEditorMorph.prototype.createMsgPalette = function() {
+    var palette = new ScrollFrameMorph();
+    palette.setColor(new Color(0, 0, 0, 0));
+    palette.padding = 12;
 
-    //// Create and style the message palette
-    //var palette = new ScrollFrameMorph();
-    //palette.owner = this;
-    //palette.setColor(new Color(71, 71, 71, 1));
-    //palette.setWidth(width);
-    //palette.setHeight(this.room.center().y * 2);
-    //palette.bounds = palette.bounds.insetBy(10);
-    //palette.padding = 12;
+    return palette;
+};
 
-    //// Build list of sharable message types
-    //for (var i = 0; i < stage.deletableMessageNames().length; i++) {
-        //// Build block morph
-        //var msg = new ReporterBlockMorph();
-        //msg.blockSpec = stage.deletableMessageNames()[i];
-        //msg.setSpec(stage.deletableMessageNames()[i]);
-        //msg.setWidth(.75 * width);
-        //msg.setHeight(50);
-        //msg.forMsg = true;
-        //msg.isTemplate = true;
-        //msg.setColor(new Color(217,77,17));
-        //msg.setPosition(new Point(palette.bounds.origin.x + 10, palette.bounds.origin.y + 24 * i + 6));
-        //msg.category = 'services';
-        //msg.hint = new StringMorph('test');
-        //// Don't allow multiple instances of the block to exist at once
-        //msg.justDropped = function() {
-            //this.destroy();
-        //};
-        //// Display fields of the message type when clicked
-        //msg.mouseClickLeft = function() {
-            //var fields = stage.messageTypes.msgTypes[this.blockSpec].fields.length === 0 ?
-                //'This message type has no fields.' :
-                //stage.messageTypes.msgTypes[this.blockSpec].fields;
-            //new SpeechBubbleMorph(fields, null, null, 2).popUp(this.world(), new Point(0, 0).add(this.bounds.corner));
-        //};
+RoomEditorMorph.prototype.updateMsgPalette = function() {
+    var stage = this.room.ide.stage,
+        palette = this.palette,
+        msg;
 
-        //// Custom menu
-        //var menu = new MenuMorph(this, null);
-        //menu.addItem('Send to...', function() {this.room.promptShare(msg.blockSpec);});
-        //msg.children[0].customContextMenu = menu;
-        //msg.customContextMenu = menu;
 
-        //palette.addContents(msg);
-    //}
+    palette.contents.children.forEach(function(child) {
+        palette.contents.removeChild(child);
+    });
 
-    //// After adding all the sharable message types, resize the container if necessary
+    for (var i = 0; i < stage.deletableMessageNames().length; i++) {
+        // Build block morph
+        msg = new ReporterBlockMorph();
+        msg.category = 'network';
+        msg.blockSpec = stage.deletableMessageNames()[i];
+        msg.setSpec(stage.deletableMessageNames()[i]);
+        msg.forMsg = true;
+        msg.isTemplate = true;
+        msg.setColor(new Color(217,77,17));
+        msg.setPosition(new Point(palette.bounds.origin.x + 10, palette.bounds.origin.y + 24 * i + 6));
+        // Don't allow multiple instances of the block to exist at once
+        msg.justDropped = function() {
+            this.destroy();
+        };
+        // Display fields of the message type when clicked
+        msg.mouseClickLeft = function() {
+            var fields = stage.messageTypes.msgTypes[this.blockSpec].fields.length === 0 ?
+                'This message type has no fields.' :
+                stage.messageTypes.msgTypes[this.blockSpec].fields;
+            new SpeechBubbleMorph(fields, null, null, 2).popUp(this.world(), new Point(0, 0).add(this.bounds.corner));
+        };
+
+        // Custom menu
+        var menu = new MenuMorph(this, null);
+        menu.addItem('Send to...', function() {this.room.promptShare(msg.blockSpec);});
+        msg.children[0].customContextMenu = menu;
+        msg.customContextMenu = menu;
+
+        palette.addContents(msg);
+    }
+
+};
+
+RoomEditorMorph.prototype.drawMsgPalette = function() {
+    //var width = 0;  // default width
+
+    // Create and style the message palette
+    // Build list of sharable message types
+    // After adding all the sharable message types, resize the container if necessary
     //if (palette.contents.width() > palette.width()) {
         //palette.setWidth(palette.contents.width());
         //this.room.setPosition(new Point(palette.width() + 15, 0));  // Shift the room accordingly
     //}
 
-    //// Display message palette with no scroll bar until it overflows
-    //this.addContents(palette);
+    // Display message palette with no scroll bar until it overflows
     //this.vBar.hide();
-//};
+};
 
 RoomEditorMorph.prototype.addButton = function(params) {
 };
