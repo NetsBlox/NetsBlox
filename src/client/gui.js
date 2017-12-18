@@ -29,7 +29,7 @@ IDE_Morph.prototype.fixLayout = function() {
 
 var mobileMode = {
     // assuming top pos for horizontal alignment and right for vertical
-    _stackMode: 'h', // stack controls horizontally or vertically
+    _stackMode: '', // stack controls horizontally or vertically
     buttons: [],
     buttonsGap: 50,
     ideMorph: undefined, // TODO replace me
@@ -39,13 +39,17 @@ var mobileMode = {
 mobileMode.init = function() {
     this.ideMorph = world.children[0];
     this.hideExtra();
-    this.buttons = this.createButtons();
     this.fixLayout();
 };
 
 mobileMode.fixLayout = function() {
+    var SYMBOL_SIZE = 40; // buttons symbol size
+    var prevStackMode = this._stackMode;
     var spaces = this.emptySpaces();
     var optRect = this.optimalRectangle(spaces);
+    // keep the button sizes consistent in landscape and portrait mode
+    if (prevStackMode === 'h' && this._stackMode === 'v') SYMBOL_SIZE /= 2; 
+    this.buttons = this.createButtons(SYMBOL_SIZE);
     // compute wrapper box details for the buttons
     var targetBox = this.computeControlPos(optRect);
     this.positionButtons(this.buttons, targetBox);
@@ -135,15 +139,21 @@ mobileMode.computeControlPos = function(targetRect) {
     return controls;
 };
 
-mobileMode.createButtons = function() {
-    var SYM_SIZE = 40,
-        BTN_PAD = SYM_SIZE * 0.8;
+mobileMode.createButtons = function(symbolSize) {
+    var BTN_PAD = symbolSize * 0.8;
+    var self = this;
     var colors = [
         new Color(50, 50, 50),
         new Color(70, 70, 70),
         new Color(90, 90, 90),
     ];
-    var self = this;
+
+    if (this.buttons && this.buttons.length !== 0) {
+        this.buttons.forEach(function(btn) {
+            btn.destroy();
+        });
+    }
+
     var buttons = [];
 
     // stopButton
@@ -152,8 +162,8 @@ mobileMode.createButtons = function() {
         this.ideMorph, // the IDE is the target
         'stopAllScripts',
         [
-            new SymbolMorph('octagon', SYM_SIZE),
-            new SymbolMorph('square', SYM_SIZE)
+            new SymbolMorph('octagon', symbolSize),
+            new SymbolMorph('square', symbolSize)
         ],
         function () {  // query
             return self.ideMorph.stage ?
@@ -167,7 +177,7 @@ mobileMode.createButtons = function() {
     var startButton = new PushButtonMorph(
         this.ideMorph,
         'pressStart',
-        new SymbolMorph('flag', SYM_SIZE)
+        new SymbolMorph('flag', symbolSize)
     );
     startButton.labelColor = new Color(0, 200, 0);
 
