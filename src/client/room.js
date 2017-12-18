@@ -1490,10 +1490,11 @@ RoomEditorMorph.prototype.updateControlButtons = function() {
 
     if (!sf) {return; }
 
-    if (!sf.toolBar) {
-        sf.toolBar = this.addToggleReplay();
-        sf.add(sf.toolBar);
+    if (sf.toolBar) {
+        sf.removeChild(sf.toolBar);
     }
+    sf.toolBar = this.addToggleReplay();
+    sf.add(sf.toolBar);
 
     //sf.toolBar.isVisible = !this.replayControls.enabled;
     sf.toolBar.drawNew();
@@ -1506,11 +1507,13 @@ RoomEditorMorph.prototype.updateControlButtons = function() {
 RoomEditorMorph.prototype.addToggleReplay = function() {
     var myself = this,
         toolBar = new AlignmentMorph(),
-        shade = (new Color(140, 140, 140));
+        shade = (new Color(140, 140, 140)),
+        enterSymbol = new SymbolMorph('pointRight', 12),
+        exitSymbol = new SymbolMorph('square', 12);
 
     // TODO: add "exit replay mode" button
     // This should be added to the replay control slider
-    toolBar.replayButton = new PushButtonMorph(
+    var replayButton = new PushButtonMorph(
         this,
         function() {
             // FIXME: change this when we have an exit button on the replay slider
@@ -1521,13 +1524,15 @@ RoomEditorMorph.prototype.addToggleReplay = function() {
             }
             myself.updateControlButtons();
         },
-        new SymbolMorph('pointRight', 12)
+        this.isReplayMode() ? exitSymbol : enterSymbol
     );
-    toolBar.replayButton.alpha = 0.2;
-    toolBar.replayButton.labelShadowColor = shade;
-    toolBar.replayButton.drawNew();
-    toolBar.replayButton.fixLayout();
-    toolBar.add(toolBar.replayButton);
+    replayButton.alpha = 0.2;
+    replayButton.labelShadowColor = shade;
+    replayButton.drawNew();
+    replayButton.fixLayout();
+
+    toolBar.replayButton = replayButton;
+    toolBar.add(replayButton);
 
     return toolBar;
 };
