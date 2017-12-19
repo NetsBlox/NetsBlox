@@ -366,6 +366,15 @@ NetsBloxMorph.prototype.resourceURL = function () {
     return '/api/' + IDE_Morph.prototype.resourceURL.apply(this, arguments);
 };
 
+NetsBloxMorph.prototype.newRole = function (name) {
+    // Initialize a new role locally
+    this.clearProject();
+    this.sprites.asArray().concat(this.stage).forEach(function(sprite) {
+        return SnapActions.loadOwner(sprite);
+    });
+    this.silentSetProjectName(name);
+};
+
 NetsBloxMorph.prototype.clearProject = function () {
     this.source = SnapCloud.username ? 'cloud' : 'local';
     if (this.stage) {
@@ -2095,11 +2104,10 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
         };
         this.droppedText(project.SourceCode);
     } else {  // initialize an empty code base
-        this.clearProject();
+        this.newRole(roleId);
         this.room._name = newRoom;  // silent set name
         // FIXME: this could cause problems later
         this.room.ownerId = project.Owner;
-        this.silentSetProjectName(roleId);
         this.sockets.updateRoomInfo();
         if (isNewRole) {
             this.showMessage(localize('A new role has been created for you at ' + newRoom));
