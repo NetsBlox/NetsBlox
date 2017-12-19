@@ -350,7 +350,6 @@ module.exports = [
         Handler: function(req, res) {
             var name = req.params.name,
                 isPreview = req.query.preview,
-                socket,
                 example;
 
             if (!EXAMPLES.hasOwnProperty(name)) {
@@ -368,7 +367,6 @@ module.exports = [
                 return res.send(example.toString());
             } else {
                 room = example;
-                room.owner = socket;
                 //  + customize and return the room for the socket
                 room = _.extend(room, example);
                 role = Object.keys(room.roles).shift();

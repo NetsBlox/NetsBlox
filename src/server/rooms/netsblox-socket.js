@@ -92,9 +92,10 @@ class NetsBloxSocket {
         if (!room) return;
 
         isOwner = isOwner || this.isOwner();
+        console.log('updating the room!');
         if (isOwner) {
-            if (Utils.isSocketUuid(this._room.owner)) {
-                this._room.setOwner(this.username);
+            if (Utils.isSocketUuid(room.owner)) {
+                room.setOwner(this.username);
             }
 
             // Update the user's room name
@@ -366,26 +367,23 @@ class NetsBloxSocket {
                 sockets = [],
                 ownerId = idChunks.pop(),
                 roomName = idChunks.pop(),
-                roleId = idChunks.pop(),
-                roomId = Utils.uuid(ownerId, roomName);
+                roleId = idChunks.pop();
 
-            return RoomManager.getExistingRoom(roomId)
-                .then(room => {
-                    if (room) {
-                        if (roleId) {
-                            if (room.hasRole(roleId)) {
-                                sockets = sockets.concat(room.getSocketsAt(roleId));
-                            }
-                        } else {
-                            sockets = room.sockets();
-                        }
-
-                        sockets.forEach(socket => {
-                            msg.dstId = Constants.EVERYONE;
-                            socket.send(msg);
-                        });
+            const room = RoomManager.getExistingRoom(ownerId, roomName);
+            if (room) {
+                if (roleId) {
+                    if (room.hasRole(roleId)) {
+                        sockets = sockets.concat(room.getSocketsAt(roleId));
                     }
+                } else {
+                    sockets = room.sockets();
+                }
+
+                sockets.forEach(socket => {
+                    msg.dstId = Constants.EVERYONE;
+                    socket.send(msg);
                 });
+            }
         }
     }
 }

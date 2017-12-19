@@ -92,28 +92,26 @@ var getRoomsNamed = function(name, user, owner) {
         user.getSharedProject(owner, name);
 
     return getProject.then(project => {
-        return RoomManager.getExistingRoom(Utils.uuid(owner, name))
-            .then(activeRoom => {
-                const areSame = !!activeRoom && !!project &&
-                    activeRoom.originTime === project.originTime;
+        const activeRoom = RoomManager.getExistingRoom(owner, name);
+        const areSame = !!activeRoom && !!project &&
+            activeRoom.originTime === project.originTime;
 
 
-                if (project) {
-                    trace(`found project ${uuid} for ${user.username}`);
-                } else {
-                    trace(`no ${uuid} project found for ${user.username}`);
-                }
+        if (project) {
+            trace(`found project ${uuid} for ${user.username}`);
+        } else {
+            trace(`no ${uuid} project found for ${user.username}`);
+        }
 
-                if (areSame) {
-                    project = activeRoom.getProject() || project;
-                }
+        if (areSame) {
+            project = activeRoom.getProject() || project;
+        }
 
-                return {
-                    active: activeRoom,
-                    stored: project,
-                    areSame: areSame
-                };
-            });
+        return {
+            active: activeRoom,
+            stored: project,
+            areSame: areSame
+        };
     });
 };
 
@@ -204,23 +202,20 @@ module.exports = [
             // If we are not overwriting the project, just name it and save!
             if (overwrite && projectName !== activeRoom.name) {
                 trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
-                const uuid = Utils.uuid(username, projectName);
 
-                return RoomManager.getExistingRoom(uuid)
-                    .then(otherRoom => {
-                        const isSame = otherRoom === activeRoom;
-                        if (otherRoom && !isSame) {  // rename the existing, active room
-                            return otherRoom.changeName(projectName, true).then(saveAs);
-                        } else {  // delete the existing
-                            return Projects.get(username, projectName)
-                                .then(project => {
-                                    if (project) {
-                                        return project.destroy();
-                                    }
-                                })
-                                .then(saveAs);
-                        }
-                    });
+                const otherRoom = RoomManager.getExistingRoom(username, projectName);
+                const isSame = otherRoom === activeRoom;
+                if (otherRoom && !isSame) {  // rename the existing, active room
+                    return otherRoom.changeName(projectName, true).then(saveAs);
+                } else {  // delete the existing
+                    return Projects.get(username, projectName)
+                        .then(project => {
+                            if (project) {
+                                return project.destroy();
+                            }
+                        })
+                        .then(saveAs);
+                }
             } else {
                 trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
                 return saveAs();
@@ -469,7 +464,7 @@ module.exports = [
                         return res.status(400).send(`${project} not found!`);
                     }
 
-                    const active = RoomManager.isActiveRoom(project.uuid());
+                    const active = RoomManager.isActiveRoom(project.getId());
 
                     if (active) {
                         return project.unpersist()
