@@ -112,8 +112,6 @@
         }
 
         addSetRoleToQuery(id, content, query) {
-            let keys = Object.keys(content);
-
             query = query || {$set: {}};
             id = id || this.getNewRoleId(content.ProjectName);
             query.$set[`roles.${id}`] = content;
@@ -525,6 +523,11 @@
 
     ProjectStorage.getRawProject = function (username, projectName) {
         return Q(collection.findOne({owner: username, name: projectName}));
+    };
+
+    ProjectStorage.getProjectId = function(owner, name) {
+        return ProjectStorage.getRawProject(owner, name)
+            .then(project => project && project._id);
     };
 
     ProjectStorage.get = function (username, projectName) {

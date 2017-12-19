@@ -40,11 +40,14 @@ class ActiveRoom {
         this._logger.log('created!');
     }
 
+    getUuid() {
+        return utils.uuid(this.owner, this.name);
+    }
+
     close () {
         // Remove all sockets from this group
         var msg = {type: 'project-closed'};
         this.sockets().forEach(socket => socket.send(msg));
-        this.destroy();
 
         // If the owner is a socket uuid, then delete it from the database, too
         if (this._project) {
