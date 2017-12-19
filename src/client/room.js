@@ -112,7 +112,7 @@ RoomMorph.prototype.getCurrentRoleName = function() {
     // Look up the role name from the current room info
     return roleNames.find(function(name) {
         return myself.roles[name].find(function(occupant) {
-            return occupant.uuid = myUuid;
+            return occupant.uuid === myUuid;
         });
     }) || this.ide.projectName;
 };
