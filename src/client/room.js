@@ -105,7 +105,16 @@ RoomMorph.prototype.getDefaultRoles = function() {
 };
 
 RoomMorph.prototype.getCurrentRoleName = function() {
-    return this.ide.projectName;
+    var myself = this,
+        roleNames = Object.keys(this.roles),
+        myUuid = myself.ide.sockets.uuid;
+
+    // Look up the role name from the current room info
+    return roleNames.find(function(name) {
+        return myself.roles[name].find(function(occupant) {
+            return occupant.uuid = myUuid;
+        });
+    }) || this.ide.projectName;
 };
 
 RoomMorph.prototype.getRoleCount = function() {
@@ -197,6 +206,7 @@ RoomMorph.equalLists = function(first, second) {
 RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     var wasEditable = this.isEditable(),
         oldNames,
+        oldRoleName = this.getCurrentRoleName(),
         names,
         changed;
 
@@ -231,6 +241,11 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     if (ownerId) {
         changed = changed || ownerId !== this.ownerId;
         this.ownerId = ownerId;
+    }
+
+    // Check if current role name changed...
+    if (this.getCurrentRoleName() !== oldRoleName) {
+        this.ide.silentSetProjectName(this.getCurrentRoleName());
     }
 
     if (changed) {
