@@ -517,11 +517,16 @@ RoomMorph.prototype.moveToRole = function(dstId) {
         function(args) {
             myself.ide.showMessage('moved to ' + dstId + '!');
             myself.ide.projectName = dstId;
+            myself.ide.source = 'cloud';
+
             var proj = args[0];
             // Load the project or make the project empty
             if (proj) {
-                myself.ide.source = 'cloud';
-                myself.ide.droppedText(proj.SourceCode);
+                if (proj.SourceCode) {
+                    myself.ide.droppedText(proj.SourceCode);
+                } else {  // newly created role
+                    myself.ide.clearProject(dstId);
+                }
                 if (proj.Public === 'true') {
                     location.hash = '#present:Username=' +
                         encodeURIComponent(SnapCloud.username) +
