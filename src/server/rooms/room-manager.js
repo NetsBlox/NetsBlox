@@ -105,7 +105,7 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
                         return room;
                     });
             } else {
-                return this.getExistingRoom(ownerId, name);
+                return this.rooms[id];
             }
         });
 };
