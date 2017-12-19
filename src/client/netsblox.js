@@ -1,13 +1,27 @@
-/* global RoomMorph, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
-   WebSocketManager, SpriteMorph, Point, ProjectsMorph, localize, Process,
+/* global RoomMorph, SERVER_URL, IDE_Morph, StageMorph, List, SnapCloud, VariableFrame,
+   WebSocketManager, SpriteMorph, Point, RoomEditorMorph, localize, Process,
    Morph, AlignmentMorph, ToggleButtonMorph, StringMorph, Color, TabMorph,
    InputFieldMorph, MorphicPreferences, ToggleMorph, MenuMorph, TextMorph
    NetsBloxSerializer, nop, SnapActions, DialogBoxMorph, hex_sha512, SnapUndo,
    ScrollFrameMorph, SnapUndo, LibraryImportDialogMorph, CollaboratorDialogMorph,
    SnapSerializer, isRetinaSupported, isRetinaEnabled, useBlurredShadows,
    BlockMorph, SyntaxElementMorph, ScriptsMorph, InputSlotDialogMorph, ArgMorph,
-   BlockLabelPlaceHolderMorph, TableMorph, contains*/
+   BlockLabelPlaceHolderMorph, TableMorph, contains, newCanvas*/
 // Netsblox IDE (subclass of IDE_Morph)
+
+function ensureFullUrl(url) {
+    // if it's not a full path attach serverURL to the front
+    // regex is checking to see if the protocol is there (eg http://, ws://)
+    if(url.match(/^\w+:\/\//) === null) {
+        if (url.substring(0,1)[0] === '/') {
+            url = SERVER_URL + url;
+        } else {
+            url = SERVER_URL + '/' + url;
+        }
+    }
+    return url;
+}
+
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
 NetsBloxMorph.uber = IDE_Morph.prototype;
@@ -83,6 +97,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
 
     function getURL(url) {
         try {
+            url = ensureFullUrl(url);
             var request = new XMLHttpRequest();
             request.open('GET', url, false);
             request.send();
@@ -147,13 +162,13 @@ NetsBloxMorph.prototype.openIn = function (world) {
                 hash = decodeURIComponent(hash);
             }
             if (contains(
-                    ['project', 'blocks', 'sprites', 'snapdata'].map(
-                        function (each) {
-                            return hash.substr(0, 8).indexOf(each);
-                        }
-                    ),
-                    1
-                )) {
+                ['project', 'blocks', 'sprites', 'snapdata'].map(
+                    function (each) {
+                        return hash.substr(0, 8).indexOf(each);
+                    }
+                ),
+                1
+            )) {
                 this.droppedText(hash);
             } else {
                 this.droppedText(getURL(hash));
@@ -877,7 +892,7 @@ NetsBloxMorph.prototype.settingsMenu = function () {
                 if (myself.isPreviousVersion()) {
                     myself.confirm(
                         'Exiting replay mode now will revert the project to\n' +
-                        'the current point in history (losing any unapplied ' + 
+                        'the current point in history (losing any unapplied ' +
                         'changes)\n\nAre you sure you want to exit replay mode?',
                         'Exit Replay Mode?',
                         function () {
@@ -1017,7 +1032,7 @@ NetsBloxMorph.prototype.createSpriteEditor = function() {
             this.spriteEditor.destroy();
         }
 
-        this.spriteEditor = new ProjectsMorph(this.room, this.sliderColor);
+        this.spriteEditor = new RoomEditorMorph(this.room, this.sliderColor);
         this.spriteEditor.color = this.groupColor;
         this.add(this.spriteEditor);
     } else {
@@ -1235,7 +1250,9 @@ NetsBloxMorph.prototype.createSpriteBar = function () {
             safeName = myself.newSpriteName(newName, myself.currentSprite);
 
         if (safeName !== currentName) {
-            SnapActions.renameSprite(myself.currentSprite, safeName);
+            return SnapActions.renameSprite(myself.currentSprite, safeName);
+        } else {
+            nameField.setContents(safeName);
         }
     };
     this.spriteBar.nameField = nameField;
@@ -1671,7 +1688,7 @@ NetsBloxMorph.prototype.requestAndroidApp = function(name) {
         projectXml,
         req,
         params,
-        baseURL = window.location.origin + '/';
+        baseURL = ensureFullUrl('/');
 
     // FIXME: this baseURL stuff could cause problems
     if (name !== this.projectName) {
@@ -1850,7 +1867,7 @@ NetsBloxMorph.prototype.saveRoomLocal = function (str) {
     if (Process.prototype.isCatchingErrors) {
         try {
             localStorage['-snap-project-' + name] = str;
-        
+
             this.setURL('#open:' + str);
             this.showMessage('Saved to the browser.', 1);
         } catch (err) {
@@ -2203,7 +2220,7 @@ NetsBloxMorph.prototype.aboutNetsBlox = function () {
         + 'NetsBlox extends Snap!, from the University of California, Berkeley and \n'
         + 'is influenced and inspired by Scratch, from the Lifelong Kindergarten\n'
         + 'group at the MIT Media Lab\n\n'
-        
+
         + 'for more information see https://netsblox.org,\nhttp://snap.berkeley.edu '
         + 'and http://scratch.mit.edu';
 
@@ -2269,7 +2286,7 @@ NetsBloxMorph.prototype.reportBug = function () {
 
 NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     var myself = this,
-        canvas = document.getElementsByTagName('canvas')[0],
+        canvas = this.world().worldCanvas,
         silent = !!error,
         version,
         report = {};
@@ -2285,7 +2302,7 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     report.version = version;
 
     // Add screenshot
-    report.screenshot = canvas.toDataURL();
+    report.screenshot = canvas.toDataURL('image/png');
 
     // Add project state
     report.project = this.serializer.serialize(this.stage);
@@ -2328,6 +2345,39 @@ NetsBloxMorph.prototype.submitBugReport = function (desc, error) {
     request.send(JSON.stringify(report));
 };
 
+NetsBloxMorph.prototype.showBugReportScreenshot = function (report) {
+    var myself = this,
+        pic = new Image();
+
+    pic.onload = function () {
+        var maxSize = myself.extent().divideBy(1.50),
+            ratio = Math.min(maxSize.x/pic.width, maxSize.y/pic.height),
+            scaledSize = new Point(pic.width, pic.height).multiplyBy(ratio),
+            screenshot = newCanvas(scaledSize),
+            context = screenshot.getContext('2d');
+
+        context.drawImage(
+            pic,
+            0,
+            0,
+            pic.width,
+            pic.height,
+            0,
+            0,
+            scaledSize.x,
+            scaledSize.y
+        );
+        new DialogBoxMorph().inform(
+            'Screenshot',
+            null,
+            myself.world(),
+            screenshot
+        );
+    };
+    pic.src = report.screenshot;
+    return;
+};
+
 NetsBloxMorph.prototype.loadBugReport = function () {
     var myself = this,
         inp = document.createElement('input');
@@ -2360,6 +2410,10 @@ NetsBloxMorph.prototype.loadBugReport = function () {
                     date,
                     msg,
                     choices = {};
+
+                choices['Show Screenshot'] = function() {
+                    myself.showBugReportScreenshot(report);
+                };
 
                 choices['Replay All Events'] = function() {
                     // Replay from 'allEvents'
@@ -2420,6 +2474,7 @@ NetsBloxMorph.prototype.loadBugReport = function () {
                 ].join('\n');
 
                 choices['Cancel'] = 'cancel';
+
                 dialog.ask(
                     localize('Bug Report'),
                     msg,
@@ -2516,7 +2571,7 @@ NetsBloxMorph.prototype.collabResponse = function (id, response) {
 
     SnapCloud.collabResponse(
         id,
-        response, 
+        response,
         function() {
             myself.showMessage('Added to the project!', 2);
         },
@@ -2546,7 +2601,7 @@ NetsBloxMorph.prototype.logout = function () {
 NetsBloxMorph.prototype.createCloudAccount = function () {
     var myself = this,
         world = this.world();
-/*
+    /*
     // force-logout, commented out for now:
     delete localStorage['-snap-user'];
     SnapCloud.clear();
@@ -2584,3 +2639,17 @@ NetsBloxMorph.prototype.createCloudAccount = function () {
     );
 };
 
+NetsBloxMorph.prototype.showUpdateNotification = function () {
+    var msgText = 'Newer Version of NetsBlox Available: Please Save and Refresh';
+    var notification = new MenuMorph(null, msgText);
+    var world = this.world();
+
+    notification.drawNew();
+
+    var point = this.spriteBar.center()
+        .subtract(new Point(notification.width()/2, notification.height()/2));
+    notification.setPosition(point);
+    notification.addShadow(new Point(2, 2), 80);
+
+    world.add(notification);
+};

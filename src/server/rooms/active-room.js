@@ -3,12 +3,13 @@
 
 'use strict';
 
-var R = require('ramda'),
-    Q = require('q'),
-    _ = require('lodash'),
-    utils = require('../server-utils'),
-    Users = require('../storage/users'),
-    Constants = require('../../common/constants');
+const R = require('ramda');
+const Q = require('q');
+const _ = require('lodash');
+const utils = require('../server-utils');
+const Users = require('../storage/users');
+const Constants = require('../../common/constants');
+const ProjectActions = require('../storage/project-actions');
 
 class ActiveRoom {
 
@@ -17,6 +18,7 @@ class ActiveRoom {
         this.originTime = Date.now();
 
         this.roles = {};  // actual occupants
+        this.roleActionIds = {};  // actual occupants
 
         this.owner = owner;
 
@@ -27,6 +29,7 @@ class ActiveRoom {
         // TODO: should I set this everytime?
         this._project = null;
 
+        this._id = null;
         this.uuid = utils.uuid(owner, name);
         this._onRolesChanged = _.debounce(
             this.sendUpdateAndSave.bind(this),
@@ -99,7 +102,7 @@ class ActiveRoom {
         this._logger.trace(`adding ${socket.uuid} to ${role}`);
 
         const oldRoom = socket._room;
-        const oldRole = socket.roleId;
+        const oldRole = socket.role;
         if (oldRoom && oldRole) {
             this._logger.trace(`removing ${socket.uuid} from old role ${oldRole}`);
             if (oldRoom === this) {
@@ -110,21 +113,35 @@ class ActiveRoom {
         }
 
         this.roles[role].push(socket);
-        socket.roleId = role;
+        socket.role = role;
         socket._setRoom(this);
     }
 
     silentRemove (socket) {
-        const role = socket.roleId;
+        const role = socket.role;
         const sockets = this.roles[role] || [];
         const index = sockets.indexOf(socket);
+        let result = Q();
 
         if (index > -1) {
             sockets.splice(index, 1);
-            socket.roleId = null;
+            socket.role = null;
+
+            // if this is the last one, remove unsaved project-actions for the given role
+            if (sockets.length === 0) {
+                let timestamp = new Date();
+                let project = this.getProject();
+                let roleId = null;
+                let projectId = project.getId();
+                result = project.getRoleId(role)
+                    .then(id => roleId = id)
+                    .then(() => project.getRoleActionIdById(roleId))
+                    .then(actionId => ProjectActions.clearActionsAfter(projectId, roleId, actionId, timestamp));
+            }
         } else {
             this._logger.warn(`could not remove socket ${socket.username} from ${this.uuid}. Not found`);
         }
+        return result;
     }
 
     remove (socket) {
@@ -160,6 +177,7 @@ class ActiveRoom {
     setStorage(store) {
         this._project = store;
         store._room = store._room || this;
+        this._id = store._id;
     }
 
     addCollaborator(username) {
@@ -174,6 +192,10 @@ class ActiveRoom {
     removeCollaborator(username) {
         return this._project.removeCollaborator(username)
             .then(() => this.onRolesChanged());
+    }
+
+    getProjectId() {
+        return this._project && this._project._id;
     }
 
     getProject() {
@@ -242,18 +264,25 @@ class ActiveRoom {
     }
 
     sendFrom (socket, msg) {
-        this.sockets()
-            .filter(s => s !== socket)  // Don't send to origin
-            .forEach(socket => socket.send(msg));
+        let sockets = this.sockets()
+            .filter(s => s !== socket);  // Don't send to origin
+
+        sockets.forEach(socket => socket.send(msg));
+
+        return sockets.map(socket => socket.getPublicId());
     }
 
     // Send to everyone, including the origin socket
     sendToEveryone (msg) {
+        let sockets = this.sockets();
+
         // Set the dstId to CONSTANTS.EVERYONE if not already set
         if (!msg.dstId) {
             msg.dstId = Constants.EVERYONE;
         }
-        this.sockets().forEach(socket => socket.send(msg));
+        sockets.forEach(socket => socket.send(msg));
+
+        return sockets.map(socket => socket.getPublicId());
     }
 
     sockets () {
@@ -311,7 +340,7 @@ class ActiveRoom {
         return Object.keys(this.roles);
     }
 
-    getRole(role, skipSave) {  // Get the project state for a given role
+    _getRole(role, skipSave) {  // Get the project state for a given role
         let socket = this.getSocketsAt(role)[0];
 
         // request it from the role if occupied or get it from the database
@@ -331,6 +360,28 @@ class ActiveRoom {
         } else {
             return this._project.getRole(role);
         }
+    }
+
+    getRole(role, skipSave) {  // Get the role and record the current actionId
+        return this._getRole(role, skipSave)
+            .then(content => {
+                if (content) {
+                    return this.setRoleActionId(role, utils.xml.actionId(content.SourceCode))
+                        .then(() => content);
+                }
+                return content;
+            });
+    }
+
+    // These next two methods are storing the action id. Currently, it is stored
+    // in memory but might be good to move to some persistent storage
+    setRoleActionId(role, id) {
+        this.roleActionIds[role] = Math.max(id, this.roleActionIds[role] || 0);
+        return Q();
+    }
+
+    getRoleActionId(role) {
+        return Q(this.roleActionIds[role] || -Infinity);
     }
 
     setRole(role, content) {
@@ -411,7 +462,7 @@ class ActiveRoom {
         }
 
         let sockets = this.getSocketsAt(roleId);
-        sockets.forEach(socket => socket.roleId = newId);
+        sockets.forEach(socket => socket.role = newId);
         this.roles[newId] = sockets;
 
         delete this.roles[roleId];

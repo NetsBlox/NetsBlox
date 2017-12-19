@@ -39,7 +39,7 @@ RoomManager.prototype.init = function(logger, storage) {
 };
 
 RoomManager.prototype.forkRoom = function(room, socket) {
-    var roleId = socket.roleId,
+    var roleId = socket.role,
         newRoom;
 
     if (socket.username === room.owner) {
@@ -85,7 +85,7 @@ RoomManager.prototype.getExistingRoom = function(uuid) {
 RoomManager.prototype.getRoom = function(socket, ownerId, name) {
     const uuid = utils.uuid(ownerId, name);
     this._logger.trace(`getting project ${uuid} for ${ownerId}`);
-    
+
     if (!this.rooms[uuid]) {
         this._logger.trace(`retrieving project ${uuid} for ${ownerId}`);
         return this.rooms[uuid] = Projects.getProject(ownerId, name)
@@ -100,16 +100,23 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
                         });
                 }
                 this._logger.trace(`retrieving project ${uuid} from database`);
-                return ActiveRoom.fromStore(this._logger, project);
+
+                // Check for a room which already references the given project
+                return this.getActiveRooms([uuid])
+                    .then(rooms => rooms.find(room => room.getProjectId().equals(project._id)))
+                    .then(room => room || ActiveRoom.fromStore(this._logger, project));
             });
 
     } else {
-        return Q(this.rooms[uuid]);
+        return this.getExistingRoom(uuid);
     }
 };
 
-RoomManager.prototype.getActiveRooms = function() {
-    return Q.all(Object.keys(this.rooms).map(uuid => this.rooms[uuid]));
+RoomManager.prototype.getActiveRooms = function(skip) {
+    skip = skip || [];
+    let uuids = Object.keys(this.rooms).filter(uuid => !skip.includes(uuid));
+    let rooms = uuids.map(uuid => this.rooms[uuid]);
+    return Q.all(rooms);
 };
 
 RoomManager.prototype.checkRoom = function(room) {

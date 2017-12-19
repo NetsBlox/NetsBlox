@@ -121,9 +121,7 @@ var sendProjectTo = function(project, res) {
     var serialized,
         openRole;
 
-    // If room is not active, pick a role arbitrarily
-    openRole = project.activeRole || Object.keys(project.roles)[0];
-    return project.getRole(openRole)
+    return project.getLastUpdatedRole()
         .then(role => {
             const uuid = Utils.uuid(project.owner, project.name);
             trace(`project ${uuid} is not active. Selected role "${openRole}"`);
@@ -185,7 +183,7 @@ module.exports = [
                 {overwrite, socketId, projectName} = req.body,
                 socket = SocketManager.getSocket(socketId),
 
-                activeRoom = socket._room;
+                activeRoom = socket.getRawRoom();
 
             if (!activeRoom) {
                 error(`Could not find active room for "${username}" - cannot save!`);
@@ -617,7 +615,6 @@ module.exports = [
                 projectName = req.query.ProjectName;
 
             this._logger.trace(`Retrieving the public project: ${projectName} from ${username}`);
-
             return this.storage.users.get(username)
                 .then(user => {
                     if (!user) {
@@ -633,7 +630,8 @@ module.exports = [
                     } else {
                         return res.status(400).send('ERROR: Project not available');
                     }
-                });
+                })
+                .catch(err => res.status(500).send(`ERROR: ${err}`));
         }
     }
 

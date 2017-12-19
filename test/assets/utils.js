@@ -118,7 +118,7 @@ const sendEmptyRole = function(msg) {
     return {
         type: 'project-response',
         id: msg.id,
-        project: serverUtils.getEmptyRole(this.roleId)
+        project: serverUtils.getEmptyRole(this.role)
     };
 };
 
@@ -160,9 +160,17 @@ const reset = function() {
         .catch(() => db)
         .then(() => db.collection('users').drop())
         .catch(() => db)
+        .then(() => db.collection('project-actions').drop())
+        .catch(() => db)
         .then(() => fixtures.init(storage))
         .then(() => logger.info('Finished loading test fixtures!'))
         .then(() => storage._db);
+};
+
+const sleep = delay => {
+    const deferred = Q.defer();
+    setTimeout(deferred.resolve, delay);
+    return deferred.promise;
 };
 
 module.exports = {
@@ -184,6 +192,7 @@ module.exports = {
 
     connect: connect,
     reset: reset,
+    sleep: sleep,
     logger: mainLogger,
     createRoom: createRoom,
     createSocket: createSocket,

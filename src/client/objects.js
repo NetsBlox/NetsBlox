@@ -3,7 +3,7 @@
    localize, BlockEditorMorph, BlockDialogMorph, TextMorph, PushButtonMorph,
    MessageFrame, BlockMorph, ToggleMorph, MessageCreatorMorph,
    VariableDialogMorph, SnapCloud, contains, List, CommandBlockMorph,
-   MessageType, isNil, RingMorph, SnapActions, ProjectsMorph, NetsBloxMorph,
+   MessageType, isNil, RingMorph, SnapActions, RoomEditorMorph, NetsBloxMorph,
    SnapUndo, newCanvas, ReplayControls, copy*/
 
 SpriteMorph.prototype.categories =
@@ -343,7 +343,7 @@ SpriteMorph.prototype.getProjectId = function () {
 
 SpriteMorph.prototype.getProjectIds = function () {
     var ide = this.parentThatIsA(IDE_Morph),
-        roles = Object.keys(ide.room.roles);
+        roles = ide.room.getRoleNames();
     return new List(roles);
 };
 
@@ -1012,7 +1012,7 @@ SpriteMorph.prototype.deleteMessageType = function(name) {
 
     // Refresh message palette if possible in case the user is already on the 'Room' tab
     try {
-        ide.room.parentThatIsA(ProjectsMorph).updateRoom();
+        ide.room.parentThatIsA(RoomEditorMorph).updateRoom();
         if (ide && ide.currentTab === 'room') {
             ide.spriteBar.tabBar.tabTo('room');
         }
@@ -1053,7 +1053,7 @@ StageMorph.prototype.addMessageType = function (messageType) {
     // Refresh message palette if possible in case the user is already on the 'Room' tab
     try {
         var ide = this.parentThatIsA(NetsBloxMorph);
-        ide.room.parentThatIsA(ProjectsMorph).updateRoom();
+        ide.room.parentThatIsA(RoomEditorMorph).updateRoom();
         if (ide && ide.currentTab === 'room') {
             ide.spriteBar.tabBar.tabTo('room');
         }
@@ -1809,28 +1809,23 @@ ReplayControls.prototype.update = function() {
             this.actionIndex += dir;
             this.actionTime = originalEvent.time;
             return setTimeout(myself.update.bind(myself), 10);
-
         }
         // Netsblox addition: end
 
         // Apply the given event
         this.isApplyingAction = true;
         action.isReplay = true;
-        SnapActions.applyEvent(action)
-            .accept(function() {
-                myself.actionIndex += dir;
-                myself.actionTime = originalEvent.time;
-                myself.isApplyingAction = false;
+        this.applyEvent(action, function() {
+            myself.actionIndex += dir;
+            myself.actionTime = originalEvent.time;
+            myself.isApplyingAction = false;
 
-                if (myself.isShowingCaptions) {
-                    myself.displayCaption(action, originalEvent);
-                }
+            if (myself.isShowingCaptions) {
+                myself.displayCaption(action, originalEvent);
+            }
 
-                setTimeout(myself.update.bind(myself), 10);
-            })
-            .reject(function() {
-                throw Error('Could not apply event: ' + JSON.stringify(action, null, 2));
-            });
+            setTimeout(myself.update.bind(myself), 10);
+        });
     } else {
         setTimeout(this.update.bind(this), 100);
     }

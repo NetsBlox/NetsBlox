@@ -26,7 +26,7 @@ TwentyQuestions.prototype.start = function (answer) {
     this._state.started = true;
     this._state.guessCount = 0;
     this._state.correctAnswer = answer.toLowerCase();
-    this._state.answerer = this.socket.roleId;
+    this._state.answerer = this.socket.role;
     // send start message to everyone
     this.socket._room.sockets()
         .forEach(socket => socket.send({
@@ -44,7 +44,7 @@ TwentyQuestions.prototype.guess = function(guess) {
         return 'Game hasn\'t started yet...wait for the answerer to think of something!';
     }
     // safeguard against the answerer accidentally attempting to guess
-    if (this.socket.roleId === this._state.answerer) {
+    if (this.socket.role === this._state.answerer) {
         return 'You\'re not the guesser!';
     }
     // ensure valid guess
@@ -109,7 +109,7 @@ TwentyQuestions.prototype.answer = function(answer) {
         return this.response.send('Game hasn\'t started yet...think of something to be guessed!');
     }
     // safeguard against the guesser accidently attempting to answer
-    if (this.socket.roleId !== this._state.answerer) {
+    if (this.socket.role !== this._state.answerer) {
         return this.response.send('You\'re not the answerer!');
     }
     // ensure valid answer

@@ -1,4 +1,4 @@
-/* global ThreadManager, Process, Context, IDE_Morph, Costume, StageMorph,
+/* global ThreadManager, ensureFullUrl, Process, Context, IDE_Morph, Costume, StageMorph,
    Qs, List, SnapActions*/
 
 ThreadManager.prototype.startProcess = function (
@@ -81,7 +81,7 @@ function NetsProcess(topBlock, onComplete, rightAway, context) {
 NetsProcess.prototype.doSocketMessage = function (msgInfo) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
         targetRole = arguments[arguments.length-1],
-        myRole = ide.projectName,  // same as seat name
+        srcId = [ide.projectName, ide.room.name, ide.room.ownerId].join('@'),
         name = msgInfo[0],
         fieldNames = msgInfo[1],
         fieldValues = Array.prototype.slice.call(arguments, 1, fieldNames.length + 1),
@@ -108,7 +108,7 @@ NetsProcess.prototype.doSocketMessage = function (msgInfo) {
     ide.sockets.sendMessage({
         type: 'message',
         dstId: targetRole,
-        srcId: myRole,
+        srcId: srcId,
         msgType: name,
         content: contents
     });
@@ -226,7 +226,7 @@ NetsProcess.prototype.createRPCUrl = function (rpc, params) {
     var ide = this.homeContext.receiver.parentThatIsA(IDE_Morph),
         uuid = ide.sockets.uuid;
 
-    return window.location.origin + '/rpc/'+rpc+'?uuid='+uuid+'&'+params;
+    return ensureFullUrl('/rpc/'+rpc+'?uuid='+uuid+'&'+params);
 };
 
 NetsProcess.prototype.callRPC = function (rpc, params, noCache) {

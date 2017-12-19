@@ -65,7 +65,7 @@ MockSocket.prototype.messages = function() {
 };
 
 MockSocket.prototype.reset = function() {
-    this.roleId = 'newRole';
+    this.role = 'newRole';
     this.uuid = 'someSocketUuid';
 
     this._messages = [];

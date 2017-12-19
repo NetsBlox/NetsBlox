@@ -1,4 +1,4 @@
-/* globals ProjectDialogMorph, Morph, AlignmentMorph, InputFieldMorph, localize,
+/* globals ProjectDialogMorph, ensureFullUrl, Morph, AlignmentMorph, InputFieldMorph, localize,
    Point, TextMorph, Color, nop, ListMorph, IDE_Morph, Process, BlockImportDialogMorph,
    BlockExportDialogMorph, detect, SnapCloud, SnapSerializer, ScrollFrameMorph,
    DialogBoxMorph, SnapActions, SpeechBubbleMorph
@@ -535,9 +535,9 @@ ProjectDialogMorph.prototype.openCloudProject = function (project) {
         function () {
             SnapCloud.reconnect(function() {
                 var isReopen = project.ProjectName === myself.ide.room.name,
-                    roles = Object.keys(myself.ide.room.roles),
+                    roles = myself.ide.room.getRoleNames(),
                     onlyMe = roles.filter(function(roleName) {
-                        return !!myself.ide.room.roles[roleName];
+                        return !!myself.ide.room.getCurrentOccupants(roleName);
                     }).length === 1;
 
                 if (isReopen && onlyMe) {  // reopening own project
@@ -717,6 +717,13 @@ IDE_Morph.prototype.exportGlobalBlocks = function () {
                 + 'custom global blocks or message types yet'
         );
     }
+};
+
+
+IDE_Morph.prototype._getURL = IDE_Morph.prototype.getURL;
+IDE_Morph.prototype.getURL = function (url, callback) {
+    url = ensureFullUrl(url);
+    return this._getURL(url, callback);
 };
 
 IDE_Morph.prototype.rawOpenBlocksString = function (str, name, silently) {

@@ -13,6 +13,10 @@
         <meta property="og:image:height" content="{{= it.image.height }}"/>
 {{ } }}
         {{ if (it.url) { }} <meta property="og:url" content="{{= encodeURI(it.url) }}"/> {{ } }}
+        <script type="text/javascript">
+            var SERVER_URL = "{{= it.baseUrl}}" || window.location.origin,
+                SERVER_ADDRESS = SERVER_URL.replace(/^.*\/\//, '');
+        </script>
         <script type="text/javascript" src="dist/netsblox-build.js"></script>
 
 		<script type="text/javascript">
