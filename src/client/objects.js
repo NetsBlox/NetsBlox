@@ -1753,85 +1753,12 @@ SpriteMorph.prototype.thumbnail = function (extentPoint) {
     return trg;
 };
 
-ReplayControls.prototype.update = function() {
-    var myself = this,
-        originalEvent,
-        sliderTime = this.getTimeFromPosition(this.slider.value),
-        diff,
-        dir,
-        index,
-        action;
-
-    if (!this.enabled) {
-        return setTimeout(this.update.bind(this), 100);
-    }
-
-    if (this.actionTime !== sliderTime && this.actions && !this.isApplyingAction) {
-        diff = sliderTime - this.actionTime;
-        dir = diff/Math.abs(diff);
-
-        // Since actionIndex is the last applied action, the reverse direction
-        // should use that value -> not one prior
-
-        if (dir === 1) {
-            index = this.actionIndex + dir;
-            originalEvent = this.actions[index];
-            action = copy(originalEvent);
-            if (!originalEvent || originalEvent.time >= sliderTime) {
-                return setTimeout(this.update.bind(this), 100);
-            }
-        } else {  // "rewind"
-            originalEvent = this.actions[this.actionIndex];
-            if (!originalEvent || originalEvent.time <= sliderTime) {
-                return setTimeout(this.update.bind(this), 100);
-            }
-            action = this.getInverseEvent(originalEvent);
-        }
-
-        // make the 'openProject' event undo-able...
-        if (action.type === 'openProject' && !action.replayType && action.args.length < 2) {
-            var ide = this.parentThatIsA(IDE_Morph),
-                serialized = ide.serializer.serialize(ide.stage);
-
-            if (action.args.length === 0) {
-                action.args.push(null);
-            }
-            action.args.push(serialized);
-        }
-
-        // Netsblox addition: start
-        // Ignore openProject actions as we are just replaying the role history
-        // and not the entire project (openProject would change the project/room)
-        if (action.type === 'openProject') {
-            if (this.isShowingCaptions) {
-                this.displayCaption(action, originalEvent);
-            }
-            this.actionIndex += dir;
-            this.actionTime = originalEvent.time;
-            return setTimeout(myself.update.bind(myself), 10);
-
-        }
-        // Netsblox addition: end
-
-        // Apply the given event
-        this.isApplyingAction = true;
-        action.isReplay = true;
-        SnapActions.applyEvent(action)
-            .accept(function() {
-                myself.actionIndex += dir;
-                myself.actionTime = originalEvent.time;
-                myself.isApplyingAction = false;
-
-                if (myself.isShowingCaptions) {
-                    myself.displayCaption(action, originalEvent);
-                }
-
-                setTimeout(myself.update.bind(myself), 10);
-            })
-            .reject(function() {
-                throw Error('Could not apply event: ' + JSON.stringify(action, null, 2));
-            });
+ReplayControls.prototype._applyEvent = ReplayControls.prototype.applyEvent;
+ReplayControls.prototype.applyEvent = function(event, next) {
+    if (event.type !== 'openProject') {
+        return ReplayControls.prototype._applyEvent.call(this, event, next);
     } else {
-        setTimeout(this.update.bind(this), 100);
+        return next();
     }
 };
+
