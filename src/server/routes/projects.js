@@ -276,7 +276,7 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
-            const origin = req.get('origin');
+            const origin = `${req.protocol}://${req.get('host')}`;
             var username = req.session.username;
             log(`${username} requested shared project list from ${origin}`);
 
@@ -316,7 +316,7 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
-            const origin = req.get('origin');
+            const origin = `${req.protocol}://${req.get('host')}`;
             var username = req.session.username;
             log(`${username} requested project list from ${origin}`);
 
