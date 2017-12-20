@@ -82,9 +82,9 @@ var getProjectInfo = function(project) {
     return preview;
 };
 
-var getProjectMetadata = function(project) {
+var getProjectMetadata = function(project, origin='') {
     let metadata = getProjectInfo(project);
-    metadata.Thumbnail = `/api/projects/${project.owner}/${project.name}/thumbnail`;
+    metadata.Thumbnail = `${origin}/api/projects/${project.owner}/${project.name}/thumbnail`;
     return metadata;
 };
 
@@ -276,8 +276,9 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
+            const origin = req.get('origin');
             var username = req.session.username;
-            log(username +' requested project list');
+            log(`${username} requested shared project list from ${origin}`);
 
             return this.storage.users.get(username)
                 .then(user => {
@@ -287,7 +288,7 @@ module.exports = [
                                 trace(`found shared project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                const previews = projects.map(getProjectMetadata);
+                                const previews = projects.map(project => getProjectMetadata(project, origin));
                                 const names = JSON.stringify(previews.map(preview =>
                                     preview.ProjectName));
 
@@ -315,8 +316,9 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
+            const origin = req.get('origin');
             var username = req.session.username;
-            log(username +' requested project list');
+            log(`${username} requested project list from ${origin}`);
 
             return this.storage.users.get(username)
                 .then(user => {
@@ -326,7 +328,7 @@ module.exports = [
                                 trace(`found project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                const previews = projects.map(getProjectMetadata);
+                                const previews = projects.map(project => getProjectMetadata(project, origin));
                                 info(`Projects for ${username} are ${JSON.stringify(
                                     previews.map(preview => preview.ProjectName)
                                 )}`
