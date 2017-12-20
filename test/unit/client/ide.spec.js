@@ -376,5 +376,44 @@ describe('ide', function() {
             });
         });
     });
+
+    describe('replay slider', function() {
+        before(function(done) {
+            driver.reset(err => {
+                if (err) return done(err);
+
+                // Add a couple blocks, change the stage size, etc
+                driver.addBlock('forward').accept(() => {
+                    SnapActions.setStageSize(500, 500).accept(() => {
+                        driver.addBlock('bubble').accept(() => {
+                            driver.ide().replayEvents();  // enter replay mode
+                            done();
+                        });
+                    });
+                });
+            });
+        });
+
+        it('should be able to undo all events', function(done) {
+            const replayer = driver.ide().replayControls;
+            replayer.jumpToBeginning();
+            setTimeout(done, 750);
+        });
+
+        it('should be able to redo all events', function(done) {
+            const replayer = driver.ide().replayControls;
+            replayer.jumpToBeginning();
+            // Jump to end
+            setTimeout(() => {
+                replayer.jumpToEnd();
+                setTimeout(() => {
+                    // Make sure a block exists!
+                    const blocks = driver.ide().currentSprite.scripts.children;
+                    if (blocks.length === 0) return done('blocks were not replayed!');
+                    return done();
+                }, 750);
+            }, 500);
+        });
+    });
 });
 
