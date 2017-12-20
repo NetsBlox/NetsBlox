@@ -525,7 +525,7 @@ RoomMorph.prototype.moveToRole = function(dstId) {
                 if (proj.SourceCode) {
                     myself.ide.droppedText(proj.SourceCode);
                 } else {  // newly created role
-                    myself.ide.clearProject(dstId);
+                    myself.ide.newRole(dstId);
                 }
                 if (proj.Public === 'true') {
                     location.hash = '#present:Username=' +
@@ -534,7 +534,7 @@ RoomMorph.prototype.moveToRole = function(dstId) {
                         encodeURIComponent(proj.ProjectName);
                 }
             } else {  // Empty the project FIXME
-                myself.ide.clearProject(dstId);
+                myself.ide.newRole(dstId);
             }
         },
         function (err, lbl) {
@@ -737,7 +737,7 @@ RoomMorph.prototype._invitationResponse = function (id, response, role) {
                             encodeURIComponent(proj.ProjectName);
                     }
                 } else {  // Empty the project
-                    myself.ide.clearProject(role);
+                    myself.ide.newRole(role);
                 }
                 myself.ide.showMessage('you have joined the room!', 2);
                 myself.ide.silentSetProjectName(role);  // Set the role name FIXME
