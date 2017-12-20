@@ -54,7 +54,7 @@ var setProjectPublic = function(name, user, value) {
 };
 
 // Select a preview from a project (retrieve them from the roles)
-var getPreview = function(project) {
+var getProjectInfo = function(project) {
 
     const roles = Object.keys(project.roles).map(k => project.roles[k]);
     const preview = {
@@ -80,6 +80,16 @@ var getPreview = function(project) {
     preview.Public = project.Public;
     preview.Owner = project.owner;
     return preview;
+};
+
+var getProjectMetadata = function(project, origin='') {
+    let metadata = getProjectInfo(project);
+    metadata.Thumbnail = `${origin}/api/projects/${project.owner}/${project.name}/thumbnail`;
+    return metadata;
+};
+
+var getProjectThumbnail = function(project) {
+    return getProjectInfo(project).Thumbnail;
 };
 
 ////////////////////// Project Helpers //////////////////////
@@ -266,8 +276,9 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
+            const origin = `${req.protocol}://${req.get('host')}`;
             var username = req.session.username;
-            log(username +' requested project list');
+            log(`${username} requested shared project list from ${origin}`);
 
             return this.storage.users.get(username)
                 .then(user => {
@@ -277,7 +288,7 @@ module.exports = [
                                 trace(`found shared project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                const previews = projects.map(getPreview);
+                                const previews = projects.map(project => getProjectMetadata(project, origin));
                                 const names = JSON.stringify(previews.map(preview =>
                                     preview.ProjectName));
 
@@ -305,8 +316,9 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
+            const origin = `${req.protocol}://${req.get('host')}`;
             var username = req.session.username;
-            log(username +' requested project list');
+            log(`${username} requested project list from ${origin}`);
 
             return this.storage.users.get(username)
                 .then(user => {
@@ -316,7 +328,7 @@ module.exports = [
                                 trace(`found project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                const previews = projects.map(getPreview);
+                                const previews = projects.map(project => getProjectMetadata(project, origin));
                                 info(`Projects for ${username} are ${JSON.stringify(
                                     previews.map(preview => preview.ProjectName)
                                 )}`
@@ -545,15 +557,15 @@ module.exports = [
             return Projects.getRawProject(req.params.owner, name)
                 .then(project => {
                     if (project) {
-                        const preview = getPreview(project);
-                        if (!preview || !preview.Thumbnail) {
+                        const thumbnail = getProjectThumbnail(project);
+                        if (!thumbnail) {
                             const err = `could not find thumbnail for ${name}`;
                             this._logger.error(err);
                             return res.status(400).send(err);
                         }
                         this._logger.trace(`Applying aspect ratio for ${req.params.owner}'s ${name}`);
                         return applyAspectRatio(
-                            preview.Thumbnail,
+                            thumbnail,
                             aspectRatio
                         ).then(buffer => {
                             this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
