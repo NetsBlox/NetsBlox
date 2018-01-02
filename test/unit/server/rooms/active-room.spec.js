@@ -104,13 +104,6 @@ describe('active-room', function() {
                 done();
             });
         });
-
-        it('should invoke "destroy"', function(done) {
-            room = new ActiveRoom(logger, 'closeTest', owner);
-            room.destroy = done;
-            room.close();
-        });
-        
     });
 
     describe('get sockets at role', function() {

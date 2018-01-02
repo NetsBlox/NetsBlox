@@ -94,8 +94,8 @@ class NetsBloxSocket {
 
         isOwner = isOwner || this.isOwner();
         if (isOwner) {
-            if (Utils.isSocketUuid(this._room.owner)) {
-                this._room.setOwner(this.username);
+            if (Utils.isSocketUuid(room.owner)) {
+                room.setOwner(this.username);
             }
 
             // Update the user's room name
@@ -374,32 +374,30 @@ class NetsBloxSocket {
                 sockets = [],
                 ownerId = idChunks.pop(),
                 roomName = idChunks.pop(),
-                roleId = idChunks.pop(),
-                roomId = Utils.uuid(ownerId, roomName);
+                roleId = idChunks.pop();
 
-            return RoomManager.getExistingRoom(roomId)
-                .then(room => {
-                    if (room) {
-                        if (roleId) {
-                            if (room.hasRole(roleId)) {
-                                sockets = sockets.concat(room.getSocketsAt(roleId));
-                            }
-                        } else {
-                            sockets = room.sockets();
-                        }
+            const room = RoomManager.getExistingRoom(ownerId, roomName);
 
-                        sockets.forEach(socket => {
-                            msg.dstId = Constants.EVERYONE;
-                            socket.send(msg);
-                        });
-
-                        // record message (including successful delivery)
-                        msg.dstId = dstId;
-                        // TODO: get the public id of each socket
-                        msg.recipients = sockets.map(socket => socket.getPublicId());
-                        Messages.save(msg);
+            if (room) {
+                if (roleId) {
+                    if (room.hasRole(roleId)) {
+                        sockets = sockets.concat(room.getSocketsAt(roleId));
                     }
+                } else {
+                    sockets = room.sockets();
+                }
+
+                sockets.forEach(socket => {
+                    msg.dstId = Constants.EVERYONE;
+                    socket.send(msg);
                 });
+
+                // record message (including successful delivery)
+                msg.dstId = dstId;
+                // TODO: get the public id of each socket
+                msg.recipients = sockets.map(socket => socket.getPublicId());
+                Messages.save(msg);
+            }
         } else if (room) {
             if (dstId === 'others in room') {
                 msg.recipients = this.sendToOthers(msg);

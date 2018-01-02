@@ -54,7 +54,7 @@ var setProjectPublic = function(name, user, value) {
 };
 
 // Select a preview from a project (retrieve them from the roles)
-var getPreview = function(project) {
+var getProjectInfo = function(project) {
 
     const roles = Object.keys(project.roles).map(k => project.roles[k]);
     const preview = {
@@ -82,6 +82,16 @@ var getPreview = function(project) {
     return preview;
 };
 
+var getProjectMetadata = function(project, origin='') {
+    let metadata = getProjectInfo(project);
+    metadata.Thumbnail = `${origin}/api/projects/${project.owner}/${project.name}/thumbnail`;
+    return metadata;
+};
+
+var getProjectThumbnail = function(project) {
+    return getProjectInfo(project).Thumbnail;
+};
+
 ////////////////////// Project Helpers //////////////////////
 var getRoomsNamed = function(name, user, owner) {
     owner = owner || user.username;
@@ -92,28 +102,26 @@ var getRoomsNamed = function(name, user, owner) {
         user.getSharedProject(owner, name);
 
     return getProject.then(project => {
-        return RoomManager.getExistingRoom(Utils.uuid(owner, name))
-            .then(activeRoom => {
-                const areSame = !!activeRoom && !!project &&
-                    activeRoom.originTime === project.originTime;
+        const activeRoom = RoomManager.getExistingRoom(owner, name);
+        const areSame = !!activeRoom && !!project &&
+            activeRoom.originTime === project.originTime;
 
 
-                if (project) {
-                    trace(`found project ${uuid} for ${user.username}`);
-                } else {
-                    trace(`no ${uuid} project found for ${user.username}`);
-                }
+        if (project) {
+            trace(`found project ${uuid} for ${user.username}`);
+        } else {
+            trace(`no ${uuid} project found for ${user.username}`);
+        }
 
-                if (areSame) {
-                    project = activeRoom.getProject() || project;
-                }
+        if (areSame) {
+            project = activeRoom.getProject() || project;
+        }
 
-                return {
-                    active: activeRoom,
-                    stored: project,
-                    areSame: areSame
-                };
-            });
+        return {
+            active: activeRoom,
+            stored: project,
+            areSame: areSame
+        };
     });
 };
 
@@ -204,23 +212,20 @@ module.exports = [
             // If we are not overwriting the project, just name it and save!
             if (overwrite && projectName !== activeRoom.name) {
                 trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
-                const uuid = Utils.uuid(username, projectName);
 
-                return RoomManager.getExistingRoom(uuid)
-                    .then(otherRoom => {
-                        const isSame = otherRoom === activeRoom;
-                        if (otherRoom && !isSame) {  // rename the existing, active room
-                            return otherRoom.changeName(projectName, true).then(saveAs);
-                        } else {  // delete the existing
-                            return Projects.get(username, projectName)
-                                .then(project => {
-                                    if (project) {
-                                        return project.destroy();
-                                    }
-                                })
-                                .then(saveAs);
-                        }
-                    });
+                const otherRoom = RoomManager.getExistingRoom(username, projectName);
+                const isSame = otherRoom === activeRoom;
+                if (otherRoom && !isSame) {  // rename the existing, active room
+                    return otherRoom.changeName(projectName, true).then(saveAs);
+                } else {  // delete the existing
+                    return Projects.get(username, projectName)
+                        .then(project => {
+                            if (project) {
+                                return project.destroy();
+                            }
+                        })
+                        .then(saveAs);
+                }
             } else {
                 trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
                 return saveAs();
@@ -271,8 +276,9 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
+            const origin = `${req.protocol}://${req.get('host')}`;
             var username = req.session.username;
-            log(username +' requested project list');
+            log(`${username} requested shared project list from ${origin}`);
 
             return this.storage.users.get(username)
                 .then(user => {
@@ -282,7 +288,7 @@ module.exports = [
                                 trace(`found shared project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                const previews = projects.map(getPreview);
+                                const previews = projects.map(project => getProjectMetadata(project, origin));
                                 const names = JSON.stringify(previews.map(preview =>
                                     preview.ProjectName));
 
@@ -310,8 +316,9 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
+            const origin = `${req.protocol}://${req.get('host')}`;
             var username = req.session.username;
-            log(username +' requested project list');
+            log(`${username} requested project list from ${origin}`);
 
             return this.storage.users.get(username)
                 .then(user => {
@@ -321,7 +328,7 @@ module.exports = [
                                 trace(`found project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
-                                const previews = projects.map(getPreview);
+                                const previews = projects.map(project => getProjectMetadata(project, origin));
                                 info(`Projects for ${username} are ${JSON.stringify(
                                     previews.map(preview => preview.ProjectName)
                                 )}`
@@ -469,7 +476,7 @@ module.exports = [
                         return res.status(400).send(`${project} not found!`);
                     }
 
-                    const active = RoomManager.isActiveRoom(project.uuid());
+                    const active = RoomManager.isActiveRoom(project.getId());
 
                     if (active) {
                         return project.unpersist()
@@ -550,15 +557,15 @@ module.exports = [
             return Projects.getRawProject(req.params.owner, name)
                 .then(project => {
                     if (project) {
-                        const preview = getPreview(project);
-                        if (!preview || !preview.Thumbnail) {
+                        const thumbnail = getProjectThumbnail(project);
+                        if (!thumbnail) {
                             const err = `could not find thumbnail for ${name}`;
                             this._logger.error(err);
                             return res.status(400).send(err);
                         }
                         this._logger.trace(`Applying aspect ratio for ${req.params.owner}'s ${name}`);
                         return applyAspectRatio(
-                            preview.Thumbnail,
+                            thumbnail,
                             aspectRatio
                         ).then(buffer => {
                             this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);

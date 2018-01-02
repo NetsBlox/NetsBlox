@@ -148,7 +148,16 @@ RoomMorph.prototype.getDefaultRoles = function() {
 };
 
 RoomMorph.prototype.getCurrentRoleName = function() {
-    return this.ide.projectName;
+    var myself = this,
+        roleNames = this.getRoleNames(),
+        myUuid = myself.ide.sockets.uuid;
+
+    // Look up the role name from the current room info
+    return roleNames.find(function(name) {
+        return myself.getCurrentOccupants(name).find(function(occupant) {
+            return occupant.uuid === myUuid;
+        });
+    }) || this.ide.projectName;
 };
 
 RoomMorph.prototype.getRoleCount = function() {
@@ -235,6 +244,7 @@ RoomMorph.equalLists = function(first, second) {
 
 RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
     var wasEditable = this.isEditable(),
+        oldRoleName = this.getCurrentRoleName(),
         changed;
 
     changed = name && this.name !== name;
@@ -261,6 +271,11 @@ RoomMorph.prototype.update = function(ownerId, name, roles, collaborators) {
         this.ownerId = ownerId;
     }
 
+    // Check if current role name changed...
+    if (this.getCurrentRoleName() !== oldRoleName) {
+        this.ide.silentSetProjectName(this.getCurrentRoleName());
+    }
+
     if (changed) {
         this.version = Date.now();
         this.drawNew();
@@ -285,6 +300,7 @@ RoomMorph.prototype.getRoles = function() {
 };
 
 RoomMorph.prototype.getRole = function(name) {
+    //name = name || this.getCurrentRoleName();
     return this.getRoles().find(function(role) {
         return role.name === name;
     });
@@ -546,7 +562,7 @@ RoomMorph.prototype.editRoleName = function(role) {
             if (role !== roleName){
                 myself.ide.sockets.sendMessage({
                     type: 'rename-role',
-                    roleId: role,
+                    role: role,
                     name: roleName
                 });
             }
@@ -562,11 +578,16 @@ RoomMorph.prototype.moveToRole = function(dstId) {
         function(args) {
             myself.ide.showMessage('moved to ' + dstId + '!');
             myself.ide.projectName = dstId;
+            myself.ide.source = 'cloud';
+
             var proj = args[0];
             // Load the project or make the project empty
             if (proj) {
-                myself.ide.source = 'cloud';
-                myself.ide.droppedText(proj.SourceCode);
+                if (proj.SourceCode) {
+                    myself.ide.droppedText(proj.SourceCode);
+                } else {  // newly created role
+                    myself.ide.newRole(dstId);
+                }
                 if (proj.Public === 'true') {
                     location.hash = '#present:Username=' +
                         encodeURIComponent(SnapCloud.username) +
@@ -574,7 +595,7 @@ RoomMorph.prototype.moveToRole = function(dstId) {
                         encodeURIComponent(proj.ProjectName);
                 }
             } else {  // Empty the project FIXME
-                myself.ide.clearProject(dstId);
+                myself.ide.newRole(dstId);
             }
         },
         function (err, lbl) {
@@ -616,10 +637,10 @@ RoomMorph.prototype.role = function() {
 
 RoomMorph.prototype.setRoleName = function(role) {
     role = role || 'untitled';
-    if (role !== this.ide.projectName) {
+    if (role !== this.getCurrentRoleName()) {
         this.ide.sockets.sendMessage({
             type: 'rename-role',
-            roleId: this.ide.projectName,
+            role: this.ide.projectName,
             name: role
         });
     }
@@ -777,7 +798,7 @@ RoomMorph.prototype._invitationResponse = function (id, response, role) {
                             encodeURIComponent(proj.ProjectName);
                     }
                 } else {  // Empty the project
-                    myself.ide.clearProject(role);
+                    myself.ide.newRole(role);
                 }
                 myself.ide.showMessage('you have joined the room!', 2);
                 myself.ide.silentSetProjectName(role);  // Set the role name FIXME
