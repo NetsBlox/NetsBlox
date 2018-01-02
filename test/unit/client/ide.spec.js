@@ -290,7 +290,7 @@ describe('ide', function() {
     });
 
     describe('server connection', () => {
-        const EXPECTED_SURL = 'http://localhost:8080';
+        const EXPECTED_SURL = window.location.origin;
         beforeEach(done => driver.reset(done));
 
         describe('SERVER_URL', () => {
