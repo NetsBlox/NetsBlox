@@ -1,4 +1,4 @@
-/* globals SpriteMorph, SnapActions, localize */
+/* globals SpriteMorph, SnapActions, localize, Point */
 function SnapDriver(world) {
     this._world = world;
 }
@@ -102,11 +102,18 @@ SnapDriver.prototype.addBlock = function(spec, position) {
 // morphic interactions
 SnapDriver.prototype.click = function(morphOrPosition) {
     let hand = this.world().hand;
-    let position = morphOrPosition instanceof Point ?
-        morphOrPosition : morphOrPosition.center();
+    let position = morphOrPosition;
+    let morphAtPointer = hand.morphAtPointer;
+
+    if (!(morphOrPosition instanceof Point)) {
+        position = morphOrPosition.center();
+        hand.morphAtPointer = () => morphOrPosition;
+    }
+
     hand.setPosition(position);
     hand.processMouseDown({button: 1});
     hand.processMouseUp();
+    hand.morphAtPointer = morphAtPointer;
 };
 
 SnapDriver.prototype.rightClick = function(morph) {
@@ -161,10 +168,9 @@ SnapDriver.prototype.newRole = function(name) {
 
 SnapDriver.prototype.moveToRole = function(name) {
     const role = this.ide().room.roleLabels[name];
-    const label = role._label;
 
-    this.selectTab('Room');
-    this.click(label.bottomCenter());
+    this.selectTab('room');
+    this.click(role);
 
     const dialog = this.dialog();
     const moveBtn = dialog.buttons.children.find(btn => btn.action === 'moveToRole');
