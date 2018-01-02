@@ -60,9 +60,12 @@ describe('actions', function() {
         });
 
         it('should detect collaboration if multiple users in role', function() {
-            var ide = driver.ide();
+            let room = driver.ide().room;
+            let role = room.getRole(room.getCurrentRoleName());
+            let occupants = role.users;
+            occupants.push({username: 'test', uuid: 'ad'});
 
-            ide.room.roles[ide.projectName].push({username: 'test', uuid: 'ad'});
+            role.setOccupants(occupants);
             expect(SnapActions.isCollaborating()).to.be(true);
         });
 
@@ -74,13 +77,18 @@ describe('actions', function() {
             expect(driver.ide().room.isLeader()).to.be(true);
         });
 
-        it('should detect leader based off of uuid', function() {
-            var ide = driver.ide();
-
+        it('should detect leader based off of uuid', function(done) {
             SnapCloud.username = 'test';
             setTimeout(() => {
-                ide.room.roles[ide.projectName].unshift({username: SnapCloud.username, uuid: 'ad'});
-                expect(ide.room.isLeader()).to.be(false);
+                let room = driver.ide().room;
+                let role = room.getRole(room.getCurrentRoleName());
+                let occupants = role.users;
+                occupants.unshift({username: SnapCloud.username, uuid: 'ad'});
+
+                role.setOccupants(occupants);
+
+                expect(driver.ide().room.isLeader()).to.be(false);
+                done();
             }, 50);
         });
     });

@@ -167,7 +167,7 @@ SnapDriver.prototype.newRole = function(name) {
 };
 
 SnapDriver.prototype.moveToRole = function(name) {
-    const role = this.ide().room.roleLabels[name];
+    const role = this.ide().room.getRole(name);
 
     this.selectTab('room');
     this.click(role);

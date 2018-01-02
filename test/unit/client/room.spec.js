@@ -18,7 +18,7 @@ describe('room', function() {
                     // wait for it to show up
                     let room = driver.ide().room;
                     driver.waitUntil(() => {
-                        return room.roles[name];
+                        return room.getRole(name);
                     }, found => {
                         if (found) return done();
                         done(`could not create role "${name}"`);
@@ -61,10 +61,10 @@ describe('room', function() {
                 driver.selectTab('Room');
 
                 const roleName = driver.ide().projectName;
-                const role = driver.ide().room.roleLabels[roleName];
+                const role = driver.ide().room.getRole(roleName);
 
                 // rename the role
-                driver.click(role._label._roleLabel);
+                driver.click(role.label);
                 driver.keys(newName);
                 driver.dialog().ok();
                 done();
@@ -73,7 +73,7 @@ describe('room', function() {
 
         it('should change role name in room tab', function(done) {
             driver.waitUntil(() => {
-                return driver.ide().room.roleLabels[newName];
+                return driver.ide().room.getRole(newName);
             }, passed => {
                 if (passed) return done();
                 done('role did not change names');
@@ -88,7 +88,7 @@ describe('room', function() {
                     driver.selectTab('Room');
 
                     const roleName = driver.ide().projectName;
-                    const role = driver.ide().room.roleLabels[roleName];
+                    const role = driver.ide().room.getRole(roleName);
 
                     // duplicate the role
                     driver.click(role);
@@ -102,7 +102,7 @@ describe('room', function() {
 
         it('should create a new role', function(done) {
             driver.waitUntil(() => {
-                const roleNames = Object.keys(driver.ide().room.roleLabels);
+                const roleNames = driver.ide().room.getRoleNames();
                 return roleNames.length === 2;
             }, passed => {
                 if (passed) return done();
@@ -112,7 +112,7 @@ describe('room', function() {
 
         it('should contain the same blocks', function(done) {
             const roleName = driver.ide().projectName;
-            const roleNames = Object.keys(driver.ide().room.roleLabels);
+            const roleNames = driver.ide().room.getRoleNames();
             const newRoleName = roleNames.find(name => name !== roleName);
             const currentBlockCount = driver.ide().currentSprite.scripts.children.length;
 
@@ -134,11 +134,11 @@ describe('room', function() {
             driver.newRole(newRoleName);
 
             driver.waitUntil(() => {
-                return driver.ide().room.roleLabels[newRoleName];
+                return driver.ide().room.getRole(newRoleName);
             }, passed => {
                 if (!passed) return done('new role did not show up');
 
-                const role = driver.ide().room.roleLabels[newRoleName];
+                const role = driver.ide().room.getRole(newRoleName);
                 // duplicate the role
                 driver.click(role);
                 const delBtn = driver.dialog().buttons.children
@@ -151,7 +151,7 @@ describe('room', function() {
 
         it('should remove the role', function(done) {
             driver.waitUntil(() => {
-                const roleNames = Object.keys(driver.ide().room.roleLabels);
+                const roleNames = driver.ide().room.getRoleNames();
                 return roleNames.includes(newRoleName);
             }, passed => {
                 if (passed) return done();
@@ -168,7 +168,7 @@ describe('room', function() {
 
             driver.selectTab('room');
 
-            driver.click(room.roomLabel);
+            driver.click(room.roomName);
             driver.keys(newName);
             driver.dialog().ok();
 

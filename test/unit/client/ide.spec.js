@@ -143,7 +143,7 @@ describe('ide', function() {
                     driver.selectTab('room');
                     var roomEditor = driver.ide().spriteEditor.room;
                     var name = 'my' + badChar + 'project';
-                    driver.click(roomEditor.titleBox);
+                    driver.click(roomEditor.roomName);
 
                     var dialog = driver.dialog();
                     dialog.body.setContents(name);
@@ -185,10 +185,10 @@ describe('ide', function() {
 
             it('should not allow renaming role with ' + badChar, function(done) {
                 driver.selectTab('room');
-                var roleLabel = driver.ide().spriteEditor.room.roleLabels.myRole._label;
-                var name = 'role' + badChar + 'name';
+                let role = driver.ide().room.getRole('myRole');
+                let name = 'role' + badChar + 'name';
 
-                roleLabel.mouseClickLeft();
+                driver.click(role.label);
                 var dialog = driver.dialog();
                 dialog.body.setContents(name);
                 dialog.ok();
@@ -198,7 +198,7 @@ describe('ide', function() {
                 // verify that the role name didn't change
                 setTimeout(() => {
                     try {
-                        expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+                        expect(driver.ide().spriteEditor.room.getRole(name)).to.be(undefined);
                         done();
                     } catch (e) {
                         done(e);
@@ -225,7 +225,7 @@ describe('ide', function() {
                     // verify that the role name didn't change
                     setTimeout(() => {
                         try {
-                            expect(driver.ide().spriteEditor.room.roleLabels[name]).to.be(undefined);
+                            expect(driver.ide().spriteEditor.room.getRole(name)).to.be(undefined);
                             done();
                         } catch (e) {
                             done(e);
