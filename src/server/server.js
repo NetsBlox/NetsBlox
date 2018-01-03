@@ -26,7 +26,7 @@ var express = require('express'),
 
     // Session and cookie info
     cookieParser = require('cookie-parser'),
-    indexTpl = dot.template(fs.readFileSync(path.join(__dirname, '..', 'client', 'netsblox.dot')));
+    indexTpl = dot.template(fs.readFileSync(path.join(__dirname, '..', 'browser', 'index.dot')));
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -47,7 +47,7 @@ var Server = function(opts) {
 };
 
 Server.prototype.configureRoutes = function() {
-    this.app.use(express.static(__dirname + '/../client/'));
+    this.app.use(express.static(__dirname + '/../browser/'));
     this.app.use(bodyParser.urlencoded({
         limit: '50mb',
         extended: true
@@ -126,7 +126,7 @@ Server.prototype.configureRoutes = function() {
     // Initial page
     this.app.get('/', (req, res) => {
         if(isDevMode) {
-            res.sendFile(path.join(__dirname, '..', 'client', 'netsblox-dev.html'));
+            res.sendFile(path.join(__dirname, '..', 'browser', 'index.dev.html'));
             return;
         }
         
