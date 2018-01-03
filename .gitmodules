@@ -1,4 +1,4 @@
-[submodule "src/client"]
-	path = src/client
+[submodule "src/browser"]
+	path = src/browser
 	url = https://github.com/netsblox/Snap--Build-Your-Own-Blocks
 	branch = netsblox
