@@ -46,7 +46,7 @@ describe('Server Tests', function() {
     });
 
     it('should provide lang files', function(done) {
-        api.get('/lang-hu.js')
+        index.get('/lang-hu.js')
             .expect(200)
             .expect(function(res) {
                 assert.notEqual(res.body.length, 0);

@@ -2,11 +2,11 @@ describe('build', function() {
     describe('es5 client js', function() {
         let fs = require('fs'),
             path = require('path'),
-            srcPath = path.join(__dirname, '..', '..', '..', 'src', 'client'),
+            srcPath = path.join(__dirname, '..', '..', '..', 'src', 'browser'),
             ugly = require('uglify-js');
 
         // Get the given js files
-        let devHtml = fs.readFileSync(path.join(srcPath, 'netsblox-dev.html'), 'utf8'),
+        let devHtml = fs.readFileSync(path.join(srcPath, 'index.dev.html'), 'utf8'),
             re = /text\/javascript" src="(.*)">/,
             match = devHtml.match(re),
             srcFiles = [];
