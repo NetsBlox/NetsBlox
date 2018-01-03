@@ -23,125 +23,9 @@ var R = require('ramda'),
     mailer = require('../mailer'),
     middleware = require('./middleware'),
     SocketManager = require('../socket-manager'),
-    saveLogin = middleware.saveLogin,
-
-    // PATHS
-    PATHS = [
-        'Costumes',
-        'Sounds',
-        'help',
-        'Backgrounds'
-    ],
-    CLIENT_ROOT = path.join(__dirname, '..', '..', 'client'),
-    SNAP_ROOT = path.join(CLIENT_ROOT, 'Snap--Build-Your-Own-Blocks'),
-    publicFiles = [
-        'snap_logo_sm.png',
-        'tools.xml'
-    ];
+    saveLogin = middleware.saveLogin;
 
 const Messages = require('../storage/messages');
-
-// merge netsblox libraries with Snap libraries
-var snapLibRoot = path.join(SNAP_ROOT, 'libraries');
-var snapLibs = fs.readdirSync(snapLibRoot).map(filename => 'libraries/' + filename);
-var libs = fs.readdirSync(path.join(CLIENT_ROOT, 'libraries'))
-    .map(filename => 'libraries/' + filename)
-    .concat(snapLibs);
-
-// Create the paths
-var resourcePaths = PATHS.map(function(name) {
-    var resPath = path.join(SNAP_ROOT, name);
-
-    return { 
-        Method: 'get', 
-        URL: name + '/:filename',
-        Handler: function(req, res) {
-            res.sendFile(path.join(resPath, req.params.filename));
-        }
-    };
-});
-
-// Add translation file paths
-var getFileFrom = dir => {
-    return file => {
-        return {
-            Method: 'get', 
-            URL: file,
-            Handler: (req, res) => res.sendFile(path.join(dir, file))
-        };
-    };
-};
-
-const isInNetsBlox = file => exists.sync(path.join(CLIENT_ROOT, file));
-var overrideSnapFiles = function(snapFiles) {
-    var netsbloxFiles = Utils.extract(isInNetsBlox, snapFiles);
-
-    resourcePaths = resourcePaths
-        .concat(snapFiles.map(getFileFrom(SNAP_ROOT)))
-        .concat(netsbloxFiles.map(getFileFrom(CLIENT_ROOT)));
-};
-
-var snapLangFiles = fs.readdirSync(SNAP_ROOT)
-    .filter(name => /^lang/.test(name));
-
-overrideSnapFiles(snapLangFiles);
-overrideSnapFiles(libs);
-
-publicFiles = publicFiles.concat(snapLangFiles);
-
-// Add importing tools, logo to the resource paths
-resourcePaths = resourcePaths.concat(publicFiles.map(file => {
-    return {
-        Method: 'get', 
-        URL: file,
-        Handler: function(req, res) {
-            if (file.includes('logo')) {
-                res.sendFile(path.join(CLIENT_ROOT, 'netsblox_logo_sm.png'));
-            } else {
-                res.sendFile(path.join(SNAP_ROOT, file));
-            }
-        }
-    };
-}));
-
-// Add importing rpcs to the resource paths
-var rpcManager = require('../rpc/rpc-manager'),
-    RPC_ROOT = path.join(__dirname, '..', 'rpc', 'libs'),
-    RPC_INDEX = fs.readFileSync(path.join(RPC_ROOT, 'RPC'), 'utf8')
-        .split('\n')
-        .filter(line => {
-            var parts = line.split('\t'),
-                deps = parts[2] ? parts[2].split(' ') : [],
-                displayName = parts[1];
-
-            // Check if we have loaded the dependent rpcs
-            for (var i = deps.length; i--;) {
-                if (!rpcManager.isRPCLoaded(deps[i])) {
-                    // eslint-disable-next-line no-console
-                    console.log(`Service ${displayName} not available because ${deps[i]} is not loaded`);
-                    return false;
-                }
-            }
-            return true;
-        })
-        .map(line => line.split('\t').splice(0, 2).join('\t'))
-        .join('\n');
-
-var rpcRoute = { 
-    Method: 'get', 
-    URL: 'rpc/:filename',
-    Handler: function(req, res) {
-        var RPC_ROOT = path.join(__dirname, '..', 'rpc', 'libs');
-
-        // IF requesting the RPC file, filter out unsupported rpcs
-        if (req.params.filename === 'RPC') {
-            res.send(RPC_INDEX);
-        } else {
-            res.sendFile(path.join(RPC_ROOT, req.params.filename));
-        }
-    }
-};
-resourcePaths.push(rpcRoute);
 
 module.exports = [
     { 
@@ -471,4 +355,4 @@ module.exports = [
             return res.sendStatus(200);
         }
     }
-].concat(resourcePaths);
+];
