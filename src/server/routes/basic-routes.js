@@ -16,7 +16,6 @@ var R = require('ramda'),
 
     debug = require('debug'),
     log = debug('netsblox:api:log'),
-    EXAMPLES = require('../examples'),
     mailer = require('../mailer'),
     middleware = require('./middleware'),
     SocketManager = require('../socket-manager'),
