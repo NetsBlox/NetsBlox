@@ -1,6 +1,7 @@
 var express = require('express'),
     bodyParser = require('body-parser'),
     qs = require('qs'),
+    Q = require('q'),
     WebSocketServer = require('ws').Server,
     _ = require('lodash'),
     dot = require('dot'),
@@ -213,7 +214,84 @@ Server.prototype.configureRoutes = function() {
         } else {
             res.sendFile(path.join(RPC_ROOT, req.params.filename));
         }
+
     });
+
+    this.app.get('/Examples/EXAMPLES', (req, res) => {
+        // if no name requested, get index
+        let metadata = req.query.metadata === 'true',
+            examples;
+
+        if (metadata) {
+            examples = Object.keys(EXAMPLES)
+                .map(name => {
+                    let example = EXAMPLES[name],
+                        role = Object.keys(example.roles).shift(),
+                        primaryRole,
+                        services = example.services,
+                        thumbnail,
+                        notes;
+
+                    // There should be a faster way to do this if all I want is the thumbnail and the notes...
+                    return example.getRole(role)
+                        .then(content => {
+                            primaryRole = content.SourceCode;
+                            thumbnail = Utils.xml.thumbnail(primaryRole);
+                            notes = Utils.xml.notes(primaryRole);
+
+                            return example.getRoleNames();
+                        })
+                        .then(roleNames => {
+                            return {
+                                projectName: name,
+                                primaryRoleName: role,
+                                roleNames: roleNames,
+                                thumbnail: thumbnail,
+                                notes: notes,
+                                services: services
+                            };
+                        });
+                });
+
+            return Q.all(examples).then(examples => res.json(examples));
+        } else {
+            examples = Object.keys(EXAMPLES)
+                .map(name => `${name}\t${name}\t  `)
+                .join('\n');
+
+            return res.send(examples);
+        }
+    });
+
+    this.app.get('/Examples/:name', (req, res) => {
+        let name = req.params.name,
+            isPreview = req.query.preview,
+            example;
+
+        if (!EXAMPLES.hasOwnProperty(name)) {
+            this._logger.warn(`ERROR: Could not find example "${name}`);
+            return res.status(500).send('ERROR: Could not find example.');
+        }
+
+        // This needs to...
+        //  + create the room for the socket
+        example = _.cloneDeep(EXAMPLES[name]);
+        var role,
+            room;
+
+        if (!isPreview) {
+            return res.send(example.toString());
+        } else {
+            room = example;
+            //  + customize and return the room for the socket
+            room = _.extend(room, example);
+            role = Object.keys(room.roles).shift();
+        }
+
+        return room.getRole(role)
+            .then(content => res.send(content.SourceCode));
+    });
+
 };
 
 Server.prototype.addScraperSettings = function(userAgent, metaInfo) {
