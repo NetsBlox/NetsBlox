@@ -338,6 +338,7 @@ NetsBloxMorph.prototype.openIn = function (world) {
                                     SnapActions.openProject(response[0].SourceCode, dict.Public)
                                         .accept(function() {
                                             msg.destroy();
+                                            applyFlags(dict);
                                         });
                                 },
                                 myself.cloudError(),
