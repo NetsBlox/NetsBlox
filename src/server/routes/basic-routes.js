@@ -211,6 +211,14 @@ module.exports = [
                 .then(projects => res.send(projects));
         }
     },
+    {
+        Method: 'get',
+        URL: 'Examples/EXAMPLES',
+        Handler: function(req, res) {
+            return Q(this.getExamplesIndex(req.query.metadata === 'true'))
+                .then(index => res.send(index));
+        }
+    },
     // Bug reporting
     {
         Method: 'post',

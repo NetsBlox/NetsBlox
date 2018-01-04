@@ -219,48 +219,8 @@ Server.prototype.configureRoutes = function() {
 
     this.app.get('/Examples/EXAMPLES', (req, res) => {
         // if no name requested, get index
-        let metadata = req.query.metadata === 'true',
-            examples;
-
-        if (metadata) {
-            examples = Object.keys(EXAMPLES)
-                .map(name => {
-                    let example = EXAMPLES[name],
-                        role = Object.keys(example.roles).shift(),
-                        primaryRole,
-                        services = example.services,
-                        thumbnail,
-                        notes;
-
-                    // There should be a faster way to do this if all I want is the thumbnail and the notes...
-                    return example.getRole(role)
-                        .then(content => {
-                            primaryRole = content.SourceCode;
-                            thumbnail = Utils.xml.thumbnail(primaryRole);
-                            notes = Utils.xml.notes(primaryRole);
-
-                            return example.getRoleNames();
-                        })
-                        .then(roleNames => {
-                            return {
-                                projectName: name,
-                                primaryRoleName: role,
-                                roleNames: roleNames,
-                                thumbnail: thumbnail,
-                                notes: notes,
-                                services: services
-                            };
-                        });
-                });
-
-            return Q.all(examples).then(examples => res.json(examples));
-        } else {
-            examples = Object.keys(EXAMPLES)
-                .map(name => `${name}\t${name}\t  `)
-                .join('\n');
-
-            return res.send(examples);
-        }
+        Q(this.getExamplesIndex(req.query.metadata === 'true'))
+            .then(index => res.send(index));
     });
 
     this.app.get('/Examples/:name', (req, res) => {
@@ -292,6 +252,48 @@ Server.prototype.configureRoutes = function() {
             .then(content => res.send(content.SourceCode));
     });
 
+};
+
+Server.prototype.getExamplesIndex = function(withMetadata) {
+    let examples;
+
+    if (withMetadata) {
+        examples = Object.keys(EXAMPLES)
+            .map(name => {
+                let example = EXAMPLES[name],
+                    role = Object.keys(example.roles).shift(),
+                    primaryRole,
+                    services = example.services,
+                    thumbnail,
+                    notes;
+
+                // There should be a faster way to do this if all I want is the thumbnail and the notes...
+                return example.getRole(role)
+                    .then(content => {
+                        primaryRole = content.SourceCode;
+                        thumbnail = Utils.xml.thumbnail(primaryRole);
+                        notes = Utils.xml.notes(primaryRole);
+
+                        return example.getRoleNames();
+                    })
+                    .then(roleNames => {
+                        return {
+                            projectName: name,
+                            primaryRoleName: role,
+                            roleNames: roleNames,
+                            thumbnail: thumbnail,
+                            notes: notes,
+                            services: services
+                        };
+                    });
+            });
+
+        return Q.all(examples).then(examples => JSON.stringify(examples));
+    } else {
+        return Object.keys(EXAMPLES)
+            .map(name => `${name}\t${name}\t  `)
+            .join('\n');
+    }
 };
 
 Server.prototype.addScraperSettings = function(userAgent, metaInfo) {
