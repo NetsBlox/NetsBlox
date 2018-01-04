@@ -27,6 +27,7 @@ var counter = 0,
     PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/,
     SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
 
+const Messages = require('../storage/messages');
 const ProjectActions = require('../storage/project-actions');
 const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
 const HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
@@ -93,8 +94,8 @@ class NetsBloxSocket {
 
         isOwner = isOwner || this.isOwner();
         if (isOwner) {
-            if (Utils.isSocketUuid(this._room.owner)) {
-                this._room.setOwner(this.username);
+            if (Utils.isSocketUuid(room.owner)) {
+                room.setOwner(this.username);
             }
 
             // Update the user's room name
@@ -298,11 +299,11 @@ class NetsBloxSocket {
     }
 
     sendToOthers (msg) {
-        this._room.sendFrom(this, msg);
+        return this._room.sendFrom(this, msg);
     }
 
     sendToEveryone (msg) {
-        this._room.sendToEveryone(msg);
+        return this._room.sendToEveryone(msg);
     }
 
     send (msg) {
@@ -349,15 +350,22 @@ class NetsBloxSocket {
         return deferred.promise;
     }
 
+    getPublicId () {
+        let room = this.getRawRoom();
+        let publicRoleId = null;
+        if (room) {
+            publicRoleId = `${this.role}@${room.name}@${room.owner}`;
+        }
+        return publicRoleId;
+    }
+
     sendMessageTo (msg, dstId) {
         dstId = dstId + ''; // make sure dstId is string
         dstId = dstId.replace(/^\s*/, '').replace(/\s*$/, '');
         msg.dstId = dstId;
-        if (dstId === 'others in room' || dstId === Constants.EVERYONE ||
-            this._room.hasRole(dstId)) {  // local message
-
-            dstId === 'others in room' ? this.sendToOthers(msg) : this.sendToEveryone(msg);
-        } else if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
+        let room = this._room;
+        msg.srcProjectId = room.getProjectId();
+        if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
             // Look up the socket matching
             //
             //     <role>@<project>@<owner> or <project>@<owner>
@@ -366,26 +374,41 @@ class NetsBloxSocket {
                 sockets = [],
                 ownerId = idChunks.pop(),
                 roomName = idChunks.pop(),
-                roleId = idChunks.pop(),
-                roomId = Utils.uuid(ownerId, roomName);
+                roleId = idChunks.pop();
 
-            return RoomManager.getExistingRoom(roomId)
-                .then(room => {
-                    if (room) {
-                        if (roleId) {
-                            if (room.hasRole(roleId)) {
-                                sockets = sockets.concat(room.getSocketsAt(roleId));
-                            }
-                        } else {
-                            sockets = room.sockets();
-                        }
+            const room = RoomManager.getExistingRoom(ownerId, roomName);
 
-                        sockets.forEach(socket => {
-                            msg.dstId = Constants.EVERYONE;
-                            socket.send(msg);
-                        });
+            if (room) {
+                if (roleId) {
+                    if (room.hasRole(roleId)) {
+                        sockets = sockets.concat(room.getSocketsAt(roleId));
                     }
+                } else {
+                    sockets = room.sockets();
+                }
+
+                sockets.forEach(socket => {
+                    msg.dstId = Constants.EVERYONE;
+                    socket.send(msg);
                 });
+
+                // record message (including successful delivery)
+                msg.dstId = dstId;
+                // TODO: get the public id of each socket
+                msg.recipients = sockets.map(socket => socket.getPublicId());
+                Messages.save(msg);
+            }
+        } else if (room) {
+            if (dstId === 'others in room') {
+                msg.recipients = this.sendToOthers(msg);
+            } else if (dstId === Constants.EVERYONE) {
+                msg.recipients = this.sendToEveryone(msg);
+            } else if (room.hasRole(dstId)) {
+                let sockets = room.getSocketsAt(dstId);
+                sockets.forEach(socket => socket.send(msg));
+                msg.recipients = sockets.map(socket => socket.getPublicId());
+            }
+            Messages.save(msg);
         }
     }
 }

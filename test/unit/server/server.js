@@ -46,7 +46,7 @@ describe('Server Tests', function() {
     });
 
     it('should provide lang files', function(done) {
-        api.get('/lang-hu.js')
+        index.get('/lang-hu.js')
             .expect(200)
             .expect(function(res) {
                 assert.notEqual(res.body.length, 0);
@@ -80,7 +80,7 @@ describe('Server Tests', function() {
         });
 
         it('should provide list of examples', function(done) {
-            api.get('/Examples/EXAMPLES/?metadata=true')
+            index.get('/Examples/EXAMPLES/?metadata=true')
                 .expect('Content-Type', /json/)
                 .expect(200)
                 .expect(function(res) {
@@ -91,7 +91,7 @@ describe('Server Tests', function() {
 
         expectedFields.forEach(name => {
             it(`should provide ${name}`, function(done) {
-                api.get('/Examples/EXAMPLES/?metadata=true')
+                index.get('/Examples/EXAMPLES/?metadata=true')
                     .expect(function(res) {
                         assert.notEqual(res.body[0][name], undefined);
                     })

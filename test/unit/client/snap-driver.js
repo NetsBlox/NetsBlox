@@ -1,4 +1,4 @@
-/* globals SpriteMorph, SnapActions */
+/* globals SpriteMorph, SnapActions, localize, Point */
 function SnapDriver(world) {
     this._world = world;
 }
@@ -54,6 +54,14 @@ SnapDriver.prototype.selectCategory = function(cat) {
     return category;
 };
 
+SnapDriver.prototype.selectTab = function(cat) {
+    let tabs = this.ide().spriteBar.tabBar.children;
+    let label = localize(cat.substring(0,1).toUpperCase() + cat.substring(1));
+    let tab = tabs.find(tab => tab.labelString === label);
+
+    this.click(tab);
+};
+
 SnapDriver.prototype.selectStage = function() {
     var ide = this.ide();
 
@@ -67,8 +75,18 @@ SnapDriver.prototype.selectSprite = function(name) {
     return ide.selectSprite(sprite);
 };
 
-SnapDriver.prototype.selectTab = function(category) {
-    this.ide().spriteBar.tabBar.tabTo(category);
+SnapDriver.prototype.keys = function(text) {
+    let world = this.world();
+    let keyboard = world.keyboardReceiver;
+
+    text.split('').forEach(letter => {
+        const event = {
+            keyCode: letter.charCodeAt(0)
+        };
+        world.currentKey = event.keyCode;
+        keyboard.processKeyPress(event);
+        world.currentKey = null;
+    });
 };
 
 // Add block by spec
@@ -82,11 +100,20 @@ SnapDriver.prototype.addBlock = function(spec, position) {
 };
 
 // morphic interactions
-SnapDriver.prototype.click = function(morph) {
+SnapDriver.prototype.click = function(morphOrPosition) {
     let hand = this.world().hand;
-    hand.setPosition(morph.center());
+    let position = morphOrPosition;
+    let morphAtPointer = hand.morphAtPointer;
+
+    if (!(morphOrPosition instanceof Point)) {
+        position = morphOrPosition.center();
+        hand.morphAtPointer = () => morphOrPosition;
+    }
+
+    hand.setPosition(position);
     hand.processMouseDown({button: 1});
     hand.processMouseUp();
+    hand.morphAtPointer = morphAtPointer;
 };
 
 SnapDriver.prototype.rightClick = function(morph) {
@@ -125,4 +152,27 @@ SnapDriver.prototype.waitUntil = function(fn, callback, maxWait) {
     };
     maxWait = maxWait || 2000;
     check();
+};
+
+// netsblox additions
+SnapDriver.prototype.newRole = function(name) {
+    this.selectTab('room');
+
+    // Click on the plus icon
+    let btn = this.ide().spriteEditor.addRoleBtn;
+    this.click(btn);
+    this.keys(name);
+    let dialog = this.dialog();
+    dialog.ok();
+};
+
+SnapDriver.prototype.moveToRole = function(name) {
+    const role = this.ide().room.getRole(name);
+
+    this.selectTab('room');
+    this.click(role);
+
+    const dialog = this.dialog();
+    const moveBtn = dialog.buttons.children.find(btn => btn.action === 'moveToRole');
+    this.click(moveBtn);
 };

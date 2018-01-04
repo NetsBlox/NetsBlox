@@ -24,7 +24,7 @@ describe('active-room', function() {
     });
 
     describe('sendToEveryone', function() {
-        var socket = {},
+        var socket = {getPublicId: () => 'test@myRole@sendToEveryoneTest'},
             msg;
 
         beforeEach(function() {
@@ -104,13 +104,6 @@ describe('active-room', function() {
                 done();
             });
         });
-
-        it('should invoke "destroy"', function(done) {
-            room = new ActiveRoom(logger, 'closeTest', owner);
-            room.destroy = done;
-            room.close();
-        });
-        
     });
 
     describe('get sockets at role', function() {
