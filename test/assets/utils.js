@@ -21,7 +21,7 @@ const serverUtils = reqSrc('server-utils');
 const Projects = reqSrc('storage/projects');
 
 (function() {
-    var clientDir = path.join(PROJECT_ROOT, 'src', 'client', 'Snap--Build-Your-Own-Blocks'),
+    var clientDir = path.join(PROJECT_ROOT, 'src', 'browser'),
         srcFiles = ['morphic.js', 'xml.js', 'store.js', 'actions.js'],
         src;
 

@@ -3,7 +3,6 @@ var R = require('ramda'),
     _ = require('lodash'),
     Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
-    exists = require('exists-file'),
     PublicProjects = require('../storage/public-projects'),
     UserAPI = require('./users'),
     RoomAPI = require('./rooms'),
@@ -17,131 +16,12 @@ var R = require('ramda'),
 
     debug = require('debug'),
     log = debug('netsblox:api:log'),
-    fs = require('fs'),
-    path = require('path'),
-    EXAMPLES = require('../examples'),
     mailer = require('../mailer'),
     middleware = require('./middleware'),
     SocketManager = require('../socket-manager'),
-    saveLogin = middleware.saveLogin,
-
-    // PATHS
-    PATHS = [
-        'Costumes',
-        'Sounds',
-        'help',
-        'Backgrounds'
-    ],
-    CLIENT_ROOT = path.join(__dirname, '..', '..', 'client'),
-    SNAP_ROOT = path.join(CLIENT_ROOT, 'Snap--Build-Your-Own-Blocks'),
-    publicFiles = [
-        'snap_logo_sm.png',
-        'tools.xml'
-    ];
+    saveLogin = middleware.saveLogin;
 
 const Messages = require('../storage/messages');
-
-// merge netsblox libraries with Snap libraries
-var snapLibRoot = path.join(SNAP_ROOT, 'libraries');
-var snapLibs = fs.readdirSync(snapLibRoot).map(filename => 'libraries/' + filename);
-var libs = fs.readdirSync(path.join(CLIENT_ROOT, 'libraries'))
-    .map(filename => 'libraries/' + filename)
-    .concat(snapLibs);
-
-// Create the paths
-var resourcePaths = PATHS.map(function(name) {
-    var resPath = path.join(SNAP_ROOT, name);
-
-    return { 
-        Method: 'get', 
-        URL: name + '/:filename',
-        Handler: function(req, res) {
-            res.sendFile(path.join(resPath, req.params.filename));
-        }
-    };
-});
-
-// Add translation file paths
-var getFileFrom = dir => {
-    return file => {
-        return {
-            Method: 'get', 
-            URL: file,
-            Handler: (req, res) => res.sendFile(path.join(dir, file))
-        };
-    };
-};
-
-const isInNetsBlox = file => exists.sync(path.join(CLIENT_ROOT, file));
-var overrideSnapFiles = function(snapFiles) {
-    var netsbloxFiles = Utils.extract(isInNetsBlox, snapFiles);
-
-    resourcePaths = resourcePaths
-        .concat(snapFiles.map(getFileFrom(SNAP_ROOT)))
-        .concat(netsbloxFiles.map(getFileFrom(CLIENT_ROOT)));
-};
-
-var snapLangFiles = fs.readdirSync(SNAP_ROOT)
-    .filter(name => /^lang/.test(name));
-
-overrideSnapFiles(snapLangFiles);
-overrideSnapFiles(libs);
-
-publicFiles = publicFiles.concat(snapLangFiles);
-
-// Add importing tools, logo to the resource paths
-resourcePaths = resourcePaths.concat(publicFiles.map(file => {
-    return {
-        Method: 'get', 
-        URL: file,
-        Handler: function(req, res) {
-            if (file.includes('logo')) {
-                res.sendFile(path.join(CLIENT_ROOT, 'netsblox_logo_sm.png'));
-            } else {
-                res.sendFile(path.join(SNAP_ROOT, file));
-            }
-        }
-    };
-}));
-
-// Add importing rpcs to the resource paths
-var rpcManager = require('../rpc/rpc-manager'),
-    RPC_ROOT = path.join(__dirname, '..', 'rpc', 'libs'),
-    RPC_INDEX = fs.readFileSync(path.join(RPC_ROOT, 'RPC'), 'utf8')
-        .split('\n')
-        .filter(line => {
-            var parts = line.split('\t'),
-                deps = parts[2] ? parts[2].split(' ') : [],
-                displayName = parts[1];
-
-            // Check if we have loaded the dependent rpcs
-            for (var i = deps.length; i--;) {
-                if (!rpcManager.isRPCLoaded(deps[i])) {
-                    // eslint-disable-next-line no-console
-                    console.log(`Service ${displayName} not available because ${deps[i]} is not loaded`);
-                    return false;
-                }
-            }
-            return true;
-        })
-        .map(line => line.split('\t').splice(0, 2).join('\t'))
-        .join('\n');
-
-var rpcRoute = { 
-    Method: 'get', 
-    URL: 'rpc/:filename',
-    Handler: function(req, res) {
-        var RPC_ROOT = path.join(__dirname, '..', 'rpc', 'libs');
-
-        // IF requesting the RPC file, filter out unsupported rpcs
-        if (req.params.filename === 'RPC') {
-            res.send(RPC_INDEX);
-        } else {
-            res.sendFile(path.join(RPC_ROOT, req.params.filename));
-        }
-    }
-};
-resourcePaths.push(rpcRoute);
 
 module.exports = [
     { 
@@ -296,88 +176,6 @@ module.exports = [
             });
         }
     },
-    {
-        Method: 'get',
-        URL: 'Examples/EXAMPLES',
-        Handler: function(req, res) {
-            // if no name requested, get index
-            let metadata = req.query.metadata === 'true',
-                examples;
-
-            if (metadata) {
-                examples = Object.keys(EXAMPLES)
-                    .map(name => {
-                        let example = EXAMPLES[name],
-                            role = Object.keys(example.roles).shift(),
-                            primaryRole,
-                            services = example.services,
-                            thumbnail,
-                            notes;
-
-                        // There should be a faster way to do this if all I want is the thumbnail and the notes...
-                        return example.getRole(role)
-                            .then(content => {
-                                primaryRole = content.SourceCode;
-                                thumbnail = Utils.xml.thumbnail(primaryRole);
-                                notes = Utils.xml.notes(primaryRole);
-
-                                return example.getRoleNames();
-                            })
-                            .then(roleNames => {
-                                return {
-                                    projectName: name,
-                                    primaryRoleName: role,
-                                    roleNames: roleNames,
-                                    thumbnail: thumbnail,
-                                    notes: notes,
-                                    services: services
-                                };
-                            });
-                    });
-
-                return Q.all(examples).then(examples => res.json(examples));
-            } else {
-                examples = Object.keys(EXAMPLES)
-                    .map(name => `${name}\t${name}\t  `)
-                    .join('\n');
-
-                return res.send(examples);
-            }
-        }
-    },
-    // individual example
-    {
-        Method: 'get',
-        URL: 'Examples/:name',
-        Handler: function(req, res) {
-            var name = req.params.name,
-                isPreview = req.query.preview,
-                example;
-
-            if (!EXAMPLES.hasOwnProperty(name)) {
-                this._logger.warn(`ERROR: Could not find example "${name}`);
-                return res.status(500).send('ERROR: Could not find example.');
-            }
-
-            // This needs to...
-            //  + create the room for the socket
-            example = _.cloneDeep(EXAMPLES[name]);
-            var role,
-                room;
-
-            if (!isPreview) {
-                return res.send(example.toString());
-            } else {
-                room = example;
-                //  + customize and return the room for the socket
-                room = _.extend(room, example);
-                role = Object.keys(room.roles).shift();
-            }
-
-            return room.getRole(role)
-                .then(content => res.send(content.SourceCode));
-        }
-    },
     // get recent messages from the given room
     {
         Method: 'get',
@@ -410,6 +208,21 @@ module.exports = [
 
             return PublicProjects.list(start, end)
                 .then(projects => res.send(projects));
+        }
+    },
+    {
+        Method: 'get',
+        URL: 'Examples/EXAMPLES',
+        Handler: function(req, res) {
+            const isJson = req.query.metadata === 'true';
+            return Q(this.getExamplesIndex(isJson))
+                .then(result => {
+                    if (isJson) {
+                        return res.json(result);
+                    } else {
+                        return res.send(result);
+                    }
+                });
         }
     },
     // Bug reporting
@@ -471,4 +284,4 @@ module.exports = [
             return res.sendStatus(200);
         }
     }
-].concat(resourcePaths);
+];
