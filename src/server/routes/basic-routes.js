@@ -215,8 +215,15 @@ module.exports = [
         Method: 'get',
         URL: 'Examples/EXAMPLES',
         Handler: function(req, res) {
-            return Q(this.getExamplesIndex(req.query.metadata === 'true'))
-                .then(index => res.send(index));
+            const isJson = req.query.metadata === 'true';
+            return Q(this.getExamplesIndex(isJson))
+                .then(result => {
+                    if (isJson) {
+                        return res.json(result);
+                    } else {
+                        return res.send(result);
+                    }
+                });
         }
     },
     // Bug reporting

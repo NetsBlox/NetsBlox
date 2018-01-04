@@ -220,7 +220,14 @@ Server.prototype.configureRoutes = function() {
     this.app.get('/Examples/EXAMPLES', (req, res) => {
         // if no name requested, get index
         Q(this.getExamplesIndex(req.query.metadata === 'true'))
-            .then(index => res.send(index));
+            .then(result => {
+                const isJson = req.query.metadata === 'true';
+                if (isJson) {
+                    res.json(result);
+                } else {
+                    res.send(result);
+                }
+            });
     });
 
     this.app.get('/Examples/:name', (req, res) => {
@@ -288,7 +295,7 @@ Server.prototype.getExamplesIndex = function(withMetadata) {
                     });
             });
 
-        return Q.all(examples).then(examples => JSON.stringify(examples));
+        return Q.all(examples);
     } else {
         return Object.keys(EXAMPLES)
             .map(name => `${name}\t${name}\t  `)
