@@ -20,7 +20,7 @@ var fs = require('fs'),
 
 // in: arg obj and input value
 // out: {isValid: boolean, value, msg}
-function parseArgValue(arg, input) {
+function parseArgValue(arg, input, ctx) {
     let inputStatus = {isValid: true, msg: '', value: input};
     // is the argument provided or not? 
     if (input === '') {
@@ -32,7 +32,7 @@ function parseArgValue(arg, input) {
     } else {
         if (types.parse.hasOwnProperty(arg.type)) { // if we have the type handler
             try {
-                inputStatus.value = types.parse[arg.type](input);
+                inputStatus.value = types.parse[arg.type](input, ctx);
             } catch (e) {
                 inputStatus.isValid = false;
                 inputStatus.msg = `"${arg.name}" is not a valid ${types.getNBType(arg.type)}.`;
@@ -279,7 +279,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
             // assuming doc params are defined in order!
             doc.args.forEach((arg, idx) => {
                 if (arg.type) {
-                    let input = parseArgValue(arg, args[idx]);
+                    let input = parseArgValue(arg, args[idx], ctx);
                     // if there was no errors update the arg with the parsed input
                     if (input.isValid) {
                         args[idx] = input.value;
