@@ -6,7 +6,7 @@
    ScrollFrameMorph, SnapUndo, LibraryImportDialogMorph, CollaboratorDialogMorph,
    SnapSerializer, isRetinaSupported, isRetinaEnabled, useBlurredShadows,
    BlockMorph, SyntaxElementMorph, ScriptsMorph, InputSlotDialogMorph, ArgMorph,
-   BlockLabelPlaceHolderMorph, TableMorph, contains, newCanvas*/
+   BlockLabelPlaceHolderMorph, TableMorph, contains, newCanvas, ProjectDialogMorph*/
 // Netsblox IDE (subclass of IDE_Morph)
 NetsBloxMorph.prototype = new IDE_Morph();
 NetsBloxMorph.prototype.constructor = NetsBloxMorph;
@@ -332,22 +332,15 @@ NetsBloxMorph.prototype.openIn = function (world) {
                         },
                         function () {nop(); }, // yield (bug in Chrome)
                         function () {
-                            SnapCloud.callService(
-                                'getProject',
-                                function (response) {
-                                    SnapActions.openProject(response[0].SourceCode, dict.Public)
-                                        .accept(function() {
-                                            msg.destroy();
-                                            applyFlags(dict);
-                                        });
-                                },
-                                myself.cloudError(),
-                                [SnapCloud.username, dict.ProjectName, SnapCloud.socketId()]
-                            );
+                            var dialog = new ProjectDialogMorph(this, 'open');
+                            dialog.popUp();
+                            dict.Owner = SnapCloud.username;
+                            dialog.openCloudProject(dict);
                         }
                     ]);
                 }, true);
                 myself.sockets.onConnect = onConnect;
+                myself.sockets.onConnect();
             };
         // Netsblox addition: end
         } else {
