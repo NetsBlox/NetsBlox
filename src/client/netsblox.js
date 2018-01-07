@@ -332,10 +332,27 @@ NetsBloxMorph.prototype.openIn = function (world) {
                         },
                         function () {nop(); }, // yield (bug in Chrome)
                         function () {
-                            var dialog = new ProjectDialogMorph(this, 'open');
-                            dialog.popUp();
-                            dict.Owner = SnapCloud.username;
-                            dialog.openCloudProject(dict);
+                            SnapCloud.reconnect(
+                                function () {
+                                    SnapCloud.callService(
+                                        'getProject',
+                                        function (response) {
+                                            msg.destroy();
+                                            var action = myself.rawLoadCloudProject(response[0]);
+                                            if (action) {
+                                                action.accept(function() {
+                                                    applyFlags(dict);
+                                                });
+                                            } else {
+                                                applyFlags(dict);
+                                            }
+                                        },
+                                        myself.cloudError(),
+                                        [SnapCloud.username, dict.ProjectName, SnapCloud.socketId()]
+                                    );
+                                },
+                                myself.cloudError()
+                            );
                         }
                     ]);
                 }, true);
@@ -1812,26 +1829,15 @@ NetsBloxMorph.prototype.openRoomString = function (str) {
 };
 
 NetsBloxMorph.prototype.openCloudDataString = function (model, parsed) {
-    var msg,
-        myself = this,
+    var myself = this,
         // Netsblox addition: start
         str = parsed ? model.toString() : model,
         // Netsblox addition: end
         size = Math.round(str.length / 1024);
 
     this.exitReplayMode();
-    this.nextSteps([
-        function () {
-            msg = myself.showMessage('Opening project\n' + size + ' KB...');
-        },
-        function () {nop(); }, // yield (bug in Chrome)
-        function () {
-            SnapActions.openProject(str);
-        },
-        function () {
-            msg.destroy();
-        }
-    ]);
+    myself.showMessage('Opening project\n' + size + ' KB...', 2);
+    return SnapActions.openProject(str);
 };
 
 // Serialize a project and save to the browser.
@@ -2090,13 +2096,14 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
 
     this.source = 'cloud';
     project.Owner = project.Owner || SnapCloud.username;
+    this.updateUrlQueryString(newRoom, isPublic === 'true');
     if (project.SourceCode) {
         this.room.nextRoom = {
             ownerId: project.Owner,
             roomName: newRoom,
             roleId: roleId
         };
-        this.droppedText(project.SourceCode);
+        return this.droppedText(project.SourceCode);
     } else {  // initialize an empty code base
         this.newRole(roleId);
         this.room._name = newRoom;  // silent set name
@@ -2107,7 +2114,6 @@ NetsBloxMorph.prototype.rawLoadCloudProject = function (project, isPublic) {
             this.showMessage(localize('A new role has been created for you at ' + newRoom));
         }
     }
-    this.updateUrlQueryString(newRoom, isPublic === 'true');
 };
 
 NetsBloxMorph.prototype.updateUrlQueryString = function (room, isPublic, isExample) {
