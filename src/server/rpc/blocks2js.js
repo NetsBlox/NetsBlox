@@ -109,7 +109,7 @@ blocks2js.parseStage = function(model) {
 };
 
 blocks2js.generateCodeFromState = function(state) {
-    console.log(state);
+    state.stage.messageTypes = state.stage.messageTypes || [];
     state.initCode += 'project.stage.messageTypes = [];\n' +
         state.stage.messageTypes
             .map(type => `project.stage.messageTypes.push(${JSON.stringify(type)})`).join(';\n');
