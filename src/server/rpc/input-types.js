@@ -76,7 +76,7 @@ const types = {
             code = factory.toString();
             let env = blocks2js.newContext();
             env.__start = function(project) {
-                project.socket = ctx.socket;
+                project.ctx = ctx;
             };
             let fn = factory(env);
             return fn;

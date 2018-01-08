@@ -1,4 +1,5 @@
 // Extend snap2js for netsblox blocks and execution on the server
+const Q = require('q');
 const snap2js = require('snap2js');
 const backend = require('snap2js/src/backend');
 const helpers = require('snap2js/src/backend-helpers');
@@ -25,22 +26,66 @@ context.doSocketMessage = function() {
     let dstId = args.pop();
 
     const msgType = messageTypes.find(type => type.name === msgTypeName);
-    const content = {};
-    msgType.fields.forEach((name, i) => content[name] = args[i]);
-
     const message = {
         type: 'message',
         dstId: dstId,
         msgType: msgType.name,
-        content: content
+        content: {}
     };
 
-    // Get the field names. Need to look up the message types from the stage...
-    // TODO
+    msgType.fields.forEach((name, i) => message.content[name] = args[i]);
 
-    // How can I get a reference to the current socket?...
-    console.log('sending', message);
-    this.project.socket.send(message);
+    this.project.ctx.socket.onMessage(message);
+};
+
+context.getJSFromRPCStruct = function(service, name) {
+    const args = Array.prototype.slice.call(arguments, 2);
+    args.pop();
+
+    console.log(`about to call ${service} ${name} with ${JSON.stringify(args)}`);
+
+    // Call the rpc...
+    // Update the context so it doesn't share a response as the original
+    // Create a new context for this
+    const RPCManager = require('./rpc-manager');
+    const rpc = RPCManager.getRPCInstance(service, this.project.ctx.socket.uuid);
+
+    const subCtx = Object.create(rpc);
+    subCtx.response = new ServerResponse();
+    // Same socket for now... Maybe this is what we want?
+
+    return Q(RPCManager.callRPC(name, subCtx, args))
+        .then(() => subCtx.response.promise)
+        .catch(err => {
+            console.error(err);
+            throw err;
+        });
+};
+
+// Make this a promise?
+function ServerResponse() {
+    this.deferred = Q.defer();
+    this.promise = this.deferred.promise;
+    this._status = null;
+    this.responseText = '';
+    this.result = null;
+}
+
+ServerResponse.prototype.status = function(code) {
+    this._status = code;
+    return this;
+};
+
+ServerResponse.prototype.send = function(text) {
+    this.responseText = text;
+    this.deferred.resolve(text);
+    return this;
+};
+
+ServerResponse.prototype.json = function(json) {
+    this.result = json;
+    this.deferred.resolve(json);
+    return this;
 };
 
 blocks2js.addContext('netsblox', context);
