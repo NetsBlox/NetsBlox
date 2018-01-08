@@ -9,10 +9,14 @@ const execute = {};
 execute.call = function(fn) {
     let deferred = Q.defer();
 
-    console.log(fn.toString());
     fn(result => {
-        console.log('execute completed');
-        return deferred.resolve(result);
+        return Q(result)
+            .then(finalResult => {
+                return deferred.resolve(finalResult);
+            })
+            .catch(err => {
+                deferred.reject(err);
+            });
     });
 
     return deferred.promise;
