@@ -1,4 +1,5 @@
-/* globals driver, SnapActions, Point, SnapUndo, expect, SnapCloud */
+/* globals driver, SnapActions, Point, SnapUndo, expect, SnapCloud,
+   RingCommandSlotMorph */
 describe('actions', function() {
     var position = new Point(600, 600);
 
@@ -210,6 +211,68 @@ describe('actions', function() {
 
             setTimeout(() => SnapActions.setStageSize(400, 400), 0);
             setTimeout(done, 100);
+        });
+    });
+
+    describe('traverse', function() {
+        beforeEach(done => driver.reset(done));
+
+        it('should include input lists', function(done) {
+            // Create a call block and add the 'input list' option
+            function setupListInputBlocks(callback) {
+                driver.addBlock('evaluate').accept(block => {
+                    // Add list input
+                    let multiArgs = block.children[2];
+                    SnapActions.addListInput(multiArgs, 1).accept(() => {
+                        driver.addBlock('reportNewList', new Point(500, 500)).accept(listBlock => {
+                            SnapActions.moveBlock(listBlock, multiArgs).accept(function() {
+                                callback(block);
+                            });
+                        });
+                    });
+                });
+            }
+
+            // Call traverse on it and ensure that it traverses over the input list
+            function checkBlocks(block) {
+                let listBlock = null;
+                SnapActions.traverse(block, block => {
+                    if (block.selector === 'reportNewList') listBlock = block;
+                });
+                if (!listBlock) return done('Did not traverse the list block');
+                done();
+            }
+
+            setupListInputBlocks(checkBlocks);
+        });
+
+        it('should include ringified statements', function(done) {
+            // Create a call block and add the 'input list' option
+            function setupListInputBlocks(callback) {
+                driver.addBlock('reifyScript').accept(ring => {
+                    driver.addBlock('doFaceTowards').accept(block => {
+                        const slot = ring.inputs()
+                            .find(child => child instanceof RingCommandSlotMorph)
+                        let target = slot.attachTargets().pop();
+
+                        SnapActions.moveBlock(block, target).accept(() => {
+                            callback(ring);
+                        });
+                    });
+                });
+            }
+
+            // Call traverse on it and ensure that it traverses over the input list
+            function checkBlocks(block) {
+                let cmdBlock = null;
+                SnapActions.traverse(block, block => {
+                    if (block.selector === 'doFaceTowards') cmdBlock = block;
+                });
+                if (!cmdBlock) return done('Did not traverse the cmd block');
+                done();
+            }
+
+            setupListInputBlocks(checkBlocks);
         });
     });
 });
