@@ -19,14 +19,31 @@
   <script src="https://cdn.rawgit.com/jquery/jquery/2.1.4/dist/jquery.min.js"></script>
   <script src="https://cdn.rawgit.com/Automattic/expect.js/0.3.1/index.js"></script>
   <script src="https://cdn.rawgit.com/mochajs/mocha/2.2.5/mocha.js"></script>
+  <script>mocha.setup('bdd')</script>
 
   <!-- Set up NetsBlox -->
   <script type="text/javascript" >
       var SERVER_URL = window.location.origin,
           SERVER_ADDRESS = SERVER_URL.replace(/^.*\/\//, '');
+
+      /* Uncomment the following to add a console log at the start of each test
+        var oit = it;
+        it = function(desc, test) {
+            if (test.length) {
+                return oit.call(this, desc, function(done) {
+                    console.log('starting test:', desc);
+                    return test(done);
+                });
+            } else {
+                return oit.call(this, desc, function() {
+                    console.log('starting test:', desc);
+                    return test();
+                });
+            }
+        };
+      */
   </script>
-  <script type="text/javascript" src="/dist/netsblox-build.js"></script>
-  <script>mocha.setup('bdd')</script>
+  <script type="text/javascript" src="/dist/app.min.js"></script>
   <script src="./snap-driver.js"></script>
   <script src="./room.spec.js"></script>
   <script src="./messages.spec.js"></script>
