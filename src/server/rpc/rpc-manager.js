@@ -324,6 +324,7 @@ RPCManager.prototype.sendRPCResult = function(response, result) {
                     .then(result => this.sendRPCResult(response, result))
                     .catch(err => {
                         this._logger.error(`Uncaught exception: ${err.toString()}`);
+                        if (response.headersSent) return;
                         response.status(500).send('Error occurred!');
                     });
             } else if (Array.isArray(result)) {
