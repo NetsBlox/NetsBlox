@@ -85,13 +85,6 @@ const types = {
                 throw new Error('Embedded JavaScript not allowed');
             }
 
-            // Submit a bug report?
-            // TODO
-            console.error('Failed to parse function', e);
-            const fs = require('fs');
-            fs.writeFileSync(`block-error.xml`, blockXml);
-            if (code) fs.writeFileSync(`block-error-fn.xml`, code);
-
             throw GENERIC_ERROR;
         }
     },
