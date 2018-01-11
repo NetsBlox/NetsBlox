@@ -6,6 +6,7 @@ const helpers = require('snap2js/src/backend-helpers');
 
 const context = snap2js.newContext();
 const blocks2js = Object.create(snap2js);
+const DEFAULT_MSG_TYPE = {name: 'message', fields: ['msg']};
 
 // Add support for the new block types
 backend.doSocketMessage = function(node) {
@@ -26,7 +27,7 @@ context.doSocketMessage = function() {
     args.pop();  // remove the execution context
     let dstId = args.pop();
 
-    const msgType = messageTypes.find(type => type.name === msgTypeName);
+    const msgType = messageTypes.find(type => type.name === msgTypeName) || DEFAULT_MSG_TYPE;
     const message = {
         type: 'message',
         dstId: dstId,
