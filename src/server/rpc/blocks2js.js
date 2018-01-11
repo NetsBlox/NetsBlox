@@ -15,6 +15,7 @@ backend.doSocketMessage = function(node) {
     return helpers.callStatementWithArgs.apply(null, args);
 };
 
+delete backend.reportJSFunction;
 blocks2js.setBackend(backend);
 
 context.doSocketMessage = function() {
