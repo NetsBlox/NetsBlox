@@ -3,8 +3,6 @@
 // It will need to load RPC's from the RPC directory and then mantain a separate
 // RPC context for each room.
 
-'use strict';
-
 var fs = require('fs'),
     path = require('path'),
     _ = require('lodash'),

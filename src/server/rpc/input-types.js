@@ -68,12 +68,8 @@ const types = {
     },
 
     'Function': (blockXml, ctx) => {
-        let code = null;
-        console.log(blockXml);
         try {
             let factory = blocks2js.compile(blockXml);
-            console.log('factory method created');
-            code = factory.toString();
             let env = blocks2js.newContext();
             env.__start = function(project) {
                 project.ctx = ctx;

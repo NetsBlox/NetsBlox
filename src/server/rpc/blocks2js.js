@@ -3,6 +3,8 @@ const Q = require('q');
 const snap2js = require('snap2js');
 const backend = require('snap2js/src/backend');
 const helpers = require('snap2js/src/backend-helpers');
+const Logger = require('../logger');
+const logger = new Logger('netsblox:rpc:blocks2js');
 
 const context = snap2js.newContext();
 const blocks2js = Object.create(snap2js);
@@ -44,7 +46,7 @@ context.getJSFromRPCStruct = function(service, name) {
     const args = Array.prototype.slice.call(arguments, 2);
     args.pop();
 
-    console.log(`about to call ${service} ${name} with ${JSON.stringify(args)}`);
+    logger.trace(`about to call ${service} ${name} with ${JSON.stringify(args)}`);
 
     // Call the rpc...
     // Update the context so it doesn't share a response as the original
@@ -59,7 +61,7 @@ context.getJSFromRPCStruct = function(service, name) {
     return Q(RPCManager.callRPC(name, subCtx, args))
         .then(() => subCtx.response.promise)
         .catch(err => {
-            console.error(err);
+            logger.error(`rpc invocation failed: ${err}`);
             throw err;
         });
 };
