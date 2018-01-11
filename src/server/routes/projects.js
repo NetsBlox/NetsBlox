@@ -126,14 +126,12 @@ var getRoomsNamed = function(name, user, owner) {
 };
 
 var sendProjectTo = function(project, res) {
-    var serialized,
-        openRole;
-
     return project.getLastUpdatedRole()
         .then(role => {
             const uuid = Utils.uuid(project.owner, project.name);
-            trace(`project ${uuid} is not active. Selected role "${openRole}"`);
-            serialized = Utils.serializeRole(role, project);
+            trace(`project ${uuid} is not active. Selected role "${role.ProjectName}"`);
+
+            let serialized = Utils.serializeRole(role, project);
             return res.send(serialized);
         })
         .catch(err => res.status(500).send('ERROR: ' + err));
