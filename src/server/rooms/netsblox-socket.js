@@ -170,18 +170,8 @@ class NetsBloxSocket {
 
     _initialize () {
         this._socket.on('message', data => {
-            var msg = JSON.parse(data),
-                type = msg.type,
-                result = Q();
-
-            this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message from ${this.username} (${this.uuid})`);
-            if (NetsBloxSocket.MessageHandlers[type]) {
-                result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
-            } else {
-                this._logger.warn('message "' + data + '" not recognized');
-            }
-            return result.catch(err =>
-                this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
+            var msg = JSON.parse(data);
+            return this.onMessage(msg);
         });
 
         this._socket.on('close', () => {
@@ -196,6 +186,26 @@ class NetsBloxSocket {
         // change the heartbeat to use ping/pong from the ws spec
         this.checkAlive();
         this._socket.on('pong', () => this.isAlive = true);
+    }
+
+    onMessage (msg) {
+        let type = msg.type,
+            result = Q();
+
+        if (CONDENSED_MSGS.includes(type)) {
+            this._logger.trace(`received "${type}" message from ${this.username} (${this.uuid})`);
+        } else {
+            let data = JSON.stringify(msg);
+            this._logger.trace(`received "${data}" message from ${this.username} (${this.uuid})`);
+        }
+
+        if (NetsBloxSocket.MessageHandlers[type]) {
+            result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
+        } else {
+            this._logger.warn('message "' + JSON.stringify(msg) + '" not recognized');
+        }
+        return result.catch(err =>
+            this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
     }
 
     checkAlive() {
