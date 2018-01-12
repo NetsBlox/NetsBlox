@@ -193,11 +193,11 @@ RPCManager.prototype.createRouter = function() {
 RPCManager.prototype.addRoute = function(router, RPC) {
     this._logger.info('Adding route for '+RPC.serviceName);
     router.route('/' + RPC.serviceName + '/:action')
-        .get(this.handleRPCRequest.bind(this, RPC));
+        .post(this.handleRPCRequest.bind(this, RPC));
 
     if (RPC.COMPATIBILITY.path) {
         router.route('/' + RPC.COMPATIBILITY.path + '/:action')
-            .get(this.handleRPCRequest.bind(this, RPC));
+            .post(this.handleRPCRequest.bind(this, RPC));
     }
 };
 
@@ -251,7 +251,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     if (supportedActions[action]) {
         rpc = this.getRPCInstance(RPC.serviceName, uuid);
         if (rpc === null) {  // Could not create/find rpc (rpc is stateful and group is unknown)
-            this._logger.log('Could not find group for user "'+req.query.uuid+'"');
+            this._logger.log(`Could not find group for user "${uuid}"`);
             return res.status(401).send('ERROR: user not found. who are you?');
         }
 
@@ -268,7 +268,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         oldFieldNameFor = RPC.COMPATIBILITY.arguments[action] || {};
         args = supportedActions[action].map(argName => {
             var oldName = oldFieldNameFor[argName];
-            return req.query.hasOwnProperty(argName) ? req.query[argName] : req.query[oldName];
+            return req.body.hasOwnProperty(argName) ? req.body[argName] : req.body[oldName];
         });
 
         // validate and enforce types in RPC manager.
