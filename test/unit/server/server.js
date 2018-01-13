@@ -199,7 +199,7 @@ describe('Server Tests', function() {
         // Testing an example RPC
         describe('Basic tests', function() {
             it('should exist', function(done) {
-                api.get('/guess?uuid='+uuid)
+                api.post('/guess?uuid='+uuid)
                     .expect(401)
                     .end(done);
             });
