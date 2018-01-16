@@ -179,19 +179,22 @@ module.exports = [
     // get recent messages from the given room
     {
         Method: 'get',
-        URL: 'socket/messages/:socketId',
+        URL: 'messages/:socketId',
         Handler: function(req, res) {
+            let {startTime, endTime} = req.query;
             let {socketId} = req.params;
-            let socket = SocketManager.getSocket(socketId);
-            let room = socket.getRawRoom();
 
+            let socket = SocketManager.getSocket(socketId);
+            if (!socket) return res.status(401).send('ERROR: Could not find socket');
+
+            let room = socket.getRawRoom();
             if (!room) {
                 this._logger.error(`Could not find active room for "${socket.username}" - cannot get messages!`);
                 return res.status(500).send('ERROR: room not found');
             }
 
             let projectId = room.getProjectId();
-            return Messages.get(projectId)
+            return Messages.get(projectId, +startTime, +endTime)
                 .then(messages => {
                     this._logger.trace(`Retrieved ${messages.length} network messages for ${projectId}`);
                     return res.json(messages);
