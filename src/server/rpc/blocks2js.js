@@ -18,8 +18,11 @@ backend.doSocketMessage = function(node) {
     return helpers.callStatementWithArgs.apply(null, args);
 };
 
-delete backend.reportJSFunction;
 blocks2js.setBackend(backend);
+
+context.reportJSFunction = function() {
+    throw new Error('Embedded JavaScript not allowed');
+};
 
 context.doSocketMessage = function() {
     const messageTypes = this.project.stage.messageTypes;
