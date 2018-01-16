@@ -181,7 +181,7 @@ module.exports = [
         Method: 'get',
         URL: 'messages/:socketId',
         Handler: function(req, res) {
-            let {startTime, endTime} = req.query;
+            let {startTime, endTime, now} = req.query;
             let {socketId} = req.params;
 
             let socket = SocketManager.getSocket(socketId);
@@ -194,7 +194,17 @@ module.exports = [
             }
 
             let projectId = room.getProjectId();
-            return Messages.get(projectId, +startTime, +endTime)
+
+            // Approximately correct the time difference between the server and
+            // the client. This is important as the client's local time may be
+            // incorrect.
+            const approxLatency = 200;
+            const dt = (Date.now() - approxLatency) - now;
+
+            this._logger.trace(`adjusting the requested time for ${socket.username} by ${dt}`);
+            startTime = (+startTime) + dt;
+            endTime = (+endTime) + dt;
+            return Messages.get(projectId, startTime, endTime)
                 .then(messages => {
                     this._logger.trace(`Retrieved ${messages.length} network messages for ${projectId}`);
                     return res.json(messages);
