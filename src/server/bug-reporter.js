@@ -1,10 +1,30 @@
 const mailer = require('./mailer');
+const Logger = require('./logger');
+const logger = new Logger('netsblox:bug-reporter');
 const Users = require('./storage/users');
 const version = require('./server-utils').version;
 const snap2jsVersion = require('snap2js/package').version;
 
 const BugReporter = function() {
     this.maintainer = process.env.MAINTAINER_EMAIL;
+};
+
+BugReporter.prototype.reportInvalidSocketMessage = function(err, msg, socket) {
+    const subject = 'Invalid Socket Message';
+    const username = socket.username;
+    const data = {
+        filename: 'message.json',
+        content: JSON.stringify({
+            error: err.stack,
+            username: username,
+            uuid: socket.uuid,
+            message: msg
+        })
+    };
+
+    return this.createBody('parse socket message', err, username)
+        .then(body => this.reportBug(subject, body, data))
+        .catch(err => console.error(err));
 };
 
 BugReporter.prototype.reportPotentialCompilerBug = function(err, block, ctx) {
@@ -15,14 +35,20 @@ BugReporter.prototype.reportPotentialCompilerBug = function(err, block, ctx) {
         filename: `block-${snap2jsVersion}.xml`,
         content: block
     };
-    let body = `Failed to compile block function: \n${err.stack.replace('\n', '\n\n')}`;
 
+    return this.createBody('compile block function', err, username)
+        .then(body => this.reportBug(subject, body, data))
+        .catch(err => console.error(err));
+};
+
+BugReporter.prototype.createBody = function(action, err, username) {
+    let body = `Failed to ${action}: \n${err.stack.replace('\n', '\n\n')}`;
     return this.getUserEmail(username)
         .then(email => {
             if (email) {
                 body += `\nUser email: ${email}`;
             }
-            return this.reportBug(subject, body, data);
+            return body;
         });
 };
 
@@ -73,7 +99,7 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
 
         return mailer.sendMail(mailOpts);
     } else {
-        this._logger.warn('No maintainer email set! Bug reports will ' +
+        logger.warn('No maintainer email set! Bug reports will ' +
             'not be recorded until MAINTAINER_EMAIL is set in the env!');
     }
 };

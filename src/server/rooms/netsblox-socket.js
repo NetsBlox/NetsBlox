@@ -31,6 +31,7 @@ const Messages = require('../storage/messages');
 const ProjectActions = require('../storage/project-actions');
 const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
 const HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
+const BugReporter = require('../bug-reporter');
 
 var createSaveableProject = function(json) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -170,8 +171,12 @@ class NetsBloxSocket {
 
     _initialize () {
         this._socket.on('message', data => {
-            var msg = JSON.parse(data);
-            return this.onMessage(msg);
+            try {
+                var msg = JSON.parse(data);
+                return this.onMessage(msg);
+            } catch (err) {
+                BugReporter.reportInvalidSocketMessage(err, data, this);
+            }
         });
 
         this._socket.on('close', () => {
