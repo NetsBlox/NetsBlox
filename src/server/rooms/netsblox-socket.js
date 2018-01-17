@@ -170,18 +170,24 @@ class NetsBloxSocket {
 
     _initialize () {
         this._socket.on('message', data => {
-            var msg = JSON.parse(data),
-                type = msg.type,
+            var type,
+                msg,
                 result = Q();
 
-            this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message from ${this.username} (${this.uuid})`);
-            if (NetsBloxSocket.MessageHandlers[type]) {
-                result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
-            } else {
-                this._logger.warn('message "' + data + '" not recognized');
+            try {
+                msg = JSON.parse(data);
+                type = msg.type;
+                this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message from ${this.username} (${this.uuid})`);
+                if (NetsBloxSocket.MessageHandlers[type]) {
+                    result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
+                } else {
+                    this._logger.warn('message "' + data + '" not recognized');
+                }
+                return result.catch(err =>
+                    this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
+            } catch(e) {
+                this._logger.error(`Failed to parse message: ${e} (${data})`);
             }
-            return result.catch(err =>
-                this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
         });
 
         this._socket.on('close', () => {
