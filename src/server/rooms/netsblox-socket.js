@@ -92,7 +92,6 @@ class NetsBloxSocket {
         if (!room) return;
 
         isOwner = isOwner || this.isOwner();
-        console.log('updating the room!');
         if (isOwner) {
             if (Utils.isSocketUuid(room.owner)) {
                 room.setOwner(this.username);
