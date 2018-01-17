@@ -24,7 +24,7 @@ BugReporter.prototype.reportInvalidSocketMessage = function(err, msg, socket) {
 
     return this.createBody('parse socket message', err, username)
         .then(body => this.reportBug(subject, body, data))
-        .catch(err => console.error(err));
+        .catch(err => logger.error(err));
 };
 
 BugReporter.prototype.reportPotentialCompilerBug = function(err, block, ctx) {
@@ -38,7 +38,7 @@ BugReporter.prototype.reportPotentialCompilerBug = function(err, block, ctx) {
 
     return this.createBody('compile block function', err, username)
         .then(body => this.reportBug(subject, body, data))
-        .catch(err => console.error(err));
+        .catch(err => logger.error(err));
 };
 
 BugReporter.prototype.createBody = function(action, err, username) {
