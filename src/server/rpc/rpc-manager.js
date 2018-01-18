@@ -236,19 +236,23 @@ RPCManager.prototype.getRPCInstance = function(name, uuid) {
     return rpcs[RPC.serviceName];
 };
 
+RPCManager.prototype.getArgumentsFor = function(service, action) {
+    return this.rpcRegistry[service] && this.rpcRegistry[service][action];
+};
+
 RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     var action,
         uuid = req.query.uuid,
-        supportedActions = this.rpcRegistry[RPC.serviceName],
         oldFieldNameFor,
         args,
         rpc;
 
     action = req.params.action;
+    const expectedArgs = this.getArgumentsFor(RPC.serviceName, action);
     this._logger.info(`Received request to ${RPC.serviceName} for ${action} (from ${uuid})`);
 
     // Then pass the call through
-    if (supportedActions[action]) {
+    if (expectedArgs) {
         rpc = this.getRPCInstance(RPC.serviceName, uuid);
         if (rpc === null) {  // Could not create/find rpc (rpc is stateful and group is unknown)
             this._logger.log(`Could not find group for user "${uuid}"`);
@@ -266,7 +270,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
 
         // Get the arguments
         oldFieldNameFor = RPC.COMPATIBILITY.arguments[action] || {};
-        args = supportedActions[action].map(argName => {
+        args = expectedArgs.map(argName => {
             var oldName = oldFieldNameFor[argName];
             return req.body.hasOwnProperty(argName) ? req.body[argName] : req.body[oldName];
         });
