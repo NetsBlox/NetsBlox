@@ -11,6 +11,11 @@ const blocks2js = Object.create(snap2js);
 const DEFAULT_MSG_TYPE = {name: 'message', fields: ['msg']};
 
 // Add support for the new block types
+backend.getJSFromRPCDropdown =
+backend.getJSFromRPC =
+backend.getJSFromRPCStruct =
+
+backend.doSocketRequest =
 backend.doSocketMessage = function(node) {
     let args = node.inputs.map(input => this.generateCode(input));
 
@@ -18,12 +23,35 @@ backend.doSocketMessage = function(node) {
     return helpers.callStatementWithArgs.apply(null, args);
 };
 
+backend.doSocketResponse =  // ignore the argument since this isn't supported
+backend.reportUsername =
+
+backend.getProjectId =
+backend.getProjectIds =
+
+backend.reportLatitude =
+backend.reportLongitude =
+backend.reportStageHeight =
+backend.reportStageWidth = function(node) {
+    return helpers.callStatementWithArgs(node.type);
+};
+
 blocks2js.setBackend(backend);
+
+
+////////////////////////// Context //////////////////////////
+context.receiveSocketMessage = () => {};
+
+// Cannot receive messages so cannot reply
+context.doSocketResponse = function() {
+    throw new Error('Can only send response immediately after receiving a message');
+};
 
 context.reportJSFunction = function() {
     throw new Error('Embedded JavaScript not allowed');
 };
 
+context.doSocketRequest =  // for now, don't worry about waiting for a response
 context.doSocketMessage = function() {
     const messageTypes = this.project.stage.messageTypes;
     let args = Array.prototype.slice.call(arguments, 0);
@@ -45,8 +73,90 @@ context.doSocketMessage = function() {
     this.project.ctx.socket.onMessage(message);
 };
 
+context.reportStageWidth = function() {
+    return this.project.stage.width;
+};
+
+context.reportStageHeight = function() {
+    return this.project.stage.height;
+};
+
+context.reportLatitude =
+context.reportLongitude = function() {
+    return 0;
+};
+
+context.getProjectId = function() {
+    return this.project.ctx.socket.role;
+};
+
+context.getProjectIds = function() {
+    const room = this.project.ctx.socket.getRawRoom();
+
+    if (room) {
+        return room.getRoleNames();
+    }
+    return [];
+};
+
+context.reportUsername = function() {
+    const uuid = this.project.ctx.socket.uuid;
+    const username = this.project.ctx.socket.username;
+
+    if (uuid !== username) {
+        return username;
+    } else {
+        return '';
+    }
+};
+
+context.getJSFromRPC = function(rpc, params) {
+    if (typeof params === 'string') {
+        let oldParams = params;
+        params = {};
+        oldParams.split('&').forEach(function(param) {
+            const chunks = param.split('=');
+            const name = chunks[0];
+            const value = chunks[1];
+
+            if (name) {
+                params[name] = value;
+            }
+        });
+    }
+
+    const [service, name] = rpc.split('/');
+    const RPCManager = require('./rpc-manager');
+    const argNames = RPCManager.getArgumentsFor(service, name);
+
+    if (!argNames) return 'unrecognized action';
+
+    // Get the argument order and return only the values
+    // TODO
+    const args = argNames.map(name => params[name]);
+
+    args.unshift(service, name);
+
+    const execContext = arguments[arguments.length-1];
+    args.push(execContext);
+
+    return context.getJSFromRPCStruct.apply(this, args);
+};
+context.getCostumeFromRPC = function() {
+    console.log('getCostumeFromRPC');
+    console.log(arguments);
+};
+
+context.getJSFromRPCDropdown = function(rpc, action, params) {
+    if (rpc && action) {
+        return context.getJSFromRPC.call(this, ['', rpc, action].join('/'), params);
+    }
+    return '';
+};
+
 context.getJSFromRPCStruct = function(service, name) {
     const args = Array.prototype.slice.call(arguments, 2);
+    console.log('args', args);
     args.pop();
 
     logger.trace(`about to call ${service} ${name} with ${JSON.stringify(args)}`);
