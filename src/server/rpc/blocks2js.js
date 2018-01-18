@@ -132,9 +132,10 @@ context.getJSFromRPC = function(rpc, params) {
     if (!argNames) return 'unrecognized action';
 
     // Get the argument order and return only the values
-    // TODO
     const args = argNames.map(name => params[name]);
 
+    // As the rpc args are variable length, we need to collect all the args
+    // for getJSFromRPCStruct and then call it with 'apply'
     args.unshift(service, name);
 
     const execContext = arguments[arguments.length-1];
@@ -142,21 +143,20 @@ context.getJSFromRPC = function(rpc, params) {
 
     return context.getJSFromRPCStruct.apply(this, args);
 };
+
 context.getCostumeFromRPC = function() {
-    console.log('getCostumeFromRPC');
-    console.log(arguments);
+    throw new Error('Retrieving costumes from RPCs is currently unsupported');
 };
 
 context.getJSFromRPCDropdown = function(rpc, action, params) {
     if (rpc && action) {
-        return context.getJSFromRPC.call(this, ['', rpc, action].join('/'), params);
+        return context.getJSFromRPC.call(this, [rpc, action].join('/'), params);
     }
     return '';
 };
 
 context.getJSFromRPCStruct = function(service, name) {
     const args = Array.prototype.slice.call(arguments, 2);
-    console.log('args', args);
     args.pop();
 
     logger.trace(`about to call ${service} ${name} with ${JSON.stringify(args)}`);
