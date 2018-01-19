@@ -6,6 +6,7 @@
     const blob = require('./blob-storage');
     const utils = require('../server-utils');
     const PublicProjects = require('./public-projects');
+    const MAX_MSG_RECORD_DURATION = 1000 * 60 * 10;  // 10 min
 
     const storeRoleBlob = function(role) {
         const content = _.clone(role);
@@ -488,6 +489,49 @@
                 name: this.name,
                 owner: this.owner
             };
+        }
+
+        //////////////// Recording messages (network traces) ////////////////
+        getRecordStartTimes() {
+            return this.getRawProject()
+                .then(project => project.recordMessagesAfter || []);
+        }
+
+        getLatestRecordStartTime() {
+            return this.getRecordStartTimes()
+                .then(times => Math.max.apply(null, times));
+        }
+
+        isRecordingMessages() {
+            return this.getLatestRecordStartTime()
+                .then(time => (Date.now() - time) < MAX_MSG_RECORD_DURATION);
+        }
+
+        startRecordingMessages(time=Date.now()) {  // Set (and return) the start recording time
+            const query = {$push: {recordMessagesAfter: time}};
+            return Q(this._db.update(this.getStorageId(), query))
+                .then(() => time);
+        }
+
+        stopRecordingMessages(startTime) {
+            return this.getRecordStartTimes()
+                .then(times => {
+                    const minTime = Date.now() - MAX_MSG_RECORD_DURATION;
+                    let removed = false;
+
+                    // Remove one matching element from the list and
+                    // all that are below the minimum
+                    times = times.filter(time => {
+                        if (!removed && time === startTime) {
+                            removed = true;
+                            return false;
+                        }
+                        return time > minTime;
+                    });
+
+                    const query = {$set: {recordMessagesAfter: times}};
+                    return Q(this._db.update(this.getStorageId(), query));
+                });
         }
 
         pretty() {
