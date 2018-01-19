@@ -179,6 +179,28 @@ context.getJSFromRPCStruct = function(service, name) {
         });
 };
 
+// Add the timeout
+const TIMEOUT = 2000;
+context.__start = function(project) {
+    project.startTime = Date.now();
+};
+
+context.callMaybeAsync = function(self, fn) {
+    let args = [].slice.call(arguments, 2);
+
+    // Wait for any args to resolve
+    self.project.startTime = self.project.startTime || Date.now();
+    if (Date.now() > (self.project.startTime + TIMEOUT)) {
+        return context.SPromise.reject(new Error('Timeout Exceeded'));
+    }
+
+    let result = context.SPromise.all(args);
+
+    result = result.then(args => fn.apply(self, args));
+
+    return result;
+};
+
 // Make this a promise?
 function ServerResponse() {
     this.deferred = Q.defer();
