@@ -188,12 +188,13 @@ context.__start = function(project) {
 context.callMaybeAsync = function(self, fn) {
     let args = [].slice.call(arguments, 2);
 
-    // Wait for any args to resolve
+    // Check if the timeout has passed
     self.project.startTime = self.project.startTime || Date.now();
     if (Date.now() > (self.project.startTime + TIMEOUT)) {
         return context.SPromise.reject(new Error('Timeout Exceeded'));
     }
 
+    // Wait for any args to resolve
     let result = context.SPromise.all(args);
 
     result = result.then(args => fn.apply(self, args));
