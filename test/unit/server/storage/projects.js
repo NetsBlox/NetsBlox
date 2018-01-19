@@ -1,4 +1,4 @@
-describe('projects', function() {
+describe.only('projects', function() {
     const utils = require('../../../assets/utils');
     const Q = require('q');
     const assert = require('assert');
@@ -527,7 +527,7 @@ describe('projects', function() {
 
         it('should return latest time', done => {
             const times = [1000, 1500, 1200];
-            Q.all(times.map(time => project.startRecordingMessages(time)))
+            Q.all(times.map(time => project.startRecordingMessages(`u${time}`, time)))
                 .then(() => project.getLatestRecordStartTime())
                 .then(time => assert.equal(time, 1500))
                 .nodeify(done);
@@ -543,17 +543,17 @@ describe('projects', function() {
         });
 
         it('should unset start time if matching', done => {
-            project.startRecordingMessages()
-                .then(time => project.stopRecordingMessages(time))
+            project.startRecordingMessages('test')
+                .then(time => project.stopRecordingMessages('test'))
                 .then(() => project.getLatestRecordStartTime())
                 .then(time => assert.equal(time, -Infinity))
                 .nodeify(done);
         });
 
         it('should remove (clean up) old start times', done => {
-            project.startRecordingMessages(1000)
+            project.startRecordingMessages('test', 1000)
                 .then(() => project.startRecordingMessages())
-                .then(time => project.stopRecordingMessages(time))
+                .then(time => project.stopRecordingMessages('test', time))
                 .then(() => project.getRawProject())
                 .then(raw => assert(!raw.recordMessagesAfter.includes(1000)))
                 .nodeify(done);
@@ -569,7 +569,7 @@ describe('projects', function() {
         });
 
         it('should be recording messages after starting recording', done => {
-            project.startRecordingMessages()
+            project.startRecordingMessages('test')
                 .then(() => project.isRecordingMessages())
                 .then(recording => assert(recording))
                 .nodeify(done);
@@ -578,17 +578,17 @@ describe('projects', function() {
         it('should still record msgs while one person is recording', done => {
             // Two people start recording
             Q.all([
-                project.startRecordingMessages(),
-                project.startRecordingMessages()
+                project.startRecordingMessages('p1'),
+                project.startRecordingMessages('p2')
             ])
-                .then(times => project.stopRecordingMessages(times[0]))
+                .then(() => project.stopRecordingMessages('p1'))
                 .then(() => project.isRecordingMessages())
                 .then(recording => assert(recording))
                 .nodeify(done);
         });
 
         it('should not be recording if timeout reached', done => {
-            project.startRecordingMessages(10000)
+            project.startRecordingMessages('test', 10000)
                 .then(() => project.isRecordingMessages())
                 .then(recording => assert(!recording))
                 .nodeify(done);
@@ -601,7 +601,7 @@ describe('projects', function() {
             utils.reset()
                 .then(() => Projects.get('brian', 'PublicProject'))
                 .then(proj => project = proj)
-                .then(() => project.startRecordingMessages())
+                .then(() => project.startRecordingMessages('test'))
                 .then(res => result = res)
                 .nodeify(done);
         });

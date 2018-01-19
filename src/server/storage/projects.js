@@ -499,7 +499,7 @@
 
         getLatestRecordStartTime() {
             return this.getRecordStartTimes()
-                .then(times => Math.max.apply(null, times));
+                .then(records => Math.max.apply(null, records.map(record => record.time)));
         }
 
         isRecordingMessages() {
@@ -507,30 +507,31 @@
                 .then(time => (Date.now() - time) < MAX_MSG_RECORD_DURATION);
         }
 
-        startRecordingMessages(time=Date.now()) {  // Set (and return) the start recording time
-            const query = {$push: {recordMessagesAfter: time}};
+        startRecordingMessages(id, time=Date.now()) {  // Set (and return) the start recording time
+            const query = {$push: {recordMessagesAfter: {id: id, time: time}}};
             return Q(this._db.update(this.getStorageId(), query))
                 .then(() => time);
         }
 
-        stopRecordingMessages(startTime) {
+        stopRecordingMessages(id) {
             return this.getRecordStartTimes()
-                .then(times => {
+                .then(records => {
                     const minTime = Date.now() - MAX_MSG_RECORD_DURATION;
-                    let removed = false;
+                    let removed = null;
 
                     // Remove one matching element from the list and
                     // all that are below the minimum
-                    times = times.filter(time => {
-                        if (!removed && time === startTime) {
-                            removed = true;
+                    records = records.filter(record => {
+                        if (!removed && record.id === id) {
+                            removed = record;
                             return false;
                         }
-                        return time > minTime;
+                        return record.time > minTime;
                     });
 
-                    const query = {$set: {recordMessagesAfter: times}};
-                    return Q(this._db.update(this.getStorageId(), query));
+                    const query = {$set: {recordMessagesAfter: records}};
+                    return Q(this._db.update(this.getStorageId(), query))
+                        .then(() => removed && removed.time);
                 });
         }
 
