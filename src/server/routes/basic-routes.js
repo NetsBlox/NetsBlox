@@ -176,12 +176,11 @@ module.exports = [
             });
         }
     },
-    // get recent messages from the given room
+    // get start/end network traces
     {
         Method: 'get',
-        URL: 'messages/:socketId',
+        URL: 'trace/start/:socketId',
         Handler: function(req, res) {
-            let {startTime, endTime, now} = req.query;
             let {socketId} = req.params;
 
             let socket = SocketManager.getSocket(socketId);
@@ -193,19 +192,33 @@ module.exports = [
                 return res.status(500).send('ERROR: room not found');
             }
 
-            let projectId = room.getProjectId();
+            const project = room.getProject();
+            return project.startRecordingMessages(socketId)
+                .then(time => res.json(time));
+        }
+    },
+    {
+        Method: 'get',
+        URL: 'trace/end/:socketId',
+        Handler: function(req, res) {
+            let {socketId} = req.params;
 
-            // Approximately correct the time difference between the server and
-            // the client. This is important as the client's local time may be
-            // incorrect.
-            const approxLatency = 200;
-            const dt = (Date.now() - approxLatency) - now;
+            let socket = SocketManager.getSocket(socketId);
+            if (!socket) return res.status(401).send('ERROR: Could not find socket');
 
-            this._logger.trace(`adjusting the requested time for ${socket.username} by ${dt}`);
-            startTime = (+startTime) + dt;
-            endTime = (+endTime) + dt;
-            return Messages.get(projectId, startTime, endTime)
+            let room = socket.getRawRoom();
+            if (!room) {
+                this._logger.error(`Could not find active room for "${socket.username}" - cannot get messages!`);
+                return res.status(500).send('ERROR: room not found');
+            }
+
+            const project = room.getProject();
+            const projectId = project.getId();
+            const endTime = Date.now();
+            return project.stopRecordingMessages(socketId)
+                .then(startTime => startTime && Messages.get(projectId, startTime, endTime))
                 .then(messages => {
+                    messages = messages || [];
                     this._logger.trace(`Retrieved ${messages.length} network messages for ${projectId}`);
                     return res.json(messages);
                 });

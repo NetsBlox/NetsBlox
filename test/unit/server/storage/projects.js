@@ -1,5 +1,6 @@
-describe('projects', function() {
+describe.only('projects', function() {
     const utils = require('../../../assets/utils');
+    const Q = require('q');
     const assert = require('assert');
     const Projects = utils.reqSrc('storage/projects');
     const PublicProjects = utils.reqSrc('storage/public-projects');
@@ -489,5 +490,133 @@ describe('projects', function() {
         });
     });
 
+    describe('getRecordStartTime', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should not be recording messages by default', done => {
+            project.isRecordingMessages()
+                .then(recording => assert(!recording))
+                .nodeify(done);
+        });
+
+        it('should not be recording messages by default', done => {
+            project.isRecordingMessages()
+                .then(recording => assert(!recording))
+                .nodeify(done);
+        });
+    });
+
+    describe('getLatestRecordStartTime', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should have default startTime of -Infinity', done => {
+            project.getLatestRecordStartTime()
+                .then(time => assert.equal(time, -Infinity))
+                .nodeify(done);
+        });
+
+        it('should return latest time', done => {
+            const times = [1000, 1500, 1200];
+            Q.all(times.map(time => project.startRecordingMessages(`u${time}`, time)))
+                .then(() => project.getLatestRecordStartTime())
+                .then(time => assert.equal(time, 1500))
+                .nodeify(done);
+        });
+    });
+
+    describe('stopRecordingMessages', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should unset start time if matching', done => {
+            project.startRecordingMessages('test')
+                .then(time => project.stopRecordingMessages('test'))
+                .then(() => project.getLatestRecordStartTime())
+                .then(time => assert.equal(time, -Infinity))
+                .nodeify(done);
+        });
+
+        it('should remove (clean up) old start times', done => {
+            project.startRecordingMessages('test', 1000)
+                .then(() => project.startRecordingMessages())
+                .then(time => project.stopRecordingMessages('test', time))
+                .then(() => project.getRawProject())
+                .then(raw => assert(!raw.recordMessagesAfter.includes(1000)))
+                .nodeify(done);
+        });
+    });
+
+    describe('isRecordingMessages', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should be recording messages after starting recording', done => {
+            project.startRecordingMessages('test')
+                .then(() => project.isRecordingMessages())
+                .then(recording => assert(recording))
+                .nodeify(done);
+        });
+
+        it('should still record msgs while one person is recording', done => {
+            // Two people start recording
+            Q.all([
+                project.startRecordingMessages('p1'),
+                project.startRecordingMessages('p2')
+            ])
+                .then(() => project.stopRecordingMessages('p1'))
+                .then(() => project.isRecordingMessages())
+                .then(recording => assert(recording))
+                .nodeify(done);
+        });
+
+        it('should not be recording if timeout reached', done => {
+            project.startRecordingMessages('test', 10000)
+                .then(() => project.isRecordingMessages())
+                .then(recording => assert(!recording))
+                .nodeify(done);
+        });
+    });
+
+    describe('startRecordingMessages', function() {
+        let result = null;
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .then(() => project.startRecordingMessages('test'))
+                .then(res => result = res)
+                .nodeify(done);
+        });
+
+        it('should set the start time', done => {
+            project.getLatestRecordStartTime()
+                .then(time => assert(time) && assert.equal(time, result))
+                .nodeify(done);
+        });
+
+        it('should be recording messages', done => {
+            project.isRecordingMessages()
+                .then(recording => assert(recording))
+                .nodeify(done);
+        });
+    });
 
 });
