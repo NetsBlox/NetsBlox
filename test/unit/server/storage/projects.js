@@ -260,6 +260,28 @@ describe('projects', function() {
         });
     });
 
+    describe('removeRole', function() {
+        let project = null;
+        before(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'MultiRoles'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should remove role by name', function(done) {
+            project.removeRole('r1')
+                .then(() => project.getRoleNames())
+                .nodeify(done);
+        });
+
+        it('should reject promise if name doesn\'t exist', function(done) {
+            project.removeRole('r1000')
+                .then(() => project.getRoleNames())
+                .catch(() => done());
+        });
+    });
+
     describe('getLastUpdatedRole', function() {
         let project = null;
         before(done => {
@@ -387,6 +409,7 @@ describe('projects', function() {
 
         it('should preserve the role id on setRawRole', function(done) {
             let firstId = null;
+            let content = null;
 
             project.getRawRole('role')
                 .then(role => {
@@ -402,6 +425,7 @@ describe('projects', function() {
         });
 
         it('should get diff role id for cloned role', function(done) {
+            let firstId = null;
             project.getRoleId('role')
                 .then(id => firstId = id)
                 .then(() => project.cloneRole('role', 'clonedRole'))
