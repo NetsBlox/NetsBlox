@@ -175,6 +175,7 @@ class NetsBloxSocket {
                 var msg = JSON.parse(data);
                 return this.onMessage(msg);
             } catch (err) {
+                this._logger.error(`Failed to parse message: ${err} (${data})`);
                 BugReporter.reportInvalidSocketMessage(err, data, this);
             }
         });

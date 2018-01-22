@@ -122,7 +122,7 @@
 
         getRoleActionIdById(roleId) {
             return this.getRoleById(roleId)
-                .then(role => utils.xml.actionId(role.SourceCode))
+                .then(role => utils.xml.actionId(role.SourceCode));
         }
 
         getRoleIds() {
@@ -245,12 +245,16 @@
                 });
         }
 
-        removeRole(role) {
+        removeRole(roleName) {
             if (this.isDeleted()) return Promise.reject('cannot removeRole: project has been deleted!');
-            var query = {$unset: {}};
-            query.$unset[`roles.${role}`] = '';
-            this._logger.trace(`removing role: ${role}`);
-            return this._db.update(this.getStorageId(), query);
+            const query = {$unset: {}};
+            this._logger.trace(`removing role: ${roleName}`);
+            return this.getRoleId(roleName)
+                .then(roleId => {
+                    if (!roleId) return Promise.reject(`Could not find role named ${roleName} in ${this.uuid()}`);
+                    query.$unset[`roles.${roleId}`] = '';
+                    return this._db.update(this.getStorageId(), query);
+                });
         }
 
         renameRole(role, newName) {
