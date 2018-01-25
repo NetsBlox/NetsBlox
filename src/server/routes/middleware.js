@@ -5,6 +5,7 @@ var server,
     jwt = require('jsonwebtoken'),
     SocketManager = require('../socket-manager'),
     logger;
+const Q = require('q');
 
 var hasSocket = function(req, res, next) {
     var socketId = (req.body && req.body.socketId) ||
@@ -49,7 +50,6 @@ var tryLogIn = function(req, res, cb, skipRefresh) {
             return cb(null, true);
         });
     } else {
-        logger.error(`User is not logged in! (${req.get('User-Agent')})`);
         return cb(null, false);
     }
 };
@@ -136,7 +136,14 @@ var setUser = function(req, res, next) {
 };
 
 var setUsername = function(req, res, cb) {
-    return tryLogIn(req, res, cb, true);
+    let result = null;
+    if (arguments.length === 2) {
+        let deferred = Q.defer();
+        cb = deferred.resolve;
+        result = deferred.promise;
+    }
+    tryLogIn(req, res, cb, true);
+    return result;
 };
 
 module.exports = {
