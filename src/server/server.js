@@ -130,7 +130,7 @@ Server.prototype.configureRoutes = function() {
     // Initial page
     this.app.get('/', (req, res) => {
         return middleware.setUsername(req, res).then(() => {
-            var baseUrl = `https://${req.get('host')}`,
+            var baseUrl = `${req.protocol}://${req.get('host')}`,
                 url = baseUrl + req.originalUrl,
                 projectName = req.query.ProjectName,
                 metaInfo = {
