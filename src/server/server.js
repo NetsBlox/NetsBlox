@@ -29,6 +29,8 @@ var express = require('express'),
     cookieParser = require('cookie-parser'),
     indexTpl = dot.template(fs.readFileSync(path.join(__dirname, '..', 'browser', 'index.dot')));
 
+const middleware = require('./routes/middleware');
+
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
@@ -126,61 +128,64 @@ Server.prototype.configureRoutes = function() {
 
     // Initial page
     this.app.get('/', (req, res) => {
-        if(isDevMode) {
-            res.sendFile(path.join(__dirname, '..', 'browser', 'index.dev.html'));
-            return;
-        }
-        
-        var baseUrl = `https://${req.get('host')}`,
-            url = baseUrl + req.originalUrl,
-            projectName = req.query.ProjectName,
-            metaInfo = {
-                googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
-                baseUrl,
-                url: url
-            };
+        return middleware.setUsername(req, res).then(() => {
+            if(isDevMode) {
+                res.sendFile(path.join(__dirname, '..', 'browser', 'index.dev.html'));
+                return;
+            }
+
+            var baseUrl = `https://${req.get('host')}`,
+                url = baseUrl + req.originalUrl,
+                projectName = req.query.ProjectName,
+                metaInfo = {
+                    username: req.session.username,
+                    googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
+                    baseUrl,
+                    url: url
+                };
 
 
-        if (req.query.action === 'present') {
-            var username = req.query.Username;
+            if (req.query.action === 'present') {
+                var username = req.query.Username;
 
-            return this.storage.publicProjects.get(username, projectName)
-                .then(project => {
-                    if (project) {
-                        metaInfo.image = {
-                            url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`),
-                            width: 640,
-                            height: 480
-                        };
-                        metaInfo.title = project.projectName;
-                        metaInfo.description = project.notes;
+                return this.storage.publicProjects.get(username, projectName)
+                    .then(project => {
+                        if (project) {
+                            metaInfo.image = {
+                                url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`),
+                                width: 640,
+                                height: 480
+                            };
+                            metaInfo.title = project.projectName;
+                            metaInfo.description = project.notes;
+                            this.addScraperSettings(req.headers['user-agent'], metaInfo);
+                        }
+                        return res.send(indexTpl(metaInfo));
+                    });
+            } else if (req.query.action === 'example' && EXAMPLES[projectName]) {
+                metaInfo.image = {
+                    url: baseUrl + encodeURI(`/api/examples/${projectName}/thumbnail`),
+                    width: 640,
+                    height: 480
+                };
+                metaInfo.title = projectName;
+                var example = EXAMPLES[projectName];
+
+                return example.getRoleNames()
+                    .then(names => example.getRole(names.shift()))
+                    .then(content => {
+                        const src = content.SourceCode;
+                        const startIndex = src.indexOf('<notes>');
+                        const endIndex = src.indexOf('</notes>');
+                        const notes = src.substring(startIndex + 7, endIndex);
+
+                        metaInfo.description = notes;
                         this.addScraperSettings(req.headers['user-agent'], metaInfo);
-                    }
-                    return res.send(indexTpl(metaInfo));
-                });
-        } else if (req.query.action === 'example' && EXAMPLES[projectName]) {
-            metaInfo.image = {
-                url: baseUrl + encodeURI(`/api/examples/${projectName}/thumbnail`),
-                width: 640,
-                height: 480
-            };
-            metaInfo.title = projectName;
-            var example = EXAMPLES[projectName];
-
-            return example.getRoleNames()
-                .then(names => example.getRole(names.shift()))
-                .then(content => {
-                    const src = content.SourceCode;
-                    const startIndex = src.indexOf('<notes>');
-                    const endIndex = src.indexOf('</notes>');
-                    const notes = src.substring(startIndex + 7, endIndex);
-
-                    metaInfo.description = notes;
-                    this.addScraperSettings(req.headers['user-agent'], metaInfo);
-                    return res.send(indexTpl(metaInfo));
-                });
-        }
-        return res.send(indexTpl(metaInfo));
+                        return res.send(indexTpl(metaInfo));
+                    });
+            }
+            return res.send(indexTpl(metaInfo));
+        });
     });
 
     // Import Service Endpoints:
@@ -340,7 +345,6 @@ Server.prototype.stop = function(done) {
 Server.prototype.createRouter = function() {
     var router = express.Router({mergeParams: true}),
         logger = this._logger.fork('api'),
-        middleware = require('./routes/middleware'),
         routes;
 
     // Load the routes from routes/
