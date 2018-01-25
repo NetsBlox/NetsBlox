@@ -26,9 +26,10 @@ var express = require('express'),
     Logger = require('./logger'),
 
     // Session and cookie info
-    cookieParser = require('cookie-parser'),
-    indexTpl = dot.template(fs.readFileSync(path.join(__dirname, '..', 'browser', 'index.dot')));
+    cookieParser = require('cookie-parser');
 
+const CLIENT_ROOT = path.join(__dirname, '..', 'browser');
+const indexTpl = dot.template(fs.readFileSync(path.join(CLIENT_ROOT, 'index.dot')));
 const middleware = require('./routes/middleware');
 
 var Server = function(opts) {
@@ -129,16 +130,13 @@ Server.prototype.configureRoutes = function() {
     // Initial page
     this.app.get('/', (req, res) => {
         return middleware.setUsername(req, res).then(() => {
-            if(isDevMode) {
-                res.sendFile(path.join(__dirname, '..', 'browser', 'index.dev.html'));
-                return;
-            }
-
             var baseUrl = `https://${req.get('host')}`,
                 url = baseUrl + req.originalUrl,
                 projectName = req.query.ProjectName,
                 metaInfo = {
+                    title: 'NetsBlox',
                     username: req.session.username,
+                    isDevMode: isDevMode,
                     googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
                     baseUrl,
                     url: url
