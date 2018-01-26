@@ -176,7 +176,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
             requestOptions.qs.keyword = keyword;
         }
 
-        return cache.wrap(coordsToCacheKey() + keyword + radius, () => {
+        return cache.wrap(coordsToCacheKey(latitude, longitude) + keyword + radius, () => {
             return rp(requestOptions).then(res=>{
                 let places = res.results;
                 places = places.map(place => {
