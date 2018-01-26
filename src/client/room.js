@@ -1154,7 +1154,7 @@ ProjectsMorph.prototype.drawMsgPalette = function() {
         msg.isTemplate = true;
         msg.setColor(new Color(217,77,17));
         msg.setPosition(new Point(palette.bounds.origin.x + 10, palette.bounds.origin.y + 24 * i + 6));
-        msg.category = 'services';
+        msg.category = 'network';
         msg.hint = new StringMorph('test');
         // Don't allow multiple instances of the block to exist at once
         msg.justDropped = function() {
