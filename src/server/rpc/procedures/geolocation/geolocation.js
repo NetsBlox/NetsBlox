@@ -22,6 +22,12 @@ if(!process.env.GOOGLE_GEOCODING_API) {
             formatter: null         // 'gpx', 'string', ...
         });
 
+    // turns coordinates into key strings used to bust the match new requests to cached responses
+    // might be a good idea to add a precision limit to reduce cache misses
+    let coordsToCacheKey = (lat, long) => {
+        return lat + ', ' + long;
+    };
+
     // helper to filter json down
     function queryJson(json, query){
         let res =  jsonQuery(query, {data: json}).value;
@@ -33,7 +39,7 @@ if(!process.env.GOOGLE_GEOCODING_API) {
 
     // reverse geocoding helper, doesn't return a promise. handles sending of response.
     let reverseGeocode = (lat, lon, response, query)=>{
-        cache.wrap(lat + ', ' + lon + query, cacheCallback => {
+        cache.wrap(coordsToCacheKey(lat, lon) + query, cacheCallback => {
             trace('Geocoding (not cached)', lat, lon);
             geocoder.reverse({lat, lon})
                 .then(function(res) {
@@ -68,17 +74,17 @@ if(!process.env.GOOGLE_GEOCODING_API) {
         let response = this.response;
 
         trace('Geocoding', address);
-        geocoder.geocode(address)
-            .then(function(res) {
-                trace(res);
-                response.json([['latitude', res[0].latitude], ['longitude', res[0].longitude]]);
-            })
+        return cache.wrap(address, () => {
+            return geocoder.geocode(address)
+                .then(function(res) {
+                    trace(res);
+                    return [['latitude', res[0].latitude], ['longitude', res[0].longitude]];
+                });
+        })
             .catch(function(err) {
                 error('Error in geocoding', err);
                 showError('Failed to geocode',response);
             });
-
-        return null;
     };
 
     /** 
@@ -170,14 +176,16 @@ if(!process.env.GOOGLE_GEOCODING_API) {
             requestOptions.qs.keyword = keyword;
         }
 
-        return rp(requestOptions).then(res=>{
-            let places = res.results;
-            places = places.map(place => {
-                return [['latitude',place.geometry.location.lat],['longitude',place.geometry.location.lng],['name',place.name],['types',place.types]];
+        return cache.wrap(coordsToCacheKey() + keyword + radius, () => {
+            return rp(requestOptions).then(res=>{
+                let places = res.results;
+                places = places.map(place => {
+                    return [['latitude',place.geometry.location.lat],['longitude',place.geometry.location.lng],['name',place.name],['types',place.types]];
+                });
+                // keep the 10 best results
+                places = places.slice(0,10);
+                return places;
             });
-            // keep the 10 best results
-            places = places.slice(0,10);
-            response.send(places);
         }).catch(err => {
             error('Error in searching for places',err);
             showError('Failed to find places',response);
