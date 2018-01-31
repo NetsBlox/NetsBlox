@@ -1,4 +1,4 @@
-describe.only('projects', function() {
+describe('projects', function() {
     const utils = require('../../../assets/utils');
     const Q = require('q');
     const assert = require('assert');
