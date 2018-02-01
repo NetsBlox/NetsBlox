@@ -4,9 +4,11 @@ const logger = new Logger('netsblox:bug-reporter');
 const Users = require('./storage/users');
 const version = require('./server-utils').version;
 const snap2jsVersion = require('snap2js/package').version;
+const request = require('request-promise');
 
 const BugReporter = function() {
     this.maintainer = process.env.MAINTAINER_EMAIL;
+    this.reportUrl = process.env.REPORT_URL;
 };
 
 BugReporter.prototype.reportInvalidSocketMessage = function(err, msg, socket) {
@@ -87,6 +89,7 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
     // Add server version?
     subject += ` (${version})`;
     body += `\n\nNetsBlox Server ${version}`;
+    data.content.serverVersion = version;
     if (this.maintainer) {
         const mailOpts = {
             from: 'bug-reporter@netsblox.org',
@@ -94,13 +97,22 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
             subject: subject,
             markdown: body,
             attachments: [data]
-
         };
 
         return mailer.sendMail(mailOpts);
-    } else {
-        logger.warn('No maintainer email set! Bug reports will ' +
-            'not be recorded until MAINTAINER_EMAIL is set in the env!');
+    }
+
+    if (this.reportUrl) {
+        request({
+            uri: this.reportUrl,
+            method: 'POST',
+            body: data.content
+        });
+    }
+
+    if (!this.maintainer && !this.reportUrl) {
+        logger.warn('Not reporting bug reports. Set MAINTAINER_EMAIL or ' +
+            'REPORT_URL in the environment to report bug reports.');
     }
 };
 
