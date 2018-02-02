@@ -99,8 +99,6 @@ BugReporter.prototype.getUserEmail = function(username) {
 BugReporter.prototype.reportBug = function(subject, body, data) {
     // email this to the maintainer
     // Add server version?
-    subject += ` (${version})`;
-    body += `\n\nNetsBlox Server ${version}`;
     data.content.serverVersion = version;
     if (this.reportUrl) {
         request({
@@ -112,6 +110,8 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
     }
 
     if (this.maintainer) {
+        subject += ` (${version})`;
+        body += `\n\nNetsBlox Server ${version}`;
         data.content = JSON.stringify(data.content);
         const mailOpts = {
             from: 'bug-reporter@netsblox.org',
