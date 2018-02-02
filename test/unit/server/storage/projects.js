@@ -1,4 +1,5 @@
 describe('projects', function() {
+    this.timeout(5000);
     const utils = require('../../../assets/utils');
     const Q = require('q');
     const assert = require('assert');
