@@ -4,9 +4,11 @@ const logger = new Logger('netsblox:bug-reporter');
 const Users = require('./storage/users');
 const version = require('./server-utils').version;
 const snap2jsVersion = require('snap2js/package').version;
+const request = require('request-promise');
 
 const BugReporter = function() {
     this.maintainer = process.env.MAINTAINER_EMAIL;
+    this.reportUrl = process.env.REPORT_URL;
 };
 
 BugReporter.prototype.reportInvalidSocketMessage = function(err, msg, socket) {
@@ -14,12 +16,15 @@ BugReporter.prototype.reportInvalidSocketMessage = function(err, msg, socket) {
     const username = socket.username;
     const data = {
         filename: 'message.json',
-        content: JSON.stringify({
-            error: err.stack,
+        content: {
+            bugType: 'SocketMessage',
+            stackTrace: err.stack,
+            error: err.message,
+            timestamp: new Date(),
             username: username,
             uuid: socket.uuid,
             message: msg
-        })
+        }
     };
 
     return this.createBody('parse socket message', err, username)
@@ -33,7 +38,15 @@ BugReporter.prototype.reportPotentialCompilerBug = function(err, block, ctx) {
     const data = {
         // Add compiler version, netsblox version...
         filename: `block-${snap2jsVersion}.xml`,
-        content: block
+        content: {
+            bugType: 'Snap2Js',
+            username: username,
+            version: snap2jsVersion,
+            error: err.message,
+            timestamp: new Date(),
+            stackTrace: err.stack,
+            block: block
+        }
     };
 
     return this.createBody('compile block function', err, username)
@@ -54,9 +67,10 @@ BugReporter.prototype.createBody = function(action, err, username) {
 
 BugReporter.prototype.reportClientBug = function(report) {
     const user = report.user;
+    report.bugType = 'Client';
     const data = {
         filename: `bug-report-v${report.version}.json`,
-        content: JSON.stringify(report)
+        content: report
     };
     let subject = 'Bug Report' + (user ? ' from ' + user : '');
 
@@ -85,22 +99,34 @@ BugReporter.prototype.getUserEmail = function(username) {
 BugReporter.prototype.reportBug = function(subject, body, data) {
     // email this to the maintainer
     // Add server version?
-    subject += ` (${version})`;
-    body += `\n\nNetsBlox Server ${version}`;
+    data.content.serverVersion = version;
+    if (this.reportUrl) {
+        request({
+            uri: this.reportUrl,
+            method: 'POST',
+            body: data.content,
+            json: true
+        });
+    }
+
     if (this.maintainer) {
+        subject += ` (${version})`;
+        body += `\n\nNetsBlox Server ${version}`;
+        data.content = JSON.stringify(data.content);
         const mailOpts = {
             from: 'bug-reporter@netsblox.org',
             to: this.maintainer,
             subject: subject,
             markdown: body,
             attachments: [data]
-
         };
 
         return mailer.sendMail(mailOpts);
-    } else {
-        logger.warn('No maintainer email set! Bug reports will ' +
-            'not be recorded until MAINTAINER_EMAIL is set in the env!');
+    }
+
+    if (!this.maintainer && !this.reportUrl) {
+        logger.warn('Not reporting bug reports. Set MAINTAINER_EMAIL or ' +
+            'REPORT_URL in the environment to report bug reports.');
     }
 };
 
