@@ -132,7 +132,7 @@ Server.prototype.configureRoutes = function() {
                 const contents = {
                     username: req.session.username,
                 };
-                return res.send(testTpl(metaInfo));
+                return res.send(testTpl(contents));
             });
         });
     }
