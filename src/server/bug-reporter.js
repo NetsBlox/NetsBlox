@@ -106,7 +106,8 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
             method: 'POST',
             body: data.content,
             json: true
-        });
+        }).catch(err =>
+            logger.warn(`Failed to report bug to URL. ${err.message}`));
     }
 
     if (this.maintainer) {
