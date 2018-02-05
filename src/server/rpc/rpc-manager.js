@@ -150,6 +150,7 @@ RPCManager.prototype.createRouter = function() {
     function createServiceMetadata(rpc) {
         let methods = this.rpcRegistry[rpc.serviceName];
         let rpcs = {}; // stores info about service's methods
+        let deprecatedMethods = rpc.COMPATIBILITY.deprecatedMethods || [];
         Object.keys(methods)
             .filter(key => !key.startsWith('_'))
             .forEach(name => {
@@ -165,11 +166,9 @@ RPCManager.prototype.createRouter = function() {
                     };
                 }
                 delete info.name;
-                info.deprecated = false;
-                // check for deprecation
-                if (rpc.COMPATIBILITY && rpc.COMPATIBILITY.deprecatedMethods
-                    && rpc.COMPATIBILITY.deprecatedMethods.includes(name)) info.deprecated = true;
-                rpcs[name] = info; 
+                info.deprecated = info.deprecated || deprecatedMethods.includes(name);
+
+                rpcs[name] = info;
             });
         return rpcs;
     }
