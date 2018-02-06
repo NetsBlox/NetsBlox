@@ -51,7 +51,7 @@ weather.temperature = function(latitude, longitude){
  * @param {Longitude} longitude
  */
 weather.temp = function(latitude, longitude) {
-    return weather.temperature(latitude, longitude);
+    return this.temperature(latitude, longitude);
 };
 
 /**
