@@ -4,22 +4,34 @@
 var debug = require('debug'),
     trace = debug('netsblox:rpc:public-roles:trace');
 
-module.exports = {
+const PublicRoles = {};
 
-    requestPublicRoleId: function() {
-        var socket = this.socket;
+/**
+ * Get the public role ID for the current role.
+ */
+PublicRoles.getPublicRoleId = function() {
+    var socket = this.socket;
 
-        return this.socket.getRoom().then(room => {
-            var owner = room.owner,
-                roomName = room.name,
-                roleId = socket.role;
+    return this.socket.getRoom().then(room => {
+        var owner = room.owner,
+            roomName = room.name,
+            roleId = socket.role;
 
-            trace(`${this.socket.username} has requested public id`);
-            return [
-                roleId,
-                roomName,
-                owner
-            ].join('@');
-        });
-    }
+        trace(`${this.socket.username} has requested public id`);
+        return [
+            roleId,
+            roomName,
+            owner
+        ].join('@');
+    });
 };
+
+/**
+ * Get the public role ID for the current role.
+ * @deprecated
+ */
+PublicRoles.requestPublicRoleId = function() {
+    return PublicRoles.getPublicRoleId.call(this);
+};
+
+module.exports = PublicRoles;
