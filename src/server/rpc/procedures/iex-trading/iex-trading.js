@@ -1,21 +1,20 @@
 // Data attributed to https://iextrading.com/api-exhibit-a
 
 const ApiConsumer = require('../utils/api-consumer');
-const request = require('request');
 
 
-StockConsumer = new ApiConsumer('iex-trading', 'https://api.iextrading.com/1.0',{cache: {ttl: 3600*24*30*6}});
+let StockConsumer = new ApiConsumer('iex-trading', 'https://api.iextrading.com/1.0',{cache: {ttl: 3600*24*30*6}});
 
 const queryOpts = {
-	queryString: '/stock/',
-	headers:{
-	},
-	body: undefined,
-	cache: true
-}
+    queryString: '/stock/',
+    headers:{
+    },
+    body: undefined,
+    cache: true
+};
 
 let stockParser = resp => {
-    let results = []
+    let results = [];
     results = resp[company];
 	    
     return results;
@@ -28,18 +27,17 @@ let stockParser = resp => {
  */
 StockConsumer.currentPrice = function(companySymbol) {
 	// Defines the query options for the API, including the user-defined value to receive
+    queryOpts.queryString = '';
+    queryOpts.queryString = '/stock/' + companySymbol + '/quote';
 
-	queryOpts.queryString = '';
-	queryOpts.queryString = '/stock/' + companySymbol + '/quote'
-
-	company = 'latestPrice';
+    let company = 'latestPrice';
 
 	// Return statement, using a promise to allow _requestData to receive the value from the API before returning
-	return this._requestData(queryOpts)
-		.then(body => {
-			return body[company];
-		})
-	};
+    return this._requestData(queryOpts)
+        .then(body => {
+            return body[company];
+        })
+};
 
 /**
  * Get the last opening price of the specified company
@@ -49,17 +47,17 @@ StockConsumer.currentPrice = function(companySymbol) {
 StockConsumer.lastOpenPrice = function(companySymbol) {
 	// Defines the query options for the API, including the user-defined value to receive
 
-	queryOpts.queryString = '';
-	queryOpts.queryString = '/stock/' + companySymbol + '/quote'
+    queryOpts.queryString = '';
+    queryOpts.queryString = '/stock/' + companySymbol + '/quote';
 
-	company = 'open';
+    company = 'open';
 
 	// Return statement, using a promise to allow _requestData to receive the value from the API before returning
-	return this._requestData(queryOpts)
-		.then(body => {
-			return body[company];
-		})
-	};
+    return this._requestData(queryOpts)
+        .then(body => {
+            return body[company];
+	    })
+};
 
 /**
  * Get the last close price of the specified company
@@ -69,17 +67,17 @@ StockConsumer.lastOpenPrice = function(companySymbol) {
 StockConsumer.lastClosePrice = function(companySymbol) {
 	// Defines the query options for the API, including the user-defined value to receive
 
-	queryOpts.queryString = '';
-	queryOpts.queryString = '/stock/' + companySymbol + '/quote'
+    queryOpts.queryString = '';
+    queryOpts.queryString = '/stock/' + companySymbol + '/quote';
 
-	company = 'close';
+    company = 'close';
 
 	// Return statement, using a promise to allow _requestData to receive the value from the API before returning
-	return this._requestData(queryOpts)
-		.then(body => {
-			return body[company];
-		})
-	};
+    return this._requestData(queryOpts)
+        .then(body => {
+            return body[company];
+        })
+};
 
 /**
  * Get a 2-n list of all the information about the specified company
@@ -89,32 +87,32 @@ StockConsumer.lastClosePrice = function(companySymbol) {
 StockConsumer.companyInformation = function(companySymbol) {
 	// Defines the query options for the API, including the user-defined value to receive
 
-	queryOpts.queryString = '';
-	queryOpts.queryString = '/stock/' + companySymbol + '/quote'
+    queryOpts.queryString = '';
+    queryOpts.queryString = '/stock/' + companySymbol + '/quote';
 
 	// Return statement, using a promise to allow _requestData to receive the value from the API before returning
-	return this._requestData(queryOpts, stockParser)
-	};
+    return this._requestData(queryOpts, stockParser)
+};
 
 	/**
  	* Get the daily change percent for a company
  	* @param {companySymbol} Symbol. The stock ticker symbol of the desired company
  	* @returns {double} The daily change percent for the company
  	*/
-	StockConsumer.dailyPercentChange = function(companySymbol) {
+StockConsumer.dailyPercentChange = function(companySymbol) {
 	// Defines the query options for the API, including the user-defined value to receive
 
-		queryOpts.queryString = '';
-	queryOpts.queryString = '/stock/' + companySymbol + '/quote'
+    queryOpts.queryString = '';
+    queryOpts.queryString = '/stock/' + companySymbol + '/quote';
 
-	company = 'changePercent';
+    company = 'changePercent';
 
 	// Return statement, using a promise to allow _requestData to receive the value from the API before returning
-	return this._requestData(queryOpts)
-		.then(body => {
-			return body[company];
-		})
-	};
+    return this._requestData(queryOpts)
+        .then(body => {
+            return body[company];
+        })
+    };
 
 
 module.exports = StockConsumer;
