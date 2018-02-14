@@ -3,6 +3,8 @@
 // It will need to load RPC's from the RPC directory and then mantain a separate
 // RPC context for each room.
 
+'use strict';
+
 var fs = require('fs'),
     path = require('path'),
     _ = require('lodash'),
@@ -18,7 +20,7 @@ var fs = require('fs'),
 
 // in: arg obj and input value
 // out: {isValid: boolean, value, msg}
-function parseArgValue(arg, input, ctx) {
+function parseArgValue(arg, input) {
     let inputStatus = {isValid: true, msg: '', value: input};
     // is the argument provided or not? 
     if (input === '') {
@@ -30,7 +32,7 @@ function parseArgValue(arg, input, ctx) {
     } else {
         if (types.parse.hasOwnProperty(arg.type)) { // if we have the type handler
             try {
-                inputStatus.value = types.parse[arg.type](input, ctx);
+                inputStatus.value = types.parse[arg.type](input);
             } catch (e) {
                 inputStatus.isValid = false;
                 inputStatus.msg = `"${arg.name}" is not a valid ${types.getNBType(arg.type)}.`;
@@ -99,12 +101,6 @@ RPCManager.prototype.loadRPCs = function() {
             RPCConstructor.COMPATIBILITY = RPCConstructor.COMPATIBILITY || {};
             _.merge(RPCConstructor.COMPATIBILITY, DEFAULT_COMPATIBILITY);
 
-            if (typeof RPCConstructor === 'function') {
-                RPCConstructor.prototype._docs = RPCConstructor._docs;
-                RPCConstructor.prototype.serviceName = RPCConstructor.serviceName;
-                RPCConstructor.prototype.COMPATIBILITY = RPCConstructor.COMPATIBILITY;
-            }
-
             this.registerRPC(RPCConstructor);
 
             return RPCConstructor;
@@ -150,7 +146,6 @@ RPCManager.prototype.createRouter = function() {
     function createServiceMetadata(rpc) {
         let methods = this.rpcRegistry[rpc.serviceName];
         let rpcs = {}; // stores info about service's methods
-        let deprecatedMethods = rpc.COMPATIBILITY.deprecatedMethods || [];
         Object.keys(methods)
             .filter(key => !key.startsWith('_'))
             .forEach(name => {
@@ -166,9 +161,11 @@ RPCManager.prototype.createRouter = function() {
                     };
                 }
                 delete info.name;
-                info.deprecated = info.deprecated || deprecatedMethods.includes(name);
-
-                rpcs[name] = info;
+                info.deprecated = false;
+                // check for deprecation
+                if (rpc.COMPATIBILITY && rpc.COMPATIBILITY.deprecatedMethods
+                    && rpc.COMPATIBILITY.deprecatedMethods.includes(name)) info.deprecated = true;
+                rpcs[name] = info; 
             });
         return rpcs;
     }
@@ -192,11 +189,11 @@ RPCManager.prototype.createRouter = function() {
 RPCManager.prototype.addRoute = function(router, RPC) {
     this._logger.info('Adding route for '+RPC.serviceName);
     router.route('/' + RPC.serviceName + '/:action')
-        .post(this.handleRPCRequest.bind(this, RPC));
+        .get(this.handleRPCRequest.bind(this, RPC));
 
     if (RPC.COMPATIBILITY.path) {
         router.route('/' + RPC.COMPATIBILITY.path + '/:action')
-            .post(this.handleRPCRequest.bind(this, RPC));
+            .get(this.handleRPCRequest.bind(this, RPC));
     }
 };
 
@@ -208,9 +205,8 @@ RPCManager.prototype.addRoute = function(router, RPC) {
  * @param {String} uuid
  * @return {RPC}
  */
-RPCManager.prototype.getRPCInstance = function(name, uuid) {
-    const RPC = this.rpcs.find(rpc => rpc.serviceName === name);
-    let socket,
+RPCManager.prototype.getRPCInstance = function(RPC, uuid) {
+    var socket,
         rpcs;
 
     if (typeof RPC !== 'function') {  // stateless rpc
@@ -233,28 +229,28 @@ RPCManager.prototype.getRPCInstance = function(name, uuid) {
     }
 
     return rpcs[RPC.serviceName];
-};
 
-RPCManager.prototype.getArgumentsFor = function(service, action) {
-    return this.rpcRegistry[service] && this.rpcRegistry[service][action];
 };
 
 RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     var action,
         uuid = req.query.uuid,
+        supportedActions = this.rpcRegistry[RPC.serviceName],
         oldFieldNameFor,
+        result,
         args,
+        doc,
         rpc;
 
     action = req.params.action;
-    const expectedArgs = this.getArgumentsFor(RPC.serviceName, action);
+    if (RPC._docs) doc = RPC._docs.getDocFor(action);
     this._logger.info(`Received request to ${RPC.serviceName} for ${action} (from ${uuid})`);
 
     // Then pass the call through
-    if (expectedArgs) {
-        rpc = this.getRPCInstance(RPC.serviceName, uuid);
+    if (supportedActions[action]) {
+        rpc = this.getRPCInstance(RPC, uuid);
         if (rpc === null) {  // Could not create/find rpc (rpc is stateful and group is unknown)
-            this._logger.log(`Could not find group for user "${uuid}"`);
+            this._logger.log('Could not find group for user "'+req.query.uuid+'"');
             return res.status(401).send('ERROR: user not found. who are you?');
         }
 
@@ -269,52 +265,47 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
 
         // Get the arguments
         oldFieldNameFor = RPC.COMPATIBILITY.arguments[action] || {};
-        args = expectedArgs.map(argName => {
+        args = supportedActions[action].map(argName => {
             var oldName = oldFieldNameFor[argName];
-            return req.body.hasOwnProperty(argName) ? req.body[argName] : req.body[oldName];
+            return req.query.hasOwnProperty(argName) ? req.query[argName] : req.query[oldName];
         });
 
         // validate and enforce types in RPC manager.
         // parse the inputs to correct types
         // provide feedback to the user
 
-        return this.callRPC(action, ctx, args);
+        if (doc) {
+            let errors = []; // mostly
+            // assuming doc params are defined in order!
+            doc.args.forEach((arg, idx) => {
+                if (arg.type) {
+                    let input = parseArgValue(arg, args[idx]);
+                    // if there was no errors update the arg with the parsed input
+                    if (input.isValid) {
+                        args[idx] = input.value;
+                    } else {
+                        // handle the error
+                        this._logger.warn(`${rpc.serviceName} -> ${action} input error:`, input.msg);
+                        if (input.msg) errors.push(input.msg);
+                    }
+                }
+            });
+            // provide user feedback if there was an error
+            if (errors.length > 0) return res.status(500).send(errors.join('\n'));
+        }
+
+        let prettyArgs = JSON.stringify(args);
+        prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
+        this._logger.log(`calling ${RPC.serviceName}.${action}(${prettyArgs})`);
+        result = ctx[action].apply(ctx, args);
+
+        this.sendRPCResult(res, result);
+
+        return result;
     } else {
         this._logger.log('Invalid action requested for '+RPC.serviceName+': '+action);
         return res.status(400).send('unrecognized action');
     }
-};
-
-RPCManager.prototype.callRPC = function(name, ctx, args) {
-    let doc = null;
-
-    if (ctx._docs) doc = ctx._docs.getDocFor(name);
-    if (doc) {
-        let errors = []; // mostly
-        // assuming doc params are defined in order!
-        doc.args.forEach((arg, idx) => {
-            if (arg.type) {
-                let input = parseArgValue(arg, args[idx], ctx);
-                // if there was no errors update the arg with the parsed input
-                if (input.isValid) {
-                    args[idx] = input.value;
-                } else {
-                    // handle the error
-                    this._logger.warn(`${ctx.serviceName} -> ${name} input error:`, input.msg);
-                    if (input.msg) errors.push(input.msg);
-                }
-            }
-        });
-        // provide user feedback if there was an error
-        if (errors.length > 0) return ctx.response.status(500).send(errors.join('\n'));
-    }
-
-    let prettyArgs = JSON.stringify(args);
-    prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
-    this._logger.log(`calling ${ctx.serviceName}.${name}(${prettyArgs})`);
-
-    const result = ctx[name].apply(ctx, args);
-    return this.sendRPCResult(ctx.response, result);
 };
 
 RPCManager.prototype.sendRPCResult = function(response, result) {
@@ -325,7 +316,6 @@ RPCManager.prototype.sendRPCResult = function(response, result) {
                     .then(result => this.sendRPCResult(response, result))
                     .catch(err => {
                         this._logger.error(`Uncaught exception: ${err.toString()}`);
-                        if (response.headersSent) return;
                         response.status(500).send('Error occurred!');
                     });
             } else if (Array.isArray(result)) {

@@ -64,7 +64,6 @@ describe('jsdoc-extractor', () => {
             assert.deepEqual(simpleMetadata, {
                 name: 'doStuff',
                 description: metadata.parsed.description,
-                deprecated: false,
                 args: [
                     {
                         name: 'address',
@@ -88,22 +87,6 @@ describe('jsdoc-extractor', () => {
                 returns: {type: 'String', description: null}
             });
         });
-
-        it('should detect deprecated methods', () => {
-            const oldComment = `
-            /**
-             * this is the description
-             * next line of description
-             * @deprecated
-             * @param {Number} limit the results limit
-             * @name doStuff
-             */
-            `;
-            let metadata = jp._parseSource(oldComment)[0];
-            let simpleMetadata = jp._simplify(metadata.parsed);
-            assert(simpleMetadata.deprecated);
-        });
-
     });
 
     describe('Docs', () => {

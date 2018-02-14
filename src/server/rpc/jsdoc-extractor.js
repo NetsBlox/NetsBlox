@@ -45,14 +45,8 @@ function simplify(metadata) {
     let returns = tags.find(tag => tag.title === 'returns');
     if (returns) returns = {type: returns.type.name, description: returns.description};
 
-    const isDeprecated = !!tags.find(tag => tag.title === 'deprecated');
-    let simplified = {
-        name: fnName,
-        deprecated: isDeprecated,
-        description,
-        args,
-        returns
-    };
+
+    let simplified = {name: fnName, description, args, returns};
     return simplified;
 }
 
