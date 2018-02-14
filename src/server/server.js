@@ -26,11 +26,8 @@ var express = require('express'),
     Logger = require('./logger'),
 
     // Session and cookie info
-    cookieParser = require('cookie-parser');
-
-const CLIENT_ROOT = path.join(__dirname, '..', 'browser');
-const indexTpl = dot.template(fs.readFileSync(path.join(CLIENT_ROOT, 'index.dot')));
-const middleware = require('./routes/middleware');
+    cookieParser = require('cookie-parser'),
+    indexTpl = dot.template(fs.readFileSync(path.join(__dirname, '..', 'browser', 'index.dot')));
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -124,76 +121,66 @@ Server.prototype.configureRoutes = function() {
 
     // Add dev endpoints
     if (isDevMode) {
-        const CLIENT_TEST_ROOT = path.join(__dirname, '..', '..', 'test', 'unit', 'client');
-        const testTpl = dot.template(fs.readFileSync(path.join(CLIENT_TEST_ROOT, 'index.dot')));
         this.app.use('/dev/', express.static(__dirname + '/../../test/unit/client/'));
-        this.app.get('/dev/', (req, res) => {
-            return middleware.setUsername(req, res).then(() => {
-                const contents = {
-                    username: req.session.username,
-                };
-                return res.send(testTpl(contents));
-            });
-        });
     }
 
     // Initial page
     this.app.get('/', (req, res) => {
-        return middleware.setUsername(req, res).then(() => {
-            var baseUrl = `${req.protocol}://${req.get('host')}`,
-                url = baseUrl + req.originalUrl,
-                projectName = req.query.ProjectName,
-                metaInfo = {
-                    title: 'NetsBlox',
-                    username: req.session.username,
-                    isDevMode: isDevMode,
-                    googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
-                    baseUrl,
-                    url: url
-                };
+        if(isDevMode) {
+            res.sendFile(path.join(__dirname, '..', 'browser', 'index.dev.html'));
+            return;
+        }
+        
+        var baseUrl = `https://${req.get('host')}`,
+            url = baseUrl + req.originalUrl,
+            projectName = req.query.ProjectName,
+            metaInfo = {
+                googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
+                baseUrl,
+                url: url
+            };
 
 
-            if (req.query.action === 'present') {
-                var username = req.query.Username;
+        if (req.query.action === 'present') {
+            var username = req.query.Username;
 
-                return this.storage.publicProjects.get(username, projectName)
-                    .then(project => {
-                        if (project) {
-                            metaInfo.image = {
-                                url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`),
-                                width: 640,
-                                height: 480
-                            };
-                            metaInfo.title = project.projectName;
-                            metaInfo.description = project.notes;
-                            this.addScraperSettings(req.headers['user-agent'], metaInfo);
-                        }
-                        return res.send(indexTpl(metaInfo));
-                    });
-            } else if (req.query.action === 'example' && EXAMPLES[projectName]) {
-                metaInfo.image = {
-                    url: baseUrl + encodeURI(`/api/examples/${projectName}/thumbnail`),
-                    width: 640,
-                    height: 480
-                };
-                metaInfo.title = projectName;
-                var example = EXAMPLES[projectName];
-
-                return example.getRoleNames()
-                    .then(names => example.getRole(names.shift()))
-                    .then(content => {
-                        const src = content.SourceCode;
-                        const startIndex = src.indexOf('<notes>');
-                        const endIndex = src.indexOf('</notes>');
-                        const notes = src.substring(startIndex + 7, endIndex);
-
-                        metaInfo.description = notes;
+            return this.storage.publicProjects.get(username, projectName)
+                .then(project => {
+                    if (project) {
+                        metaInfo.image = {
+                            url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`),
+                            width: 640,
+                            height: 480
+                        };
+                        metaInfo.title = project.projectName;
+                        metaInfo.description = project.notes;
                         this.addScraperSettings(req.headers['user-agent'], metaInfo);
-                        return res.send(indexTpl(metaInfo));
-                    });
-            }
-            return res.send(indexTpl(metaInfo));
-        });
+                    }
+                    return res.send(indexTpl(metaInfo));
+                });
+        } else if (req.query.action === 'example' && EXAMPLES[projectName]) {
+            metaInfo.image = {
+                url: baseUrl + encodeURI(`/api/examples/${projectName}/thumbnail`),
+                width: 640,
+                height: 480
+            };
+            metaInfo.title = projectName;
+            var example = EXAMPLES[projectName];
+
+            return example.getRoleNames()
+                .then(names => example.getRole(names.shift()))
+                .then(content => {
+                    const src = content.SourceCode;
+                    const startIndex = src.indexOf('<notes>');
+                    const endIndex = src.indexOf('</notes>');
+                    const notes = src.substring(startIndex + 7, endIndex);
+
+                    metaInfo.description = notes;
+                    this.addScraperSettings(req.headers['user-agent'], metaInfo);
+                    return res.send(indexTpl(metaInfo));
+                });
+        }
+        return res.send(indexTpl(metaInfo));
     });
 
     // Import Service Endpoints:
@@ -353,6 +340,7 @@ Server.prototype.stop = function(done) {
 Server.prototype.createRouter = function() {
     var router = express.Router({mergeParams: true}),
         logger = this._logger.fork('api'),
+        middleware = require('./routes/middleware'),
         routes;
 
     // Load the routes from routes/

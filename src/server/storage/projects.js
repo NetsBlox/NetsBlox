@@ -6,7 +6,6 @@
     const blob = require('./blob-storage');
     const utils = require('../server-utils');
     const PublicProjects = require('./public-projects');
-    const MAX_MSG_RECORD_DURATION = 1000 * 60 * 10;  // 10 min
 
     const storeRoleBlob = function(role) {
         const content = _.clone(role);
@@ -122,7 +121,7 @@
 
         getRoleActionIdById(roleId) {
             return this.getRoleById(roleId)
-                .then(role => utils.xml.actionId(role.SourceCode));
+                .then(role => utils.xml.actionId(role.SourceCode))
         }
 
         getRoleIds() {
@@ -245,16 +244,12 @@
                 });
         }
 
-        removeRole(roleName) {
+        removeRole(role) {
             if (this.isDeleted()) return Promise.reject('cannot removeRole: project has been deleted!');
-            const query = {$unset: {}};
-            this._logger.trace(`removing role: ${roleName}`);
-            return this.getRoleId(roleName)
-                .then(roleId => {
-                    if (!roleId) return Promise.reject(`Could not find role named ${roleName} in ${this.uuid()}`);
-                    query.$unset[`roles.${roleId}`] = '';
-                    return this._db.update(this.getStorageId(), query);
-                });
+            var query = {$unset: {}};
+            query.$unset[`roles.${role}`] = '';
+            this._logger.trace(`removing role: ${role}`);
+            return this._db.update(this.getStorageId(), query);
         }
 
         renameRole(role, newName) {
@@ -493,50 +488,6 @@
                 name: this.name,
                 owner: this.owner
             };
-        }
-
-        //////////////// Recording messages (network traces) ////////////////
-        getRecordStartTimes() {
-            return this.getRawProject()
-                .then(project => project.recordMessagesAfter || []);
-        }
-
-        getLatestRecordStartTime() {
-            return this.getRecordStartTimes()
-                .then(records => Math.max.apply(null, records.map(record => record.time)));
-        }
-
-        isRecordingMessages() {
-            return this.getLatestRecordStartTime()
-                .then(time => (Date.now() - time) < MAX_MSG_RECORD_DURATION);
-        }
-
-        startRecordingMessages(id, time=Date.now()) {  // Set (and return) the start recording time
-            const query = {$push: {recordMessagesAfter: {id: id, time: time}}};
-            return Q(this._db.update(this.getStorageId(), query))
-                .then(() => time);
-        }
-
-        stopRecordingMessages(id) {
-            return this.getRecordStartTimes()
-                .then(records => {
-                    const minTime = Date.now() - MAX_MSG_RECORD_DURATION;
-                    let removed = null;
-
-                    // Remove one matching element from the list and
-                    // all that are below the minimum
-                    records = records.filter(record => {
-                        if (!removed && record.id === id) {
-                            removed = record;
-                            return false;
-                        }
-                        return record.time > minTime;
-                    });
-
-                    const query = {$set: {recordMessagesAfter: records}};
-                    return Q(this._db.update(this.getStorageId(), query))
-                        .then(() => removed && removed.time);
-                });
         }
 
         pretty() {
