@@ -16,11 +16,11 @@ var R = require('ramda'),
 
     debug = require('debug'),
     log = debug('netsblox:api:log'),
-    mailer = require('../mailer'),
     middleware = require('./middleware'),
     SocketManager = require('../socket-manager'),
     saveLogin = middleware.saveLogin;
 
+const BugReporter = require('../bug-reporter');
 const Messages = require('../storage/messages');
 
 module.exports = [
@@ -176,23 +176,49 @@ module.exports = [
             });
         }
     },
-    // get recent messages from the given room
+    // get start/end network traces
     {
         Method: 'get',
-        URL: 'socket/messages/:socketId',
+        URL: 'trace/start/:socketId',
         Handler: function(req, res) {
             let {socketId} = req.params;
-            let socket = SocketManager.getSocket(socketId);
-            let room = socket.getRawRoom();
 
+            let socket = SocketManager.getSocket(socketId);
+            if (!socket) return res.status(401).send('ERROR: Could not find socket');
+
+            let room = socket.getRawRoom();
             if (!room) {
                 this._logger.error(`Could not find active room for "${socket.username}" - cannot get messages!`);
                 return res.status(500).send('ERROR: room not found');
             }
 
-            let projectId = room.getProjectId();
-            return Messages.get(projectId)
+            const project = room.getProject();
+            return project.startRecordingMessages(socketId)
+                .then(time => res.json(time));
+        }
+    },
+    {
+        Method: 'get',
+        URL: 'trace/end/:socketId',
+        Handler: function(req, res) {
+            let {socketId} = req.params;
+
+            let socket = SocketManager.getSocket(socketId);
+            if (!socket) return res.status(401).send('ERROR: Could not find socket');
+
+            let room = socket.getRawRoom();
+            if (!room) {
+                this._logger.error(`Could not find active room for "${socket.username}" - cannot get messages!`);
+                return res.status(500).send('ERROR: room not found');
+            }
+
+            const project = room.getProject();
+            const projectId = project.getId();
+            const endTime = Date.now();
+            return project.stopRecordingMessages(socketId)
+                .then(startTime => startTime && Messages.get(projectId, startTime, endTime))
                 .then(messages => {
+                    messages = messages || [];
                     this._logger.trace(`Retrieved ${messages.length} network messages for ${projectId}`);
                     return res.json(messages);
                 });
@@ -239,48 +265,8 @@ module.exports = [
                 this._logger.info('Received anonymous bug report');
             }
 
-            // email this to the maintainer
-            if (process.env.MAINTAINER_EMAIL) {
-                var subject,
-                    mailOpts;
+            BugReporter.reportClientBug(report);
 
-                subject = 'Bug Report' + (user ? ' from ' + user : '');
-                if (report.isAutoReport) {
-                    subject = 'Auto ' + subject;
-                }
-
-                mailOpts = {
-                    from: 'bug-reporter@netsblox.org',
-                    to: process.env.MAINTAINER_EMAIL,
-                    subject: subject,
-                    markdown: 'Hello,\n\nA new bug report has been created' +
-                        (user !== null ? ' by ' + user : '') + ':\n\n---\n\n' +
-                        report.description + '\n\n---\n\n',
-                    attachments: [
-                        {
-                            filename: `bug-report-v${report.version}.json`,
-                            content: JSON.stringify(report)
-                        }
-                    ]
-                };
-
-                if (report.user) {
-                    this.storage.users.get(report.user)
-                        .then(user => {
-                            if (user) {
-                                mailOpts.markdown += '\n\nReporter\'s email: ' + user.email;
-                            }
-                            mailer.sendMail(mailOpts);
-                            this._logger.info('Bug report has been sent to ' + process.env.MAINTAINER_EMAIL);
-                        });
-                } else {
-                    mailer.sendMail(mailOpts);
-                    this._logger.info('Bug report has been sent to ' + process.env.MAINTAINER_EMAIL);
-                }
-            } else {
-                this._logger.warn('No maintainer email set! Bug reports will ' +
-                    'not be recorded until MAINTAINER_EMAIL is set in the env!');
-            }
             return res.sendStatus(200);
         }
     }

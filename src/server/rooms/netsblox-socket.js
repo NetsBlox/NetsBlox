@@ -31,6 +31,7 @@ const Messages = require('../storage/messages');
 const ProjectActions = require('../storage/project-actions');
 const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
 const HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
+const BugReporter = require('../bug-reporter');
 
 var createSaveableProject = function(json) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -170,18 +171,13 @@ class NetsBloxSocket {
 
     _initialize () {
         this._socket.on('message', data => {
-            var msg = JSON.parse(data),
-                type = msg.type,
-                result = Q();
-
-            this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message from ${this.username} (${this.uuid})`);
-            if (NetsBloxSocket.MessageHandlers[type]) {
-                result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
-            } else {
-                this._logger.warn('message "' + data + '" not recognized');
+            try {
+                var msg = JSON.parse(data);
+                return this.onMessage(msg);
+            } catch (err) {
+                this._logger.error(`Failed to parse message: ${err} (${data})`);
+                BugReporter.reportInvalidSocketMessage(err, data, this);
             }
-            return result.catch(err =>
-                this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
         });
 
         this._socket.on('close', () => {
@@ -196,6 +192,26 @@ class NetsBloxSocket {
         // change the heartbeat to use ping/pong from the ws spec
         this.checkAlive();
         this._socket.on('pong', () => this.isAlive = true);
+    }
+
+    onMessage (msg) {
+        let type = msg.type,
+            result = Q();
+
+        if (CONDENSED_MSGS.includes(type)) {
+            this._logger.trace(`received "${type}" message from ${this.username} (${this.uuid})`);
+        } else {
+            let data = JSON.stringify(msg);
+            this._logger.trace(`received "${data}" message from ${this.username} (${this.uuid})`);
+        }
+
+        if (NetsBloxSocket.MessageHandlers[type]) {
+            result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
+        } else {
+            this._logger.warn('message "' + JSON.stringify(msg) + '" not recognized');
+        }
+        return result.catch(err =>
+            this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
     }
 
     checkAlive() {
@@ -363,8 +379,10 @@ class NetsBloxSocket {
         dstId = dstId + ''; // make sure dstId is string
         dstId = dstId.replace(/^\s*/, '').replace(/\s*$/, '');
         msg.dstId = dstId;
-        let room = this._room;
-        msg.srcProjectId = room.getProjectId();
+        let srcRoom = this._room;
+        if (!srcRoom) return this._logger.error(`Sending message without room! ${this.username}`);
+
+        msg.srcProjectId = srcRoom.getProjectId();
         if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
             // Look up the socket matching
             //
@@ -394,21 +412,31 @@ class NetsBloxSocket {
 
                 // record message (including successful delivery)
                 msg.dstId = dstId;
-                // TODO: get the public id of each socket
                 msg.recipients = sockets.map(socket => socket.getPublicId());
-                Messages.save(msg);
             }
-        } else if (room) {
+        } else {
             if (dstId === 'others in room') {
                 msg.recipients = this.sendToOthers(msg);
             } else if (dstId === Constants.EVERYONE) {
                 msg.recipients = this.sendToEveryone(msg);
-            } else if (room.hasRole(dstId)) {
-                let sockets = room.getSocketsAt(dstId);
+            } else if (srcRoom.hasRole(dstId)) {
+                let sockets = srcRoom.getSocketsAt(dstId);
                 sockets.forEach(socket => socket.send(msg));
                 msg.recipients = sockets.map(socket => socket.getPublicId());
             }
-            Messages.save(msg);
+        }
+
+        return this.saveMessage(msg, srcRoom);
+    }
+
+    saveMessage (msg, srcRoom/*, dstRoom*/) {
+        // Check if the room should save the message
+        const project = srcRoom.getProject();
+        if (project) {
+            return project.isRecordingMessages()
+                .then(isRecording => isRecording && Messages.save(msg));
+        } else {
+            this._logger.error(`Will not save messages: active room is missing project ${srcRoom.getUuid()}`);
         }
     }
 }
