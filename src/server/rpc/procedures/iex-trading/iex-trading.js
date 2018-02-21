@@ -30,7 +30,7 @@ StockConsumer.lastOpenPrice = function(companySymbol) {
     return this._requestData({queryString: `/stock/${companySymbol}/quote?displayPercent=true`})
         .then(body => {
             return body.open;
-	    });
+        });
 };
 
 /**
@@ -56,7 +56,7 @@ StockConsumer.companyInformation = function(companySymbol) {
 
 	// Return statement, using a promise to allow _requestData to receive the value from the API before returning
     return this._requestData({queryString: `/stock/${companySymbol}/quote?displayPercent=true`})
-    	.then(body => {
+        .then(body => {
             return body;
         });
 };
