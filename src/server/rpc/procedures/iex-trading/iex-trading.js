@@ -7,8 +7,8 @@ const StockConsumer = new ApiConsumer('iex-trading', 'https://api.iextrading.com
 
 /**
  * Get the current price of the given stock, with a 15 min delay
- * @param {companySymbol} Symbol. The stock ticker symbol of the desired company
- * @returns {number} Value of the current price for that stock
+ * @param {String} companySymbol Company stock ticker symbol
+ * @returns {Number} Current price for the specified stock
  */
 StockConsumer.currentPrice = function(companySymbol) {
 
@@ -21,8 +21,8 @@ StockConsumer.currentPrice = function(companySymbol) {
 
 /**
  * Get the last opening price of the specified company
- * @param {companySymbol} Symbol. The stock ticker symbol of the desired company
- * @returns {number} Value of the last opening price for that stock
+ * @param {String} companySymbol Company stock ticker symbol
+ * @returns {Number} Value of the last opening price for that stock
  */
 StockConsumer.lastOpenPrice = function(companySymbol) {
 
@@ -35,8 +35,8 @@ StockConsumer.lastOpenPrice = function(companySymbol) {
 
 /**
  * Get the last close price of the specified company
- * @param {companySymbol} Symbol. The stock ticker symbol of the desired company
- * @returns {number} Value of the last close price for that stock
+ * @param {String} companySymbol Company stock ticker symbol
+ * @returns {Number} Value of the last close price for that stock
  */
 StockConsumer.lastClosePrice = function(companySymbol) {
 
@@ -48,9 +48,9 @@ StockConsumer.lastClosePrice = function(companySymbol) {
 };
 
 /**
- * Get all infromation about the specified
- * @param {companySymbol} Symbol. The stock ticker symbol of the desired company
- * @returns {array} 2-n Array of all the company information
+ * Get all information about the specified company
+ * @param {String} companySymbol Company stock ticker symbol
+ * @returns {Object} Company information
  */
 StockConsumer.companyInformation = function(companySymbol) {
 
@@ -63,8 +63,8 @@ StockConsumer.companyInformation = function(companySymbol) {
 
 /**
 * Get the daily change percent for a company
-* @param {companySymbol} Symbol. The stock ticker symbol of the desired company
-* @returns {number} The daily change percent for the company
+* @param {String} companySymbol Company stock ticker symbol
+* @returns {Number} The daily change percent for the specified company
 */
 StockConsumer.dailyPercentChange = function(companySymbol) {
 
