@@ -204,12 +204,14 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
     }
 
     dataset.forEach(line => {
-        line = line.map(pt => {
-            let newPt = [];
-            newPt.push(pt[0][1]);
-            newPt.push(pt[1][1]);
-            return newPt;
-        });
+        line = line
+            .map(pt => {
+                let newPt = [];
+                newPt.push(pt[0][1]);
+                newPt.push(pt[1][1]);
+                return newPt;
+            })
+            .sort((p1, p2) => parseFloat(p1[0]) < parseFloat(p2[0]) ? -1 : 1);
         lines.push(line);
     });
 
