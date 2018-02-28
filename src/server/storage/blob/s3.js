@@ -34,7 +34,7 @@ class S3Backend {
             .on('httpDone', () => deferred.resolve(data))
             .on('error', err => {
                 this.logger.error(`Could not read from ${JSON.stringify(id)}: ${err}`);
-                throw err;
+                deferred.reject(err);
             })
             .send();
 
