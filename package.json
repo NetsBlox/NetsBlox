@@ -30,6 +30,7 @@
   "homepage": "https://github.com/NetsBlox/NetsBlox",
   "dependencies": {
     "async": "^2.0.0-rc.2",
+    "aws-sdk": "^2.203.0",
     "body-parser": "^1.12.4",
     "cache-manager": "^2.0.0",
     "cache-manager-fs": "^1.0.6",
