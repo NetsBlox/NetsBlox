@@ -39,15 +39,17 @@ function calcRanges(lines, isCategorical){
 
         if (! isCategorical){
             // min max of x
-            line = _.sortBy(line, (pt => pt[0]));
-            let {0 : xmin ,length : l, [l - 1] : xmax} = line.map(pt => pt[0]);
+            let xs = line.map(pt => pt[0]);
+            let xmin = Math.min.apply(null, xs);
+            let xmax = Math.max.apply(null, xs);
             if( xmin < stats.x.min ) stats.x.min = xmin;
             if( xmax > stats.x.max ) stats.x.max = xmax;
         }
 
         // min max of y
-        line = _.sortBy(line, (pt => pt[1]));
-        let {0 : ymin ,length : l, [l - 1] : ymax} = line.map(pt => pt[1]);
+        let ys = line.map(pt => pt[1]);
+        let ymin = Math.min.apply(null, ys);
+        let ymax = Math.max.apply(null, ys);
         if( ymin < stats.y.min ) stats.y.min = ymin;
         if( ymax > stats.y.max ) stats.y.max = ymax;
     });
@@ -76,7 +78,7 @@ function prepareData(input, isCategorical) {
             }
             if (! isCategorical) pt[0] = parseFloat(pt[0]);
             pt[1] = parseFloat(pt[1]);
-            if ( !x || !y || (! isCategorical && isNaN(x)) || isNaN(y) ) throw 'all [x,y] pairs should be numbers';
+            if ((! isCategorical && isNaN(x)) || isNaN(y) ) throw 'all [x,y] pairs should be numbers';
             return pt;
         });
         return line;
@@ -138,12 +140,6 @@ chart.draw = function(lines, options){
         relativePadding.x = stats.x.range !== 0 ? stats.x.range * 0.05 : 1;
         opts.xRange = {min: stats.x.min - relativePadding.x, max: stats.x.max + relativePadding.x};
         if (options.xRange.length === 2) opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
-
-        // sort lines
-        lines = lines.map(pts => {
-            pts = _.sortBy(pts, (pt => pt[0]));
-            return pts;
-        });
     }
 
     if (options.isTimeSeries) {
@@ -208,12 +204,14 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
     }
 
     dataset.forEach(line => {
-        line = line.map(pt => {
-            let newPt = [];
-            newPt.push(pt[0][1]);
-            newPt.push(pt[1][1]);
-            return newPt;
-        });
+        line = line
+            .map(pt => {
+                let newPt = [];
+                newPt.push(pt[0][1]);
+                newPt.push(pt[1][1]);
+                return newPt;
+            })
+            .sort((p1, p2) => parseFloat(p1[0]) < parseFloat(p2[0]) ? -1 : 1);
         lines.push(line);
     });
 
