@@ -65,6 +65,7 @@
     "nodemailer-markdown": "^1.0.0",
     "nop": "^1.0.0",
     "osmosis": "^1.1.4",
+    "progress": "^2.0.0",
     "q": "^1.4.1",
     "qs": "^6.5.0",
     "ramda": "^0.20.1",
