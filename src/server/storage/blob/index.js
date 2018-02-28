@@ -38,6 +38,11 @@ class BlobStorage {
         return Q(this.backend.store(id, data))
             .then(() => id);
     }
+
+    // List all ids (for migrations)
+    list() {
+        return this.backend.list();
+    }
 }
 
 module.exports = new BlobStorage();

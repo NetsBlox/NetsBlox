@@ -14,20 +14,18 @@ const exists = require('exists-file');
 const BASE_DIR = process.env.NETSBLOX_BLOB_DIR ||
         path.join(__dirname, '..', '..', '..', 'blob-storage');
 
-let logger = null;
-
 class FSBackend {
 
     constructor(_logger) {
-        logger = _logger.fork('fs');
+        this.logger = _logger.fork('fs');
         // create the given directory, if needed
-        logger.info(`blob directory is ${BASE_DIR}`);
+        this.logger.info(`blob directory is ${BASE_DIR}`);
         this.configure(BASE_DIR);
     }
 
     _verifyExists() {
         if (!exists.sync(this.baseDir)) {
-            logger.info(`created blob directory at ${this.baseDir}`);
+            this.logger.info(`created blob directory at ${this.baseDir}`);
             fse.ensureDirSync(this.baseDir);
         }
     }
@@ -55,7 +53,7 @@ class FSBackend {
     store(id, data) {
         const [dirname, filename] = this.getDirectoryAndFile(id);
 
-        logger.info(`storing data in the blob: ${id}`);
+        this.logger.info(`storing data in the blob: ${id}`);
 
         // store the data and return the hash
         this._verifyExists();
@@ -64,13 +62,13 @@ class FSBackend {
                 if (!exists.sync(filename)) {
                     return Q.nfcall(fs.writeFile, filename, data);
                 } else {
-                    logger.trace(`data already stored. skipping write ${id}`);
+                    this.logger.trace(`data already stored. skipping write ${id}`);
                     return Q();
                 }
             })
             .then(() => id)
             .fail(err => {
-                logger.error(`Could not write to ${filename}: ${err}`);
+                this.logger.error(`Could not write to ${filename}: ${err}`);
                 throw err;
             });
     }
@@ -81,8 +79,23 @@ class FSBackend {
         // get the data from the given hash
         return Q.nfcall(fs.readFile, filename, 'utf8')
             .fail(err => {
-                logger.error(`Could not read from ${filename}: ${err}`);
+                this.logger.error(`Could not read from ${filename}: ${err}`);
                 throw err;
+            });
+    }
+
+    list() {
+        return fse.readdir(this.baseDir)
+            .then(prefixes => {
+                this.logger.log(`found ${prefixes} prefixes`);
+                const promises = prefixes.map(name => {
+                    const absdir = path.join(this.baseDir, name);
+                    return fse.readdir(absdir)
+                        .then(postfixes => postfixes.map(end => name + end));
+                });
+
+                return Q.all(promises)
+                    .then(lists => lists.reduce((l1, l2) => l1.concat(l2), []));
             });
     }
 }

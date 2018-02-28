@@ -54,6 +54,31 @@ class S3Backend {
                 throw err;
             });
     }
+
+    list() {
+        const deferred = Q.defer();
+        let ids = [];
+        const params = {
+            Bucket: this.bucket,
+            MaxKeys: 2
+        };
+        const callback = (err, data) => {
+            if (err) return deferred.reject(err);
+
+            ids = ids.concat(data.Contents.map(data => data.Key));
+
+            if (data.IsTruncated) {
+                params.Marker = data.NextMarker;
+                this.client.listObjects(params, callback);
+            } else {
+                deferred.resolve(ids);
+            }
+        };
+
+        this.client.listObjects(params, callback);
+
+        return deferred.promise;
+    }
 }
 
 module.exports = S3Backend;
