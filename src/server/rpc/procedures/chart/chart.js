@@ -47,7 +47,7 @@ function calcRanges(lines, isCategorical){
         }
 
         // min max of y
-        let ys = line.map(pt => pt[0]);
+        let ys = line.map(pt => pt[1]);
         let ymin = Math.min.apply(null, ys);
         let ymax = Math.max.apply(null, ys);
         if( ymin < stats.y.min ) stats.y.min = ymin;
