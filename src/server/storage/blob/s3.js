@@ -5,28 +5,38 @@ class S3Backend {
 
     constructor(_logger) {
         this.logger = _logger.fork('s3');
+
+        const endPoint = process.env.S3_ENDPOINT || 'http://127.0.0.1:9000';
+        this.logger.trace(`Connecting to ${endPoint}`);
+        this.logger.trace(`Using access key id: "${process.env.S3_KEY_ID}"`);
         this.client = new AWS.S3({
-            endPoint: process.env.S3_ENDPOINT || 'http://127.0.0.1:9000',
+            endpoint: endPoint,
             //port: process.env.S3_PORT || 9000,
             //secure: process.env.S3_SECURE !== undefined ? process.env.S3_SECURE : true,
             accessKeyId: process.env.S3_KEY_ID,
             secretAccessKey: process.env.S3_SECRET_KEY,
-            s3ForcePathStyle: 'true',
+            s3ForcePathStyle: true,
             signatureVersion: 'v4'
         });
+        this.bucket = process.env.S3_BUCKET || 'netsblox-data';
     }
 
     get(id) {
         let data = '';
         const deferred = Q.defer();
+        const params = {
+            Bucket: this.bucket,
+            Key: id
+        };
 
-        this.client.getObject(id)
+        this.client.getObject(params)
             .on('httpData', chunk => data += chunk)
             .on('httpDone', () => deferred.resolve(data))
             .on('error', err => {
                 this.logger.error(`Could not read from ${JSON.stringify(id)}: ${err}`);
                 throw err;
-            });
+            })
+            .send();
 
         return deferred.promise;
     }
