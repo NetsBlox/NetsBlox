@@ -1,7 +1,4 @@
-// Detect and load the correct backend
-//   Default: fs
-// TODO
-
+// Detect and load the correct backend (default is 'fs')
 
 const BLOB_BACKEND = process.env.BLOB_BACKEND || 'fs';
 const Logger = require('../../logger');
