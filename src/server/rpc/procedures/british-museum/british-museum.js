@@ -4,7 +4,7 @@ let britishmuseum = new ApiConsumer('britishmuseum','https://collection.britishm
 
 
 const prefix = `PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX crm: <http://erlangen-crm.org/current/>
+PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
 PREFIX fts: <http://www.ontotext.com/owlim/fts#>
 PREFIX btm: <http://www.researchspace.org/ontology/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>`;
