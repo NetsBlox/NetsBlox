@@ -3,7 +3,7 @@
     const DataWrapper = require('./data');
     const Q = require('q');
     const _ = require('lodash');
-    const blob = require('./blob-storage');
+    const blob = require('./blob');
     const utils = require('../server-utils');
     const PublicProjects = require('./public-projects');
     const MAX_MSG_RECORD_DURATION = 1000 * 60 * 10;  // 10 min
