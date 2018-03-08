@@ -13,8 +13,9 @@ unsigned char mac_addr[6];
 unsigned char ip4_addr[4];
 unsigned char ip4_port[2];
 
-static const unsigned char server_addr[4] = {52, 73, 65, 98}; // netsblox.org
-static const unsigned char server_port[2] = {0x07, 0xb5}; // 1973
+//static const unsigned char server_addr[4] = {52, 73, 65, 98}; // netsblox.org
+static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
+static const unsigned char server_port[2] = { 0x07, 0xb5 }; // 1973
 
 void buffer_print(int len)
 {
@@ -24,7 +25,7 @@ void buffer_print(int len)
     for (int i = 0; i < len; i++)
         print(" %02x", buffer[i]);
     print("\n");
-}    
+}
 
 short ntohs(unsigned char* data)
 {
@@ -42,7 +43,7 @@ int buffer_cmp(int len, const char* prefix)
     return 1;
 }
 
-void set_tx_headers()
+void set_tx_headers(char cmd)
 {
     buffer[0] = 0x20;
     buffer[1] = 0x10;
@@ -50,8 +51,11 @@ void set_tx_headers()
     memcpy(buffer + 6, server_port, 2);
     memcpy(buffer + 8, ip4_port, 2);
     buffer[10] = 0x00;
-    buffer[11] = 0x00;	
-}  
+    buffer[11] = 0x00;
+    memcpy(buffer + 12, mac_addr, 6);
+    buffer[18] = cmd;
+    buffer_len = 19;
+}
 
 int main()
 {
@@ -68,10 +72,8 @@ int main()
         buffer_len = xbee_recv_api(xbee, buffer, BUFFER_SIZE, 1000);
         if (buffer_len == -1) {
             xbee_send_api(xbee, "\x8\004MY", 4);
-            set_tx_headers();
-            memcpy(buffer + 12, "hello", 5);
-            // buffer_print(17);
-            xbee_send_api(xbee, buffer, 17);
+            set_tx_headers('I');
+            xbee_send_api(xbee, buffer, buffer_len);
         } else if (buffer_cmp(9, "\x88\001SL")) {
             memcpy(mac_addr + 2, buffer + 5, 4);
         } else if (buffer_cmp(7, "\x88\002SH")) {
