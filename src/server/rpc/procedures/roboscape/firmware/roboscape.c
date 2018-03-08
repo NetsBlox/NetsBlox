@@ -13,8 +13,8 @@ unsigned char mac_addr[6];
 unsigned char ip4_addr[4];
 unsigned char ip4_port[2];
 
-//static const unsigned char server_addr[4] = {52, 73, 65, 98}; // netsblox.org
-static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
+static const unsigned char server_addr[4] = {52, 73, 65, 98}; // netsblox.org
+//static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
 static const unsigned char server_port[2] = { 0x07, 0xb5 }; // 1973
 
 void buffer_print(int len)
