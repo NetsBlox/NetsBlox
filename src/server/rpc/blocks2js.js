@@ -26,6 +26,8 @@ backend.doSocketMessage = function(node) {
 backend.doSocketResponse =  // ignore the argument since this isn't supported
 backend.reportUsername =
 
+backend.reportRPCError =
+
 backend.getProjectId =
 backend.getProjectIds =
 
@@ -173,16 +175,27 @@ context.getJSFromRPCStruct = function(service, name) {
 
     return Q(RPCManager.callRPC(name, subCtx, args))
         .then(() => subCtx.response.promise)
+        .then(text => {  // received response
+            if (subCtx.response._status > 299) {
+                this.project.rpcError = text;
+            }
+            return text;
+        })
         .catch(err => {
             logger.error(`rpc invocation failed: ${err}`);
             throw err;
         });
 };
 
+context.reportRPCError = function() {
+    return this.project.rpcError;
+};
+
 // Add the timeout
 const TIMEOUT = 2000;
 context.__start = function(project) {
     project.startTime = Date.now();
+    project.rpcError = null;
 };
 
 context.callMaybeAsync = function(self, fn) {
