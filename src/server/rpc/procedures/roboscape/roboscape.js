@@ -11,8 +11,8 @@
 'use strict';
 
 var debug = require('debug'),
-    // log = debug('netsblox:rpc:roboscape'),
-    log = console.log,
+    log = debug('netsblox:rpc:roboscape'),
+    // log = console.log,
     dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
     PORT = 1973, // listening UDP port
@@ -33,7 +33,7 @@ RoboScape.prototype._robots = {};
 RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
     if (!robot) {
-        log('RoboScape adding robot ' + mac_addr);
+        log('adding robot ' + mac_addr);
         robot = {}
         this._robots[mac_addr] = robot;
     }
@@ -56,7 +56,7 @@ RoboScape.prototype._tick = function () {
         var robot = RoboScape.prototype._robots[mac_addr];
         robot.tick -= 1;
         if (robot.tick <= 0) {
-            log('RoboScape forgetting robot ' + mac_addr);
+            log('forgetting robot ' + mac_addr);
             delete RoboScape.prototype._robots[mac_addr];
         }
     }
@@ -89,7 +89,7 @@ RoboScape.prototype.setSpeed = function (robot, left, right) {
     right = Math.max(Math.min(+right, 128), -128);
 
     log(robot);
-    log('RoboScape setting robot ' + robot.mac_addr +
+    log('setting robot ' + robot.mac_addr +
         ' speed to ' + left + ' ' + right);
     var message = Buffer.alloc(5);
     message.write('W', 0, 1);
@@ -97,7 +97,7 @@ RoboScape.prototype.setSpeed = function (robot, left, right) {
     message.writeInt16BE(right, 3);
     server.send(message, robot.ip4_port, robot.ip4_addr, function (err) {
         if (err) {
-            log('RoboScape send error ' + err);
+            log('send error ' + err);
         }
     });
     return true;
@@ -105,19 +105,19 @@ RoboScape.prototype.setSpeed = function (robot, left, right) {
 
 server.on('listening', function () {
     var local = server.address();
-    log('RoboScape listening on ' + local.address + ':' + local.port);
+    log('listening on ' + local.address + ':' + local.port);
 });
 
 server.on('message', function (message, remote) {
     var mac = message.toString('hex', 0, 6),
         cmd = message.toString('ascii', 6, 7);
 
-    var time = (new Date()).toLocaleTimeString();
-    log('RoboScape ' + time + ' ' + remote.address + ':' +
-        remote.port + ' ' + message.toString('hex'));
-
     if (cmd == 'I') {
         RoboScape.prototype._addRobot(mac, remote.address, remote.port);
+    } else {
+        var time = (new Date()).toLocaleTimeString();
+        log('unknown ' + time + ' ' + remote.address + ':' +
+            remote.port + ' ' + message.toString('hex'));
     }
 });
 

@@ -1,4 +1,5 @@
 #include "simpletools.h"
+#include "abdrive360.h"
 #include "xbee.h"
 
 enum {
@@ -6,7 +7,7 @@ enum {
 };
 
 fdserial* xbee;
-char buffer[BUFFER_SIZE];
+unsigned char buffer[BUFFER_SIZE];
 int buffer_len;
 
 unsigned char mac_addr[6];
@@ -32,7 +33,7 @@ short ntohs(unsigned char* data)
     return (data[0] << 8) + data[1];
 }
 
-int buffer_cmp(int len, const char* prefix)
+int cmp_api_response(int len, const unsigned char* prefix)
 {
     if (buffer_len != len)
         return 0;
@@ -43,7 +44,12 @@ int buffer_cmp(int len, const char* prefix)
     return 1;
 }
 
-void set_tx_headers(char cmd)
+int cmp_rx_headers(int len, unsigned char cmd)
+{
+    return buffer_len == len && buffer[0] == 0xb0 && buffer[11] == cmd;
+}  
+
+void set_tx_headers(unsigned char cmd)
 {
     buffer[0] = 0x20;
     buffer[1] = 0x10;
@@ -74,22 +80,25 @@ int main()
             xbee_send_api(xbee, "\x8\004MY", 4);
             set_tx_headers('I');
             xbee_send_api(xbee, buffer, buffer_len);
-        } else if (buffer_cmp(9, "\x88\001SL")) {
+        } else if (cmp_api_response(9, "\x88\001SL")) {
             memcpy(mac_addr + 2, buffer + 5, 4);
-        } else if (buffer_cmp(7, "\x88\002SH")) {
+        } else if (cmp_api_response(7, "\x88\002SH")) {
             memcpy(mac_addr, buffer + 5, 2);
             print("mac:");
             for (int i = 0; i < 6; i++)
                 print(" %02x", mac_addr[i]);
             print("\n");
-        } else if (buffer_cmp(7, "\x88\003C0")) {
+        } else if (cmp_api_response(7, "\x88\003C0")) {
             memcpy(ip4_port, buffer + 5, 2);
-        } else if (buffer_cmp(9, "\x88\004MY")) {
+        } else if (cmp_api_response(9, "\x88\004MY")) {
             memcpy(ip4_addr, buffer + 5, 4);
             print("ip4:");
             for (int i = 0; i < 4; i++)
                 print("%c%d", i == 0 ? ' ' : '.', ip4_addr[i]);
             print(" %d\n", ntohs(ip4_port));
+        } else if (cmp_rx_headers(16, 'W')) {
+            toggle(27);
+            drive_speed(ntohs(buffer + 12), ntohs(buffer + 14));
         } else if (buffer_len >= 0) {
             buffer_print(buffer_len);
         }
