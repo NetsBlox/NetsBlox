@@ -2,10 +2,11 @@
  * Author: Miklos Maroti <mmaroti@gmail.com>
  * 
  * Robot to server messages:
- *  mac_addr[6] I: identification, sent every second
+ *  mac_addr[6] time[4] 'I': identification, sent every second
+ *  mac_addr[6] time[4] 'W' left[2] right[2]: wheel ack
  * 
  * Server to robot messages:
- *  W left[2] right[2]: sets the wheel speeds
+ *  'W' left[2] right[2]: sets the wheel speeds
  */
 
 'use strict';
@@ -34,21 +35,33 @@ RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
     if (!robot) {
         log('adding robot ' + mac_addr);
-        robot = {}
+        robot = {
+            mac_addr: mac_addr,
+            ip4_addr: ip4_addr,
+            ip4_port: ip4_port,
+            tick: FORGET_TIME,
+            time: -1,
+        };
         this._robots[mac_addr] = robot;
+    } else {
+        robot.ip4_addr = ip4_addr;
+        robot.ip4_port = ip4_port;
+        robot.tick = FORGET_TIME;
     }
-    robot.mac_addr = mac_addr;
-    robot.ip4_addr = ip4_addr;
-    robot.ip4_port = ip4_port;
-    robot.tick = FORGET_TIME;
+    return robot;
 };
 
 RoboScape.prototype._getRobot = function (robot) {
-    for (var mac_addr in RoboScape.prototype._robots) {
-        if (mac_addr.endsWith(robot))
-            return RoboScape.prototype._robots[mac_addr];
+    if (typeof robot === 'string') {
+        if (robot.length === 6) {
+            return RoboScape.prototype._robots[robot];
+        }
+        for (var mac_addr in RoboScape.prototype._robots) {
+            if (mac_addr.endsWith(robot))
+                return RoboScape.prototype._robots[mac_addr];
+        }
     }
-    return null;
+    return undefined;
 }
 
 RoboScape.prototype._tick = function () {
@@ -88,13 +101,12 @@ RoboScape.prototype.setSpeed = function (robot, left, right) {
     left = Math.max(Math.min(+left, 128), -128);
     right = Math.max(Math.min(+right, 128), -128);
 
-    log(robot);
     log('setting robot ' + robot.mac_addr +
         ' speed to ' + left + ' ' + right);
     var message = Buffer.alloc(5);
     message.write('W', 0, 1);
-    message.writeInt16BE(left, 1);
-    message.writeInt16BE(right, 3);
+    message.writeInt16LE(left, 1);
+    message.writeInt16LE(right, 3);
     server.send(message, robot.ip4_port, robot.ip4_addr, function (err) {
         if (err) {
             log('send error ' + err);
@@ -109,12 +121,14 @@ server.on('listening', function () {
 });
 
 server.on('message', function (message, remote) {
-    var mac = message.toString('hex', 0, 6),
-        cmd = message.toString('ascii', 6, 7);
+    var mac_addr = message.toString('hex', 0, 6),
+        time = message.readUInt32LE(6),
+        command = message.toString('ascii', 10, 11);
 
-    if (cmd == 'I') {
-        RoboScape.prototype._addRobot(mac, remote.address, remote.port);
-    } else {
+    var robot = RoboScape.prototype._addRobot(mac_addr, remote.address, remote.port);
+    robot.time = time;
+
+    if (command == 'I') {} else {
         var time = (new Date()).toLocaleTimeString();
         log('unknown ' + time + ' ' + remote.address + ':' +
             remote.port + ' ' + message.toString('hex'));

@@ -1,5 +1,5 @@
-#include "simpletools.h"
 #include "abdrive360.h"
+#include "simpletools.h"
 #include "xbee.h"
 
 enum {
@@ -14,9 +14,14 @@ unsigned char mac_addr[6];
 unsigned char ip4_addr[4];
 unsigned char ip4_port[2];
 
-static const unsigned char server_addr[4] = {52, 73, 65, 98}; // netsblox.org
+static const unsigned char server_addr[4] = { 52, 73, 65, 98 }; // netsblox.org
 //static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
 static const unsigned char server_port[2] = { 0x07, 0xb5 }; // 1973
+
+unsigned short ntohs(unsigned char* data)
+{
+    return (data[0] << 8) + data[1];
+}
 
 void buffer_print(int len)
 {
@@ -26,11 +31,6 @@ void buffer_print(int len)
     for (int i = 0; i < len; i++)
         print(" %02x", buffer[i]);
     print("\n");
-}
-
-short ntohs(unsigned char* data)
-{
-    return (data[0] << 8) + data[1];
 }
 
 int cmp_api_response(int len, const unsigned char* prefix)
@@ -47,9 +47,9 @@ int cmp_api_response(int len, const unsigned char* prefix)
 int cmp_rx_headers(int len, unsigned char cmd)
 {
     return buffer_len == len && buffer[0] == 0xb0 && buffer[11] == cmd;
-}  
+}
 
-void set_tx_headers(unsigned char cmd)
+void set_tx_headers(int time, unsigned char cmd)
 {
     buffer[0] = 0x20;
     buffer[1] = 0x10;
@@ -59,8 +59,9 @@ void set_tx_headers(unsigned char cmd)
     buffer[10] = 0x00;
     buffer[11] = 0x00;
     memcpy(buffer + 12, mac_addr, 6);
-    buffer[18] = cmd;
-    buffer_len = 19;
+    memcpy(buffer + 18, &time, 4);
+    buffer[22] = cmd;
+    buffer_len = 23;
 }
 
 int main()
@@ -78,7 +79,7 @@ int main()
         buffer_len = xbee_recv_api(xbee, buffer, BUFFER_SIZE, 1000);
         if (buffer_len == -1) {
             xbee_send_api(xbee, "\x8\004MY", 4);
-            set_tx_headers('I');
+            set_tx_headers(CNT, 'I');
             xbee_send_api(xbee, buffer, buffer_len);
         } else if (cmp_api_response(9, "\x88\001SL")) {
             memcpy(mac_addr + 2, buffer + 5, 4);
@@ -97,8 +98,11 @@ int main()
                 print("%c%d", i == 0 ? ' ' : '.', ip4_addr[i]);
             print(" %d\n", ntohs(ip4_port));
         } else if (cmp_rx_headers(16, 'W')) {
+            int left = *(short*)(buffer + 12);
+            int right = *(short*)(buffer + 14);
             toggle(27);
-            drive_speed(ntohs(buffer + 12), ntohs(buffer + 14));
+            drive_speed(left, right);
+            set_tx_headers(CNT, 'W');
         } else if (buffer_len >= 0) {
             buffer_print(buffer_len);
         }
