@@ -14,8 +14,8 @@ unsigned char mac_addr[6];
 unsigned char ip4_addr[4];
 unsigned char ip4_port[2];
 
-static const unsigned char server_addr[4] = { 52, 73, 65, 98 }; // netsblox.org
-//static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
+//static const unsigned char server_addr[4] = { 52, 73, 65, 98 }; // netsblox.org
+static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
 static const unsigned char server_port[2] = { 0x07, 0xb5 }; // 1973
 
 unsigned short ntohs(unsigned char* data)
@@ -64,10 +64,16 @@ void set_tx_headers(int time, unsigned char cmd)
     buffer_len = 23;
 }
 
+void write_le16(short data)
+{
+    *(short*)(buffer + buffer_len) = data;
+    buffer_len += 2;
+}
+
 int main()
 {
-    input(9);
-    xbee = xbee_open(9, 8, 1);
+    input(1);
+    xbee = xbee_open(1, 0, 1);
     xbee_send_api(xbee, "\x8\000IDvummiv", 10);
 
     xbee_send_api(xbee, "\x8\001SL", 4);
@@ -97,12 +103,24 @@ int main()
             for (int i = 0; i < 4; i++)
                 print("%c%d", i == 0 ? ' ' : '.', ip4_addr[i]);
             print(" %d\n", ntohs(ip4_port));
-        } else if (cmp_rx_headers(16, 'W')) {
+        } else if (cmp_rx_headers(16, 'D')) {
             int left = *(short*)(buffer + 12);
             int right = *(short*)(buffer + 14);
             toggle(27);
             drive_speed(left, right);
-            set_tx_headers(CNT, 'W');
+            set_tx_headers(CNT, 'D');
+            write_le16(left);
+            write_le16(right);
+            xbee_send_api(xbee, buffer, buffer_len);
+        } else if (cmp_rx_headers(16, 'B')) {
+            int duration = *(short*)(buffer + 12);
+            int tone = *(short*)(buffer + 14);
+            toggle(27);
+            freqout(2, duration, tone);
+            set_tx_headers(CNT, 'B');
+            write_le16(duration);
+            write_le16(tone);
+            xbee_send_api(xbee, buffer, buffer_len);
         } else if (buffer_len >= 0) {
             buffer_print(buffer_len);
         }
