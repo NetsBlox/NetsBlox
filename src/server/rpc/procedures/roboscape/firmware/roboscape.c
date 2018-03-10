@@ -14,9 +14,10 @@ unsigned char mac_addr[6];
 unsigned char ip4_addr[4];
 unsigned char ip4_port[2];
 
-//static const unsigned char server_addr[4] = { 52, 73, 65, 98 }; // netsblox.org
-static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
+static const unsigned char server_addr[4] = { 52, 73, 65, 98 }; // netsblox.org
+//static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
 static const unsigned char server_port[2] = { 0x07, 0xb5 }; // 1973
+//static const unsigned char server_port[2] = { 0x07, 0xb4 }; // 1972
 
 unsigned short ntohs(unsigned char* data)
 {
@@ -66,7 +67,7 @@ void set_tx_headers(int time, unsigned char cmd)
 
 void write_le16(short data)
 {
-    *(short*)(buffer + buffer_len) = data;
+    memcpy(buffer + buffer_len, &data, 2);
     buffer_len += 2;
 }
 
@@ -81,12 +82,18 @@ int main()
     xbee_send_api(xbee, "\x8\003C0", 4);
     xbee_send_api(xbee, "\x8\004MY", 4);
 
+    int whiskers = 0;
+    int slower = 0;
     while (1) {
-        buffer_len = xbee_recv_api(xbee, buffer, BUFFER_SIZE, 1000);
+        buffer_len = xbee_recv_api(xbee, buffer, BUFFER_SIZE, 10);
+
         if (buffer_len == -1) {
-            xbee_send_api(xbee, "\x8\004MY", 4);
-            set_tx_headers(CNT, 'I');
-            xbee_send_api(xbee, buffer, buffer_len);
+            if (++slower >= 100) {
+                slower = 0;
+                xbee_send_api(xbee, "\x8\004MY", 4);
+                set_tx_headers(CNT, 'I');
+                xbee_send_api(xbee, buffer, buffer_len);
+            }                
         } else if (cmp_api_response(9, "\x88\001SL")) {
             memcpy(mac_addr + 2, buffer + 5, 4);
         } else if (cmp_api_response(7, "\x88\002SH")) {
@@ -103,6 +110,15 @@ int main()
             for (int i = 0; i < 4; i++)
                 print("%c%d", i == 0 ? ' ' : '.', ip4_addr[i]);
             print(" %d\n", ntohs(ip4_port));
+        } else if (cmp_rx_headers(16, 'B')) {
+            int msec = *(short*)(buffer + 12);
+            int tone = *(short*)(buffer + 14);
+            toggle(27);
+            freqout(2, msec, tone);
+            set_tx_headers(CNT, 'B');
+            write_le16(msec);
+            write_le16(tone);
+            xbee_send_api(xbee, buffer, buffer_len);
         } else if (cmp_rx_headers(16, 'D')) {
             int left = *(short*)(buffer + 12);
             int right = *(short*)(buffer + 14);
@@ -112,17 +128,17 @@ int main()
             write_le16(left);
             write_le16(right);
             xbee_send_api(xbee, buffer, buffer_len);
-        } else if (cmp_rx_headers(16, 'B')) {
-            int duration = *(short*)(buffer + 12);
-            int tone = *(short*)(buffer + 14);
-            toggle(27);
-            freqout(2, duration, tone);
-            set_tx_headers(CNT, 'B');
-            write_le16(duration);
-            write_le16(tone);
-            xbee_send_api(xbee, buffer, buffer_len);
         } else if (buffer_len >= 0) {
             buffer_print(buffer_len);
         }
+        
+        int whiskers2 = 0x03 ^ ((input(3) << 1) | input(4));
+        if (whiskers != whiskers2) {
+            toggle(27);
+            whiskers = whiskers2;
+            set_tx_headers(CNT, 'W');
+            buffer[buffer_len++] = whiskers;
+            xbee_send_api(xbee, buffer, buffer_len);
+        }          
     }
 }
