@@ -20,7 +20,7 @@ var debug = require('debug'),
     dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
     PORT = 1973, // listening UDP port
-    FORGET_TIME = 30; // forgetting a robot
+    FORGET_TIME = 120; // forgetting a robot
 
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
@@ -51,12 +51,12 @@ Robot.prototype.beep = function (msec, tone) {
     msec = Math.min(Math.max(+msec, 0), 1000);
     tone = Math.min(Math.max(+tone, 0), 20000);
 
-    log('set beep ' + robot.mac_addr + ' ' + msec + ' ' + tone);
+    log('set beep ' + this.mac_addr + ' ' + msec + ' ' + tone);
     var message = Buffer.alloc(5);
     message.write('B', 0, 1);
     message.writeUInt16LE(msec, 1);
     message.writeUInt16LE(tone, 3);
-    server.send(message, robot.ip4_port, robot.ip4_addr, function (err) {
+    server.send(message, this.ip4_port, this.ip4_addr, function (err) {
         if (err) {
             log('send error ' + err);
         }
