@@ -188,6 +188,7 @@ server.on('listening', function () {
 server.on('message', function (message, remote) {
     // just for development
     if (process.env.ROBOSCAPE_FORWARD) {
+        console.log('forwarding udp message');
         if (remote.address !== process.env.ROBOSCAPE_FORWARD) {
             server.robot_addr = remote.address;
             server.robot_port = remote.port
@@ -239,7 +240,12 @@ server.on('message', function (message, remote) {
 server.bind(PORT);
 
 if (process.env.ROBOSCAPE_FORWARD) {
-    log("RoboScape forwarding to " + process.env.ROBOSCAPE_FORWARD);
+    log("forwarding all messages to " + process.env.ROBOSCAPE_FORWARD);
+    module.exports = {
+        isSupported: function () {
+            return false;
+        }
+    };
 } else {
     setTimeout(RoboScape.prototype._tick, 1000);
     module.exports = RoboScape;
