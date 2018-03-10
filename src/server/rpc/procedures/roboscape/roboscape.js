@@ -83,8 +83,6 @@ RoboScape.prototype._tick = function () {
     setTimeout(RoboScape.prototype._tick, 1000);
 };
 
-setTimeout(RoboScape.prototype._tick, 1000);
-
 /**
  * Returns the MAC addresses of all robots.
  * @returns {array}
@@ -187,10 +185,6 @@ server.on('listening', function () {
     log('listening on ' + local.address + ':' + local.port);
 });
 
-if (process.env.ROBOSCAPE_FORWARD) {
-    console.log("RoboScape forwarding to " + process.env.ROBOSCAPE_FORWARD);
-}
-
 server.on('message', function (message, remote) {
     // just for development
     if (process.env.ROBOSCAPE_FORWARD) {
@@ -244,4 +238,9 @@ server.on('message', function (message, remote) {
 
 server.bind(PORT);
 
-module.exports = RoboScape;
+if (process.env.ROBOSCAPE_FORWARD) {
+    log("RoboScape forwarding to " + process.env.ROBOSCAPE_FORWARD);
+} else {
+    setTimeout(RoboScape.prototype._tick, 1000);
+    module.exports = RoboScape;
+}
