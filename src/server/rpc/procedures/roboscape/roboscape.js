@@ -22,10 +22,6 @@ var debug = require('debug'),
     PORT = 1973, // listening UDP port
     FORGET_TIME = 30; // forgetting a robot
 
-/**
- * Creates a robot that manages interactions.
- * @constructor
- */
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
     this.ip4_addr = ip4_addr;
@@ -35,11 +31,6 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.sockets = {};
 };
 
-/**
- * Sets the speed of the wheels of the robot.
- * @param {number} left the speed of the left wheel
- * @param {number} right the speed of the right wheel
- */
 Robot.prototype.setSpeed = function (left, right) {
     left = Math.max(Math.min(+left, 128), -128);
     right = Math.max(Math.min(+right, 128), -128);
@@ -56,11 +47,6 @@ Robot.prototype.setSpeed = function (left, right) {
     });
 };
 
-/**
- * Beeps with the speaker.
- * @param {number} msec duration in milliseconds
- * @param {number} tone frequency of the beep in Hz
- */
 Robot.prototype.beep = function (msec, tone) {
     msec = Math.min(Math.max(+msec, 0), 1000);
     tone = Math.min(Math.max(+tone, 0), 20000);
@@ -77,11 +63,6 @@ Robot.prototype.beep = function (msec, tone) {
     });
 };
 
-/**
- * Sends a message to the client about this robot.
- * @param {string} msgType the message type
- * @param {object} content object with fields
- */
 Robot.prototype.report = function (msgType, content) {
     content.robot = this.mac_addr;
     content.time = this.time;
@@ -101,7 +82,6 @@ Robot.prototype.report = function (msgType, content) {
 /**
  * RoboScape - This constructor is called on the first 
  * request to an RPC from a given room.
- *
  * @constructor
  * @return {undefined}
  */
