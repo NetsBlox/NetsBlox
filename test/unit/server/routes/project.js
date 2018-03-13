@@ -2,6 +2,7 @@ describe('project routes', function() {
     const utils = require('../../../assets/utils');
     const assert = require('assert');
     const supertest = require('supertest');
+    const Jimp = require('jimp');
     let port = 8393,
         options = {
             port: port,
@@ -48,10 +49,17 @@ describe('project routes', function() {
 
         it('should apply aspect ratio', function(done) {
             api.get(`/projects/brian/PublicProject/thumbnail?aspectRatio=1.61`)
-                .expect(200)
-                .expect('content-type', 'image/png')
-                .expect(res => assert(res.body.toString() == thumbnail161.toString(), 'image does not match expected (padded) image'))
-                .end(done);
+                .then(res => {
+                    assert(res.header['content-type'], 'image/png');
+                    return Promise.all([Jimp.read(res.body), Jimp.read(thumbnail161)]);
+                })
+                .then(([resp, expected]) => {
+                    assert(resp.bitmap.width, expected.bitmap.width, 'image does not match expected (padded) image width');
+                    assert(resp.bitmap.height, expected.bitmap.height, 'image does not match expected (padded) image height');
+                    done();
+                })
+                .catch(done);
+
         });
 
         // Examples
