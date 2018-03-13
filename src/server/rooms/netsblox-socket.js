@@ -180,14 +180,7 @@ class NetsBloxSocket {
             }
         });
 
-        this._socket.on('close', () => {
-            this._logger.trace('closed!');
-            if (this._room) {
-                this.leave();
-            }
-            this.onclose.forEach(fn => fn.call(this));
-            this.onClose(this.uuid);
-        });
+        this._socket.on('close', () => this.close());
 
         // change the heartbeat to use ping/pong from the ws spec
         this.checkAlive();
@@ -198,6 +191,15 @@ class NetsBloxSocket {
             type: 'report-version',
             body: Utils.version
         });
+    }
+
+    close () {
+        this._logger.trace('closed!');
+        if (this._room) {
+            this.leave();
+        }
+        this.onclose.forEach(fn => fn.call(this));
+        this.onClose(this);
     }
 
     onMessage (msg) {
@@ -223,6 +225,7 @@ class NetsBloxSocket {
     checkAlive() {
         if (!this.isAlive) {
             this._socket.terminate();
+            this.close();
         } else {
             this._socket.ping('', false, true);
             this.isAlive = false;
@@ -558,17 +561,23 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'join-room': function(msg) {
-        var owner = msg.owner,
-            name = msg.room,
-            role = msg.role;
+        const owner = msg.owner;
+        const name = msg.room;
+        const role = msg.role;
+        let room = null;
 
+        // It might be good for this to be sync on the client...
+        // TODO
         return RoomManager.getRoom(this, owner, name)
-            .then(room => {
+            .then(nextRoom => {
+                room = nextRoom;
                 this._logger.trace(`${this.username} is joining room ${owner}/${name}`);
-
-                // Check if the user is already at the room
-                return room.add(this, role);
+                if (!room.hasRole(role)) {
+                    this._logger.trace(`created role ${role} in ${owner}/${name}`);
+                    return room.createRole(role);
+                }
             })
+            .then(() => room.add(this, role))
             .catch(err => this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
 
     },
