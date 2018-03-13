@@ -180,14 +180,7 @@ class NetsBloxSocket {
             }
         });
 
-        this._socket.on('close', () => {
-            this._logger.trace('closed!');
-            if (this._room) {
-                this.leave();
-            }
-            this.onclose.forEach(fn => fn.call(this));
-            this.onClose(this.uuid);
-        });
+        this._socket.on('close', () => this.close());
 
         // change the heartbeat to use ping/pong from the ws spec
         this.checkAlive();
@@ -198,6 +191,15 @@ class NetsBloxSocket {
             type: 'report-version',
             body: Utils.version
         });
+    }
+
+    close () {
+        this._logger.trace('closed!');
+        if (this._room) {
+            this.leave();
+        }
+        this.onclose.forEach(fn => fn.call(this));
+        this.onClose(this);
     }
 
     onMessage (msg) {
@@ -223,6 +225,7 @@ class NetsBloxSocket {
     checkAlive() {
         if (!this.isAlive) {
             this._socket.terminate();
+            this.close();
         } else {
             this._socket.ping('', false, true);
             this.isAlive = false;
