@@ -19,10 +19,10 @@ const Projects = require('../storage/projects');
 
 
 try {
-    info('trying to load lwip');
-    var lwip = require('lwip');
+    info('trying to load Jimp');
+    var Jimp = require('jimp');
 } catch (e) {
-    error('Could not load lwip:');
+    error('Could not load Jimp:');
     error('aspectRatio for image thumbnails will not be supported');
 }
 
@@ -140,39 +140,41 @@ var sendProjectTo = function(project, res) {
 const TRANSPARENT = [0,0,0,0];
 
 var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
-    var lwip = require('lwip');
-    return Q.ninvoke(lwip, 'open', buffer, 'png')
+    let deferred = Q.defer();
+    let handleImageBuffer = (err, imgBuf) => {
+        if (err) {
+            deferred.reject(err);
+        } else {
+            deferred.resolve(imgBuf);
+        }
+    };
+    Jimp.read(buffer)
         .then(image => {
-            var width = image.width(),
-                height = image.height(),
+            var width = image.bitmap.width,
+                height = image.bitmap.height,
                 pad = Utils.computeAspectRatioPadding(width, height, ratio);
-
-            return Q.ninvoke(
-                image,
-                'pad',
-                pad.left,
-                pad.top,
-                pad.right,
-                pad.bottom,
-                TRANSPARENT
-            );
-        })
-        .then(image => Q.ninvoke(image, 'toBuffer', 'png'));
+            // round paddings to behave like lwip
+            let wDiff = parseInt((2*pad.left));
+            let hDiff = parseInt((2*pad.top));
+            image
+                .contain(width + wDiff, height + hDiff)
+                .getBuffer(Jimp.AUTO, handleImageBuffer);
+        });
+    return deferred.promise;
 };
-
 
 var applyAspectRatio = function (thumbnail, aspectRatio) {
     var image = thumbnail
         .replace(/^data:image\/png;base64,|^data:image\/jpeg;base64,|^data:image\/jpg;base64,|^data:image\/bmp;base64,/, '');
     var buffer = new Buffer(image, 'base64');
 
-    if (aspectRatio && typeof lwip !== 'undefined') {
+    if (aspectRatio && typeof Jimp !== 'undefined') {
         trace(`padding image with aspect ratio ${aspectRatio}`);
         aspectRatio = Math.max(aspectRatio, 0.2);
         aspectRatio = Math.min(aspectRatio, 5);
         return padImage(buffer, aspectRatio);
     } else {
-        if (aspectRatio) error('module lwip is not available thus setting aspect ratio will not work');
+        if (aspectRatio) error('module Jimp is not available thus setting aspect ratio will not work');
         return Q(buffer);
     }
 };
