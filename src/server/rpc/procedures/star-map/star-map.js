@@ -1,3 +1,9 @@
+/**
+ * The StarMap Service provides access to astronomy data using Sloan Digital Sky Survey.
+ * For more information, check out http://skyserver.sdss.org/dr14/en/home.aspx
+ *
+ * @service
+ */
 // This is the Sky Map RPC. It wraps the web API of the Sloan Digital Sky Survey.
 
 'use strict';

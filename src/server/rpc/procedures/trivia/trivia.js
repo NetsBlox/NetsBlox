@@ -1,7 +1,8 @@
-// This will use the jservice.io API to retrieve trivia questions.
-//
-// This is a static rpc collection. That is, it does not maintain state and is
-// shared across groups
+/**
+ * The Trivia Service provides access to trivia questions using the jservice API.
+ * For more information, check out https://jservice.io.
+ * @service
+ */
 'use strict';
 
 var debug = require('debug'),

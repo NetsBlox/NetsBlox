@@ -1,5 +1,8 @@
-// This is the ConnectN RPC. It will maintain the game board and can be queried
-// for win/tie/ongoing as well as turn
+/**
+ * The ConnectN Service provides helpers for building games like Connect-4 and Tic-Tac-Toe.
+ *
+ * @service
+ */
 
 'use strict';
 
@@ -9,13 +12,6 @@ var debug = require('debug'),
     Constants = require('../../../../common/constants'),
     info = debug('netsblox:rpc:connect-n:info');
 
-/**
- * ConnectN - This constructor is called on the first request to an RPC
- * from a given room
- *
- * @constructor
- * @return {undefined}
- */
 var ConnectN = function() {
     this._state = {};
     this._state.board = ConnectN.getNewBoard();
@@ -23,7 +19,12 @@ var ConnectN = function() {
     this._state.lastMove = null;
 };
 
-// Actions
+/**
+ * Create a new ConnectN game
+ * @param {Number=} row The number of rows on the game board
+ * @param {Number=} column The number of columns on the game board
+ * @param {Number=} numDotsToConnect The number of connected tiles required to win
+ */
 ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
     this._state.numRow = row || 3;
     this._state.numCol = column || 3;
@@ -58,6 +59,11 @@ ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
 
 
 
+/**
+ * Play at the given row, column to occupy the location.
+ * @param {Number} row The given row at which to move
+ * @param {Number} column The given column at which to move
+ */
 ConnectN.prototype.play = function(row, column) {
     // ...the game is still going
     if (this._state._winner) {
@@ -142,6 +148,9 @@ ConnectN.prototype.play = function(row, column) {
     return 'Play was not successful!';
 };
 
+/**
+ * Check if the current game is over.
+ */
 ConnectN.prototype.isGameOver = function() {
     var isOver = false;
 
@@ -157,13 +166,21 @@ ConnectN.prototype.isGameOver = function() {
     return isOver;
 };
 
-// Helper functions
 /**
- * Get the winner from the given board layout.
- *
- * @param board
- * @return {String} winner
+ * Check if every position on the current board is occupied.
  */
+ConnectN.prototype.isFullBoard = function() {
+    for (var i = this._state.board.length; i--;) {
+        for (var j = this._state.board[i].length; j--;) {
+            if (this._state.board[i][j] === null) {
+                return false;
+            }
+        }
+    }
+    return true;
+};
+
+// Helper functions
 ConnectN.getWinner = function(board, numDotsToConnect) {
     var possibleWinners = [];
     // Check for horizontal wins
@@ -207,17 +224,6 @@ ConnectN.rotateBoard = function(board) {
         }
     }
     return rotatedBoard;
-};
-
-ConnectN.prototype.isFullBoard = function() {
-    for (var i = this._state.board.length; i--;) {
-        for (var j = this._state.board[i].length; j--;) {
-            if (this._state.board[i][j] === null) {
-                return false;
-            }
-        }
-    }
-    return true;
 };
 
 ConnectN.getDiagonalWinner = function(board, numDotsToConnect) {

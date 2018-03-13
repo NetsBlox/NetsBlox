@@ -1,3 +1,8 @@
+/**
+ * The GoogleTrends Service provides access to the current Google trends.
+ * For more information, check out https://trends.google.com/trends/.
+ * @service
+ */
 let TrendsRPC = {};
 
 var debug = require('debug'),

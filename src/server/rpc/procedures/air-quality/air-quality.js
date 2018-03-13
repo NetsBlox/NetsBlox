@@ -1,9 +1,12 @@
+/**
+ * The AirQuality Service provides access to real-time air quality data using the AirNowAPI.
+ * For more information, check out https://docs.airnowapi.org/.
+ * @service
+ */
+
 // This will use the AirNowAPI to get air quality given a latitude and longitude.
 // If we start to run out of API requests, they have the entire dataset available
 // for download online.
-//
-// This is a static rpc collection. That is, it does not maintain state and is 
-// shared across groups
 'use strict';
 
 var debug = require('debug'),

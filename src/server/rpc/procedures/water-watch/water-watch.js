@@ -1,3 +1,8 @@
+/**
+ * The WaterWatch Service provides access to real-time water data.
+ * For more information, check out https://waterservices.usgs.gov/
+ * @service
+ */
 const ApiConsumer = require('../utils/api-consumer'),
     waterwatch = new ApiConsumer('waterwatch','https://waterservices.usgs.gov/nwis/iv/?');
 
