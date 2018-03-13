@@ -149,7 +149,7 @@ RPCManager.prototype.createRouter = function() {
 
     function createServiceMetadata(rpc) {
         let methods = this.rpcRegistry[rpc.serviceName];
-        let rpcs = {}; // stores info about service's methods
+        let serviceDoc = {rpcs:{}}; // stores info about service's methods
         let deprecatedMethods = rpc.COMPATIBILITY.deprecatedMethods || [];
         Object.keys(methods)
             .filter(key => !key.startsWith('_'))
@@ -168,9 +168,13 @@ RPCManager.prototype.createRouter = function() {
                 delete info.name;
                 info.deprecated = info.deprecated || deprecatedMethods.includes(name);
 
-                rpcs[name] = info;
+                serviceDoc.rpcs[name] = info;
             });
-        return rpcs;
+
+        if (rpc._docs) {
+            serviceDoc.description = rpc._docs.description;
+        }
+        return serviceDoc;
     }
 
     this.rpcs.forEach(rpc => {
