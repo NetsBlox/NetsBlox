@@ -1,4 +1,4 @@
-describe.only('blob', function() {
+describe('blob', function() {
     const sha = require('../../../../../src/common/sha512').hex_sha512;
     const blob = require('../../../../../src/server/storage/blob');
     const assert = require('assert');
