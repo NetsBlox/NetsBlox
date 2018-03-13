@@ -1,7 +1,10 @@
-// This is an RPC to provide access to Google maps and map utilities
-//
-// For end-user convenience, it is stateful and remembers the map lat,lng and
-// size of the image for each user in the given group
+/**
+ * The GoogleMaps Service provides access to the Google Maps API along with helper functions for interacting with the maps (such as converting coordinates).
+ * For more information, check out https://developers.google.com/maps/documentation/static-maps/intro
+ *
+ * Terms of use: https://developers.google.com/maps/terms
+ * @service
+ */
 'use strict';
 
 var debug = require('debug'),
@@ -17,7 +20,6 @@ var debug = require('debug'),
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity}),
     key = process.env.GOOGLE_MAPS_KEY;
 
-// TODO: check that the env variable is defined
 var storage;
 
 // Retrieving a static map image

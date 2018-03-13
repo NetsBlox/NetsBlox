@@ -1,3 +1,10 @@
+/**
+ * The Twitter Service provides access to real-time and historical stock price data.
+ * For more information, check out https://twitter.com.
+ *
+ * Terms of use: https://twitter.com/en/tos
+ * @service
+ */
 // This will use the Twitter API to allow the client to execute certain Twitter functions within NetsBlox
 
 'use strict';

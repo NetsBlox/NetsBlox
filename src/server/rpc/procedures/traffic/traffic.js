@@ -1,5 +1,8 @@
-// This will use the Bing traffic API to retrieve a list of traffic incidents and send
-// a message to the user with the data
+/**
+ * The Traffic Service provides access to real-time traffic data using the Bing Traffic API.
+ * For more information, check out https://msdn.microsoft.com/en-us/library/hh441725.aspx
+ * @service
+ */
 
 'use strict';
 

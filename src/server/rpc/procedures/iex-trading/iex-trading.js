@@ -1,8 +1,12 @@
-// Data attributed to https://iextrading.com/api-exhibit-a
+/**
+ * The IEXTrading Service provides access to real-time and historical stock price data.
+ * For more information, check out https://iextrading.com/developer.
+ *
+ * Terms of use: https://iextrading.com/api-exhibit-a
+ * @service
+ */
 
 const ApiConsumer = require('../utils/api-consumer');
-
-
 const StockConsumer = new ApiConsumer('iex-trading', 'https://api.iextrading.com/1.0',{cache: {ttl: 5*60}});
 
 /**

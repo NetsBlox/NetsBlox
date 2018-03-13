@@ -1,5 +1,12 @@
-const ApiConsumer = require('../utils/api-consumer');
+/**
+ * The BritishMuseum Service provides access to data from the British Museum collection.
+ * For more information, check out https://britishmuseum.org/
+ *
+ * Terms of use: https://collection.britishmuseum.org/resource/Termsofuse
+ * @service
+ */
 
+const ApiConsumer = require('../utils/api-consumer');
 let britishmuseum = new ApiConsumer('britishmuseum','https://collection.britishmuseum.org/',{cache: {ttl: 3600*24*30*6}});
 
 

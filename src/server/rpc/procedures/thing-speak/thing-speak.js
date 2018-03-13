@@ -1,3 +1,10 @@
+/**
+ * The ThingSpeak Service provides access to real-time and historical stock price data.
+ * For more information, check out https://thingspeak.com/.
+ *
+ * Terms of use: https://thingspeak.com/pages/terms
+ * @service
+ */
 const ApiConsumer = require('../utils/api-consumer');
 const thingspeakIoT = new ApiConsumer('thingspeakIoT',
     'https://api.thingspeak.com/channels/');

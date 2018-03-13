@@ -1,3 +1,10 @@
+/**
+ * The Weather Service provides access to real-time weather data using OpenWeatherMap.
+ * For more information, check out https://openweathermap.org/.
+ *
+ * Terms of Service: https://openweathermap.org/terms
+ * @service
+ */
 // This is a static rpc collection. That is, it does not maintain state and is
 // shared across groups
 'use strict';

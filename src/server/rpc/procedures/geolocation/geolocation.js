@@ -1,3 +1,10 @@
+/**
+ * The Geolocation Service provides access to the Google Places API and geocoding capabilities.
+ * For more information, check out https://developers.google.com/places/
+ *
+ * Terms of service: https://developers.google.com/maps/terms
+ * @service
+ */
 if(!process.env.GOOGLE_GEOCODING_API) {
     console.log('Warning: environment variable GOOGLE_GEOCODING_API not defined, Geolocation RPC will not work.');
 } else {

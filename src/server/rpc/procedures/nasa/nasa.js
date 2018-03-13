@@ -1,3 +1,8 @@
+/**
+ * The NASA Service provides access to planetary pictures and mars weather data.
+ * For more information, check out https://api.nasa.gov/.
+ * @service
+ */
 // This will utilize NASA's public APIs in order to provide data to the client
 
 'use strict';
@@ -76,5 +81,4 @@ module.exports = {
         });
         return null;
     }
-
 };

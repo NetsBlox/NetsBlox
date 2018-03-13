@@ -1,3 +1,10 @@
+/**
+ * The MovieDB Service provides access to movie data using TMDB (The MovieDB API).
+ * For more information, check out https://www.themoviedb.org/
+ *
+ * Terms of use: https://www.themoviedb.org/documentation/api/terms-of-use
+ * @service
+ */
 // This is the MovieDB game RPC. It wraps the web API of themoviedb.org.
 
 'use strict';

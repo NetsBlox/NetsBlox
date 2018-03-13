@@ -1,3 +1,9 @@
+/**
+ * The Eclipse2017 Service provides access to US weather data along the path of the Great American Eclipse.
+ * For more information about the eclipse, check out https://www.greatamericaneclipse.com/.
+ * @service
+ */
+
 const Logger = require('../../../logger'),
     eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePath.js').center,
     rpcUtils = require('../utils'),

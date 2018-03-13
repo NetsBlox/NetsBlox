@@ -4,7 +4,7 @@ const execute = {};
 /**
  * Execute a function on the NetsBlox server.
  *
- * @param {Function} fn function to execute
+ * @param {Function} fn function (ringified blocks) to execute
  */
 execute.call = function(fn) {
     let deferred = Q.defer();
