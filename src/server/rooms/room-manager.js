@@ -65,11 +65,12 @@ RoomManager.prototype.createRoom = function(socket, name, ownerId) {
         .then(project => {
             const id = project.getId();
             if (this.rooms[id]) {
-                return this.rooms[id];
+                room = this.rooms[id];
+            } else {
+                room.setStorage(project);
+                this.register(room);
             }
 
-            room.setStorage(project);
-            this.register(room);
             return room;
         });
 };
