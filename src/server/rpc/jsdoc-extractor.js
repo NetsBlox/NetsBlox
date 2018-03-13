@@ -56,16 +56,24 @@ function simplify(metadata) {
     return simplified;
 }
 
-function parseSource(source, searchScope){
+function parseSource(source, searchScope) {
     let lines = source.split(/\n/);
     let blocks = extractDocBlocks(source);
+
+
     blocks = blocks.map(block => {
         let src = block.lines.join('\n');
         block.parsed = doctrine.parse(src, {unwrap: true});
         return block;
     });
 
-    blocks = blocks.filter(block => {
+    // Find the description
+    const description = blocks
+        .filter(block => block.parsed.tags.find(tag => tag.title === 'service'))
+        .map(block => block.parsed.description)
+        .pop();
+
+    const rpcDocs = blocks.filter(block => {
         let linesToSearch = lines.slice(block.endLine, block.endLine + searchScope);
         let fnName;
         // if @name is set just use that and save a few cycles
@@ -85,7 +93,10 @@ function parseSource(source, searchScope){
         return true;
     });
 
-    return blocks;
+    return {
+        description,
+        rpcs: rpcDocs
+    };
 }
 
 // returns the first function found the a line or an array of lines
@@ -200,23 +211,25 @@ function mkextract () {
 }
 
 function parseService(path, scope) {
-    return parseSync(path, scope)
-        .map(md => {
-            md.parsed = simplify(md.parsed);
-            return md;
-        });
+    const serviceDocs = parseSync(path, scope);
+    serviceDocs.rpcs = serviceDocs.rpcs.map(md => {
+        md.parsed = simplify(md.parsed);
+        return md;
+    });
+    return serviceDocs;
 }
 
 // netsblox docs container
 let Docs = function(servicePath) {
-    this._docs = parseService(servicePath).map(doc => doc.parsed);
+    const serviceDocs = parseService(servicePath);
+    this.description = serviceDocs.description;
+    this.rpcs = serviceDocs.rpcs.map(doc => doc.parsed);
 };
 
 // get a doc for an action
 Docs.prototype.getDocFor = function(actionName) {
-    if (!this._docs || this._docs.length === 0) return undefined;
     // can preprocess and separate docs for different actions here;
-    let doc = this._docs.find(doc => doc.name === actionName);
+    let doc = this.rpcs.find(doc => doc.name === actionName);
     if (doc) return Object.assign({}, doc);
     return undefined;
 };
