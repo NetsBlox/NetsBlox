@@ -13,18 +13,10 @@ var _ = require('lodash'),
     log = debug('netsblox:api:projects:log'),
     info = debug('netsblox:api:projects:info'),
     trace = debug('netsblox:api:projects:trace'),
+    Jimp = require('jimp'),
     error = debug('netsblox:api:projects:error');
 
 const Projects = require('../storage/projects');
-
-
-try {
-    info('trying to load lwip');
-    var lwip = require('lwip');
-} catch (e) {
-    error('Could not load lwip:');
-    error('aspectRatio for image thumbnails will not be supported');
-}
 
 
 /**
@@ -137,42 +129,31 @@ var sendProjectTo = function(project, res) {
         .catch(err => res.status(500).send('ERROR: ' + err));
 };
 
-const TRANSPARENT = [0,0,0,0];
-
 var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
-    var lwip = require('lwip');
-    return Q.ninvoke(lwip, 'open', buffer, 'png')
+    return Jimp.read(buffer)
         .then(image => {
-            var width = image.width(),
-                height = image.height(),
+            var width = image.bitmap.width,
+                height = image.bitmap.height,
                 pad = Utils.computeAspectRatioPadding(width, height, ratio);
-
-            return Q.ninvoke(
-                image,
-                'pad',
-                pad.left,
-                pad.top,
-                pad.right,
-                pad.bottom,
-                TRANSPARENT
-            );
-        })
-        .then(image => Q.ninvoke(image, 'toBuffer', 'png'));
+            // round paddings to behave like lwip
+            let wDiff = parseInt((2*pad.left));
+            let hDiff = parseInt((2*pad.top));
+            image = image.contain(width + wDiff, height + hDiff);
+            return Q.ninvoke(image, 'getBuffer', Jimp.AUTO);
+        });
 };
-
 
 var applyAspectRatio = function (thumbnail, aspectRatio) {
     var image = thumbnail
         .replace(/^data:image\/png;base64,|^data:image\/jpeg;base64,|^data:image\/jpg;base64,|^data:image\/bmp;base64,/, '');
     var buffer = new Buffer(image, 'base64');
 
-    if (aspectRatio && typeof lwip !== 'undefined') {
+    if (aspectRatio) {
         trace(`padding image with aspect ratio ${aspectRatio}`);
         aspectRatio = Math.max(aspectRatio, 0.2);
         aspectRatio = Math.min(aspectRatio, 5);
         return padImage(buffer, aspectRatio);
     } else {
-        if (aspectRatio) error('module lwip is not available thus setting aspect ratio will not work');
         return Q(buffer);
     }
 };
