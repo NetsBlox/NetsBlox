@@ -129,8 +129,6 @@ var sendProjectTo = function(project, res) {
         .catch(err => res.status(500).send('ERROR: ' + err));
 };
 
-const TRANSPARENT = [0,0,0,0];
-
 var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
     return Jimp.read(buffer)
         .then(image => {
