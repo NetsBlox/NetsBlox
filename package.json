@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start": "node bin/netsblox-start.js",
-    "dev": "node node_modules/nodemon/bin/nodemon --ignore src/client/dist -w src -w test --exec 'npm run postinstall && npm start'",
+    "dev": "node node_modules/nodemon/bin/nodemon --ignore src/browser/dist -w src -w test --exec 'npm run postinstall && npm start'",
     "testmon": "node node_modules/nodemon/bin/nodemon -w src -w test node_modules/mocha/bin/mocha --recursive test/unit/server test/unit/client/serialization.spec.js test/features",
     "test-quick": "MONGO_URI=mongodb://127.0.0.1:27017/netsblox-tests ENV=test node node_modules/mocha/bin/mocha --recursive test/unit/server test/unit/client/serialization.spec.js test/features",
     "test-client": "node test/unit/client/integration.js",
