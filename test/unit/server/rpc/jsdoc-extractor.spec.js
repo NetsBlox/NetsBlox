@@ -53,7 +53,7 @@ describe('jsdoc-extractor', () => {
 
     describe('parsing', () => {
 
-        let metadata = jp._parseSource(comment)[0];
+        let metadata = jp._parseSource(comment).rpcs[0];
 
         it('should parse jsdoc comments', () => {
             assert.deepEqual(metadata.parsed.tags[1].name, 'limit');
@@ -99,7 +99,7 @@ describe('jsdoc-extractor', () => {
              * @name doStuff
              */
             `;
-            let metadata = jp._parseSource(oldComment)[0];
+            let metadata = jp._parseSource(oldComment).rpcs[0];
             let simpleMetadata = jp._simplify(metadata.parsed);
             assert(simpleMetadata.deprecated);
         });
@@ -111,7 +111,7 @@ describe('jsdoc-extractor', () => {
         describe('getDocFor', () => {
             it('should return a copy', () => {
                 let Docs = jp.Docs;
-                let sampleDocs = {_docs: [{name: 'rpcName', description: 'original description'}]};
+                let sampleDocs = {rpcs: [{name: 'rpcName', description: 'original description'}]};
                 let targetDoc = Docs.prototype.getDocFor.call(sampleDocs, 'rpcName');
                 targetDoc.description = 'mutated description';
                 let secondGet = Docs.prototype.getDocFor.call(sampleDocs, 'rpcName');
