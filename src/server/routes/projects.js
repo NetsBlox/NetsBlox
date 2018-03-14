@@ -140,15 +140,7 @@ var sendProjectTo = function(project, res) {
 const TRANSPARENT = [0,0,0,0];
 
 var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
-    let deferred = Q.defer();
-    let handleImageBuffer = (err, imgBuf) => {
-        if (err) {
-            deferred.reject(err);
-        } else {
-            deferred.resolve(imgBuf);
-        }
-    };
-    Jimp.read(buffer)
+    return Jimp.read(buffer)
         .then(image => {
             var width = image.bitmap.width,
                 height = image.bitmap.height,
@@ -156,11 +148,9 @@ var padImage = function (buffer, ratio) {  // Pad the image to match the given a
             // round paddings to behave like lwip
             let wDiff = parseInt((2*pad.left));
             let hDiff = parseInt((2*pad.top));
-            image
-                .contain(width + wDiff, height + hDiff)
-                .getBuffer(Jimp.AUTO, handleImageBuffer);
+            image = image.contain(width + wDiff, height + hDiff);
+            return Q.ninvoke(image, 'getBuffer', Jimp.AUTO);
         });
-    return deferred.promise;
 };
 
 var applyAspectRatio = function (thumbnail, aspectRatio) {
