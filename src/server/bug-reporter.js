@@ -84,7 +84,7 @@ BugReporter.prototype.reportClientBug = function(report) {
 
     return this.getUserEmail(report.user)
         .then(email => {
-            if (email) body += '\n\nReporter\'s email: ' + user.email;
+            if (email) body += '\n\nReporter\'s email: ' + email;
             return this.reportBug(subject, body, data);
         });
 };
