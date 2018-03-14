@@ -13,18 +13,10 @@ var _ = require('lodash'),
     log = debug('netsblox:api:projects:log'),
     info = debug('netsblox:api:projects:info'),
     trace = debug('netsblox:api:projects:trace'),
+    Jimp = require('jimp'),
     error = debug('netsblox:api:projects:error');
 
 const Projects = require('../storage/projects');
-
-
-try {
-    info('trying to load Jimp');
-    var Jimp = require('jimp');
-} catch (e) {
-    error('Could not load Jimp:');
-    error('aspectRatio for image thumbnails will not be supported');
-}
 
 
 /**
@@ -158,13 +150,12 @@ var applyAspectRatio = function (thumbnail, aspectRatio) {
         .replace(/^data:image\/png;base64,|^data:image\/jpeg;base64,|^data:image\/jpg;base64,|^data:image\/bmp;base64,/, '');
     var buffer = new Buffer(image, 'base64');
 
-    if (aspectRatio && typeof Jimp !== 'undefined') {
+    if (aspectRatio) {
         trace(`padding image with aspect ratio ${aspectRatio}`);
         aspectRatio = Math.max(aspectRatio, 0.2);
         aspectRatio = Math.min(aspectRatio, 5);
         return padImage(buffer, aspectRatio);
     } else {
-        if (aspectRatio) error('module Jimp is not available thus setting aspect ratio will not work');
         return Q(buffer);
     }
 };
