@@ -16,11 +16,8 @@ const StockConsumer = new ApiConsumer('iex-trading', 'https://api.iextrading.com
  */
 StockConsumer.currentPrice = function(companySymbol) {
 
-	// Return statement, using a promise to allow _requestData to receive the value from the API before returning
-    return this._requestData({queryString: `/stock/${companySymbol}/quote?displayPercent=true`})
-        .then(body => {
-            return body.latestPrice;
-        });
+    // Return statement, using a promise to allow _requestData to receive the value from the API before returning
+    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.latestPrice');
 };
 
 /**
@@ -30,11 +27,8 @@ StockConsumer.currentPrice = function(companySymbol) {
  */
 StockConsumer.lastOpenPrice = function(companySymbol) {
 
-	// Return statement, using a promise to allow _requestData to receive the value from the API before returning
-    return this._requestData({queryString: `/stock/${companySymbol}/quote?displayPercent=true`})
-        .then(body => {
-            return body.open;
-        });
+    // Return statement, using a promise to allow _requestData to receive the value from the API before returning
+    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.open');
 };
 
 /**
@@ -44,11 +38,8 @@ StockConsumer.lastOpenPrice = function(companySymbol) {
  */
 StockConsumer.lastClosePrice = function(companySymbol) {
 
-	// Return statement, using a promise to allow _requestData to receive the value from the API before returning
-    return this._requestData({queryString: `/stock/${companySymbol}/quote?displayPercent=true`})
-        .then(body => {
-            return body.close;
-        });
+    // Return statement, using a promise to allow _requestData to receive the value from the API before returning
+    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.close');
 };
 
 /**
@@ -58,11 +49,8 @@ StockConsumer.lastClosePrice = function(companySymbol) {
  */
 StockConsumer.companyInformation = function(companySymbol) {
 
-	// Return statement, using a promise to allow _requestData to receive the value from the API before returning
-    return this._requestData({queryString: `/stock/${companySymbol}/quote?displayPercent=true`})
-        .then(body => {
-            return body;
-        });
+    // Return statement, using a promise to allow _requestData to receive the value from the API before returning
+    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`});
 };
 
 /**
@@ -72,7 +60,7 @@ StockConsumer.companyInformation = function(companySymbol) {
 */
 StockConsumer.dailyPercentChange = function(companySymbol) {
 
-	// Return statement, using a promise to allow _requestData to receive the value from the API before returning
+    // Return statement, using a promise to allow _requestData to receive the value from the API before returning
     return this._requestData({queryString: `/stock/${companySymbol}/quote?displayPercent=true`})
         .then(body => {
             return body.changePercent;
