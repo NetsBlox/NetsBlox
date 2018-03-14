@@ -1,6 +1,5 @@
 describe('project routes', function() {
     const utils = require('../../../assets/utils');
-    const hash = require('../../../../src/common/sha512').hex_sha512;
     const assert = require('assert');
     const supertest = require('supertest');
     let port = 8393,
