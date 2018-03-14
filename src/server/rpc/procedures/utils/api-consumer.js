@@ -212,8 +212,8 @@ class ApiConsumer {
                 }
                 this._logger.trace('parsed response:', parsedRes);
                 let snapStructure = this._createSnapStructure(parsedRes);
-                this.response.send(snapStructure);
                 this._logger.trace('responded with an structure', snapStructure);
+                return snapStructure;
             });
     }
 
@@ -260,7 +260,7 @@ class ApiConsumer {
             .then(res => {
                 let answer = this._queryJson(res,selector);
                 this._logger.trace('answer is', answer);
-                this.response.send(answer);
+                return answer;
             });
     }
 
@@ -291,7 +291,7 @@ class ApiConsumer {
             delete this._remainingMsgs[this.socket.uuid];
             this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.role);
         }else {
-            this.response.send('there are no messages in the queue to stop.');
+            return 'there are no messages in the queue to stop.';
         }
     }
 }
