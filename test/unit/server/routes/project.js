@@ -71,39 +71,4 @@ describe('project routes', function() {
                 .end(done);
         });
     });
-
-    describe('login/logout', function() {
-
-        it('should support login', function(done) {
-            const user = 'brian';
-            const password = hash('secretPassword');
-
-            api.post(`/`)
-                .send({__u: user, __h: password, remember: true})
-                .expect(res => res.text.startsWith('Service'))
-                .end(err => done(err));
-        });
-
-        it('should support logout', function(done) {
-            const user = 'brian';
-            const password = hash('secretPassword');
-
-            api.post(`/`)
-                .send({__u: user, __h: password, remember: true})
-                .expect(res => res.text.startsWith('Service'))
-                .end(err => {
-                    if (err) return done(err);
-                    // Logout
-                    api.post(`/logout`)
-                        .expect(res => {  // check that the cookie is reset
-                            const setCookieCmd = res.header['set-cookie']
-                                .find(cmd => cmd.includes('netsblox-cookie=;'));
-
-                            assert(setCookieCmd);
-                        })
-                        .end(err => done(err));
-                });
-        });
-
-    });
 });
