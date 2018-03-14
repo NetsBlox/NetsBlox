@@ -711,7 +711,7 @@ NetsBloxSocket.MessageHandlers = {
 
     'request-actions': function(msg) {
         const actionId = msg.actionId;
-        this.requestActionsAfter(actionId);
+        return this.requestActionsAfter(actionId);
     }
 };
 
