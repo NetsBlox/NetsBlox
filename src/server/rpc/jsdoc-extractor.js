@@ -73,25 +73,27 @@ function parseSource(source, searchScope) {
         .map(block => block.parsed.description)
         .pop();
 
-    const rpcDocs = blocks.filter(block => {
-        let linesToSearch = lines.slice(block.endLine, block.endLine + searchScope);
-        let fnName;
-        // if @name is set just use that and save a few cycles
-        let nameTag = block.parsed.tags.find(tag => tag.title === 'name');
-        if (nameTag) {
-            fnName  = nameTag.name;
-            logger.info('fn name set through @name', fnName);
-        } else {
-            fnName = findFn(linesToSearch);
-            if (!fnName){
-                logger.warn(`can't associate ${block.lines} with any function. # Fix it at line ${block.beginLine}, column ${block.column}`);
-                return false;
+    const rpcDocs = blocks
+        .filter(block => !block.parsed.tags.find(tag => tag.title === 'service'))
+        .filter(block => {
+            let linesToSearch = lines.slice(block.endLine, block.endLine + searchScope);
+            let fnName;
+            // if @name is set just use that and save a few cycles
+            let nameTag = block.parsed.tags.find(tag => tag.title === 'name');
+            if (nameTag) {
+                fnName  = nameTag.name;
+                logger.info('fn name set through @name', fnName);
+            } else {
+                fnName = findFn(linesToSearch);
+                if (!fnName){
+                    logger.warn(`can't associate ${block.lines} with any function. # Fix it at line ${block.beginLine}, column ${block.column}`);
+                    return false;
+                }
+                block.parsed.tags.push({title: 'name', name: fnName, description: null});
             }
-            block.parsed.tags.push({title: 'name', name: fnName, description: null});
-        }
-        block.fnName = fnName;
-        return true;
-    });
+            block.fnName = fnName;
+            return true;
+        });
 
     return {
         description,
