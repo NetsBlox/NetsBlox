@@ -448,6 +448,22 @@ class NetsBloxSocket {
             this._logger.error(`Will not save messages: active room is missing project ${srcRoom.getUuid()}`);
         }
     }
+
+    requestActionsAfter (actionId) {
+        if (!this.hasRoom()) {
+            this._logger.error(`User requested actions without room: ${this.username}`);
+            return;
+        }
+
+        let project = this._room.getProject();
+        let projectId = project.getId();
+        return project.getRoleId(this.role)
+            .then(roleId => ProjectActions.getActionsAfter(projectId, roleId, actionId))
+            .then(actions => {
+                actions.forEach(action => this.send(action));
+                this.send({type: 'request-actions-complete'});
+            });
+    }
 }
 
 // From the WebSocket spec
@@ -561,13 +577,10 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'join-room': function(msg) {
-        const owner = msg.owner;
+        const {owner, role, actionId} = msg;
         const name = msg.room;
-        const role = msg.role;
         let room = null;
 
-        // It might be good for this to be sync on the client...
-        // TODO
         return RoomManager.getRoom(this, owner, name)
             .then(nextRoom => {
                 room = nextRoom;
@@ -578,6 +591,7 @@ NetsBloxSocket.MessageHandlers = {
                 }
             })
             .then(() => room.add(this, role))
+            .then(() => this.requestActionsAfter(actionId))
             .catch(err => this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
 
     },
@@ -696,19 +710,8 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'request-actions': function(msg) {
-        if (!this.hasRoom()) {
-            this._logger.error(`User requested actions without room: ${this.username}`);
-            return;
-        }
-
-        let project = this._room.getProject();
-        let projectId = project.getId();
-        return project.getRoleId(this.role)
-            .then(roleId => ProjectActions.getActionsAfter(projectId, roleId, msg.actionId))
-            .then(actions => {
-                actions.forEach(action => this.send(action));
-                this.send({type: 'request-actions-complete'});
-            });
+        const actionId = msg.actionId;
+        this.requestActionsAfter(actionId);
     }
 };
 
