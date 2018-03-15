@@ -265,7 +265,8 @@ module.exports = [
                 this._logger.info('Received anonymous bug report');
             }
 
-            BugReporter.reportClientBug(report);
+            const socket = SocketManager.getSocket(report.clientUuid);
+            BugReporter.reportClientBug(socket, report);
 
             return res.sendStatus(200);
         }

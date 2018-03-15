@@ -154,8 +154,13 @@ class ActiveRoom {
     }
 
     getStateMsg () {
-        var occupants = {},
-            msg;
+        const state = this.getState();
+        state.type = 'room-roles';
+        return state;
+    }
+
+    getState () {
+        const occupants = {};
 
         this.getRoleNames()
             .forEach(role => occupants[role] =
@@ -167,14 +172,12 @@ class ActiveRoom {
                     };
                 }));
 
-        msg = {
-            type: 'room-roles',
+        return {
             owner: this.owner,
             collaborators: this.getCollaborators(),
             name: this.name,
             occupants: occupants
         };
-        return msg;
     }
 
     setStorage(store) {
@@ -385,6 +388,10 @@ class ActiveRoom {
 
     getRoleActionId(role) {
         return Q(this.roleActionIds[role] || -Infinity);
+    }
+
+    getRoleActionIds() {
+        return Q(this.roleActionIds);
     }
 
     setRole(role, content) {
