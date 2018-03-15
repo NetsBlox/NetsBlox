@@ -8,6 +8,11 @@
 
 const ApiConsumer = require('../utils/api-consumer');
 const StockConsumer = new ApiConsumer('iex-trading', 'https://api.iextrading.com/1.0',{cache: {ttl: 5*60}});
+const rewordError = err => {
+    if (err.statusCode === 404) {
+        return 'Unknown company symbol';
+    }
+};
 
 /**
  * Get the current price of the given stock, with a 15 min delay
@@ -15,7 +20,14 @@ const StockConsumer = new ApiConsumer('iex-trading', 'https://api.iextrading.com
  * @returns {Number} Current price for the specified stock
  */
 StockConsumer.currentPrice = function(companySymbol) {
-    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.latestPrice');
+    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.latestPrice')
+        .catch(err => {
+            const prettyError = rewordError(err);
+            if (prettyError) {
+                return this.response.status(500).send(prettyError);
+            }
+            throw err;
+        });
 };
 
 /**
@@ -24,7 +36,14 @@ StockConsumer.currentPrice = function(companySymbol) {
  * @returns {Number} Value of the last opening price for that stock
  */
 StockConsumer.lastOpenPrice = function(companySymbol) {
-    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.open');
+    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.open')
+        .catch(err => {
+            const prettyError = rewordError(err);
+            if (prettyError) {
+                return this.response.status(500).send(prettyError);
+            }
+            throw err;
+        });
 };
 
 /**
@@ -33,7 +52,14 @@ StockConsumer.lastOpenPrice = function(companySymbol) {
  * @returns {Number} Value of the last close price for that stock
  */
 StockConsumer.lastClosePrice = function(companySymbol) {
-    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.close');
+    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.close')
+        .catch(err => {
+            const prettyError = rewordError(err);
+            if (prettyError) {
+                return this.response.status(500).send(prettyError);
+            }
+            throw err;
+        });
 };
 
 /**
@@ -42,7 +68,14 @@ StockConsumer.lastClosePrice = function(companySymbol) {
  * @returns {Object} Company information
  */
 StockConsumer.companyInformation = function(companySymbol) {
-    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`});
+    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`})
+        .catch(err => {
+            const prettyError = rewordError(err);
+            if (prettyError) {
+                return this.response.status(500).send(prettyError);
+            }
+            throw err;
+        });
 };
 
 /**
@@ -51,7 +84,14 @@ StockConsumer.companyInformation = function(companySymbol) {
 * @returns {Number} The daily change percent for the specified company
 */
 StockConsumer.dailyPercentChange = function(companySymbol) {
-    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.changePercent');
+    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.changePercent')
+        .catch(err => {
+            const prettyError = rewordError(err);
+            if (prettyError) {
+                return this.response.status(500).send(prettyError);
+            }
+            throw err;
+        });
 };
 
 StockConsumer.serviceName = 'IEXTrading';
