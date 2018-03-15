@@ -5,6 +5,7 @@ const Users = require('./storage/users');
 const version = require('./server-utils').version;
 const snap2jsVersion = require('snap2js/package').version;
 const request = require('request-promise');
+const Q = require('q');
 
 const BugReporter = function() {
     this.maintainer = process.env.MAINTAINER_EMAIL;
@@ -65,7 +66,7 @@ BugReporter.prototype.createBody = function(action, err, username) {
         });
 };
 
-BugReporter.prototype.reportClientBug = function(report) {
+BugReporter.prototype.reportClientBug = function(socket, report) {
     const user = report.user;
     report.bugType = 'Client';
     const data = {
@@ -85,7 +86,30 @@ BugReporter.prototype.reportClientBug = function(report) {
     return this.getUserEmail(report.user)
         .then(email => {
             if (email) body += '\n\nReporter\'s email: ' + email;
+            return this.getRoomState(socket);
+        })
+        .then(roomState => {
+            report.room = roomState;
             return this.reportBug(subject, body, data);
+        });
+};
+
+BugReporter.prototype.getRoomState = function(socket) {
+    if (!socket) {
+        return Q({error: 'socket not found'});
+    }
+
+    const room = socket.getRawRoom();
+    if (!room) {
+        return Q({error: 'no associated room'});
+    }
+
+    const state = room.getState();
+    state.projectId = room.getProjectId();
+    return room.getRoleActionIds()
+        .then(roleActionIds => {
+            state.roleActionIds = roleActionIds;
+            return state;
         });
 };
 
