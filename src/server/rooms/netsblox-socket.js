@@ -153,12 +153,19 @@ class NetsBloxSocket {
                         sockets.forEach(socket => socket.send(msg));
                     }
                     msg.projectId = projectId;
-                    return room.setRoleActionId(role, msg.action.id)
-                        .then(() => room.getProject().getRoleId(role))
+                    // Only set the role's action id if not user action
+                    const storeAction = () => room.getProject().getRoleId(role)
                         .then(roleId => {
                             msg.roleId = roleId;
                             return ProjectActions.store(msg);
                         });
+
+                    if (!msg.action.isUserAction) {
+                        return room.setRoleActionId(role, msg.action.id)
+                            .then(storeAction);
+                    } else {
+                        return storeAction();
+                    }
                 }
             });
     }
@@ -166,7 +173,14 @@ class NetsBloxSocket {
     canApplyAction(action) {
         const startRole = this.role;
         return this._room.getRoleActionId(this.role)
-            .then(actionId => actionId < action.id && this.role === startRole);
+            .then(actionId => {
+                const accepted = actionId < action.id && this.role === startRole;
+                if (!accepted) {
+                    this._logger.log(`rejecting action with id ${action.id} ` +
+                        `(${actionId}) from ${this.getPublicId()}`);
+                }
+                return accepted;
+            });
     }
 
     _initialize () {
@@ -175,7 +189,7 @@ class NetsBloxSocket {
                 var msg = JSON.parse(data);
                 return this.onMessage(msg);
             } catch (err) {
-                this._logger.error(`Failed to parse message: ${err} (${data})`);
+                this._logger.error(`failed to parse message: ${err} (${data})`);
                 BugReporter.reportInvalidSocketMessage(err, data, this);
             }
         });
