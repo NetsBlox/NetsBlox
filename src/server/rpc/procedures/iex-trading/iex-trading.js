@@ -15,8 +15,6 @@ const StockConsumer = new ApiConsumer('iex-trading', 'https://api.iextrading.com
  * @returns {Number} Current price for the specified stock
  */
 StockConsumer.currentPrice = function(companySymbol) {
-
-    // Return statement, using a promise to allow _requestData to receive the value from the API before returning
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.latestPrice');
 };
 
@@ -26,8 +24,6 @@ StockConsumer.currentPrice = function(companySymbol) {
  * @returns {Number} Value of the last opening price for that stock
  */
 StockConsumer.lastOpenPrice = function(companySymbol) {
-
-    // Return statement, using a promise to allow _requestData to receive the value from the API before returning
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.open');
 };
 
@@ -37,8 +33,6 @@ StockConsumer.lastOpenPrice = function(companySymbol) {
  * @returns {Number} Value of the last close price for that stock
  */
 StockConsumer.lastClosePrice = function(companySymbol) {
-
-    // Return statement, using a promise to allow _requestData to receive the value from the API before returning
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.close');
 };
 
@@ -48,8 +42,6 @@ StockConsumer.lastClosePrice = function(companySymbol) {
  * @returns {Object} Company information
  */
 StockConsumer.companyInformation = function(companySymbol) {
-
-    // Return statement, using a promise to allow _requestData to receive the value from the API before returning
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`});
 };
 
@@ -59,12 +51,7 @@ StockConsumer.companyInformation = function(companySymbol) {
 * @returns {Number} The daily change percent for the specified company
 */
 StockConsumer.dailyPercentChange = function(companySymbol) {
-
-    // Return statement, using a promise to allow _requestData to receive the value from the API before returning
-    return this._requestData({queryString: `/stock/${companySymbol}/quote?displayPercent=true`})
-        .then(body => {
-            return body.changePercent;
-        });
+    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.changePercent');
 };
 
 StockConsumer.serviceName = 'IEXTrading';
