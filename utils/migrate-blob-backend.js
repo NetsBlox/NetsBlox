@@ -4,7 +4,7 @@
 const targetBackend = process.argv[2];
 
 if (!targetBackend) {
-    console.error('usage: migrate-blob-backend <target-backend>');
+    console.error('usage: node --expose_gc ./migrate-blob-backend.js <target-backend>');
     process.exit(1);
 }
 
@@ -27,7 +27,11 @@ currentBlob.list()
         const bar = new ProgressBar('Migrating blob data: :percent complete', {total: ids.length});
         return ids.reduce((promise, id) => {
             return promise.then(() => currentBlob.get(id))
-                .then(data => newBlob.store(data))
-                .then(() => bar.tick());
+                .then(data => newBlob.store(data))  // Can I free 'data'?
+                .then(() => {
+                    if (global.gc) global.gc();
+                    console.log('memory usage:', process.memoryUsage());
+                    bar.tick();
+                });
         }, Q());
     });
