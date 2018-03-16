@@ -10,6 +10,13 @@ const Q = require('q');
 const BugReporter = function() {
     this.maintainer = process.env.MAINTAINER_EMAIL;
     this.reportUrl = process.env.REPORT_URL;
+    if (this.reportUrl || this.maintainer) {
+        const endpoints = [this.reportUrl, this.maintainer].filter(word => !!word).join(' and ');
+        logger.trace(`sending bug reports to ${endpoints}`);
+    } else {
+        logger.warn('Not reporting bug reports. Set MAINTAINER_EMAIL or ' +
+            'REPORT_URL in the environment to report bug reports.');
+    }
 };
 
 BugReporter.prototype.reportInvalidSocketMessage = function(err, msg, socket) {
