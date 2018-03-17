@@ -10,7 +10,7 @@ BLOB_BACKEND=s3
 node list-blob-objects.js > s3-objects.txt
 echo "Found $(wc -l s3-objects.txt) objects in the s3 blob"
 
-grep -v -F -x -f fs-objects.txt s3-objects.txt > new-objects.txt
+grep -v -F -x -f s3-objects.txt fs-objects.txt > new-objects.txt
 echo "Found $(wc -l new-objects.txt) new objects to upload to s3"
 
 for id in $(cat new-objects.txt); do
