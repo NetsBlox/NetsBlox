@@ -60,7 +60,7 @@ class S3Backend {
         let ids = [];
         const params = {
             Bucket: this.bucket,
-            MaxKeys: 2
+            MaxKeys: 2000
         };
         const callback = (err, data) => {
             if (err) return deferred.reject(err);
@@ -68,14 +68,14 @@ class S3Backend {
             ids = ids.concat(data.Contents.map(data => data.Key));
 
             if (data.IsTruncated) {
-                params.Marker = data.NextMarker;
-                this.client.listObjects(params, callback);
+                params.ContinuationToken = data.NextContinuationToken;
+                this.client.listObjectsV2(params, callback);
             } else {
                 deferred.resolve(ids);
             }
         };
 
-        this.client.listObjects(params, callback);
+        this.client.listObjectsV2(params, callback);
 
         return deferred.promise;
     }
