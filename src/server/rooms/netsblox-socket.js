@@ -241,7 +241,7 @@ class NetsBloxSocket {
             this._socket.terminate();
             this.close();
         } else {
-            this._socket.ping('', false, true);
+            this._socket.ping();
             this.isAlive = false;
             setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
         }
