@@ -1,5 +1,6 @@
 #include "abdrive360.h"
 #include "simpletools.h"
+#include "ping.h"
 #include "xbee.h"
 
 enum {
@@ -14,8 +15,8 @@ unsigned char mac_addr[6];
 unsigned char ip4_addr[4];
 unsigned char ip4_port[2];
 
-static const unsigned char server_addr[4] = { 52, 73, 65, 98 }; // netsblox.org
-//static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
+//static const unsigned char server_addr[4] = { 52, 73, 65, 98 }; // netsblox.org
+static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
 static const unsigned char server_port[2] = { 0x07, 0xb5 }; // 1973
 //static const unsigned char server_port[2] = { 0x07, 0xb4 }; // 1972
 
@@ -75,6 +76,7 @@ int main()
 {
     input(1);
     xbee = xbee_open(1, 0, 1);
+    xbee_send_api(xbee, "\x8\000NR", 4);
     xbee_send_api(xbee, "\x8\000IDvummiv", 10);
 
     xbee_send_api(xbee, "\x8\001SL", 4);
@@ -127,6 +129,12 @@ int main()
             set_tx_headers(CNT, 'D');
             write_le16(left);
             write_le16(right);
+            xbee_send_api(xbee, buffer, buffer_len);
+        } else if (cmp_rx_headers(12, 'R')) {
+            toggle(27);
+            int dist = ping_cm(5);
+            set_tx_headers(CNT, 'R');
+            write_le16(dist);
             xbee_send_api(xbee, buffer, buffer_len);
         } else if (buffer_len >= 0) {
             buffer_print(buffer_len);

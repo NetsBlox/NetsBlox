@@ -3,13 +3,15 @@
  * 
  * Robot to server messages:
  *  mac_addr[6] time[4] 'I': identification, sent every second
- *  mac_addr[6] time[4] 'D' left[2] right[2]: driving speed ack
- *  mac_addr[6] time[4] 'B' msec[2] tone[2]: beep ack
- *  mac_addr[6] time[4] 'W' bits: whiskers status
+ *  mac_addr[6] time[4] 'D' left[2] right[2]: driving speed response
+ *  mac_addr[6] time[4] 'B' msec[2] tone[2]: beep response
+ *  mac_addr[6] time[4] 'W' bits[1]: whiskers status
+ *  mac_addr[6] time[4] 'R' dist[2]: ultrasound ranging response
  * 
  * Server to robot messages:
  *  'D' left[2] right[2]: set driving speed
  *  'B' msec[2] tone[2]: beep
+ *  'R': ultrasound ranging
  */
 
 'use strict';
@@ -26,9 +28,33 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
     this.ip4_addr = ip4_addr;
     this.ip4_port = ip4_port;
-    this.tick = FORGET_TIME;
-    this.time = -1;
-    this.sockets = {};
+    this.heartbeats = FORGET_TIME;
+    this.timestamp = -1; // time of last message in robot time
+    this.sockets = {}; // sockets of registered clients
+    this.callbacks = {}; // callbacks keyed by msgType
+};
+
+Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
+    this.ip4_addr = ip4_addr;
+    this.ip4_port = ip4_port;
+    this.heartbeats = FORGET_TIME;
+};
+
+Robot.prototype.heartbeat = function () {
+    this.heartbeats -= 1;
+    if (this.heartbeats <= 0) {
+        this.sockets = null;
+        return false;
+    }
+    return true;
+};
+
+Robot.prototype.sendToRobot = function (message) {
+    server.send(message, this.ip4_port, this.ip4_addr, function (err) {
+        if (err) {
+            log('send error ' + err);
+        }
+    });
 };
 
 Robot.prototype.setSpeed = function (left, right) {
@@ -40,11 +66,7 @@ Robot.prototype.setSpeed = function (left, right) {
     message.write('D', 0, 1);
     message.writeInt16LE(left, 1);
     message.writeInt16LE(right, 3);
-    server.send(message, this.ip4_port, this.ip4_addr, function (err) {
-        if (err) {
-            log('send error ' + err);
-        }
-    });
+    this.sendToRobot(message);
 };
 
 Robot.prototype.beep = function (msec, tone) {
@@ -56,16 +78,46 @@ Robot.prototype.beep = function (msec, tone) {
     message.write('B', 0, 1);
     message.writeUInt16LE(msec, 1);
     message.writeUInt16LE(tone, 3);
-    server.send(message, this.ip4_port, this.ip4_addr, function (err) {
-        if (err) {
-            log('send error ' + err);
+    this.sendToRobot(message);
+};
+
+Robot.prototype.addCallback = function (msgType, callback, timeout) {
+    if (!this.callbacks[msgType]) {
+        this.callbacks[msgType] = [];
+    }
+    var callbacks = this.callbacks[msgType];
+    callbacks.push(callback);
+
+    setTimeout(function () {
+        var i = callbacks.indexOf(callback);
+        if (i >= 0) {
+            callbacks.splice(i, 1);
+            callback(null);
         }
-    });
+    }, timeout || 500);
+};
+
+Robot.prototype.range = function (callback) {
+    this.addCallback('range', callback);
+
+    log('range ' + this.mac_addr);
+    var message = Buffer.alloc(1);
+    message.write('R', 0, 1);
+    this.sendToRobot(message);
 };
 
 Robot.prototype.report = function (msgType, content) {
     content.robot = this.mac_addr;
-    content.time = this.time;
+    content.time = this.timestamp;
+
+    if (this.callbacks[msgType]) {
+        var callbacks = this.callbacks[msgType];
+        delete this.callbacks[msgType];
+        callbacks.forEach(function (callback) {
+            callback(content);
+        });
+        callbacks.length = 0;
+    }
 
     for (var id in this.sockets) {
         var socket = this.sockets[id];
@@ -101,9 +153,7 @@ RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
         robot = new Robot(mac_addr, ip4_addr, ip4_port);
         this._robots[mac_addr] = robot;
     } else {
-        robot.ip4_addr = ip4_addr;
-        robot.ip4_port = ip4_port;
-        robot.tick = FORGET_TIME;
+        robot.updateAddress(ip4_addr, ip4_port);
     }
     return robot;
 };
@@ -121,17 +171,15 @@ RoboScape.prototype._getRobot = function (robot) {
     return undefined;
 };
 
-RoboScape.prototype._tick = function () {
+RoboScape.prototype._heartbeat = function () {
     for (var mac_addr in RoboScape.prototype._robots) {
         var robot = RoboScape.prototype._robots[mac_addr];
-        robot.tick -= 1;
-        if (robot.tick <= 0) {
+        if (!robot.heartbeat()) {
             log('forgetting ' + mac_addr);
-            robot.sockets = null;
             delete RoboScape.prototype._robots[mac_addr];
         }
     }
-    setTimeout(RoboScape.prototype._tick, 1000);
+    setTimeout(RoboScape.prototype._heartbeat, 1000);
 };
 
 /**
@@ -170,6 +218,27 @@ RoboScape.prototype.beep = function (robot, msec, tone) {
     if (robot) {
         robot.beep(msec, tone);
         return true;
+    }
+    return false;
+};
+
+/**
+ * Ranges with the ultrasound sensor
+ * @param {string} robot name of the robot (matches at the end)
+ * @returns {number} range in centimeters
+ */
+RoboScape.prototype.range = function (robot) {
+    robot = this._getRobot(robot);
+    if (robot) {
+        var response = this.response;
+        robot.range(function (content) {
+            if (content) {
+                response.status(200).json(content.range);
+            } else {
+                response.status(400).json(-1);
+            }
+        });
+        return null;
     }
     return false;
 };
@@ -231,27 +300,6 @@ server.on('listening', function () {
 });
 
 server.on('message', function (message, remote) {
-    // just for development
-    if (process.env.ROBOSCAPE_FORWARD) {
-        console.log('forwarding udp message');
-        if (remote.address !== process.env.ROBOSCAPE_FORWARD) {
-            server.robot_addr = remote.address;
-            server.robot_port = remote.port
-            server.send(message, PORT, process.env.ROBOSCAPE_FORWARD, function (err) {
-                if (err) {
-                    log('forward error ' + err);
-                }
-            });
-        } else if (server.robot_addr) {
-            server.send(message, server.robot_port, server.robot_addr, function (err) {
-                if (err) {
-                    log('forward error ' + err);
-                }
-            });
-        }
-        return;
-    }
-
     if (message.length < 11) {
         log('invalid ' + remote.address + ':' +
             remote.port + ' ' + message.toString('hex'));
@@ -259,11 +307,11 @@ server.on('message', function (message, remote) {
     }
 
     var mac_addr = message.toString('hex', 0, 6),
-        time = message.readUInt32LE(6),
+        timestamp = message.readUInt32LE(6),
         command = message.toString('ascii', 10, 11);
 
     var robot = RoboScape.prototype._addRobot(mac_addr, remote.address, remote.port);
-    robot.time = time;
+    robot.timestamp = timestamp;
 
     if (command === 'I' && message.length === 11) {
         // pass
@@ -281,6 +329,10 @@ server.on('message', function (message, remote) {
         robot.report('whiskers', {
             state: message.readUInt8(11),
         });
+    } else if (command === 'R' && message.length === 13) {
+        robot.report('range', {
+            range: message.readInt16LE(11),
+        });
     } else {
         log('unknown ' + remote.address + ':' + remote.port +
             ' ' + message.toString('hex'));
@@ -289,14 +341,5 @@ server.on('message', function (message, remote) {
 
 server.bind(PORT);
 
-if (process.env.ROBOSCAPE_FORWARD) {
-    log("forwarding all messages to " + process.env.ROBOSCAPE_FORWARD);
-    module.exports = {
-        isSupported: function () {
-            return false;
-        }
-    };
-} else {
-    setTimeout(RoboScape.prototype._tick, 1000);
-    module.exports = RoboScape;
-}
+setTimeout(RoboScape.prototype._heartbeat, 1000);
+module.exports = RoboScape;
