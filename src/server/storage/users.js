@@ -33,6 +33,15 @@
             delete this.password;
         }
 
+        setPassword(password) {
+            // Set the password field...
+            const newHash = hash(password);
+            const query = {$set: {hash: newHash}};
+
+            this.hash = newHash;
+            return this._db.update(this.getStorageId(), query);
+        }
+
         getProject(name) {
             this._logger.trace(`Getting project ${name} for ${this.username}`);
             return Projects.getProject(this.username, name)
@@ -141,7 +150,7 @@
 
     UserStorage.get = function (username) {
         // Retrieve the user
-        return collection.findOne({username})
+        return Q(collection.findOne({username}))
             .then(data => {
                 let user = null;
                 if (data) {
