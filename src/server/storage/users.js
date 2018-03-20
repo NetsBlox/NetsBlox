@@ -33,6 +33,12 @@
             delete this.password;
         }
 
+        setPassword(password) {
+            // Set the password field...
+            const query = {$set: {hash: hash(password)}};
+            return this._db.update(this.getStorageId(), query);
+        }
+
         getProject(name) {
             this._logger.trace(`Getting project ${name} for ${this.username}`);
             return Projects.getProject(this.username, name)
