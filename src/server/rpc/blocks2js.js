@@ -215,6 +215,10 @@ context.callMaybeAsync = function(self, fn) {
     return result;
 };
 
+context.doWarp = function() {
+    // Disable warping when executing on the server
+};
+
 // Make this a promise?
 function ServerResponse() {
     this.deferred = Q.defer();
