@@ -168,6 +168,7 @@ context.getJSFromRPCStruct = function(service, name) {
     // Create a new context for this
     const RPCManager = require('./rpc-manager');
     const rpc = RPCManager.getRPCInstance(service, this.project.ctx.socket.uuid);
+    rpc.socket = this.project.ctx.socket;
 
     const subCtx = Object.create(rpc);
     subCtx.response = new ServerResponse();
