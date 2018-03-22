@@ -1,6 +1,6 @@
 {
   "name": "netsblox",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Visual programming environment with networking support",
   "bin": {
     "netsblox": "./bin/netsblox"
@@ -79,7 +79,7 @@
     "urlencode": "^1.1.0",
     "vantage": "^1.5.1",
     "vantage-repl": "^1.1.4",
-    "ws": "^2.0.0",
+    "ws": "^5.1.0",
     "xml2js": "^0.4.10",
     "yargs": "^6.6.0"
   },
