@@ -4,10 +4,10 @@
 var R = require('ramda'),
     assert = require('assert'),
     debug = require('debug'),
-    info = debug('netsblox:api:utils:info'),
     trace = debug('netsblox:api:utils:trace'),
-    error = debug('netsblox:api:utils:error'),
     version = require('../../package.json').version;
+
+const APP = `NetsBlox ${version}, http://netsblox.org`;
 
 var uuid = function(owner, name) {
     return owner + '/' + name;
@@ -16,15 +16,17 @@ var uuid = function(owner, name) {
 // Helpers for routes
 var APP_REGEX = /app="([^"]+)"/;
 var getRoomXML = function(project) {
-    var roles = [project.activeRole].concat(Object.keys(project.roles)
-        .filter(name => name !== project.activeRole))
-        .map(roleName => project.roles[roleName]);
-    var roleXml = roles.map(role =>
-        `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
-    ).join('');
-    var app = roleXml.match(APP_REGEX)[1] || `NetsBlox ${version}, http://netsblox.org`;
+    return project.getRoles()
+        .then(roles => {
+            roles = sortByDateField(roles, 'Updated', -1);
 
-    return `<room name="${project.name}" app="${app}">${roleXml}</room>`;
+            var roleXml = roles.map(role =>
+                `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
+            ).join('');
+            var app = roleXml.match(APP_REGEX)[1] || APP;
+
+            return `<room name="${project.name}" app="${app}">${roleXml}</room>`;
+        });
 };
 
 var serializeArray = function(content) {
@@ -37,58 +39,26 @@ var serialize = function(service) {
     return encodeURI(pairs.map(R.join('=')).join('&'));
 };
 
-var serializeRole = (project, roomName) => {
-    var src;
-    src = project.SourceCode ? 
-        `<snapdata>+${encodeURIComponent(project.SourceCode + project.Media)}</snapdata>` :
+var serializeRole = (role, project) => {
+    const owner = encodeURIComponent(project.owner);
+    const name = encodeURIComponent(project.name);
+    const src = role.SourceCode ?
+        `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
-    return `RoomName=${encodeURIComponent(roomName)}&${serialize(R.omit(['SourceCode', 'Media'],
-        project))}&SourceCode=${src}`;
+    return `RoomName=${name}&Owner=${owner}&` +
+        serialize(R.omit(['SourceCode', 'Media'], role)) +
+        `&SourceCode=${src}`;
 };
 
 var joinActiveProject = function(userId, room, res) {
-    var serialized,
-        openRole,
-        createdNewRole = false,
-        role;
-
-    openRole = Object.keys(room.roles)
-        .filter(role => !room.roles[role])  // not occupied
-        .shift();
+    let openRole = room.getUnoccupiedRole();
 
     trace(`room "${room.name}" is already active`);
-    if (openRole && room.cachedProjects[openRole]) {  // Send an open role and add the user
-        trace(`adding ${userId} to open role "${openRole}" at "${room.name}"`);
-        role = room.cachedProjects[openRole];
-    } else {  // If no open role w/ cache -> make a new role
-        let i = 2,
-            base;
-
-        if (!openRole) {
-            openRole = base = 'new role';
-            while (room.hasOwnProperty(openRole)) {
-                openRole = `${base} (${i++})`;
-            }
-            trace(`creating new role "${openRole}" at "${room.name}" ` +
-                `for ${userId}`);
-        } else {
-            error(`Found open role "${openRole}" but it is not cached! May have lost data!!!`);
-        }
-
-        info(`adding ${userId} to new role "${openRole}" at ` +
-            `"${room.name}"`);
-
-        room.createRole(openRole);
-        createdNewRole = true;
-        role = {
-            ProjectName: openRole,
-            SourceCode: null,
-            SourceSize: 0
-        };
-        room.cachedProjects[openRole] = role;
-    }
-    serialized = serializeRole(role, room.name);
-    return res.send(`OwnerId=${room.owner.username}&NewRole=${createdNewRole}&${serialized}`);
+    return room.getRole(openRole).then(role => {
+        trace(`adding ${userId} to role "${openRole}" at "${room.name}"`);
+        let serialized = serializeRole(role, room);
+        return res.send(serialized);
+    });
 };
 
 // Function helpers
@@ -113,14 +83,15 @@ var getArgumentsFor = function(fn) {
 
 // given a project source code returns an array of used services as tags.
 var extractRpcs = function(projectXml){
-    let rpcs = [];
+    let services = [];
     let foundRpcs = projectXml.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/g);
     if (foundRpcs) {
         foundRpcs.forEach(txt=>{
-            rpcs.push(txt.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/)[1]);
-        });                
+            let match = txt.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/);
+            services.push(match[1]);
+        });
     }
-    return rpcs;
+    return services;
 };
 
 var computeAspectRatioPadding = function(width, height, ratio){
@@ -143,6 +114,111 @@ var computeAspectRatioPadding = function(width, height, ratio){
     return {left, right, top, bottom};
 };
 
+var isSocketUuid = function(name) {
+    return name[0] === '_';
+};
+
+var getEmptyRole = function(name) {
+    return {
+        ProjectName: name,
+        SourceCode: '',
+        SourceSize: 0,
+        Media: '',
+        MediaSize: 0
+    };
+};
+
+var parseActionId = function(src) {
+    const startString = 'collabStartIndex="';
+    const startIndex = src.indexOf(startString);
+    const offset = startIndex + startString.length+1;
+    const endIndex = src.substring(offset).indexOf('"') + offset;
+    return +src.substring(offset-1, endIndex) || 0;
+};
+
+var parseField = function(src, field) {
+    const startIndex = src.indexOf(`<${field}>`);
+    const endIndex = src.indexOf(`</${field}>`);
+    return src.substring(startIndex + field.length + 2, endIndex);
+};
+
+// Snap serialization functions
+const SnapXml = {};
+function isNil(thing) {
+    return thing === undefined || thing === null;
+}
+
+SnapXml.escape = function (string, ignoreQuotes) {
+    var src = isNil(string) ? '' : string.toString(),
+        result = '',
+        i,
+        ch;
+    for (i = 0; i < src.length; i += 1) {
+        ch = src[i];
+        switch (ch) {
+        case '\'':
+            result += '&apos;';
+            break;
+        case '\"':
+            result += ignoreQuotes ? ch : '&quot;';
+            break;
+        case '<':
+            result += '&lt;';
+            break;
+        case '>':
+            result += '&gt;';
+            break;
+        case '&':
+            result += '&amp;';
+            break;
+        case '\n': // escape CR b/c of export to URL feature
+            result += '&#xD;';
+            break;
+        case '~': // escape tilde b/c it's overloaded in serializer.store()
+            result += '&#126;';
+            break;
+        default:
+            result += ch;
+        }
+    }
+    return result;
+};
+
+SnapXml.format = function (string) {
+    // private
+    var i = -1,
+        values = arguments,
+        value;
+
+    return string.replace(/[@$%]([\d]+)?/g, function (spec, index) {
+        index = parseInt(index, 10);
+
+        if (isNaN(index)) {
+            i += 1;
+            value = values[i + 1];
+        } else {
+            value = values[index + 1];
+        }
+        // original line of code - now frowned upon by JSLint:
+        // value = values[(isNaN(index) ? (i += 1) : index) + 1];
+
+        return spec === '@' ?
+            SnapXml.escape(value)
+            : spec === '$' ?
+                SnapXml.escape(value, true)
+                : value;
+    });
+};
+
+const sortByDateField = function(list, field, dir) {
+    dir = dir || 1;
+    return list.sort((r1, r2) => {
+        let [aTime, bTime] = [r1[field], r2[field]];
+        let [aDate, bDate] = [new Date(aTime), new Date(bTime)];
+        return aDate < bDate ? -dir : dir;
+    });
+};
+
 module.exports = {
     serialize,
     serializeArray,
@@ -152,5 +228,16 @@ module.exports = {
     getRoomXML,
     extractRpcs,
     computeAspectRatioPadding,
-    getArgumentsFor
+    isSocketUuid,
+    xml: {
+        thumbnail: src => parseField(src, 'thumbnail'),
+        notes: src => parseField(src, 'notes'),
+        actionId: parseActionId,
+        format: SnapXml.format
+    },
+    getEmptyRole,
+    getArgumentsFor,
+    APP,
+    version,
+    sortByDateField
 };

@@ -2,15 +2,15 @@
 
 var _ = require('lodash'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
+    Q = require('q'),
 
     debug = require('debug'),
     log = debug('netsblox:api:rooms:log'),
     warn = debug('netsblox:api:rooms:warn'),
-    error = debug('netsblox:api:rooms:error'),
     utils = require('../server-utils'),
     RoomManager = require('../rooms/room-manager'),
-    Sessions = require('snap-collaboration').sessions,
     SocketManager = require('../socket-manager'),
+    Projects = require('../storage/projects'),
     invites = {};
 
 module.exports = [
@@ -20,116 +20,107 @@ module.exports = [
         Parameters: '',
         Method: 'Get',
         Note: '',
-        middleware: ['isLoggedIn'],
+        middleware: ['isLoggedIn', 'setUser'],
         Handler: function(req, res) {
-            var sockets = getFriendSockets(req.session.username),
-                resp = {};
+            return getFriendSockets(req.session.user)
+                .then(sockets => {
+                    var resp = {};
+                    sockets.forEach(socket => resp[socket.username] = socket.uuid);
 
-            sockets.forEach(socket => resp[socket.username] = socket.uuid);
-
-            log(Utils.serialize(resp));
-            return res.send(Utils.serialize(resp));
+                    log(Utils.serialize(resp));
+                    return res.send(Utils.serialize(resp));
+                });
         }
     },
     {
         Service: 'getCollaborators',
         Parameters: 'socketId',
         Method: 'post',
-        middleware: ['isLoggedIn'],
+        middleware: ['isLoggedIn', 'hasSocket', 'setUser'],
         Handler: function(req, res) {
-            var friends = getFriendSockets(req.session.username),
-                socketId = req.body.socketId,
-                sessionId = Sessions.sessionId(socketId),
-                resp = {},
-                id;
+            const socket = SocketManager.getSocket(req.body.socketId);
+            let room = null;
 
-            log(`session for ${socketId} is ${sessionId}`);
-            friends.forEach(socket => {
-                id = socket.collaborationId();
-                log(`session for ${id} is ${Sessions.sessionId(id)}`);
-                if (sessionId && Sessions.sessionId(id) === sessionId) {
-                    resp[socket.username] = socket.uuid;
-                } else {
-                    resp[socket.username] = false;
-                }
-            });
+            return socket.getRoom()
+                .then(_room => {
+                    room = _room;
+                    return getFriendSockets(req.session.user);
+                })
+                .then(friends => {
+                    const collaborators = room.getCollaborators();
+                    const resp = {};
+                    let username;
 
-            return res.send(Utils.serialize(resp));
+                    friends.forEach(socket => {
+                        username = socket.username;
+
+                        if (collaborators.includes(username)) {
+                            resp[socket.username] = socket.uuid;
+                        } else {
+                            resp[socket.username] = false;
+                        }
+                    });
+                    return res.send(Utils.serialize(resp));
+                });
+
         }
     },
     {
         Service: 'evictCollaborator',
-        Parameters: 'socketId,otherId',
+        Parameters: 'socketId,userId',
         Method: 'post',
         middleware: ['hasSocket', 'isLoggedIn'],
         Handler: function(req, res) {
-            var socketId = req.body.socketId,
-                socket = SocketManager.getSocket(socketId),
-                otherId = req.body.otherId,
-                otherSocket = SocketManager.getSocket(otherId);
+            var {socketId, userId} = req.body,
+                socket = SocketManager.getSocket(socketId);
 
-            if (!otherSocket) {
-                this._logger.warn(`Could not find socket to remove: ${otherId}`);
-                return res.sendStatus(400);  // TODO
-            }
-
-            // Remove the other socket
-            this._logger.debug(`Removing socket ${otherId} from ${otherSocket.getSessionId()}`);
-            otherSocket.leaveSession();
-            this._logger.debug(`New session for ${otherId} is ${otherSocket.getSessionId()}`);
-
-            // Send the remove message to the other socket
-            otherSocket.send({
-                type: 'notification',
-                message: 'You are no longer collaborating with ' + socket.username
+            return socket.getRoom().then(room => {
+                // Remove all sockets with the given username
+                log(`removing collaborator ${userId} from room ${room.uuid}`);
+                room.removeCollaborator(userId);
+                return res.sendStatus(200);
             });
-            return res.sendStatus(200);
         }
     },
     {
         Service: 'evictUser',
-        Parameters: 'userId,roleId,ownerId,roomName',
+        Parameters: 'userId,role,ownerId,roomName',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            var roleId = req.body.roleId,
-                roomName = req.body.roomName,
-                ownerId = req.body.ownerId,
-                roomId = Utils.uuid(ownerId, roomName),
-                userId = req.body.userId,
-                socket,
-                room = RoomManager.rooms[roomId];
+            let {role, roomName, ownerId, userId} = req.body,
+                roomId = Utils.uuid(ownerId, roomName);
+
+            const room = RoomManager.getExistingRoom(ownerId, roomName);
 
             // Get the socket at the given room role
             log(`roomId is ${roomId}`);
-            log(`roleId is ${roleId}`);
+            log(`role is ${role}`);
             log(`userId is ${userId}`);
-            socket = room.roles[roleId];
+
+            const socket = room.getSocketsAt(role)
+                .find(socket => socket.uuid === userId);
 
             if (!socket) {  // user is not online
-                this._logger.warn(`Cannot remove role ${roleId} - no associated socket!`);
+                var err = `${userId} is not at ${role} at room ${roomId}`;
+                this._logger.warn(err);
                 return res.send('user has been evicted!');
             }
 
-            if (socket.username === userId) {
-                // Remove the user from the room!
-                log(`${userId} is evicted from room ${roomId}`);
-                if (userId === ownerId) {  // removing another instance of self
-                    socket.newRoom();
-                } else {  // Fork the room
-                    RoomManager.forkRoom({room, socket});
-                }
-                room.onRolesChanged();
-            } else {
-                var err = `${userId} is not at ${roleId} at room ${roomId}`;
-                error(err);
-                return res.status(400).send(err);
+            // Remove the user from the room!
+            log(`${userId} is evicted from room ${roomId}`);
+            if (socket.username === ownerId) {  // removing another instance of self
+                socket.newRoom();
+            } else {  // Fork the room
+                RoomManager.forkRoom(room, socket);
             }
+            room.onRolesChanged();
+            return res.sendStatus(200);
         }
     },
     {
-        Service: 'inviteToRoom',
-        Parameters: 'socketId,invitee,ownerId,roomName,roleId',
+        Service: 'inviteGuest',
+        Parameters: 'socketId,invitee,ownerId,roomName,role',
         middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
         Note: '',
@@ -138,21 +129,22 @@ module.exports = [
             //  inviter
             //  invitee
             //  roomId
-            //  roleId
+            //  role
             var inviter = req.session.username,
-                invitee = req.body.invitee,
-                roomName = req.body.roomName,
-                roomId = utils.uuid(req.body.ownerId, roomName),
-                roleId = req.body.roleId,
-                inviteId = ['room', inviter, invitee, roomId, roleId].join('-'),
+                {ownerId, roomName, invitee} = req.body,
+                roomId = utils.uuid(ownerId, roomName),
+                role = req.body.role,
+                inviteId = ['room', inviter, invitee, roomId, role].join('-'),
                 inviteeSockets = SocketManager.socketsFor(invitee);
 
-            log(`${inviter} is inviting ${invitee} to ${roleId} at ${roomId}`);
+            log(`${inviter} is inviting ${invitee} to ${role} at ${roomId}`);
 
             // Record the invitation
             invites[inviteId] = {
+                owner: ownerId,
+                roomName: roomName,
                 room: roomId,
-                role: roleId,
+                role: role,
                 invitee
             };
 
@@ -167,11 +159,11 @@ module.exports = [
                         roomName: roomName,
                         room: roomId,
                         inviter,
-                        role: roleId
+                        role: role
                     };
                     socket.send(msg);
                 }
-            );
+                );
             res.send('ok');
         }
     },
@@ -186,15 +178,16 @@ module.exports = [
             //  inviter
             //  invitee
             //  roomId
-            //  roleId
+            //  role
             var username = req.session.username,
-                inviteId = req.body.inviteId,
+                id = req.body.inviteId,
                 response = req.body.response === 'true',
-                invitee = invites[inviteId].invitee,
+                // TODO: store these in the database
+                invitee = invites[id].invitee,
                 socketId = req.body.socketId,
                 closeInvite = {
                     type: 'close-invite',
-                    id: inviteId
+                    id: id
                 };
 
             // Notify other clients of response
@@ -202,146 +195,136 @@ module.exports = [
                 .filter(socket => socket.uuid !== socketId)
                 .forEach(socket => socket.send(closeInvite));
 
-            acceptInvitation.call(this,
-                username,
-                inviteId,
-                response,
-                socketId,
-                (err, project) => {
-                    if (err) {
-                        return res.status(500).send(err);
-                    }
-                    res.status(200).send(project);
-                }
-            );
+
+            const invite = invites[id];
+            delete invites[id];
+
+            // Ignore if the invite no longer exists
+            if (!invite && response) return res.status(400).send('ERROR: invite no longer exists');
+
+            if (invite) {
+                log(`${username} ${response ? 'accepted' : 'denied'} ` +
+                    `invitation (${id}) for ${invite.role} at ${invite.room}`);
+            }
+
+            if (response) {
+                return Q(acceptInvitation(invite, socketId))
+                    .then(project => res.status(200).send(project))
+                    .fail(err => res.status(500).send(`ERROR: ${err}`));
+            } else {
+                res.sendStatus(200);
+            }
         }
     },
     {
         Service: 'deleteRole',
-        Parameters: 'roleId,ownerId,roomName',
+        Parameters: 'role,ownerId,roomName',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username,
-                roleId = req.body.roleId,
+                role = req.body.role,
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName,
-                roomId = utils.uuid(ownerId, roomName),
-                room = RoomManager.rooms[roomId];
+                roomId = utils.uuid(ownerId, roomName);
 
-            //  Get the room
+            const room = RoomManager.getExistingRoom(ownerId, roomName);
+                    //  Get the room
             if (!room) {
                 this._logger.error(`Could not find room ${roomId} for ${username}`);
                 return res.status(404).send('ERROR: Could not find room');
             }
-            
-            //  Verify that the username is either the ownerId
-            //      or the owner of the role
-            this._logger.trace(`ownerId is ${room.owner.username} and username is ${username}`);
-            if (room.owner.username !== username && !!room.roles[roleId] &&
-                room.roles[roleId].username !== username) {
 
-                this._logger.error(`${username} does not have permission to edit ${roleId} at ${roomId}`);
-                return res.status(403).send(`ERROR: You do not have permission to delete ${roleId}`);
+            //  Verify that the username is either the ownerId
+            this._logger.trace(`ownerId is ${room.owner.username} and username is ${username}`);
+            if (!room.isEditableFor(username)) {
+                this._logger.error(`${username} does not have permission to edit ${role} at ${roomId}`);
+                return res.status(403).send(`ERROR: You do not have permission to delete ${role}`);
             }
 
-            //  Get the socket and join a different room (if not the owner)
-            //  TODO: Check that it isn't the owner
-            //  TODO: Check that the owner doesn't remove the last role
-            // If the role has an owner...
-            if (room.roles[roleId]) {
-                RoomManager.forkRoom({room, roleId});
+            // Disallow deleting roles without evicting the users first
+            const sockets = room.getSocketsAt(role) || [];
+            if (sockets.length) {
+                return res.status(403).send('ERROR: Cannot delete occupied role. Remove the occupants first.');
             }
 
             //  Remove the given role
-            room.removeRole(roleId);
-            res.send('ok');
+            return room.removeRole(role)
+                .then(() => res.send('ok'));
         }
     },
     {
         Service: 'moveToRole',
-        Parameters: 'dstId,roleId,ownerId,roomName,socketId',
+        Parameters: 'dstId,role,ownerId,roomName,socketId',
         middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             var socketId = req.body.socketId;
             var socket = SocketManager.getSocket(socketId),
-                roleId = req.body.roleId,
+                role = req.body.role,
                 dstId = req.body.dstId,
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName,
-                roomId = Utils.uuid(ownerId, roomName),
-                room = RoomManager.rooms[roomId];
+                roomId = Utils.uuid(ownerId, roomName);
 
+            const room = RoomManager.getExistingRoom(ownerId, roomName);
             if (!socket) {
                 this._logger.error('Could not find socket for ' + socketId);
                 return res.status(404).send('ERROR: Not fully connected... Please try again or try a different browser (and report this issue to the netsblox maintainers!)');
             }
 
-            if (!socket.isOwner()) {
+            if (!socket.canEditRoom()) {
                 return res.status(403).send('ERROR: permission denied');
             }
 
             //  Cache the current state in the active room
-            room.cache(roleId, err => {
-                if (err) {
-                    return res.status(500).send('ERROR: ' + err);
-                }
+            return room.saveRole(role)
+                .then(() => {
+                    // Reply w/ the new role code
+                    return room.getRole(dstId);
+                })
+                .then(project => {
+                    if (project) {
+                        project = Utils.serializeRole(project, room.name);
+                    }
+                    // Update the room state
+                    room.add(socket, dstId);
 
-                // Update the room state
-                room.move({src: roleId, dst: dstId});
-
-                // Reply w/ the new role code
-                var project = room.cachedProjects[dstId] || null;
-                if (project) {
-                    project = Utils.serializeRole(project, room.name);
-                }
-                res.send(project);
-            });
+                    res.send(project);
+                })
+                .catch(err => res.status(500).send('ERROR: ' + err));
         }
     },
     {  // Create a new role and copy this project's blocks to it
         Service: 'cloneRole',
-        Parameters: 'roleId,socketId',
+        Parameters: 'role,socketId',
         middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             // Check that the requestor is the owner
             var socket = SocketManager.getSocket(req.body.socketId),
-                roleId = req.body.roleId,
-                room = socket._room,
-                newRole;
+                role = req.body.role,
+                room = socket._room;
 
-            if (!socket.isOwner()) {
+            if (!socket.canEditRoom()) {
                 this._logger.error(`${socket.username} tried to clone role... DENIED`);
-                return res.status(403).send('ERROR: Only owners can clone roles');
+                return res.status(403).send('ERROR: Guests can\'t clone roles');
             }
 
-            // Create the new role
-            var count = 2;
-            while (room.roles.hasOwnProperty(newRole = `${roleId} (${count++})`));
-            room.createRole(newRole);
-
-            // Get the project json
-            if (room.roles[roleId]) {  // Request via ws
-                room.cache(roleId, err => {
-                    if (!err) {
-                        room.cachedProjects[newRole] = room.cachedProjects[roleId];
-                    }
-                    res.send(encodeURIComponent(newRole));
+            return room.cloneRole(role)
+                .then(newRole => res.send(encodeURIComponent(newRole)))
+                .catch(err => {
+                    this._logger.error(`Clone role failed: ${err}`);
+                    res.send(`ERROR: ${err}`);
                 });
-            } else {  // use the current cached value
-                room.cachedProjects[newRole] = room.cachedProjects[roleId];
-                res.send(encodeURIComponent(newRole));
-            }
         }
     },
     {  // Collaboration
         Service: 'inviteToCollaborate',
-        Parameters: 'socketId,invitee,ownerId,roomName,roleId,sessionId',
+        Parameters: 'socketId,invitee,ownerId,roomName',
         middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
         Note: '',
@@ -350,18 +333,16 @@ module.exports = [
                 invitee = req.body.invitee,
                 roomName = req.body.roomName,
                 roomId = utils.uuid(req.body.ownerId, roomName),
-                roleId = req.body.roleId,
-                sessionId = req.body.sessionId,
-                inviteId = ['collab', inviter, invitee, roomId, roleId].join('-'),
+                role = req.body.role,
+                inviteId = ['collab', inviter, invitee, roomId, role].join('-'),
                 inviteeSockets = SocketManager.socketsFor(invitee);
 
-            log(`${inviter} is inviting ${invitee} to ${roleId} at ${roomId} (${sessionId})`);
+            log(`${inviter} is inviting ${invitee} to ${roomId}`);
 
             // Record the invitation
             invites[inviteId] = {
-                room: roomId,
-                role: roleId,
-                sessionId: sessionId,
+                owner: req.body.ownerId,
+                project: roomName,  // TODO: This would be nice to be an id...
                 invitee
             };
 
@@ -376,11 +357,11 @@ module.exports = [
                         roomName: roomName,
                         room: roomId,
                         inviter,
-                        role: roleId
+                        role: role
                     };
                     socket.send(msg);
                 }
-            );
+                );
             res.send('ok');
         }
     },
@@ -419,17 +400,18 @@ module.exports = [
             delete invites[inviteId];
 
             if (response) {
-                // Add the roleId to the room (if doesn't exist)
-                let room = RoomManager.rooms[invite.room];
-
+                // TODO: update the inviter...
+                // Add the given user as a collaborator
+                const uuid = Utils.uuid(invite.owner, invite.project);
+                const room = RoomManager.getExistingRoom(invite.owner, invite.project);
                 if (!room) {
-                    warn(`room no longer exists "${invite.room}`);
-                    return res.send('ERROR: project is no longer open');
+                    // TODO: Look up the room
+                    warn(`room no longer exists "${uuid}`);
+                    return Projects.getProject(invite.owner, invite.project)
+                        .then(project => project.addCollaborator(username))
+                        .then(() => res.sendStatus(200));
                 }
-
-                // add the given socket to the session
-                Sessions.joinSession(req.body.collabId, invite.sessionId);
-                return res.sendStatus(200);
+                room.addCollaborator(username).then(() => res.sendStatus(200));
             }
         }
     }
@@ -439,55 +421,39 @@ module.exports = [
     return api;
 });
 
-function getFriendSockets(username) {
-    log(username +' requested friend list');
-    warn('returning ALL active sockets');
+function getFriendSockets(user) {
+    log(`${user.username} requested friend list`);
 
-    var allSockets = SocketManager.sockets()
-        .filter(socket => socket.username !== username && socket.loggedIn);
-
-    return allSockets;
+    return user.getGroupMembers()
+        .then(usernames => {
+            let inGroup = {};
+            usernames.forEach(name => inGroup[name] = true);
+            return SocketManager.sockets()
+                .filter(socket => {
+                    return socket.username !== user.username &&
+                        socket.loggedIn && inGroup[socket.username];
+                });
+        });
 }
 
-function acceptInvitation (username, id, response, socketId, callback) {
-    var socket = SocketManager.getSocket(socketId),
-        invite = invites[id];
+function acceptInvitation (invite, socketId) {
+    const socket = SocketManager.getSocket(socketId);
+    const room = RoomManager.getExistingRoom(invite.owner, invite.roomName);
 
-    // Ignore if the invite no longer exists
-    if (!invite) {
-        return callback('ERROR: invite no longer exists');
+    if (!room) {
+        warn(`room no longer exists "${invite.room} ${JSON.stringify(invites)}`);
+        return Q.reject(new Error('project is no longer open'));
     }
 
-    log(`${username} ${response ? 'accepted' : 'denied'} ` +
-        `invitation (${id}) for ${invite.role} at ${invite.room}`);
-
-    delete invites[id];
-
-    if (response) {
-        // Add the roleId to the room (if doesn't exist)
-        let room = RoomManager.rooms[invite.room],
-            project;
-
-        if (!room) {
-            warn(`room no longer exists "${invite.room} ${JSON.stringify(invites)}`);
-            return callback('ERROR: project is no longer open');
-        }
-
-        if (room.roles[invite.role]) {
-            return callback('ERROR: role is occupied');
-        }
-
-        if (socket) {
-            socket.join(room, invite.role);
-        } else {
-            room.onRolesChanged();
-        }
-
-        project = room.cachedProjects[invite.role] || null;
-        if (project) {
-            project = Utils.serializeRole(project, room.name);
-        }
-        callback(null, project);
+    if (!socket) {
+        warn(`could not find socket "${invite.room} ${JSON.stringify(invites)}`);
+        return Q.reject(new Error('could not find connected user'));
     }
+
+    return room.getRole(invite.role)
+        .then(project => {
+            room.add(socket, invite.role);
+            return Utils.serializeRole(project, room.name);
+        });
 }
 

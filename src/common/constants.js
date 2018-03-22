@@ -5,8 +5,8 @@ module.exports = {
     RPC: {
         RESERVED_FN_NAMES: [
             'init',
-            'getPath',
-            'isStateless',
+            'serviceName',
+            'isSupported',
             'COMPATIBILITY'
         ]
     }

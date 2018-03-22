@@ -29,7 +29,7 @@
 
     ///////////////// Stateful, Room-based RPC's /////////////////
     Storage.create = function(name) {
-        return new GenStorage(logger, db, ':rpc:' + name);
+        return new GenStorage(logger, db, 'rpc:' + name);
     };
 
 })(exports);

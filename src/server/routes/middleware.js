@@ -5,6 +5,7 @@ var server,
     jwt = require('jsonwebtoken'),
     SocketManager = require('../socket-manager'),
     logger;
+const Q = require('q');
 
 var hasSocket = function(req, res, next) {
     var socketId = (req.body && req.body.socketId) ||
@@ -35,7 +36,7 @@ var tryLogIn = function(req, res, cb, skipRefresh) {
     req.session = req.session || new Session(res);
     if (cookie) {
         // verify the cookie is valid
-        logger.trace(`validating cookie`);
+        logger.trace('validating cookie');
         jwt.verify(cookie, sessionSecret, (err, token) => {
             if (err) {
                 logger.error(`Error verifying jwt: ${err}`);
@@ -49,7 +50,6 @@ var tryLogIn = function(req, res, cb, skipRefresh) {
             return cb(null, true);
         });
     } else {
-        logger.error(`User is not logged in! (${req.get('User-Agent')})`);
         return cb(null, false);
     }
 };
@@ -80,7 +80,7 @@ var saveLogin = function(res, user, remember) {
     if (typeof remember === 'boolean') {
         cookie.remember = remember;
     }
-	refreshCookie(res, cookie);
+    refreshCookie(res, cookie);
 };
 
 var refreshCookie = function(res, cookie) {
@@ -90,6 +90,7 @@ var refreshCookie = function(res, cookie) {
         },
         date;
 
+    if (process.env.HOST !== undefined) options.domain = process.env.HOST;
     if (cookie.remember) {
         date = new Date();
         date.setDate(date.getDate() + 14);  // valid for 2 weeks
@@ -113,18 +114,18 @@ Session.prototype.destroy = function() {
 // Helpers
 var loadUser = function(username, res, next) {
     // Load the user and handle errors
-    server.storage.users.get(username, function(e, user) {
-        if (e) {
+    server.storage.users.get(username)
+        .then(user => {
+            if (!user) {
+                logger.error(`user not found: "${username}"`);
+                return res.status(400).send('ERROR: user not found');
+            }
+            next(user);
+        })
+        .catch(e => {
             logger.error(`Could not retrieve "${username}": ${e}`);
             return res.status(500).send('ERROR: ' + e);
-        }
-
-        if (!user) {
-            logger.error(`user not found: "${username}"`);
-            return res.status(400).send('ERROR: user not found');
-        }
-        next(user);
-    });
+        });
 };
 
 var setUser = function(req, res, next) {
@@ -135,7 +136,14 @@ var setUser = function(req, res, next) {
 };
 
 var setUsername = function(req, res, cb) {
-    return tryLogIn(req, res, cb, true);
+    let result = null;
+    if (arguments.length === 2) {
+        let deferred = Q.defer();
+        cb = deferred.resolve;
+        result = deferred.promise;
+    }
+    tryLogIn(req, res, cb, true);
+    return result;
 };
 
 module.exports = {

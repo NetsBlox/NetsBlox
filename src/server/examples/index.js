@@ -1,11 +1,33 @@
 // This file will prepare the raw source code from the examples directory
-var fs = require('fs'),
-    path = require('path'),
-    extractRpcs = require('../server-utils').extractRpcs,
-    _ = require('lodash');
+const fs = require('fs');
+const path = require('path');
+const extractRpcs = require('../server-utils').extractRpcs;
+const nbVersion = require('../../../package.json').version;
+const _ = require('lodash');
 
 // Create the dictionary of examples
 var examples = {};
+
+const Q = require('q');
+const Example = {};
+Example.getRole = function(role) {
+    return Q(this._roles[role]);
+};
+
+Example.getRoleNames = function() {
+    return Q(Object.keys(this._roles));
+};
+
+Example.toString = function() {
+    let roles = Object.keys(this._roles).map(name => this._roles[name]);
+    const projectName = roles[0].RoomName;
+    // prepare the roles' code
+    let wrappedRoles = roles.map(role => {
+        return `<role name="${role.ProjectName}">` + role.SourceCode + role.Media + '</role>';
+    });
+    return `<room name="${projectName}" app="NetsBlox ${nbVersion}, http://netsblox.org">`
+    + wrappedRoles.join('') + '</room>';
+};
 
 // Read in the directories
 fs.readdirSync(__dirname)
@@ -17,31 +39,31 @@ fs.readdirSync(__dirname)
     )
     // create the example data objects
     .map(pair => {
-        var result = {},
+        var result = Object.create(Example),
             clients = pair[1];
 
         result.RoomName = pair[0];
-        result.cachedProjects = {};
+        result._roles = {};
 
         // Add project source
         for (var i = clients.length; i--;) {
-            result.cachedProjects[clients[i].replace('.xml', '')] =
+            result._roles[clients[i].replace('.xml', '')] =
                 fs.readFileSync(path.join(__dirname, pair[0], clients[i]), 'utf8');
         }
         return result;
     })
     .forEach(item => {
-        var roles = Object.keys(item.cachedProjects),
+        var roles = Object.keys(item._roles),
             src;
 
         item.roles = {};
         item.services = [];
         for (var i = roles.length; i--;) {
             item.roles[roles[i]] = null;
-            // TODO: FIXME: the cachedProjects are not the correct format
-            src = item.cachedProjects[roles[i]];
+            // TODO: FIXME: the roles are not the correct format
+            src = item._roles[roles[i]];
             item.services = item.services.concat(extractRpcs(src));
-            item.cachedProjects[roles[i]] = {
+            item._roles[roles[i]] = {
                 SourceCode: src,
                 ProjectName: roles[i],
                 RoomName: item.RoomName,

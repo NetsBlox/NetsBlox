@@ -1,27 +1,16 @@
+/* eslint-disable no-console*/
 // Vantage support for the server object
 'use strict';
 
 var vantage = require('vantage')(),
     chalk = require('chalk'),
     repl = require('vantage-repl'),
-    R = require('ramda'),
     Query = require('../../common/data-query'),
-    fs = require('fs'),
-    banner,
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
     ],
     RoomManager = require('../rooms/room-manager'),
     NO_USER_LABEL = '<vacant>';
-
-// Set the banner
-banner = ['\n'+
-    '#####################################################',
-    '#                                                   #',
-    '#                 NetsBlox Server                   #',
-    '#                                                   #',
-    '#####################################################']
-    .join('\n');
 
 var NetsBloxVantage = function(server) {
     this.initRoomManagement(server);
@@ -33,10 +22,8 @@ var NetsBloxVantage = function(server) {
         .option('-j, --json', 'Print as json')
         .option('-a, --admin', 'Toggle admin status')
         .option('-u, --update', 'Update the user\'s schema')
-        .option('-c, --clear', 'Clear the room info')
         .option('--delete', 'Delete the user')
         .option('--force', 'Force the given command')
-        .option('-e [project]', 'Save user project to file')
         .option('-p, --password <password>', 'Set the user password')
         .alias('u')
         .action((args, cb) => {
@@ -60,10 +47,7 @@ var NetsBloxVantage = function(server) {
                         .join('\n')))
                     .then(cb);
             } else {
-                server.storage.users.get(username, function(err, user) {
-                    if (err) {
-                        return cb(err);
-                    }
+                server.storage.users.get(username).then(user => {
                     if (!user) {
                         console.log('user does not exist!');
                         return cb();
@@ -74,42 +58,6 @@ var NetsBloxVantage = function(server) {
                         } else {
                             console.log(user.pretty().rooms);
                         }
-                    } else if (args.options.e) {
-                        var name = args.options.e,
-                            room = user.rooms.find(room => room.name === name),
-                            saveable;
-
-                        if (room) {
-                            saveable = `<room name="${name}">` +
-                                // Create role/project info
-                                Object.keys(room.roles).map(role => [
-                                    `<role name="${role}">`,
-                                    room.roles[role].SourceCode || '',
-                                    room.roles[role].Media || '',
-                                    `</role>`
-                                ].join('\n')) +
-                                `</room>`;
-
-                            fs.writeFile(name + '.xml', saveable, err => {
-                                if (err) {
-                                    return cb(err);
-                                }
-                                console.log(`saved ${name} to ${name}.xml`);
-                                cb();
-                            });
-                        } else {
-                            console.log(`Could not find room "${name}"`);
-                        }
-
-                    } else if (args.options.update) {
-                        user.rooms = user.rooms || user.projects || [];
-                        delete user.projects;
-                        user.save();
-                        console.log('User updated!');
-                    } else if (args.options.clear) {
-                        user.rooms = [];
-                        user.save();
-                        console.log('User updated!');
                     } else if (args.options.admin) {
                         user.admin = !user.admin;
                         user.save();
@@ -135,7 +83,8 @@ var NetsBloxVantage = function(server) {
                         console.log(user.pretty());
                     }
                     cb();
-                });
+                })
+                    .catch(err => cb(err));
             }
         });
 
@@ -176,29 +125,36 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
         //.option('--with-names', 'Include the group names')
         .action(function(args, cb) {
             // Get all groups
-            var header = '* * * * * * * Rooms * * * * * * * \n',
-                rooms = R.values(RoomManager.rooms),
-                text = rooms.map(function(room) {
-                    var clients = Object.keys(room.roles)
-                        .map(role => {
-                            let client = room.roles[role],
-                                username = client ? client.username : NO_USER_LABEL;
+            var header = '* * * * * * * Rooms * * * * * * * \n';
+            const rooms = RoomManager.getActiveRooms();
+            let text = rooms.map(function(room) {
+                var clients = room.getRoleNames()
+                    .map(role => {
+                        let clients = room.getSocketsAt(role),
+                            names = clients.length ?
+                                clients.map(c => c.username) : [NO_USER_LABEL];
 
-                            if (args.options.long && client) {
-                                username = `${username} (${client.uuid})`;
-                            }
+                        return `\t${role}: ${names.join(',')}`;
+                    });
 
-                            return `\t${role}: ${username}`;
-                        });
-
-                    return `${room.uuid}:\n${clients.join('\n')}\n`;
-                }).join('\n');
+                const collabs = room.getCollaborators().join(' ');
+                return `${room.uuid}:\n   collabs: ${collabs}\n` +
+                    `   roles:\n${clients.join('\n')}\n`;
+            }).join('\n');
 
             if (args.options.entries) {
-                text = Object.keys(RoomManager.rooms).join('\n');
+                text = rooms.map(room => room.uuid).join('\n');
             }
             console.log(header+text);
             return cb();
+        });
+
+    vantage
+        .command('ruuids', 'Get all room uuids')
+        .action((a, cb) => {
+            let uuids = RoomManager.getActiveRoomIds();
+            console.log(uuids);
+            cb();
         });
 
     vantage
@@ -242,16 +198,15 @@ NetsBloxVantage.checkSocket = function(args, nbSocket) {
 NetsBloxVantage.prettyPrintGroup = function(group) {
     var text = group.name+':\n'+
         group.groups
-        .map(function(group) {
-            return '  '+group.join(' ');
-        })
-        .join('\n');
+            .map(function(group) {
+                return '  '+group.join(' ');
+            })
+            .join('\n');
     return text;
 };
 
 NetsBloxVantage.prototype.start = function(port) {
     vantage
-        .banner(banner)
         .delimiter(chalk.white('netsblox~$'))
         .listen(port || 1234)
         .use(repl)
@@ -259,3 +214,4 @@ NetsBloxVantage.prototype.start = function(port) {
 };
 
 module.exports = NetsBloxVantage;
+/* eslint-enable no-console*/

@@ -1,5 +1,8 @@
-// This will use the Bing traffic API to retrieve a list of traffic incidents and send
-// a message to the user with the data
+/**
+ * The Traffic Service provides access to real-time traffic data using the Bing Traffic API.
+ * For more information, check out https://msdn.microsoft.com/en-us/library/hh441725.aspx
+ * @service
+ */
 
 'use strict';
 
@@ -15,28 +18,25 @@ var sendNext = function(socket) {
     if (msgs) {
         var msg = msgs.shift();  // retrieve the first message
 
-        while (msgs.length && msg.dstId !== socket.roleId) {
+        while (msgs.length && msg.dstId !== socket.role) {
             msg = msgs.shift();
         }
 
         // check the roleId
-        if (msgs.length && msg.dstId === socket.roleId) {
+        if (msgs.length && msg.dstId === socket.role) {
             socket.send(msg);
         }
 
         if (msgs.length) {
             setTimeout(sendNext, 250, socket);
-        } 
+        }
     }
 };
 
 if (!process.env.BING_TRAFFIC_KEY) {
     trace('Env variable BING_TRAFFIC_KEY is not set thus the traffic service is disabled.');
-}else{   
+}else{
     module.exports = {
-
-        isStateless: true,
-        getPath: () => '/traffic',
 
         search: function(westLongitude, northLatitude, eastLongitude, southLatitude) {
 
@@ -48,7 +48,7 @@ if (!process.env.BING_TRAFFIC_KEY) {
 
             trace(`Requesting traffic accidents in ${westLongitude},${northLatitude},${eastLongitude},${southLatitude}`);
             request(url, (err, res, body) => {
-                
+
                 if (err) {
                     trace('Error:' + err);
                     return response.send('Could not access 3rd party API');
@@ -66,7 +66,7 @@ if (!process.env.BING_TRAFFIC_KEY) {
                     return response.send('The area is too big! Try zooming in more.');
                 }
 
-                var type = ['Accident', 'Congestion', 'Disabled Vehicle', 'Mass Transit', 'Miscellaneous', 
+                var type = ['Accident', 'Congestion', 'Disabled Vehicle', 'Mass Transit', 'Miscellaneous',
                     'Other', 'Planned Event', 'Road Hazard', 'Construction', 'Alert', 'Weather'];
 
                 // build the list of traffic incidents
@@ -75,7 +75,7 @@ if (!process.env.BING_TRAFFIC_KEY) {
                         var msg = {
                             type: 'message',
                             msgType: 'Traffic',
-                            dstId: socket.roleId,
+                            dstId: socket.role,
                             content: {
                                 latitude: body.resourceSets[0].resources[i].point.coordinates[0],
                                 longitude: body.resourceSets[0].resources[i].point.coordinates[1],
@@ -96,7 +96,7 @@ if (!process.env.BING_TRAFFIC_KEY) {
             if (msgs) {
                 // remove those with a different roleId | dont remove other's messages
                 msgs = msgs.filter(msg => {
-                    return msg.dstId != socket.roleId;
+                    return msg.dstId != socket.role;
                 });
             }
             return 'stopped';

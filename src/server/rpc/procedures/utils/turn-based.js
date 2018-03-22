@@ -5,7 +5,8 @@ var getArgs = require('../../../server-utils').getArgumentsFor;
 class TurnBased {
 
     constructor(action, reset) {
-        this._lastRoleToAct = null;
+        this._state = {};
+        this._state._lastRoleToAct = null;
         this._rawAction = this[action];
 
         // replace "action" w/ a modified version
@@ -14,7 +15,7 @@ class TurnBased {
                 success;
 
             // Filter
-            if (this._lastRoleToAct === socket.roleId) {
+            if (this._state._lastRoleToAct === socket.role) {
                 return this.response.status(403).send('It\'s not your turn!');
             }
 
@@ -26,9 +27,9 @@ class TurnBased {
                 socket._room.sockets().forEach(s => s.send({
                     type: 'message',
                     msgType: 'your turn',
-                    dstId: this._lastRoleToAct
+                    dstId: this._state._lastRoleToAct
                 }));
-                this._lastRoleToAct = socket.roleId;
+                this._state._lastRoleToAct = socket.role;
             }
         };
         this[action].args = getArgs(this._rawAction);
@@ -38,7 +39,7 @@ class TurnBased {
         this[reset] = function() {
             var success = this._resetAction.apply(this, arguments);
             if (success) {
-                this._lastRoleToAct = null;
+                this._state._lastRoleToAct = null;
             }
         };
         this[reset].args = getArgs(this._resetAction);

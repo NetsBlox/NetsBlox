@@ -1,9 +1,12 @@
+/**
+ * The AirQuality Service provides access to real-time air quality data using the AirNowAPI.
+ * For more information, check out https://docs.airnowapi.org/.
+ * @service
+ */
+
 // This will use the AirNowAPI to get air quality given a latitude and longitude.
 // If we start to run out of API requests, they have the entire dataset available
 // for download online.
-//
-// This is a static rpc collection. That is, it does not maintain state and is 
-// shared across groups
 'use strict';
 
 var debug = require('debug'),
@@ -65,6 +68,7 @@ var qualityIndex = function(latitude, longitude) {
     request(url, (err, res, body) => {
         var aqi = -1,
             code = err ? 500 : res.statusCode;
+
         try {
             body = JSON.parse(body).shift();
             if (body && body.AQI) {
@@ -83,19 +87,14 @@ var qualityIndex = function(latitude, longitude) {
 };
 
 module.exports = {
-
-    // This is very important => Otherwise it will try to instantiate this
-    isStateless: true,
     COMPATIBILITY: {
-        aqi: {
-            latitude: 'lat',
-            longitude: 'lng'
+        path: 'air',
+        arguments: {
+            aqi: {
+                latitude: 'lat',
+                longitude: 'lng'
+            }
         }
-    },
-
-    // These next two functions are the same from the stateful RPC's
-    getPath: function() {
-        return '/air';
     },
 
     // air quality index

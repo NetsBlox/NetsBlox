@@ -31,13 +31,15 @@ SocketManager.prototype.sockets = function() {
     return this._sockets.slice();
 };
 
-SocketManager.prototype.onClose = function(uuid) {
-    for (var i = this._sockets.length; i--;) {
-        if (this._sockets[i].uuid === uuid) {
-            delete this._sockets[uuid];
-            return;
-        }
+SocketManager.prototype.onClose = function(socket) {
+    const index = this._sockets.indexOf(socket);
+    const hasSocket = index !== -1;
+    if (hasSocket) {
+        this._sockets.splice(index, 1);
+    } else {
+        this._logger.error(`Could not find socket: ${socket.username}`);
     }
+    return hasSocket;
 };
 
 SocketManager.prototype.socketsFor = function(username) {

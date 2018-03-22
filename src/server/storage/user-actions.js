@@ -1,13 +1,12 @@
 (function(UserActionData) {
     var Q = require('q'),
         logger,
-        blob = require('./blob-storage'),
+        blob = require('./blob'),
         collection;
 
     UserActionData.init = function(_logger, db) {
         logger = _logger.fork('user-actions');
         collection = db.collection('netsblox:storage:user-actions');
-        logger.trace('initialized!');
     };
 
     UserActionData.record = function(event) {
@@ -108,6 +107,10 @@
     UserActionData.clear = function() {
         logger.trace('clearing user action data');
         return collection.deleteMany({});
+    };
+
+    UserActionData.getCollection = function() {
+        return collection;
     };
 
 })(exports);

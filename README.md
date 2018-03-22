@@ -22,7 +22,27 @@ This results in the stage costume changing:
 ![Google map costume on the stage](./map-example.png)
 
 ## Installation
+The recommended method of installation is using [Docker](https://www.docker.com) as explained below. Otherwise, native installation instructions are also available.
+### Docker
+NetsBlox requires access to MongoDB and a file system (for blob storage). MongoDB can be started using Docker:
+```
+docker run -d -p 27017:27017 -v /abs/path/to/data:/data/db mongo
+```
+where `/abs/path/to/data` is a path on the host machine where the project content and media will be stored.
+
+NetsBlox can then be started with
+```
+docker run -it -p 8080:8080 -e MONGO_URI='mongodb://172.17.0.1:27017/netsblox' -v /path/to/directory/for/media:/blob-data netsblox/server
+```
+where `/path/to/directory/for/media` is the directory on the host machine to store the project content and media.
+
+In order to enable specific RPCs which use external APIs, you may have to set environment variables using the `-e` flag (like `-e GOOGLE_MAPS_KEY=myGoogleMapsKey`) or pass in a list of environment variables through a file using `--env-file`. The list of all the environment variables are explained in the **RPC Support** section below.
+
+Next, just navigate to `localhost:8080` in a web browser to try it out!
+### Native
 Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= v6.0.0) and a [MongoDB](https://www.mongodb.com/download-center?jmp=nav#community) database. By default, NetsBlox will expect MongoDB to be running locally (this can be changed by setting the `MONGO_URI` environment variable).
+
+Server protocol can also be set through `SERVER_PROTOCOL` environment variable.
 
 First clone the repository and install the dependencies.
 ```
@@ -48,6 +68,8 @@ RPCs that are using 3rd party API's often require getting an API key from the gi
   - `BING_TRAFFIC_KEY` should be set to an API key from [Bing Traffic](https://msdn.microsoft.com/en-us/library/hh441725.aspx)
 - Twitter
   - `TWITTER_BEARER_TOKEN` should be set to an API key from Twitter
+- [Pixabay](https://pixabay.com)
+  - `PIXABAY` should be set to an API key from Pixabay
 
 To simplify this process (and to keep your `~/.bashrc` clean), these values can be stored in a `.env` file in the project root directory and they will be loaded into the environment on starting NetsBlox.
 

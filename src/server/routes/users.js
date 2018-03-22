@@ -3,6 +3,7 @@
 'use strict';
 
 var middleware = require('./middleware'),
+    SocketManager = require('../socket-manager'),
     debug = require('debug'),
     log = debug('netsblox:api:Users:log'),
     info = debug('netsblox:api:Users:info');
@@ -17,29 +18,38 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username;
             log('Deleting user "'+username+'"');
-            this.storage.users.get(username, function(e, user) {
-                if (e || !user) {
-                    return res.status(500).send(e || 'Could not remove "'+username+'"');
-                }
-                user.destroy();
-                req.session.destroy();
-                return res.send('account for "'+username+'" has been deleted');
-            });
+            return this.storage.users.get(username)
+                .then(user => {
+                    if (!user) {
+                        return res.status(500).send(`Could not remove "${username}": user not found`);
+                    }
+                    user.destroy();
+                    req.session.destroy();
+                    return res.send('account for "'+username+'" has been deleted');
+                })
+                .catch(err => res.status(500).send(err));
         }
     },
     {
         Service: 'logout',
-        Parameters: '',
-        Method: 'Get',
+        Parameters: 'socketId',
+        Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            log(`received logout request!`);
+            log('received logout request!');
             middleware.tryLogIn(req, res, err => {
                 if (err) {
                     return res.status(400).send(err);
                 }
 
-                log(req.session.username+' has logged out');
+                // get the socket and call onLogout
+                const socketId = req.body.socketId;
+                const socket = SocketManager.getSocket(socketId);
+                if (socket) {
+                    socket.onLogout();
+                }
+
+                log(`${req.session.username} has logged out`);
                 // Delete the cookie
                 req.session.destroy();
                 return res.status(200).send('you have been logged out');
@@ -58,22 +68,21 @@ module.exports = [
 
             info('Changing password for '+username);
             // Verify that the old password is correct
-            this.storage.users.get(username, (e, user) => {
-                if (e) {
-                    return res.status(500).send('ERROR: ' + e);
-                }
-                if (!user || user.hash !== oldPassword) {
-                    return res.status(403).send('ERROR: incorrect login');
-                }
-                user.hash = newPassword;
-                user.save();
-                return res.send('Password has been updated!');
-            });
+            this.storage.users.get(username)
+                .then(user => {
+                    if (!user || user.hash !== oldPassword) {
+                        return res.status(403).send('ERROR: incorrect login');
+                    }
+                    user.hash = newPassword;
+                    user.save();
+                    return res.send('Password has been updated!');
+                })
+                .catch(err => res.status(500).send('ERROR: ' + err));
         }
     }
 ]
-.map(function(api) {
+    .map(function(api) {
     // Set the URL to be the service name
-    api.URL = api.Service;
-    return api;
-});
+        api.URL = api.Service;
+        return api;
+    });

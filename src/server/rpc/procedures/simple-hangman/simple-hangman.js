@@ -4,36 +4,33 @@
 
 // Word list
 var words = ['accurate','address', 'afford','alert','analyze','ancestor',
-'annual','apparent','appropriate','arena','arrest','ascend','assist','attempt',
-'attentive','attractive','awkward','baggage','basic','benefit','blend','blossom',
-'burrow','calculate','capable','captivity','carefree','century','chamber',
-'circular','coax','column','communicate','competition','complete','concentrate',
-'concern','conclude','confuse','congratulate','considerable','content','contribute',
-'crafty','create','demonstrate','descend','desire','destructive','develop','disaster',
-'disclose','distract','distress','dusk','eager','ease','entertain','entire','entrance',
-'envy','essential','extraordinary','flexible','focus','fragile','frantic','frequent',
-'frontier','furious','generosity','hail','hardship','heroic','host','humble','Impact',
-'increase','indicate','inspire','instant','invisible','jagged','lack','limb','limp',
-'manufacture','master','mature','meadow','mistrust','mock','modest','noble','orchard',
-'outstanding','peculiar','peer','permit','plead','plentiful','pointless','portion',
-'practice','precious','prefer','prepare','proceed','queasy','recent','recognize','reduce',
-'release','represent','request','resist','response','reveal','routine','severe','shabby',
-'shallow','sole','source','sturdy','surface','survive','terror','threat','tidy','tour',
-'tradition','tragic','typical','vacant','valiant','variety','vast','venture','weary'];
+    'annual','apparent','appropriate','arena','arrest','ascend','assist','attempt',
+    'attentive','attractive','awkward','baggage','basic','benefit','blend','blossom',
+    'burrow','calculate','capable','captivity','carefree','century','chamber',
+    'circular','coax','column','communicate','competition','complete','concentrate',
+    'concern','conclude','confuse','congratulate','considerable','content','contribute',
+    'crafty','create','demonstrate','descend','desire','destructive','develop','disaster',
+    'disclose','distract','distress','dusk','eager','ease','entertain','entire','entrance',
+    'envy','essential','extraordinary','flexible','focus','fragile','frantic','frequent',
+    'frontier','furious','generosity','hail','hardship','heroic','host','humble','Impact',
+    'increase','indicate','inspire','instant','invisible','jagged','lack','limb','limp',
+    'manufacture','master','mature','meadow','mistrust','mock','modest','noble','orchard',
+    'outstanding','peculiar','peer','permit','plead','plentiful','pointless','portion',
+    'practice','precious','prefer','prepare','proceed','queasy','recent','recognize','reduce',
+    'release','represent','request','resist','response','reveal','routine','severe','shabby',
+    'shallow','sole','source','sturdy','surface','survive','terror','threat','tidy','tour',
+    'tradition','tragic','typical','vacant','valiant','variety','vast','venture','weary'];
 
 var debug = require('debug'),
     trace = debug('netsblox:rpc:simple-hangman:trace');
 
 var SimpleHangman = function() {
-    this.word = null;
-    this.wrongGuesses = 0;
-    this.knownIndices = [];
+    this._state = {};
+    this._state.word = null;
+    this._state.wrongGuesses = 0;
+    this._state.knownIndices = [];
 
     this._restart();
-};
-
-SimpleHangman.getPath = function() {
-    return '/simplehangman';
 };
 
 // Actions
@@ -43,13 +40,13 @@ SimpleHangman.prototype.restart = function() {
 };
 
 SimpleHangman.prototype.getCurrentlyKnownWord = function() {
-    var letters = this.word.split('').map(() => '_');
+    var letters = this._state.word.split('').map(() => '_');
 
-    this.knownIndices.forEach(function(index) {
-        letters[index] = this.word[index];
+    this._state.knownIndices.forEach(function(index) {
+        letters[index] = this._state.word[index];
     }, this);
     trace('Currently known word is "'+letters.join(' ')+'"');
-    trace('word is '+this.word);
+    trace('word is '+this._state.word);
     return letters.join(' ');
 };
 
@@ -59,22 +56,22 @@ SimpleHangman.prototype.guess = function(letter) {
 
     letter = letter[0];
     trace('Guessing letter: '+letter);
-    indices = SimpleHangman.getAllIndices(this.word, letter);
-    added = SimpleHangman.merge(this.knownIndices, indices);
+    indices = SimpleHangman.getAllIndices(this._state.word, letter);
+    added = SimpleHangman.merge(this._state.knownIndices, indices);
     if (added === 0) {
-        this.wrongGuesses++;
+        this._state.wrongGuesses++;
     }
     return indices;
 };
 
 SimpleHangman.prototype.isWordGuessed = function() {
-    var isComplete = this.word.length === this.knownIndices.length;
+    var isComplete = this._state.word.length === this._state.knownIndices.length;
     return isComplete;
 };
 
 SimpleHangman.prototype.getWrongCount = function() {
-    trace('wrong count is '+this.wrongGuesses);
-    return this.wrongGuesses;
+    trace('wrong count is '+this._state.wrongGuesses);
+    return this._state.wrongGuesses;
 };
 
 // Private
@@ -85,9 +82,9 @@ SimpleHangman.prototype.getWrongCount = function() {
  */
 SimpleHangman.prototype._restart = function() {
     var index = Math.floor(Math.random()*words.length);
-    this.word = words[index];
-    this.wrongGuesses = 0;
-    this.knownIndices = [];
+    this._state.word = words[index];
+    this._state.wrongGuesses = 0;
+    this._state.knownIndices = [];
 };
 
 SimpleHangman.getAllIndices = function(word, letter) {

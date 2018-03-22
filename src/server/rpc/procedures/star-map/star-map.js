@@ -1,3 +1,9 @@
+/**
+ * The StarMap Service provides access to astronomy data using Sloan Digital Sky Survey.
+ * For more information, check out http://skyserver.sdss.org/dr14/en/home.aspx
+ *
+ * @service
+ */
 // This is the Sky Map RPC. It wraps the web API of the Sloan Digital Sky Survey.
 
 'use strict';
@@ -15,16 +21,8 @@ var baseUrl = 'http://skyserver.sdss.org/dr13/SkyserverWS';
 
 module.exports = {
 
-    // This is very important => Otherwise it will try to instantiate this
-    isStateless: true,
-
-    /**
-     * Return the path to the given RPC
-     *
-     * @return {String}
-     */
-    getPath: function() {
-        return '/sky-map';
+    COMPATIBILITY: {
+        path: 'sky-map'
     },
 
     arcHourMinSecToDeg: function(arcHour, arcMin, arcSec) {

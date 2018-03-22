@@ -1,20 +1,20 @@
+/**
+ * The NASA Service provides access to planetary pictures and mars weather data.
+ * For more information, check out https://api.nasa.gov/.
+ * @service
+ */
 // This will utilize NASA's public APIs in order to provide data to the client
 
 'use strict';
 
-var debug = require('debug'),
-    log = debug('netsblox:rpc:nasa:log'),
-    error = debug('netsblox:rpc:nasa:error'),
-    trace = debug('netsblox:rpc:nasa:trace'),
-    request = require('request'),
+var request = require('request'),
     KEY = process.env.NASA_KEY,
     APOD_URL = 'https://api.nasa.gov/planetary/apod?api_key=' + KEY,
     MARS_URL = 'http://marsweather.ingenology.com/v1/latest/';
 
 module.exports = {
 
-    isStateless: true,
-    getPath: () => '/NASA',
+    serviceName: 'NASA',
 
     // NASA's 'Astronomy Picture of the Day'
     apod: function() {
@@ -26,7 +26,7 @@ module.exports = {
             var msg = {
                 type: 'message',
                 msgType: 'Astronomy Pic of the Day',
-                dstId: socket.roleId,
+                dstId: socket.role,
                 content: {
                     date: body.date,
                     title: body.title,
@@ -81,5 +81,4 @@ module.exports = {
         });
         return null;
     }
-
 };

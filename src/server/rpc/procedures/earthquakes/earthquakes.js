@@ -1,8 +1,13 @@
+/**
+ * The Earthquakes Service provides access to historical earthquake data.
+ * For more information, check out https://earthquake.usgs.gov/.
+ * @service
+ */
 // This will use the Seismi API to populate a list of recent earthquakes. All queries
 // will then be handled wrt this list stored in the filesystem. Hourly, we will update
 // our cache of this earthquake data.
 //
-// This is a static rpc collection. That is, it does not maintain state and is 
+// This is a static rpc collection. That is, it does not maintain state and is
 // shared across groups
 'use strict';
 
@@ -10,6 +15,7 @@ var debug = require('debug'),
     log = debug('netsblox:rpc:earthquakes:log'),
     error = debug('netsblox:rpc:earthquakes:error'),
     trace = debug('netsblox:rpc:earthquakes:trace'),
+    moment = require('moment'),
     R = require('ramda'),
     request = require('request'),
     baseUrl = 'http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&';
@@ -17,8 +23,16 @@ var debug = require('debug'),
 // Helpers
 var createParams = function(obj) {
     return R.toPairs(obj)
+        .filter(keyVal => keyVal[1] != null )
         .map(keyVal => keyVal.join('='))
         .join('&');
+};
+
+let stringToDate = string => {
+    if (string.match(/^\d+$/)) {
+        return new Date(parseInt(string));
+    }
+    return new Date(string);
 };
 
 var DELAY = 250;
@@ -31,12 +45,12 @@ Earthquakes._sendNext = function(socket) {
         // send an earthquake message
         var msg = msgs.shift();
 
-        while (msgs.length && msg.dstId !== socket.roleId) {
+        while (msgs.length && msg.dstId !== socket.role) {
             msg = msgs.shift();
         }
 
         // check that the socket is still at the role receiving the messages
-        if (msg && msg.dstId === socket.roleId) {
+        if (msg && msg.dstId === socket.role) {
             socket.send(msg);
         }
 
@@ -50,32 +64,29 @@ Earthquakes._sendNext = function(socket) {
     }
 };
 
-// This is very important => Otherwise it will try to instantiate this
-Earthquakes.isStateless = true;
-
-// These next two functions are the same from the stateful RPC's
-Earthquakes.getPath = function() {
-    return '/earthquakes';
-};
-
 Earthquakes.stop = function() {
     var uuid = this.socket.uuid;
     delete Earthquakes._remainingMsgs[uuid];
     return '';
 };
 
-Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongitude) {
+Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongitude, startTime, endTime, minMagnitude, maxMagnitude) {
     var socket = this.socket,
         response = this.response,
-        params = createParams({
+        options = {
             minlatitude: +minLatitude || 0,
             minlongitude: +minLongitude || 0,
             maxlatitude: +maxLatitude || 0,
-            maxlongitude: +maxLongitude || 0
-        }),
-        url = baseUrl + params;
+            maxlongitude: +maxLongitude || 0,
+            starttime: startTime ? stringToDate(startTime).toISOString() : moment().subtract(30, 'days').toDate().toISOString(),
+            endtime: endTime ? stringToDate(endTime).toISOString() : new Date().toISOString(),
+            minmagnitude: minMagnitude || null,
+            maxmagnitude: maxMagnitude || null
+        };
+    let params = createParams(options);
+    let url = baseUrl + params;
 
-    trace('Requesting earthquakes at : ' + params);
+    trace('Requesting earthquakes at : ' + url);
 
     // This method will not respond with anything... It will simply
     // trigger socket messages to the given client
@@ -92,8 +103,8 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
             return response.status(500).send('ERROR: could not retrieve earthquakes');
         }
 
-        log('Found ' + body.metadata.count + ' earthquakes');
-        response.sendStatus(200);
+        trace('Found ' + body.metadata.count + ' earthquakes');
+        response.send('Sending ' + body.metadata.count + ' earthquake messages');
 
         var earthquakes = [],
             msg;
@@ -109,7 +120,7 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
             // For now, I will send lat, lng, size, date
             msg = {
                 type: 'message',
-                dstId: socket.roleId,
+                dstId: socket.role,
                 msgType: 'Earthquake',
                 content: {
                     latitude: earthquakes[i].geometry.coordinates[1],

@@ -15,3 +15,5 @@ connectn.xml	ConnectN helpers
 public-roles.xml	Public Roles
 moviedb.xml	Movie database		MovieDB
 GoogleTrends.xml Google Trends GoogleTrends
+geolocation.xml	Geolocation		geolocation
+waterwatch.xml	Waterwatch		waterwatch

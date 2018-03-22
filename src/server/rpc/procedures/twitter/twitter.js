@@ -1,14 +1,23 @@
+/**
+ * The Twitter Service provides access to real-time and historical stock price data.
+ * For more information, check out https://twitter.com.
+ *
+ * Terms of use: https://twitter.com/en/tos
+ * @service
+ */
 // This will use the Twitter API to allow the client to execute certain Twitter functions within NetsBlox
 
 'use strict';
 
 var debug = require('debug'),
-    log = debug('netsblox:rpc:twitter:log'),
     error = debug('netsblox:rpc:twitter:error'),
     trace = debug('netsblox:rpc:twitter:trace'),
     request = require('request'),
     baseURL = 'https://api.twitter.com/1.1/',
     KEY = process.env.TWITTER_BEARER_TOKEN;
+
+// make sure key starts with bearer
+if ( KEY && !KEY.startsWith('Bearer ')) KEY = 'Bearer ' + KEY;
 
 var options = {
     url: baseURL,
@@ -29,8 +38,14 @@ function rateCheck(response, res) {
 
 module.exports = {
 
-    isStateless: true,
-    getPath: () => '/Twitter',
+    isSupported: () => {
+        if(!KEY){
+            /* eslint-disable no-console*/
+            console.error('TWITTER_BEARER_TOKEN is missing.');
+            /* eslint-enable no-console*/
+        }
+        return KEY;
+    },
 
     // returns a list of a user's recent tweets
     recentTweets: function(screenName, count) {
@@ -51,6 +66,12 @@ module.exports = {
         // repeat as many times as necessary
         var getTweets = () => { 
             request(options, (err, res, body) => {
+                // check if user has any tweets
+                if ( body.length < 1 ) {
+                    // we should set an error status and send a null array
+                    response.send(results);
+                    return;
+                }
                 if (rateCheck(res, response)) {
                     return;
                 }
