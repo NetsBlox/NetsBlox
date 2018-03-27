@@ -94,6 +94,35 @@ StockConsumer.dailyPercentChange = function(companySymbol) {
         });
 };
 
+/**
+ * Get historical closing price information about the specified company
+ * @param {String} companySymbol Company stock ticker symbol
+ * @param {String} range Time period (e.g. 1m, 3m, 1y, etc) to retrieve prices for
+ * @returns {Object} Historical price information
+ */
+StockConsumer.historicalClosingPrices = function(companySymbol, range) {
+    return this._requestData({queryString: `/stock/${companySymbol}/chart/${range}`})
+            .then(res => {
+                output = {};    
+
+                // Convert data to more usable table        
+                for(i = 0; i < res.length; i++)
+                {
+                    output[res[i]['date']] = res[i]['close'];
+                }
+
+                return output;
+            })
+            .catch(err => {
+                const prettyError = rewordError(err);
+                if (prettyError) {
+                    return this.response.status(500).send(prettyError);
+                }
+                throw err;
+        });
+};
+
+
 StockConsumer.serviceName = 'IEXTrading';
 
 module.exports = StockConsumer;
