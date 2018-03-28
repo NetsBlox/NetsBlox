@@ -22,6 +22,17 @@ const BugReporter = function() {
 BugReporter.prototype.reportInvalidSocketMessage = function(err, msg, socket) {
     const subject = 'Invalid Socket Message';
     const username = socket.username;
+    const req = socket._socket.upgradeReq;
+    const headerFields = [
+        'user-agent',
+        'sec-websocket-version',
+        'sec-websocket-extensions',
+        'accept-encoding',
+        'accept-language'
+    ];
+    const headers = {};
+    headerFields.forEach(header => headers[header] = req.headers[header]);
+
     const data = {
         filename: 'message.json',
         content: {
@@ -31,6 +42,8 @@ BugReporter.prototype.reportInvalidSocketMessage = function(err, msg, socket) {
             timestamp: new Date(),
             username: username,
             uuid: socket.uuid,
+            reqHeaders: headers,
+            readyState: socket._socket.readyState,
             message: msg
         }
     };
