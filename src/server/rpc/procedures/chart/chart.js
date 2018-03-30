@@ -59,8 +59,10 @@ function calcRanges(lines, isCategorical){
     return stats;
 }
 
-function prepareData(input, isCategorical) {
+function prepareData(input, options) {
     // if the input is one line convert it to appropriate format
+    const xShouldBeNumeric = !options.isCategorical && !options.isTimeSeries;
+
     if (! Array.isArray(input[0][0])){
         chart._logger.trace('one line input detected');
         input = [input];
@@ -74,16 +76,28 @@ function prepareData(input, isCategorical) {
             let [x,y] = pt;
             if (!Array.isArray(pt)) {
                 chart._logger.warn('input is not an array!', pt);
-                throw 'all input points should be in [x,y] form.';
+                throw 'all input points should be in [x,y] form';
             }
-            if (! isCategorical) pt[0] = parseFloat(pt[0]);
+            if (xShouldBeNumeric) pt[0] = parseFloat(pt[0]);
             pt[1] = parseFloat(pt[1]);
-            if ((! isCategorical && isNaN(x)) || isNaN(y) ) throw 'all [x,y] pairs should be numbers';
+
+            if ((xShouldBeNumeric && isNaN(x)) || isNaN(y) ) {
+                let invalidValue = (xShouldBeNumeric && isNaN(x)) ? x : y;
+                invalidValue = truncate(invalidValue.toString(), 7);
+                throw `all [x,y] pairs should be numbers: ${invalidValue}`;
+            }
             return pt;
         });
         return line;
     });
     return input;
+}
+
+function truncate(word, len) {
+    if (word.length > len) {
+        return word.substring(0, len) + '...';
+    }
+    return word;
 }
 
 
@@ -104,7 +118,6 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
  * @param {Array} lines a single line or list of lines. Each line should be in form of [[x1,y1], [x2,y2]]
  * @param {Object=} options Configuration for graph title, axes, and more
  */
-
 chart.draw = function(lines, options){
     // process the options
     Object.keys(options).forEach(key => {
@@ -118,7 +131,7 @@ chart.draw = function(lines, options){
 
     // prepare and check for errors in data
     try {
-        lines = prepareData(lines, options.isCategorical);
+        lines = prepareData(lines, options);
     } catch (e) {
         this._logger.error(e);
         this.response.status(500).send(e);
@@ -199,7 +212,7 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
     };
 
     if (!isMultipleDataset(dataset)){
-        this._logger.trace('oneline input detected');
+        this._logger.trace('single line input detected');
         dataset = [dataset];
     }
 
