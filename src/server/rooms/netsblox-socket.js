@@ -237,7 +237,7 @@ class NetsBloxSocket {
     }
 
     checkAlive() {
-        if (!this.isAlive) {
+        if (!this.isAlive || !this.isSocketOpen()) {
             this._socket.terminate();
             this.close();
         } else {
@@ -245,6 +245,10 @@ class NetsBloxSocket {
             this.isAlive = false;
             setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
         }
+    }
+
+    isSocketOpen() {
+        return this._socket.readyState === this.OPEN;
     }
 
     onLogin (user) {
@@ -354,7 +358,7 @@ class NetsBloxSocket {
 
         msg = JSON.stringify(msg);
         this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
-        if (this._socket.readyState === this.OPEN) {
+        if (this.isSocketOpen()) {
             this._socket.send(msg);
         } else {
             this._logger.log('could not send msg - socket no longer open');
