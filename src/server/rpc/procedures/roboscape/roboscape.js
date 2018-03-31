@@ -7,12 +7,22 @@
  *  mac_addr[6] time[4] 'B' msec[2] tone[2]: beep response
  *  mac_addr[6] time[4] 'W' bits[1]: whiskers status
  *  mac_addr[6] time[4] 'R' dist[2]: ultrasound ranging response
+ *  mac_addr[6] time[4] 'T' left[4] right[4]: wheel ticks
+ *  mac_addr[6] time[4] 'X' left[2] right[2]: drive distance
  * 
  * Server to robot messages:
  *  'D' left[2] right[2]: set driving speed
  *  'B' msec[2] tone[2]: beep
  *  'R': ultrasound ranging
+ *  'T': get wheel ticks
+ *  'X' left[2] right[2]: drive certain distance
+ * 
+ * TODO:
+ * - change 'D' to 'S', 'X' to 'D'
+ * - move the message processing into the robot
+ * - use promises instead of callbacks
  */
+
 
 'use strict';
 
@@ -22,7 +32,8 @@ var debug = require('debug'),
     dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
     PORT = 1973, // listening UDP port
-    FORGET_TIME = 120; // forgetting a robot
+    FORGET_TIME = 120, // forgetting a robot in seconds
+    RESPONSE_TIMEOUT = 200; // waiting for response in milliseconds
 
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
@@ -94,15 +105,34 @@ Robot.prototype.addCallback = function (msgType, callback, timeout) {
             callbacks.splice(i, 1);
             callback(null);
         }
-    }, timeout || 500);
+    }, timeout || RESPONSE_TIMEOUT);
 };
 
-Robot.prototype.range = function (callback) {
+Robot.prototype.getRange = function (callback) {
     this.addCallback('range', callback);
-
     log('range ' + this.mac_addr);
     var message = Buffer.alloc(1);
     message.write('R', 0, 1);
+    this.sendToRobot(message);
+};
+
+Robot.prototype.getTicks = function (callback) {
+    this.addCallback('ticks', callback);
+    log('ticks ' + this.mac_addr);
+    var message = Buffer.alloc(1);
+    message.write('T', 0, 1);
+    this.sendToRobot(message);
+};
+
+Robot.prototype.drive = function (left, right) {
+    left = Math.max(Math.min(+left, 64), -64);
+    right = Math.max(Math.min(+right, 64), -64);
+
+    log('drive ' + this.mac_addr + ' ' + left + ' ' + right);
+    var message = Buffer.alloc(5);
+    message.write('X', 0, 1);
+    message.writeInt16LE(left, 1);
+    message.writeInt16LE(right, 3);
     this.sendToRobot(message);
 };
 
@@ -227,18 +257,55 @@ RoboScape.prototype.beep = function (robot, msec, tone) {
  * @param {string} robot name of the robot (matches at the end)
  * @returns {number} range in centimeters
  */
-RoboScape.prototype.range = function (robot) {
+RoboScape.prototype.getRange = function (robot) {
     robot = this._getRobot(robot);
     if (robot) {
         var response = this.response;
-        robot.range(function (content) {
+        robot.getRange(function (content) {
             if (content) {
                 response.status(200).json(content.range);
             } else {
-                response.status(400).json(-1);
+                response.status(400).json(false);
             }
         });
         return null;
+    }
+    return false;
+};
+
+/**
+ * Returns the current number of wheel ticks (1/64th rotations)
+ * @param {string} robot name of the robot (matches at the end)
+ * @returns {number} range in centimeters
+ */
+RoboScape.prototype.getTicks = function (robot) {
+    robot = this._getRobot(robot);
+    if (robot) {
+        var response = this.response;
+        robot.getTicks(function (content) {
+            if (content) {
+                response.status(200).json([content.left, content.right]);
+            } else {
+                response.status(400).json(false);
+            }
+        });
+        return null;
+    }
+    return false;
+};
+
+/**
+ * Drives the whiles for the specified ticks.
+ * @param {string} robot name of the robot (matches at the end)
+ * @param {number} left distance for left wheel in ticks
+ * @param {number} right distance for right wheel in ticks
+ * @returns {boolean} True if the robot was found
+ */
+RoboScape.prototype.drive = function (robot, left, right) {
+    robot = this._getRobot(robot);
+    if (robot) {
+        robot.drive(left, right);
+        return true;
     }
     return false;
 };
@@ -332,6 +399,16 @@ server.on('message', function (message, remote) {
     } else if (command === 'R' && message.length === 13) {
         robot.report('range', {
             range: message.readInt16LE(11),
+        });
+    } else if (command === 'T' && message.length === 19) {
+        robot.report('ticks', {
+            left: message.readInt32LE(11),
+            right: message.readInt32LE(15),
+        });
+    } else if (command === 'X' && message.length === 15) {
+        robot.report('drive', {
+            left: message.readInt16LE(11),
+            right: message.readInt16LE(13),
         });
     } else {
         log('unknown ' + remote.address + ':' + remote.port +

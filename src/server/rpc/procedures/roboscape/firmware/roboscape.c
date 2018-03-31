@@ -18,7 +18,6 @@ unsigned char ip4_port[2];
 //static const unsigned char server_addr[4] = { 52, 73, 65, 98 }; // netsblox.org
 static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
 static const unsigned char server_port[2] = { 0x07, 0xb5 }; // 1973
-//static const unsigned char server_port[2] = { 0x07, 0xb4 }; // 1972
 
 unsigned short ntohs(unsigned char* data)
 {
@@ -51,8 +50,9 @@ int cmp_rx_headers(int len, unsigned char cmd)
     return buffer_len == len && buffer[0] == 0xb0 && buffer[11] == cmd;
 }
 
-void set_tx_headers(int time, unsigned char cmd)
+void set_tx_headers(unsigned char cmd)
 {
+    int time = CNT / (CLKFREQ / 1000); // TODO: do proper overflow handling
     buffer[0] = 0x20;
     buffer[1] = 0x10;
     memcpy(buffer + 2, server_addr, 4);
@@ -70,6 +70,12 @@ void write_le16(short data)
 {
     memcpy(buffer + buffer_len, &data, 2);
     buffer_len += 2;
+}
+
+void write_le32(int data)
+{
+    memcpy(buffer + buffer_len, &data, 4);
+    buffer_len += 4;
 }
 
 int main()
@@ -93,7 +99,7 @@ int main()
             if (++slower >= 100) {
                 slower = 0;
                 xbee_send_api(xbee, "\x8\004MY", 4);
-                set_tx_headers(CNT, 'I');
+                set_tx_headers('I');
                 xbee_send_api(xbee, buffer, buffer_len);
             }                
         } else if (cmp_api_response(9, "\x88\001SL")) {
@@ -117,7 +123,7 @@ int main()
             int tone = *(short*)(buffer + 14);
             toggle(27);
             freqout(2, msec, tone);
-            set_tx_headers(CNT, 'B');
+            set_tx_headers('B');
             write_le16(msec);
             write_le16(tone);
             xbee_send_api(xbee, buffer, buffer_len);
@@ -126,16 +132,33 @@ int main()
             int right = *(short*)(buffer + 14);
             toggle(27);
             drive_speed(left, right);
-            set_tx_headers(CNT, 'D');
+            set_tx_headers('D');
             write_le16(left);
             write_le16(right);
             xbee_send_api(xbee, buffer, buffer_len);
         } else if (cmp_rx_headers(12, 'R')) {
             toggle(27);
             int dist = ping_cm(5);
-            set_tx_headers(CNT, 'R');
+            set_tx_headers('R');
             write_le16(dist);
             xbee_send_api(xbee, buffer, buffer_len);
+        } else if (cmp_rx_headers(12, 'T')) {
+            toggle(27);
+            int left, right;
+            drive_getTicks(&left, &right);
+            set_tx_headers('T');
+            write_le32(left);
+            write_le32(-right); // this seems to be inverted
+            xbee_send_api(xbee, buffer, buffer_len);
+        } else if (cmp_rx_headers(16, 'X')) {
+            int left = *(short*)(buffer + 12);
+            int right = *(short*)(buffer + 14);
+            toggle(27);
+            set_tx_headers('X');
+            write_le16(left);
+            write_le16(right);
+            xbee_send_api(xbee, buffer, buffer_len);
+            drive_goto(left, right);
         } else if (buffer_len >= 0) {
             buffer_print(buffer_len);
         }
@@ -144,7 +167,7 @@ int main()
         if (whiskers != whiskers2) {
             toggle(27);
             whiskers = whiskers2;
-            set_tx_headers(CNT, 'W');
+            set_tx_headers('W');
             buffer[buffer_len++] = whiskers;
             xbee_send_api(xbee, buffer, buffer_len);
         }          
