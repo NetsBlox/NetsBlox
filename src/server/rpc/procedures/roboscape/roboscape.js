@@ -414,12 +414,12 @@ server.on('message', function (message, remote) {
     }
 });
 
-if (env.ROBOSCAPE_PORT) {
-    log('listening on port ' + env.ROBOSCAPE_PORT);
-    server.bind(env.ROBOSCAPE_PORT || 1973);
+if (process.env.ROBOSCAPE_PORT) {
+    console.log('ROBOSCAPE_PORT is ' + process.env.ROBOSCAPE_PORT);
+    server.bind(process.env.ROBOSCAPE_PORT || 1973);
 
     setTimeout(RoboScape.prototype._heartbeat, 1000);
     module.exports = RoboScape;
 } else {
-    log('RoboScape is not started, set ROBOSCAPE_PORT to 1973');
+    console.log('ROBOSCAPE_PORT is not set (to 1973), RoboScape is disabled');
 }
