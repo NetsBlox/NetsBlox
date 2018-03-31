@@ -23,7 +23,6 @@
  * - use promises instead of callbacks
  */
 
-
 'use strict';
 
 var debug = require('debug'),
@@ -31,7 +30,6 @@ var debug = require('debug'),
     // log = console.log,
     dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
-    PORT = 1973, // listening UDP port
     FORGET_TIME = 120, // forgetting a robot in seconds
     RESPONSE_TIMEOUT = 200; // waiting for response in milliseconds
 
@@ -416,7 +414,12 @@ server.on('message', function (message, remote) {
     }
 });
 
-server.bind(PORT);
+if (env.ROBOSCAPE_PORT) {
+    log('listening on port ' + env.ROBOSCAPE_PORT);
+    server.bind(env.ROBOSCAPE_PORT || 1973);
 
-setTimeout(RoboScape.prototype._heartbeat, 1000);
-module.exports = RoboScape;
+    setTimeout(RoboScape.prototype._heartbeat, 1000);
+    module.exports = RoboScape;
+} else {
+    log('RoboScape is not started, set ROBOSCAPE_PORT to 1973');
+}
