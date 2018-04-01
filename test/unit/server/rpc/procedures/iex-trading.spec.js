@@ -10,5 +10,6 @@ describe('iex-trading', function() {
         ['lastClosePrice', ['companySymbol']],
         ['companyInformation', ['companySymbol']],
         ['dailyPercentChange', ['companySymbol']],
+        ['historicalClosingPrices', ['companySymbol', 'range']],
     ]);
 });
