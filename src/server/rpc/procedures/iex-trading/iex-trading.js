@@ -103,10 +103,10 @@ StockConsumer.dailyPercentChange = function(companySymbol) {
 StockConsumer.historicalClosingPrices = function(companySymbol, range) {
     return this._requestData({queryString: `/stock/${companySymbol}/chart/${range}`})
             .then(res => {
-                output = {};    
+                let output = {};    
 
                 // Convert data to more usable table        
-                for(i = 0; i < res.length; i++)
+                for(let i = 0; i < res.length; i++)
                 {
                     output[res[i]['date']] = res[i]['close'];
                 }
@@ -119,7 +119,7 @@ StockConsumer.historicalClosingPrices = function(companySymbol, range) {
                     return this.response.status(500).send(prettyError);
                 }
                 throw err;
-        });
+            });
 };
 
 
