@@ -68,13 +68,9 @@ RPCManager.prototype.loadRPCs = function() {
     return fs.readdirSync(PROCEDURES_DIR)
         .map(name => [name, path.join(PROCEDURES_DIR, name, name+'.js')])
         .filter(pair => fs.existsSync(pair[1]))
-        .map(pair => {
-            let service = require(pair[1]);
-            service._docs = new Docs(pair[1]);
-            return [pair[0], service];
-        })
+        .map(pair => [pair[0], pair[1], require(pair[1])])  // name, path, module
         .filter(pair => {
-            let [name, service] = pair;
+            let [name, /*path*/, service] = pair;
             if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
                 if(service.isSupported && !service.isSupported()){
                     /* eslint-disable no-console*/
@@ -87,7 +83,9 @@ RPCManager.prototype.loadRPCs = function() {
             return false;
         })
         .map(pair => {
-            let [name, RPCConstructor] = pair;
+            let [name, path, RPCConstructor] = pair;
+
+            RPCConstructor._docs = new Docs(path);
             if (RPCConstructor.init) {
                 RPCConstructor.init(this._logger);
             }
