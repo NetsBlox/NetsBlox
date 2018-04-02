@@ -697,14 +697,6 @@ NetsBloxSocket.MessageHandlers = {
         }
     },
 
-    'request-new-name': function() {
-        if (this.hasRoom()) {
-            this._room.changeName(this._room.name || 'untitled');  // get unique base name
-        } else {
-            this._logger.warn(`Cannot req new name w/o a room! (${this.username})`);
-        }
-    },
-
     'share-msg-type': function(msg) {
         this.sendToEveryone(msg);
     },
