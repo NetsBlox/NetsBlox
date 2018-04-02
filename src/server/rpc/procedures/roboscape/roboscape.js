@@ -331,7 +331,7 @@ RoboScape.prototype._getRegistered = function () {
  */
 RoboScape.prototype.register = function (robots) {
     var state = this._state,
-        id = this.socket.uuid
+        id = this.socket.uuid;
 
     for (var mac_addr in state.registered) {
         if (this._robots[mac_addr] && this._robots[mac_addr].sockets) {
@@ -339,7 +339,7 @@ RoboScape.prototype.register = function (robots) {
             delete this._robots[mac_addr].sockets[id];
         }
     }
-    state.registered = {}
+    state.registered = {};
 
     if (!Array.isArray(robots)) {
         robots = ('' + robots).split(',');
