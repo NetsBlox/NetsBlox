@@ -267,7 +267,6 @@ module.exports = [
                 ownerId = req.body.ownerId,
                 roomName = req.body.roomName;
 
-            console.log('roomName', roomName);
             const room = RoomManager.getExistingRoom(ownerId, roomName);
             if (!socket) {
                 this._logger.error('Could not find socket for ' + socketId);
