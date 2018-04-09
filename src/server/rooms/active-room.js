@@ -503,15 +503,8 @@ class ActiveRoom {
                         content.SourceCode + content.Media + '</role>'
                 );
 
-                // only save the ones that may have been updated
-                const updateRoles = this.getRoleNames()
-                    .filter(name => this.isOccupied(name))
-                    .map(name => roles.find(role => role.ProjectName === name))
-                    .filter(role => !!role);
-
-                return this.setRoles(updateRoles)
-                    .then(() => utils.xml.format('<room name="@" app="@">', this.name, utils.APP) +
-                    roleContents.join('') + '</room>');
+                return utils.xml.format('<room name="@" app="@">', this.name, utils.APP) +
+                    roleContents.join('') + '</room>';
             });
     }
 }
