@@ -157,6 +157,11 @@
         setRole(name, content) {
             this._logger.trace(`updating role: ${name} in ${this.owner}/${this.name}`);
             content.ProjectName = name;
+
+            // Parse additional important fields
+            content.Thumbnail = utils.xml.thumbnail(content.SourceCode);
+            content.Notes = utils.xml.notes(content.SourceCode);
+            content.Updated = new Date();
             return storeRoleBlob(content)
                 .then(content => this.setRawRole(name, content));
         }
