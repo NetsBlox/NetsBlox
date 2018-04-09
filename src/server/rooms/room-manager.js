@@ -101,7 +101,7 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
                 this._logger.trace(`retrieving project ${name} for ${ownerId}`);
                 return ActiveRoom.fromStore(this._logger, project)
                     .then(room => {
-                        if (this.rooms[id]) return this.getExistingRoom(ownerId, name);
+                        if (this.rooms[id]) return this.rooms[id];
                         this.register(room);
                         return room;
                     });
