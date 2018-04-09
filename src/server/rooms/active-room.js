@@ -346,19 +346,12 @@ class ActiveRoom {
         return Object.keys(this.roles);
     }
 
-    _getRole(role, skipSave) {  // Get the project state for a given role
+    _getRole(role) {  // Get the project state for a given role
         let socket = this.getSocketsAt(role)[0];
 
         // request it from the role if occupied or get it from the database
         if (socket) {
             return socket.getProjectJson()
-                .then(content => {
-                    if (!skipSave) {
-                        return this.setRole(role, content)
-                            .then(() => content);
-                    }
-                    return content;
-                })
                 .catch(err => {
                     this._logger.trace(`could not get project json for ${role} in ${this.name}: ${err}`);
                     return this._project.getRole(role);
@@ -368,8 +361,8 @@ class ActiveRoom {
         }
     }
 
-    getRole(role, skipSave) {  // Get the role and record the current actionId
-        return this._getRole(role, skipSave)
+    getRole(role) {  // Get the role and record the current actionId
+        return this._getRole(role)
             .then(content => {
                 if (content) {
                     return this.setRoleActionId(role, utils.xml.actionId(content.SourceCode))
