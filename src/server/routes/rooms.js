@@ -256,19 +256,18 @@ module.exports = [
     },
     {
         Service: 'moveToRole',
-        Parameters: 'dstId,role,ownerId,roomName,socketId',
+        Parameters: 'dstId,ownerId,roomName,socketId',
         middleware: ['hasSocket'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             var socketId = req.body.socketId;
             var socket = SocketManager.getSocket(socketId),
-                role = req.body.role,
                 dstId = req.body.dstId,
                 ownerId = req.body.ownerId,
-                roomName = req.body.roomName,
-                roomId = Utils.uuid(ownerId, roomName);
+                roomName = req.body.roomName;
 
+            console.log('roomName', roomName);
             const room = RoomManager.getExistingRoom(ownerId, roomName);
             if (!socket) {
                 this._logger.error('Could not find socket for ' + socketId);
@@ -279,12 +278,7 @@ module.exports = [
                 return res.status(403).send('ERROR: permission denied');
             }
 
-            //  Cache the current state in the active room
-            return room.saveRole(role)
-                .then(() => {
-                    // Reply w/ the new role code
-                    return room.getRole(dstId);
-                })
+            return room.getRole(dstId)
                 .then(project => {
                     if (project) {
                         project = Utils.serializeRole(project, room.name);
