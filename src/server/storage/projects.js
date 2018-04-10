@@ -578,11 +578,13 @@
 
     // Project Storage
     var logger,
-        collection;
+        collection,
+        ProjectArchives;
 
     ProjectStorage.init = function (_logger, db) {
         logger = _logger.fork('projects');
         collection = db.collection('projects');
+        ProjectArchives = db.collection('project-archives');
     };
 
     ProjectStorage.getRawProject = function (username, projectName) {
