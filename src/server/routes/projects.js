@@ -161,24 +161,23 @@ var applyAspectRatio = function (thumbnail, aspectRatio) {
 module.exports = [
     {
         Service: 'saveProject',
-        Parameters: 'socketId,overwrite,projectName',
+        Parameters: 'roleName,projectName,currentProjectName,ownerId,overwrite,srcXml,mediaXml',
         Method: 'Post',
         Note: '',
-        middleware: ['hasSocket', 'isLoggedIn'],
+        middleware: ['isLoggedIn'],
         Handler: function(req, res) {
-            var username = req.session.username,
-                {overwrite, socketId, projectName} = req.body,
-                socket = SocketManager.getSocket(socketId),
+            const username = req.session.username;
+            const {projectName, roleName, ownerId, currentProjectName, overwrite} = req.body;
+            const {srcXml, mediaXml} = req.body;
 
-                activeRoom = socket.getRawRoom();
-
-            if (!activeRoom) {
-                error(`Could not find active room for "${username}" - cannot save!`);
-                return res.status(500).send('ERROR: active room not found');
-            }
 
             const saveAs = () => {
+                const roleData = {
+                    SourceCode: srcXml,
+                    Media: mediaXml
+                };
                 activeRoom.changeName(projectName)
+                    .then(() => activeRoom.setRole(roleName, roleData))
                     .then(() => activeRoom.getProject().persist())
                     .then(() => res.status(200).send('saved'));
             };
@@ -189,12 +188,18 @@ module.exports = [
             //   - ow, delete it
             //
             // If we are not overwriting the project, just name it and save!
-            if (overwrite && projectName !== activeRoom.name) {
-                trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
+
+            trace(`Saving ${roleName} from ${currentProjectName} (${ownerId})`);
+
+            // Check that the user can edit the project?
+            const activeRoom = RoomManager.getExistingRoom(ownerId, currentProjectName);
+            if (overwrite && projectName !== currentProjectName) {
+                trace(`overwriting ${projectName} with ${currentProjectName} for ${username}`);
 
                 const otherRoom = RoomManager.getExistingRoom(username, projectName);
                 const isSame = otherRoom === activeRoom;
                 if (otherRoom && !isSame) {  // rename the existing, active room
+                    trace(`Renaming existing open project: ${projectName}`);
                     return otherRoom.changeName(projectName, true).then(saveAs);
                 } else {  // delete the existing
                     return Projects.get(username, projectName)
@@ -206,7 +211,6 @@ module.exports = [
                         .then(saveAs);
                 }
             } else {
-                trace(`overwriting ${projectName} with ${activeRoom.name} for ${username}`);
                 return saveAs();
             }
         }
