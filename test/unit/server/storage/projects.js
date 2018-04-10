@@ -651,4 +651,29 @@ describe('projects', function() {
         });
     });
 
+    describe('archive', function() {
+        let archives, project;
+
+        before(done => {
+            utils.reset()
+                .then(db => archives = db.collection('project-archives'))
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(result => project = result)
+                .then(() => project.archive())
+                .nodeify(done);
+        });
+
+        it('should store archive in project-archives', () => {
+            return project.getRawProject()
+                .then(result => Q(archives.findOne({projectId: result._id})))
+                .then(archive => assert(archive));
+        });
+
+        it('should not update archive on project edit', () => {
+            return project.setName('someNewName')
+                .then(() => project.getRawProject())
+                .then(result => Q(archives.findOne({projectId: result._id})))
+                .then(archive => assert.equal(archive.name, 'PublicProject'));
+        });
+    });
 });
