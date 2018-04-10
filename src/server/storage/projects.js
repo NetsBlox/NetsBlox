@@ -485,9 +485,11 @@
         }
 
         _execUpdate(query/*, options*/) {
+            query.$set = query.$set || {};
+            query.$set.lastUpdatedAt = new Date();
+
             const args = Array.prototype.slice.call(arguments);
             args.unshift(this.getStorageId());
-            query.$set.lastUpdatedAt = new Date();
 
             return Q(this._db.update.apply(this._db, args));
         }
