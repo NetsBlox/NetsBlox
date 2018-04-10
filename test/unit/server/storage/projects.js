@@ -72,6 +72,13 @@ describe('projects', function() {
             });
     });
 
+    it('should get role by id', function(done) {
+        Projects.get('brian', 'MultiRoles')
+            .then(project => project.getRoleById('r1-ID'))
+            .then(role => assert(role))
+            .nodeify(done);
+    });
+
     it('should get role', function(done) {
         project.getRoleNames()
             .then(() => project.getRole('p1'))
