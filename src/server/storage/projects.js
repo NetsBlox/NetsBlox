@@ -431,6 +431,18 @@
                 .then(() => this.save());
         }
 
+        archive() {  // Archive a copy of the current project
+            return this.getRawProject()
+                .then(project => {
+                    project.projectId = project._id;
+                    delete project._id;
+                    return ProjectArchives.save(project);
+                })
+                .then(result => {
+                    return result.ops[0]._id;
+                });
+        }
+
         isTransient() {
             return this.getRawProject()
                 .then(project => !!project.transient);
@@ -566,11 +578,13 @@
 
     // Project Storage
     var logger,
-        collection;
+        collection,
+        ProjectArchives;
 
     ProjectStorage.init = function (_logger, db) {
         logger = _logger.fork('projects');
         collection = db.collection('projects');
+        ProjectArchives = db.collection('project-archives');
     };
 
     ProjectStorage.getRawProject = function (username, projectName) {
