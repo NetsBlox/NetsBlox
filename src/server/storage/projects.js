@@ -69,7 +69,7 @@
             const params = {
                 room: room,
                 logger: this._logger,
-                lastUpdatedAt: Date.now(),
+                lastUpdatedAt: new Date(),
                 db: this._db
             };
             const data = this._saveable();
@@ -325,7 +325,7 @@
                         name: this.name,
                         owner: this.owner,
                         transient: true,
-                        lastUpdatedAt: Date.now(),
+                        lastUpdatedAt: new Date(),
                         originTime: this.originTime,
                         collaborators: this.collaborators,
                         roles: roleDict
@@ -346,7 +346,7 @@
             const options = {};
 
             this._logger.trace(`saving project ${this.owner}/${this.name}`);
-            query.$set.lastUpdatedAt = Date.now();
+            query.$set.lastUpdatedAt = new Date();
 
             let next = Q();
             if (this._room) {  // update if attached to a room
