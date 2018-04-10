@@ -344,62 +344,49 @@
         save() {
             const query = {$set: {}};
             const options = {};
-            let roles = null;
 
             this._logger.trace(`saving project ${this.owner}/${this.name}`);
-            return this.collectSaveableRoles()
-                .then(saveableRoles => {
-                    if (this.isDeleted()) return;
-                    roles = saveableRoles;
-                    const roleNames = roles.map(role => role.ProjectName);
-                    this._logger.trace(`updated roles are ${roleNames.join(',')}`);
+            query.$set.lastUpdatedAt = Date.now();
 
-                    return this.getRoleIdsFor(roleNames);
-                })
-                .then(ids => {
-                    if (this.isDeleted()) return;
-                    roles.forEach((role, i) => this.addSetRoleToQuery(ids[i], role, query));
-                    query.$set.lastUpdatedAt = Date.now();
+            let next = Q();
+            if (this._room) {  // update if attached to a room
+                const nameChanged = this.name !== this._room.name;
+                const ownerLoggedIn = utils.isSocketUuid(this.owner) &&
+                    this._room.owner !== this.owner;
 
-                    if (this._room) {  // update if attached to a room
-                        const nameChanged = this.name !== this._room.name;
-                        const ownerLoggedIn = utils.isSocketUuid(this.owner) &&
-                            this._room.owner !== this.owner;
+                if (ownerLoggedIn) {
+                    query.$set.owner = this._room.owner;
+                }
 
-                        if (ownerLoggedIn) {
-                            query.$set.owner = this._room.owner;
-                        }
+                if (nameChanged) {
+                    query.$set.name = this._room.name;
+                    next = this.getRawProject()
+                        .then(project => {
+                            if (this.isDeleted()) return;
 
-                        if (nameChanged) {
-                            query.$set.name = this._room.name;
-                            return this.getRawProject()
-                                .then(project => {
-                                    if (this.isDeleted()) return;
-
-                                    if (!project.transient) {  // create a copy
-                                        this._logger.trace(`duplicating project (save as) ${this.name}->${this._room.name}`);
-                                        this.name = query.$set.name;
-                                        // covert the roles keys to match expected format
-                                        Object.keys(project.roles).forEach(roleId => {
-                                            project[`roles.${roleId}`] = project.roles[roleId];
-                                        });
-                                        delete project.roles;
-                                        delete project._id;
-
-                                        this.originTime = Date.now();
-                                        project.originTime = this.originTime;
-                                        this._room.originTime = this.originTime;
-
-                                        query.$set = _.extend({}, project, query.$set);
-                                        options.upsert = true;
-                                    } else {
-                                        this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
-                                    }
+                            if (!project.transient) {  // create a copy
+                                this._logger.trace(`duplicating project (save as) ${this.name}->${this._room.name}`);
+                                this.name = query.$set.name;
+                                // covert the roles keys to match expected format
+                                Object.keys(project.roles).forEach(roleId => {
+                                    project[`roles.${roleId}`] = project.roles[roleId];
                                 });
-                        }
-                    }
-                    return Q();
-                })
+                                delete project.roles;
+                                delete project._id;
+
+                                this.originTime = Date.now();
+                                project.originTime = this.originTime;
+                                this._room.originTime = this.originTime;
+
+                                query.$set = _.extend({}, project, query.$set);
+                                options.upsert = true;
+                            } else {
+                                this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
+                            }
+                        });
+                }
+            }
+            return next
                 .then(() => {
                     if (this.isDeleted()) return;
                     this._db.update(this.getStorageId(), query, options);
