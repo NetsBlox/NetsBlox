@@ -112,6 +112,12 @@
             return this._db.update(this.getStorageId(), query);
         }
 
+        setRoleById(id, content) {
+            this.addRoleMetadata(content);
+            return storeRoleBlob(content)
+                .then(content => this.setRawRoleById(id, content));
+        }
+
         addSetRoleToQuery(id, content, query) {
             query = query || {$set: {}};
             id = id || this.getNewRoleId(content.ProjectName);
@@ -158,12 +164,17 @@
             this._logger.trace(`updating role: ${name} in ${this.owner}/${this.name}`);
             content.ProjectName = name;
 
-            // Parse additional important fields
+            this.addRoleMetadata(content);
+            return storeRoleBlob(content)
+                .then(content => this.setRawRole(name, content));
+        }
+
+        // Parse additional important fields
+        addRoleMetadata(content) {
             content.Thumbnail = utils.xml.thumbnail(content.SourceCode);
             content.Notes = utils.xml.notes(content.SourceCode);
             content.Updated = new Date();
-            return storeRoleBlob(content)
-                .then(content => this.setRawRole(name, content));
+            return content;
         }
 
         setRoles(roles) {
@@ -198,7 +209,7 @@
         }
 
         getRoleById(role) {
-            return this.getRawRole(role)
+            return this.getRawRoleById(role)
                 .then(content => content && loadRoleContent(content));
         }
 
