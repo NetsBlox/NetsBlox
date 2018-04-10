@@ -193,7 +193,7 @@
         }
 
         getRoleById(role) {
-            return this.getRawRole(role)
+            return this.getRawRoleById(role)
                 .then(content => content && loadRoleContent(content));
         }
 
