@@ -177,9 +177,15 @@ module.exports = [
                     Media: mediaXml
                 };
                 activeRoom.changeName(projectName)
+                    .then(() => activeRoom.getProject().archive())
                     .then(() => activeRoom.setRole(roleName, roleData))
                     .then(() => activeRoom.getProject().persist())
-                    .then(() => res.status(200).send('saved'));
+                    .then(() => res.status(200).send('saved'))
+                    .catch(err => {
+                        const msg = `could not save ${currentProjectName} for ${ownerId}: ${err}`;
+                        error(msg);
+                        throw err;
+                    });
             };
 
             // If we are going to overwrite the project
