@@ -133,32 +133,47 @@ describe('projects', function() {
             .catch(done);
     });
 
-    it('should create copy if name changed after persist', function(done) {
-        project.persist()
-            .then(() => project.addCollaborator('spartacus'))
+    it('should update project name on room rename (inPlace)', function() {
+        return project.persist()
+            .then(() => project._room.changeName('name-changed', null, true))
             .then(() => {
-                project._room.name = 'name-changed';
-                return project.save();
+                assert.equal(project.name, 'name-changed');
+                return Projects.get(OWNER, PROJECT_NAME);
             })
+            .then(match => assert(!match));
+    });
+
+    it('should not create copy on room rename inPlace', function() {
+        return project.persist()
+            .then(() => project.addCollaborator('spartacus'))
+            .then(() => project._room.changeName('name-changed', null, true))
+            .then(() => project.getRawProject())
+            .then(data => {
+                assert.equal(data.name, 'name-changed');
+                assert(data.collaborators.includes('spartacus'));
+                return Projects.get(OWNER, PROJECT_NAME);
+            })
+            .then(match => assert(!match));
+    });
+
+    it('should create copy on room rename (!inPlace)', function() {
+        return project.persist()
+            .then(() => project.addCollaborator('spartacus'))
+            .then(() => project._room.changeName('name-changed'))
             .then(() => project.getRawProject())
             .then(data => {
                 assert(data.collaborators.includes('spartacus'));
                 return Projects.get(OWNER, PROJECT_NAME);
             })
-            .then(original => original.destroy())
-            .then(() => {
-                done();
-            })
-            .catch(done);
+            .then(original => original.destroy());
     });
 
-    it('should have the correct origin time', function(done) {
-        project.getRawProject()
-            .then(data => {
-                assert.equal(data.originTime, project.originTime);
-                done();
-            })
-            .catch(done);
+    it('should have the correct origin time', function() {
+        let project = null;
+        return Projects.get('brian', 'MultiRoles')
+            .then(result => project = result)
+            .then(() => project.getRawProject())
+            .then(data => assert.equal(data.originTime, project.originTime));
     });
 
     describe('deletion', function() {
@@ -600,11 +615,10 @@ describe('projects', function() {
                 .nodeify(done);
         });
 
-        it('should be recording messages after starting recording', done => {
-            project.startRecordingMessages('test')
+        it('should be recording messages after starting recording', () => {
+            return project.startRecordingMessages('test')
                 .then(() => project.isRecordingMessages())
-                .then(recording => assert(recording))
-                .nodeify(done);
+                .then(recording => assert(recording));
         });
 
         it('should still record msgs while one person is recording', done => {

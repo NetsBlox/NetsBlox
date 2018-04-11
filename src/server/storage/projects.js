@@ -84,7 +84,7 @@
             return Q(this._db.findOne(this.getStorageId()))
                 .then(project => {
                     if (!project) {
-                        let msg = `Could not find project ${this.uuid()}`;
+                        let msg = `could not find project ${this.uuid()}`;
                         this._logger.error(msg);
                         throw new Error(msg);
                     }
