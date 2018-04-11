@@ -69,7 +69,7 @@
             const params = {
                 room: room,
                 logger: this._logger,
-                lastUpdatedAt: Date.now(),
+                lastUpdatedAt: new Date(),
                 db: this._db
             };
             const data = this._saveable();
@@ -109,7 +109,7 @@
 
         setRawRoleById(id, content) {
             const query = this.addSetRoleToQuery(id, content);
-            return this._db.update(this.getStorageId(), query);
+            return this._execUpdate(query);
         }
 
         setRoleById(id, content) {
@@ -194,7 +194,7 @@
                 .then(ids => {
                     if (this.isDeleted()) throw new Error('cannot complete setRoles: project has been deleted!');
                     rawRoles.forEach((role, i) => this.addSetRoleToQuery(ids[i], role, query));
-                    return this._db.update(this.getStorageId(), query);
+                    return this._execUpdate(query);
                 });
         }
 
@@ -269,7 +269,7 @@
                 .then(roleId => {
                     if (!roleId) return Promise.reject(`Could not find role named ${roleName} in ${this.uuid()}`);
                     query.$unset[`roles.${roleId}`] = '';
-                    return this._db.update(this.getStorageId(), query);
+                    return this._execUpdate(query);
                 });
         }
 
@@ -325,7 +325,7 @@
                         name: this.name,
                         owner: this.owner,
                         transient: true,
-                        lastUpdatedAt: Date.now(),
+                        lastUpdatedAt: new Date(),
                         originTime: this.originTime,
                         collaborators: this.collaborators,
                         roles: roleDict
@@ -346,7 +346,7 @@
             const options = {};
 
             this._logger.trace(`saving project ${this.owner}/${this.name}`);
-            query.$set.lastUpdatedAt = Date.now();
+            query.$set.lastUpdatedAt = new Date();
 
             let next = Q();
             if (this._room) {  // update if attached to a room
@@ -389,7 +389,7 @@
             return next
                 .then(() => {
                     if (this.isDeleted()) return;
-                    this._db.update(this.getStorageId(), query, options);
+                    this._execUpdate(query, options);
                 })
                 .then(() => {
                     if (this.isDeleted()) {
@@ -419,7 +419,7 @@
             if (this.isDeleted()) return Promise.reject('cannot call persist: project has been deleted!');
             const query = {$set: {transient: false}};
             this._logger.trace(`persisting project ${this.owner}/${this.name}`);
-            return this._db.update(this.getStorageId(), query)
+            return this._execUpdate(query)
                 .then(() => this.save());
         }
 
@@ -427,7 +427,7 @@
             if (this.isDeleted()) return Promise.reject('cannot call unpersist: project has been deleted!');
             const query = {$set: {transient: true}};
             this._logger.trace(`unpersisting project ${this.owner}/${this.name}`);
-            return this._db.update(this.getStorageId(), query)
+            return this._execUpdate(query)
                 .then(() => this.save());
         }
 
@@ -451,7 +451,7 @@
         setPublic(isPublic) {
             if (this.isDeleted()) return Promise.reject('cannot call setPublic: project has been deleted!');
             const query = {$set: {Public: isPublic === true}};
-            return this._db.update(this.getStorageId(), query);
+            return this._execUpdate(query);
         }
 
         setName(name) {
@@ -465,7 +465,7 @@
                         return PublicProjects.rename(this.owner, this.name, name);
                     }
                 })
-                .then(() => this._db.update(this.getStorageId(), query))
+                .then(() => this._execUpdate(query))
                 .then(() => this.name = name);
         }
 
@@ -496,10 +496,13 @@
             return this._execUpdate(query);
         }
 
-        _execUpdate(/*query, options*/) {
-            let args = [].slice.call(arguments);
+        _execUpdate(query/*, options*/) {
+            query.$set = query.$set || {};
+            query.$set.lastUpdatedAt = new Date();
+
+            const args = Array.prototype.slice.call(arguments);
             args.unshift(this.getStorageId());
-            // TODO: record that the collection has been updated
+
             return Q(this._db.update.apply(this._db, args));
         }
 
@@ -528,7 +531,7 @@
 
         startRecordingMessages(id, time=Date.now()) {  // Set (and return) the start recording time
             const query = {$push: {recordMessagesAfter: {id: id, time: time}}};
-            return Q(this._db.update(this.getStorageId(), query))
+            return this._execUpdate(query)
                 .then(() => time);
         }
 
@@ -549,7 +552,7 @@
                     });
 
                     const query = {$set: {recordMessagesAfter: records}};
-                    return Q(this._db.update(this.getStorageId(), query))
+                    return this._execUpdate(query)
                         .then(() => removed && removed.time);
                 });
         }
