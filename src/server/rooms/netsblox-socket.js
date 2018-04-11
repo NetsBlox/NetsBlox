@@ -60,6 +60,7 @@ class NetsBloxSocket {
         this._socket = socket;
         this._projectRequests = {};  // saving
         this.isAlive = true;
+        this.nextHeartbeat = null;
 
         this.onclose = [];
         this._initialize();
@@ -212,6 +213,9 @@ class NetsBloxSocket {
         if (this._room) {
             this.leave();
         }
+        if (this.nextHeartbeat) {
+            clearTimeout(this.nextHeartbeat);
+        }
         this.onclose.forEach(fn => fn.call(this));
         this.onClose(this);
     }
@@ -243,7 +247,7 @@ class NetsBloxSocket {
         } else {
             this._socket.ping();
             this.isAlive = false;
-            setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
+            this.nextHeartbeat = setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
         }
     }
 
