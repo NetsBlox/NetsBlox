@@ -33,7 +33,7 @@ storage.connect()
             return storage.disconnect();
         }
         logger.trace('About to export project');
-        return ActiveRoom.fromStore(logger, null, project);
+        return ActiveRoom.fromStore(logger, project);
     })
     .then(room => room.serialize())
     .then(xml => {
