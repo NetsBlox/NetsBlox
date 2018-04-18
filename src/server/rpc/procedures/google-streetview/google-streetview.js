@@ -7,18 +7,7 @@
  */
 'use strict';
 
-var debug = require('debug'),
-    request = require('request'),
-    geolib = require('geolib'),
-    CacheManager = require('cache-manager'),
-    Storage = require('../../storage'),
-    // TODO: Change this cache to mongo or something (file?)
-    // This cache is shared among all GoogleMaps instances
-    cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity}),
-    key = process.env.GOOGLE_MAPS_KEY;
-
-var storage;
-
+var key = process.env.GOOGLE_MAPS_KEY;
 
 const ApiConsumer = require('../utils/api-consumer');
 const GoogleStreetView = new ApiConsumer('google-streetview', 'https://maps.googleapis.com/maps/api/streetview?',{cache: {ttl: 5*60}});
