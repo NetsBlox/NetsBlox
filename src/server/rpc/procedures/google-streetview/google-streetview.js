@@ -27,9 +27,9 @@ GoogleStreetView.isSupported = () => {
  * @param {Longitude} longitude Longitude coordinate of location
  * @param {Number} width Width of image
  * @param {Number} height Height of image
- * @param {Number} fieldofview Field of View of image
+ * @param {Number} fieldofview Field of View of image, maximum of 120
  * @param {Number} heading Heading of view
- * @param {Number} pitch Pitch of view
+ * @param {Number} pitch Pitch of view, 90 to point up, -90 to point down
  * @returns {Image} Image of requested location with specified size and orientation
  */
 GoogleStreetView.getViewFromLatLong = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
@@ -41,9 +41,9 @@ GoogleStreetView.getViewFromLatLong = function(latitude, longitude, width, heigh
  * @param {String} address Address or Name of location
  * @param {Number} width Width of image
  * @param {Number} height Height of image
- * @param {Number} fieldofview Field of View of image
+ * @param {Number} fieldofview Field of View of image, maximum of 120
  * @param {Number} heading Heading of view
- * @param {Number} pitch Pitch of view
+ * @param {Number} pitch Pitch of view, 90 to point up, -90 to point down
  * @returns {Image} Image of requested location with specified size and orientation
  */
 GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofview, heading, pitch) {
