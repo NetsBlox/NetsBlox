@@ -333,13 +333,19 @@ Server.prototype.start = function(done) {
         .then(() => {
             this.configureRoutes();
             this._server = this.app.listen(this.opts.port, err => {
+                if (err) {
+                    return done(err);
+                }
+
+                // eslint-disable-next-line no-console
+                console.log(`listening on port ${this.opts.port}`);
                 this._wss = new WebSocketServer({server: this._server});
                 SocketManager.enable(this._wss);
                 // Enable Vantage
                 if (this.opts.vantage) {
                     new Vantage(this).start(this.opts.vantagePort);
                 }
-                done(err);
+                done();
             });
         });
 };
