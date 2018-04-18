@@ -43,6 +43,7 @@ Storage.prototype.connect = function(mongoURI) {
             this.publicProjects = PublicProjects;
 
             this._db = db;
+            this._client = client;
             this._logger.info(`Connected to ${mongoURI}`);
             return db;
         })
@@ -63,7 +64,7 @@ Storage.prototype.connect = function(mongoURI) {
 };
 
 Storage.prototype.disconnect = function() {
-    return this._db.close(true);
+    return this._client.close(true);
 };
 
 module.exports = Storage;
