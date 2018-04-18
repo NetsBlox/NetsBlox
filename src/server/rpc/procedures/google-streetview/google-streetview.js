@@ -8,7 +8,6 @@
 'use strict';
 
 var debug = require('debug'),
-    trace = debug('netsblox:rpc:static-map:trace'),
     request = require('request'),
     geolib = require('geolib'),
     CacheManager = require('cache-manager'),
@@ -34,18 +33,32 @@ GoogleStreetView.isSupported = () => {
 };
 
 /**
- * Get the current price of the given stock, with a 15 min delay
- * @param {Number} width Company stock ticker symbol
- * @param {Number} height Company stock ticker symbol
- * @param {Number} latitude Company stock ticker symbol
- * @param {Number} longitude Company stock ticker symbol
- * @param {Number} fieldofview Company stock ticker symbol
- * @param {Number} heading Company stock ticker symbol
- * @param {Number} pitch Company stock ticker symbol
- * @returns {Image} Current price for the specified stock
+ * Get Street View image of a location using coordinates
+ * @param {Number} width Width of image
+ * @param {Number} height Height of image
+ * @param {Number} latitude Latitude coordinate of location
+ * @param {Number} longitude Longitude coordinate of location
+ * @param {Number} fieldofview Field of View of image
+ * @param {Number} heading Heading of view
+ * @param {Number} pitch Pitch of view
+ * @returns {Image} Image of requested location with specified size and orientation
  */
-GoogleStreetView.getView = function(width, height, latitude, longitude, fieldofview, heading, pitch) {
+GoogleStreetView.getViewFromLatLong = function(width, height, latitude, longitude, fieldofview, heading, pitch) {
     return this._sendImage({queryString: `size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`, method: 'GET'});
+};
+
+/**
+ * Get Street View image of a location from a location string
+ * @param {Number} width Width of image
+ * @param {Number} height Height of image
+ * @param {String} address Address or Name of location
+ * @param {Number} fieldofview Field of View of image
+ * @param {Number} heading Heading of view
+ * @param {Number} pitch Pitch of view
+ * @returns {Image} Image of requested location with specified size and orientation
+ */
+GoogleStreetView.getViewFromAddress = function(width, height, location, fieldofview, heading, pitch) {
+    return this._sendImage({queryString: `size=${width}x${height}&location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`, method: 'GET'});
 };
 
 GoogleStreetView.serviceName = 'GoogleStreetView';
