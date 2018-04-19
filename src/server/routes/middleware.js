@@ -108,7 +108,14 @@ var Session = function(res) {
 
 Session.prototype.destroy = function() {
     // TODO: Change this to a blacklist
-    this._res.clearCookie(COOKIE_ID);
+    const options = {
+        httpOnly: true,
+        expires: new Date(0)
+    };
+
+    if (process.env.HOST !== undefined) options.domain = process.env.HOST;
+
+    this._res.cookie(COOKIE_ID, '', options);
 };
 
 // Helpers
