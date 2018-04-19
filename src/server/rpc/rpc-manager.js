@@ -310,10 +310,9 @@ RPCManager.prototype.parseArgValue = function (arg, input, ctx) {
                 inputStatus.value = types.parse[typeName].apply(null, args);
             } catch (e) {
                 inputStatus.isValid = false;
-                // Hide types like "BoundedNumber"
-                // TODO
-                inputStatus.msg = `"${arg.name}" is not a valid ${types.getNBType(typeName)}.`;
-                if (e.message.includes(typeName)) {
+                const netsbloxType = types.getNBType(typeName);
+                inputStatus.msg = `"${arg.name}" is not a valid ${netsbloxType}.`;
+                if (e.message.includes(netsbloxType)) {
                     inputStatus.msg = `"${arg.name}" is not valid. ` + e.message;
                 } else if (e.message) {
                     inputStatus.msg += ' ' + e.message;
