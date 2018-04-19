@@ -69,23 +69,32 @@ describe('jsdoc-extractor', () => {
                     {
                         name: 'address',
                         optional: false,
-                        type: 'String',
+                        type: {
+                            name: 'String',
+                            params: []
+                        },
                         description: 'target address'
                     },
                     {
                         name: 'limit',
                         optional: false,
-                        type: 'Number',
+                        type: {
+                            name: 'Number',
+                            params: []
+                        },
                         description: 'the results limit'
                     },
                     {
                         name: 'options',
                         optional: false,
-                        type: 'Object',
+                        type: {
+                            name: 'Object',
+                            params: []
+                        },
                         description: null
                     }
                 ],
-                returns: {type: 'String', description: null}
+                returns: {type: {name: 'String', params: []}, description: null}
             });
         });
 
@@ -102,6 +111,21 @@ describe('jsdoc-extractor', () => {
             let metadata = jp._parseSource(oldComment).rpcs[0];
             let simpleMetadata = jp._simplify(metadata.parsed);
             assert(simpleMetadata.deprecated);
+        });
+
+        it('should parse parameterized types', () => {
+            const parameterized = `
+            /**
+             * this is the description
+             * @param {BoundedNumber<10, 20>} number number (between 10-20)
+             * @name doSomething
+             */
+            `;
+            const metadata = jp._parseSource(parameterized).rpcs[0];
+            const simpleMetadata = jp._simplify(metadata.parsed);
+            const argType = simpleMetadata.args[0].type;
+            assert.equal(argType.name, 'BoundedNumber');
+            assert.deepEqual(argType.params, [10, 20]);
         });
 
     });
