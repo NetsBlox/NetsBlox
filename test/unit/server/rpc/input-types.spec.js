@@ -87,6 +87,11 @@ describe('RPC Input Types', function() {
         describe('BoundedNumber', function() {
             const type = 'BoundedNumber';
 
+            it('should include minimum value', () => {
+                let rawInput = '10';
+                typesParser[type](rawInput, 10, 180);
+            });
+
             it('should not throw if within range', () => {
                 let rawInput = '-151';
                 typesParser[type](rawInput, -180, 180);
