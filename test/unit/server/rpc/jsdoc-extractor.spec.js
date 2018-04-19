@@ -113,19 +113,42 @@ describe('jsdoc-extractor', () => {
             assert(simpleMetadata.deprecated);
         });
 
-        it('should parse parameterized types', () => {
-            const parameterized = `
-            /**
-             * this is the description
-             * @param {BoundedNumber<10, 20>} number number (between 10-20)
-             * @name doSomething
-             */
-            `;
-            const metadata = jp._parseSource(parameterized).rpcs[0];
-            const simpleMetadata = jp._simplify(metadata.parsed);
-            const argType = simpleMetadata.args[0].type;
-            assert.equal(argType.name, 'BoundedNumber');
-            assert.deepEqual(argType.params, [10, 20]);
+        describe('parameterized types', function() {
+            let parsed = null;
+            before(function() {
+                const parameterized = `
+                /**
+                 * this is the description
+                 * @param {BoundedNumber<10, 20>} number number (between 10-20)
+                 * @param {BoundedNumber<-10, 20>} negnumber number (between -10,20)
+                 * @param {BoundedNumber<10.334, 20>} decnumber number (between 10.334,20)
+                 * @param {BoundedNumber<String, 20>} mixed
+                 * @name doSomething
+                 */
+                `;
+                const metadata = jp._parseSource(parameterized).rpcs[0];
+                parsed = jp._simplify(metadata.parsed);
+            });
+
+            it('should parse name', () => {
+                const argType = parsed.args[0].type;
+                assert.equal(argType.name, 'BoundedNumber');
+            });
+
+            it('should parse parameters', () => {
+                const argType = parsed.args[0].type;
+                assert.deepEqual(argType.params, [10, 20]);
+            });
+
+            it('should parse negative numbers for params', () => {
+                const argType = parsed.args[1].type;
+                assert.deepEqual(argType.params, [-10, 20]);
+            });
+
+            it('should parse decimal params', () => {
+                const argType = parsed.args[2].type;
+                assert.deepEqual(argType.params, [10.334, 20]);
+            });
         });
 
     });
