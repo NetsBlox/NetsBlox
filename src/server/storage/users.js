@@ -133,7 +133,6 @@
 
         _emailTmpPassword(password) {
             mailer.sendMail({
-                from: 'no-reply@netsblox.com',
                 to: this.email,
                 subject: 'Temporary Password',
                 markdown: 'Hello '+this.username+',\nYour NetsBlox password has been '+

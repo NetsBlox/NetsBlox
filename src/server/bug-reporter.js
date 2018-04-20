@@ -159,7 +159,7 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
         body += `\n\nNetsBlox Server ${version}`;
         data.content = JSON.stringify(data.content);
         const mailOpts = {
-            from: 'bug-reporter@netsblox.org',
+            from: 'bug-reporter',
             to: this.maintainer,
             subject: subject,
             markdown: body,
