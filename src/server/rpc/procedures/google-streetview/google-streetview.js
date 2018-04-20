@@ -25,11 +25,11 @@ GoogleStreetView.isSupported = () => {
  * Get Street View image of a location using coordinates
  * @param {Latitude} latitude Latitude coordinate of location
  * @param {Longitude} longitude Longitude coordinate of location
- * @param {Number} width Width of image
- * @param {Number} height Height of image
- * @param {Number} fieldofview Field of View of image, maximum of 120
- * @param {Number} heading Heading of view
- * @param {Number} pitch Pitch of view, 90 to point up, -90 to point down
+ * @param {BoundedNumber<1,2000>} width Width of image
+ * @param {BoundedNumber<1,2000>} height Height of image
+ * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of 120
+ * @param {BoundedNumber<0,360>} heading Heading of view
+ * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
  * @returns {Image} Image of requested location with specified size and orientation
  */
 GoogleStreetView.getViewFromLatLong = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
@@ -39,11 +39,11 @@ GoogleStreetView.getViewFromLatLong = function(latitude, longitude, width, heigh
 /**
  * Get Street View image of a location from a location string
  * @param {String} address Address or Name of location
- * @param {Number} width Width of image
- * @param {Number} height Height of image
- * @param {Number} fieldofview Field of View of image, maximum of 120
- * @param {Number} heading Heading of view
- * @param {Number} pitch Pitch of view, 90 to point up, -90 to point down
+ * @param {BoundedNumber<1,2000>} width Width of image
+ * @param {BoundedNumber<1,2000>} height Height of image
+ * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of 120
+ * @param {BoundedNumber<0,360>} heading Heading of view
+ * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
  * @returns {Image} Image of requested location with specified size and orientation
  */
 GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofview, heading, pitch) {
