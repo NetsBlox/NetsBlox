@@ -23,13 +23,8 @@ function simplify(metadata) {
         let simpleParam = {name, description};
         // if type is defined
         if (type) {
-            if (type.type === 'OptionalType') {
-                simpleParam.optional = true;
-                simpleParam.type = type.expression.name;
-            } else {
-                simpleParam.optional = false;
-                simpleParam.type = type.name;
-            }
+            simpleParam.type = new InputType(type);
+            simpleParam.optional = type.type === 'OptionalType';
         } else {
             simpleParam.type = null;
             logger.warn(`rpc ${fnName}, parameter ${name} is missing the type attribute`);
@@ -43,7 +38,7 @@ function simplify(metadata) {
 
     // find and simplify the return doc
     let returns = tags.find(tag => tag.title === 'returns');
-    if (returns) returns = {type: returns.type.name, description: returns.description};
+    if (returns) returns = {type: new InputType(returns.type), description: returns.description};
 
     const isDeprecated = !!tags.find(tag => tag.title === 'deprecated');
     let simplified = {
@@ -54,6 +49,14 @@ function simplify(metadata) {
         returns
     };
     return simplified;
+}
+
+function InputType(parsed) {
+    this.name = parsed.expression ? parsed.expression.name : parsed.name;
+    this.params = [];
+    if (parsed.type === 'TypeApplication') {
+        this.params = parsed.applications.map(param => param.value);
+    }
 }
 
 function parseSource(source, searchScope) {
