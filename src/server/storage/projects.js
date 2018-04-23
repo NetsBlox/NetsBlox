@@ -389,13 +389,14 @@
             return next
                 .then(() => {
                     if (this.isDeleted()) return;
-                    this._execUpdate(query, options);
+                    return this._execUpdate(query, options);
                 })
                 .then(() => {
                     if (this.isDeleted()) {
                         this._logger.trace(`project has been deleted while saving: ${this.uuid()}`);
                         return;
                     }
+
                     this._logger.trace(`saved project ${this.owner}/${this.name}`);
                     this.owner = query.$set.owner || this.owner;
                     this.name = query.$set.name || this.name;
@@ -503,7 +504,16 @@
             const args = Array.prototype.slice.call(arguments);
             args.unshift(this.getStorageId());
 
-            return Q(this._db.update.apply(this._db, args));
+            return Q(this._db.update.apply(this._db, args))
+                .then(res => {
+                    const {result} = res;
+                    // The project is always referencing the updated version
+                    // (even after upsert/"save as")
+                    if (result.upserted && result.upserted[0]) {
+                        this._id = result.upserted[0]._id;
+                    }
+                    return res;
+                });
         }
 
         getStorageId() {
