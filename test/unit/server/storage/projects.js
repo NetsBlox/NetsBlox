@@ -284,6 +284,35 @@ describe('projects', function() {
         });
     });
 
+    describe('execUpdate', function() {
+        let project = null;
+        before(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'MultiRoles'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should update project id on execUpdate (upsert)', function() {
+            const newName = 'someNewName';
+            const id = project.getId();
+            return project.getRawProject()
+                .then(json => {
+                    const options = {upsert: true};
+                    const query = {};
+                    query.$set = json;
+                    query.$set.name = newName;
+
+                    delete query.$set._id;
+                    project.name = newName;
+                    return project._execUpdate(query, options);
+                })
+                .then(() => {
+                    assert.notEqual(id.toString(), project.getId().toString());
+                });
+        });
+    });
+
     describe('removeRole', function() {
         let project = null;
         before(done => {
