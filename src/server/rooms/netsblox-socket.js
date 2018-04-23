@@ -199,7 +199,6 @@ class NetsBloxSocket {
 
         // change the heartbeat to use ping/pong from the ws spec
         this.checkAlive();
-        this._socket.on('pong', () => this.isAlive = true);
 
         // Report the server version
         this.send({
@@ -245,10 +244,14 @@ class NetsBloxSocket {
             this._socket.terminate();
             this.close();
         } else {
-            this._socket.ping();
+            this.ping();
             this.isAlive = false;
             this.nextHeartbeat = setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
         }
+    }
+
+    ping() {
+        this.send({type: 'ping'});
     }
 
     isSocketOpen() {
@@ -495,6 +498,10 @@ NetsBloxSocket.prototype.CLOSING = 2;
 NetsBloxSocket.prototype.CLOSED = 3;
 
 NetsBloxSocket.MessageHandlers = {
+    'pong': function() {
+        this.isAlive = true;
+    },
+
     'set-uuid': function(msg) {
         this.uuid = msg.body;
         this.username = this.username || this.uuid;
