@@ -62,7 +62,7 @@ class NetsBloxSocket {
         this.username = this.uuid;
         this._socket = socket;
         this._projectRequests = {};  // saving
-        this.lastMsgTime = Date.now();
+        this.lastSocketActivity = Date.now();
         this.nextHeartbeat = null;
         this.nextHeartbeatCheck = null;
 
@@ -238,7 +238,7 @@ class NetsBloxSocket {
             this._logger.trace(`received "${data}" message from ${this.username} (${this.uuid})`);
         }
 
-        this.lastMsgTime = Date.now();
+        this.lastSocketActivity = Date.now();
         if (NetsBloxSocket.MessageHandlers[type]) {
             result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
         } else {
@@ -249,8 +249,8 @@ class NetsBloxSocket {
     }
 
     checkAlive() {
-        const sinceLastMsg = Date.now() - this.lastMsgTime;
-        if (sinceLastMsg > 2*NetsBloxSocket.HEARTBEAT_INTERVAL || !this.isSocketOpen()) {
+        const sinceLastMsg = Date.now() - this.lastSocketActivity;
+        if (sinceLastMsg > 2*NetsBloxSocket.HEARTBEAT_INTERVAL || this.isSocketDead()) {
             this._socket.terminate();
             this.close();
         }
@@ -258,7 +258,7 @@ class NetsBloxSocket {
     }
 
     keepAlive() {
-        let sinceLastMsg = Date.now() - this.lastMsgTime;
+        let sinceLastMsg = Date.now() - this.lastSocketActivity;
         if (sinceLastMsg >= NetsBloxSocket.HEARTBEAT_INTERVAL) {
             this.ping();
             sinceLastMsg = 0;
@@ -274,6 +274,10 @@ class NetsBloxSocket {
 
     isSocketOpen() {
         return this._socket.readyState === this.OPEN;
+    }
+
+    isSocketDead() {
+        return this._socket.readyState > this.OPEN;
     }
 
     onLogin (user) {
@@ -385,8 +389,10 @@ class NetsBloxSocket {
         this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
         if (this.isSocketOpen()) {
             this._socket.send(msg);
+        } else if (this.isSocketDead()) {
+            this.checkAlive();
         } else {
-            this._logger.log('could not send msg - socket no longer open');
+            this._logger.log('could not send msg - socket still opening');
         }
     }
 
