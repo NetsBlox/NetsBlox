@@ -1,3 +1,11 @@
+/**
+ * The CloudVariables Service provides support for storing variables on the cloud.
+ * Variables can be optionally password-protected or stored only for the current user.
+ *
+ * Cloud variables that are inactive (no reads or writes) for 30 days are subject to deletion.
+ *
+ * @service
+ */
 const Storage = require('../../storage');
 
 let _collections = null;
@@ -43,6 +51,11 @@ const validateContentSize = function(content) {
 
 const CloudVariables = {};
 
+/**
+ * Get the value of a cloud variable
+ * @param {String} name Variable name
+ * @param {String=} password Password (if password-protected)
+ */
 CloudVariables.getVariable = function(name, password) {
     const {sharedVars} = getCollections();
     const username = this.socket.username;
@@ -66,6 +79,13 @@ CloudVariables.getVariable = function(name, password) {
         });
 };
 
+/**
+ * Set a cloud variable.
+ * If a password is provided on creation, the variable will be password-protected.
+ * @param {String} name Variable name
+ * @param {String} value Value to store in variable
+ * @param {String=} password Password (if password-protected)
+ */
 CloudVariables.setVariable = function(name, value, password) {
     validateVariableName(name);
     validateContentSize(value);
@@ -92,6 +112,11 @@ CloudVariables.setVariable = function(name, value, password) {
         });
 };
 
+/**
+ * Delete a given cloud variable
+ * @param {String} name Variable to delete
+ * @param {String=} password Password (if password-protected)
+ */
 CloudVariables.deleteVariable = function(name, password) {
     const {sharedVars} = getCollections();
     return sharedVars.findOne({name: name})
@@ -103,6 +128,10 @@ CloudVariables.deleteVariable = function(name, password) {
         .then(() => 'OK');
 };
 
+/**
+ * Get the value of a variable for the current user.
+ * @param {String} name Variable name
+ */
 CloudVariables.getUserVariable = function(name) {
     const {userVars} = getCollections();
     const username = this.socket.username;
@@ -124,6 +153,11 @@ CloudVariables.getUserVariable = function(name) {
         });
 };
 
+/**
+ * Set the value of the user cloud variable for the current user.
+ * @param {String} name Variable name
+ * @param {String} value
+ */
 CloudVariables.setUserVariable = function(name, value) {
     ensureLoggedIn(this.socket);
     validateVariableName(name);
@@ -141,6 +175,11 @@ CloudVariables.setUserVariable = function(name, value) {
         .then(() => 'OK');
 };
 
+/**
+ * Delete the user variable for the current user.
+ * @param {String} name Variable name
+ * @param {String} value
+ */
 CloudVariables.deleteUserVariable = function(name) {
     const {userVars} = getCollections();
     const username = this.socket.username;
