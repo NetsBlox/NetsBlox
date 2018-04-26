@@ -286,8 +286,12 @@ RPCManager.prototype.callRPC = function(name, ctx, args) {
     prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
     this._logger.log(`calling ${ctx.serviceName}.${name}(${prettyArgs})`);
 
-    const result = ctx[name].apply(ctx, args);
-    return this.sendRPCResult(ctx.response, result);
+    try {
+        const result = ctx[name].apply(ctx, args);
+        return this.sendRPCResult(ctx.response, result);
+    } catch (err) {
+        this.sendRPCError(ctx.response, err);
+    }
 };
 
 // in: arg obj and input value
@@ -329,11 +333,7 @@ RPCManager.prototype.sendRPCResult = function(response, result) {
             if (typeof result.then === 'function') {
                 return result
                     .then(result => this.sendRPCResult(response, result))
-                    .catch(err => {
-                        this._logger.error(`Uncaught exception: ${err.toString()}`);
-                        if (response.headersSent) return;
-                        response.status(500).send('Error occurred!');
-                    });
+                    .catch(err => this.sendRPCError(response, err));
             } else if (Array.isArray(result)) {
                 return response.json(result);
             } else {  // arbitrary JSON
@@ -345,6 +345,12 @@ RPCManager.prototype.sendRPCResult = function(response, result) {
             return response.sendStatus(200);
         }
     }
+};
+
+RPCManager.prototype.sendRPCError = function(response, error) {
+    this._logger.error(`Uncaught exception: ${error.toString()}`);
+    if (response.headersSent) return;
+    response.status(500).send(error.message);
 };
 
 RPCManager.prototype.isRPCLoaded = function(rpcPath) {
