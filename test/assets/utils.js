@@ -154,16 +154,7 @@ const reset = function() {
 
     return connect()
         .then(_db => db = _db)
-        .then(() => db.collection('groups').drop())
-        .catch(() => db)
-        .then(() => db.collection('projects').drop())
-        .catch(() => db)
-        .then(() => db.collection('users').drop())
-        .catch(() => db)
-        .then(() => db.collection('project-actions').drop())
-        .catch(() => db)
-        .then(() => db.collection('project-archives').drop())
-        .catch(() => db)
+        .then(() => db.dropDatabase())
         .then(() => fixtures.init(storage))
         .then(() => logger.info('Finished loading test fixtures!'))
         .then(() => storage._db);
