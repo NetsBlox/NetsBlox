@@ -30,7 +30,7 @@ const ensureAuthorized = function(variable, password) {
 };
 
 const ensureLoggedIn = function(socket) {
-    if (!socket.isLoggedIn()) {
+    if (!socket.loggedIn) {
         throw new Error('Login required.');
     }
 };
