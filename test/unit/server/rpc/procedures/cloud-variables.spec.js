@@ -23,6 +23,14 @@ describe('cloud-variables', function() {
 
     describe('public', function() {
 
+        it('should not set variables w/ invalid names', function() {
+            try {
+                cloudvariables.setVariable('^#', 'world');
+            } catch(err) {
+                assert(err.message.includes('variable name'));
+            }
+        });
+
         it('should get/set variables', function() {
             const name = newVar();
             return cloudvariables.setVariable(name, 'world')
@@ -64,6 +72,16 @@ describe('cloud-variables', function() {
         beforeEach(function() {
             cloudvariables.socket.loggedIn = true;
             cloudvariables.socket.username = 'brian';
+        });
+
+        it('should not be able to set variables if guest', function() {
+            const name = newVar();
+            cloudvariables.socket.loggedIn = false;
+            try {
+                return cloudvariables.setUserVariable(name, 'world');
+            } catch(err) {
+                assert(err.message.includes('Login required'));
+            }
         });
 
         it('should get/set variables', function() {
