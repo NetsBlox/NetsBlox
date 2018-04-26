@@ -1,7 +1,4 @@
 const Storage = require('../../storage');
-const NAME = 'CloudVariables';
-const Logger = require('../../../logger');
-const logger = new Logger('netsblox:rpc:cloud-variables');
 
 let _collections = null;
 const getCollections = function() {
@@ -102,7 +99,8 @@ CloudVariables.deleteVariable = function(name, password) {
             ensureAuthorized(variable, password);
 
             return sharedVars.deleteOne({name, password});
-        });
+        })
+        .then(() => 'OK');
 };
 
 CloudVariables.getUserVariable = function(name) {
@@ -148,7 +146,8 @@ CloudVariables.deleteUserVariable = function(name) {
     const username = this.socket.username;
 
     ensureLoggedIn(this.socket);
-    return userVars.deleteOne({name: name, owner: username});
+    return userVars.deleteOne({name: name, owner: username})
+        .then(() => 'OK');
 };
 
 module.exports = CloudVariables;
