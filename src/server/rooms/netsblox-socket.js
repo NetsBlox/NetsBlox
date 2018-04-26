@@ -18,6 +18,9 @@ var counter = 0,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
     RoomManager = require('./room-manager'),
+    SILENT_MSGS = [
+        'pong'
+    ],
     CONDENSED_MSGS = [
         'project-response',
         'import-room',
@@ -30,7 +33,7 @@ var counter = 0,
 const Messages = require('../storage/messages');
 const ProjectActions = require('../storage/project-actions');
 const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
-const HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
+const HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
 const BugReporter = require('../bug-reporter');
 
 var createSaveableProject = function(json) {
@@ -59,8 +62,9 @@ class NetsBloxSocket {
         this.username = this.uuid;
         this._socket = socket;
         this._projectRequests = {};  // saving
-        this.isAlive = true;
+        this.lastSocketActivity = Date.now();
         this.nextHeartbeat = null;
+        this.nextHeartbeatCheck = null;
 
         this.onclose = [];
         this._initialize();
@@ -198,8 +202,8 @@ class NetsBloxSocket {
         this._socket.on('close', () => this.close());
 
         // change the heartbeat to use ping/pong from the ws spec
+        this.keepAlive();
         this.checkAlive();
-        this._socket.on('pong', () => this.isAlive = true);
 
         // Report the server version
         this.send({
@@ -216,6 +220,9 @@ class NetsBloxSocket {
         if (this.nextHeartbeat) {
             clearTimeout(this.nextHeartbeat);
         }
+        if (this.nextHeartbeatCheck) {
+            clearTimeout(this.nextHeartbeatCheck);
+        }
         this.onclose.forEach(fn => fn.call(this));
         this.onClose(this);
     }
@@ -226,11 +233,12 @@ class NetsBloxSocket {
 
         if (CONDENSED_MSGS.includes(type)) {
             this._logger.trace(`received "${type}" message from ${this.username} (${this.uuid})`);
-        } else {
+        } else if (!SILENT_MSGS.includes(type)) {
             let data = JSON.stringify(msg);
             this._logger.trace(`received "${data}" message from ${this.username} (${this.uuid})`);
         }
 
+        this.lastSocketActivity = Date.now();
         if (NetsBloxSocket.MessageHandlers[type]) {
             result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
         } else {
@@ -241,18 +249,35 @@ class NetsBloxSocket {
     }
 
     checkAlive() {
-        if (!this.isAlive || !this.isSocketOpen()) {
+        const sinceLastMsg = Date.now() - this.lastSocketActivity;
+        if (sinceLastMsg > 2*NetsBloxSocket.HEARTBEAT_INTERVAL || this.isSocketDead()) {
             this._socket.terminate();
             this.close();
-        } else {
-            this._socket.ping();
-            this.isAlive = false;
-            this.nextHeartbeat = setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
         }
+        this.nextHeartbeatCheck = setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
+    }
+
+    keepAlive() {
+        let sinceLastMsg = Date.now() - this.lastSocketActivity;
+        if (sinceLastMsg >= NetsBloxSocket.HEARTBEAT_INTERVAL) {
+            this.ping();
+            sinceLastMsg = 0;
+        }
+
+        const nextMsgDelay = NetsBloxSocket.HEARTBEAT_INTERVAL - sinceLastMsg;
+        this.nextHeartbeat = setTimeout(this.keepAlive.bind(this), nextMsgDelay);
+    }
+
+    ping() {
+        this.send({type: 'ping'});
     }
 
     isSocketOpen() {
         return this._socket.readyState === this.OPEN;
+    }
+
+    isSocketDead() {
+        return this._socket.readyState > this.OPEN;
     }
 
     onLogin (user) {
@@ -364,8 +389,10 @@ class NetsBloxSocket {
         this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
         if (this.isSocketOpen()) {
             this._socket.send(msg);
+        } else if (this.isSocketDead()) {
+            this.checkAlive();
         } else {
-            this._logger.log('could not send msg - socket no longer open');
+            this._logger.log('could not send msg - socket still opening');
         }
     }
 
@@ -495,6 +522,9 @@ NetsBloxSocket.prototype.CLOSING = 2;
 NetsBloxSocket.prototype.CLOSED = 3;
 
 NetsBloxSocket.MessageHandlers = {
+    'pong': function() {
+    },
+
     'set-uuid': function(msg) {
         this.uuid = msg.body;
         this.username = this.username || this.uuid;
