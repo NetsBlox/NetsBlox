@@ -35,7 +35,7 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
     this.ip4_addr = ip4_addr;
     this.ip4_port = ip4_port;
-    this.heartbeats = FORGET_TIME;
+    this.heartbeats = 0;
     this.timestamp = -1; // time of last message in robot time
     this.sockets = {}; // sockets of registered clients
     this.callbacks = {}; // callbacks keyed by msgType
@@ -44,12 +44,12 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
 Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
     this.ip4_addr = ip4_addr;
     this.ip4_port = ip4_port;
-    this.heartbeats = FORGET_TIME;
+    this.heartbeats = 0;
 };
 
 Robot.prototype.heartbeat = function () {
-    this.heartbeats -= 1;
-    if (this.heartbeats <= 0) {
+    this.heartbeats += 1;
+    if (this.heartbeats >= FORGET_TIME) {
         this.sockets = null;
         return false;
     }
@@ -61,6 +61,24 @@ Robot.prototype.sendToRobot = function (message) {
         if (err) {
             log('send error ' + err);
         }
+    });
+};
+
+Robot.prototype.receiveFromRobot = function (msgType, timeout) {
+    if (!this.callbacks[msgType]) {
+        this.callbacks[msgType] = [];
+    }
+    var callbacks = this.callbacks[msgType];
+
+    return new Promise(function (resolve, reject) {
+        callbacks.push(resolve);
+        setTimeout(function () {
+            var i = callbacks.indexOf(resolve);
+            if (i >= 0) {
+                callbacks.splice(i, 1);
+            }
+            resolve(false);
+        }, timeout || RESPONSE_TIMEOUT);
     });
 };
 
@@ -88,27 +106,9 @@ Robot.prototype.beep = function (msec, tone) {
     this.sendToRobot(message);
 };
 
-Robot.prototype.getResponse = function (msgType, timeout) {
-    if (!this.callbacks[msgType]) {
-        this.callbacks[msgType] = [];
-    }
-    var callbacks = this.callbacks[msgType];
-
-    return new Promise(function (resolve, reject) {
-        callbacks.push(resolve);
-        setTimeout(function () {
-            var i = callbacks.indexOf(resolve);
-            if (i >= 0) {
-                callbacks.splice(i, 1);
-            }
-            resolve(false);
-        }, timeout || RESPONSE_TIMEOUT);
-    });
-};
-
 Robot.prototype.getRange = function () {
-    log('range ' + this.mac_addr);
-    var promise = this.getResponse('range');
+    log('get range ' + this.mac_addr);
+    var promise = this.receiveFromRobot('get range');
     var message = Buffer.alloc(1);
     message.write('R', 0, 1);
     this.sendToRobot(message);
@@ -116,8 +116,8 @@ Robot.prototype.getRange = function () {
 };
 
 Robot.prototype.getTicks = function () {
-    log('ticks ' + this.mac_addr);
-    var promise = this.getResponse('ticks');
+    log('get ticks ' + this.mac_addr);
+    var promise = this.receiveFromRobot('get ticks');
     var message = Buffer.alloc(1);
     message.write('T', 0, 1);
     this.sendToRobot(message);
@@ -136,10 +136,13 @@ Robot.prototype.drive = function (left, right) {
     this.sendToRobot(message);
 };
 
-Robot.prototype.report = function (msgType, content) {
+Robot.prototype.sendToClient = function (msgType, content, fields) {
     content.robot = this.mac_addr;
     content.time = this.timestamp;
-    log('event ' + JSON.stringify(content));
+
+    if (msgType !== 'alive') {
+        log('event ' + msgType + ' ' + JSON.stringify(content));
+    }
 
     if (this.callbacks[msgType]) {
         var callbacks = this.callbacks[msgType];
@@ -152,12 +155,26 @@ Robot.prototype.report = function (msgType, content) {
 
     for (var id in this.sockets) {
         var socket = this.sockets[id];
-        log('sending ' + id + ' ' + msgType + ' ' + JSON.stringify(content));
+
         socket.send({
             type: 'message',
             dstId: socket.role,
             msgType: msgType,
             content: content
+        });
+
+        var text = msgType;
+        for (var i = 0; i < fields.length; i++) {
+            text += ' ' + content[fields[i]];
+        }
+        socket.send({
+            type: 'message',
+            dstId: socket.role,
+            msgType: 'event',
+            content: {
+                robot: this.mac_addr,
+                text: text
+            }
         });
     }
 };
@@ -169,41 +186,39 @@ Robot.prototype.onMessage = function (message, address, port) {
         return;
     }
 
-    var timestamp = message.readUInt32LE(6),
-        command = message.toString('ascii', 10, 11);
-
-    this.timestamp = timestamp;
+    this.timestamp = message.readUInt32LE(6);
+    var command = message.toString('ascii', 10, 11);
 
     if (command === 'I' && message.length === 11) {
-        // pass
+        this.sendToClient('alive', {}, ['time']);
     } else if (command === 'B' && message.length === 15) {
-        this.report('beep', {
+        this.sendToClient('beep', {
             msec: message.readInt16LE(11),
             tone: message.readInt16LE(13),
-        });
+        }, ['msec', 'tone', 'time']);
     } else if (command === 'D' && message.length === 15) {
-        this.report('speed', {
+        this.sendToClient('set speed', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        });
+        }, ['left', 'right', 'time']);
     } else if (command === 'W' && message.length === 12) {
-        this.report('whiskers', {
+        this.sendToClient('whiskers', {
             state: message.readUInt8(11),
-        });
+        }, ['state', 'time']);
     } else if (command === 'R' && message.length === 13) {
-        this.report('range', {
+        this.sendToClient('get range', {
             range: message.readInt16LE(11),
-        });
+        }, ['range', 'time']);
     } else if (command === 'T' && message.length === 19) {
-        this.report('ticks', {
+        this.sendToClient('get ticks', {
             left: message.readInt32LE(11),
             right: message.readInt32LE(15),
-        });
+        }, ['left', 'right', 'time']);
     } else if (command === 'X' && message.length === 15) {
-        this.report('drive', {
+        this.sendToClient('drive', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        });
+        }, ['left', 'right', 'time']);
     } else {
         log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
@@ -396,6 +411,40 @@ RoboScape.prototype.register = function (robots) {
         }
     }
     return ok;
+};
+
+/**
+ * Sends a textual command to the robot
+ * @param {string} robot name of the robot (matches at the end)
+ * @param {string} command textual command
+ * @returns {string} textual response
+ */
+RoboScape.prototype.send = function (robot, command) {
+    // log('send ' + robot + ' ' + command);
+    robot = this._getRobot(robot);
+    if (robot && typeof command === 'string') {
+        if (command.match(/^alive$/)) {
+            return robot.heartbeats < 2;
+        } else if (command.match(/^beep (\d*) (\d*)$/)) {
+            robot.beep(RegExp.$1, RegExp.$2);
+            return true;
+        } else if (command.match(/^set speed (\d*) (\d*)$/)) {
+            robot.setSpeed(RegExp.$1, RegExp.$2);
+            return true;
+        } else if (command.match(/^drive (\d*) (\d*)$/)) {
+            robot.drive(RegExp.$1, RegExp.$2);
+            return true;
+        } else if (command.match(/^get range$/)) {
+            return robot.getRange().then(function (value) {
+                return value && value.range;
+            });
+        } else if (command.match(/^get ticks$/)) {
+            return robot.getTicks().then(function (value) {
+                return value && [value.left, value.right];
+            });
+        }
+    }
+    return false;
 };
 
 server.on('listening', function () {
