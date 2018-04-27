@@ -170,10 +170,10 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
         socket.send({
             type: 'message',
             dstId: socket.role,
-            msgType: 'event',
+            msgType: 'robot message',
             content: {
                 robot: this.mac_addr,
-                text: text
+                message: text
             }
         });
     }
@@ -195,30 +195,30 @@ Robot.prototype.onMessage = function (message, address, port) {
         this.sendToClient('beep', {
             msec: message.readInt16LE(11),
             tone: message.readInt16LE(13),
-        }, ['msec', 'tone', 'time']);
+        }, ['time', 'msec', 'tone']);
     } else if (command === 'D' && message.length === 15) {
         this.sendToClient('set speed', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        }, ['left', 'right', 'time']);
+        }, ['time', 'left', 'right']);
     } else if (command === 'W' && message.length === 12) {
         this.sendToClient('whiskers', {
             state: message.readUInt8(11),
-        }, ['state', 'time']);
+        }, ['time', 'state']);
     } else if (command === 'R' && message.length === 13) {
         this.sendToClient('get range', {
             range: message.readInt16LE(11),
-        }, ['range', 'time']);
+        }, ['time', 'range']);
     } else if (command === 'T' && message.length === 19) {
         this.sendToClient('get ticks', {
             left: message.readInt32LE(11),
             right: message.readInt32LE(15),
-        }, ['left', 'right', 'time']);
+        }, ['time', 'left', 'right']);
     } else if (command === 'X' && message.length === 15) {
         this.sendToClient('drive', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        }, ['left', 'right', 'time']);
+        }, ['time', 'left', 'right']);
     } else {
         log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
@@ -425,14 +425,14 @@ RoboScape.prototype.send = function (robot, command) {
     if (robot && typeof command === 'string') {
         if (command.match(/^alive$/)) {
             return robot.heartbeats < 2;
-        } else if (command.match(/^beep (\d*) (\d*)$/)) {
-            robot.beep(RegExp.$1, RegExp.$2);
+        } else if (command.match(/^beep (-?\d*) (-?\d*)$/)) {
+            robot.beep(+RegExp.$1, +RegExp.$2);
             return true;
-        } else if (command.match(/^set speed (\d*) (\d*)$/)) {
-            robot.setSpeed(RegExp.$1, RegExp.$2);
+        } else if (command.match(/^set speed (-?\d*) (-?\d*)$/)) {
+            robot.setSpeed(+RegExp.$1, +RegExp.$2);
             return true;
-        } else if (command.match(/^drive (\d*) (\d*)$/)) {
-            robot.drive(RegExp.$1, RegExp.$2);
+        } else if (command.match(/^drive (-?\d*) (-?\d*)$/)) {
+            robot.drive(+RegExp.$1, +RegExp.$2);
             return true;
         } else if (command.match(/^get range$/)) {
             return robot.getRange().then(function (value) {
