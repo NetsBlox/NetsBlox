@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Miklos Maroti <mmaroti@gmail.com>
  * 
  * Robot to server messages:
@@ -19,8 +19,6 @@
  * 
  * TODO:
  * - change 'D' to 'S', 'X' to 'D'
- * - move the message processing into the robot
- * - use promises instead of callbacks
  */
 
 'use strict';
@@ -90,36 +88,40 @@ Robot.prototype.beep = function (msec, tone) {
     this.sendToRobot(message);
 };
 
-Robot.prototype.addCallback = function (msgType, callback, timeout) {
+Robot.prototype.getResponse = function (msgType, timeout) {
     if (!this.callbacks[msgType]) {
         this.callbacks[msgType] = [];
     }
     var callbacks = this.callbacks[msgType];
-    callbacks.push(callback);
 
-    setTimeout(function () {
-        var i = callbacks.indexOf(callback);
-        if (i >= 0) {
-            callbacks.splice(i, 1);
-            callback(null);
-        }
-    }, timeout || RESPONSE_TIMEOUT);
+    return new Promise(function (resolve, reject) {
+        callbacks.push(resolve);
+        setTimeout(function () {
+            var i = callbacks.indexOf(resolve);
+            if (i >= 0) {
+                callbacks.splice(i, 1);
+            }
+            resolve(false);
+        }, timeout || RESPONSE_TIMEOUT);
+    });
 };
 
-Robot.prototype.getRange = function (callback) {
-    this.addCallback('range', callback);
+Robot.prototype.getRange = function () {
     log('range ' + this.mac_addr);
+    var promise = this.getResponse('range');
     var message = Buffer.alloc(1);
     message.write('R', 0, 1);
     this.sendToRobot(message);
+    return promise;
 };
 
-Robot.prototype.getTicks = function (callback) {
-    this.addCallback('ticks', callback);
+Robot.prototype.getTicks = function () {
     log('ticks ' + this.mac_addr);
+    var promise = this.getResponse('ticks');
     var message = Buffer.alloc(1);
     message.write('T', 0, 1);
     this.sendToRobot(message);
+    return promise;
 };
 
 Robot.prototype.drive = function (left, right) {
@@ -137,6 +139,7 @@ Robot.prototype.drive = function (left, right) {
 Robot.prototype.report = function (msgType, content) {
     content.robot = this.mac_addr;
     content.time = this.timestamp;
+    log('event ' + JSON.stringify(content));
 
     if (this.callbacks[msgType]) {
         var callbacks = this.callbacks[msgType];
@@ -159,7 +162,55 @@ Robot.prototype.report = function (msgType, content) {
     }
 };
 
-/**
+Robot.prototype.onMessage = function (message, address, port) {
+    if (message.length < 11) {
+        log('invalid message ' + this.ip4_addr + ':' + this.ip4_port +
+            ' ' + message.toString('hex'));
+        return;
+    }
+
+    var timestamp = message.readUInt32LE(6),
+        command = message.toString('ascii', 10, 11);
+
+    this.timestamp = timestamp;
+
+    if (command === 'I' && message.length === 11) {
+        // pass
+    } else if (command === 'B' && message.length === 15) {
+        this.report('beep', {
+            msec: message.readInt16LE(11),
+            tone: message.readInt16LE(13),
+        });
+    } else if (command === 'D' && message.length === 15) {
+        this.report('speed', {
+            left: message.readInt16LE(11),
+            right: message.readInt16LE(13),
+        });
+    } else if (command === 'W' && message.length === 12) {
+        this.report('whiskers', {
+            state: message.readUInt8(11),
+        });
+    } else if (command === 'R' && message.length === 13) {
+        this.report('range', {
+            range: message.readInt16LE(11),
+        });
+    } else if (command === 'T' && message.length === 19) {
+        this.report('ticks', {
+            left: message.readInt32LE(11),
+            right: message.readInt32LE(15),
+        });
+    } else if (command === 'X' && message.length === 15) {
+        this.report('drive', {
+            left: message.readInt16LE(11),
+            right: message.readInt16LE(13),
+        });
+    } else {
+        log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
+            ' ' + message.toString('hex'));
+    }
+};
+
+/*
  * RoboScape - This constructor is called on the first 
  * request to an RPC from a given room.
  * @constructor
@@ -258,15 +309,9 @@ RoboScape.prototype.beep = function (robot, msec, tone) {
 RoboScape.prototype.getRange = function (robot) {
     robot = this._getRobot(robot);
     if (robot) {
-        var response = this.response;
-        robot.getRange(function (content) {
-            if (content) {
-                response.status(200).json(content.range);
-            } else {
-                response.status(400).json(false);
-            }
+        return robot.getRange().then(function (value) {
+            return value && value.range;
         });
-        return null;
     }
     return false;
 };
@@ -274,20 +319,14 @@ RoboScape.prototype.getRange = function (robot) {
 /**
  * Returns the current number of wheel ticks (1/64th rotations)
  * @param {string} robot name of the robot (matches at the end)
- * @returns {number} range in centimeters
+ * @returns {array} the number of ticks for the left and right wheels
  */
 RoboScape.prototype.getTicks = function (robot) {
     robot = this._getRobot(robot);
     if (robot) {
-        var response = this.response;
-        robot.getTicks(function (content) {
-            if (content) {
-                response.status(200).json([content.left, content.right]);
-            } else {
-                response.status(400).json(false);
-            }
+        return robot.getTicks().then(function (value) {
+            return value && [value.left, value.right];
         });
-        return null;
     }
     return false;
 };
@@ -365,52 +404,14 @@ server.on('listening', function () {
 });
 
 server.on('message', function (message, remote) {
-    if (message.length < 11) {
-        log('invalid ' + remote.address + ':' +
+    if (message.length < 6) {
+        log('invalid message ' + remote.address + ':' +
             remote.port + ' ' + message.toString('hex'));
-        return;
-    }
-
-    var mac_addr = message.toString('hex', 0, 6),
-        timestamp = message.readUInt32LE(6),
-        command = message.toString('ascii', 10, 11);
-
-    var robot = RoboScape.prototype._addRobot(mac_addr, remote.address, remote.port);
-    robot.timestamp = timestamp;
-
-    if (command === 'I' && message.length === 11) {
-        // pass
-    } else if (command === 'B' && message.length === 15) {
-        robot.report('beep', {
-            msec: message.readInt16LE(11),
-            tone: message.readInt16LE(13),
-        });
-    } else if (command === 'D' && message.length === 15) {
-        robot.report('speed', {
-            left: message.readInt16LE(11),
-            right: message.readInt16LE(13),
-        });
-    } else if (command === 'W' && message.length === 12) {
-        robot.report('whiskers', {
-            state: message.readUInt8(11),
-        });
-    } else if (command === 'R' && message.length === 13) {
-        robot.report('range', {
-            range: message.readInt16LE(11),
-        });
-    } else if (command === 'T' && message.length === 19) {
-        robot.report('ticks', {
-            left: message.readInt32LE(11),
-            right: message.readInt32LE(15),
-        });
-    } else if (command === 'X' && message.length === 15) {
-        robot.report('drive', {
-            left: message.readInt16LE(11),
-            right: message.readInt16LE(13),
-        });
     } else {
-        log('unknown ' + remote.address + ':' + remote.port +
-            ' ' + message.toString('hex'));
+        var mac_addr = message.toString('hex', 0, 6);
+        var robot = RoboScape.prototype._addRobot(
+            mac_addr, remote.address, remote.port);
+        robot.onMessage(message);
     }
 });
 
