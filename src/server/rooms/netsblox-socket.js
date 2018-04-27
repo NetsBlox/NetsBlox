@@ -253,8 +253,12 @@ class NetsBloxSocket {
         if (sinceLastMsg > 2*NetsBloxSocket.HEARTBEAT_INTERVAL || this.isSocketDead()) {
             this._socket.terminate();
             this.close();
+        } else {
+            if (this.nextHeartbeatCheck) {
+                clearTimeout(this.nextHeartbeatCheck);
+            }
+            this.nextHeartbeatCheck = setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
         }
-        this.nextHeartbeatCheck = setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
     }
 
     keepAlive() {
