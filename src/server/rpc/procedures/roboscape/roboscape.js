@@ -39,6 +39,7 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.timestamp = -1; // time of last message in robot time
     this.sockets = {}; // sockets of registered clients
     this.callbacks = {}; // callbacks keyed by msgType
+    this.encryption = []; // encryption key
 };
 
 Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
@@ -173,7 +174,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
             msgType: 'robot message',
             content: {
                 robot: this.mac_addr,
-                message: text
+                message: this.encrypt(text)
             }
         });
     }
@@ -225,6 +226,31 @@ Robot.prototype.onMessage = function (message) {
         log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
     }
+};
+
+Robot.prototype.encrypt = function (text, decrypt) {
+    if (typeof text !== 'string') {
+        return false;
+    } else if (this.encryption.length === 0) {
+        return text;
+    }
+
+    var output = '';
+    for (var i = 0; i < text.length; i++) {
+        var code = text.charCodeAt(i),
+            shift = this.encryption[i % this.encryption.length];
+        code = decrypt ? code - shift : code + shift;
+        while (code < 32) {
+            code += 127 - 32;
+        }
+        while (code > 127) {
+            code -= 127 - 32;
+        }
+        output += String.fromCharCode(code);
+    }
+    log('"' + text + '" ' + (decrypt ? 'decrypted' : 'encrypted') +
+        ' to "' + output + '"');
+    return output;
 };
 
 /*
@@ -423,16 +449,23 @@ RoboScape.prototype.send = function (robot, command) {
     // log('send ' + robot + ' ' + command);
     robot = this._getRobot(robot);
     if (robot && typeof command === 'string') {
+        if (command.match(/^reset key$/)) {
+            robot.encryption = [];
+            return true;
+        }
+
+        command = robot.encrypt(command, false);
+
         if (command.match(/^alive$/)) {
             robot.sendToClient('alive', {}, ['time']);
             return robot.heartbeats < 2;
-        } else if (command.match(/^beep (-?\d*) (-?\d*)$/)) {
+        } else if (command.match(/^beep (-?\d+) (-?\d+)$/)) {
             robot.beep(+RegExp.$1, +RegExp.$2);
             return true;
-        } else if (command.match(/^set speed (-?\d*) (-?\d*)$/)) {
+        } else if (command.match(/^set speed (-?\d+) (-?\d+)$/)) {
             robot.setSpeed(+RegExp.$1, +RegExp.$2);
             return true;
-        } else if (command.match(/^drive (-?\d*) (-?\d*)$/)) {
+        } else if (command.match(/^drive (-?\d+) (-?\d+)$/)) {
             robot.drive(+RegExp.$1, +RegExp.$2);
             return true;
         } else if (command.match(/^get range$/)) {
@@ -443,6 +476,14 @@ RoboScape.prototype.send = function (robot, command) {
             return robot.getTicks().then(function (value) {
                 return value && [value.left, value.right];
             });
+        } else if (command.match(/^set key(| -?\d+([ ,]-?\d+)*)$/)) {
+            var encryption = RegExp.$1.split(/[, ]/);
+            if (encryption[0] === '') {
+                encryption.splice(0, 1);
+            }
+            robot.encryption = encryption.map(Number);
+            robot.sendToClient('set key', {}, ['time']);
+            return true;
         }
     }
     return false;
