@@ -213,7 +213,7 @@ class NetsBloxSocket {
     }
 
     close () {
-        this._logger.trace('closed!');
+        this._logger.trace(`${this.username} (${this.uuid}) closed socket!`);
         if (this._room) {
             this.leave();
         }
