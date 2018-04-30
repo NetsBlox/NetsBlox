@@ -28,6 +28,7 @@ var debug = require('debug'),
     // log = console.log,
     dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
+    SocketManager = require('../../../socket-manager'),
     FORGET_TIME = 120, // forgetting a robot in seconds
     RESPONSE_TIMEOUT = 200; // waiting for response in milliseconds
 
@@ -37,7 +38,7 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.ip4_port = ip4_port;
     this.heartbeats = 0;
     this.timestamp = -1; // time of last message in robot time
-    this.sockets = {}; // sockets of registered clients
+    this.sockets = []; // uuids of sockets of registered clients
     this.callbacks = {}; // callbacks keyed by msgType
     this.encryption = []; // encryption key
 };
@@ -51,10 +52,33 @@ Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
 Robot.prototype.heartbeat = function () {
     this.heartbeats += 1;
     if (this.heartbeats >= FORGET_TIME) {
-        this.sockets = null;
         return false;
     }
     return true;
+};
+
+Robot.prototype.isAlive = function () {
+    return this.heartBeats < FORGET_TIME;
+};
+
+Robot.prototype.addClientSocket = function (uuid) {
+    var i = this.sockets.indexOf(uuid);
+    if (i < 0) {
+        log('register ' + uuid + ' ' + this.mac_addr);
+        this.sockets.push(uuid);
+        return true;
+    }
+    return false;
+};
+
+Robot.prototype.removeClientSocket = function (uuid) {
+    var i = this.sockets.indexOf(uuid);
+    if (i >= 0) {
+        log('unregister ' + uuid + ' ' + this.mac_addr);
+        this.sockets.splice(i, 1);
+        return true;
+    }
+    return false;
 };
 
 Robot.prototype.sendToRobot = function (message) {
@@ -138,6 +162,8 @@ Robot.prototype.drive = function (left, right) {
 };
 
 Robot.prototype.sendToClient = function (msgType, content, fields) {
+    var myself = this;
+
     content.robot = this.mac_addr;
     content.time = this.timestamp;
 
@@ -154,8 +180,8 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
         callbacks.length = 0;
     }
 
-    for (var id in this.sockets) {
-        var socket = this.sockets[id];
+    this.sockets.forEach(function (uuid) {
+        var socket = SocketManager.getSocket(uuid);
 
         socket.send({
             type: 'message',
@@ -173,11 +199,11 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
             dstId: socket.role,
             msgType: 'robot message',
             content: {
-                robot: this.mac_addr,
-                message: this.encrypt(text)
+                robot: myself.mac_addr,
+                message: myself.encrypt(text)
             }
         });
-    }
+    });
 };
 
 Robot.prototype.onMessage = function (message) {
@@ -251,6 +277,22 @@ Robot.prototype.encrypt = function (text, decrypt) {
     log('"' + text + '" ' + (decrypt ? 'decrypted' : 'encrypted') +
         ' to "' + output + '"');
     return output;
+};
+
+Robot.prototype.decrypt = function (text) {
+    return this.encrypt(text, true);
+};
+
+Robot.prototype.setEncryption = function (keys) {
+    if (keys instanceof Array) {
+        this.encryption = keys;
+        log(this.mac_addr + ' encryption set to ' + keys);
+        this.sendToClient('set key', {}, ['time']);
+        return true;
+    } else {
+        log('invalid encryption key ' + keys);
+        return false;
+    }
 };
 
 /*
@@ -396,7 +438,7 @@ RoboScape.prototype._getRegistered = function () {
     var state = this._state,
         robots = [];
     for (var mac_addr in state.registered) {
-        if (this._robots[mac_addr].sockets) {
+        if (this._robots[mac_addr].isAlive()) {
             robots.push(mac_addr);
         } else {
             delete state.registered[mac_addr];
@@ -411,12 +453,11 @@ RoboScape.prototype._getRegistered = function () {
  */
 RoboScape.prototype.eavesdrop = function (robots) {
     var state = this._state,
-        id = this.socket.uuid;
+        uuid = this.socket.uuid;
 
     for (var mac_addr in state.registered) {
-        if (this._robots[mac_addr] && this._robots[mac_addr].sockets) {
-            log('unregister ' + id + ' ' + mac_addr);
-            delete this._robots[mac_addr].sockets[id];
+        if (this._robots[mac_addr]) {
+            this._robots[mac_addr].removeClientSocket(uuid);
         }
     }
     state.registered = {};
@@ -429,9 +470,8 @@ RoboScape.prototype.eavesdrop = function (robots) {
     for (var i = 0; i < robots.length; i++) {
         var robot = this._getRobot(robots[i]);
         if (robot) {
-            log('register ' + id + ' ' + robot.mac_addr);
             state.registered[robot.mac_addr] = robot;
-            this._robots[robot.mac_addr].sockets[id] = this.socket;
+            robot.addClientSocket(uuid);
         } else {
             ok = false;
         }
@@ -454,7 +494,7 @@ RoboScape.prototype.send = function (robot, command) {
             return true;
         }
 
-        command = robot.encrypt(command, false);
+        command = robot.decrypt(command);
 
         if (command.match(/^alive$/)) {
             robot.sendToClient('alive', {}, ['time']);
@@ -481,9 +521,7 @@ RoboScape.prototype.send = function (robot, command) {
             if (encryption[0] === '') {
                 encryption.splice(0, 1);
             }
-            robot.encryption = encryption.map(Number);
-            robot.sendToClient('set key', {}, ['time']);
-            return true;
+            return robot.setEncryption(encryption.map(Number));
         }
     }
     return false;
