@@ -182,27 +182,29 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
 
     this.sockets.forEach(function (uuid) {
         var socket = SocketManager.getSocket(uuid);
+        if (socket) {
+            socket.send({
+                type: 'message',
+                dstId: socket.role,
+                msgType: msgType,
+                content: content
+            });
 
-        socket.send({
-            type: 'message',
-            dstId: socket.role,
-            msgType: msgType,
-            content: content
-        });
-
-        var text = msgType;
-        for (var i = 0; i < fields.length; i++) {
-            text += ' ' + content[fields[i]];
-        }
-        socket.send({
-            type: 'message',
-            dstId: socket.role,
-            msgType: 'robot message',
-            content: {
-                robot: myself.mac_addr,
-                message: myself.encrypt(text)
+            var text = msgType;
+            for (var i = 0; i < fields.length; i++) {
+                text += ' ' + content[fields[i]];
             }
-        });
+
+            socket.send({
+                type: 'message',
+                dstId: socket.role,
+                msgType: 'robot message',
+                content: {
+                    robot: myself.mac_addr,
+                    message: myself.encrypt(text)
+                }
+            });
+        }
     });
 };
 
