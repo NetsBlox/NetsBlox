@@ -179,7 +179,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     }
 };
 
-Robot.prototype.onMessage = function (message, address, port) {
+Robot.prototype.onMessage = function (message) {
     if (message.length < 11) {
         log('invalid message ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
@@ -190,7 +190,7 @@ Robot.prototype.onMessage = function (message, address, port) {
     var command = message.toString('ascii', 10, 11);
 
     if (command === 'I' && message.length === 11) {
-        this.sendToClient('alive', {}, ['time']);
+        // nothing
     } else if (command === 'B' && message.length === 15) {
         this.sendToClient('beep', {
             msec: message.readInt16LE(11),
@@ -202,9 +202,11 @@ Robot.prototype.onMessage = function (message, address, port) {
             right: message.readInt16LE(13),
         }, ['time', 'left', 'right']);
     } else if (command === 'W' && message.length === 12) {
+        var state = message.readUInt8(11);
         this.sendToClient('whiskers', {
-            state: message.readUInt8(11),
-        }, ['time', 'state']);
+            left: (state & 0x2) != 0,
+            right: (state & 0x1) != 0
+        }, ['time', 'left', 'right']);
     } else if (command === 'R' && message.length === 13) {
         this.sendToClient('get range', {
             range: message.readInt16LE(11),
@@ -253,16 +255,14 @@ RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
 };
 
 RoboScape.prototype._getRobot = function (robot) {
-    if (typeof robot === 'string') {
-        if (robot.length === 6) {
-            return RoboScape.prototype._robots[robot];
-        }
-        for (var mac_addr in RoboScape.prototype._robots) {
-            if (mac_addr.endsWith(robot))
-                return RoboScape.prototype._robots[mac_addr];
-        }
+    robot = '' + robot;
+    if (robot.length === 6) {
+        return RoboScape.prototype._robots[robot];
     }
-    return undefined;
+    for (var mac_addr in RoboScape.prototype._robots) {
+        if (mac_addr.endsWith(robot))
+            return RoboScape.prototype._robots[mac_addr];
+    }
 };
 
 RoboScape.prototype._heartbeat = function () {
@@ -383,7 +383,7 @@ RoboScape.prototype._getRegistered = function () {
  * Registers for receiving messages from the given robots.
  * @param {array} robot one or a list of robots
  */
-RoboScape.prototype.register = function (robots) {
+RoboScape.prototype.eavesdrop = function (robots) {
     var state = this._state,
         id = this.socket.uuid;
 
@@ -396,7 +396,7 @@ RoboScape.prototype.register = function (robots) {
     state.registered = {};
 
     if (!Array.isArray(robots)) {
-        robots = ('' + robots).split(',');
+        robots = ('' + robots).split(/[, ]/);
     }
 
     var ok = true;
@@ -424,6 +424,7 @@ RoboScape.prototype.send = function (robot, command) {
     robot = this._getRobot(robot);
     if (robot && typeof command === 'string') {
         if (command.match(/^alive$/)) {
+            robot.sendToClient('alive', {}, ['time']);
             return robot.heartbeats < 2;
         } else if (command.match(/^beep (-?\d*) (-?\d*)$/)) {
             robot.beep(+RegExp.$1, +RegExp.$2);
