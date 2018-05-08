@@ -12,6 +12,8 @@ enum {
     PIEZO_SPEAKER_PIN = 2,
     PING_SENSOR_PIN = 6,
     BUTTON_PIN = 7,
+    LED_0_PIN = 26,
+    LED_1_PIN = 27
 };
 
 fdserial* xbee;
@@ -131,7 +133,6 @@ int main()
         } else if (cmp_rx_headers(16, 'B')) { // beep
             int msec = *(short*)(buffer + 12);
             int tone = *(short*)(buffer + 14);
-            toggle(27);
             freqout(PIEZO_SPEAKER_PIN, msec, tone);
             set_tx_headers('B');
             write_le16(msec);
@@ -140,20 +141,17 @@ int main()
         } else if (cmp_rx_headers(16, 'S')) { // setSpeed
             int left = *(short*)(buffer + 12);
             int right = *(short*)(buffer + 14);
-            toggle(27);
             drive_speed(left, right);
             set_tx_headers('S');
             write_le16(left);
             write_le16(right);
             xbee_send_api(xbee, buffer, buffer_len);
         } else if (cmp_rx_headers(12, 'R')) { // getRange
-            toggle(27);
             int dist = ping_cm(PING_SENSOR_PIN);
             set_tx_headers('R');
             write_le16(dist);
             xbee_send_api(xbee, buffer, buffer_len);
         } else if (cmp_rx_headers(12, 'T')) { // getTicks
-            toggle(27);
             int left, right;
             drive_getTicks(&left, &right);
             set_tx_headers('T');
@@ -163,32 +161,46 @@ int main()
         } else if (cmp_rx_headers(16, 'D')) { // drive
             int left = *(short*)(buffer + 12);
             int right = *(short*)(buffer + 14);
-            toggle(27);
             set_tx_headers('D');
             write_le16(left);
             write_le16(right);
             xbee_send_api(xbee, buffer, buffer_len);
             drive_goto(left, right);
+        } else if (cmp_rx_headers(14, 'L')) { // setLed
+            int led = *(buffer + 12);
+            int state = *(buffer + 13);
+            set_tx_headers('L');
+            buffer[buffer_len++] = led;
+            buffer[buffer_len++] = state;
+            if (led == 0)
+                led = LED_0_PIN;
+            else
+                led = LED_1_PIN;
+            if (state == 0)
+                low(led);
+            else if (state == 1)
+                high(led);
+            else
+                toggle(led);
+            xbee_send_api(xbee, buffer, buffer_len);
         } else if (buffer_len >= 0) { // unknown
             buffer_print(buffer_len);
         }
 
         temp = (input(WHISKERS_LEFT_PIN) << 1) | input(WHISKERS_RIGHT_PIN);
         if (whiskers != temp) { // whiskers
-            toggle(27);
             whiskers = temp;
             set_tx_headers('W');
             buffer[buffer_len++] = whiskers;
             xbee_send_api(xbee, buffer, buffer_len);
         }
-        
+
         temp = input(BUTTON_PIN);
         if (button != temp) { // user button
-          toggle(27);
-          button = temp;
-          set_tx_headers('P');
-          buffer[buffer_len++] = button;
-          xbee_send_api(xbee, buffer, buffer_len);
-        }          
+            button = temp;
+            set_tx_headers('P');
+            buffer[buffer_len++] = button;
+            xbee_send_api(xbee, buffer, buffer_len);
+        }
     }
 }

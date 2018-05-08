@@ -10,6 +10,7 @@
  *  mac_addr[6] time[4] 'T' left[4] right[4]: wheel ticks
  *  mac_addr[6] time[4] 'D' left[2] right[2]: drive distance
  *  mac_addr[6] time[4] 'P' status[1]: button pressed
+ *  mac_addr[6] time[4] 'L' led[1] state[1]: LED state change
  * 
  * Server to robot messages:
  *  'S' left[2] right[2]: set driving speed
@@ -17,6 +18,7 @@
  *  'R': ultrasound ranging
  *  'T': get wheel ticks
  *  'D' left[2] right[2]: drive certain distance
+ *  'L' led[1] state[1]: change LED state
  */
 
 'use strict';
@@ -114,6 +116,24 @@ Robot.prototype.setSpeed = function (left, right) {
     message.write('S', 0, 1);
     message.writeInt16LE(left, 1);
     message.writeInt16LE(right, 3);
+    this.sendToRobot(message);
+};
+
+Robot.prototype.setLed = function (led, cmd) {
+    led = Math.min(Math.max(+led, 0), 1);
+    if (cmd === false || cmd === 'false' || cmd === 'off' || +cmd === 0) {
+        cmd = 0;
+    } else if (cmd === true || cmd === 'true' || cmd === 'on' || +cmd === 1) {
+        cmd = 1;
+    } else {
+        cmd = 2;
+    }
+
+    log('set led ' + this.mac_addr + ' ' + led + ' ' + cmd);
+    var message = Buffer.alloc(3);
+    message.write('L', 0, 1);
+    message.writeUInt8(led, 1);
+    message.writeUInt8(cmd, 2);
     this.sendToRobot(message);
 };
 
@@ -215,7 +235,6 @@ Robot.prototype.onMessage = function (message) {
 
     this.timestamp = message.readUInt32LE(6);
     var command = message.toString('ascii', 10, 11);
-    var state;
 
     if (command === 'I' && message.length === 11) {
         // do nothing
@@ -230,15 +249,14 @@ Robot.prototype.onMessage = function (message) {
             right: message.readInt16LE(13),
         }, ['time', 'left', 'right']);
     } else if (command === 'W' && message.length === 12) {
-        state = message.readUInt8(11);
+        var state = message.readUInt8(11);
         this.sendToClient('whiskers', {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
         }, ['time', 'left', 'right']);
     } else if (command === 'P' && message.length === 12) {
-        state = message.readUInt8(11);
         this.sendToClient('button', {
-            pressed: state == 0
+            pressed: message.readUInt8(11) == 0
         }, ['time', 'pressed']);
     } else if (command === 'R' && message.length === 13) {
         this.sendToClient('get range', {
@@ -254,6 +272,11 @@ Robot.prototype.onMessage = function (message) {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
         }, ['time', 'left', 'right']);
+    } else if (command === 'L' && message.length === 13) {
+        this.sendToClient('led', {
+            led: message.readUInt8(11),
+            command: message.readUInt8(12)
+        }, ['time', 'led', 'command']);
     } else {
         log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
@@ -369,6 +392,22 @@ RoboScape.prototype.setSpeed = function (robot, left, right) {
     robot = this._getRobot(robot);
     if (robot) {
         robot.setSpeed(left, right);
+        return true;
+    }
+    return false;
+};
+
+/**
+ * Sets one of the LEDs of the given robots.
+ * @param {string} robot name of the robot (matches at the end)
+ * @param {number} led the number of the LED (0 or 1)
+ * @param {number} command false/off/0, true/on/1, or toggle/2
+ * @returns {boolean} True if the robot was found
+ */
+RoboScape.prototype.setLed = function (robot, led, command) {
+    robot = this._getRobot(robot);
+    if (robot) {
+        robot.setLed(led, command);
         return true;
     }
     return false;
