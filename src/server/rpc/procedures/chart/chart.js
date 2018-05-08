@@ -1,3 +1,9 @@
+/**
+ * Charting service powered by Gnuplot
+ *
+ * @service
+ */
+
 const ApiConsumer = require('../utils/api-consumer'),
     rpcUtils = require('../utils'),
     gnuPlot = require('./node-gnuplot.js'),
