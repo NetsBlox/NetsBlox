@@ -10,7 +10,9 @@
  *  mac_addr[6] time[4] 'T' left[4] right[4]: wheel ticks
  *  mac_addr[6] time[4] 'D' left[2] right[2]: drive distance
  *  mac_addr[6] time[4] 'P' status[1]: button pressed
- *  mac_addr[6] time[4] 'L' led[1] state[1]: LED state change
+ *  mac_addr[6] time[4] 'L' led[1] cmd[1]: LED state change
+ *  mac_addr[6] time[4] 'F' bits[1]: infra red detection event
+ *  mac_addr[6] time[4] 'G' msec[2]: send infra red light
  * 
  * Server to robot messages:
  *  'S' left[2] right[2]: set driving speed
@@ -19,6 +21,7 @@
  *  'T': get wheel ticks
  *  'D' left[2] right[2]: drive certain distance
  *  'L' led[1] state[1]: change LED state
+ *  'G' msec[2]: send infra red light
  */
 
 'use strict';
@@ -149,6 +152,16 @@ Robot.prototype.beep = function (msec, tone) {
     this.sendToRobot(message);
 };
 
+Robot.prototype.infraLight = function (msec) {
+    msec = Math.min(Math.max(+msec, 0), 1000);
+
+    log('infra light ' + this.mac_addr + ' ' + msec);
+    var message = Buffer.alloc(3);
+    message.write('G', 0, 1);
+    message.writeUInt16LE(msec, 1);
+    this.sendToRobot(message);
+};
+
 Robot.prototype.getRange = function () {
     log('get range ' + this.mac_addr);
     var promise = this.receiveFromRobot('get range');
@@ -235,6 +248,7 @@ Robot.prototype.onMessage = function (message) {
 
     this.timestamp = message.readUInt32LE(6);
     var command = message.toString('ascii', 10, 11);
+    var state;
 
     if (command === 'I' && message.length === 11) {
         // do nothing
@@ -249,7 +263,7 @@ Robot.prototype.onMessage = function (message) {
             right: message.readInt16LE(13),
         }, ['time', 'left', 'right']);
     } else if (command === 'W' && message.length === 12) {
-        var state = message.readUInt8(11);
+        state = message.readUInt8(11);
         this.sendToClient('whiskers', {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
@@ -277,6 +291,16 @@ Robot.prototype.onMessage = function (message) {
             led: message.readUInt8(11),
             command: message.readUInt8(12)
         }, ['time', 'led', 'command']);
+    } else if (command === 'F' && message.length === 12) {
+        state = message.readUInt8(11);
+        this.sendToClient('infra event', {
+            left: (state & 0x2) == 0,
+            right: (state & 0x1) == 0
+        }, ['time', 'left', 'right']);
+    } else if (command === 'G' && message.length === 13) {
+        this.sendToClient('infra light', {
+            msec: message.readInt16LE(11)
+        }, ['time', 'msec']);
     } else {
         log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
@@ -424,6 +448,21 @@ RoboScape.prototype.beep = function (robot, msec, tone) {
     robot = this._getRobot(robot);
     if (robot) {
         robot.beep(msec, tone);
+        return true;
+    }
+    return false;
+};
+
+/**
+ * Turns on the infra red LED.
+ * @param {string} robot name of the robot (matches at the end)
+ * @param {number} msec duration in milliseconds
+ * @returns {boolean} True if the robot was found
+ */
+RoboScape.prototype.infraLight = function (robot, msec) {
+    robot = this._getRobot(robot);
+    if (robot) {
+        robot.infraLight(msec);
         return true;
     }
     return false;

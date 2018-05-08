@@ -13,7 +13,10 @@ enum {
     PING_SENSOR_PIN = 6,
     BUTTON_PIN = 7,
     LED_0_PIN = 26,
-    LED_1_PIN = 27
+    LED_1_PIN = 27,
+    INFRA_LIGHT_PIN = 5,
+    INFRA_LEFT_PIN = 11,
+    INFRA_RIGHT_PIN = 10,
 };
 
 fdserial* xbee;
@@ -102,6 +105,8 @@ int main()
 
     int whiskers = 0;
     int button = 0;
+    int infrared = 0;
+
     int slower = 0;
     while (1) {
         int temp;
@@ -137,6 +142,12 @@ int main()
             set_tx_headers('B');
             write_le16(msec);
             write_le16(tone);
+            xbee_send_api(xbee, buffer, buffer_len);
+        } else if (cmp_rx_headers(14, 'G')) { // infra light
+            int msec = *(short*)(buffer + 12);
+            freqout(INFRA_LIGHT_PIN, msec, 38000);
+            set_tx_headers('G');
+            write_le16(msec);
             xbee_send_api(xbee, buffer, buffer_len);
         } else if (cmp_rx_headers(16, 'S')) { // setSpeed
             int left = *(short*)(buffer + 12);
@@ -194,12 +205,18 @@ int main()
             buffer[buffer_len++] = whiskers;
             xbee_send_api(xbee, buffer, buffer_len);
         }
-
         temp = input(BUTTON_PIN);
         if (button != temp) { // user button
             button = temp;
             set_tx_headers('P');
             buffer[buffer_len++] = button;
+            xbee_send_api(xbee, buffer, buffer_len);
+        }
+        temp = (input(INFRA_LEFT_PIN) << 1) | input(INFRA_RIGHT_PIN);
+        if (infrared != temp) { // infra red
+            infrared = temp;
+            set_tx_headers('F');
+            buffer[buffer_len++] = infrared;
             xbee_send_api(xbee, buffer, buffer_len);
         }
     }
