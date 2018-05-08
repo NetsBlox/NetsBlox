@@ -5,6 +5,13 @@
 
 enum {
     BUFFER_SIZE = 200,
+    XBEE_DO_PIN = 4,
+    XBEE_DI_PIN = 3,
+    WHISKERS_LEFT_PIN = 8,
+    WHISKERS_RIGHT_PIN = 9,
+    PIEZO_SPEAKER_PIN = 2,
+    PING_SENSOR_PIN = 6,
+    BUTTON_PIN = 5,
 };
 
 fdserial* xbee;
@@ -80,8 +87,9 @@ void write_le32(int data)
 
 int main()
 {
-    input(1);
-    xbee = xbee_open(1, 0, 1);
+    input(XBEE_DO_PIN);
+    xbee = xbee_open(XBEE_DO_PIN, XBEE_DI_PIN, 1);
+
     xbee_send_api(xbee, "\x8\000NR", 4);
     xbee_send_api(xbee, "\x8\000IDvummiv", 10);
 
@@ -122,7 +130,7 @@ int main()
             int msec = *(short*)(buffer + 12);
             int tone = *(short*)(buffer + 14);
             toggle(27);
-            freqout(2, msec, tone);
+            freqout(PIEZO_SPEAKER_PIN, msec, tone);
             set_tx_headers('B');
             write_le16(msec);
             write_le16(tone);
@@ -138,7 +146,7 @@ int main()
             xbee_send_api(xbee, buffer, buffer_len);
         } else if (cmp_rx_headers(12, 'R')) { // getRange
             toggle(27);
-            int dist = ping_cm(5);
+            int dist = ping_cm(PING_SENSOR_PIN);
             set_tx_headers('R');
             write_le16(dist);
             xbee_send_api(xbee, buffer, buffer_len);
@@ -163,7 +171,7 @@ int main()
             buffer_print(buffer_len);
         }
 
-        int whiskers2 = 0x03 ^ ((input(3) << 1) | input(4));
+        int whiskers2 = 0x03 ^ ((input(WHISKERS_LEFT_PIN) << 1) | input(WHISKERS_RIGHT_PIN));
         if (whiskers != whiskers2) { // whiskers
             toggle(27);
             whiskers = whiskers2;
