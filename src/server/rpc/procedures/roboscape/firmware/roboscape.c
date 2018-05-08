@@ -1,6 +1,6 @@
 #include "abdrive360.h"
-#include "simpletools.h"
 #include "ping.h"
+#include "simpletools.h"
 #include "xbee.h"
 
 enum {
@@ -96,12 +96,12 @@ int main()
         buffer_len = xbee_recv_api(xbee, buffer, BUFFER_SIZE, 10);
 
         if (buffer_len == -1) {
-            if (++slower >= 100) {
+            if (++slower >= 100) { // alive
                 slower = 0;
                 xbee_send_api(xbee, "\x8\004MY", 4);
                 set_tx_headers('I');
                 xbee_send_api(xbee, buffer, buffer_len);
-            }                
+            }
         } else if (cmp_api_response(9, "\x88\001SL")) {
             memcpy(mac_addr + 2, buffer + 5, 4);
         } else if (cmp_api_response(7, "\x88\002SH")) {
@@ -118,7 +118,7 @@ int main()
             for (int i = 0; i < 4; i++)
                 print("%c%d", i == 0 ? ' ' : '.', ip4_addr[i]);
             print(" %d\n", ntohs(ip4_port));
-        } else if (cmp_rx_headers(16, 'B')) {
+        } else if (cmp_rx_headers(16, 'B')) { // beep
             int msec = *(short*)(buffer + 12);
             int tone = *(short*)(buffer + 14);
             toggle(27);
@@ -127,22 +127,22 @@ int main()
             write_le16(msec);
             write_le16(tone);
             xbee_send_api(xbee, buffer, buffer_len);
-        } else if (cmp_rx_headers(16, 'D')) {
+        } else if (cmp_rx_headers(16, 'S')) { // setSpeed
             int left = *(short*)(buffer + 12);
             int right = *(short*)(buffer + 14);
             toggle(27);
             drive_speed(left, right);
-            set_tx_headers('D');
+            set_tx_headers('S');
             write_le16(left);
             write_le16(right);
             xbee_send_api(xbee, buffer, buffer_len);
-        } else if (cmp_rx_headers(12, 'R')) {
+        } else if (cmp_rx_headers(12, 'R')) { // getRange
             toggle(27);
             int dist = ping_cm(5);
             set_tx_headers('R');
             write_le16(dist);
             xbee_send_api(xbee, buffer, buffer_len);
-        } else if (cmp_rx_headers(12, 'T')) {
+        } else if (cmp_rx_headers(12, 'T')) { // getTicks
             toggle(27);
             int left, right;
             drive_getTicks(&left, &right);
@@ -150,26 +150,26 @@ int main()
             write_le32(left);
             write_le32(-right); // this seems to be inverted
             xbee_send_api(xbee, buffer, buffer_len);
-        } else if (cmp_rx_headers(16, 'X')) {
+        } else if (cmp_rx_headers(16, 'D')) { // drive
             int left = *(short*)(buffer + 12);
             int right = *(short*)(buffer + 14);
             toggle(27);
-            set_tx_headers('X');
+            set_tx_headers('D');
             write_le16(left);
             write_le16(right);
             xbee_send_api(xbee, buffer, buffer_len);
             drive_goto(left, right);
-        } else if (buffer_len >= 0) {
+        } else if (buffer_len >= 0) { // unknown
             buffer_print(buffer_len);
         }
-        
+
         int whiskers2 = 0x03 ^ ((input(3) << 1) | input(4));
-        if (whiskers != whiskers2) {
+        if (whiskers != whiskers2) { // whiskers
             toggle(27);
             whiskers = whiskers2;
             set_tx_headers('W');
             buffer[buffer_len++] = whiskers;
             xbee_send_api(xbee, buffer, buffer_len);
-        }          
+        }
     }
 }

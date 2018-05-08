@@ -3,22 +3,19 @@
  * 
  * Robot to server messages:
  *  mac_addr[6] time[4] 'I': identification, sent every second
- *  mac_addr[6] time[4] 'D' left[2] right[2]: driving speed response
+ *  mac_addr[6] time[4] 'S' left[2] right[2]: driving speed response
  *  mac_addr[6] time[4] 'B' msec[2] tone[2]: beep response
  *  mac_addr[6] time[4] 'W' bits[1]: whiskers status
  *  mac_addr[6] time[4] 'R' dist[2]: ultrasound ranging response
  *  mac_addr[6] time[4] 'T' left[4] right[4]: wheel ticks
- *  mac_addr[6] time[4] 'X' left[2] right[2]: drive distance
+ *  mac_addr[6] time[4] 'D' left[2] right[2]: drive distance
  * 
  * Server to robot messages:
- *  'D' left[2] right[2]: set driving speed
+ *  'S' left[2] right[2]: set driving speed
  *  'B' msec[2] tone[2]: beep
  *  'R': ultrasound ranging
  *  'T': get wheel ticks
- *  'X' left[2] right[2]: drive certain distance
- * 
- * TODO:
- * - change 'D' to 'S', 'X' to 'D'
+ *  'D' left[2] right[2]: drive certain distance
  */
 
 'use strict';
@@ -113,7 +110,7 @@ Robot.prototype.setSpeed = function (left, right) {
 
     log('set speed ' + this.mac_addr + ' ' + left + ' ' + right);
     var message = Buffer.alloc(5);
-    message.write('D', 0, 1);
+    message.write('S', 0, 1);
     message.writeInt16LE(left, 1);
     message.writeInt16LE(right, 3);
     this.sendToRobot(message);
@@ -155,7 +152,7 @@ Robot.prototype.drive = function (left, right) {
 
     log('drive ' + this.mac_addr + ' ' + left + ' ' + right);
     var message = Buffer.alloc(5);
-    message.write('X', 0, 1);
+    message.write('D', 0, 1);
     message.writeInt16LE(left, 1);
     message.writeInt16LE(right, 3);
     this.sendToRobot(message);
@@ -219,13 +216,13 @@ Robot.prototype.onMessage = function (message) {
     var command = message.toString('ascii', 10, 11);
 
     if (command === 'I' && message.length === 11) {
-        // nothing
+        // do nothing
     } else if (command === 'B' && message.length === 15) {
         this.sendToClient('beep', {
             msec: message.readInt16LE(11),
             tone: message.readInt16LE(13),
         }, ['time', 'msec', 'tone']);
-    } else if (command === 'D' && message.length === 15) {
+    } else if (command === 'S' && message.length === 15) {
         this.sendToClient('set speed', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
@@ -245,7 +242,7 @@ Robot.prototype.onMessage = function (message) {
             left: message.readInt32LE(11),
             right: message.readInt32LE(15),
         }, ['time', 'left', 'right']);
-    } else if (command === 'X' && message.length === 15) {
+    } else if (command === 'D' && message.length === 15) {
         this.sendToClient('drive', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
@@ -501,13 +498,13 @@ RoboScape.prototype.send = function (robot, command) {
         if (command.match(/^alive$/)) {
             robot.sendToClient('alive', {}, ['time']);
             return robot.heartbeats < 2;
-        } else if (command.match(/^beep (-?\d+) (-?\d+)$/)) {
+        } else if (command.match(/^beep (-?\d+)[, ](-?\d+)$/)) {
             robot.beep(+RegExp.$1, +RegExp.$2);
             return true;
-        } else if (command.match(/^set speed (-?\d+) (-?\d+)$/)) {
+        } else if (command.match(/^set speed (-?\d+)[, ](-?\d+)$/)) {
             robot.setSpeed(+RegExp.$1, +RegExp.$2);
             return true;
-        } else if (command.match(/^drive (-?\d+) (-?\d+)$/)) {
+        } else if (command.match(/^drive (-?\d+)[, ](-?\d+)$/)) {
             robot.drive(+RegExp.$1, +RegExp.$2);
             return true;
         } else if (command.match(/^get range$/)) {
