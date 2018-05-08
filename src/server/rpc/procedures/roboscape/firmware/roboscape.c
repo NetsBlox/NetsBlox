@@ -11,7 +11,7 @@ enum {
     WHISKERS_RIGHT_PIN = 9,
     PIEZO_SPEAKER_PIN = 2,
     PING_SENSOR_PIN = 6,
-    BUTTON_PIN = 5,
+    BUTTON_PIN = 7,
 };
 
 fdserial* xbee;
@@ -99,8 +99,10 @@ int main()
     xbee_send_api(xbee, "\x8\004MY", 4);
 
     int whiskers = 0;
+    int button = 0;
     int slower = 0;
     while (1) {
+        int temp;
         buffer_len = xbee_recv_api(xbee, buffer, BUFFER_SIZE, 10);
 
         if (buffer_len == -1) {
@@ -171,13 +173,22 @@ int main()
             buffer_print(buffer_len);
         }
 
-        int whiskers2 = 0x03 ^ ((input(WHISKERS_LEFT_PIN) << 1) | input(WHISKERS_RIGHT_PIN));
-        if (whiskers != whiskers2) { // whiskers
+        temp = (input(WHISKERS_LEFT_PIN) << 1) | input(WHISKERS_RIGHT_PIN);
+        if (whiskers != temp) { // whiskers
             toggle(27);
-            whiskers = whiskers2;
+            whiskers = temp;
             set_tx_headers('W');
             buffer[buffer_len++] = whiskers;
             xbee_send_api(xbee, buffer, buffer_len);
         }
+        
+        temp = input(BUTTON_PIN);
+        if (button != temp) { // user button
+          toggle(27);
+          button = temp;
+          set_tx_headers('P');
+          buffer[buffer_len++] = button;
+          xbee_send_api(xbee, buffer, buffer_len);
+        }          
     }
 }

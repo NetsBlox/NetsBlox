@@ -9,6 +9,7 @@
  *  mac_addr[6] time[4] 'R' dist[2]: ultrasound ranging response
  *  mac_addr[6] time[4] 'T' left[4] right[4]: wheel ticks
  *  mac_addr[6] time[4] 'D' left[2] right[2]: drive distance
+ *  mac_addr[6] time[4] 'P' status[1]: button pressed
  * 
  * Server to robot messages:
  *  'S' left[2] right[2]: set driving speed
@@ -214,6 +215,7 @@ Robot.prototype.onMessage = function (message) {
 
     this.timestamp = message.readUInt32LE(6);
     var command = message.toString('ascii', 10, 11);
+    var state;
 
     if (command === 'I' && message.length === 11) {
         // do nothing
@@ -228,11 +230,16 @@ Robot.prototype.onMessage = function (message) {
             right: message.readInt16LE(13),
         }, ['time', 'left', 'right']);
     } else if (command === 'W' && message.length === 12) {
-        var state = message.readUInt8(11);
+        state = message.readUInt8(11);
         this.sendToClient('whiskers', {
-            left: (state & 0x2) != 0,
-            right: (state & 0x1) != 0
+            left: (state & 0x2) == 0,
+            right: (state & 0x1) == 0
         }, ['time', 'left', 'right']);
+    } else if (command === 'P' && message.length === 12) {
+        state = message.readUInt8(11);
+        this.sendToClient('button', {
+            pressed: state == 0
+        }, ['time', 'pressed']);
     } else if (command === 'R' && message.length === 13) {
         this.sendToClient('get range', {
             range: message.readInt16LE(11),
