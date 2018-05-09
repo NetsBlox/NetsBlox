@@ -22,6 +22,11 @@
  *  'D' left[2] right[2]: drive certain distance
  *  'L' led[1] state[1]: change LED state
  *  'G' msec[2] pwr[1]: send infra red light
+ * 
+ * Environment variables:
+ *  ROBOSCAPE_PORT: set it to the UDP port (1973) to enable this module
+ *  ROBOSCAPE_TYPE: sets the NetsBlox interface type, can be "security", 
+ *      "native" or "both" (default)
  */
 
 'use strict';
@@ -33,7 +38,8 @@ var debug = require('debug'),
     server = dgram.createSocket('udp4'),
     SocketManager = require('../../../socket-manager'),
     FORGET_TIME = 120, // forgetting a robot in seconds
-    RESPONSE_TIMEOUT = 200; // waiting for response in milliseconds
+    RESPONSE_TIMEOUT = 200, // waiting for response in milliseconds
+    ROBOSCAPE_TYPE = process.env.ROBOSCAPE_TYPE || 'both';
 
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
@@ -61,6 +67,10 @@ Robot.prototype.heartbeat = function () {
 };
 
 Robot.prototype.isAlive = function () {
+    return this.heartBeats <= 2;
+};
+
+Robot.prototype.isSending = function () {
     return this.heartBeats < FORGET_TIME;
 };
 
@@ -200,9 +210,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     content.robot = this.mac_addr;
     content.time = this.timestamp;
 
-    if (msgType !== 'alive') {
-        log('event ' + msgType + ' ' + JSON.stringify(content));
-    }
+    log('event ' + msgType + ' ' + JSON.stringify(content));
 
     if (this.callbacks[msgType]) {
         var callbacks = this.callbacks[msgType];
@@ -216,27 +224,31 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     this.sockets.forEach(function (uuid) {
         var socket = SocketManager.getSocket(uuid);
         if (socket) {
-            socket.send({
-                type: 'message',
-                dstId: socket.role,
-                msgType: msgType,
-                content: content
-            });
-
-            var text = msgType;
-            for (var i = 0; i < fields.length; i++) {
-                text += ' ' + content[fields[i]];
+            if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
+                socket.send({
+                    type: 'message',
+                    dstId: socket.role,
+                    msgType: msgType,
+                    content: content
+                });
             }
 
-            socket.send({
-                type: 'message',
-                dstId: socket.role,
-                msgType: 'robot message',
-                content: {
-                    robot: myself.mac_addr,
-                    message: myself.encrypt(text)
+            if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
+                var text = msgType;
+                for (var i = 0; i < fields.length; i++) {
+                    text += ' ' + content[fields[i]];
                 }
-            });
+
+                socket.send({
+                    type: 'message',
+                    dstId: socket.role,
+                    msgType: 'robot message',
+                    content: {
+                        robot: myself.mac_addr,
+                        message: myself.encrypt(text)
+                    }
+                });
+            }
         }
     });
 };
@@ -401,124 +413,6 @@ RoboScape.prototype._heartbeat = function () {
 };
 
 /**
- * Returns the MAC addresses of all robots.
- * @returns {array}
- */
-RoboScape.prototype.getRobots = function () {
-    return Object.keys(RoboScape.prototype._robots);
-};
-
-/**
- * Sets the wheel speed of the given robots.
- * @param {string} robot name of the robot (matches at the end)
- * @param {number} left speed of the left wheel in [-128, 128]
- * @param {number} right speed of the right wheel in [-128, 128]
- * @returns {boolean} True if the robot was found
- */
-RoboScape.prototype.setSpeed = function (robot, left, right) {
-    robot = this._getRobot(robot);
-    if (robot) {
-        robot.setSpeed(left, right);
-        return true;
-    }
-    return false;
-};
-
-/**
- * Sets one of the LEDs of the given robots.
- * @param {string} robot name of the robot (matches at the end)
- * @param {number} led the number of the LED (0 or 1)
- * @param {number} command false/off/0, true/on/1, or toggle/2
- * @returns {boolean} True if the robot was found
- */
-RoboScape.prototype.setLed = function (robot, led, command) {
-    robot = this._getRobot(robot);
-    if (robot) {
-        robot.setLed(led, command);
-        return true;
-    }
-    return false;
-};
-
-/**
- * Beeps with the speaker.
- * @param {string} robot name of the robot (matches at the end)
- * @param {number} msec duration in milliseconds
- * @param {number} tone frequency of the beep in Hz
- * @returns {boolean} True if the robot was found
- */
-RoboScape.prototype.beep = function (robot, msec, tone) {
-    robot = this._getRobot(robot);
-    if (robot) {
-        robot.beep(msec, tone);
-        return true;
-    }
-    return false;
-};
-
-/**
- * Turns on the infra red LED.
- * @param {string} robot name of the robot (matches at the end)
- * @param {number} msec duration in milliseconds between 0 and 1000
- * @param {number} pwr power level between 0 and 100
- * @returns {boolean} True if the robot was found
- */
-RoboScape.prototype.infraLight = function (robot, msec, pwr) {
-    robot = this._getRobot(robot);
-    if (robot) {
-        robot.infraLight(msec, pwr);
-        return true;
-    }
-    return false;
-};
-
-/**
- * Ranges with the ultrasound sensor
- * @param {string} robot name of the robot (matches at the end)
- * @returns {number} range in centimeters
- */
-RoboScape.prototype.getRange = function (robot) {
-    robot = this._getRobot(robot);
-    if (robot) {
-        return robot.getRange().then(function (value) {
-            return value && value.range;
-        });
-    }
-    return false;
-};
-
-/**
- * Returns the current number of wheel ticks (1/64th rotations)
- * @param {string} robot name of the robot (matches at the end)
- * @returns {array} the number of ticks for the left and right wheels
- */
-RoboScape.prototype.getTicks = function (robot) {
-    robot = this._getRobot(robot);
-    if (robot) {
-        return robot.getTicks().then(function (value) {
-            return value && [value.left, value.right];
-        });
-    }
-    return false;
-};
-
-/**
- * Drives the whiles for the specified ticks.
- * @param {string} robot name of the robot (matches at the end)
- * @param {number} left distance for left wheel in ticks
- * @param {number} right distance for right wheel in ticks
- * @returns {boolean} True if the robot was found
- */
-RoboScape.prototype.drive = function (robot, left, right) {
-    robot = this._getRobot(robot);
-    if (robot) {
-        robot.drive(left, right);
-        return true;
-    }
-    return false;
-};
-
-/**
  * Returns the MAC addresses of the registered robots for this client.
  * @returns {array} the list of registered robots
  */
@@ -526,7 +420,7 @@ RoboScape.prototype._getRegistered = function () {
     var state = this._state,
         robots = [];
     for (var mac_addr in state.registered) {
-        if (this._robots[mac_addr].isAlive()) {
+        if (this._robots[mac_addr].isSending()) {
             robots.push(mac_addr);
         } else {
             delete state.registered[mac_addr];
@@ -537,7 +431,7 @@ RoboScape.prototype._getRegistered = function () {
 
 /**
  * Registers for receiving messages from the given robots.
- * @param {array} robot one or a list of robots
+ * @param {array} robots one or a list of robots
  */
 RoboScape.prototype.eavesdrop = function (robots) {
     var state = this._state,
@@ -567,53 +461,188 @@ RoboScape.prototype.eavesdrop = function (robots) {
     return ok;
 };
 
-/**
- * Sends a textual command to the robot
- * @param {string} robot name of the robot (matches at the end)
- * @param {string} command textual command
- * @returns {string} textual response
- */
-RoboScape.prototype.send = function (robot, command) {
-    // log('send ' + robot + ' ' + command);
-    robot = this._getRobot(robot);
-    if (robot && typeof command === 'string') {
-        if (command.match(/^reset key$/)) {
-            robot.encryption = [];
+if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
+    /**
+     * Returns the MAC addresses of all robots.
+     * @returns {array}
+     */
+    RoboScape.prototype.getRobots = function () {
+        return Object.keys(RoboScape.prototype._robots);
+    };
+
+    /**
+     * Returns true if the given robot is alive, sent messages in the
+     * last two seconds.
+     * @returns {boolean} True if the robot is alive
+     */
+    RoboScape.prototype.isAlive = function (robot) {
+        robot = this._getRobot(robot);
+        if (robot) {
+            return robot.isAlive();
+        }
+        return false;
+    };
+
+    /**
+     * Sets the wheel speed of the given robots.
+     * @param {string} robot name of the robot (matches at the end)
+     * @param {number} left speed of the left wheel in [-128, 128]
+     * @param {number} right speed of the right wheel in [-128, 128]
+     * @returns {boolean} True if the robot was found
+     */
+    RoboScape.prototype.setSpeed = function (robot, left, right) {
+        robot = this._getRobot(robot);
+        if (robot) {
+            robot.setSpeed(left, right);
             return true;
         }
+        return false;
+    };
 
-        command = robot.decrypt(command);
+    /**
+     * Sets one of the LEDs of the given robots.
+     * @param {string} robot name of the robot (matches at the end)
+     * @param {number} led the number of the LED (0 or 1)
+     * @param {number} command false/off/0, true/on/1, or toggle/2
+     * @returns {boolean} True if the robot was found
+     */
+    RoboScape.prototype.setLed = function (robot, led, command) {
+        robot = this._getRobot(robot);
+        if (robot) {
+            robot.setLed(led, command);
+            return true;
+        }
+        return false;
+    };
 
-        if (command.match(/^alive$/)) {
-            robot.sendToClient('alive', {}, ['time']);
-            return robot.heartbeats < 2;
-        } else if (command.match(/^beep (-?\d+)[, ](-?\d+)$/)) {
-            robot.beep(+RegExp.$1, +RegExp.$2);
+    /**
+     * Beeps with the speaker.
+     * @param {string} robot name of the robot (matches at the end)
+     * @param {number} msec duration in milliseconds
+     * @param {number} tone frequency of the beep in Hz
+     * @returns {boolean} True if the robot was found
+     */
+    RoboScape.prototype.beep = function (robot, msec, tone) {
+        robot = this._getRobot(robot);
+        if (robot) {
+            robot.beep(msec, tone);
             return true;
-        } else if (command.match(/^set speed (-?\d+)[, ](-?\d+)$/)) {
-            robot.setSpeed(+RegExp.$1, +RegExp.$2);
+        }
+        return false;
+    };
+
+    /**
+     * Turns on the infra red LED.
+     * @param {string} robot name of the robot (matches at the end)
+     * @param {number} msec duration in milliseconds between 0 and 1000
+     * @param {number} pwr power level between 0 and 100
+     * @returns {boolean} True if the robot was found
+     */
+    RoboScape.prototype.infraLight = function (robot, msec, pwr) {
+        robot = this._getRobot(robot);
+        if (robot) {
+            robot.infraLight(msec, pwr);
             return true;
-        } else if (command.match(/^drive (-?\d+)[, ](-?\d+)$/)) {
-            robot.drive(+RegExp.$1, +RegExp.$2);
-            return true;
-        } else if (command.match(/^get range$/)) {
+        }
+        return false;
+    };
+
+    /**
+     * Ranges with the ultrasound sensor
+     * @param {string} robot name of the robot (matches at the end)
+     * @returns {number} range in centimeters
+     */
+    RoboScape.prototype.getRange = function (robot) {
+        robot = this._getRobot(robot);
+        if (robot) {
             return robot.getRange().then(function (value) {
                 return value && value.range;
             });
-        } else if (command.match(/^get ticks$/)) {
+        }
+        return false;
+    };
+
+    /**
+     * Returns the current number of wheel ticks (1/64th rotations)
+     * @param {string} robot name of the robot (matches at the end)
+     * @returns {array} the number of ticks for the left and right wheels
+     */
+    RoboScape.prototype.getTicks = function (robot) {
+        robot = this._getRobot(robot);
+        if (robot) {
             return robot.getTicks().then(function (value) {
                 return value && [value.left, value.right];
             });
-        } else if (command.match(/^set key(| -?\d+([ ,]-?\d+)*)$/)) {
-            var encryption = RegExp.$1.split(/[, ]/);
-            if (encryption[0] === '') {
-                encryption.splice(0, 1);
-            }
-            return robot.setEncryption(encryption.map(Number));
         }
-    }
-    return false;
-};
+        return false;
+    };
+
+    /**
+     * Drives the whiles for the specified ticks.
+     * @param {string} robot name of the robot (matches at the end)
+     * @param {number} left distance for left wheel in ticks
+     * @param {number} right distance for right wheel in ticks
+     * @returns {boolean} True if the robot was found
+     */
+    RoboScape.prototype.drive = function (robot, left, right) {
+        robot = this._getRobot(robot);
+        if (robot) {
+            robot.drive(left, right);
+            return true;
+        }
+        return false;
+    };
+}
+
+if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
+    /**
+     * Sends a textual command to the robot
+     * @param {string} robot name of the robot (matches at the end)
+     * @param {string} command textual command
+     * @returns {string} textual response
+     */
+    RoboScape.prototype.send = function (robot, command) {
+        // log('send ' + robot + ' ' + command);
+        robot = this._getRobot(robot);
+        if (robot && typeof command === 'string') {
+            if (command.match(/^reset key$/)) {
+                robot.encryption = [];
+                return true;
+            }
+
+            command = robot.decrypt(command);
+
+            if (command.match(/^is alive$/)) {
+                robot.sendToClient('is alive', {}, ['time']);
+                return robot.isAlive();
+            } else if (command.match(/^beep (-?\d+)[, ](-?\d+)$/)) {
+                robot.beep(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^set speed (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSpeed(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^drive (-?\d+)[, ](-?\d+)$/)) {
+                robot.drive(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^get range$/)) {
+                return robot.getRange().then(function (value) {
+                    return value && value.range;
+                });
+            } else if (command.match(/^get ticks$/)) {
+                return robot.getTicks().then(function (value) {
+                    return value && [value.left, value.right];
+                });
+            } else if (command.match(/^set key(| -?\d+([ ,]-?\d+)*)$/)) {
+                var encryption = RegExp.$1.split(/[, ]/);
+                if (encryption[0] === '') {
+                    encryption.splice(0, 1);
+                }
+                return robot.setEncryption(encryption.map(Number));
+            }
+        }
+        return false;
+    };
+}
 
 server.on('listening', function () {
     var local = server.address();
