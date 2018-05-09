@@ -39,7 +39,41 @@ var debug = require('debug'),
     SocketManager = require('../../../socket-manager'),
     FORGET_TIME = 120, // forgetting a robot in seconds
     RESPONSE_TIMEOUT = 200, // waiting for response in milliseconds
-    ROBOSCAPE_TYPE = process.env.ROBOSCAPE_TYPE || 'both';
+    ROBOSCAPE_TYPE = process.env.ROBOSCAPE_TYPE || 'both',
+    RATE_CONTROL_ALPHA = 0.99; // decay constant
+
+var RateControl = function () {
+    this.lastMsgTime = new Date().getTime();
+    this.globalLimit = 0; // in milliseconds per message
+    this.globalValue = 1000; // in milliseconds per message
+    this.clientLimit = 0; // in milliseconds per message
+    this.clientPenalty = 0; // in milliseconds
+};
+
+RateControl.prototype.setGlobalLimit = function (rate) {
+    rate = Math.max(+rate, 0);
+    this.globalLimit = rate <= 0 ? 0 : 1000 / rate;
+};
+
+RateControl.prototype.setClientLimit = function (rate, penalty) {
+    rate = Math.max(+rate, 0);
+    this.clientLimit = rate <= 0 ? 0 : 1000 / rate;
+    this.clientPenalty = Math.max(+penalty, 0);
+};
+
+RateControl.prototype.accept = function () {
+    var nextMsgTime = new Date().getTime();
+    var globalNext = RATE_CONTROL_ALPHA * this.globalValue +
+        (1 - RATE_CONTROL_ALPHA) * (nextMsgTime - this.lastMsgTime);
+
+    if (globalNext < this.globalLimit) {
+        return false;
+    }
+
+    this.lastMsgTime = nextMsgTime;
+    this.globalValue = globalNext;
+    return true;
+};
 
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
@@ -51,6 +85,7 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.callbacks = {}; // callbacks keyed by msgType
     this.encryption = []; // encryption key
     this.buttonDownTime = 0; // last time button was pressed
+    this.rateControl = new RateControl();
 };
 
 Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
