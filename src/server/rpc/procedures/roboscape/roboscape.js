@@ -50,6 +50,7 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.sockets = []; // uuids of sockets of registered clients
     this.callbacks = {}; // callbacks keyed by msgType
     this.encryption = []; // encryption key
+    this.buttonDownTime = 0; // last time button was pressed
 };
 
 Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
@@ -133,16 +134,21 @@ Robot.prototype.setSpeed = function (left, right) {
 };
 
 Robot.prototype.setLed = function (led, cmd) {
+    if (!('' + cmd).startsWith('_')) {
+        log('set led ' + this.mac_addr + ' ' + led + ' ' + cmd);
+    }
+
     led = Math.min(Math.max(+led, 0), 1);
-    if (cmd === false || cmd === 'false' || cmd === 'off' || +cmd === 0) {
+    if (cmd === false || cmd === 'false' ||
+        cmd === 'off' || cmd === '_off' || +cmd === 0) {
         cmd = 0;
-    } else if (cmd === true || cmd === 'true' || cmd === 'on' || +cmd === 1) {
+    } else if (cmd === true || cmd === 'true' ||
+        cmd === 'on' || cmd === '_on' || +cmd === 1) {
         cmd = 1;
     } else {
         cmd = 2;
     }
 
-    log('set led ' + this.mac_addr + ' ' + led + ' ' + cmd);
     var message = Buffer.alloc(3);
     message.write('L', 0, 1);
     message.writeUInt8(led, 1);
@@ -210,7 +216,9 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     content.robot = this.mac_addr;
     content.time = this.timestamp;
 
-    log('event ' + msgType + ' ' + JSON.stringify(content));
+    if (msgType !== 'set led') {
+        log('event ' + msgType + ' ' + JSON.stringify(content));
+    }
 
     if (this.callbacks[msgType]) {
         var callbacks = this.callbacks[msgType];
@@ -283,9 +291,27 @@ Robot.prototype.onMessage = function (message) {
             right: (state & 0x1) == 0
         }, ['time', 'left', 'right']);
     } else if (command === 'P' && message.length === 12) {
-        this.sendToClient('button', {
-            pressed: message.readUInt8(11) == 0
-        }, ['time', 'pressed']);
+        state = message.readUInt8(11) == 0;
+        if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
+            this.sendToClient('button', {
+                pressed: state
+            }, ['time', 'pressed']);
+        }
+        if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
+            if (state) {
+                this.buttonDownTime = new Date().getTime();
+                setTimeout(function (robot, pressed) {
+                    if (robot.buttonDownTime === pressed) {
+                        robot.resetEncryption();
+                    }
+                }, 1000, this, this.buttonDownTime);
+            } else {
+                if (new Date().getTime() - this.buttonDownTime < 1000) {
+                    this.randomEncryption();
+                }
+                this.buttonDownTime = 0;
+            }
+        }
     } else if (command === 'R' && message.length === 13) {
         this.sendToClient('get range', {
             range: message.readInt16LE(11),
@@ -301,7 +327,7 @@ Robot.prototype.onMessage = function (message) {
             right: message.readInt16LE(13),
         }, ['time', 'left', 'right']);
     } else if (command === 'L' && message.length === 13) {
-        this.sendToClient('led', {
+        this.sendToClient('set led', {
             led: message.readUInt8(11),
             command: message.readUInt8(12)
         }, ['time', 'led', 'command']);
@@ -354,13 +380,64 @@ Robot.prototype.decrypt = function (text) {
 Robot.prototype.setEncryption = function (keys) {
     if (keys instanceof Array) {
         this.encryption = keys;
-        log(this.mac_addr + ' encryption set to ' + keys);
+        log(this.mac_addr + ' encryption set to [' + keys + ']');
         this.sendToClient('set key', {}, ['time']);
         return true;
     } else {
         log('invalid encryption key ' + keys);
         return false;
     }
+};
+
+Robot.prototype.playBlinks = function (states) {
+    this.lastBlinkStates = states;
+    var myself = this,
+        index = 0,
+        pause = true,
+        repeat,
+        step = function () {
+            if (states != myself.lastBlinkStates) {
+                return;
+            }
+            if (pause) {
+                for (repeat = 0; repeat < 3; repeat++) {
+                    myself.setLed(0, '_off');
+                    myself.setLed(1, '_off');
+                }
+                pause = false;
+                setTimeout(step, 200);
+            } else if (index < states.length) {
+                for (repeat = 0; repeat < 2; repeat++) {
+                    myself.setLed(0, states[index] & 0x1 ? '_on' : '_off');
+                    myself.setLed(1, states[index] & 0x2 ? '_on' : '_off');
+                }
+                pause = true;
+                index += 1;
+                setTimeout(step, 800);
+            }
+        };
+    setTimeout(step, 0);
+};
+
+Robot.prototype.randomEncryption = function () {
+    var keys = [],
+        blinks = [];
+    for (var i = 0; i < 4; i++) {
+        var a = Math.floor(Math.random() * 16);
+        keys.push(a);
+        blinks.push(a & 0x8 ? 2 : 1);
+        blinks.push(a & 0x4 ? 2 : 1);
+        blinks.push(a & 0x2 ? 2 : 1);
+        blinks.push(a & 0x1 ? 2 : 1);
+    }
+    this.setEncryption(keys);
+    blinks.push(3);
+    this.playBlinks(blinks);
+};
+
+Robot.prototype.resetEncryption = function () {
+    this.setEncryption([]);
+    this.playBlinks([3]);
 };
 
 /*
@@ -606,8 +683,7 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
         robot = this._getRobot(robot);
         if (robot && typeof command === 'string') {
             if (command.match(/^reset key$/)) {
-                robot.encryption = [];
-                return true;
+                return robot.setEncryption([]);
             }
 
             command = robot.decrypt(command);
