@@ -12,7 +12,7 @@
  *  mac_addr[6] time[4] 'P' status[1]: button pressed
  *  mac_addr[6] time[4] 'L' led[1] cmd[1]: LED state change
  *  mac_addr[6] time[4] 'F' bits[1]: infra red detection event
- *  mac_addr[6] time[4] 'G' msec[2]: send infra red light
+ *  mac_addr[6] time[4] 'G' msec[2] pwr[1]: send infra red light
  * 
  * Server to robot messages:
  *  'S' left[2] right[2]: set driving speed
@@ -21,7 +21,7 @@
  *  'T': get wheel ticks
  *  'D' left[2] right[2]: drive certain distance
  *  'L' led[1] state[1]: change LED state
- *  'G' msec[2]: send infra red light
+ *  'G' msec[2] pwr[1]: send infra red light
  */
 
 'use strict';
@@ -152,13 +152,15 @@ Robot.prototype.beep = function (msec, tone) {
     this.sendToRobot(message);
 };
 
-Robot.prototype.infraLight = function (msec) {
+Robot.prototype.infraLight = function (msec, pwr) {
     msec = Math.min(Math.max(+msec, 0), 1000);
+    pwr = Math.round(2.55 * (100 - Math.min(Math.max(+pwr, 0), 100)));
 
     log('infra light ' + this.mac_addr + ' ' + msec);
-    var message = Buffer.alloc(3);
+    var message = Buffer.alloc(4);
     message.write('G', 0, 1);
     message.writeUInt16LE(msec, 1);
+    message.writeUInt8(pwr, 3);
     this.sendToRobot(message);
 };
 
@@ -297,10 +299,11 @@ Robot.prototype.onMessage = function (message) {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
         }, ['time', 'left', 'right']);
-    } else if (command === 'G' && message.length === 13) {
+    } else if (command === 'G' && message.length === 14) {
         this.sendToClient('infra light', {
-            msec: message.readInt16LE(11)
-        }, ['time', 'msec']);
+            msec: message.readInt16LE(11),
+            pwr: Math.round(100 - message.readUInt8(13) / 2.55)
+        }, ['time', 'msec', 'pwr']);
     } else {
         log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
@@ -456,13 +459,14 @@ RoboScape.prototype.beep = function (robot, msec, tone) {
 /**
  * Turns on the infra red LED.
  * @param {string} robot name of the robot (matches at the end)
- * @param {number} msec duration in milliseconds
+ * @param {number} msec duration in milliseconds between 0 and 1000
+ * @param {number} pwr power level between 0 and 100
  * @returns {boolean} True if the robot was found
  */
-RoboScape.prototype.infraLight = function (robot, msec) {
+RoboScape.prototype.infraLight = function (robot, msec, pwr) {
     robot = this._getRobot(robot);
     if (robot) {
-        robot.infraLight(msec);
+        robot.infraLight(msec, pwr);
         return true;
     }
     return false;

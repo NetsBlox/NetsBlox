@@ -143,11 +143,17 @@ int main()
             write_le16(msec);
             write_le16(tone);
             xbee_send_api(xbee, buffer, buffer_len);
-        } else if (cmp_rx_headers(14, 'G')) { // infra light
+        } else if (cmp_rx_headers(15, 'G')) { // infra light
             int msec = *(short*)(buffer + 12);
+            int pwr = *(buffer + 14);
+            int old = get_output(26);
+            dac_ctr(26, 0, pwr);
             freqout(INFRA_LIGHT_PIN, msec, 38000);
+            dac_ctr_stop();
+            set_output(26, old);
             set_tx_headers('G');
             write_le16(msec);
+            buffer[buffer_len++] = pwr;
             xbee_send_api(xbee, buffer, buffer_len);
         } else if (cmp_rx_headers(16, 'S')) { // setSpeed
             int left = *(short*)(buffer + 12);
