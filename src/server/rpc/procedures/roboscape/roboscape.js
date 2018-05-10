@@ -40,39 +40,92 @@ var debug = require('debug'),
     FORGET_TIME = 120, // forgetting a robot in seconds
     RESPONSE_TIMEOUT = 200, // waiting for response in milliseconds
     ROBOSCAPE_TYPE = process.env.ROBOSCAPE_TYPE || 'both',
+    RATE_CONTROL_BASE = 1000, // in milliseconds
     RATE_CONTROL_ALPHA = 0.99; // decay constant
 
 var RateControl = function () {
-    this.lastMsgTime = new Date().getTime();
+    this.globalLast = new Date().getTime() - RATE_CONTROL_BASE;
+    this.globalRate = RATE_CONTROL_BASE; // in milliseconds per message
     this.globalLimit = 0; // in milliseconds per message
-    this.globalValue = 1000; // in milliseconds per message
-    this.clientLimit = 0; // in milliseconds per message
-    this.clientPenalty = 0; // in milliseconds
+    this.clientLimit = 100; // in milliseconds per message
+    this.clientPenalty = 1000; // in milliseconds
+    this.clients = {};
 };
 
 RateControl.prototype.setGlobalLimit = function (rate) {
     rate = Math.max(+rate, 0);
-    this.globalLimit = rate <= 0 ? 0 : 1000 / rate;
+    this.globalLimit = rate <= 0 ? 0 : RATE_CONTROL_BASE / rate;
 };
 
 RateControl.prototype.setClientLimit = function (rate, penalty) {
     rate = Math.max(+rate, 0);
-    this.clientLimit = rate <= 0 ? 0 : 1000 / rate;
+    this.clientLimit = rate <= 0 ? 0 : RATE_CONTROL_BASE / rate;
     this.clientPenalty = Math.max(+penalty, 0);
 };
 
-RateControl.prototype.accept = function () {
-    var nextMsgTime = new Date().getTime();
-    var globalNext = RATE_CONTROL_ALPHA * this.globalValue +
-        (1 - RATE_CONTROL_ALPHA) * (nextMsgTime - this.lastMsgTime);
+RateControl.prototype.lookupClient = function (id) {
+    var client = this.clients[id];
+    if (!client) {
+        client = {
+            last: new Date().getTime() - RATE_CONTROL_BASE,
+            rate: RATE_CONTROL_BASE,
+            disabled: 0
+        };
+        log('ratecontrol ' + id + ' created with ' + client.last +
+            ' ' + client.rate + ' ' + client.disabled);
+        this.clients[id] = client;
+    }
+    return client;
+};
 
-    if (globalNext < this.globalLimit) {
+RateControl.prototype.accept = function (clientId) {
+    var time = new Date().getTime();
+
+    var client = this.lookupClient(clientId);
+    if (client.disabled > time) {
+        log('ratecontrol ' + clientId + ' client penalty');
         return false;
     }
 
-    this.lastMsgTime = nextMsgTime;
-    this.globalValue = globalNext;
+    var clientNext = RATE_CONTROL_ALPHA * client.rate +
+        (1 - RATE_CONTROL_ALPHA) * (time - client.last);
+    if (clientNext < this.clientLimit) {
+        client.disabled = time + this.clientPenalty;
+        log('ratecontrol ' + clientId + ' client limit');
+        return false;
+    }
+
+    var globalNext = RATE_CONTROL_ALPHA * this.globalRate +
+        (1 - RATE_CONTROL_ALPHA) * (time - this.globalLast);
+    if (globalNext < this.globalLimit) {
+        log('ratecontrol ' + clientId + ' global limit');
+        return false;
+    }
+
+    this.globalLast = time;
+    this.globalRate = globalNext;
+    client.last = time;
+    client.rate = clientNext;
+    log('ratecontrol ' + clientId + ' accepted with ' +
+        client.last + ' ' + client.rate + ' ' + client.disabled);
     return true;
+};
+
+RateControl.prototype.heartbeat = function () {
+    var time = new Date().getTime();
+    for (var id in this.clients) {
+        var client = this.clients[id];
+        if (client.disabled > time) {
+            continue;
+        }
+
+        var clientNext = RATE_CONTROL_ALPHA * client.rate +
+            (1 - RATE_CONTROL_ALPHA) * (time - client.last);
+        if (clientNext >= RATE_CONTROL_BASE) {
+            delete this.clients[id];
+            log('ratecontrol ' + id + ' deleted');
+        }
+    }
 };
 
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
@@ -95,11 +148,16 @@ Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
 };
 
 Robot.prototype.heartbeat = function () {
+    this.rateControl.heartbeat();
     this.heartbeats += 1;
     if (this.heartbeats >= FORGET_TIME) {
         return false;
     }
     return true;
+};
+
+Robot.prototype.accept = function (uuid) {
+    return this.rateControl.accept(uuid);
 };
 
 Robot.prototype.isAlive = function () {
@@ -144,7 +202,7 @@ Robot.prototype.receiveFromRobot = function (msgType, timeout) {
     }
     var callbacks = this.callbacks[msgType];
 
-    return new Promise(function (resolve, reject) {
+    return new Promise(function (resolve) {
         callbacks.push(resolve);
         setTimeout(function () {
             var i = callbacks.indexOf(resolve);
@@ -589,7 +647,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.isAlive = function (robot) {
         robot = this._getRobot(robot);
-        if (robot) {
+        if (robot && robot.accept(this.socket.uuid)) {
             return robot.isAlive();
         }
         return false;
@@ -604,7 +662,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.setSpeed = function (robot, left, right) {
         robot = this._getRobot(robot);
-        if (robot) {
+        if (robot && robot.accept(this.socket.uuid)) {
             robot.setSpeed(left, right);
             return true;
         }
@@ -620,7 +678,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.setLed = function (robot, led, command) {
         robot = this._getRobot(robot);
-        if (robot) {
+        if (robot && robot.accept(this.socket.uuid)) {
             robot.setLed(led, command);
             return true;
         }
@@ -636,7 +694,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.beep = function (robot, msec, tone) {
         robot = this._getRobot(robot);
-        if (robot) {
+        if (robot && robot.accept(this.socket.uuid)) {
             robot.beep(msec, tone);
             return true;
         }
@@ -652,7 +710,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.infraLight = function (robot, msec, pwr) {
         robot = this._getRobot(robot);
-        if (robot) {
+        if (robot && robot.accept(this.socket.uuid)) {
             robot.infraLight(msec, pwr);
             return true;
         }
@@ -666,7 +724,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.getRange = function (robot) {
         robot = this._getRobot(robot);
-        if (robot) {
+        if (robot && robot.accept(this.socket.uuid)) {
             return robot.getRange().then(function (value) {
                 return value && value.range;
             });
@@ -681,7 +739,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.getTicks = function (robot) {
         robot = this._getRobot(robot);
-        if (robot) {
+        if (robot && robot.accept(this.socket.uuid)) {
             return robot.getTicks().then(function (value) {
                 return value && [value.left, value.right];
             });
@@ -698,7 +756,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.drive = function (robot, left, right) {
         robot = this._getRobot(robot);
-        if (robot) {
+        if (robot && robot.accept(this.socket.uuid)) {
             robot.drive(left, right);
             return true;
         }
@@ -716,9 +774,13 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
     RoboScape.prototype.send = function (robot, command) {
         // log('send ' + robot + ' ' + command);
         robot = this._getRobot(robot);
+
         if (robot && typeof command === 'string') {
             if (command.match(/^reset key$/)) {
                 return robot.setEncryption([]);
+            }
+            if (!robot.accept(this.socket.uuid)) {
+                return false;
             }
 
             command = robot.decrypt(command);
@@ -772,6 +834,7 @@ server.on('message', function (message, remote) {
     }
 });
 
+/* eslint no-console: off */
 if (process.env.ROBOSCAPE_PORT) {
     console.log('ROBOSCAPE_PORT is ' + process.env.ROBOSCAPE_PORT);
     server.bind(process.env.ROBOSCAPE_PORT || 1973);
