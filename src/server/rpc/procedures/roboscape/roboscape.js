@@ -39,94 +39,7 @@ var debug = require('debug'),
     SocketManager = require('../../../socket-manager'),
     FORGET_TIME = 120, // forgetting a robot in seconds
     RESPONSE_TIMEOUT = 200, // waiting for response in milliseconds
-    ROBOSCAPE_TYPE = process.env.ROBOSCAPE_TYPE || 'both',
-    RATE_CONTROL_BASE = 1000, // in milliseconds
-    RATE_CONTROL_ALPHA = 0.99; // decay constant
-
-var RateControl = function () {
-    this.globalLast = new Date().getTime() - RATE_CONTROL_BASE;
-    this.globalRate = RATE_CONTROL_BASE; // in milliseconds per message
-    this.globalLimit = 0; // in milliseconds per message
-    this.clientLimit = 100; // in milliseconds per message
-    this.clientPenalty = 1000; // in milliseconds
-    this.clients = {};
-};
-
-RateControl.prototype.setGlobalLimit = function (rate) {
-    rate = Math.max(+rate, 0);
-    this.globalLimit = rate <= 0 ? 0 : RATE_CONTROL_BASE / rate;
-};
-
-RateControl.prototype.setClientLimit = function (rate, penalty) {
-    rate = Math.max(+rate, 0);
-    this.clientLimit = rate <= 0 ? 0 : RATE_CONTROL_BASE / rate;
-    this.clientPenalty = Math.max(+penalty, 0);
-};
-
-RateControl.prototype.lookupClient = function (id) {
-    var client = this.clients[id];
-    if (!client) {
-        client = {
-            last: new Date().getTime() - RATE_CONTROL_BASE,
-            rate: RATE_CONTROL_BASE,
-            disabled: 0
-        };
-        log('ratecontrol ' + id + ' created with ' + client.last +
-            ' ' + client.rate + ' ' + client.disabled);
-        this.clients[id] = client;
-    }
-    return client;
-};
-
-RateControl.prototype.accept = function (clientId) {
-    var time = new Date().getTime();
-
-    var client = this.lookupClient(clientId);
-    if (client.disabled > time) {
-        log('ratecontrol ' + clientId + ' client penalty');
-        return false;
-    }
-
-    var clientNext = RATE_CONTROL_ALPHA * client.rate +
-        (1 - RATE_CONTROL_ALPHA) * (time - client.last);
-    if (clientNext < this.clientLimit) {
-        client.disabled = time + this.clientPenalty;
-        log('ratecontrol ' + clientId + ' client limit');
-        return false;
-    }
-
-    var globalNext = RATE_CONTROL_ALPHA * this.globalRate +
-        (1 - RATE_CONTROL_ALPHA) * (time - this.globalLast);
-    if (globalNext < this.globalLimit) {
-        log('ratecontrol ' + clientId + ' global limit');
-        return false;
-    }
-
-    this.globalLast = time;
-    this.globalRate = globalNext;
-    client.last = time;
-    client.rate = clientNext;
-    log('ratecontrol ' + clientId + ' accepted with ' +
-        client.last + ' ' + client.rate + ' ' + client.disabled);
-    return true;
-};
-
-RateControl.prototype.heartbeat = function () {
-    var time = new Date().getTime();
-    for (var id in this.clients) {
-        var client = this.clients[id];
-        if (client.disabled > time) {
-            continue;
-        }
-
-        var clientNext = RATE_CONTROL_ALPHA * client.rate +
-            (1 - RATE_CONTROL_ALPHA) * (time - client.last);
-        if (clientNext >= RATE_CONTROL_BASE) {
-            delete this.clients[id];
-            log('ratecontrol ' + id + ' deleted');
-        }
-    }
-};
+    ROBOSCAPE_TYPE = process.env.ROBOSCAPE_TYPE || 'both';
 
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
@@ -138,7 +51,23 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.callbacks = {}; // callbacks keyed by msgType
     this.encryption = []; // encryption key
     this.buttonDownTime = 0; // last time button was pressed
-    this.rateControl = new RateControl();
+    // rate control
+    this.totalCount = 0; // in messages per second
+    this.totalRate = 0; // in messages per second
+    this.clientRate = 0; // in messages per second
+    this.clientPenalty = 0; // in seconds
+    this.clientCounts = {};
+};
+
+Robot.prototype.setTotalRate = function (rate) {
+    log('set total rate ' + this.mac_addr + ' ' + rate);
+    this.totalRate = Math.max(rate, 0);
+};
+
+Robot.prototype.setClientRate = function (rate, penalty) {
+    log('set client rate ' + this.mac_addr + ' ' + rate + ' ' + penalty);
+    this.clientRate = Math.max(rate, 0);
+    this.clientPenalty = Math.min(Math.max(penalty, 0), 60);
 };
 
 Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
@@ -147,17 +76,55 @@ Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
     this.heartbeats = 0;
 };
 
+Robot.prototype.accepts = function (clientId) {
+    var client = this.clientCounts[clientId];
+    if (!client) {
+        client = {
+            count: 0,
+            penalty: 0
+        };
+        this.clientCounts[clientId] = client;
+    }
+
+    if (client.penalty > 0) {
+        log(clientId + ' client penalty');
+        return false;
+    }
+
+    if (this.clientRate !== 0 && client.count + 1 > this.clientRate) {
+        log(clientId + ' client rate violation');
+        client.penalty = 1 + this.clientPenalty;
+        return false;
+    }
+
+    if (this.totalRate !== 0 && this.totalCount + 1 > this.totalRate) {
+        log(clientId + ' total rate violation');
+        return false;
+    }
+
+    this.totalCount += 1;
+    client.count += 1;
+    return true;
+};
+
 Robot.prototype.heartbeat = function () {
-    this.rateControl.heartbeat();
+    this.totalCount = 0;
+    for (var id in this.clientCounts) {
+        var client = this.clientCounts[id];
+        client.count = 0;
+        if (client.penalty > 1) {
+            client.count = 0;
+            client.penalty -= 1;
+        } else {
+            delete this.clientCounts[id];
+        }
+    }
+
     this.heartbeats += 1;
     if (this.heartbeats >= FORGET_TIME) {
         return false;
     }
     return true;
-};
-
-Robot.prototype.accept = function (uuid) {
-    return this.rateControl.accept(uuid);
 };
 
 Robot.prototype.isAlive = function () {
@@ -647,7 +614,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.isAlive = function (robot) {
         robot = this._getRobot(robot);
-        if (robot && robot.accept(this.socket.uuid)) {
+        if (robot && robot.accepts(this.socket.uuid)) {
             return robot.isAlive();
         }
         return false;
@@ -662,7 +629,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.setSpeed = function (robot, left, right) {
         robot = this._getRobot(robot);
-        if (robot && robot.accept(this.socket.uuid)) {
+        if (robot && robot.accepts(this.socket.uuid)) {
             robot.setSpeed(left, right);
             return true;
         }
@@ -678,7 +645,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.setLed = function (robot, led, command) {
         robot = this._getRobot(robot);
-        if (robot && robot.accept(this.socket.uuid)) {
+        if (robot && robot.accepts(this.socket.uuid)) {
             robot.setLed(led, command);
             return true;
         }
@@ -694,7 +661,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.beep = function (robot, msec, tone) {
         robot = this._getRobot(robot);
-        if (robot && robot.accept(this.socket.uuid)) {
+        if (robot && robot.accepts(this.socket.uuid)) {
             robot.beep(msec, tone);
             return true;
         }
@@ -710,7 +677,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.infraLight = function (robot, msec, pwr) {
         robot = this._getRobot(robot);
-        if (robot && robot.accept(this.socket.uuid)) {
+        if (robot && robot.accepts(this.socket.uuid)) {
             robot.infraLight(msec, pwr);
             return true;
         }
@@ -724,7 +691,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.getRange = function (robot) {
         robot = this._getRobot(robot);
-        if (robot && robot.accept(this.socket.uuid)) {
+        if (robot && robot.accepts(this.socket.uuid)) {
             return robot.getRange().then(function (value) {
                 return value && value.range;
             });
@@ -739,7 +706,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.getTicks = function (robot) {
         robot = this._getRobot(robot);
-        if (robot && robot.accept(this.socket.uuid)) {
+        if (robot && robot.accepts(this.socket.uuid)) {
             return robot.getTicks().then(function (value) {
                 return value && [value.left, value.right];
             });
@@ -756,8 +723,39 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
      */
     RoboScape.prototype.drive = function (robot, left, right) {
         robot = this._getRobot(robot);
-        if (robot && robot.accept(this.socket.uuid)) {
+        if (robot && robot.accepts(this.socket.uuid)) {
             robot.drive(left, right);
+            return true;
+        }
+        return false;
+    };
+
+    /**
+     * Sets the total message limit for the given robot.
+     * @param {string} robot name of the robot (matches at the end)
+     * @param {number} rate number of messages per seconds
+     * @returns {boolean} True if the robot was found
+     */
+    RoboScape.prototype.setTotalRate = function (robot, rate) {
+        robot = this._getRobot(robot);
+        if (robot && robot.accepts(this.socket.uuid)) {
+            robot.setTotalRate(rate);
+            return true;
+        }
+        return false;
+    };
+
+    /**
+     * Sets the client message limit and penalty for the given robot.
+     * @param {string} robot name of the robot (matches at the end)
+     * @param {number} rate number of messages per seconds
+     * @param {number} penalty number seconds of penalty if rate is violated
+     * @returns {boolean} True if the robot was found
+     */
+    RoboScape.prototype.setClientRate = function (robot, rate, penalty) {
+        robot = this._getRobot(robot);
+        if (robot && robot.accepts(this.socket.uuid)) {
+            robot.setClientRate(rate, penalty);
             return true;
         }
         return false;
@@ -779,7 +777,7 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
             if (command.match(/^reset key$/)) {
                 return robot.setEncryption([]);
             }
-            if (!robot.accept(this.socket.uuid)) {
+            if (!robot.accepts(this.socket.uuid)) {
                 return false;
             }
 
@@ -811,6 +809,12 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
                     encryption.splice(0, 1);
                 }
                 return robot.setEncryption(encryption.map(Number));
+            } else if (command.match(/^set total rate (-?\d+)$/)) {
+                robot.setTotalRate(+RegExp.$1);
+                return true;
+            } else if (command.match(/^set client rate (-?\d+)[, ](-?\d+)$/)) {
+                robot.setClientRate(+RegExp.$1, +RegExp.$2);
+                return true;
             }
         }
         return false;
