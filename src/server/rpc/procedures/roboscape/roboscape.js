@@ -62,12 +62,19 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
 Robot.prototype.setTotalRate = function (rate) {
     log('set total rate ' + this.mac_addr + ' ' + rate);
     this.totalRate = Math.max(rate, 0);
+    this.sendToClient('set total rate', {
+        rate: this.totalRate
+    }, ['time', 'rate']);
 };
 
 Robot.prototype.setClientRate = function (rate, penalty) {
     log('set client rate ' + this.mac_addr + ' ' + rate + ' ' + penalty);
     this.clientRate = Math.max(rate, 0);
     this.clientPenalty = Math.min(Math.max(penalty, 0), 60);
+    this.sendToClient('set client rate', {
+        rate: this.clientRate,
+        penalty: this.clientPenalty
+    }, ['time', 'rate', 'penalty']);
 };
 
 Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
