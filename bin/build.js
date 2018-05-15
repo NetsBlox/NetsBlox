@@ -38,7 +38,11 @@ if (isDevEnv) {  // don't minify in dev
 } else {
     console.log('dev src length:', src.length);
 
-    final_code = ugly.minify(srcFiles, {outSourceMap: path.join(srcPath, 'netsblox-build.js.map')}).code;
+    const result = ugly.minify(src);
+    final_code = result.code;
+    if (result.error) {
+        throw result.error;
+    }
     console.log('output length:', final_code.length);
     console.log('compression ratio:', 1-(final_code.length/src.length));
 }
