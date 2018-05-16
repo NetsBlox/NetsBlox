@@ -1,10 +1,22 @@
 #include "abdrive360.h"
-#include "simpletools.h"
 #include "ping.h"
+#include "simpletools.h"
 #include "xbee.h"
 
 enum {
     BUFFER_SIZE = 200,
+    XBEE_DO_PIN = 4,
+    XBEE_DI_PIN = 3,
+    WHISKERS_LEFT_PIN = 8,
+    WHISKERS_RIGHT_PIN = 9,
+    PIEZO_SPEAKER_PIN = 2,
+    PING_SENSOR_PIN = 6,
+    BUTTON_PIN = 7,
+    LED_0_PIN = 26,
+    LED_1_PIN = 27,
+    INFRA_LIGHT_PIN = 5,
+    INFRA_LEFT_PIN = 11,
+    INFRA_RIGHT_PIN = 10,
 };
 
 fdserial* xbee;
@@ -80,8 +92,9 @@ void write_le32(int data)
 
 int main()
 {
-    input(1);
-    xbee = xbee_open(1, 0, 1);
+    input(XBEE_DO_PIN);
+    xbee = xbee_open(XBEE_DO_PIN, XBEE_DI_PIN, 1);
+
     xbee_send_api(xbee, "\x8\000NR", 4);
     xbee_send_api(xbee, "\x8\000IDvummiv", 10);
 
@@ -91,17 +104,21 @@ int main()
     xbee_send_api(xbee, "\x8\004MY", 4);
 
     int whiskers = 0;
+    int button = 0;
+    int infrared = 0;
+
     int slower = 0;
     while (1) {
+        int temp;
         buffer_len = xbee_recv_api(xbee, buffer, BUFFER_SIZE, 10);
 
         if (buffer_len == -1) {
-            if (++slower >= 100) {
+            if (++slower >= 100) { // alive
                 slower = 0;
                 xbee_send_api(xbee, "\x8\004MY", 4);
                 set_tx_headers('I');
                 xbee_send_api(xbee, buffer, buffer_len);
-            }                
+            }
         } else if (cmp_api_response(9, "\x88\001SL")) {
             memcpy(mac_addr + 2, buffer + 5, 4);
         } else if (cmp_api_response(7, "\x88\002SH")) {
@@ -118,58 +135,95 @@ int main()
             for (int i = 0; i < 4; i++)
                 print("%c%d", i == 0 ? ' ' : '.', ip4_addr[i]);
             print(" %d\n", ntohs(ip4_port));
-        } else if (cmp_rx_headers(16, 'B')) {
+        } else if (cmp_rx_headers(16, 'B')) { // beep
             int msec = *(short*)(buffer + 12);
             int tone = *(short*)(buffer + 14);
-            toggle(27);
-            freqout(2, msec, tone);
+            freqout(PIEZO_SPEAKER_PIN, msec, tone);
             set_tx_headers('B');
             write_le16(msec);
             write_le16(tone);
             xbee_send_api(xbee, buffer, buffer_len);
-        } else if (cmp_rx_headers(16, 'D')) {
+        } else if (cmp_rx_headers(15, 'G')) { // infra light
+            int msec = *(short*)(buffer + 12);
+            int pwr = *(buffer + 14);
+            int old = get_output(26);
+            dac_ctr(26, 0, pwr);
+            freqout(INFRA_LIGHT_PIN, msec, 38000);
+            dac_ctr_stop();
+            set_output(26, old);
+            set_tx_headers('G');
+            write_le16(msec);
+            buffer[buffer_len++] = pwr;
+            xbee_send_api(xbee, buffer, buffer_len);
+        } else if (cmp_rx_headers(16, 'S')) { // setSpeed
             int left = *(short*)(buffer + 12);
             int right = *(short*)(buffer + 14);
-            toggle(27);
             drive_speed(left, right);
-            set_tx_headers('D');
+            set_tx_headers('S');
             write_le16(left);
             write_le16(right);
             xbee_send_api(xbee, buffer, buffer_len);
-        } else if (cmp_rx_headers(12, 'R')) {
-            toggle(27);
-            int dist = ping_cm(5);
+        } else if (cmp_rx_headers(12, 'R')) { // getRange
+            int dist = ping_cm(PING_SENSOR_PIN);
             set_tx_headers('R');
             write_le16(dist);
             xbee_send_api(xbee, buffer, buffer_len);
-        } else if (cmp_rx_headers(12, 'T')) {
-            toggle(27);
+        } else if (cmp_rx_headers(12, 'T')) { // getTicks
             int left, right;
             drive_getTicks(&left, &right);
             set_tx_headers('T');
             write_le32(left);
             write_le32(-right); // this seems to be inverted
             xbee_send_api(xbee, buffer, buffer_len);
-        } else if (cmp_rx_headers(16, 'X')) {
+        } else if (cmp_rx_headers(16, 'D')) { // drive
             int left = *(short*)(buffer + 12);
             int right = *(short*)(buffer + 14);
-            toggle(27);
-            set_tx_headers('X');
+            set_tx_headers('D');
             write_le16(left);
             write_le16(right);
             xbee_send_api(xbee, buffer, buffer_len);
             drive_goto(left, right);
-        } else if (buffer_len >= 0) {
+        } else if (cmp_rx_headers(14, 'L')) { // setLed
+            int led = *(buffer + 12);
+            int state = *(buffer + 13);
+            set_tx_headers('L');
+            buffer[buffer_len++] = led;
+            buffer[buffer_len++] = state;
+            if (led == 0)
+                led = LED_0_PIN;
+            else
+                led = LED_1_PIN;
+            if (state == 0)
+                low(led);
+            else if (state == 1)
+                high(led);
+            else
+                toggle(led);
+            xbee_send_api(xbee, buffer, buffer_len);
+        } else if (buffer_len >= 0) { // unknown
             buffer_print(buffer_len);
         }
-        
-        int whiskers2 = 0x03 ^ ((input(3) << 1) | input(4));
-        if (whiskers != whiskers2) {
-            toggle(27);
-            whiskers = whiskers2;
+
+        temp = (input(WHISKERS_LEFT_PIN) << 1) | input(WHISKERS_RIGHT_PIN);
+        if (whiskers != temp) { // whiskers
+            whiskers = temp;
             set_tx_headers('W');
             buffer[buffer_len++] = whiskers;
             xbee_send_api(xbee, buffer, buffer_len);
-        }          
+        }
+        temp = input(BUTTON_PIN);
+        if (button != temp) { // user button
+            button = temp;
+            set_tx_headers('P');
+            buffer[buffer_len++] = button;
+            xbee_send_api(xbee, buffer, buffer_len);
+        }
+        temp = (input(INFRA_LEFT_PIN) << 1) | input(INFRA_RIGHT_PIN);
+        if (infrared != temp) { // infra red
+            infrared = temp;
+            set_tx_headers('F');
+            buffer[buffer_len++] = infrared;
+            xbee_send_api(xbee, buffer, buffer_len);
+        }
     }
 }
