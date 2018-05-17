@@ -12,16 +12,6 @@ engines:
     enabled: true
   fixme:
     enabled: true
-ratings:
-  paths:
-  - "**.css"
-  - "**.inc"
-  - "**.js"
-  - "**.jsx"
-  - "**.module"
-  - "**.php"
-  - "**.py"
-  - "**.rb"
 exclude_paths:
 - test/
 - src/client/Snap--Build-Your-Own-Blocks/
