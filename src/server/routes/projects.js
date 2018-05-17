@@ -265,7 +265,7 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
-            const origin = `${req.protocol}://${req.get('host')}`;
+            const origin = `${process.env.SERVER_PROTOCOL || req.protocol}://${req.get('host')}`;
             var username = req.session.username;
             log(`${username} requested shared project list from ${origin}`);
 
