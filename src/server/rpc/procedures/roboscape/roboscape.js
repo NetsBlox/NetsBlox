@@ -65,7 +65,7 @@ Robot.prototype.setTotalRate = function (rate) {
     this.totalRate = Math.max(rate, 0);
     this.sendToClient('set total rate', {
         rate: this.totalRate
-    }, ['time', 'rate']);
+    }, ['rate']);
 };
 
 Robot.prototype.setClientRate = function (rate, penalty) {
@@ -75,7 +75,7 @@ Robot.prototype.setClientRate = function (rate, penalty) {
     this.sendToClient('set client rate', {
         rate: this.clientRate,
         penalty: this.clientPenalty
-    }, ['time', 'rate', 'penalty']);
+    }, ['rate', 'penalty']);
 };
 
 Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
@@ -345,12 +345,17 @@ Robot.prototype.onMessage = function (message) {
         return;
     }
 
+    var oldTimestamp = this.timestamp;
     this.timestamp = message.readUInt32LE(6);
     var command = message.toString('ascii', 10, 11);
     var state;
 
     if (command === 'I' && message.length === 11) {
-        // do nothing
+        if (this.timestamp < oldTimestamp) {
+            log('robot was rebooted');
+            this.setSeqNum(-1);
+            this.encryption = [];
+        }
     } else if (command === 'B' && message.length === 15) {
         this.sendToClient('beep', {
             msec: message.readInt16LE(11),
@@ -458,7 +463,7 @@ Robot.prototype.setEncryption = function (keys) {
     if (keys instanceof Array) {
         this.encryption = keys;
         log(this.mac_addr + ' encryption set to [' + keys + ']');
-        this.sendToClient('set key', {}, ['time']);
+        this.sendToClient('set key', {}, []);
         return true;
     } else {
         log('invalid encryption key ' + keys);
@@ -793,7 +798,7 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
         if (robot && typeof command === 'string') {
             if (command.match(/^reset key$/)) {
                 robot.setSeqNum(-1);
-                return robot.setEncryption([]);
+                robot.encryption = [];
             }
 
             command = robot.decrypt(command);
