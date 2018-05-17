@@ -57,6 +57,7 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.clientRate = 0; // in messages per second
     this.clientPenalty = 0; // in seconds
     this.clientCounts = {};
+    this.lastSeqNum = -1; // initially disabled
 };
 
 Robot.prototype.setTotalRate = function (rate) {
@@ -83,7 +84,16 @@ Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
     this.heartbeats = 0;
 };
 
-Robot.prototype.accepts = function (clientId) {
+Robot.prototype.setSeqNum = function (seqNum) {
+    this.lastSeqNum = seqNum;
+};
+
+Robot.prototype.accepts = function (clientId, seqNum) {
+    if (this.lastSeqNum >= 0 && (seqNum <= this.lastSeqNum ||
+            seqNum > this.lastSeqNum + 100)) {
+        return false;
+    }
+
     var client = this.clientCounts[clientId];
     if (!client) {
         client = {
@@ -784,43 +794,60 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
             if (command.match(/^reset key$/)) {
                 return robot.setEncryption([]);
             }
-            if (!robot.accepts(this.socket.uuid)) {
+
+            command = robot.decrypt(command);
+            var seqNum = -1;
+            if (command.match(/^(\d+)[, ](.*)$/)) {
+                seqNum = +RegExp.$1;
+                command = RegExp.$2;
+            }
+            if (!robot.accepts(this.socket.uuid, seqNum)) {
                 return false;
             }
 
-            command = robot.decrypt(command);
-
             if (command.match(/^is alive$/)) {
+                robot.setSeqNum(seqNum);
                 robot.sendToClient('is alive', {}, ['time']);
                 return robot.isAlive();
             } else if (command.match(/^beep (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
                 robot.beep(+RegExp.$1, +RegExp.$2);
                 return true;
             } else if (command.match(/^set speed (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
                 robot.setSpeed(+RegExp.$1, +RegExp.$2);
                 return true;
             } else if (command.match(/^drive (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
                 robot.drive(+RegExp.$1, +RegExp.$2);
                 return true;
             } else if (command.match(/^get range$/)) {
+                robot.setSeqNum(seqNum);
                 return robot.getRange().then(function (value) {
                     return value && value.range;
                 });
             } else if (command.match(/^get ticks$/)) {
+                robot.setSeqNum(seqNum);
                 return robot.getTicks().then(function (value) {
                     return value && [value.left, value.right];
                 });
             } else if (command.match(/^set key(| -?\d+([ ,]-?\d+)*)$/)) {
+                robot.setSeqNum(seqNum);
                 var encryption = RegExp.$1.split(/[, ]/);
                 if (encryption[0] === '') {
                     encryption.splice(0, 1);
                 }
                 return robot.setEncryption(encryption.map(Number));
             } else if (command.match(/^set total rate (-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
                 robot.setTotalRate(+RegExp.$1);
                 return true;
             } else if (command.match(/^set client rate (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
                 robot.setClientRate(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^reset seq$/)) {
+                robot.setSeqNum(-1);
                 return true;
             }
         }
