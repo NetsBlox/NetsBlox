@@ -355,24 +355,24 @@ Robot.prototype.onMessage = function (message) {
         this.sendToClient('beep', {
             msec: message.readInt16LE(11),
             tone: message.readInt16LE(13),
-        }, ['time', 'msec', 'tone']);
+        }, ['msec', 'tone']);
     } else if (command === 'S' && message.length === 15) {
         this.sendToClient('set speed', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        }, ['time', 'left', 'right']);
+        }, ['left', 'right']);
     } else if (command === 'W' && message.length === 12) {
         state = message.readUInt8(11);
         this.sendToClient('whiskers', {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
-        }, ['time', 'left', 'right']);
+        }, ['left', 'right']);
     } else if (command === 'P' && message.length === 12) {
         state = message.readUInt8(11) == 0;
         if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
             this.sendToClient('button', {
                 pressed: state
-            }, ['time', 'pressed']);
+            }, ['pressed']);
         }
         if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
             if (state) {
@@ -392,33 +392,33 @@ Robot.prototype.onMessage = function (message) {
     } else if (command === 'R' && message.length === 13) {
         this.sendToClient('get range', {
             range: message.readInt16LE(11),
-        }, ['time', 'range']);
+        }, ['range']);
     } else if (command === 'T' && message.length === 19) {
         this.sendToClient('get ticks', {
             left: message.readInt32LE(11),
             right: message.readInt32LE(15),
-        }, ['time', 'left', 'right']);
+        }, ['left', 'right']);
     } else if (command === 'D' && message.length === 15) {
         this.sendToClient('drive', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        }, ['time', 'left', 'right']);
+        }, ['left', 'right']);
     } else if (command === 'L' && message.length === 13) {
         this.sendToClient('set led', {
             led: message.readUInt8(11),
             command: message.readUInt8(12)
-        }, ['time', 'led', 'command']);
+        }, ['led', 'command']);
     } else if (command === 'F' && message.length === 12) {
         state = message.readUInt8(11);
         this.sendToClient('infra event', {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
-        }, ['time', 'left', 'right']);
+        }, ['left', 'right']);
     } else if (command === 'G' && message.length === 14) {
         this.sendToClient('infra light', {
             msec: message.readInt16LE(11),
             pwr: Math.round(100 - message.readUInt8(13) / 2.55)
-        }, ['time', 'msec', 'pwr']);
+        }, ['msec', 'pwr']);
     } else {
         log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
@@ -792,6 +792,7 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
 
         if (robot && typeof command === 'string') {
             if (command.match(/^reset key$/)) {
+                robot.setSeqNum(-1);
                 return robot.setEncryption([]);
             }
 
@@ -807,7 +808,7 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
 
             if (command.match(/^is alive$/)) {
                 robot.setSeqNum(seqNum);
-                robot.sendToClient('is alive', {}, ['time']);
+                robot.sendToClient('is alive', {}, []);
                 return robot.isAlive();
             } else if (command.match(/^beep (-?\d+)[, ](-?\d+)$/)) {
                 robot.setSeqNum(seqNum);
@@ -845,6 +846,14 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
             } else if (command.match(/^set client rate (-?\d+)[, ](-?\d+)$/)) {
                 robot.setSeqNum(seqNum);
                 robot.setClientRate(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^set led (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
+                robot.setLed(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^infra light (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
+                robot.infraLight(+RegExp.$1, +RegExp.$2);
                 return true;
             } else if (command.match(/^reset seq$/)) {
                 robot.setSeqNum(-1);
