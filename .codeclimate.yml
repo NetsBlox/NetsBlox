@@ -1,6 +1,10 @@
 ---
-engines:
+plugins:
   csslint:
+    enabled: true
+  eslint:
+    enabled: true
+  fixme:
     enabled: true
   duplication:
     enabled: true
@@ -8,10 +12,6 @@ engines:
       languages:
         javascript:
           mass_threshold: 140
-  eslint:
-    enabled: true
-  fixme:
-    enabled: true
 exclude_paths:
 - test/
 - src/client/Snap--Build-Your-Own-Blocks/
