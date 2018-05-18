@@ -145,11 +145,11 @@ Robot.prototype.heartbeat = function () {
 };
 
 Robot.prototype.isAlive = function () {
-    return this.heartBeats <= 2;
+    return this.heartbeats <= 2;
 };
 
 Robot.prototype.isSending = function () {
-    return this.heartBeats < FORGET_TIME;
+    return this.heartbeats < FORGET_TIME;
 };
 
 Robot.prototype.addClientSocket = function (uuid) {
