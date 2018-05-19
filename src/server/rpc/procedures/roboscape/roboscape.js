@@ -330,7 +330,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
                     msgType: 'robot message',
                     content: {
                         robot: myself.mac_addr,
-                        message: myself.encrypt(text)
+                        message: myself.encrypt(text.trim())
                     }
                 });
             }
@@ -463,7 +463,9 @@ Robot.prototype.setEncryption = function (keys) {
     if (keys instanceof Array) {
         this.encryption = keys;
         log(this.mac_addr + ' encryption set to [' + keys + ']');
-        this.sendToClient('set key', {}, []);
+        this.sendToClient('set key', {
+            keys: keys.join(' ')
+        }, [keys]);
         return true;
     } else {
         log('invalid encryption key ' + keys);
@@ -799,6 +801,7 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
             if (command.match(/^reset key$/)) {
                 robot.setSeqNum(-1);
                 robot.encryption = [];
+                return true;
             }
 
             command = robot.decrypt(command);
