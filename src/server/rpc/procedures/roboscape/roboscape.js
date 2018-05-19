@@ -63,19 +63,12 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
 Robot.prototype.setTotalRate = function (rate) {
     log('set total rate ' + this.mac_addr + ' ' + rate);
     this.totalRate = Math.max(rate, 0);
-    this.sendToClient('set total rate', {
-        rate: this.totalRate
-    }, ['rate']);
 };
 
 Robot.prototype.setClientRate = function (rate, penalty) {
     log('set client rate ' + this.mac_addr + ' ' + rate + ' ' + penalty);
     this.clientRate = Math.max(rate, 0);
     this.clientPenalty = Math.min(Math.max(penalty, 0), 60);
-    this.sendToClient('set client rate', {
-        rate: this.clientRate,
-        penalty: this.clientPenalty
-    }, ['rate', 'penalty']);
 };
 
 Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
@@ -148,8 +141,8 @@ Robot.prototype.isAlive = function () {
     return this.heartbeats <= 2;
 };
 
-Robot.prototype.isSending = function () {
-    return this.heartbeats < FORGET_TIME;
+Robot.prototype.isMostlyAlive = function () {
+    return this.heartbeats <= FORGET_TIME;
 };
 
 Robot.prototype.addClientSocket = function (uuid) {
@@ -287,6 +280,26 @@ Robot.prototype.drive = function (left, right) {
     this.sendToRobot(message);
 };
 
+Robot.prototype.commandToClient = function (command) {
+    if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
+        var mac_addr = this.mac_addr;
+        this.sockets.forEach(function (uuid) {
+            var socket = SocketManager.getSocket(uuid);
+            if (socket) {
+                socket.send({
+                    type: 'message',
+                    dstId: socket.role,
+                    msgType: 'robot command',
+                    content: {
+                        robot: mac_addr,
+                        command: command
+                    }
+                });
+            }
+        });
+    }
+};
+
 Robot.prototype.sendToClient = function (msgType, content, fields) {
     var myself = this;
 
@@ -360,24 +373,24 @@ Robot.prototype.onMessage = function (message) {
         this.sendToClient('beep', {
             msec: message.readInt16LE(11),
             tone: message.readInt16LE(13),
-        }, ['msec', 'tone']);
+        }, ['time', 'msec', 'tone']);
     } else if (command === 'S' && message.length === 15) {
-        this.sendToClient('set speed', {
+        this.sendToClient('speed', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        }, ['left', 'right']);
+        }, ['time', 'left', 'right']);
     } else if (command === 'W' && message.length === 12) {
         state = message.readUInt8(11);
         this.sendToClient('whiskers', {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
-        }, ['left', 'right']);
+        }, ['time', 'left', 'right']);
     } else if (command === 'P' && message.length === 12) {
         state = message.readUInt8(11) == 0;
         if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
             this.sendToClient('button', {
                 pressed: state
-            }, ['pressed']);
+            }, ['time', 'pressed']);
         }
         if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
             if (state) {
@@ -395,35 +408,35 @@ Robot.prototype.onMessage = function (message) {
             }
         }
     } else if (command === 'R' && message.length === 13) {
-        this.sendToClient('get range', {
+        this.sendToClient('range', {
             range: message.readInt16LE(11),
-        }, ['range']);
+        }, ['time', 'range']);
     } else if (command === 'T' && message.length === 19) {
-        this.sendToClient('get ticks', {
+        this.sendToClient('ticks', {
             left: message.readInt32LE(11),
             right: message.readInt32LE(15),
-        }, ['left', 'right']);
+        }, ['time', 'left', 'right']);
     } else if (command === 'D' && message.length === 15) {
         this.sendToClient('drive', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        }, ['left', 'right']);
+        }, ['time', 'left', 'right']);
     } else if (command === 'L' && message.length === 13) {
         this.sendToClient('set led', {
             led: message.readUInt8(11),
             command: message.readUInt8(12)
-        }, ['led', 'command']);
+        }, ['time', 'led', 'command']);
     } else if (command === 'F' && message.length === 12) {
         state = message.readUInt8(11);
         this.sendToClient('infra event', {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
-        }, ['left', 'right']);
+        }, ['time', 'left', 'right']);
     } else if (command === 'G' && message.length === 14) {
         this.sendToClient('infra light', {
             msec: message.readInt16LE(11),
             pwr: Math.round(100 - message.readUInt8(13) / 2.55)
-        }, ['msec', 'pwr']);
+        }, ['time', 'msec', 'pwr']);
     } else {
         log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
@@ -463,9 +476,6 @@ Robot.prototype.setEncryption = function (keys) {
     if (keys instanceof Array) {
         this.encryption = keys;
         log(this.mac_addr + ' encryption set to [' + keys + ']');
-        this.sendToClient('set key', {
-            keys: keys.join(' ')
-        }, [keys]);
         return true;
     } else {
         log('invalid encryption key ' + keys);
@@ -581,7 +591,7 @@ RoboScape.prototype._getRegistered = function () {
     var state = this._state,
         robots = [];
     for (var mac_addr in state.registered) {
-        if (this._robots[mac_addr].isSending()) {
+        if (this._robots[mac_addr].isMostlyAlive()) {
             robots.push(mac_addr);
         } else {
             delete state.registered[mac_addr];
@@ -804,6 +814,9 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
                 return true;
             }
 
+            // for replay attacks
+            robot.commandToClient(command);
+
             command = robot.decrypt(command);
             var seqNum = -1;
             if (command.match(/^(\d+)[, ](.*)$/)) {
@@ -816,7 +829,7 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
 
             if (command.match(/^is alive$/)) {
                 robot.setSeqNum(seqNum);
-                robot.sendToClient('is alive', {}, []);
+                robot.sendToClient('alive', {}, ['time']);
                 return robot.isAlive();
             } else if (command.match(/^beep (-?\d+)[, ](-?\d+)$/)) {
                 robot.setSeqNum(seqNum);
