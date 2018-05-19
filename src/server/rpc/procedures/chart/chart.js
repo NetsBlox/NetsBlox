@@ -1,3 +1,9 @@
+/**
+ * Charting service powered by Gnuplot
+ *
+ * @service
+ */
+
 const ApiConsumer = require('../utils/api-consumer'),
     rpcUtils = require('../utils'),
     gnuPlot = require('./node-gnuplot.js'),
@@ -24,20 +30,20 @@ const defaults = {
 
 // calculates data stats
 // TODO refactor so it process one axis (one array) at a time. con: lose some performance
-function calcRanges(lines, isCategorical){
+function calcRanges(lines, xShouldBeNumeric){
     let stats = {
         y: {
             min: Number.MAX_VALUE, max: -1 * Number.MAX_VALUE
         }
     };
-    if (! isCategorical){
+    if (xShouldBeNumeric){
         stats.x = {
             min: Number.MAX_VALUE, max: -1 * Number.MAX_VALUE
         }; 
     }
     lines.forEach(line => {
 
-        if (! isCategorical){
+        if (xShouldBeNumeric){
             // min max of x
             let xs = line.map(pt => pt[0]);
             let xmin = Math.min.apply(null, xs);
@@ -59,9 +65,8 @@ function calcRanges(lines, isCategorical){
     return stats;
 }
 
-function prepareData(input, options) {
+function prepareData(input, xShouldBeNumeric) {
     // if the input is one line convert it to appropriate format
-    const xShouldBeNumeric = !options.isCategorical && !options.isTimeSeries;
 
     if (! Array.isArray(input[0][0])){
         chart._logger.trace('one line input detected');
@@ -129,15 +134,16 @@ chart.draw = function(lines, options){
     });
     options = _.merge({}, defaults, options || {});
 
+    const xShouldBeNumeric = !options.isCategorical && !options.isTimeSeries;
     // prepare and check for errors in data
     try {
-        lines = prepareData(lines, options);
+        lines = prepareData(lines, xShouldBeNumeric);
     } catch (e) {
         this._logger.error(e);
         this.response.status(500).send(e);
         return null;
     }
-    let stats = calcRanges(lines, options.isCategorical);
+    let stats = calcRanges(lines, xShouldBeNumeric);
     this._logger.info('data stats:', stats);
     const relativePadding = {
         y: stats.y.range !== 0 ? stats.y.range * 0.05 : 1
@@ -149,7 +155,7 @@ chart.draw = function(lines, options){
     opts.yRange = {min: stats.y.min - relativePadding.y, max: stats.y.max + relativePadding.y};
     if (options.yRange.length === 2) opts.yRange = {min: options.yRange[0], max: options.yRange[1]};
 
-    if (! options.isCategorical){
+    if (xShouldBeNumeric){
         relativePadding.x = stats.x.range !== 0 ? stats.x.range * 0.05 : 1;
         opts.xRange = {min: stats.x.min - relativePadding.x, max: stats.x.max + relativePadding.x};
         if (options.xRange.length === 2) opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
