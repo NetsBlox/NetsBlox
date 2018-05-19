@@ -252,7 +252,7 @@ Robot.prototype.infraLight = function (msec, pwr) {
 
 Robot.prototype.getRange = function () {
     log('get range ' + this.mac_addr);
-    var promise = this.receiveFromRobot('get range');
+    var promise = this.receiveFromRobot('range');
     var message = Buffer.alloc(1);
     message.write('R', 0, 1);
     this.sendToRobot(message);
@@ -261,7 +261,7 @@ Robot.prototype.getRange = function () {
 
 Robot.prototype.getTicks = function () {
     log('get ticks ' + this.mac_addr);
-    var promise = this.receiveFromRobot('get ticks');
+    var promise = this.receiveFromRobot('ticks');
     var message = Buffer.alloc(1);
     message.write('T', 0, 1);
     this.sendToRobot(message);
