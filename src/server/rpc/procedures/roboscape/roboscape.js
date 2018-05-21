@@ -238,7 +238,7 @@ Robot.prototype.beep = function (msec, tone) {
     msec = Math.min(Math.max(+msec, 0), 1000);
     tone = Math.min(Math.max(+tone, 0), 20000);
 
-    log('set beep ' + this.mac_addr + ' ' + msec + ' ' + tone);
+    log('beep ' + this.mac_addr + ' ' + msec + ' ' + tone);
     var message = Buffer.alloc(5);
     message.write('B', 0, 1);
     message.writeUInt16LE(msec, 1);
@@ -467,7 +467,7 @@ Robot.prototype.encrypt = function (text, decrypt) {
         while (code < 32) {
             code += 127 - 32;
         }
-        while (code > 127) {
+        while (code >= 127) {
             code -= 127 - 32;
         }
         output += String.fromCharCode(code);
