@@ -63,12 +63,16 @@ GoogleMaps.prototype._pixelsAt = function(lat, lon, map) {
 };
 
 
-GoogleMaps.prototype._getGoogleParams = function(options) {
+// precisionLimit if present would limit the precision of coordinate parameters
+GoogleMaps.prototype._getGoogleParams = function(options, precisionLimit) {
     // Create the params for Google
     var params = [];
     params.push('size=' + options.width + 'x' + options.height);
     params.push('scale=' + options.scale);
-    params.push('center=' + options.center.lat + ',' + options.center.lon);
+    // reduce lat lon precisionLimit to a reasonable value to reduce cache misses
+    let centerLat = precisionLimit ? parseFloat(options.center.lat).toFixed(precisionLimit) : options.center.lat;
+    let centerLon = precisionLimit ? parseFloat(options.center.lon).toFixed(precisionLimit) : options.center.lon;
+    params.push('center=' + centerLat + ',' + centerLon);
     params.push('key=' + key);
     params.push('zoom='+(options.zoom || '12'));
     params.push('maptype='+(options.mapType));
