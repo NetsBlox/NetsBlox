@@ -71,6 +71,14 @@ Robot.prototype.setClientRate = function (rate, penalty) {
     this.clientPenalty = Math.min(Math.max(penalty, 0), 60);
 };
 
+Robot.prototype.resetRates = function () {
+    log('reset rate limits');
+    this.totalRate = 0;
+    this.clientRate = 0;
+    this.clientPenalty = 0;
+    this.clientCounts = {};
+};
+
 Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
     this.ip4_addr = ip4_addr;
     this.ip4_port = ip4_port;
@@ -367,7 +375,8 @@ Robot.prototype.onMessage = function (message) {
         if (this.timestamp < oldTimestamp) {
             log('robot was rebooted');
             this.setSeqNum(-1);
-            this.encryption = [];
+            this.setEncryption([]);
+            this.resetRates();
         }
     } else if (command === 'B' && message.length === 15) {
         this.sendToClient('beep', {
@@ -604,7 +613,7 @@ RoboScape.prototype._getRegistered = function () {
  * Registers for receiving messages from the given robots.
  * @param {array} robots one or a list of robots
  */
-RoboScape.prototype.eavesdrop = function (robots) {
+RoboScape.prototype.listen = function (robots) {
     var state = this._state,
         uuid = this.socket.uuid;
 
@@ -810,7 +819,7 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
         if (robot && typeof command === 'string') {
             if (command.match(/^reset key$/)) {
                 robot.setSeqNum(-1);
-                robot.encryption = [];
+                robot.setEncryption([]);
                 return true;
             }
 
@@ -878,6 +887,9 @@ if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
                 return true;
             } else if (command.match(/^reset seq$/)) {
                 robot.setSeqNum(-1);
+                return true;
+            } else if (command.match(/^reset rates$/)) {
+                robot.resetRates();
                 return true;
             }
         }
