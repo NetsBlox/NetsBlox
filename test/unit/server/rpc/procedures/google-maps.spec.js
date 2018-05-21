@@ -67,4 +67,34 @@ describe('googlemaps', function() {
 
     });
 
+    describe('getGoogleParams', function() {
+
+        const opts = {
+            center: {
+                lat: 36.2645738345627,
+                lon: -82.54322767345267,
+            },
+            width: (640 / 1),
+            height: (480 / 1),
+            zoom: 15,
+            scale: 1,
+            mapType: 'roadmap'
+        };
+
+        it('should round coordinates properly', function() {
+            let params = googlemaps._rpc._getGoogleParams(opts, 4);
+            let outCoords = params.match(/center=(.*)&key/)[1];
+            const expectedCoords = '36.2646,-82.5432';
+            assert.equal(outCoords, expectedCoords);
+        });
+
+        it('should not round coordinates', function() {
+            let params = googlemaps._rpc._getGoogleParams(opts);
+            let outCoords = params.match(/center=(.*)&key/)[1];
+            const expectedCoords = '36.2645738345627,-82.54322767345268';
+            assert.equal(outCoords, expectedCoords);
+        });
+
+    });
+
 });
