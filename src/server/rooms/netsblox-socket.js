@@ -273,7 +273,7 @@ class NetsBloxSocket {
     }
 
     ping() {
-        this.send({type: 'ping'});
+        this.send({type: 'ping'}, true);
     }
 
     isSocketOpen() {
@@ -382,7 +382,7 @@ class NetsBloxSocket {
         return this._room.sendToEveryone(msg);
     }
 
-    send (msg) {
+    send (msg, silent) {
         // Set the defaults
         msg.type = msg.type || 'message';
         if (msg.type === 'message') {
@@ -390,7 +390,10 @@ class NetsBloxSocket {
         }
 
         msg = JSON.stringify(msg);
-        this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
+        if (!silent) {
+            this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
+        }
+
         if (this.isSocketOpen()) {
             this._socket.send(msg);
         } else if (this.isSocketDead()) {
