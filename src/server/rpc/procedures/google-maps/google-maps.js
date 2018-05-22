@@ -63,12 +63,16 @@ GoogleMaps.prototype._pixelsAt = function(lat, lon, map) {
 };
 
 
-GoogleMaps.prototype._getGoogleParams = function(options) {
+// precisionLimit if present would limit the precision of coordinate parameters
+GoogleMaps.prototype._getGoogleParams = function(options, precisionLimit) {
     // Create the params for Google
     var params = [];
     params.push('size=' + options.width + 'x' + options.height);
     params.push('scale=' + options.scale);
-    params.push('center=' + options.center.lat + ',' + options.center.lon);
+    // reduce lat lon precisionLimit to a reasonable value to reduce cache misses
+    let centerLat = precisionLimit ? parseFloat(options.center.lat).toFixed(precisionLimit) : options.center.lat;
+    let centerLon = precisionLimit ? parseFloat(options.center.lon).toFixed(precisionLimit) : options.center.lon;
+    params.push('center=' + centerLat + ',' + centerLon);
     params.push('key=' + key);
     params.push('zoom='+(options.zoom || '12'));
     params.push('maptype='+(options.mapType));
@@ -128,7 +132,10 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
     // Check the cache
     this._recordUserMap(this.socket, options).then(() => {
 
-        cache.wrap(url, cacheCallback => {
+        // allow the lookups that are "close" to an already visited location hit the cache
+        const PRECISION = 7; // 6 or 5 is probably safe
+        const cacheKey = this._getGoogleParams(options, PRECISION);
+        cache.wrap(cacheKey, cacheCallback => {
             // Get the image -> not in cache!
             trace('request params:', options);
             trace('url is '+url);
