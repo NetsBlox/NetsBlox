@@ -612,6 +612,15 @@ RoboScape.prototype._getRegistered = function () {
 /**
  * Registers for receiving messages from the given robots.
  * @param {array} robots one or a list of robots
+ * @deprecated
+ */
+RoboScape.prototype.eavesdrop = function (robots) {
+    return this.listen(robots);
+};
+
+/**
+ * Registers for receiving messages from the given robots.
+ * @param {array} robots one or a list of robots
  */
 RoboScape.prototype.listen = function (robots) {
     var state = this._state,
