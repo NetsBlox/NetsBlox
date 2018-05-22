@@ -133,7 +133,7 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
     this._recordUserMap(this.socket, options).then(() => {
 
         // allow the lookups that are "close" to an already visited location hit the cache
-        const PRECISION = 7; // 6 or 5 is probabbly safe
+        const PRECISION = 7; // 6 or 5 is probably safe
         const cacheKey = this._getGoogleParams(options, PRECISION);
         cache.wrap(cacheKey, cacheCallback => {
             // Get the image -> not in cache!
