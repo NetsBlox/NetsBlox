@@ -135,9 +135,9 @@
             mailer.sendMail({
                 to: this.email,
                 subject: 'Temporary Password',
-                markdown: 'Hello '+this.username+',\nYour NetsBlox password has been '+
+                html: '<p>Hello '+this.username+',<br/><br/>Your NetsBlox password has been '+
                     'temporarily set to '+password+'. Please change it after '+
-                    'logging in.'
+                    'logging in.</p>'
             });
         }
     }
