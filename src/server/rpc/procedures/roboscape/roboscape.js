@@ -561,7 +561,7 @@ RoboScape.prototype._robots = {};
 RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
     if (!robot) {
-        log('discovering ' + mac_addr);
+        log('discovering ' + mac_addr + ' at ' + ip4_addr + ':' + ip4_port);
         robot = new Robot(mac_addr, ip4_addr, ip4_port);
         this._robots[mac_addr] = robot;
     } else {
