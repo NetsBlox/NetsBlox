@@ -518,8 +518,7 @@
 
         getStorageId() {
             return {
-                name: this.name,
-                owner: this.owner
+                _id: this._id
             };
         }
 
