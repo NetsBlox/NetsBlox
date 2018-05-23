@@ -96,7 +96,7 @@ var getRoomsNamed = function(name, user, owner) {
     return getProject.then(project => {
         const activeRoom = RoomManager.getExistingRoom(owner, name);
         const areSame = !!activeRoom && !!project &&
-            activeRoom.originTime === project.originTime;
+            activeRoom.getProjectId().equals(project.getId());
 
 
         if (project) {
