@@ -332,8 +332,8 @@ describe('Server Tests', function() {
     });
 
     describe('development', function() {
-        it('should host the client test endpoint on /dev/', function(done) {
-            index.get('/dev/')
+        it('should host the client test endpoint on /test/', function(done) {
+            index.get('/test/')
                 .expect(200)
                 .end(done);
         });
