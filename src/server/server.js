@@ -122,12 +122,12 @@ Server.prototype.configureRoutes = function() {
         res.json(sockets);
     });
 
-    // Add dev endpoints
+    // Add dev/test endpoints
     if (isDevMode) {
-        const CLIENT_TEST_ROOT = path.join(__dirname, '..', '..', 'test', 'unit', 'client');
+        const CLIENT_TEST_ROOT = path.join(CLIENT_ROOT, 'test');
         const testTpl = dot.template(fs.readFileSync(path.join(CLIENT_TEST_ROOT, 'index.dot')));
-        this.app.use('/dev/', express.static(__dirname + '/../../test/unit/client/'));
-        this.app.get('/dev/', (req, res) => {
+        this.app.use('/test/', express.static(__dirname + '/../../test/unit/client/'));
+        this.app.get('/test/', (req, res) => {
             return middleware.setUsername(req, res).then(() => {
                 const contents = {
                     username: req.session.username,

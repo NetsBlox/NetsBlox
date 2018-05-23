@@ -167,7 +167,7 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
             from: 'bug-reporter',
             to: this.maintainer,
             subject: subject,
-            markdown: body,
+            html: `<p>${body.split('\n').join('<br/>')}</p>`,
             attachments: [data]
         };
 
