@@ -262,13 +262,6 @@ class ActiveRoom {
             });
     }
 
-    save() {
-        if (this._project) {  // has been saved
-            return this._project.save();
-        }
-        return Q();
-    }
-
     sendFrom (socket, msg) {
         let sockets = this.sockets()
             .filter(s => s !== socket);  // Don't send to origin
@@ -491,8 +484,7 @@ class ActiveRoom {
         // This should be called when the room layout changes in a way that
         // effects the datamodel (eg, created role). Changes about clients
         // moving around should call sendUpdateMsg
-        this.sendUpdateMsg();
-        return this.save();
+        return this.sendUpdateMsg();
     }
 
     serialize() {  // Create project xml from the current room

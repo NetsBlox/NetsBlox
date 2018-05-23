@@ -246,7 +246,8 @@ module.exports = [
                     let project = null;
                     return user.getNewName(name)
                         .then(_name => name = _name)
-                        .then(() => activeRoom.save())
+                        // Do I need to save the new role content?
+                        //.then(() => activeRoom.save())
                         .then(() => activeRoom.getProject().getCopy(user))
                         .then(_project => project = _project)
                         .then(() => project.setName(name))
