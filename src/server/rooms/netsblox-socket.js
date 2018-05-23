@@ -626,8 +626,8 @@ NetsBloxSocket.MessageHandlers = {
 
     'request-room-state': function() {
         if (this.hasRoom()) {
-            var msg = this._room.getStateMsg();
-            this.send(msg);
+            return this._room.getStateMsg()
+                .then(msg => this.send(msg));
         }
     },
 
