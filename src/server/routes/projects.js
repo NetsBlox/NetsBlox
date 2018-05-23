@@ -226,9 +226,11 @@ module.exports = [
         Parameters: 'socketId',
         Method: 'Post',
         Note: '',
-        middleware: ['hasSocket', 'isLoggedIn'],
+        middleware: ['hasSocket', 'isLoggedIn', 'setUser'],
         Handler: function(req, res) {
-            var username = req.session.username,
+            // Save the latest role content (include xml in the req)
+            // TODO
+            var {user, username} = req.session.username,
                 {socketId} = req.body,
                 socket = SocketManager.getSocket(socketId),
 
@@ -240,21 +242,18 @@ module.exports = [
             }
 
             // make a copy of the project for the given user and save it!
-            return Users.get(username)
-                .then(user => {
-                    let name = `Copy of ${activeRoom.name}`;
-                    let project = null;
-                    return user.getNewName(name)
-                        .then(_name => name = _name)
-                        .then(() => activeRoom.save())
-                        .then(() => activeRoom.getProject().getCopy(user))
-                        .then(_project => project = _project)
-                        .then(() => project.setName(name))
-                        .then(() => project.persist())
-                        .then(() => {
-                            trace(`${username} saved a copy of project: ${name}`);
-                            res.sendStatus(200);
-                        });
+            let name = `Copy of ${activeRoom.name}`;
+            let project = null;
+            return user.getNewName(name)
+                .then(_name => name = _name)
+                .then(() => activeRoom.save())
+                .then(() => activeRoom.getProject().getCopy(user))
+                .then(_project => project = _project)
+                .then(() => project.setName(name))
+                .then(() => project.persist())
+                .then(() => {
+                    trace(`${username} saved a copy of project: ${name}`);
+                    res.sendStatus(200);
                 });
         }
     },
