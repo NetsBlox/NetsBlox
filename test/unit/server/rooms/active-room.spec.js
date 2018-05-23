@@ -150,15 +150,18 @@ describe('active-room', function() {
             }).then(_room => {
                 room = _room;
                 s1 = room.getSocketsAt('role1')[0];
-                room.add(s1, 'role2');
-                done();
-            });
+                return room.add(s1, 'role2');
+            })
+            .nodeify(done);
         });
 
         it('should send update message on changing roles', function() {
             const msg = s1._socket.message(-1);
             assert.equal(msg.type, 'room-roles');
-            assert.equal(msg.occupants.role2[0].username, 'first');
+
+            const roles = Object.values(msg.roles);
+            const role2 = roles.find(role => role.name === 'role2');
+            assert.equal(role2.occupants[0].username, 'first');
         });
 
         it('should remove the socket from the original role', function() {
@@ -171,23 +174,29 @@ describe('active-room', function() {
     });
 
     describe('add', function() {
-        var s1, s2;
+        let room, s1, s2;
 
         before(function(done) {
-            utils.createRoom({
+            const config = {
                 name: 'add-test',
-                owner: 'first',
+                owner: 'owner',
                 roles: {
                     role1: [],
                     role2: [],
+                    role3: ['owner'],
                 }
-            }).then(room => {
-                s1 = utils.createSocket('role1');
-                room.add(s1, 'role1');
-                s2 = utils.createSocket('role2');
-                room.add(s2, 'role2');
-                done();
-            });
+            };
+            return utils.createRoom(config)
+                .then(result => {
+                    room = result;
+                    s1 = utils.createSocket('role1');
+                    return room.add(s1, 'role1');
+                })
+                .then(() => {
+                    s2 = utils.createSocket('role2');
+                    return room.add(s2, 'role2');
+                })
+                .nodeify(done);
         });
 
         it('should update the role name', function() {
@@ -209,12 +218,20 @@ describe('active-room', function() {
                 role1: [s1.username],
                 role2: [s2.username]
             };
-            const actual = s1._socket.message(-1).occupants;
+            const stateMsg = s1._socket.message(-1);
+            const roles = Object.values(stateMsg.roles);
+            const role1 = roles.find(role => role.name === 'role1');
+            const role2 = roles.find(role => role.name === 'role2');
 
             // We only care about the usernames
-            actual.role1 = actual.role1.map(info => info.username);
-            actual.role2 = actual.role2.map(info => info.username);
-            assert(_.isEqual(actual, expected));
+            assert.deepEqual(
+                role1.occupants.map(info => info.username),
+                expected.role1
+            );
+            assert.deepEqual(
+                role2.occupants.map(info => info.username),
+                expected.role2
+            );
         });
     });
 
@@ -234,9 +251,8 @@ describe('active-room', function() {
                 alice = room.getSocketsAt('role1')[0];
                 bob = room.getSocketsAt('role2')[0];
 
-                room.add(alice, 'role2');
-                done();
-            });
+                return room.add(alice, 'role2');
+            }).nodeify(done);
         });
 
         it('should both receive update messages', function() {
@@ -246,7 +262,8 @@ describe('active-room', function() {
 
         it('should send correct update message', function() {
             const msg = alice._socket.message(-1);
-            const usersAtRole2 = msg.occupants.role2.map(info => info.username);
+            const role2 = Object.values(msg.roles).find(role => role.name === 'role2');
+            const usersAtRole2 = role2.occupants.map(info => info.username);
             assert(_.isEqual(usersAtRole2, ['bob', 'alice']));
         });
 
