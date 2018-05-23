@@ -238,11 +238,8 @@ class ActiveRoom {
         return this.changeName();
     }
 
-    changeName(name, force, inPlace) {
+    getValidName(name, force) {
         let owner = null;
-        // Check if this project is already saved for the owner.
-        //   - If so, keep the same name
-        //   - Else, request a new name
         name = name || this.name;
         return this.getOwner()
             .then(_owner => {
@@ -264,7 +261,14 @@ class ActiveRoom {
                     return owner.getNewName(name, activeRoomNames);
                 }
                 return name;
-            })
+            });
+    }
+
+    changeName(name, force, inPlace) {
+        // Check if this project is already saved for the owner.
+        //   - If so, keep the same name
+        //   - Else, request a new name
+        return this.getValidName(name, force)
             .then(name => {
                 const project = this.getProject();
                 if (inPlace && project) {
