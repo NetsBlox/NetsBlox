@@ -154,30 +154,45 @@ class ActiveRoom {
     }
 
     getStateMsg () {
-        const state = this.getState();
-        state.type = 'room-roles';
-        return state;
+        return this.getState().then(state => {
+            state.type = 'room-roles';
+            return state;
+        });
     }
 
     getState () {
-        const occupants = {};
+        const roleNames = this.getRoleNames();
 
-        this.getRoleNames()
-            .forEach(role => occupants[role] =
-                this.getSocketsAt(role).map(socket => {
-                    return {
-                        uuid: socket.uuid,
-                        username: utils.isSocketUuid(socket.username) ?
-                            null : socket.username
-                    };
-                }));
+        return this._project.getRoleIdsFor(roleNames)
+            .then(ids => {
+                // sort the role names by their id
+                const rolesInfo = {};
+                const roles = roleNames
+                    .map((name, i) => [name, ids[i]])
+                    .sort((r1, r2) => r1[1] < r2[1] ? -1 : 1);
 
-        return {
-            owner: this.owner,
-            collaborators: this.getCollaborators(),
-            name: this.name,
-            occupants: occupants
-        };
+                roles.forEach(pair => {
+                    // Change this to use the socket id
+                    const [name, id] = pair;
+                    const occupants = this.getSocketsAt(name)
+                        .map(socket => {
+                            return {
+                                uuid: socket.uuid,
+                                username: utils.isSocketUuid(socket.username) ?
+                                    null : socket.username
+                            };
+                        });
+                    rolesInfo[id] = {name, occupants};
+                });
+
+                return {
+                    owner: this.owner,
+                    id: this.getProjectId(),
+                    collaborators: this.getCollaborators(),
+                    name: this.name,
+                    roles: rolesInfo
+                };
+            });
     }
 
     setStorage(store) {
@@ -478,9 +493,10 @@ class ActiveRoom {
     }
 
     sendUpdateMsg () {
-        var msg = this.getStateMsg();
-
-        this.sockets().forEach(socket => socket.send(msg));
+        return this.getStateMsg()
+            .then(msg => {
+                this.sockets().forEach(socket => socket.send(msg));
+            });
     }
 
     onRolesChanged() {

@@ -124,9 +124,14 @@ BugReporter.prototype.getRoomState = function(socket) {
         return Q({error: 'no associated room'});
     }
 
-    const state = room.getState();
-    state.projectId = room.getProjectId();
-    return room.getRoleActionIds()
+    const projectId = room.getProjectId();
+    let state = null;
+    return room.getState()
+        .then(roomState => {
+            state = roomState;
+            state.projectId = projectId;
+            return room.getRoleActionIds();
+        })
         .then(roleActionIds => {
             state.roleActionIds = roleActionIds;
             return state;
