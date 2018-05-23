@@ -98,7 +98,7 @@ class ActiveRoom {
 
     add (socket, role) {
         this.silentAdd(socket, role);
-        this.sendUpdateMsg();
+        return this.sendUpdateMsg();
     }
 
     silentAdd (socket, role) {
@@ -438,9 +438,7 @@ class ActiveRoom {
         if (!this.roles[role]) {
             this._logger.trace(`Adding role ${role}`);
             this.roles[role] = [];
-            if (content) {
-                return this.setRole(role, content || utils.getEmptyRole(role));
-            }
+            return this.setRole(role, content || utils.getEmptyRole(role));
         }
         return Q();
     }
