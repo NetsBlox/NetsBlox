@@ -110,7 +110,14 @@ int main()
     xbee = xbee_open(XBEE_DO_PIN, XBEE_DI_PIN, 1);
 
     xbee_send_api(xbee, "\x8\000NR", 4);
-    xbee_send_api(xbee, "\x8\000IDvummiv", 10);
+    if (0) {
+        xbee_send_api(xbee, "\x8\000IDvummiv", 10);
+    } else {
+        xbee_send_api(xbee, "\x8\000IDrobonet", 11);
+        xbee_send_api(xbee, "\x8\000EE\002", 5);
+        xbee_send_api(xbee, "\x8\000PKcybercamp", 13);
+        pause(100); // do not overflow the xbee buffer
+    }
 
     xbee_send_api(xbee, "\x8\001SL", 4);
     xbee_send_api(xbee, "\x8\002SH", 4);

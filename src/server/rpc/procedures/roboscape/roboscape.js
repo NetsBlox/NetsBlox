@@ -25,7 +25,7 @@
  * 
  * Environment variables:
  *  ROBOSCAPE_PORT: set it to the UDP port (1973) to enable this module
- *  ROBOSCAPE_TYPE: sets the NetsBlox interface type, can be "security", 
+ *  ROBOSCAPE_MODE: sets the NetsBlox interface type, can be "security", 
  *      "native" or "both" (default)
  */
 
@@ -39,7 +39,7 @@ var debug = require('debug'),
     SocketManager = require('../../../socket-manager'),
     FORGET_TIME = 120, // forgetting a robot in seconds
     RESPONSE_TIMEOUT = 200, // waiting for response in milliseconds
-    ROBOSCAPE_TYPE = process.env.ROBOSCAPE_TYPE || 'both';
+    ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
 
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
@@ -289,7 +289,7 @@ Robot.prototype.drive = function (left, right) {
 };
 
 Robot.prototype.commandToClient = function (command) {
-    if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
+    if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         var mac_addr = this.mac_addr;
         this.sockets.forEach(function (uuid) {
             var socket = SocketManager.getSocket(uuid);
@@ -330,7 +330,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     this.sockets.forEach(function (uuid) {
         var socket = SocketManager.getSocket(uuid);
         if (socket) {
-            if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
+            if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
                 socket.send({
                     type: 'message',
                     dstId: socket.role,
@@ -339,7 +339,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
                 });
             }
 
-            if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
+            if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
                 var text = msgType;
                 for (var i = 0; i < fields.length; i++) {
                     text += ' ' + content[fields[i]];
@@ -396,12 +396,12 @@ Robot.prototype.onMessage = function (message) {
         }, ['time', 'left', 'right']);
     } else if (command === 'P' && message.length === 12) {
         state = message.readUInt8(11) == 0;
-        if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
+        if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
             this.sendToClient('button', {
                 pressed: state
             }, ['time', 'pressed']);
         }
-        if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
+        if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
             if (state) {
                 this.buttonDownTime = new Date().getTime();
                 setTimeout(function (robot, pressed) {
@@ -641,7 +641,7 @@ RoboScape.prototype.listen = function (robots) {
     return ok;
 };
 
-if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
+if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
     /**
      * Returns the MAC addresses of all robots.
      * @returns {array}
@@ -805,7 +805,7 @@ if (ROBOSCAPE_TYPE === 'native' || ROBOSCAPE_TYPE === 'both') {
     };
 }
 
-if (ROBOSCAPE_TYPE === 'security' || ROBOSCAPE_TYPE === 'both') {
+if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
     /**
      * Sends a textual command to the robot
      * @param {string} robot name of the robot (matches at the end)
