@@ -274,7 +274,8 @@ class ActiveRoom {
                 if (inPlace && project) {
                     this.name = name;
                     return project.setName(name)
-                        .then(() => this.update(name));
+                        .then(() => this.update(name))
+                        .then(() => name);
                 } else {
                     return this.update(name).then(() => name);
                 }
