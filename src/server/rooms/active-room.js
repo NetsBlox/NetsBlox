@@ -238,11 +238,8 @@ class ActiveRoom {
         return this.changeName();
     }
 
-    changeName(name, force, inPlace) {
+    getValidName(name, force) {
         let owner = null;
-        // Check if this project is already saved for the owner.
-        //   - If so, keep the same name
-        //   - Else, request a new name
         name = name || this.name;
         return this.getOwner()
             .then(_owner => {
@@ -264,24 +261,25 @@ class ActiveRoom {
                     return owner.getNewName(name, activeRoomNames);
                 }
                 return name;
-            })
+            });
+    }
+
+    changeName(name, force, inPlace) {
+        // Check if this project is already saved for the owner.
+        //   - If so, keep the same name
+        //   - Else, request a new name
+        return this.getValidName(name, force)
             .then(name => {
                 const project = this.getProject();
                 if (inPlace && project) {
                     this.name = name;
                     return project.setName(name)
-                        .then(() => this.update(name));
+                        .then(() => this.update(name))
+                        .then(() => name);
                 } else {
                     return this.update(name).then(() => name);
                 }
             });
-    }
-
-    save() {
-        if (this._project) {  // has been saved
-            return this._project.save();
-        }
-        return Q();
     }
 
     sendFrom (socket, msg) {
@@ -505,8 +503,7 @@ class ActiveRoom {
         // This should be called when the room layout changes in a way that
         // effects the datamodel (eg, created role). Changes about clients
         // moving around should call sendUpdateMsg
-        this.sendUpdateMsg();
-        return this.save();
+        return this.sendUpdateMsg();
     }
 
     serialize() {  // Create project xml from the current room

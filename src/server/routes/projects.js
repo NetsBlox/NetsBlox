@@ -163,19 +163,31 @@ module.exports = [
         Parameters: 'roleName,projectName,currentProjectName,ownerId,overwrite,srcXml,mediaXml',
         Method: 'Post',
         Note: '',
-        middleware: ['isLoggedIn'],
+        middleware: ['isLoggedIn', 'setUser'],
         Handler: function(req, res) {
-            const username = req.session.username;
+            const {user, username} = req.session;
             const {projectName, roleName, ownerId, currentProjectName, overwrite} = req.body;
             const {srcXml, mediaXml} = req.body;
-
 
             const saveAs = () => {
                 const roleData = {
                     SourceCode: srcXml,
                     Media: mediaXml
                 };
-                activeRoom.changeName(projectName)
+                // If the projectName is different from currentProjectName,
+                // we should make a copy of the project and update the room
+                const makeCopy = projectName !== currentProjectName;
+                let prepareProject = Q();
+                if (makeCopy) {
+                    prepareProject = activeRoom.getProject().getCopy(user)
+                        .then(project => {
+                            activeRoom.setStorage(project);
+                            return activeRoom.changeName(projectName, null, true)
+                                .then(name => trace('changed name to', name));
+                        });
+                }
+
+                return prepareProject
                     .then(() => activeRoom.getProject().archive())
                     .then(() => activeRoom.setRole(roleName, roleData))
                     .then(() => activeRoom.getProject().persist())
@@ -198,8 +210,13 @@ module.exports = [
 
             // Check that the user can edit the project?
             const activeRoom = RoomManager.getExistingRoom(ownerId, currentProjectName);
+            if (!activeRoom) {
+                error(`Could not find active room for "${username}" - cannot save!`);
+                return res.status(500).send('ERROR: active room not found');
+            }
+
             if (overwrite && projectName !== currentProjectName) {
-                trace(`overwriting ${projectName} with ${currentProjectName} for ${username}`);
+                trace(`overwriting ${currentProjectName} with ${projectName} for ${username}`);
 
                 const otherRoom = RoomManager.getExistingRoom(username, projectName);
                 const isSame = otherRoom === activeRoom;
@@ -245,7 +262,6 @@ module.exports = [
             let project = null;
             return user.getNewName(name)
                 .then(_name => name = _name)
-                .then(() => activeRoom.save())
                 .then(() => activeRoom.getProject().getCopy(user))
                 .then(_project => project = _project)
                 .then(() => project.setName(name))

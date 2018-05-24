@@ -604,8 +604,7 @@ NetsBloxSocket.MessageHandlers = {
     'elevate-permissions': function(msg) {
         if (this.isOwner()) {
             var username = msg.username;
-            this._room.addCollaborator(username);
-            this._room.save();
+            return this._room.addCollaborator(username);
         }
     },
 

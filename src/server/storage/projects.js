@@ -341,72 +341,6 @@
                 .then(() => this);
         }
 
-        save() {
-            const query = {$set: {}};
-            const options = {};
-
-            this._logger.trace(`saving project ${this.owner}/${this.name}`);
-            query.$set.lastUpdatedAt = new Date();
-
-            let next = Q();
-            if (this._room) {  // update if attached to a room
-                const nameChanged = this.name !== this._room.name;
-                const ownerLoggedIn = utils.isSocketUuid(this.owner) &&
-                    this._room.owner !== this.owner;
-
-                if (ownerLoggedIn) {
-                    query.$set.owner = this._room.owner;
-                }
-
-                if (nameChanged) {
-                    query.$set.name = this._room.name;
-                    next = this.getRawProject()
-                        .then(project => {
-                            if (this.isDeleted()) return;
-
-                            if (!project.transient) {  // create a copy
-                                this._logger.trace(`duplicating project (save as) ${this.name}->${this._room.name}`);
-                                this.name = query.$set.name;
-                                // covert the roles keys to match expected format
-                                Object.keys(project.roles).forEach(roleId => {
-                                    project[`roles.${roleId}`] = project.roles[roleId];
-                                });
-                                delete project.roles;
-                                delete project._id;
-
-                                this.originTime = Date.now();
-                                project.originTime = this.originTime;
-                                this._room.originTime = this.originTime;
-
-                                query.$set = _.extend({}, project, query.$set);
-                                options.upsert = true;
-                            } else {
-                                this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
-                            }
-                        });
-                }
-            }
-            return next
-                .then(() => {
-                    if (this.isDeleted()) return;
-                    return this._execUpdate(query, options);
-                })
-                .then(() => {
-                    if (this.isDeleted()) {
-                        this._logger.trace(`project has been deleted while saving: ${this.uuid()}`);
-                        return;
-                    }
-
-                    this._logger.trace(`saved project ${this.owner}/${this.name}`);
-                    this.owner = query.$set.owner || this.owner;
-                    this.name = query.$set.name || this.name;
-                })
-                .catch(err => {
-                    this._logger.warn(`project not saved: ${err}`);
-                    throw err;
-                });
-        }
-
         getLastUpdatedRoleName() {
             return this.getRawRoles()
                 .then(roles => utils.sortByDateField(roles, 'Updated', -1).shift().ProjectName);
@@ -420,16 +354,14 @@
             if (this.isDeleted()) return Promise.reject('cannot call persist: project has been deleted!');
             const query = {$set: {transient: false}};
             this._logger.trace(`persisting project ${this.owner}/${this.name}`);
-            return this._execUpdate(query)
-                .then(() => this.save());
+            return this._execUpdate(query);
         }
 
         unpersist() {
             if (this.isDeleted()) return Promise.reject('cannot call unpersist: project has been deleted!');
             const query = {$set: {transient: true}};
             this._logger.trace(`unpersisting project ${this.owner}/${this.name}`);
-            return this._execUpdate(query)
-                .then(() => this.save());
+            return this._execUpdate(query);
         }
 
         archive() {  // Archive a copy of the current project
@@ -518,8 +450,7 @@
 
         getStorageId() {
             return {
-                name: this.name,
-                owner: this.owner
+                _id: this._id
             };
         }
 
