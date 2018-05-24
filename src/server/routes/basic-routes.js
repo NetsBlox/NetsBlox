@@ -247,7 +247,7 @@ module.exports = [
                     if (isJson) {
                         let agentType = useragent.is(req.headers['user-agent']);
                         if (agentType.safari) {
-                            result = result.filter(ex => ex.roleNames.length == 1)
+                            result = result.filter(ex => ex.roleNames.length == 1);
                         }
                         return res.json(result);
                     } else {
