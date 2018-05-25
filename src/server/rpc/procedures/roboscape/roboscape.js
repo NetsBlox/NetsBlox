@@ -851,7 +851,15 @@ if (process.env.ROBOSCAPE_PORT) {
     server.bind(process.env.ROBOSCAPE_PORT || 1973);
 
     setTimeout(RoboScape.prototype._heartbeat, 1000);
-    module.exports = RoboScape;
 } else {
     console.log('ROBOSCAPE_PORT is not set (to 1973), RoboScape is disabled');
 }
+
+RoboScape.isSupported = function() {
+    if (!process.env.ROBOSCAPE_PORT) {
+        console.log('ROBOSCAPE_PORT is not set (to 1973), RoboScape is disabled');
+    }
+    return !!process.env.ROBOSCAPE_PORT;
+};
+
+module.exports = RoboScape;
