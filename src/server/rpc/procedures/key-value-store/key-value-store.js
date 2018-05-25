@@ -66,13 +66,12 @@ KeyValueStore.get = function(key) {
 };
 
 KeyValueStore.put = function(key, value) {
-    // Validate the variable names
-    // TODO
     var keys = getKeys(key),
         response = this.response;
 
-    validateKeys(keys);
     logger.trace(`Looking up key "${key}"`);
+
+    validateKeys(keys);
     getStore()
         .then(store => {
             var result = store,
