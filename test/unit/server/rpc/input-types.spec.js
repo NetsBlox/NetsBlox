@@ -112,6 +112,16 @@ describe('RPC Input Types', function() {
                 let rawInput = '181';
                 assert.throws(() => typesParser[type](rawInput, '-180', '180'), /180/);
             });
+
+            it('should throw if below minimum (w/o max)', () => {
+                let rawInput = '-181';
+                assert.throws(() => typesParser[type](rawInput, '-180'), /180/);
+            });
+
+            it('should accept if above minimum (w/o max)', () => {
+                const rawInput = '10';
+                typesParser[type](rawInput, '9');
+            });
         });
 
     });
