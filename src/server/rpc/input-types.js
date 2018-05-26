@@ -30,7 +30,14 @@ types.BoundedNumber = (input, min, max) => {
     const number = types.Number(input);
     min = parseFloat(min);
     max = parseFloat(max);
-    if (number < min || max < number) {
+    if (isNaN(max)) {  // only minimum specified
+        if (number < min || max < number) {
+            throw new Error(`Number must be greater than ${min}`);
+        }
+        return number;
+    }
+
+    if (number < min || max < number) {  // both min and max bounds
         throw new Error(`Number must be between ${min} and ${max}`);
     }
     return number;
