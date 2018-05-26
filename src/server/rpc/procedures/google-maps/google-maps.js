@@ -244,7 +244,7 @@ GoogleMaps.prototype.getYFromLatitude = function(latitude) {
  * @param {Number} x x value of map image
  * @returns {Longitude} Longitude of the x value from the image
  */
-GoogleMaps.prototype.getLongitude = function(x){
+GoogleMaps.prototype.getLongitudeFromX = function(x){
     return this._getMapInfo(this.socket.role).then(mapInfo => {
         let coords = this._coordsAt(x,0, mapInfo);
         return coords.lon;
@@ -256,11 +256,33 @@ GoogleMaps.prototype.getLongitude = function(x){
  * @param {Number} y y value of map image
  * @returns {Latitude} Latitude of the y value from the image
  */
-GoogleMaps.prototype.getLatitude = function(y){
+GoogleMaps.prototype.getLatitudeFromY = function(y){
     return this._getMapInfo(this.socket.role).then(mapInfo => {
         let coords = this._coordsAt(0,y, mapInfo);
         return coords.lat;
     });
+};
+
+/**
+ * Convert x value of map image to longitude.
+ * @param {Number} x x value of map image
+ * @returns {Longitude} Longitude of the x value from the image
+ *
+ * @deprecated
+ */
+GoogleMaps.prototype.getLongitude = function(x){
+    return this.getLongitudeFromX(x);
+};
+
+/**
+ * Convert y value of map image to latitude.
+ * @param {Number} y y value of map image
+ * @returns {Latitude} Latitude of the y value from the image
+ *
+ * @deprecated
+ */
+GoogleMaps.prototype.getLatitude = function(y){
+    return this.getLatitudeFromY(y);
 };
 
 /**
