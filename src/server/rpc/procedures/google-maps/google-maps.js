@@ -167,14 +167,31 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
     });
 };
 
+/**
+ * Get a map image of the given region.
+ * @param {Latitude} latitude Latitude of center point
+ * @param {Longitude} longitude Longitude of center point
+ * @param {BoundedNumber<0>} width Image width
+ * @param {BoundedNumber<0>} height Image height
+ * @param {BoundedNumber<0>} zoom Zoom level of map image
+ * @returns {Image} Map image
+ */
 GoogleMaps.prototype.getMap = function(latitude, longitude, width, height, zoom){
 
-    // this._getMap.bind(this, latitude, longitude, width, height, zoom);
     this._getMap(latitude, longitude, width, height, zoom, 'roadmap');
 
     return null;
 };
 
+/**
+ * Get a satellite map image of the given region.
+ * @param {Latitude} latitude Latitude of center point
+ * @param {Longitude} longitude Longitude of center point
+ * @param {BoundedNumber<0>} width Image width
+ * @param {BoundedNumber<0>} height Image height
+ * @param {BoundedNumber<0>} zoom Zoom level of map image
+ * @returns {Image} Map image
+ */
 GoogleMaps.prototype.getSatelliteMap = function(latitude, longitude, width, height, zoom){
 
     this._getMap(latitude, longitude, width, height, zoom, 'satellite');
@@ -182,20 +199,39 @@ GoogleMaps.prototype.getSatelliteMap = function(latitude, longitude, width, heig
     return null;
 };
 
-
+/**
+ * Get a terrain map image of the given region.
+ * @param {Latitude} latitude Latitude of center point
+ * @param {Longitude} longitude Longitude of center point
+ * @param {BoundedNumber<0>} width Image width
+ * @param {BoundedNumber<0>} height Image height
+ * @param {BoundedNumber<0>} zoom Zoom level of map image
+ * @returns {Image} Map image
+ */
 GoogleMaps.prototype.getTerrainMap = function(latitude, longitude, width, height, zoom){
 
     this._getMap(latitude, longitude, width, height, zoom, 'terrain');
 
     return null;
 };
+
+/**
+ * Convert longitude to the x value on the map image.
+ * @param {Longitude} longitude Longitude coordinate
+ * @returns {Number} Map x coordinate of the given longitude
+ */
 GoogleMaps.prototype.getXFromLongitude = function(longitude) {
     return this._getMapInfo(this.socket.role).then(mapInfo => {
         let pixels = this._pixelsAt(0,longitude, mapInfo);
         return pixels.x;
     });
 };
-//
+
+/**
+ * Convert latitude to the y value on the map image.
+ * @param {Latitude} latitude Latitude coordinate
+ * @returns {Number} Map y coordinate of the given latitude
+ */
 GoogleMaps.prototype.getYFromLatitude = function(latitude) {
     return this._getMapInfo(this.socket.role).then(mapInfo => {
         let pixels = this._pixelsAt(latitude,0, mapInfo);
@@ -203,6 +239,11 @@ GoogleMaps.prototype.getYFromLatitude = function(latitude) {
     });
 };
 
+/**
+ * Convert x value of map image to longitude.
+ * @param {Number} x x value of map image
+ * @returns {Longitude} Longitude of the x value from the image
+ */
 GoogleMaps.prototype.getLongitude = function(x){
     return this._getMapInfo(this.socket.role).then(mapInfo => {
         let coords = this._coordsAt(x,0, mapInfo);
@@ -210,6 +251,11 @@ GoogleMaps.prototype.getLongitude = function(x){
     });
 };
 
+/**
+ * Convert y value of map image to latitude.
+ * @param {Number} y y value of map image
+ * @returns {Latitude} Latitude of the y value from the image
+ */
 GoogleMaps.prototype.getLatitude = function(y){
     return this._getMapInfo(this.socket.role).then(mapInfo => {
         let coords = this._coordsAt(0,y, mapInfo);
@@ -245,7 +291,14 @@ GoogleMaps.prototype.getImageCoordinates = function(latitude, longitude){
     });
 };
 
-
+/**
+ * Get the straight line distance between two points in meters.
+ * @param {Latitude} startLatitude Latitude of start point
+ * @param {Longitude} startLongitude Longitude of start point
+ * @param {Latitude} endLatitude Latitude of end point
+ * @param {Longitude} endLongitude Longitude of end point
+ * @returns {Number} Distance in meters
+ */
 GoogleMaps.prototype.getDistance = function(startLatitude, startLongitude, endLatitude, endLongitude){
     return geolib.getDistance(
         {latitude: startLatitude, longitude: startLongitude},
@@ -284,9 +337,28 @@ var mapGetter = function(minMax, attr) {
     };
 };
 
+/**
+ * Get the maximum longitude of the current map.
+ * @returns {Longitude}
+ */
 GoogleMaps.prototype.maxLongitude = mapGetter('max', 'lon');
+
+/**
+ * Get the maximum latitude of the current map.
+ * @returns {Longitude}
+ */
 GoogleMaps.prototype.maxLatitude = mapGetter('max', 'lat');
+
+/**
+ * Get the minimum longitude of the current map.
+ * @returns {Longitude}
+ */
 GoogleMaps.prototype.minLongitude = mapGetter('min', 'lon');
+
+/**
+ * Get the minimum latitude of the current map.
+ * @returns {Longitude}
+ */
 GoogleMaps.prototype.minLatitude = mapGetter('min', 'lat');
 
 GoogleMaps.isSupported = () => {
