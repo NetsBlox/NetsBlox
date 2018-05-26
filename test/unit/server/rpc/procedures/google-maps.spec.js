@@ -20,6 +20,8 @@ describe('googlemaps', function() {
             ['getTerrainMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
             ['getLongitude', ['x']],
             ['getLatitude', ['y']],
+            ['getLongitudeFromX', ['x']],
+            ['getLatitudeFromY', ['y']],
             ['getXFromLongitude', ['longitude']],
             ['getYFromLatitude', ['latitude']],
             ['getImageCoordinates', ['latitude', 'longitude']],
