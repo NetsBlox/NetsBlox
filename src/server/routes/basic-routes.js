@@ -2,7 +2,6 @@
 var R = require('ramda'),
     _ = require('lodash'),
     Q = require('q'),
-    useragent = require('useragent'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     PublicProjects = require('../storage/public-projects'),
     UserAPI = require('./users'),
@@ -245,10 +244,6 @@ module.exports = [
             return Q(this.getExamplesIndex(isJson))
                 .then(result => {
                     if (isJson) {
-                        let agentType = useragent.is(req.headers['user-agent']);
-                        if (agentType.safari) {
-                            result = result.filter(ex => ex.roleNames.length == 1);
-                        }
                         return res.json(result);
                     } else {
                         return res.send(result);
