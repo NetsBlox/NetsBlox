@@ -68,14 +68,17 @@ describe('cloud-variables', function() {
                 .catch(err => assert(err.message.includes('password')));
         });
 
-        describe('locking variables', function() {
+        describe.only('locking variables', function() {
             const name = 'lock-var-test';
             const initialValue = 'world';
             const client1 = '_netsblox_1';
             const client2 = '_netsblox_2';
+
             beforeEach(() => {
-                cloudvariables.socket.uuid = client1;
-                return cloudvariables.setVariable(name, initialValue)
+                cloudvariables._rpc._setMaxLockAge(5 * 1000 * 60);
+                cloudvariables.setRequester(client1);
+                return utils.reset()
+                    .then(() => cloudvariables.setVariable(name, initialValue))
                     .then(() => cloudvariables.lockVariable(name));
             });
 
@@ -100,7 +103,7 @@ describe('cloud-variables', function() {
                     .catch(err => assert(err.message.includes('locked')));
             });
 
-            it.only('should block on subsequent locks', function() {
+            it('should block on subsequent locks', function() {
                 const events = [];
 
                 cloudvariables.setRequester(client2);
@@ -115,10 +118,33 @@ describe('cloud-variables', function() {
                     .then(() => assert(events[0] === 'release lock'));
             });
 
-            // only can be unlocked by the locker
-            // TODO
+            it('should only be able to be unlocked by the "locker"', function(done) {
+                cloudvariables.setRequester(client2);
+                cloudvariables.unlockVariable(name)
+                    .then(() => done('expected unlock variable to throw error'))
+                    .catch(err => {
+                        assert(err.message.includes('Variable is locked'));
+                        done();
+                    });
+            });
 
-            // Locked variables 
+            it('should apply next lock if lock times out', function() {
+                return cloudvariables.unlockVariable(name)
+                    .then(() => {
+                        cloudvariables._rpc._setMaxLockAge(200);
+
+                        return cloudvariables.lockVariable(name);
+                    })
+                    .then(() => {
+                        cloudvariables.setRequester(client2);
+                        return cloudvariables.lockVariable(name);
+                    });
+            });
+
+            it.skip('should un-queue lock if connection closed early', function() {
+            });
+
+            // Locked variables
             // what if the connection is aborted?
             // TODO
         });
@@ -126,8 +152,7 @@ describe('cloud-variables', function() {
 
     describe('user', function() {
         beforeEach(function() {
-            cloudvariables.socket.loggedIn = true;
-            cloudvariables.socket.username = 'brian';
+            cloudvariables.setRequester('client_1', 'brian');
         });
 
         it('should not be able to set variables if guest', function() {
