@@ -1,9 +1,7 @@
 // This is a key value store that can be used across tables
 'use strict';
 
-var debug = require('debug'),
-    trace = debug('netsblox:rpc:public-roles:trace');
-
+const logger = require('../utils/logger')('public-roles');
 const PublicRoles = {};
 
 /**
@@ -17,7 +15,7 @@ PublicRoles.getPublicRoleId = function() {
             roomName = room.name,
             roleId = socket.role;
 
-        trace(`${this.socket.username} has requested public id`);
+        logger.trace(`${this.socket.username} has requested public id`);
         return [
             roleId,
             roomName,

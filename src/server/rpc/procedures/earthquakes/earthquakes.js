@@ -11,11 +11,8 @@
 // shared across groups
 'use strict';
 
-var debug = require('debug'),
-    log = debug('netsblox:rpc:earthquakes:log'),
-    error = debug('netsblox:rpc:earthquakes:error'),
-    trace = debug('netsblox:rpc:earthquakes:trace'),
-    moment = require('moment'),
+const logger = require('../utils/logger')('earthquakes');
+var moment = require('moment'),
     R = require('ramda'),
     request = require('request'),
     baseUrl = 'http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&';
@@ -86,7 +83,7 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
     let params = createParams(options);
     let url = baseUrl + params;
 
-    trace('Requesting earthquakes at : ' + url);
+    logger.trace('Requesting earthquakes at : ' + url);
 
     // This method will not respond with anything... It will simply
     // trigger socket messages to the given client
@@ -99,11 +96,11 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
         try {
             body = JSON.parse(body);
         } catch (e) {
-            error('Received non-json: ' + body);
+            logger.error('Received non-json: ' + body);
             return response.status(500).send('ERROR: could not retrieve earthquakes');
         }
 
-        trace('Found ' + body.metadata.count + ' earthquakes');
+        logger.trace('Found ' + body.metadata.count + ' earthquakes');
         response.send('Sending ' + body.metadata.count + ' earthquake messages');
 
         var earthquakes = [],
@@ -112,7 +109,7 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
         try {
             earthquakes = body.features;
         } catch (e) {
-            log('Could not parse earthquakes (returning empty array): ' + e);
+            logger.log('Could not parse earthquakes (returning empty array): ' + e);
         }
 
         var msgs = [];

@@ -5,12 +5,9 @@
  */
 'use strict';
 
-var debug = require('debug'),
-    error = debug('netsblox:rpc:trivia:error'),
-    trace = debug('netsblox:rpc:trivia:trace'),
-    request = require('request');
-
-var baseUrl = 'http://jservice.io/api';
+const logger = require('../utils/logger')('trivia');
+const request = require('request');
+const baseUrl = 'http://jservice.io/api';
 
 module.exports = {
 
@@ -19,7 +16,7 @@ module.exports = {
             response = this.response,
             socket = this.socket;
 
-        trace('Requesting random trivia');
+        logger.trace('Requesting random trivia');
 
         // This method will not respond with anything... It will simply
         // trigger socket messages to the given client
@@ -36,9 +33,9 @@ module.exports = {
             try {
                 questions = JSON.parse(body);
             } catch (e) {
-                error('Could not parse questions (returning empty array): ' + e);
+                logger.error('Could not parse questions (returning empty array): ' + e);
             }
-            trace('Sending random trivia to ' + socket.username);
+            logger.trace('Sending random trivia to ' + socket.username);
 
             for (var i = questions.length; i--;) {
                 msg = {

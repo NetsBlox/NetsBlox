@@ -7,18 +7,18 @@
  */
 'use strict';
 
-var debug = require('debug'),
-    trace = debug('netsblox:rpc:static-map:trace'),
-    request = require('request'),
-    SphericalMercator = require('sphericalmercator'),
-    geolib = require('geolib'),
-    merc = new SphericalMercator({size:256}),
-    CacheManager = require('cache-manager'),
-    Storage = require('../../storage'),
-    // TODO: Change this cache to mongo or something (file?)
-    // This cache is shared among all GoogleMaps instances
-    cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity}),
-    key = process.env.GOOGLE_MAPS_KEY;
+const logger = require('../utils/logger')('google-maps');
+const request = require('request');
+const SphericalMercator = require('sphericalmercator');
+const geolib = require('geolib');
+const merc = new SphericalMercator({size:256});
+const CacheManager = require('cache-manager');
+const Storage = require('../../storage');
+
+// TODO: Change this cache to mongo or something (file?)
+// This cache is shared among all GoogleMaps instances
+const cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity});
+const key = process.env.GOOGLE_MAPS_KEY;
 
 var storage;
 
@@ -82,7 +82,7 @@ GoogleMaps.prototype._getGoogleParams = function(options, precisionLimit) {
 GoogleMaps.prototype._getMapInfo = function(roleId) {
     return getStorage().get(this._state.roomId)
         .then(maps => {
-            trace(`getting map for ${roleId}: ${JSON.stringify(maps)}`);
+            logger.trace(`getting map for ${roleId}: ${JSON.stringify(maps)}`);
             return maps[roleId];
         });
 };
@@ -107,7 +107,7 @@ GoogleMaps.prototype._recordUserMap = function(socket, map) {
             maps[socket.role] = map;
             getStorage().save(this._state.roomId, maps);
         })
-        .then(() => trace(`Stored map for ${socket.role}: ${JSON.stringify(map)}`));
+        .then(() => logger.trace(`Stored map for ${socket.role}: ${JSON.stringify(map)}`));
 };
 
 
@@ -137,9 +137,9 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
         const cacheKey = this._getGoogleParams(options, PRECISION);
         cache.wrap(cacheKey, cacheCallback => {
             // Get the image -> not in cache!
-            trace('request params:', options);
-            trace('url is '+url);
-            trace('Requesting new image from google!');
+            logger.trace('request params:', options);
+            logger.trace('url is '+url);
+            logger.trace('Requesting new image from google!');
             var mapResponse = request.get(url);
             delete mapResponse.headers['cache-control'];
 
@@ -153,7 +153,7 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
             });
         }, (err, imageBuffer) => {
             // Send the response to the user
-            trace('Sending the response!');
+            logger.trace('Sending the response!');
             // Set the headers
             response.set('cache-control', 'private, no-store, max-age=0');
             response.set('content-type', 'image/png');
@@ -161,7 +161,7 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
             response.set('connection', 'close');
 
             response.status(200).send(imageBuffer);
-            trace('Sent the response!');
+            logger.trace('Sent the response!');
         });
 
     });

@@ -6,14 +6,12 @@
  * @service
  */
 const GeoLocationRPC = {};
+const logger = require('../utils/logger')('geolocation');
 
-var debug = require('debug'),
-    error = debug('netsblox:rpc:geolocation:error'),
-    CacheManager = require('cache-manager'),
-    NodeGeocoder = require('node-geocoder'),
-    rp = require('request-promise'),
-    jsonQuery = require('json-query'),
-    trace = debug('netsblox:rpc:geolocation:trace');
+const CacheManager = require('cache-manager');
+const NodeGeocoder = require('node-geocoder');
+const rp = require('request-promise');
+const jsonQuery = require('json-query');
 
 // init
 var cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
@@ -43,7 +41,7 @@ function queryJson(json, query){
 // reverse geocoding helper, doesn't return a promise. handles sending of response.
 let reverseGeocode = (lat, lon, response, query)=>{
     cache.wrap(coordsToCacheKey(lat, lon) + query, cacheCallback => {
-        trace('Geocoding (not cached)', lat, lon);
+        logger.trace('Geocoding (not cached)', lat, lon);
         geocoder.reverse({lat, lon})
             .then(function(res) {
             // only intereseted in the first match
@@ -53,12 +51,12 @@ let reverseGeocode = (lat, lon, response, query)=>{
                 return cacheCallback(null, res);
             })
             .catch((err) => {
-                error(err);
+                logger.error(err);
                 return cacheCallback('Error in reverse geocoding', null);
             });
     }, (err, results) => {
         if(results){
-            trace('answering with',results);
+            logger.trace('answering with',results);
             response.send(results);
         }else {
             showError(err, response);
@@ -76,16 +74,16 @@ let reverseGeocode = (lat, lon, response, query)=>{
 GeoLocationRPC.geolocate = function (address) {
     let response = this.response;
 
-    trace('Geocoding', address);
+    logger.trace('Geocoding', address);
     return cache.wrap(address, () => {
         return geocoder.geocode(address)
             .then(function(res) {
-                trace(res);
+                logger.trace(res);
                 return [['latitude', res[0].latitude], ['longitude', res[0].longitude]];
             });
     })
         .catch(function(err) {
-            error('Error in geocoding', err);
+            logger.error('Error in geocoding', err);
             showError('Failed to geocode',response);
         });
 };
@@ -146,7 +144,7 @@ GeoLocationRPC.info = function (latitude, longitude) {
             levels = levels.reverse(); // reverse so that it's big to small
             return levels;
         }).catch(err => {
-            error(err);
+            logger.error(err);
             throw(err);
         });
 };
@@ -190,7 +188,7 @@ GeoLocationRPC.nearbySearch = function (latitude, longitude, keyword, radius) {
             return places;
         });
     }).catch(err => {
-        error('Error in searching for places',err);
+        logger.error('Error in searching for places',err);
         showError('Failed to find places',response);
     });
 
