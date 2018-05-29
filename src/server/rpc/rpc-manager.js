@@ -235,6 +235,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         let ctx = Object.create(rpc);
         ctx.socket = SocketManager.getSocket(uuid);
         ctx.response = res;
+        ctx.request = req;
         if (!ctx.socket) {
             this._logger.error(`Could not find socket ${uuid} for rpc ` +
                 `${RPC.serviceName}:${action}. Will try to call it anyway...`);
