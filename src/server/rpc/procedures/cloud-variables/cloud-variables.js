@@ -26,20 +26,30 @@ const ensureVariableExists = function(variable) {
 
 };
 
-const MAX_LOCK_AGE = 5 * 1000 * 60;
+let MAX_LOCK_AGE = 5 * 1000 * 60;
 const getLockOwnerId = function(variable) {
     if (variable && variable.lock) {
-        const isStale = new Date() - variable.lock.creationTime > MAX_LOCK_AGE;
-        if (!isStale) {
+        if (!isLockStale(variable)) {
             return variable.lock.clientId;
         }
     }
 };
 
+const isLockStale = function(variable) {
+    if (variable && variable.lock) {
+        return new Date() - variable.lock.creationTime > MAX_LOCK_AGE;
+    }
+    return false;
+};
+
+const isLocked = function(variable) {
+    return !!getLockOwnerId(variable);
+};
+
 const ensureOwnsMutex = function(variable, user) {
     const ownerId = getLockOwnerId(variable);
     if (ownerId && ownerId !== user.uuid) {
-        throw new Error(`Variable is locked`);
+        throw new Error(`Variable is locked (by someone else)`);
     }
 };
 
@@ -76,6 +86,9 @@ const validateContentSize = function(content) {
 
 const CloudVariables = {};
 CloudVariables._queuedLocks = {};
+CloudVariables._setMaxLockAge = function(age) {  // for testing
+    MAX_LOCK_AGE = age;
+};
 
 /**
  * Get the value of a cloud variable
@@ -180,14 +193,9 @@ CloudVariables.lockVariable = function(name, password) {
             //
             // If locked by someone else, then we need to queue the lock
             // If it is already locked, we should block until we can obtain the lock
-            // TODO
-            const isLocked = !!getLockOwnerId(variable);
-            // if locked, queue the applyLockFn
-            // TODO
-            // else apply the lock
-            // TODO
+            const locked = !!isLocked(variable);
 
-            if (isLocked) {
+            if (locked) {
                 return this._queueLockFor(variable);
             } else {
                 return this._applyLock(name, password, clientId, username);
@@ -197,7 +205,6 @@ CloudVariables.lockVariable = function(name, password) {
 
 CloudVariables._queueLockFor = function(variable) {
     // Return a promise which will resolve when the lock is applied
-    // TODO
     const deferred = Q.defer();
     const {name, password} = variable;
 
@@ -212,14 +219,10 @@ CloudVariables._queueLockFor = function(variable) {
         promise: deferred
     });
 
-    // call setTimeout for when the lock times out?
-    // TODO
-
     return deferred.promise;
 };
 
 CloudVariables._applyLock = function(name, password, clientId, username) {
-    console.log('applying lock for', name, 'for', clientId);
     const {sharedVars} = getCollections();
 
     const lock = {
@@ -233,11 +236,20 @@ CloudVariables._applyLock = function(name, password, clientId, username) {
         }
     };
 
-    // We need to ensure that two of these don't happen simultaneously
-    // Could I queue these requests to they don't overwrite each other?
-    // TODO
+    setTimeout(() => this._checkStaleLock(name), MAX_LOCK_AGE+1);
     return sharedVars.updateOne({name, password}, query)
         .then(() => 'OK');
+};
+
+CloudVariables._checkStaleLock = function(name) {
+    const {sharedVars} = getCollections();
+
+    return sharedVars.findOne({name: name})
+        .then(variable => {
+            if (isLockStale(variable)) {
+                return this._onUnlockVariable(variable.name);
+            }
+        });
 };
 
 /**
@@ -253,26 +265,27 @@ CloudVariables.unlockVariable = function(name, password) {
     validateVariableName(name);
 
     const {sharedVars} = getCollections();
-    const username = this.socket.username;
 
     return sharedVars.findOne({name: name})
         .then(variable => {
             ensureVariableExists(variable);
             ensureAuthorized(variable, password);
+            ensureOwnsMutex(variable, this.socket);
 
-            const lockOwner = getLockOwnerId(variable);
-            if (lockOwner === this.socket.uuid) {
-                const query = {
-                    $set: {
-                        lock: null
-                    }
-                };
-
-                return sharedVars.updateOne({name, password}, query)
-                    .then(() => this._onUnlockVariable(name));
+            if (!isLocked(variable)) {
+                throw new Error('Variable not locked');
             }
-        })
-        .then(() => 'OK');
+
+            const query = {
+                $set: {
+                    lock: null
+                }
+            };
+
+            return sharedVars.updateOne({name, password}, query)
+                .then(() => this._onUnlockVariable(name))
+                .then(() => 'OK');
+        });
 };
 
 CloudVariables._onUnlockVariable = function(name) {
