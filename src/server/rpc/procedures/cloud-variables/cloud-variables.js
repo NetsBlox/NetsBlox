@@ -212,11 +212,23 @@ CloudVariables._queueLockFor = function(variable) {
         this._queuedLocks[name] = [];
     }
 
-    this._queuedLocks[name].push({
+    const lock = {
         password: password,
         clientId: this.socket.uuid,
         username: this.socket.username,
         promise: deferred
+    };
+
+    this._queuedLocks[name].push(lock);
+
+    // If the request is terminated, remove the lock from the queue
+    this.request.on('close', () => {
+        const queue = this._queuedLocks[name] || [];
+        const index = queue.indexOf(lock);
+        if (index > -1) {
+            queue.splice(index, 1);
+        }
+        return deferred.reject(new Error('Canceled by user'));
     });
 
     return deferred.promise;
