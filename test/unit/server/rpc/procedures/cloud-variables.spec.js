@@ -1,4 +1,5 @@
 describe('cloud-variables', function() {
+    const Q = require('q');
     const utils = require('../../../../assets/utils');
     const CloudVariables = utils.reqSrc('rpc/procedures/cloud-variables/cloud-variables');
     const RPCMock = require('../../../../assets/mock-rpc');
@@ -65,6 +66,61 @@ describe('cloud-variables', function() {
             return cloudvariables.setVariable(name, 'world', 'password')
                 .then(() => cloudvariables.deleteVariable(name))
                 .catch(err => assert(err.message.includes('password')));
+        });
+
+        describe('locking variables', function() {
+            const name = 'lock-var-test';
+            const initialValue = 'world';
+            const client1 = '_netsblox_1';
+            const client2 = '_netsblox_2';
+            beforeEach(() => {
+                cloudvariables.socket.uuid = client1;
+                return cloudvariables.setVariable(name, initialValue)
+                    .then(() => cloudvariables.lockVariable(name));
+            });
+
+            it('should allow locker to read locked variable', function() {
+                return cloudvariables.getVariable(name)
+                    .then(value => assert.equal(value, initialValue));
+            });
+
+            it('should allow other user to read locked variable', function() {
+                cloudvariables.socket.uuid = client2;
+                return cloudvariables.getVariable(name)
+                    .then(value => assert.equal(value, initialValue));
+            });
+
+            it('should allow original user to set locked variable', function() {
+                return cloudvariables.setVariable(name, 'newValue');
+            });
+
+            it('should NOT allow other user to set locked variable', function() {
+                cloudvariables.socket.uuid = client2;
+                return cloudvariables.setVariable(name, 'newValue')
+                    .catch(err => assert(err.message.includes('locked')));
+            });
+
+            it.only('should block on subsequent locks', function() {
+                const events = [];
+
+                cloudvariables.setRequester(client2);
+                const acquireLock = cloudvariables.lockVariable(name)
+                    .then(() => events.push('acquired lock'));
+
+                cloudvariables.setRequester(client1);
+                const releaseLock = cloudvariables.unlockVariable(name)
+                    .then(() => events.push('release lock'));
+
+                return Q.all([acquireLock, releaseLock])
+                    .then(() => assert(events[0] === 'release lock'));
+            });
+
+            // only can be unlocked by the locker
+            // TODO
+
+            // Locked variables 
+            // what if the connection is aborted?
+            // TODO
         });
     });
 
