@@ -19,6 +19,13 @@ var MockRPC = function(RPC, raw) {
     this.rpcName = this._rpc.rpcName;
 };
 
+MockRPC.prototype.setRequester = function(uuid, username) {
+    this.socket = new MockSocket();
+    this._rpc.socket = this.socket;
+    this.socket.uuid = uuid;
+    this.socket.username = username;
+};
+
 MockRPC.prototype.createMethods = function(RPC) {
     var fnObj = typeof RPC === 'function' ? RPC.prototype : RPC,
         publicFns = Object.keys(fnObj)
@@ -40,7 +47,10 @@ MockRPC.prototype.getArgumentsFor = function(fnName) {
 
 MockRPC.prototype.addMethod = function(name) {
     this[name] = function() {
-        return this._rpc[name].apply(this._rpc, arguments);
+        const ctx = Object.create(this._rpc);
+        ctx.socket = this.socket;
+        ctx.response = this.response;
+        return this._rpc[name].apply(ctx, arguments);
     };
 };
 
