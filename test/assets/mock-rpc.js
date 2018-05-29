@@ -22,8 +22,13 @@ var MockRPC = function(RPC, raw) {
 MockRPC.prototype.setRequester = function(uuid, username) {
     this.socket = new MockSocket();
     this._rpc.socket = this.socket;
-    this.socket.uuid = uuid;
+    this.socket.uuid = uuid || this.socket.uuid;
+    if (this.socket.uuid[0] !== '_') {
+        this.socket.uuid = '_' + this.socket.uuid;
+    }
+
     this.socket.username = username;
+    this.socket.loggedIn = !!username;
 };
 
 MockRPC.prototype.createMethods = function(RPC) {
