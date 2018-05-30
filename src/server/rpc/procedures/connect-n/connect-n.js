@@ -6,13 +6,10 @@
 
 'use strict';
 
-var debug = require('debug'),
-    log = debug('netsblox:rpc:connect-n:log'),
-    trace = debug('netsblox:rpc:connect-n:trace'),
-    Constants = require('../../../../common/constants'),
-    info = debug('netsblox:rpc:connect-n:info');
+const logger = require('../utils/logger')('connect-n');
+const Constants = require('../../../../common/constants');
 
-var ConnectN = function() {
+const ConnectN = function() {
     this._state = {};
     this._state.board = ConnectN.getNewBoard();
     this._state._winner = null;
@@ -39,7 +36,7 @@ ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
 
     this._state.numDotsToConnect = Math.min(Math.max(this._state.numRow, this._state.numCol), this._state.numDotsToConnect);
 
-    info(this.socket.role+' is clearing board and creating a new one with size: ', this._state.numRow, ', ', this._state.numCol);
+    logger.info(this.socket.role+' is clearing board and creating a new one with size: ', this._state.numRow, ', ', this._state.numCol);
     this._state.board = ConnectN.getNewBoard(this._state.numRow, this._state.numCol);
 
     this.socket._room.sockets()
@@ -67,7 +64,7 @@ ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
 ConnectN.prototype.play = function(row, column) {
     // ...the game is still going
     if (this._state._winner) {
-        log('"'+roleId+'" is trying to play after the game is over');
+        logger.log('"'+roleId+'" is trying to play after the game is over');
         return 'The game is over!';
     }
 
@@ -77,7 +74,7 @@ ConnectN.prototype.play = function(row, column) {
 
     // ...it is the given role's turn
     if (this._state.lastMove === roleId) {
-        log('"'+roleId+'" is trying to play twice in a row!');
+        logger.log('"'+roleId+'" is trying to play twice in a row!');
         return 'Trying to play twice in a row!';
     }
 
@@ -90,12 +87,12 @@ ConnectN.prototype.play = function(row, column) {
 
     // ...it's a valid position
     if (!isOnBoard) {
-        log('"'+roleId+'" is trying to play in an invalid position ('+row+','+column+')');
+        logger.log('"'+roleId+'" is trying to play in an invalid position ('+row+','+column+')');
         return 'Trying to play at invalid position!';
     }
 
 
-    trace('"'+roleId+'" is trying to play at '+row+','+column+'. Board is \n'+
+    logger.trace('"'+roleId+'" is trying to play at '+row+','+column+'. Board is \n'+
         this._state.board.map(function(row) {
             return row.map(t => t || '_').join(' ');
         })
@@ -106,7 +103,7 @@ ConnectN.prototype.play = function(row, column) {
     if (open) {
         this._state.board[row][column] = roleId;
         this._state._winner = ConnectN.getWinner(this._state.board, this._state.numDotsToConnect);
-        trace('"'+roleId+'" successfully played at '+row+','+column);
+        logger.trace('"'+roleId+'" successfully played at '+row+','+column);
         // Send the play message to everyone!
         this.socket._room.sockets()
             .forEach(socket => socket.send({
@@ -123,7 +120,7 @@ ConnectN.prototype.play = function(row, column) {
         this._state.lastMove = roleId;
 
 
-        trace('"'+roleId+'" is after playing at '+row+','+column+'. Board is \n'+
+        logger.trace('"'+roleId+'" is after playing at '+row+','+column+'. Board is \n'+
             this._state.board.map(function(row) {
                 return row.map(t => t || '_').join(' ');
             })
@@ -162,7 +159,7 @@ ConnectN.prototype.isGameOver = function() {
     isOver = isOver || isDraw;
     if(isDraw)
         this._state._winner = 'DRAW';
-    log('isGameOver: ' + isOver + ' (' + this._state._winner + ')');
+    logger.log('isGameOver: ' + isOver + ' (' + this._state._winner + ')');
     return isOver;
 };
 

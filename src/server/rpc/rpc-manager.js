@@ -23,7 +23,7 @@ const DEFAULT_COMPATIBILITY = {arguments: {}};
  * @constructor
  */
 var RPCManager = function() {
-    this._logger = new Logger('netsblox:rpc-manager');
+    this._logger = new Logger('netsblox:services');
     this.rpcRegistry = {};
     this.rpcs = this.loadRPCs();
     this.router = this.createRouter();

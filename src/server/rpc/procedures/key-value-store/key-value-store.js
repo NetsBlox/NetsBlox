@@ -1,10 +1,9 @@
 // This is a key value store that can be used across tables
 'use strict';
 
+const logger = require('../utils/logger')('key-value-store');
 var Storage = require('../../storage'),
     NAME = 'KeyValueStore',
-    Logger = require('../../../logger'),
-    logger = new Logger('netsblox:rpc:kv-store'),
     SEP = '/';
 
 var getKeys = key => key.split(SEP).filter(k => k !== '');  // rm empty strings

@@ -1,11 +1,8 @@
 // This is a hangman set of RPC's which will mediate a game of hangman
 'use strict';
 
-var debug = require('debug'),
-    trace = debug('netsblox:rpc:hangman:trace'),
-    info = debug('netsblox:rpc:hangman:info');
-
-var Hangman = function() {
+const logger = require('../utils/logger')('public-roles');
+const Hangman = function() {
     this._state = {};
     this._state.word = null;
     this._state.wrongGuesses = 0;
@@ -18,7 +15,7 @@ Hangman.prototype.setWord = function(word) {
     this._state.word = word;
     this._state.wrongGuesses = 0;
     this._state.knownIndices = [];
-    info('Setting word to "'+this._state.word+'"');
+    logger.info('Setting word to "'+this._state.word+'"');
 };
 
 Hangman.prototype.getCurrentlyKnownWord = function() {
@@ -29,8 +26,8 @@ Hangman.prototype.getCurrentlyKnownWord = function() {
     this._state.knownIndices.forEach(function(index) {
         letters[index] = this._state.word[index];
     }, this);
-    trace('Currently known word is "'+letters.join(' ')+'"');
-    trace('word is '+this._state.word);
+    logger.trace('Currently known word is "'+letters.join(' ')+'"');
+    logger.trace('word is '+this._state.word);
     return letters.join(' ');
 };
 
@@ -43,7 +40,7 @@ Hangman.prototype.guess = function(letter) {
     }
 
     letter = letter[0];
-    trace('Guessing letter: '+letter);
+    logger.trace('Guessing letter: '+letter);
     indices = Hangman.getAllIndices(this._state.word, letter);
     added = Hangman.merge(this._state.knownIndices, indices);
     if (added === 0) {
@@ -58,7 +55,7 @@ Hangman.prototype.isWordGuessed = function() {
 };
 
 Hangman.prototype.getWrongCount = function() {
-    trace('wrong count is '+this._state.wrongGuesses);
+    logger.trace('wrong count is '+this._state.wrongGuesses);
     return this._state.wrongGuesses;
 };
 
