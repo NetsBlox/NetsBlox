@@ -82,6 +82,14 @@ describe('cloud-variables', function() {
                     .then(() => cloudvariables.lockVariable(name));
             });
 
+            it('should return error if variable doesnt exist', function(done) {
+                cloudvariables.lockVariable('i-dont-exist')
+                    .catch(err => {
+                        assert(err.message.includes('not found'));
+                        done();
+                    });
+            });
+
             it('should allow locker to read locked variable', function() {
                 return cloudvariables.getVariable(name)
                     .then(value => assert.equal(value, initialValue));
@@ -150,11 +158,30 @@ describe('cloud-variables', function() {
                 cloudvariables.lockVariable(name)
                     .then(() => done('did not throw exception'))
                     .catch(err => {  // Ensure that it throws exception
-                        const lockCount = cloudvariables._rpc._queuedLocks[name].length;
                         assert(err.message.includes('anceled'));
-                        assert.equal(lockCount, 0);
+
+                        const queuedLocks = cloudvariables._rpc._queuedLocks;
+                        assert.deepEqual(queuedLocks, {});
                         done();
                     });
+            });
+
+            it('should reject queued locks on variable delete', function(done) {
+                cloudvariables.setRequester(client2);
+
+                // Create a new lock then delete the variable
+                cloudvariables.lockVariable(name)
+                    .then(() => done('did not throw exception'))
+                    .catch(err => {  // Ensure that it throws exception
+                        assert(err.message.includes('Variable deleted'));
+
+                        const queuedLocks = cloudvariables._rpc._queuedLocks;
+                        assert.deepEqual(queuedLocks, {});
+                        done();
+                    });
+
+                cloudvariables.setRequester(client1);
+                cloudvariables.deleteVariable(name);
             });
         });
     });

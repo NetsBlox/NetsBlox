@@ -162,8 +162,12 @@ CloudVariables.deleteVariable = function(name, password) {
             ensureAuthorized(variable, password);
 
             // Clear the queued locks
-            // TODO
-            return sharedVars.deleteOne({name, password});
+            const id = variable._id;
+            const pendingLocks = this._queuedLocks[id] || [];
+            pendingLocks.forEach(lock => lock.promise.reject(new Error('Variable deleted')));
+            delete this._queuedLocks[id];
+
+            return sharedVars.deleteOne({_id: id});
         })
         .then(() => 'OK');
 };
@@ -198,7 +202,7 @@ CloudVariables.lockVariable = function(name, password) {
             if (locked) {
                 return this._queueLockFor(variable);
             } else {
-                return this._applyLock(name, password, clientId, username);
+                return this._applyLock(variable._id, clientId, username);
             }
         });
 };
@@ -206,27 +210,32 @@ CloudVariables.lockVariable = function(name, password) {
 CloudVariables._queueLockFor = function(variable) {
     // Return a promise which will resolve when the lock is applied
     const deferred = Q.defer();
-    const {name, password} = variable;
+    const id = variable._id;
+    const {password} = variable;
 
-    if (!this._queuedLocks[name]) {
-        this._queuedLocks[name] = [];
+    if (!this._queuedLocks[id]) {
+        this._queuedLocks[id] = [];
     }
 
     const lock = {
+        id: id,
         password: password,
         clientId: this.socket.uuid,
         username: this.socket.username,
         promise: deferred
     };
 
-    this._queuedLocks[name].push(lock);
+    this._queuedLocks[id].push(lock);
 
     // If the request is terminated, remove the lock from the queue
     this.request.on('close', () => {
-        const queue = this._queuedLocks[name] || [];
+        const queue = this._queuedLocks[id] || [];
         const index = queue.indexOf(lock);
         if (index > -1) {
             queue.splice(index, 1);
+            if (!this._queuedLocks[id].length) {
+                delete this._queuedLocks[id];
+            }
         }
         return deferred.reject(new Error('Canceled by user'));
     });
@@ -234,7 +243,7 @@ CloudVariables._queueLockFor = function(variable) {
     return deferred.promise;
 };
 
-CloudVariables._applyLock = function(name, password, clientId, username) {
+CloudVariables._applyLock = function(id, clientId, username) {
     const {sharedVars} = getCollections();
 
     const lock = {
@@ -248,18 +257,18 @@ CloudVariables._applyLock = function(name, password, clientId, username) {
         }
     };
 
-    setTimeout(() => this._checkStaleLock(name), MAX_LOCK_AGE+1);
-    return sharedVars.updateOne({name, password}, query)
+    setTimeout(() => this._checkStaleLock(id), MAX_LOCK_AGE+1);
+    return sharedVars.updateOne({_id: id}, query)
         .then(() => 'OK');
 };
 
-CloudVariables._checkStaleLock = function(name) {
+CloudVariables._checkStaleLock = function(id) {
     const {sharedVars} = getCollections();
 
-    return sharedVars.findOne({name: name})
+    return sharedVars.findOne({_id: id})
         .then(variable => {
             if (isLockStale(variable)) {
-                return this._onUnlockVariable(variable.name);
+                return this._onUnlockVariable(id);
             }
         });
 };
@@ -295,22 +304,22 @@ CloudVariables.unlockVariable = function(name, password) {
             };
 
             return sharedVars.updateOne({name, password}, query)
-                .then(() => this._onUnlockVariable(name))
+                .then(() => this._onUnlockVariable(variable._id))
                 .then(() => 'OK');
         });
 };
 
-CloudVariables._onUnlockVariable = function(name) {
+CloudVariables._onUnlockVariable = function(id) {
     // if there is a queued lock, apply it
-    if (this._queuedLocks[name]) {
-        const nextLock = this._queuedLocks[name].shift();
-        const {password, clientId, username} = nextLock;
+    if (this._queuedLocks.hasOwnProperty(id)) {
+        const nextLock = this._queuedLocks[id].shift();
+        const {clientId, username} = nextLock;
 
         // apply the lock
-        this._applyLock(name, password, clientId, username);
+        this._applyLock(id, clientId, username);
         nextLock.promise.resolve();
-        if (this._queuedLocks[name].length === 0) {
-            delete this._queuedLocks[name];
+        if (this._queuedLocks[id].length === 0) {
+            delete this._queuedLocks[id];
         }
     }
 };
