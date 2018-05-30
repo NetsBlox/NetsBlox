@@ -1,8 +1,10 @@
+const Q = require('q');
 const fs = require('fs');
 const path = require('path');
 const logoPath = path.join(__dirname, '..', '..', '..', '..', '..', 'netsblox_logo.png');
 const buffer = fs.readFileSync(logoPath);
 const utils = require('../utils');
+const logger = require('../utils/logger')('dev');
 
 const dev = {};
 dev.isSupported = () => process.env.ENV !== 'production';
@@ -21,6 +23,23 @@ dev.image = function() {
  */
 dev.echoIfWithin = function(input) {
     return input;
+};
+
+/**
+ * Sleep for 3 seconds and detect if the RPC was aborted.
+ */
+dev.detectAbort = function() {
+    const deferred = Q.defer();
+    let aborted = false;
+
+    this.request.on('close', () => {
+        logger.log('aborted rpc call!');
+        deferred.resolve('aborted!');
+        aborted = true;
+    });
+
+    setTimeout(() => aborted || deferred.resolve('not aborted'), 3000);
+    return deferred.promise;
 };
 
 module.exports = dev;

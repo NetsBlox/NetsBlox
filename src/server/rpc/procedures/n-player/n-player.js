@@ -2,9 +2,7 @@
 
 'use strict';
 
-var R = require('ramda'),
-    debug = require('debug'),
-    info = debug('netsblox:rpc:n-player:info');
+const logger = require('../utils/logger')('n-player');
 
 /**
  * NPlayer - This constructor is called on the first request to an RPC
@@ -13,7 +11,7 @@ var R = require('ramda'),
  * @constructor
  * @return {undefined}
  */
-var NPlayer = function() {
+const NPlayer = function() {
     this._state = {};
     this._state.active = null;
     this._state.previous = null;
@@ -31,9 +29,9 @@ NPlayer.prototype.start = function() {
     });
 
     // set the active player to the current one
-    this._state.active = R.findIndex(R.propEq('role', this.socket.role))(this._state.players);
+    this._state.active = this._state.players.findIndex(player => player.role === this.socket.role);
 
-    info(`Player #${this._state.active} (${this._state.players[this._state.active].role}) is (re)starting a ${this._state.players.length} player game`);
+    logger.info(`Player #${this._state.active} (${this._state.players[this._state.active].role}) is (re)starting a ${this._state.players.length} player game`);
 
     // Send the start message to everyone
     this._state.players.forEach(player => player.socket.send({
@@ -88,15 +86,15 @@ NPlayer.prototype.endTurn = function(next) {
         return false;
     } else {
 
-        info(`Player #${this._state.active} (${this._state.players[this._state.active].role}) called endTurn`);
+        logger.info(`Player #${this._state.active} (${this._state.players[this._state.active].role}) called endTurn`);
 
         var nextIndex;
         if(next == undefined || next == '') {
             nextIndex = (this._state.active + 1) % this._state.players.length;
         } else {
-            nextIndex = R.findIndex(R.propEq('role', next), this._state.players);
+            nextIndex = this._state.players.findIndex(player => player.role === next);
             if(nextIndex === -1) {
-                info('Role ' +next+ ' is not part of the game');
+                logger.info('Role ' +next+ ' is not part of the game');
                 return false;
             }
         }
@@ -105,7 +103,7 @@ NPlayer.prototype.endTurn = function(next) {
         this._state.previous = this._state.active;
         this._state.active = nextIndex;
 
-        info('Player #' +this._state.active+' ('+ this._state.players[this._state.active].role +') is the new active player');
+        logger.info('Player #' +this._state.active+' ('+ this._state.players[this._state.active].role +') is the new active player');
 
         // Send the play message to the newly activated player
         this._state.players[this._state.active].socket.send({

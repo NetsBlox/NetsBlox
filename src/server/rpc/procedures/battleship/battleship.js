@@ -1,15 +1,13 @@
 'use strict';
 
-var debug = require('debug'),
-    error = debug('netsblox:rpc:battleship:error'),
-    trace = debug('netsblox:rpc:battleship:trace'),
-    Board = require('./board'),
-    TurnBased = require('../utils/turn-based'),
-    BattleshipConstants = require('./constants'),
-    Constants = require('../../../../common/constants'),
-    BOARD_SIZE = BattleshipConstants.BOARD_SIZE,
-    SHIPS = BattleshipConstants.SHIPS,
-    DIRS = BattleshipConstants.DIRS;
+const logger = require('../utils/logger')('battleship');
+const Board = require('./board');
+const TurnBased = require('../utils/turn-based');
+const BattleshipConstants = require('./constants');
+const Constants = require('../../../../common/constants');
+const BOARD_SIZE = BattleshipConstants.BOARD_SIZE;
+const SHIPS = BattleshipConstants.SHIPS;
+const DIRS = BattleshipConstants.DIRS;
 
 var isHorizontal = dir => dir === 'east' || dir === 'west';
 
@@ -96,7 +94,7 @@ Battleship.prototype.placeShip = function(ship, row, column, facing) {
 
     // Create a board if none exists
     if (!this._state._boards[role]) {
-        trace(`creating board for ${role}`);
+        logger.trace(`creating board for ${role}`);
         this._state._boards[role] = new Board(BOARD_SIZE);
     }
 
@@ -121,17 +119,17 @@ Battleship.prototype.fire = function(row, column) {
     // If target is not provided, try to get another role with a board.
     // If none exists, just try to get another role in the room
     if (!target) {
-        trace('trying to infer a target');
+        logger.trace('trying to infer a target');
         roles = Object.keys(this._state._boards);
         if (!roles.length) {
             roles = socket._room.getRoleNames();
-            trace(`no other boards. Checking other roles in the room (${roles})`);
+            logger.trace(`no other boards. Checking other roles in the room (${roles})`);
         }
 
         target = roles.filter(r => r !== role).shift();
     }
 
-    trace(`${role} is firing at ${target} (${row}, ${column})`);
+    logger.trace(`${role} is firing at ${target} (${row}, ${column})`);
     if (!checkRowCol(row, column)) {
         this.response.status(400).send(`Invalid position (${row}, ${column})`);
         return false;
@@ -141,7 +139,7 @@ Battleship.prototype.fire = function(row, column) {
     //   - hit <target> <ship> <row> <col> <sunk>
     //   - miss <target> <row> <col>
     if (!this._state._boards[target]) {
-        error(`board doesn't exist for "${target}"`);
+        logger.error(`board doesn't exist for "${target}"`);
         this._state._boards[target] = new Board(BOARD_SIZE);
     }
 
@@ -173,7 +171,7 @@ Battleship.prototype.remainingShips = function(roleId) {
     var role = roleId || this.socket.role;
 
     if (!this._state._boards[role]) {
-        error(`board doesn't exist for "${role}"`);
+        logger.error(`board doesn't exist for "${role}"`);
         this._state._boards[role] = new Board(BOARD_SIZE);
     }
 
@@ -190,7 +188,7 @@ Battleship.prototype.shipLength = function(ship) {
     if (!SHIPS[ship]) {
         return `Ship "${ship}" not found!`;
     }
-    trace(`request for length of ${ship} (${SHIPS[ship]})`);
+    logger.trace(`request for length of ${ship} (${SHIPS[ship]})`);
     return SHIPS[ship];
 };
 
