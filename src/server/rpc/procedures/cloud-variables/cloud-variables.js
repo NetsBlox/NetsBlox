@@ -49,7 +49,7 @@ const isLocked = function(variable) {
 const ensureOwnsMutex = function(variable, user) {
     const ownerId = getLockOwnerId(variable);
     if (ownerId && ownerId !== user.uuid) {
-        throw new Error(`Variable is locked (by someone else)`);
+        throw new Error('Variable is locked (by someone else)');
     }
 };
 
