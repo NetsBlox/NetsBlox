@@ -32,7 +32,7 @@ describe('earthquakes', function() {
         });
 
         it('should remove entry from remainingMsgs', function() {
-            var uuid = earthquakes._rpc.socket.uuid,
+            var uuid = earthquakes.socket.uuid,
                 remainingMsgs = earthquakes._rpc._remainingMsgs;
 
             remainingMsgs[uuid] = [];
@@ -48,7 +48,7 @@ describe('earthquakes', function() {
             before(function() {
                 var remainingMsgs = earthquakes._rpc._remainingMsgs;
 
-                socket = earthquakes._rpc.socket;
+                socket = earthquakes.socket;
                 remainingMsgs[socket.uuid] = [{dstId: 'someOldRole'}];
                 earthquakes._rpc._sendNext(socket);
             });
@@ -66,7 +66,7 @@ describe('earthquakes', function() {
             it('should not fail if no earthquakes found', function() {
                 var remainingMsgs = earthquakes._rpc._remainingMsgs;
 
-                socket = earthquakes._rpc.socket;
+                socket = earthquakes.socket;
                 remainingMsgs[socket.uuid] = [];
                 earthquakes._rpc._sendNext(socket);
             });
