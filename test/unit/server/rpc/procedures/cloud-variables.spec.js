@@ -138,6 +138,20 @@ describe('cloud-variables', function() {
                     .then(() => assert(events[0] === 'release lock'));
             });
 
+            it('should block on subsequent locks (same client)', function() {
+                const events = [];
+
+                // acquire and release a lock simultaneously
+                const acquireLock = cloudvariables.lockVariable(name)
+                    .then(() => events.push('acquired lock'));
+
+                const releaseLock = cloudvariables.unlockVariable(name)
+                    .then(() => events.push('release lock'));
+
+                return Q.all([acquireLock, releaseLock])
+                    .then(() => assert(events[0] === 'release lock'));
+            });
+
             it('should only be able to be unlocked by the "locker"', function(done) {
                 cloudvariables.setRequester(client2);
                 cloudvariables.unlockVariable(name)
