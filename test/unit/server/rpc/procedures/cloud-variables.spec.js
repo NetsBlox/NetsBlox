@@ -111,6 +111,18 @@ describe('cloud-variables', function() {
                     .catch(err => assert(err.message.includes('locked')));
             });
 
+            it('should throw error on unlock of unlocked variable', function(done) {
+                const newVar = 'unlocked-var';
+
+                cloudvariables.setVariable(newVar, '10')
+                    .then(() => cloudvariables.unlockVariable(newVar))
+                    .then(() => done('no error thrown'))
+                    .catch(err => {
+                        assert.equal(err.message, 'Variable not locked');
+                        done();
+                    });
+            });
+
             it('should block on subsequent locks', function() {
                 const events = [];
 
