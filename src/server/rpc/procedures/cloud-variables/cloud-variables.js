@@ -110,7 +110,7 @@ CloudVariables.getVariable = function(name, password) {
                     lastReadTime: new Date(),
                 }
             };
-            return sharedVars.updateOne({name, password}, query)
+            return sharedVars.updateOne({_id: variable._id}, query)
                 .then(() => variable.value);
         });
 };
@@ -259,7 +259,13 @@ CloudVariables._applyLock = function(id, clientId, username) {
 
     setTimeout(() => this._checkStaleLock(id), MAX_LOCK_AGE+1);
     return sharedVars.updateOne({_id: id}, query)
-        .then(() => 'OK');
+        .then(res => {  // Ensure that the variable wasn't deleted during this application
+            if (res.matchedCount === 0) {
+                throw new Error('Variable deleted');
+            }
+
+            return 'OK';
+        });
 };
 
 CloudVariables._checkStaleLock = function(id) {
@@ -303,7 +309,7 @@ CloudVariables.unlockVariable = function(name, password) {
                 }
             };
 
-            return sharedVars.updateOne({name, password}, query)
+            return sharedVars.updateOne({_id: variable._id}, query)
                 .then(() => this._onUnlockVariable(variable._id))
                 .then(() => 'OK');
         });
