@@ -68,7 +68,7 @@ describe('cloud-variables', function() {
                 .catch(err => assert(err.message.includes('password')));
         });
 
-        describe.only('locking variables', function() {
+        describe('locking variables', function() {
             const name = 'lock-var-test';
             const initialValue = 'world';
             const client1 = '_netsblox_1';
@@ -141,12 +141,21 @@ describe('cloud-variables', function() {
                     });
             });
 
-            it.skip('should un-queue lock if connection closed early', function() {
-            });
+            it('should un-queue lock if connection closed early', function(done) {
+                cloudvariables.setRequester(client2);
 
-            // Locked variables
-            // what if the connection is aborted?
-            // TODO
+                // Create a new lock then cancel the request
+                setTimeout(() => cloudvariables.request.abort(), 100);  // this is not ideal
+
+                cloudvariables.lockVariable(name)
+                    .then(() => done('did not throw exception'))
+                    .catch(err => {  // Ensure that it throws exception
+                        const lockCount = cloudvariables._rpc._queuedLocks[name].length;
+                        assert(err.message.includes('anceled'));
+                        assert.equal(lockCount, 0);
+                        done();
+                    });
+            });
         });
     });
 

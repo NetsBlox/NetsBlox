@@ -173,7 +173,7 @@ CloudVariables.deleteVariable = function(name, password) {
  *
  * A locked variable cannot be changed by anyone other than the person
  * who locked it. A variable cannot be locked for more than 5 minutes.
- * 
+ *
  * @param {String} name Variable to lock
  * @param {String=} password Password (if password-protected)
  */
