@@ -197,9 +197,9 @@ CloudVariables.lockVariable = function(name, password) {
             //
             // If locked by someone else, then we need to queue the lock
             // If it is already locked, we should block until we can obtain the lock
-            const locked = !!isLocked(variable);
+            const lockOwner = getLockOwnerId(variable);
 
-            if (locked) {
+            if (lockOwner && lockOwner !== clientId) {
                 return this._queueLockFor(variable);
             } else {
                 return this._applyLock(variable._id, clientId, username);
