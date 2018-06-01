@@ -339,7 +339,8 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
                 });
             }
 
-            if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
+            if ((ROBOSCAPE_MODE === 'security' && msgType !== 'set led') ||
+                ROBOSCAPE_MODE === 'both') {
                 var text = msgType;
                 for (var i = 0; i < fields.length; i++) {
                     text += ' ' + content[fields[i]];
@@ -832,17 +833,23 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
                 return true;
             }
 
-            // for replay attacks
-            robot.commandToClient(command);
+            if (command.match(/^backdoor[, ](.*)$/)) {
+                log('executing ' + command);
+                command = RegExp.$1;
+            } else {
+                // for replay attacks
+                robot.commandToClient(command);
 
-            command = robot.decrypt(command);
-            var seqNum = -1;
-            if (command.match(/^(\d+)[, ](.*)$/)) {
-                seqNum = +RegExp.$1;
-                command = RegExp.$2;
-            }
-            if (!robot.accepts(this.socket.uuid, seqNum)) {
-                return false;
+                command = robot.decrypt(command);
+
+                var seqNum = -1;
+                if (command.match(/^(\d+)[, ](.*)$/)) {
+                    seqNum = +RegExp.$1;
+                    command = RegExp.$2;
+                }
+                if (!robot.accepts(this.socket.uuid, seqNum)) {
+                    return false;
+                }
             }
 
             if (command.match(/^is alive$/)) {
