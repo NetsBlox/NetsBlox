@@ -343,6 +343,7 @@ class NetsBloxSocket {
 
     newRoom (opts) {
         opts = opts || {role: 'myRole'};
+        opts.role = opts.role || 'myRole';
         return this.getNewName(opts.room || opts.name)
             .then(name => {
                 let room = null;

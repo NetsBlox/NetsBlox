@@ -552,6 +552,18 @@
             });
     };
 
+    ProjectStorage.getById = function (id) {
+        return Q(collection.findOne({_id: id}))
+            .then(data => {
+                var params = {
+                    logger: logger,
+                    db: collection,
+                    data
+                };
+                return data ? new Project(params) : null;
+            });
+    };
+
     ProjectStorage.getTransientProject = function (username, projectName) {
         return collection.findOne({owner: username, name: projectName, transient: true})
             .then(data => {

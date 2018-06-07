@@ -3,6 +3,7 @@
 const ActiveRoom = require('./active-room');
 const _ = require('lodash');
 const Projects = require('../storage/projects');
+const Q = require('q');
 
 var RoomManager = function() {
     var self = this;
@@ -88,6 +89,7 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
     const prettyName = `"${name}" for "${ownerId}"`;
     this._logger.trace(`getting project ${prettyName}`);
 
+    this._logger.trace(`retrieving project ${name} for ${ownerId}`);
     return Projects.getProject(ownerId, name)
         .then(project => {
             if (!project) {
@@ -96,19 +98,22 @@ RoomManager.prototype.getRoom = function(socket, ownerId, name) {
                 return this.createRoom(socket, name, ownerId);
             }
 
-            const id = project.getId();
-            if (!this.rooms[id]) {  // create a room for the project
-                this._logger.trace(`retrieving project ${name} for ${ownerId}`);
-                return ActiveRoom.fromStore(this._logger, project)
-                    .then(room => {
-                        if (this.rooms[id]) return this.rooms[id];
-                        this.register(room);
-                        return room;
-                    });
-            } else {
-                return this.rooms[id];
-            }
+            return this.getRoomForProject(project);
         });
+};
+
+RoomManager.prototype.getRoomForProject = function(project) {
+    const id = project.getId();
+    if (!this.rooms[id]) {  // create a room for the project
+        return ActiveRoom.fromStore(this._logger, project)
+            .then(room => {
+                if (this.rooms[id]) return this.rooms[id];
+                this.register(room);
+                return room;
+            });
+    } else {
+        return Q(this.rooms[id]);
+    }
 };
 
 RoomManager.prototype.register = function(room) {
