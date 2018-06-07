@@ -163,16 +163,18 @@ module.exports = [
         Parameters: 'socketId,name',
         Method: 'Post',
         Note: '',
-        middleware: ['hasSocket'],
         Handler: function(req, res) {
-            var {socketId, name} = req.body,
-                socket = SocketManager.getSocket(socketId);
+            const {clientId, name} = req.body;
+            const socket = SocketManager.getSocket(clientId);
 
             return socket.newRoom({role: name})
                 .then(() => socket.getRoom())
                 .then(room => {
                     const name = socket.role;
-                    return res.send(`projectId=${room.getProjectId()}&roleName=${name}`);
+                    return res.send({
+                        projectId: room.getProjectId(),
+                        roleName: name
+                    });
                 });
         }
     },
@@ -181,7 +183,6 @@ module.exports = [
         Parameters: 'socketId,projectId,roomName,roleName,owner,actionId',
         Method: 'Post',
         Note: '',
-        middleware: ['hasSocket'],
         Handler: function(req, res) {
             // Look up the projectId
             const {socketId, owner, roleName, roomName, actionId} = req.body;
@@ -207,7 +208,7 @@ module.exports = [
                     return room.add(socket, roleName);
                 })
                 .then(() => socket.requestActionsAfter(actionId))
-                .then(() => res.send(`projectId=${projectId}`));
+                .then(() => res.send({projectId}));
         }
     },
     {
