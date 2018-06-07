@@ -280,7 +280,7 @@ module.exports = [
             return room.getRole(dstId)
                 .then(project => {
                     if (project) {
-                        project = Utils.serializeRole(project, room.name);
+                        project = Utils.serializeRole(project, room.getProject());
                     }
                     // Update the room state
                     room.add(socket, dstId);
@@ -446,7 +446,7 @@ function acceptInvitation (invite, socketId) {
     return room.getRole(invite.role)
         .then(project => {
             room.add(socket, invite.role);
-            return Utils.serializeRole(project, room.name);
+            return Utils.serializeRole(project, room.getProject());
         });
 }
 

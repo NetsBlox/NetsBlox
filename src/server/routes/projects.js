@@ -159,6 +159,58 @@ var applyAspectRatio = function (thumbnail, aspectRatio) {
 
 module.exports = [
     {
+        Service: 'newProject',
+        Parameters: 'socketId,name',
+        Method: 'Post',
+        Note: '',
+        middleware: ['hasSocket'],
+        Handler: function(req, res) {
+            var {socketId, name} = req.body,
+                socket = SocketManager.getSocket(socketId);
+
+            return socket.newRoom({role: name})
+                .then(() => socket.getRoom())
+                .then(room => {
+                    const name = socket.role;
+                    return res.send(`projectId=${room.getProjectId()}&roleName=${name}`);
+                });
+        }
+    },
+    {
+        Service: 'setClientState',
+        Parameters: 'socketId,projectId,roomName,roleName,owner,actionId',
+        Method: 'Post',
+        Note: '',
+        middleware: ['hasSocket'],
+        Handler: function(req, res) {
+            // Look up the projectId
+            const {socketId, owner, roleName, roomName, actionId} = req.body;
+            let {projectId} = req.body;
+            const socket = SocketManager.getSocket(socketId);
+
+            // Get the room by projectId and have the socket join the role
+            return Projects.getById(projectId)
+                .then(project => {
+                    if (project) {
+                        return RoomManager.getRoomForProject(project);
+                    } else {
+                        return RoomManager.createRoom(socket, roomName, owner);
+                    }
+                })
+                .then(room => {
+                    projectId = room.getProjectId();
+                    if (!room.hasRole(roleName)) {
+                        this._logger.trace(`created role ${roleName} in ${owner}/${roomName}`);
+                        return room.createRole(roleName)
+                            .then(() => room.add(socket, roleName));
+                    }
+                    return room.add(socket, roleName);
+                })
+                .then(() => socket.requestActionsAfter(actionId))
+                .then(() => res.send(`projectId=${projectId}`));
+        }
+    },
+    {
         Service: 'saveProject',
         Parameters: 'roleName,projectName,currentProjectName,ownerId,overwrite,srcXml,mediaXml',
         Method: 'Post',
@@ -191,7 +243,7 @@ module.exports = [
                     .then(() => activeRoom.getProject().archive())
                     .then(() => activeRoom.setRole(roleName, roleData))
                     .then(() => activeRoom.getProject().persist())
-                    .then(() => res.status(200).send('saved'))
+                    .then(() => res.status(200).send(`projectId=${activeRoom.getProjectId()}`))
                     .catch(err => {
                         const msg = `could not save ${currentProjectName} for ${ownerId}: ${err}`;
                         error(msg);
@@ -268,7 +320,7 @@ module.exports = [
                 .then(() => project.persist())
                 .then(() => {
                     trace(`${username} saved a copy of project: ${name}`);
-                    res.sendStatus(200);
+                    return res.status(200).send(`projectId=${project.getId()}`);
                 });
         }
     },
