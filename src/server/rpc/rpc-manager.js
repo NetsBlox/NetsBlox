@@ -25,8 +25,10 @@ const DEFAULT_COMPATIBILITY = {arguments: {}};
 var RPCManager = function() {
     this._logger = new Logger('netsblox:services');
     this.rpcRegistry = {};
+    this._rpcInstances = {};
     this.rpcs = this.loadRPCs();
     this.router = this.createRouter();
+    this.checkStaleServices();
 };
 
 /**
@@ -163,12 +165,12 @@ RPCManager.prototype.createRouter = function() {
 };
 
 RPCManager.prototype.addRoute = function(router, RPC) {
-    this._logger.info('Adding route for '+RPC.serviceName);
-    router.route('/' + RPC.serviceName + '/:action')
+    this._logger.info(`Adding route for ${RPC.serviceName}`);
+    router.route(`/${RPC.serviceName}/:action`)
         .post(this.handleRPCRequest.bind(this, RPC));
 
     if (RPC.COMPATIBILITY.path) {
-        router.route('/' + RPC.COMPATIBILITY.path + '/:action')
+        router.route(`/${RPC.COMPATIBILITY.path}/:action`)
             .post(this.handleRPCRequest.bind(this, RPC));
     }
 };
@@ -181,31 +183,27 @@ RPCManager.prototype.addRoute = function(router, RPC) {
  * @param {String} uuid
  * @return {RPC}
  */
-RPCManager.prototype.getRPCInstance = function(name, uuid) {
+RPCManager.prototype.getRPCInstance = function(name, projectId) {
     const RPC = this.rpcs.find(rpc => rpc.serviceName === name);
-    let socket,
-        rpcs;
 
     if (typeof RPC !== 'function') {  // stateless rpc
         return RPC;
     }
 
     // Look up the rpc context
-    // socket -> active room -> rpc contexts
-    socket = SocketManager.getSocket(uuid);
-    if (!socket || !socket._room) {
-        return null;
+    if (!this._rpcInstances[projectId]) {
+        this._rpcInstances[projectId] = {};
     }
-    const room = socket._room;
-    rpcs = room.rpcs;
+    const projectRPCs = this._rpcInstances[projectId];
 
     // If the RPC hasn't been created for the given room, create one
-    if (!rpcs[RPC.serviceName]) {
-        this._logger.info(`Creating new RPC (${RPC.serviceName}) for ${room.uuid}`);
-        rpcs[RPC.serviceName] = new RPC(room.uuid);
+    if (!projectRPCs[RPC.serviceName]) {
+        this._logger.info(`Creating new RPC (${RPC.serviceName}) for ${projectId}`);
+        projectRPCs[RPC.serviceName] = new RPC(projectId);
     }
 
-    return rpcs[RPC.serviceName];
+    projectRPCs.lastInvocationTime = new Date();
+    return projectRPCs[RPC.serviceName];
 };
 
 RPCManager.prototype.getArgumentsFor = function(service, action) {
@@ -213,8 +211,9 @@ RPCManager.prototype.getArgumentsFor = function(service, action) {
 };
 
 RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
+    const uuid = req.query.uuid;
+    const projectId = req.query.projectId;
     var action,
-        uuid = req.query.uuid,
         oldFieldNameFor,
         args,
         rpc;
@@ -225,15 +224,15 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
 
     // Then pass the call through
     if (expectedArgs) {
-        rpc = this.getRPCInstance(RPC.serviceName, uuid);
-        if (rpc === null) {  // Could not create/find rpc (rpc is stateful and group is unknown)
-            this._logger.log(`Could not find group for user "${uuid}"`);
-            return res.status(401).send('ERROR: user not found. who are you?');
-        }
+        rpc = this.getRPCInstance(RPC.serviceName, projectId);
 
         // Add the netsblox socket for triggering network messages from an RPC
         let ctx = Object.create(rpc);
         ctx.socket = SocketManager.getSocket(uuid);
+        if (!ctx.socket) {
+            this._logger.warn(`Calling RPC with disconnected websocket: ${uuid} (${projectId})`);
+        }
+
         ctx.response = res;
         ctx.request = req;
         if (!ctx.socket) {
@@ -356,6 +355,27 @@ RPCManager.prototype.sendRPCError = function(response, error) {
 
 RPCManager.prototype.isRPCLoaded = function(rpcPath) {
     return !!this.rpcRegistry[rpcPath] || this.rpcRegistry['/' + rpcPath];
+};
+
+RPCManager.prototype.checkStaleServices = function() {
+    const minutes = 60*1000;
+    this.removeStaleRPCInstances();
+    setTimeout(() => this.checkStaleServices(), 10*minutes);
+};
+
+RPCManager.prototype.removeStaleRPCInstances = function() {
+    const MAX_STALE_TIME = 12*60*60*1000;  // consider services stale after 12 hours
+    const projectIds = Object.keys(this._rpcInstances);
+    const now = new Date();
+
+    projectIds.forEach(projectId => {
+        const projectRPCs = this._rpcInstances[projectId];
+        const sinceLastInvocation = now - projectRPCs.lastInvocationTime;
+        if (sinceLastInvocation > MAX_STALE_TIME) {
+            this._logger.trace(`Removing stale service instances for ${projectId}`);
+            delete this._rpcInstances[projectId];
+        }
+    });
 };
 
 module.exports = new RPCManager();
