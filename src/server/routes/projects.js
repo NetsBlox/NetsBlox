@@ -213,14 +213,30 @@ module.exports = [
     },
     {
         Service: 'saveProject',
-        Parameters: 'roleName,projectName,currentProjectName,ownerId,overwrite,srcXml,mediaXml',
+        Parameters: 'roleName,projectName,projectId,ownerId,overwrite,srcXml,mediaXml',
         Method: 'Post',
         Note: '',
         middleware: ['isLoggedIn', 'setUser'],
         Handler: function(req, res) {
             const {user, username} = req.session;
-            const {projectName, roleName, ownerId, currentProjectName, overwrite} = req.body;
+            const {projectName, roleName, ownerId, projectId, overwrite} = req.body;
             const {srcXml, mediaXml} = req.body;
+
+            // If we are going to overwrite the project
+            //   - set the name
+            //   - if the other project is open, rename it
+            //   - ow, delete it
+            //
+            // If we are not overwriting the project, just name it and save!
+
+            // Check that the user can edit the project?
+            const activeRoom = RoomManager.getExistingRoomById(projectId);
+            if (!activeRoom) {
+                error(`Could not find active room for "${username}" - cannot save!`);
+                return res.status(500).send('ERROR: active room not found');
+            }
+            const currentProjectName = activeRoom.name;
+            trace(`Saving ${roleName} from ${currentProjectName} (${ownerId})`);
 
             const saveAs = () => {
                 const roleData = {
@@ -251,22 +267,6 @@ module.exports = [
                         throw err;
                     });
             };
-
-            // If we are going to overwrite the project
-            //   - set the name
-            //   - if the other project is open, rename it
-            //   - ow, delete it
-            //
-            // If we are not overwriting the project, just name it and save!
-
-            trace(`Saving ${roleName} from ${currentProjectName} (${ownerId})`);
-
-            // Check that the user can edit the project?
-            const activeRoom = RoomManager.getExistingRoom(ownerId, currentProjectName);
-            if (!activeRoom) {
-                error(`Could not find active room for "${username}" - cannot save!`);
-                return res.status(500).send('ERROR: active room not found');
-            }
 
             if (overwrite && projectName !== currentProjectName) {
                 trace(`overwriting ${currentProjectName} with ${projectName} for ${username}`);

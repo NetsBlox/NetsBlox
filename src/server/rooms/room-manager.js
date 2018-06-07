@@ -85,6 +85,10 @@ RoomManager.prototype.getExistingRoom = function(owner, name) {
     return allRooms.find(room => room.owner === owner && room.name === name);
 };
 
+RoomManager.prototype.getExistingRoomById = function(projectId) {
+    return this.rooms[projectId];
+};
+
 RoomManager.prototype.getRoom = function(socket, ownerId, name) {
     const prettyName = `"${name}" for "${ownerId}"`;
     this._logger.trace(`getting project ${prettyName}`);
