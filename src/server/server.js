@@ -25,6 +25,8 @@ var express = require('express'),
     // Logging
     Logger = require('./logger'),
 
+    SERVER_NAME = process.env.SERVER_NAME || 'netsblox',
+
     // Session and cookie info
     cookieParser = require('cookie-parser');
 
@@ -131,6 +133,7 @@ Server.prototype.configureRoutes = function() {
             return middleware.setUsername(req, res).then(() => {
                 const contents = {
                     username: req.session.username,
+                    clientId: this.getNewClientId()
                 };
                 return res.send(testTpl(contents));
             });
@@ -148,6 +151,7 @@ Server.prototype.configureRoutes = function() {
                     username: req.session.username,
                     isDevMode: isDevMode,
                     googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
+                    clientId: this.getNewClientId(),
                     baseUrl,
                     url: url
                 };
@@ -272,6 +276,10 @@ Server.prototype.configureRoutes = function() {
             .then(content => res.send(content.SourceCode));
     });
 
+};
+
+Server.prototype.getNewClientId = function() {
+    return '_' + SERVER_NAME + Date.now();
 };
 
 Server.prototype.getExamplesIndex = function(withMetadata) {
