@@ -220,77 +220,74 @@ module.exports = [
         Note: '',
         middleware: ['isLoggedIn', 'setUser'],
         Handler: function(req, res) {
+            // Check permissions
+            // TODO
+            // Change "overwrite" to be handled by the client?
+            // TODO
             const {user, username} = req.session;
             const {projectName, roleName, ownerId, projectId, overwrite} = req.body;
             const {srcXml, mediaXml} = req.body;
 
-            // If we are going to overwrite the project
-            //   - set the name
-            //   - if the other project is open, rename it
-            //   - ow, delete it
+            // Get any projects with colliding name
+            //   - if they are currently opened
+            //     - rename room
+            //     - set to transient
+            //   - else
+            //     - delete
             //
-            // If we are not overwriting the project, just name it and save!
-
-            // Check that the user can edit the project?
-            const activeRoom = RoomManager.getExistingRoomById(projectId);
-            if (!activeRoom) {
-                error(`Could not find active room for "${username}" - cannot save!`);
-                return res.status(500).send('ERROR: active room not found');
-            }
-            const currentProjectName = activeRoom.name;
+            // Get the project
+            //   - set the name
+            //   - set the role content
+            //   - persist
+            //
+            let project = null;
             trace(`Saving ${roleName} from ${projectName} (${ownerId})`);
+            return Projects.getById(projectId)
+                .then(_project => {
+                    // if project name is different from save name,
+                    // it is "Save as" (make a copy)
+                    project = _project;
+                    const isSaveAs = project.name !== projectName;
 
-            const saveAs = () => {
-                const roleData = {
-                    SourceCode: srcXml,
-                    Media: mediaXml
-                };
-
-                // If the projectName is different from currentProjectName,
-                // we should make a copy of the project and update the room
-                const makeCopy = projectName !== currentProjectName;
-                let prepareProject = Q();
-                if (makeCopy) {
-                    prepareProject = activeRoom.getProject().getCopy(user)
-                        .then(project => {
-                            activeRoom.setStorage(project);
-                            return activeRoom.changeName(projectName, null, true)
-                                .then(name => trace('changed name to', name));
-                        });
-                }
-
-                return prepareProject
-                    .then(() => activeRoom.getProject().archive())
-                    .then(() => activeRoom.setRole(roleName, roleData))
-                    .then(() => activeRoom.getProject().persist())
-                    .then(() => res.status(200).send(`projectId=${activeRoom.getProjectId()}`))
-                    .catch(err => {
-                        const msg = `could not save ${projectName} for ${ownerId}: ${err}`;
-                        error(msg);
-                        throw err;
-                    });
-            };
-
-            if (overwrite && projectName !== currentProjectName) {
-                trace(`overwriting ${currentProjectName} with ${projectName} for ${username}`);
-
-                const otherRoom = RoomManager.getExistingRoom(username, projectName);
-                const isSame = otherRoom === activeRoom;
-                if (otherRoom && !isSame) {  // rename the existing, active room
-                    trace(`Renaming existing open project: ${projectName}`);
-                    return otherRoom.changeName(projectName, true).then(saveAs);
-                } else {  // delete the existing
-                    return Projects.get(username, projectName)
-                        .then(project => {
-                            if (project) {
-                                return project.destroy();
-                            }
-                        })
-                        .then(saveAs);
-                }
-            } else {
-                return saveAs();
-            }
+                    if (isSaveAs) {
+                        trace(`Detected "save as". Copying original ${project.name}`);
+                        return project.getCopy().persist()  // save the original
+                            // get any project with colliding name and
+                            //   - if it is open
+                            //     - rename and set to transient
+                            //   - else, delete it (overwrite it)
+                            .then(() => Projects.get(ownerId, projectName))
+                            .then(existingProject => {  // ensure it is unique
+                                if (existingProject.getId().toString() === projectId) {
+                                    return null;
+                                }
+                                const collision = existingProject;
+                                const room = RoomManager.getExistingRoomById(collision.getId());
+                                if (room) {
+                                    trace(`found name collision with open project. Renaming and unpersisting.`);
+                                    return room.changeName(null, true, true)
+                                        .then(() => collision.unpersist());
+                                } else {
+                                    trace(`found name collision with project. Overwriting ${project.name}.`);
+                                    return collision.destroy();
+                                }
+                            });
+                    }
+                })
+                .then(() => project.archive())
+                .then(() => {
+                    const roleData = {
+                        SourceCode: srcXml,
+                        Media: mediaXml
+                    };
+                    return project.setRole(roleName, roleData);
+                })
+                .then(() => project.persist())
+                .then(() => res.status(200).send({projectId}))
+                .catch(err => {
+                    error(`Error saving ${projectId}:`, err);
+                    return res.status(500).send(err);
+                });
         }
     },
     {
