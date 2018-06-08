@@ -313,25 +313,22 @@ module.exports = [
     },
     {  // Collaboration
         Service: 'inviteToCollaborate',
-        Parameters: 'socketId,invitee,ownerId,roomName',
+        Parameters: 'socketId,invitee,ownerId,roomName,projectId',
         middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
+            const {invitee, projectId, role, roomName} = req.body;
             var inviter = req.session.username,
-                invitee = req.body.invitee,
-                roomName = req.body.roomName,
-                roomId = utils.uuid(req.body.ownerId, roomName),
-                role = req.body.role,
-                inviteId = ['collab', inviter, invitee, roomId, role].join('-'),
+                inviteId = ['collab', inviter, invitee, projectId, role].join('-'),
                 inviteeSockets = SocketManager.socketsFor(invitee);
 
-            log(`${inviter} is inviting ${invitee} to ${roomId}`);
+            log(`${inviter} is inviting ${invitee} to ${projectId}`);
 
             // Record the invitation
             invites[inviteId] = {
                 owner: req.body.ownerId,
-                project: roomName,  // TODO: This would be nice to be an id...
+                projectId: projectId,
                 invitee
             };
 
@@ -344,7 +341,7 @@ module.exports = [
                         type: 'collab-invitation',
                         id: inviteId,
                         roomName: roomName,
-                        room: roomId,
+                        projectId: projectId,
                         inviter,
                         role: role
                     };
@@ -391,16 +388,23 @@ module.exports = [
             if (response) {
                 // TODO: update the inviter...
                 // Add the given user as a collaborator
-                const uuid = Utils.uuid(invite.owner, invite.project);
-                const room = RoomManager.getExistingRoom(invite.owner, invite.project);
+                const {owner, projectId} = invite;
+                const room = RoomManager.getExistingRoomById(projectId);
                 if (!room) {
                     // TODO: Look up the room
-                    warn(`room no longer exists "${uuid}`);
-                    return Projects.getProject(invite.owner, invite.project)
-                        .then(project => project.addCollaborator(username))
-                        .then(() => res.sendStatus(200));
+                    log(`room is not open "${projectId}`);
+                    return Projects.getProject(owner, invite.project)
+                        .then(project => {
+                            if (project) {
+                                return project.addCollaborator(username)
+                                    .then(() => res.status(200).send({projectId}));
+                            } else {
+                                return res.status(400).send('Project no longer exists');
+                            }
+                        });
                 }
-                room.addCollaborator(username).then(() => res.sendStatus(200));
+                return room.addCollaborator(username)
+                    .then(() => res.status(200).send({projectId: projectId}));
             }
         }
     }
