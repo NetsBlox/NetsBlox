@@ -238,13 +238,14 @@ module.exports = [
                 return res.status(500).send('ERROR: active room not found');
             }
             const currentProjectName = activeRoom.name;
-            trace(`Saving ${roleName} from ${currentProjectName} (${ownerId})`);
+            trace(`Saving ${roleName} from ${projectName} (${ownerId})`);
 
             const saveAs = () => {
                 const roleData = {
                     SourceCode: srcXml,
                     Media: mediaXml
                 };
+
                 // If the projectName is different from currentProjectName,
                 // we should make a copy of the project and update the room
                 const makeCopy = projectName !== currentProjectName;
@@ -264,7 +265,7 @@ module.exports = [
                     .then(() => activeRoom.getProject().persist())
                     .then(() => res.status(200).send(`projectId=${activeRoom.getProjectId()}`))
                     .catch(err => {
-                        const msg = `could not save ${currentProjectName} for ${ownerId}: ${err}`;
+                        const msg = `could not save ${projectName} for ${ownerId}: ${err}`;
                         error(msg);
                         throw err;
                     });
