@@ -318,7 +318,7 @@ module.exports = [
             let project = null;
             return user.getNewName(name)
                 .then(_name => name = _name)
-                .then(() => activeRoom.getProject().getCopy(user))
+                .then(() => activeRoom.getProject().getCopyFor(user))
                 .then(_project => project = _project)
                 .then(() => project.setName(name))
                 .then(() => project.persist())
@@ -496,7 +496,7 @@ module.exports = [
                         // Clone, change the room name, and send!
                         // Since they are the same, we assume the user wants to create
                         // a copy of the active room
-                        return rooms.stored.getCopy(user)
+                        return rooms.stored.getCopyFor(user)
                             .then(copy => sendProjectTo(copy, res));
                     } else {
                         // not the same; simply change the name of the active room

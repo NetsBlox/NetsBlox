@@ -1,6 +1,7 @@
 (function(ProjectStorage) {
 
     const DataWrapper = require('./data');
+    const ObjectId = require('mongodb').ObjectId;
     const Q = require('q');
     const _ = require('lodash');
     const blob = require('./blob');
@@ -231,7 +232,7 @@
                 .then(roles => Q.all(roles.map(loadRoleContent)));
         }
 
-        getCopy(user) {
+        getCopyFor(user) {
             const owner = user.username;
             return this.getRawProject()
                 .then(raw => {
@@ -251,6 +252,22 @@
                             });
                             return project.create(raw.roles);
                         });
+                });
+        }
+
+        getCopy() {
+            return this.getRawProject()
+                .then(metadata => {
+                    metadata.originTime = Date.now();
+                    metadata.collaborators = [];
+                    metadata.transient = true;
+
+                    const project = new Project({
+                        logger: this._logger,
+                        db: this._db,
+                        data: metadata
+                    });
+                    return project.create(metadata.roles);
                 });
         }
 
@@ -553,7 +570,7 @@
     };
 
     ProjectStorage.getById = function (id) {
-        return Q(collection.findOne({_id: id}))
+        return ProjectStorage.getRawProjectById(id)
             .then(data => {
                 var params = {
                     logger: logger,
@@ -562,6 +579,11 @@
                 };
                 return data ? new Project(params) : null;
             });
+    };
+
+    ProjectStorage.getRawProjectById = function (id) {
+        id = typeof id === 'string' ? ObjectId(id) : id;
+        return Q(collection.findOne({_id: id}));
     };
 
     ProjectStorage.getTransientProject = function (username, projectName) {
