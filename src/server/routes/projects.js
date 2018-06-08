@@ -160,14 +160,16 @@ var applyAspectRatio = function (thumbnail, aspectRatio) {
 module.exports = [
     {
         Service: 'newProject',
-        Parameters: 'socketId,name',
+        Parameters: 'clientId,name',
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
             const {clientId, name} = req.body;
             const socket = SocketManager.getSocket(clientId);
 
-            return socket.newRoom({role: name})
+            return Q.nfcall(middleware.trySetUser, req, res)
+                .then(loggedIn => loggedIn && socket.onLogin(req.session.user))
+                .then(() => socket.newRoom({role: name}))
                 .then(() => socket.getRoom())
                 .then(room => {
                     const name = socket.role;
