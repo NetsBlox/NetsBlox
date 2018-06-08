@@ -246,7 +246,7 @@ module.exports = [
         Handler: function(req, res) {
             // Save the latest role content (include xml in the req)
             // TODO
-            var {user, username} = req.session.username,
+            var {user, username} = req.session,
                 {socketId} = req.body,
                 socket = SocketManager.getSocket(socketId),
 
