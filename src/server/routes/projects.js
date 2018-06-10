@@ -201,7 +201,6 @@ module.exports = [
                     }
                 })
                 .then(room => {
-                    projectId = room.getProjectId();
                     if (!room.hasRole(roleName)) {
                         this._logger.trace(`created role ${roleName} in ${owner}/${roomName}`);
                         return room.createRole(roleName)
@@ -244,12 +243,16 @@ module.exports = [
             //   - persist
             //
             let project = null;
-            trace(`Saving ${roleName} from ${projectName} (${ownerId})`);
+            trace(`Saving ${roleName} from ${projectName} (${projectId})`);
             return Projects.getById(projectId)
                 .then(_project => {
                     // if project name is different from save name,
                     // it is "Save as" (make a copy)
+
                     project = _project;
+                    // Sometimes the project isn't found...
+                    // How can this happen? TODO
+                    // what if they are using a tmp id?
                     const isSaveAs = project.name !== projectName;
 
                     if (isSaveAs) {
