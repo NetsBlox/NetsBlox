@@ -582,6 +582,9 @@
     };
 
     ProjectStorage.getRawProjectById = function (id) {
+        if (id.length > 24) {  // invalid ObjectId (using tmp ID)
+            return Q(null);
+        }
         id = typeof id === 'string' ? ObjectId(id) : id;
         return Q(collection.findOne({_id: id}));
     };
