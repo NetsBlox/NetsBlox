@@ -180,16 +180,16 @@ module.exports = [
                 });
         }
     },
-    {
+    {  // TODO: Should this be updated to be included in all requests?
         Service: 'setClientState',
-        Parameters: 'socketId,projectId,roomName,roleName,owner,actionId',
+        Parameters: 'clientId,projectId,roomName,roleName,owner,actionId',
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
             // Look up the projectId
-            const {socketId, owner, roleName, roomName, actionId} = req.body;
+            const {clientId, owner, roleName, roomName, actionId} = req.body;
             let {projectId} = req.body;
-            const socket = SocketManager.getSocket(socketId);
+            const socket = SocketManager.getSocket(clientId);
 
             // Get the room by projectId and have the socket join the role
             return Projects.getById(projectId)
@@ -210,7 +210,10 @@ module.exports = [
                     return room.add(socket, roleName);
                 })
                 .then(() => socket.requestActionsAfter(actionId))
-                .then(() => res.send({projectId}));
+                .then(() => res.send({projectId}))
+                .catch(err => {
+                    res.status(500).send(err.message);
+                });
         }
     },
     {
