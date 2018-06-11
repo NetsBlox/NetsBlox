@@ -256,15 +256,19 @@ module.exports = [
                     const isSaveAs = project.name !== projectName;
 
                     if (isSaveAs) {
-                        trace(`Detected "save as". Copying original ${project.name}`);
-                        return project.getCopy().persist()  // save the original
-                            // get any project with colliding name and
-                            //   - if it is open
-                            //     - rename and set to transient
-                            //   - else, delete it (overwrite it)
+                        // Only copy original if it has already been saved
+                        trace(`Detected "save as". Saving ${project.name} as ${projectName}`);
+                        return project.isTransient()
+                            .then(isTransient => {
+                                if (!isTransient) {
+                                    trace(`Original project already saved. Copying original ${project.name}`);
+                                    return project.getCopy()  // save the original
+                                        .then(copy => copy.persist());
+                                }
+                            })
                             .then(() => Projects.get(ownerId, projectName))
-                            .then(existingProject => {  // ensure it is unique
-                                if (existingProject.getId().toString() === projectId) {
+                            .then(existingProject => {  // overwrite or rename any collisions
+                                if (!existingProject || existingProject.getId().toString() === projectId) {
                                     return null;
                                 }
                                 const collision = existingProject;
