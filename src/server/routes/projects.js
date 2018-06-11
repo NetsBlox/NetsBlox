@@ -280,6 +280,15 @@ module.exports = [
                             });
                     }
                 })
+                .then(() => {  // update room name
+                    return project.setName(projectName)
+                        .then(() => {
+                            const room = RoomManager.getExistingRoomById(projectId);
+                            if (room) {
+                                return room.update(projectName);
+                            }
+                        });
+                })
                 .then(() => project.archive())
                 .then(() => {
                     const roleData = {
