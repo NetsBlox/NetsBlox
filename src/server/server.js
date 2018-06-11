@@ -399,7 +399,18 @@ Server.prototype.createRouter = function() {
             if (api.Service) {
                 logger.trace(`received ${api.Service} request`);
             }
-            return api.Handler.call(this, req, res);
+            try {
+                const result = api.Handler.call(this, req, res);
+                if (result && result.then) {
+                    result.catch(err => {
+                        logger.error(`error occurred in ${api.URL}:`, e);
+                        res.status(500).send(e.message);
+                    });
+                }
+            } catch (e) {
+                logger.error(`error occurred in ${api.URL}:`, e);
+                res.status(500).send(e.message);
+            }
         });
     });
     return router;
