@@ -403,13 +403,13 @@ Server.prototype.createRouter = function() {
                 const result = api.Handler.call(this, req, res);
                 if (result && result.then) {
                     result.catch(err => {
-                        logger.error(`error occurred in ${api.URL}:`, e);
-                        res.status(500).send(e.message);
+                        logger.error(`error occurred in ${api.URL}:`, err);
+                        res.status(500).send(err.message);
                     });
                 }
-            } catch (e) {
-                logger.error(`error occurred in ${api.URL}:`, e);
-                res.status(500).send(e.message);
+            } catch (err) {
+                logger.error(`error occurred in ${api.URL}:`, err);
+                res.status(500).send(err.message);
             }
         });
     });
