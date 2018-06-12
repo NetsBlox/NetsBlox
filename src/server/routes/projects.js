@@ -224,7 +224,11 @@ module.exports = [
                     if (project) {
                         return RoomManager.getRoomForProject(project);
                     } else {
-                        return RoomManager.createRoom(socket, roomName, owner);
+                        return RoomManager.createRoom(socket, roomName, owner)
+                            .then(room => {
+                                projectId = room.getProjectId();
+                                return room;
+                            });
                     }
                 })
                 .then(room => {
@@ -251,17 +255,12 @@ module.exports = [
             const {clientId, projectId, name, role, roles} = req.body;
             const socket = SocketManager.getSocket(clientId);
 
-            let ensureHasRoom = Q();
-            if (!socket.hasRoom()) {
-                ensureHasRoom = RoomManager.createRoom(socket, 'untitled')
-                    .then(room => {
-                        return room.createRole(role)
-                            .then(() => room.changeName(name, false, true))
-                            .then(() => room.add(socket, role));
-                    });
-            }
-
-            return ensureHasRoom
+            return RoomManager.createRoom(socket, 'untitled')
+                .then(room => {
+                    return room.createRole(role)
+                        .then(() => room.changeName(name, false, true))
+                        .then(() => room.add(socket, role));
+                })
                 .then(() => socket.importRoom(roles))
                 .then(room => {
                     const projectId = room.getProjectId();
