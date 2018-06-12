@@ -242,6 +242,34 @@ module.exports = [
                 });
         }
     },
+    {  // TODO: Should this be updated to be included in all requests?
+        Service: 'importProject',
+        Parameters: 'clientId,projectId,name,role,roles',
+        Method: 'Post',
+        Note: '',
+        Handler: function(req, res) {
+            const {clientId, projectId, name, role, roles} = req.body;
+            const socket = SocketManager.getSocket(clientId);
+
+            let ensureHasRoom = Q();
+            if (!socket.hasRoom()) {
+                ensureHasRoom = RoomManager.createRoom(socket, 'untitled')
+                    .then(room => {
+                        return room.createRole(role)
+                            .then(() => room.changeName(name, false, true))
+                            .then(() => room.add(socket, role));
+                    });
+            }
+
+            return ensureHasRoom
+                .then(() => socket.importRoom(roles))
+                .then(room => {
+                    const projectId = room.getProjectId();
+                    return room.changeName(name, false, true)
+                        .then(() => res.send({projectId}));
+                });
+        }
+    },
     {
         Service: 'saveProject',
         Parameters: 'roleName,projectName,projectId,ownerId,overwrite,srcXml,mediaXml',
