@@ -167,15 +167,35 @@ module.exports = [
             const {clientId, name} = req.body;
             const socket = SocketManager.getSocket(clientId);
 
+            // TODO: Remove the dependency on the websocket connection
             return Q.nfcall(middleware.trySetUser, req, res)
-                .then(loggedIn => loggedIn && socket.onLogin(req.session.user))
-                .then(() => socket.newRoom({role: name}))
-                .then(() => socket.getRoom())
+                .then(loggedIn => {
+                    if (socket) {
+                        if (loggedIn) {
+                            socket.onLogin(req.session.user);
+                        }
+                        return socket.newRoom({role: name})
+                            .then(() => socket.getRoom());
+                    } else {
+                        let username = req.session.username || clientId;
+                        return RoomManager.createRoom({username}, 'untitled')
+                            .then(room => {
+                                return room.createRole('myRole')
+                                    .then(() => room.changeName(null, false, true))
+                                    .then(() => room);
+                            });
+                    }
+                })
                 .then(room => {
-                    const name = socket.role;
+                    console.log();
+                    console.log();
+                    console.log(room.name);
+                    const roleName = socket ? socket.role : 'myRole';
+                    const projectId = room.getProjectId();
+                    this._logger.trace(`Created new project: ${projectId} (${roleName})`);
                     return res.send({
-                        projectId: room.getProjectId(),
-                        roleName: name
+                        projectId,
+                        roleName
                     });
                 });
         }
@@ -189,10 +209,17 @@ module.exports = [
             // Look up the projectId
             const {clientId, owner, roleName, roomName, actionId} = req.body;
             let {projectId} = req.body;
+            // TODO: Remove the dependency on the websocket connection
             const socket = SocketManager.getSocket(clientId);
 
             // Get the room by projectId and have the socket join the role
-            return Projects.getById(projectId)
+            return Q.nfcall(middleware.trySetUser, req, res)
+                .then(loggedIn => {
+                    if (socket && loggedIn) {
+                            socket.onLogin(req.session.user);
+                    }
+                })
+                .then(() => Projects.getById(projectId))
                 .then(project => {
                     if (project) {
                         return RoomManager.getRoomForProject(project);

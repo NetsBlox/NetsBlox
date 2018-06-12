@@ -602,8 +602,15 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'rename-room': function(msg) {
-        if (this.isOwner()) {
-            this._room.changeName(msg.name, false, !!msg.inPlace);
+        // Look up the room using the projectId
+        const room = RoomManager.getExistingRoomById(msg.projectId);
+        if (room) {
+            const isOwner = room.getProject().owner === this.username;
+            if (isOwner) {
+                room.changeName(msg.name, false, !!msg.inPlace);
+            }
+        } else {
+            this._logger.error(`Could not find room for ${msg.projectId}`);
         }
     },
 
