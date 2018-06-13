@@ -246,7 +246,7 @@ module.exports = [
                 });
         }
     },
-    {  // TODO: Should this be updated to be included in all requests?
+    {
         Service: 'importProject',
         Parameters: 'clientId,projectId,name,role,roles',
         Method: 'Post',
