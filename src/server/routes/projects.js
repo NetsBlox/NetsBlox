@@ -187,9 +187,6 @@ module.exports = [
                     }
                 })
                 .then(room => {
-                    console.log();
-                    console.log();
-                    console.log(room.name);
                     const roleName = socket ? socket.role : 'myRole';
                     const projectId = room.getProjectId();
                     this._logger.trace(`Created new project: ${projectId} (${roleName})`);
@@ -252,7 +249,7 @@ module.exports = [
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
-            const {clientId, projectId, name, role, roles} = req.body;
+            const {clientId, name, role, roles} = req.body;
             const socket = SocketManager.getSocket(clientId);
 
             return RoomManager.createRoom(socket, 'untitled')
