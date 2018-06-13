@@ -278,10 +278,9 @@ module.exports = [
         Handler: function(req, res) {
             // Check permissions
             // TODO
-            // Change "overwrite" to be handled by the client?
-            // TODO
             const {user, username} = req.session;
-            const {projectName, roleName, ownerId, projectId, overwrite} = req.body;
+            const {roleName, ownerId, projectId, overwrite} = req.body;
+            let {projectName} = req.body;
             const {srcXml, mediaXml} = req.body;
 
             // Get any projects with colliding name
@@ -331,9 +330,13 @@ module.exports = [
                                     trace(`found name collision with open project. Renaming and unpersisting.`);
                                     return room.changeName(null, true, true)
                                         .then(() => collision.unpersist());
-                                } else {
+                                } else if (overwrite) {
                                     trace(`found name collision with project. Overwriting ${project.name}.`);
                                     return collision.destroy();
+                                } else {  // rename the project
+                                    const activeRoomNames = RoomManager.getAllActiveFor(username);
+                                    return user.getNewName(projectName, activeRoomNames)
+                                        .then(name => projectName = name);
                                 }
                             });
                     }
@@ -480,23 +483,22 @@ module.exports = [
     },
     {
         Service: 'hasConflictingStoredProject',
-        Parameters: 'socketId',
+        Parameters: 'projectId,name',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn', 'hasSocket', 'noCache', 'setUser'],
         Handler: function(req, res) {
-            var socket = SocketManager.getSocket(req.body.socketId),
-                roomName = socket._room.name,
-                user = req.session.user;
+            const {projectId, name} = req.body;
+            const user = req.session.user;
 
-            return getRoomsNamed.call(this, roomName, user).then(rooms => {
+            // Check if the name will conflict with any currently saved projects
+            return user.getRawProjects()
+                .then(projects => {
+                    const conflict = projects
+                        .find(project => project.name === name && project._id !== projectId);
 
-                var hasConflicting = rooms.stored && !rooms.areSame;
-
-                log(`${user.username} is checking if project "${roomName}" conflicts w/ any saved names (${hasConflicting})`);
-                // Check if it is actually the same - do the originTime's match?
-                return res.send(`hasConflicting=${!!hasConflicting}`);
-            });
+                    return res.send(`hasConflicting=${!!conflict}`);
+                });
         }
     },
     {
