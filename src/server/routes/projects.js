@@ -492,7 +492,7 @@ module.exports = [
             return user.getRawProjects()
                 .then(projects => {
                     const conflict = projects
-                        .find(project => project.name === name && project._id !== projectId);
+                        .find(project => project.name === name && project._id.toString() !== projectId);
 
                     log(`${user.username} is checking if "${name}" conflicts w/ any saved names (${!!conflict})`);
                     return res.send(`hasConflicting=${!!conflict}`);
