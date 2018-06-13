@@ -45,7 +45,7 @@ var serializeRole = (role, project) => {
     const src = role.SourceCode ?
         `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
-    return `RoomName=${name}&Owner=${owner}&` +
+    return `RoomName=${name}&Owner=${owner}&ProjectID=${project.getId()}&` +
         serialize(R.omit(['SourceCode', 'Media'], role)) +
         `&SourceCode=${src}`;
 };
@@ -56,7 +56,7 @@ var joinActiveProject = function(userId, room, res) {
     trace(`room "${room.name}" is already active`);
     return room.getRole(openRole).then(role => {
         trace(`adding ${userId} to role "${openRole}" at "${room.name}"`);
-        let serialized = serializeRole(role, room);
+        let serialized = serializeRole(role, room.getProject());
         return res.send(serialized);
     });
 };

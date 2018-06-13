@@ -159,82 +159,208 @@ var applyAspectRatio = function (thumbnail, aspectRatio) {
 
 module.exports = [
     {
+        Service: 'newProject',
+        Parameters: 'clientId,name',
+        Method: 'Post',
+        Note: '',
+        Handler: function(req, res) {
+            const {clientId, name} = req.body;
+            const socket = SocketManager.getSocket(clientId);
+
+            // TODO: Remove the dependency on the websocket connection
+            return Q.nfcall(middleware.trySetUser, req, res)
+                .then(loggedIn => {
+                    if (socket) {
+                        if (loggedIn) {
+                            socket.onLogin(req.session.user);
+                        }
+                        return socket.newRoom({role: name})
+                            .then(() => socket.getRoom());
+                    } else {
+                        let username = req.session.username || clientId;
+                        return RoomManager.createRoom({username}, 'untitled')
+                            .then(room => {
+                                return room.createRole('myRole')
+                                    .then(() => room.changeName(null, false, true))
+                                    .then(() => room);
+                            });
+                    }
+                })
+                .then(room => {
+                    const roleName = socket ? socket.role : 'myRole';
+                    const projectId = room.getProjectId();
+                    this._logger.trace(`Created new project: ${projectId} (${roleName})`);
+                    return res.send({
+                        projectId,
+                        roleName
+                    });
+                });
+        }
+    },
+    {  // TODO: Should this be updated to be included in all requests?
+        Service: 'setClientState',
+        Parameters: 'clientId,projectId,roomName,roleName,owner,actionId',
+        Method: 'Post',
+        Note: '',
+        Handler: function(req, res) {
+            // Look up the projectId
+            const {clientId, owner, roleName, roomName, actionId} = req.body;
+            let {projectId} = req.body;
+            // TODO: Remove the dependency on the websocket connection
+            const socket = SocketManager.getSocket(clientId);
+
+            // Get the room by projectId and have the socket join the role
+            return Q.nfcall(middleware.trySetUser, req, res)
+                .then(loggedIn => {
+                    if (socket && loggedIn) {
+                        socket.onLogin(req.session.user);
+                    }
+                })
+                .then(() => Projects.getById(projectId))
+                .then(project => {
+                    if (project) {
+                        return RoomManager.getRoomForProject(project);
+                    } else {
+                        return RoomManager.createRoom(socket, roomName, owner)
+                            .then(room => {
+                                projectId = room.getProjectId();
+                                return room;
+                            });
+                    }
+                })
+                .then(room => {
+                    if (!room.hasRole(roleName)) {
+                        this._logger.trace(`created role ${roleName} in ${owner}/${roomName}`);
+                        return room.createRole(roleName)
+                            .then(() => room.add(socket, roleName));
+                    }
+                    return room.add(socket, roleName);
+                })
+                .then(() => socket.requestActionsAfter(actionId))
+                .then(() => res.send({projectId}))
+                .catch(err => {
+                    res.status(500).send(err.message);
+                });
+        }
+    },
+    {
+        Service: 'importProject',
+        Parameters: 'clientId,projectId,name,role,roles',
+        Method: 'Post',
+        Note: '',
+        Handler: function(req, res) {
+            const {clientId, name, role, roles} = req.body;
+            const socket = SocketManager.getSocket(clientId);
+
+            return RoomManager.createRoom(socket, 'untitled')
+                .then(room => {
+                    return room.createRole(role)
+                        .then(() => room.changeName(name, false, true))
+                        .then(() => room.add(socket, role));
+                })
+                .then(() => socket.importRoom(roles))
+                .then(room => {
+                    const projectId = room.getProjectId();
+                    return room.changeName(name, false, true)
+                        .then(() => res.send({projectId}));
+                });
+        }
+    },
+    {
         Service: 'saveProject',
-        Parameters: 'roleName,projectName,currentProjectName,ownerId,overwrite,srcXml,mediaXml',
+        Parameters: 'roleName,projectName,projectId,ownerId,overwrite,srcXml,mediaXml',
         Method: 'Post',
         Note: '',
         middleware: ['isLoggedIn', 'setUser'],
         Handler: function(req, res) {
+            // Check permissions
+            // TODO
             const {user, username} = req.session;
-            const {projectName, roleName, ownerId, currentProjectName, overwrite} = req.body;
+            const {roleName, ownerId, projectId, overwrite} = req.body;
+            let {projectName} = req.body;
             const {srcXml, mediaXml} = req.body;
 
-            const saveAs = () => {
-                const roleData = {
-                    SourceCode: srcXml,
-                    Media: mediaXml
-                };
-                // If the projectName is different from currentProjectName,
-                // we should make a copy of the project and update the room
-                const makeCopy = projectName !== currentProjectName;
-                let prepareProject = Q();
-                if (makeCopy) {
-                    prepareProject = activeRoom.getProject().getCopy(user)
-                        .then(project => {
-                            activeRoom.setStorage(project);
-                            return activeRoom.changeName(projectName, null, true)
-                                .then(name => trace('changed name to', name));
-                        });
-                }
-
-                return prepareProject
-                    .then(() => activeRoom.getProject().archive())
-                    .then(() => activeRoom.setRole(roleName, roleData))
-                    .then(() => activeRoom.getProject().persist())
-                    .then(() => res.status(200).send('saved'))
-                    .catch(err => {
-                        const msg = `could not save ${currentProjectName} for ${ownerId}: ${err}`;
-                        error(msg);
-                        throw err;
-                    });
-            };
-
-            // If we are going to overwrite the project
-            //   - set the name
-            //   - if the other project is open, rename it
-            //   - ow, delete it
+            // Get any projects with colliding name
+            //   - if they are currently opened
+            //     - rename room
+            //     - set to transient
+            //   - else
+            //     - delete
             //
-            // If we are not overwriting the project, just name it and save!
+            // Get the project
+            //   - set the name
+            //   - set the role content
+            //   - persist
+            //
+            let project = null;
+            trace(`Saving ${roleName} from ${projectName} (${projectId})`);
+            return Projects.getById(projectId)
+                .then(_project => {
+                    // if project name is different from save name,
+                    // it is "Save as" (make a copy)
 
-            trace(`Saving ${roleName} from ${currentProjectName} (${ownerId})`);
+                    project = _project;
+                    // Sometimes the project isn't found...
+                    // How can this happen? TODO
+                    // what if they are using a tmp id?
+                    const isSaveAs = project.name !== projectName;
 
-            // Check that the user can edit the project?
-            const activeRoom = RoomManager.getExistingRoom(ownerId, currentProjectName);
-            if (!activeRoom) {
-                error(`Could not find active room for "${username}" - cannot save!`);
-                return res.status(500).send('ERROR: active room not found');
-            }
-
-            if (overwrite && projectName !== currentProjectName) {
-                trace(`overwriting ${currentProjectName} with ${projectName} for ${username}`);
-
-                const otherRoom = RoomManager.getExistingRoom(username, projectName);
-                const isSame = otherRoom === activeRoom;
-                if (otherRoom && !isSame) {  // rename the existing, active room
-                    trace(`Renaming existing open project: ${projectName}`);
-                    return otherRoom.changeName(projectName, true).then(saveAs);
-                } else {  // delete the existing
-                    return Projects.get(username, projectName)
-                        .then(project => {
-                            if (project) {
-                                return project.destroy();
+                    if (isSaveAs) {
+                        // Only copy original if it has already been saved
+                        trace(`Detected "save as". Saving ${project.name} as ${projectName}`);
+                        return project.isTransient()
+                            .then(isTransient => {
+                                if (!isTransient) {
+                                    trace(`Original project already saved. Copying original ${project.name}`);
+                                    return project.getCopy()  // save the original
+                                        .then(copy => copy.persist());
+                                }
+                            })
+                            .then(() => Projects.get(ownerId, projectName))
+                            .then(existingProject => {  // overwrite or rename any collisions
+                                if (!existingProject || existingProject.getId().toString() === projectId) {
+                                    return null;
+                                }
+                                const collision = existingProject;
+                                const room = RoomManager.getExistingRoomById(collision.getId());
+                                if (room) {
+                                    trace(`found name collision with open project. Renaming and unpersisting.`);
+                                    return room.changeName(null, true, true)
+                                        .then(() => collision.unpersist());
+                                } else if (overwrite) {
+                                    trace(`found name collision with project. Overwriting ${project.name}.`);
+                                    return collision.destroy();
+                                } else {  // rename the project
+                                    const activeRoomNames = RoomManager.getAllActiveFor(username);
+                                    return user.getNewName(projectName, activeRoomNames)
+                                        .then(name => projectName = name);
+                                }
+                            });
+                    }
+                })
+                .then(() => {  // update room name
+                    return project.setName(projectName)
+                        .then(() => {
+                            const room = RoomManager.getExistingRoomById(projectId);
+                            if (room) {
+                                return room.update(projectName);
                             }
-                        })
-                        .then(saveAs);
-                }
-            } else {
-                return saveAs();
-            }
+                        });
+                })
+                .then(() => project.archive())
+                .then(() => {
+                    const roleData = {
+                        SourceCode: srcXml,
+                        Media: mediaXml
+                    };
+                    return project.setRole(roleName, roleData);
+                })
+                .then(() => project.persist())
+                .then(() => res.status(200).send({projectId}))
+                .catch(err => {
+                    error(`Error saving ${projectId}:`, err);
+                    return res.status(500).send(err);
+                });
         }
     },
     {
@@ -262,13 +388,13 @@ module.exports = [
             let project = null;
             return user.getNewName(name)
                 .then(_name => name = _name)
-                .then(() => activeRoom.getProject().getCopy(user))
+                .then(() => activeRoom.getProject().getCopyFor(user))
                 .then(_project => project = _project)
                 .then(() => project.setName(name))
                 .then(() => project.persist())
                 .then(() => {
                     trace(`${username} saved a copy of project: ${name}`);
-                    res.sendStatus(200);
+                    return res.status(200).send(`projectId=${project.getId()}`);
                 });
         }
     },
@@ -354,23 +480,23 @@ module.exports = [
     },
     {
         Service: 'hasConflictingStoredProject',
-        Parameters: 'socketId',
+        Parameters: 'projectId,name',
         Method: 'post',
         Note: '',
-        middleware: ['isLoggedIn', 'hasSocket', 'noCache', 'setUser'],
+        middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
-            var socket = SocketManager.getSocket(req.body.socketId),
-                roomName = socket._room.name,
-                user = req.session.user;
+            const {projectId, name} = req.body;
+            const user = req.session.user;
 
-            return getRoomsNamed.call(this, roomName, user).then(rooms => {
+            // Check if the name will conflict with any currently saved projects
+            return user.getRawProjects()
+                .then(projects => {
+                    const conflict = projects
+                        .find(project => project.name === name && project._id !== projectId);
 
-                var hasConflicting = rooms.stored && !rooms.areSame;
-
-                log(`${user.username} is checking if project "${roomName}" conflicts w/ any saved names (${hasConflicting})`);
-                // Check if it is actually the same - do the originTime's match?
-                return res.send(`hasConflicting=${!!hasConflicting}`);
-            });
+                    log(`${user.username} is checking if "${name}" conflicts w/ any saved names (${!!conflict})`);
+                    return res.send(`hasConflicting=${!!conflict}`);
+                });
         }
     },
     {
@@ -440,7 +566,7 @@ module.exports = [
                         // Clone, change the room name, and send!
                         // Since they are the same, we assume the user wants to create
                         // a copy of the active room
-                        return rooms.stored.getCopy(user)
+                        return rooms.stored.getCopyFor(user)
                             .then(copy => sendProjectTo(copy, res));
                     } else {
                         // not the same; simply change the name of the active room

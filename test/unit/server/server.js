@@ -200,7 +200,7 @@ describe('Server Tests', function() {
         describe('Basic tests', function() {
             it('should exist', function(done) {
                 api.post('/guess?uuid='+uuid)
-                    .expect(401)
+                    .expect(400)
                     .end(done);
             });
         });
