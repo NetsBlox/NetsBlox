@@ -173,7 +173,7 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
  * @param {Longitude} longitude Longitude of center point
  * @param {BoundedNumber<0>} width Image width
  * @param {BoundedNumber<0>} height Image height
- * @param {BoundedNumber<0>} zoom Zoom level of map image
+ * @param {BoundedNumber<0,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.prototype.getMap = function(latitude, longitude, width, height, zoom){
@@ -189,7 +189,7 @@ GoogleMaps.prototype.getMap = function(latitude, longitude, width, height, zoom)
  * @param {Longitude} longitude Longitude of center point
  * @param {BoundedNumber<0>} width Image width
  * @param {BoundedNumber<0>} height Image height
- * @param {BoundedNumber<0>} zoom Zoom level of map image
+ * @param {BoundedNumber<0,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.prototype.getSatelliteMap = function(latitude, longitude, width, height, zoom){
@@ -205,7 +205,7 @@ GoogleMaps.prototype.getSatelliteMap = function(latitude, longitude, width, heig
  * @param {Longitude} longitude Longitude of center point
  * @param {BoundedNumber<0>} width Image width
  * @param {BoundedNumber<0>} height Image height
- * @param {BoundedNumber<0>} zoom Zoom level of map image
+ * @param {BoundedNumber<0,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.prototype.getTerrainMap = function(latitude, longitude, width, height, zoom){
