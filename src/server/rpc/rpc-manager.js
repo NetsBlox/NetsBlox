@@ -213,18 +213,18 @@ RPCManager.prototype.getArgumentsFor = function(service, action) {
 RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     const uuid = req.query.uuid;
     const projectId = req.query.projectId;
-    var action,
-        oldFieldNameFor,
-        args,
-        rpc;
+    const action = req.params.action;
 
-    action = req.params.action;
+    if(!uuid || !projectId) {
+        return res.status(400).send('Project ID and client ID are required.');
+    }
+
     const expectedArgs = this.getArgumentsFor(RPC.serviceName, action);
     this._logger.info(`Received request to ${RPC.serviceName} for ${action} (from ${uuid})`);
 
     // Then pass the call through
     if (expectedArgs) {
-        rpc = this.getRPCInstance(RPC.serviceName, projectId);
+        const rpc = this.getRPCInstance(RPC.serviceName, projectId);
 
         // Add the netsblox socket for triggering network messages from an RPC
         let ctx = Object.create(rpc);
@@ -241,8 +241,8 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         }
 
         // Get the arguments
-        oldFieldNameFor = RPC.COMPATIBILITY.arguments[action] || {};
-        args = expectedArgs.map(argName => {
+        const oldFieldNameFor = RPC.COMPATIBILITY.arguments[action] || {};
+        const args = expectedArgs.map(argName => {
             var oldName = oldFieldNameFor[argName];
             return req.body.hasOwnProperty(argName) ? req.body[argName] : req.body[oldName];
         });
