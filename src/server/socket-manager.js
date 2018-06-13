@@ -17,7 +17,8 @@ SocketManager.prototype.init = function(logger) {
 SocketManager.prototype.enable = function(wss) {
     this._logger.info('Socket management enabled!');
 
-    wss.on('connection', rawSocket => {
+    wss.on('connection', (rawSocket, req) => {
+        rawSocket.upgradeReq = req;
         var socket = new Socket(this._logger, rawSocket);
         this._sockets.push(socket);
     });
