@@ -486,7 +486,7 @@ module.exports = [
         Parameters: 'projectId,name',
         Method: 'post',
         Note: '',
-        middleware: ['isLoggedIn', 'hasSocket', 'noCache', 'setUser'],
+        middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
             const {projectId, name} = req.body;
             const user = req.session.user;
@@ -497,6 +497,7 @@ module.exports = [
                     const conflict = projects
                         .find(project => project.name === name && project._id !== projectId);
 
+                    log(`${user.username} is checking if "${name}" conflicts w/ any saved names (${!!conflict})`);
                     return res.send(`hasConflicting=${!!conflict}`);
                 });
         }
