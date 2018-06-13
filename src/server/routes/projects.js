@@ -216,7 +216,7 @@ module.exports = [
             return Q.nfcall(middleware.trySetUser, req, res)
                 .then(loggedIn => {
                     if (socket && loggedIn) {
-                            socket.onLogin(req.session.user);
+                        socket.onLogin(req.session.user);
                     }
                 })
                 .then(() => Projects.getById(projectId))
