@@ -70,6 +70,7 @@ var getProjectInfo = function(project) {
     preview.Updated = new Date(preview.Updated);
     preview.Public = project.Public;
     preview.Owner = project.owner;
+    preview.ID = project._id.toString();
     return preview;
 };
 
@@ -540,20 +541,18 @@ module.exports = [
     },
     {
         Service: 'isProjectActive',
-        Parameters: 'ProjectName',
+        Parameters: 'clientId,projectId',
         Method: 'post',
         Note: '',
-        middleware: ['isLoggedIn', 'noCache', 'setUser'],
+        middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
-            var roomName = req.body.ProjectName,
-                user = req.session.user;
-
-            return getRoomsNamed.call(this, roomName, user).then(rooms => {
-
-                log(`${user.username} is checking if project "${req.body.ProjectName}" is active (${rooms.areSame})`);
-                // Check if it is actually the same - do the originTime's match?
-                return res.send(`active=${rooms.areSame}`);
-            });
+            const {clientId, projectId} = req.body;
+            const room = RoomManager.getExistingRoomById(projectId);
+            if (room) {
+                const userCount = room.sockets().filter(socket => socket.uuid !== clientId).length;
+                return res.send(`active=${userCount > 0}`);
+            }
+            return res.send(`active=${!!room}`);
         }
     },
     {
