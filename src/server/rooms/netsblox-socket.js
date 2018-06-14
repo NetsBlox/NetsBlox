@@ -360,9 +360,7 @@ class NetsBloxSocket {
                         this._logger.info(`"${this.username}" made a new room "${name}" (${room.getProjectId()})`);
                         return room.createRole(opts.role);
                     })
-                    .then(() => {
-                        return this.join(room, opts.role);
-                    })
+                    .then(() => this.join(room, opts.role))
                     .catch(err => this._logger.error(err));
             });
     }
