@@ -119,7 +119,7 @@ BugReporter.prototype.getRoomState = function(socket) {
         return Q({error: 'socket not found'});
     }
 
-    const room = socket.getRawRoom();
+    const room = socket.getRoomSync();
     if (!room) {
         return Q({error: 'no associated room'});
     }

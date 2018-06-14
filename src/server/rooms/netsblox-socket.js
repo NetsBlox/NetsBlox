@@ -90,7 +90,7 @@ class NetsBloxSocket {
         }
     }
 
-    getRawRoom () {
+    getRoomSync () {
         return this._room;
     }
 
@@ -438,7 +438,7 @@ class NetsBloxSocket {
     }
 
     getPublicId () {
-        let room = this.getRawRoom();
+        let room = this.getRoomSync();
         let publicRoleId = null;
         if (room) {
             publicRoleId = `${this.role}@${room.name}@${room.owner}`;
