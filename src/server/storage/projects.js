@@ -694,12 +694,35 @@
         };
     };
 
-    ProjectStorage.new = function(user, room) {
+    ProjectStorage.new = function() {
+        if (arguments.length === 2) {
+            return ProjectStorage.newFromRoom.apply(this, arguments);
+        } else {
+            return ProjectStorage.newFromData.apply(this, arguments);
+        }
+    };
+
+    ProjectStorage.newFromRoom = function(user, room) {
         const project = new Project({
             logger: logger,
             db: collection,
             data: getDefaultProjectData(user, room),
             room: room
+        });
+
+        return project.create();
+    };
+
+    ProjectStorage.newFromData = function(data) {
+        data.roles = data.roles || {};
+        data.originTime = data.originTime || new Date();
+        data.collaborators = data.collaborators || [];
+        data.name = data.name || 'untitled';
+
+        const project = new Project({
+            logger: logger,
+            db: collection,
+            data: data
         });
 
         return project.create();
