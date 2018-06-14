@@ -186,7 +186,7 @@ module.exports = [
             let socket = SocketManager.getSocket(socketId);
             if (!socket) return res.status(401).send('ERROR: Could not find socket');
 
-            let room = socket.getRawRoom();
+            let room = socket.getRoomSync();
             if (!room) {
                 this._logger.error(`Could not find active room for "${socket.username}" - cannot get messages!`);
                 return res.status(500).send('ERROR: room not found');
@@ -206,7 +206,7 @@ module.exports = [
             let socket = SocketManager.getSocket(socketId);
             if (!socket) return res.status(401).send('ERROR: Could not find socket');
 
-            let room = socket.getRawRoom();
+            let room = socket.getRoomSync();
             if (!room) {
                 this._logger.error(`Could not find active room for "${socket.username}" - cannot get messages!`);
                 return res.status(500).send('ERROR: room not found');

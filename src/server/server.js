@@ -110,7 +110,7 @@ Server.prototype.configureRoutes = function() {
 
     this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {
         const sockets = SocketManager.sockets().map(socket => {
-            const room = socket.getRawRoom();
+            const room = socket.getRoomSync();
             const roomName = room && Utils.uuid(room.owner, room.name);
 
             return {
