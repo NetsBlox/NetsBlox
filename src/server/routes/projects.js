@@ -206,29 +206,31 @@ module.exports = [
         Handler: function(req, res) {
             const {clientId, name} = req.body;
             const socket = SocketManager.getSocket(clientId);
+            let user = null;
 
-            // TODO: Remove the dependency on the websocket connection
             return Q.nfcall(middleware.trySetUser, req, res)
                 .then(loggedIn => {
                     if (socket) {
                         if (loggedIn) {
-                            socket.onLogin(req.session.user);
+                            user = req.session.user;
+                            socket.onLogin(user);
                         }
                         return socket.newRoom({role: name})
-                            .then(() => socket.getRoom());
+                            .then(() => socket.getRoomSync().getProject());
                     } else {
-                        let username = req.session.username || clientId;
-                        return RoomManager.createRoom({username}, 'untitled')
-                            .then(room => {
-                                return room.createRole('myRole')
-                                    .then(() => room.changeName(null, false, true))
-                                    .then(() => room);
+                        let userId = req.session.username || clientId;
+                        return Projects.new({owner: userId})
+                            .then(project => {
+                                return project.setRole('myRole', Utils.getEmptyRole('myRole'))
+                                    .then(() => user ? user.getNewName(name) : name)
+                                    .then(name => project.setName(name))
+                                    .then(() => project);
                             });
                     }
                 })
-                .then(room => {
+                .then(project => {
                     const roleName = socket ? socket.role : 'myRole';
-                    const projectId = room.getProjectId();
+                    const projectId = project.getId();
                     this._logger.trace(`Created new project: ${projectId} (${roleName})`);
                     return res.send({
                         projectId,
@@ -246,41 +248,74 @@ module.exports = [
             // Look up the projectId
             const {clientId, owner, roleName, roomName, actionId} = req.body;
             let {projectId} = req.body;
-            // TODO: Remove the dependency on the websocket connection
+            let userId = clientId;
+            let user = null;
             const socket = SocketManager.getSocket(clientId);
 
-            // Get the room by projectId and have the socket join the role
-            return Q.nfcall(middleware.trySetUser, req, res)
+            const setUserAndId = Q.nfcall(middleware.trySetUser, req, res)
                 .then(loggedIn => {
-                    if (socket && loggedIn) {
-                        socket.onLogin(req.session.user);
+                    if (loggedIn) {
+                        user = req.session.user;
+                        if (socket) {
+                            socket.onLogin(user);
+                        }
+                        userId = user.username;
                     }
-                })
-                .then(() => Projects.getById(projectId))
-                .then(project => {
-                    if (project) {
-                        return RoomManager.getRoomForProject(project);
-                    } else {
-                        return RoomManager.createRoom(socket, roomName, owner)
-                            .then(room => {
-                                projectId = room.getProjectId();
-                                return room;
-                            });
-                    }
-                })
-                .then(room => {
-                    if (!room.hasRole(roleName)) {
-                        this._logger.trace(`created role ${roleName} in ${owner}/${roomName}`);
-                        return room.createRole(roleName)
-                            .then(() => room.add(socket, roleName));
-                    }
-                    return room.add(socket, roleName);
-                })
-                .then(() => socket.requestActionsAfter(actionId))
-                .then(() => res.send({projectId}))
-                .catch(err => {
-                    res.status(500).send(err.message);
                 });
+
+
+            // Get the room by projectId and have the socket join the role
+            if (socket) {
+                return setUserAndId
+                    .then(() => Projects.getById(projectId))
+                    .then(project => {
+                        if (project) {
+                            return RoomManager.getRoomForProject(project);
+                        } else {
+                            return RoomManager.createRoom({username: userId}, roomName, owner)
+                                .then(room => {
+                                    projectId = room.getProjectId();
+                                    return room;
+                                });
+                        }
+                    })
+                    .then(room => {
+                        if (!room.hasRole(roleName)) {
+                            this._logger.trace(`created role ${roleName} in ${owner}/${roomName}`);
+                            return room.createRole(roleName)
+                                .then(() => room);
+                        }
+                        return room;
+                    })
+                    .then(room => {
+                        return room.add(socket, roleName)
+                            .then(() => socket.requestActionsAfter(actionId));
+                    })
+                    .then(() => {
+                        const room = socket.getRoomSync();
+                        if (room) {
+                            projectId = room.getProjectId();
+                        }
+                        return res.send({projectId});
+                    });
+            } else {  // validate the projectId and return a valid projectId
+                return setUserAndId
+                    .then(() => Projects.getById(projectId))
+                    .then(project => {
+                        if (project) {
+                            return project.getId();
+                        } else {
+                            return Projects.new({owner: userId})
+                                .then(project => {
+                                    return project.setRole(roleName, Utils.getEmptyRole(roleName))
+                                        .then(() => user ? user.getNewName(roomName) : roomName)
+                                        .then(name => project.setName(name))
+                                        .then(() => project.getId());
+                                });
+                        }
+                    })
+                    .then(projectId => res.send({projectId}));
+            }
         }
     },
     {
