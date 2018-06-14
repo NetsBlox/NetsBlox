@@ -431,7 +431,7 @@ module.exports = [
                     return project.setRole(roleName, roleData);
                 })
                 .then(() => project.persist())
-                .then(() => res.status(200).send({projectId}))
+                .then(() => res.status(200).send({name: projectName, projectId}))
                 .catch(err => {
                     error(`Error saving ${projectId}:`, err);
                     return res.status(500).send(err);
@@ -440,36 +440,41 @@ module.exports = [
     },
     {
         Service: 'saveProjectCopy',
-        Parameters: 'socketId',
+        Parameters: 'clientId,projectId',
         Method: 'Post',
         Note: '',
-        middleware: ['hasSocket', 'isLoggedIn', 'setUser'],
+        middleware: ['isLoggedIn', 'setUser'],
         Handler: function(req, res) {
             // Save the latest role content (include xml in the req)
             // TODO
-            var {user, username} = req.session,
-                {socketId} = req.body,
-                socket = SocketManager.getSocket(socketId),
-
-                activeRoom = socket._room;
-
-            if (!activeRoom) {
-                error(`Could not find active room for "${username}" - cannot save!`);
-                return res.status(500).send('ERROR: active room not found');
-            }
+            const {user} = req.session;
+            const {projectId} = req.body;
 
             // make a copy of the project for the given user and save it!
-            let name = `Copy of ${activeRoom.name}`;
+            let name = null;
             let project = null;
             return user.getNewName(name)
-                .then(_name => name = _name)
-                .then(() => activeRoom.getProject().getCopyFor(user))
+                .then(_name => {
+                    name = _name;
+                    return Projects.getById(projectId);
+                })
+                .then(project => {
+                    if (!project) {
+                        throw new Error(`Project not found.`);
+                    }
+                    name = `Copy of ${project.name || 'untitled'}`;
+                    return project.getCopyFor(user);
+                })
                 .then(_project => project = _project)
                 .then(() => project.setName(name))
                 .then(() => project.persist())
                 .then(() => {
-                    trace(`${username} saved a copy of project: ${name}`);
-                    return res.status(200).send(`projectId=${project.getId()}`);
+                    trace(`${user.username} saved a copy of project: ${name}`);
+                    const result = {
+                        name,
+                        projectId: project.getId()
+                    };
+                    return res.status(200).send(result);
                 });
         }
     },
