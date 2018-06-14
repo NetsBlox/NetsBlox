@@ -239,7 +239,7 @@ module.exports = [
                 });
         }
     },
-    {  // TODO: Should this be updated to be included in all requests?
+    {
         Service: 'setClientState',
         Parameters: 'clientId,projectId,roomName,roleName,owner,actionId',
         Method: 'Post',
