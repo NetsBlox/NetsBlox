@@ -463,14 +463,15 @@ Robot.prototype.encrypt = function (text, decrypt) {
     var output = '';
     for (var i = 0; i < text.length; i++) {
         var code = text.charCodeAt(i),
-            shift = this.encryption[i % this.encryption.length];
+            shift = +this.encryption[i % this.encryption.length];
+
         code = decrypt ? code - shift : code + shift;
-        while (code < 32) {
+        code = (code - 32) % (127 - 32);
+        if (code < 0) {
             code += 127 - 32;
         }
-        while (code >= 127) {
-            code -= 127 - 32;
-        }
+        code += 32;
+
         output += String.fromCharCode(code);
     }
     log('"' + text + '" ' + (decrypt ? 'decrypted' : 'encrypted') +
@@ -653,9 +654,9 @@ RoboScape.prototype.listen = function (robots) {
 
 if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
     /**
-      * Returns the MAC addresses of all robots.
-      * @returns {array}
-      */
+     * Returns the MAC addresses of all robots.
+     * @returns {array}
+     */
     RoboScape.prototype.getRobots = function () {
         return Object.keys(RoboScape.prototype._robots);
     };
