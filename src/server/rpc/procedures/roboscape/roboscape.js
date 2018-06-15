@@ -539,12 +539,16 @@ Robot.prototype.randomEncryption = function () {
         blinks.push(a & 0x2 ? 2 : 1);
         blinks.push(a & 0x1 ? 2 : 1);
     }
-    this.setEncryption(keys);
     blinks.push(3);
+    this.setSeqNum(-1);
+    this.resetRates();
+    this.setEncryption(keys);
     this.playBlinks(blinks);
 };
 
 Robot.prototype.resetEncryption = function () {
+    this.setSeqNum(-1);
+    this.resetRates();
     this.setEncryption([]);
     this.playBlinks([3]);
 };
