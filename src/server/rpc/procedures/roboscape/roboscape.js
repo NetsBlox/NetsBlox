@@ -91,7 +91,7 @@ Robot.prototype.setSeqNum = function (seqNum) {
 
 Robot.prototype.accepts = function (clientId, seqNum) {
     if (this.lastSeqNum >= 0 && (seqNum <= this.lastSeqNum ||
-            seqNum > this.lastSeqNum + 100)) {
+        seqNum > this.lastSeqNum + 100)) {
         return false;
     }
 
@@ -303,6 +303,8 @@ Robot.prototype.commandToClient = function (command) {
                         command: command
                     }
                 });
+            } else {
+                log('socket not found for ' + uuid);
             }
         });
     }
@@ -356,6 +358,8 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
                     }
                 });
             }
+        } else {
+            log('socket not found for ' + uuid);
         }
     });
 };
@@ -830,6 +834,7 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         if (robot && typeof command === 'string') {
             if (command.match(/^reset key$/)) {
                 robot.setSeqNum(-1);
+                robot.resetRates();
                 robot.setEncryption([]);
                 return true;
             }
