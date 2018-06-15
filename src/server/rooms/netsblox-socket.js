@@ -337,7 +337,7 @@ class NetsBloxSocket {
             }
             promise = this.user.getNewName(name, taken);
         } else {
-            promise = Q('untitled');
+            promise = Q(name);
         }
 
         return promise.then(name => {

@@ -200,28 +200,34 @@ module.exports = [
     },
     {
         Service: 'newProject',
-        Parameters: 'clientId,name',
+        Parameters: 'clientId,roleName',
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
-            const {clientId, name} = req.body;
+            const {clientId} = req.body;
+            let {roleName} = req.body;
             const socket = SocketManager.getSocket(clientId);
+            const name = 'untitled';
             let user = null;
+            roleName = roleName || (socket ? socket.role : 'myRole');
 
             return Q.nfcall(middleware.trySetUser, req, res)
                 .then(loggedIn => {
-                    if (socket) {
-                        if (loggedIn) {
-                            user = req.session.user;
+                    if (loggedIn) {
+                        user = req.session.user;
+                        if (socket) {
                             socket.onLogin(user);
                         }
-                        return socket.newRoom({role: name})
+                    }
+
+                    if (socket) {
+                        return socket.newRoom({name, role: roleName})
                             .then(() => socket.getRoomSync().getProject());
                     } else {
                         let userId = req.session.username || clientId;
                         return Projects.new({owner: userId})
                             .then(project => {
-                                return project.setRole('myRole', Utils.getEmptyRole('myRole'))
+                                return project.setRole(roleName, Utils.getEmptyRole(roleName))
                                     .then(() => user ? user.getNewName(name) : name)
                                     .then(name => project.setName(name))
                                     .then(() => project);
@@ -229,11 +235,11 @@ module.exports = [
                     }
                 })
                 .then(project => {
-                    const roleName = socket ? socket.role : 'myRole';
                     const projectId = project.getId();
                     this._logger.trace(`Created new project: ${projectId} (${roleName})`);
                     return res.send({
                         projectId,
+                        name: project.name,
                         roleName
                     });
                 });
