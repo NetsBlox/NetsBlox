@@ -48,6 +48,7 @@ const Projects = reqSrc('storage/projects');
         'modules = {};',
         'window = {location:{}};',
         'var SnapActions;',
+        'var SnapCloud = {};',
         src,
         'global.Client = global.Client || {};',
         'global.Client.XML_Serializer = XML_Serializer;',
