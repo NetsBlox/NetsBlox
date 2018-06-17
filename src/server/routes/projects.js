@@ -209,7 +209,11 @@ module.exports = [
             const socket = SocketManager.getSocket(clientId);
             const name = 'untitled';
             let user = null;
-            roleName = roleName || (socket ? socket.role : 'myRole');
+
+            roleName = roleName || 'myRole';
+            if (socket && socket.role) {
+                roleName = roleName || socket.role;
+            }
 
             return Q.nfcall(middleware.trySetUser, req, res)
                 .then(loggedIn => {
