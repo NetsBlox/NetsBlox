@@ -320,7 +320,7 @@ module.exports = [
         Handler: function(req, res) {
             const {invitee, projectId, role, roomName} = req.body;
             var inviter = req.session.username,
-                inviteId = ['collab', inviter, invitee, projectId, role].join('-'),
+                inviteId = ['collab', inviter, invitee, projectId, Date.now()].join('-'),
                 inviteeSockets = SocketManager.socketsFor(invitee);
 
             log(`${inviter} is inviting ${invitee} to ${projectId}`);
@@ -341,7 +341,7 @@ module.exports = [
                         type: 'collab-invitation',
                         id: inviteId,
                         roomName: roomName,
-                        projectId: projectId,
+                        ProjectID: projectId,
                         inviter,
                         role: role
                     };
@@ -353,7 +353,7 @@ module.exports = [
     },
     {
         Service: 'inviteCollaboratorResponse',
-        Parameters: 'inviteId,response,socketId,collabId',
+        Parameters: 'inviteId,response,socketId',
         middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
         Note: '',
@@ -388,12 +388,12 @@ module.exports = [
             if (response) {
                 // TODO: update the inviter...
                 // Add the given user as a collaborator
-                const {owner, projectId} = invite;
+                const {projectId} = invite;
                 const room = RoomManager.getExistingRoomById(projectId);
                 if (!room) {
                     // TODO: Look up the room
-                    log(`room is not open "${projectId}`);
-                    return Projects.getProject(owner, invite.project)
+                    log(`project is not open "${projectId}`);
+                    return Projects.getById(projectId)
                         .then(project => {
                             if (project) {
                                 return project.addCollaborator(username)
