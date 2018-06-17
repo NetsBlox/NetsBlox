@@ -603,27 +603,29 @@ module.exports = [
     },
     {
         Service: 'joinActiveProject',
-        Parameters: 'ProjectName,owner',
+        Parameters: 'projectId',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
-            var roomName = req.body.ProjectName,
-                user = req.session.user,
-                owner = req.body.owner || user.username;
+            const {projectId} = req.body;
+            const {user} = req.session;
 
-            log(`${user.username} joining active ${owner}/${roomName}`);
-            return getRoomsNamed.call(this, roomName, user, owner).then(rooms => {
-                // Get the active project and join it
-                if (rooms.active) {
-                    // Join the project
-                    Utils.joinActiveProject(user.username, rooms.active, res);
-                } else if (rooms.stored) {  // else, getProject w/ the stored version
-                    sendProjectTo(rooms.stored, res);
-                } else {  // if there is no stored version, ERROR!
-                    res.send('ERROR: Project not found');
-                }
-            });
+            log(`${user.username} joining project ${projectId}`);
+            // Join the given project
+            const room = RoomManager.getExistingRoomById(projectId);
+            if (room) {
+                Utils.joinActiveProject(user.username, room, res);
+            } else {
+                return Projects.getById(projectId)
+                    .then(project => {
+                        if (project) {
+                            return sendProjectTo(project, res);
+                        } else {
+                            return res.send('ERROR: Project not found');
+                        }
+                    });
+            }
         }
     },
     {
