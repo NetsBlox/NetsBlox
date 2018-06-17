@@ -231,8 +231,9 @@ module.exports = [
                         let userId = req.session.username || clientId;
                         return Projects.new({owner: userId})
                             .then(project => {
+                                const projectId = project._id.toString();
                                 return project.setRole(roleName, Utils.getEmptyRole(roleName))
-                                    .then(() => user ? user.getNewName(name) : name)
+                                    .then(() => user ? user.getNewNameFor(name, projectId) : name)
                                     .then(name => project.setName(name))
                                     .then(() => project);
                             });

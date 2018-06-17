@@ -326,16 +326,11 @@ class NetsBloxSocket {
         this.role = role;
     }
 
-    getNewName (name, taken) {
+    getNewName (name) {
         var promise;
 
         if (this.user) {
-            if (!taken) {
-                taken = RoomManager.getActiveRooms()
-                    .filter(room => room.owner === this.username)
-                    .map(room => room.name);
-            }
-            promise = this.user.getNewName(name, taken);
+            promise = this.user.getNewName(name);
         } else {
             promise = Q(name);
         }
