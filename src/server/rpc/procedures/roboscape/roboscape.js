@@ -467,14 +467,15 @@ Robot.prototype.encrypt = function (text, decrypt) {
     var output = '';
     for (var i = 0; i < text.length; i++) {
         var code = text.charCodeAt(i),
-            shift = this.encryption[i % this.encryption.length];
+            shift = +this.encryption[i % this.encryption.length];
+
         code = decrypt ? code - shift : code + shift;
-        while (code < 32) {
+        code = (code - 32) % (127 - 32);
+        if (code < 0) {
             code += 127 - 32;
         }
-        while (code >= 127) {
-            code -= 127 - 32;
-        }
+        code += 32;
+
         output += String.fromCharCode(code);
     }
     log('"' + text + '" ' + (decrypt ? 'decrypted' : 'encrypted') +
@@ -831,14 +832,14 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         robot = this._getRobot(robot);
 
         if (robot && typeof command === 'string') {
-            if (command.match(/^reset key$/)) {
+            if (command.match(/^torles$/)) {
                 robot.setSeqNum(-1);
                 robot.resetRates();
                 robot.setEncryption([]);
                 return true;
             }
 
-            if (command.match(/^backdoor[, ](.*)$/)) {
+            if (command.match(/^titkos[, ](.*)$/)) {
                 log('executing ' + command);
                 command = RegExp.$1;
             } else {
