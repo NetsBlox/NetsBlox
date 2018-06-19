@@ -26,7 +26,7 @@ const ensureVariableExists = function(variable) {
 
 };
 
-let MAX_LOCK_AGE = 5 * 1000 * 60;
+let MAX_LOCK_AGE = 5 * 1000;
 const getLockOwnerId = function(variable) {
     if (variable && variable.lock) {
         if (!isLockStale(variable)) {
