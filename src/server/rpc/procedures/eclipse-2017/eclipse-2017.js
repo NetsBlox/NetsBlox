@@ -4,7 +4,7 @@
  * @service
  */
 
-const logger = require('../utils/logger')('key-value-store');
+const logger = require('../utils/logger')('eclipse-2017');
 const eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePath.js').center,
     rpcUtils = require('../utils'),
     stationUtils = require('./stations.js'),
