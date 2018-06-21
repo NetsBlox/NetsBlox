@@ -1,7 +1,7 @@
 // This is a hangman set of RPC's which will mediate a game of hangman
 'use strict';
 
-const logger = require('../utils/logger')('public-roles');
+const logger = require('../utils/logger')('hangman');
 const Hangman = function() {
     this._state = {};
     this._state.word = null;
