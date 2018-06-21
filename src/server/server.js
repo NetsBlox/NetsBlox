@@ -156,6 +156,7 @@ Server.prototype.configureRoutes = function() {
                             metaInfo.description = project.notes;
                             this.addScraperSettings(req.headers['user-agent'], metaInfo);
                         }
+                        res.set('Cache-Control', 'no-cache');
                         return res.send(indexTpl(metaInfo));
                     });
             } else if (req.query.action === 'example' && EXAMPLES[projectName]) {
@@ -177,6 +178,7 @@ Server.prototype.configureRoutes = function() {
 
                         metaInfo.description = notes;
                         this.addScraperSettings(req.headers['user-agent'], metaInfo);
+                        res.set('Cache-Control', 'no-cache');
                         return res.send(indexTpl(metaInfo));
                     });
             }
