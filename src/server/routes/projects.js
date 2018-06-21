@@ -338,7 +338,7 @@ module.exports = [
             const {clientId, name, role, roles} = req.body;
             const socket = SocketManager.getSocket(clientId);
 
-            return RoomManager.createRoom(socket, 'untitled')
+            return RoomManager.createRoom(socket, name)
                 .then(room => {
                     return room.createRole(role)
                         .then(() => room.changeName(name, false, true))
