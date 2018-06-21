@@ -72,7 +72,11 @@ Server.prototype.configureRoutes = function() {
     });
 
     // Add routes
-    this.app.use('/rpc', this.rpcManager.router);
+    this.app.use('/rpc', function(req, res, next) {
+        return middleware.tryLogIn(req, res, function() {
+            next();
+        }, true);
+    }, this.rpcManager.router);
     this.app.use('/api', this.createRouter());
 
     // Add deployment state endpoint info

@@ -56,6 +56,11 @@ MockRPC.prototype.addMethod = function(name) {
         ctx.socket = this.socket;
         ctx.response = this.response;
         ctx.request = this.request;
+        ctx.caller = {
+            clientId: this.socket.uuid,
+            username: this.socket.username,
+            projectId: 'testProject'
+        };
         return this._rpc[name].apply(ctx, arguments);
     };
 };
