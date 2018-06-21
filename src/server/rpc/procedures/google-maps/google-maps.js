@@ -31,9 +31,9 @@ var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap',
         return storage;
     };
 
-var GoogleMaps = function(roomId) {
+var GoogleMaps = function(projectId) {
     this._state = {};
-    this._state.roomId = roomId;
+    this._state.projectId = projectId;
     this._state.userMaps = {};  // Store the state of the map for each user
 };
 
@@ -79,15 +79,16 @@ GoogleMaps.prototype._getGoogleParams = function(options, precisionLimit) {
     return params.join('&');
 };
 
-GoogleMaps.prototype._getMapInfo = function(roleId) {
-    return getStorage().get(this._state.roomId)
+GoogleMaps.prototype._getMapInfo = function(clientId) {
+    return getStorage().get(this._state.projectId)
         .then(maps => {
-            logger.trace(`getting map for ${roleId}: ${JSON.stringify(maps)}`);
-            return maps[roleId];
+            logger.trace(`getting map for ${clientId}: ${JSON.stringify(maps)}`);
+
+            return maps && maps[clientId];
         });
 };
 
-GoogleMaps.prototype._recordUserMap = function(socket, map) {
+GoogleMaps.prototype._recordUserMap = function(caller, map) {
     // Store the user's new map settings
     // get the corners of the image. We need to actully get both they are NOT "just opposite" of eachother.
     let northEastCornerCoords = this._coordsAt(map.width/2*map.scale, map.height/2*map.scale , map);
@@ -101,13 +102,13 @@ GoogleMaps.prototype._recordUserMap = function(socket, map) {
         lat: northEastCornerCoords.lat,
         lon: northEastCornerCoords.lon
     };
-    return getStorage().get(this._state.roomId)
+    return getStorage().get(this._state.projectId)
         .then(maps => {
             maps = maps || {};
-            maps[socket.role] = map;
-            getStorage().save(this._state.roomId, maps);
+            maps[caller.clientId] = map;
+            getStorage().save(this._state.projectId, maps);
         })
-        .then(() => logger.trace(`Stored map for ${socket.role}: ${JSON.stringify(map)}`));
+        .then(() => logger.trace(`Stored map for ${caller.clientId}: ${JSON.stringify(map)}`));
 };
 
 
@@ -130,7 +131,7 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
         url = baseUrl+'?'+params;
 
     // Check the cache
-    this._recordUserMap(this.socket, options).then(() => {
+    this._recordUserMap(this.caller, options).then(() => {
 
         // allow the lookups that are "close" to an already visited location hit the cache
         const PRECISION = 7; // 6 or 5 is probably safe
@@ -221,7 +222,7 @@ GoogleMaps.prototype.getTerrainMap = function(latitude, longitude, width, height
  * @returns {Number} Map x coordinate of the given longitude
  */
 GoogleMaps.prototype.getXFromLongitude = function(longitude) {
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let pixels = this._pixelsAt(0,longitude, mapInfo);
         return pixels.x;
     });
@@ -233,7 +234,7 @@ GoogleMaps.prototype.getXFromLongitude = function(longitude) {
  * @returns {Number} Map y coordinate of the given latitude
  */
 GoogleMaps.prototype.getYFromLatitude = function(latitude) {
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let pixels = this._pixelsAt(latitude,0, mapInfo);
         return pixels.y;
     });
@@ -245,7 +246,7 @@ GoogleMaps.prototype.getYFromLatitude = function(latitude) {
  * @returns {Longitude} Longitude of the x value from the image
  */
 GoogleMaps.prototype.getLongitudeFromX = function(x){
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let coords = this._coordsAt(x,0, mapInfo);
         return coords.lon;
     });
@@ -257,7 +258,7 @@ GoogleMaps.prototype.getLongitudeFromX = function(x){
  * @returns {Latitude} Latitude of the y value from the image
  */
 GoogleMaps.prototype.getLatitudeFromY = function(y){
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let coords = this._coordsAt(0,y, mapInfo);
         return coords.lat;
     });
@@ -293,7 +294,7 @@ GoogleMaps.prototype.getLatitude = function(y){
  */
 
 GoogleMaps.prototype.getEarthCoordinates = function(x, y){
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let coords = this._coordsAt(x,y, mapInfo);
         return [coords.lat, coords.lon];
     });
@@ -307,7 +308,7 @@ GoogleMaps.prototype.getEarthCoordinates = function(x, y){
  */
 
 GoogleMaps.prototype.getImageCoordinates = function(latitude, longitude){
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let pixels = this._pixelsAt(latitude, longitude, mapInfo);
         return [pixels.x, pixels.y];
     });
@@ -330,12 +331,9 @@ GoogleMaps.prototype.getDistance = function(startLatitude, startLongitude, endLa
 
 // Getting current map settings
 GoogleMaps.prototype._getUserMap = function() {
-    var response = this.response;
-
-    return this._getMapInfo(this.socket.role).then(map => {
+    return this._getMapInfo(this.caller.clientId).then(map => {
         if (!map) {
-            response.send('ERROR: No map found. Please request a map and try again.');
-            return null;
+            throw new Error('No map found. Please request a map and try again.');
         }
         return map;
     });
@@ -343,19 +341,8 @@ GoogleMaps.prototype._getUserMap = function() {
 
 var mapGetter = function(minMax, attr) {
     return function() {
-        var response = this.response;
-
-        this._getMapInfo(this.socket.role).then(map => {
-
-            if (!map) {
-                response.send('ERROR: No map found. Please request a map and try again.');
-            } else {
-                response.json(map[minMax][attr]);
-            }
-
-        });
-
-        return null;
+        return this._getUserMap(this.caller.clientId)
+            .then(map => map[minMax][attr]);
     };
 };
 
