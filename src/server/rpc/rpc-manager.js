@@ -230,15 +230,16 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         let ctx = Object.create(rpc);
         ctx.socket = SocketManager.getSocket(uuid);
         if (!ctx.socket) {
-            this._logger.warn(`Calling RPC with disconnected websocket: ${uuid} (${projectId})`);
+            this._logger.warn(`Calling ${RPC.serviceName}.${action} with disconnected websocket: ${uuid} (${projectId})`);
         }
 
         ctx.response = res;
         ctx.request = req;
-        if (!ctx.socket) {
-            this._logger.error(`Could not find socket ${uuid} for rpc ` +
-                `${RPC.serviceName}:${action}. Will try to call it anyway...`);
-        }
+        ctx.caller = {
+            username: req.session.username,
+            projectId,
+            clientId: uuid
+        };
 
         // Get the arguments
         const oldFieldNameFor = RPC.COMPATIBILITY.arguments[action] || {};
@@ -284,7 +285,7 @@ RPCManager.prototype.callRPC = function(name, ctx, args) {
 
     let prettyArgs = JSON.stringify(args);
     prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
-    this._logger.log(`calling ${ctx.serviceName}.${name}(${prettyArgs})`);
+    this._logger.log(`calling ${ctx.serviceName}.${name}(${prettyArgs}) ${ctx.caller.clientId}`);
 
     try {
         const result = ctx[name].apply(ctx, args);
