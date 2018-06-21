@@ -129,7 +129,7 @@ Server.prototype.configureRoutes = function() {
     });
 
     // Initial page
-    this.app.get('/', (req, res) => {
+    this.app.get('/', middleware.noCache, (req, res) => {
         return middleware.setUsername(req, res).then(() => {
             var baseUrl = `${process.env.SERVER_PROTOCOL || req.protocol}://${req.get('host')}`,
                 url = baseUrl + req.originalUrl,
