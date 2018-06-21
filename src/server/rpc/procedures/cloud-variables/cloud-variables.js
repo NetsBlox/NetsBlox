@@ -46,9 +46,9 @@ const isLocked = function(variable) {
     return !!getLockOwnerId(variable);
 };
 
-const ensureOwnsMutex = function(variable, user) {
+const ensureOwnsMutex = function(variable, clientId) {
     const ownerId = getLockOwnerId(variable);
-    if (ownerId && ownerId !== user.uuid) {
+    if (ownerId && ownerId !== clientId) {
         throw new Error('Variable is locked (by someone else)');
     }
 };
@@ -64,8 +64,8 @@ const ensureAuthorized = function(variable, password) {
     }
 };
 
-const ensureLoggedIn = function(socket) {
-    if (!socket.loggedIn) {
+const ensureLoggedIn = function(caller) {
+    if (!caller.username) {
         throw new Error('Login required.');
     }
 };
@@ -97,7 +97,7 @@ CloudVariables._setMaxLockAge = function(age) {  // for testing
  */
 CloudVariables.getVariable = function(name, password) {
     const {sharedVars} = getCollections();
-    const username = this.socket.username;
+    const username = this.caller.username;
 
     return sharedVars.findOne({name: name})
         .then(variable => {
@@ -127,12 +127,12 @@ CloudVariables.setVariable = function(name, value, password) {
     validateContentSize(value);
 
     const {sharedVars} = getCollections();
-    const username = this.socket.username;
+    const username = this.caller.username;
 
     return sharedVars.findOne({name: name})
         .then(variable => {
             ensureAuthorized(variable, password);
-            ensureOwnsMutex(variable, this.socket);
+            ensureOwnsMutex(variable, this.caller.clientId);
             // Set both the password and value in case it gets deleted
             // during this async fn...
             const query = {
@@ -185,8 +185,8 @@ CloudVariables.lockVariable = function(name, password) {
     validateVariableName(name);
 
     const {sharedVars} = getCollections();
-    const username = this.socket.username;
-    const clientId = this.socket.uuid;
+    const username = this.caller.username;
+    const clientId = this.caller.clientId;
 
     return sharedVars.findOne({name: name})
         .then(variable => {
@@ -220,8 +220,8 @@ CloudVariables._queueLockFor = function(variable) {
     const lock = {
         id: id,
         password: password,
-        clientId: this.socket.uuid,
-        username: this.socket.username,
+        clientId: this.caller.clientId,
+        username: this.caller.username,
         promise: deferred
     };
 
@@ -297,7 +297,7 @@ CloudVariables.unlockVariable = function(name, password) {
         .then(variable => {
             ensureVariableExists(variable);
             ensureAuthorized(variable, password);
-            ensureOwnsMutex(variable, this.socket);
+            ensureOwnsMutex(variable, this.caller.clientId);
 
             if (!isLocked(variable)) {
                 throw new Error('Variable not locked');
@@ -336,9 +336,9 @@ CloudVariables._onUnlockVariable = function(id) {
  */
 CloudVariables.getUserVariable = function(name) {
     const {userVars} = getCollections();
-    const username = this.socket.username;
+    const username = this.caller.username;
 
-    ensureLoggedIn(this.socket);
+    ensureLoggedIn(this.caller);
     return userVars.findOne({name: name, owner: username})
         .then(variable => {
             if (!variable) {
@@ -361,12 +361,12 @@ CloudVariables.getUserVariable = function(name) {
  * @param {String} value
  */
 CloudVariables.setUserVariable = function(name, value) {
-    ensureLoggedIn(this.socket);
+    ensureLoggedIn(this.caller);
     validateVariableName(name);
     validateContentSize(value);
 
     const {userVars} = getCollections();
-    const username = this.socket.username;
+    const username = this.caller.username;
     const query = {
         $set: {
             value,
@@ -384,9 +384,9 @@ CloudVariables.setUserVariable = function(name, value) {
  */
 CloudVariables.deleteUserVariable = function(name) {
     const {userVars} = getCollections();
-    const username = this.socket.username;
+    const username = this.caller.username;
 
-    ensureLoggedIn(this.socket);
+    ensureLoggedIn(this.caller);
     return userVars.deleteOne({name: name, owner: username})
         .then(() => 'OK');
 };
