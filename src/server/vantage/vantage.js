@@ -138,8 +138,12 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
                     });
 
                 const collabs = room.getCollaborators().join(' ');
-                return `${room.uuid}:\n   collabs: ${collabs}\n` +
-                    `   roles:\n${clients.join('\n')}\n`;
+                return [
+                    `${room.uuid}:`,
+                    `projectId: ${room.getProjectId()}`,
+                    `collabs: ${collabs}`,
+                    `roles:\n${clients.join('\n')}\n`
+                ].join('\n   ');
             }).join('\n');
 
             if (args.options.entries) {

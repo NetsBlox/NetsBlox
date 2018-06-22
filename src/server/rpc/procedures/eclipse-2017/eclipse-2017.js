@@ -4,11 +4,10 @@
  * @service
  */
 
-const Logger = require('../../../logger'),
-    eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePath.js').center,
+const logger = require('../utils/logger')('eclipse-2017');
+const eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePath.js').center,
     rpcUtils = require('../utils'),
     stationUtils = require('./stations.js'),
-    logger = new Logger('netsblox:eclipse'),
     schedule = require('node-schedule'),
     { cronString } = require('./utils'),
     rpcStorage = require('../../storage');

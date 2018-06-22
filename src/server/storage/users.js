@@ -110,6 +110,29 @@
             this.save();
         }
 
+        getNewNameFor(name, projectId) {
+            var nameExists = {},
+                i = 2,
+                basename;
+
+            return this.getAllRawProjects()
+                .then(projects => {
+                    projects.forEach(project => {
+                        const id = project._id.toString();
+                        if (id !== projectId) {
+                            nameExists[project.name] = id;
+                        }
+                    });
+                    basename = basename || 'untitled';
+                    name = basename;
+                    while (nameExists[name]) {
+                        name = `${basename} (${i++})`;
+                    }
+
+                    return name;
+                });
+        }
+
         getNewName(name, takenNames) {
             var nameExists = {},
                 i = 2,
@@ -135,9 +158,9 @@
             mailer.sendMail({
                 to: this.email,
                 subject: 'Temporary Password',
-                markdown: 'Hello '+this.username+',\nYour NetsBlox password has been '+
+                html: '<p>Hello '+this.username+',<br/><br/>Your NetsBlox password has been '+
                     'temporarily set to '+password+'. Please change it after '+
-                    'logging in.'
+                    'logging in.</p>'
             });
         }
     }

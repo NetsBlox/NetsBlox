@@ -25,6 +25,8 @@ var express = require('express'),
     // Logging
     Logger = require('./logger'),
 
+    SERVER_NAME = process.env.SERVER_NAME || 'netsblox',
+
     // Session and cookie info
     cookieParser = require('cookie-parser');
 
@@ -70,7 +72,11 @@ Server.prototype.configureRoutes = function() {
     });
 
     // Add routes
-    this.app.use('/rpc', this.rpcManager.router);
+    this.app.use('/rpc', function(req, res, next) {
+        return middleware.tryLogIn(req, res, function() {
+            next();
+        }, true);
+    }, this.rpcManager.router);
     this.app.use('/api', this.createRouter());
 
     // Add deployment state endpoint info
@@ -108,7 +114,7 @@ Server.prototype.configureRoutes = function() {
 
     this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {
         const sockets = SocketManager.sockets().map(socket => {
-            const room = socket.getRawRoom();
+            const room = socket.getRoomSync();
             const roomName = room && Utils.uuid(room.owner, room.name);
 
             return {
@@ -122,23 +128,8 @@ Server.prototype.configureRoutes = function() {
         res.json(sockets);
     });
 
-    // Add dev endpoints
-    if (isDevMode) {
-        const CLIENT_TEST_ROOT = path.join(__dirname, '..', '..', 'test', 'unit', 'client');
-        const testTpl = dot.template(fs.readFileSync(path.join(CLIENT_TEST_ROOT, 'index.dot')));
-        this.app.use('/dev/', express.static(__dirname + '/../../test/unit/client/'));
-        this.app.get('/dev/', (req, res) => {
-            return middleware.setUsername(req, res).then(() => {
-                const contents = {
-                    username: req.session.username,
-                };
-                return res.send(testTpl(contents));
-            });
-        });
-    }
-
     // Initial page
-    this.app.get('/', (req, res) => {
+    this.app.get('/', middleware.noCache, (req, res) => {
         return middleware.setUsername(req, res).then(() => {
             var baseUrl = `${process.env.SERVER_PROTOCOL || req.protocol}://${req.get('host')}`,
                 url = baseUrl + req.originalUrl,
@@ -148,6 +139,7 @@ Server.prototype.configureRoutes = function() {
                     username: req.session.username,
                     isDevMode: isDevMode,
                     googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
+                    clientId: this.getNewClientId(),
                     baseUrl,
                     url: url
                 };
@@ -274,6 +266,10 @@ Server.prototype.configureRoutes = function() {
 
 };
 
+Server.prototype.getNewClientId = function() {
+    return '_' + SERVER_NAME + Date.now();
+};
+
 Server.prototype.getExamplesIndex = function(withMetadata) {
     let examples;
 
@@ -391,7 +387,18 @@ Server.prototype.createRouter = function() {
             if (api.Service) {
                 logger.trace(`received ${api.Service} request`);
             }
-            return api.Handler.call(this, req, res);
+            try {
+                const result = api.Handler.call(this, req, res);
+                if (result && result.then) {
+                    result.catch(err => {
+                        logger.error(`error occurred in ${api.URL}:`, err);
+                        res.status(500).send(err.message);
+                    });
+                }
+            } catch (err) {
+                logger.error(`error occurred in ${api.URL}:`, err);
+                res.status(500).send(err.message);
+            }
         });
     });
     return router;

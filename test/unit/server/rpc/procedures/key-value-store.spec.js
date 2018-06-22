@@ -1,8 +1,9 @@
 describe('kvstore', function() {
     const utils = require('../../../../assets/utils');
-    var KVStore = utils.reqSrc('rpc/procedures/key-value-store/key-value-store'),
-        RPCMock = require('../../../../assets/mock-rpc'),
-        kvstore = new RPCMock(KVStore);
+    const KVStore = utils.reqSrc('rpc/procedures/key-value-store/key-value-store');
+    const RPCMock = require('../../../../assets/mock-rpc');
+    const kvstore = new RPCMock(KVStore);
+    const assert = require('assert');
 
     utils.verifyRPCInterfaces(kvstore, [
         ['get', ['key']],
@@ -11,4 +12,15 @@ describe('kvstore', function() {
         ['parent', ['key']],
         ['child', ['key']]
     ]);
+
+    describe('key validation', function() {
+        it('should not allow . in key', function() {
+            assert.throws(() => kvstore.put('mr.hyde'));
+        });
+
+        it('should not allow . in nested key', function() {
+            assert.throws(() => kvstore.put('/firstDir/mr.hyde'));
+        });
+    });
+
 });

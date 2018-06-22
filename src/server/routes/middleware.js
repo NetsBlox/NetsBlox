@@ -30,6 +30,16 @@ var noCache = function(req, res, next) {
 };
 
 // Access control and auth
+var trySetUser = function(req, res, cb, skipRefresh) {
+    tryLogIn(req, res, (err, loggedIn) => {
+        if (loggedIn) {
+            setUser(req, res, () => cb(null, true));
+        } else {
+            cb(null, false);
+        }
+    }, skipRefresh);
+};
+
 var tryLogIn = function(req, res, cb, skipRefresh) {
     var cookie = req.cookies[COOKIE_ID];
 
@@ -158,6 +168,7 @@ module.exports = {
     noCache,
     isLoggedIn,
     tryLogIn,
+    trySetUser,
     saveLogin,
     loadUser,
     setUser,

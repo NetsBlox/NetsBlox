@@ -7,18 +7,18 @@
  */
 'use strict';
 
-var debug = require('debug'),
-    trace = debug('netsblox:rpc:static-map:trace'),
-    request = require('request'),
-    SphericalMercator = require('sphericalmercator'),
-    geolib = require('geolib'),
-    merc = new SphericalMercator({size:256}),
-    CacheManager = require('cache-manager'),
-    Storage = require('../../storage'),
-    // TODO: Change this cache to mongo or something (file?)
-    // This cache is shared among all GoogleMaps instances
-    cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity}),
-    key = process.env.GOOGLE_MAPS_KEY;
+const logger = require('../utils/logger')('google-maps');
+const request = require('request');
+const SphericalMercator = require('sphericalmercator');
+const geolib = require('geolib');
+const merc = new SphericalMercator({size:256});
+const CacheManager = require('cache-manager');
+const Storage = require('../../storage');
+
+// TODO: Change this cache to mongo or something (file?)
+// This cache is shared among all GoogleMaps instances
+const cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity});
+const key = process.env.GOOGLE_MAPS_KEY;
 
 var storage;
 
@@ -31,9 +31,9 @@ var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap',
         return storage;
     };
 
-var GoogleMaps = function(roomId) {
+var GoogleMaps = function(projectId) {
     this._state = {};
-    this._state.roomId = roomId;
+    this._state.projectId = projectId;
     this._state.userMaps = {};  // Store the state of the map for each user
 };
 
@@ -63,27 +63,32 @@ GoogleMaps.prototype._pixelsAt = function(lat, lon, map) {
 };
 
 
-GoogleMaps.prototype._getGoogleParams = function(options) {
+// precisionLimit if present would limit the precision of coordinate parameters
+GoogleMaps.prototype._getGoogleParams = function(options, precisionLimit) {
     // Create the params for Google
     var params = [];
     params.push('size=' + options.width + 'x' + options.height);
     params.push('scale=' + options.scale);
-    params.push('center=' + options.center.lat + ',' + options.center.lon);
+    // reduce lat lon precisionLimit to a reasonable value to reduce cache misses
+    let centerLat = precisionLimit ? parseFloat(options.center.lat).toFixed(precisionLimit) : options.center.lat;
+    let centerLon = precisionLimit ? parseFloat(options.center.lon).toFixed(precisionLimit) : options.center.lon;
+    params.push('center=' + centerLat + ',' + centerLon);
     params.push('key=' + key);
     params.push('zoom='+(options.zoom || '12'));
     params.push('maptype='+(options.mapType));
     return params.join('&');
 };
 
-GoogleMaps.prototype._getMapInfo = function(roleId) {
-    return getStorage().get(this._state.roomId)
+GoogleMaps.prototype._getMapInfo = function(clientId) {
+    return getStorage().get(this._state.projectId)
         .then(maps => {
-            trace(`getting map for ${roleId}: ${JSON.stringify(maps)}`);
-            return maps[roleId];
+            logger.trace(`getting map for ${clientId}: ${JSON.stringify(maps)}`);
+
+            return maps && maps[clientId];
         });
 };
 
-GoogleMaps.prototype._recordUserMap = function(socket, map) {
+GoogleMaps.prototype._recordUserMap = function(caller, map) {
     // Store the user's new map settings
     // get the corners of the image. We need to actully get both they are NOT "just opposite" of eachother.
     let northEastCornerCoords = this._coordsAt(map.width/2*map.scale, map.height/2*map.scale , map);
@@ -97,13 +102,13 @@ GoogleMaps.prototype._recordUserMap = function(socket, map) {
         lat: northEastCornerCoords.lat,
         lon: northEastCornerCoords.lon
     };
-    return getStorage().get(this._state.roomId)
+    return getStorage().get(this._state.projectId)
         .then(maps => {
             maps = maps || {};
-            maps[socket.role] = map;
-            getStorage().save(this._state.roomId, maps);
+            maps[caller.clientId] = map;
+            getStorage().save(this._state.projectId, maps);
         })
-        .then(() => trace(`Stored map for ${socket.role}: ${JSON.stringify(map)}`));
+        .then(() => logger.trace(`Stored map for ${caller.clientId}: ${JSON.stringify(map)}`));
 };
 
 
@@ -126,13 +131,16 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
         url = baseUrl+'?'+params;
 
     // Check the cache
-    this._recordUserMap(this.socket, options).then(() => {
+    this._recordUserMap(this.caller, options).then(() => {
 
-        cache.wrap(url, cacheCallback => {
+        // allow the lookups that are "close" to an already visited location hit the cache
+        const PRECISION = 7; // 6 or 5 is probably safe
+        const cacheKey = this._getGoogleParams(options, PRECISION);
+        cache.wrap(cacheKey, cacheCallback => {
             // Get the image -> not in cache!
-            trace('request params:', options);
-            trace('url is '+url);
-            trace('Requesting new image from google!');
+            logger.trace('request params:', options);
+            logger.trace('url is '+url);
+            logger.trace('Requesting new image from google!');
             var mapResponse = request.get(url);
             delete mapResponse.headers['cache-control'];
 
@@ -146,7 +154,7 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
             });
         }, (err, imageBuffer) => {
             // Send the response to the user
-            trace('Sending the response!');
+            logger.trace('Sending the response!');
             // Set the headers
             response.set('cache-control', 'private, no-store, max-age=0');
             response.set('content-type', 'image/png');
@@ -154,20 +162,37 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
             response.set('connection', 'close');
 
             response.status(200).send(imageBuffer);
-            trace('Sent the response!');
+            logger.trace('Sent the response!');
         });
 
     });
 };
 
+/**
+ * Get a map image of the given region.
+ * @param {Latitude} latitude Latitude of center point
+ * @param {Longitude} longitude Longitude of center point
+ * @param {BoundedNumber<0>} width Image width
+ * @param {BoundedNumber<0>} height Image height
+ * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @returns {Image} Map image
+ */
 GoogleMaps.prototype.getMap = function(latitude, longitude, width, height, zoom){
 
-    // this._getMap.bind(this, latitude, longitude, width, height, zoom);
     this._getMap(latitude, longitude, width, height, zoom, 'roadmap');
 
     return null;
 };
 
+/**
+ * Get a satellite map image of the given region.
+ * @param {Latitude} latitude Latitude of center point
+ * @param {Longitude} longitude Longitude of center point
+ * @param {BoundedNumber<0>} width Image width
+ * @param {BoundedNumber<0>} height Image height
+ * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @returns {Image} Map image
+ */
 GoogleMaps.prototype.getSatelliteMap = function(latitude, longitude, width, height, zoom){
 
     this._getMap(latitude, longitude, width, height, zoom, 'satellite');
@@ -175,39 +200,90 @@ GoogleMaps.prototype.getSatelliteMap = function(latitude, longitude, width, heig
     return null;
 };
 
-
+/**
+ * Get a terrain map image of the given region.
+ * @param {Latitude} latitude Latitude of center point
+ * @param {Longitude} longitude Longitude of center point
+ * @param {BoundedNumber<0>} width Image width
+ * @param {BoundedNumber<0>} height Image height
+ * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @returns {Image} Map image
+ */
 GoogleMaps.prototype.getTerrainMap = function(latitude, longitude, width, height, zoom){
 
     this._getMap(latitude, longitude, width, height, zoom, 'terrain');
 
     return null;
 };
+
+/**
+ * Convert longitude to the x value on the map image.
+ * @param {Longitude} longitude Longitude coordinate
+ * @returns {Number} Map x coordinate of the given longitude
+ */
 GoogleMaps.prototype.getXFromLongitude = function(longitude) {
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let pixels = this._pixelsAt(0,longitude, mapInfo);
         return pixels.x;
     });
 };
-//
+
+/**
+ * Convert latitude to the y value on the map image.
+ * @param {Latitude} latitude Latitude coordinate
+ * @returns {Number} Map y coordinate of the given latitude
+ */
 GoogleMaps.prototype.getYFromLatitude = function(latitude) {
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let pixels = this._pixelsAt(latitude,0, mapInfo);
         return pixels.y;
     });
 };
 
-GoogleMaps.prototype.getLongitude = function(x){
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+/**
+ * Convert x value of map image to longitude.
+ * @param {Number} x x value of map image
+ * @returns {Longitude} Longitude of the x value from the image
+ */
+GoogleMaps.prototype.getLongitudeFromX = function(x){
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let coords = this._coordsAt(x,0, mapInfo);
         return coords.lon;
     });
 };
 
-GoogleMaps.prototype.getLatitude = function(y){
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+/**
+ * Convert y value of map image to latitude.
+ * @param {Number} y y value of map image
+ * @returns {Latitude} Latitude of the y value from the image
+ */
+GoogleMaps.prototype.getLatitudeFromY = function(y){
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let coords = this._coordsAt(0,y, mapInfo);
         return coords.lat;
     });
+};
+
+/**
+ * Convert x value of map image to longitude.
+ * @param {Number} x x value of map image
+ * @returns {Longitude} Longitude of the x value from the image
+ *
+ * @deprecated
+ */
+GoogleMaps.prototype.getLongitude = function(x){
+    return this.getLongitudeFromX(x);
+};
+
+/**
+ * Convert y value of map image to latitude.
+ * @param {Number} y y value of map image
+ * @returns {Latitude} Latitude of the y value from the image
+ *
+ * @deprecated
+ */
+GoogleMaps.prototype.getLatitude = function(y){
+    return this.getLatitudeFromY(y);
 };
 
 /**
@@ -218,7 +294,7 @@ GoogleMaps.prototype.getLatitude = function(y){
  */
 
 GoogleMaps.prototype.getEarthCoordinates = function(x, y){
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let coords = this._coordsAt(x,y, mapInfo);
         return [coords.lat, coords.lon];
     });
@@ -232,13 +308,20 @@ GoogleMaps.prototype.getEarthCoordinates = function(x, y){
  */
 
 GoogleMaps.prototype.getImageCoordinates = function(latitude, longitude){
-    return this._getMapInfo(this.socket.role).then(mapInfo => {
+    return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let pixels = this._pixelsAt(latitude, longitude, mapInfo);
         return [pixels.x, pixels.y];
     });
 };
 
-
+/**
+ * Get the straight line distance between two points in meters.
+ * @param {Latitude} startLatitude Latitude of start point
+ * @param {Longitude} startLongitude Longitude of start point
+ * @param {Latitude} endLatitude Latitude of end point
+ * @param {Longitude} endLongitude Longitude of end point
+ * @returns {Number} Distance in meters
+ */
 GoogleMaps.prototype.getDistance = function(startLatitude, startLongitude, endLatitude, endLongitude){
     return geolib.getDistance(
         {latitude: startLatitude, longitude: startLongitude},
@@ -248,12 +331,9 @@ GoogleMaps.prototype.getDistance = function(startLatitude, startLongitude, endLa
 
 // Getting current map settings
 GoogleMaps.prototype._getUserMap = function() {
-    var response = this.response;
-
-    return this._getMapInfo(this.socket.role).then(map => {
+    return this._getMapInfo(this.caller.clientId).then(map => {
         if (!map) {
-            response.send('ERROR: No map found. Please request a map and try again.');
-            return null;
+            throw new Error('No map found. Please request a map and try again.');
         }
         return map;
     });
@@ -261,25 +341,33 @@ GoogleMaps.prototype._getUserMap = function() {
 
 var mapGetter = function(minMax, attr) {
     return function() {
-        var response = this.response;
-
-        this._getMapInfo(this.socket.role).then(map => {
-
-            if (!map) {
-                response.send('ERROR: No map found. Please request a map and try again.');
-            } else {
-                response.json(map[minMax][attr]);
-            }
-
-        });
-
-        return null;
+        return this._getUserMap(this.caller.clientId)
+            .then(map => map[minMax][attr]);
     };
 };
 
+/**
+ * Get the maximum longitude of the current map.
+ * @returns {Longitude}
+ */
 GoogleMaps.prototype.maxLongitude = mapGetter('max', 'lon');
+
+/**
+ * Get the maximum latitude of the current map.
+ * @returns {Longitude}
+ */
 GoogleMaps.prototype.maxLatitude = mapGetter('max', 'lat');
+
+/**
+ * Get the minimum longitude of the current map.
+ * @returns {Longitude}
+ */
 GoogleMaps.prototype.minLongitude = mapGetter('min', 'lon');
+
+/**
+ * Get the minimum latitude of the current map.
+ * @returns {Longitude}
+ */
 GoogleMaps.prototype.minLatitude = mapGetter('min', 'lat');
 
 GoogleMaps.isSupported = () => {

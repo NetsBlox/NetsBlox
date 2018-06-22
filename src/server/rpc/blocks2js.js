@@ -93,7 +93,7 @@ context.getProjectId = function() {
 };
 
 context.getProjectIds = function() {
-    const room = this.project.ctx.socket.getRawRoom();
+    const room = this.project.ctx.socket.getRoomSync();
 
     if (room) {
         return room.getRoleNames();

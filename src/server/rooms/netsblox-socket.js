@@ -90,7 +90,7 @@ class NetsBloxSocket {
         }
     }
 
-    getRawRoom () {
+    getRoomSync () {
         return this._room;
     }
 
@@ -273,7 +273,7 @@ class NetsBloxSocket {
     }
 
     ping() {
-        this.send({type: 'ping'});
+        this.send({type: 'ping'}, true);
     }
 
     isSocketOpen() {
@@ -326,13 +326,13 @@ class NetsBloxSocket {
         this.role = role;
     }
 
-    getNewName (name, taken) {
+    getNewName (name) {
         var promise;
 
         if (this.user) {
-            promise = this.user.getNewName(name, taken);
+            promise = this.user.getNewName(name);
         } else {
-            promise = Q('untitled');
+            promise = Q(name);
         }
 
         return promise.then(name => {
@@ -343,20 +343,19 @@ class NetsBloxSocket {
 
     newRoom (opts) {
         opts = opts || {role: 'myRole'};
+        opts.role = opts.role || 'myRole';
         return this.getNewName(opts.room || opts.name)
             .then(name => {
                 let room = null;
-                this._logger.info(`"${this.username}" is making a new room "${name}"`);
 
                 return RoomManager.createRoom(this, name)
                     .then(_room => {
                         room = _room;
                         this._setRoom(room);
+                        this._logger.info(`"${this.username}" made a new room "${name}" (${room.getProjectId()})`);
                         return room.createRole(opts.role);
                     })
-                    .then(() => {
-                        return this.join(room, opts.role);
-                    })
+                    .then(() => this.join(room, opts.role))
                     .catch(err => this._logger.error(err));
             });
     }
@@ -382,7 +381,7 @@ class NetsBloxSocket {
         return this._room.sendToEveryone(msg);
     }
 
-    send (msg) {
+    send (msg, silent) {
         // Set the defaults
         msg.type = msg.type || 'message';
         if (msg.type === 'message') {
@@ -390,7 +389,10 @@ class NetsBloxSocket {
         }
 
         msg = JSON.stringify(msg);
-        this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
+        if (!silent) {
+            this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
+        }
+
         if (this.isSocketOpen()) {
             this._socket.send(msg);
         } else if (this.isSocketDead()) {
@@ -429,7 +431,7 @@ class NetsBloxSocket {
     }
 
     getPublicId () {
-        let room = this.getRawRoom();
+        let room = this.getRoomSync();
         let publicRoleId = null;
         if (room) {
             publicRoleId = `${this.role}@${room.name}@${room.owner}`;
@@ -517,6 +519,32 @@ class NetsBloxSocket {
                 this.send({type: 'request-actions-complete'});
             });
     }
+
+    importRoom(roleDict) {
+        if (!this.hasRoom()) {
+            const errMsg = `${this.username} has no associated room`;
+            this._logger.error(errMsg);
+            return Promise.reject(new Error(errMsg));
+        }
+
+        // change the socket's name to the given name (as long as it isn't colliding)
+        // Add all the additional roles
+        let roleNames = Object.keys(roleDict);
+
+        this._logger.trace(`adding roles: ${roleNames.join(',')}`);
+        roleNames.forEach(name => this._room.silentCreateRole(name));
+
+        // load the roles into the cache
+        const roles = roleNames.map(name => {
+            const role = roleDict[name];
+            role.ProjectName = name;
+            return role;
+        });
+
+        return this._room.setRoles(roles)
+            .then(() => this._room.onRolesChanged())
+            .then(() => this._room);
+    }
 }
 
 // From the WebSocket spec
@@ -593,16 +621,22 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'rename-room': function(msg) {
-        if (this.isOwner()) {
-            this._room.changeName(msg.name, false, !!msg.inPlace);
+        // Look up the room using the projectId
+        const room = RoomManager.getExistingRoomById(msg.projectId);
+        if (room) {
+            const isOwner = room.getProject().owner === this.username;
+            if (isOwner) {
+                room.changeName(msg.name, false, !!msg.inPlace);
+            }
+        } else {
+            this._logger.error(`Could not find room for ${msg.projectId}`);
         }
     },
 
     'elevate-permissions': function(msg) {
         if (this.isOwner()) {
             var username = msg.username;
-            this._room.addCollaborator(username);
-            this._room.save();
+            return this._room.addCollaborator(username);
         }
     },
 
@@ -623,8 +657,8 @@ NetsBloxSocket.MessageHandlers = {
 
     'request-room-state': function() {
         if (this.hasRoom()) {
-            var msg = this._room.getStateMsg();
-            this.send(msg);
+            return this._room.getStateMsg()
+                .then(msg => this.send(msg));
         }
     },
 
@@ -662,58 +696,7 @@ NetsBloxSocket.MessageHandlers = {
 
     ///////////// Import/Export /////////////
     'import-room': function(msg) {
-        let promise = Q([]);
-
-        if (!this.hasRoom()) {
-            this._logger.error(`${this.username} has no associated room`);
-            return;
-        }
-
-        // change the socket's name to the given name (as long as it isn't colliding)
-        if (this.user) {
-            promise = this.user.getProjectNames();
-        }
-
-        return promise
-            .then(names => {
-                // create unique name, if needed
-                const takenNames = {};
-                let i = 2;
-
-                names.forEach(name => takenNames[name] = true);
-
-                let name = msg.name;
-                while (takenNames[name]) {
-                    name = msg.name + ' (' + i + ')';
-                    i++;
-                }
-
-                this._logger.trace(`changing room name from ${this._room.name} to ${name}`);
-                this._room.update(name);
-
-                // Rename the socket's role
-                this._logger.trace(`changing role name from ${this.role} to ${msg.role}`);
-                this._room.renameRole(this.role, msg.role);
-
-                // Add all the additional roles
-                let roles = Object.keys(msg.roles);
-                this._logger.trace(`adding roles: ${roles.join(',')}`);
-                roles.forEach(role => this._room.silentCreateRole(role));
-
-                // load the roles into the cache
-                roles.forEach(role => this._room.setRole(
-                    role,
-                    {
-                        SourceCode: msg.roles[role].SourceCode,
-                        Media: msg.roles[role].Media,
-                        MediaSize: msg.roles[role].Media.length,
-                        SourceSize: msg.roles[role].SourceCode.length,
-                        RoomName: msg.name
-                    }
-                ));
-
-                this._room.onRolesChanged();
-            });
+        return this.importRoom(msg);
     },
 
     // Retrieve the json for each project and respond

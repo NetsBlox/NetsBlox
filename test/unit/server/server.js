@@ -200,7 +200,7 @@ describe('Server Tests', function() {
         describe('Basic tests', function() {
             it('should exist', function(done) {
                 api.post('/guess?uuid='+uuid)
-                    .expect(401)
+                    .expect(400)
                     .end(done);
             });
         });
@@ -332,8 +332,8 @@ describe('Server Tests', function() {
     });
 
     describe('development', function() {
-        it('should host the client test endpoint on /dev/', function(done) {
-            index.get('/dev/')
+        it('should host the client test endpoint on /test/', function(done) {
+            index.get('/test/')
                 .expect(200)
                 .end(done);
         });

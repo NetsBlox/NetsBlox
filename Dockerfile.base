@@ -1,4 +1,4 @@
-from node:6.9.2
+from node:8.11.2
 MAINTAINER Brian Broll <brian.broll@vanderbilt.edu>
 
 ENV ENV production

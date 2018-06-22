@@ -1,6 +1,7 @@
 (function(ProjectStorage) {
 
     const DataWrapper = require('./data');
+    const ObjectId = require('mongodb').ObjectId;
     const Q = require('q');
     const _ = require('lodash');
     const blob = require('./blob');
@@ -231,7 +232,7 @@
                 .then(roles => Q.all(roles.map(loadRoleContent)));
         }
 
-        getCopy(user) {
+        getCopyFor(user) {
             const owner = user.username;
             return this.getRawProject()
                 .then(raw => {
@@ -251,6 +252,22 @@
                             });
                             return project.create(raw.roles);
                         });
+                });
+        }
+
+        getCopy() {
+            return this.getRawProject()
+                .then(metadata => {
+                    metadata.originTime = Date.now();
+                    metadata.collaborators = [];
+                    metadata.transient = true;
+
+                    const project = new Project({
+                        logger: this._logger,
+                        db: this._db,
+                        data: metadata
+                    });
+                    return project.create(metadata.roles);
                 });
         }
 
@@ -341,72 +358,6 @@
                 .then(() => this);
         }
 
-        save() {
-            const query = {$set: {}};
-            const options = {};
-
-            this._logger.trace(`saving project ${this.owner}/${this.name}`);
-            query.$set.lastUpdatedAt = new Date();
-
-            let next = Q();
-            if (this._room) {  // update if attached to a room
-                const nameChanged = this.name !== this._room.name;
-                const ownerLoggedIn = utils.isSocketUuid(this.owner) &&
-                    this._room.owner !== this.owner;
-
-                if (ownerLoggedIn) {
-                    query.$set.owner = this._room.owner;
-                }
-
-                if (nameChanged) {
-                    query.$set.name = this._room.name;
-                    next = this.getRawProject()
-                        .then(project => {
-                            if (this.isDeleted()) return;
-
-                            if (!project.transient) {  // create a copy
-                                this._logger.trace(`duplicating project (save as) ${this.name}->${this._room.name}`);
-                                this.name = query.$set.name;
-                                // covert the roles keys to match expected format
-                                Object.keys(project.roles).forEach(roleId => {
-                                    project[`roles.${roleId}`] = project.roles[roleId];
-                                });
-                                delete project.roles;
-                                delete project._id;
-
-                                this.originTime = Date.now();
-                                project.originTime = this.originTime;
-                                this._room.originTime = this.originTime;
-
-                                query.$set = _.extend({}, project, query.$set);
-                                options.upsert = true;
-                            } else {
-                                this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
-                            }
-                        });
-                }
-            }
-            return next
-                .then(() => {
-                    if (this.isDeleted()) return;
-                    return this._execUpdate(query, options);
-                })
-                .then(() => {
-                    if (this.isDeleted()) {
-                        this._logger.trace(`project has been deleted while saving: ${this.uuid()}`);
-                        return;
-                    }
-
-                    this._logger.trace(`saved project ${this.owner}/${this.name}`);
-                    this.owner = query.$set.owner || this.owner;
-                    this.name = query.$set.name || this.name;
-                })
-                .catch(err => {
-                    this._logger.warn(`project not saved: ${err}`);
-                    throw err;
-                });
-        }
-
         getLastUpdatedRoleName() {
             return this.getRawRoles()
                 .then(roles => utils.sortByDateField(roles, 'Updated', -1).shift().ProjectName);
@@ -420,16 +371,14 @@
             if (this.isDeleted()) return Promise.reject('cannot call persist: project has been deleted!');
             const query = {$set: {transient: false}};
             this._logger.trace(`persisting project ${this.owner}/${this.name}`);
-            return this._execUpdate(query)
-                .then(() => this.save());
+            return this._execUpdate(query);
         }
 
         unpersist() {
             if (this.isDeleted()) return Promise.reject('cannot call unpersist: project has been deleted!');
             const query = {$set: {transient: true}};
             this._logger.trace(`unpersisting project ${this.owner}/${this.name}`);
-            return this._execUpdate(query)
-                .then(() => this.save());
+            return this._execUpdate(query);
         }
 
         archive() {  // Archive a copy of the current project
@@ -518,8 +467,7 @@
 
         getStorageId() {
             return {
-                name: this.name,
-                owner: this.owner
+                _id: this._id
             };
         }
 
@@ -619,6 +567,26 @@
                 };
                 return data ? new Project(params) : null;
             });
+    };
+
+    ProjectStorage.getById = function (id) {
+        return ProjectStorage.getRawProjectById(id)
+            .then(data => {
+                var params = {
+                    logger: logger,
+                    db: collection,
+                    data
+                };
+                return data ? new Project(params) : null;
+            });
+    };
+
+    ProjectStorage.getRawProjectById = function (id) {
+        if (!id || id.length !== 24) {  // invalid ObjectId (using tmp ID)
+            return Q(null);
+        }
+        id = typeof id === 'string' ? ObjectId(id) : id;
+        return Q(collection.findOne({_id: id}));
     };
 
     ProjectStorage.getTransientProject = function (username, projectName) {
@@ -726,12 +694,35 @@
         };
     };
 
-    ProjectStorage.new = function(user, room) {
+    ProjectStorage.new = function() {
+        if (arguments.length === 2) {
+            return ProjectStorage.newFromRoom.apply(this, arguments);
+        } else {
+            return ProjectStorage.newFromData.apply(this, arguments);
+        }
+    };
+
+    ProjectStorage.newFromRoom = function(user, room) {
         const project = new Project({
             logger: logger,
             db: collection,
             data: getDefaultProjectData(user, room),
             room: room
+        });
+
+        return project.create();
+    };
+
+    ProjectStorage.newFromData = function(data) {
+        data.roles = data.roles || {};
+        data.originTime = data.originTime || new Date();
+        data.collaborators = data.collaborators || [];
+        data.name = data.name || 'untitled';
+
+        const project = new Project({
+            logger: logger,
+            db: collection,
+            data: data
         });
 
         return project.create();

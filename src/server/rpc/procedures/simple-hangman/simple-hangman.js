@@ -3,7 +3,7 @@
 'use strict';
 
 // Word list
-var words = ['accurate','address', 'afford','alert','analyze','ancestor',
+const words = ['accurate','address', 'afford','alert','analyze','ancestor',
     'annual','apparent','appropriate','arena','arrest','ascend','assist','attempt',
     'attentive','attractive','awkward','baggage','basic','benefit','blend','blossom',
     'burrow','calculate','capable','captivity','carefree','century','chamber',
@@ -21,8 +21,7 @@ var words = ['accurate','address', 'afford','alert','analyze','ancestor',
     'shallow','sole','source','sturdy','surface','survive','terror','threat','tidy','tour',
     'tradition','tragic','typical','vacant','valiant','variety','vast','venture','weary'];
 
-var debug = require('debug'),
-    trace = debug('netsblox:rpc:simple-hangman:trace');
+const logger = require('../utils/logger')('simple-hangman');
 
 var SimpleHangman = function() {
     this._state = {};
@@ -45,8 +44,8 @@ SimpleHangman.prototype.getCurrentlyKnownWord = function() {
     this._state.knownIndices.forEach(function(index) {
         letters[index] = this._state.word[index];
     }, this);
-    trace('Currently known word is "'+letters.join(' ')+'"');
-    trace('word is '+this._state.word);
+    logger.trace('Currently known word is "'+letters.join(' ')+'"');
+    logger.trace('word is '+this._state.word);
     return letters.join(' ');
 };
 
@@ -55,7 +54,7 @@ SimpleHangman.prototype.guess = function(letter) {
         added;
 
     letter = letter[0];
-    trace('Guessing letter: '+letter);
+    logger.trace('Guessing letter: '+letter);
     indices = SimpleHangman.getAllIndices(this._state.word, letter);
     added = SimpleHangman.merge(this._state.knownIndices, indices);
     if (added === 0) {
@@ -70,7 +69,7 @@ SimpleHangman.prototype.isWordGuessed = function() {
 };
 
 SimpleHangman.prototype.getWrongCount = function() {
-    trace('wrong count is '+this._state.wrongGuesses);
+    logger.trace('wrong count is '+this._state.wrongGuesses);
     return this._state.wrongGuesses;
 };
 

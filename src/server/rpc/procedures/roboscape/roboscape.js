@@ -31,10 +31,8 @@
 
 'use strict';
 
-var debug = require('debug'),
-    log = debug('netsblox:rpc:roboscape'),
-    // log = console.log,
-    dgram = require('dgram'),
+const logger = require('../utils/logger')('roboscape');
+var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
     SocketManager = require('../../../socket-manager'),
     FORGET_TIME = 120, // forgetting a robot in seconds
@@ -61,18 +59,18 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
 };
 
 Robot.prototype.setTotalRate = function (rate) {
-    log('set total rate ' + this.mac_addr + ' ' + rate);
+    logger.log('set total rate ' + this.mac_addr + ' ' + rate);
     this.totalRate = Math.max(rate, 0);
 };
 
 Robot.prototype.setClientRate = function (rate, penalty) {
-    log('set client rate ' + this.mac_addr + ' ' + rate + ' ' + penalty);
+    logger.log('set client rate ' + this.mac_addr + ' ' + rate + ' ' + penalty);
     this.clientRate = Math.max(rate, 0);
     this.clientPenalty = Math.min(Math.max(penalty, 0), 60);
 };
 
 Robot.prototype.resetRates = function () {
-    log('reset rate limits');
+    logger.log('reset rate limits');
     this.totalRate = 0;
     this.clientRate = 0;
     this.clientPenalty = 0;
@@ -91,7 +89,7 @@ Robot.prototype.setSeqNum = function (seqNum) {
 
 Robot.prototype.accepts = function (clientId, seqNum) {
     if (this.lastSeqNum >= 0 && (seqNum <= this.lastSeqNum ||
-        seqNum > this.lastSeqNum + 100)) {
+            seqNum > this.lastSeqNum + 100)) {
         return false;
     }
 
@@ -105,18 +103,18 @@ Robot.prototype.accepts = function (clientId, seqNum) {
     }
 
     if (client.penalty > 0) {
-        log(clientId + ' client penalty');
+        logger.log(clientId + ' client penalty');
         return false;
     }
 
     if (this.clientRate !== 0 && client.count + 1 > this.clientRate) {
-        log(clientId + ' client rate violation');
+        logger.log(clientId + ' client rate violation');
         client.penalty = 1 + this.clientPenalty;
         return false;
     }
 
     if (this.totalRate !== 0 && this.totalCount + 1 > this.totalRate) {
-        log(clientId + ' total rate violation');
+        logger.log(clientId + ' total rate violation');
         return false;
     }
 
@@ -156,7 +154,7 @@ Robot.prototype.isMostlyAlive = function () {
 Robot.prototype.addClientSocket = function (uuid) {
     var i = this.sockets.indexOf(uuid);
     if (i < 0) {
-        log('register ' + uuid + ' ' + this.mac_addr);
+        logger.log('register ' + uuid + ' ' + this.mac_addr);
         this.sockets.push(uuid);
         return true;
     }
@@ -166,7 +164,7 @@ Robot.prototype.addClientSocket = function (uuid) {
 Robot.prototype.removeClientSocket = function (uuid) {
     var i = this.sockets.indexOf(uuid);
     if (i >= 0) {
-        log('unregister ' + uuid + ' ' + this.mac_addr);
+        logger.log('unregister ' + uuid + ' ' + this.mac_addr);
         this.sockets.splice(i, 1);
         return true;
     }
@@ -176,7 +174,7 @@ Robot.prototype.removeClientSocket = function (uuid) {
 Robot.prototype.sendToRobot = function (message) {
     server.send(message, this.ip4_port, this.ip4_addr, function (err) {
         if (err) {
-            log('send error ' + err);
+            logger.log('send error ' + err);
         }
     });
 };
@@ -203,7 +201,7 @@ Robot.prototype.setSpeed = function (left, right) {
     left = Math.max(Math.min(+left, 128), -128);
     right = Math.max(Math.min(+right, 128), -128);
 
-    log('set speed ' + this.mac_addr + ' ' + left + ' ' + right);
+    logger.log('set speed ' + this.mac_addr + ' ' + left + ' ' + right);
     var message = Buffer.alloc(5);
     message.write('S', 0, 1);
     message.writeInt16LE(left, 1);
@@ -213,7 +211,7 @@ Robot.prototype.setSpeed = function (left, right) {
 
 Robot.prototype.setLed = function (led, cmd) {
     if (!('' + cmd).startsWith('_')) {
-        log('set led ' + this.mac_addr + ' ' + led + ' ' + cmd);
+        logger.log('set led ' + this.mac_addr + ' ' + led + ' ' + cmd);
     }
 
     led = Math.min(Math.max(+led, 0), 1);
@@ -238,7 +236,7 @@ Robot.prototype.beep = function (msec, tone) {
     msec = Math.min(Math.max(+msec, 0), 1000);
     tone = Math.min(Math.max(+tone, 0), 20000);
 
-    log('beep ' + this.mac_addr + ' ' + msec + ' ' + tone);
+    logger.log('set beep ' + this.mac_addr + ' ' + msec + ' ' + tone);
     var message = Buffer.alloc(5);
     message.write('B', 0, 1);
     message.writeUInt16LE(msec, 1);
@@ -250,7 +248,7 @@ Robot.prototype.infraLight = function (msec, pwr) {
     msec = Math.min(Math.max(+msec, 0), 1000);
     pwr = Math.round(2.55 * (100 - Math.min(Math.max(+pwr, 0), 100)));
 
-    log('infra light ' + this.mac_addr + ' ' + msec);
+    logger.log('infra light ' + this.mac_addr + ' ' + msec);
     var message = Buffer.alloc(4);
     message.write('G', 0, 1);
     message.writeUInt16LE(msec, 1);
@@ -259,7 +257,7 @@ Robot.prototype.infraLight = function (msec, pwr) {
 };
 
 Robot.prototype.getRange = function () {
-    log('get range ' + this.mac_addr);
+    logger.log('get range ' + this.mac_addr);
     var promise = this.receiveFromRobot('range');
     var message = Buffer.alloc(1);
     message.write('R', 0, 1);
@@ -268,7 +266,7 @@ Robot.prototype.getRange = function () {
 };
 
 Robot.prototype.getTicks = function () {
-    log('get ticks ' + this.mac_addr);
+    logger.log('get ticks ' + this.mac_addr);
     var promise = this.receiveFromRobot('ticks');
     var message = Buffer.alloc(1);
     message.write('T', 0, 1);
@@ -280,7 +278,7 @@ Robot.prototype.drive = function (left, right) {
     left = Math.max(Math.min(+left, 64), -64);
     right = Math.max(Math.min(+right, 64), -64);
 
-    log('drive ' + this.mac_addr + ' ' + left + ' ' + right);
+    logger.log('drive ' + this.mac_addr + ' ' + left + ' ' + right);
     var message = Buffer.alloc(5);
     message.write('D', 0, 1);
     message.writeInt16LE(left, 1);
@@ -304,7 +302,7 @@ Robot.prototype.commandToClient = function (command) {
                     }
                 });
             } else {
-                log('socket not found for ' + uuid);
+                logger.log('socket not found for ' + uuid);
             }
         });
     }
@@ -317,7 +315,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     content.time = this.timestamp;
 
     if (msgType !== 'set led') {
-        log('event ' + msgType + ' ' + JSON.stringify(content));
+        logger.log('event ' + msgType + ' ' + JSON.stringify(content));
     }
 
     if (this.callbacks[msgType]) {
@@ -359,14 +357,14 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
                 });
             }
         } else {
-            log('socket not found for ' + uuid);
+            logger.log('socket not found for ' + uuid);
         }
     });
 };
 
 Robot.prototype.onMessage = function (message) {
     if (message.length < 11) {
-        log('invalid message ' + this.ip4_addr + ':' + this.ip4_port +
+        logger.log('invalid message ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
         return;
     }
@@ -378,7 +376,7 @@ Robot.prototype.onMessage = function (message) {
 
     if (command === 'I' && message.length === 11) {
         if (this.timestamp < oldTimestamp) {
-            log('robot was rebooted');
+            logger.log('robot was rebooted ' + this.mac_addr);
             this.setSeqNum(-1);
             this.setEncryption([]);
             this.resetRates();
@@ -452,7 +450,7 @@ Robot.prototype.onMessage = function (message) {
             pwr: Math.round(100 - message.readUInt8(13) / 2.55)
         }, ['time', 'msec', 'pwr']);
     } else {
-        log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
+        logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
     }
 };
@@ -478,7 +476,7 @@ Robot.prototype.encrypt = function (text, decrypt) {
 
         output += String.fromCharCode(code);
     }
-    log('"' + text + '" ' + (decrypt ? 'decrypted' : 'encrypted') +
+    logger.log('"' + text + '" ' + (decrypt ? 'decrypted' : 'encrypted') +
         ' to "' + output + '"');
     return output;
 };
@@ -490,10 +488,10 @@ Robot.prototype.decrypt = function (text) {
 Robot.prototype.setEncryption = function (keys) {
     if (keys instanceof Array) {
         this.encryption = keys;
-        log(this.mac_addr + ' encryption set to [' + keys + ']');
+        logger.log(this.mac_addr + ' encryption set to [' + keys + ']');
         return true;
     } else {
-        log('invalid encryption key ' + keys);
+        logger.log('invalid encryption key ' + keys);
         return false;
     }
 };
@@ -571,7 +569,7 @@ RoboScape.prototype._robots = {};
 RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
     if (!robot) {
-        log('discovering ' + mac_addr + ' at ' + ip4_addr + ':' + ip4_port);
+        logger.log('discovering ' + mac_addr + ' at ' + ip4_addr + ':' + ip4_port);
         robot = new Robot(mac_addr, ip4_addr, ip4_port);
         this._robots[mac_addr] = robot;
     } else {
@@ -595,7 +593,7 @@ RoboScape.prototype._heartbeat = function () {
     for (var mac_addr in RoboScape.prototype._robots) {
         var robot = RoboScape.prototype._robots[mac_addr];
         if (!robot.heartbeat()) {
-            log('forgetting ' + mac_addr);
+            logger.log('forgetting ' + mac_addr);
             delete RoboScape.prototype._robots[mac_addr];
         }
     }
@@ -832,12 +830,12 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
      * @returns {string} textual response
      */
     RoboScape.prototype.send = function (robot, command) {
-        // log('send ' + robot + ' ' + command);
+        // logger.log('send ' + robot + ' ' + command);
         robot = this._getRobot(robot);
 
         if (robot && typeof command === 'string') {
             if (command.match(/^backdoor[, ](.*)$/)) {
-                log('executing ' + command);
+                logger.log('executing ' + command);
                 command = RegExp.$1;
             } else {
                 // for replay attacks
@@ -918,12 +916,12 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
 
 server.on('listening', function () {
     var local = server.address();
-    log('listening on ' + local.address + ':' + local.port);
+    logger.log('listening on ' + local.address + ':' + local.port);
 });
 
 server.on('message', function (message, remote) {
     if (message.length < 6) {
-        log('invalid message ' + remote.address + ':' +
+        logger.log('invalid message ' + remote.address + ':' +
             remote.port + ' ' + message.toString('hex'));
     } else {
         var mac_addr = message.toString('hex', 0, 6);
@@ -939,7 +937,13 @@ if (process.env.ROBOSCAPE_PORT) {
     server.bind(process.env.ROBOSCAPE_PORT || 1973);
 
     setTimeout(RoboScape.prototype._heartbeat, 1000);
-    module.exports = RoboScape;
-} else {
-    console.log('ROBOSCAPE_PORT is not set (to 1973), RoboScape is disabled');
 }
+
+RoboScape.isSupported = function () {
+    if (!process.env.ROBOSCAPE_PORT) {
+        console.log('ROBOSCAPE_PORT is not set (to 1973), RoboScape is disabled');
+    }
+    return !!process.env.ROBOSCAPE_PORT;
+};
+
+module.exports = RoboScape;

@@ -98,7 +98,7 @@ class ActiveRoom {
 
     add (socket, role) {
         this.silentAdd(socket, role);
-        this.sendUpdateMsg();
+        return this.sendUpdateMsg();
     }
 
     silentAdd (socket, role) {
@@ -154,30 +154,45 @@ class ActiveRoom {
     }
 
     getStateMsg () {
-        const state = this.getState();
-        state.type = 'room-roles';
-        return state;
+        return this.getState().then(state => {
+            state.type = 'room-roles';
+            return state;
+        });
     }
 
     getState () {
-        const occupants = {};
+        const roleNames = this.getRoleNames();
 
-        this.getRoleNames()
-            .forEach(role => occupants[role] =
-                this.getSocketsAt(role).map(socket => {
-                    return {
-                        uuid: socket.uuid,
-                        username: utils.isSocketUuid(socket.username) ?
-                            null : socket.username
-                    };
-                }));
+        return this._project.getRoleIdsFor(roleNames)
+            .then(ids => {
+                // sort the role names by their id
+                const rolesInfo = {};
+                const roles = roleNames
+                    .map((name, i) => [name, ids[i]])
+                    .sort((r1, r2) => r1[1] < r2[1] ? -1 : 1);
 
-        return {
-            owner: this.owner,
-            collaborators: this.getCollaborators(),
-            name: this.name,
-            occupants: occupants
-        };
+                roles.forEach(pair => {
+                    // Change this to use the socket id
+                    const [name, id] = pair;
+                    const occupants = this.getSocketsAt(name)
+                        .map(socket => {
+                            return {
+                                uuid: socket.uuid,
+                                username: utils.isSocketUuid(socket.username) ?
+                                    null : socket.username
+                            };
+                        });
+                    rolesInfo[id] = {name, occupants};
+                });
+
+                return {
+                    owner: this.owner,
+                    id: this.getProjectId(),
+                    collaborators: this.getCollaborators(),
+                    name: this.name,
+                    roles: rolesInfo
+                };
+            });
     }
 
     setStorage(store) {
@@ -223,11 +238,8 @@ class ActiveRoom {
         return this.changeName();
     }
 
-    changeName(name, force, inPlace) {
+    getValidName(name, force) {
         let owner = null;
-        // Check if this project is already saved for the owner.
-        //   - If so, keep the same name
-        //   - Else, request a new name
         name = name || this.name;
         return this.getOwner()
             .then(_owner => {
@@ -249,24 +261,25 @@ class ActiveRoom {
                     return owner.getNewName(name, activeRoomNames);
                 }
                 return name;
-            })
+            });
+    }
+
+    changeName(name, force, inPlace) {
+        // Check if this project is already saved for the owner.
+        //   - If so, keep the same name
+        //   - Else, request a new name
+        return this.getValidName(name, force)
             .then(name => {
                 const project = this.getProject();
                 if (inPlace && project) {
                     this.name = name;
                     return project.setName(name)
-                        .then(() => this.update(name));
+                        .then(() => this.update(name))
+                        .then(() => name);
                 } else {
                     return this.update(name).then(() => name);
                 }
             });
-    }
-
-    save() {
-        if (this._project) {  // has been saved
-            return this._project.save();
-        }
-        return Q();
     }
 
     sendFrom (socket, msg) {
@@ -423,9 +436,7 @@ class ActiveRoom {
         if (!this.roles[role]) {
             this._logger.trace(`Adding role ${role}`);
             this.roles[role] = [];
-            if (content) {
-                return this.setRole(role, content || utils.getEmptyRole(role));
-            }
+            return this.setRole(role, content || utils.getEmptyRole(role));
         }
         return Q();
     }
@@ -478,9 +489,10 @@ class ActiveRoom {
     }
 
     sendUpdateMsg () {
-        var msg = this.getStateMsg();
-
-        this.sockets().forEach(socket => socket.send(msg));
+        return this.getStateMsg()
+            .then(msg => {
+                this.sockets().forEach(socket => socket.send(msg));
+            });
     }
 
     onRolesChanged() {
@@ -491,8 +503,7 @@ class ActiveRoom {
         // This should be called when the room layout changes in a way that
         // effects the datamodel (eg, created role). Changes about clients
         // moving around should call sendUpdateMsg
-        this.sendUpdateMsg();
-        return this.save();
+        return this.sendUpdateMsg();
     }
 
     serialize() {  // Create project xml from the current room

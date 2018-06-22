@@ -206,17 +206,6 @@ describe('projects', function() {
                     });
             });
         });
-
-        it('should log on save when deleted but continue', function(done) {
-            let traceFn = project._logger.trace;  // mock this out for the test
-            project._logger.trace = msg => {
-                if (msg.includes('project has been deleted')) {
-                    done();
-                    project._logger.trace = traceFn;
-                }
-            };
-            project.save();
-        });
     });
 
     describe('setName', function() {
@@ -293,22 +282,17 @@ describe('projects', function() {
                 .nodeify(done);
         });
 
-        it('should update project id on execUpdate (upsert)', function() {
+        it('should record the update time ', function() {
+            const startTime = new Date();
             const newName = 'someNewName';
-            const id = project.getId();
-            return project.getRawProject()
-                .then(json => {
-                    const options = {upsert: true};
-                    const query = {};
-                    query.$set = json;
-                    query.$set.name = newName;
+            const query = {$set: {}};
+            query.$set.name = newName;
 
-                    delete query.$set._id;
-                    project.name = newName;
-                    return project._execUpdate(query, options);
-                })
-                .then(() => {
-                    assert.notEqual(id.toString(), project.getId().toString());
+            return project._execUpdate(query)
+                .then(() => project.getRawProject())
+                .then(json => {
+                    const {lastUpdatedAt} = json;
+                    assert(lastUpdatedAt >= startTime, 'last update time not recorded');
                 });
         });
     });
