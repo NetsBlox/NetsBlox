@@ -660,15 +660,15 @@ RoboScape.prototype.listen = function (robots) {
     return ok;
 };
 
-if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
-    /**
-     * Returns the MAC addresses of all robots.
-     * @returns {array}
-     */
-    RoboScape.prototype.getRobots = function () {
-        return Object.keys(RoboScape.prototype._robots);
-    };
+/**
+ * Returns the MAC addresses of all robots.
+ * @returns {array}
+ */
+RoboScape.prototype.getRobots = function () {
+    return Object.keys(RoboScape.prototype._robots);
+};
 
+if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
     /**
      * Returns true if the given robot is alive, sent messages in the
      * last two seconds.
@@ -836,13 +836,6 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         robot = this._getRobot(robot);
 
         if (robot && typeof command === 'string') {
-            if (command.match(/^reset key$/)) {
-                robot.setSeqNum(-1);
-                robot.resetRates();
-                robot.setEncryption([]);
-                return true;
-            }
-
             if (command.match(/^backdoor[, ](.*)$/)) {
                 log('executing ' + command);
                 command = RegExp.$1;
