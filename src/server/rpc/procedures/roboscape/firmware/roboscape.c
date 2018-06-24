@@ -31,6 +31,20 @@ static const unsigned char server_addr[4] = { 52, 73, 65, 98 }; // netsblox.org
 //static const unsigned char server_addr[4] = { 129, 59, 104, 208 }; // mmaroti.isis.vanderbilt.edu
 static const unsigned char server_port[2] = { 0x07, 0xb5 }; // 1973
 
+unsigned int time_ref = 0;
+unsigned int last_cnt = 0;
+
+int get_time()
+{
+    unsigned int elapsed = CNT - last_cnt;
+    while (elapsed >= CLKFREQ) {
+        elapsed -= CLKFREQ;
+        last_cnt += CLKFREQ;
+        time_ref += 1000;
+    }
+    return time_ref + elapsed / (CLKFREQ / 1000);
+}
+
 unsigned short ntohs(unsigned char* data)
 {
     return (data[0] << 8) + data[1];
@@ -64,7 +78,7 @@ int cmp_rx_headers(int len, unsigned char cmd)
 
 void set_tx_headers(unsigned char cmd)
 {
-    int time = CNT / (CLKFREQ / 1000); // TODO: do proper overflow handling
+    int time = get_time();
     buffer[0] = 0x20;
     buffer[1] = 0x10;
     memcpy(buffer + 2, server_addr, 4);
@@ -96,7 +110,14 @@ int main()
     xbee = xbee_open(XBEE_DO_PIN, XBEE_DI_PIN, 1);
 
     xbee_send_api(xbee, "\x8\000NR", 4);
-    xbee_send_api(xbee, "\x8\000IDvummiv", 10);
+    if (0) {
+        xbee_send_api(xbee, "\x8\000IDvummiv", 10);
+    } else {
+        xbee_send_api(xbee, "\x8\000IDrobonet", 11);
+        xbee_send_api(xbee, "\x8\000EE\002", 5);
+        xbee_send_api(xbee, "\x8\000PKcybercamp", 13);
+        pause(100); // do not overflow the xbee buffer
+    }
 
     xbee_send_api(xbee, "\x8\001SL", 4);
     xbee_send_api(xbee, "\x8\002SH", 4);
