@@ -115,7 +115,9 @@ module.exports = [
                 RoomManager.forkRoom(room, socket);
             }
             room.onRolesChanged();
-            return res.sendStatus(200);
+
+            return room.getState()
+                .then(state => res.json(state));
         }
     },
     {
@@ -251,7 +253,8 @@ module.exports = [
 
             //  Remove the given role
             return room.removeRole(role)
-                .then(() => res.send('ok'));
+                .then(() => room.getState())
+                .then(state => res.json(state));
         }
     },
     {
@@ -286,6 +289,58 @@ module.exports = [
                 .catch(err => res.status(500).send('ERROR: ' + err));
         }
     },
+    {  // Create a new role
+        Service: 'renameRole',
+        Parameters: 'roleId,name,socketId,projectId',
+        middleware: ['hasSocket', 'isLoggedIn'],
+        Method: 'post',
+        Note: '',
+        Handler: function(req, res) {
+            const {roleId, name} = req.body;
+            const socket = SocketManager.getSocket(req.body.socketId);
+
+            if (!socket.canEditRoom()) {
+                this._logger.error(`${socket.username} tried to rename role... DENIED`);
+                return res.status(403).send('ERROR: Guests can\'t rename roles');
+            }
+
+            const room = socket.getRoomSync();
+            const project = room.getProject();
+            return project.getRoleName(roleId)
+                .then(oldName => room.renameRole(oldName, name))
+                .then(() => room.getState())
+                .then(state => res.json(state))
+                .catch(err => {
+                    this._logger.error(`Rename role failed: ${err}`);
+                    res.send(`ERROR: ${err.message}`);
+                });
+        }
+    },
+    {  // Create a new role
+        Service: 'addRole',
+        Parameters: 'name,socketId,projectId',
+        middleware: ['hasSocket', 'isLoggedIn'],
+        Method: 'post',
+        Note: '',
+        Handler: function(req, res) {
+            const {name, projectId} = req.body;
+            const socket = SocketManager.getSocket(req.body.socketId);
+
+            if (!socket.canEditRoom()) {
+                this._logger.error(`${socket.username} tried to create role... DENIED`);
+                return res.status(403).send('ERROR: Guests can\'t create roles');
+            }
+
+            const room = RoomManager.getExistingRoomById(projectId);
+            return room.createRole(name)
+                .then(() => room.getState())
+                .then(state => res.json(state))
+                .catch(err => {
+                    this._logger.error(`Add role failed: ${err}`);
+                    res.send(`ERROR: ${err.message}`);
+                });
+        }
+    },
     {  // Create a new role and copy this project's blocks to it
         Service: 'cloneRole',
         Parameters: 'role,socketId',
@@ -304,7 +359,8 @@ module.exports = [
             }
 
             return room.cloneRole(role)
-                .then(newRole => res.send(encodeURIComponent(newRole)))
+                .then(() => room.getState())
+                .then(state => res.json(state))
                 .catch(err => {
                     this._logger.error(`Clone role failed: ${err}`);
                     res.send(`ERROR: ${err}`);
