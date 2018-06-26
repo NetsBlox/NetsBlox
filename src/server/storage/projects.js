@@ -94,6 +94,12 @@
                 });
         }
 
+        setOwner(name) {
+            const query = {$set: {owner: name}};
+            return this._execUpdate(query)
+                .then(() => this.owner = name);
+        }
+
         ///////////////////////// Roles /////////////////////////
         getNewRoleId(name) {
             return `${name}-${Date.now()}`;
