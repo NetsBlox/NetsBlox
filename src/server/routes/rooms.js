@@ -115,7 +115,9 @@ module.exports = [
                 RoomManager.forkRoom(room, socket);
             }
             room.onRolesChanged();
-            return res.sendStatus(200);
+
+            return room.getState()
+                .then(state => res.json(state));
         }
     },
     {
@@ -251,7 +253,8 @@ module.exports = [
 
             //  Remove the given role
             return room.removeRole(role)
-                .then(() => res.send('ok'));
+                .then(() => room.getState())
+                .then(state => res.json(state));
         }
     },
     {
@@ -356,7 +359,8 @@ module.exports = [
             }
 
             return room.cloneRole(role)
-                .then(newRole => res.send(encodeURIComponent(newRole)))
+                .then(() => room.getState())
+                .then(state => res.json(state))
                 .catch(err => {
                     this._logger.error(`Clone role failed: ${err}`);
                     res.send(`ERROR: ${err}`);
