@@ -299,13 +299,21 @@
         renameRole(role, newName) {
             if (this.isDeleted()) return Promise.reject('cannot renameRole: project has been deleted!');
             return this.getRoleId(role)
-                .then(id => {
-                    let query = {$set: {}};
-                    query.$set[`roles.${id}.ProjectName`] = newName;
+                .then(id => this.setRoleName(id, newName));
+        }
 
-                    this._logger.trace(`renaming role: ${role} -> ${newName}`);
-                    return this._execUpdate(query);
-                });
+        setRoleName(roleId, name) {
+            if (this.isDeleted()) return Promise.reject('cannot setRoleName: project has been deleted!');
+            const query = {$set: {}};
+            query.$set[`roles.${roleId}.ProjectName`] = name;
+
+            this._logger.trace(`setting role name of ${roleId} to ${name}`);
+            return this._execUpdate(query);
+        }
+
+        getRoleName (id) {
+            return this.getRawRoleById(id)
+                .then(data => data && data.ProjectName);
         }
 
         getRoleNames () {

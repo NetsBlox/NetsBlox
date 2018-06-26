@@ -287,6 +287,33 @@ module.exports = [
         }
     },
     {  // Create a new role
+        Service: 'renameRole',
+        Parameters: 'roleId,name,socketId,projectId',
+        middleware: ['hasSocket', 'isLoggedIn'],
+        Method: 'post',
+        Note: '',
+        Handler: function(req, res) {
+            const {roleId, name} = req.body;
+            const socket = SocketManager.getSocket(req.body.socketId);
+
+            if (!socket.canEditRoom()) {
+                this._logger.error(`${socket.username} tried to rename role... DENIED`);
+                return res.status(403).send('ERROR: Guests can\'t rename roles');
+            }
+
+            const room = socket.getRoomSync();
+            const project = room.getProject();
+            return project.getRoleName(roleId)
+                .then(oldName => room.renameRole(oldName, name))
+                .then(() => room.getState())
+                .then(state => res.json(state))
+                .catch(err => {
+                    this._logger.error(`Rename role failed: ${err}`);
+                    res.send(`ERROR: ${err.message}`);
+                });
+        }
+    },
+    {  // Create a new role
         Service: 'addRole',
         Parameters: 'name,socketId,projectId',
         middleware: ['hasSocket', 'isLoggedIn'],
