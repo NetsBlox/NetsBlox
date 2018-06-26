@@ -186,6 +186,7 @@ class ActiveRoom {
                 });
 
                 return {
+                    version: Date.now(),
                     owner: this.owner,
                     id: this.getProjectId(),
                     collaborators: this.getCollaborators(),

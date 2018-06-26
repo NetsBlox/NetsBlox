@@ -286,6 +286,31 @@ module.exports = [
                 .catch(err => res.status(500).send('ERROR: ' + err));
         }
     },
+    {  // Create a new role
+        Service: 'addRole',
+        Parameters: 'name,socketId,projectId',
+        middleware: ['hasSocket', 'isLoggedIn'],
+        Method: 'post',
+        Note: '',
+        Handler: function(req, res) {
+            const {name, projectId} = req.body;
+            const socket = SocketManager.getSocket(req.body.socketId);
+
+            if (!socket.canEditRoom()) {
+                this._logger.error(`${socket.username} tried to create role... DENIED`);
+                return res.status(403).send('ERROR: Guests can\'t create roles');
+            }
+
+            const room = RoomManager.getExistingRoomById(projectId);
+            return room.createRole(name)
+                .then(() => room.getState())
+                .then(state => res.json(state))
+                .catch(err => {
+                    this._logger.error(`Add role failed: ${err}`);
+                    res.send(`ERROR: ${err.message}`);
+                });
+        }
+    },
     {  // Create a new role and copy this project's blocks to it
         Service: 'cloneRole',
         Parameters: 'role,socketId',
