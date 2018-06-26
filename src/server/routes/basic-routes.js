@@ -155,19 +155,19 @@ module.exports = [
                         log(`"${user.username}" has logged in.`);
                     }
 
+                    user.recordLogin();
+
                     if (!isUsingCookie) {  // save the cookie, if needed
                         saveLogin(res, user, req.body.remember);
                     }
 
-                    // We need to update the project owner regardless of the ws connection
-                    // Associate the websocket with the username
+                    // Update the project if logging in from the netsblox app
                     const socket = SocketManager.getSocket(req.body.socketId);
+                    let updateProject = Q();
+
                     if (socket) {  // websocket has already connected
                         socket.onLogin(user);
-                    }
-
-                    let updateProject = Q();
-                    if (projectId) {
+                    } else if (projectId) {  // update project manually
                         updateProject = Projects.getById(projectId)
                             .then(project => {
                                 // Update the project owner, if needed
@@ -181,7 +181,6 @@ module.exports = [
 
                     return updateProject
                         .then(() => {
-                            user.recordLogin();
                             if (req.body.return_user) {
                                 return res.status(200).json({
                                     username: username,
@@ -195,7 +194,7 @@ module.exports = [
                         });
                 })
                 .catch(e => {
-                    log(`Could not find user "${username}": ${e}`);
+                    log(`Login failed for "${username}": ${e}`);
                     return res.status(500).send('ERROR: ' + e);
                 });
         }
