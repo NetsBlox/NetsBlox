@@ -113,80 +113,86 @@ module.exports = [
     { 
         Method: 'post', 
         URL: '',  // login method
-        middleware: ['tryLogIn'],
         Handler: function(req, res) {
             const hash = req.body.__h;
             const projectId = req.body.projectId;
             const isUsingCookie = !req.body.__u;
+            let loggedIn = false;
+            let username = req.body.__u;
 
             // Should check if the user has a valid cookie. If so, log them in with it!
-            const loggedIn = req.session && !!req.session.username;
-            let username = req.body.__u || req.session.username;
-
-            if (!username) {
-                log('"passive" login failed - no session found!');
-                if (req.body.silent) {
-                    return res.sendStatus(204);
-                } else {
-                    return res.sendStatus(403);
-                }
-            }
-
             // Explicit login
-            log(`Logging in as ${username}`);
-            return this.storage.users.get(username)
+            return Q.nfcall(middleware.tryLogIn, req, res)
+                .then(() => {
+                    loggedIn = req.session && !!req.session.username;
+                    username = username || req.session.username;
+
+                    if (!username) {
+                        log('"passive" login failed - no session found!');
+                        if (req.body.silent) {
+                            return res.sendStatus(204);
+                        } else {
+                            return res.sendStatus(403);
+                        }
+                    }
+                    log(`Logging in as ${username}`);
+
+                    return this.storage.users.get(username);
+                })
                 .then(user => {
-                    if (user && (loggedIn || user.hash === hash)) {  // Sign in 
-                        if (!isUsingCookie) {
-                            saveLogin(res, user, req.body.remember);
-                        }
 
-                        log(`"${user.username}" has logged in.`);
-
-                        // We need to update the project owner regardless of the ws connection
-                        // Associate the websocket with the username
-                        const socket = SocketManager.getSocket(req.body.socketId);
-                        if (socket) {  // websocket has already connected
-                            socket.onLogin(user);
-                        }
-
-                        let updateProject = Q();
-                        if (projectId) {
-                            updateProject = Projects.getById(projectId)
-                                .then(project => {
-                                    // Update the project owner, if needed
-                                    console.log();
-                                    console.log();
-                                    console.log();
-                                    if (project && Utils.isSocketUuid(project.owner)) {
-                                        console.log('updating owner from', project.owner);
-                                        return project.setOwner(username);
-                                    }
-                                });
-                        }
-
-                        return updateProject
-                            .then(() => {
-                                user.recordLogin();
-                                if (req.body.return_user) {
-                                    return res.status(200).json({
-                                        username: username,
-                                        admin: user.admin,
-                                        email: user.email,
-                                        api: req.body.api ? SERIALIZED_API : null
-                                    });
-                                } else {
-                                    return res.status(200).send(SERIALIZED_API);
-                                }
-                            });
-                    } else {
-                        if (user) {
-                            log(`Incorrect password attempt for ${user.username}`);
-                            return res.status(403).send('Incorrect password');
-                        }
+                    if (!user) {  // incorrect username
                         log(`Could not find user "${username}"`);
                         return res.status(403).send(`Could not find user "${username}"`);
                     }
+
+                    if (!loggedIn) {  // login, if needed
+                        const correctPassword = user.hash === hash;
+                        if (!correctPassword) {
+                            log(`Incorrect password attempt for ${user.username}`);
+                            return res.status(403).send('Incorrect password');
+                        }
+                        log(`"${user.username}" has logged in.`);
+                    }
+
+                    if (!isUsingCookie) {  // save the cookie, if needed
+                        saveLogin(res, user, req.body.remember);
+                    }
+
+                    // We need to update the project owner regardless of the ws connection
+                    // Associate the websocket with the username
+                    const socket = SocketManager.getSocket(req.body.socketId);
+                    if (socket) {  // websocket has already connected
+                        socket.onLogin(user);
+                    }
+
+                    let updateProject = Q();
+                    if (projectId) {
+                        updateProject = Projects.getById(projectId)
+                            .then(project => {
+                                // Update the project owner, if needed
+                                if (project && Utils.isSocketUuid(project.owner)) {
+                                    return user.getNewName(project.name)
+                                        .then(name => project.setName(name))
+                                        .then(() => project.setOwner(username));
+                                }
+                            });
+                    }
+
+                    return updateProject
+                        .then(() => {
+                            user.recordLogin();
+                            if (req.body.return_user) {
+                                return res.status(200).json({
+                                    username: username,
+                                    admin: user.admin,
+                                    email: user.email,
+                                    api: req.body.api ? SERIALIZED_API : null
+                                });
+                            } else {
+                                return res.status(200).send(SERIALIZED_API);
+                            }
+                        });
                 })
                 .catch(e => {
                     log(`Could not find user "${username}": ${e}`);
