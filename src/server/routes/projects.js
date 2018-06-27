@@ -404,9 +404,6 @@ module.exports = [
                         throw new Error(`Project not found.`);
                     }
 
-                    // Sometimes the project isn't found...
-                    // How can this happen? TODO
-                    // what if they are using a tmp id?
                     const isSaveAs = project.name !== projectName;
 
                     if (isSaveAs) {
