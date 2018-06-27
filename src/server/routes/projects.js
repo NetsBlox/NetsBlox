@@ -15,6 +15,7 @@ var _ = require('lodash'),
     Jimp = require('jimp'),
     error = debug('netsblox:api:projects:error');
 
+const DEFAULT_ROLE_NAME = 'myRole';
 const Projects = require('../storage/projects');
 
 
@@ -210,11 +211,12 @@ module.exports = [
             const name = 'untitled';
             let user = null;
 
-            roleName = roleName || 'myRole';
+            roleName = roleName || DEFAULT_ROLE_NAME;
             if (socket && socket.role) {
                 roleName = roleName || socket.role;
             }
 
+            let project = null;
             return Q.nfcall(middleware.trySetUser, req, res)
                 .then(loggedIn => {
                     if (loggedIn) {
@@ -226,24 +228,26 @@ module.exports = [
 
                     if (socket) {
                         return socket.newRoom({name, role: roleName})
-                            .then(() => socket.getRoomSync().getProject());
+                            .then(() => project = socket.getRoomSync().getProject());
                     } else {
                         let userId = req.session.username || clientId;
                         return Projects.new({owner: userId})
-                            .then(project => {
+                            .then(newProject => {
+                                project = newProject;
                                 const projectId = project._id.toString();
                                 return project.setRole(roleName, Utils.getEmptyRole(roleName))
                                     .then(() => user ? user.getNewNameFor(name, projectId) : name)
-                                    .then(name => project.setName(name))
-                                    .then(() => project);
+                                    .then(name => project.setName(name));
                             });
                     }
                 })
-                .then(project => {
+                .then(() => project.getRoleId(roleName))
+                .then(roleId => {
                     const projectId = project.getId();
                     this._logger.trace(`Created new project: ${projectId} (${roleName})`);
                     return res.send({
                         projectId,
+                        roleId,
                         name: project.name,
                         roleName
                     });
@@ -257,12 +261,13 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             // Look up the projectId
-            const {clientId, owner, roleName, roomName, actionId} = req.body;
-            let {projectId} = req.body;
+            const {clientId, owner, actionId} = req.body;
+            let {roleName, roomName, roleId, projectId} = req.body;
             let userId = clientId;
             let user = null;
-            const socket = SocketManager.getSocket(clientId);
 
+            roomName = roomName || 'untitled';
+            const socket = SocketManager.getSocket(clientId);
             const setUserAndId = Q.nfcall(middleware.trySetUser, req, res)
                 .then(loggedIn => {
                     if (loggedIn) {
@@ -291,6 +296,8 @@ module.exports = [
                         }
                     })
                     .then(room => {
+                        roleName = roleName ||
+                            room.getRoleNames().shift() || DEFAULT_ROLE_NAME;
                         if (!room.hasRole(roleName)) {
                             this._logger.trace(`created role ${roleName} in ${owner}/${roomName}`);
                             return room.createRole(roleName)
@@ -300,14 +307,18 @@ module.exports = [
                     })
                     .then(room => {
                         return room.add(socket, roleName)
-                            .then(() => socket.requestActionsAfter(actionId));
+                            .then(() => room.getProject().getRoleId(roleName))
+                            .then(id => {
+                                roleId = id;
+                                return socket.requestActionsAfter(actionId);
+                            });
                     })
                     .then(() => {
                         const room = socket.getRoomSync();
                         if (room) {
                             projectId = room.getProjectId();
                         }
-                        return res.send({projectId});
+                        return res.send({projectId, roleId});
                     });
             } else {  // validate the projectId and return a valid projectId
                 return setUserAndId
@@ -318,14 +329,16 @@ module.exports = [
                         } else {
                             return Projects.new({owner: userId})
                                 .then(project => {
-                                    return project.setRole(roleName, Utils.getEmptyRole(roleName))
+                                    roleName = roleName || DEFAULT_ROLE_NAME;
+                                    const content = Utils.getEmptyRole(roleName);
+                                    return project.setRoleById(roleId, content)
                                         .then(() => user ? user.getNewName(roomName) : roomName)
                                         .then(name => project.setName(name))
                                         .then(() => project.getId());
                                 });
                         }
                     })
-                    .then(projectId => res.send({projectId}));
+                    .then(projectId => res.send({projectId, roleId}));
             }
         }
     },
@@ -348,13 +361,14 @@ module.exports = [
                 .then(room => {
                     const projectId = room.getProjectId();
                     return room.changeName(name, false, true)
-                        .then(() => res.send({projectId}));
+                        .then(() => room.getProject().getRoleId(role))
+                        .then(roleId => res.send({projectId, roleId}));
                 });
         }
     },
     {
         Service: 'saveProject',
-        Parameters: 'roleName,projectName,projectId,ownerId,overwrite,srcXml,mediaXml',
+        Parameters: 'roleId,roleName,projectName,projectId,ownerId,overwrite,srcXml,mediaXml',
         Method: 'Post',
         Note: '',
         middleware: ['isLoggedIn', 'setUser'],
@@ -362,7 +376,7 @@ module.exports = [
             // Check permissions
             // TODO
             const {user, username} = req.session;
-            const {roleName, ownerId, projectId, overwrite} = req.body;
+            const {roleId, ownerId, projectId, overwrite, roleName} = req.body;
             let {projectName} = req.body;
             const {srcXml, mediaXml} = req.body;
 
@@ -379,13 +393,17 @@ module.exports = [
             //   - persist
             //
             let project = null;
-            trace(`Saving ${roleName} from ${projectName} (${projectId})`);
+            trace(`Saving ${roleId} from ${projectName} (${projectId})`);
             return Projects.getById(projectId)
                 .then(_project => {
                     // if project name is different from save name,
                     // it is "Save as" (make a copy)
 
                     project = _project;
+                    if (!project) {
+                        throw new Error(`Project not found.`);
+                    }
+
                     // Sometimes the project isn't found...
                     // How can this happen? TODO
                     // what if they are using a tmp id?
@@ -436,16 +454,17 @@ module.exports = [
                 .then(() => project.archive())
                 .then(() => {
                     const roleData = {
+                        ProjectName: roleName,
                         SourceCode: srcXml,
                         Media: mediaXml
                     };
-                    return project.setRole(roleName, roleData);
+                    return project.setRoleById(roleId, roleData);
                 })
                 .then(() => project.persist())
-                .then(() => res.status(200).send({name: projectName, projectId}))
+                .then(() => res.status(200).send({name: projectName, projectId, roleId}))
                 .catch(err => {
                     error(`Error saving ${projectId}:`, err);
-                    return res.status(500).send(err);
+                    return res.status(500).send(err.message);
                 });
         }
     },

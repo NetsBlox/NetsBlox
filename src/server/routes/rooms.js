@@ -397,7 +397,7 @@ module.exports = [
                         type: 'collab-invitation',
                         id: inviteId,
                         roomName: roomName,
-                        ProjectID: projectId,
+                        projectId: projectId,
                         inviter,
                         role: role
                     };

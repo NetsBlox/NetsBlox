@@ -1,5 +1,6 @@
 (function(ProjectStorage) {
 
+    const assert = require('assert');
     const DataWrapper = require('./data');
     const ObjectId = require('mongodb').ObjectId;
     const Q = require('q');
@@ -115,11 +116,13 @@
         }
 
         setRawRoleById(id, content) {
+            assert(content.ProjectName);
             const query = this.addSetRoleToQuery(id, content);
             return this._execUpdate(query);
         }
 
         setRoleById(id, content) {
+            assert(content.ProjectName);
             this.addRoleMetadata(content);
             return storeRoleBlob(content)
                 .then(content => this.setRawRoleById(id, content));
@@ -229,7 +232,10 @@
             return this.getRawProject()
                 .then(project => {
                     return Object.keys(project.roles)
-                        .map(name => project.roles[name]);
+                        .map(id => {
+                            project.roles[id].ID = id;
+                            return project.roles[id];
+                        });
                 });
         }
 
