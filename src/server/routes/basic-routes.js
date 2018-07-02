@@ -7,27 +7,38 @@ var R = require('ramda'),
     UserAPI = require('./users'),
     RoomAPI = require('./rooms'),
     ProjectAPI = require('./projects'),
-    EXTERNAL_API = UserAPI
-        .concat(ProjectAPI)
-        .concat(RoomAPI)
-        .filter(api => api.Service)
-        .map(R.omit.bind(R, 'Handler'))
-        .map(R.omit.bind(R, 'middleware')),
-
     debug = require('debug'),
     log = debug('netsblox:api:log'),
-    middleware = require('./middleware'),
-    SocketManager = require('../socket-manager'),
-    saveLogin = middleware.saveLogin;
+    middleware = require('./middleware');
 
-const SERIALIZED_API = Utils.serializeArray(EXTERNAL_API);
+const SocketManager = require('../socket-manager');
 const BugReporter = require('../bug-reporter');
 const Messages = require('../storage/messages');
 const Projects = require('../storage/projects');
+const DEFAULT_ROLE_NAME = 'myRole';
+const RoomManager = require('../rooms/room-manager');
+
+const ExternalAPI = {};
+UserAPI.concat(ProjectAPI, RoomAPI)
+    .filter(api => api.Service)
+    .map(R.omit.bind(R, 'Handler'))
+    .map(R.omit.bind(R, 'middleware'))
+    .forEach(endpoint => {
+        const name = endpoint.Service;
+        const service = {};
+        Object.keys(endpoint).forEach(key => {
+            service[key.toLowerCase()] = endpoint[key];
+        });
+
+        if (service.parameters) {
+            service.parameters = service.parameters.split(',');
+        }
+        ExternalAPI[name] = service;
+    });
 
 module.exports = [
-    { 
-        Method: 'get', 
+    {
+        Method: 'get',
         URL: 'ResetPW',
         Handler: function(req, res) {
             log('password reset request:', req.query.Username);
@@ -110,56 +121,130 @@ module.exports = [
                 });
         }
     },
-    { 
-        Method: 'post', 
+    {
+        Service: 'setClientState',
+        Parameters: 'clientId,projectId,roomName,roleName,owner,actionId',
+        URL: 'setClientState',
+        Method: 'Post',
+        Note: '',
+        Handler: function(req, res) {
+            // Look up the projectId
+            const {clientId, owner, actionId} = req.body;
+            let {roleName, roomName, roleId, projectId} = req.body;
+            let userId = clientId;
+            let user = null;
+
+            roomName = roomName || 'untitled';
+            const socket = SocketManager.getSocket(clientId);
+
+            const startTime = Date.now();
+            let lastTime = startTime;
+            const mark = name => {
+                const now = Date.now();
+                console.log(`--- ${name} ---`);
+                console.log((now - lastTime)/1000);
+                lastTime = now;
+            };
+
+            const setUserAndId = middleware.login(req, res)
+                .then(() => {
+                    mark('login');
+                    if (req.loggedIn) {
+                        user = req.session.user;
+                        if (socket) {
+                            socket.onLogin(user);
+                        }
+                        userId = user.username;
+                    }
+                });
+
+
+            // Get the room by projectId and have the socket join the role
+            if (socket) {
+                return setUserAndId
+                    .then(() => Projects.getById(projectId))
+                    .then(project => {
+                        mark('getById');
+                        if (project) {
+                            return RoomManager.getRoomForProject(project);
+                        } else {
+                            return RoomManager.createRoom({username: userId}, roomName, owner)
+                                .then(room => {
+                                    projectId = room.getProjectId();
+                                    return room;
+                                });
+                        }
+                    })
+                    .then(room => {
+                        mark('get room');
+                        roleName = roleName ||
+                            room.getRoleNames().shift() || DEFAULT_ROLE_NAME;
+                        if (!room.hasRole(roleName)) {
+                            this._logger.trace(`created role ${roleName} in ${owner}/${roomName}`);
+                            return room.createRole(roleName)
+                                .then(() => room);
+                        }
+                        return room;
+                    })
+                    .then(room => {
+                        mark('ensure role');
+                        return room.add(socket, roleName)
+                            .then(() => room.getProject().getRoleId(roleName))
+                            .then(id => {
+                                roleId = id;
+                                mark('add socket');
+                                return socket.requestActionsAfter(actionId);
+                            });
+                    })
+                    .then(() => {
+                        mark('request actions');
+                        const room = socket.getRoomSync();
+                        if (room) {
+                            projectId = room.getProjectId();
+                        }
+                        console.log('============== TOTAL:', (Date.now()-startTime)/1000);
+                        return res.send({api: ExternalAPI, projectId, roleId});
+                    });
+            } else {  // validate the projectId and return a valid projectId
+                return setUserAndId
+                    .then(() => Projects.getById(projectId))
+                    .then(project => {
+                        if (project) {
+                            return project.getId();
+                        } else {
+                            return Projects.new({owner: userId})
+                                .then(project => {
+                                    roleName = roleName || DEFAULT_ROLE_NAME;
+                                    const content = Utils.getEmptyRole(roleName);
+                                    return project.setRoleById(roleId, content)
+                                        .then(() => user ? user.getNewName(roomName) : roomName)
+                                        .then(name => project.setName(name))
+                                        .then(() => project.getId());
+                                });
+                        }
+                    })
+                    .then(projectId => res.send({
+                        api: ExternalAPI,
+                        projectId,
+                        roleId
+                    }));
+            }
+        }
+    },
+    {
+        Method: 'post',
         URL: '',  // login method
         Handler: function(req, res) {
-            const hash = req.body.__h;
             const projectId = req.body.projectId;
-            const isUsingCookie = !req.body.__u;
-            let loggedIn = false;
             let username = req.body.__u;
+            let user = null;
 
             // Should check if the user has a valid cookie. If so, log them in with it!
             // Explicit login
-            return Q.nfcall(middleware.tryLogIn, req, res)
+            return middleware.login(req, res)
                 .then(() => {
-                    loggedIn = req.session && !!req.session.username;
-                    username = username || req.session.username;
-
-                    if (!username) {
-                        log('"passive" login failed - no session found!');
-                        if (req.body.silent) {
-                            return res.sendStatus(204);
-                        } else {
-                            return res.sendStatus(403);
-                        }
-                    }
-                    log(`Logging in as ${username}`);
-
-                    return this.storage.users.get(username);
-                })
-                .then(user => {
-
-                    if (!user) {  // incorrect username
-                        log(`Could not find user "${username}"`);
-                        return res.status(403).send(`Could not find user "${username}"`);
-                    }
-
-                    if (!loggedIn) {  // login, if needed
-                        const correctPassword = user.hash === hash;
-                        if (!correctPassword) {
-                            log(`Incorrect password attempt for ${user.username}`);
-                            return res.status(403).send('Incorrect password');
-                        }
-                        log(`"${user.username}" has logged in.`);
-                    }
-
-                    user.recordLogin();
-
-                    if (!isUsingCookie) {  // save the cookie, if needed
-                        saveLogin(res, user, req.body.remember);
-                    }
+                    username = req.session.username;
+                    user = req.session.user;
 
                     // Update the project if logging in from the netsblox app
                     const socket = SocketManager.getSocket(req.body.socketId);
@@ -185,11 +270,10 @@ module.exports = [
                                 return res.status(200).json({
                                     username: username,
                                     admin: user.admin,
-                                    email: user.email,
-                                    api: req.body.api ? SERIALIZED_API : null
+                                    email: user.email
                                 });
                             } else {
-                                return res.status(200).send(SERIALIZED_API);
+                                return res.status(200).json(ExternalAPI);
                             }
                         });
                 })
