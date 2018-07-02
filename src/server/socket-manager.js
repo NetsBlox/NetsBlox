@@ -8,6 +8,7 @@ var SocketManager = function() {
 
     // Provide getter for sockets
     Socket.prototype.onClose = SocketManager.prototype.onClose.bind(this);
+    Socket.prototype.getSocketsAt = SocketManager.prototype.getSocketsAt.bind(this);
 };
 
 SocketManager.prototype.init = function(logger) {
@@ -26,6 +27,23 @@ SocketManager.prototype.enable = function(wss) {
 
 SocketManager.prototype.getSocket = function(uuid) {
     return this._sockets.find(socket => socket.uuid === uuid);
+};
+
+SocketManager.prototype.getSocketsAt = function(projectId, roleId) {
+    return this._sockets.filter(
+        socket => socket.projectId === projectId && socket.roleId === roleId
+    );
+};
+
+SocketManager.prototype.setClientState = function(clientId, projectId, roleId, username) {
+    const client = this.getSocket(clientId);
+
+    if (!client) {
+        this._logger.info(`Could not set client state for ${clientId}`);
+        return;
+    }
+
+    client.setState(projectId, roleId, username);
 };
 
 SocketManager.prototype.sockets = function() {

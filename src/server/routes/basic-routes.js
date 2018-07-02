@@ -203,8 +203,9 @@ module.exports = [
                             projectId = room.getProjectId();
                         }
                         console.log('============== TOTAL:', (Date.now()-startTime)/1000);
-                        return res.send({api: ExternalAPI, projectId, roleId});
-                    });
+                        return SocketManager.setClientState(clientId, projectId, roleId, userId);
+                    })
+                    .then(() => res.send({api: ExternalAPI, projectId, roleId}));
             } else {  // validate the projectId and return a valid projectId
                 return setUserAndId
                     .then(() => Projects.getById(projectId))
@@ -223,11 +224,11 @@ module.exports = [
                                 });
                         }
                     })
-                    .then(projectId => res.send({
-                        api: ExternalAPI,
-                        projectId,
-                        roleId
-                    }));
+                    .then(id => {
+                        projectId = id;
+                        SocketManager.setClientState(clientId, projectId, roleId, userId);
+                        return res.send({api: ExternalAPI, projectId, roleId});
+                    });
             }
         }
     },

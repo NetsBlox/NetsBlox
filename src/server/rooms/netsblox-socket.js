@@ -26,15 +26,16 @@ var counter = 0,
         'import-room',
         'record-action',
         'user-action'
-    ],
-    PUBLIC_ROLE_FORMAT = /^.*@.*@.*$/,
-    SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
+    ];
 
 const Messages = require('../storage/messages');
 const ProjectActions = require('../storage/project-actions');
 const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
 const HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
 const BugReporter = require('../bug-reporter');
+const Projects = require('../storage/projects');
+const SocketManager = require('../socket-manager');
+const NetsBloxAddress = require('../netsblox-address');
 
 var createSaveableProject = function(json) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -57,6 +58,8 @@ class NetsBloxSocket {
         this._room = null;
         this._onRoomJoinDeferred = null;
         this.loggedIn = false;
+        this.projectId = null;
+        this.roleId = null;
 
         this.user = null;
         this.username = this.uuid;
@@ -73,10 +76,11 @@ class NetsBloxSocket {
     }
 
     hasRoom (silent) {
-        if (!this._room && !silent) {
+        const hasRoom = !!this.projectId
+        if (!hasRoom && !silent) {
             this._logger.error('user has no room!');
         }
-        return !!this._room;
+        return hasRoom;
     }
 
     getRoom () {
@@ -440,68 +444,37 @@ class NetsBloxSocket {
     }
 
     sendMessageTo (msg, dstId) {
-        dstId = dstId + ''; // make sure dstId is string
-        dstId = dstId.replace(/^\s*/, '').replace(/\s*$/, '');
-        msg.dstId = dstId;
-        let srcRoom = this._room;
-        if (!srcRoom) return this._logger.error(`Sending message without room! ${this.username}`);
+        return NetsBloxAddress.new(dstId, this.projectId, this.roleId)
+            .then(address => {
+                const states = address.resolve();
+                const clients = states
+                    .map(state => {
+                        const [projectId, roleId] = state;
+                        // FIXME
+                        return this.getSocketsAt(projectId, roleId);
+                    })
+                    .reduce((l1, l2) => l1.concat(l2), []);
 
-        msg.srcProjectId = srcRoom.getProjectId();
-        if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
-            // Look up the socket matching
-            //
-            //     <role>@<project>@<owner> or <project>@<owner>
-            //
-            var idChunks = dstId.split('@'),
-                sockets = [],
-                ownerId = idChunks.pop(),
-                roomName = idChunks.pop(),
-                roleId = idChunks.pop();
-
-            const room = RoomManager.getExistingRoom(ownerId, roomName);
-
-            if (room) {
-                if (roleId) {
-                    if (room.hasRole(roleId)) {
-                        sockets = sockets.concat(room.getSocketsAt(roleId));
-                    }
-                } else {
-                    sockets = room.sockets();
-                }
-
-                sockets.forEach(socket => {
+                clients.forEach(client => {
                     msg.dstId = Constants.EVERYONE;
-                    socket.send(msg);
+                    client.send(msg);
                 });
 
-                // record message (including successful delivery)
-                msg.dstId = dstId;
-                msg.recipients = sockets.map(socket => socket.getPublicId());
-            }
-        } else {
-            if (dstId === 'others in room') {
-                msg.recipients = this.sendToOthers(msg);
-            } else if (dstId === Constants.EVERYONE) {
-                msg.recipients = this.sendToEveryone(msg);
-            } else if (srcRoom.hasRole(dstId)) {
-                let sockets = srcRoom.getSocketsAt(dstId);
-                sockets.forEach(socket => socket.send(msg));
-                msg.recipients = sockets.map(socket => socket.getPublicId());
-            }
-        }
-
-        return this.saveMessage(msg, srcRoom);
+                return address.getPublicIds();
+            });
     }
 
-    saveMessage (msg, srcRoom/*, dstRoom*/) {
+    saveMessage (msg, srcProjectId) {
         // Check if the room should save the message
-        const project = srcRoom.getProject();
-        if (project) {
-            return project.isRecordingMessages()
-                .then(isRecording => isRecording && Messages.save(msg));
-        } else {
-            this._logger.error(`Will not save messages: active room is missing project ${srcRoom.getUuid()}`);
-        }
+        return Projects.getById(srcProjectId)
+            .then(project => {
+                if (project) {
+                    return project.isRecordingMessages()
+                        .then(isRecording => isRecording && Messages.save(msg));
+                } else {
+                    this._logger.error(`Will not save messages: unknown project ${srcProjectId}`);
+                }
+            });
     }
 
     requestActionsAfter (actionId) {
@@ -545,6 +518,12 @@ class NetsBloxSocket {
             .then(() => this._room.onRolesChanged())
             .then(() => this._room);
     }
+
+    setState(projectId, roleId, username) {
+        this.projectId = projectId;
+        this.roleId = roleId;
+        this.username = username || this.uuid;
+    }
 }
 
 // From the WebSocket spec
@@ -557,19 +536,11 @@ NetsBloxSocket.MessageHandlers = {
     'pong': function() {
     },
 
-    'set-uuid': function(msg) {
-        this.uuid = msg.body;
-        this.username = this.username || this.uuid;
-    },
+    'set-state': function(msg) {
+        const {projectId, roleId, username, clientId} = msg.body;
+        this.uuid = clientId;
 
-    'request-uuid': function() {
-        this.uuid = '_' + SERVER_NAME + Date.now();
-        this.username = this.username || this.uuid;
-        // Provide a uuid
-        this.send({
-            type: 'uuid',
-            body: this.uuid
-        });
+        this.setState(projectId, roleId, username);
     },
 
     'message': function(msg) {
@@ -579,7 +550,12 @@ NetsBloxSocket.MessageHandlers = {
         }
 
         var dstIds = typeof msg.dstId !== 'object' ? [msg.dstId] : msg.dstId.contents;
-        dstIds.forEach(dstId => this.sendMessageTo(msg, dstId));
+        return Q.all(dstIds.map(dstId => this.sendMessageTo(msg, dstId)))
+            .then(recipients => {
+                msg.recipients = recipients.reduce((l1, l2) => l1.concat(l2), []);
+                msg.dstId = dstIds;
+                return this.saveMessage(msg, this.projectId);
+            });
     },
 
     'user-action': function(msg) {
