@@ -385,7 +385,11 @@ Server.prototype.createRouter = function() {
 
         router.route(api.URL)[method]((req, res) => {
             if (api.Service) {
-                logger.trace(`received ${api.Service} request`);
+                const args = (api.Parameters || '').split(',')
+                    .map(name => req.body[name] || 'undefined')
+                    .map(content => content.length < 50 ? content : '<omitted>')
+                    .join(', ');
+                logger.trace(`received request ${api.Service}(${args})`);
             }
             try {
                 const result = api.Handler.call(this, req, res);
