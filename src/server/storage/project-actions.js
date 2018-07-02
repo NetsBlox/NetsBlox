@@ -9,6 +9,7 @@
     ProjectActions.init = function(_logger, db) {
         logger = _logger.fork('project-actions');
         collection = db.collection('project-actions');
+        collection.createIndex({'action.id': 1});
     };
 
     ProjectActions.store = function(action) {
