@@ -596,19 +596,6 @@ NetsBloxSocket.MessageHandlers = {
         delete this._projectRequests[id];
     },
 
-    'rename-room': function(msg) {
-        // Look up the room using the projectId
-        const room = RoomManager.getExistingRoomById(msg.projectId);
-        if (room) {
-            const isOwner = room.getProject().owner === this.username;
-            if (isOwner) {
-                room.changeName(msg.name, false, !!msg.inPlace);
-            }
-        } else {
-            this._logger.error(`Could not find room for ${msg.projectId}`);
-        }
-    },
-
     'elevate-permissions': function(msg) {
         if (this.isOwner()) {
             var username = msg.username;
@@ -622,15 +609,6 @@ NetsBloxSocket.MessageHandlers = {
             .then(sockets => sockets.forEach(socket => socket.send(msg)));
     },
 
-    'rename-role': function(msg) {
-        if (this.canEditRoom() && msg.role !== msg.name) {
-            this._room.renameRole(msg.role, msg.name);
-
-            const sockets = this._room.getSocketsAt(msg.name);
-            sockets.forEach(socket => socket.send(msg));
-        }
-    },
-
     'request-room-state': function() {
         if (this.hasRoom()) {
             return this._room.getStateMsg()
@@ -638,36 +616,7 @@ NetsBloxSocket.MessageHandlers = {
         }
     },
 
-    'create-room': function(msg) {
-        this.newRoom(msg);
-    },
-
-    'join-room': function(msg) {
-        const {owner, role, actionId} = msg;
-        const name = msg.room;
-        let room = null;
-
-        return RoomManager.getRoom(this, owner, name)
-            .then(nextRoom => {
-                room = nextRoom;
-                this._logger.trace(`${this.username} is joining room ${owner}/${name}`);
-                if (!room.hasRole(role)) {
-                    this._logger.trace(`created role ${role} in ${owner}/${name}`);
-                    return room.createRole(role);
-                }
-            })
-            .then(() => room.add(this, role))
-            .then(() => this.requestActionsAfter(actionId))
-            .catch(err => this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
-
-    },
-
     ///////////// Import/Export /////////////
-    'import-room': function(msg) {
-        return this.importRoom(msg);
-    },
-
-    // Retrieve the json for each project and respond
     'export-room': function(msg) {
         if (this.hasRoom()) {
             this._room.serialize()
