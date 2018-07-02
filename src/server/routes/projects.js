@@ -459,9 +459,7 @@ module.exports = [
     },
     {
         Service: 'getProjectList',
-        Parameters: '',
         Method: 'Get',
-        Note: '',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
             const origin = `${req.protocol}://${req.get('host')}`;
@@ -527,11 +525,14 @@ module.exports = [
         Handler: function(req, res) {
             const {clientId, projectId} = req.body;
             const room = RoomManager.getExistingRoomById(projectId);
+            let active = !!room;
+
             if (room) {
                 const userCount = room.sockets().filter(socket => socket.uuid !== clientId).length;
-                return res.send(`active=${userCount > 0}`);
+                active = userCount > 0;
             }
-            return res.send(`active=${!!room}`);
+
+            return res.json({active});
         }
     },
     {
