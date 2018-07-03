@@ -283,22 +283,51 @@
                 });
         }
 
+        getNewRoleName(basename) {
+            basename = basename || 'role';
+            return this.getRoleNames()
+                .then(names => {
+                    let i = 2;
+                    let name = basename;
+                    while (names.includes(name)) {
+                        name = `${basename} (${i})`;
+                        i++;
+                    }
+                    return name;
+                });
+        }
+
         cloneRole(role, newName) {
+            let getNewName = null;
+
+            if (!newName) {
+                getNewName = this.getNewRoleName(role);
+            } else {
+                getNewName = Q(newName);
+            }
+
             return this.getRawRole(role)
                 .then(content => {
-                    return this.setRawRole(newName, content);
+                    return getNewName
+                        .then(newName => this.setRawRole(newName, content));
                 });
+        }
+
+        removeRoleById(roleId) {
+            if (this.isDeleted()) return Promise.reject('cannot removeRole: project has been deleted!');
+            const query = {$unset: {}};
+            this._logger.trace(`removing role ${roleId} from ${this._id.toString()}`);
+            query.$unset[`roles.${roleId}`] = '';
+            return this._execUpdate(query);
         }
 
         removeRole(roleName) {
             if (this.isDeleted()) return Promise.reject('cannot removeRole: project has been deleted!');
-            const query = {$unset: {}};
             this._logger.trace(`removing role: ${roleName}`);
             return this.getRoleId(roleName)
                 .then(roleId => {
                     if (!roleId) return Promise.reject(`Could not find role named ${roleName} in ${this.uuid()}`);
-                    query.$unset[`roles.${roleId}`] = '';
-                    return this._execUpdate(query);
+                    return this.removeRoleById(roleId);
                 });
         }
 
