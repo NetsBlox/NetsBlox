@@ -58,19 +58,20 @@ module.exports = [
     },
     {
         Service: 'evictCollaborator',
-        Parameters: 'socketId,userId',
+        Parameters: 'userId,projectId',
         Method: 'post',
-        middleware: ['hasSocket', 'isLoggedIn'],
+        middleware: ['isLoggedIn'],
         Handler: function(req, res) {
-            var {socketId, userId} = req.body,
-                socket = SocketManager.getSocket(socketId);
+            const {userId, projectId} = req.body;
 
-            return socket.getRoom().then(room => {
-                // Remove all sockets with the given username
-                log(`removing collaborator ${userId} from room ${room.uuid}`);
-                room.removeCollaborator(userId);
-                return res.sendStatus(200);
-            });
+            // Add better auth!
+            // TODO
+            return Projects.getById(projectId)
+                .then(project => {
+                    log(`removing collaborator ${userId} from project ${project.uuid()}`);
+                    return project.removeCollaborator(userId);
+                })
+                .then(() => res.sendStatus(200));
         }
     },
     {
