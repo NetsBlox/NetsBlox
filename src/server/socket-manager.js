@@ -2,6 +2,8 @@
 'use strict';
 
 var Socket = require('./rooms/netsblox-socket');
+const utils = require('./server-utils');
+const Projects = require('./storage/projects');
 
 var SocketManager = function() {
     this._sockets = [];
@@ -31,8 +33,12 @@ SocketManager.prototype.getSocket = function(uuid) {
 
 SocketManager.prototype.getSocketsAt = function(projectId, roleId) {
     return this._sockets.filter(
-        socket => socket.projectId === projectId && socket.roleId === roleId
+        socket => socket.projectId.toString() === projectId.toString() && socket.roleId === roleId
     );
+};
+
+SocketManager.prototype.getSocketsAtProject = function(projectId) {
+    return this._sockets.filter(socket => socket.projectId.toString() === projectId.toString());
 };
 
 SocketManager.prototype.setClientState = function(clientId, projectId, roleId, username) {
@@ -40,10 +46,68 @@ SocketManager.prototype.setClientState = function(clientId, projectId, roleId, u
 
     if (!client) {
         this._logger.info(`Could not set client state for ${clientId}`);
-        return;
+        // Reconsider how this might be affected
+        // TODO
+        return Promise.reject(new Error(`No websocket connection for ${clientId}`));
     }
 
+    // Update the changed rooms
+    const oldProjectId = client.projectId;
     client.setState(projectId, roleId, username);
+
+    if (oldProjectId && oldProjectId !== projectId) {
+        this.onRoomUpdate(oldProjectId);
+    }
+    return this.onRoomUpdate(projectId);
+};
+
+SocketManager.prototype.getRoomState = function(projectId) {
+    return Projects.getRawProjectById(projectId)
+        .then(metadata => {
+            const ids = Object.keys(metadata.roles).sort();
+            const rolesInfo = {};
+            const roles = ids.map(id => [metadata.roles[id].ProjectName, id]);
+
+            roles.forEach(pair => {
+                // Change this to use the socket id
+                const [name, id] = pair;
+                const occupants = this.getSocketsAt(projectId, id)
+                    .map(socket => {
+                        return {
+                            uuid: socket.uuid,
+                            username: utils.isSocketUuid(socket.username) ?
+                                null : socket.username
+                        };
+                    });
+                rolesInfo[id] = {name, occupants};
+            });
+
+            return {
+                version: Date.now(),
+                owner: metadata.owner,
+                id: metadata._id.toString(),
+                collaborators: metadata.collaborators,
+                name: metadata.name,
+                roles: rolesInfo
+            };
+        });
+};
+
+SocketManager.prototype.onRoomUpdate = function(projectId) {
+    // Send room updates to the clients in the room
+    // TODO
+    return this.getRoomState(projectId)
+        .then(state => {
+            const clients = this.getSocketsAtProject(projectId);
+
+            const msg = state;
+            msg.type = 'room-roles';
+
+            const count = clients.length;
+            this._logger.error(`About to send room update for ${projectId} to ${count} clients`);
+            clients.forEach(client => client.send(msg));
+            return msg;
+        });
 };
 
 SocketManager.prototype.sockets = function() {
