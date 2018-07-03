@@ -602,11 +602,12 @@
     };
 
     ProjectStorage.getRawProjectById = function (id) {
-        if (!id || id.length !== 24) {  // invalid ObjectId (using tmp ID)
+        try {
+            id = typeof id === 'string' ? ObjectId(id) : id;
+            return Q(collection.findOne({_id: id}));
+        } catch (e) {
             return Q(null);
         }
-        id = typeof id === 'string' ? ObjectId(id) : id;
-        return Q(collection.findOne({_id: id}));
     };
 
     ProjectStorage.getTransientProject = function (username, projectName) {
