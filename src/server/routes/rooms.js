@@ -435,9 +435,10 @@ function getFriendSockets(user) {
             let inGroup = {};
             usernames.forEach(name => inGroup[name] = true);
             return SocketManager.sockets()
+                .filter(socket => !Utils.isSocketUuid(socket.username))
                 .filter(socket => {
                     return socket.username !== user.username &&
-                        socket.loggedIn && inGroup[socket.username];
+                        inGroup[socket.username];
                 });
         });
 }
