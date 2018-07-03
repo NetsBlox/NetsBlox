@@ -80,11 +80,12 @@ module.exports = [
             }
 
             // validate username
-            if (uname[0] === '_') {
+            const nameRegex = /[^a-zA-Z0-9][a-zA-Z0-9_\-\(\)\.]*/;
+            if (uname[0] === '_' || nameRegex.test(uname)) {
                 return res.status(400).send('ERROR: invalid username');
             }
 
-            self.storage.users.get(uname)
+            return self.storage.users.get(uname)
                 .then(user => {
                     if (!user) {
                         var newUser = self.storage.users.new(uname, email);
