@@ -24,11 +24,8 @@ module.exports = [
         Handler: function(req, res) {
             return getFriendSockets(req.session.user)
                 .then(sockets => {
-                    var resp = {};
-                    sockets.forEach(socket => resp[socket.username] = socket.uuid);
-
-                    log(Utils.serialize(resp));
-                    return res.send(Utils.serialize(resp));
+                    const usernames = _.uniq(sockets.map(socket => socket.username));
+                    return res.send(usernames);
                 });
         }
     },
