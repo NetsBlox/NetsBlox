@@ -34,35 +34,29 @@ module.exports = [
     },
     {
         Service: 'getCollaborators',
-        Parameters: 'socketId',
+        Parameters: 'projectId',
         Method: 'post',
-        middleware: ['isLoggedIn', 'hasSocket', 'setUser'],
+        middleware: ['isLoggedIn', 'setUser'],
         Handler: function(req, res) {
-            const socket = SocketManager.getSocket(req.body.socketId);
-            let room = null;
+            const {projectId} = req.body;
+            let collaborators = null;
 
-            return socket.getRoom()
-                .then(_room => {
-                    room = _room;
+            return Projects.getRawProjectById(projectId)
+                .then(metadata => {
+                    collaborators = metadata.collaborators;
                     return getFriendSockets(req.session.user);
                 })
                 .then(friends => {
-                    const collaborators = room.getCollaborators();
-                    const resp = {};
-                    let username;
+                    const usernames = _.uniq(friends.map(socket => socket.username));
 
-                    friends.forEach(socket => {
-                        username = socket.username;
-
-                        if (collaborators.includes(username)) {
-                            resp[socket.username] = socket.uuid;
-                        } else {
-                            resp[socket.username] = false;
-                        }
+                    return usernames.map(username => {
+                        return {
+                            username,
+                            collaborating: collaborators.includes(username)
+                        };
                     });
-                    return res.send(Utils.serialize(resp));
-                });
-
+                })
+                .then(users => res.send(users));
         }
     },
     {
