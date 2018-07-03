@@ -1,7 +1,7 @@
 'use strict';
 
-var _ = require('lodash'),
-    Utils = _.extend(require('../utils'), require('../server-utils.js')),
+const _ = require('lodash');
+var Utils = _.extend(require('../utils'), require('../server-utils.js')),
     Q = require('q'),
 
     debug = require('debug'),
@@ -214,151 +214,114 @@ module.exports = [
     },
     {
         Service: 'deleteRole',
-        Parameters: 'role,ownerId,roomName',
+        Parameters: 'roleId,projectId',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn'],
         Handler: function(req, res) {
-            var username = req.session.username,
-                role = req.body.role,
-                ownerId = req.body.ownerId,
-                roomName = req.body.roomName,
-                roomId = utils.uuid(ownerId, roomName);
+            const {roleId, projectId} = req.body;
 
-            const room = RoomManager.getExistingRoom(ownerId, roomName);
-                    //  Get the room
-            if (!room) {
-                this._logger.error(`Could not find room ${roomId} for ${username}`);
-                return res.status(404).send('ERROR: Could not find room');
-            }
-
-            //  Verify that the username is either the ownerId
-            this._logger.trace(`ownerId is ${room.owner.username} and username is ${username}`);
-            if (!room.isEditableFor(username)) {
-                this._logger.error(`${username} does not have permission to edit ${role} at ${roomId}`);
-                return res.status(403).send(`ERROR: You do not have permission to delete ${role}`);
-            }
-
-            // Disallow deleting roles without evicting the users first
-            const sockets = room.getSocketsAt(role) || [];
-            if (sockets.length) {
+            const clients = SocketManager.getSocketsAt(projectId, roleId);
+            if (clients.length) {
                 return res.status(403).send('ERROR: Cannot delete occupied role. Remove the occupants first.');
             }
 
-            //  Remove the given role
-            return room.removeRole(role)
-                .then(() => room.getState())
+            // Add better auth
+            // TODO
+            return Projects.getById(projectId)
+                .then(project => project.removeRoleById(roleId))
+                .then(() => SocketManager.onRoomUpdate(projectId))
                 .then(state => res.json(state));
         }
     },
     {
         Service: 'moveToRole',
-        Parameters: 'projectId,dstId,socketId',
+        Parameters: 'projectId,roleId,clientId',
+        middleware: ['isLoggedIn'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            const {dstId, socketId, projectId} = req.body;
-            const socket = SocketManager.getSocket(socketId);
+            const {roleId, projectId, clientId} = req.body;
+            const {username} = req.session;
 
-            const room = RoomManager.getExistingRoomById(projectId);
-            if (!socket) {
-                this._logger.error('Could not find socket for ' + socketId);
-                return res.status(404).send('ERROR: Not fully connected... Please try again or try a different browser (and report this issue to the netsblox maintainers!)');
-            }
-
-            if (!socket.canEditRoom()) {
-                return res.status(403).send('ERROR: permission denied');
-            }
-
-            return room.getRole(dstId)
+            // Add auth
+            // TODO
+            return Projects.getById(projectId)
                 .then(project => {
-                    if (project) {
-                        project = Utils.serializeRole(project, room.getProject());
+                    if (!project.roles[roleId]) {
+                        // Better error message!
+                        // FIXME
+                        return res.status(400).send(`Invalid Role ID: ${roleId}`);
                     }
-                    // Update the room state
-                    room.add(socket, dstId);
 
-                    res.send(project);
+                    // room update only sent via ws here...
+                    // TODO
+                    return SocketManager.setClientState(clientId, projectId, roleId, username)
+                        .then(() => project.getRoleById(roleId))
+                        .then(role => utils.serializeRole(role, project));
                 })
-                .catch(err => res.status(500).send('ERROR: ' + err));
+                .then(xml => res.send(xml));
         }
     },
     {  // Create a new role
         Service: 'renameRole',
-        Parameters: 'roleId,name,socketId,projectId',
-        middleware: ['hasSocket', 'isLoggedIn'],
+        Parameters: 'roleId,name,projectId',
+        middleware: ['isLoggedIn'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            const {roleId, name} = req.body;
-            const socket = SocketManager.getSocket(req.body.socketId);
+            const {roleId, name, projectId} = req.body;
+            // Add better auth!
+            // TODO
 
-            if (!socket.canEditRoom()) {
-                this._logger.error(`${socket.username} tried to rename role... DENIED`);
-                return res.status(403).send('ERROR: Guests can\'t rename roles');
-            }
-
-            const room = socket.getRoomSync();
-            const project = room.getProject();
-            return project.getRoleName(roleId)
-                .then(oldName => room.renameRole(oldName, name))
-                .then(() => room.getState())
-                .then(state => res.json(state))
-                .catch(err => {
-                    this._logger.error(`Rename role failed: ${err}`);
-                    res.send(`ERROR: ${err.message}`);
-                });
+            return Projects.getById(projectId)
+                .then(project => project.setRoleName(roleId, name))
+                .then(() => SocketManager.onRoomUpdate(projectId))
+                .then(state => res.json(state));
         }
     },
     {  // Create a new role
         Service: 'addRole',
         Parameters: 'name,socketId,projectId',
-        middleware: ['hasSocket', 'isLoggedIn'],
+        middleware: ['isLoggedIn'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
             const {name, projectId} = req.body;
-            const socket = SocketManager.getSocket(req.body.socketId);
-
-            if (!socket.canEditRoom()) {
-                this._logger.error(`${socket.username} tried to create role... DENIED`);
-                return res.status(403).send('ERROR: Guests can\'t create roles');
-            }
-
-            const room = RoomManager.getExistingRoomById(projectId);
-            return room.createRole(name)
-                .then(() => room.getState())
+            return Projects.getById(projectId)
+                .then(project => {
+                    // What if project is not found?
+                    // TODO
+                    // This should be moved to a single location...
+                    // Maybe add a findById which may return null...
+                    return project.setRole(name, utils.getEmptyRole(name));
+                })
+                .then(() => SocketManager.onRoomUpdate(projectId))
                 .then(state => res.json(state))
                 .catch(err => {
                     this._logger.error(`Add role failed: ${err}`);
                     res.send(`ERROR: ${err.message}`);
                 });
+
+            // Add better auth based on the username
+            // TODO
         }
     },
     {  // Create a new role and copy this project's blocks to it
         Service: 'cloneRole',
-        Parameters: 'role,socketId',
-        middleware: ['hasSocket'],
+        Parameters: 'role,projectId',
+        middleware: ['isLoggedIn'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            // Check that the requestor is the owner
-            var socket = SocketManager.getSocket(req.body.socketId),
-                role = req.body.role,
-                room = socket._room;
+            // Better auth!
+            // TODO
+            const {role, projectId} = req.body;
+            return Projects.getById(projectId)
+                .then(project => project.cloneRole(role))
+                .then(() => SocketManager.onRoomUpdate(projectId))
+                .then(state => res.json(state));
 
-            if (!socket.canEditRoom()) {
-                this._logger.error(`${socket.username} tried to clone role... DENIED`);
-                return res.status(403).send('ERROR: Guests can\'t clone roles');
-            }
-
-            return room.cloneRole(role)
-                .then(() => room.getState())
-                .then(state => res.json(state))
-                .catch(err => {
-                    this._logger.error(`Clone role failed: ${err}`);
-                    res.send(`ERROR: ${err}`);
-                });
         }
     },
     {  // Collaboration
