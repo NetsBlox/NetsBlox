@@ -9,16 +9,19 @@
 // for download online.
 'use strict';
 
-const logger = require('../utils/logger')('air-quality');
-const API_KEY = process.env.AIR_NOW_KEY;
-const path = require('path');
-const fs = require('fs');
-const geolib = require('geolib');
-const request = require('request');
+const ApiConsumer = require('../utils/api-consumer');
 
-var baseUrl = 'http://www.airnowapi.org/aq/forecast/zipCode/?format=application/' + 
-        'json&API_KEY=' + API_KEY,
-    reportingLocations = (function() {  // Parse csv
+var debug = require('debug'),
+    error = debug('netsblox:rpc:air-quality:error'),
+    trace = debug('netsblox:rpc:air-quality:trace'),
+    API_KEY = process.env.AIR_NOW_KEY,
+    path = require('path'),
+    fs = require('fs'),
+    geolib = require('geolib');
+
+const AirConsumer = new ApiConsumer('air-quality', `http://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&API_KEY=${API_KEY}`,{cache: {ttl: 30*60}});
+
+var reportingLocations = (function() {  // Parse csv
         var locationPath = path.join(__dirname, 'air-reporting-locations.csv'),
             text = fs.readFileSync(locationPath, 'utf8'),
             rawLocations = text.split('\n');
@@ -38,72 +41,74 @@ var baseUrl = 'http://www.airnowapi.org/aq/forecast/zipCode/?format=application/
             });
     })();
 
-
-var getClosestReportingLocation = function(latitude, longitude) {
+/**
+ * Get ZIP code of closest reporting location for coordinates
+ * @param {Latitude} latitude latitude of location
+ * @param {Longitude} longitude Longitude of location
+ * @returns {Number} ZIP code of closest location
+ */
+AirConsumer.getClosestReportingLocation = function(latitude, longitude) {
     var nearest = geolib.findNearest({latitude: latitude, longitude: longitude}, reportingLocations),
         city = reportingLocations[nearest.key].city,
         state = reportingLocations[nearest.key].state,
         zipcode = reportingLocations[nearest.key].zipcode;
-    logger.trace('Nearest reporting location is ' + city + ', ' + state);
+    trace('Nearest reporting location is ' + city + ', ' + state);
     return zipcode;
 };
 
 /**
- * Get air quality index at a location 
- * @param {Latitude} latitude Latitude
- * @param {Longitude} longitude Longitude
- * @returns {String} ZIP code of closest reporting location
+ * Get air quality index of closest reporting location for coordinates
+ * @param {Latitude} latitude latitude of location
+ * @param {Longitude} longitude Longitude of location
+ * @returns {Number} AQI of closest station
  */
-var qualityIndex = function(latitude, longitude) {
-    var response = this.response,
-        nearest,
-        url;
+AirConsumer.qualityIndex = function(latitude, longitude) {
+    var nearest = this.getClosestReportingLocation(latitude, longitude);;
 
-    logger.trace(`Requesting air quality at ${latitude}, ${longitude}`);
-    if (!latitude || !longitude) {
-        return response.status(400).send('ERROR: missing latitude or longitude');
+    trace(`Requesting air quality at ${latitude}, ${longitude} (nearest station: ${nearest})`);
+
+    return this.qualityIndexByZip(nearest);
+};
+
+/**
+ * Get air quality index of closest reporting location for ZIP code
+ * @param {BoundedNumber<0,99999>} zipCode ZIP code of location
+ * @returns {Number} AQI of closest station
+ */
+AirConsumer.qualityIndexByZip = function(zipCode) {
+
+    trace(`Requesting air quality at ${zipCode}`);
+
+    return this._sendAnswer({queryString: `&zipCode=${zipCode}`}, '.AQI')
+    .catch(err => {
+        
+        error('Could not get air quality index: ', e);
+        
+        throw err;
+    }).then((r) => (r.length > 0? r[0]: -1));    
+};
+
+/**
+ * Get air quality index of closest reporting location for coordinates
+ * @param {Latitude} latitude latitude of location
+ * @param {Longitude} longitude Longitude of location
+ * @returns {Number} AQI of closest station
+ */
+AirConsumer.aqi = function(latitude, longitude) {
+    // For backwards compatibility, RPC had duplicate methods
+    return qualityIndex(latitude, longitude);
+};
+
+AirConsumer.serviceName = 'AirQuality';
+
+AirConsumer.COMPATIBILITY = {
+    path: 'air',
+    arguments: {
+        aqi: {
+            latitude: 'lat',
+            longitude: 'lng'
+        }
     }
-
-    nearest = getClosestReportingLocation(latitude, longitude);
-    url = baseUrl + '&zipCode=' + nearest;
-
-    logger.trace('Requesting air quality at '+ nearest);
-    
-    request(url, (err, res, body) => {
-        var aqi = -1,
-            code = err ? 500 : res.statusCode;
-
-        try {
-            body = JSON.parse(body).shift();
-            if (body && body.AQI) {
-                aqi = +body.AQI;
-                logger.trace('Air quality at '+ nearest + ' is ' + aqi);
-            }
-        } catch (e) {
-            // Just send -1 if anything bad happens
-            logger.error('Could not get air quality index: ', e);
-        }
-
-        response.status(code).json(aqi);
-    });
-
-    return null;
 };
 
-module.exports = {
-    COMPATIBILITY: {
-        path: 'air',
-        arguments: {
-            aqi: {
-                latitude: 'lat',
-                longitude: 'lng'
-            }
-        }
-    },
-
-    // air quality index
-    // Return -1 if unknown
-    aqi: qualityIndex,
-    qualityIndex: qualityIndex
-};
-
+module.exports = AirConsumer;
