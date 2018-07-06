@@ -39,8 +39,8 @@ var baseUrl = 'http://www.airnowapi.org/aq/forecast/zipCode/?format=application/
     })();
 
 
-var getClosestReportingLocation = function(lat, lng) {
-    var nearest = geolib.findNearest({latitude: lat, longitude: lng}, reportingLocations),
+var getClosestReportingLocation = function(latitude, longitude) {
+    var nearest = geolib.findNearest({latitude: latitude, longitude: longitude}, reportingLocations),
         city = reportingLocations[nearest.key].city,
         state = reportingLocations[nearest.key].state,
         zipcode = reportingLocations[nearest.key].zipcode;
@@ -48,6 +48,12 @@ var getClosestReportingLocation = function(lat, lng) {
     return zipcode;
 };
 
+/**
+ * Get air quality index at a location 
+ * @param {Latitude} latitude Latitude
+ * @param {Longitude} longitude Longitude
+ * @returns {String} ZIP code of closest reporting location
+ */
 var qualityIndex = function(latitude, longitude) {
     var response = this.response,
         nearest,
@@ -100,3 +106,4 @@ module.exports = {
     aqi: qualityIndex,
     qualityIndex: qualityIndex
 };
+
