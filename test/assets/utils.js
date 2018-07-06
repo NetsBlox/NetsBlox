@@ -47,6 +47,7 @@ const Projects = reqSrc('storage/projects');
     src = [
         'modules = {};',
         'window = {location:{}};',
+        'var CLIENT_ID, SERVER_URL;',
         'var SnapActions;',
         'var SnapCloud = {};',
         src,
