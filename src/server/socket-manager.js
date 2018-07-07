@@ -52,7 +52,8 @@ SocketManager.prototype.setClientState = function(clientId, projectId, roleId, u
         this._logger.info(`Could not set client state for ${clientId}`);
         // Reconsider how this might be affected
         // TODO
-        return Promise.reject(new Error(`No websocket connection for ${clientId}`));
+        //return Promise.reject(new Error(`No websocket connection for ${clientId}`));
+        return Promise.resolve();
     }
 
     // Update the changed rooms
