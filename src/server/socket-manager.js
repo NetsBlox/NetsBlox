@@ -20,6 +20,8 @@ SocketManager.prototype.init = function(logger) {
 SocketManager.prototype.enable = function(wss) {
     this._logger.info('Socket management enabled!');
 
+    // Should I move this back to the server?
+    // TODO
     wss.on('connection', (rawSocket, req) => {
         rawSocket.upgradeReq = req;
         var socket = new Socket(this._logger, rawSocket);

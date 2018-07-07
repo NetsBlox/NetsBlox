@@ -80,6 +80,7 @@ module.exports = [
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
+            // TODO: update this so it doesn't depend on the ws connection!
             let {role, roomName, ownerId, userId} = req.body,
                 roomId = Utils.uuid(ownerId, roomName);
 
@@ -119,6 +120,7 @@ module.exports = [
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
+            // TODO: update this so it doesn't depend on the ws connection!
             // Require:
             //  inviter
             //  invitee
@@ -134,6 +136,8 @@ module.exports = [
             log(`${inviter} is inviting ${invitee} to ${role} at ${roomId}`);
 
             // Record the invitation
+            // add projectId?
+            // TODO
             invites[inviteId] = {
                 owner: ownerId,
                 roomName: roomName,
@@ -147,6 +151,8 @@ module.exports = [
                 .filter(socket => socket.uuid !== req.body.socketId)
                 .forEach(socket => {
                     // Send the invite to the sockets
+                    // add projectId?
+                    // TODO
                     var msg = {
                         type: 'room-invitation',
                         id: inviteId,
@@ -400,6 +406,7 @@ module.exports = [
                 // TODO: update the inviter...
                 // Add the given user as a collaborator
                 const {projectId} = invite;
+                // TODO: update this so it doesn't depend on the ws connection!
                 const room = RoomManager.getExistingRoomById(projectId);
                 if (!room) {
                     // TODO: Look up the room
