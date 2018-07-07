@@ -34,13 +34,15 @@ SocketManager.prototype.getSocket = function(uuid) {
 };
 
 SocketManager.prototype.getSocketsAt = function(projectId, roleId) {
+    projectId = projectId && projectId.toString();
     return this._sockets.filter(
-        socket => socket.projectId.toString() === projectId.toString() && socket.roleId === roleId
+        socket => socket.projectId === projectId && socket.roleId === roleId
     );
 };
 
 SocketManager.prototype.getSocketsAtProject = function(projectId) {
-    return this._sockets.filter(socket => socket.projectId.toString() === projectId.toString());
+    projectId = projectId && projectId.toString();
+    return this._sockets.filter(socket => socket.projectId === projectId);
 };
 
 SocketManager.prototype.setClientState = function(clientId, projectId, roleId, username) {
