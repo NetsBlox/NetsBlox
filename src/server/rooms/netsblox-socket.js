@@ -34,7 +34,6 @@ const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
 const HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
 const BugReporter = require('../bug-reporter');
 const Projects = require('../storage/projects');
-const SocketManager = require('../socket-manager');
 const NetsBloxAddress = require('../netsblox-address');
 
 var createSaveableProject = function(json) {
@@ -76,7 +75,7 @@ class NetsBloxSocket {
     }
 
     hasRoom (silent) {
-        const hasRoom = !!this.projectId
+        const hasRoom = !!this.projectId;
         if (!hasRoom && !silent) {
             this._logger.error('user has no room!');
         }
@@ -151,7 +150,9 @@ class NetsBloxSocket {
         }
 
         // accept the event here and broadcast to everyone
-        let projectId = this._room.getProjectId();
+        // Update this to not use the room
+        // TODO
+        let projectId = this.projectId;
         let room = this._room;
         let role = this.role;
         return this.canApplyAction(msg.action)
@@ -520,9 +521,10 @@ class NetsBloxSocket {
     }
 
     setState(projectId, roleId, username) {
-        this.projectId = projectId;
+        this.projectId = projectId && projectId.toString();
         this.roleId = roleId;
         this.username = username || this.uuid;
+        this.loggedIn = Utils.isSocketUuid(this.username);
     }
 }
 

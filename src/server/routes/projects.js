@@ -207,50 +207,41 @@ module.exports = [
         Handler: function(req, res) {
             const {clientId} = req.body;
             let {roleName} = req.body;
-            const socket = SocketManager.getSocket(clientId);
+
             const name = 'untitled';
             let user = null;
+            let userId = clientId;
 
             roleName = roleName || DEFAULT_ROLE_NAME;
-            if (socket && socket.role) {
-                roleName = roleName || socket.role;
-            }
 
             let project = null;
             return Q.nfcall(middleware.trySetUser, req, res)
                 .then(loggedIn => {
                     if (loggedIn) {
                         user = req.session.user;
-                        if (socket) {
-                            socket.onLogin(user);
-                        }
+                        userId = req.session.username;
                     }
 
-                    if (socket) {
-                        return socket.newRoom({name, role: roleName})
-                            .then(() => project = socket.getRoomSync().getProject());
-                    } else {
-                        let userId = req.session.username || clientId;
-                        return Projects.new({owner: userId})
-                            .then(newProject => {
-                                project = newProject;
-                                const projectId = project._id.toString();
-                                return project.setRole(roleName, Utils.getEmptyRole(roleName))
-                                    .then(() => user ? user.getNewNameFor(name, projectId) : name)
-                                    .then(name => project.setName(name));
-                            });
-                    }
+                    return Projects.new({owner: userId})
+                        .then(newProject => {
+                            project = newProject;
+                            const projectId = project._id.toString();
+                            return project.setRole(roleName, Utils.getEmptyRole(roleName))
+                                .then(() => user ? user.getNewNameFor(name, projectId) : name)
+                                .then(name => project.setName(name));
+                        });
                 })
                 .then(() => project.getRoleId(roleName))
                 .then(roleId => {
                     const projectId = project.getId();
                     this._logger.trace(`Created new project: ${projectId} (${roleName})`);
-                    return res.send({
-                        projectId,
-                        roleId,
-                        name: project.name,
-                        roleName
-                    });
+                    return SocketManager.setClientState(clientId, projectId, roleId, userId)
+                        .then(() => res.send({
+                            projectId,
+                            roleId,
+                            name: project.name,
+                            roleName
+                        }));
                 });
         }
     },
@@ -563,46 +554,60 @@ module.exports = [
         }
     },
     {
-        Service: 'getProject',
-        Parameters: 'owner,projectName,socketId',
+        Service: 'getProjectByName',
+        Parameters: 'owner,projectName',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
-            var {owner, projectName, socketId} = req.body,
-                user = req.session.user,
-                socket = socketId && SocketManager.getSocket(socketId);
+            const {owner, projectName} = req.body;
+            const {user, username} = req.session;
 
-            if (socket) {
-                socket.leave();
-            }
+            // Check permissions
+            // TODO
+
+            // Verify that the project names are not colliding?
+            // TODO
+            trace(`${username} opening project ${owner}/${projectName}`);
+            return Projects.get(owner, projectName)
+                .then(project => {
+                    if (project) {
+                        if (username !== owner) {  // send a copy
+                            return project.getCopyFor(user)
+                                .then(copy => sendProjectTo(copy, res));
+                        }
+
+                        return sendProjectTo(project, res);
+                    } else {
+                        res.send('ERROR: Project not found');
+                    }
+                });
+
+            // Check if the project is currently open
+            // TODO
+            // If open, create a copy and open it
+            // Ensure no name collisions
+        }
+    },
+    {
+        Service: 'getProject',
+        Parameters: 'projectId',
+        Method: 'post',
+        Note: '',
+        middleware: ['isLoggedIn', 'noCache', 'setUser'],
+        Handler: function(req, res) {
+            const {projectId} = req.body;
+            const {username} = req.session;
 
             // Get the projectName
-            trace(`${user.username} opening project ${owner}/${projectName}`);
-            return getRoomsNamed.call(this, projectName, user, owner).then(rooms => {
-                if (rooms.active) {
-                    trace(`room with name ${projectName} already open. Are they the same? ${rooms.areSame}`);
-                    if (rooms.areSame) {
-                        // Clone, change the room name, and send!
-                        // Since they are the same, we assume the user wants to create
-                        // a copy of the active room
-                        return rooms.stored.getCopyFor(user)
-                            .then(copy => sendProjectTo(copy, res));
-                    } else {
-                        // not the same; simply change the name of the active room
-                        // (the active room must be newer since it hasn't been saved
-                        // yet)
-                        trace(`active room is ${projectName} already open`);
-                        rooms.active.changeName();
-                        sendProjectTo(rooms.stored, res);
-                    }
-                } else if (rooms.stored) {
-                    trace(`no active room with name ${projectName}. Proceeding normally`);
-                    sendProjectTo(rooms.stored, res);
-                } else {
-                    res.send('ERROR: Project not found');
-                }
-            });
+            // TODO: update this so it doesn't depend on the ws connection!
+            trace(`${username} opening project ${projectId}`);
+            return Projects.getById(projectId)
+                .then(project => {
+                    // auth!
+                    // TODO
+                    return sendProjectTo(project, res);
+                });
         }
     },
     {
