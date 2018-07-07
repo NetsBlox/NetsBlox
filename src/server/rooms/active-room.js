@@ -154,10 +154,10 @@ class ActiveRoom {
     }
 
     getStateMsg () {
-        return this.getState().then(state => {
-            state.type = 'room-roles';
-            return state;
-        });
+        //return this.getState().then(state => {
+            //state.type = 'room-roles';
+            //return state;
+        //});
     }
 
     getState () {
@@ -490,10 +490,11 @@ class ActiveRoom {
     }
 
     sendUpdateMsg () {
-        return this.getStateMsg()
-            .then(msg => {
-                this.sockets().forEach(socket => socket.send(msg));
-            });
+        return Q();
+        //return this.getStateMsg()
+            //.then(msg => {
+                //this.sockets().forEach(socket => socket.send(msg));
+            //});
     }
 
     onRolesChanged() {
