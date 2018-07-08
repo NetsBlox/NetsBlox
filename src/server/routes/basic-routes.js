@@ -203,35 +203,29 @@ module.exports = [
                     user = req.session.user;
 
                     // Update the project if logging in from the netsblox app
-                    const socket = SocketManager.getSocket(req.body.socketId);
-                    let updateProject = Q();
-
-                    if (socket) {  // websocket has already connected
-                        socket.onLogin(user);
-                    } else if (projectId) {  // update project manually
-                        updateProject = Projects.getById(projectId)
+                    if (projectId) {  // update project owner
+                        return Projects.getById(projectId)
                             .then(project => {
                                 // Update the project owner, if needed
                                 if (project && Utils.isSocketUuid(project.owner)) {
                                     return user.getNewName(project.name)
                                         .then(name => project.setName(name))
-                                        .then(() => project.setOwner(username));
+                                        .then(() => project.setOwner(username))
+                                        .then(() => SocketManager.onRoomUpdate(projectId));
                                 }
                             });
                     }
-
-                    return updateProject
-                        .then(() => {
-                            if (req.body.return_user) {
-                                return res.status(200).json({
-                                    username: username,
-                                    admin: user.admin,
-                                    email: user.email
-                                });
-                            } else {
-                                return res.status(200).json(ExternalAPI);
-                            }
+                })
+                .then(() => {
+                    if (req.body.return_user) {
+                        return res.status(200).json({
+                            username: username,
+                            admin: user.admin,
+                            email: user.email
                         });
+                    } else {
+                        return res.status(200).json(ExternalAPI);
+                    }
                 })
                 .catch(e => {
                     log(`Login failed for "${username}": ${e}`);
