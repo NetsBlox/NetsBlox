@@ -136,7 +136,6 @@ module.exports = [
             let user = null;
 
             roomName = roomName || 'untitled';
-            const socket = SocketManager.getSocket(clientId);
 
             const startTime = Date.now();
             let lastTime = startTime;
@@ -149,88 +148,43 @@ module.exports = [
 
             const setUserAndId = middleware.login(req, res)
                 .then(() => {
-                    mark('login');
-                    if (req.loggedIn) {
-                        user = req.session.user;
-                        if (socket) {
-                            socket.onLogin(user);
-                        }
-                        userId = user.username;
-                    }
+                    user = req.session.user;
+                    userId = user.username;
+                })
+                .catch(err => {
+                    console.error(`login failed`);  // FIXME
                 });
 
 
             // Get the room by projectId and have the socket join the role
-            if (socket) {
-                return setUserAndId
-                    .then(() => Projects.getById(projectId))
-                    .then(project => {
-                        mark('getById');
-                        if (project) {
-                            return RoomManager.getRoomForProject(project);
-                        } else {
-                            return RoomManager.createRoom({username: userId}, roomName, owner)
-                                .then(room => {
-                                    projectId = room.getProjectId();
-                                    return room;
-                                });
+            return setUserAndId
+                .then(() => Projects.getById(projectId))
+                .then(project => {
+                    if (project) {
+                        if (project.owner === clientId && req.loggedIn) {
+                            return user.getNewName(roomName)
+                                .then(name => project.setName(name))
+                                .then(() => project.setOwner(userId))
+                                .then(() => project.getId());
                         }
-                    })
-                    .then(room => {
-                        mark('get room');
-                        roleName = roleName ||
-                            room.getRoleNames().shift() || DEFAULT_ROLE_NAME;
-                        if (!room.hasRole(roleName)) {
-                            this._logger.trace(`created role ${roleName} in ${owner}/${roomName}`);
-                            return room.createRole(roleName)
-                                .then(() => room);
-                        }
-                        return room;
-                    })
-                    .then(room => {
-                        mark('ensure role');
-                        return room.add(socket, roleName)
-                            .then(() => room.getProject().getRoleId(roleName))
-                            .then(id => {
-                                roleId = id;
-                                mark('add socket');
-                                return socket.requestActionsAfter(actionId);
+                        return project.getId();
+                    } else {
+                        return Projects.new({owner: userId})
+                            .then(project => {
+                                roleName = roleName || DEFAULT_ROLE_NAME;
+                                const content = Utils.getEmptyRole(roleName);
+                                return project.setRoleById(roleId, content)
+                                    .then(() => user ? user.getNewName(roomName) : roomName)
+                                    .then(name => project.setName(name))
+                                    .then(() => project.getId());
                             });
-                    })
-                    .then(() => {
-                        mark('request actions');
-                        const room = socket.getRoomSync();
-                        if (room) {
-                            projectId = room.getProjectId();
-                        }
-                        console.log('============== TOTAL:', (Date.now()-startTime)/1000);
-                        return SocketManager.setClientState(clientId, projectId, roleId, userId);
-                    })
-                    .then(() => res.send({api: ExternalAPI, projectId, roleId}));
-            } else {  // validate the projectId and return a valid projectId
-                return setUserAndId
-                    .then(() => Projects.getById(projectId))
-                    .then(project => {
-                        if (project) {
-                            return project.getId();
-                        } else {
-                            return Projects.new({owner: userId})
-                                .then(project => {
-                                    roleName = roleName || DEFAULT_ROLE_NAME;
-                                    const content = Utils.getEmptyRole(roleName);
-                                    return project.setRoleById(roleId, content)
-                                        .then(() => user ? user.getNewName(roomName) : roomName)
-                                        .then(name => project.setName(name))
-                                        .then(() => project.getId());
-                                });
-                        }
-                    })
-                    .then(id => {
-                        projectId = id;
-                        SocketManager.setClientState(clientId, projectId, roleId, userId);
-                        return res.send({api: ExternalAPI, projectId, roleId});
-                    });
-            }
+                    }
+                })
+                .then(id => {
+                    projectId = id;
+                    SocketManager.setClientState(clientId, projectId, roleId, userId);
+                    return res.send({api: ExternalAPI, projectId, roleId});
+                });
         }
     },
     {
