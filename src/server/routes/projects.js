@@ -95,6 +95,7 @@ var getRoomsNamed = function(name, user, owner) {
         user.getSharedProject(owner, name);
 
     return getProject.then(project => {
+            // TODO: remove dependency on RoomManager
         const activeRoom = RoomManager.getExistingRoom(owner, name);
         const areSame = !!activeRoom && !!project &&
             activeRoom.getProjectId().equals(project.getId());
@@ -169,6 +170,7 @@ module.exports = [
             const {projectId} = req.body;
             let {name} = req.body;
 
+            // TODO: remove dependency on RoomManager
             const room = RoomManager.getExistingRoomById(projectId);
             if (room) {
                 return room.changeName(name, false, true)
@@ -326,6 +328,7 @@ module.exports = [
                                     return null;
                                 }
                                 const collision = existingProject;
+            // TODO: remove dependency on RoomManager
                                 const room = RoomManager.getExistingRoomById(collision.getId());
                                 if (room) {
                                     trace(`found name collision with open project. Renaming and unpersisting.`);
@@ -335,6 +338,7 @@ module.exports = [
                                     trace(`found name collision with project. Overwriting ${project.name}.`);
                                     return collision.destroy();
                                 } else {  // rename the project
+            // TODO: remove dependency on RoomManager
                                     const activeRoomNames = RoomManager.getAllActiveFor(username);
                                     return user.getNewName(projectName, activeRoomNames)
                                         .then(name => projectName = name);
@@ -345,6 +349,7 @@ module.exports = [
                 .then(() => {  // update room name
                     return project.setName(projectName)
                         .then(() => {
+            // TODO: remove dependency on RoomManager
                             const room = RoomManager.getExistingRoomById(projectId);
                             if (room) {
                                 return room.update(projectName);
@@ -515,6 +520,7 @@ module.exports = [
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
             const {clientId, projectId} = req.body;
+            // TODO: remove dependency on RoomManager
             const room = RoomManager.getExistingRoomById(projectId);
             let active = !!room;
 
@@ -538,6 +544,7 @@ module.exports = [
 
             log(`${user.username} joining project ${projectId}`);
             // Join the given project
+            // TODO: remove dependency on RoomManager
             const room = RoomManager.getExistingRoomById(projectId);
             if (room) {
                 Utils.joinActiveProject(user.username, room, res);
@@ -630,6 +637,7 @@ module.exports = [
                         return res.status(400).send(`${project} not found!`);
                     }
 
+            // TODO: remove dependency on RoomManager
                     const active = RoomManager.isActiveRoom(project.getId());
 
                     if (active) {

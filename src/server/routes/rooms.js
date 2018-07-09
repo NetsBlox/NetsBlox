@@ -84,6 +84,7 @@ module.exports = [
             let {role, roomName, ownerId, userId} = req.body,
                 roomId = Utils.uuid(ownerId, roomName);
 
+            // TODO: remove dependency on RoomManager
             const room = RoomManager.getExistingRoom(ownerId, roomName);
 
             // Get the socket at the given room role
@@ -105,6 +106,7 @@ module.exports = [
             if (socket.username === ownerId) {  // removing another instance of self
                 socket.newRoom();
             } else {  // Fork the room
+            // TODO: remove dependency on RoomManager
                 RoomManager.forkRoom(room, socket);
             }
             room.onRolesChanged();
@@ -450,6 +452,7 @@ function getFriendSockets(user) {
 
 function acceptInvitation (invite, socketId) {
     const socket = SocketManager.getSocket(socketId);
+            // TODO: remove dependency on RoomManager
     const room = RoomManager.getExistingRoom(invite.owner, invite.roomName);
 
     if (!room) {

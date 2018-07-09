@@ -240,6 +240,7 @@ module.exports = [
         Handler: function(req, res) {
             let {socketId} = req.params;
 
+            // TODO: Remove dependency on ws
             let socket = SocketManager.getSocket(socketId);
             if (!socket) return res.status(401).send('ERROR: Could not find socket');
 
@@ -260,6 +261,7 @@ module.exports = [
         Handler: function(req, res) {
             let {socketId} = req.params;
 
+            // TODO: Remove dependency on ws
             let socket = SocketManager.getSocket(socketId);
             if (!socket) return res.status(401).send('ERROR: Could not find socket');
 

@@ -73,7 +73,6 @@ function login(req, res) {
     let loggedIn = false;
     let username = req.body.__u;
 
-    console.log('about to login...', req.loggedIn);
     if (req.loggedIn) return Promise.resolve();
 
     return Q.nfcall(tryLogIn, req, res)
