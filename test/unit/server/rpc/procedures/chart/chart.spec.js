@@ -61,7 +61,7 @@ describe('chart', function() {
                 const path = require('path');
 
                 const img = chart.response.response;
-                const expected = fs.readFileSync(path.join(__dirname, 'xTicks-isTimeSeries.png'))
+                const expected = fs.readFileSync(path.join(__dirname, 'xTicks-isTimeSeries.png'));
                 assert(expected.equals(img));
             });
     });
