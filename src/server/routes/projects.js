@@ -253,35 +253,31 @@ module.exports = [
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
-            const {clientId, name, role, roles} = req.body;
-            // Try to login
+            const {clientId, name, roles} = req.body;
+            let {role} = req.body;
+            // Try to login (and set the user)
             // TODO
             const userId = req.session ? req.session.username : clientId;
-            const socket = SocketManager.getSocket(clientId);
+            const user = req.session && req.session.user;
 
-            // TODO: remove dependency on RoomManager
             return Projects.new({owner: userId})
                 .then(project => {
-                    roleName = roleName || DEFAULT_ROLE_NAME;
-                    const content = Utils.getEmptyRole(roleName);
-                    return project.setRoleById(roleId, content)
-                        .then(() => user ? user.getNewName(roomName) : roomName)
+                    role = role || DEFAULT_ROLE_NAME;
+                    return project.setRoles(roles)
+                        .then(() => user ? user.getNewName(name) : name)
                         .then(name => project.setName(name))
-                        .then(() => project.getId());
-                });
-
-            return RoomManager.createRoom(socket, name)
-                .then(room => {
-                    return room.createRole(role)
-                        .then(() => room.changeName(name, false, true))
-                        .then(() => room.add(socket, role));
-                })
-                .then(() => socket.importRoom(roles))
-                .then(room => {
-                    const projectId = room.getProjectId();
-                    return room.changeName(name, false, true)
-                        .then(() => room.getProject().getRoleId(role))
-                        .then(roleId => res.send({projectId, roleId}));
+                        .then(() => project.getRoleId(role))
+                        .then(roleId => {
+                            const projectId = project.getId();
+                            return SocketManager.setClientState(clientId, projectId, roleId, userId)
+                                .then(state => {
+                                    res.json({
+                                        state,
+                                        roleId,
+                                        projectId
+                                    });
+                                });
+                        });
                 });
         }
     },
