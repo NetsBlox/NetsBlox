@@ -254,7 +254,21 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             const {clientId, name, role, roles} = req.body;
+            // Try to login
+            // TODO
+            const userId = req.session ? req.session.username : clientId;
             const socket = SocketManager.getSocket(clientId);
+
+            // TODO: remove dependency on RoomManager
+            return Projects.new({owner: userId})
+                .then(project => {
+                    roleName = roleName || DEFAULT_ROLE_NAME;
+                    const content = Utils.getEmptyRole(roleName);
+                    return project.setRoleById(roleId, content)
+                        .then(() => user ? user.getNewName(roomName) : roomName)
+                        .then(name => project.setName(name))
+                        .then(() => project.getId());
+                });
 
             return RoomManager.createRoom(socket, name)
                 .then(room => {
