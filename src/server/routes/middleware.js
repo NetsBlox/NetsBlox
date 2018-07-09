@@ -82,11 +82,12 @@ function login(req, res) {
 
             if (!username) {
                 logger.log('"passive" login failed - no session found!');
-                if (req.body.silent) {
-                    return res.sendStatus(204);
-                } else {
-                    return res.sendStatus(403);
-                }
+                throw new Error(`No session found`);
+                //if (req.body.silent) {
+                    //return res.sendStatus(204);
+                //} else {
+                    //return res.sendStatus(403);
+                //}
             }
             logger.log(`Logging in as ${username}`);
 
@@ -96,14 +97,14 @@ function login(req, res) {
 
             if (!user) {  // incorrect username
                 logger.log(`Could not find user "${username}"`);
-                return res.status(403).send(`Could not find user "${username}"`);
+                throw new Error(`Could not find user "${username}"`);
             }
 
             if (!loggedIn) {  // login, if needed
                 const correctPassword = user.hash === hash;
                 if (!correctPassword) {
                     logger.log(`Incorrect password attempt for ${user.username}`);
-                    return res.status(403).send('Incorrect password');
+                    throw new Error(`Incorrect password`);
                 }
                 logger.log(`"${user.username}" has logged in.`);
             }
