@@ -61,12 +61,27 @@ Earthquakes._sendNext = function(socket) {
     }
 };
 
+/**
+ * Stop sending earthquake messages
+ */
 Earthquakes.stop = function() {
     var uuid = this.socket.uuid;
     delete Earthquakes._remainingMsgs[uuid];
     return '';
 };
 
+
+/**
+ * Get the current price of the given stock, with a 15 min delay
+ * @param {Latitude=} minLatitude Minimum latitude of region
+ * @param {Latitude=} maxLatitude Maximum latitude of region
+ * @param {Longitude=} minLongitude Minimum longitude of region
+ * @param {Longitude=} maxLongitude Maximum longitude of region
+ * @param {String=} startTime Minimum time
+ * @param {String=} endTime Maximum time
+ * @param {Number=} minMagnitude Minimum magnitude of earthquakes to report
+ * @param {Number=} maxMagnitude Maximum magnitude of earthquakes to report
+ */
 Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongitude, startTime, endTime, minMagnitude, maxMagnitude) {
     var socket = this.socket,
         response = this.response,
