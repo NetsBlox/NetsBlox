@@ -2,6 +2,12 @@ var MockResponse = function() {
     this.code = null;
     this.response = null;
     this.headersSent = false;
+    this.headers = {};
+};
+
+MockResponse.prototype.set = function(header, value) {
+    this.headers[header] = value;
+    return this;
 };
 
 MockResponse.prototype.status = function(code) {
