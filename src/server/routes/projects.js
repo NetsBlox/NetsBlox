@@ -530,14 +530,9 @@ module.exports = [
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
             const {clientId, projectId} = req.body;
-            // TODO: remove dependency on RoomManager
-            const room = RoomManager.getExistingRoomById(projectId);
-            let active = !!room;
-
-            if (room) {
-                const userCount = room.sockets().filter(socket => socket.uuid !== clientId).length;
-                active = userCount > 0;
-            }
+            const userCount = SocketManager.getSocketsAtProject(projectId)
+                .filter(socket => socket.uuid !== clientId).length;
+            const active = userCount > 0;
 
             return res.json({active});
         }

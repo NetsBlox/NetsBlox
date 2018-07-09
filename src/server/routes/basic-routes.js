@@ -16,7 +16,6 @@ const BugReporter = require('../bug-reporter');
 const Messages = require('../storage/messages');
 const Projects = require('../storage/projects');
 const DEFAULT_ROLE_NAME = 'myRole';
-const RoomManager = require('../rooms/room-manager');
 
 const ExternalAPI = {};
 UserAPI.concat(ProjectAPI, RoomAPI)
