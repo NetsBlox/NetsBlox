@@ -648,7 +648,7 @@ NetsBloxSocket.MessageHandlers = {
             record = {};
 
         if (this.hasRoom()) {
-            projectId = this._room.uuid;
+            projectId = this.projectId;
         }
 
         record.username = this.username === this.uuid ? null : this.username;
