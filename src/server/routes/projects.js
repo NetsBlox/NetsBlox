@@ -86,39 +86,6 @@ var getProjectThumbnail = function(project) {
 };
 
 ////////////////////// Project Helpers //////////////////////
-var getRoomsNamed = function(name, user, owner) {
-    owner = owner || user.username;
-    const uuid = Utils.uuid(owner, name);
-
-    trace(`looking up projects ${uuid} for ${user.username}`);
-    let getProject = user.username === owner ? user.getProject(name) :
-        user.getSharedProject(owner, name);
-
-    return getProject.then(project => {
-            // TODO: remove dependency on RoomManager
-        const activeRoom = RoomManager.getExistingRoom(owner, name);
-        const areSame = !!activeRoom && !!project &&
-            activeRoom.getProjectId().equals(project.getId());
-
-
-        if (project) {
-            trace(`found project ${uuid} for ${user.username}`);
-        } else {
-            trace(`no ${uuid} project found for ${user.username}`);
-        }
-
-        if (areSame) {
-            project = activeRoom.getProject() || project;
-        }
-
-        return {
-            active: activeRoom,
-            stored: project,
-            areSame: areSame
-        };
-    });
-};
-
 var sendProjectTo = function(project, res) {
     return project.getLastUpdatedRole()
         .then(role => {
