@@ -50,18 +50,6 @@ var serializeRole = (role, project) => {
         `&SourceCode=${src}`;
 };
 
-var joinActiveProject = function(userId, room, res) {
-    let openRole = room.getUnoccupiedRole();
-
-    trace(`room "${room.name}" is already active`);
-    return room.getRole(openRole)
-        .then(role => {
-            trace(`adding ${userId} to role "${openRole}" at "${room.name}"`);
-            let serialized = serializeRole(role, room.getProject());
-            return res.send(serialized);
-        });
-};
-
 // Function helpers
 var FN_ARGS = /^(function)?\s*[^\(]*\(\s*([^\)]*)\)/m,
     FN_ARG_SPLIT = /,/,
@@ -224,7 +212,6 @@ module.exports = {
     serialize,
     serializeArray,
     serializeRole,
-    joinActiveProject,
     uuid,
     getRoomXML,
     extractRpcs,
