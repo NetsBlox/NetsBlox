@@ -208,9 +208,13 @@
                 });
         }
 
-        getRawRoleById(role) {
+        getRawRoleById(id) {
             return this.getRawProject()
-                .then(project => project.roles[role]);
+                .then(project => {
+                    const role = project.roles[id];
+                    role.ID = id;
+                    return role;
+                });
         }
 
         getRawRole(name) {
