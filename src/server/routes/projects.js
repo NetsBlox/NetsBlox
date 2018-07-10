@@ -549,20 +549,30 @@ module.exports = [
 
             log(`${user.username} joining project ${projectId}`);
             // Join the given project
-            // TODO: remove dependency on RoomManager
-            const room = RoomManager.getExistingRoomById(projectId);
-            if (room) {
-                Utils.joinActiveProject(user.username, room, res);
-            } else {
-                return Projects.getById(projectId)
-                    .then(project => {
-                        if (project) {
-                            return sendProjectTo(project, res);
-                        } else {
-                            return res.send('ERROR: Project not found');
-                        }
-                    });
-            }
+            return Projects.getById(projectId)
+                .then(project => {
+                    if (project) {
+                        
+                        return project.getRawRoles()
+                            .then(metadata => {  // Get an unoccupied role
+                                const occupiedRoles = SocketManager.getSocketsAtProject(projectId)
+                                    .map(socket => socket.roleId);
+                                const unoccupiedRoles = metadata
+                                    .filter(data => !occupiedRoles.includes(data.ID));
+                                const roleChoices = unoccupiedRoles.length ?
+                                    unoccupiedRoles : metadata;
+
+                                const roleId = Utils.sortByDateField(roleChoices, 'Updated', -1).shift().ID;
+                                return project.getRoleById(roleId);
+                            })
+                            .then(role => {
+                                const serialized = Utils.serializeRole(role, project);
+                                return res.send(serialized);
+                            });
+                    } else {
+                        return res.send('ERROR: Project not found');
+                    }
+                });
         }
     },
     {
