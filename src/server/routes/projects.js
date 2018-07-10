@@ -170,35 +170,29 @@ module.exports = [
             const {projectId} = req.body;
             let {name} = req.body;
 
-            // TODO: remove dependency on RoomManager
-            const room = RoomManager.getExistingRoomById(projectId);
-            if (room) {
-                return room.changeName(name, false, true)
-                    .then(name => res.send({name}));
-            } else {
-                return Projects.getById(projectId)
-                    .then(project => {
-                        if (project) {
-                            // Get a valid name
-                            Projects.getAllRawUserProjects(project.owner)
-                                .then(projects => {
-                                    const nameToID = {};
-                                    projects
-                                        .forEach(project => nameToID[project.name] = project._id.toString());
-                                    const basename = name;
-                                    let i = 2;
-                                    while (nameToID[name] && nameToID[name] !== projectId) {
-                                        name = `${basename} (${i})`;
-                                        i++;
-                                    }
-                                    return project.setName(name);
-                                })
-                                .then(() => res.send({name}));
-                        } else {
-                            res.status(400).send(`Project Not Found`);
-                        }
-                    });
-            }
+            return Projects.getById(projectId)
+                .then(project => {
+                    if (project) {
+                        // Get a valid name
+                        return Projects.getAllRawUserProjects(project.owner)
+                            .then(projects => {
+                                const nameToID = {};
+                                projects
+                                    .forEach(project => nameToID[project.name] = project._id.toString());
+                                const basename = name;
+                                let i = 2;
+                                while (nameToID[name] && nameToID[name] !== projectId) {
+                                    name = `${basename} (${i})`;
+                                    i++;
+                                }
+                                return project.setName(name);
+                            })
+                            .then(() => SocketManager.onRoomUpdate(projectId))
+                            .then(state => res.json(state));
+                    } else {
+                        res.status(400).send(`Project Not Found`);
+                    }
+                });
         }
     },
     {
