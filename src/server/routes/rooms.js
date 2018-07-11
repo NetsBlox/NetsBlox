@@ -408,23 +408,16 @@ module.exports = [
                 // TODO: update the inviter...
                 // Add the given user as a collaborator
                 const {projectId} = invite;
-                // TODO: update this so it doesn't depend on the ws connection!
-                const room = RoomManager.getExistingRoomById(projectId);
-                if (!room) {
-                    // TODO: Look up the room
-                    log(`project is not open "${projectId}`);
-                    return Projects.getById(projectId)
-                        .then(project => {
-                            if (project) {
-                                return project.addCollaborator(username)
-                                    .then(() => res.status(200).send({projectId}));
-                            } else {
-                                return res.status(400).send('Project no longer exists');
-                            }
-                        });
-                }
-                return room.addCollaborator(username)
-                    .then(() => res.status(200).send({projectId: projectId}));
+                log(`project is not open "${projectId}`);
+                return Projects.getById(projectId)
+                    .then(project => {
+                        if (project) {
+                            return project.addCollaborator(username)
+                                .then(() => res.status(200).send({projectId}));
+                        } else {
+                            return res.status(400).send('Project no longer exists');
+                        }
+                    });
             }
         }
     }
