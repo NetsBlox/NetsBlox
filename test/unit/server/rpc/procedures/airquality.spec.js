@@ -5,7 +5,6 @@ describe('air-quality', function() {
         airquality = new RPCMock(AirQualityService);
 
     utils.verifyRPCInterfaces(airquality, [
-        ['getClosestReportingLocation', ['latitude', 'longitude']],
         ['qualityIndex', ['latitude', 'longitude']],
         ['aqi', ['latitude', 'longitude']],
         ['qualityIndexByZip', ['zipCode']],

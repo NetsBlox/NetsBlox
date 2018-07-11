@@ -47,7 +47,7 @@ var reportingLocations = (function() {  // Parse csv
  * @param {Longitude} longitude Longitude of location
  * @returns {Number} ZIP code of closest location
  */
-AirConsumer.getClosestReportingLocation = function(latitude, longitude) {
+AirConsumer._getClosestReportingLocation = function(latitude, longitude) {
     var nearest = geolib.findNearest({latitude: latitude, longitude: longitude}, reportingLocations),
         city = reportingLocations[nearest.key].city,
         state = reportingLocations[nearest.key].state,
@@ -63,7 +63,7 @@ AirConsumer.getClosestReportingLocation = function(latitude, longitude) {
  * @returns {Number} AQI of closest station
  */
 AirConsumer.qualityIndex = function(latitude, longitude) {
-    var nearest = this.getClosestReportingLocation(latitude, longitude);;
+    var nearest = this._getClosestReportingLocation(latitude, longitude);;
 
     trace(`Requesting air quality at ${latitude}, ${longitude} (nearest station: ${nearest})`);
 
