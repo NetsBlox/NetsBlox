@@ -613,22 +613,12 @@ module.exports = [
                         return res.status(400).send(`${project} not found!`);
                     }
 
-            // TODO: remove dependency on RoomManager
-                    const active = RoomManager.isActiveRoom(project.getId());
-
-                    if (active) {
-                        return project.unpersist()
-                            .then(() => {
-                                trace(`project ${project.name} set to transient. will be deleted on users exit`);
-                                return res.send('project deleted!');
-                            });
-                    } else {
-                        return project.destroy()
-                            .then(() => {
-                                trace(`project ${project.name} deleted`);
-                                return res.send('project deleted!');
-                            });
-                    }
+                    // TODO: Test this some more!
+                    return project.destroy()
+                        .then(() => {
+                            trace(`project ${project.name} deleted`);
+                            return res.send('project deleted!');
+                        });
                 });
         }
     },
