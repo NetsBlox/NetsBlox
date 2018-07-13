@@ -172,9 +172,9 @@ GoogleMaps.prototype._getMap = function(latitude, longitude, width, height, zoom
  * Get a map image of the given region.
  * @param {Latitude} latitude Latitude of center point
  * @param {Longitude} longitude Longitude of center point
- * @param {BoundedNumber<0>} width Image width
- * @param {BoundedNumber<0>} height Image height
- * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @param {BoundedNumber<1>} width Image width
+ * @param {BoundedNumber<1>} height Image height
+ * @param {BoundedNumber<1,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.prototype.getMap = function(latitude, longitude, width, height, zoom){
@@ -188,9 +188,9 @@ GoogleMaps.prototype.getMap = function(latitude, longitude, width, height, zoom)
  * Get a satellite map image of the given region.
  * @param {Latitude} latitude Latitude of center point
  * @param {Longitude} longitude Longitude of center point
- * @param {BoundedNumber<0>} width Image width
- * @param {BoundedNumber<0>} height Image height
- * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @param {BoundedNumber<1>} width Image width
+ * @param {BoundedNumber<1>} height Image height
+ * @param {BoundedNumber<1,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.prototype.getSatelliteMap = function(latitude, longitude, width, height, zoom){
@@ -204,9 +204,9 @@ GoogleMaps.prototype.getSatelliteMap = function(latitude, longitude, width, heig
  * Get a terrain map image of the given region.
  * @param {Latitude} latitude Latitude of center point
  * @param {Longitude} longitude Longitude of center point
- * @param {BoundedNumber<0>} width Image width
- * @param {BoundedNumber<0>} height Image height
- * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @param {BoundedNumber<1>} width Image width
+ * @param {BoundedNumber<1>} height Image height
+ * @param {BoundedNumber<1,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.prototype.getTerrainMap = function(latitude, longitude, width, height, zoom){
