@@ -7,7 +7,6 @@ var express = require('express'),
     dot = require('dot'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
     SocketManager = require('./socket-manager'),
-    RoomManager = require('./rooms/room-manager'),
     RPCManager = require('./rpc/rpc-manager'),
     Storage = require('./storage/storage'),
     EXAMPLES = require('./examples'),
@@ -48,7 +47,6 @@ var Server = function(opts) {
 
     // Group and RPC Managers
     this.rpcManager = RPCManager;
-    RoomManager.init(this._logger, this.storage);
     SocketManager.init(this._logger, this.storage);
 };
 
@@ -81,36 +79,6 @@ Server.prototype.configureRoutes = function() {
 
     // Add deployment state endpoint info
     const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
-    this.app.get(`/${stateEndpoint}/rooms`, function(req, res) {
-        const rooms = RoomManager.getActiveRooms();
-        return res.json(rooms.map(room => {
-            const roles = {};
-            const project = room.getProject();
-            let lastUpdatedAt = null;
-
-            if (project) {
-                lastUpdatedAt = new Date(project.lastUpdatedAt);
-            }
-
-            room.getRoleNames().forEach(role => {
-                roles[role] = room.getSocketsAt(role).map(socket => {
-                    return {
-                        username: socket.username,
-                        uuid: socket.uuid
-                    };
-                });
-            });
-
-            return {
-                uuid: room.uuid,
-                name: room.name,
-                owner: room.owner,
-                collaborators: room.getCollaborators(),
-                lastUpdatedAt: lastUpdatedAt,
-                roles: roles
-            };
-        }));
-    });
 
     this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {
         const sockets = SocketManager.sockets().map(socket => {

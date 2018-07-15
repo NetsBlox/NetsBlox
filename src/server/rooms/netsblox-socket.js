@@ -17,7 +17,6 @@ var counter = 0,
     Utils = require('../server-utils'),
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
-    RoomManager = require('./room-manager'),
     SILENT_MSGS = [
         'pong'
     ],
@@ -348,25 +347,6 @@ class NetsBloxSocket {
 
     onEvicted () {
         this.send({type: 'evicted'});
-    }
-
-    newRoom (opts) {
-        opts = opts || {role: 'myRole'};
-        opts.role = opts.role || 'myRole';
-        return this.getNewName(opts.room || opts.name)
-            .then(name => {
-                let room = null;
-
-                return RoomManager.createRoom(this, name)
-                    .then(_room => {
-                        room = _room;
-                        this._setRoom(room);
-                        this._logger.info(`"${this.username}" made a new room "${name}" (${room.getProjectId()})`);
-                        return room.createRole(opts.role);
-                    })
-                    .then(() => this.join(room, opts.role))
-                    .catch(err => this._logger.error(err));
-            });
     }
 
     // This should only be called internally *EXCEPT* when the socket is going to close
