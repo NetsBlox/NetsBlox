@@ -32,6 +32,7 @@ var express = require('express'),
 const CLIENT_ROOT = path.join(__dirname, '..', 'browser');
 const indexTpl = dot.template(fs.readFileSync(path.join(CLIENT_ROOT, 'index.dot')));
 const middleware = require('./routes/middleware');
+const NetsBloxSocket = require('./rooms/netsblox-socket');
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -48,6 +49,9 @@ var Server = function(opts) {
     // Group and RPC Managers
     this.rpcManager = RPCManager;
     SocketManager.init(this._logger, this.storage);
+    NetsBloxSocket.prototype.onClose = function() {
+        SocketManager.onDisconnect(this);
+    };
 };
 
 Server.prototype.configureRoutes = function() {
@@ -300,8 +304,15 @@ Server.prototype.start = function(done) {
 
                 // eslint-disable-next-line no-console
                 console.log(`listening on port ${this.opts.port}`);
+
+                // Enable the websocket handling
                 this._wss = new WebSocketServer({server: this._server});
-                SocketManager.enable(this._wss);
+                this._wss.on('connection', (socket, req) => {
+                    socket.upgradeReq = req;
+                    const client = new NetsBloxSocket(this._logger, socket);
+                    SocketManager.onConnect(client);
+                });
+
                 // Enable Vantage
                 if (this.opts.vantage) {
                     new Vantage(this).start(this.opts.vantagePort);

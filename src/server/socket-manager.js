@@ -1,32 +1,30 @@
 
 'use strict';
 
-var Socket = require('./rooms/netsblox-socket');
 const utils = require('./server-utils');
 const Projects = require('./storage/projects');
 
 var SocketManager = function() {
     this._sockets = [];
-
-    // Provide getter for sockets
-    Socket.prototype.onClose = SocketManager.prototype.onClose.bind(this);
-    Socket.prototype.getSocketsAt = SocketManager.prototype.getSocketsAt.bind(this);
 };
 
 SocketManager.prototype.init = function(logger) {
     this._logger = logger.fork('socket-manager');
 };
 
-SocketManager.prototype.enable = function(wss) {
-    this._logger.info('Socket management enabled!');
+SocketManager.prototype.onConnect = function(socket) {
+    this._sockets.push(socket);
+};
 
-    // Should I move this back to the server?
-    // TODO
-    wss.on('connection', (rawSocket, req) => {
-        rawSocket.upgradeReq = req;
-        var socket = new Socket(this._logger, rawSocket);
-        this._sockets.push(socket);
-    });
+SocketManager.prototype.onDisconnect = function(socket) {
+    const index = this._sockets.indexOf(socket);
+    const hasSocket = index !== -1;
+    if (hasSocket) {
+        this._sockets.splice(index, 1);
+    } else {
+        this._logger.error(`Could not find socket: ${socket.username}`);
+    }
+    return hasSocket;
 };
 
 SocketManager.prototype.getSocket = function(uuid) {
@@ -117,17 +115,6 @@ SocketManager.prototype.onRoomUpdate = function(projectId) {
 
 SocketManager.prototype.sockets = function() {
     return this._sockets.slice();
-};
-
-SocketManager.prototype.onClose = function(socket) {
-    const index = this._sockets.indexOf(socket);
-    const hasSocket = index !== -1;
-    if (hasSocket) {
-        this._sockets.splice(index, 1);
-    } else {
-        this._logger.error(`Could not find socket: ${socket.username}`);
-    }
-    return hasSocket;
 };
 
 SocketManager.prototype.socketsFor = function(username) {

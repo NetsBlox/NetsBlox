@@ -33,6 +33,7 @@ const HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
 const BugReporter = require('../bug-reporter');
 const Projects = require('../storage/projects');
 const NetsBloxAddress = require('../netsblox-address');
+const SocketManager = require('../socket-manager');
 
 var createSaveableProject = function(json) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -415,8 +416,7 @@ class NetsBloxSocket {
                 const clients = states
                     .map(state => {
                         const [projectId, roleId] = state;
-                        // FIXME
-                        return this.getSocketsAt(projectId, roleId);
+                        return SocketManager.getSocketsAt(projectId, roleId);
                     })
                     .reduce((l1, l2) => l1.concat(l2), []);
 
