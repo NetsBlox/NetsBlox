@@ -299,34 +299,26 @@ module.exports = [
                                     return null;
                                 }
                                 const collision = existingProject;
-            // TODO: remove dependency on RoomManager
-                                const room = RoomManager.getExistingRoomById(collision.getId());
-                                if (room) {
+                                const isActive = SocketManager.getSocketsAtProject(collision.getId()).length > 0;
+                                if (isActive) {
                                     trace(`found name collision with open project. Renaming and unpersisting.`);
-                                    return room.changeName(null, true, true)
+                                    return user.getNewName(projectName)
+                                        .then(name => collision.setName(name))
                                         .then(() => collision.unpersist());
                                 } else if (overwrite) {
+                                    // What if this is occupied by users with a patchy ws connection?
+                                    // FIXME
                                     trace(`found name collision with project. Overwriting ${project.name}.`);
                                     return collision.destroy();
                                 } else {  // rename the project
-            // TODO: remove dependency on RoomManager
-                                    const activeRoomNames = RoomManager.getAllActiveFor(username);
-                                    return user.getNewName(projectName, activeRoomNames)
+                                    return user.getNewName(projectName)
                                         .then(name => projectName = name);
                                 }
                             });
                     }
                 })
-                .then(() => {  // update room name
-                    return project.setName(projectName)
-                        .then(() => {
-            // TODO: remove dependency on RoomManager
-                            const room = RoomManager.getExistingRoomById(projectId);
-                            if (room) {
-                                return room.update(projectName);
-                            }
-                        });
-                })
+                .then(() => project.setName(projectName))  // update room name
+                .then(() => SocketManager.onRoomUpdate(projectId))
                 .then(() => project.archive())
                 .then(() => {
                     const roleData = {
