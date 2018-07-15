@@ -235,51 +235,33 @@ module.exports = [
     // get start/end network traces
     {
         Method: 'get',
-        URL: 'trace/start/:socketId',
+        URL: 'trace/start/:projectId/:clientId',
         Handler: function(req, res) {
-            let {socketId} = req.params;
+            const {projectId, clientId} = req.params;
 
-            // TODO: Remove dependency on ws
-            let socket = SocketManager.getSocket(socketId);
-            if (!socket) return res.status(401).send('ERROR: Could not find socket');
-
-            let room = socket.getRoomSync();
-            if (!room) {
-                this._logger.error(`Could not find active room for "${socket.username}" - cannot get messages!`);
-                return res.status(500).send('ERROR: room not found');
-            }
-
-            const project = room.getProject();
-            return project.startRecordingMessages(socketId)
+            return Projects.getById(projectId)
+                .then(project => project.startRecordingMessages(clientId))
                 .then(time => res.json(time));
         }
     },
     {
         Method: 'get',
-        URL: 'trace/end/:socketId',
+        URL: 'trace/end/:projectId/:clientId',
         Handler: function(req, res) {
-            let {socketId} = req.params;
+            const {projectId, clientId} = req.params;
 
-            // TODO: Remove dependency on ws
-            let socket = SocketManager.getSocket(socketId);
-            if (!socket) return res.status(401).send('ERROR: Could not find socket');
-
-            let room = socket.getRoomSync();
-            if (!room) {
-                this._logger.error(`Could not find active room for "${socket.username}" - cannot get messages!`);
-                return res.status(500).send('ERROR: room not found');
-            }
-
-            const project = room.getProject();
-            const projectId = project.getId();
-            const endTime = Date.now();
-            return project.stopRecordingMessages(socketId)
-                .then(startTime => startTime && Messages.get(projectId, startTime, endTime))
+            return Projects.getById(projectId)
+                .then(project => {
+                    const endTime = Date.now();
+                    return project.stopRecordingMessages(clientId)
+                        .then(startTime => startTime && Messages.get(projectId, startTime, endTime));
+                })
                 .then(messages => {
                     messages = messages || [];
-                    this._logger.trace(`Retrieved ${messages.length} network messages for ${projectId}`);
+                    this._logger.trace(`Retrieved ${messages.length} messages for ${projectId}`);
                     return res.json(messages);
                 });
+
         }
     },
     // public projects
