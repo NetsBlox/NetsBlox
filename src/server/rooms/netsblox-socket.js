@@ -15,7 +15,6 @@ var counter = 0,
     ],
     R = require('ramda'),
     Utils = require('../server-utils'),
-    assert = require('assert'),
     UserActions = require('../storage/user-actions'),
     SILENT_MSGS = [
         'pong'
@@ -53,7 +52,7 @@ class NetsBloxSocket {
         this._logger = logger.fork(this.uuid);
 
         this.role = null;
-        this._room = null;
+        this._room = null;  // TODO: REMOVE
         this._onRoomJoinDeferred = null;
         this.loggedIn = false;
         this.projectId = null;
@@ -88,11 +87,11 @@ class NetsBloxSocket {
             }
             return this._onRoomJoinDeferred.promise;
         } else {
-            return Q(this._room);
+            return Q(this._room);  // TODO: REMOVE
         }
     }
 
-    getRoomSync () {
+    getRoomSync () {  // TODO: REMOVE
         return this._room;
     }
 
@@ -116,7 +115,7 @@ class NetsBloxSocket {
         }
     }
 
-    _setRoom (room) {
+    _setRoom (room) {  // TODO: REMOVE
         if (this._room && room !== this._room) {  // leave current room
             this.leave();
         }
@@ -130,19 +129,19 @@ class NetsBloxSocket {
     }
 
     isOwner () {
-        return this._room &&
+        return this._room &&  // TODO: REMOVE
             (this._room.owner === this.uuid || this._room.owner === this.username);
     }
 
-    isCollaborator () {
+    isCollaborator () {  // TODO: REMOVE
         return this._room && this._room.getCollaborators().includes(this.username);
     }
 
-    canEditRoom () {
+    canEditRoom () {  // TODO: REMOVE
         return this.isOwner() || this.isCollaborator();
     }
 
-    sendEditMsg (msg) {
+    sendEditMsg (msg) {  // TODO: REMOVE
         if (!this.hasRoom()) {
             this._logger.error(`Trying to send edit msg w/o room ${this.uuid}`);
             return;
@@ -218,7 +217,7 @@ class NetsBloxSocket {
 
     close () {
         this._logger.trace(`closed socket for ${this.uuid} (${this.username})`);
-        if (this._room) {
+        if (this._room) {  // TODO: REMOVE
             this.leave();
         }
         if (this.nextHeartbeat) {
@@ -311,25 +310,6 @@ class NetsBloxSocket {
         this.updateRoom(isOwner);
     }
 
-    join (room, role) {
-        role = role || this.role;
-        this._logger.log(`joining ${room.uuid}/${role} from ${this.role}`);
-        if (this._room === room && role !== this.role) {
-            return this.moveToRole(role);
-        }
-
-        this._logger.log(`joining ${room.uuid}/${role} from ${this.role}`);
-        if (this._room && this._room.uuid !== room.uuid) {
-            this.leave();
-        }
-
-        this._setRoom(room);
-
-        this._room.add(this, role);
-        this._logger.trace(`${this.username} joined ${room.uuid} at ${role}`);
-        this.role = role;
-    }
-
     getNewName (name) {
         var promise;
 
@@ -351,15 +331,9 @@ class NetsBloxSocket {
 
     // This should only be called internally *EXCEPT* when the socket is going to close
     leave () {
-        if (this._room) {
+        if (this._room) {  // TODO: REMOVE
             this._room.remove(this);
         }
-    }
-
-    moveToRole (role) {
-        this._logger.log(`changing to role ${this._room.uuid}/${role} from ${this.role}`);
-        this._room.add(this, role);
-        assert.equal(this.role, role);
     }
 
     sendToOthers (msg) {
