@@ -346,6 +346,10 @@ class NetsBloxSocket {
         });
     }
 
+    onEvicted () {
+        this.send({type: 'evicted'});
+    }
+
     newRoom (opts) {
         opts = opts || {role: 'myRole'};
         opts.role = opts.role || 'myRole';

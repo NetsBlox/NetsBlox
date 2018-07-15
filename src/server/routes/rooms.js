@@ -8,7 +8,6 @@ var Utils = _.extend(require('../utils'), require('../server-utils.js')),
     log = debug('netsblox:api:rooms:log'),
     warn = debug('netsblox:api:rooms:warn'),
     utils = require('../server-utils'),
-    RoomManager = require('../rooms/room-manager'),
     SocketManager = require('../socket-manager'),
     Projects = require('../storage/projects'),
     invites = {};
@@ -76,97 +75,97 @@ module.exports = [
     },
     {
         Service: 'evictUser',
-        Parameters: 'userId,role,ownerId,roomName',
+        Parameters: 'evictedClientId,projectId',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            // TODO: update this so it doesn't depend on the ws connection!
-            let {role, roomName, ownerId, userId} = req.body,
-                roomId = Utils.uuid(ownerId, roomName);
+            const {evictedClientId, projectId} = req.body;
+            const socket = SocketManager.getSocket(evictedClientId);
 
-            // TODO: remove dependency on RoomManager
-            const room = RoomManager.getExistingRoom(ownerId, roomName);
+            log(`evicting ${evictedClientId} from ${projectId}`);
+            if (!socket) {  // user is not online
+                const err = `${evictedClientId} is not connected.`;
+                this._logger.warn(err);
+                return res.send('could not find user to evict.');
+            }
 
             // Get the socket at the given room role
-            log(`roomId is ${roomId}`);
-            log(`role is ${role}`);
-            log(`userId is ${userId}`);
-
-            const socket = room.getSocketsAt(role)
-                .find(socket => socket.uuid === userId);
-
-            if (!socket) {  // user is not online
-                var err = `${userId} is not at ${role} at room ${roomId}`;
+            if (socket.projectId !== projectId) {
+                const err = `${evictedClientId} is not at ${projectId}.`;
                 this._logger.warn(err);
                 return res.send('user has been evicted!');
             }
 
             // Remove the user from the room!
-            log(`${userId} is evicted from room ${roomId}`);
-            if (socket.username === ownerId) {  // removing another instance of self
-                socket.newRoom();
-            } else {  // Fork the room
-            // TODO: remove dependency on RoomManager
-                RoomManager.forkRoom(room, socket);
-            }
-            room.onRolesChanged();
-
-            return room.getState()
+            log(`evicted ${evictedClientId} from ${projectId}`);
+            socket.onEvicted();
+            return SocketManager.onRoomUpdate(projectId)
                 .then(state => res.json(state));
         }
     },
     {
         Service: 'inviteGuest',
-        Parameters: 'socketId,invitee,ownerId,roomName,role',
+        Parameters: 'socketId,invitee,roleId,projectId',
         middleware: ['hasSocket', 'isLoggedIn'],
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            // TODO: update this so it doesn't depend on the ws connection!
             // Require:
             //  inviter
             //  invitee
             //  roomId
             //  role
-            var inviter = req.session.username,
-                {ownerId, roomName, invitee} = req.body,
-                roomId = utils.uuid(ownerId, roomName),
-                role = req.body.role,
-                inviteId = ['room', inviter, invitee, roomId, role].join('-'),
-                inviteeSockets = SocketManager.socketsFor(invitee);
+            const {projectId, roleId, invitee} = req.body;
+            const inviter = req.session.username;
+            const inviteId = [
+                'invite-guest',
+                inviter,
+                invitee,
+                roleId,
+                projectId
+            ].join('-');
 
-            log(`${inviter} is inviting ${invitee} to ${role} at ${roomId}`);
+            log(`${inviter} is inviting ${invitee} to ${roleId} at ${projectId}`);
 
             // Record the invitation
-            // add projectId?
-            // TODO
             invites[inviteId] = {
-                owner: ownerId,
-                roomName: roomName,
-                room: roomId,
-                role: role,
+                projectId,
+                roleId,
                 invitee
             };
 
             // If the user is online, send the invitation via ws to the browser
-            inviteeSockets
-                .filter(socket => socket.uuid !== req.body.socketId)
-                .forEach(socket => {
-                    // Send the invite to the sockets
-                    // add projectId?
-                    // TODO
-                    var msg = {
-                        type: 'room-invitation',
-                        id: inviteId,
-                        roomName: roomName,
-                        room: roomId,
-                        inviter,
-                        role: role
-                    };
-                    socket.send(msg);
-                }
-                );
-            res.send('ok');
+            return Projects.getRawProjectById(projectId)
+                .then(metadata => {
+                    if (!metadata) {
+                        log(`guest invitation failed: project not found`);
+                        return res.status(400).send('Project not found');
+                    }
+
+                    if (!metadata.roles[roleId]) {
+                        log(`guest invitation failed: role not found`);
+                        return res.status(400).send('Role not found');
+                    }
+
+                    const roleName = metadata.roles[roleId].ProjectName;
+                    const projectName = metadata.name;
+
+                    const inviteeSockets = SocketManager.socketsFor(invitee);
+                    inviteeSockets
+                        .filter(socket => socket.uuid !== req.body.socketId)
+                        .forEach(socket => {
+                            var msg = {
+                                type: 'room-invitation',
+                                id: inviteId,
+                                roomName: projectName,
+                                inviter,
+                                role: roleName
+                            };
+                            socket.send(msg);
+                        });
+
+                    return res.send('ok');
+                });
         }
     },
     {
@@ -185,24 +184,27 @@ module.exports = [
                 id = req.body.inviteId,
                 response = req.body.response === 'true',
                 // TODO: store these in the database
-                invitee = invites[id].invitee,
                 socketId = req.body.socketId,
                 closeInvite = {
                     type: 'close-invite',
                     id: id
                 };
 
+            const invite = invites[id];
+            delete invites[id];
+
+            if (!invite && response) {
+                return res.status(400).send('ERROR: invite no longer exists');
+            }
+
+            const {projectId, roleId, invitee} = invite;
+
             // Notify other clients of response
             SocketManager.socketsFor(invitee)
                 .filter(socket => socket.uuid !== socketId)
                 .forEach(socket => socket.send(closeInvite));
 
-
-            const invite = invites[id];
-            delete invites[id];
-
             // Ignore if the invite no longer exists
-            if (!invite && response) return res.status(400).send('ERROR: invite no longer exists');
 
             if (invite) {
                 log(`${username} ${response ? 'accepted' : 'denied'} ` +
@@ -210,9 +212,19 @@ module.exports = [
             }
 
             if (response) {
-                return Q(acceptInvitation(invite, socketId))
-                    .then(project => res.status(200).send(project))
-                    .fail(err => res.status(500).send(`ERROR: ${err}`));
+                return Projects.getById(projectId)
+                    .then(project => {
+                        if (!project) {
+                            warn(`room no longer exists "${invite.room} ${JSON.stringify(invites)}`);
+                            throw new Error('project is no longer open');
+                        }
+
+                        return SocketManager.setClientState(socketId, projectId, roleId, username)
+                            .then(() => project.getRoleById(invite.roleId))
+                            .then(role => utils.serializeRole(role, project));
+                    })
+                    .then(xml => res.status(200).send(xml))
+                    .catch(err => res.status(500).send(`ERROR: ${err}`));
             } else {
                 res.sendStatus(200);
             }
@@ -442,26 +454,3 @@ function getFriendSockets(user) {
                 });
         });
 }
-
-function acceptInvitation (invite, socketId) {
-    const socket = SocketManager.getSocket(socketId);
-            // TODO: remove dependency on RoomManager
-    const room = RoomManager.getExistingRoom(invite.owner, invite.roomName);
-
-    if (!room) {
-        warn(`room no longer exists "${invite.room} ${JSON.stringify(invites)}`);
-        return Q.reject(new Error('project is no longer open'));
-    }
-
-    if (!socket) {
-        warn(`could not find socket "${invite.room} ${JSON.stringify(invites)}`);
-        return Q.reject(new Error('could not find connected user'));
-    }
-
-    return room.getRole(invite.role)
-        .then(project => {
-            room.add(socket, invite.role);
-            return Utils.serializeRole(project, room.getProject());
-        });
-}
-
