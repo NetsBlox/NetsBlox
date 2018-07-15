@@ -394,12 +394,18 @@ class NetsBloxSocket {
     }
 
     getPublicId () {
-        let room = this.getRoomSync();
-        let publicRoleId = null;
-        if (room) {
-            publicRoleId = `${this.role}@${room.name}@${room.owner}`;
-        }
-        return publicRoleId;
+        // Look up the current project, role names
+        return Projects.getRawProjectById(this.projectId)
+            .then(metadata => {
+                if (!metadata.roles[this.roleId]) {
+                    throw new Error('Role not found');
+                }
+
+                const roleName = metadata.roles[this.roleId].ProjectName;
+                const projectName = metadata.name;
+                const owner = metadata.owner;
+                return `${roleName}@${projectName}@${owner}`;
+            });
     }
 
     sendMessageTo (msg, dstId) {

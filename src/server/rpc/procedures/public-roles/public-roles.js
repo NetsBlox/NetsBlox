@@ -8,20 +8,11 @@ const PublicRoles = {};
  * Get the public role ID for the current role.
  */
 PublicRoles.getPublicRoleId = function() {
-    var socket = this.socket;
-
-    return this.socket.getRoom().then(room => {
-        var owner = room.owner,
-            roomName = room.name,
-            roleId = socket.role;
-
-        logger.trace(`${this.socket.username} has requested public id`);
-        return [
-            roleId,
-            roomName,
-            owner
-        ].join('@');
-    });
+    return this.socket.getPublicId()
+        .catch(err => {
+            logger.error(`Could not get public role ID for ${this.socket.uuid}: ${err}`);
+            throw err;
+        });
 };
 
 /**
