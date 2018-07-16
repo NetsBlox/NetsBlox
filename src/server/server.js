@@ -6,7 +6,7 @@ var express = require('express'),
     _ = require('lodash'),
     dot = require('dot'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
-    SocketManager = require('./socket-manager'),
+    NetworkTopology = require('./network-topology'),
     RPCManager = require('./rpc/rpc-manager'),
     Storage = require('./storage/storage'),
     EXAMPLES = require('./examples'),
@@ -48,9 +48,9 @@ var Server = function(opts) {
 
     // Group and RPC Managers
     this.rpcManager = RPCManager;
-    SocketManager.init(this._logger, this.storage);
+    NetworkTopology.init(this._logger, this.storage);
     NetsBloxSocket.prototype.onClose = function() {
-        SocketManager.onDisconnect(this);
+        NetworkTopology.onDisconnect(this);
     };
 };
 
@@ -85,7 +85,7 @@ Server.prototype.configureRoutes = function() {
     const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
 
     this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {
-        const sockets = SocketManager.sockets().map(socket => {
+        const sockets = NetworkTopology.sockets().map(socket => {
             return {
                 clientId: socket.uuid,
                 username: socket.username,
@@ -310,7 +310,7 @@ Server.prototype.start = function(done) {
                 this._wss.on('connection', (socket, req) => {
                     socket.upgradeReq = req;
                     const client = new NetsBloxSocket(this._logger, socket);
-                    SocketManager.onConnect(client);
+                    NetworkTopology.onConnect(client);
                 });
 
                 // Enable Vantage

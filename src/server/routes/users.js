@@ -3,7 +3,7 @@
 'use strict';
 
 var middleware = require('./middleware'),
-    SocketManager = require('../socket-manager'),
+    NetworkTopology = require('../network-topology'),
     debug = require('debug'),
     log = debug('netsblox:api:Users:log'),
     info = debug('netsblox:api:Users:info');
@@ -44,7 +44,7 @@ module.exports = [
 
                 // get the socket and call onLogout
                 const socketId = req.body.socketId;
-                const socket = SocketManager.getSocket(socketId);
+                const socket = NetworkTopology.getSocket(socketId);
                 if (socket) {
                     socket.onLogout();
                 }

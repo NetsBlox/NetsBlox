@@ -2,13 +2,12 @@
 
 const _ = require('lodash');
 var Utils = _.extend(require('../utils'), require('../server-utils.js')),
-    Q = require('q'),
 
     debug = require('debug'),
     log = debug('netsblox:api:rooms:log'),
     warn = debug('netsblox:api:rooms:warn'),
     utils = require('../server-utils'),
-    SocketManager = require('../socket-manager'),
+    NetworkTopology = require('../network-topology'),
     Projects = require('../storage/projects'),
     invites = {};
 
@@ -80,7 +79,7 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             const {evictedClientId, projectId} = req.body;
-            const socket = SocketManager.getSocket(evictedClientId);
+            const socket = NetworkTopology.getSocket(evictedClientId);
 
             log(`evicting ${evictedClientId} from ${projectId}`);
             if (!socket) {  // user is not online
@@ -99,7 +98,7 @@ module.exports = [
             // Remove the user from the room!
             log(`evicted ${evictedClientId} from ${projectId}`);
             socket.onEvicted();
-            return SocketManager.onRoomUpdate(projectId)
+            return NetworkTopology.onRoomUpdate(projectId)
                 .then(state => res.json(state));
         }
     },
@@ -150,7 +149,7 @@ module.exports = [
                     const roleName = metadata.roles[roleId].ProjectName;
                     const projectName = metadata.name;
 
-                    const inviteeSockets = SocketManager.socketsFor(invitee);
+                    const inviteeSockets = NetworkTopology.socketsFor(invitee);
                     inviteeSockets
                         .filter(socket => socket.uuid !== req.body.socketId)
                         .forEach(socket => {
@@ -200,7 +199,7 @@ module.exports = [
             const {projectId, roleId, invitee} = invite;
 
             // Notify other clients of response
-            SocketManager.socketsFor(invitee)
+            NetworkTopology.socketsFor(invitee)
                 .filter(socket => socket.uuid !== socketId)
                 .forEach(socket => socket.send(closeInvite));
 
@@ -219,7 +218,7 @@ module.exports = [
                             throw new Error('project is no longer open');
                         }
 
-                        return SocketManager.setClientState(socketId, projectId, roleId, username)
+                        return NetworkTopology.setClientState(socketId, projectId, roleId, username)
                             .then(() => project.getRoleById(invite.roleId))
                             .then(role => utils.serializeRole(role, project));
                     })
@@ -239,7 +238,7 @@ module.exports = [
         Handler: function(req, res) {
             const {roleId, projectId} = req.body;
 
-            const clients = SocketManager.getSocketsAt(projectId, roleId);
+            const clients = NetworkTopology.getSocketsAt(projectId, roleId);
             if (clients.length) {
                 return res.status(403).send('ERROR: Cannot delete occupied role. Remove the occupants first.');
             }
@@ -248,7 +247,7 @@ module.exports = [
             // TODO
             return Projects.getById(projectId)
                 .then(project => project.removeRoleById(roleId))
-                .then(() => SocketManager.onRoomUpdate(projectId))
+                .then(() => NetworkTopology.onRoomUpdate(projectId))
                 .then(state => res.json(state));
         }
     },
@@ -265,7 +264,7 @@ module.exports = [
 
             return Projects.getById(projectId)
                 .then(project => project.setRoleName(roleId, name))
-                .then(() => SocketManager.onRoomUpdate(projectId))
+                .then(() => NetworkTopology.onRoomUpdate(projectId))
                 .then(state => res.json(state));
         }
     },
@@ -285,7 +284,7 @@ module.exports = [
                     // Maybe add a findById which may return null...
                     return project.setRole(name, utils.getEmptyRole(name));
                 })
-                .then(() => SocketManager.onRoomUpdate(projectId))
+                .then(() => NetworkTopology.onRoomUpdate(projectId))
                 .then(state => res.json(state))
                 .catch(err => {
                     this._logger.error(`Add role failed: ${err}`);
@@ -308,7 +307,7 @@ module.exports = [
             const {role, projectId} = req.body;
             return Projects.getById(projectId)
                 .then(project => project.cloneRole(role))
-                .then(() => SocketManager.onRoomUpdate(projectId))
+                .then(() => NetworkTopology.onRoomUpdate(projectId))
                 .then(state => res.json(state));
 
         }
@@ -323,7 +322,7 @@ module.exports = [
             const {invitee, projectId, role, roomName} = req.body;
             var inviter = req.session.username,
                 inviteId = ['collab', inviter, invitee, projectId, Date.now()].join('-'),
-                inviteeSockets = SocketManager.socketsFor(invitee);
+                inviteeSockets = NetworkTopology.socketsFor(invitee);
 
             log(`${inviter} is inviting ${invitee} to ${projectId}`);
 
@@ -371,7 +370,7 @@ module.exports = [
                 };
 
             // Notify other clients of response
-            var allSockets = SocketManager.socketsFor(invitee),
+            var allSockets = NetworkTopology.socketsFor(invitee),
                 invite = invites[inviteId];
 
             allSockets.filter(socket => socket.uuid !== socketId)
@@ -417,7 +416,7 @@ function getFriendSockets(user) {
         .then(usernames => {
             let inGroup = {};
             usernames.forEach(name => inGroup[name] = true);
-            return SocketManager.sockets()
+            return NetworkTopology.sockets()
                 .filter(socket => !Utils.isSocketUuid(socket.username))
                 .filter(socket => {
                     return socket.username !== user.username &&

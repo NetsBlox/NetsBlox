@@ -24,7 +24,7 @@ const HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
 const BugReporter = require('../bug-reporter');
 const Projects = require('../storage/projects');
 const NetsBloxAddress = require('../netsblox-address');
-const SocketManager = require('../socket-manager');
+const NetworkTopology = require('../network-topology');
 
 class NetsBloxSocket {
     constructor (logger, socket) {
@@ -117,7 +117,7 @@ class NetsBloxSocket {
         const roleId = this.roleId;
         return this.canApplyAction(msg.action)
             .then(canApply => {
-                const sockets = SocketManager.getSocketsAt(projectId, roleId);
+                const sockets = NetworkTopology.getSocketsAt(projectId, roleId);
                 if (canApply) {
                     if (sockets.length > 1) {
                         sockets.forEach(socket => socket.send(msg));
@@ -285,7 +285,7 @@ class NetsBloxSocket {
     }
 
     sendToEveryone (msg) {
-        const sockets = SocketManager.getSocketsAtProject(this.projectId);
+        const sockets = NetworkTopology.getSocketsAtProject(this.projectId);
         sockets.forEach(socket => socket.send(msg));
     }
 
@@ -360,7 +360,7 @@ class NetsBloxSocket {
                 const clients = states
                     .map(state => {
                         const [projectId, roleId] = state;
-                        return SocketManager.getSocketsAt(projectId, roleId);
+                        return NetworkTopology.getSocketsAt(projectId, roleId);
                     })
                     .reduce((l1, l2) => l1.concat(l2), []);
 
@@ -494,7 +494,7 @@ NetsBloxSocket.MessageHandlers = {
         return Projects.getRawProjectById(this.projectId)
             .then(metadata => {
                 const {owner} = metadata;
-                const sockets = SocketManager.getSocketsAtProject(projectId);
+                const sockets = NetworkTopology.getSocketsAtProject(projectId);
                 const owners = sockets.filter(socket => socket.username === owner);
 
                 owners.forEach(socket => socket.send(msg));
@@ -503,7 +503,7 @@ NetsBloxSocket.MessageHandlers = {
 
     'request-room-state': function() {
         if (this.hasRoom()) {
-            return SocketManager.getRoomState(this.projectId)
+            return NetworkTopology.getRoomState(this.projectId)
                 .then(msg => {
                     msg.type = 'room-roles';
                     this.send(msg);

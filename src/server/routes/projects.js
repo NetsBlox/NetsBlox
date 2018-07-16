@@ -4,7 +4,7 @@ var _ = require('lodash'),
     Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     middleware = require('./middleware'),
-    SocketManager = require('../socket-manager'),
+    NetworkTopology = require('../network-topology'),
     PublicProjects = require('../storage/public-projects'),
     EXAMPLES = require('../examples'),
     debug = require('debug'),
@@ -153,7 +153,7 @@ module.exports = [
                                 }
                                 return project.setName(name);
                             })
-                            .then(() => SocketManager.onRoomUpdate(projectId))
+                            .then(() => NetworkTopology.onRoomUpdate(projectId))
                             .then(state => res.json(state));
                     } else {
                         res.status(400).send(`Project Not Found`);
@@ -197,7 +197,7 @@ module.exports = [
                 .then(roleId => {
                     const projectId = project.getId();
                     this._logger.trace(`Created new project: ${projectId} (${roleName})`);
-                    return SocketManager.setClientState(clientId, projectId, roleId, userId)
+                    return NetworkTopology.setClientState(clientId, projectId, roleId, userId)
                         .then(() => res.send({
                             projectId,
                             roleId,
@@ -229,7 +229,7 @@ module.exports = [
                         .then(() => project.getRoleId(role))
                         .then(roleId => {
                             const projectId = project.getId();
-                            return SocketManager.setClientState(clientId, projectId, roleId, userId)
+                            return NetworkTopology.setClientState(clientId, projectId, roleId, userId)
                                 .then(state => {
                                     res.json({
                                         state,
@@ -298,7 +298,7 @@ module.exports = [
                                     return null;
                                 }
                                 const collision = existingProject;
-                                const isActive = SocketManager.getSocketsAtProject(collision.getId()).length > 0;
+                                const isActive = NetworkTopology.getSocketsAtProject(collision.getId()).length > 0;
                                 if (isActive) {
                                     trace(`found name collision with open project. Renaming and unpersisting.`);
                                     return user.getNewName(projectName)
@@ -317,7 +317,7 @@ module.exports = [
                     }
                 })
                 .then(() => project.setName(projectName))  // update room name
-                .then(() => SocketManager.onRoomUpdate(projectId))
+                .then(() => NetworkTopology.onRoomUpdate(projectId))
                 .then(() => project.archive())
                 .then(() => {
                     const roleData = {
@@ -482,7 +482,7 @@ module.exports = [
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
             const {clientId, projectId} = req.body;
-            const userCount = SocketManager.getSocketsAtProject(projectId)
+            const userCount = NetworkTopology.getSocketsAtProject(projectId)
                 .filter(socket => socket.uuid !== clientId).length;
             const active = userCount > 0;
 
@@ -504,10 +504,10 @@ module.exports = [
             return Projects.getById(projectId)
                 .then(project => {
                     if (project) {
-                        
+
                         return project.getRawRoles()
                             .then(metadata => {  // Get an unoccupied role
-                                const occupiedRoles = SocketManager.getSocketsAtProject(projectId)
+                                const occupiedRoles = NetworkTopology.getSocketsAtProject(projectId)
                                     .map(socket => socket.roleId);
                                 const unoccupiedRoles = metadata
                                     .filter(data => !occupiedRoles.includes(data.ID));

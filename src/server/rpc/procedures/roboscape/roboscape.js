@@ -34,7 +34,7 @@
 const logger = require('../utils/logger')('roboscape');
 var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
-    SocketManager = require('../../../socket-manager'),
+    NetworkTopology = require('../../../network-topology'),
     FORGET_TIME = 120, // forgetting a robot in seconds
     RESPONSE_TIMEOUT = 200, // waiting for response in milliseconds
     ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
@@ -290,7 +290,7 @@ Robot.prototype.commandToClient = function (command) {
     if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         var mac_addr = this.mac_addr;
         this.sockets.forEach(function (uuid) {
-            var socket = SocketManager.getSocket(uuid);
+            var socket = NetworkTopology.getSocket(uuid);
             if (socket) {
                 socket.send({
                     type: 'message',
@@ -328,7 +328,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     }
 
     this.sockets.forEach(function (uuid) {
-        var socket = SocketManager.getSocket(uuid);
+        var socket = NetworkTopology.getSocket(uuid);
         if (socket) {
             if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
                 socket.send({

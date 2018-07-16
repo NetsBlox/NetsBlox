@@ -9,7 +9,7 @@ var fs = require('fs'),
     express = require('express'),
     Logger = require('../logger'),
     PROCEDURES_DIR = path.join(__dirname,'procedures'),
-    SocketManager = require('../socket-manager'),
+    NetworkTopology = require('../network-topology'),
     utils = require('../server-utils'),
     JsonToSnapList = require('./procedures/utils').jsonToSnapList ,
     Docs = require('./jsdoc-extractor.js').Docs,
@@ -228,7 +228,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
 
         // Add the netsblox socket for triggering network messages from an RPC
         let ctx = Object.create(rpc);
-        ctx.socket = SocketManager.getSocket(uuid);
+        ctx.socket = NetworkTopology.getSocket(uuid);
         if (!ctx.socket) {
             this._logger.warn(`Calling ${RPC.serviceName}.${action} with disconnected websocket: ${uuid} (${projectId})`);
         }

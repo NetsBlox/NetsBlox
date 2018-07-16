@@ -11,7 +11,7 @@ var R = require('ramda'),
     log = debug('netsblox:api:log'),
     middleware = require('./middleware');
 
-const SocketManager = require('../socket-manager');
+const NetworkTopology = require('../network-topology');
 const BugReporter = require('../bug-reporter');
 const Messages = require('../storage/messages');
 const Projects = require('../storage/projects');
@@ -181,7 +181,7 @@ module.exports = [
                 })
                 .then(id => {
                     projectId = id;
-                    SocketManager.setClientState(clientId, projectId, roleId, userId);
+                    NetworkTopology.setClientState(clientId, projectId, roleId, userId);
                     return res.send({api: ExternalAPI, projectId, roleId});
                 });
         }
@@ -210,7 +210,7 @@ module.exports = [
                                     return user.getNewName(project.name)
                                         .then(name => project.setName(name))
                                         .then(() => project.setOwner(username))
-                                        .then(() => SocketManager.onRoomUpdate(projectId));
+                                        .then(() => NetworkTopology.onRoomUpdate(projectId));
                                 }
                             });
                     }
@@ -305,7 +305,7 @@ module.exports = [
                 this._logger.info('Received anonymous bug report');
             }
 
-            const socket = SocketManager.getSocket(report.clientUuid);
+            const socket = NetworkTopology.getSocket(report.clientUuid);
             BugReporter.reportClientBug(socket, report);
 
             return res.sendStatus(200);

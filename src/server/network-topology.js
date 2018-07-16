@@ -4,19 +4,19 @@
 const utils = require('./server-utils');
 const Projects = require('./storage/projects');
 
-var SocketManager = function() {
+var NetworkTopology = function() {
     this._sockets = [];
 };
 
-SocketManager.prototype.init = function(logger) {
-    this._logger = logger.fork('socket-manager');
+NetworkTopology.prototype.init = function(logger) {
+    this._logger = logger.fork('network-topology');
 };
 
-SocketManager.prototype.onConnect = function(socket) {
+NetworkTopology.prototype.onConnect = function(socket) {
     this._sockets.push(socket);
 };
 
-SocketManager.prototype.onDisconnect = function(socket) {
+NetworkTopology.prototype.onDisconnect = function(socket) {
     const index = this._sockets.indexOf(socket);
     const hasSocket = index !== -1;
     if (hasSocket) {
@@ -27,23 +27,23 @@ SocketManager.prototype.onDisconnect = function(socket) {
     return hasSocket;
 };
 
-SocketManager.prototype.getSocket = function(uuid) {
+NetworkTopology.prototype.getSocket = function(uuid) {
     return this._sockets.find(socket => socket.uuid === uuid);
 };
 
-SocketManager.prototype.getSocketsAt = function(projectId, roleId) {
+NetworkTopology.prototype.getSocketsAt = function(projectId, roleId) {
     projectId = projectId && projectId.toString();
     return this._sockets.filter(
         socket => socket.projectId === projectId && socket.roleId === roleId
     );
 };
 
-SocketManager.prototype.getSocketsAtProject = function(projectId) {
+NetworkTopology.prototype.getSocketsAtProject = function(projectId) {
     projectId = projectId && projectId.toString();
     return this._sockets.filter(socket => socket.projectId === projectId);
 };
 
-SocketManager.prototype.setClientState = function(clientId, projectId, roleId, username) {
+NetworkTopology.prototype.setClientState = function(clientId, projectId, roleId, username) {
     const client = this.getSocket(clientId);
 
     if (!client) {
@@ -64,7 +64,7 @@ SocketManager.prototype.setClientState = function(clientId, projectId, roleId, u
     return this.onRoomUpdate(projectId);
 };
 
-SocketManager.prototype.getRoomState = function(projectId) {
+NetworkTopology.prototype.getRoomState = function(projectId) {
     return Projects.getRawProjectById(projectId)
         .then(metadata => {
             const ids = Object.keys(metadata.roles).sort();
@@ -96,9 +96,8 @@ SocketManager.prototype.getRoomState = function(projectId) {
         });
 };
 
-SocketManager.prototype.onRoomUpdate = function(projectId) {
-    // Send room updates to the clients in the room
-    // TODO
+NetworkTopology.prototype.onRoomUpdate = function(projectId) {
+    // push room update msg to the clients in the project
     return this.getRoomState(projectId)
         .then(state => {
             const clients = this.getSocketsAtProject(projectId);
@@ -113,11 +112,11 @@ SocketManager.prototype.onRoomUpdate = function(projectId) {
         });
 };
 
-SocketManager.prototype.sockets = function() {
+NetworkTopology.prototype.sockets = function() {
     return this._sockets.slice();
 };
 
-SocketManager.prototype.socketsFor = function(username) {
+NetworkTopology.prototype.socketsFor = function(username) {
     var uuids = Object.keys(this._sockets),
         sockets = [],
         socket;
@@ -131,4 +130,4 @@ SocketManager.prototype.socketsFor = function(username) {
     return sockets;
 };
 
-module.exports = new SocketManager();
+module.exports = new NetworkTopology();

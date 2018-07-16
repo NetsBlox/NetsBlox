@@ -6,7 +6,7 @@ const version = require('./server-utils').version;
 const snap2jsVersion = require('snap2js/package').version;
 const request = require('request-promise');
 const Q = require('q');
-const SocketManager = require('./socket-manager');
+const NetworkTopology = require('./network-topology');
 const ProjectActions = require('./storage/project-actions');
 
 const BugReporter = function() {
@@ -122,7 +122,7 @@ BugReporter.prototype.getRoomState = function(socket) {
     }
 
     const projectId = socket.projectId;
-    return SocketManager.getRoomState(projectId)
+    return NetworkTopology.getRoomState(projectId)
         .then(state => {
             return ProjectActions.getProjectActionIdInfo(projectId)
                 .then(roleActionIds => {

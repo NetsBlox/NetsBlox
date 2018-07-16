@@ -3,7 +3,7 @@ var server,
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
     COOKIE_ID = 'netsblox-cookie',
     jwt = require('jsonwebtoken'),
-    SocketManager = require('../socket-manager'),
+    NetworkTopology = require('../network-topology'),
     logger;
 const Q = require('q');
 const Users = require('../storage/users');
@@ -14,7 +14,7 @@ var hasSocket = function(req, res, next) {
         (req.query && req.query.socketId);
 
     if (socketId) {
-        if (SocketManager.getSocket(socketId)) {
+        if (NetworkTopology.getSocket(socketId)) {
             return next();
         }
         logger.error(`No socket found for ${socketId} (${req.get('User-Agent')})`);
