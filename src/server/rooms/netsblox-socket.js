@@ -5,15 +5,6 @@
 var counter = 0,
     Q = require('q'),
     Constants = require(__dirname + '/../../common/constants'),
-    PROJECT_FIELDS = [
-        'ProjectName',
-        'SourceCode',
-        'Media',
-        'SourceSize',
-        'MediaSize',
-        'RoomUuid'
-    ],
-    R = require('ramda'),
     Utils = require('../server-utils'),
     UserActions = require('../storage/user-actions'),
     SILENT_MSGS = [
@@ -35,18 +26,6 @@ const Projects = require('../storage/projects');
 const NetsBloxAddress = require('../netsblox-address');
 const SocketManager = require('../socket-manager');
 
-var createSaveableProject = function(json) {
-    var project = R.pick(PROJECT_FIELDS, json);
-    // Set defaults
-    project.Public = false;
-    project.Updated = new Date();
-
-    // Add the thumbnail,notes from the project content
-    project.Thumbnail = Utils.xml.thumbnail(project.SourceCode);
-    project.Notes = Utils.xml.notes(project.SourceCode);
-    return project;
-};
-
 class NetsBloxSocket {
     constructor (logger, socket) {
         this.id = (++counter);
@@ -54,7 +33,6 @@ class NetsBloxSocket {
 
         this.role = null;
         this._room = null;  // TODO: REMOVE
-        this._onRoomJoinDeferred = null;
         this.loggedIn = false;
         this.projectId = null;
         this.roleId = null;
@@ -345,8 +323,8 @@ class NetsBloxSocket {
         });
         this._projectRequests[id] = {
             promise: deferred,
-            role: this.role,
-            roomName: this._room && this._room.name
+            roleId: this.roleId,
+            projectId: this.projectId
         };
 
         // Add the timeout for the project request
@@ -463,37 +441,42 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'project-response': function(msg) {
-        var id = msg.id,
-            json = msg.project,
-            err;
+        const id = msg.id;
+        const json = msg.project;
 
-        const project = createSaveableProject(json);
+        const req = this._projectRequests[id];
+        delete this._projectRequests[id];
+
+        const project = {
+            ID: req.roleId,
+            ProjectName: json.ProjectName,
+            SourceCode: json.SourceCode,
+            Media: json.Media,
+            Thumbnail: Utils.xml.thumbnail(json.SourceCode),
+            Notes: Utils.xml.notes(json.SourceCode),
+            Updated: new Date()
+        };
+
         if (!project) {  // silent failure
-            err = `Received falsey project! ${JSON.stringify(project)}`;
+            const err = `Received falsey project! ${JSON.stringify(project)}`;
             this._logger.error(err);
-            this._projectRequests[id].promise.reject(err);
-            delete this._projectRequests[id];
+            req.promise.reject(err);
             return;
         }
 
         // Check if the socket has changed locations
-        const req = this._projectRequests[id];
-        const roomName = this._room && this._room.name;
-        const hasMoved = this.role !== req.role || roomName !== req.roomName;
-        const oldProject = json.ProjectName !== this.role;
-        if (hasMoved || oldProject) {
-            err = hasMoved ?
-                `socket moved from ${req.role}/${req.roomName} to ${this.role}/${roomName}`:
-                `received old project ${json.ProjectName}. expected "${this.role}"`;
+
+        const {projectId, roleId} = req;
+        const hasMoved = projectId !== this.projectId && roleId !== this.roleId;
+        if (hasMoved) {
+            const err = `socket moved from ${req.roleId}/${req.projectId} ` +
+                `to ${this.roleId}/${this.projectId}`;
             this._logger.log(`project request ${id} canceled: ${err}`);
-            req.promise.reject(err);
-            delete this._projectRequests[id];
-            return;
+            return req.promise.reject(err);
         }
 
-        this._logger.log(`created saveable project for ${this.role} (${id})`);
-        req.promise.resolve(project);
-        delete this._projectRequests[id];
+        this._logger.log(`created saveable project for ${this.roleId} (${id})`);
+        return req.promise.resolve(project);
     },
 
     'elevate-permissions': function(msg) {
