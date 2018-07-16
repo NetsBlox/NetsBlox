@@ -163,8 +163,8 @@ BaiduMaps.prototype._getMap = function(latitude, longitude, width, height, zoom)
  * Get a map image of the given region.
  * @param {Latitude} latitude Latitude of center point
  * @param {Longitude} longitude Longitude of center point
- * @param {BoundedNumber<0,1024>} width Image width
- * @param {BoundedNumber<0,1024>} height Image height
+ * @param {BoundedNumber<1,1024>} width Image width
+ * @param {BoundedNumber<1,1024>} height Image height
  * @param {BoundedNumber<1,19>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
@@ -224,34 +224,11 @@ BaiduMaps.prototype.getLatitudeFromY = function(y){
 };
 
 /**
- * Convert x value of map image to longitude.
- * @param {Number} x x value of map image
- * @returns {Longitude} Longitude of the x value from the image
- *
- * @deprecated
- */
-BaiduMaps.prototype.getLongitude = function(x){
-    return this.getLongitudeFromX(x);
-};
-
-/**
- * Convert y value of map image to latitude.
- * @param {Number} y y value of map image
- * @returns {Latitude} Latitude of the y value from the image
- *
- * @deprecated
- */
-BaiduMaps.prototype.getLatitude = function(y){
-    return this.getLatitudeFromY(y);
-};
-
-/**
  * Get the earth coordinates (latitude, longitude) of a given point in the last requested map image (x, y).
  * @param {Number} x x position of the point
  * @param {Number} y y position of the point
  * @returns {Array} A list containing the latitude and longitude of the given point.
  */
-
 BaiduMaps.prototype.getEarthCoordinates = function(x, y){
     return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let coords = this._coordsAt(x,y, mapInfo);
@@ -265,7 +242,6 @@ BaiduMaps.prototype.getEarthCoordinates = function(x, y){
  * @param {Longitude} longitude longitude of the point
  * @returns {Array} A list containing (x, y) position of the given point.
  */
-
 BaiduMaps.prototype.getImageCoordinates = function(latitude, longitude){
     return this._getUserMap(this.caller.clientId).then(mapInfo => {
         let pixels = this._pixelsAt(latitude, longitude, mapInfo);
