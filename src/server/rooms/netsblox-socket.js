@@ -526,29 +526,41 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'elevate-permissions': function(msg) {
+        // TODO: Add auth
         if (this.isOwner()) {
-            var username = msg.username;
-            return this._room.addCollaborator(username);
+            const username = msg.username;
+            return Projects.getById(this.projectId)
+                .then(project => project.addCollaborator(username));
         }
     },
 
     'permission-elevation-request': function(msg) {
-        this.getRoom()
-            .then(room => room.getOwnerSockets())
-            .then(sockets => sockets.forEach(socket => socket.send(msg)));
+        // FIXME: ensure the user has a project...
+        const projectId = this.projectId;
+        return Projects.getRawProjectById(this.projectId)
+            .then(metadata => {
+                const {owner} = metadata;
+                const sockets = SocketManager.getSocketsAtProject(projectId);
+                const owners = sockets.filter(socket => socket.username === owner);
+
+                owners.forEach(socket => socket.send(msg));
+            });
     },
 
     'request-room-state': function() {
         if (this.hasRoom()) {
-            return this._room.getStateMsg()
-                .then(msg => this.send(msg));
+            return SocketManager.getRoomState(this.projectId)
+                .then(msg => {
+                    msg.type = 'room-roles';
+                    this.send(msg);
+                });
         }
     },
 
     ///////////// Import/Export /////////////
     'export-room': function(msg) {
         if (this.hasRoom()) {
-            this._room.serialize()
+            this._room.serialize()  // FIXME
                 .then(project => {
                     this._logger.trace(`Exporting project for ${this._room.name}` +
                         ` to ${this.username}`);
