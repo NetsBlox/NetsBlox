@@ -16,8 +16,6 @@ describe('baidu-staticmaps', function() {
     describe('interfaces', function() {
         utils.verifyRPCInterfaces(baidumaps, [
             ['getMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
-            ['getLongitude', ['x']],
-            ['getLatitude', ['y']],
             ['getLongitudeFromX', ['x']],
             ['getLatitudeFromY', ['y']],
             ['getXFromLongitude', ['longitude']],
