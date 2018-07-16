@@ -306,12 +306,9 @@ class NetsBloxSocket {
         this.send({type: 'evicted'});
     }
 
-    sendToOthers (msg) {
-        return this._room.sendFrom(this, msg);
-    }
-
     sendToEveryone (msg) {
-        return this._room.sendToEveryone(msg);
+        const sockets = SocketManager.getSocketsAtProject(this.projectId);
+        sockets.forEach(socket => socket.send(msg));
     }
 
     send (msg, silent) {
