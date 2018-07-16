@@ -1,4 +1,4 @@
-describe('baidu-staticmaps', function() {
+describe('baidu-maps', function() {
     const utils = require('../../../../assets/utils');
     var Baidumaps = utils.reqSrc('rpc/procedures/baidu-maps/baidu-maps'),
         RPCMock = require('../../../../assets/mock-rpc'),

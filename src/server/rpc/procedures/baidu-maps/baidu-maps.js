@@ -7,7 +7,7 @@
  */
 'use strict';
 
-const logger = require('../utils/logger')('baidu-staticmaps');
+const logger = require('../utils/logger')('baidu-maps');
 const request = require('request');
 const SphericalMercator = require('sphericalmercator');
 const geolib = require('geolib');
@@ -26,7 +26,7 @@ var storage;
 var baseUrl = 'https://api.map.baidu.com/staticimage/v2?mcode=666666&',
     getStorage = function() {
         if (!storage) {
-            storage = Storage.create('baidu-staticmaps');
+            storage = Storage.create('baidu-maps');
         }
         return storage;
     };
@@ -312,22 +312,6 @@ BaiduMaps.isSupported = () => {
         /* eslint-enable no-console*/
     }
     return !!key;
-};
-// Map of argument name to old field name
-BaiduMaps.COMPATIBILITY = {
-    path: 'baidu-staticmaps',
-    arguments: {
-        getMap: {
-            latitude: 'lat',
-            longitude: 'lon'
-        },
-        getXFromLongitude: {
-            longitude: 'lng'
-        },
-        getYFromLatitude: {
-            latitude: 'lat'
-        }
-    }
 };
 
 module.exports = BaiduMaps;
