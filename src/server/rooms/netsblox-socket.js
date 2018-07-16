@@ -422,32 +422,6 @@ class NetsBloxSocket {
             });
     }
 
-    importRoom(roleDict) {
-        if (!this.hasRoom()) {
-            const errMsg = `${this.username} has no associated room`;
-            this._logger.error(errMsg);
-            return Promise.reject(new Error(errMsg));
-        }
-
-        // change the socket's name to the given name (as long as it isn't colliding)
-        // Add all the additional roles
-        let roleNames = Object.keys(roleDict);
-
-        this._logger.trace(`adding roles: ${roleNames.join(',')}`);
-        roleNames.forEach(name => this._room.silentCreateRole(name));
-
-        // load the roles into the cache
-        const roles = roleNames.map(name => {
-            const role = roleDict[name];
-            role.ProjectName = name;
-            return role;
-        });
-
-        return this._room.setRoles(roles)
-            .then(() => this._room.onRolesChanged())
-            .then(() => this._room);
-    }
-
     setState(projectId, roleId, username) {
         this.projectId = projectId && projectId.toString();
         this.roleId = roleId;
