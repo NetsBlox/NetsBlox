@@ -142,38 +142,31 @@ class NetsBloxSocket {
         return this.isOwner() || this.isCollaborator();
     }
 
-    sendEditMsg (msg) {  // TODO: REMOVE
+    sendEditMsg (msg) {
         if (!this.hasRoom()) {
-            this._logger.error(`Trying to send edit msg w/o room ${this.uuid}`);
+            this._logger.error(`Trying to send edit msg w/o project ${this.uuid}`);
             return;
         }
 
         // accept the event here and broadcast to everyone
-        // Update this to not use the room
-        // TODO
-        let projectId = this.projectId;
-        let room = this._room;
-        let role = this.role;
+        const projectId = this.projectId;
+        const roleId = this.roleId;
         return this.canApplyAction(msg.action)
             .then(canApply => {
-                const sockets = this._room.getSocketsAt(role);
+                const sockets = SocketManager.getSocketsAt(projectId, roleId);
                 if (canApply) {
                     if (sockets.length > 1) {
                         sockets.forEach(socket => socket.send(msg));
                     }
                     msg.projectId = projectId;
                     // Only set the role's action id if not user action
-                    const storeAction = () => room.getProject().getRoleId(role)
-                        .then(roleId => {
-                            msg.roleId = roleId;
-                            return ProjectActions.store(msg);
-                        });
+                    msg.roleId = roleId;
 
                     if (!msg.action.isUserAction) {
-                        return room.setRoleActionId(role, msg.action.id)
-                            .then(storeAction);
+                        return ProjectActions.setLatestActionId(projectId, roleId, msg.action.id)
+                            .then(() => ProjectActions.store(msg));
                     } else {
-                        return storeAction();
+                        return ProjectActions.store(msg);
                     }
                 }
             });
@@ -181,7 +174,7 @@ class NetsBloxSocket {
 
     canApplyAction(action) {
         const startRole = this.role;
-        return this._room.getRoleActionId(this.role)
+        return ProjectActions.getLatestActionId(this.projectId, this.roleId)
             .then(actionId => {
                 const accepted = actionId < action.id && this.role === startRole;
                 if (!accepted) {
@@ -443,15 +436,13 @@ class NetsBloxSocket {
     }
 
     requestActionsAfter (actionId) {
-        if (!this.hasRoom()) {
-            this._logger.error(`User requested actions without room: ${this.username}`);
+        if (!this.projectId) {
+            this._logger.error(`User requested actions without project: ${this.username}`);
+            this.send({type: 'request-actions-complete'});
             return;
         }
 
-        let project = this._room.getProject();
-        let projectId = project.getId();
-        return project.getRoleId(this.role)
-            .then(roleId => ProjectActions.getActionsAfter(projectId, roleId, actionId))
+        return ProjectActions.getActionsAfter(this.projectId, this.roleId, actionId)
             .then(actions => {
                 actions.forEach(action => this.send(action));
                 this.send({type: 'request-actions-complete'});
