@@ -361,49 +361,18 @@
         }
 
         ///////////////////////// End Roles /////////////////////////
-        collectProjects() {
-            var sockets = this._room ?
-                this._room.getRoleNames()
-                    .map(name => this._room.getSocketsAt(name)[0])
-                    .filter(socket => !!socket) : [];
+        create(roleDict={}) {  // initial save
+            const data = {
+                name: this.name,
+                owner: this.owner,
+                transient: true,
+                lastUpdatedAt: new Date(),
+                originTime: this.originTime,
+                collaborators: this.collaborators,
+                roles: roleDict
+            };
 
-            // Request the project from the first socket
-            // if the request fails, continue with the ones that succeed
-            const jsons = sockets.map(socket =>
-                socket.getProjectJson()
-                    .catch(err => {
-                        this._logger.warn('could not save project at ' +
-                            `${socket.role} in ${this.owner}/${this.name}: ${err}`);
-                        return null;
-                    })
-            );
-            return Q.all(jsons)
-                .then(roles => roles.filter(role => !!role));
-        }
-
-        collectSaveableRoles() {
-            return this.collectProjects()
-                .then(roles => Q.all(roles.map(role => storeRoleBlob(role))));
-        }
-
-
-        create(roleDict) {  // initial save
-            return this.collectSaveableRoles()
-                .then(roles => {
-                    roleDict = roleDict || {};
-                    const data = {
-                        name: this.name,
-                        owner: this.owner,
-                        transient: true,
-                        lastUpdatedAt: new Date(),
-                        originTime: this.originTime,
-                        collaborators: this.collaborators,
-                        roles: roleDict
-                    };
-
-                    roles.forEach(role => roleDict[role.ProjectName] = role);
-                    return this._db.save(data);
-                })
+            return this._db.save(data)
                 .then(result => {
                     const id = result.ops[0]._id;
                     this._id = id;
