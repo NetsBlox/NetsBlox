@@ -252,35 +252,6 @@ module.exports = [
                 .then(state => res.json(state));
         }
     },
-    {
-        Service: 'moveToRole',
-        Parameters: 'projectId,roleId,clientId',
-        middleware: ['isLoggedIn'],
-        Method: 'post',
-        Note: '',
-        Handler: function(req, res) {
-            const {roleId, projectId, clientId} = req.body;
-            const {username} = req.session;
-
-            // Add auth
-            // TODO
-            return Projects.getById(projectId)
-                .then(project => {
-                    if (!project.roles[roleId]) {
-                        // Better error message!
-                        // FIXME
-                        return res.status(400).send(`Invalid Role ID: ${roleId}`);
-                    }
-
-                    // room update only sent via ws here...
-                    // TODO
-                    return SocketManager.setClientState(clientId, projectId, roleId, username)
-                        .then(() => project.getRoleById(roleId))
-                        .then(role => utils.serializeRole(role, project));
-                })
-                .then(xml => res.send(xml));
-        }
-    },
     {  // Create a new role
         Service: 'renameRole',
         Parameters: 'roleId,name,projectId',

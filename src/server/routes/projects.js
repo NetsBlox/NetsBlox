@@ -565,23 +565,32 @@ module.exports = [
     },
     {
         Service: 'getProject',
-        Parameters: 'projectId',
+        Parameters: 'projectId,roleId',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
             const {projectId} = req.body;
+            let {roleId} = req.body;
             const {username} = req.session;
 
             // Get the projectName
-            // TODO: update this so it doesn't depend on the ws connection!
             trace(`${username} opening project ${projectId}`);
+            let project;
             return Projects.getById(projectId)
-                .then(project => {
-                    // auth!
-                    // TODO
-                    return sendProjectTo(project, res);
-                });
+                .then(result => {  // if no roleId specified, get the last updated
+                    project = result;
+                    if (!roleId) {
+                        return project.getLastUpdatedRole()
+                            .then(role => roleId = role.ID);
+                    }
+                })
+                .then(() => project.getRoleById(roleId))
+                .then(role => {
+                    const serialized = Utils.serializeRole(role, project);
+                    return res.send(serialized);
+                })
+                .catch(err => res.status(500).send('ERROR: ' + err));
         }
     },
     {
