@@ -117,8 +117,7 @@ class NetsBloxSocket {
     }
 
     isOwner () {  // move to auth stuff...
-        return this._room &&  // TODO: REMOVE
-            (this._room.owner === this.uuid || this._room.owner === this.username);
+        return this.projectId;
     }
 
     isCollaborator () {  // TODO: REMOVE
