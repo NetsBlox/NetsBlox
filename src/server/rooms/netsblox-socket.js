@@ -116,20 +116,7 @@ class NetsBloxSocket {
         }
     }
 
-    _setRoom (room) {  // TODO: REMOVE
-        if (this._room && room !== this._room) {  // leave current room
-            this.leave();
-        }
-
-        this._room = room;
-        this.updateRoom();
-        if (this._onRoomJoinDeferred) {
-            this._onRoomJoinDeferred.resolve(room);
-            this._onRoomJoinDeferred = null;
-        }
-    }
-
-    isOwner () {
+    isOwner () {  // move to auth stuff...
         return this._room &&  // TODO: REMOVE
             (this._room.owner === this.uuid || this._room.owner === this.username);
     }
@@ -211,9 +198,6 @@ class NetsBloxSocket {
 
     close () {
         this._logger.trace(`closed socket for ${this.uuid} (${this.username})`);
-        if (this._room) {  // TODO: REMOVE
-            this.leave();
-        }
         if (this.nextHeartbeat) {
             clearTimeout(this.nextHeartbeat);
         }
@@ -321,13 +305,6 @@ class NetsBloxSocket {
 
     onEvicted () {
         this.send({type: 'evicted'});
-    }
-
-    // This should only be called internally *EXCEPT* when the socket is going to close
-    leave () {
-        if (this._room) {  // TODO: REMOVE
-            this._room.remove(this);
-        }
     }
 
     sendToOthers (msg) {
