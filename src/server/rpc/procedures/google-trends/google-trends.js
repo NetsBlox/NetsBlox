@@ -14,6 +14,11 @@ var countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
     geoNamesUsername = process.env.GOOGLE_TRENDS_USERNAME || 'hamidzr';
 
+/**
+ * Get trends information at a location
+ * @param {Latitude} latitude Latitude of location
+ * @param {Longitude} longitude Longitude of location
+ */
 TrendsRPC.byLocation = function (latitude, longitude) {
     // get location data eg: country, language
     // or we can use geocoder package
@@ -39,7 +44,10 @@ TrendsRPC.byLocation = function (latitude, longitude) {
     return null;  // explicitly return null since async
 };
 
-
+/**
+ * Get trends information for a country
+ * @param {String} countryCode Abbreviation of country to search
+ */
 TrendsRPC.byCountryCode = function (countryCode) {
     let response = this.response;
 
