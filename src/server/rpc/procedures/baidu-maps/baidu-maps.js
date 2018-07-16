@@ -60,7 +60,7 @@ BaiduMaps.prototype._pixelsAt = function(lat, lon, map) {
 
 // precisionLimit if present would limit the precision of coordinate parameters
 BaiduMaps.prototype._getBaiduParams = function(options, precisionLimit) {
-    // Create the params for Google
+    // Create the params for Baidu
     var params = [];
     params.push('width=' + options.width);
     params.push('height=' + options.height);
