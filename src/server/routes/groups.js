@@ -19,20 +19,20 @@ module.exports = [
         middleware: ['isLoggedIn'],
         Handler: function(req) {
             // gets a list of groups
-            logger.trace('About to print all groups');
-            return Groups.all();
+            let owner = req.session.username;
+            return Groups.all(owner);
         }
     },
     {
-        URL: 'groups/:name',
+        URL: 'groups/:id',
         Method: 'GET',
-        middleware: ['isLoggedIn'],
+        middleware: ['isLoggedIn', 'isGroupOwner'],
         Handler: function(req) {
             // a specific group's details: (which only include members)
             let groupName = req.params.name;
-            return Groups.get(groupName).then( group => {
-                return group.getMembers();
-            });
+            let owner = req.session.username;
+            // TODO search the users for matching group id and return
+            return [1,2];
         }
     },
     {
@@ -49,31 +49,16 @@ module.exports = [
         }
     },
     {
-        // TODO add member removal
         // add new members
-        URL: 'groups/:name/members',
+        URL: 'groups/:id/members',
         Method: 'POST',
         middleware: ['isLoggedIn', 'isGroupOwner'],
         Handler: function(req) {
-            let username = req.body.username,
-                groupName = req.params.name,
-                user;
-            return Users.get(username)
-                .then(_user => {
-                    user = _user;
-                    if (!user) {
-                        throw 'User not found';
-                    }
-                    return Groups.get(groupName);
-                })
-                .then(group => {
-                    if (!group) throw 'Group not found';
-                    return group.addMember(user);
-                });
+            // TODO should go to the users route with the owner set
         }
     },
     {
-        URL: 'groups/:name',
+        URL: 'groups/:id',
         Method: 'DELETE',
         middleware: ['isLoggedIn', 'isGroupOwner'],
         Handler: function(req) {
