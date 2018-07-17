@@ -54,7 +54,24 @@ module.exports = [
         Method: 'POST',
         middleware: ['isLoggedIn', 'isGroupOwner'],
         Handler: function(req) {
-            // TODO should go to the users route with the owner set
+            let username = req.body.username,
+                password = req.body.password,
+                groupId = req.params.id,
+                user;
+            return Users.get(username)
+                .then(_user => {
+                    user = _user;
+                    if (user) {
+                        throw new Error('user already exists');
+                    }
+                    user = Users.new({
+                        username,
+                        password,
+                        group: groupId
+
+                    });
+                    return user.save();
+                });
         }
     },
     {

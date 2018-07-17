@@ -209,13 +209,14 @@
         return deferred.promise;
     };
 
-    UserStorage.new = function (username, email) {
+    UserStorage.new = function (username, email, group) {
         var createdAt = Date.now();
 
         return new User(this._logger, {
             username,
             email,
-            createdAt
+            createdAt,
+            group,
         });
     };
 
