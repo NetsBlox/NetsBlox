@@ -17,7 +17,7 @@ class NetsBloxAddress {
         return Projects.getRawProjectById(this.projectId)
             .then(metadata => {
                 if (!metadata) {
-                    throw new Error(`Project no longer exists. Cannot resolve address`);
+                    throw new Error('Project no longer exists. Cannot resolve address');
                 }
                 const projectName = metadata.name;
                 const owner = metadata.owner;

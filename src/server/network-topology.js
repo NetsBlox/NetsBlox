@@ -48,9 +48,6 @@ NetworkTopology.prototype.setClientState = function(clientId, projectId, roleId,
 
     if (!client) {
         this._logger.info(`Could not set client state for ${clientId}`);
-        // Reconsider how this might be affected
-        // TODO
-        //return Promise.reject(new Error(`No websocket connection for ${clientId}`));
         return Promise.resolve();
     }
 

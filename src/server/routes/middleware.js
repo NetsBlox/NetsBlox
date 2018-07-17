@@ -82,7 +82,7 @@ function login(req, res) {
 
             if (!username) {
                 logger.log('"passive" login failed - no session found!');
-                throw new Error(`No session found`);
+                throw new Error('No session found');
                 //if (req.body.silent) {
                     //return res.sendStatus(204);
                 //} else {
@@ -104,7 +104,7 @@ function login(req, res) {
                 const correctPassword = user.hash === hash;
                 if (!correctPassword) {
                     logger.log(`Incorrect password attempt for ${user.username}`);
-                    throw new Error(`Incorrect password`);
+                    throw new Error('Incorrect password');
                 }
                 logger.log(`"${user.username}" has logged in.`);
             }

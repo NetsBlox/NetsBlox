@@ -3,7 +3,6 @@
 'use strict';
 
 const NetworkTopology = require('../../../network-topology');
-var Constants = require('../../../../common/constants');
 
 let TwentyQuestions = function () {
     this._state = {};

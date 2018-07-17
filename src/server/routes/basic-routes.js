@@ -129,29 +129,17 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             // Look up the projectId
-            const {clientId, owner, actionId} = req.body;
+            const {clientId} = req.body;
             let {roleName, roomName, roleId, projectId} = req.body;
             let userId = clientId;
             let user = null;
 
             roomName = roomName || 'untitled';
 
-            const startTime = Date.now();
-            let lastTime = startTime;
-            const mark = name => {
-                const now = Date.now();
-                console.log(`--- ${name} ---`);
-                console.log((now - lastTime)/1000);
-                lastTime = now;
-            };
-
             const setUserAndId = middleware.login(req, res)
                 .then(() => {
                     user = req.session.user;
                     userId = user.username;
-                })
-                .catch(err => {
-                    console.error(`login failed`);  // FIXME
                 });
 
 

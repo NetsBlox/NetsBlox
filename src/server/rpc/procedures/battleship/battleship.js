@@ -4,7 +4,6 @@ const logger = require('../utils/logger')('battleship');
 const Board = require('./board');
 const TurnBased = require('../utils/turn-based');
 const BattleshipConstants = require('./constants');
-const Constants = require('../../../../common/constants');
 const BOARD_SIZE = BattleshipConstants.BOARD_SIZE;
 const SHIPS = BattleshipConstants.SHIPS;
 const DIRS = BattleshipConstants.DIRS;
