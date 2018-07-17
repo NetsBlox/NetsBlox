@@ -53,8 +53,7 @@
             params.data = params.data || {};
 
             super(params.db, params.data || {});
-            this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid()));
-            this._room = params.room;
+            this._logger = params.logger.fork(this.uuid());
             this.collaborators = this.collaborators || [];
             this.originTime = params.data.originTime;
         }
@@ -65,21 +64,6 @@
 
         getId() {
             return this._id;
-        }
-
-        fork(room) {
-            const params = {
-                room: room,
-                logger: this._logger,
-                lastUpdatedAt: new Date(),
-                db: this._db
-            };
-            const data = this._saveable();
-            data.owner = room.owner;
-            params.data = data;
-
-            this._logger.trace(`creating fork: ${room.uuid}`);
-            return new Project(params);
         }
 
         getRawProject() {
@@ -556,9 +540,6 @@
         }
     }
 
-    var EXTRA_KEYS = ['_room'];
-    Project.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(EXTRA_KEYS);
-
     // Project Storage
     var logger,
         collection,
@@ -706,37 +687,7 @@
         return deferred.promise;
     };
 
-    // Create room from ActiveRoom (request projects from clients)
-    const getDefaultProjectData = function(user, room) {
-        return {
-            owner: user.username,
-            name: room.name,
-            originTime: room.originTime,
-            collaborators: room.getCollaborators(),
-            roles: {}
-        };
-    };
-
-    ProjectStorage.new = function() {
-        if (arguments.length === 2) {
-            return ProjectStorage.newFromRoom.apply(this, arguments);
-        } else {
-            return ProjectStorage.newFromData.apply(this, arguments);
-        }
-    };
-
-    ProjectStorage.newFromRoom = function(user, room) {
-        const project = new Project({
-            logger: logger,
-            db: collection,
-            data: getDefaultProjectData(user, room),
-            room: room
-        });
-
-        return project.create();
-    };
-
-    ProjectStorage.newFromData = function(data) {
+    ProjectStorage.new = function(data) {
         data.roles = data.roles || {};
         data.originTime = data.originTime || new Date();
         data.collaborators = data.collaborators || [];
