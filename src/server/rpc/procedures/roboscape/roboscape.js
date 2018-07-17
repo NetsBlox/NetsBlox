@@ -292,15 +292,11 @@ Robot.prototype.commandToClient = function (command) {
         this.sockets.forEach(function (uuid) {
             var socket = NetworkTopology.getSocket(uuid);
             if (socket) {
-                socket.send({
-                    type: 'message',
-                    dstId: socket.role,
-                    msgType: 'robot command',
-                    content: {
-                        robot: mac_addr,
-                        command: command
-                    }
-                });
+                const content = {
+                    robot: mac_addr,
+                    command: command
+                };
+                socket.sendMessage('robot command', content);
             } else {
                 logger.log('socket not found for ' + uuid);
             }
@@ -331,12 +327,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
         var socket = NetworkTopology.getSocket(uuid);
         if (socket) {
             if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
-                socket.send({
-                    type: 'message',
-                    dstId: socket.role,
-                    msgType: msgType,
-                    content: content
-                });
+                socket.sendMessage(msgType, content);
             }
 
             if ((ROBOSCAPE_MODE === 'security' && msgType !== 'set led') ||
@@ -346,15 +337,11 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
                     text += ' ' + content[fields[i]];
                 }
 
-                socket.send({
-                    type: 'message',
-                    dstId: socket.role,
-                    msgType: 'robot message',
-                    content: {
-                        robot: myself.mac_addr,
-                        message: myself.encrypt(text.trim())
-                    }
-                });
+                const content = {
+                    robot: myself.mac_addr,
+                    message: myself.encrypt(text.trim())
+                };
+                socket.sendMessage('robot message', content);
             }
         } else {
             logger.log('socket not found for ' + uuid);
