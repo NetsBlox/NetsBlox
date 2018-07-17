@@ -50,12 +50,12 @@ class NetsBloxSocket {
         this._logger.trace('created');
     }
 
-    hasRoom (silent) {
-        const hasRoom = !!this.projectId;
-        if (!hasRoom && !silent) {
-            this._logger.error('user has no room!');
+    hasProject (silent) {
+        const hasProject = !!this.projectId;
+        if (!hasProject && !silent) {
+            this._logger.error('user has no project!');
         }
-        return hasRoom;
+        return hasProject;
     }
 
     isOwner () {  // TODO: move to auth stuff...
@@ -64,7 +64,7 @@ class NetsBloxSocket {
     }
 
     sendEditMsg (msg) {
-        if (!this.hasRoom()) {
+        if (!this.hasProject()) {
             this._logger.error(`Trying to send edit msg w/o project ${this.uuid}`);
             return;
         }
@@ -439,20 +439,21 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'permission-elevation-request': function(msg) {
-        // FIXME: ensure the user has a project...
-        const projectId = this.projectId;
-        return Projects.getRawProjectById(this.projectId)
-            .then(metadata => {
-                const {owner} = metadata;
-                const sockets = NetworkTopology.getSocketsAtProject(projectId);
-                const owners = sockets.filter(socket => socket.username === owner);
+        if (this.hasProject()) {
+            const projectId = this.projectId;
+            return Projects.getRawProjectById(this.projectId)
+                .then(metadata => {
+                    const {owner} = metadata;
+                    const sockets = NetworkTopology.getSocketsAtProject(projectId);
+                    const owners = sockets.filter(socket => socket.username === owner);
 
-                owners.forEach(socket => socket.send(msg));
-            });
+                    owners.forEach(socket => socket.send(msg));
+                });
+        }
     },
 
     'request-room-state': function() {
-        if (this.hasRoom()) {
+        if (this.hasProject()) {
             return NetworkTopology.getRoomState(this.projectId)
                 .then(msg => {
                     msg.type = 'room-roles';
@@ -463,7 +464,7 @@ NetsBloxSocket.MessageHandlers = {
 
     ///////////// Import/Export /////////////
     'export-room': function(msg) {
-        if (this.hasRoom()) {
+        if (this.hasProject()) {
             const projectId = this.projectId;
             const occupantForRole = {};
 
@@ -528,7 +529,7 @@ NetsBloxSocket.MessageHandlers = {
             projectId = 'n/a',
             record = {};
 
-        if (this.hasRoom()) {
+        if (this.hasProject()) {
             projectId = this.projectId;
         }
 
