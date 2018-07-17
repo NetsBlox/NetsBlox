@@ -155,8 +155,8 @@ var setUser = function(req, res, next) {
 
 // check group write access
 let isGroupOwner = function(req, res, next) {
-    let groupName = req.params.name;
-    Groups.get(groupName)
+    let groupId = req.params.id;
+    Groups.get(groupId)
         .then( group => {
             let owner = group.getOwner();
             if (owner === req.session.username) {
@@ -167,7 +167,7 @@ let isGroupOwner = function(req, res, next) {
         })
         .catch(err => {
             logger.error(err);
-            res.status(404).send(`Group not found: ${groupName}`);
+            res.status(404).send(`Group not found: ${groupId}`);
         });
 };
 
