@@ -137,12 +137,12 @@ module.exports = [
             return Projects.getRawProjectById(projectId)
                 .then(metadata => {
                     if (!metadata) {
-                        log(`guest invitation failed: project not found`);
+                        log('guest invitation failed: project not found');
                         return res.status(400).send('Project not found');
                     }
 
                     if (!metadata.roles[roleId]) {
-                        log(`guest invitation failed: role not found`);
+                        log('guest invitation failed: role not found');
                         return res.status(400).send('Role not found');
                     }
 
