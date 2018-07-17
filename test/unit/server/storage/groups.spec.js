@@ -85,6 +85,18 @@ describe('groups', function() {
     });
 
 
+    it('should find all groups', async function() {
+        const gps = ['gpname', 'gp2'];
+        await Groups.new(gps[0], owner);
+        await Groups.new(gps[1], owner);
+        let groups = await Groups.all(owner);
+        assert.deepEqual(gps.length, groups.length);
+        gps.forEach(gpName => {
+            assert(groups.find(group => group.name = gpName));
+        })
+    });
+
+
 
     describe.skip('group members', function() {
         let group = null;
