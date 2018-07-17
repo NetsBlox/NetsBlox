@@ -308,24 +308,36 @@ RPCManager.prototype.parseArgValue = function (arg, input, ctx) {
         }
     } else if (arg.type) {
         const typeName = arg.type.name;
+        const recordError = err => {
+            inputStatus.isValid = false;
+            const netsbloxType = types.getNBType(typeName);
+            inputStatus.msg = `"${arg.name}" is not a valid ${netsbloxType}.`;
+            if (err.message.includes(netsbloxType)) {
+                inputStatus.msg = `"${arg.name}" is not valid. ` + err.message;
+            } else if (err.message) {
+                inputStatus.msg += ' ' + err.message;
+            }
+        };
+
         if (types.parse.hasOwnProperty(typeName)) { // if we have the type handler
             try {
                 const args = [input].concat(arg.type.params);
                 args.push(ctx);
-                inputStatus.value = types.parse[typeName].apply(null, args);
+                return Promise.resolve(types.parse[typeName].apply(null, args))
+                    .then(value => {
+                        inputStatus.value = value;
+                        return inputStatus;
+                    })
+                    .catch(e => {
+                        recordError(e);
+                        return inputStatus;
+                    });
             } catch (e) {
-                inputStatus.isValid = false;
-                const netsbloxType = types.getNBType(typeName);
-                inputStatus.msg = `"${arg.name}" is not a valid ${netsbloxType}.`;
-                if (e.message.includes(netsbloxType)) {
-                    inputStatus.msg = `"${arg.name}" is not valid. ` + e.message;
-                } else if (e.message) {
-                    inputStatus.msg += ' ' + e.message;
-                }
+                recordError(e);
             }
         }
     }
-    return inputStatus;
+    return Promise.resolve(inputStatus);
 };
 
 RPCManager.prototype.sendRPCResult = function(response, result) {
