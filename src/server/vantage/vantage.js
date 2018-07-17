@@ -126,29 +126,39 @@ NetsBloxVantage.prototype.initRoomManagement = function(server) {
         .action(function(args, cb) {
             // Get all groups
             var header = '* * * * * * * Rooms * * * * * * * \n';
-            return RoomManager.getActiveRooms()
-                .then(rooms => {
-                    let text = rooms.map(function(room) {
-                        var clients = room.getRoleNames()
-                            .map(role => {
-                                let clients = room.getSocketsAt(role),
-                                    names = clients.length ?
-                                        clients.map(c => c.username) : [NO_USER_LABEL];
+            const rooms = RoomManager.getActiveRooms();
+            let text = rooms.map(function(room) {
+                var clients = room.getRoleNames()
+                    .map(role => {
+                        let clients = room.getSocketsAt(role),
+                            names = clients.length ?
+                                clients.map(c => c.username) : [NO_USER_LABEL];
 
-                                return `\t${role}: ${names.join(',')}`;
-                            });
+                        return `\t${role}: ${names.join(',')}`;
+                    });
 
-                        const collabs = room.getCollaborators().join(' ');
-                        return `${room.uuid}:\n   collabs: ${collabs}\n` +
-                            `   roles:\n${clients.join('\n')}\n`;
-                    }).join('\n');
+                const collabs = room.getCollaborators().join(' ');
+                return [
+                    `${room.uuid}:`,
+                    `projectId: ${room.getProjectId()}`,
+                    `collabs: ${collabs}`,
+                    `roles:\n${clients.join('\n')}\n`
+                ].join('\n   ');
+            }).join('\n');
 
-                    if (args.options.entries) {
-                        text = rooms.map(room => room.uuid).join('\n');
-                    }
-                    console.log(header+text);
-                    return cb();
-                });
+            if (args.options.entries) {
+                text = rooms.map(room => room.uuid).join('\n');
+            }
+            console.log(header+text);
+            return cb();
+        });
+
+    vantage
+        .command('ruuids', 'Get all room uuids')
+        .action((a, cb) => {
+            let uuids = RoomManager.getActiveRoomIds();
+            console.log(uuids);
+            cb();
         });
 
     vantage

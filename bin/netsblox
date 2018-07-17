@@ -19,6 +19,7 @@ program
 program
     .command('start', 'start the netsblox server')
     .command('add-user', 'create a new user account')
+    .command('set-password <username> <password>', 'set user password')
     .command('sessions', 'list the recorded data sessions')
     .command('persist', 'set project transient to false')
     .command('session [sessionId...]', 'display collected session info')

@@ -18,6 +18,9 @@ var counter = 0,
     assert = require('assert'),
     UserActions = require('../storage/user-actions'),
     RoomManager = require('./room-manager'),
+    SILENT_MSGS = [
+        'pong'
+    ],
     CONDENSED_MSGS = [
         'project-response',
         'import-room',
@@ -30,7 +33,8 @@ var counter = 0,
 const Messages = require('../storage/messages');
 const ProjectActions = require('../storage/project-actions');
 const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
-const HEARTBEAT_INTERVAL = 55*1000;  // 55 seconds
+const HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
+const BugReporter = require('../bug-reporter');
 
 var createSaveableProject = function(json) {
     var project = R.pick(PROJECT_FIELDS, json);
@@ -58,7 +62,9 @@ class NetsBloxSocket {
         this.username = this.uuid;
         this._socket = socket;
         this._projectRequests = {};  // saving
-        this.isAlive = true;
+        this.lastSocketActivity = Date.now();
+        this.nextHeartbeat = null;
+        this.nextHeartbeatCheck = null;
 
         this.onclose = [];
         this._initialize();
@@ -84,7 +90,7 @@ class NetsBloxSocket {
         }
     }
 
-    getRawRoom () {
+    getRoomSync () {
         return this._room;
     }
 
@@ -94,8 +100,8 @@ class NetsBloxSocket {
 
         isOwner = isOwner || this.isOwner();
         if (isOwner) {
-            if (Utils.isSocketUuid(this._room.owner)) {
-                this._room.setOwner(this.username);
+            if (Utils.isSocketUuid(room.owner)) {
+                room.setOwner(this.username);
             }
 
             // Update the user's room name
@@ -152,12 +158,19 @@ class NetsBloxSocket {
                         sockets.forEach(socket => socket.send(msg));
                     }
                     msg.projectId = projectId;
-                    return room.setRoleActionId(role, msg.action.id)
-                        .then(() => room.getProject().getRoleId(role))
+                    // Only set the role's action id if not user action
+                    const storeAction = () => room.getProject().getRoleId(role)
                         .then(roleId => {
                             msg.roleId = roleId;
                             return ProjectActions.store(msg);
                         });
+
+                    if (!msg.action.isUserAction) {
+                        return room.setRoleActionId(role, msg.action.id)
+                            .then(storeAction);
+                    } else {
+                        return storeAction();
+                    }
                 }
             });
     }
@@ -165,47 +178,110 @@ class NetsBloxSocket {
     canApplyAction(action) {
         const startRole = this.role;
         return this._room.getRoleActionId(this.role)
-            .then(actionId => actionId < action.id && this.role === startRole);
+            .then(actionId => {
+                const accepted = actionId < action.id && this.role === startRole;
+                if (!accepted) {
+                    this._logger.log(`rejecting action with id ${action.id} ` +
+                        `(${actionId}) from ${this.getPublicId()}`);
+                }
+                return accepted;
+            });
     }
 
     _initialize () {
         this._socket.on('message', data => {
-            var msg = JSON.parse(data),
-                type = msg.type,
-                result = Q();
-
-            this._logger.trace(`received "${CONDENSED_MSGS.indexOf(type) !== -1 ? type : data}" message from ${this.username} (${this.uuid})`);
-            if (NetsBloxSocket.MessageHandlers[type]) {
-                result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
-            } else {
-                this._logger.warn('message "' + data + '" not recognized');
+            try {
+                var msg = JSON.parse(data);
+                return this.onMessage(msg);
+            } catch (err) {
+                this._logger.error(`failed to parse message: ${err} (${data})`);
+                BugReporter.reportInvalidSocketMessage(err, data, this);
             }
-            return result.catch(err =>
-                this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
         });
 
-        this._socket.on('close', () => {
-            this._logger.trace('closed!');
-            if (this._room) {
-                this.leave();
-            }
-            this.onclose.forEach(fn => fn.call(this));
-            this.onClose(this.uuid);
-        });
+        this._socket.on('close', () => this.close());
 
         // change the heartbeat to use ping/pong from the ws spec
+        this.keepAlive();
         this.checkAlive();
-        this._socket.on('pong', () => this.isAlive = true);
+
+        // Report the server version
+        this.send({
+            type: 'report-version',
+            body: Utils.version
+        });
+    }
+
+    close () {
+        this._logger.trace(`closed socket for ${this.uuid} (${this.username})`);
+        if (this._room) {
+            this.leave();
+        }
+        if (this.nextHeartbeat) {
+            clearTimeout(this.nextHeartbeat);
+        }
+        if (this.nextHeartbeatCheck) {
+            clearTimeout(this.nextHeartbeatCheck);
+        }
+        this.onclose.forEach(fn => fn.call(this));
+        this.onClose(this);
+    }
+
+    onMessage (msg) {
+        let type = msg.type,
+            result = Q();
+
+        if (CONDENSED_MSGS.includes(type)) {
+            this._logger.trace(`received "${type}" message from ${this.username} (${this.uuid})`);
+        } else if (!SILENT_MSGS.includes(type)) {
+            let data = JSON.stringify(msg);
+            this._logger.trace(`received "${data}" message from ${this.username} (${this.uuid})`);
+        }
+
+        this.lastSocketActivity = Date.now();
+        if (NetsBloxSocket.MessageHandlers[type]) {
+            result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
+        } else {
+            this._logger.warn('message "' + JSON.stringify(msg) + '" not recognized');
+        }
+        return result.catch(err =>
+            this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
     }
 
     checkAlive() {
-        if (!this.isAlive) {
+        const sinceLastMsg = Date.now() - this.lastSocketActivity;
+        if (sinceLastMsg > 2*NetsBloxSocket.HEARTBEAT_INTERVAL || this.isSocketDead()) {
             this._socket.terminate();
+            this.close();
         } else {
-            this._socket.ping('', false, true);
-            this.isAlive = false;
-            setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
+            if (this.nextHeartbeatCheck) {
+                clearTimeout(this.nextHeartbeatCheck);
+            }
+            this.nextHeartbeatCheck = setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
         }
+    }
+
+    keepAlive() {
+        let sinceLastMsg = Date.now() - this.lastSocketActivity;
+        if (sinceLastMsg >= NetsBloxSocket.HEARTBEAT_INTERVAL) {
+            this.ping();
+            sinceLastMsg = 0;
+        }
+
+        const nextMsgDelay = NetsBloxSocket.HEARTBEAT_INTERVAL - sinceLastMsg;
+        this.nextHeartbeat = setTimeout(this.keepAlive.bind(this), nextMsgDelay);
+    }
+
+    ping() {
+        this.send({type: 'ping'}, true);
+    }
+
+    isSocketOpen() {
+        return this._socket.readyState === this.OPEN;
+    }
+
+    isSocketDead() {
+        return this._socket.readyState > this.OPEN;
     }
 
     onLogin (user) {
@@ -250,13 +326,13 @@ class NetsBloxSocket {
         this.role = role;
     }
 
-    getNewName (name, taken) {
+    getNewName (name) {
         var promise;
 
         if (this.user) {
-            promise = this.user.getNewName(name, taken);
+            promise = this.user.getNewName(name);
         } else {
-            promise = Q('untitled');
+            promise = Q(name);
         }
 
         return promise.then(name => {
@@ -267,20 +343,19 @@ class NetsBloxSocket {
 
     newRoom (opts) {
         opts = opts || {role: 'myRole'};
+        opts.role = opts.role || 'myRole';
         return this.getNewName(opts.room || opts.name)
             .then(name => {
                 let room = null;
-                this._logger.info(`"${this.username}" is making a new room "${name}"`);
 
                 return RoomManager.createRoom(this, name)
                     .then(_room => {
                         room = _room;
                         this._setRoom(room);
+                        this._logger.info(`"${this.username}" made a new room "${name}" (${room.getProjectId()})`);
                         return room.createRole(opts.role);
                     })
-                    .then(() => {
-                        return this.join(room, opts.role);
-                    })
+                    .then(() => this.join(room, opts.role))
                     .catch(err => this._logger.error(err));
             });
     }
@@ -306,7 +381,7 @@ class NetsBloxSocket {
         return this._room.sendToEveryone(msg);
     }
 
-    send (msg) {
+    send (msg, silent) {
         // Set the defaults
         msg.type = msg.type || 'message';
         if (msg.type === 'message') {
@@ -314,11 +389,16 @@ class NetsBloxSocket {
         }
 
         msg = JSON.stringify(msg);
-        this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
-        if (this._socket.readyState === this.OPEN) {
+        if (!silent) {
+            this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
+        }
+
+        if (this.isSocketOpen()) {
             this._socket.send(msg);
+        } else if (this.isSocketDead()) {
+            this.checkAlive();
         } else {
-            this._logger.log('could not send msg - socket no longer open');
+            this._logger.log('could not send msg - socket still opening');
         }
     }
 
@@ -351,7 +431,7 @@ class NetsBloxSocket {
     }
 
     getPublicId () {
-        let room = this.getRawRoom();
+        let room = this.getRoomSync();
         let publicRoleId = null;
         if (room) {
             publicRoleId = `${this.role}@${room.name}@${room.owner}`;
@@ -363,8 +443,10 @@ class NetsBloxSocket {
         dstId = dstId + ''; // make sure dstId is string
         dstId = dstId.replace(/^\s*/, '').replace(/\s*$/, '');
         msg.dstId = dstId;
-        let room = this._room;
-        msg.srcProjectId = room.getProjectId();
+        let srcRoom = this._room;
+        if (!srcRoom) return this._logger.error(`Sending message without room! ${this.username}`);
+
+        msg.srcProjectId = srcRoom.getProjectId();
         if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message
             // Look up the socket matching
             //
@@ -374,44 +456,94 @@ class NetsBloxSocket {
                 sockets = [],
                 ownerId = idChunks.pop(),
                 roomName = idChunks.pop(),
-                roleId = idChunks.pop(),
-                roomId = Utils.uuid(ownerId, roomName);
+                roleId = idChunks.pop();
 
-            return RoomManager.getExistingRoom(roomId)
-                .then(room => {
-                    if (room) {
-                        if (roleId) {
-                            if (room.hasRole(roleId)) {
-                                sockets = sockets.concat(room.getSocketsAt(roleId));
-                            }
-                        } else {
-                            sockets = room.sockets();
-                        }
+            const room = RoomManager.getExistingRoom(ownerId, roomName);
 
-                        sockets.forEach(socket => {
-                            msg.dstId = Constants.EVERYONE;
-                            socket.send(msg);
-                        });
-
-                        // record message (including successful delivery)
-                        msg.dstId = dstId;
-                        // TODO: get the public id of each socket
-                        msg.recipients = sockets.map(socket => socket.getPublicId());
-                        Messages.save(msg);
+            if (room) {
+                if (roleId) {
+                    if (room.hasRole(roleId)) {
+                        sockets = sockets.concat(room.getSocketsAt(roleId));
                     }
+                } else {
+                    sockets = room.sockets();
+                }
+
+                sockets.forEach(socket => {
+                    msg.dstId = Constants.EVERYONE;
+                    socket.send(msg);
                 });
-        } else if (room) {
+
+                // record message (including successful delivery)
+                msg.dstId = dstId;
+                msg.recipients = sockets.map(socket => socket.getPublicId());
+            }
+        } else {
             if (dstId === 'others in room') {
                 msg.recipients = this.sendToOthers(msg);
             } else if (dstId === Constants.EVERYONE) {
                 msg.recipients = this.sendToEveryone(msg);
-            } else if (room.hasRole(dstId)) {
-                let sockets = room.getSocketsAt(dstId);
+            } else if (srcRoom.hasRole(dstId)) {
+                let sockets = srcRoom.getSocketsAt(dstId);
                 sockets.forEach(socket => socket.send(msg));
                 msg.recipients = sockets.map(socket => socket.getPublicId());
             }
-            Messages.save(msg);
         }
+
+        return this.saveMessage(msg, srcRoom);
+    }
+
+    saveMessage (msg, srcRoom/*, dstRoom*/) {
+        // Check if the room should save the message
+        const project = srcRoom.getProject();
+        if (project) {
+            return project.isRecordingMessages()
+                .then(isRecording => isRecording && Messages.save(msg));
+        } else {
+            this._logger.error(`Will not save messages: active room is missing project ${srcRoom.getUuid()}`);
+        }
+    }
+
+    requestActionsAfter (actionId) {
+        if (!this.hasRoom()) {
+            this._logger.error(`User requested actions without room: ${this.username}`);
+            return;
+        }
+
+        let project = this._room.getProject();
+        let projectId = project.getId();
+        return project.getRoleId(this.role)
+            .then(roleId => ProjectActions.getActionsAfter(projectId, roleId, actionId))
+            .then(actions => {
+                actions.forEach(action => this.send(action));
+                this.send({type: 'request-actions-complete'});
+            });
+    }
+
+    importRoom(roleDict) {
+        if (!this.hasRoom()) {
+            const errMsg = `${this.username} has no associated room`;
+            this._logger.error(errMsg);
+            return Promise.reject(new Error(errMsg));
+        }
+
+        // change the socket's name to the given name (as long as it isn't colliding)
+        // Add all the additional roles
+        let roleNames = Object.keys(roleDict);
+
+        this._logger.trace(`adding roles: ${roleNames.join(',')}`);
+        roleNames.forEach(name => this._room.silentCreateRole(name));
+
+        // load the roles into the cache
+        const roles = roleNames.map(name => {
+            const role = roleDict[name];
+            role.ProjectName = name;
+            return role;
+        });
+
+        return this._room.setRoles(roles)
+            .then(() => this._room.onRolesChanged())
+            .then(() => this._room);
     }
 }
 
@@ -422,14 +554,7 @@ NetsBloxSocket.prototype.CLOSING = 2;
 NetsBloxSocket.prototype.CLOSED = 3;
 
 NetsBloxSocket.MessageHandlers = {
-    'report-version': function(msg) {
-        // Check if the client is out-of-date
-        if (msg.version !== Utils.version) {
-            this.send({
-                type: 'new-version-available',
-                version: Utils.version
-            });
-        }
+    'pong': function() {
     },
 
     'set-uuid': function(msg) {
@@ -496,16 +621,22 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'rename-room': function(msg) {
-        if (this.isOwner()) {
-            this._room.changeName(msg.name, false, !!msg.inPlace);
+        // Look up the room using the projectId
+        const room = RoomManager.getExistingRoomById(msg.projectId);
+        if (room) {
+            const isOwner = room.getProject().owner === this.username;
+            if (isOwner) {
+                room.changeName(msg.name, false, !!msg.inPlace);
+            }
+        } else {
+            this._logger.error(`Could not find room for ${msg.projectId}`);
         }
     },
 
     'elevate-permissions': function(msg) {
         if (this.isOwner()) {
             var username = msg.username;
-            this._room.addCollaborator(username);
-            this._room.save();
+            return this._room.addCollaborator(username);
         }
     },
 
@@ -526,8 +657,8 @@ NetsBloxSocket.MessageHandlers = {
 
     'request-room-state': function() {
         if (this.hasRoom()) {
-            var msg = this._room.getStateMsg();
-            this.send(msg);
+            return this._room.getStateMsg()
+                .then(msg => this.send(msg));
         }
     },
 
@@ -536,83 +667,28 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'join-room': function(msg) {
-        var owner = msg.owner,
-            name = msg.room,
-            role = msg.role;
+        const {owner, role, actionId} = msg;
+        const name = msg.room;
+        let room = null;
 
         return RoomManager.getRoom(this, owner, name)
-            .then(room => {
+            .then(nextRoom => {
+                room = nextRoom;
                 this._logger.trace(`${this.username} is joining room ${owner}/${name}`);
-
-                // Check if the user is already at the room
-                return room.add(this, role);
+                if (!room.hasRole(role)) {
+                    this._logger.trace(`created role ${role} in ${owner}/${name}`);
+                    return room.createRole(role);
+                }
             })
+            .then(() => room.add(this, role))
+            .then(() => this.requestActionsAfter(actionId))
             .catch(err => this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
 
     },
 
-    'add-role': function(msg) {
-        if (this.canEditRoom()) {
-            this._room.createRole(msg.name, Utils.getEmptyRole(msg.name));
-        } else {
-            this._logger.warn(`${this.username} cannot edit the room`);
-        }
-    },
-
     ///////////// Import/Export /////////////
     'import-room': function(msg) {
-        let promise = Q([]);
-
-        if (!this.hasRoom()) {
-            this._logger.error(`${this.username} has no associated room`);
-            return;
-        }
-
-        // change the socket's name to the given name (as long as it isn't colliding)
-        if (this.user) {
-            promise = this.user.getProjectNames();
-        }
-
-        return promise
-            .then(names => {
-                // create unique name, if needed
-                const takenNames = {};
-                let i = 2;
-
-                names.forEach(name => takenNames[name] = true);
-
-                let name = msg.name;
-                while (takenNames[name]) {
-                    name = msg.name + ' (' + i + ')';
-                    i++;
-                }
-
-                this._logger.trace(`changing room name from ${this._room.name} to ${name}`);
-                this._room.update(name);
-
-                // Rename the socket's role
-                this._logger.trace(`changing role name from ${this.role} to ${msg.role}`);
-                this._room.renameRole(this.role, msg.role);
-
-                // Add all the additional roles
-                let roles = Object.keys(msg.roles);
-                this._logger.trace(`adding roles: ${roles.join(',')}`);
-                roles.forEach(role => this._room.silentCreateRole(role));
-
-                // load the roles into the cache
-                roles.forEach(role => this._room.setRole(
-                    role,
-                    {
-                        SourceCode: msg.roles[role].SourceCode,
-                        Media: msg.roles[role].Media,
-                        MediaSize: msg.roles[role].Media.length,
-                        SourceSize: msg.roles[role].SourceCode.length,
-                        RoomName: msg.name
-                    }
-                ));
-
-                this._room.onRolesChanged();
-            });
+        return this.importRoom(msg);
     },
 
     // Retrieve the json for each project and respond
@@ -631,14 +707,6 @@ NetsBloxSocket.MessageHandlers = {
                 })
                 .catch(() =>
                     this._logger.error(`Could not collect projects from ${this._room.name}`));
-        }
-    },
-
-    'request-new-name': function() {
-        if (this.hasRoom()) {
-            this._room.changeName(this._room.name || 'untitled');  // get unique base name
-        } else {
-            this._logger.warn(`Cannot req new name w/o a room! (${this.username})`);
         }
     },
 
@@ -665,19 +733,8 @@ NetsBloxSocket.MessageHandlers = {
     },
 
     'request-actions': function(msg) {
-        if (!this.hasRoom()) {
-            this._logger.error(`User requested actions without room: ${this.username}`);
-            return;
-        }
-
-        let project = this._room.getProject();
-        let projectId = project.getId();
-        return project.getRoleId(this.role)
-            .then(roleId => ProjectActions.getActionsAfter(projectId, roleId, msg.actionId))
-            .then(actions => {
-                actions.forEach(action => this.send(action));
-                this.send({type: 'request-actions-complete'});
-            });
+        const actionId = msg.actionId;
+        return this.requestActionsAfter(actionId);
     }
 };
 

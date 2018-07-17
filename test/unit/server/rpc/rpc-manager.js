@@ -67,4 +67,23 @@ describe('rpc-manager', function() {
             };
         });
     });
+
+    describe('parseArgValue', function() {
+        const arg = {
+            type: {
+                name: 'BoundedNumber',
+                params: ['10', '20']
+            }
+        };
+
+        it('should be able to parse parameterized types', function() {
+            return RPCManager.parseArgValue(arg, '12')
+                .then(result => assert.equal(typeof result.value, 'number'));
+        });
+
+        it('should pass params to type parser', function() {
+            RPCManager.parseArgValue(arg, '22')
+                .then(result => assert(!result.isValid));
+        });
+    });
 });

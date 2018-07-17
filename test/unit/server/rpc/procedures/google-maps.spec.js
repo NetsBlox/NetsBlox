@@ -1,25 +1,27 @@
-describe('staticmap', function() {
+describe('googlemaps', function() {
     const utils = require('../../../../assets/utils');
-    var StaticMap = utils.reqSrc('rpc/procedures/google-maps/google-maps'),
+    var Googlemaps = utils.reqSrc('rpc/procedures/google-maps/google-maps'),
         RPCMock = require('../../../../assets/mock-rpc'),
         assert = require('assert'),
-        staticmap = new RPCMock(StaticMap);
+        googlemaps = new RPCMock(Googlemaps);
 
     before(function(done) {
         utils.connect()
             .then(() => {
-                staticmap = new RPCMock(StaticMap);
+                googlemaps = new RPCMock(Googlemaps);
                 done();
             });
     });
 
     describe('interfaces', function() {
-        utils.verifyRPCInterfaces(staticmap, [
+        utils.verifyRPCInterfaces(googlemaps, [
             ['getMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
             ['getSatelliteMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
             ['getTerrainMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
             ['getLongitude', ['x']],
             ['getLatitude', ['y']],
+            ['getLongitudeFromX', ['x']],
+            ['getLatitudeFromY', ['y']],
             ['getXFromLongitude', ['longitude']],
             ['getYFromLatitude', ['latitude']],
             ['getImageCoordinates', ['latitude', 'longitude']],
@@ -34,11 +36,11 @@ describe('staticmap', function() {
 
     describe('getDistance', function() {
         it('should calculate distance in meters (string input)', function(){
-            let distance = staticmap.getDistance('36', '-86', '36', '-87');
+            let distance = googlemaps.getDistance('36', '-86', '36', '-87');
             assert.deepEqual(distance, 90163);
         });
         it('should calculate distance in meters (integer input)', function(){
-            let distance = staticmap.getDistance(36, -86, 36, -87);
+            let distance = googlemaps.getDistance(36, -86, 36, -87);
             assert.deepEqual(distance, 90163);
         });
     });
@@ -58,11 +60,41 @@ describe('staticmap', function() {
         };
 
         it('should handle wraparound at map boundaries', function(){
-            let coords = staticmap._rpc._coordsAt(-170, 90, map);
+            let coords = googlemaps._rpc._coordsAt(-170, 90, map);
             assert(coords.lon > -180 && coords.lon < 180);
             map.center.lon = +150;
-            coords = staticmap._rpc._coordsAt(170, 90, map);
+            coords = googlemaps._rpc._coordsAt(170, 90, map);
             assert(coords.lon > -180 && coords.lon < 180);
+        });
+
+    });
+
+    describe('getGoogleParams', function() {
+
+        const opts = {
+            center: {
+                lat: 36.2645738345627,
+                lon: -82.54322767345267,
+            },
+            width: (640 / 1),
+            height: (480 / 1),
+            zoom: 15,
+            scale: 1,
+            mapType: 'roadmap'
+        };
+
+        it('should round coordinates properly', function() {
+            let params = googlemaps._rpc._getGoogleParams(opts, 4);
+            let outCoords = params.match(/center=(.*)&key/)[1];
+            const expectedCoords = '36.2646,-82.5432';
+            assert.equal(outCoords, expectedCoords);
+        });
+
+        it('should not round coordinates', function() {
+            let params = googlemaps._rpc._getGoogleParams(opts);
+            let outCoords = params.match(/center=(.*)&key/)[1];
+            const expectedCoords = '36.2645738345627,-82.54322767345268';
+            assert.equal(outCoords, expectedCoords);
         });
 
     });

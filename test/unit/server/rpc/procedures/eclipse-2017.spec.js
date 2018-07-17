@@ -33,8 +33,8 @@ describe('Eclipse 2017', function() {
         });
 
         it('should be able to work with clock strings', function(){
-            const start = '3:48',
-            end = '4:10:0';
+            const start = '3:48';
+            const end = '4:10:0';
             let seconds = eclipsePath.clockToSeconds(start)+ 22*60;
             assert.equal(eclipsePath.secondsToClock(seconds), end);
         });
@@ -132,54 +132,40 @@ describe('Eclipse 2017', function() {
             return readingsCol;
         };
 
-        before(function(done){
-            utils.connect().then(getReadingsCol).then(readingsCol => {
-                getReadingsCol().insertMany(sampleUpdates).then(()=>{
-                    done();
-                }).catch(done);
-            });
+        before(function(){
+            return utils.connect()
+                .then(getReadingsCol)
+                .then(() => getReadingsCol().insertMany(sampleUpdates));
         });
 
-        it('_stationReading should get the latest update', function(done){
-            return Eclipse._stationReading('si').then(reading => {
-                assert.equal(reading.id, 1);
-                done();
-            }).catch(done);
+        it('_stationReading should get the latest update', function(){
+            return Eclipse._stationReading('si')
+                .then(reading => assert.equal(reading.id, 1));
         });
 
-        it('_stationReading should get the proper update from history', function(done){
-            return Eclipse._stationReading('si', rDate(106).toISOString()).then(reading => {
-                assert.equal(reading.id, 4);
-                done();
-            }).catch(done);
+        it('_stationReading should get the proper update from history', function(){
+            return Eclipse._stationReading('si', rDate(106).toISOString())
+                .then(reading => assert.equal(reading.id, 4));
         });
 
-        it('_stationReading should get the proper update from history 2', function(done){
-            return Eclipse._stationReading('si', rDate(110).toISOString()).then(reading => {
-                assert.equal(reading.id, 2);
-                done();
-            }).catch(done);
+        it('_stationReading should get the proper update from history 2', function(){
+            return Eclipse._stationReading('si', rDate(110).toISOString())
+                .then(reading => assert.equal(reading.id, 2));
         });
 
-        it('_stationReadings should handle only startTime', function(done){
-            return Eclipse._stationReadings('si',rDate(105).toISOString()).then(readings => {
-                assert.deepEqual(readings.map(r=>r.id),[1,0,2,4]);
-                done();
-            }).catch(done);
+        it('_stationReadings should handle only startTime', function(){
+            return Eclipse._stationReadings('si',rDate(105).toISOString())
+                .then(readings => assert.deepEqual(readings.map(r=>r.id),[1,0,2,4]));
         });
 
-        it('_stationReadings should handle only endTime', function(done){
-            return Eclipse._stationReadings('si',null, rDate(106).toISOString()).then(readings => {
-                assert.deepEqual(readings.map(r=>r.id),[4,6,3]);
-                done();
-            }).catch(done);
+        it('_stationReadings should handle only endTime', function(){
+            return Eclipse._stationReadings('si',null, rDate(106).toISOString())
+                .then(readings => assert.deepEqual(readings.map(r=>r.id),[4,6,3]));
         });
 
-        it('_stationReadings should handle a range', function(done){
-            return Eclipse._stationReadings('si', rDate(109).toISOString(), rDate(130).toISOString()).then(readings => {
-                assert.deepEqual(readings.map(r=>r.id),[1,0,2]);
-                done();
-            }).catch(done);
+        it('_stationReadings should handle a range', function(){
+            return Eclipse._stationReadings('si', rDate(109).toISOString(), rDate(130).toISOString())
+                .then(readings => assert.deepEqual(readings.map(r=>r.id),[1,0,2]));
         });
 
         after(function(){

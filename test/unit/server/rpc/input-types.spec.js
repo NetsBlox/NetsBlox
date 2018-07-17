@@ -84,6 +84,55 @@ describe('RPC Input Types', function() {
 
         });
 
+        describe('BoundedNumber', function() {
+            const type = 'BoundedNumber';
+
+            it('should include minimum value', () => {
+                let rawInput = '10';
+                typesParser[type](rawInput, 10, 180);
+            });
+
+            it('should not throw if within range', () => {
+                let rawInput = '-151';
+                typesParser[type](rawInput, -180, 180);
+            });
+
+            it('should return Number (not string)', () => {
+                const input = '10';
+                const value = typesParser[type](input, 0, 21);
+                assert.equal(typeof value, 'number');
+            });
+
+            it('should throw if less than min', () => {
+                let rawInput = '-181';
+                assert.throws(() => typesParser[type](rawInput, -180, 180), /-180/);
+            });
+
+            it('should throw if more than max', () => {
+                let rawInput = '181';
+                assert.throws(() => typesParser[type](rawInput, '-180', '180'), /180/);
+            });
+
+            it('should throw if below minimum (w/o max)', () => {
+                let rawInput = '-181';
+                assert.throws(() => typesParser[type](rawInput, '-180'), /180/);
+            });
+
+            it('should not print NaN in error if below minimum (w/o max)', () => {
+                let rawInput = '-181';
+                try {
+                    typesParser[type](rawInput, '-180');
+                } catch (err) {
+                    assert(!err.message.includes('NaN'));
+                }
+            });
+
+            it('should accept if above minimum (w/o max)', () => {
+                const rawInput = '10';
+                typesParser[type](rawInput, '9');
+            });
+        });
+
     });
 
 });

@@ -53,4 +53,29 @@ describe('users', function() {
                 .catch(done);
         });
     });
+
+    describe('setPassword', function() {
+        it('should update user password in memory', function(done) {
+            let firstHash = null;
+            Users.get('brian')
+                .then(user => {
+                    firstHash = user.hash;
+                    return user.setPassword('someNewPasswordForMemoryTest')
+                        .then(() => assert.notEqual(firstHash, user.hash));
+                })
+                .nodeify(done);
+        });
+
+        it('should update user password in database', function(done) {
+            let firstHash = null;
+            Users.get('brian')
+                .then(user => {
+                    firstHash = user.hash;
+                    return user.setPassword('someNewPasswordForDBTest');
+                })
+                .then(() => Users.get('brian'))
+                .then(user => assert.notEqual(firstHash, user.hash))
+                .nodeify(done);
+        });
+    });
 });

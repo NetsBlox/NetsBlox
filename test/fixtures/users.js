@@ -14,7 +14,8 @@ function addDefaults(user) {
 
 module.exports = [
     {
-        username: 'brian'
+        username: 'brian',
+        password: 'secretPassword'
     },
     {
         username: 'hamid'

@@ -1,11 +1,14 @@
-let TrendsRPC = {};
+/**
+ * The GoogleTrends Service provides access to the current Google trends.
+ * For more information, check out https://trends.google.com/trends/.
+ * @service
+ */
+const TrendsRPC = {};
 
-var debug = require('debug'),
-    request = require('request'),
-    googleTrends = require('google-trends-api'),
-    error = debug('netsblox:rpc:trends:error'),
-    CacheManager = require('cache-manager'),
-    trace = debug('netsblox:rpc:trends:trace');
+const logger = require('../utils/logger')('google-trends');
+const request = require('request');
+const googleTrends = require('google-trends-api');
+const CacheManager = require('cache-manager');
 
 var countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
@@ -17,14 +20,14 @@ TrendsRPC.byLocation = function (latitude, longitude) {
     let url = `${countryInfoBaseUrl}radius=${50}&lat=${latitude}&lng=${longitude}&username=${geoNamesUsername}`,
         response = this.response;
 
-    trace('Requesting country data from ', url);
+    logger.trace('Requesting country data from ', url);
     request(url, (err, res, body) => {
         if (err) {
-            error('Could not request country data', err);
+            logger.error('Could not request country data', err);
             return response.status(500).send('ERROR: ' + err);
         }
         let countryInfo = JSON.parse(body);
-        trace('detected country: ', countryInfo.countryName, countryInfo, 'long', longitude, 'lat', latitude);
+        logger.trace('detected country: ', countryInfo.countryName, countryInfo, 'long', longitude, 'lat', latitude);
         if (typeof countryInfo.countryCode != 'undefined') {
             // Improve: google does not use official country codes for trends see VN vs VE
             TrendsRPC.byCountryCode.call(this, countryInfo.countryCode);
@@ -44,24 +47,24 @@ TrendsRPC.byCountryCode = function (countryCode) {
     countryCode = countryCode.toUpperCase();
     cache.wrap(countryCode, cacheCallback => {
         // Get the trends -> not in cache!
-        trace('this request is not cached, requesting googleTrends for : ', countryCode);
+        logger.trace('this request is not cached, requesting googleTrends for : ', countryCode);
         googleTrends.hotTrends(countryCode)
             .then((trendsArr) => {
                 return trendsArr.slice(0, 10);
             })
             .then((results) => {
-                trace(results);
+                logger.trace(results);
                 return cacheCallback(null, results);
             })
             .catch((err) => {
-                error(err);
+                logger.error(err);
                 return cacheCallback(null, `No trends available for ${countryCode}`);
             });
     }, (err, results) => {
         // Send the response to the user
-        trace('sending the response');
+        logger.trace('sending the response');
         response.json(results);
-        trace('Sent the response!');
+        logger.trace('Sent the response!');
     });
 
     return null;  // explicitly return null since async

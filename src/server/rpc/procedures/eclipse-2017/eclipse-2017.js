@@ -1,8 +1,13 @@
-const Logger = require('../../../logger'),
-    eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePath.js').center,
+/**
+ * The Eclipse2017 Service provides access to US weather data along the path of the Great American Eclipse.
+ * For more information about the eclipse, check out https://www.greatamericaneclipse.com/.
+ * @service
+ */
+
+const logger = require('../utils/logger')('eclipse-2017');
+const eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePath.js').center,
     rpcUtils = require('../utils'),
     stationUtils = require('./stations.js'),
-    logger = new Logger('netsblox:eclipse'),
     schedule = require('node-schedule'),
     { cronString } = require('./utils'),
     rpcStorage = require('../../storage');

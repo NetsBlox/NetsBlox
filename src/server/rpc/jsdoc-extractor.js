@@ -23,13 +23,8 @@ function simplify(metadata) {
         let simpleParam = {name, description};
         // if type is defined
         if (type) {
-            if (type.type === 'OptionalType') {
-                simpleParam.optional = true;
-                simpleParam.type = type.expression.name;
-            } else {
-                simpleParam.optional = false;
-                simpleParam.type = type.name;
-            }
+            simpleParam.type = new InputType(type);
+            simpleParam.optional = type.type === 'OptionalType';
         } else {
             simpleParam.type = null;
             logger.warn(`rpc ${fnName}, parameter ${name} is missing the type attribute`);
@@ -43,43 +38,70 @@ function simplify(metadata) {
 
     // find and simplify the return doc
     let returns = tags.find(tag => tag.title === 'returns');
-    if (returns) returns = {type: returns.type.name, description: returns.description};
+    if (returns) returns = {type: new InputType(returns.type), description: returns.description};
 
-
-    let simplified = {name: fnName, description, args, returns};
+    const isDeprecated = !!tags.find(tag => tag.title === 'deprecated');
+    let simplified = {
+        name: fnName,
+        deprecated: isDeprecated,
+        description,
+        args,
+        returns
+    };
     return simplified;
 }
 
-function parseSource(source, searchScope){
+function InputType(parsed) {
+    this.name = parsed.expression ? parsed.expression.name : parsed.name;
+    this.params = [];
+    if (parsed.type === 'TypeApplication') {
+        this.params = parsed.applications.map(param => param.value);
+    }
+}
+
+function parseSource(source, searchScope) {
     let lines = source.split(/\n/);
     let blocks = extractDocBlocks(source);
+
+
     blocks = blocks.map(block => {
         let src = block.lines.join('\n');
         block.parsed = doctrine.parse(src, {unwrap: true});
         return block;
     });
 
-    blocks = blocks.filter(block => {
-        let linesToSearch = lines.slice(block.endLine, block.endLine + searchScope);
-        let fnName;
-        // if @name is set just use that and save a few cycles
-        let nameTag = block.parsed.tags.find(tag => tag.title === 'name');
-        if (nameTag) {
-            fnName  = nameTag.name;
-            logger.info('fn name set through @name', fnName);
-        } else {
-            fnName = findFn(linesToSearch);
-            if (!fnName){
-                logger.warn(`can't associate ${block.lines} with any function. # Fix it at line ${block.beginLine}, column ${block.column}`);
-                return false;
-            }
-            block.parsed.tags.push({title: 'name', name: fnName, description: null});
-        }
-        block.fnName = fnName;
-        return true;
-    });
+    // Find the description
+    const description = blocks
+        .filter(block => block.parsed.tags.find(tag => tag.title === 'service'))
+        .map(block => block.parsed.description)
+        .pop();
 
-    return blocks;
+    const rpcDocs = blocks
+        .filter(block => !block.parsed.tags.find(tag => tag.title === 'service'))
+        .filter(block => {
+            let linesToSearch = lines.slice(block.endLine, block.endLine + searchScope);
+            let fnName;
+            // if @name is set just use that and save a few cycles
+            let nameTag = block.parsed.tags.find(tag => tag.title === 'name');
+            if (nameTag) {
+                fnName  = nameTag.name;
+                logger.info('fn name set through @name', fnName);
+            } else {
+                fnName = findFn(linesToSearch);
+                if (!fnName){
+                    logger.warn(`can't associate ${block.lines} with any function. # Fix it at line ${block.beginLine}, column ${block.column}`);
+                    return false;
+                }
+                block.parsed.tags.push({title: 'name', name: fnName, description: null});
+            }
+            block.fnName = fnName;
+            return true;
+        });
+
+    return {
+        description,
+        rpcs: rpcDocs
+    };
 }
 
 // returns the first function found the a line or an array of lines
@@ -194,23 +216,25 @@ function mkextract () {
 }
 
 function parseService(path, scope) {
-    return parseSync(path, scope)
-        .map(md => {
-            md.parsed = simplify(md.parsed);
-            return md;
-        });
+    const serviceDocs = parseSync(path, scope);
+    serviceDocs.rpcs = serviceDocs.rpcs.map(md => {
+        md.parsed = simplify(md.parsed);
+        return md;
+    });
+    return serviceDocs;
 }
 
 // netsblox docs container
 let Docs = function(servicePath) {
-    this._docs = parseService(servicePath).map(doc => doc.parsed);
+    const serviceDocs = parseService(servicePath);
+    this.description = serviceDocs.description;
+    this.rpcs = serviceDocs.rpcs.map(doc => doc.parsed);
 };
 
 // get a doc for an action
 Docs.prototype.getDocFor = function(actionName) {
-    if (!this._docs || this._docs.length === 0) return undefined;
     // can preprocess and separate docs for different actions here;
-    let doc = this._docs.find(doc => doc.name === actionName);
+    let doc = this.rpcs.find(doc => doc.name === actionName);
     if (doc) return Object.assign({}, doc);
     return undefined;
 };

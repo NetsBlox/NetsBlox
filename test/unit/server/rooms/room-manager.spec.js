@@ -26,9 +26,7 @@ describe('room-manager', () => {
                     room = firstRoom;
                     return room.getProject().setName(newName);
                 })
-                .then(() => {
-                    return Rooms.getRoom(null, 'brian', newName)
-                })
+                .then(() => Rooms.getRoom(null, 'brian', newName))
                 .then(newRoom => assert(room === newRoom))
                 .nodeify(done);
         });

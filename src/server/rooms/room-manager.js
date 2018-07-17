@@ -1,25 +1,21 @@
 'use strict';
 
 const ActiveRoom = require('./active-room');
-const utils = require('../server-utils');
-const Q = require('q');
+const _ = require('lodash');
 const Projects = require('../storage/projects');
+const Q = require('q');
 
 var RoomManager = function() {
     var self = this;
     this.rooms = {};
 
     ActiveRoom.prototype.onUuidChange = function(oldUuid) {
-        var room = this;
+        // This is no longer necessary since the ids are now permanent
+        //var room = this;
         // update the rooms dictionary
-        self._logger.trace(`moving record from ${oldUuid} to ${room.uuid}`);
-        self.rooms[room.uuid] = room;
-        delete self.rooms[oldUuid];
-    };
-
-    ActiveRoom.prototype.destroy = function() {
-        self._logger.trace(`Removing room ${this.uuid}`);
-        delete self.rooms[this.uuid];
+        //self._logger.trace(`moving record from ${oldUuid} to ${room.uuid}`);
+        //self.rooms[room.uuid] = room;
+        //delete self.rooms[oldUuid];
     };
 
     ActiveRoom.prototype.check = function() {
@@ -27,8 +23,7 @@ var RoomManager = function() {
     };
 
     ActiveRoom.prototype.getAllActiveFor = owner => {
-        return Object.keys(this.rooms).map(uuid => this.rooms[uuid])
-            .filter(room => room.owner === owner);
+        return _.values(this.rooms).filter(room => room.owner === owner);
 
     };
 };
@@ -52,81 +47,108 @@ RoomManager.prototype.forkRoom = function(room, socket) {
 
     // Create the new room
     newRoom = room.fork(this._logger, socket);
-    this.rooms[newRoom.uuid] = newRoom;
+
+    this.register(newRoom);
     socket.join(newRoom);
+};
+
+RoomManager.prototype.getProjectId = function(ownerId, name) {
+    return Projects.getProjectId(ownerId, name);
 };
 
 RoomManager.prototype.createRoom = function(socket, name, ownerId) {
     ownerId = ownerId || socket.username;
 
     this._logger.trace(`creating room ${name} for ${ownerId}`);
-    var uuid = utils.uuid(ownerId, name);
-    if (this.rooms[uuid]) {
-        this._logger.error('room already exists! (' + uuid + ')');
-    }
 
-    this.rooms[uuid] = new ActiveRoom(this._logger, name, ownerId);
-
-    return Projects.new(socket, this.rooms[uuid])
+    let room = new ActiveRoom(this._logger, name, ownerId);
+    return Projects.new(socket, room)
         .then(project => {
-            this.rooms[uuid].setStorage(project);
-            return this.rooms[uuid];
+            const id = project.getId();
+            if (this.rooms[id]) {
+                room = this.rooms[id];
+            } else {
+                room.setStorage(project);
+                this.register(room);
+            }
+
+            return room;
         });
 };
 
-RoomManager.prototype.isActiveRoom = function(uuid) {
-    return !!this.rooms[uuid];
+RoomManager.prototype.isActiveRoom = function(projectId) {
+    return !!this.rooms[projectId];
 };
 
-RoomManager.prototype.getExistingRoom = function(uuid) {
-    return Q(this.rooms[uuid]);
+RoomManager.prototype.getExistingRoom = function(owner, name) {
+    const allRooms = this.getActiveRooms();
+    return allRooms.find(room => room.owner === owner && room.name === name);
+};
+
+RoomManager.prototype.getExistingRoomById = function(projectId) {
+    return this.rooms[projectId];
 };
 
 RoomManager.prototype.getRoom = function(socket, ownerId, name) {
-    const uuid = utils.uuid(ownerId, name);
-    this._logger.trace(`getting project ${uuid} for ${ownerId}`);
+    const prettyName = `"${name}" for "${ownerId}"`;
+    this._logger.trace(`getting project ${prettyName}`);
 
-    if (!this.rooms[uuid]) {
-        this._logger.trace(`retrieving project ${uuid} for ${ownerId}`);
-        return this.rooms[uuid] = Projects.getProject(ownerId, name)
-            .then(project => {
-                if (!project) {
-                    this._logger.error(`No project found for ${uuid}`);
-                    // If no project is found, create a new project for the user
-                    return this.createRoom(socket, name, ownerId)
-                        .then(project => {
-                            this.rooms[uuid] = project;
-                            return project;
-                        });
-                }
-                this._logger.trace(`retrieving project ${uuid} from database`);
+    this._logger.trace(`retrieving project ${name} for ${ownerId}`);
+    return Projects.getProject(ownerId, name)
+        .then(project => {
+            if (!project) {
+                this._logger.error(`No project found for ${prettyName}`);
+                // If no project is found, create a new project for the user
+                return this.createRoom(socket, name, ownerId);
+            }
 
-                // Check for a room which already references the given project
-                return this.getActiveRooms([uuid])
-                    .then(rooms => rooms.find(room => room.getProjectId().equals(project._id)))
-                    .then(room => room || ActiveRoom.fromStore(this._logger, project));
+            return this.getRoomForProject(project);
+        });
+};
+
+RoomManager.prototype.getRoomForProject = function(project) {
+    const id = project.getId();
+    if (!this.rooms[id]) {  // create a room for the project
+        return ActiveRoom.fromStore(this._logger, project)
+            .then(room => {
+                if (this.rooms[id]) return this.rooms[id];
+                this.register(room);
+                return room;
             });
-
     } else {
-        return this.getExistingRoom(uuid);
+        return Q(this.rooms[id]);
     }
 };
 
-RoomManager.prototype.getActiveRooms = function(skip) {
-    skip = skip || [];
-    let uuids = Object.keys(this.rooms).filter(uuid => !skip.includes(uuid));
-    let rooms = uuids.map(uuid => this.rooms[uuid]);
-    return Q.all(rooms);
+RoomManager.prototype.register = function(room) {
+    const id = room.getProjectId();
+    const prettyName = `"${room.name}" for "${room.owner}"`;
+
+    if (!id) {
+        this._logger.error(`Could not register room - missing project id! (${prettyName})`);
+        return;
+    }
+    this.rooms[id] = room;
+};
+
+RoomManager.prototype.getActiveRoomIds = function() {
+    return Object.keys(this.rooms);
+};
+
+RoomManager.prototype.getActiveRooms = function() {
+    return _.values(this.rooms);
 };
 
 RoomManager.prototype.checkRoom = function(room) {
-    var uuid = utils.uuid(room.owner, room.name),
-        sockets = room.sockets();
+    const prettyName = `"${room.name}" for "${room.owner}"`;
+    const id = room.getProjectId();
+    const sockets = room.sockets();
 
-    this._logger.trace('Checking room ' + uuid + ' (' + sockets.length + ')');
+    this._logger.trace(`Checking room ${prettyName} (${sockets.length})`);
     if (sockets.length === 0) {
-        this._logger.trace('Removing empty room: ' + uuid);
-        room.close().then(() => delete this.rooms[uuid]);
+        this._logger.trace(`Removing empty room: ${prettyName}`);
+        delete this.rooms[id];
+        room.close();
     }
 };
 

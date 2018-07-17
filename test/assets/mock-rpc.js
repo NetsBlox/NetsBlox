@@ -14,9 +14,21 @@ var MockRPC = function(RPC, raw) {
 
     this.socket = new MockSocket();
     this.response = new MockResponse();
-    this._rpc.socket = this.socket;
-    this._rpc.response = this.response;
+    this.request = new MockRequest();
+
     this.rpcName = this._rpc.rpcName;
+};
+
+MockRPC.prototype.setRequester = function(uuid, username) {
+    this.socket = new MockSocket();
+    this._rpc.socket = this.socket;
+    this.socket.uuid = uuid || this.socket.uuid;
+    if (this.socket.uuid[0] !== '_') {
+        this.socket.uuid = '_' + this.socket.uuid;
+    }
+
+    this.socket.username = username;
+    this.socket.loggedIn = !!username;
 };
 
 MockRPC.prototype.createMethods = function(RPC) {
@@ -40,7 +52,16 @@ MockRPC.prototype.getArgumentsFor = function(fnName) {
 
 MockRPC.prototype.addMethod = function(name) {
     this[name] = function() {
-        return this._rpc[name].apply(this._rpc, arguments);
+        const ctx = Object.create(this._rpc);
+        ctx.socket = this.socket;
+        ctx.response = this.response;
+        ctx.request = this.request;
+        ctx.caller = {
+            clientId: this.socket.uuid,
+            username: this.socket.username,
+            projectId: 'testProject'
+        };
+        return this._rpc[name].apply(ctx, arguments);
     };
 };
 
@@ -72,6 +93,24 @@ MockSocket.prototype.reset = function() {
     this._room = {
         sockets: () => []
     };
+};
+
+const MockRequest = function() {
+    this._events = {};
+};
+
+MockRequest.prototype.abort = function() {
+    if (this._events.close) {
+        this._events.close();
+    }
+};
+
+MockRequest.prototype.on = function(event, fn) {
+    if (event === 'close') {
+        this._events.close = fn;
+    } else {
+        throw new Error('Unrecognized event listener:', event);
+    }
 };
 
 module.exports = MockRPC;

@@ -2,12 +2,12 @@
 'use strict';
 
 const isDevEnv = process.env.ENV !== 'production';
-var fs = require('fs'),
+var fs = require('fs-extra'),
     path = require('path'),
-    srcPath = path.join(__dirname, '..', 'src', 'client');
+    srcPath = path.join(__dirname, '..', 'src', 'browser');
 
 // Get the given js files
-var devHtml = fs.readFileSync(path.join(srcPath, 'netsblox-dev.html'), 'utf8'),
+var devHtml = fs.readFileSync(path.join(srcPath, 'index.dev.html'), 'utf8'),
     re = /text\/javascript" src="(.*)">/,
     match = devHtml.match(re),
     srcFiles = [];
@@ -38,10 +38,17 @@ if (isDevEnv) {  // don't minify in dev
 } else {
     console.log('dev src length:', src.length);
 
-    final_code = ugly.minify(srcFiles, {outSourceMap: path.join(srcPath, 'netsblox-build.js.map')}).code;
+    const result = ugly.minify(src);
+    final_code = result.code;
+    if (result.error) {
+        throw result.error;
+    }
     console.log('output length:', final_code.length);
     console.log('compression ratio:', 1-(final_code.length/src.length));
 }
 
-fs.writeFileSync(path.join(srcPath, 'dist', 'netsblox-build.js'), final_code);
+const outputPath = path.join(srcPath, 'dist', 'app.min.js');
+fs.ensureDir(path.dirname(outputPath))
+    .then(() => fs.writeFileSync(outputPath, final_code))
+    .catch(err => console.error(err));
 /* eslint-enable no-console */

@@ -21,7 +21,7 @@ const serverUtils = reqSrc('server-utils');
 const Projects = reqSrc('storage/projects');
 
 (function() {
-    var clientDir = path.join(PROJECT_ROOT, 'src', 'client', 'Snap--Build-Your-Own-Blocks'),
+    var clientDir = path.join(PROJECT_ROOT, 'src', 'browser'),
         srcFiles = ['morphic.js', 'xml.js', 'store.js', 'actions.js'],
         src;
 
@@ -47,7 +47,9 @@ const Projects = reqSrc('storage/projects');
     src = [
         'modules = {};',
         'window = {location:{}};',
+        'var CLIENT_ID, SERVER_URL;',
         'var SnapActions;',
+        'var SnapCloud = {};',
         src,
         'global.Client = global.Client || {};',
         'global.Client.XML_Serializer = XML_Serializer;',
@@ -85,33 +87,41 @@ const createSocket = function(username) {
 const createRoom = function(config) {
     // Get the room and attach a project
     const room = new ActiveRoom(logger, config.name, config.owner);
+    let attachProject = Q(room);
     
-    Object.keys(config.roles).forEach(name => {
-        config.roles[name] = config.roles[name] || [];
-        room.silentCreateRole(name);
-        config.roles[name].forEach(username => {
-            const socket = createSocket(username);
-            
-            room.silentAdd(socket, name);
-        });
-    });
-
-    const owner = room.getOwnerSockets()[0];
-    
-    //  Add response capabilities
-    room.sockets().forEach(socket => {
-        socket._socket.addResponse('project-request', sendEmptyRole.bind(socket));
-    });
-    
-    if (owner) {
-        return Projects.new(owner, room)
-            .then(project => {
-                room.setStorage(project);
-                return room;
-            });
-    } else {  // don't add a project if not occupied
-        return Q(room);
+    if (config.owner) {
+        const socket = createSocket(config.owner);
+        attachProject = Projects.new(socket, room)
+            .then(project => room.setStorage(project));
     }
+
+    return attachProject
+        .then(() => {
+            const roleNames = Object.keys(config.roles);
+            const createRoles = roleNames.reduce((promise, name) => {
+                config.roles[name] = config.roles[name] || [];
+                return promise
+                    .then(() => room.silentCreateRole(name))
+                    .then(() => {
+                        const usernames = config.roles[name];
+                        const addSockets = usernames.map(username => {
+                            const socket = createSocket(username);
+                            return room.silentAdd(socket, name);
+                        });
+                        return Q.all(addSockets);
+                    });
+            }, Q());
+
+            return createRoles;
+        })
+        .then(() => {
+            //  Add response capabilities
+            room.sockets().forEach(socket => {
+                socket._socket.addResponse('project-request', sendEmptyRole.bind(socket));
+            });
+
+            return room;
+        });
 };
 
 const sendEmptyRole = function(msg) {
@@ -154,14 +164,7 @@ const reset = function() {
 
     return connect()
         .then(_db => db = _db)
-        .then(() => db.collection('groups').drop())
-        .catch(() => db)
-        .then(() => db.collection('projects').drop())
-        .catch(() => db)
-        .then(() => db.collection('users').drop())
-        .catch(() => db)
-        .then(() => db.collection('project-actions').drop())
-        .catch(() => db)
+        .then(() => db.dropDatabase())
         .then(() => fixtures.init(storage))
         .then(() => logger.info('Finished loading test fixtures!'))
         .then(() => storage._db);

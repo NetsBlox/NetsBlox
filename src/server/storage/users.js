@@ -33,6 +33,15 @@
             delete this.password;
         }
 
+        setPassword(password) {
+            // Set the password field...
+            const newHash = hash(password);
+            const query = {$set: {hash: newHash}};
+
+            this.hash = newHash;
+            return this._db.update(this.getStorageId(), query);
+        }
+
         getProject(name) {
             this._logger.trace(`Getting project ${name} for ${this.username}`);
             return Projects.getProject(this.username, name)
@@ -101,6 +110,29 @@
             this.save();
         }
 
+        getNewNameFor(name, projectId) {
+            var nameExists = {},
+                i = 2,
+                basename;
+
+            return this.getAllRawProjects()
+                .then(projects => {
+                    projects.forEach(project => {
+                        const id = project._id.toString();
+                        if (id !== projectId) {
+                            nameExists[project.name] = id;
+                        }
+                    });
+                    basename = basename || 'untitled';
+                    name = basename;
+                    while (nameExists[name]) {
+                        name = `${basename} (${i++})`;
+                    }
+
+                    return name;
+                });
+        }
+
         getNewName(name, takenNames) {
             var nameExists = {},
                 i = 2,
@@ -124,12 +156,11 @@
 
         _emailTmpPassword(password) {
             mailer.sendMail({
-                from: 'no-reply@netsblox.com',
                 to: this.email,
                 subject: 'Temporary Password',
-                markdown: 'Hello '+this.username+',\nYour NetsBlox password has been '+
+                html: '<p>Hello '+this.username+',<br/><br/>Your NetsBlox password has been '+
                     'temporarily set to '+password+'. Please change it after '+
-                    'logging in.'
+                    'logging in.</p>'
             });
         }
     }
@@ -141,7 +172,7 @@
 
     UserStorage.get = function (username) {
         // Retrieve the user
-        return collection.findOne({username})
+        return Q(collection.findOne({username}))
             .then(data => {
                 let user = null;
                 if (data) {

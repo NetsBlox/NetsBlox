@@ -6,6 +6,7 @@ var server,
     jwt = require('jsonwebtoken'),
     SocketManager = require('../socket-manager'),
     logger;
+const Q = require('q');
 
 var hasSocket = function(req, res, next) {
     var socketId = (req.body && req.body.socketId) ||
@@ -30,6 +31,16 @@ var noCache = function(req, res, next) {
 };
 
 // Access control and auth
+var trySetUser = function(req, res, cb, skipRefresh) {
+    tryLogIn(req, res, (err, loggedIn) => {
+        if (loggedIn) {
+            setUser(req, res, () => cb(null, true));
+        } else {
+            cb(null, false);
+        }
+    }, skipRefresh);
+};
+
 var tryLogIn = function(req, res, cb, skipRefresh) {
     var cookie = req.cookies[COOKIE_ID];
 
@@ -50,7 +61,6 @@ var tryLogIn = function(req, res, cb, skipRefresh) {
             return cb(null, true);
         });
     } else {
-        logger.error(`User is not logged in! (${req.get('User-Agent')})`);
         return cb(null, false);
     }
 };
@@ -109,7 +119,14 @@ var Session = function(res) {
 
 Session.prototype.destroy = function() {
     // TODO: Change this to a blacklist
-    this._res.clearCookie(COOKIE_ID);
+    const options = {
+        httpOnly: true,
+        expires: new Date(0)
+    };
+
+    if (process.env.HOST !== undefined) options.domain = process.env.HOST;
+
+    this._res.cookie(COOKIE_ID, '', options);
 };
 
 // Helpers
@@ -156,7 +173,14 @@ let isGroupOwner = function(req, res, next) {
 
 
 var setUsername = function(req, res, cb) {
-    return tryLogIn(req, res, cb, true);
+    let result = null;
+    if (arguments.length === 2) {
+        let deferred = Q.defer();
+        cb = deferred.resolve;
+        result = deferred.promise;
+    }
+    tryLogIn(req, res, cb, true);
+    return result;
 };
 
 module.exports = {
@@ -164,6 +188,7 @@ module.exports = {
     noCache,
     isLoggedIn,
     tryLogIn,
+    trySetUser,
     saveLogin,
     loadUser,
     setUser,

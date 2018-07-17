@@ -9,8 +9,20 @@ Messages.init = (_logger, db) => {
     collection = db.collection('messages');
 };
 
-Messages.get = projectId => {
-    return collection.find({srcProjectId: projectId})
+Messages.get = (projectId, start, end) => {
+    start = start || 0;
+    end = end || Date.now();
+
+    let query = {
+        srcProjectId: projectId,
+        $and: [
+            {time: {$gte: start}},
+            {time: {$lte: end}}
+        ]
+    };
+
+    logger.trace(`Getting messages for ${projectId} btwn ${new Date(start)} and ${new Date(end)}`);
+    return collection.find(query)
         .limit(Messages.MAX_MESSAGE_COUNT)
         .toArray();
 };

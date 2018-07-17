@@ -1,7 +1,7 @@
 (function(UserActionData) {
     var Q = require('q'),
         logger,
-        blob = require('./blob-storage'),
+        blob = require('./blob'),
         collection;
 
     UserActionData.init = function(_logger, db) {

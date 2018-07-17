@@ -1,13 +1,18 @@
+/**
+ * The Twitter Service provides access to real-time and historical stock price data.
+ * For more information, check out https://twitter.com.
+ *
+ * Terms of use: https://twitter.com/en/tos
+ * @service
+ */
 // This will use the Twitter API to allow the client to execute certain Twitter functions within NetsBlox
 
 'use strict';
 
-var debug = require('debug'),
-    error = debug('netsblox:rpc:twitter:error'),
-    trace = debug('netsblox:rpc:twitter:trace'),
-    request = require('request'),
-    baseURL = 'https://api.twitter.com/1.1/',
-    KEY = process.env.TWITTER_BEARER_TOKEN;
+const logger = require('../utils/logger')('twitter');
+const request = require('request');
+const baseURL = 'https://api.twitter.com/1.1/';
+var KEY = process.env.TWITTER_BEARER_TOKEN;
 
 // make sure key starts with bearer
 if ( KEY && !KEY.startsWith('Bearer ')) KEY = 'Bearer ' + KEY;
@@ -50,7 +55,7 @@ module.exports = {
 
         // ensure valid parameters
         if (screenName == '' || screenName == undefined || count == '' || count == undefined || count <= 0) {
-            trace('Enter valid parameters...');
+            logger.trace('Enter valid parameters...');
             return 'Missing screenName or count';
         }
 
@@ -96,7 +101,7 @@ module.exports = {
 
         // ensure valid parameter
         if (screenName == '' || screenName == undefined) {
-            trace('Enter a valid screen name...');
+            logger.trace('Enter a valid screen name...');
             return 'Missing screenName';
         }
 
@@ -121,7 +126,7 @@ module.exports = {
 
         // ensure valid parameter
         if (screenName == '' || screenName == undefined) {
-            trace('Enter a valid screen name...');
+            logger.trace('Enter a valid screen name...');
             return 'Missing screenName';
         }
 
@@ -146,7 +151,7 @@ module.exports = {
 
         // ensure valid parameters
         if (keyword == '' || keyword == undefined || count == '' || count == undefined || count <= 0) {
-            trace('Enter valid parameters...');
+            logger.trace('Enter valid parameters...');
             return 'KEYWORD and COUNT required';
         }
 
@@ -190,9 +195,9 @@ module.exports = {
         options.url = baseURL + 'statuses/user_timeline.json?';
 
         // ensure valid parameter
-        trace(`getting the average number of daily tweets for ${screenName}`);
+        logger.trace(`getting the average number of daily tweets for ${screenName}`);
         if (screenName == '' || screenName == undefined) {
-            trace('Enter valid parameters...');
+            logger.trace('Enter valid parameters...');
             return 'Missing screenName';
         }
 
@@ -207,7 +212,7 @@ module.exports = {
                 var diffDays = Math.round(Math.abs((oldestDate.getTime() - dateToday.getTime())/(oneDay)));
                 return response.json(body.length / diffDays);
             } catch (err) {
-                error(err);
+                logger.error(err);
                 return response.send('Could not retrieve the average number of daily tweets');
             }
         });
@@ -224,7 +229,7 @@ module.exports = {
 
         // ensure valid parameters
         if (screenName == '' || screenName == undefined || count == '' || count == undefined || count <= 0) {
-            trace('Enter valid parameters...');
+            logger.trace('Enter valid parameters...');
             return 'screenName and count are required';
         }
     
@@ -264,7 +269,7 @@ module.exports = {
 
         // ensure valid parameter
         if (screenName == '' || screenName == undefined) {
-            trace('Enter valid parameters...');
+            logger.trace('Enter valid parameters...');
             return 'Missing screenName';
         }
 

@@ -13,7 +13,7 @@ addons:
 services:
     - mongodb
 node_js:
-- '6.5.0'
+- '8.11.2'
 install:
 - npm install
 before_script:

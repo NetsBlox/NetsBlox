@@ -1,14 +1,16 @@
-// This will use the Bing traffic API to retrieve a list of traffic incidents and send
-// a message to the user with the data
+/**
+ * The Traffic Service provides access to real-time traffic data using the Bing Traffic API.
+ * For more information, check out https://msdn.microsoft.com/en-us/library/hh441725.aspx
+ * @service
+ */
 
 'use strict';
 
-var debug = require('debug'),
-    trace = debug('netsblox:rpc:traffic:trace'),
-    API_KEY = process.env.BING_TRAFFIC_KEY,
-    request = require('request'),
-    baseUrl = 'http://dev.virtualearth.net/REST/v1/Traffic/Incidents/',
-    msgs = [];
+const logger = require('../utils/logger')('traffic');
+const API_KEY = process.env.BING_TRAFFIC_KEY;
+const request = require('request');
+const baseUrl = 'http://dev.virtualearth.net/REST/v1/Traffic/Incidents/';
+let msgs = [];
 
 // Helper function to send the messages to the client
 var sendNext = function(socket) {
@@ -31,7 +33,7 @@ var sendNext = function(socket) {
 };
 
 if (!process.env.BING_TRAFFIC_KEY) {
-    trace('Env variable BING_TRAFFIC_KEY is not set thus the traffic service is disabled.');
+    logger.trace('Env variable BING_TRAFFIC_KEY is not set thus the traffic service is disabled.');
 }else{
     module.exports = {
 
@@ -43,23 +45,23 @@ if (!process.env.BING_TRAFFIC_KEY) {
                 url = baseUrl + southLatitude + ',' + westLongitude + ',' + northLatitude +
                     ',' + eastLongitude + '?key=' + API_KEY;
 
-            trace(`Requesting traffic accidents in ${westLongitude},${northLatitude},${eastLongitude},${southLatitude}`);
+            logger.trace(`Requesting traffic accidents in ${westLongitude},${northLatitude},${eastLongitude},${southLatitude}`);
             request(url, (err, res, body) => {
 
                 if (err) {
-                    trace('Error:' + err);
+                    logger.trace('Error:' + err);
                     return response.send('Could not access 3rd party API');
                 }
 
                 try {
                     body = JSON.parse(body);
                 } catch(e) {
-                    trace('Non-JSON data...');
+                    logger.trace('Non-JSON data...');
                     return response.send('Bad API Result: ' + body);
                 }
 
                 if (body.statusCode == 400) {
-                    trace('Invalid parameters...');
+                    logger.trace('Invalid parameters...');
                     return response.send('The area is too big! Try zooming in more.');
                 }
 

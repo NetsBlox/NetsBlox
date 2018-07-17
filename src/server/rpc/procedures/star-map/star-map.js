@@ -1,13 +1,17 @@
+/**
+ * The StarMap Service provides access to astronomy data using Sloan Digital Sky Survey.
+ * For more information, check out http://skyserver.sdss.org/dr14/en/home.aspx
+ *
+ * @service
+ */
 // This is the Sky Map RPC. It wraps the web API of the Sloan Digital Sky Survey.
 
 'use strict';
 
-var debug = require('debug'),
-    request = require('request'),    
-    CacheManager = require('cache-manager'),   
-    cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity}),
-    info = debug('netsblox:rpc:star-map:info'),
-    trace = debug('netsblox:rpc:star-map:trace');
+const logger = require('../utils/logger')('star-map');
+const request = require('request');
+const CacheManager = require('cache-manager');
+const cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity});
 
 
 // Retrieving static images
@@ -27,7 +31,7 @@ module.exports = {
         var rsp = this.response;
         var queryUrl = `http://skyserver.sdss.org/dr13/en/tools/Resolver.ashx?name=${name}`;
 
-        trace(`Querying object by name: ${name}`);
+        logger.trace(`Querying object by name: ${name}`);
 
         request.get(queryUrl, function (err, res) {
             
@@ -38,13 +42,13 @@ module.exports = {
             if(lines.length < 3) {
                 rsp.status(400).send('Not found.');
             } else {
-                trace(lines);
+                logger.trace(lines);
                 var objName = lines[0].split(':')[1].trim();
                 var ra = lines[1].split(':')[1].trim();
                 var dec = lines[2].split(':')[1].trim();
                 ra = parseFloat(ra);
                 dec = parseFloat(dec);
-                trace(`Found ${objName} at ra=${ra} dec=${dec}`);
+                logger.trace(`Found ${objName} at ra=${ra} dec=${dec}`);
                 rsp.status(200).json([ra, dec]);
             }
         });
@@ -70,8 +74,8 @@ module.exports = {
             height = parseFloat(height);
         }
 
-        info(`width = ${width}`);
-        info(`height = ${height}`);
+        logger.info(`width = ${width}`);
+        logger.info(`height = ${height}`);
 
 
         if(isNaN(scale) || scale>32.0 || scale < 1.0/128.0) {
@@ -88,12 +92,12 @@ module.exports = {
         } else {
             url = baseUrl+`/ImgCutout/getjpeg?ra=${right_ascension}&dec=${declination}&width=${width}&height=${height}&scale=${scale}&opt=${options}`;
 
-            info(`Getting image from URL ${url}`);
+            logger.info(`Getting image from URL ${url}`);
 
             // Check the cache
             cache.wrap(url, function(cacheCallback) {
                 // Get the image -> not in cache!
-                trace('Requesting new image from SDSS!');
+                logger.trace('Requesting new image from SDSS!');
                 var response = request.get(url);
                 delete response.headers['cache-control'];
 
@@ -107,7 +111,7 @@ module.exports = {
                 });
             }, function(err, imageBuffer) {
                 // Send the response to the user
-                info('Sending the response!');
+                logger.info('Sending the response!');
                 // Set the headers
                 rsp.set('cache-control', 'private, no-store, max-age=0');
                 rsp.set('content-type', 'image/jpeg');
@@ -115,7 +119,7 @@ module.exports = {
                 rsp.set('connection', 'close');
 
                 rsp.status(200).send(imageBuffer);
-                info('Sent the response!');
+                logger.info('Sent the response!');
             });
         }
 

@@ -1,29 +1,27 @@
-// This is the ConnectN RPC. It will maintain the game board and can be queried
-// for win/tie/ongoing as well as turn
+/**
+ * The ConnectN Service provides helpers for building games like Connect-4 and Tic-Tac-Toe.
+ *
+ * @service
+ */
 
 'use strict';
 
-var debug = require('debug'),
-    log = debug('netsblox:rpc:connect-n:log'),
-    trace = debug('netsblox:rpc:connect-n:trace'),
-    Constants = require('../../../../common/constants'),
-    info = debug('netsblox:rpc:connect-n:info');
+const logger = require('../utils/logger')('connect-n');
+const Constants = require('../../../../common/constants');
 
-/**
- * ConnectN - This constructor is called on the first request to an RPC
- * from a given room
- *
- * @constructor
- * @return {undefined}
- */
-var ConnectN = function() {
+const ConnectN = function() {
     this._state = {};
     this._state.board = ConnectN.getNewBoard();
     this._state._winner = null;
     this._state.lastMove = null;
 };
 
-// Actions
+/**
+ * Create a new ConnectN game
+ * @param {Number=} row The number of rows on the game board
+ * @param {Number=} column The number of columns on the game board
+ * @param {Number=} numDotsToConnect The number of connected tiles required to win
+ */
 ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
     this._state.numRow = row || 3;
     this._state.numCol = column || 3;
@@ -38,7 +36,7 @@ ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
 
     this._state.numDotsToConnect = Math.min(Math.max(this._state.numRow, this._state.numCol), this._state.numDotsToConnect);
 
-    info(this.socket.role+' is clearing board and creating a new one with size: ', this._state.numRow, ', ', this._state.numCol);
+    logger.info(this.socket.role+' is clearing board and creating a new one with size: ', this._state.numRow, ', ', this._state.numCol);
     this._state.board = ConnectN.getNewBoard(this._state.numRow, this._state.numCol);
 
     this.socket._room.sockets()
@@ -58,10 +56,15 @@ ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
 
 
 
+/**
+ * Play at the given row, column to occupy the location.
+ * @param {Number} row The given row at which to move
+ * @param {Number} column The given column at which to move
+ */
 ConnectN.prototype.play = function(row, column) {
     // ...the game is still going
     if (this._state._winner) {
-        log('"'+roleId+'" is trying to play after the game is over');
+        logger.log('"'+roleId+'" is trying to play after the game is over');
         return 'The game is over!';
     }
 
@@ -71,7 +74,7 @@ ConnectN.prototype.play = function(row, column) {
 
     // ...it is the given role's turn
     if (this._state.lastMove === roleId) {
-        log('"'+roleId+'" is trying to play twice in a row!');
+        logger.log('"'+roleId+'" is trying to play twice in a row!');
         return 'Trying to play twice in a row!';
     }
 
@@ -84,12 +87,12 @@ ConnectN.prototype.play = function(row, column) {
 
     // ...it's a valid position
     if (!isOnBoard) {
-        log('"'+roleId+'" is trying to play in an invalid position ('+row+','+column+')');
+        logger.log('"'+roleId+'" is trying to play in an invalid position ('+row+','+column+')');
         return 'Trying to play at invalid position!';
     }
 
 
-    trace('"'+roleId+'" is trying to play at '+row+','+column+'. Board is \n'+
+    logger.trace('"'+roleId+'" is trying to play at '+row+','+column+'. Board is \n'+
         this._state.board.map(function(row) {
             return row.map(t => t || '_').join(' ');
         })
@@ -100,7 +103,7 @@ ConnectN.prototype.play = function(row, column) {
     if (open) {
         this._state.board[row][column] = roleId;
         this._state._winner = ConnectN.getWinner(this._state.board, this._state.numDotsToConnect);
-        trace('"'+roleId+'" successfully played at '+row+','+column);
+        logger.trace('"'+roleId+'" successfully played at '+row+','+column);
         // Send the play message to everyone!
         this.socket._room.sockets()
             .forEach(socket => socket.send({
@@ -117,7 +120,7 @@ ConnectN.prototype.play = function(row, column) {
         this._state.lastMove = roleId;
 
 
-        trace('"'+roleId+'" is after playing at '+row+','+column+'. Board is \n'+
+        logger.trace('"'+roleId+'" is after playing at '+row+','+column+'. Board is \n'+
             this._state.board.map(function(row) {
                 return row.map(t => t || '_').join(' ');
             })
@@ -142,6 +145,9 @@ ConnectN.prototype.play = function(row, column) {
     return 'Play was not successful!';
 };
 
+/**
+ * Check if the current game is over.
+ */
 ConnectN.prototype.isGameOver = function() {
     var isOver = false;
 
@@ -153,17 +159,25 @@ ConnectN.prototype.isGameOver = function() {
     isOver = isOver || isDraw;
     if(isDraw)
         this._state._winner = 'DRAW';
-    log('isGameOver: ' + isOver + ' (' + this._state._winner + ')');
+    logger.log('isGameOver: ' + isOver + ' (' + this._state._winner + ')');
     return isOver;
 };
 
-// Helper functions
 /**
- * Get the winner from the given board layout.
- *
- * @param board
- * @return {String} winner
+ * Check if every position on the current board is occupied.
  */
+ConnectN.prototype.isFullBoard = function() {
+    for (var i = this._state.board.length; i--;) {
+        for (var j = this._state.board[i].length; j--;) {
+            if (this._state.board[i][j] === null) {
+                return false;
+            }
+        }
+    }
+    return true;
+};
+
+// Helper functions
 ConnectN.getWinner = function(board, numDotsToConnect) {
     var possibleWinners = [];
     // Check for horizontal wins
@@ -207,17 +221,6 @@ ConnectN.rotateBoard = function(board) {
         }
     }
     return rotatedBoard;
-};
-
-ConnectN.prototype.isFullBoard = function() {
-    for (var i = this._state.board.length; i--;) {
-        for (var j = this._state.board[i].length; j--;) {
-            if (this._state.board[i][j] === null) {
-                return false;
-            }
-        }
-    }
-    return true;
 };
 
 ConnectN.getDiagonalWinner = function(board, numDotsToConnect) {

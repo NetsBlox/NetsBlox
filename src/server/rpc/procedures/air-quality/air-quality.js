@@ -1,19 +1,20 @@
+/**
+ * The AirQuality Service provides access to real-time air quality data using the AirNowAPI.
+ * For more information, check out https://docs.airnowapi.org/.
+ * @service
+ */
+
 // This will use the AirNowAPI to get air quality given a latitude and longitude.
 // If we start to run out of API requests, they have the entire dataset available
 // for download online.
-//
-// This is a static rpc collection. That is, it does not maintain state and is 
-// shared across groups
 'use strict';
 
-var debug = require('debug'),
-    error = debug('netsblox:rpc:air-quality:error'),
-    trace = debug('netsblox:rpc:air-quality:trace'),
-    API_KEY = process.env.AIR_NOW_KEY,
-    path = require('path'),
-    fs = require('fs'),
-    geolib = require('geolib'),
-    request = require('request');
+const logger = require('../utils/logger')('air-quality');
+const API_KEY = process.env.AIR_NOW_KEY;
+const path = require('path');
+const fs = require('fs');
+const geolib = require('geolib');
+const request = require('request');
 
 var baseUrl = 'http://www.airnowapi.org/aq/forecast/zipCode/?format=application/' + 
         'json&API_KEY=' + API_KEY,
@@ -43,7 +44,7 @@ var getClosestReportingLocation = function(lat, lng) {
         city = reportingLocations[nearest.key].city,
         state = reportingLocations[nearest.key].state,
         zipcode = reportingLocations[nearest.key].zipcode;
-    trace('Nearest reporting location is ' + city + ', ' + state);
+    logger.trace('Nearest reporting location is ' + city + ', ' + state);
     return zipcode;
 };
 
@@ -52,7 +53,7 @@ var qualityIndex = function(latitude, longitude) {
         nearest,
         url;
 
-    trace(`Requesting air quality at ${latitude}, ${longitude}`);
+    logger.trace(`Requesting air quality at ${latitude}, ${longitude}`);
     if (!latitude || !longitude) {
         return response.status(400).send('ERROR: missing latitude or longitude');
     }
@@ -60,7 +61,7 @@ var qualityIndex = function(latitude, longitude) {
     nearest = getClosestReportingLocation(latitude, longitude);
     url = baseUrl + '&zipCode=' + nearest;
 
-    trace('Requesting air quality at '+ nearest);
+    logger.trace('Requesting air quality at '+ nearest);
     
     request(url, (err, res, body) => {
         var aqi = -1,
@@ -70,11 +71,11 @@ var qualityIndex = function(latitude, longitude) {
             body = JSON.parse(body).shift();
             if (body && body.AQI) {
                 aqi = +body.AQI;
-                trace('Air quality at '+ nearest + ' is ' + aqi);
+                logger.trace('Air quality at '+ nearest + ' is ' + aqi);
             }
         } catch (e) {
             // Just send -1 if anything bad happens
-            error('Could not get air quality index: ', e);
+            logger.error('Could not get air quality index: ', e);
         }
 
         response.status(code).json(aqi);

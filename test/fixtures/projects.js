@@ -6,8 +6,6 @@
  *   collaborators: []
  *
  */
-const _ = require('lodash');
-const utils = require('../../src/server/server-utils');
 const fs = require('fs');
 const path = require('path');
 const PROJECT_DATA_DIR = path.join(__dirname, 'projects');
@@ -25,13 +23,7 @@ function loadProjectData(project) {
         return {
             ProjectName: name,
             SourceCode: src,
-            Media: media,
-            SourceSize: src.length,
-            MediaSize: media.length,
-            Thumbnail: utils.xml.thumbnail(src),
-            Updated: new Date(),
-            Public: false,
-            Notes: ''
+            Media: media
         };
     });
 

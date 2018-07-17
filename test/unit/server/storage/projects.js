@@ -1,5 +1,7 @@
 describe('projects', function() {
+    this.timeout(5000);
     const utils = require('../../../assets/utils');
+    const Q = require('q');
     const assert = require('assert');
     const Projects = utils.reqSrc('storage/projects');
     const PublicProjects = utils.reqSrc('storage/public-projects');
@@ -70,12 +72,17 @@ describe('projects', function() {
             });
     });
 
+    it('should get role by id', function(done) {
+        Projects.get('brian', 'MultiRoles')
+            .then(project => project.getRoleById('r1-ID'))
+            .then(role => assert(role))
+            .nodeify(done);
+    });
+
     it('should get role', function(done) {
         project.getRoleNames()
-            .then(names => console.log(names))
             .then(() => project.getRole('p1'))
             .then(role => {
-                console.log('role');
                 assert.equal(role.ProjectName, 'p1');
                 assert.notEqual(role.SourceCode.length, 128);
             })
@@ -93,6 +100,16 @@ describe('projects', function() {
                 done();
             })
             .catch(done);
+    });
+
+    it('should not change id on rename role', function(done) {
+        let roleId = null;
+        project.getRoleId('p1')
+            .then(id => roleId = id)
+            .then(() => project.renameRole('p1', 'newName'))
+            .then(() => project.getRoleId('newName'))
+            .then(id => assert.equal(id, roleId))
+            .nodeify(done);
     });
 
     it('should create cloned role', function(done) {
@@ -116,32 +133,47 @@ describe('projects', function() {
             .catch(done);
     });
 
-    it('should create copy if name changed after persist', function(done) {
-        project.persist()
-            .then(() => project.addCollaborator('spartacus'))
+    it('should update project name on room rename (inPlace)', function() {
+        return project.persist()
+            .then(() => project._room.changeName('name-changed', null, true))
             .then(() => {
-                project._room.name = 'name-changed';
-                return project.save();
+                assert.equal(project.name, 'name-changed');
+                return Projects.get(OWNER, PROJECT_NAME);
             })
+            .then(match => assert(!match));
+    });
+
+    it('should not create copy on room rename inPlace', function() {
+        return project.persist()
+            .then(() => project.addCollaborator('spartacus'))
+            .then(() => project._room.changeName('name-changed', null, true))
+            .then(() => project.getRawProject())
+            .then(data => {
+                assert.equal(data.name, 'name-changed');
+                assert(data.collaborators.includes('spartacus'));
+                return Projects.get(OWNER, PROJECT_NAME);
+            })
+            .then(match => assert(!match));
+    });
+
+    it('should create copy on room rename (!inPlace)', function() {
+        return project.persist()
+            .then(() => project.addCollaborator('spartacus'))
+            .then(() => project._room.changeName('name-changed'))
             .then(() => project.getRawProject())
             .then(data => {
                 assert(data.collaborators.includes('spartacus'));
                 return Projects.get(OWNER, PROJECT_NAME);
             })
-            .then(original => original.destroy())
-            .then(() => {
-                done();
-            })
-            .catch(done);
+            .then(original => original.destroy());
     });
 
-    it('should have the correct origin time', function(done) {
-        project.getRawProject()
-            .then(data => {
-                assert.equal(data.originTime, project.originTime);
-                done();
-            })
-            .catch(done);
+    it('should have the correct origin time', function() {
+        let project = null;
+        return Projects.get('brian', 'MultiRoles')
+            .then(result => project = result)
+            .then(() => project.getRawProject())
+            .then(data => assert.equal(data.originTime, project.originTime));
     });
 
     describe('deletion', function() {
@@ -173,17 +205,6 @@ describe('projects', function() {
                         done();
                     });
             });
-        });
-
-        it('should log on save when deleted but continue', function(done) {
-            let traceFn = project._logger.trace;  // mock this out for the test
-            project._logger.trace = msg => {
-                if (msg.includes('project has been deleted')) {
-                    done();
-                    project._logger.trace = traceFn;
-                }
-            };
-            project.save();
         });
     });
 
@@ -249,6 +270,52 @@ describe('projects', function() {
                 .then(() => project.getLastUpdatedRoleName())
                 .then(name => assert.equal(name, 'r1'))
                 .nodeify(done);
+        });
+    });
+
+    describe('execUpdate', function() {
+        let project = null;
+        before(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'MultiRoles'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should record the update time ', function() {
+            const startTime = new Date();
+            const newName = 'someNewName';
+            const query = {$set: {}};
+            query.$set.name = newName;
+
+            return project._execUpdate(query)
+                .then(() => project.getRawProject())
+                .then(json => {
+                    const {lastUpdatedAt} = json;
+                    assert(lastUpdatedAt >= startTime, 'last update time not recorded');
+                });
+        });
+    });
+
+    describe('removeRole', function() {
+        let project = null;
+        before(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'MultiRoles'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should remove role by name', function(done) {
+            project.removeRole('r1')
+                .then(() => project.getRoleNames())
+                .nodeify(done);
+        });
+
+        it('should reject promise if name doesn\'t exist', function(done) {
+            project.removeRole('r1000')
+                .then(() => project.getRoleNames())
+                .catch(() => done());
         });
     });
 
@@ -379,6 +446,7 @@ describe('projects', function() {
 
         it('should preserve the role id on setRawRole', function(done) {
             let firstId = null;
+            let content = null;
 
             project.getRawRole('role')
                 .then(role => {
@@ -394,6 +462,7 @@ describe('projects', function() {
         });
 
         it('should get diff role id for cloned role', function(done) {
+            let firstId = null;
             project.getRoleId('role')
                 .then(id => firstId = id)
                 .then(() => project.cloneRole('role', 'clonedRole'))
@@ -481,5 +550,157 @@ describe('projects', function() {
         });
     });
 
+    describe('getRecordStartTime', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
 
+        it('should not be recording messages by default', done => {
+            project.isRecordingMessages()
+                .then(recording => assert(!recording))
+                .nodeify(done);
+        });
+
+        it('should not be recording messages by default', done => {
+            project.isRecordingMessages()
+                .then(recording => assert(!recording))
+                .nodeify(done);
+        });
+    });
+
+    describe('getLatestRecordStartTime', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should have default startTime of -Infinity', done => {
+            project.getLatestRecordStartTime()
+                .then(time => assert.equal(time, -Infinity))
+                .nodeify(done);
+        });
+
+        it('should return latest time', done => {
+            const times = [1000, 1500, 1200];
+            Q.all(times.map(time => project.startRecordingMessages(`u${time}`, time)))
+                .then(() => project.getLatestRecordStartTime())
+                .then(time => assert.equal(time, 1500))
+                .nodeify(done);
+        });
+    });
+
+    describe('stopRecordingMessages', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should unset start time if matching', done => {
+            project.startRecordingMessages('test')
+                .then(time => project.stopRecordingMessages('test'))
+                .then(() => project.getLatestRecordStartTime())
+                .then(time => assert.equal(time, -Infinity))
+                .nodeify(done);
+        });
+
+        it('should remove (clean up) old start times', done => {
+            project.startRecordingMessages('test', 1000)
+                .then(() => project.startRecordingMessages())
+                .then(time => project.stopRecordingMessages('test', time))
+                .then(() => project.getRawProject())
+                .then(raw => assert(!raw.recordMessagesAfter.includes(1000)))
+                .nodeify(done);
+        });
+    });
+
+    describe('isRecordingMessages', function() {
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should be recording messages after starting recording', () => {
+            return project.startRecordingMessages('test')
+                .then(() => project.isRecordingMessages())
+                .then(recording => assert(recording));
+        });
+
+        it('should still record msgs while one person is recording', done => {
+            // Two people start recording
+            Q.all([
+                project.startRecordingMessages('p1'),
+                project.startRecordingMessages('p2')
+            ])
+                .then(() => project.stopRecordingMessages('p1'))
+                .then(() => project.isRecordingMessages())
+                .then(recording => assert(recording))
+                .nodeify(done);
+        });
+
+        it('should not be recording if timeout reached', done => {
+            project.startRecordingMessages('test', 10000)
+                .then(() => project.isRecordingMessages())
+                .then(recording => assert(!recording))
+                .nodeify(done);
+        });
+    });
+
+    describe('startRecordingMessages', function() {
+        let result = null;
+        beforeEach(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(proj => project = proj)
+                .then(() => project.startRecordingMessages('test'))
+                .then(res => result = res)
+                .nodeify(done);
+        });
+
+        it('should set the start time', done => {
+            project.getLatestRecordStartTime()
+                .then(time => assert(time) && assert.equal(time, result))
+                .nodeify(done);
+        });
+
+        it('should be recording messages', done => {
+            project.isRecordingMessages()
+                .then(recording => assert(recording))
+                .nodeify(done);
+        });
+    });
+
+    describe('archive', function() {
+        let archives, project;
+
+        before(done => {
+            utils.reset()
+                .then(db => archives = db.collection('project-archives'))
+                .then(() => Projects.get('brian', 'PublicProject'))
+                .then(result => project = result)
+                .then(() => project.archive())
+                .nodeify(done);
+        });
+
+        it('should store archive in project-archives', () => {
+            return project.getRawProject()
+                .then(result => Q(archives.findOne({projectId: result._id})))
+                .then(archive => assert(archive));
+        });
+
+        it('should not update archive on project edit', () => {
+            return project.setName('someNewName')
+                .then(() => project.getRawProject())
+                .then(result => Q(archives.findOne({projectId: result._id})))
+                .then(archive => assert.equal(archive.name, 'PublicProject'));
+        });
+    });
 });
