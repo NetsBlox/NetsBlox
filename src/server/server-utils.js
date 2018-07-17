@@ -42,10 +42,11 @@ var serialize = function(service) {
 var serializeRole = (role, project) => {
     const owner = encodeURIComponent(project.owner);
     const name = encodeURIComponent(project.name);
+    const roleId = encodeURIComponent(role.ID);
     const src = role.SourceCode ?
         `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
-    return `ProjectID=${project.getId()}&RoleID=${role.ID}&RoomName=${name}&` +
+    return `ProjectID=${project.getId()}&RoleID=${roleId}&RoomName=${name}&` +
         `Owner=${owner}&${serialize(R.omit(['SourceCode', 'Media'], role))}` +
         `&SourceCode=${src}`;
 };
