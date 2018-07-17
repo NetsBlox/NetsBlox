@@ -230,11 +230,20 @@ class NetsBloxSocket {
         sockets.forEach(socket => socket.send(msg));
     }
 
+    sendMessage (msgType, content) {
+        const msg = {
+            msgType,
+            content
+        };
+        return this.send(msg);
+    }
+
     send (msg, silent) {
         // Set the defaults
         msg.type = msg.type || 'message';
         if (msg.type === 'message') {
             msg.dstId = msg.dstId || Constants.EVERYONE;
+            msg.content = msg.content || {};
         }
 
         msg = JSON.stringify(msg);
