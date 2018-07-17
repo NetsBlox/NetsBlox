@@ -755,6 +755,7 @@ module.exports = [
         URL: 'projects/:owner',
         middleware: ['setUsername'],
         Handler: function(req, res) {
+            // If requesting for another user, only return the public projects
             const publicOnly = req.params.owner !== req.session.username;
             const username = req.params.owner;
 
@@ -763,7 +764,7 @@ module.exports = [
             return Users.get(username)
                 .then(user => {
                     if (!user) {
-                        return res.status(400).send(`Invalid username`);
+                        return res.status(400).send('Invalid username');
                     }
 
                     return user.getRawProjects()
