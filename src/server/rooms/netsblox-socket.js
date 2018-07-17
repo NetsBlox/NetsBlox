@@ -32,7 +32,6 @@ class NetsBloxSocket {
         this._logger = logger.fork(this.uuid);
 
         this.role = null;
-        this._room = null;  // TODO: REMOVE
         this.loggedIn = false;
         this.projectId = null;
         this.roleId = null;
@@ -59,51 +58,9 @@ class NetsBloxSocket {
         return hasRoom;
     }
 
-    getRoom () {
-        if (!this.hasRoom()) {
-            if (!this._onRoomJoinDeferred) {
-                this._onRoomJoinDeferred = Q.defer();
-            }
-            return this._onRoomJoinDeferred.promise;
-        } else {
-            return Q(this._room);  // TODO: REMOVE
-        }
-    }
-
-    getRoomSync () {  // TODO: REMOVE
-        return this._room;
-    }
-
-    updateRoom (isOwner) {
-        const room = this._room;
-        if (!room) return;
-
-        isOwner = isOwner || this.isOwner();
-        if (isOwner) {
-            if (Utils.isSocketUuid(room.owner)) {
-                room.setOwner(this.username);
-            }
-
-            // Update the user's room name
-            room.update();
-        }
-
-        const sockets = room.getSocketsAt(this.role) || [];
-        if (sockets.includes(this)) {
-            room.updateRole(this.role);
-        }
-    }
-
-    isOwner () {  // move to auth stuff...
+    isOwner () {  // TODO: move to auth stuff...
+        // TODO: update
         return this.projectId;
-    }
-
-    isCollaborator () {  // TODO: REMOVE
-        return this._room && this._room.getCollaborators().includes(this.username);
-    }
-
-    canEditRoom () {  // TODO: REMOVE
-        return this.isOwner() || this.isCollaborator();
     }
 
     sendEditMsg (msg) {
@@ -242,27 +199,11 @@ class NetsBloxSocket {
         return this._socket.readyState > this.OPEN;
     }
 
-    onLogin (user) {
-        let isOwner = this.isOwner();
-
-        this._logger.log(`logged in as ${user.username} (from ${this.username})`);
-        // Update the room if we are the owner (and not already logged in)
-        this.username = user.username;
-        this.user = user;
-        this.loggedIn = true;
-
-        this.updateRoom(isOwner);
-    }
-
     onLogout () {
-        let isOwner = this.isOwner();
-
         this._logger.log(`${this.username} is logging out!`);
         this.username = this.uuid;
         this.user = null;
         this.loggedIn = false;
-
-        this.updateRoom(isOwner);
     }
 
     getNewName (name) {
