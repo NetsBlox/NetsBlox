@@ -261,44 +261,53 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
 
 RPCManager.prototype.callRPC = function(name, ctx, args) {
     let doc = null;
+    let prepareInputs = Promise.resolve();
+    const errors = [];
 
     if (ctx._docs) doc = ctx._docs.getDocFor(name);
     if (doc) {
-        let errors = []; // mostly
         // assuming doc params are defined in order!
-        doc.args.forEach((arg, idx) => {
+        prepareInputs = Promise.all(doc.args.map((arg, idx) => {
             if (arg.type) {
-                let input = this.parseArgValue(arg, args[idx], ctx);
-                // if there was no errors update the arg with the parsed input
-                if (input.isValid) {
-                    args[idx] = input.value;
-                } else {
-                    // handle the error
-                    this._logger.warn(`${ctx.serviceName} -> ${name} input error:`, input.msg);
-                    if (input.msg) errors.push(input.msg);
-                }
+                //let input = this.parseArgValue(arg, args[idx], ctx);
+                return this.parseArgValue(arg, args[idx], ctx)
+                    .then(input => {
+                        // if there was no errors update the arg with the parsed input
+                        if (input.isValid) {
+                            args[idx] = input.value;
+                        } else {
+                            // handle the error
+                            this._logger.warn(`${ctx.serviceName} -> ${name} input error:`, input.msg);
+                            if (input.msg) errors.push(input.msg);
+                        }
+                    });
+            }
+        }));
+    }
+
+    return prepareInputs
+        .then(() => {
+            // provide user feedback if there was an error
+            if (errors.length > 0) return ctx.response.status(500).send(errors.join('\n'));
+
+            let prettyArgs = JSON.stringify(args);
+            prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
+            this._logger.log(`calling ${ctx.serviceName}.${name}(${prettyArgs}) ${ctx.caller.clientId}`);
+
+            try {
+                const result = ctx[name].apply(ctx, args);
+                return this.sendRPCResult(ctx.response, result);
+            } catch (err) {
+                this.sendRPCError(ctx.response, err);
             }
         });
-        // provide user feedback if there was an error
-        if (errors.length > 0) return ctx.response.status(500).send(errors.join('\n'));
-    }
-
-    let prettyArgs = JSON.stringify(args);
-    prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
-    this._logger.log(`calling ${ctx.serviceName}.${name}(${prettyArgs}) ${ctx.caller.clientId}`);
-
-    try {
-        const result = ctx[name].apply(ctx, args);
-        return this.sendRPCResult(ctx.response, result);
-    } catch (err) {
-        this.sendRPCError(ctx.response, err);
-    }
 };
 
 // in: arg obj and input value
 // out: {isValid: boolean, value, msg}
 RPCManager.prototype.parseArgValue = function (arg, input, ctx) {
-    let inputStatus = {isValid: true, msg: '', value: input};
+    const inputStatus = {isValid: true, msg: '', value: input};
+
     // is the argument provided or not?
     if (input === '') {
         if (!arg.optional) {
@@ -308,24 +317,36 @@ RPCManager.prototype.parseArgValue = function (arg, input, ctx) {
         }
     } else if (arg.type) {
         const typeName = arg.type.name;
+        const recordError = err => {
+            inputStatus.isValid = false;
+            const netsbloxType = types.getNBType(typeName);
+            inputStatus.msg = `"${arg.name}" is not a valid ${netsbloxType}.`;
+            if (err.message.includes(netsbloxType)) {
+                inputStatus.msg = `"${arg.name}" is not valid. ` + err.message;
+            } else if (err.message) {
+                inputStatus.msg += ' ' + err.message;
+            }
+        };
+
         if (types.parse.hasOwnProperty(typeName)) { // if we have the type handler
             try {
                 const args = [input].concat(arg.type.params);
                 args.push(ctx);
-                inputStatus.value = types.parse[typeName].apply(null, args);
+                return Promise.resolve(types.parse[typeName].apply(null, args))
+                    .then(value => {
+                        inputStatus.value = value;
+                        return inputStatus;
+                    })
+                    .catch(e => {
+                        recordError(e);
+                        return inputStatus;
+                    });
             } catch (e) {
-                inputStatus.isValid = false;
-                const netsbloxType = types.getNBType(typeName);
-                inputStatus.msg = `"${arg.name}" is not a valid ${netsbloxType}.`;
-                if (e.message.includes(netsbloxType)) {
-                    inputStatus.msg = `"${arg.name}" is not valid. ` + e.message;
-                } else if (e.message) {
-                    inputStatus.msg += ' ' + e.message;
-                }
+                recordError(e);
             }
         }
     }
-    return inputStatus;
+    return Promise.resolve(inputStatus);
 };
 
 RPCManager.prototype.sendRPCResult = function(response, result) {
