@@ -42,13 +42,13 @@ Earthquakes._sendNext = function(socket) {
         // send an earthquake message
         var msg = msgs.shift();
 
-        while (msgs.length && msg.dstId !== socket.role) {
+        while (msgs.length && msg.dstId !== socket.roleId) {
             msg = msgs.shift();
         }
 
         // check that the socket is still at the role receiving the messages
-        if (msg && msg.dstId === socket.role) {
-            socket.send(msg);
+        if (msg && msg.dstId === socket.roleId) {
+            socket.sendMessage('Earthquake', msg.content);
         }
 
         if (msgs.length) {
@@ -87,7 +87,7 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
 
     // This method will not respond with anything... It will simply
     // trigger socket messages to the given client
-    request(url, function(err, res, body) {
+    request(url, (err, res, body) => {
         if (err) {
             response.status(500).send('ERROR: ' + err);
             return;
@@ -103,8 +103,7 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
         logger.trace('Found ' + body.metadata.count + ' earthquakes');
         response.send('Sending ' + body.metadata.count + ' earthquake messages');
 
-        var earthquakes = [],
-            msg;
+        var earthquakes = [];
 
         try {
             earthquakes = body.features;
@@ -112,22 +111,18 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
             logger.log('Could not parse earthquakes (returning empty array): ' + e);
         }
 
-        var msgs = [];
-        for (var i = earthquakes.length; i--;) {
-            // For now, I will send lat, lng, size, date
-            msg = {
-                type: 'message',
-                dstId: socket.role,
-                msgType: 'Earthquake',
+        const msgs = earthquakes.map(quake => {
+            return {
+                dstId: this.caller.roleId,
                 content: {
-                    latitude: earthquakes[i].geometry.coordinates[1],
-                    longitude: earthquakes[i].geometry.coordinates[0],
-                    size: earthquakes[i].properties.mag,
-                    time: earthquakes[i].properties.time
+                    latitude: quake.geometry.coordinates[1],
+                    longitude: quake.geometry.coordinates[0],
+                    size: quake.properties.mag,
+                    time: quake.properties.time
                 }
             };
-            msgs.push(msg);
-        }
+        });
+
         if (msgs.length) {
             Earthquakes._remainingMsgs[socket.uuid] = msgs;
             Earthquakes._sendNext(socket);
