@@ -9,43 +9,37 @@
             this._logger = logger.fork(data.name);
         }
 
-        addMember (user) {
-            const op = {$push: {members: user.username}};
-            const query = this.getStorageId();
-            query.members = {$not: new RegExp('^' + user.username + '$')};
-            return this._db.update(query, op)
-                .then(() => user.setGroupId(this.name));
-        }
-
         // returns the group owner
         getOwner() {
             return this.owner;
         }
 
-        removeMember (user) {
-            const op = {$pull: {members: user.username}};
-            return this._db.update(this.getStorageId(), op)
-                .then(() => user.setGroupId(null));
+        save() {
+            return this._db.updateOne(this._query(), { $set: {name: this.name, owner: this.owner} })
+                .then(() => this);
         }
 
-        getMembers () {
-            return this._db.findOne(this.getStorageId())
-                .then(data => {
-                    if (data) return data.members || [];
-                    return [];
-                });
+        // TODO lookup the members from the users collections
+        findMember() {
         }
 
-        create () {
-            return this._db.save({
+        create() {
+            return this._db.insertOne({
                 name: this.name,
                 owner: this.owner,
-                members: []
+            }).then(res => {
+                this._id = res.insertedId;
+                return this;
             });
         }
 
-        getStorageId () {
-            return {name: this.name};
+        // generates a query that finds this entity in the db
+        _query() {
+            return {_id: this._id};
+        }
+
+        getId() {
+            return this._id;
         }
     }
 
@@ -55,20 +49,19 @@
     };
 
     // in: groupName and owner's username
-    GroupStore.new = function(name, ownerName) {
-        logger.trace(`creating new group: ${name}`);
+    GroupStore.new = function(name, owner) {
+        logger.trace(`creating new group: ${owner}/${name}`);
         // TODO ensure unique groupname
         let group = new Group({
             name: name,
-            owner: ownerName,
-            members: []
+            owner: owner,
         });
         return group.create();
     };
 
-    GroupStore.findOne = function(name) {
-        logger.trace(`getting ${name}`);
-        return collection.findOne({name})
+    GroupStore.findOne = function(name, owner) {
+        logger.trace(`getting ${owner}/${name}`);
+        return collection.findOne({name, owner})
             .then(data => {
                 if (data) {
                     return new Group(data);
@@ -77,9 +70,9 @@
             });
     };
 
-    GroupStore.get = function(name) {
-        logger.trace(`getting ${name}`);
-        return collection.findOne({name})
+    GroupStore.get = function(id) {
+        logger.trace(`getting ${id}`);
+        return collection.findOne({_id: id})
             .then(data => {
                 if (data) {
                     return new Group(data);
@@ -88,13 +81,13 @@
             });
     };
 
-    GroupStore.remove = function(name) {
-        logger.info(`removing ${name}`);
-        return collection.deleteOne({name});
+    GroupStore.remove = function(id) {
+        logger.info(`removing ${id}`);
+        return collection.deleteOne({_id: id});
     };
 
-    GroupStore.all = function() {
-        return collection.find({}).toArray();
+    GroupStore.all = function(owner) {
+        return collection.find({owner}).toArray();
     };
 
 })(exports);

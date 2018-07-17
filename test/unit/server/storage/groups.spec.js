@@ -5,16 +5,19 @@ describe('groups', function() {
     const Users = utils.reqSrc('storage/users');
     const Q = require('q');
 
-    before(function(done) {
+    const owner = 'username';
+
+    beforeEach(function(done) {
         utils.reset().then(() => done());
     });
 
     it('should create group', function(done) {
         const name = 'my-test-group';
-        Groups.new(name)
-            .then(() => Groups.get(name))
-            .then(found => {
-                assert(found);
+        Groups.new(name, owner)
+            .then(group => Groups.get(group._id))
+            .then(doc => {
+                assert(doc);
+                assert.equal(doc.name, name);
                 done();
             })
             .catch(done);
@@ -22,19 +25,41 @@ describe('groups', function() {
 
     it('should remove group', function(done) {
         const name = 'my-old-group';
-        Groups.new(name)
-            .then(() => Groups.remove(name))
-            .then(() => Groups.findOne(name))
-            .then(found => {
-                assert(!found);
+        let id;
+        Groups.new(name, owner)
+            .then(group => {
+                id = group._id;
+                return Groups.remove(group._id);
+            })
+            .then(() => Groups.get(id))
+            .catch(err => {
+                assert.deepEqual(err.message, 'group not found');
+                done();
+            });
+    });
+
+    it('should update', function(done) {
+        const name = 'to-update',
+            newName = 'new-name';
+        Groups.new(name, owner)
+            .then(grp => {
+                grp.name = newName;
+                return grp.save();
+            })
+            .then(grp => {
+                assert.equal(grp.name, newName);
+                return Groups.get(grp._id);
+            })
+            .then(grp => {
+                assert.deepEqual(grp.name, newName);
                 done();
             })
             .catch(done);
     });
-    
-    it('should throw when finding non-existing groups', function(done) {
-        const name = 'non-existing';
-        Groups.get(name)
+
+    it('get should throw when finding non-existing groups', function(done) {
+        const id = 'non-existing-id';
+        Groups.get(id)
             .catch(err => {
                 assert(err.message === 'group not found');
                 done();
@@ -42,17 +67,16 @@ describe('groups', function() {
     });
 
 
-    it('should return null when finding non-existing groups', function(done) {
-        const name = 'non-existing';
-        Groups.findOne(name)
+    it('findOne should return null when finding non-existing groups', function(done) {
+        const name = 'non-existing-name';
+        Groups.findOne(name, owner)
             .then(found => {
                 assert(!found);
                 done();
-            })
-            .catch(done);
+            });
     });
 
-    describe('group', function() {
+    describe.skip('group members', function() {
         let group = null;
         let user = null;
         let user2 = null;
@@ -65,7 +89,7 @@ describe('groups', function() {
             user2.hash = 123;
 
             Q.all([user, user2].map(item => item.save()))
-                .then(() => Groups.new(name))
+                .then(() => Groups.new(name, owner))
                 .then(g => group = g)
                 .then(() => done())
                 .catch(done);
