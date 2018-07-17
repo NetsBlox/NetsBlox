@@ -44,4 +44,14 @@ describe('examples', function() {
         });
     });
 
+    describe('xml format', () => {
+        Object.keys(EXAMPLES).forEach(example => {
+            it(`should contain single room for ${example}`, function() {
+                const str = EXAMPLES[example].toString();
+                const roomElementCount = str.split('</room>').length-1;
+                assert.equal(roomElementCount, 1);
+            });
+        });
+    });
+
 });
