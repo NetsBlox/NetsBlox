@@ -213,6 +213,7 @@ RPCManager.prototype.getArgumentsFor = function(service, action) {
 RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
     const uuid = req.query.uuid;
     const projectId = req.query.projectId;
+    const roleId = req.query.roleId;
     const action = req.params.action;
 
     if(!uuid || !projectId) {
@@ -238,6 +239,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         ctx.caller = {
             username: req.session.username,
             projectId,
+            roleId,
             clientId: uuid
         };
 
@@ -251,11 +253,10 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         // validate and enforce types in RPC manager.
         // parse the inputs to correct types
         // provide feedback to the user
-
         return this.callRPC(action, ctx, args);
     } else {
-        this._logger.log('Invalid action requested for '+RPC.serviceName+': '+action);
-        return res.status(400).send('unrecognized action');
+        this._logger.log(`Invalid RPC:${RPC.serviceName}.${action}`);
+        return res.status(400).send('Invalid RPC');
     }
 };
 
