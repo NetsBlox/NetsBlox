@@ -67,14 +67,24 @@ describe('groups', function() {
     });
 
 
-    it('findOne should return null when finding non-existing groups', function(done) {
+    it('findOne should return null when finding non-existing groups', async function() {
         const name = 'non-existing-name';
-        Groups.findOne(name, owner)
-            .then(found => {
-                assert(!found);
-                done();
-            });
+        let group = await Groups.findOne(name, owner);
+        assert(!group);
     });
+
+
+    it('should not allow duplicate groups', async function() {
+        const name = 'gpname';
+        await Groups.new(name, owner);
+        try {
+            await Groups.new(name, owner);
+        } catch (e) {
+            assert.deepEqual(e.message, 'group exists');
+        }
+    });
+
+
 
     describe.skip('group members', function() {
         let group = null;

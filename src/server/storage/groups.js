@@ -49,9 +49,10 @@
     };
 
     // in: groupName and owner's username
-    GroupStore.new = function(name, owner) {
+    GroupStore.new = async function(name, owner) {
         logger.trace(`creating new group: ${owner}/${name}`);
-        // TODO ensure unique groupname
+        let curGroup = await this.findOne(name, owner);
+        if (curGroup) throw new Error('group exists');
         let group = new Group({
             name: name,
             owner: owner,
