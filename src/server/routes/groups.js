@@ -17,10 +17,11 @@ module.exports = [
         URL: 'groups',
         Method: 'GET',
         middleware: ['isLoggedIn'],
-        Handler: function(req) {
+        Handler: async function(req) {
             // gets a list of groups
             let owner = req.session.username;
-            return Groups.all(owner);
+             let groups = await Groups.all(owner);
+             return groups.map(grp => grp.data());
         }
     },
     {
@@ -39,13 +40,14 @@ module.exports = [
         URL: 'groups',
         Method: 'POST',
         middleware: ['isLoggedIn'],
-        Handler: function(req) {
+        Handler: async function(req) {
             // create a new group
-            // console.log(req);
             let groupName = req.body.name;
+            if (!groupName) throw new Error('group name is required');
             let owner = req.session.username;
             logger.info('creating group', groupName, 'with owner', owner);
-            return Groups.new(groupName, owner);
+            let group = await Groups.new(groupName, owner);
+            return group.data();
         }
     },
     {
@@ -89,12 +91,18 @@ module.exports = [
     let handler = route.Handler;
     route.Handler = (req, res) => {
         handler(req, res)
-            .then( val => {
-                res.status(200).send(val);
+            .then(val => {
+                console.log(val);
+                if (typeof val === 'object') {
+                    res.status(200).json(val);
+                } else {
+                    res.status(200).send(val);
+                }
             })
             .catch(e => {
                 logger.error(e);
-                res.status(500).send();
+                // WARN could potentially leak information
+                res.status(500).send(e.message);
             });
     };
     return route;
