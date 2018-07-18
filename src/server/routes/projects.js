@@ -16,6 +16,7 @@ var _ = require('lodash'),
     error = debug('netsblox:api:projects:error');
 
 const Projects = require('../storage/projects');
+const Users = require('../storage/users');
 
 
 /**
@@ -754,14 +755,27 @@ module.exports = [
         URL: 'projects/:owner',
         middleware: ['setUsername'],
         Handler: function(req, res) {
-            var publicOnly = req.params.owner !== req.session.username;
+            // If requesting for another user, only return the public projects
+            const publicOnly = req.params.owner !== req.session.username;
+            const username = req.params.owner;
 
             // return the names of all projects owned by :owner
-            middleware.loadUser(req.params.owner, res, user => res.json(
-                user.rooms
-                    .filter(room => !publicOnly || !!room.Public)
-                    .map(room => room.name))
-            );
+            log(`getting project names for ${username}`);
+            return Users.get(username)
+                .then(user => {
+                    if (!user) {
+                        return res.status(400).send('Invalid username');
+                    }
+
+                    return user.getRawProjects()
+                        .then(projects => {
+                            const names = projects
+                                .filter(project => !publicOnly || !!project.Public)
+                                .map(project => project.name);
+
+                            return res.json(names);
+                        });
+                });
 
         }
     },
