@@ -67,6 +67,7 @@ var tryLogIn = function(req, res, cb, skipRefresh) {
 
 var isLoggedIn = function(req, res, next) {
     logger.trace(`checking if logged in ${Object.keys(req.cookies)}`);
+    if (req.method === 'OPTIONS') return next();
     tryLogIn(req, res, (err, success) => {
         if (err) {
             return next(err);
