@@ -23,6 +23,13 @@
         findMember() {
         }
 
+        data() {
+            return {
+                name: this.name,
+                _id: this._id
+            };
+        }
+
         create() {
             return this._db.insertOne({
                 name: this.name,
@@ -87,8 +94,9 @@
         return collection.deleteOne({_id: id});
     };
 
-    GroupStore.all = function(owner) {
-        return collection.find({owner}).toArray();
+    GroupStore.all = async function(owner) {
+        let groupsArr = await collection.find({owner}).toArray();
+        return groupsArr.map(group => new Group(group));
     };
 
 })(exports);
