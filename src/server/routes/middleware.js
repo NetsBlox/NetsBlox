@@ -156,6 +156,7 @@ var setUser = function(req, res, next) {
 
 // check group write access
 let isGroupOwner = function(req, res, next) {
+    if (req.method === 'OPTIONS') return next();
     let groupId = req.params.id;
     Groups.get(groupId)
         .then( group => {
