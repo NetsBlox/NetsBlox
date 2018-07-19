@@ -74,24 +74,23 @@
 
     GroupStore.findOne = function(name, owner) {
         logger.trace(`getting ${owner}/${name}`);
-        return collection.findOne({name, owner})
+        return Q(collection.findOne({name, owner}))
             .then(data => {
-                if (data) {
-                    return new Group(data);
-                }
+                return new Group(data);
+            })
+            .catch(() => {
                 return null;
-            });
+            })
     };
 
     GroupStore.get = function(id) {
         logger.trace(`getting ${id}`);
         if (typeof id === 'string') id = ObjectId(id)
-        return collection.findOne({_id: id})
-            .then((data, error) => {
-                if (data) {
+        return Q(collection.findOne({_id: id}))
+            .then(data => {
                     return new Group(data);
-                }
-                logger.error(data, error);
+            })
+            .catch(err => {
                 throw new Error(`group ${id} not found`);
             })
 
@@ -99,11 +98,11 @@
 
     GroupStore.remove = function(id) {
         logger.info(`removing ${id}`);
-        return collection.deleteOne({_id: id});
+        return Q(collection.deleteOne({_id: id}));
     };
 
     GroupStore.all = async function(owner) {
-        let groupsArr = await collection.find({owner}).toArray();
+        let groupsArr = await Q(collection.find({owner}).toArray());
         return groupsArr.map(group => new Group(group));
     };
 
