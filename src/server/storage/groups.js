@@ -1,6 +1,8 @@
 (function(GroupStore) {
     var logger, collection;
-    const Data = require('./data');
+    const Data = require('./data'),
+        Q = require('q'),
+        ObjectId = require('mongodb').ObjectId;
 
     class Group extends Data {
 
@@ -30,14 +32,16 @@
             };
         }
 
-        create() {
-            return this._db.insertOne({
+        save() {
+            return this._db.save({
                 name: this.name,
                 owner: this.owner,
-            }).then(res => {
-                this._id = res.insertedId;
-                return this;
-            });
+            })
+            .then(result => {
+                const id = result.ops[0]._id;
+                this._id = id;
+            })
+            .then(() => this);
         }
 
         // generates a query that finds this entity in the db
@@ -46,6 +50,7 @@
         }
 
         getId() {
+            console.log('######### id is ', this._id);
             return this._id;
         }
     }
@@ -59,12 +64,12 @@
     GroupStore.new = async function(name, owner) {
         logger.trace(`creating new group: ${owner}/${name}`);
         let curGroup = await this.findOne(name, owner);
-        if (curGroup) throw new Error('group exists');
+        if (curGroup) throw new Error(`group ${owner}/${name} exists`);
         let group = new Group({
             name: name,
             owner: owner,
         });
-        return group.create();
+        return group.save();
     };
 
     GroupStore.findOne = function(name, owner) {
@@ -80,13 +85,16 @@
 
     GroupStore.get = function(id) {
         logger.trace(`getting ${id}`);
+        if (typeof id === 'string') id = ObjectId(id)
         return collection.findOne({_id: id})
-            .then(data => {
+            .then((data, error) => {
                 if (data) {
                     return new Group(data);
                 }
-                throw new Error('group not found');
-            });
+                logger.error(data, error);
+                throw new Error(`group ${id} not found`);
+            })
+
     };
 
     GroupStore.remove = function(id) {

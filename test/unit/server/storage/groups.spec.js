@@ -1,41 +1,52 @@
-describe('groups', function() {
+describe.only('groups', function() {
     const utils = require('../../../assets/utils');
     const assert = require('assert');
     const Groups = utils.reqSrc('storage/groups');
     const Users = utils.reqSrc('storage/users');
     const Q = require('q');
 
-    const owner = 'username';
+    const owner = 'testUsername';
 
     beforeEach(function(done) {
-        utils.reset().then(() => done());
+        utils.reset().then(() => done()).catch(done);
     });
 
-    it('should create group', function(done) {
+    it('should create group', async function() {
         const name = 'my-test-group';
-        Groups.new(name, owner)
-            .then(group => Groups.get(group._id))
-            .then(doc => {
-                assert(doc);
-                assert.equal(doc.name, name);
-                done();
-            })
-            .catch(done);
+        let group = await Groups.new(name, owner);
+        let doc = await Groups.findOne(name, owner);
+        assert(doc);
+        assert.equal(doc.name, name);
     });
 
-    it('should remove group', function(done) {
+    it('get should work with mongodb ObjectId input', async function() {
+        const name = 'my-aaf-group';
+        let group = await Groups.new(name, owner);
+        let doc = await Groups.get(group.getId());
+        assert(doc);
+        assert.equal(doc.name, name);
+    });
+
+    it('get should work with string id', async function() {
+        const name = 'my-aaf-group';
+        let group = await Groups.new(name, owner);
+        let id = group.getId().toString();
+        let doc = await Groups.get(id);
+        assert(doc);
+        assert.equal(doc.name, name);
+    });
+
+    it('should remove group', async function() {
         const name = 'my-old-group';
         let id;
-        Groups.new(name, owner)
-            .then(group => {
-                id = group._id;
-                return Groups.remove(group._id);
-            })
-            .then(() => Groups.get(id))
-            .catch(err => {
-                assert.deepEqual(err.message, 'group not found');
-                done();
-            });
+        let group = await Groups.new(name, owner)
+        await Groups.remove(group._id);
+        try {
+            await Groups.get(group._id);
+            throw new Error('did no remove the group');
+        } catch (e) {
+            assert(e.message.includes('not found'), 'get didnt throw properly');
+        }
     });
 
     it('should update', function(done) {
@@ -58,10 +69,10 @@ describe('groups', function() {
     });
 
     it('get should throw when finding non-existing groups', function(done) {
-        const id = 'non-existing-id';
+        const id = '5b50e4104be2cd3f493b1af1'; // non existing id
         Groups.get(id)
             .catch(err => {
-                assert(err.message === 'group not found');
+                assert(err.message.includes('not found'));
                 done();
             });
     });
@@ -80,7 +91,7 @@ describe('groups', function() {
         try {
             await Groups.new(name, owner);
         } catch (e) {
-            assert.deepEqual(e.message, 'group exists');
+            assert(e.message.includes('exists'));
         }
     });
 
