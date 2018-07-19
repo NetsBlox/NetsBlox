@@ -25,15 +25,30 @@ module.exports = [
         }
     },
     {
+        // get group details, only the owner can
+        // CHECK maybe the users want to see this too
         URL: 'groups/:id',
         Method: 'GET',
         middleware: ['isLoggedIn', 'isGroupOwner'],
-        Handler: function(req) {
+        Handler: async function(req) {
             // a specific group's details: (which only include members)
-            let groupName = req.params.name;
-            let owner = req.session.username;
+            const groupId = req.params.id;
+            let group = await Groups.get(groupId);
+            return group.data();
+        }
+    },
+    {
+        // get group members
+        URL: 'groups/:id/members',
+        Method: 'GET',
+        middleware: ['isLoggedIn', 'isGroupOwner'],
+        Handler: async function(req) {
+            // a specific group's details: (which only include members)
+            const groupId = req.params.id,
+                owner = req.session.username;
             // TODO search the users for matching group id and return
-            return [1,2];
+            let users = await Users.find({groupId: {$eq: groupId}});
+            return users;
         }
     },
     {
