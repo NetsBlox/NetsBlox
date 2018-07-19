@@ -194,6 +194,12 @@
             .catch(e => this._logger.error('Could not get the user names!', e));
     };
 
+    UserStorage.find = function (query) {
+        return collection.find(query).toArray();
+        // TODO wrap each user in User class?
+    };
+
+
     UserStorage.forEach = function (fn) {
         const deferred = Q.defer();
         const stream = collection.find().stream();
@@ -209,15 +215,22 @@
         return deferred.promise;
     };
 
-    UserStorage.new = function (username, email, group) {
+    UserStorage.new = function (username, email, groupId) {
+        groupId = groupId || null; // WARN what should be the default
         var createdAt = Date.now();
 
         return new User(this._logger, {
             username,
             email,
             createdAt,
-            group,
+            groupId,
         });
+    };
+
+    UserStorage.newWithPassword = function (username, email, groupId, password) {
+        let user = this.new(username, email, groupId);
+        user.hash = hash(password);
+        return user;
     };
 
 })(exports);
