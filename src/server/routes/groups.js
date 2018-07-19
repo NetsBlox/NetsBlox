@@ -58,6 +58,7 @@ module.exports = [
         Handler: function(req) {
             let username = req.body.username,
                 password = req.body.password,
+                email = req.body.email,
                 groupId = req.params.id,
                 user;
             return Users.get(username)
@@ -66,12 +67,12 @@ module.exports = [
                     if (user) {
                         throw new Error('user already exists');
                     }
-                    user = Users.new({
+                    user = Users.newWithPassword(
                         username,
+                        email,
+                        groupId,
                         password,
-                        group: groupId
-
-                    });
+                    );
                     return user.save();
                 });
         }
@@ -92,7 +93,6 @@ module.exports = [
     route.Handler = (req, res) => {
         handler(req, res)
             .then(val => {
-                console.log(val);
                 if (typeof val === 'object') {
                     res.status(200).json(val);
                 } else {
