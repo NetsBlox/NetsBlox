@@ -250,7 +250,7 @@ module.exports = [
         Handler: function(req, res) {
             // Check permissions
             // TODO
-            const {user, username} = req.session;
+            const {user} = req.session;
             const {roleId, ownerId, projectId, overwrite, roleName} = req.body;
             let {projectName} = req.body;
             const {srcXml, mediaXml} = req.body;
