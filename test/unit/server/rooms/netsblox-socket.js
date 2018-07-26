@@ -10,6 +10,8 @@ describe('netsblox-socket', function() {
         MockWebSocket = require(ROOT_DIR + 'test/assets/mock-websocket'),
         socket;
 
+    const NetworkTopology = utils.reqSrc('network-topology');
+
     describe('getNewName', function() {
 
         before(function() {
@@ -19,30 +21,6 @@ describe('netsblox-socket', function() {
         it('should generate new project names', function() {
             var name = socket.getNewName();
             assert(name);
-        });
-    });
-
-    describe('getRoom', function() {
-        before(function() {
-            socket = new NBSocket(logger, new MockWebSocket());
-        });
-
-        it('should resolve when the room is set', function(done) {
-            var testRoom = {owner: 'abc'},
-                waited = false;
-
-            testRoom.getSocketsAt = () => [];
-            socket.getRoom()
-                .then(room => {
-                    assert.equal(room, testRoom);
-                    assert(waited);
-                })
-                .nodeify(done);
-
-            setTimeout(() => {
-                waited = true;
-                socket._setRoom(testRoom);
-            }, 25);
         });
     });
 
@@ -92,19 +70,21 @@ describe('netsblox-socket', function() {
     describe('user messages', function() {
         var alice, bob, steve;
 
-        before(function(done) {
-            utils.createRoom({
+        before(async function() {
+            await utils.reset();
+            const project = await utils.createRoom({
                 name: 'add-test',
                 owner: 'first',
                 roles: {
                     role1: ['alice'],
                     role2: ['bob', 'steve'],
                 }
-            }).then(room => {
-                [alice] = room.getSocketsAt('role1');
-                [bob, steve] = room.getSocketsAt('role2');
-                done();
             });
+
+            const projectId = project.getId();
+            const [id1, id2] = await project.getRoleIdsFor(['role1', 'role2']);
+            [alice] = NetworkTopology.getSocketsAt(projectId, id1);
+            [bob, steve] = NetworkTopology.getSocketsAt(projectId, id2);
         });
 
         it('should ignore bad dstId for interroom messages', function() {
@@ -114,34 +94,41 @@ describe('netsblox-socket', function() {
         });
 
         // Test local message routing
-        it('should route messages to local roles', function() {
-            alice._socket.receive({
+        it('should route messages to local roles', async function() {
+            await alice._socket.receive({
                 type: 'message',
-                namespace: 'netsblox',
                 dstId: 'role2',
                 content: {
                     msg: 'worked'
                 }
             });
 
-            const msg = bob._socket.message(-1);
-            const msg2 = steve._socket.message(-1);
+            const msg = bob._socket.messages()
+                .filter(msg => msg.type === 'message')
+                .pop();
+            const msg2 = steve._socket.messages()
+                .filter(msg => msg.type === 'message')
+                .pop();
+
             assert.equal(msg.content.msg, 'worked');
             assert.equal(msg2.content.msg, 'worked');
         });
     });
 
     describe('getProjectJson', function() {
-        it('should fail if receiving mismatching project name', function(done) {
+
+        it('should fail if receiving mismatching project ID', function(done) {
             const socket = utils.createSocket('test-user');
-            socket.role = 'role1';
+            socket.roleId = 'role1';
             socket._socket.addResponse('project-request', function(msg) {
+                socket.projectId = 'newId';
                 return {
                     type: 'project-response',
                     id: msg.id,
                     project: sUtils.getEmptyRole('myRole')
                 };
             });
+
             socket.getProjectJson()
                 .then(() => done('failed!'))
                 .catch(() => done());
@@ -149,19 +136,19 @@ describe('netsblox-socket', function() {
 
         it('should fail if socket changed roles', function(done) {
             const socket = utils.createSocket('test-user');
-            socket.role = 'role1';
+            socket.roleId = 'role1';
             socket._socket.addResponse('project-request', function(msg) {
+                socket.roleId += '2';
                 return {
                     type: 'project-response',
                     id: msg.id,
                     project: sUtils.getEmptyRole('myRole')
                 };
             });
+
             socket.getProjectJson()
                 .then(() => done('failed!'))
                 .catch(() => done());
-
-            socket.role = 'role2';
         });
     });
 
