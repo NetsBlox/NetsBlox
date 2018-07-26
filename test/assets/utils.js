@@ -87,7 +87,7 @@ const createSocket = function(username) {
     return socket;
 };
 
-const createRoom = function(config) {
+const createRoom = async function(config) {
     // Get the room and attach a project
     const roleNames = Object.keys(config.roles);
 
@@ -98,30 +98,24 @@ const createRoom = function(config) {
         .unshift();
 
     const {name, owner} = config;
-    let project = null;
-    return Projects.new({name, owner})
-        .then(result => {
-            project = result;
-            const roles = roleNames.map(name => serverUtils.getEmptyRole(name));
-            return project.setRoles(roles);
-        })
-        .then(() => project.getRoleIdsFor(roleNames))
-        .then(ids => {
-            const projectId = project.getId();
+    const project = await Projects.new({name, owner});
+    const roles = roleNames.map(name => serverUtils.getEmptyRole(name));
+    await project.setRoles(roles);
+    const ids = await project.getRoleIdsFor(roleNames);
 
-            roleNames.forEach((name, i) => {
-                const roleId = ids[i];
-                const usernames = config.roles[name];
+    const projectId = project.getId();
+    roleNames.forEach((name, i) => {
+        const roleId = ids[i];
+        const usernames = config.roles[name] || [];
 
-                usernames.forEach(username => {
-                    const socket = createSocket(username);
-                    console.log('setClientState', socket.uuid, projectId, roleId);
-                    NetworkTopology.setClientState(socket.uuid, projectId, roleId, username);
-                    return socket;
-                });
-            });
-            return project;
+        usernames.forEach(username => {
+            const socket = createSocket(username);
+            NetworkTopology.setClientState(socket.uuid, projectId, roleId, username);
+            return socket;
         });
+    });
+
+    return project;
 
 };
 
