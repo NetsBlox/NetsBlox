@@ -1,4 +1,5 @@
 describe('server-utils', function() {
+    const _ = require('lodash');
     const utils = require('../../../src/server/server-utils');
     const assert = require('assert');
 
@@ -39,6 +40,18 @@ describe('server-utils', function() {
         it('should be able to parse action id', function () {
             const test = '<project collabStartIndex="10">';
             assert.equal(utils.xml.actionId(test), 10);
+        });
+    });
+
+    describe('client IDs', function() {
+        it('should ensure client IDs do not collide', function() {
+            const ids = [
+                utils.getNewClientId(),
+                utils.getNewClientId(),
+                utils.getNewClientId(),
+                utils.getNewClientId()
+            ];
+            assert.equal(_.uniq(ids).length, ids.length);
         });
     });
 });

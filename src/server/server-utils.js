@@ -8,6 +8,8 @@ var R = require('ramda'),
     version = require('../../package.json').version;
 
 const APP = `NetsBlox ${version}, http://netsblox.org`;
+const SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
+
 
 var uuid = function(owner, name) {
     return owner + '/' + name;
@@ -219,6 +221,20 @@ const sortByDateField = function(list, field, dir) {
     });
 };
 
+let lastId = '';
+const getNewClientId = function() {
+    let suffix = Date.now();
+
+    if (lastId.includes(suffix)) {
+        let count = +lastId.split('_')[2] || 1;
+        suffix += '_' + (count+1);
+    }
+
+    const clientId = '_' + SERVER_NAME + suffix;
+    lastId = clientId;
+    return clientId;
+};
+
 module.exports = {
     serialize,
     serializeArray,
@@ -239,5 +255,6 @@ module.exports = {
     getArgumentsFor,
     APP,
     version,
-    sortByDateField
+    sortByDateField,
+    getNewClientId
 };
