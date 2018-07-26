@@ -25,12 +25,9 @@ describe('projects', function() {
     });
 
     let project = null;
-    beforeEach(function(done) {
-        getRoom().then(room => {
-            project = room.getProject();
-            done();
-        })
-            .catch(done);
+    beforeEach(function() {
+        return Projects.new({owner: OWNER, name: PROJECT_NAME})
+            .then(result => project = result);
     });
 
     afterEach(function(done) {
