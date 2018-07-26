@@ -11,7 +11,7 @@ describe('collaboration', function() {
         };
     });
 
-    describe.only('basic', function() {
+    describe('basic', function() {
         let p1, p2;
         beforeEach(() => {
             return utils.reset()
@@ -51,23 +51,20 @@ describe('collaboration', function() {
 
     describe('requesting actions', function() {
         let user = null;
-        let room = null;
-        beforeEach(done => {
-            utils.reset()
-                .then(() => utils.createRoom({
-                    name: 'test-room',
-                    owner: 'brian',
-                    roles: {
-                        role: ['brian'],
-                        role2: []
-                    }
-                }))
-                .then(_room => {
-                    room = _room;
-                    [user] = _room.getSocketsAt('role');
-                })
-                .then(() => twentyActions.reduce((a, b) => a.then(() => user._socket.receive(b)), Q()))
-                .nodeify(done);
+        let project = null;
+        beforeEach(async () => {
+            await utils.reset();
+            project = await utils.createRoom({
+                name: 'test-room',
+                owner: 'brian',
+                roles: {
+                    role: ['brian'],
+                    role2: []
+                }
+            });
+            const roleId = await project.getRoleId('role');
+            [user] = NetworkTopology.getSocketsAt(project.getId(), roleId);
+            await twentyActions.reduce((a, b) => a.then(() => user._socket.receive(b)), Q());
         });
 
         it('should be able to request missing actions', function(done) {
@@ -100,38 +97,39 @@ describe('collaboration', function() {
                 .nodeify(done);
         });
 
-        it('should not return actions from old roles', function(done) {
+        it('should not return actions from old roles', async function() {
             let messageCount = user._socket.messages().length;
-            user.role = 'role2';
-            user._socket.receive({type: 'request-actions', actionId: 9})
-                .then(() => {
-                    let checkMsgs = function() {
-                        let msgs = user._socket.messages().slice(messageCount)
-                            .filter(msg => msg.type === 'user-action');
+            const roleId = await project.getRoleId('role2');
+            user.roleId = roleId;
+            await user._socket.receive({type: 'request-actions', actionId: 9});
 
-                        assert.equal(msgs.length, 0);
-                        done();
-                    };
-                    setTimeout(checkMsgs, 100);
-                });
+            const deferred = Q.defer();
+            let checkMsgs = function() {
+                let msgs = user._socket.messages().slice(messageCount)
+                    .filter(msg => msg.type === 'user-action');
+
+                assert.equal(msgs.length, 0);
+                deferred.resolve();
+            };
+            setTimeout(checkMsgs, 100);
+
+            await deferred.promise;
         });
 
-        it('should not return actions from unsaved roles', function(done) {
-            let role = user.role;
-            let messageCount = 0;
-            room.silentRemove(user)  // this should clear the project-actions for the role
-                .then(() => room.silentAdd(user, role))
-                .then(() => {  // move back to role and request actions
-                    messageCount = user._socket.messages().length;
-                    return user._socket.receive({type: 'request-actions', actionId: 9});
-                })
-                .then(() => {
-                    let msgs = user._socket.messages().slice(messageCount)
-                        .filter(msg => msg.type === 'user-action');
+        it('should not return actions from unsaved roles', async function() {
+            const firstRoleId = user.roleId
+            const roleId = await project.getRoleId('role2');
+            // Remove the client from the given role
+            await NetworkTopology.setClientState(user.uuid, user.projectId, roleId, user.username);
 
-                    assert.equal(msgs.length, 0, 'Should be empty: ' + JSON.stringify(msgs));
-                })
-                .nodeify(done);
+            // Add the client back to the given role
+            await NetworkTopology.setClientState(user.uuid, user.projectId, firstRoleId, user.username);
+            let messageCount = user._socket.messages().length;
+            await user._socket.receive({type: 'request-actions', actionId: 9});
+            const msgs = user._socket.messages().slice(messageCount)
+                .filter(msg => msg.type === 'user-action');
+
+            assert.equal(msgs.length, 0, 'Should be empty: ' + JSON.stringify(msgs));
         });
     });
 });

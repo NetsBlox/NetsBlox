@@ -3,6 +3,7 @@
 
 const utils = require('./server-utils');
 const Projects = require('./storage/projects');
+const ProjectActions = require('./storage/project-actions');
 
 var NetworkTopology = function() {
     this._sockets = [];
@@ -21,6 +22,10 @@ NetworkTopology.prototype.onDisconnect = function(socket) {
     const hasSocket = index !== -1;
     if (hasSocket) {
         this._sockets.splice(index, 1);
+        const {projectId, roleId} = socket;
+        if (projectId && roleId) {
+            this.onClientLeave(projectId, roleId);
+        }
     } else {
         this._logger.error(`Could not find socket: ${socket.username}`);
     }
@@ -43,7 +48,7 @@ NetworkTopology.prototype.getSocketsAtProject = function(projectId) {
     return this._sockets.filter(socket => socket.projectId === projectId);
 };
 
-NetworkTopology.prototype.setClientState = function(clientId, projectId, roleId, username) {
+NetworkTopology.prototype.setClientState = async function(clientId, projectId, roleId, username) {
     const client = this.getSocket(clientId);
 
     if (!client) {
@@ -52,13 +57,16 @@ NetworkTopology.prototype.setClientState = function(clientId, projectId, roleId,
     }
 
     // Update the changed rooms
-    const oldProjectId = client.projectId;
+    const {projectId: oldProjectId, roleId: oldRoleId} = client;
     client.setState(projectId, roleId, username);
 
-    if (oldProjectId && oldProjectId !== projectId) {
-        this.onRoomUpdate(oldProjectId);
+    if (oldProjectId && oldRoleId) {
+        await this.onClientLeave(oldProjectId, oldRoleId);
     }
-    return this.onRoomUpdate(projectId);
+
+    if (oldProjectId !== projectId) {  // moved to a new project
+        return this.onRoomUpdate(projectId);
+    }
 };
 
 NetworkTopology.prototype.getRoomState = function(projectId) {
@@ -107,6 +115,31 @@ NetworkTopology.prototype.onRoomUpdate = function(projectId) {
             clients.forEach(client => client.send(msg));
             return msg;
         });
+};
+
+NetworkTopology.prototype.onClientLeave = function(projectId, roleId) {
+    return this.onRoomUpdate(projectId)
+        .then(state => {  // Check if previous role is now empty
+            const isEmpty = state.roles[roleId].occupants.length === 0;
+
+            if (isEmpty) {
+                return this.onRoleEmpty(projectId, roleId);
+            }
+        });
+};
+
+NetworkTopology.prototype.onRoleEmpty = function(projectId, roleId) {
+    // Get the current (saved) action ID for the role
+    const endTime = new Date();
+    return Projects.getById(projectId)
+        .then(project => project.getRoleActionIdById(roleId))
+        .then(async (actionId) => {
+            // Update the latest action ID for the role
+            await ProjectActions.setLatestActionId(actionId);
+
+            // Clear the actions after that ID
+            return ProjectActions.clearActionsAfter(projectId, roleId, actionId, endTime);
+        })
 };
 
 NetworkTopology.prototype.sockets = function() {
