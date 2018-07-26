@@ -417,7 +417,7 @@ NetsBloxSocket.MessageHandlers = {
         // Check if the socket has changed locations
 
         const {projectId, roleId} = req;
-        const hasMoved = projectId !== this.projectId && roleId !== this.roleId;
+        const hasMoved = projectId !== this.projectId || roleId !== this.roleId;
         if (hasMoved) {
             const err = `socket moved from ${req.roleId}/${req.projectId} ` +
                 `to ${this.roleId}/${this.projectId}`;
