@@ -1,4 +1,4 @@
-describe.only('Battleship Tests', function() {
+describe('Battleship Tests', function() {
     const utils = require('../../../../assets/utils');
     var Battleship = utils.reqSrc('rpc/procedures/battleship/battleship'),
         RPCMock = require('../../../../assets/mock-rpc'),
