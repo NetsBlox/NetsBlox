@@ -63,7 +63,7 @@
         }
 
         getId() {
-            return this._id;
+            return this._id.toString();
         }
 
         fork(room) {
