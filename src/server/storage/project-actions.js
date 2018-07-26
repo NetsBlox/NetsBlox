@@ -60,7 +60,7 @@
 
     ProjectActions.setLatestActionId = function(projectId, roleId, actionId) {
         const query = {projectId, roleId};
-        return Q(actionIdCollection.update(query, {$set: {actionId}}));
+        return Q(actionIdCollection.updateOne(query, {$set: {actionId}}, {upsert: true}));
     };
 
     ProjectActions.getProjectActionIdInfo = function(projectId) {
