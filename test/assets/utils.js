@@ -10,7 +10,6 @@ const Q = require('q');
 const PROJECT_ROOT = path.join(__dirname, '..', '..');
 const reqSrc = p => require(PROJECT_ROOT + '/src/server/' + p);
 
-const ActiveRoom = require(PROJECT_ROOT + '/src/server/rooms/active-room');
 const NetsBloxSocket = require(PROJECT_ROOT + '/src/server/rooms/netsblox-socket');
 const Socket = require('./mock-websocket');
 const Logger = require(PROJECT_ROOT + '/src/server/logger');
@@ -19,6 +18,9 @@ const mainLogger = new Logger('netsblox:test');
 const storage = new Storage(mainLogger);
 const serverUtils = reqSrc('server-utils');
 const Projects = reqSrc('storage/projects');
+const NetworkTopology = reqSrc('network-topology');
+
+NetworkTopology.init(new Logger('netsblox:test'));
 
 (function() {
     var clientDir = path.join(PROJECT_ROOT, 'src', 'browser'),
@@ -79,49 +81,48 @@ const canLoadXml = string => {
 let logger = new Logger('netsblox:test');
 const createSocket = function(username) {
     const socket = new NetsBloxSocket(logger, new Socket());
-    socket.uuid = `_netsblox${Date.now()}`;
+    socket.uuid = serverUtils.getNewClientId();
     socket.username = username || socket.uuid;
+    NetworkTopology.onConnect(socket);
     return socket;
 };
 
 const createRoom = function(config) {
     // Get the room and attach a project
-    const room = new ActiveRoom(logger, config.name, config.owner);
-    let attachProject = Q(room);
-    
-    if (config.owner) {
-        const socket = createSocket(config.owner);
-        attachProject = Projects.new(socket, room)
-            .then(project => room.setStorage(project));
-    }
+    const roleNames = Object.keys(config.roles);
 
-    return attachProject
-        .then(() => {
-            const roleNames = Object.keys(config.roles);
-            const createRoles = roleNames.reduce((promise, name) => {
-                config.roles[name] = config.roles[name] || [];
-                return promise
-                    .then(() => room.silentCreateRole(name))
-                    .then(() => {
-                        const usernames = config.roles[name];
-                        const addSockets = usernames.map(username => {
-                            const socket = createSocket(username);
-                            return room.silentAdd(socket, name);
-                        });
-                        return Q.all(addSockets);
-                    });
-            }, Q());
+    // Ensure there is an owner
+    config.owner = config.owner || roleNames
+        .map(name => config.roles[name])
+        .reduce((l1, l2) => l1.concat(l2), [])
+        .unshift();
 
-            return createRoles;
+    const {name, owner} = config;
+    let project = null;
+    return Projects.new({name, owner})
+        .then(result => {
+            project = result;
+            const roles = roleNames.map(name => serverUtils.getEmptyRole(name));
+            return project.setRoles(roles);
         })
-        .then(() => {
-            //  Add response capabilities
-            room.sockets().forEach(socket => {
-                socket._socket.addResponse('project-request', sendEmptyRole.bind(socket));
-            });
+        .then(() => project.getRoleIdsFor(roleNames))
+        .then(ids => {
+            const projectId = project.getId();
 
-            return room;
+            roleNames.forEach((name, i) => {
+                const roleId = ids[i];
+                const usernames = config.roles[name];
+
+                usernames.forEach(username => {
+                    const socket = createSocket(username);
+                    console.log('setClientState', socket.uuid, projectId, roleId);
+                    NetworkTopology.setClientState(socket.uuid, projectId, roleId, username);
+                    return socket;
+                });
+            });
+            return project;
         });
+
 };
 
 const sendEmptyRole = function(msg) {

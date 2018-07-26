@@ -1,9 +1,7 @@
 describe('collaboration', function() {
     const utils = require('../assets/utils');
-    const RoomManager = utils.reqSrc('rooms/room-manager');
-    const Logger = utils.reqSrc('logger');
-    const ActiveRoom = utils.reqSrc('rooms/active-room');
     const assert = require('assert');
+    const NetworkTopology = utils.reqSrc('network-topology');
     const Q = require('q');
     const _ = require('lodash');
     const twentyActions = _.range(20).map(i => {
@@ -13,11 +11,10 @@ describe('collaboration', function() {
         };
     });
 
-    describe('basic', function() {
+    describe.only('basic', function() {
         let p1, p2;
-        beforeEach(done => {
-            RoomManager.init(new Logger('active-room-test'), {}, ActiveRoom);
-            utils.reset()
+        beforeEach(() => {
+            return utils.reset()
                 .then(() => utils.createRoom({
                     name: 'test-room',
                     owner: 'brian',
@@ -26,31 +23,29 @@ describe('collaboration', function() {
                         role2: []
                     }
                 }))
-                .then(room => [p1, p2] = room.getSocketsAt('role'))
-                .nodeify(done);
+                .then(project => {
+                    return project.getRoleId('role')
+                        .then(roleId => {
+                            [p1, p2] = NetworkTopology.getSocketsAt(project.getId(), roleId);
+                        });
+                });
         });
 
-        it('should block conflicting actions', function(done) {
-            p1._socket.receive({type: 'user-action', action:{id: 2}})
-                .then(() => p1._socket.receive({type: 'user-action', action:{id: 1}}))
-                .then(() => {
-                    let actions = p1._socket.messages().filter(msg => msg.type === 'user-action');
-                    assert.equal(actions.length, 1);
-                })
-                .nodeify(done);
+        it('should block conflicting actions', async function() {
+            await p1._socket.receive({type: 'user-action', action:{id: 2}})
+            await p1._socket.receive({type: 'user-action', action:{id: 1}})
+            let actions = p1._socket.messages().filter(msg => msg.type === 'user-action');
+            assert.equal(actions.length, 1);
         });
 
-        it('should send actions to all users', function(done) {
-            p1._socket.receive({type: 'user-action', action:{id: 2}})
-                .then(() => p1._socket.receive({type: 'user-action', action:{id: 3}}))
-                .then(() => {
-                    let actions = p1._socket.messages().filter(msg => msg.type === 'user-action');
-                    assert.equal(actions.length, 2);
+        it('should send actions to all users', async function() {
+            await p1._socket.receive({type: 'user-action', action:{id: 2}});
+            await p1._socket.receive({type: 'user-action', action:{id: 3}});
+            let actions = p1._socket.messages().filter(msg => msg.type === 'user-action');
+            assert.equal(actions.length, 2);
 
-                    actions = p2._socket.messages().filter(msg => msg.type === 'user-action');
-                    assert.equal(actions.length, 2);
-                })
-                .nodeify(done);
+            actions = p2._socket.messages().filter(msg => msg.type === 'user-action');
+            assert.equal(actions.length, 2);
         });
     });
 
@@ -58,7 +53,6 @@ describe('collaboration', function() {
         let user = null;
         let room = null;
         beforeEach(done => {
-            RoomManager.init(new Logger('active-room-test'), {}, ActiveRoom);
             utils.reset()
                 .then(() => utils.createRoom({
                     name: 'test-room',
