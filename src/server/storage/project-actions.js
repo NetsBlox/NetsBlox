@@ -1,6 +1,5 @@
 (function(ProjectActions) {
     const Q = require('q');
-    const ObjectId = require('mongodb').ObjectId;
     let logger, collection;
 
     ProjectActions.getCollection = function() {
@@ -24,7 +23,7 @@
     ProjectActions.getActionsAfter = function(projectId, roleId, actionId) {
         logger.trace(`getting actions after ${actionId} in ${projectId} at role: ${roleId}`);
         let cursor = collection.find({
-            projectId: ObjectId(projectId),
+            projectId: projectId,
             roleId: roleId,
             notSaved: {$ne: true},
             'action.id': {$gt: actionId}
@@ -35,7 +34,7 @@
     ProjectActions.clearActionsAfter = function(projectId, roleId, actionId, endTime) {
         let ctx = `after ${actionId} in ${projectId} at role: ${roleId}`;
         let query = {
-            projectId: ObjectId(projectId),
+            projectId: projectId,
             roleId: roleId,
             time: {$lte: endTime},
             'action.id': {$gt: actionId}
