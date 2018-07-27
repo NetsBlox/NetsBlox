@@ -72,7 +72,7 @@ const canLoadXml = string => {
     var xml;
 
     // Add a collabId and reserialize
-    var res = Client.SnapActions.uniqueIdForImport(string);
+    var res = Browser.SnapActions.uniqueIdForImport(string);
     xml = res.toString();
     assert(parser.parse(xml));
 };
