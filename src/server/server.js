@@ -30,7 +30,7 @@ var express = require('express'),
 const CLIENT_ROOT = path.join(__dirname, '..', 'browser');
 const indexTpl = dot.template(fs.readFileSync(path.join(CLIENT_ROOT, 'index.dot')));
 const middleware = require('./routes/middleware');
-const NetsBloxSocket = require('./rooms/netsblox-socket');
+const Client = require('./client');
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -47,7 +47,7 @@ var Server = function(opts) {
     // Group and RPC Managers
     this.rpcManager = RPCManager;
     NetworkTopology.init(this._logger, this.storage);
-    NetsBloxSocket.prototype.onClose = function() {
+    Client.prototype.onClose = function() {
         NetworkTopology.onDisconnect(this);
     };
 };
@@ -303,7 +303,7 @@ Server.prototype.start = function(done) {
                 this._wss = new WebSocketServer({server: this._server});
                 this._wss.on('connection', (socket, req) => {
                     socket.upgradeReq = req;
-                    const client = new NetsBloxSocket(this._logger, socket);
+                    const client = new Client(this._logger, socket);
                     NetworkTopology.onConnect(client);
                 });
 

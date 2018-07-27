@@ -60,7 +60,7 @@ MockRPC.prototype.addMethod = function(name) {
             roleId: this.socket.roleId,
             clientId: this.socket.uuid,
             username: this.socket.username,
-            projectId: 'testProject'
+            projectId: this.socket.projectId || 'testProject'
         };
         return this._rpc[name].apply(ctx, arguments);
     };

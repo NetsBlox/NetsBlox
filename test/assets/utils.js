@@ -10,7 +10,7 @@ const Q = require('q');
 const PROJECT_ROOT = path.join(__dirname, '..', '..');
 const reqSrc = p => require(PROJECT_ROOT + '/src/server/' + p);
 
-const NetsBloxSocket = require(PROJECT_ROOT + '/src/server/rooms/netsblox-socket');
+const Client = reqSrc('client');
 const Socket = require('./mock-websocket');
 const Logger = require(PROJECT_ROOT + '/src/server/logger');
 const Storage = require(PROJECT_ROOT + '/src/server/storage/storage');
@@ -36,7 +36,7 @@ NetworkTopology.init(new Logger('netsblox:test'));
                     .split('// Morph')[0]
                     .split('// Global Functions')[1];
             }
-        
+
             if (file.includes('store.js')) {  // remove the SnapSerializer stuff
                 code = code.split('StageMorph.prototype.toXML')[0];
             }
@@ -53,9 +53,9 @@ NetworkTopology.init(new Logger('netsblox:test'));
         'var SnapActions;',
         'var SnapCloud = {};',
         src,
-        'global.Client = global.Client || {};',
-        'global.Client.XML_Serializer = XML_Serializer;',
-        'global.Client.SnapActions = SnapActions;'
+        'global.Browser = global.Browser || {};',
+        'global.Browser.XML_Serializer = XML_Serializer;',
+        'global.Browser.SnapActions = SnapActions;'
     ].join('\n');
     eval(src);
 })(this);
@@ -67,7 +67,7 @@ const idBlocks = block => {
     return block;
 };
 
-const parser = new Client.XML_Serializer();
+const parser = new Browser.XML_Serializer();
 const canLoadXml = string => {
     var xml;
 
@@ -80,7 +80,7 @@ const canLoadXml = string => {
 // Create configured room helpers
 let logger = new Logger('netsblox:test');
 const createSocket = function(username) {
-    const socket = new NetsBloxSocket(logger, new Socket());
+    const socket = new Client(logger, new Socket());
     socket.uuid = serverUtils.getNewClientId();
     socket.username = username || socket.uuid;
     NetworkTopology.onConnect(socket);

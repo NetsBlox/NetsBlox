@@ -1,12 +1,12 @@
-describe('netsblox-socket', function() {
-    var ROOT_DIR = '../../../../',
+describe('client (ws)', function() {
+    var ROOT_DIR = '../../../',
         utils = require(ROOT_DIR + 'test/assets/utils'),
         sUtils = utils.reqSrc('server-utils'),
-        NBSocket = utils.reqSrc('rooms/netsblox-socket'),
+        Client = utils.reqSrc('client'),
         Logger = utils.reqSrc('logger'),
-        Constants = require(ROOT_DIR + 'src/common/constants'),
+        Constants = utils.reqSrc('../common/constants'),
         assert = require('assert'),
-        logger = new Logger('netsblox-socket'),
+        logger = new Logger('client'),
         MockWebSocket = require(ROOT_DIR + 'test/assets/mock-websocket'),
         socket;
 
@@ -15,7 +15,7 @@ describe('netsblox-socket', function() {
     describe('getNewName', function() {
 
         before(function() {
-            socket = new NBSocket(logger, new MockWebSocket());
+            socket = new Client(logger, new MockWebSocket());
         });
 
         it('should generate new project names', function() {
@@ -30,11 +30,11 @@ describe('netsblox-socket', function() {
 
         before(function() {
             msg = {
-                type: 'uuid', 
+                type: 'uuid',
                 dstId: 'fred'
             };
             rawSocket = new MockWebSocket();
-            socket = new NBSocket(logger, rawSocket);
+            socket = new Client(logger, rawSocket);
         });
 
         it('should default "type" to "message"', function() {
@@ -90,7 +90,7 @@ describe('netsblox-socket', function() {
         it('should ignore bad dstId for interroom messages', function() {
             var msg = {};
             msg.dstId = 0;
-            NBSocket.MessageHandlers.message.call(alice, msg);
+            Client.MessageHandlers.message.call(alice, msg);
         });
 
         // Test local message routing
@@ -153,13 +153,13 @@ describe('netsblox-socket', function() {
     });
 
     describe('broken connections', function() {
-        before(() => NBSocket.setHeartBeatInterval(25));
-        after(() => NBSocket.resetHeartBeatInterval());
+        before(() => Client.setHeartBeatInterval(25));
+        after(() => Client.resetHeartBeatInterval());
 
         it('should detect and close broken connections', function(done) {
             // Create a socket
             let ws = new MockWebSocket();
-            let socket = new NBSocket(logger, ws);
+            let socket = new Client(logger, ws);
 
             // Verify that 'onclose' is called
             socket.onclose.push(done);
@@ -172,7 +172,7 @@ describe('netsblox-socket', function() {
     describe('version checking', function() {
         it('should send server version on connect', function() {
             let ws = new MockWebSocket();
-            let socket = new NBSocket(logger, ws);
+            let socket = new Client(logger, ws);
             let msg = socket._socket.message(-1);
             assert.equal(msg.type, 'report-version');
         });

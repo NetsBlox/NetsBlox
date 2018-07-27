@@ -4,9 +4,9 @@
 'use strict';
 var counter = 0,
     Q = require('q'),
-    Constants = require(__dirname + '/../../common/constants'),
-    Utils = require('../server-utils'),
-    UserActions = require('../storage/user-actions'),
+    Constants = require(__dirname + '/../common/constants'),
+    Utils = require('./server-utils'),
+    UserActions = require('./storage/user-actions'),
     SILENT_MSGS = [
         'pong'
     ],
@@ -17,14 +17,14 @@ var counter = 0,
         'user-action'
     ];
 
-const Messages = require('../storage/messages');
-const ProjectActions = require('../storage/project-actions');
+const Messages = require('./storage/messages');
+const ProjectActions = require('./storage/project-actions');
 const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
 const HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
-const BugReporter = require('../bug-reporter');
-const Projects = require('../storage/projects');
-const NetsBloxAddress = require('../netsblox-address');
-const NetworkTopology = require('../network-topology');
+const BugReporter = require('./bug-reporter');
+const Projects = require('./storage/projects');
+const NetsBloxAddress = require('./netsblox-address');
+const NetworkTopology = require('./network-topology');
 
 class NetsBloxSocket {
     constructor (logger, socket) {
