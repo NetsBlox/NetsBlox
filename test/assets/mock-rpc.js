@@ -8,7 +8,7 @@ var Constants = require('../../src/common/constants'),
     _ = require('lodash');
 
 const utils = require('./utils');
-const NetsBloxSocket = utils.reqSrc('rooms/netsblox-socket');
+const Client = utils.reqSrc('client');
 const Logger = utils.reqSrc('logger');
 const MockSocket = require('./mock-websocket');
 
@@ -18,7 +18,7 @@ var MockRPC = function(RPC, raw) {
     this.createMethods(RPC);
 
     const logger = new Logger('netsblox:test:services');
-    this.socket = new NetsBloxSocket(logger, new MockSocket());
+    this.socket = new Client(logger, new MockSocket());
     this.response = new MockResponse();
     this.request = new MockRequest();
 
