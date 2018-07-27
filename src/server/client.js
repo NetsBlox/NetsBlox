@@ -26,7 +26,7 @@ const Projects = require('./storage/projects');
 const NetsBloxAddress = require('./netsblox-address');
 const NetworkTopology = require('./network-topology');
 
-class NetsBloxSocket {
+class Client {
     constructor (logger, socket) {
         this.id = (++counter);
         this._logger = logger.fork(this.uuid);
@@ -154,8 +154,8 @@ class NetsBloxSocket {
         }
 
         this.lastSocketActivity = Date.now();
-        if (NetsBloxSocket.MessageHandlers[type]) {
-            result = NetsBloxSocket.MessageHandlers[type].call(this, msg) || Q();
+        if (Client.MessageHandlers[type]) {
+            result = Client.MessageHandlers[type].call(this, msg) || Q();
         } else {
             this._logger.warn('message "' + JSON.stringify(msg) + '" not recognized');
         }
@@ -165,25 +165,25 @@ class NetsBloxSocket {
 
     checkAlive() {
         const sinceLastMsg = Date.now() - this.lastSocketActivity;
-        if (sinceLastMsg > 2*NetsBloxSocket.HEARTBEAT_INTERVAL || this.isSocketDead()) {
+        if (sinceLastMsg > 2*Client.HEARTBEAT_INTERVAL || this.isSocketDead()) {
             this._socket.terminate();
             this.close();
         } else {
             if (this.nextHeartbeatCheck) {
                 clearTimeout(this.nextHeartbeatCheck);
             }
-            this.nextHeartbeatCheck = setTimeout(this.checkAlive.bind(this), NetsBloxSocket.HEARTBEAT_INTERVAL);
+            this.nextHeartbeatCheck = setTimeout(this.checkAlive.bind(this), Client.HEARTBEAT_INTERVAL);
         }
     }
 
     keepAlive() {
         let sinceLastMsg = Date.now() - this.lastSocketActivity;
-        if (sinceLastMsg >= NetsBloxSocket.HEARTBEAT_INTERVAL) {
+        if (sinceLastMsg >= Client.HEARTBEAT_INTERVAL) {
             this.ping();
             sinceLastMsg = 0;
         }
 
-        const nextMsgDelay = NetsBloxSocket.HEARTBEAT_INTERVAL - sinceLastMsg;
+        const nextMsgDelay = Client.HEARTBEAT_INTERVAL - sinceLastMsg;
         this.nextHeartbeat = setTimeout(this.keepAlive.bind(this), nextMsgDelay);
     }
 
@@ -359,12 +359,12 @@ class NetsBloxSocket {
 }
 
 // From the WebSocket spec
-NetsBloxSocket.prototype.CONNECTING = 0;
-NetsBloxSocket.prototype.OPEN = 1;
-NetsBloxSocket.prototype.CLOSING = 2;
-NetsBloxSocket.prototype.CLOSED = 3;
+Client.prototype.CONNECTING = 0;
+Client.prototype.OPEN = 1;
+Client.prototype.CLOSING = 2;
+Client.prototype.CLOSED = 3;
 
-NetsBloxSocket.MessageHandlers = {
+Client.MessageHandlers = {
     'pong': function() {
     },
 
@@ -548,8 +548,8 @@ NetsBloxSocket.MessageHandlers = {
 };
 
 // Utilities for testing
-NetsBloxSocket.HEARTBEAT_INTERVAL = HEARTBEAT_INTERVAL;
-NetsBloxSocket.setHeartBeatInterval = time => NetsBloxSocket.HEARTBEAT_INTERVAL = time;
-NetsBloxSocket.resetHeartBeatInterval = () => NetsBloxSocket.setHeartBeatInterval(HEARTBEAT_INTERVAL);
+Client.HEARTBEAT_INTERVAL = HEARTBEAT_INTERVAL;
+Client.setHeartBeatInterval = time => Client.HEARTBEAT_INTERVAL = time;
+Client.resetHeartBeatInterval = () => Client.setHeartBeatInterval(HEARTBEAT_INTERVAL);
 
-module.exports = NetsBloxSocket;
+module.exports = Client;
