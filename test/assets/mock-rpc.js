@@ -7,12 +7,18 @@ var Constants = require('../../src/common/constants'),
     MockResponse = require('./mock-response'),
     _ = require('lodash');
 
+const utils = require('./utils');
+const NetsBloxSocket = utils.reqSrc('rooms/netsblox-socket');
+const Logger = utils.reqSrc('logger');
+const MockSocket = require('./mock-websocket');
+
 var MockRPC = function(RPC, raw) {
     this._methods = [];
     this._rpc = typeof RPC === 'function' ? new RPC() : raw ? RPC : _.cloneDeep(RPC);
     this.createMethods(RPC);
 
-    this.socket = new MockSocket();
+    const logger = new Logger('netsblox:test:services');
+    this.socket = new NetsBloxSocket(logger, new MockSocket());
     this.response = new MockResponse();
     this.request = new MockRequest();
 
@@ -62,36 +68,6 @@ MockRPC.prototype.addMethod = function(name) {
             projectId: 'testProject'
         };
         return this._rpc[name].apply(ctx, arguments);
-    };
-};
-
-var MockSocket = function() {
-    this.reset();
-};
-
-MockSocket.prototype.send = function(msg) {
-    this._messages.push(msg);
-};
-
-MockSocket.prototype.message = function(index) {
-    if (index < 0) {
-        return this._messages[this._messages+index];
-    } else {
-        return this._messages[index];
-    }
-};
-
-MockSocket.prototype.messages = function() {
-    return this._messages.slice();
-};
-
-MockSocket.prototype.reset = function() {
-    this.role = 'newRole';
-    this.uuid = 'someSocketUuid';
-
-    this._messages = [];
-    this._room = {
-        sockets: () => []
     };
 };
 
