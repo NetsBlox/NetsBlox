@@ -96,9 +96,9 @@ britishmuseum._search = function(label, type, material, limit) {
 };
 
 /**
- * Search for entries using a label
+ * Search for artifacts using a label
  * @param {String} label Label to search for
- * @param {Number} limit Maximum number of entries to return
+ * @param {Number=} limit Maximum number of entries to return
  * @returns {Object} Table of entries found
  */
 britishmuseum.searchByLabel = function(label, limit){

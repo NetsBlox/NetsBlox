@@ -72,11 +72,11 @@ Earthquakes.stop = function() {
 
 
 /**
- * Get the current price of the given stock, with a 15 min delay
- * @param {Latitude=} minLatitude Minimum latitude of region
- * @param {Latitude=} maxLatitude Maximum latitude of region
- * @param {Longitude=} minLongitude Minimum longitude of region
- * @param {Longitude=} maxLongitude Maximum longitude of region
+ * Send messages for earthquakes within a given region
+ * @param {Latitude} minLatitude Minimum latitude of region
+ * @param {Latitude} maxLatitude Maximum latitude of region
+ * @param {Longitude} minLongitude Minimum longitude of region
+ * @param {Longitude} maxLongitude Maximum longitude of region
  * @param {String=} startTime Minimum time
  * @param {String=} endTime Maximum time
  * @param {Number=} minMagnitude Minimum magnitude of earthquakes to report
@@ -86,10 +86,10 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
     var socket = this.socket,
         response = this.response,
         options = {
-            minlatitude: +minLatitude || 0,
-            minlongitude: +minLongitude || 0,
-            maxlatitude: +maxLatitude || 0,
-            maxlongitude: +maxLongitude || 0,
+            minlatitude: minLatitude,
+            minlongitude: minLongitude,
+            maxlatitude: maxLatitude,
+            maxlongitude: maxLongitude,
             starttime: startTime ? stringToDate(startTime).toISOString() : moment().subtract(30, 'days').toDate().toISOString(),
             endtime: endTime ? stringToDate(endTime).toISOString() : new Date().toISOString(),
             minmagnitude: minMagnitude || null,

@@ -18,6 +18,7 @@ function encodeQueryData(options) {
 
 /**
  * Get the water data for sites within a bounding box.
+ * For help interpreting this data, see https://help.waterdata.usgs.gov/tutorials/surface-water-data/how-do-i-interpret-gage-height-and-streamflow-values
  * @param {Latitude} minLatitude Minimum latitude of bounding box
  * @param {Latitude} maxLatitude Maximum latitude of bounding box
  * @param {Longitude} minLongitude Minimum longitude of bounding box
@@ -57,6 +58,7 @@ waterwatch.gageHeight = function (minLatitude, maxLatitude, minLongitude, maxLon
 
 /**
  * Get stream flow data for sites within a bounding box.
+ * For help interpreting this data, see https://help.waterdata.usgs.gov/tutorials/surface-water-data/how-do-i-interpret-gage-height-and-streamflow-values
  * @param {Latitude} minLatitude Minimum latitude of bounding box
  * @param {Latitude} maxLatitude Maximum latitude of bounding box
  * @param {Longitude} minLongitude Minimum longitude of bounding box

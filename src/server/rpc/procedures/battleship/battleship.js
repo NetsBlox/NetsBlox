@@ -72,7 +72,7 @@ Battleship.prototype.start = function() {
 };
 
 /**
- * Places a ship on the board
+ * Place a ship on the board
  * @param {String} ship Ship type to place
  * @param {BoundedNumber<1,100>} row Row to place ship in
  * @param {BoundedNumber<1,100>} column Column to place ship in
@@ -191,7 +191,7 @@ Battleship.prototype.fire = function(row, column) {
 
 /**
  * Get number of remaining ships of a role
- * @param {String} roleID Type of ship
+ * @param {String} roleID Name of role to use
  * @returns {Number} Number of remaining ships
  */
 Battleship.prototype.remainingShips = function(roleId) {
