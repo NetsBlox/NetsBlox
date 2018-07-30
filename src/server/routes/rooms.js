@@ -218,6 +218,9 @@ module.exports = [
                             throw new Error('project is no longer open');
                         }
 
+                        // setClientState should be triggered by the client in case
+                        // the xml loading fails (could be bigger problems if collaborating).
+                        // FIXME
                         return NetworkTopology.setClientState(socketId, projectId, roleId, username)
                             .then(() => project.getRoleById(invite.roleId))
                             .then(role => utils.serializeRole(role, project));
