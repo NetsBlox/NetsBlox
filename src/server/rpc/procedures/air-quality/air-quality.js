@@ -39,7 +39,7 @@ var reportingLocations = (function() {  // Parse csv
                 longitude: +data[4]
             };
         });
-    })();
+})();
 
 /**
  * Get ZIP code of closest reporting location for coordinates
