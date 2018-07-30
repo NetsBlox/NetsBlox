@@ -37,11 +37,11 @@
                 name: this.name,
                 owner: this.owner,
             })
-            .then(result => {
-                const id = result.ops[0]._id;
-                this._id = id;
-            })
-            .then(() => this);
+                .then(result => {
+                    const id = result.ops[0]._id;
+                    this._id = id;
+                })
+                .then(() => this);
         }
 
         // generates a query that finds this entity in the db
@@ -80,19 +80,19 @@
             })
             .catch(() => {
                 return null;
-            })
+            });
     };
 
     GroupStore.get = function(id) {
         logger.trace(`getting ${id}`);
-        if (typeof id === 'string') id = ObjectId(id)
+        if (typeof id === 'string') id = ObjectId(id);
         return Q(collection.findOne({_id: id}))
             .then(data => {
-                    return new Group(data);
+                return new Group(data);
             })
             .catch(err => {
                 throw new Error(`group ${id} not found`);
-            })
+            });
 
     };
 

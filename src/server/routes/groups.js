@@ -20,8 +20,8 @@ module.exports = [
         Handler: async function(req) {
             // gets a list of groups
             let owner = req.session.username;
-             let groups = await Groups.all(owner);
-             return groups.map(grp => grp.data());
+            let groups = await Groups.all(owner);
+            return groups.map(grp => grp.data());
         }
     },
     {

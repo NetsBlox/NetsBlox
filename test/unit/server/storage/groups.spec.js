@@ -39,7 +39,7 @@ describe.only('groups', function() {
     it('should remove group', async function() {
         const name = 'my-old-group';
         let id;
-        let group = await Groups.new(name, owner)
+        let group = await Groups.new(name, owner);
         await Groups.remove(group._id);
         try {
             await Groups.get(group._id);
@@ -104,7 +104,7 @@ describe.only('groups', function() {
         assert.deepEqual(gps.length, groups.length);
         gps.forEach(gpName => {
             assert(groups.find(group => group.name = gpName));
-        })
+        });
     });
 
 
