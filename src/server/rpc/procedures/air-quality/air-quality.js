@@ -22,23 +22,23 @@ var debug = require('debug'),
 const AirConsumer = new ApiConsumer('air-quality', `http://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&API_KEY=${API_KEY}`,{cache: {ttl: 30*60}});
 
 var reportingLocations = (function() {  // Parse csv
-        var locationPath = path.join(__dirname, 'air-reporting-locations.csv'),
-            text = fs.readFileSync(locationPath, 'utf8'),
-            rawLocations = text.split('\n');
+    var locationPath = path.join(__dirname, 'air-reporting-locations.csv'),
+        text = fs.readFileSync(locationPath, 'utf8'),
+        rawLocations = text.split('\n');
 
-        rawLocations.pop();  // Remove trailing \n
-        rawLocations.shift();  // Remove header
-        return rawLocations
-            .map(function(line) {
-                var data = line.split('|');
-                return {
-                    city: data[0],
-                    state: data[1],
-                    zipcode: data[2],
-                    latitude: +data[3],
-                    longitude: +data[4]
-                };
-            });
+    rawLocations.pop();  // Remove trailing \n
+    rawLocations.shift();  // Remove header
+    return rawLocations
+        .map(function(line) {
+        var data = line.split('|');
+        return {
+            city: data[0],
+            state: data[1],
+            zipcode: data[2],
+            latitude: +data[3],
+            longitude: +data[4]
+        };
+        });
     })();
 
 /**
@@ -63,7 +63,7 @@ AirConsumer._getClosestReportingLocation = function(latitude, longitude) {
  * @returns {Number} AQI of closest station
  */
 AirConsumer.qualityIndex = function(latitude, longitude) {
-    var nearest = this._getClosestReportingLocation(latitude, longitude);;
+    var nearest = this._getClosestReportingLocation(latitude, longitude);
 
     trace(`Requesting air quality at ${latitude}, ${longitude} (nearest station: ${nearest})`);
 
@@ -82,7 +82,7 @@ AirConsumer.qualityIndexByZip = function(zipCode) {
     return this._sendAnswer({queryString: `&zipCode=${zipCode}`}, '.AQI')
     .catch(err => {
         
-        error('Could not get air quality index: ', e);
+        error('Could not get air quality index: ', err);
         
         throw err;
     }).then((r) => (r.length > 0? r[0]: -1));    
@@ -96,7 +96,7 @@ AirConsumer.qualityIndexByZip = function(zipCode) {
  */
 AirConsumer.aqi = function(latitude, longitude) {
     // For backwards compatibility, RPC had duplicate methods
-    return qualityIndex(latitude, longitude);
+    return this.qualityIndex(latitude, longitude);
 };
 
 AirConsumer.serviceName = 'AirQuality';
