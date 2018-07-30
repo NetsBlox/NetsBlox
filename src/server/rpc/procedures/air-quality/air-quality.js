@@ -30,14 +30,14 @@ var reportingLocations = (function() {  // Parse csv
     rawLocations.shift();  // Remove header
     return rawLocations
         .map(function(line) {
-        var data = line.split('|');
-        return {
-            city: data[0],
-            state: data[1],
-            zipcode: data[2],
-            latitude: +data[3],
-            longitude: +data[4]
-        };
+            var data = line.split('|');
+            return {
+                city: data[0],
+                state: data[1],
+                zipcode: data[2],
+                latitude: +data[3],
+                longitude: +data[4]
+            };
         });
     })();
 
