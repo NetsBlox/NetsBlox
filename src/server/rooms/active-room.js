@@ -217,7 +217,7 @@ class ActiveRoom {
     }
 
     getProjectId() {
-        return this._project && this._project._id;
+        return this._project && this._project.getId();
     }
 
     getProject() {

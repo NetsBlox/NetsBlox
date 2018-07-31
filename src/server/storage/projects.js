@@ -63,7 +63,7 @@
         }
 
         getId() {
-            return this._id;
+            return this._id.toString();
         }
 
         fork(room) {
@@ -568,7 +568,7 @@
 
     ProjectStorage.getProjectId = function(owner, name) {
         return ProjectStorage.getRawProject(owner, name)
-            .then(project => project && project._id);
+            .then(project => project && project._id.toString());
     };
 
     ProjectStorage.get = function (username, projectName) {
