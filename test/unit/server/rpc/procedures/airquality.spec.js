@@ -7,6 +7,6 @@ describe('air-quality', function() {
     utils.verifyRPCInterfaces(airquality, [
         ['qualityIndex', ['latitude', 'longitude']],
         ['aqi', ['latitude', 'longitude']],
-        ['qualityIndexByZip', ['zipCode']],
+        ['qualityIndexByZipCode', ['zipCode']],
     ]);
 });

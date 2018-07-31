@@ -75,7 +75,7 @@ AirConsumer.qualityIndex = function(latitude, longitude) {
  * @param {BoundedNumber<0,99999>} zipCode ZIP code of location
  * @returns {Number} AQI of closest station
  */
-AirConsumer.qualityIndexByZip = function(zipCode) {
+AirConsumer.qualityIndexByZipCode = function(zipCode) {
 
     trace(`Requesting air quality at ${zipCode}`);
 
@@ -93,6 +93,7 @@ AirConsumer.qualityIndexByZip = function(zipCode) {
  * @param {Latitude} latitude latitude of location
  * @param {Longitude} longitude Longitude of location
  * @returns {Number} AQI of closest station
+ * @deprecated
  */
 AirConsumer.aqi = function(latitude, longitude) {
     // For backwards compatibility, RPC had duplicate methods
