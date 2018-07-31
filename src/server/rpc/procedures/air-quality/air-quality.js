@@ -11,9 +11,7 @@
 
 const ApiConsumer = require('../utils/api-consumer');
 
-var debug = require('debug'),
-    error = debug('netsblox:rpc:air-quality:error'),
-    trace = debug('netsblox:rpc:air-quality:trace'),
+const logger = require('../utils/logger')('air-quality'),
     API_KEY = process.env.AIR_NOW_KEY,
     path = require('path'),
     fs = require('fs'),
@@ -52,7 +50,7 @@ AirConsumer._getClosestReportingLocation = function(latitude, longitude) {
         city = reportingLocations[nearest.key].city,
         state = reportingLocations[nearest.key].state,
         zipcode = reportingLocations[nearest.key].zipcode;
-    trace('Nearest reporting location is ' + city + ', ' + state);
+    logger.trace('Nearest reporting location is ' + city + ', ' + state);
     return zipcode;
 };
 
@@ -65,7 +63,7 @@ AirConsumer._getClosestReportingLocation = function(latitude, longitude) {
 AirConsumer.qualityIndex = function(latitude, longitude) {
     var nearest = this._getClosestReportingLocation(latitude, longitude);
 
-    trace(`Requesting air quality at ${latitude}, ${longitude} (nearest station: ${nearest})`);
+    logger.trace(`Requesting air quality at ${latitude}, ${longitude} (nearest station: ${nearest})`);
 
     return this.qualityIndexByZip(nearest);
 };
@@ -77,7 +75,7 @@ AirConsumer.qualityIndex = function(latitude, longitude) {
  */
 AirConsumer.qualityIndexByZipCode = function(zipCode) {
 
-    trace(`Requesting air quality at ${zipCode}`);
+    logger.trace(`Requesting air quality at ${zipCode}`);
 
     return this._sendAnswer({queryString: `&zipCode=${zipCode}`}, '.AQI')
     .catch(err => {
