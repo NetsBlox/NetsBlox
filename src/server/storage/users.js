@@ -1,6 +1,7 @@
 (function(UserStorage) {
 
-    const Q = require('q');
+    const Q = require('q'),
+        ObjectId = require('mongodb').ObjectId;
     const Groups = require('./groups');
     var randomString = require('just.randomstring'),
         hash = require('../../common/sha512').hex_sha512,
@@ -31,6 +32,12 @@
                 this.hash = hash(password);
             }
             delete this.password;
+        }
+
+        // updates based on mongoid vs username
+        update(user) {
+            return this._db.updateOne({_id: this._id}, { $set: {username: this.username, email: this.email} })
+                .then(() => this);
         }
 
         setPassword(password) {
@@ -186,6 +193,20 @@
                 this._logger.error(`Error when retrieving user: ${err}`);
                 throw err;
             });
+    };
+
+    UserStorage.getById = function(id) {
+        this._logger.trace(`getting ${id}`);
+        if (typeof id === 'string') id = ObjectId(id);
+        return Q(collection.findOne({_id: id}))
+            .then(data => {
+                return new User(this._logger, data);
+            })
+            .catch(err => {
+                this._logger.error(`Error when getting user by id ${err}`);
+                throw new Error(`group ${id} not found`);
+            });
+
     };
 
     UserStorage.names = function () {

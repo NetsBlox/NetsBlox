@@ -78,4 +78,18 @@ describe('users', function() {
                 .nodeify(done);
         });
     });
+
+    it('should update users email and username', async () => {
+        const newUsername = 'hamidz',
+            newEmail = 'newBrianEmail@email.com';
+
+        let user = await Users.get('hamid');
+        user.email = newEmail;
+        user.username = newUsername;
+        await user.update();
+        let updatedUser = await Users.getById(user._id);
+        assert.deepEqual(updatedUser.email, newEmail);
+        assert.deepEqual(updatedUser.username, newUsername);
+
+    });
 });
