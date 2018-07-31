@@ -51,6 +51,23 @@ module.exports = [
         }
     },
     {
+        URL: 'groups/:id',
+        Method: 'PATCH',
+        middleware: ['isLoggedIn', 'isGroupOwner'],
+        Handler: async function(req) {
+            const groupId = req.params.id;
+            // create a new group
+            let newGroupName = req.body.name;
+            if (!newGroupName) throw new Error('updated group name is required');
+            let owner = req.session.username;
+            logger.info('updating group', newGroupName, '/', owner);
+            let group = await Groups.get(groupId);
+            group.name = newGroupName;
+            await group.update();
+            return group.data();
+        }
+    },
+    {
         URL: 'groups',
         Method: 'POST',
         middleware: ['isLoggedIn'],
@@ -98,7 +115,7 @@ module.exports = [
         // overwrites member info
         // does not allow group membership change
         URL: 'groups/:id/members/:userId',
-        Method: 'PUT',
+        Method: 'PATCH',
         middleware: ['isLoggedIn', 'isGroupOwner', 'isValidMember', 'canManageMember', 'memberIsNew'],
         Handler: async function(req) {
             let username = req.body.username,

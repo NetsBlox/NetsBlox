@@ -16,11 +16,6 @@
             return this.owner;
         }
 
-        save() {
-            return this._db.updateOne(this._query(), { $set: {name: this.name, owner: this.owner} })
-                .then(() => this);
-        }
-
         // TODO lookup the members from the users collections
         findMember() {
         }
@@ -30,6 +25,11 @@
                 name: this.name,
                 _id: this._id
             };
+        }
+
+        update() {
+            return this._db.updateOne({_id: this._id}, { $set: {name: this.name} })
+                .then(() => this);
         }
 
         save() {
