@@ -154,6 +154,8 @@ var setUser = function(req, res, next) {
     });
 };
 
+// ====== group helper middlewares =======
+
 // check group write access
 let isGroupOwner = function(req, res, next) {
     if (req.method === 'OPTIONS') return next();
@@ -171,6 +173,40 @@ let isGroupOwner = function(req, res, next) {
             logger.error(err);
             res.status(404).send(`Group not found: ${groupId}`);
         });
+};
+
+// checks if the targeted groupuser exists
+let isValidMember = async function(req, res, next) {
+    let userId = req.params.userId;
+    if (!userId) return res.status(404).send('missing user (userId)');
+    let user = await server.storage.users.getById(userId);
+    if (!user) return res.status(404).send(`cant find user with user id ${userId}`);
+    next();
+};
+
+// checks to see if the user had activity on the server (eg has a project)
+// requires a validmember
+let memberIsNew = async function(req, res, next) {
+    // TODO add optional bypass
+    let userId = req.params.userId;
+    let user = await server.storage.users.getById(userId);
+    // condition #1: must have no saved or transient project
+    let projects = await user.getAllRawProjects();
+    if (projects.length !== 0) return res.status(403).send('user is not new');
+
+    next();
+};
+
+// requires a validMember
+let canManageMember = async function(req, res, next) {
+    const groupId = req.params.id,
+        userId = req.params.userId;
+    let user = await server.storage.users.getById(userId);
+    if (!user.groupId || user.groupId !== groupId) {
+        res.status(403).send('unauthorized to make changes to this user');
+    } else {
+        next();
+    }
 };
 
 
@@ -196,6 +232,9 @@ module.exports = {
     setUser,
     setUsername,
     isGroupOwner,
+    isValidMember,
+    memberIsNew,
+    canManageMember,
 
     // additional
     init: _server => {

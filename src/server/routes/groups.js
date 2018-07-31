@@ -99,7 +99,7 @@ module.exports = [
         // does not allow group membership change
         URL: 'groups/:id/members/:userId',
         Method: 'PUT',
-        middleware: ['isLoggedIn', 'isGroupOwner'],
+        middleware: ['isLoggedIn', 'isGroupOwner', 'isValidMember', 'canManageMember', 'memberIsNew'],
         Handler: async function(req) {
             let username = req.body.username,
                 password = req.body.password,
@@ -109,14 +109,7 @@ module.exports = [
 
             if (!username || !email) throw new Error('missing information');
 
-            // make sure the requester is owner of all the affected groups
             let user = await Users.getById(userId);
-            if (!user) {
-                throw new Error('user not found'); // information leakage
-            }
-            if (!user.groupId || user.groupId !== groupId) {
-                throw new Error('unauthorized to make changes to this user');
-            }
             if (username && user.username !== username) { // updating the username
                 let userExists = await Users.get(username);
                 if (userExists) throw new Error('username already exists');
@@ -134,6 +127,7 @@ module.exports = [
         middleware: ['isLoggedIn', 'isGroupOwner'],
         Handler: function(req) {
             // delete a group
+            // TODO if any of the users are not new disallow
             let groupName = req.params.name;
             logger.info('removing group', groupName);
             return Groups.remove(groupName);
