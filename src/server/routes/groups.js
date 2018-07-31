@@ -6,6 +6,7 @@ const Logger = require('../logger'),
     // Storage = require('../src/server/storage/storage'),
     // storage = new Storage(logger),
     Users = require('../storage/users'),
+    assert = require('assert'),
     Groups = require('../storage/groups');
 
 // assuming group names are unique (id)
@@ -44,11 +45,9 @@ module.exports = [
         middleware: ['isLoggedIn', 'isGroupOwner'],
         Handler: async function(req) {
             // a specific group's details: (which only include members)
-            const groupId = req.params.id,
-                owner = req.session.username;
-            // TODO search the users for matching group id and return
+            const groupId = req.params.id;
             let users = await Users.find({groupId: {$eq: groupId}});
-            return users;
+            return users.map(u => u.pretty());
         }
     },
     {
@@ -66,31 +65,68 @@ module.exports = [
         }
     },
     {
-        // add new members
+        // create new members
         URL: 'groups/:id/members',
         Method: 'POST',
         middleware: ['isLoggedIn', 'isGroupOwner'],
-        Handler: function(req) {
+        Handler: async (req) => {
+            let username = req.body.username,
+                password = req.body.password,
+                email = req.body.email,
+                groupId = req.params.id;
+            let user = await Users.get(username);
+            if (user) {
+                throw new Error('user already exists');
+            }
+            user = Users.newWithPassword(
+                username,
+                email,
+                groupId,
+                password,
+            );
+            let result = await user.save();
+            if (result.upserted) {
+                assert.deepEqual(result.upserted.length, 1, 'expected to affect one row');
+                let _id = result.upserted[0]._id;
+                return {username, email, groupId, _id};
+            } else {
+                throw new Error(`failed to create user ${username}`);
+            }
+        }
+    },
+    {
+        // overwrites member info
+        // does not allow group membership change
+        URL: 'groups/:id/members/:userId',
+        Method: 'PUT',
+        middleware: ['isLoggedIn', 'isGroupOwner'],
+        Handler: async function(req) {
             let username = req.body.username,
                 password = req.body.password,
                 email = req.body.email,
                 groupId = req.params.id,
-                user;
-            return Users.get(username)
-                .then(_user => {
-                    user = _user;
-                    if (user) {
-                        throw new Error('user already exists');
-                    }
-                    user = Users.newWithPassword(
-                        username,
-                        email,
-                        groupId,
-                        password,
-                    );
-                    return user.save();
-                });
+                userId = req.params.userId;
+
+            if (!username || !email) throw new Error('missing information');
+
+            // make sure the requester is owner of all the affected groups
+            let user = await Users.getById(userId);
+            if (!user) {
+                throw new Error('user not found'); // information leakage
+            }
+            if (!user.groupId || user.groupId !== groupId) {
+                throw new Error('unauthorized to make changes to this user');
+            }
+            if (username && user.username !== username) { // updating the username
+                let userExists = await Users.get(username);
+                if (userExists) throw new Error('username already exists');
+            }
+            if (username) user.username = username;
+            if (email) user.email = email;
+            await user.update();
+            return `user saved ${user.username}`;
         }
+
     },
     {
         URL: 'groups/:id',
