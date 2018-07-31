@@ -216,10 +216,9 @@
     };
 
     UserStorage.find = function (query) {
-        return collection.find(query).toArray();
-        // TODO wrap each user in User class?
+        return collection.find(query).toArray()
+            .then(users => users.map(user => new User(this._logger, user)));
     };
-
 
     UserStorage.forEach = function (fn) {
         const deferred = Q.defer();
@@ -248,6 +247,7 @@
         });
     };
 
+    // TODO merge this with new (optional password at the end)
     UserStorage.newWithPassword = function (username, email, groupId, password) {
         let user = this.new(username, email, groupId);
         user.hash = hash(password);
