@@ -139,6 +139,21 @@ module.exports = [
 
     },
     {
+        // delete a group member
+        URL: 'groups/:id/members/:userId',
+        Method: 'DELETE',
+        middleware: ['isLoggedIn', 'isGroupOwner', 'isValidMember', 'canManageMember', 'memberIsNew'],
+        Handler: async function(req) {
+            let groupId = req.params.id,
+                userId = req.params.userId;
+
+            let user = await Users.getById(userId);
+            await user.destroy();
+            return `user deleted ${user.username}`;
+        }
+
+    },
+    {
         URL: 'groups/:id',
         Method: 'DELETE',
         middleware: ['isLoggedIn', 'isGroupOwner'],
