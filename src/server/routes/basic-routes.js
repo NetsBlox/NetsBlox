@@ -123,7 +123,7 @@ module.exports = [
     },
     {
         Service: 'setClientState',
-        Parameters: 'clientId,projectId,roomName,roleName,owner,actionId',
+        Parameters: 'clientId,projectId,roomName,roleName,actionId',
         URL: 'setClientState',
         Method: 'Post',
         Note: '',
