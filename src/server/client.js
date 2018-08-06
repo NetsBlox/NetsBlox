@@ -463,7 +463,7 @@ Client.MessageHandlers = {
     },
 
     ///////////// Import/Export /////////////
-    'export-room': function(msg) {
+    'export-room': async function(msg) {
         if (this.hasProject()) {
             const projectId = this.projectId;
             const occupantForRole = {};
@@ -474,34 +474,32 @@ Client.MessageHandlers = {
                     occupantForRole[socket.roleId] = socket;
                 });
 
-            return Projects.getById(this.projectId)
-                .then(project => {
+            const project = await Projects.getById(this.projectId);
                     // For each role...
                     //   - if it is occupied, request the content
                     //   - else, use the content from the database
-                    return project.getRoleIds()
-                        .then(ids => {
-                            const fetchers = ids.map(id => {
-                                const occupant = occupantForRole[id];
-                                if (occupant) {
-                                    return occupant.getProjectJson()
-                                        .catch(err => {
-                                            this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
-                                            return project.getRoleById(id);
-                                        });
-                                }
-                                return project.getRoleById(id);
-                            });
+            return project.getRoleIds()
+                .then(ids => {
+                    const fetchers = ids.map(id => {
+                        const occupant = occupantForRole[id];
+                        if (occupant) {
+                            return occupant.getProjectJson()
+                                .catch(err => {
+                                    this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
+                                    return project.getRoleById(id);
+                                });
+                        }
+                        return project.getRoleById(id);
+                    });
 
-                            return Q.all(fetchers);
-                        });
+                    return Q.all(fetchers);
                 })
                 .then(roles => {
                     const roleContents = roles.map(content =>
                         Utils.xml.format('<role name="@">', content.ProjectName)
                         + content.SourceCode + content.Media + '</role>'
                     );
-                    return Utils.xml.format('<room name="@" app="@">', this.name, Utils.APP) +
+                    return Utils.xml.format('<room name="@" app="@">', project.name, Utils.APP) +
                         roleContents.join('') + '</room>';
                 })
                 .then(xml => {
