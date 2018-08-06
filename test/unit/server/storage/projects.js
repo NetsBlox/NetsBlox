@@ -658,4 +658,17 @@ describe('projects', function() {
                 .then(archive => assert.equal(archive.name, 'PublicProject'));
         });
     });
+
+    describe('getId', function() {
+        let project;
+
+        before(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
+        });
+
+        it('should return a string', function() {
+            assert.equal(typeof project.getId(), 'string');
+        })
+    });
 });
