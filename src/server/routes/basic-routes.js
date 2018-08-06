@@ -140,6 +140,9 @@ module.exports = [
                 .then(() => {
                     user = req.session.user;
                     userId = user.username;
+                })
+                .catch(err => {
+                    this._logger.info(`could not log in client ${clientId}: ${err.message}`);
                 });
 
 
