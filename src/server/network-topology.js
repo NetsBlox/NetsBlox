@@ -139,7 +139,7 @@ NetworkTopology.prototype.onRoleEmpty = function(projectId, roleId) {
 
             // Clear the actions after that ID
             return ProjectActions.clearActionsAfter(projectId, roleId, actionId, endTime);
-        })
+        });
 };
 
 NetworkTopology.prototype.sockets = function() {
