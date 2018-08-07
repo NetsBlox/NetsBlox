@@ -45,7 +45,7 @@ if (isDevEnv) {  // don't minify in dev
     const result = ugly.minify(uglySrc);
     final_code = result.code;
     if (result.error) {
-        console.error(result);
+        console.error(result.error);
         throw result.error;
     }
     console.log('output length:', final_code.length);
