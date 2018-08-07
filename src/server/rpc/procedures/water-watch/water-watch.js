@@ -96,7 +96,6 @@ waterwatch.waterTemp = function (minLatitude, maxLatitude, minLongitude, maxLong
 };
 
 /**
- * Ask the server to stop sending messages.
  * @returns {Number} Number of messages stopped.
  */
 waterwatch.stop = function(){
