@@ -122,10 +122,10 @@ waterwatch.waterTemp = function (minLatitude, maxLatitude, minLongitude, maxLong
 
 /**
  * Stop sending messages from this service.
+ * @returns {Number} Number of messages stopped.
  */
 waterwatch.stop = function(){
-    this._stopMsgs();
-    return null;
+    return this._stopMsgs();
 };
 
 module.exports = waterwatch;
