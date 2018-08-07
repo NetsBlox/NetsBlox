@@ -123,6 +123,7 @@ describe('jsdoc-extractor', () => {
                  * @param {BoundedNumber<-10, 20>} negnumber number (between -10,20)
                  * @param {BoundedNumber<10.334, 20>} decnumber number (between 10.334,20)
                  * @param {BoundedNumber<String, 20>} mixed
+                 * @param {BoundedNumber<10, 20>=} IAmOptional
                  * @name doSomething
                  */
                 `;
@@ -148,6 +149,12 @@ describe('jsdoc-extractor', () => {
             it('should parse decimal params', () => {
                 const argType = parsed.args[2].type;
                 assert.deepEqual(argType.params, [10.334, 20]);
+            });
+
+            it('should support optional param types', () => {
+                const arg = parsed.args[4];
+                assert(arg.optional);
+                assert.deepEqual(arg.type.params, [10, 20]);
             });
         });
 
