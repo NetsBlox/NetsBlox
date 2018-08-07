@@ -52,8 +52,8 @@ NetworkTopology.prototype.setClientState = async function(clientId, projectId, r
     const client = this.getSocket(clientId);
 
     if (!client) {
-        this._logger.info(`Could not set client state for ${clientId}`);
-        return Promise.resolve();
+        this._logger.warn(`Could not set client state for ${clientId}`);
+        return this.getRoomState(projectId);
     }
 
     // Update the changed rooms
