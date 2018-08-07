@@ -294,6 +294,7 @@ class ApiConsumer {
             this.response.status(304).send('stopping sending of the remaining ' + 0 + 'msgs');
             this._logger.trace('there are no messages in the queue to stop.');
         }
+        return null; // allows the caller to just return this function
     }
 }
 

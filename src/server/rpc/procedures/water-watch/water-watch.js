@@ -96,8 +96,7 @@ waterwatch.waterTemp = function (minLatitude, maxLatitude, minLongitude, maxLong
 };
 
 waterwatch.stop = function(){
-    this._stopMsgs();
-    return Promise.resolve();
+    return this._stopMsgs();
 };
 
 module.exports = waterwatch;
