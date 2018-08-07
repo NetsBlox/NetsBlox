@@ -578,8 +578,10 @@ RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
     return robot;
 };
 
+// fails silently if it can't get the robot
 RoboScape.prototype._getRobot = function (robot) {
     robot = '' + robot;
+    if( robot.length < 4) return false;
     if (robot.length === 6) {
         return RoboScape.prototype._robots[robot];
     }
