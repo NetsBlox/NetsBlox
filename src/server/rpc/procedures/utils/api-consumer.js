@@ -291,7 +291,8 @@ class ApiConsumer {
             delete this._remainingMsgs[this.socket.uuid];
             this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.role);
         }else {
-            return 'there are no messages in the queue to stop.';
+            this.response.status(304).send('stopping sending of the remaining ' + 0 + 'msgs');
+            this._logger.trace('there are no messages in the queue to stop.');
         }
     }
 }
