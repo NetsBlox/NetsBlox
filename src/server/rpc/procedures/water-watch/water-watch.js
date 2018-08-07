@@ -95,6 +95,10 @@ waterwatch.waterTemp = function (minLatitude, maxLatitude, minLongitude, maxLong
     return this._sendMsgs(queryOptions, parser, 'waterTemp');
 };
 
+/**
+ * Ask the server to stop sending messages.
+ * @returns {Number} Number of messages stopped.
+ */
 waterwatch.stop = function(){
     return this._stopMsgs();
 };
