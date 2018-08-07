@@ -98,7 +98,7 @@ britishmuseum._search = function(label, type, material, limit) {
 /**
  * Search for artifacts using a label
  * @param {String} label Label to search for
- * @param {Number=} limit Maximum number of artifacts to return
+ * @param {BoundedNumber<0>=} limit Maximum number of artifacts to return
  * @returns {Object} Table of artifacts found
  */
 britishmuseum.searchByLabel = function(label, limit){
@@ -121,7 +121,7 @@ britishmuseum.searchByLabel = function(label, limit){
 /**
  * Search for artifacts by type
  * @param {String} type Type to search for
- * @param {Number=} limit Maximum number of artifacts to return
+ * @param {BoundedNumber<0>=} limit Maximum number of artifacts to return
  * @returns {Object} Table of artifacts found
  */
 britishmuseum.searchByType = function(type, limit){
@@ -146,7 +146,7 @@ britishmuseum.searchByType = function(type, limit){
 /**
  * Search for artifacts by material
  * @param {String} material Material to search for
- * @param {Number=} limit Maximum number of artifacts to return
+ * @param {BoundedNumber<0>=} limit Maximum number of artifacts to return
  * @returns {Object} Table of artifacts found
  */
 britishmuseum.searchByMaterial = function(material, limit){

@@ -76,7 +76,7 @@ Battleship.prototype.start = function() {
  * @param {String} ship Ship type to place
  * @param {BoundedNumber<1,100>} row Row to place ship in
  * @param {BoundedNumber<1,100>} column Column to place ship in
- * @param {BoundedNumber<0,3>} facing Direction to face
+ * @param {String} facing Direction to face
  * @returns {Boolean} If piece was placed
  */
 Battleship.prototype.placeShip = function(ship, row, column, facing) {

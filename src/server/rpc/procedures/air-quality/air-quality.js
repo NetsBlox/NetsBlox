@@ -65,7 +65,7 @@ AirConsumer.qualityIndex = function(latitude, longitude) {
 
     logger.trace(`Requesting air quality at ${latitude}, ${longitude} (nearest station: ${nearest})`);
 
-    return this.qualityIndexByZip(nearest);
+    return this.qualityIndexByZipCode(nearest);
 };
 
 /**
