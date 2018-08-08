@@ -91,6 +91,7 @@ NetworkTopology.prototype.getRoomState = function(projectId) {
             });
 
             return {
+                saved: !metadata.transient,
                 version: Date.now(),
                 owner: metadata.owner,
                 id: metadata._id.toString(),
@@ -120,9 +121,14 @@ NetworkTopology.prototype.onRoomUpdate = function(projectId) {
 NetworkTopology.prototype.onClientLeave = function(projectId, roleId) {
     return this.onRoomUpdate(projectId)
         .then(state => {  // Check if previous role is now empty
-            const isEmpty = state.roles[roleId].occupants.length === 0;
+            const isRoleEmpty = state.roles[roleId].occupants.length === 0;
+            const isProjectEmpty = !Object.values(state.roles)
+                .find(role => role.occupants.length > 0);
 
-            if (isEmpty) {
+            // Check if project is empty. If empty and the project is unsaved, remove it
+            if (isProjectEmpty && !state.saved) {
+                return Projects.destroy(state.id);
+            } else if (isRoleEmpty) {
                 return this.onRoleEmpty(projectId, roleId);
             }
         });
