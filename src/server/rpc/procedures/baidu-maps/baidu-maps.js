@@ -35,13 +35,14 @@ var BaiduMaps = function(projectId) {
     this._state = {};
     this._state.projectId = projectId;
     this._state.userMaps = {};  // Store the state of the map for each user
+    this.coordscale = 1.16447486;
 };
 
 BaiduMaps.prototype._coordsAt = function(x, y, map) {
     let centerLl = [map.center.lon, map.center.lat];
-    let centerPx = merc.px(centerLl, map.zoom);
+    let centerPx = merc.px(centerLl, map.zoom - 1);
     let targetPx = [centerPx[0] + parseInt(x), centerPx[1] - parseInt(y)];
-    let targetLl = merc.ll(targetPx, map.zoom); // long lat
+    let targetLl = merc.ll(targetPx, map.zoom - 1); // long lat
     let coords = {lat: targetLl[1], lon: targetLl[0]};
     if (coords.lon < -180) coords.lon = coords.lon + 360;
     if (coords.lon > 180) coords.lon = coords.lon - 360;
@@ -50,9 +51,9 @@ BaiduMaps.prototype._coordsAt = function(x, y, map) {
 
 BaiduMaps.prototype._pixelsAt = function(lat, lon, map) {
     // current latlon in px
-    let curPx = merc.px([map.center.lon, map.center.lat], map.zoom);
+    let curPx = merc.px([map.center.lon, map.center.lat], map.zoom - 1);
     // new latlon in px
-    let targetPx = merc.px([lon, lat], map.zoom);
+    let targetPx = merc.px([lon, lat], map.zoom - 1);
     // difference in px
     return {x: (targetPx[0] - curPx[0]), y: -(targetPx[1] - curPx[1])};
 };
@@ -70,6 +71,7 @@ BaiduMaps.prototype._getBaiduParams = function(options, precisionLimit) {
     params.push('center=' + centerLon + ',' + centerLat);
     params.push('ak=' + key);
     params.push('zoom='+(options.zoom || '12'));
+    
     return params.join('&');
 };
 
@@ -206,7 +208,7 @@ BaiduMaps.prototype.getYFromLatitude = function(latitude) {
  */
 BaiduMaps.prototype.getLongitudeFromX = function(x){
     return this._getUserMap(this.caller.clientId).then(mapInfo => {
-        let coords = this._coordsAt(x,0, mapInfo);
+        let coords = this._coordsAt(x / this.coordscale,0, mapInfo);
         return coords.lon;
     });
 };
@@ -218,7 +220,7 @@ BaiduMaps.prototype.getLongitudeFromX = function(x){
  */
 BaiduMaps.prototype.getLatitudeFromY = function(y){
     return this._getUserMap(this.caller.clientId).then(mapInfo => {
-        let coords = this._coordsAt(0,y, mapInfo);
+        let coords = this._coordsAt(0,y / this.coordscale, mapInfo);
         return coords.lat;
     });
 };
