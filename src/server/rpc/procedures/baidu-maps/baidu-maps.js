@@ -41,7 +41,7 @@ var BaiduMaps = function(projectId) {
 BaiduMaps.prototype._coordsAt = function(x, y, map) {
     let centerLl = [map.center.lon, map.center.lat];
     let centerPx = merc.px(centerLl, map.zoom - 1);
-    let targetPx = [centerPx[0] + parseInt(x), centerPx[1] - parseInt(y)];
+    let targetPx = [centerPx[0] + parseInt(x / this.coordscale), centerPx[1] - parseInt(y / this.coordscale)];
     let targetLl = merc.ll(targetPx, map.zoom - 1); // long lat
     let coords = {lat: targetLl[1], lon: targetLl[0]};
     if (coords.lon < -180) coords.lon = coords.lon + 360;
@@ -55,7 +55,7 @@ BaiduMaps.prototype._pixelsAt = function(lat, lon, map) {
     // new latlon in px
     let targetPx = merc.px([lon, lat], map.zoom - 1);
     // difference in px
-    return {x: (targetPx[0] - curPx[0]), y: -(targetPx[1] - curPx[1])};
+    return {x: (targetPx[0] - curPx[0]) * this.coordscale, y: -(targetPx[1] - curPx[1]) * this.coordscale};
 };
 
 
@@ -208,7 +208,7 @@ BaiduMaps.prototype.getYFromLatitude = function(latitude) {
  */
 BaiduMaps.prototype.getLongitudeFromX = function(x){
     return this._getUserMap(this.caller.clientId).then(mapInfo => {
-        let coords = this._coordsAt(x / this.coordscale,0, mapInfo);
+        let coords = this._coordsAt(x,0, mapInfo);
         return coords.lon;
     });
 };
@@ -220,7 +220,7 @@ BaiduMaps.prototype.getLongitudeFromX = function(x){
  */
 BaiduMaps.prototype.getLatitudeFromY = function(y){
     return this._getUserMap(this.caller.clientId).then(mapInfo => {
-        let coords = this._coordsAt(0,y / this.coordscale, mapInfo);
+        let coords = this._coordsAt(0,y, mapInfo);
         return coords.lat;
     });
 };
