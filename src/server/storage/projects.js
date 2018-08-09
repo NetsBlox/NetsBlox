@@ -742,4 +742,8 @@
         return project.create();
     };
 
+    ProjectStorage.destroy = function(projectId) {
+        return collection.deleteOne({_id: ObjectId(projectId)});
+    };
+
 })(exports);
