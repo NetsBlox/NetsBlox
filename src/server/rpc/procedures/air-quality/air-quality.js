@@ -9,38 +9,44 @@
 // for download online.
 'use strict';
 
-const logger = require('../utils/logger')('air-quality');
-const API_KEY = process.env.AIR_NOW_KEY;
-const path = require('path');
-const fs = require('fs');
-const geolib = require('geolib');
-const request = require('request');
+const ApiConsumer = require('../utils/api-consumer');
 
-var baseUrl = 'http://www.airnowapi.org/aq/forecast/zipCode/?format=application/' + 
-        'json&API_KEY=' + API_KEY,
-    reportingLocations = (function() {  // Parse csv
-        var locationPath = path.join(__dirname, 'air-reporting-locations.csv'),
-            text = fs.readFileSync(locationPath, 'utf8'),
-            rawLocations = text.split('\n');
+const logger = require('../utils/logger')('air-quality'),
+    API_KEY = process.env.AIR_NOW_KEY,
+    path = require('path'),
+    fs = require('fs'),
+    geolib = require('geolib');
 
-        rawLocations.pop();  // Remove trailing \n
-        rawLocations.shift();  // Remove header
-        return rawLocations
-            .map(function(line) {
-                var data = line.split('|');
-                return {
-                    city: data[0],
-                    state: data[1],
-                    zipcode: data[2],
-                    latitude: +data[3],
-                    longitude: +data[4]
-                };
-            });
-    })();
+const AirConsumer = new ApiConsumer('air-quality', `http://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&API_KEY=${API_KEY}`,{cache: {ttl: 30*60}});
 
+var reportingLocations = (function() {  // Parse csv
+    var locationPath = path.join(__dirname, 'air-reporting-locations.csv'),
+        text = fs.readFileSync(locationPath, 'utf8'),
+        rawLocations = text.split('\n');
 
-var getClosestReportingLocation = function(lat, lng) {
-    var nearest = geolib.findNearest({latitude: lat, longitude: lng}, reportingLocations),
+    rawLocations.pop();  // Remove trailing \n
+    rawLocations.shift();  // Remove header
+    return rawLocations
+        .map(function(line) {
+            var data = line.split('|');
+            return {
+                city: data[0],
+                state: data[1],
+                zipcode: data[2],
+                latitude: +data[3],
+                longitude: +data[4]
+            };
+        });
+})();
+
+/**
+ * Get ZIP code of closest reporting location for coordinates
+ * @param {Latitude} latitude latitude of location
+ * @param {Longitude} longitude Longitude of location
+ * @returns {Number} ZIP code of closest location
+ */
+AirConsumer._getClosestReportingLocation = function(latitude, longitude) {
+    var nearest = geolib.findNearest({latitude: latitude, longitude: longitude}, reportingLocations),
         city = reportingLocations[nearest.key].city,
         state = reportingLocations[nearest.key].state,
         zipcode = reportingLocations[nearest.key].zipcode;
@@ -48,55 +54,60 @@ var getClosestReportingLocation = function(lat, lng) {
     return zipcode;
 };
 
-var qualityIndex = function(latitude, longitude) {
-    var response = this.response,
-        nearest,
-        url;
+/**
+ * Get air quality index of closest reporting location for coordinates
+ * @param {Latitude} latitude latitude of location
+ * @param {Longitude} longitude Longitude of location
+ * @returns {Number} AQI of closest station
+ */
+AirConsumer.qualityIndex = function(latitude, longitude) {
+    var nearest = this._getClosestReportingLocation(latitude, longitude);
 
-    logger.trace(`Requesting air quality at ${latitude}, ${longitude}`);
-    if (!latitude || !longitude) {
-        return response.status(400).send('ERROR: missing latitude or longitude');
+    logger.trace(`Requesting air quality at ${latitude}, ${longitude} (nearest station: ${nearest})`);
+
+    return this.qualityIndexByZipCode(nearest);
+};
+
+/**
+ * Get air quality index of closest reporting location for ZIP code
+ * @param {BoundedNumber<0,99999>} zipCode ZIP code of location
+ * @returns {Number} AQI of closest station
+ */
+AirConsumer.qualityIndexByZipCode = function(zipCode) {
+
+    logger.trace(`Requesting air quality at ${zipCode}`);
+
+    return this._sendAnswer({queryString: `&zipCode=${zipCode}`}, '.AQI')
+    .catch(err => {
+        
+        logger.error('Could not get air quality index: ', err);
+        
+        throw err;
+    }).then((r) => (r.length > 0? r[0]: -1));    
+};
+
+/**
+ * Get air quality index of closest reporting location for coordinates
+ * @param {Latitude} latitude latitude of location
+ * @param {Longitude} longitude Longitude of location
+ * @returns {Number} AQI of closest station
+ * @deprecated
+ */
+AirConsumer.aqi = function(latitude, longitude) {
+    // For backwards compatibility, RPC had duplicate methods
+    return this.qualityIndex(latitude, longitude);
+};
+
+AirConsumer.serviceName = 'AirQuality';
+
+AirConsumer.COMPATIBILITY = {
+    path: 'air',
+    arguments: {
+        aqi: {
+            latitude: 'lat',
+            longitude: 'lng'
+        }
     }
-
-    nearest = getClosestReportingLocation(latitude, longitude);
-    url = baseUrl + '&zipCode=' + nearest;
-
-    logger.trace('Requesting air quality at '+ nearest);
-    
-    request(url, (err, res, body) => {
-        var aqi = -1,
-            code = err ? 500 : res.statusCode;
-
-        try {
-            body = JSON.parse(body).shift();
-            if (body && body.AQI) {
-                aqi = +body.AQI;
-                logger.trace('Air quality at '+ nearest + ' is ' + aqi);
-            }
-        } catch (e) {
-            // Just send -1 if anything bad happens
-            logger.error('Could not get air quality index: ', e);
-        }
-
-        response.status(code).json(aqi);
-    });
-
-    return null;
 };
 
-module.exports = {
-    COMPATIBILITY: {
-        path: 'air',
-        arguments: {
-            aqi: {
-                latitude: 'lat',
-                longitude: 'lng'
-            }
-        }
-    },
-
-    // air quality index
-    // Return -1 if unknown
-    aqi: qualityIndex,
-    qualityIndex: qualityIndex
-};
+module.exports = AirConsumer;
