@@ -45,12 +45,11 @@
         }
 
         // generates a query that finds this entity in the db
-        _query() {
+        getStorageId() {
             return {_id: this._id};
         }
 
         getId() {
-            console.log('######### id is ', this._id);
             return this._id;
         }
     }
@@ -64,7 +63,8 @@
     GroupStore.new = async function(name, owner) {
         logger.trace(`creating new group: ${owner}/${name}`);
         let curGroup = await this.findOne(name, owner);
-        if (curGroup) throw new Error(`group ${owner}/${name} exists`);
+        logger.error(`group ${owner}/${name} exists`);
+        if (curGroup) throw new Error('Group already exists.');
         let group = new Group({
             name: name,
             owner: owner,
@@ -91,6 +91,7 @@
                 return new Group(data);
             })
             .catch(err => {
+                logger.error(err);
                 throw new Error(`group ${id} not found`);
             });
 

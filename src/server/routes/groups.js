@@ -3,15 +3,9 @@
 
 const Logger = require('../logger'),
     logger = new Logger('netsblox:api:Groups'),
-    // Storage = require('../src/server/storage/storage'),
-    // storage = new Storage(logger),
     Users = require('../storage/users'),
     assert = require('assert'),
     Groups = require('../storage/groups');
-
-// assuming group names are unique (id)
-// TODO check if user has access to the group
-// TODO group-user association as admin or teacher
 
 module.exports = [
     {
@@ -119,12 +113,11 @@ module.exports = [
         middleware: ['isLoggedIn', 'isGroupOwner', 'isValidMember', 'canManageMember', 'memberIsNew'],
         Handler: async function(req) {
             let username = req.body.username,
-                password = req.body.password,
                 email = req.body.email,
-                groupId = req.params.id,
                 userId = req.params.userId;
 
-            if (!username || !email) throw new Error('missing information');
+            // we need atleast one field to patch
+            if (!username && !email) throw new Error('missing information');
 
             let user = await Users.getById(userId);
             if (username && user.username !== username) { // updating the username
@@ -144,8 +137,7 @@ module.exports = [
         Method: 'DELETE',
         middleware: ['isLoggedIn', 'isGroupOwner', 'isValidMember', 'canManageMember', 'memberIsNew'],
         Handler: async function(req) {
-            let groupId = req.params.id,
-                userId = req.params.userId;
+            let userId = req.params.userId;
 
             let user = await Users.getById(userId);
             await user.destroy();

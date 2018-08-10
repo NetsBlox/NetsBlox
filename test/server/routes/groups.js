@@ -7,7 +7,7 @@ let options = {
     vantage: false
 };
 
-describe.only('groups routes', () => {
+describe.skip('groups routes', () => {
     before(function(done) {
         utils.reset().then(() => {
             const Server = require('../../../src/server/server');
@@ -20,13 +20,4 @@ describe.only('groups routes', () => {
     after(function(done) {
         server.stop(done);
     });
-
-
-    // TODO need authentication tests and utilities first
-    // it('should .. ', done => {
-    //     api.get('/groups')
-    //         .expect(401)
-    //         .end(done);
-    // });
-
 });

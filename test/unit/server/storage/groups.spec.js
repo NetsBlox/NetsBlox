@@ -1,4 +1,4 @@
-describe.only('groups', function() {
+describe('groups', function() {
     const utils = require('../../../assets/utils');
     const assert = require('assert');
     const Groups = utils.reqSrc('storage/groups');
@@ -38,12 +38,11 @@ describe.only('groups', function() {
 
     it('should remove group', async function() {
         const name = 'my-old-group';
-        let id;
         let group = await Groups.new(name, owner);
         await Groups.remove(group._id);
         try {
             await Groups.get(group._id);
-            throw new Error('did no remove the group');
+            throw new Error('did not remove the group');
         } catch (e) {
             assert(e.message.includes('not found'), 'get didnt throw properly');
         }
