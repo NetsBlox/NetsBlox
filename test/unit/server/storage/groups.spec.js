@@ -17,6 +17,8 @@ describe('groups', function() {
         let doc = await Groups.findOne(name, owner);
         assert(doc);
         assert.equal(doc.name, name);
+        assert.equal(group.name, name);
+        assert.equal(group.owner, owner, 'mismatching owners');
     });
 
     it('get should work with mongodb ObjectId input', async function() {
