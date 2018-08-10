@@ -95,7 +95,7 @@ module.exports = [
             if (user) {
                 throw new Error('user already exists');
             }
-            user = Users.newWithPassword(
+            user = Users.new(
                 username,
                 email,
                 groupId,

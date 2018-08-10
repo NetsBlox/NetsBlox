@@ -235,22 +235,17 @@
         return deferred.promise;
     };
 
-    UserStorage.new = function (username, email, groupId) {
+    UserStorage.new = function (username, email, groupId, password) {
         groupId = groupId || null; // WARN what should be the default
         var createdAt = Date.now();
 
-        return new User(this._logger, {
+        let user = new User(this._logger, {
             username,
             email,
             createdAt,
             groupId,
         });
-    };
-
-    // TODO merge this with new (optional password at the end)
-    UserStorage.newWithPassword = function (username, email, groupId, password) {
-        let user = this.new(username, email, groupId);
-        user.hash = hash(password);
+        if (password !== undefined) user.hash = hash(password);
         return user;
     };
 
