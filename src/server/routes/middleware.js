@@ -70,6 +70,7 @@ function tryLogIn (req, res, cb, skipRefresh) {
 function login(req, res) {
     const hash = req.body.__h;
     const isUsingCookie = !req.body.__u;
+    const {clientId} = req.body;
     let loggedIn = false;
     let username = req.body.__u;
 
@@ -114,6 +115,11 @@ function login(req, res) {
 
             if (!isUsingCookie) {  // save the cookie, if needed
                 saveLogin(res, user, req.body.remember);
+            }
+
+            const socket = NetworkTopology.getSocket(clientId);
+            if (socket) {
+                socket.username = username;
             }
 
             req.loggedIn = true;
