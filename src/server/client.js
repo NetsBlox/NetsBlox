@@ -429,27 +429,25 @@ Client.MessageHandlers = {
         return req.promise.resolve(project);
     },
 
-    'elevate-permissions': function(msg) {
-        // TODO: Add auth
-        if (this.isOwner()) {
-            const username = msg.username;
-            return Projects.getById(this.projectId)
-                .then(project => project.addCollaborator(username));
+    'elevate-permissions': async function(msg) {
+        const {username, projectId} = msg;
+        const project = await Projects.getById(projectId);
+        if (project.owner === this.username) {
+            await project.addCollaborator(username);
+            await NetworkTopology.onRoomUpdate(projectId);
         }
     },
 
     'permission-elevation-request': function(msg) {
-        if (this.hasProject()) {
-            const projectId = this.projectId;
-            return Projects.getRawProjectById(this.projectId)
-                .then(metadata => {
-                    const {owner} = metadata;
-                    const sockets = NetworkTopology.getSocketsAtProject(projectId);
-                    const owners = sockets.filter(socket => socket.username === owner);
+        const {projectId} = msg;
+        return Projects.getRawProjectById(this.projectId)
+            .then(metadata => {
+                const {owner} = metadata;
+                const sockets = NetworkTopology.getSocketsAtProject(projectId);
+                const owners = sockets.filter(socket => socket.username === owner);
 
-                    owners.forEach(socket => socket.send(msg));
-                });
-        }
+                owners.forEach(socket => socket.send(msg));
+            });
     },
 
     'request-room-state': function() {
