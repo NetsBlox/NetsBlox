@@ -103,22 +103,19 @@
             });
     };
 
-    GroupStore.get = function(id) {
-        logger.trace(`getting ${id}`);
+    GroupStore.get = async function(id) {
+        logger.trace(`getting group ${id}`);
         if (typeof id === 'string') id = ObjectId(id);
-        return Q(collection.findOne({_id: id}))
-            .then(data => {
-                return new Group(data);
-            })
-            .catch(err => {
-                logger.error(err);
-                throw new Error(`group ${id} not found`);
-            });
-
+        let data =  await Q(collection.findOne({_id: id}));
+        if (data) {
+            return new Group(data);
+        } else {
+            throw new Error(`group ${id} not found`);
+        }
     };
 
     GroupStore.remove = function(id) {
-        logger.info(`removing ${id}`);
+        logger.info(`removing group ${id}`);
         return Q(collection.deleteOne({_id: id}));
     };
 
