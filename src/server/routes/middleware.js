@@ -196,7 +196,7 @@ let memberIsNew = async function(req, res, next) {
     if (projects.length !== 0) issues.push('user has projects');
 
     // condition #2: account age
-    let age = (new Date().getTime() - user.createdAt.getTime()) / 60000 ; // in minutes
+    let age = (new Date().getTime() - user.createdAt) / 60000 ; // in minutes
     const AGE_LIMIT_MINUTES = 60 * 24 * 7; // a week
     if (age > AGE_LIMIT_MINUTES) issues.push('you cannot change an old account');
 
