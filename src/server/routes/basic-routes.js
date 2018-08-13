@@ -180,47 +180,49 @@ module.exports = [
     {
         Method: 'post',
         URL: '',  // login method
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             const projectId = req.body.projectId;
             let username = req.body.__u;
             let user = null;
 
             // Should check if the user has a valid cookie. If so, log them in with it!
             // Explicit login
-            return middleware.login(req, res)
-                .then(() => {
-                    username = req.session.username;
-                    user = req.session.user;
+            try {
+                await middleware.login(req, res);
+            } catch (err) {
+                log(`Login failed for "${username}": ${err}`);
+                if (req.body.silent) {
+                    return res.sendStatus(204);
+                } else {
+                    return res.status(403).send(err.message);
+                }
+            }
 
-                    // Update the project if logging in from the netsblox app
-                    if (projectId) {  // update project owner
-                        return Projects.getById(projectId)
-                            .then(project => {
-                                // Update the project owner, if needed
-                                if (project && Utils.isSocketUuid(project.owner)) {
-                                    return user.getNewName(project.name)
-                                        .then(name => project.setName(name))
-                                        .then(() => project.setOwner(username))
-                                        .then(() => NetworkTopology.onRoomUpdate(projectId));
-                                }
-                            });
-                    }
-                })
-                .then(() => {
-                    if (req.body.return_user) {
-                        return res.status(200).json({
-                            username: username,
-                            admin: user.admin,
-                            email: user.email
-                        });
-                    } else {
-                        return res.status(200).json(ExternalAPI);
-                    }
-                })
-                .catch(e => {
-                    log(`Login failed for "${username}": ${e}`);
-                    return res.status(500).send('ERROR: ' + e);
+            username = req.session.username;
+            user = req.session.user;
+
+            // Update the project if logging in from the netsblox app
+            if (projectId) {  // update project owner
+                const project = await Projects.getById(projectId);
+
+                // Update the project owner, if needed
+                if (project && Utils.isSocketUuid(project.owner)) {
+                    const name = await user.getNewName(project.name);
+                    await project.setName(name);
+                    await project.setOwner(username);
+                    await NetworkTopology.onRoomUpdate(projectId);
+                }
+            }
+
+            if (req.body.return_user) {
+                return res.status(200).json({
+                    username: username,
+                    admin: user.admin,
+                    email: user.email
                 });
+            } else {
+                return res.status(200).json(ExternalAPI);
+            }
         }
     },
     // get start/end network traces
