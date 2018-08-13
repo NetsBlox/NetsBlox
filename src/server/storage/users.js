@@ -215,8 +215,8 @@
             .catch(e => this._logger.error('Could not get the user names!', e));
     };
 
-    UserStorage.find = function (query) {
-        return collection.find(query).toArray()
+    UserStorage.findGroupMembers = function (groupId) {
+        return collection.find({groupId: {$eq: groupId}}).toArray()
             .then(users => users.map(user => new User(this._logger, user)));
     };
 

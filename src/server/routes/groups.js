@@ -40,7 +40,7 @@ module.exports = [
         Handler: async function(req) {
             // a specific group's details: (which only include members)
             const groupId = req.params.id;
-            let users = await Users.find({groupId: {$eq: groupId}});
+            let users = await Users.findGroupMembers(groupId);
             return users.map(u => u.pretty());
         }
     },
