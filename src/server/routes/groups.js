@@ -143,12 +143,17 @@ module.exports = [
         URL: 'groups/:id',
         Method: 'DELETE',
         middleware: ['isLoggedIn', 'isGroupOwner'],
-        Handler: function(req) {
+        Handler: async function(req) {
+            let groupId = req.params.id;
             // delete a group
-            // TODO if any of the users are not new disallow
-            let groupName = req.params.name;
-            logger.info('removing group', groupName);
-            return Groups.remove(groupName);
+            let group = await Groups.get(groupId);
+            if (await group.isNew()) {
+                logger.info('removing group', group.name);
+                await group.destroy();
+                return `deleted group ${group.name}`;
+            } else {
+                throw new Error('cannot delete group.');
+            }
         }
     },
 ].map(route => { // handle the actual sending of the results

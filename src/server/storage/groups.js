@@ -2,6 +2,7 @@
     var logger, collection;
     const Data = require('./data'),
         Q = require('q'),
+        Users = require('./users'),
         ObjectId = require('mongodb').ObjectId;
 
     class Group extends Data {
@@ -16,8 +17,8 @@
             return this.owner;
         }
 
-        // TODO lookup the members from the users collections
-        findMember() {
+        async findMembers() {
+            return Users.findGroupMembers(this._id.toString());
         }
 
         data() {
@@ -52,6 +53,23 @@
         getId() {
             return this._id;
         }
+
+        // is new or is safe to delete
+        async isNew() {
+            let checks = []; // stores failed checks
+
+            // #1
+            let members = await this.findMembers();
+            if (members.length > 0) checks.push('it has members');
+
+            // #2
+            let age = (new Date().getTime() - this.createdAt) / 60000 ; // compute age in minutes
+            const AGE_LIMIT_MINUTES = 60 * 24; // a day
+            if (age > AGE_LIMIT_MINUTES) checks.push('it was created a while ago');
+
+            if (checks.length > 0) logger.warn(`group is not new: ${checks.join('& ')}`);
+            return checks.length === 0;
+        }
     }
 
     GroupStore.init = function(_logger, db) {
@@ -65,15 +83,17 @@
         let curGroup = await this.findOne(name, owner);
         logger.error(`group ${owner}/${name} exists`);
         if (curGroup) throw new Error('Group already exists.');
+        var createdAt = Date.now();
         let group = new Group({
             name: name,
+            createdAt,
             owner: owner,
         });
         return group.save();
     };
 
     GroupStore.findOne = function(name, owner) {
-        logger.trace(`getting ${owner}/${name}`);
+        logger.trace(`finding group ${owner}/${name}`);
         return Q(collection.findOne({name, owner}))
             .then(data => {
                 return new Group(data);
