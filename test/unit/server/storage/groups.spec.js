@@ -1,4 +1,4 @@
-describe('groups', function() {
+describe.only('groups', function() {
     const utils = require('../../../assets/utils');
     const assert = require('assert');
     const Groups = utils.reqSrc('storage/groups');
@@ -97,11 +97,11 @@ describe('groups', function() {
     });
 
 
-    it('should find all groups', async function() {
+    it(`should find all of the user's groups`, async function() {
         const gps = ['gpname', 'gp2'];
         await Groups.new(gps[0], owner);
         await Groups.new(gps[1], owner);
-        let groups = await Groups.all(owner);
+        let groups = await Groups.findAllUserGroups(owner);
         assert.deepEqual(gps.length, groups.length);
         gps.forEach(gpName => {
             assert(groups.find(group => group.name = gpName));

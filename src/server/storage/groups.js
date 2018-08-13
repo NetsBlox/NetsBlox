@@ -119,7 +119,7 @@
         return Q(collection.deleteOne({_id: id}));
     };
 
-    GroupStore.all = async function(owner) {
+    GroupStore.findAllUserGroups = async function(owner) {
         let groupsArr = await Q(collection.find({owner}).toArray());
         return groupsArr.map(group => new Group(group));
     };
