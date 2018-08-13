@@ -84,11 +84,6 @@ function login(req, res) {
             if (!username) {
                 logger.log('"passive" login failed - no session found!');
                 throw new Error('No session found');
-                //if (req.body.silent) {
-                    //return res.sendStatus(204);
-                //} else {
-                    //return res.sendStatus(403);
-                //}
             }
             logger.log(`Logging in as ${username}`);
 
