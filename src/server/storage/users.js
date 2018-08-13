@@ -36,7 +36,7 @@
 
         // updates based on mongoid vs username
         update() {
-            return this._db.updateOne({_id: this._id}, { $set: {username: this.username, email: this.email} })
+            return this._db.updateOne({_id: this._id}, { $set: {email: this.email} })
                 .then(() => this);
         }
 
