@@ -117,7 +117,7 @@ var computeAspectRatioPadding = function(width, height, ratio){
 };
 
 var isSocketUuid = function(name) {
-    return name[0] === '_';
+    return name && name[0] === '_';
 };
 
 var getEmptyRole = function(name) {
