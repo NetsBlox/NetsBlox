@@ -372,7 +372,10 @@ Server.prototype.createRouter = function() {
         // Add the middleware
         if (api.middleware) {
             logger.trace(`adding "${method}" to ${api.URL}`);
-            var args = api.middleware.map(name => middleware[name]);
+            var args = api.middleware.map(name => (req, res, next) => {
+                if (req.method === 'OPTIONS') return next();
+                return middleware[name](req, res, next);
+            });
             args.unshift(api.URL);
             router.use.apply(router, args);
         }
