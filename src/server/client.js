@@ -368,11 +368,15 @@ Client.MessageHandlers = {
     'pong': function() {
     },
 
-    'set-state': function(msg) {
-        const {projectId, roleId, username, clientId} = msg.body;
-        this.uuid = clientId;
+    'set-uuid': function(msg) {
+        const {clientId} = msg.body;
+        if (this.uuid && this.uuid !== clientId) {
+            throw new Error(`client ${this.uuid} tried to reset clientId to ${clientId}`);
+        }
 
-        this.setState(projectId, roleId, username);
+        this.uuid = clientId;
+        this.username = this.username || clientId;
+        this.send({type: 'connected'});
     },
 
     'message': function(msg) {
