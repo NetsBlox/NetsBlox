@@ -25,12 +25,20 @@ class Battleship extends TurnBased {
 var isValidDim = dim => 0 <= dim && dim <= BOARD_SIZE;
 var checkRowCol = (row, col) => isValidDim(row) && isValidDim(col);
 
+/**
+ * Resets the game by clearing the board and reverting to the placing phase
+ * @returns {Boolean} If game was reset
+ */
 Battleship.prototype.reset = function() {
     this._state._STATE = BattleshipConstants.PLACING;
     this._state._boards = {};
     return true;
 };
 
+/**
+ * Begins the game, if board is ready
+ * @returns {Boolean} If game was started
+ */
 Battleship.prototype.start = function() {
     // Check that all boards are ready
     var roles = Object.keys(this._state._boards),
@@ -61,6 +69,14 @@ Battleship.prototype.start = function() {
     return true;
 };
 
+/**
+ * Place a ship on the board
+ * @param {String} ship Ship type to place
+ * @param {BoundedNumber<1,100>} row Row to place ship in
+ * @param {BoundedNumber<1,100>} column Column to place ship in
+ * @param {String} facing Direction to face
+ * @returns {Boolean} If piece was placed
+ */
 Battleship.prototype.placeShip = function(ship, row, column, facing) {
     var role = this.caller.roleId,
         len = SHIPS[ship];
@@ -101,6 +117,12 @@ Battleship.prototype.placeShip = function(ship, row, column, facing) {
     return result || 'Could not place ship - colliding with another ship!';
 };
 
+/**
+ * Fire a shot at the board
+ * @param {BoundedNumber<1,100>} row Row to fire at
+ * @param {BoundedNumber<1,100>} column Column to fire at
+ * @returns {Boolean} If ship was hit
+ */
 Battleship.prototype.fire = function(row, column) {
     const role = this.caller.roleId;
 
@@ -161,6 +183,11 @@ Battleship.prototype.fire = function(row, column) {
     return !!result;
 };
 
+/**
+ * Get number of remaining ships of a role
+ * @param {String} roleID Name of role to use
+ * @returns {Number} Number of remaining ships
+ */
 Battleship.prototype.remainingShips = function(roleId) {
     if (roleId) {  // resolve the provided role name to a role ID
         return Projects.getRawProjectById(this.caller.projectId)
@@ -188,10 +215,19 @@ Battleship.prototype.remainingShips = function(roleId) {
     return this._state._boards[role].remaining();
 };
 
+/**
+ * Get list of ship types
+ * @returns {Array} Types of ships
+ */
 Battleship.prototype.allShips = function() {
     return Object.keys(SHIPS);
 };
 
+/**
+ * Get length of a ship type
+ * @param {String} ship Type of ship
+ * @returns {Number} Length of ship type
+ */
 Battleship.prototype.shipLength = function(ship) {
     ship = (ship || '').toLowerCase();
 
@@ -203,3 +239,4 @@ Battleship.prototype.shipLength = function(ship) {
 };
 
 module.exports = Battleship;
+
