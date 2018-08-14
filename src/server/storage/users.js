@@ -161,6 +161,27 @@
                 });
         }
 
+        async isNewWithRejections() {
+            let rejections = [];
+
+            // condition #1: must have no saved or transient project
+            let projects = await this.getAllRawProjects();
+            if (projects.length !== 0) rejections.push('user has projects');
+
+            // condition #2: account age
+            const AGE_LIMIT_MINUTES = 60 * 24 * 1; // a week
+            let age = (new Date().getTime() - this.createdAt) / 60000 ; // in minutes
+            if (age > AGE_LIMIT_MINUTES) rejections.push('this is an old account');
+
+            return rejections;
+        }
+
+        // is it safe to allow deletion of this user?
+        async isNew() {
+            let objections = await this.isNewWithRejections();
+            return objections === 0;
+        }
+
         _emailTmpPassword(password) {
             mailer.sendMail({
                 to: this.email,

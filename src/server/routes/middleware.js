@@ -188,20 +188,13 @@ let isValidMember = async function(req, res, next) {
 // requires a validmember
 let memberIsNew = async function(req, res, next) {
     // TODO add optional bypass
-    let issues = [];
     let userId = req.params.userId;
     let user = await server.storage.users.getById(userId);
-    // condition #1: must have no saved or transient project
-    let projects = await user.getAllRawProjects();
-    if (projects.length !== 0) issues.push('user has projects');
 
-    // condition #2: account age
-    let age = (new Date().getTime() - user.createdAt) / 60000 ; // in minutes
-    const AGE_LIMIT_MINUTES = 60 * 24 * 7; // a week
-    if (age > AGE_LIMIT_MINUTES) issues.push('you cannot change an old account');
+    let rejections = await user.isNewWithRejections();
 
-    if (issues.length > 0) {
-        let msg = issues.join('& ');
+    if (rejections.length > 0) {
+        let msg = rejections.join(' & ');
         return res.status(403).send(msg);
     }
     next();
