@@ -93,17 +93,17 @@ class Client {
             });
     }
 
-    canApplyAction(action) {
+    async canApplyAction(action) {
         const startRole = this.role;
-        return ProjectActions.getLatestActionId(this.projectId, this.roleId)
-            .then(actionId => {
-                const accepted = actionId < action.id && this.role === startRole;
-                if (!accepted) {
-                    this._logger.log(`rejecting action with id ${action.id} ` +
-                        `(${actionId}) from ${this.getPublicId()}`);
-                }
-                return accepted;
-            });
+        const actionId = await ProjectActions.getLatestActionId(this.projectId, this.roleId);
+
+        const accepted = actionId < action.id && this.role === startRole;
+        if (!accepted) {
+            const prettyId = `${this.uuid} at ${this.roleId} in ${this.projectId}`;
+            this._logger.log(`rejecting action with id ${action.id} ` +
+                `(${actionId}) from ${prettyId}`);
+        }
+        return accepted;
     }
 
     _initialize () {
