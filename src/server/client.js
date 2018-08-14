@@ -369,7 +369,7 @@ Client.MessageHandlers = {
     },
 
     'set-uuid': function(msg) {
-        const {clientId} = msg.body;
+        const {clientId} = msg;
         if (this.uuid && this.uuid !== clientId) {
             throw new Error(`client ${this.uuid} tried to reset clientId to ${clientId}`);
         }
