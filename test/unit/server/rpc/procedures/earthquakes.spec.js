@@ -3,7 +3,6 @@ describe('earthquakes', function() {
     var EarthQuakes = utils.reqSrc('rpc/procedures/earthquakes/earthquakes'),
         RPCMock = require('../../../../assets/mock-rpc'),
         earthquakes,
-        storage = utils.reqSrc('storage/storage'),
         assert = require('assert');
 
     before(function() {
@@ -54,7 +53,10 @@ describe('earthquakes', function() {
             });
 
             it('should stop sending if the socket changes roles', function() {
-                assert.equal(socket.messages().length, 0);
+                const msgs = socket._socket.messages()
+                    .filter(msg => msg.type === 'message');
+
+                assert.equal(msgs.length, 0);
             });
 
             it('should remove remaining msgs record', function() {

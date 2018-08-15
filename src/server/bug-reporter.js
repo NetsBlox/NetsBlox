@@ -6,6 +6,8 @@ const version = require('./server-utils').version;
 const snap2jsVersion = require('snap2js/package').version;
 const request = require('request-promise');
 const Q = require('q');
+const NetworkTopology = require('./network-topology');
+const ProjectActions = require('./storage/project-actions');
 
 const BugReporter = function() {
     this.maintainer = process.env.MAINTAINER_EMAIL;
@@ -119,22 +121,17 @@ BugReporter.prototype.getRoomState = function(socket) {
         return Q({error: 'socket not found'});
     }
 
-    const room = socket.getRoomSync();
-    if (!room) {
-        return Q({error: 'no associated room'});
-    }
-
-    const projectId = room.getProjectId();
-    let state = null;
-    return room.getState()
-        .then(roomState => {
-            state = roomState;
-            state.projectId = projectId;
-            return room.getRoleActionIds();
+    const projectId = socket.projectId;
+    return NetworkTopology.getRoomState(projectId)
+        .then(state => {
+            return ProjectActions.getProjectActionIdInfo(projectId)
+                .then(roleActionIds => {
+                    state.roleActionIds = roleActionIds;
+                    return state;
+                });
         })
-        .then(roleActionIds => {
-            state.roleActionIds = roleActionIds;
-            return state;
+        .catch(err => {
+            return {error: `Could not get room state: ${err.message}`};
         });
 };
 

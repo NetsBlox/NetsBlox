@@ -89,21 +89,16 @@ context.reportLongitude = function() {
 };
 
 context.getProjectId = function() {
-    return this.project.ctx.socket.role;
+    return this.project.roleName;
 };
 
 context.getProjectIds = function() {
-    const room = this.project.ctx.socket.getRoomSync();
-
-    if (room) {
-        return room.getRoleNames();
-    }
-    return [];
+    return this.project.roleNames;
 };
 
 context.reportUsername = function() {
-    const uuid = this.project.ctx.socket.uuid;
-    const username = this.project.ctx.socket.username;
+    const uuid = this.project.ctx.caller.clientId;
+    const username = this.project.ctx.caller.username;
 
     if (uuid !== username) {
         return username;
@@ -167,7 +162,7 @@ context.getJSFromRPCStruct = function(service, name) {
     // Update the context so it doesn't share a response as the original
     // Create a new context for this
     const RPCManager = require('./rpc-manager');
-    const rpc = RPCManager.getRPCInstance(service, this.project.ctx.socket.uuid);
+    const rpc = RPCManager.getRPCInstance(service, this.project.ctx.caller.clientId);
     rpc.socket = this.project.ctx.socket;
 
     const subCtx = Object.create(rpc);

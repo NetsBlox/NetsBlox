@@ -23,18 +23,14 @@ module.exports = {
 
         request(APOD_URL, function(err, res, body) {
             body = JSON.parse(body);
-            var msg = {
-                type: 'message',
-                msgType: 'Astronomy Pic of the Day',
-                dstId: socket.role,
-                content: {
-                    date: body.date,
-                    title: body.title,
-                    link: body.url,
-                    description: body.explanation
-                }
+            const msgType = 'Astronomy Pic of the Day';
+            const content = {
+                date: body.date,
+                title: body.title,
+                link: body.url,
+                description: body.explanation
             };
-            socket.send(msg);
+            socket.sendMessage(msgType, content);
             return response.json(true);
         });
         return null;

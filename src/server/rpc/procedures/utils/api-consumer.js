@@ -149,14 +149,14 @@ class ApiConsumer {
         if (msgs && msgs.length) {
             var msg = msgs.shift();
 
-            while (msgs.length && msg.dstId !== this.socket.role) {
+            while (msgs.length && msg.dstId !== this.socket.roleId) {
                 msg = msgs.shift();
             }
 
             // check that the socket is still at the role receiving the messages
-            if (msg && msg.dstId === this.socket.role) {
+            if (msg && msg.dstId === this.socket.roleId) {
                 this._logger.trace('sending msg to', this.socket.uuid, this.socket.role);
-                this.socket.send(msg);
+                this.socket.sendMessage(msg.msgType, msg.content);
             }
 
             if (msgs.length) {
@@ -238,7 +238,7 @@ class ApiConsumer {
 
                 msgContents.forEach(content=>{
                     let msg = {
-                        dstId: this.socket.role,
+                        dstId: this.socket.roleId,
                         msgType,
                         content
                     };
@@ -290,7 +290,7 @@ class ApiConsumer {
         if (this._remainingMsgs[this.socket.uuid]) {
             msgCount = this._remainingMsgs[this.socket.uuid].length;
             delete this._remainingMsgs[this.socket.uuid];
-            this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.role);
+            this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
         }else {
             msgCount = 0;
             this._logger.trace('there are no messages in the queue to stop.');

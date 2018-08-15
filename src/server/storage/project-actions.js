@@ -1,6 +1,6 @@
 (function(ProjectActions) {
     const Q = require('q');
-    let logger, collection;
+    let logger, collection, actionIdCollection;
 
     ProjectActions.getCollection = function() {
         return collection;
@@ -9,6 +9,9 @@
     ProjectActions.init = function(_logger, db) {
         logger = _logger.fork('project-actions');
         collection = db.collection('project-actions');
+        actionIdCollection = db.collection('latest-action-ids');
+
+        collection.createIndex({'action.id': 1});
     };
 
     ProjectActions.store = function(action) {
@@ -47,6 +50,21 @@
                 logger.trace(`cleared ${count} action(s) ${ctx}`);
                 return count;
             });
+    };
+
+    ProjectActions.getLatestActionId = function(projectId, roleId) {
+        const query = {projectId, roleId};
+        return Q(actionIdCollection.findOne(query))
+            .then(doc => doc ? doc.actionId : 0);
+    };
+
+    ProjectActions.setLatestActionId = function(projectId, roleId, actionId) {
+        const query = {projectId, roleId};
+        return Q(actionIdCollection.updateOne(query, {$set: {actionId}}, {upsert: true}));
+    };
+
+    ProjectActions.getProjectActionIdInfo = function(projectId) {
+        return Q(actionIdCollection.find({projectId}).toArray());
     };
 
 })(exports);
