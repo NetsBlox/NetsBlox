@@ -4,8 +4,7 @@ var _ = require('lodash'),
     Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     middleware = require('./middleware'),
-    RoomManager = require('../rooms/room-manager'),
-    SocketManager = require('../socket-manager'),
+    NetworkTopology = require('../network-topology'),
     PublicProjects = require('../storage/public-projects'),
     EXAMPLES = require('../examples'),
     debug = require('debug'),
@@ -15,6 +14,7 @@ var _ = require('lodash'),
     Jimp = require('jimp'),
     error = debug('netsblox:api:projects:error');
 
+const DEFAULT_ROLE_NAME = 'myRole';
 const Projects = require('../storage/projects');
 const Users = require('../storage/users');
 
@@ -86,38 +86,6 @@ var getProjectThumbnail = function(project) {
 };
 
 ////////////////////// Project Helpers //////////////////////
-var getRoomsNamed = function(name, user, owner) {
-    owner = owner || user.username;
-    const uuid = Utils.uuid(owner, name);
-
-    trace(`looking up projects ${uuid} for ${user.username}`);
-    let getProject = user.username === owner ? user.getProject(name) :
-        user.getSharedProject(owner, name);
-
-    return getProject.then(project => {
-        const activeRoom = RoomManager.getExistingRoom(owner, name);
-        const areSame = !!activeRoom && !!project &&
-            activeRoom.getProjectId().equals(project.getId());
-
-
-        if (project) {
-            trace(`found project ${uuid} for ${user.username}`);
-        } else {
-            trace(`no ${uuid} project found for ${user.username}`);
-        }
-
-        if (areSame) {
-            project = activeRoom.getProject() || project;
-        }
-
-        return {
-            active: activeRoom,
-            stored: project,
-            areSame: areSame
-        };
-    });
-};
-
 var sendProjectTo = function(project, res) {
     return project.getLastUpdatedRole()
         .then(role => {
@@ -169,34 +137,29 @@ module.exports = [
             const {projectId} = req.body;
             let {name} = req.body;
 
-            const room = RoomManager.getExistingRoomById(projectId);
-            if (room) {
-                return room.changeName(name, false, true)
-                    .then(name => res.send({name}));
-            } else {
-                return Projects.getById(projectId)
-                    .then(project => {
-                        if (project) {
-                            // Get a valid name
-                            Projects.getAllRawUserProjects(project.owner)
-                                .then(projects => {
-                                    const nameToID = {};
-                                    projects
-                                        .forEach(project => nameToID[project.name] = project._id.toString());
-                                    const basename = name;
-                                    let i = 2;
-                                    while (nameToID[name] && nameToID[name] !== projectId) {
-                                        name = `${basename} (${i})`;
-                                        i++;
-                                    }
-                                    return project.setName(name);
-                                })
-                                .then(() => res.send({name}));
-                        } else {
-                            res.status(400).send(`Project Not Found`);
-                        }
-                    });
-            }
+            return Projects.getById(projectId)
+                .then(project => {
+                    if (project) {
+                        // Get a valid name
+                        return Projects.getAllRawUserProjects(project.owner)
+                            .then(projects => {
+                                const nameToID = {};
+                                projects
+                                    .forEach(project => nameToID[project.name] = project._id.toString());
+                                const basename = name;
+                                let i = 2;
+                                while (nameToID[name] && nameToID[name] !== projectId) {
+                                    name = `${basename} (${i})`;
+                                    i++;
+                                }
+                                return project.setName(name);
+                            })
+                            .then(() => NetworkTopology.onRoomUpdate(projectId))
+                            .then(state => res.json(state));
+                    } else {
+                        res.status(400).send(`Project Not Found`);
+                    }
+                });
         }
     },
     {
@@ -207,127 +170,42 @@ module.exports = [
         Handler: function(req, res) {
             const {clientId} = req.body;
             let {roleName} = req.body;
-            const socket = SocketManager.getSocket(clientId);
+
             const name = 'untitled';
             let user = null;
+            let userId = clientId;
 
-            roleName = roleName || 'myRole';
-            if (socket && socket.role) {
-                roleName = roleName || socket.role;
-            }
+            roleName = roleName || DEFAULT_ROLE_NAME;
 
+            let project = null;
             return Q.nfcall(middleware.trySetUser, req, res)
                 .then(loggedIn => {
                     if (loggedIn) {
                         user = req.session.user;
-                        if (socket) {
-                            socket.onLogin(user);
-                        }
+                        userId = req.session.username;
                     }
 
-                    if (socket) {
-                        return socket.newRoom({name, role: roleName})
-                            .then(() => socket.getRoomSync().getProject());
-                    } else {
-                        let userId = req.session.username || clientId;
-                        return Projects.new({owner: userId})
-                            .then(project => {
-                                const projectId = project._id.toString();
-                                return project.setRole(roleName, Utils.getEmptyRole(roleName))
-                                    .then(() => user ? user.getNewNameFor(name, projectId) : name)
-                                    .then(name => project.setName(name))
-                                    .then(() => project);
-                            });
-                    }
+                    return Projects.new({owner: userId})
+                        .then(newProject => {
+                            project = newProject;
+                            const projectId = project._id.toString();
+                            return project.setRole(roleName, Utils.getEmptyRole(roleName))
+                                .then(() => user ? user.getNewNameFor(name, projectId) : name)
+                                .then(name => project.setName(name));
+                        });
                 })
-                .then(project => {
+                .then(() => project.getRoleId(roleName))
+                .then(roleId => {
                     const projectId = project.getId();
                     this._logger.trace(`Created new project: ${projectId} (${roleName})`);
-                    return res.send({
-                        projectId,
-                        name: project.name,
-                        roleName
-                    });
+                    return NetworkTopology.setClientState(clientId, projectId, roleId, userId)
+                        .then(() => res.send({
+                            projectId,
+                            roleId,
+                            name: project.name,
+                            roleName
+                        }));
                 });
-        }
-    },
-    {
-        Service: 'setClientState',
-        Parameters: 'clientId,projectId,roomName,roleName,owner,actionId',
-        Method: 'Post',
-        Note: '',
-        Handler: function(req, res) {
-            // Look up the projectId
-            const {clientId, owner, roleName, roomName, actionId} = req.body;
-            let {projectId} = req.body;
-            let userId = clientId;
-            let user = null;
-            const socket = SocketManager.getSocket(clientId);
-
-            const setUserAndId = Q.nfcall(middleware.trySetUser, req, res)
-                .then(loggedIn => {
-                    if (loggedIn) {
-                        user = req.session.user;
-                        if (socket) {
-                            socket.onLogin(user);
-                        }
-                        userId = user.username;
-                    }
-                });
-
-
-            // Get the room by projectId and have the socket join the role
-            if (socket) {
-                return setUserAndId
-                    .then(() => Projects.getById(projectId))
-                    .then(project => {
-                        if (project) {
-                            return RoomManager.getRoomForProject(project);
-                        } else {
-                            return RoomManager.createRoom({username: userId}, roomName, owner)
-                                .then(room => {
-                                    projectId = room.getProjectId();
-                                    return room;
-                                });
-                        }
-                    })
-                    .then(room => {
-                        if (!room.hasRole(roleName)) {
-                            this._logger.trace(`created role ${roleName} in ${owner}/${roomName}`);
-                            return room.createRole(roleName)
-                                .then(() => room);
-                        }
-                        return room;
-                    })
-                    .then(room => {
-                        return room.add(socket, roleName)
-                            .then(() => socket.requestActionsAfter(actionId));
-                    })
-                    .then(() => {
-                        const room = socket.getRoomSync();
-                        if (room) {
-                            projectId = room.getProjectId();
-                        }
-                        return res.send({projectId});
-                    });
-            } else {  // validate the projectId and return a valid projectId
-                return setUserAndId
-                    .then(() => Projects.getById(projectId))
-                    .then(project => {
-                        if (project) {
-                            return project.getId();
-                        } else {
-                            return Projects.new({owner: userId})
-                                .then(project => {
-                                    return project.setRole(roleName, Utils.getEmptyRole(roleName))
-                                        .then(() => user ? user.getNewName(roomName) : roomName)
-                                        .then(name => project.setName(name))
-                                        .then(() => project.getId());
-                                });
-                        }
-                    })
-                    .then(projectId => res.send({projectId}));
-            }
         }
     },
     {
@@ -336,34 +214,43 @@ module.exports = [
         Method: 'Post',
         Note: '',
         Handler: function(req, res) {
-            const {clientId, name, role, roles} = req.body;
-            const socket = SocketManager.getSocket(clientId);
+            const {clientId, name, roles} = req.body;
+            let {role} = req.body;
+            const userId = req.session ? req.session.username : clientId;
+            const user = req.session && req.session.user;
 
-            return RoomManager.createRoom(socket, name)
-                .then(room => {
-                    return room.createRole(role)
-                        .then(() => room.changeName(name, false, true))
-                        .then(() => room.add(socket, role));
-                })
-                .then(() => socket.importRoom(roles))
-                .then(room => {
-                    const projectId = room.getProjectId();
-                    return room.changeName(name, false, true)
-                        .then(() => res.send({projectId}));
+            return Projects.new({owner: userId})
+                .then(project => {
+                    role = role || DEFAULT_ROLE_NAME;
+                    return project.setRoles(roles)
+                        .then(() => user ? user.getNewName(name) : name)
+                        .then(name => project.setName(name))
+                        .then(() => project.getRoleId(role))
+                        .then(roleId => {
+                            const projectId = project.getId();
+                            return NetworkTopology.setClientState(clientId, projectId, roleId, userId)
+                                .then(state => {
+                                    res.json({
+                                        state,
+                                        roleId,
+                                        projectId
+                                    });
+                                });
+                        });
                 });
         }
     },
     {
         Service: 'saveProject',
-        Parameters: 'roleName,projectName,projectId,ownerId,overwrite,srcXml,mediaXml',
+        Parameters: 'roleId,roleName,projectName,projectId,ownerId,overwrite,srcXml,mediaXml',
         Method: 'Post',
         Note: '',
         middleware: ['isLoggedIn', 'setUser'],
         Handler: function(req, res) {
             // Check permissions
             // TODO
-            const {user, username} = req.session;
-            const {roleName, ownerId, projectId, overwrite} = req.body;
+            const {user} = req.session;
+            const {roleId, ownerId, projectId, overwrite, roleName} = req.body;
             let {projectName} = req.body;
             const {srcXml, mediaXml} = req.body;
 
@@ -380,16 +267,17 @@ module.exports = [
             //   - persist
             //
             let project = null;
-            trace(`Saving ${roleName} from ${projectName} (${projectId})`);
+            trace(`Saving ${roleId} from ${projectName} (${projectId})`);
             return Projects.getById(projectId)
                 .then(_project => {
                     // if project name is different from save name,
                     // it is "Save as" (make a copy)
 
                     project = _project;
-                    // Sometimes the project isn't found...
-                    // How can this happen? TODO
-                    // what if they are using a tmp id?
+                    if (!project) {
+                        throw new Error(`Project not found.`);
+                    }
+
                     const isSaveAs = project.name !== projectName;
 
                     if (isSaveAs) {
@@ -409,44 +297,39 @@ module.exports = [
                                     return null;
                                 }
                                 const collision = existingProject;
-                                const room = RoomManager.getExistingRoomById(collision.getId());
-                                if (room) {
+                                const isActive = NetworkTopology.getSocketsAtProject(collision.getId()).length > 0;
+                                if (isActive) {
                                     trace(`found name collision with open project. Renaming and unpersisting.`);
-                                    return room.changeName(null, true, true)
+                                    return user.getNewName(projectName)
+                                        .then(name => collision.setName(name))
                                         .then(() => collision.unpersist());
                                 } else if (overwrite) {
+                                    // FIXME: What if this is occupied by users with a patchy ws connection?
                                     trace(`found name collision with project. Overwriting ${project.name}.`);
                                     return collision.destroy();
                                 } else {  // rename the project
-                                    const activeRoomNames = RoomManager.getAllActiveFor(username);
-                                    return user.getNewName(projectName, activeRoomNames)
+                                    return user.getNewName(projectName)
                                         .then(name => projectName = name);
                                 }
                             });
                     }
                 })
-                .then(() => {  // update room name
-                    return project.setName(projectName)
-                        .then(() => {
-                            const room = RoomManager.getExistingRoomById(projectId);
-                            if (room) {
-                                return room.update(projectName);
-                            }
-                        });
-                })
+                .then(() => project.setName(projectName))  // update room name
+                .then(() => NetworkTopology.onRoomUpdate(projectId))
                 .then(() => project.archive())
                 .then(() => {
                     const roleData = {
+                        ProjectName: roleName,
                         SourceCode: srcXml,
                         Media: mediaXml
                     };
-                    return project.setRole(roleName, roleData);
+                    return project.setRoleById(roleId, roleData);
                 })
                 .then(() => project.persist())
-                .then(() => res.status(200).send({name: projectName, projectId}))
+                .then(() => res.status(200).send({name: projectName, projectId, roleId}))
                 .catch(err => {
                     error(`Error saving ${projectId}:`, err);
-                    return res.status(500).send(err);
+                    return res.status(500).send(err.message);
                 });
         }
     },
@@ -532,9 +415,7 @@ module.exports = [
     },
     {
         Service: 'getProjectList',
-        Parameters: '',
         Method: 'Get',
-        Note: '',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
             const origin = `${req.protocol}://${req.get('host')}`;
@@ -599,12 +480,11 @@ module.exports = [
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
             const {clientId, projectId} = req.body;
-            const room = RoomManager.getExistingRoomById(projectId);
-            if (room) {
-                const userCount = room.sockets().filter(socket => socket.uuid !== clientId).length;
-                return res.send(`active=${userCount > 0}`);
-            }
-            return res.send(`active=${!!room}`);
+            const userCount = NetworkTopology.getSocketsAtProject(projectId)
+                .filter(socket => socket.uuid !== clientId).length;
+            const active = userCount > 0;
+
+            return res.json({active});
         }
     },
     {
@@ -619,62 +499,89 @@ module.exports = [
 
             log(`${user.username} joining project ${projectId}`);
             // Join the given project
-            const room = RoomManager.getExistingRoomById(projectId);
-            if (room) {
-                Utils.joinActiveProject(user.username, room, res);
-            } else {
-                return Projects.getById(projectId)
-                    .then(project => {
-                        if (project) {
-                            return sendProjectTo(project, res);
-                        } else {
-                            return res.send('ERROR: Project not found');
-                        }
-                    });
-            }
+            return Projects.getById(projectId)
+                .then(project => {
+                    if (project) {
+
+                        return project.getRawRoles()
+                            .then(metadata => {  // Get an unoccupied role
+                                const occupiedRoles = NetworkTopology.getSocketsAtProject(projectId)
+                                    .map(socket => socket.roleId);
+                                const unoccupiedRoles = metadata
+                                    .filter(data => !occupiedRoles.includes(data.ID));
+                                const roleChoices = unoccupiedRoles.length ?
+                                    unoccupiedRoles : metadata;
+
+                                const roleId = Utils.sortByDateField(roleChoices, 'Updated', -1).shift().ID;
+                                return project.getRoleById(roleId);
+                            })
+                            .then(role => {
+                                const serialized = Utils.serializeRole(role, project);
+                                return res.send(serialized);
+                            });
+                    } else {
+                        return res.send('ERROR: Project not found');
+                    }
+                });
         }
     },
     {
-        Service: 'getProject',
-        Parameters: 'owner,projectName,socketId',
+        Service: 'getProjectByName',
+        Parameters: 'owner,projectName',
         Method: 'post',
         Note: '',
         middleware: ['isLoggedIn', 'noCache', 'setUser'],
         Handler: function(req, res) {
-            var {owner, projectName, socketId} = req.body,
-                user = req.session.user,
-                socket = socketId && SocketManager.getSocket(socketId);
+            const {owner, projectName} = req.body;
+            const {user, username} = req.session;
 
-            if (socket) {
-                socket.leave();
-            }
+            // Check permissions
+            // TODO
+
+            trace(`${username} opening project ${owner}/${projectName}`);
+            return Projects.get(owner, projectName)
+                .then(project => {
+                    if (project) {
+                        if (username !== owner) {  // send a copy
+                            return project.getCopyFor(user)
+                                .then(copy => sendProjectTo(copy, res));
+                        }
+
+                        return sendProjectTo(project, res);
+                    } else {
+                        res.send('ERROR: Project not found');
+                    }
+                });
+        }
+    },
+    {
+        Service: 'getProject',
+        Parameters: 'projectId,roleId',
+        Method: 'post',
+        Note: '',
+        middleware: ['isLoggedIn', 'noCache', 'setUser'],
+        Handler: function(req, res) {
+            const {projectId} = req.body;
+            let {roleId} = req.body;
+            const {username} = req.session;
 
             // Get the projectName
-            trace(`${user.username} opening project ${owner}/${projectName}`);
-            return getRoomsNamed.call(this, projectName, user, owner).then(rooms => {
-                if (rooms.active) {
-                    trace(`room with name ${projectName} already open. Are they the same? ${rooms.areSame}`);
-                    if (rooms.areSame) {
-                        // Clone, change the room name, and send!
-                        // Since they are the same, we assume the user wants to create
-                        // a copy of the active room
-                        return rooms.stored.getCopyFor(user)
-                            .then(copy => sendProjectTo(copy, res));
-                    } else {
-                        // not the same; simply change the name of the active room
-                        // (the active room must be newer since it hasn't been saved
-                        // yet)
-                        trace(`active room is ${projectName} already open`);
-                        rooms.active.changeName();
-                        sendProjectTo(rooms.stored, res);
+            trace(`${username} opening project ${projectId}`);
+            let project;
+            return Projects.getById(projectId)
+                .then(result => {  // if no roleId specified, get the last updated
+                    project = result;
+                    if (!roleId) {
+                        return project.getLastUpdatedRole()
+                            .then(role => roleId = role.ID);
                     }
-                } else if (rooms.stored) {
-                    trace(`no active room with name ${projectName}. Proceeding normally`);
-                    sendProjectTo(rooms.stored, res);
-                } else {
-                    res.send('ERROR: Project not found');
-                }
-            });
+                })
+                .then(() => project.getRoleById(roleId))
+                .then(role => {
+                    const serialized = Utils.serializeRole(role, project);
+                    return res.send(serialized);
+                })
+                .catch(err => res.status(500).send('ERROR: ' + err));
         }
     },
     {
@@ -697,21 +604,11 @@ module.exports = [
                         return res.status(400).send(`${project} not found!`);
                     }
 
-                    const active = RoomManager.isActiveRoom(project.getId());
-
-                    if (active) {
-                        return project.unpersist()
-                            .then(() => {
-                                trace(`project ${project.name} set to transient. will be deleted on users exit`);
-                                return res.send('project deleted!');
-                            });
-                    } else {
-                        return project.destroy()
-                            .then(() => {
-                                trace(`project ${project.name} deleted`);
-                                return res.send('project deleted!');
-                            });
-                    }
+                    return project.destroy()
+                        .then(() => {
+                            trace(`project ${project.name} deleted`);
+                            return res.send('project deleted!');
+                        });
                 });
         }
     },

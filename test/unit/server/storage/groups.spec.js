@@ -1,4 +1,4 @@
-describe.only('groups', function() {
+describe('groups', function() {
     const utils = require('../../../assets/utils');
     const assert = require('assert');
     const Groups = utils.reqSrc('storage/groups');

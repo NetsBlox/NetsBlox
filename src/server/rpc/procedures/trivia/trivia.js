@@ -13,8 +13,7 @@ module.exports = {
 
     random: function() {
         var url = baseUrl + '/random',
-            response = this.response,
-            socket = this.socket;
+            response = this.response;
 
         logger.trace('Requesting random trivia');
 
@@ -27,28 +26,22 @@ module.exports = {
             response.send('trivia message sent!');
 
             // Trigger the ws messages
-            var questions = [],
-                msg;
+            let questions = [];
 
             try {
                 questions = JSON.parse(body);
             } catch (e) {
                 logger.error('Could not parse questions (returning empty array): ' + e);
             }
-            logger.trace('Sending random trivia to ' + socket.username);
+            logger.trace('Sending random trivia to ' + this.caller.username);
 
             for (var i = questions.length; i--;) {
-                msg = {
-                    type: 'message',
-                    dstId: socket.role,
-                    msgType: 'Trivia',
-                    content: {
-                        question: questions[i].question,
-                        difficulty: questions[i].value,
-                        answer: questions[i].answer
-                    }
+                const content = {
+                    question: questions[i].question,
+                    difficulty: questions[i].value,
+                    answer: questions[i].answer
                 };
-                socket.send(msg);
+                this.socket.sendMessage('Trivia', content);
             }
         });
         return null;

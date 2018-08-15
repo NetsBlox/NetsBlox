@@ -4,9 +4,10 @@ var server,
     Groups = require('../storage/groups'),
     COOKIE_ID = 'netsblox-cookie',
     jwt = require('jsonwebtoken'),
-    SocketManager = require('../socket-manager'),
+    NetworkTopology = require('../network-topology'),
     logger;
 const Q = require('q');
+const Users = require('../storage/users');
 
 var hasSocket = function(req, res, next) {
     var socketId = (req.body && req.body.socketId) ||
@@ -14,7 +15,7 @@ var hasSocket = function(req, res, next) {
         (req.query && req.query.socketId);
 
     if (socketId) {
-        if (SocketManager.getSocket(socketId)) {
+        if (NetworkTopology.getSocket(socketId)) {
             return next();
         }
         logger.error(`No socket found for ${socketId} (${req.get('User-Agent')})`);
@@ -41,7 +42,7 @@ var trySetUser = function(req, res, cb, skipRefresh) {
     }, skipRefresh);
 };
 
-var tryLogIn = function(req, res, cb, skipRefresh) {
+function tryLogIn (req, res, cb, skipRefresh) {
     var cookie = req.cookies[COOKIE_ID];
 
     req.session = req.session || new Session(res);
@@ -58,12 +59,72 @@ var tryLogIn = function(req, res, cb, skipRefresh) {
             if (!skipRefresh) {
                 refreshCookie(res, token);
             }
+            req.loggedIn = true;
             return cb(null, true);
         });
     } else {
+        req.loggedIn = false;
         return cb(null, false);
     }
-};
+}
+
+function login(req, res) {
+    const hash = req.body.__h;
+    const isUsingCookie = !req.body.__u;
+    const {clientId} = req.body;
+    let loggedIn = false;
+    let username = req.body.__u;
+
+    if (req.loggedIn) return Promise.resolve();
+
+    return Q.nfcall(tryLogIn, req, res)
+        .then(() => {
+            loggedIn = req.loggedIn;
+            username = username || req.session.username;
+
+            if (!username) {
+                logger.log('"passive" login failed - no session found!');
+                throw new Error('No session found');
+            }
+            logger.log(`Logging in as ${username}`);
+
+            return Users.get(username);
+        })
+        .then(user => {
+
+            if (!user) {  // incorrect username
+                logger.log(`Could not find user "${username}"`);
+                throw new Error(`Could not find user "${username}"`);
+            }
+
+            if (!loggedIn) {  // login, if needed
+                const correctPassword = user.hash === hash;
+                if (!correctPassword) {
+                    logger.log(`Incorrect password attempt for ${user.username}`);
+                    throw new Error('Incorrect password');
+                }
+                logger.log(`"${user.username}" has logged in.`);
+            }
+
+            req.session.user = user;
+            user.recordLogin();
+
+            if (!isUsingCookie) {  // save the cookie, if needed
+                saveLogin(res, user, req.body.remember);
+            }
+
+            const socket = NetworkTopology.getSocket(clientId);
+            if (socket) {
+                socket.username = username;
+            }
+
+            req.loggedIn = true;
+            req.session = req.session || new Session(res);
+            req.session.username = user.username;
+            req.session.user = user;
+        });
+
+}
 
 var isLoggedIn = function(req, res, next) {
     logger.trace(`checking if logged in ${Object.keys(req.cookies)}`);
@@ -229,6 +290,7 @@ module.exports = {
     noCache,
     isLoggedIn,
     tryLogIn,
+    login,
     trySetUser,
     saveLogin,
     loadUser,

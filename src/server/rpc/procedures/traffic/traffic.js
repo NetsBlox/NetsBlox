@@ -10,25 +10,26 @@ const logger = require('../utils/logger')('traffic');
 const API_KEY = process.env.BING_TRAFFIC_KEY;
 const request = require('request');
 const baseUrl = 'http://dev.virtualearth.net/REST/v1/Traffic/Incidents/';
-let msgs = [];
+let pendingEventsFor = {};
 
 // Helper function to send the messages to the client
 var sendNext = function(socket) {
-    if (msgs) {
-        var msg = msgs.shift();  // retrieve the first message
+    const events = pendingEventsFor[socket.uuid] || [];
+    let event = events.shift();  // retrieve the first message
 
-        while (msgs.length && msg.dstId !== socket.role) {
-            msg = msgs.shift();
-        }
+    while (events.length && event.roleId !== socket.roleId) {
+        event = events.shift();
+    }
 
-        // check the roleId
-        if (msgs.length && msg.dstId === socket.role) {
-            socket.send(msg);
-        }
+    // check the roleId
+    if (event && event.roleId === socket.roleId) {
+        socket.sendMessage('Traffic', event.data);
+    }
 
-        if (msgs.length) {
-            setTimeout(sendNext, 250, socket);
-        }
+    if (events.length) {
+        setTimeout(sendNext, 250, socket);
+    } else {
+        delete pendingEventsFor[socket.uuid];
     }
 };
 
@@ -70,19 +71,18 @@ if (!process.env.BING_TRAFFIC_KEY) {
 
                 // build the list of traffic incidents
                 if (body.resourceSets[0].estimatedTotal != 0) {
-                    for (var i = 0; i < body.resourceSets[0].resources.length; i++) {
-                        var msg = {
-                            type: 'message',
-                            msgType: 'Traffic',
-                            dstId: socket.role,
-                            content: {
-                                latitude: body.resourceSets[0].resources[i].point.coordinates[0],
-                                longitude: body.resourceSets[0].resources[i].point.coordinates[1],
-                                type: type[body.resourceSets[0].resources[i].type-1]
+                    const results = body.resourceSets[0].resources.map(resource => {
+                        return {
+                            roleId: this.caller.roleId,
+                            data: {
+                                latitude: resource.point.coordinates[0],
+                                longitude: resource.point.coordinates[1],
+                                type: type[resource.type-1]
                             }
                         };
-                        msgs.push(msg);
-                    }
+                    });
+
+                    pendingEventsFor[this.caller.clientId] = results;
                 }
                 sendNext(socket);
                 response.sendStatus(200);
@@ -91,13 +91,7 @@ if (!process.env.BING_TRAFFIC_KEY) {
         },
 
         stop: function() {
-            var socket = this.socket;
-            if (msgs) {
-                // remove those with a different roleId | dont remove other's messages
-                msgs = msgs.filter(msg => {
-                    return msg.dstId != socket.role;
-                });
-            }
+            delete pendingEventsFor[this.socket.uuid];
             return 'stopped';
         },
         COMPATIBILITY: {

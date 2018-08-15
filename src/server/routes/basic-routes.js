@@ -7,27 +7,37 @@ var R = require('ramda'),
     UserAPI = require('./users'),
     RoomAPI = require('./rooms'),
     ProjectAPI = require('./projects'),
-    EXTERNAL_API = UserAPI
-        .concat(ProjectAPI)
-        .concat(RoomAPI)
-        .filter(api => api.Service)
-        .map(R.omit.bind(R, 'Handler'))
-        .map(R.omit.bind(R, 'middleware')),
-
     debug = require('debug'),
     log = debug('netsblox:api:log'),
-    middleware = require('./middleware'),
-    SocketManager = require('../socket-manager'),
-    saveLogin = middleware.saveLogin;
+    middleware = require('./middleware');
 
-const SERIALIZED_API = Utils.serializeArray(EXTERNAL_API);
+const NetworkTopology = require('../network-topology');
 const BugReporter = require('../bug-reporter');
 const Messages = require('../storage/messages');
 const Projects = require('../storage/projects');
+const DEFAULT_ROLE_NAME = 'myRole';
+
+const ExternalAPI = {};
+UserAPI.concat(ProjectAPI, RoomAPI)
+    .filter(api => api.Service)
+    .map(R.omit.bind(R, 'Handler'))
+    .map(R.omit.bind(R, 'middleware'))
+    .forEach(endpoint => {
+        const name = endpoint.Service;
+        const service = {};
+        Object.keys(endpoint).forEach(key => {
+            service[key.toLowerCase()] = endpoint[key];
+        });
+
+        if (service.parameters) {
+            service.parameters = service.parameters.split(',');
+        }
+        ExternalAPI[name] = service;
+    });
 
 module.exports = [
-    { 
-        Method: 'get', 
+    {
+        Method: 'get',
         URL: 'ResetPW',
         Handler: function(req, res) {
             log('password reset request:', req.query.Username);
@@ -69,11 +79,12 @@ module.exports = [
             }
 
             // validate username
-            if (uname[0] === '_') {
+            const nameRegex = /[^a-zA-Z0-9][a-zA-Z0-9_\-\(\)\.]*/;
+            if (uname[0] === '_' || nameRegex.test(uname)) {
                 return res.status(400).send('ERROR: invalid username');
             }
 
-            self.storage.users.get(uname)
+            return self.storage.users.get(uname)
                 .then(user => {
                     if (!user) {
                         var newUser = self.storage.users.new(uname, email);
@@ -110,141 +121,140 @@ module.exports = [
                 });
         }
     },
-    { 
-        Method: 'post', 
-        URL: '',  // login method
+    {
+        Service: 'setClientState',
+        Parameters: 'clientId,projectId,roomName,roleName,actionId',
+        URL: 'setClientState',
+        Method: 'Post',
+        Note: '',
         Handler: function(req, res) {
-            const hash = req.body.__h;
+            // Look up the projectId
+            const {clientId} = req.body;
+            let {roleName, roomName, roleId, projectId} = req.body;
+            let userId = clientId;
+            let user = null;
+
+            roomName = roomName || 'untitled';
+
+            const setUserAndId = middleware.login(req, res)
+                .then(() => {
+                    user = req.session.user;
+                    userId = user.username;
+                })
+                .catch(err => {
+                    this._logger.info(`could not log in client ${clientId}: ${err.message}`);
+                });
+
+
+            // Get the room by projectId and have the socket join the role
+            return setUserAndId
+                .then(() => Projects.getById(projectId))
+                .then(project => {
+                    if (project) {
+                        if (project.owner === clientId && req.loggedIn) {
+                            return user.getNewName(roomName)
+                                .then(name => project.setName(name))
+                                .then(() => project.setOwner(userId))
+                                .then(() => project.getId());
+                        }
+                        return project.getId();
+                    } else {
+                        return Projects.new({owner: userId})
+                            .then(project => {
+                                roleName = roleName || DEFAULT_ROLE_NAME;
+                                const content = Utils.getEmptyRole(roleName);
+                                return project.setRoleById(roleId, content)
+                                    .then(() => user ? user.getNewName(roomName) : roomName)
+                                    .then(name => project.setName(name))
+                                    .then(() => project.getId());
+                            });
+                    }
+                })
+                .then(id => {
+                    projectId = id;
+                    NetworkTopology.setClientState(clientId, projectId, roleId, userId);
+                    return res.send({api: ExternalAPI, projectId, roleId});
+                });
+        }
+    },
+    {
+        Method: 'post',
+        URL: '',  // login method
+        Handler: async function(req, res) {
             const projectId = req.body.projectId;
-            const isUsingCookie = !req.body.__u;
-            let loggedIn = false;
             let username = req.body.__u;
+            let user = null;
 
             // Should check if the user has a valid cookie. If so, log them in with it!
             // Explicit login
-            return Q.nfcall(middleware.tryLogIn, req, res)
-                .then(() => {
-                    loggedIn = req.session && !!req.session.username;
-                    username = username || req.session.username;
+            try {
+                await middleware.login(req, res);
+            } catch (err) {
+                log(`Login failed for "${username}": ${err}`);
+                if (req.body.silent) {
+                    return res.sendStatus(204);
+                } else {
+                    return res.status(403).send(err.message);
+                }
+            }
 
-                    if (!username) {
-                        log('"passive" login failed - no session found!');
-                        if (req.body.silent) {
-                            return res.sendStatus(204);
-                        } else {
-                            return res.sendStatus(403);
-                        }
-                    }
-                    log(`Logging in as ${username}`);
+            username = req.session.username;
+            user = req.session.user;
 
-                    return this.storage.users.get(username);
-                })
-                .then(user => {
+            // Update the project if logging in from the netsblox app
+            if (projectId) {  // update project owner
+                const project = await Projects.getById(projectId);
 
-                    if (!user) {  // incorrect username
-                        log(`Could not find user "${username}"`);
-                        return res.status(403).send(`Could not find user "${username}"`);
-                    }
+                // Update the project owner, if needed
+                if (project && Utils.isSocketUuid(project.owner)) {
+                    const name = await user.getNewName(project.name);
+                    await project.setName(name);
+                    await project.setOwner(username);
+                    await NetworkTopology.onRoomUpdate(projectId);
+                }
+            }
 
-                    if (!loggedIn) {  // login, if needed
-                        const correctPassword = user.hash === hash;
-                        if (!correctPassword) {
-                            log(`Incorrect password attempt for ${user.username}`);
-                            return res.status(403).send('Incorrect password');
-                        }
-                        log(`"${user.username}" has logged in.`);
-                    }
-
-                    user.recordLogin();
-
-                    if (!isUsingCookie) {  // save the cookie, if needed
-                        saveLogin(res, user, req.body.remember);
-                    }
-
-                    // Update the project if logging in from the netsblox app
-                    const socket = SocketManager.getSocket(req.body.socketId);
-                    let updateProject = Q();
-
-                    if (socket) {  // websocket has already connected
-                        socket.onLogin(user);
-                    } else if (projectId) {  // update project manually
-                        updateProject = Projects.getById(projectId)
-                            .then(project => {
-                                // Update the project owner, if needed
-                                if (project && Utils.isSocketUuid(project.owner)) {
-                                    return user.getNewName(project.name)
-                                        .then(name => project.setName(name))
-                                        .then(() => project.setOwner(username));
-                                }
-                            });
-                    }
-
-                    return updateProject
-                        .then(() => {
-                            if (req.body.return_user) {
-                                return res.status(200).json({
-                                    username: username,
-                                    admin: user.admin,
-                                    email: user.email,
-                                    api: req.body.api ? SERIALIZED_API : null
-                                });
-                            } else {
-                                return res.status(200).send(SERIALIZED_API);
-                            }
-                        });
-                })
-                .catch(e => {
-                    log(`Login failed for "${username}": ${e}`);
-                    return res.status(500).send('ERROR: ' + e);
+            if (req.body.return_user) {
+                return res.status(200).json({
+                    username: username,
+                    admin: user.admin,
+                    email: user.email
                 });
+            } else {
+                return res.status(200).json(ExternalAPI);
+            }
         }
     },
     // get start/end network traces
     {
         Method: 'get',
-        URL: 'trace/start/:socketId',
+        URL: 'trace/start/:projectId/:clientId',
         Handler: function(req, res) {
-            let {socketId} = req.params;
+            const {projectId, clientId} = req.params;
 
-            let socket = SocketManager.getSocket(socketId);
-            if (!socket) return res.status(401).send('ERROR: Could not find socket');
-
-            let room = socket.getRoomSync();
-            if (!room) {
-                this._logger.error(`Could not find active room for "${socket.username}" - cannot get messages!`);
-                return res.status(500).send('ERROR: room not found');
-            }
-
-            const project = room.getProject();
-            return project.startRecordingMessages(socketId)
+            return Projects.getById(projectId)
+                .then(project => project.startRecordingMessages(clientId))
                 .then(time => res.json(time));
         }
     },
     {
         Method: 'get',
-        URL: 'trace/end/:socketId',
+        URL: 'trace/end/:projectId/:clientId',
         Handler: function(req, res) {
-            let {socketId} = req.params;
+            const {projectId, clientId} = req.params;
 
-            let socket = SocketManager.getSocket(socketId);
-            if (!socket) return res.status(401).send('ERROR: Could not find socket');
-
-            let room = socket.getRoomSync();
-            if (!room) {
-                this._logger.error(`Could not find active room for "${socket.username}" - cannot get messages!`);
-                return res.status(500).send('ERROR: room not found');
-            }
-
-            const project = room.getProject();
-            const projectId = project.getId();
-            const endTime = Date.now();
-            return project.stopRecordingMessages(socketId)
-                .then(startTime => startTime && Messages.get(projectId, startTime, endTime))
+            return Projects.getById(projectId)
+                .then(project => {
+                    const endTime = Date.now();
+                    return project.stopRecordingMessages(clientId)
+                        .then(startTime => startTime && Messages.get(projectId, startTime, endTime));
+                })
                 .then(messages => {
                     messages = messages || [];
-                    this._logger.trace(`Retrieved ${messages.length} network messages for ${projectId}`);
+                    this._logger.trace(`Retrieved ${messages.length} messages for ${projectId}`);
                     return res.json(messages);
                 });
+
         }
     },
     // public projects
@@ -288,7 +298,7 @@ module.exports = [
                 this._logger.info('Received anonymous bug report');
             }
 
-            const socket = SocketManager.getSocket(report.clientUuid);
+            const socket = NetworkTopology.getSocket(report.clientUuid);
             BugReporter.reportClientBug(socket, report);
 
             return res.sendStatus(200);

@@ -68,9 +68,9 @@ describe('twentyquestions', function() {
 
             describe('for guesser', function () {
                 beforeEach(function () {
-                    twentyquestions.socket.role = 'answerer';
+                    twentyquestions.socket.roleId = 'answerer';
                     twentyquestions.start('books');
-                    twentyquestions.socket.role = 'guesser';
+                    twentyquestions.socket.roleId = 'guesser';
                 });
 
                 it ('should return an error when guessing as an answerer', function () {
@@ -89,15 +89,15 @@ describe('twentyquestions', function() {
 
         describe('game started', function () {
             function switchRole () {
-                if (twentyquestions.socket.role === 'guesser') {
-                    twentyquestions.socket.role = 'answerer';
+                if (twentyquestions.socket.roleId === 'guesser') {
+                    twentyquestions.socket.roleId = 'answerer';
                 } else {
-                    twentyquestions.socket.role = 'guesser';
+                    twentyquestions.socket.roleId = 'guesser';
                 }
             }
             beforeEach(function () {
                 twentyquestions.restart();
-                twentyquestions.socket.role = 'answerer';
+                twentyquestions.socket.roleId = 'answerer';
                 twentyquestions.start('book shelf');
             });
 

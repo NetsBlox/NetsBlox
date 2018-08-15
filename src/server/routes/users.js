@@ -3,7 +3,7 @@
 'use strict';
 
 var middleware = require('./middleware'),
-    SocketManager = require('../socket-manager'),
+    NetworkTopology = require('../network-topology'),
     debug = require('debug'),
     log = debug('netsblox:api:Users:log'),
     info = debug('netsblox:api:Users:info');
@@ -32,7 +32,7 @@ module.exports = [
     },
     {
         Service: 'logout',
-        Parameters: 'socketId',
+        Parameters: 'clientId',
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
@@ -43,8 +43,8 @@ module.exports = [
                 }
 
                 // get the socket and call onLogout
-                const socketId = req.body.socketId;
-                const socket = SocketManager.getSocket(socketId);
+                const {clientId} = req.body;
+                const socket = NetworkTopology.getSocket(clientId);
                 if (socket) {
                     socket.onLogout();
                 }
