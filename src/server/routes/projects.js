@@ -216,8 +216,6 @@ module.exports = [
         Handler: function(req, res) {
             const {clientId, name, roles} = req.body;
             let {role} = req.body;
-            // Try to login (and set the user)
-            // TODO
             const userId = req.session ? req.session.username : clientId;
             const user = req.session && req.session.user;
 
@@ -306,8 +304,7 @@ module.exports = [
                                         .then(name => collision.setName(name))
                                         .then(() => collision.unpersist());
                                 } else if (overwrite) {
-                                    // What if this is occupied by users with a patchy ws connection?
-                                    // FIXME
+                                    // FIXME: What if this is occupied by users with a patchy ws connection?
                                     trace(`found name collision with project. Overwriting ${project.name}.`);
                                     return collision.destroy();
                                 } else {  // rename the project
@@ -541,8 +538,6 @@ module.exports = [
             // Check permissions
             // TODO
 
-            // Verify that the project names are not colliding?
-            // TODO
             trace(`${username} opening project ${owner}/${projectName}`);
             return Projects.get(owner, projectName)
                 .then(project => {
@@ -557,11 +552,6 @@ module.exports = [
                         res.send('ERROR: Project not found');
                     }
                 });
-
-            // Check if the project is currently open
-            // TODO
-            // If open, create a copy and open it
-            // Ensure no name collisions
         }
     },
     {
@@ -614,7 +604,6 @@ module.exports = [
                         return res.status(400).send(`${project} not found!`);
                     }
 
-                    // TODO: Test this some more!
                     return project.destroy()
                         .then(() => {
                             trace(`project ${project.name} deleted`);

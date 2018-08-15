@@ -29,8 +29,8 @@ class NetsBloxAddress {
 }
 
 NetsBloxAddress.new = function(dstId, srcProjectId, srcRoleId) {
-    // Can we do any caching?
-    // TODO
+    // TODO: Explore caching options to increase perf
+    // (it's common to have a lot of msg throughput)
 
     logger.trace(`resolving netsblox address: "${dstId}" from ${srcRoleId} at ${srcProjectId}`);
     if (PUBLIC_ROLE_FORMAT.test(dstId)) {  // inter-room message

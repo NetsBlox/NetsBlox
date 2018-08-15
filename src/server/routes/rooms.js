@@ -218,9 +218,8 @@ module.exports = [
                             throw new Error('project is no longer open');
                         }
 
-                        // setClientState should be triggered by the client in case
+                        // FIXME: setClientState should be triggered by the client in case
                         // the xml loading fails (could be bigger problems if collaborating).
-                        // FIXME
                         return NetworkTopology.setClientState(socketId, projectId, roleId, username)
                             .then(() => project.getRoleById(invite.roleId))
                             .then(role => utils.serializeRole(role, project));
@@ -279,10 +278,12 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             const {name, projectId} = req.body;
+
+            // TODO: Add better auth based on the username
+
             return Projects.getById(projectId)
                 .then(project => {
-                    // What if project is not found?
-                    // TODO
+                    // TODO: What if project is not found?
                     // This should be moved to a single location...
                     // Maybe add a findById which may return null...
                     return project.setRole(name, utils.getEmptyRole(name));
@@ -293,9 +294,6 @@ module.exports = [
                     this._logger.error(`Add role failed: ${err}`);
                     res.send(`ERROR: ${err.message}`);
                 });
-
-            // Add better auth based on the username
-            // TODO
         }
     },
     {  // Create a new role and copy this project's blocks to it
