@@ -16,21 +16,6 @@ var uuid = function(owner, name) {
 };
 
 // Helpers for routes
-var APP_REGEX = /app="([^"]+)"/;
-var getRoomXML = function(project) {
-    return project.getRoles()
-        .then(roles => {
-            roles = sortByDateField(roles, 'Updated', -1);
-
-            var roleXml = roles.map(role =>
-                `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
-            ).join('');
-            var app = roleXml.match(APP_REGEX)[1] || APP;
-
-            return `<room name="${project.name}" app="${app}">${roleXml}</room>`;
-        });
-};
-
 var serializeArray = function(content) {
     assert(content instanceof Array);
     return content.map(serialize).join(' ');
@@ -230,7 +215,6 @@ module.exports = {
     serializeArray,
     serializeRole,
     uuid,
-    getRoomXML,
     extractRpcs,
     computeAspectRatioPadding,
     isSocketUuid,

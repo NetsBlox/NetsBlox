@@ -763,7 +763,7 @@ module.exports = [
                 })
                 .then(project => {
                     if (project && project.Public) {
-                        return Utils.getRoomXML(project)
+                        return project.toXML()
                             .then(xml => res.send(xml));
                     } else {
                         return res.status(400).send('ERROR: Project not available');

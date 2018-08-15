@@ -521,6 +521,17 @@
                 });
         }
 
+        async toXML() {
+            let roles = await this.getRoles();
+            roles = utils.sortByDateField(roles, 'Updated', -1);
+
+            const roleXml = roles.map(role =>
+                `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
+            ).join('');
+
+            return `<room name="${this.name}" app="${utils.APP}">${roleXml}</room>`;
+        }
+
         pretty() {
             var prettyRoom = {
                 name: this.name,
