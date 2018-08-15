@@ -1,4 +1,6 @@
 describe('cloud-variables', function() {
+    this.timeout(20000);
+
     const Q = require('q');
     const utils = require('../../../../assets/utils');
     const CloudVariables = utils.reqSrc('rpc/procedures/cloud-variables/cloud-variables');
