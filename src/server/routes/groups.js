@@ -54,6 +54,10 @@ module.exports = [
             let newGroupName = req.body.name;
             if (!newGroupName) throw new Error('updated group name is required');
             let owner = req.session.username;
+
+            let existingGroup = await Groups.findOne(newGroupName, owner);
+            if (existingGroup) throw new Error('group name exists');
+
             logger.info('updating group', newGroupName, '/', owner);
             let group = await Groups.get(groupId);
             group.name = newGroupName;
@@ -71,6 +75,10 @@ module.exports = [
             if (!groupName) throw new Error('group name is required');
             let owner = req.session.username;
             logger.info('creating group', groupName, 'with owner', owner);
+
+            let existingGroup = await Groups.findOne(groupName, owner);
+            if (existingGroup) throw new Error('group name exists');
+
             let group = await Groups.new(groupName, owner);
             return group.data();
         }
