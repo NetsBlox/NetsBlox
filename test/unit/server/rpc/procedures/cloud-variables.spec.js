@@ -140,18 +140,12 @@ describe('cloud-variables', function() {
                     .then(() => assert(events[0] === 'release lock'));
             });
 
-            it('should no-op on subsequent locks (same client)', function() {
-                const events = [];
-
+            it('should no-op on subsequent locks (same client)', async function() {
                 // acquire and release a lock simultaneously
-                const acquireLock = cloudvariables.lockVariable(name)
-                    .then(() => events.push('acquired lock'));
+                // This next call should no-op rather than block (like in the prev test)
+                await cloudvariables.lockVariable(name);
 
-                const releaseLock = cloudvariables.unlockVariable(name)
-                    .then(() => events.push('release lock'));
-
-                return Q.all([acquireLock, releaseLock])
-                    .then(() => assert(events[0] === 'acquired lock'));
+                await cloudvariables.unlockVariable(name);
             });
 
             it('should only be able to be unlocked by the "locker"', function(done) {
