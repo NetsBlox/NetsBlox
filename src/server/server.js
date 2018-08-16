@@ -46,10 +46,7 @@ var Server = function(opts) {
 
     // Group and RPC Managers
     this.rpcManager = RPCManager;
-    NetworkTopology.init(this._logger, this.storage);
-    Client.prototype.onClose = function() {
-        NetworkTopology.onDisconnect(this);
-    };
+    NetworkTopology.init(this._logger, Client);
 };
 
 Server.prototype.configureRoutes = function() {

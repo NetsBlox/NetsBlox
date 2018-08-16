@@ -6,11 +6,18 @@ const Projects = require('./storage/projects');
 const ProjectActions = require('./storage/project-actions');
 
 var NetworkTopology = function() {
+    this.initialized = false;
     this._sockets = [];
 };
 
-NetworkTopology.prototype.init = function(logger) {
+NetworkTopology.prototype.init = function(logger, Client) {
+    this.initialized = true;
     this._logger = logger.fork('network-topology');
+
+    const self = this;
+    Client.prototype.onClose = function() {
+        self.onDisconnect(this);
+    };
 };
 
 NetworkTopology.prototype.onConnect = function(socket) {

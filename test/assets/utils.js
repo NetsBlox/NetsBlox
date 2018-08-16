@@ -20,7 +20,7 @@ const serverUtils = reqSrc('server-utils');
 const Projects = reqSrc('storage/projects');
 const NetworkTopology = reqSrc('network-topology');
 
-NetworkTopology.init(new Logger('netsblox:test'));
+NetworkTopology.init(new Logger('netsblox:test'), Client);
 
 (function() {
     var clientDir = path.join(PROJECT_ROOT, 'src', 'browser'),
