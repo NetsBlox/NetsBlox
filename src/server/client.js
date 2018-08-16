@@ -139,6 +139,7 @@ class Client {
             clearTimeout(this.nextHeartbeatCheck);
         }
         this.onclose.forEach(fn => fn.call(this));
+        this.onclose = [];  // ensure no double-calling of close
         this.onClose(this);
     }
 
