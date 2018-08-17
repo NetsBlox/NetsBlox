@@ -555,6 +555,31 @@ module.exports = [
         }
     },
     {
+        Service: 'getEntireProject',
+        Parameters: 'projectId',
+        Method: 'post',
+        Note: '',
+        middleware: ['isLoggedIn', 'noCache', 'setUser'],
+        Handler: async function(req, res) {
+            const {projectId} = req.body;
+            const {username} = req.session;
+
+            // TODO: add auth!
+
+            // Get the projectName
+            trace(`${username} opening project ${projectId}`);
+            const project = await Projects.getById(projectId);
+
+            if (!project) {
+                return res.status(404).send('Project not found');
+            }
+
+            const xml = await project.toXML();
+            res.set('Content-Type', 'text/xml');
+            return res.send(xml);
+        }
+    },
+    {
         Service: 'getProject',
         Parameters: 'projectId,roleId',
         Method: 'post',
