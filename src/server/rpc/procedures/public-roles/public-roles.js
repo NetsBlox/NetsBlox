@@ -9,15 +9,17 @@ const PublicRoles = {};
  * Get the public role ID for the current role.
  */
 PublicRoles.getPublicRoleId = function() {
-    const {projectId, roleId} = this.caller;
+    const {projectId, roleId, clientId} = this.caller;
     return Projects.getRawProjectById(projectId)
         .then(metadata => {
             if (!metadata) {
-                throw new Error(`Project not found. Has it been deleted?`);
+                logger.warn(`cannot get public id for ${clientId} project ${projectId} not found.`);
+                throw new Error('Project not found. Has it been deleted?');
             }
 
             if (!metadata.roles[roleId]) {
-                throw new Error(`Role not found. Has it been deleted?`);
+                logger.warn(`cannot get public id for ${clientId} role ${roleId} at ${projectId} not found.`);
+                throw new Error('Role not found. Has it been deleted?');
             }
 
             const roleName = metadata.roles[roleId].ProjectName;
