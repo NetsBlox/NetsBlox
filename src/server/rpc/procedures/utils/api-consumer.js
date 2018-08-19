@@ -1,5 +1,4 @@
-const Logger = require('../../../logger'),
-    CacheManager = require('cache-manager'),
+const CacheManager = require('cache-manager'),
     fsStore = require('cache-manager-fs'),
     fs = require('fs'),
     Q = require('q'),
@@ -24,7 +23,7 @@ class ApiConsumer {
         },opts);
         if (!fs.existsSync(opts.cache.path)) fs.mkdirSync(opts.cache.path);
         this._baseUrl = baseUrl;
-        this._logger = new Logger('netsblox:rpc:'+this._name);
+        this._logger = require('./logger')(this._name);
         // setup api endpoint
         this.COMPATIBILITY = {
             path: this._name
