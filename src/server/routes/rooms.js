@@ -64,7 +64,7 @@ module.exports = [
 
             // Add better auth!
             // TODO
-            const project = await Projects.getById(projectId)
+            const project = await Projects.getById(projectId);
             log(`removing collaborator ${userId} from project ${project.uuid()}`);
             await project.removeCollaborator(userId);
 
