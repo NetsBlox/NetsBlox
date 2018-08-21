@@ -59,17 +59,18 @@ module.exports = [
         Parameters: 'userId,projectId',
         Method: 'post',
         middleware: ['isLoggedIn'],
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             const {userId, projectId} = req.body;
 
             // Add better auth!
             // TODO
-            return Projects.getById(projectId)
-                .then(project => {
-                    log(`removing collaborator ${userId} from project ${project.uuid()}`);
-                    return project.removeCollaborator(userId);
-                })
-                .then(() => res.sendStatus(200));
+            const project = await Projects.getById(projectId);
+            log(`removing collaborator ${userId} from project ${project.uuid()}`);
+            await project.removeCollaborator(userId);
+
+            await NetworkTopology.onRoomUpdate(projectId);
+
+            res.sendStatus(200);
         }
     },
     {
