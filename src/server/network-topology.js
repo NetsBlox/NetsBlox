@@ -141,18 +141,16 @@ NetworkTopology.prototype.onClientLeave = function(projectId, roleId) {
         });
 };
 
-NetworkTopology.prototype.onRoleEmpty = function(projectId, roleId) {
+NetworkTopology.prototype.onRoleEmpty = async function(projectId, roleId) {
     // Get the current (saved) action ID for the role
     const endTime = new Date();
-    return Projects.getById(projectId)
-        .then(project => project.getRoleActionIdById(roleId))
-        .then(async (actionId) => {
-            // Update the latest action ID for the role
-            await ProjectActions.setLatestActionId(actionId);
+    const project = await Projects.getById(projectId);
+    const actionId = await project.getRoleActionIdById(roleId);
+    // Update the latest action ID for the role
+    await ProjectActions.setLatestActionId(projectId, roleId, actionId);
 
-            // Clear the actions after that ID
-            return ProjectActions.clearActionsAfter(projectId, roleId, actionId, endTime);
-        });
+    // Clear the actions after that ID
+    return await ProjectActions.clearActionsAfter(projectId, roleId, actionId, endTime);
 };
 
 NetworkTopology.prototype.sockets = function() {
