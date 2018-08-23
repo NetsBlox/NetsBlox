@@ -11,6 +11,7 @@ const blocks2js = Object.create(snap2js);
 const DEFAULT_MSG_TYPE = {name: 'message', fields: ['msg']};
 
 // Add support for the new block types
+backend.doRunRPC =
 backend.getJSFromRPCDropdown =
 backend.getJSFromRPC =
 backend.getJSFromRPCStruct =
@@ -152,6 +153,7 @@ context.getJSFromRPCDropdown = function(rpc, action, params) {
     return '';
 };
 
+context.doRunRPC =
 context.getJSFromRPCStruct = function(service, name) {
     const args = Array.prototype.slice.call(arguments, 2);
     args.pop();
