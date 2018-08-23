@@ -1,3 +1,4 @@
+/* eslint-disable */
 /*
 
 	sha512.js
@@ -16,7 +17,7 @@
 
 */
 
-var hex_sha512 = (function (hex_sha512) {
+(function (global) {
 
     var hexcase = 0;
 
@@ -342,6 +343,6 @@ var hex_sha512 = (function (hex_sha512) {
        dst.h = (w2 & 0xffff) | (w3 << 16);
     }
 
-    return hex_sha512;
+    return global.hex_sha512 = hex_sha512;
 
-})({});
+})(this);
