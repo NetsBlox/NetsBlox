@@ -19,7 +19,7 @@ var counter = 0,
 
 const Messages = require('./storage/messages');
 const ProjectActions = require('./storage/project-actions');
-const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
+const REQUEST_TIMEOUT = 60*1000;  // 1 minute
 const HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
 const BugReporter = require('./bug-reporter');
 const Projects = require('./storage/projects');
@@ -268,7 +268,7 @@ class Client {
         return this._socket.readyState;
     }
 
-    getProjectJson () {
+    getProjectJson (timeout=REQUEST_TIMEOUT) {
         var id = ++counter;
         const deferred = Q.defer();
         this.send({
@@ -287,7 +287,7 @@ class Client {
                 this._projectRequests[id].promise.reject('TIMEOUT');
                 delete this._projectRequests[id];
             }
-        }, REQUEST_TIMEOUT);
+        }, timeout);
 
         return deferred.promise;
     }
