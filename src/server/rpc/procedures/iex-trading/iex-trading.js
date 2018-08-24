@@ -20,6 +20,8 @@ const rewordError = err => {
  * @returns {Number} Current price for the specified stock
  */
 StockConsumer.currentPrice = function(companySymbol) {
+    companySymbol = companySymbol.toUpperCase();
+    
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.latestPrice')
         .catch(err => {
             const prettyError = rewordError(err);
@@ -36,6 +38,8 @@ StockConsumer.currentPrice = function(companySymbol) {
  * @returns {Number} Value of the last opening price for that stock
  */
 StockConsumer.lastOpenPrice = function(companySymbol) {
+    companySymbol = companySymbol.toUpperCase();
+
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.open')
         .catch(err => {
             const prettyError = rewordError(err);
@@ -52,6 +56,8 @@ StockConsumer.lastOpenPrice = function(companySymbol) {
  * @returns {Number} Value of the last close price for that stock
  */
 StockConsumer.lastClosePrice = function(companySymbol) {
+    companySymbol = companySymbol.toUpperCase();
+
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.close')
         .catch(err => {
             const prettyError = rewordError(err);
@@ -68,6 +74,8 @@ StockConsumer.lastClosePrice = function(companySymbol) {
  * @returns {Object} Company information
  */
 StockConsumer.companyInformation = function(companySymbol) {
+    companySymbol = companySymbol.toUpperCase();
+
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`})
         .catch(err => {
             const prettyError = rewordError(err);
@@ -84,6 +92,8 @@ StockConsumer.companyInformation = function(companySymbol) {
 * @returns {Number} The daily change percent for the specified company
 */
 StockConsumer.dailyPercentChange = function(companySymbol) {
+    companySymbol = companySymbol.toUpperCase();
+    
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.changePercent')
         .catch(err => {
             const prettyError = rewordError(err);
@@ -101,17 +111,19 @@ StockConsumer.dailyPercentChange = function(companySymbol) {
  * @returns {Array} Historical price information
  */
 StockConsumer.historicalClosingPrices = function(companySymbol, range) {
+    companySymbol = companySymbol.toUpperCase();
+
     return this._requestData({queryString: `/stock/${companySymbol}/chart/${range}`})
-            .then(res => {
-                return res.map(price => [price.date, price.close]);
-            })
-            .catch(err => {
-                const prettyError = rewordError(err);
-                if (prettyError) {
-                    return this.response.status(500).send(prettyError);
-                }
-                throw err;
-            });
+        .then(res => {
+            return res.map(price => [price.date, price.close]);
+        })
+        .catch(err => {
+            const prettyError = rewordError(err);
+            if (prettyError) {
+                return this.response.status(500).send(prettyError);
+            }
+            throw err;
+        });
 };
 
 

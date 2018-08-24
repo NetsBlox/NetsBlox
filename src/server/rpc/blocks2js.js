@@ -11,6 +11,7 @@ const blocks2js = Object.create(snap2js);
 const DEFAULT_MSG_TYPE = {name: 'message', fields: ['msg']};
 
 // Add support for the new block types
+backend.doRunRPC =
 backend.getJSFromRPCDropdown =
 backend.getJSFromRPC =
 backend.getJSFromRPCStruct =
@@ -152,22 +153,26 @@ context.getJSFromRPCDropdown = function(rpc, action, params) {
     return '';
 };
 
+context.doRunRPC =
 context.getJSFromRPCStruct = function(service, name) {
     const args = Array.prototype.slice.call(arguments, 2);
     args.pop();
 
-    logger.trace(`about to call ${service} ${name} with ${JSON.stringify(args)}`);
+    logger.trace(`about to call ${service}.${name}(${JSON.stringify(args)})`);
 
     // Call the rpc...
     // Update the context so it doesn't share a response as the original
     // Create a new context for this
     const RPCManager = require('./rpc-manager');
-    const rpc = RPCManager.getRPCInstance(service, this.project.ctx.caller.clientId);
-    rpc.socket = this.project.ctx.socket;
 
+    const rpc = RPCManager.getRPCInstance(service, this.project.ctx.caller.projectId);
     const subCtx = Object.create(rpc);
+
+    // Copy over the parameters of the original context
+    const params = Object.keys(this.project.ctx);
+    params.forEach(param => subCtx[param] = this.project.ctx[param]);
+
     subCtx.response = new ServerResponse();
-    // Same socket for now... Maybe this is what we want?
 
     return Q(RPCManager.callRPC(name, subCtx, args))
         .then(() => subCtx.response.promise)

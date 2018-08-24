@@ -357,8 +357,6 @@ RPCManager.prototype.sendRPCResult = function(response, result) {
                 return result
                     .then(result => this.sendRPCResult(response, result))
                     .catch(err => this.sendRPCError(response, err));
-            } else if (Array.isArray(result)) {
-                return response.json(result);
             } else {  // arbitrary JSON
                 return response.json(JsonToSnapList(result));
             }

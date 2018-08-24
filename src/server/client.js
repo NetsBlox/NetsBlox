@@ -19,7 +19,7 @@ var counter = 0,
 
 const Messages = require('./storage/messages');
 const ProjectActions = require('./storage/project-actions');
-const REQUEST_TIMEOUT = 10*60*1000;  // 10 minutes
+const REQUEST_TIMEOUT = 60*1000;  // 1 minute
 const HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
 const BugReporter = require('./bug-reporter');
 const Projects = require('./storage/projects');
@@ -31,7 +31,6 @@ class Client {
         this.id = (++counter);
         this._logger = logger.fork(this.uuid);
 
-        this.role = null;
         this.loggedIn = false;
         this.projectId = null;
         this.roleId = null;
@@ -89,15 +88,18 @@ class Client {
                     } else {
                         return ProjectActions.store(msg);
                     }
+                } else {
+                    msg.type = 'action-rejected';
+                    this.send(msg);
                 }
             });
     }
 
     async canApplyAction(action) {
-        const startRole = this.role;
+        const startRole = this.roleId;
         const actionId = await ProjectActions.getLatestActionId(this.projectId, this.roleId);
 
-        const accepted = actionId < action.id && this.role === startRole;
+        const accepted = actionId < action.id && this.roleId === startRole;
         if (!accepted) {
             const prettyId = `${this.uuid} at ${this.roleId} in ${this.projectId}`;
             this._logger.log(`rejecting action with id ${action.id} ` +
@@ -139,6 +141,7 @@ class Client {
             clearTimeout(this.nextHeartbeatCheck);
         }
         this.onclose.forEach(fn => fn.call(this));
+        this.onclose = [];  // ensure no double-calling of close
         this.onClose(this);
     }
 
@@ -264,7 +267,7 @@ class Client {
         return this._socket.readyState;
     }
 
-    getProjectJson () {
+    getProjectJson (timeout=REQUEST_TIMEOUT) {
         var id = ++counter;
         const deferred = Q.defer();
         this.send({
@@ -283,7 +286,7 @@ class Client {
                 this._projectRequests[id].promise.reject('TIMEOUT');
                 delete this._projectRequests[id];
             }
-        }, REQUEST_TIMEOUT);
+        }, timeout);
 
         return deferred.promise;
     }

@@ -1,4 +1,4 @@
-const Logger = require('../../../logger'),
+const newLogger = require('./logger'),
     CacheManager = require('cache-manager'),
     fsStore = require('cache-manager-fs'),
     fs = require('fs'),
@@ -24,7 +24,7 @@ class ApiConsumer {
         },opts);
         if (!fs.existsSync(opts.cache.path)) fs.mkdirSync(opts.cache.path);
         this._baseUrl = baseUrl;
-        this._logger = new Logger('netsblox:rpc:'+this._name);
+        this._logger = newLogger(this._name);
         // setup api endpoint
         this.COMPATIBILITY = {
             path: this._name
@@ -155,7 +155,7 @@ class ApiConsumer {
 
             // check that the socket is still at the role receiving the messages
             if (msg && msg.dstId === this.socket.roleId) {
-                this._logger.trace('sending msg to', this.socket.uuid, this.socket.role);
+                this._logger.trace('sending msg to', this.socket.uuid, this.socket.roleId);
                 this.socket.sendMessage(msg.msgType, msg.content);
             }
 

@@ -133,33 +133,42 @@ module.exports = [
         Parameters: 'projectId,name',
         Method: 'Post',
         Note: '',
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             const {projectId} = req.body;
             let {name} = req.body;
 
-            return Projects.getById(projectId)
-                .then(project => {
-                    if (project) {
-                        // Get a valid name
-                        return Projects.getAllRawUserProjects(project.owner)
-                            .then(projects => {
-                                const nameToID = {};
-                                projects
-                                    .forEach(project => nameToID[project.name] = project._id.toString());
-                                const basename = name;
-                                let i = 2;
-                                while (nameToID[name] && nameToID[name] !== projectId) {
-                                    name = `${basename} (${i})`;
-                                    i++;
-                                }
-                                return project.setName(name);
-                            })
-                            .then(() => NetworkTopology.onRoomUpdate(projectId))
-                            .then(state => res.json(state));
-                    } else {
-                        res.status(400).send(`Project Not Found`);
-                    }
-                });
+            // Resolve conflicts with transient, marked for deletion projects
+            const project = await Projects.getById(projectId);
+            if (!project) {
+                return res.status(400).send(`Project Not Found`);
+            }
+
+            // Get a valid name
+            const projects = await Projects.getAllRawUserProjects(project.owner);
+            const projectsByName = {};
+
+            projects
+                .forEach(project => projectsByName[project.name] = project);
+
+            const basename = name;
+            let i = 2;
+            let collision = projectsByName[name];
+            while (collision &&
+                collision._id.toString() !== projectId &&
+                !collision.deleteAt  // delete existing a little early
+                ) {
+                name = `${basename} (${i})`;
+                i++;
+                collision = projectsByName[name];
+            }
+
+            if (collision && collision.deleteAt) {
+                await Projects.destroy(collision._id);
+            }
+
+            await project.setName(name);
+            const state = await NetworkTopology.onRoomUpdate(projectId);
+            res.json(state);
         }
     },
     {
@@ -555,6 +564,31 @@ module.exports = [
         }
     },
     {
+        Service: 'getEntireProject',
+        Parameters: 'projectId',
+        Method: 'post',
+        Note: '',
+        middleware: ['isLoggedIn', 'noCache', 'setUser'],
+        Handler: async function(req, res) {
+            const {projectId} = req.body;
+            const {username} = req.session;
+
+            // TODO: add auth!
+
+            // Get the projectName
+            trace(`${username} opening project ${projectId}`);
+            const project = await Projects.getById(projectId);
+
+            if (!project) {
+                return res.status(404).send('Project not found');
+            }
+
+            const xml = await project.toXML();
+            res.set('Content-Type', 'text/xml');
+            return res.send(xml);
+        }
+    },
+    {
         Service: 'getProject',
         Parameters: 'projectId,roleId',
         Method: 'post',
@@ -763,7 +797,7 @@ module.exports = [
                 })
                 .then(project => {
                     if (project && project.Public) {
-                        return Utils.getRoomXML(project)
+                        return project.toXML()
                             .then(xml => res.send(xml));
                     } else {
                         return res.status(400).send('ERROR: Project not available');

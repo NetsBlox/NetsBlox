@@ -669,6 +669,19 @@ describe('projects', function() {
 
         it('should return a string', function() {
             assert.equal(typeof project.getId(), 'string');
-        })
+        });
+    });
+
+    describe('toXML', function() {
+        before(() => utils.reset());
+
+        it('should generate project xml', async function() {
+            const project = await Projects.get('brian', 'PublicProject');
+            const xml = await project.toXML();
+            assert(xml, 'Did not generate XML');
+            assert(xml.startsWith('<room'));
+            assert(xml.includes('<project'));
+        });
+
     });
 });

@@ -9,25 +9,36 @@ var Constants = require('../../src/common/constants'),
 
 const utils = require('./utils');
 const Client = utils.reqSrc('client');
+const NetworkTopology = utils.reqSrc('network-topology');
 const Logger = utils.reqSrc('logger');
 const MockSocket = require('./mock-websocket');
+let logger;
 
 var MockRPC = function(RPC, raw) {
     this._methods = [];
     this._rpc = typeof RPC === 'function' ? new RPC() : raw ? RPC : _.cloneDeep(RPC);
     this.createMethods(RPC);
 
-    const logger = new Logger('netsblox:test:services');
-    this.socket = new Client(logger, new MockSocket());
+    logger = new Logger('netsblox:test:services');
+    this.getNewSocket();
     this.response = new MockResponse();
     this.request = new MockRequest();
 
     this.rpcName = this._rpc.rpcName;
 };
 
-MockRPC.prototype.setRequester = function(uuid, username) {
-    this.socket = new MockSocket();
+MockRPC.prototype.getNewSocket = function() {
+    if (this.socket) {
+        this.socket.onClose();
+    }
+    this.socket = new Client(logger, new MockSocket());
     this._rpc.socket = this.socket;
+    NetworkTopology.onConnect(this.socket);
+};
+
+MockRPC.prototype.setRequester = function(uuid, username) {
+    this.getNewSocket();
+
     this.socket.uuid = uuid || this.socket.uuid;
     if (this.socket.uuid[0] !== '_') {
         this.socket.uuid = '_' + this.socket.uuid;
@@ -68,6 +79,9 @@ MockRPC.prototype.addMethod = function(name) {
             username: this.socket.username,
             projectId: this.socket.projectId || 'testProject'
         };
+        const args = JSON.stringify(Array.prototype.slice.call(arguments));
+        const id = ctx.caller.clientId || 'new client';
+        logger.trace(`${id} is calling ${name}(${args.substring(1, args.length-1)})`);
         return this._rpc[name].apply(ctx, arguments);
     };
 };

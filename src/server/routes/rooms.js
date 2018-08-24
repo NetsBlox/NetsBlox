@@ -59,17 +59,18 @@ module.exports = [
         Parameters: 'userId,projectId',
         Method: 'post',
         middleware: ['isLoggedIn'],
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             const {userId, projectId} = req.body;
 
             // Add better auth!
             // TODO
-            return Projects.getById(projectId)
-                .then(project => {
-                    log(`removing collaborator ${userId} from project ${project.uuid()}`);
-                    return project.removeCollaborator(userId);
-                })
-                .then(() => res.sendStatus(200));
+            const project = await Projects.getById(projectId);
+            log(`removing collaborator ${userId} from project ${project.uuid()}`);
+            await project.removeCollaborator(userId);
+
+            await NetworkTopology.onRoomUpdate(projectId);
+
+            res.sendStatus(200);
         }
     },
     {
@@ -298,19 +299,35 @@ module.exports = [
     },
     {  // Create a new role and copy this project's blocks to it
         Service: 'cloneRole',
-        Parameters: 'role,projectId',
+        Parameters: 'roleId,projectId',
         middleware: ['isLoggedIn'],
         Method: 'post',
         Note: '',
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             // Better auth!
             // TODO
-            const {role, projectId} = req.body;
-            return Projects.getById(projectId)
-                .then(project => project.cloneRole(role))
-                .then(() => NetworkTopology.onRoomUpdate(projectId))
-                .then(state => res.json(state));
 
+            const {roleId, projectId} = req.body;
+            const project = await Projects.getById(projectId);
+            const [client] = NetworkTopology.getSocketsAt(projectId, roleId);
+            const roleName = project.roles[roleId].ProjectName;
+
+            if (client) {  // Try to request the latest
+                try {
+                    const content = await client.getProjectJson(2000);
+                    const name = await project.getNewRoleName(roleName);
+                    content.ProjectName = name;
+
+                    await project.setRole(name, content);
+                } catch (err) {
+                    await project.cloneRole(roleName);
+                }
+            } else {
+                await project.cloneRole(roleName);
+            }
+
+            const state = await NetworkTopology.onRoomUpdate(projectId);
+            res.json(state);
         }
     },
     {  // Collaboration
