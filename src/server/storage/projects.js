@@ -353,6 +353,7 @@
                 lastUpdatedAt: new Date(),
                 originTime: this.originTime,
                 collaborators: this.collaborators,
+                deleteAt: null,
                 roles: roleDict
             };
 
@@ -559,6 +560,16 @@
     ProjectStorage.init = function (_logger, db) {
         logger = _logger.fork('projects');
         collection = db.collection('projects');
+        // automatically garbage collect transient projects by setting "deleteAt"
+        collection.createIndex(
+            {deleteAt: 1},
+            {
+                expireAfterSeconds: 1,
+                partialFilterExpression: {
+                    transient: true
+                }
+            }
+        );
         ProjectArchives = db.collection('project-archives');
     };
 
@@ -595,10 +606,17 @@
             });
     };
 
-    ProjectStorage.getRawProjectById = function (id) {
+    ProjectStorage.getRawProjectById = function (id, unmarkForDeletion=false) {
         try {
             id = typeof id === 'string' ? ObjectId(id) : id;
-            return Q(collection.findOne({_id: id}));
+            const query = {_id: id};
+            if (unmarkForDeletion) {
+                const update = {$set: {deleteAt: null}};
+                return Q(collection.findOneAndUpdate(query, update))
+                    .then(result => result.value);
+            } else {
+                return Q(collection.findOne(query));
+            }
         } catch (e) {
             return Q(null);
         }
@@ -715,6 +733,17 @@
 
     ProjectStorage.destroy = function(projectId) {
         return collection.deleteOne({_id: ObjectId(projectId)});
+    };
+
+    const DELETE_DELAY = 60*1000;
+    ProjectStorage.markForDeletion = async function(projectId) {
+        // Record that the project is now empty. This will be used to mark it for deletion
+        const query = {_id: ObjectId(projectId)};
+        const deleteAt = new Date(Date.now() + DELETE_DELAY);
+
+        return await collection.updateOne(query, {
+            $set: {deleteAt}
+        });
     };
 
 })(exports);
