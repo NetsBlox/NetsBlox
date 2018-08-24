@@ -125,9 +125,75 @@ describe('groups', () => {
             throw new Error('group was not deleted');
         });
 
+        it('should not be able to delete group with students', async () => {
+            let gp = await gpActions.createGroup('testgp');
+        const sampleUser = {
+                username: 'newUser',
+                email: 'asdf@gola',
+                groupId: gp._id,
+                password: 'monkey',
+            };
+            let createdUser = await gpActions.createUser(sampleUser);
+            try {
+                // expecting this to fail
+                await gpActions.deleteGroup(gp);
+            } catch (e) {
+                assert(e.response.data.includes('cannot delete group'), e.message);
+                await gpActions.fetchGroup(gp._id);
+                return
+            }
+            throw new Error('group deletion did not fail');
+        });
+
     }) // end of crud section
 
     describe('group members', () => {
+        let testGp;
+        const sampleUser = {
+                username: 'newUser',
+                email: 'asdf@gola',
+                groupId: undefined,
+                password: 'monkey',
+            };
+
+
+        beforeEach(async () => {
+            await utils.reset();
+            testGp = await gpActions.createGroup('testgp');
+            sampleUser.groupId = testGp._id;
+        });
+
+        it('should be able to create members', async () => {
+            let createdUser = await gpActions.createUser(sampleUser);
+            assert.deepEqual(createdUser.username, sampleUser.username);
+            assert(createdUser._id, 'created user does not have an id');
+        });
+
+        it('should be able to fetch group users', async () => {
+            let createdUser = await gpActions.createUser(sampleUser);
+            let gpUsers = await gpActions.fetchUsers(testGp._id);
+            assert.deepEqual(gpUsers.length, 1);
+            assert.deepEqual(gpUsers[0]._id, createdUser._id);
+        });
+
+
+        it('should not be able to create duplicate members', async () => {
+            await gpActions.createUser(sampleUser);
+            try {
+                await gpActions.createUser(sampleUser);
+            } catch (e) {
+                assert(e.response.data.includes('exists'), e.message);
+                return
+            }
+            throw new Error('duplicate user creation did not fail');
+        });
+
+        it('should be able to delete new members', async () => {
+            let createdUser = await gpActions.createUser(sampleUser);
+            await gpActions.deleteUser(createdUser);
+            let gpUsers = await gpActions.fetchUsers(testGp._id);
+            assert.deepEqual(gpUsers.length, 0);
+        });
 
     })
 
