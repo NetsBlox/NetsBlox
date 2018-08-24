@@ -133,33 +133,42 @@ module.exports = [
         Parameters: 'projectId,name',
         Method: 'Post',
         Note: '',
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             const {projectId} = req.body;
             let {name} = req.body;
 
-            return Projects.getById(projectId)
-                .then(project => {
-                    if (project) {
-                        // Get a valid name
-                        return Projects.getAllRawUserProjects(project.owner)
-                            .then(projects => {
-                                const nameToID = {};
-                                projects
-                                    .forEach(project => nameToID[project.name] = project._id.toString());
-                                const basename = name;
-                                let i = 2;
-                                while (nameToID[name] && nameToID[name] !== projectId) {
-                                    name = `${basename} (${i})`;
-                                    i++;
-                                }
-                                return project.setName(name);
-                            })
-                            .then(() => NetworkTopology.onRoomUpdate(projectId))
-                            .then(state => res.json(state));
-                    } else {
-                        res.status(400).send(`Project Not Found`);
-                    }
-                });
+            // Resolve conflicts with transient, marked for deletion projects
+            const project = await Projects.getById(projectId);
+            if (!project) {
+                return res.status(400).send(`Project Not Found`);
+            }
+
+            // Get a valid name
+            const projects = await Projects.getAllRawUserProjects(project.owner);
+            const projectsByName = {};
+
+            projects
+                .forEach(project => projectsByName[project.name] = project);
+
+            const basename = name;
+            let i = 2;
+            let collision = projectsByName[name];
+            while (collision &&
+                collision._id.toString() !== projectId &&
+                !collision.deleteAt  // delete existing a little early
+                ) {
+                name = `${basename} (${i})`;
+                i++;
+                collision = projectsByName[name];
+            }
+
+            if (collision && collision.deleteAt) {
+                await Projects.destroy(collision._id);
+            }
+
+            await project.setName(name);
+            const state = await NetworkTopology.onRoomUpdate(projectId);
+            res.json(state);
         }
     },
     {
