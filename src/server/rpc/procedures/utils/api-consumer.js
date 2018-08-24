@@ -155,7 +155,7 @@ class ApiConsumer {
 
             // check that the socket is still at the role receiving the messages
             if (msg && msg.dstId === this.socket.roleId) {
-                this._logger.trace('sending msg to', this.socket.uuid, this.socket.role);
+                this._logger.trace('sending msg to', this.socket.uuid, this.socket.roleId);
                 this.socket.sendMessage(msg.msgType, msg.content);
             }
 

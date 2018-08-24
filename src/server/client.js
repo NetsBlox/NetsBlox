@@ -31,7 +31,6 @@ class Client {
         this.id = (++counter);
         this._logger = logger.fork(this.uuid);
 
-        this.role = null;
         this.loggedIn = false;
         this.projectId = null;
         this.roleId = null;
@@ -97,10 +96,10 @@ class Client {
     }
 
     async canApplyAction(action) {
-        const startRole = this.role;
+        const startRole = this.roleId;
         const actionId = await ProjectActions.getLatestActionId(this.projectId, this.roleId);
 
-        const accepted = actionId < action.id && this.role === startRole;
+        const accepted = actionId < action.id && this.roleId === startRole;
         if (!accepted) {
             const prettyId = `${this.uuid} at ${this.roleId} in ${this.projectId}`;
             this._logger.log(`rejecting action with id ${action.id} ` +
