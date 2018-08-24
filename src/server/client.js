@@ -89,6 +89,9 @@ class Client {
                     } else {
                         return ProjectActions.store(msg);
                     }
+                } else {
+                    msg.type = 'action-rejected';
+                    this.send(msg);
                 }
             });
     }
