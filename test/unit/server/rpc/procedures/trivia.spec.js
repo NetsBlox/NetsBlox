@@ -6,6 +6,6 @@ describe('trivia', function() {
 
     utils.verifyRPCInterfaces(trivia, [
         ['random'],
-        ['getQuestion']
+        ['getRandomQuestion']
     ]);
 });
