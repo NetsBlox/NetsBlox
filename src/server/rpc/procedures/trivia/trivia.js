@@ -6,14 +6,14 @@
 'use strict';
 
 const ApiConsumer = require('../utils/api-consumer');
-const Trivia = new ApiConsumer('trivia', 'http://jservice.io/api',{cache: {ttl: 0}});
+const Trivia = new ApiConsumer('trivia', 'http://jservice.io/api',{cache: {ttl: 0.5}});
 
 /**
  * Get a random trivia question.
  * This includes the question, answer, and additional information.
  * @returns {Promise<Object>}
  */
-Trivia.getQuestion = function() {
+Trivia.getRandomQuestion = function() {
     const keepKeys = [
         'id',
         'question',
