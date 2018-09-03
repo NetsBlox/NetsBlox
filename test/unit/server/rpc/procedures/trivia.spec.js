@@ -5,6 +5,7 @@ describe('trivia', function() {
         trivia = new RPCMock(Trivia);
 
     utils.verifyRPCInterfaces(trivia, [
-        ['random']
+        ['random'],
+        ['getRandomQuestion']
     ]);
 });
