@@ -337,11 +337,11 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
                     text += ' ' + content[fields[i]];
                 }
 
-                const content = {
+                const encryptedContent = {
                     robot: myself.mac_addr,
                     message: myself.encrypt(text.trim())
                 };
-                socket.sendMessage('robot message', content);
+                socket.sendMessage('robot message', encryptedContent);
             }
         } else {
             logger.log('socket not found for ' + uuid);
