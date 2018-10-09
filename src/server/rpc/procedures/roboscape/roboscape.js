@@ -653,8 +653,8 @@ RoboScape.prototype.listen = function (robots) {
 
 if(ROBOSCAPE_CAMERA)
 {
-    RoboScape.prototype.fieldWidth = -1;
-    RoboScape.prototype.fieldHeight = -1;
+    RoboScape.fieldWidth = -1;
+    RoboScape.fieldHeight = -1;
     
     /**
      * Is the robot tracked by the camera
@@ -708,8 +708,28 @@ if(ROBOSCAPE_CAMERA)
     RoboScape.prototype.getFieldHeight = function () {
         return fieldHeight;
     }
-}
 
+    
+    /**
+     * Subscribe to robot position update events
+     * @param {String} robot name of the robot (matches at the end)
+     */
+    RoboScape.prototype.subscribeToPositions = function() {
+
+    }
+
+    
+    /**
+     * Unsubscribe from robot position update events
+     * @param {String=} robot name of the robot (matches at the end), blank to unsubscribe from all
+     */
+    RoboScape.prototype.unsubscribeFromPositions = function() {
+
+    }
+
+
+}
+ 
 /**
  * Returns the MAC addresses of all robots.
  * @returns {array}
