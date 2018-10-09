@@ -59,6 +59,7 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.lastSeqNum = -1; // initially disabled
     this.xposition = -1;
     this.yposition = -1;
+    this.heading = -1;
     this.positionknown = false;
 };
 
@@ -655,7 +656,7 @@ if(ROBOSCAPE_CAMERA)
 {
     RoboScape.fieldWidth = -1;
     RoboScape.fieldHeight = -1;
-    
+
     /**
      * Is the robot tracked by the camera
      * @param {String} robot name of the robot (matches at the end)
@@ -674,7 +675,7 @@ if(ROBOSCAPE_CAMERA)
      * @param {String} robot name of the robot (matches at the end)
      */
     RoboScape.prototype.getX = function (robot) {
-        robot = this._getRobot(robot);
+        robot = this._getRobot(robot); 
 
         if (robot && robot.positionknown){
             return robot.xposition;
@@ -691,6 +692,19 @@ if(ROBOSCAPE_CAMERA)
 
         if (robot && robot.positionknown){
             return robot.yposition;
+        } 
+        return false;
+    }
+
+    /**
+     * Get the tracked heading of the robot
+     * @param {String} robot name of the robot (matches at the end)
+     */
+    RoboScape.prototype.getHeading = function (robot) {
+        robot = this._getRobot(robot);
+
+        if (robot && robot.positionknown){
+            return robot.heading;
         } 
         return false;
     }
@@ -992,6 +1006,28 @@ server.on('listening', function () {
 });
 
 server.on('message', function (message, remote) {
+    // Robot position update
+    if(ROBOSCAPE_CAMERA && message.length > 14)
+    {
+        let buf = new ArrayBuffer(message.length);
+        let view = new DataView(buf);
+
+        message.forEach((byte, i) => view.setUint8(i, byte));
+
+        let mac_addr = message.toString('hex', 0, 6);
+
+        // Check that robot exists
+        let robot = RoboScape.prototype._getRobot(mac_addr);
+        if(robot)
+        {
+            // Get data for robot
+            robot.xposition = view.getFloat32(6, true);
+            robot.yposition = view.getFloat32(10, true);
+            robot.heading = view.getFloat64(14, true) * 180 / Math.PI;
+            robot.positionknown = true;
+        }
+    }
+
     if (message.length < 6) {
         logger.log('invalid message ' + remote.address + ':' +
             remote.port + ' ' + message.toString('hex'));
