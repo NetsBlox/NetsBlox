@@ -37,7 +37,8 @@ var dgram = require('dgram'),
     NetworkTopology = require('../../../network-topology'),
     FORGET_TIME = 120, // forgetting a robot in seconds
     RESPONSE_TIMEOUT = 200, // waiting for response in milliseconds
-    ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
+    ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both',
+    ROBOSCAPE_CAMERA = process.env.ROBOSCAPE_CAMERA || false;
 
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
@@ -56,6 +57,9 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.clientPenalty = 0; // in seconds
     this.clientCounts = {};
     this.lastSeqNum = -1; // initially disabled
+    this.xposition = -1;
+    this.yposition = -1;
+    this.positionknown = false;
 };
 
 Robot.prototype.setTotalRate = function (rate) {
@@ -645,6 +649,66 @@ RoboScape.prototype.listen = function (robots) {
     }
     return ok;
 };
+
+
+if(ROBOSCAPE_CAMERA)
+{
+    RoboScape.prototype.fieldWidth = -1;
+    RoboScape.prototype.fieldHeight = -1;
+    
+    /**
+     * Is the robot tracked by the camera
+     * @param {String} robot name of the robot (matches at the end)
+     */
+    RoboScape.prototype.isPositionKnown = function (robot) {
+        robot = this._getRobot(robot);
+
+        if (robot){
+            return robot.positionknown;
+        } 
+        return false;
+    }
+
+    /**
+     * Get the tracked X position of the robot
+     * @param {String} robot name of the robot (matches at the end)
+     */
+    RoboScape.prototype.getX = function (robot) {
+        robot = this._getRobot(robot);
+
+        if (robot && robot.positionknown){
+            return robot.xposition;
+        } 
+        return false;
+    }
+
+    /**
+     * Get the tracked Y position of the robot
+     * @param {String} robot name of the robot (matches at the end)
+     */
+    RoboScape.prototype.getY = function (robot) {
+        robot = this._getRobot(robot);
+
+        if (robot && robot.positionknown){
+            return robot.yposition;
+        } 
+        return false;
+    }
+
+    /**
+     * Get the width of the tracked area
+     */
+    RoboScape.prototype.getFieldWidth = function () {
+        return fieldWidth;
+    }
+
+    /**
+     * Get the height of the tracked area
+     */
+    RoboScape.prototype.getFieldHeight = function () {
+        return fieldHeight;
+    }
+}
 
 /**
  * Returns the MAC addresses of all robots.
