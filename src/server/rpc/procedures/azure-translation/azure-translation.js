@@ -81,7 +81,7 @@ TranslationConsumer.detectLanguage = function(text) {
  * @returns {Array} List of languages supported by the translator
  */
 TranslationConsumer.getSupportedLanguages = function() {
-    return this._sendAnswer({queryString: `languages?api-version=3.0&scope=translation`,
+    return this._sendAnswer({queryString: 'languages?api-version=3.0&scope=translation',
         headers: {  'Content-Type' : 'application/json',
                     'Ocp-Apim-Subscription-Key' : key}}, '.translation')
         .catch(err => {
