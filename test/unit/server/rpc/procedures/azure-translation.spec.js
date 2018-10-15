@@ -1,10 +1,12 @@
 describe('azure-translation', function() {
     const utils = require('../../../../assets/utils');
-    var StockService = utils.reqSrc('rpc/procedures/azure-translation/azure-translation'),
+    var TranslationService = utils.reqSrc('rpc/procedures/azure-translation/azure-translation'),
         RPCMock = require('../../../../assets/mock-rpc'),
-        stocks = new RPCMock(StockService);
+        translation = new RPCMock(TranslationService);
 
-    utils.verifyRPCInterfaces(stocks, [
+    utils.verifyRPCInterfaces(translation, [
         ['toEnglish', ['text']],
+        ['detectLanguage', ['text']],
+        ['getSupportedLanguages', []],
     ]);
 });

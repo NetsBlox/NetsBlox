@@ -7,7 +7,7 @@
  */
 
 const ApiConsumer = require('../utils/api-consumer');
-const TranslationConsumer = new ApiConsumer('azure-translation', 'https://api.cognitive.microsofttranslator.com/translate?api-version=3.0',{cache: {ttl: 15 * 60}});
+const TranslationConsumer = new ApiConsumer('azure-translation', 'https://api.cognitive.microsofttranslator.com/',{cache: {ttl: 15 * 60}});
 const key = process.env.AZURE_TRANSLATION_KEY;
 
 /**
@@ -28,12 +28,44 @@ TranslationConsumer._get_guid = function () {
 TranslationConsumer.toEnglish = function(text) {
     let body = [{'Text' : text}];
     let guid = this._get_guid();
-    return this._sendAnswer({queryString: `&to=en&h=${guid}`,
+    return this._sendAnswer({queryString: `translate?api-version=3.0&to=en&h=${guid}`,
         method: 'POST',
         headers: { 'Content-Type' : 'application/json',
                     'Ocp-Apim-Subscription-Key' : key,
                     'X-ClientTraceId' : guid},
         body: body}, '.translations .text[0]')
+        .catch(err => {
+            throw err;
+        });
+};
+
+/**
+ * Attempt to detect language of input text
+ * @param {String} text Text in an unknown language
+ * @returns {String} Abbreviation for name of language detected in text
+ */
+TranslationConsumer.detectLanguage = function(text) {
+    let body = [{'Text' : text}];
+    let guid = this._get_guid();
+    return this._sendAnswer({queryString: `detect?api-version=3.0&h=${guid}`,
+        method: 'POST',
+        headers: { 'Content-Type' : 'application/json',
+                    'Ocp-Apim-Subscription-Key' : key,
+                    'X-ClientTraceId' : guid},
+        body: body}, '.language[0]')
+        .catch(err => {
+            throw err;
+        });
+};
+
+/**
+ * Attempt to detect language of input text
+ * @returns {Array} List of languages supported by the translator
+ */
+TranslationConsumer.getSupportedLanguages = function() {
+    return this._sendAnswer({queryString: `languages?api-version=3.0&scope=translation`,
+        headers: { 'Content-Type' : 'application/json',
+                    'Ocp-Apim-Subscription-Key' : key}}, '.translation')
         .catch(err => {
             throw err;
         });
