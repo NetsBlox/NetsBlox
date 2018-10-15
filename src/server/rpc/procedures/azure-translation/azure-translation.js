@@ -21,14 +21,23 @@ TranslationConsumer._get_guid = function () {
 };
 
 /**
- * Translate text to English
+ * Translate text between languages
  * @param {String} text Text in another language
+ * @param {String=} from Text in another language
+ * @param {String} to Text in another language
  * @returns {String} Text translated to English
  */
-TranslationConsumer.toEnglish = function(text) {
+TranslationConsumer.translate = function(text, from, to) {
     let body = [{'Text' : text}];
     let guid = this._get_guid();
-    return this._sendAnswer({queryString: `translate?api-version=3.0&to=en&h=${guid}`,
+    let query = `translate?api-version=3.0&to=${to}&h=${guid}`;
+
+    if(from)
+    {
+        query = query + `&from=${from}`;
+    }
+
+    return this._sendAnswer({queryString: query,
         method: 'POST',
         headers: { 'Content-Type' : 'application/json',
                     'Ocp-Apim-Subscription-Key' : key,
@@ -37,6 +46,15 @@ TranslationConsumer.toEnglish = function(text) {
         .catch(err => {
             throw err;
         });
+};
+
+/**
+ * Translate text to English
+ * @param {String} text Text in another language
+ * @returns {String} Text translated to English
+ */
+TranslationConsumer.toEnglish = function(text) {
+    return this.translate(text, null, "en");
 };
 
 /**
@@ -70,6 +88,8 @@ TranslationConsumer.getSupportedLanguages = function() {
             throw err;
         });
 };
+
+
 
 TranslationConsumer.isSupported = () => {
     if(!key){

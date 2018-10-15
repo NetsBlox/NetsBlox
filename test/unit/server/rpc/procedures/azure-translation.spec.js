@@ -5,6 +5,7 @@ describe('azure-translation', function() {
         translation = new RPCMock(TranslationService);
 
     utils.verifyRPCInterfaces(translation, [
+        ['translate', ['text', 'from', 'to']],
         ['toEnglish', ['text']],
         ['detectLanguage', ['text']],
         ['getSupportedLanguages', []],
