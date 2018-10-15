@@ -23,9 +23,9 @@ TranslationConsumer._get_guid = function () {
 /**
  * Translate text between languages
  * @param {String} text Text in another language
- * @param {String=} from Text in another language
- * @param {String} to Text in another language
- * @returns {String} Text translated to English
+ * @param {String=} from Language to translate from (auto-detects if not specified)
+ * @param {String} to Language to translate to
+ * @returns {String} Text translated to requested language
  */
 TranslationConsumer.translate = function(text, from, to) {
     let body = [{'Text' : text}];
