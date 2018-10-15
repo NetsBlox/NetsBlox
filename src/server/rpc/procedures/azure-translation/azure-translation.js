@@ -39,7 +39,7 @@ TranslationConsumer.translate = function(text, from, to) {
 
     return this._sendAnswer({queryString: query,
         method: 'POST',
-        headers: { 'Content-Type' : 'application/json',
+        headers: {  'Content-Type' : 'application/json',
                     'Ocp-Apim-Subscription-Key' : key,
                     'X-ClientTraceId' : guid},
         body: body}, '.translations .text[0]')
@@ -54,7 +54,7 @@ TranslationConsumer.translate = function(text, from, to) {
  * @returns {String} Text translated to English
  */
 TranslationConsumer.toEnglish = function(text) {
-    return this.translate(text, null, "en");
+    return this.translate(text, null, 'en');
 };
 
 /**
@@ -67,7 +67,7 @@ TranslationConsumer.detectLanguage = function(text) {
     let guid = this._get_guid();
     return this._sendAnswer({queryString: `detect?api-version=3.0&h=${guid}`,
         method: 'POST',
-        headers: { 'Content-Type' : 'application/json',
+        headers: {  'Content-Type' : 'application/json',
                     'Ocp-Apim-Subscription-Key' : key,
                     'X-ClientTraceId' : guid},
         body: body}, '.language[0]')
@@ -82,7 +82,7 @@ TranslationConsumer.detectLanguage = function(text) {
  */
 TranslationConsumer.getSupportedLanguages = function() {
     return this._sendAnswer({queryString: `languages?api-version=3.0&scope=translation`,
-        headers: { 'Content-Type' : 'application/json',
+        headers: {  'Content-Type' : 'application/json',
                     'Ocp-Apim-Subscription-Key' : key}}, '.translation')
         .catch(err => {
             throw err;
