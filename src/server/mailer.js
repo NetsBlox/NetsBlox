@@ -1,6 +1,6 @@
 var nodemailer = require('nodemailer');
 
-let transporterOpts = undefined;
+let transporterOpts;
 
 const hasSecureSMTPConf = () => {
     const vars = ['HOST', 'PORT', 'SECURE', 'USER', 'PASS'];
