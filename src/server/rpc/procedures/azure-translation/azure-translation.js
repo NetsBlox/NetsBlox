@@ -31,7 +31,7 @@ TranslationConsumer._getCacheKey = function(queryOptions){
     parameters.push(fullUrl);
     if (queryOptions.body) parameters.push(JSON.stringify(queryOptions.body));
     return parameters.join(' ');
-}
+};
 
 /**
  * Translate text between languages
@@ -79,7 +79,7 @@ TranslationConsumer.toEnglish = function(text) {
 TranslationConsumer.detectLanguage = function(text) {
     let body = [{'Text' : text}];
     let guid = this._get_guid();
-    return this._sendAnswer({queryString: `detect?api-version=3.0`,
+    return this._sendAnswer({queryString: 'detect?api-version=3.0',
         method: 'POST',
         headers: {
             'Content-Type' : 'application/json',
