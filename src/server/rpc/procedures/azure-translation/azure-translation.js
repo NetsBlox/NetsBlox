@@ -7,7 +7,7 @@
  */
 
 const ApiConsumer = require('../utils/api-consumer');
-const TranslationConsumer = new ApiConsumer('azure-translation', 'https://api.cognitive.microsofttranslator.com/',{cache: {ttl: 15 * 60}});
+const TranslationConsumer = new ApiConsumer('azure-translation', 'https://api.cognitive.microsofttranslator.com/',{cache: {ttl: 60 * 60}});
 const key = process.env.AZURE_TRANSLATION_KEY;
 
 /**
@@ -21,6 +21,19 @@ TranslationConsumer._get_guid = function () {
 };
 
 /**
+ * Customized cache key to allow translated strings to be cached even though the URL may be identical
+ * @param {Object} queryOptions 
+ */
+TranslationConsumer._getCacheKey = function(queryOptions){
+    let parameters = [];
+    parameters.push(queryOptions.method || 'GET');
+    let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
+    parameters.push(fullUrl);
+    if (queryOptions.body) parameters.push(JSON.stringify(queryOptions.body));
+    return parameters.join(' ');
+}
+
+/**
  * Translate text between languages
  * @param {String} text Text in another language
  * @param {String=} from Language to translate from (auto-detects if not specified)
@@ -30,7 +43,7 @@ TranslationConsumer._get_guid = function () {
 TranslationConsumer.translate = function(text, from, to) {
     let body = [{'Text' : text}];
     let guid = this._get_guid();
-    let query = `translate?api-version=3.0&to=${to}&h=${guid}`;
+    let query = `translate?api-version=3.0&to=${to}`;
 
     if(from)
     {
@@ -66,7 +79,7 @@ TranslationConsumer.toEnglish = function(text) {
 TranslationConsumer.detectLanguage = function(text) {
     let body = [{'Text' : text}];
     let guid = this._get_guid();
-    return this._sendAnswer({queryString: `detect?api-version=3.0&h=${guid}`,
+    return this._sendAnswer({queryString: `detect?api-version=3.0`,
         method: 'POST',
         headers: {
             'Content-Type' : 'application/json',
