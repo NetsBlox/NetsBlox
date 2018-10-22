@@ -741,12 +741,12 @@ if(ROBOSCAPE_CAMERA)
 
         if(RoboScape.prototype._subscriptions[robot] == undefined)
         {
-            RoboScape.prototype._subscriptions[robot] = {};
+            RoboScape.prototype._subscriptions[robot] = [];
         }
         
-        if(RoboScape.prototype._subscriptions[robot][uuid] == undefined)
+        if(RoboScape.prototype._subscriptions[robot].indexOf(uuid) < 0)
         {
-            RoboScape.prototype._subscriptions[robot][uuid] = this.socket;
+            RoboScape.prototype._subscriptions[robot].push(uuid);
         }
     }
     
@@ -763,19 +763,20 @@ if(ROBOSCAPE_CAMERA)
             
             if(RoboScape.prototype._subscriptions[robot] != undefined)
             {
-                if(RoboScape.prototype._subscriptions[robot][uuid] != undefined)
+                let index = RoboScape.prototype._subscriptions[robot].indexOf(uuid);
+                if(index >= 0)
                 {
-                    delete RoboScape.prototype._subscriptions[robot][uuid];
+                    RoboScape.prototype._subscriptions[robot].splice(index, 1);
                 }
             }
         } else {
             logger.log(`${uuid} unsubscribing from all robots`);
             
             Object.keys(RoboScape.prototype._subscriptions).forEach(key => {
-                
-                if(RoboScape.prototype._subscriptions[key][uuid] != undefined)
+                let index = RoboScape.prototype._subscriptions[key].indexOf(uuid);
+                if(index >= 0)
                 {
-                    delete RoboScape.prototype._subscriptions[key][uuid];
+                    RoboScape.prototype._subscriptions[key].splice(index, 1);
                 }
             });
         }
@@ -791,8 +792,7 @@ if(ROBOSCAPE_CAMERA)
         let list = [];
 
         Object.keys(RoboScape.prototype._subscriptions).forEach(key => {
-                
-            if(RoboScape.prototype._subscriptions[key][uuid] != undefined)
+            if(RoboScape.prototype._subscriptions[key].indexOf(uuid) >= 0)
             {
                 list.push(key);
             }
