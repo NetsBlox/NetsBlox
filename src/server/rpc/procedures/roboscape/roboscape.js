@@ -557,6 +557,7 @@ var RoboScape = function () {
 
 RoboScape.serviceName = 'RoboScape';
 RoboScape.prototype._robots = {};
+RoboScape.prototype._subscriptions = {};
 
 RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
@@ -728,19 +729,77 @@ if(ROBOSCAPE_CAMERA)
      * Subscribe to robot position update events
      * @param {String} robot name of the robot (matches at the end)
      */
-    RoboScape.prototype.subscribeToPositions = function() {
+    RoboScape.prototype.subscribeToPositions = function(robot) {
+        let uuid = this.socket.uuid;
+        robot = this._getRobot(robot).mac_addr;
+        logger.log(`${uuid} subscribing to robot ${robot}`);
 
+        if(robot == undefined)
+        {
+            return 'Robot not found';
+        }
+
+        if(RoboScape.prototype._subscriptions[robot] == undefined)
+        {
+            RoboScape.prototype._subscriptions[robot] = {};
+        }
+        
+        if(RoboScape.prototype._subscriptions[robot][uuid] == undefined)
+        {
+            RoboScape.prototype._subscriptions[robot][uuid] = this.socket;
+        }
     }
-
     
     /**
      * Unsubscribe from robot position update events
      * @param {String=} robot name of the robot (matches at the end), blank to unsubscribe from all
      */
-    RoboScape.prototype.unsubscribeFromPositions = function() {
+    RoboScape.prototype.unsubscribeFromPositions = function(robot) {
+        let uuid = this.socket.uuid;
 
+        if(robot != ""){
+            robot = this._getRobot(robot).mac_addr;
+            logger.log(`${uuid} unsubscribing from robot ${robot}`);
+            
+            if(RoboScape.prototype._subscriptions[robot] != undefined)
+            {
+                if(RoboScape.prototype._subscriptions[robot][uuid] != undefined)
+                {
+                    delete RoboScape.prototype._subscriptions[robot][uuid];
+                }
+            }
+        } else {
+            logger.log(`${uuid} unsubscribing from all robots`);
+            
+            Object.keys(RoboScape.prototype._subscriptions).forEach(key => {
+                
+                if(RoboScape.prototype._subscriptions[key][uuid] != undefined)
+                {
+                    delete RoboScape.prototype._subscriptions[key][uuid];
+                }
+            });
+        }
+        return 'Unsubscribed';
     }
 
+    
+    /**
+     * List robots this user is subscribed to
+     */
+    RoboScape.prototype.getSubscriptions = function() {
+        let uuid = this.socket.uuid;
+        let list = [];
+
+        Object.keys(RoboScape.prototype._subscriptions).forEach(key => {
+                
+            if(RoboScape.prototype._subscriptions[key][uuid] != undefined)
+            {
+                list.push(key);
+            }
+        });
+
+        return list;
+    }
 
 }
  
