@@ -46,12 +46,12 @@ describe('snap structure creation', function() {
         assert.deepEqual(utils.jsonToSnapList(stringJson)[2][1], 'foo');
     });
 
-    it('should remove null items from the array', function(){
-        let arrayWithNull = multipleData;
+    it('should not remove null or falsy items from the array', function(){
+        let arrayWithNull = [...multipleData];
         arrayWithNull.push(null);
         const nullArray = [null,null,false,undefined];
-        assert.equal(utils.jsonToSnapList(arrayWithNull).length, 3);
-        assert.deepEqual(utils.jsonToSnapList(nullArray),[]);
+        assert.equal(utils.jsonToSnapList(arrayWithNull).length, 4);
+        assert.deepEqual(utils.jsonToSnapList(nullArray).length, 4);
     });
 
     it('should convert date objects to GMT datestring', function(){
