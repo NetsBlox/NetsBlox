@@ -91,7 +91,7 @@ class ApiConsumer {
         parameters.push(queryOptions.method || 'GET');
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
         parameters.push(fullUrl);
-        if (queryOptions.body) parameters.push(queryOptions.body);
+        if (queryOptions.body) parameters.push(JSON.stringify(queryOptions.body));
         return parameters.join(' ');
     }
 
