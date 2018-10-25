@@ -7,7 +7,7 @@
  */
 
 const ApiConsumer = require('../utils/api-consumer');
-const TranslationConsumer = new ApiConsumer('azure-translation', 'https://api.cognitive.microsofttranslator.com/',{cache: {ttl: 60 * 60}});
+const TranslationConsumer = new ApiConsumer('azure-translation', 'https://api.cognitive.microsofttranslator.com/',{cache: {ttl: 12 * 60 * 60}});
 const key = process.env.AZURE_TRANSLATION_KEY;
 
 /**
