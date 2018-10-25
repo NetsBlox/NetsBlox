@@ -21,19 +21,6 @@ TranslationConsumer._get_guid = function () {
 };
 
 /**
- * Customized cache key to allow translated strings to be cached even though the URL may be identical
- * @param {Object} queryOptions 
- */
-TranslationConsumer._getCacheKey = function(queryOptions){
-    let parameters = [];
-    parameters.push(queryOptions.method || 'GET');
-    let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
-    parameters.push(fullUrl);
-    if (queryOptions.body) parameters.push(JSON.stringify(queryOptions.body));
-    return parameters.join(' ');
-};
-
-/**
  * Translate text between languages
  * @param {String} text Text in another language
  * @param {String=} from Language to translate from (auto-detects if not specified)
