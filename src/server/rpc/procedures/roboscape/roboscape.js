@@ -60,6 +60,7 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.xposition = -1;
     this.yposition = -1;
     this.heading = -1;
+    this.poseSockets = []; // uuids of sockets subscribed for position/orientation updates
     this.positionknown = false;
 };
 
@@ -156,22 +157,46 @@ Robot.prototype.isMostlyAlive = function () {
     return this.heartbeats <= FORGET_TIME;
 };
 
-Robot.prototype.addClientSocket = function (uuid) {
-    var i = this.sockets.indexOf(uuid);
-    if (i < 0) {
-        logger.log('register ' + uuid + ' ' + this.mac_addr);
-        this.sockets.push(uuid);
-        return true;
+Robot.prototype.addClientSocket = function (uuid, type = 'listen') {
+    if(type == 'listen')
+    {
+        var i = this.sockets.indexOf(uuid);
+        if (i < 0) {
+            logger.log('register ' + uuid + ' ' + this.mac_addr);
+            this.sockets.push(uuid);
+            return true;
+        }
+    } else if(type == 'pose')
+    {
+        var i = this.poseSockets.indexOf(uuid);
+        if (i < 0) {
+            logger.log('pose register ' + uuid + ' ' + this.mac_addr);
+            this.poseSockets.push(uuid);
+            return true;
+        }
     }
     return false;
 };
 
-Robot.prototype.removeClientSocket = function (uuid) {
-    var i = this.sockets.indexOf(uuid);
-    if (i >= 0) {
-        logger.log('unregister ' + uuid + ' ' + this.mac_addr);
-        this.sockets.splice(i, 1);
-        return true;
+Robot.prototype.removeClientSocket = function (uuid, type = 'listen') {
+
+
+    if(type == 'listen')
+    {
+        var i = this.sockets.indexOf(uuid);
+        if (i >= 0) {
+            logger.log('unregister ' + uuid + ' ' + this.mac_addr);
+            this.sockets.splice(i, 1);
+            return true;
+        }
+    } else if(type == 'pose')
+    {
+        var i = this.poseSockets.indexOf(uuid);
+        if (i >= 0) {
+            logger.log('pose unregister ' + uuid + ' ' + this.mac_addr);
+            this.poseSockets.splice(i, 1);
+            return true;
+        }
     }
     return false;
 };
@@ -328,7 +353,8 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
         callbacks.length = 0;
     }
 
-    this.sockets.forEach(function (uuid) {
+
+    var send = function (uuid) {
         var socket = NetworkTopology.getSocket(uuid);
         if (socket) {
             if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
@@ -351,7 +377,13 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
         } else {
             logger.log('socket not found for ' + uuid);
         }
-    });
+    };
+
+    if(msgType != 'pose') {
+        this.sockets.forEach(send);
+    } else {
+        this.poseSockets.forEach(send);
+    }
 };
 
 Robot.prototype.onMessage = function (message) {
@@ -557,7 +589,6 @@ var RoboScape = function () {
 
 RoboScape.serviceName = 'RoboScape';
 RoboScape.prototype._robots = {};
-RoboScape.prototype._subscriptions = {};
 
 RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
@@ -625,31 +656,7 @@ RoboScape.prototype.eavesdrop = function (robots) {
  * @param {array} robots one or a list of robots
  */
 RoboScape.prototype.listen = function (robots) {
-    var state = this._state,
-        uuid = this.socket.uuid;
-
-    for (var mac_addr in state.registered) {
-        if (this._robots[mac_addr]) {
-            this._robots[mac_addr].removeClientSocket(uuid);
-        }
-    }
-    state.registered = {};
-
-    if (!Array.isArray(robots)) {
-        robots = ('' + robots).split(/[, ]/);
-    }
-
-    var ok = true;
-    for (var i = 0; i < robots.length; i++) {
-        var robot = this._getRobot(robots[i]);
-        if (robot) {
-            state.registered[robot.mac_addr] = robot;
-            robot.addClientSocket(uuid);
-        } else {
-            ok = false;
-        }
-    }
-    return ok;
+    return this._subscribeToRobots(robots);
 };
 
 
@@ -729,76 +736,8 @@ if(ROBOSCAPE_CAMERA)
      * Subscribe to robot position update events
      * @param {String} robot name of the robot (matches at the end)
      */
-    RoboScape.prototype.subscribeToPositions = function(robot) {
-        let uuid = this.socket.uuid;
-        robot = this._getRobot(robot).mac_addr;
-        logger.log(`${uuid} subscribing to robot ${robot}`);
-
-        if(robot == undefined)
-        {
-            return 'Robot not found';
-        }
-
-        if(RoboScape.prototype._subscriptions[robot] == undefined)
-        {
-            RoboScape.prototype._subscriptions[robot] = [];
-        }
-        
-        if(RoboScape.prototype._subscriptions[robot].indexOf(uuid) < 0)
-        {
-            RoboScape.prototype._subscriptions[robot].push(uuid);
-        }
-    }
-    
-    /**
-     * Unsubscribe from robot position update events
-     * @param {String=} robot name of the robot (matches at the end), blank to unsubscribe from all
-     */
-    RoboScape.prototype.unsubscribeFromPositions = function(robot) {
-        let uuid = this.socket.uuid;
-
-        if(robot != ""){
-            robot = this._getRobot(robot).mac_addr;
-            logger.log(`${uuid} unsubscribing from robot ${robot}`);
-            
-            if(RoboScape.prototype._subscriptions[robot] != undefined)
-            {
-                let index = RoboScape.prototype._subscriptions[robot].indexOf(uuid);
-                if(index >= 0)
-                {
-                    RoboScape.prototype._subscriptions[robot].splice(index, 1);
-                }
-            }
-        } else {
-            logger.log(`${uuid} unsubscribing from all robots`);
-            
-            Object.keys(RoboScape.prototype._subscriptions).forEach(key => {
-                let index = RoboScape.prototype._subscriptions[key].indexOf(uuid);
-                if(index >= 0)
-                {
-                    RoboScape.prototype._subscriptions[key].splice(index, 1);
-                }
-            });
-        }
-        return 'Unsubscribed';
-    }
-
-    
-    /**
-     * List robots this user is subscribed to
-     */
-    RoboScape.prototype.getSubscriptions = function() {
-        let uuid = this.socket.uuid;
-        let list = [];
-
-        Object.keys(RoboScape.prototype._subscriptions).forEach(key => {
-            if(RoboScape.prototype._subscriptions[key].indexOf(uuid) >= 0)
-            {
-                list.push(key);
-            }
-        });
-
-        return list;
+    RoboScape.prototype.subscribeToPose = function(robot) {
+        return this._subscribeToRobots(robot, 'pose');
     }
 
 }
@@ -1059,6 +998,33 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
     };
 }
 
+
+RoboScape.prototype._subscribeToRobots = function(robots, type = 'listen') {
+    var state = this._state, uuid = this.socket.uuid;
+    for (var mac_addr in state.registered) {
+        if (this._robots[mac_addr]) {
+            this._robots[mac_addr].removeClientSocket(uuid, type);
+        }
+    }
+    state.registered = {};
+    if (!Array.isArray(robots)) {
+        robots = ('' + robots).split(/[, ]/);
+    }
+    var ok = true;
+    for (var i = 0; i < robots.length; i++) {
+        var robot = this._getRobot(robots[i]);
+        if (robot) {
+            state.registered[robot.mac_addr] = robot;
+            robot.addClientSocket(uuid, type);
+        }
+        else {
+            ok = false;
+        }
+    }
+    return { __return: ok, robots };
+};
+
+
 server.on('listening', function () {
     var local = server.address();
     logger.log('listening on ' + local.address + ':' + local.port);
@@ -1084,6 +1050,13 @@ server.on('message', function (message, remote) {
             robot.yposition = view.getFloat32(10, true);
             robot.heading = view.getFloat64(14, true) * 180 / Math.PI;
             robot.positionknown = true;
+
+            // Send pose message
+            robot.sendToClient('pose', {
+                x: robot.xposition,
+                y: robot.yposition,
+                heading: robot.heading,
+            }, ['time', 'x', 'y', 'heading']);
         }
     }
 
