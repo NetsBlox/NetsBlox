@@ -7,7 +7,7 @@
  */
 
 const ApiConsumer = require('../utils/api-consumer');
-const TranslationConsumer = new ApiConsumer('azure-translation', 'https://api.cognitive.microsofttranslator.com/',{cache: {ttl: 15 * 60}});
+const TranslationConsumer = new ApiConsumer('azure-translation', 'https://api.cognitive.microsofttranslator.com/',{cache: {ttl: 12 * 60 * 60}});
 const key = process.env.AZURE_TRANSLATION_KEY;
 
 /**
@@ -30,7 +30,7 @@ TranslationConsumer._get_guid = function () {
 TranslationConsumer.translate = function(text, from, to) {
     let body = [{'Text' : text}];
     let guid = this._get_guid();
-    let query = `translate?api-version=3.0&to=${to}&h=${guid}`;
+    let query = `translate?api-version=3.0&to=${to}`;
 
     if(from)
     {
@@ -66,7 +66,7 @@ TranslationConsumer.toEnglish = function(text) {
 TranslationConsumer.detectLanguage = function(text) {
     let body = [{'Text' : text}];
     let guid = this._get_guid();
-    return this._sendAnswer({queryString: `detect?api-version=3.0&h=${guid}`,
+    return this._sendAnswer({queryString: 'detect?api-version=3.0',
         method: 'POST',
         headers: {
             'Content-Type' : 'application/json',
