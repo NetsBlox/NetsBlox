@@ -680,6 +680,21 @@
             });
     };
 
+    ProjectStorage.getAllUserProjects = async function (username) {
+        try {
+            const rawProjects = await ProjectStorage.getAllRawUserProjects(username);
+            const projects = rawProjects.map(d => new Project({
+                logger: logger,
+                db: collection,
+                data: d
+            }));
+            return projects;
+        } catch (e) {
+            logger.error(`getting user projects errored: ${e}`);
+            throw e;
+        }
+    };
+
     ProjectStorage.getRawSharedProjects = function (username) {
         return collection.find({collaborators: username}).toArray();
     };
