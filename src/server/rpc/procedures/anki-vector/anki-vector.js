@@ -220,7 +220,7 @@ AnkiService.prototype.sendCommand = function (robot, command) {
     robot = this._getRobot(robot);
 
     if (robot){
-        robot.sendToRobot(robot.name + "-" +command);
+        robot.sendToRobot(robot.name + ":" +command);
         return true;
     }
     
@@ -234,12 +234,12 @@ server.on('listening', function () {
 
 server.on('message', function (message, remote) {
     logger.log('message ' + remote.address + ':' +
-        remote.port + ' ' + message.toString('hex'));
+        remote.port + ' ' + message.toString('ascii'));
     if (message.length < 6) {
         logger.log('invalid message ' + remote.address + ':' +
-            remote.port + ' ' + message.toString('hex'));
+            remote.port + ' ' + message.toString('ascii'));
     } else {
-        var name = message.toString('hex', 0, 8);
+        var name = message.toString('ascii', 0, 11);
         var robot = AnkiService.prototype._addRobot(
             name, remote.address, remote.port);
         robot.onMessage(message);
