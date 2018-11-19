@@ -206,6 +206,23 @@ AnkiService.prototype._getRegistered = function () {
 AnkiService.prototype.getRobots = function () {
     return Object.keys(AnkiService.prototype._robots);
 };
+
+/**
+ * Sends a command to a robot.
+ * @param {String} robot Robot to send command to
+ * @param {String} command Command to send
+ * @returns {Boolean} Was command sent
+ */
+AnkiService.prototype.sendCommand = function (robot, command) {
+    robot = this._getRobot(robot);
+
+    if (robot){
+        robot.sendToRobot(robot.serialnum + "-" +command);
+        return true;
+    }
+    
+    return false;
+}
     
 server.on('listening', function () {
     var local = server.address();
