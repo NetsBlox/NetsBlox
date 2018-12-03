@@ -29,7 +29,7 @@ const NetworkTopology = require('./network-topology');
 class Client {
     constructor (logger, socket) {
         this.id = (++counter);
-        this._logger = logger.fork(this.uuid);
+        this._logger = logger.fork('client-'+this.id);
 
         this.loggedIn = false;
         this.projectId = null;
