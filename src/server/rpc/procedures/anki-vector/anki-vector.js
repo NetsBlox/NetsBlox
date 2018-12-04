@@ -1,5 +1,5 @@
 /**
- * Based on Roboscape RPC.
+ * Controls Anki Vector robots. Based on Roboscape RPC.
  * Environment variables:
  *  ANKI_PORT: set it to the UDP port (1974) to enable this module
  */
@@ -19,6 +19,7 @@ var Robot = function (name, ip4_addr, ip4_port) {
     this.ip4_port = ip4_port;
     this.heartbeats = 0;
     this.timestamp = -1; // time of last message in robot time
+    this.callbacks = {};
 };
 
 
@@ -84,11 +85,11 @@ Robot.prototype.sendToRobot = function (message) {
     });
 };
 
-Robot.prototype.receiveFromRobot = function (msgType, timeout) {
-    if (!this.callbacks[msgType]) {
-        this.callbacks[msgType] = [];
+Robot.prototype.receiveFromRobot = function (seq, timeout) {
+    if (!this.callbacks[seq]) {
+        this.callbacks[seq] = [];
     }
-    var callbacks = this.callbacks[msgType];
+    var callbacks = this.callbacks[seq];
 
     return new Promise(function (resolve) {
         callbacks.push(resolve);
@@ -102,37 +103,38 @@ Robot.prototype.receiveFromRobot = function (msgType, timeout) {
     });
 };
 
+Robot.prototype.onMessage = function (message) {
+    logger.log(`message from ${this.ip4_addr}:${this.ip4_port} to robot ${this.name} : ${message.toString('hex')}`);
 
-Robot.prototype.sendToClient = function (msgType, content, fields) {
-    content.robot = this.name;
-    content.time = this.timestamp;
+    message = message.trim();
 
-    if (msgType !== 'set led') {
-        logger.log('event ' + msgType + ' ' + JSON.stringify(content));
+    // Not valid response
+    if(message.length < 2 || message.indexOf(' ') === -1)
+    {
+        logger.log('message invalid');
+        return;
+    }
+    
+    let seq = parseInt(message.split(' ')[0]);
+
+    // Not valid response
+    if(seq === NaN)
+    {
+        logger.log('sequence number invalid');
+        return;
     }
 
-    if (this.callbacks[msgType]) {
-        var callbacks = this.callbacks[msgType];
-        delete this.callbacks[msgType];
+    logger.log(message);
+    
+    // Handle callbacks
+    if (this.callbacks[seq]) {
+        var callbacks = this.callbacks[seq];
+        delete this.callbacks[seq];
         callbacks.forEach(function (callback) {
-            callback(content);
+            callback(message.substr(message.indexOf(' ')));
         });
         callbacks.length = 0;
     }
-
-    this.sockets.forEach(function (uuid) {
-        var socket = NetworkTopology.getSocket(uuid);
-        if (socket) {
-            socket.sendMessage(msgType, content);
-        } else {
-            logger.log('socket not found for ' + uuid);
-        }
-    });
-};
-
-Robot.prototype.onMessage = function (message) {
-    logger.log('message ' + this.ip4_addr + ':' + this.ip4_port +
-            ' ' + message.toString('hex'));
 };
 
 /*
@@ -143,7 +145,8 @@ Robot.prototype.onMessage = function (message) {
  */
 var AnkiService = function () {
     this._state = {
-        registered: {}
+        registered: {},
+        seqNum: 0
     };
 };
 
@@ -220,8 +223,30 @@ AnkiService.prototype.sendCommand = function (robot, command) {
     robot = this._getRobot(robot);
 
     if (robot){
-        robot.sendToRobot(robot.name + ":" +command);
+        robot.sendToRobot(robot.name + ':' + command);
         return true;
+    }
+    
+    return false;
+}
+
+
+/**
+ * Request data from robot.
+ * @param {String} robot Robot to send request to
+ * @param {String} request Request to send
+ * @returns {Object} Result of request
+ */
+AnkiService.prototype.sendRequest = function (robot, request) {
+    robot = this._getRobot(robot);
+
+    // Generate sequence number
+    let seq = this._state.seqNum++;
+
+    if (robot){
+        var promise = robot.receiveFromRobot(seq);
+        robot.sendToRobot(robot.name + ':' + seq + ' ' + request);
+        return promise.then((result) => result && JSON.parse(result));
     }
     
     return false;
@@ -242,7 +267,7 @@ server.on('message', function (message, remote) {
         var name = message.toString('ascii', 0, 11);
         var robot = AnkiService.prototype._addRobot(
             name, remote.address, remote.port);
-        robot.onMessage(message);
+        robot.onMessage(message.toString('ascii', 12));
     }
 });
 
