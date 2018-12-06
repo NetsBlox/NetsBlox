@@ -11,7 +11,8 @@ var dgram = require('dgram'),
     NetworkTopology = require('../../../network-topology'),
     FORGET_TIME = 120, // forgetting a robot in seconds
     RESPONSE_TIMEOUT = 200,
-    DEFAULT_PORT = 1983;
+    DEFAULT_PORT = 1983,
+    ANKI_MODE = process.env.ANKI_MODE || 'both';
 
 var Robot = function (name, ip4_addr, ip4_port) {
     this.name = name;
@@ -78,7 +79,7 @@ Robot.prototype.removeClientSocket = function (uuid) {
 };
 
 Robot.prototype.sendToRobot = function (message) {
-    server.send(message, this.ip4_port, this.ip4_addr, function (err) {
+    server.send(this.name + ':' + message, this.ip4_port, this.ip4_addr, function (err) {
         if (err) {
             logger.log('send error ' + err);
         }
@@ -125,7 +126,7 @@ Robot.prototype.onMessage = function (message) {
     }
 
     logger.log(message);
-    
+
     // Handle callbacks
     if (this.callbacks[seq]) {
         var callbacks = this.callbacks[seq];
@@ -213,45 +214,154 @@ AnkiService.prototype.getRobots = function () {
     return Object.keys(AnkiService.prototype._robots);
 };
 
-/**
- * Sends a command to a robot.
- * @param {String} robot Robot to send command to
- * @param {String} command Command to send
- * @returns {Boolean} Was command sent
- */
-AnkiService.prototype.sendCommand = function (robot, command) {
-    robot = this._getRobot(robot);
+if(ANKI_MODE == 'text' || ANKI_MODE == 'both'){
+    /**
+     * Sends a command to a robot.
+     * @param {String} robot Robot to send command to
+     * @param {String} command Command to send
+     * @returns {Boolean} Was command sent
+     */
+    AnkiService.prototype.sendCommand = function (robot, command) {
+        robot = this._getRobot(robot);
 
-    if (robot){
-        robot.sendToRobot(robot.name + ':' + command);
-        return true;
+        if (robot){
+            robot.sendToRobot(command);
+            return true;
+        }
+        
+        return false;
     }
-    
-    return false;
+
+
+    /**
+     * Request data from robot.
+     * @param {String} robot Robot to send request to
+     * @param {String} request Request to send
+     * @returns {Object} Result of request
+     */
+    AnkiService.prototype.sendRequest = function (robot, request) {
+        robot = this._getRobot(robot);
+
+        // Generate sequence number
+        let seq = this._state.seqNum++;
+
+        if (robot){
+            var promise = robot.receiveFromRobot(seq);
+            robot.sendToRobot(seq + ' ' + request);
+            return promise.then((result) => result && JSON.parse(result));
+        }
+        
+        return false;
+    }
 }
 
+// RPC commands
+if(ANKI_MODE == 'simple' || ANKI_MODE == 'both')
+{
+    /**
+     * Drive a set number of millimeters
+     * @param {String} robot Robot to send command to
+     * @param {Number} distance Millimeters to drive
+     * @returns {Boolean} Was command sent
+     */
+    AnkiService.prototype.driveMM = function (robot, distance) {
+        robot = this._getRobot(robot);
 
-/**
- * Request data from robot.
- * @param {String} robot Robot to send request to
- * @param {String} request Request to send
- * @returns {Object} Result of request
- */
-AnkiService.prototype.sendRequest = function (robot, request) {
-    robot = this._getRobot(robot);
+        if (robot){
+            robot.sendToRobot(`drivemm ${distance}`);
+            return true;
+        }
+        
+        return false;
+    }
 
-    // Generate sequence number
-    let seq = this._state.seqNum++;
+    /**
+     * Turn a set angle
+     * @param {String} robot Robot to send command to
+     * @param {Number} angle Degrees to turn
+     * @returns {Boolean} Was command sent
+     */
+    AnkiService.prototype.turn = function (robot, distance) {
+        robot = this._getRobot(robot);
 
-    if (robot){
-        var promise = robot.receiveFromRobot(seq);
-        robot.sendToRobot(robot.name + ':' + seq + ' ' + request);
-        return promise.then((result) => result && JSON.parse(result));
+        if (robot){
+            robot.sendToRobot(`turn ${distance}`);
+            return true;
+        }
+        
+        return false;
+    }
+
+    
+    /**
+     * Raise the arm
+     * @param {String} robot Robot to send command to
+     * @returns {Boolean} Was command sent
+     */
+    AnkiService.prototype.raiseArm = function (robot) {
+        robot = this._getRobot(robot);
+
+        if (robot){
+            robot.sendToRobot('set lift 1');
+            return true;
+        }
+        
+        return false;
+    }    
+
+    /**
+     * Lower the arm
+     * @param {String} robot Robot to send command to
+     * @returns {Boolean} Was command sent
+     */
+    AnkiService.prototype.lowerArm = function (robot) {
+        robot = this._getRobot(robot);
+
+        if (robot){
+            robot.sendToRobot('set lift 0');
+            return true;
+        }
+        
+        return false;
     }
     
-    return false;
-}
+    /**
+     * Make the robot speak
+     * @param {String} robot Robot to send command to
+     * @param {String} text Text to read aloud
+     * @returns {Boolean} Was command sent
+     */
+    AnkiService.prototype.say = function (robot) {
+        robot = this._getRobot(robot);
+
+        if (robot){
+            robot.sendToRobot(`say ${text}`);
+            return true;
+        }
+        
+        return false;
+    }
+
     
+    /**
+     * Make the robot drive with a given speed
+     * @param {String} robot Robot to send command to
+     * @param {Number} left Speed of left treads
+     * @param {Number} right Speed of right treads
+     * @returns {Boolean} Was command sent
+     */
+    AnkiService.prototype.setSpeed = function (robot, left, right) {
+        robot = this._getRobot(robot);
+
+        if (robot){
+            robot.sendToRobot(`set speed ${left} ${right}`);
+            return true;
+        }
+        
+        return false;
+    }
+}
+
 server.on('listening', function () {
     var local = server.address();
     logger.log('listening on ' + local.address + ':' + local.port);
