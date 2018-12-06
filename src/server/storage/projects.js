@@ -9,6 +9,7 @@
     const utils = require('../server-utils');
     const PublicProjects = require('./public-projects');
     const MAX_MSG_RECORD_DURATION = 1000 * 60 * 10;  // 10 min
+    const memoize = require('memoizee');
 
     const storeRoleBlob = function(role) {
         const content = _.clone(role);
@@ -577,6 +578,9 @@
         return Q(collection.findOne({owner: username, name: projectName}));
     };
 
+    ProjectStorage.getRawProject = memoize(ProjectStorage.getRawProject,
+        {promise: true, maxAge: 500, primitive: true});
+
     ProjectStorage.getProjectId = function(owner, name) {
         return ProjectStorage.getRawProject(owner, name)
             .then(project => project && project._id.toString());
@@ -621,6 +625,10 @@
             return Q(null);
         }
     };
+
+    // memoize it
+    ProjectStorage.getRawProjectById = memoize(ProjectStorage.getRawProjectById,
+        {promise: true, maxAge: 500, primitive: true});
 
     ProjectStorage.getTransientProject = function (username, projectName) {
         return collection.findOne({owner: username, name: projectName, transient: true})
