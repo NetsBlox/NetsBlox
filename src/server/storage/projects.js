@@ -50,23 +50,29 @@
     };
 
     let cachedFindOne = function(query) {
-        console.trace('query', query)
         // make sure query is stringifiable if using primitive caching
+        // ObjectId is stringifiable
         if (query._id) {
             let id = query._id;
             query._id = typeof id === 'string' ? ObjectId(id) : id;
-            console.log('id', query._id.toString());
         }
         return Q(collection.findOne(query));
     };
-    cacheKey = args => {
-        key = JSON.stringify(args[0]);
-        console.log('key is', key);
-        return key;
-    };
+
+    const cacheKey = args => JSON.stringify(args[0]);
+
+    // WARN CHECK might eat up rejected promises
     cachedFindOne = memoize(cachedFindOne, {maxAge: 500,
         promise: 'done:finally', primitive: true,
         normalizer: cacheKey});
+
+    const findOne = function(query, cache=false) {
+        if (cache === true) {
+            return cachedFindOne(query);
+        } else {
+            return Q(collection.findOne(query));
+        }
+    };
 
     class Project extends DataWrapper {
         constructor(params) {
@@ -86,10 +92,8 @@
             return this._id.toString();
         }
 
-        // similar to projectStorage.getRawProjectById() right?
-        getRawProject() {
-            // console.trace('getting raw proj');
-            return Q(collection.findOne(this.getStorageId()))
+        getRawProject(cache=false) {
+            return findOne(this.getStorageId(), cache)
                 .then(project => {
                     if (!project) {
                         let msg = `could not find project ${this.uuid()}`;
@@ -502,7 +506,7 @@
 
         //////////////// Recording messages (network traces) ////////////////
         getRecordStartTimes() {
-            return this.getRawProject()
+            return this.getRawProject(true)
                 .then(project => project.recordMessagesAfter || []);
         }
 
@@ -599,9 +603,6 @@
         return cachedFindOne({owner: username, name: projectName});
     };
 
-    // ProjectStorage.getRawProject = memoize(ProjectStorage.getRawProject,
-    //     {promise: true, maxAge: 1000, primitive: true});
-
     ProjectStorage.getProjectId = function(owner, name) {
         return ProjectStorage.getRawProject(owner, name)
             .then(project => project && project._id.toString());
@@ -646,10 +647,6 @@
             return Q(null);
         }
     };
-
-    // memoize it
-    // ProjectStorage.getRawProjectById = memoize(ProjectStorage.getRawProjectById,
-    //     {promise: true, maxAge: 1000, primitive: true});
 
     ProjectStorage.getTransientProject = function (username, projectName) {
         return collection.findOne({owner: username, name: projectName, transient: true})
