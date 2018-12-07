@@ -331,7 +331,7 @@ class Client {
         return Projects.getById(srcProjectId)
             .then(project => {
                 if (project) {
-                    return project.isRecordingMessages()
+                    return project.isRecordingMessages() // OPT initiates a database query
                         .then(isRecording => isRecording && Messages.save(msg));
                 } else {
                     this._logger.error(`Will not save messages: unknown project ${srcProjectId}`);

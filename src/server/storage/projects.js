@@ -49,6 +49,19 @@
         return project;
     };
 
+    let cachedFindOne = function(query) {
+        console.log('query', query)
+        // make sure query is stringifiable if using primitive caching
+        if (query._id) {
+            let id = query._id;
+            query._id = typeof id === 'string' ? ObjectId(id) : id;
+            console.log(query._id.toString());
+        }
+        return Q(collection.findOne(query));
+    };
+    cachedFindOne = memoize(cachedFindOne, {maxAge: 500, promise: true, primitive: true});
+
+
     class Project extends DataWrapper {
         constructor(params) {
             params.data = params.data || {};
@@ -67,8 +80,10 @@
             return this._id.toString();
         }
 
+        // similar to projectStorage.getRawProjectById() right?
         getRawProject() {
-            return Q(this._db.findOne(this.getStorageId()))
+            // console.trace('getting raw proj');
+            return cachedFindOne(this.getStorageId())
                 .then(project => {
                     if (!project) {
                         let msg = `could not find project ${this.uuid()}`;
@@ -575,11 +590,11 @@
     };
 
     ProjectStorage.getRawProject = function (username, projectName) {
-        return Q(collection.findOne({owner: username, name: projectName}));
+        return cachedFindOne({owner: username, name: projectName});
     };
 
-    ProjectStorage.getRawProject = memoize(ProjectStorage.getRawProject,
-        {promise: true, maxAge: 500, primitive: true});
+    // ProjectStorage.getRawProject = memoize(ProjectStorage.getRawProject,
+    //     {promise: true, maxAge: 1000, primitive: true});
 
     ProjectStorage.getProjectId = function(owner, name) {
         return ProjectStorage.getRawProject(owner, name)
@@ -619,7 +634,7 @@
                 return Q(collection.findOneAndUpdate(query, update))
                     .then(result => result.value);
             } else {
-                return Q(collection.findOne(query));
+                return cachedFindOne(query);
             }
         } catch (e) {
             return Q(null);
@@ -627,8 +642,8 @@
     };
 
     // memoize it
-    ProjectStorage.getRawProjectById = memoize(ProjectStorage.getRawProjectById,
-        {promise: true, maxAge: 500, primitive: true});
+    // ProjectStorage.getRawProjectById = memoize(ProjectStorage.getRawProjectById,
+    //     {promise: true, maxAge: 1000, primitive: true});
 
     ProjectStorage.getTransientProject = function (username, projectName) {
         return collection.findOne({owner: username, name: projectName, transient: true})
