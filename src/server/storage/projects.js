@@ -50,17 +50,23 @@
     };
 
     let cachedFindOne = function(query) {
-        console.log('query', query)
+        console.trace('query', query)
         // make sure query is stringifiable if using primitive caching
         if (query._id) {
             let id = query._id;
             query._id = typeof id === 'string' ? ObjectId(id) : id;
-            console.log(query._id.toString());
+            console.log('id', query._id.toString());
         }
         return Q(collection.findOne(query));
     };
-    cachedFindOne = memoize(cachedFindOne, {maxAge: 500, promise: true, primitive: true});
-
+    cacheKey = args => {
+        key = JSON.stringify(args[0]);
+        console.log('key is', key);
+        return key;
+    };
+    cachedFindOne = memoize(cachedFindOne, {maxAge: 500,
+        promise: 'done:finally', primitive: true,
+        normalizer: cacheKey});
 
     class Project extends DataWrapper {
         constructor(params) {
@@ -83,7 +89,7 @@
         // similar to projectStorage.getRawProjectById() right?
         getRawProject() {
             // console.trace('getting raw proj');
-            return cachedFindOne(this.getStorageId())
+            return Q(collection.findOne(this.getStorageId()))
                 .then(project => {
                     if (!project) {
                         let msg = `could not find project ${this.uuid()}`;
