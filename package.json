@@ -11,7 +11,7 @@
     "testmon": "npx nodemon -w src -w test --exec 'npm run test'",
     "test-quick": "MONGO_URI=mongodb://127.0.0.1:27017/netsblox-tests ENV=test npx mocha --recursive test/unit/server test/unit/client/serialization.spec.js test/features",
     "test-client": "node test/unit/client/integration.js",
-    "test": "MONGO_URI=mongodb://127.0.0.1:27017/netsblox-tests ENV=test istanbul --hook-run-in-context cover node_modules/mocha/bin/_mocha -- --timeout 5000 --recursive test/unit/server test/unit/client/serialization.spec.js test/features",
+    "test": "MONGO_URI=mongodb://127.0.0.1:27017/netsblox-tests ENV=test istanbul --hook-run-in-context cover node_modules/mocha/bin/_mocha -- --timeout 5000 --recursive test/unit/server test/unit/client/serialization.spec.js test/features --exit",
     "postinstall": "node bin/build.js",
     "docker": "docker run -it -p 8080:8080 --env-file .env -e MONGO_URI='mongodb://172.17.0.1:27017/netsblox' -v $PWD:/netsblox netsblox/base bash"
   },
