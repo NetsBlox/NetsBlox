@@ -1,14 +1,13 @@
 'use strict';
 
-var debug = require('debug'),
-    trace = debug('netsblox:routes:mobile-manager:trace'),
-    error = debug('netsblox:routes:mobile-manager:error'),
-    
+const Logger = require('../logger'),
+    logger = new Logger('netsblox:routes:mobile-manager'),
+
     DEFAULT_NETSBLOX_URL = 'http://netsblox.herokuapp.com/';
 
 module.exports = [
-    { 
-        Method: 'post', 
+    {
+        Method: 'post',
         URL: 'mobile/compile',
         Handler: function(req, res) {
             var self = this,
@@ -17,7 +16,7 @@ module.exports = [
                 baseURL = req.body.baseURL,  // Why do I need to change this, again? It needs to be resolved if localhost/127.0.0.1
                 xml = req.body.xml;
 
-            trace('Request to compile Android app from ' + username + ' for project ' + project);
+            logger.trace('Request to compile Android app from ' + username + ' for project ' + project);
 
             // Check if enabled
             if (!self.mobileManager.supported) {
@@ -32,7 +31,7 @@ module.exports = [
             }
 
             if (!username) {
-                return res.status(403).send('Username not found. Must be ' + 
+                return res.status(403).send('Username not found. Must be ' +
                     'logged in to compile Android apps');
             }
 
@@ -40,15 +39,15 @@ module.exports = [
                 .then(user => {
                     if (user) {
                         self.mobileManager.emailProjectApk(project, user.email, baseURL, xml);
-                        return res.status(200).send('Building the Android app. ' + 
+                        return res.status(200).send('Building the Android app. ' +
                             '\nResults will be emailed to ' + user.email + ' on completion.');
                     } else {
-                        error('Could not find user to build android app (user "'+username+'")');
+                        logger.error('Could not find user to build android app (user "'+username+'")');
                         return res.status(400).send('ERROR: could not find user "'+username+'"');
                     }
                 })
                 .catch(e => {
-                    error('Server error when looking for user: "'+username+'". Error:', e);
+                    logger.error('Server error when looking for user: "'+username+'". Error:', e);
                     return res.status(500).send('ERROR: ' + e);
                 });
         }
