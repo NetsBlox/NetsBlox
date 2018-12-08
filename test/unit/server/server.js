@@ -5,7 +5,6 @@ describe('Server Tests', function() {
     const utils = require('../../assets/utils');
     var supertest = require('supertest'),
         assert = require('assert'),
-        fse = require('fs-extra'),
         port = 8493,
         options = {
             port: port,
@@ -101,20 +100,6 @@ describe('Server Tests', function() {
     });
 
     describe('Reset Password tests', function() {
-    });
-
-    const bigQueryLoc = 'test/assets/big-query-string.txt';
-    it('should parse long queries properly', function(done) {
-        fse.readFile(bigQueryLoc, {encoding: 'UTF8'}).then(queryString => {
-            server.app.get('/queryParse', (req, res) => {
-                res.status(200).send(req.query);
-            });
-            index.get('/queryParse?'+queryString).end( (err, res) => {
-                assert.equal(Object.keys(res.body).length, 10, 'Parsed query should have 10 keys');
-                assert.deepEqual(res.body.timeOutputFormat, '%H:%M');
-                done();
-            });
-        }).catch(done);
     });
 
     describe('login tests', function() {

@@ -37,7 +37,7 @@ var Server = function(opts) {
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
     this.app.set('query parser', string => {
-        return qs.parse(string, {parameterLimit: 10000, arrayLimit: 20000});
+        return qs.parse(string);
     });
 
     // Mongo variables
