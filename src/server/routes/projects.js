@@ -137,7 +137,7 @@ module.exports = [
             // Resolve conflicts with transient, marked for deletion projects
             const project = await Projects.getById(projectId);
             if (!project) {
-                return res.status(400).send(`Project Not Found`);
+                return res.status(400).send('Project Not Found');
             }
 
             // Get a valid name
@@ -281,7 +281,7 @@ module.exports = [
 
                     project = _project;
                     if (!project) {
-                        throw new Error(`Project not found.`);
+                        throw new Error('Project not found.');
                     }
 
                     const isSaveAs = project.name !== projectName;
@@ -305,7 +305,7 @@ module.exports = [
                                 const collision = existingProject;
                                 const isActive = NetworkTopology.getSocketsAtProject(collision.getId()).length > 0;
                                 if (isActive) {
-                                    logger.trace(`found name collision with open project. Renaming and unpersisting.`);
+                                    logger.trace('found name collision with open project. Renaming and unpersisting.');
                                     return user.getNewName(projectName)
                                         .then(name => collision.setName(name))
                                         .then(() => collision.unpersist());
@@ -361,7 +361,7 @@ module.exports = [
                 })
                 .then(project => {
                     if (!project) {
-                        throw new Error(`Project not found.`);
+                        throw new Error('Project not found.');
                     }
                     name = `Copy of ${project.name || 'untitled'}`;
                     return project.getCopyFor(user);
