@@ -7,12 +7,9 @@ var _ = require('lodash'),
     NetworkTopology = require('../network-topology'),
     PublicProjects = require('../storage/public-projects'),
     EXAMPLES = require('../examples'),
-    debug = require('debug'),
-    log = debug('netsblox:api:projects:log'),
-    info = debug('netsblox:api:projects:info'),
-    trace = debug('netsblox:api:projects:trace'),
-    Jimp = require('jimp'),
-    error = debug('netsblox:api:projects:error');
+    Logger = require('../logger'),
+    logger = new Logger('netsblox:api:projects'),
+    Jimp = require('jimp');
 
 const DEFAULT_ROLE_NAME = 'myRole';
 const Projects = require('../storage/projects');
@@ -90,7 +87,7 @@ var sendProjectTo = function(project, res) {
     return project.getLastUpdatedRole()
         .then(role => {
             const uuid = Utils.uuid(project.owner, project.name);
-            trace(`project ${uuid} is not active. Selected role "${role.ProjectName}"`);
+            logger.trace(`project ${uuid} is not active. Selected role "${role.ProjectName}"`);
 
             let serialized = Utils.serializeRole(role, project);
             return res.send(serialized);
@@ -118,7 +115,7 @@ var applyAspectRatio = function (thumbnail, aspectRatio) {
     var buffer = new Buffer(image, 'base64');
 
     if (aspectRatio) {
-        trace(`padding image with aspect ratio ${aspectRatio}`);
+        logger.trace(`padding image with aspect ratio ${aspectRatio}`);
         aspectRatio = Math.max(aspectRatio, 0.2);
         aspectRatio = Math.min(aspectRatio, 5);
         return padImage(buffer, aspectRatio);
@@ -140,7 +137,7 @@ module.exports = [
             // Resolve conflicts with transient, marked for deletion projects
             const project = await Projects.getById(projectId);
             if (!project) {
-                return res.status(400).send(`Project Not Found`);
+                return res.status(400).send('Project Not Found');
             }
 
             // Get a valid name
@@ -276,7 +273,7 @@ module.exports = [
             //   - persist
             //
             let project = null;
-            trace(`Saving ${roleId} from ${projectName} (${projectId})`);
+            logger.trace(`Saving ${roleId} from ${projectName} (${projectId})`);
             return Projects.getById(projectId)
                 .then(_project => {
                     // if project name is different from save name,
@@ -284,18 +281,18 @@ module.exports = [
 
                     project = _project;
                     if (!project) {
-                        throw new Error(`Project not found.`);
+                        throw new Error('Project not found.');
                     }
 
                     const isSaveAs = project.name !== projectName;
 
                     if (isSaveAs) {
                         // Only copy original if it has already been saved
-                        trace(`Detected "save as". Saving ${project.name} as ${projectName}`);
+                        logger.trace(`Detected "save as". Saving ${project.name} as ${projectName}`);
                         return project.isTransient()
                             .then(isTransient => {
                                 if (!isTransient) {
-                                    trace(`Original project already saved. Copying original ${project.name}`);
+                                    logger.trace(`Original project already saved. Copying original ${project.name}`);
                                     return project.getCopy()  // save the original
                                         .then(copy => copy.persist());
                                 }
@@ -308,13 +305,13 @@ module.exports = [
                                 const collision = existingProject;
                                 const isActive = NetworkTopology.getSocketsAtProject(collision.getId()).length > 0;
                                 if (isActive) {
-                                    trace(`found name collision with open project. Renaming and unpersisting.`);
+                                    logger.trace('found name collision with open project. Renaming and unpersisting.');
                                     return user.getNewName(projectName)
                                         .then(name => collision.setName(name))
                                         .then(() => collision.unpersist());
                                 } else if (overwrite) {
                                     // FIXME: What if this is occupied by users with a patchy ws connection?
-                                    trace(`found name collision with project. Overwriting ${project.name}.`);
+                                    logger.trace(`found name collision with project. Overwriting ${project.name}.`);
                                     return collision.destroy();
                                 } else {  // rename the project
                                     return user.getNewName(projectName)
@@ -337,7 +334,7 @@ module.exports = [
                 .then(() => project.persist())
                 .then(() => res.status(200).send({name: projectName, projectId, roleId}))
                 .catch(err => {
-                    error(`Error saving ${projectId}:`, err);
+                    logger.error(`Error saving ${projectId}:`, err);
                     return res.status(500).send(err.message);
                 });
         }
@@ -364,7 +361,7 @@ module.exports = [
                 })
                 .then(project => {
                     if (!project) {
-                        throw new Error(`Project not found.`);
+                        throw new Error('Project not found.');
                     }
                     name = `Copy of ${project.name || 'untitled'}`;
                     return project.getCopyFor(user);
@@ -373,7 +370,7 @@ module.exports = [
                 .then(() => project.setName(name))
                 .then(() => project.persist())
                 .then(() => {
-                    trace(`${user.username} saved a copy of project: ${name}`);
+                    logger.trace(`${user.username} saved a copy of project: ${name}`);
                     const result = {
                         name,
                         projectId: project.getId()
@@ -391,21 +388,21 @@ module.exports = [
         Handler: function(req, res) {
             const origin = `${process.env.SERVER_PROTOCOL || req.protocol}://${req.get('host')}`;
             var username = req.session.username;
-            log(`${username} requested shared project list from ${origin}`);
+            logger.log(`${username} requested shared project list from ${origin}`);
 
             return this.storage.users.get(username)
                 .then(user => {
                     if (user) {
                         return user.getSharedProjects()
                             .then(projects => {
-                                trace(`found shared project list (${projects.length}) ` +
+                                logger.trace(`found shared project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
                                 const previews = projects.map(project => getProjectMetadata(project, origin));
                                 const names = JSON.stringify(previews.map(preview =>
                                     preview.ProjectName));
 
-                                info(`shared projects for ${username} are ${names}`);
+                                logger.info(`shared projects for ${username} are ${names}`);
 
                                 if (req.query.format === 'json') {
                                     return res.json(previews);
@@ -429,18 +426,18 @@ module.exports = [
         Handler: function(req, res) {
             const origin = `${req.protocol}://${req.get('host')}`;
             var username = req.session.username;
-            log(`${username} requested project list from ${origin}`);
+            logger.log(`${username} requested project list from ${origin}`);
 
             return this.storage.users.get(username)
                 .then(user => {
                     if (user) {
                         return user.getProjects()
                             .then(projects => {
-                                trace(`found project list (${projects.length}) ` +
+                                logger.trace(`found project list (${projects.length}) ` +
                                     `for ${username}: ${projects.map(proj => proj.name)}`);
 
                                 const previews = projects.map(project => getProjectMetadata(project, origin));
-                                info(`Projects for ${username} are ${JSON.stringify(
+                                logger.info(`Projects for ${username} are ${JSON.stringify(
                                     previews.map(preview => preview.ProjectName)
                                 )}`
                                 );
@@ -476,7 +473,7 @@ module.exports = [
                     const conflict = projects
                         .find(project => project.name === name && project._id.toString() !== projectId);
 
-                    log(`${user.username} is checking if "${name}" conflicts w/ any saved names (${!!conflict})`);
+                    logger.log(`${user.username} is checking if "${name}" conflicts w/ any saved names (${!!conflict})`);
                     return res.send(`hasConflicting=${!!conflict}`);
                 });
         }
@@ -506,7 +503,7 @@ module.exports = [
             const {projectId} = req.body;
             const {user} = req.session;
 
-            log(`${user.username} joining project ${projectId}`);
+            logger.log(`${user.username} joining project ${projectId}`);
             // Join the given project
             return Projects.getById(projectId)
                 .then(project => {
@@ -547,7 +544,7 @@ module.exports = [
             // Check permissions
             // TODO
 
-            trace(`${username} opening project ${owner}/${projectName}`);
+            logger.trace(`${username} opening project ${owner}/${projectName}`);
             return Projects.get(owner, projectName)
                 .then(project => {
                     if (project) {
@@ -576,7 +573,7 @@ module.exports = [
             // TODO: add auth!
 
             // Get the projectName
-            trace(`${username} opening project ${projectId}`);
+            logger.trace(`${username} opening project ${projectId}`);
             const project = await Projects.getById(projectId);
 
             if (!project) {
@@ -600,7 +597,7 @@ module.exports = [
             const {username} = req.session;
 
             // Get the projectName
-            trace(`${username} opening project ${projectId}`);
+            logger.trace(`${username} opening project ${projectId}`);
             let project;
             return Projects.getById(projectId)
                 .then(result => {  // if no roleId specified, get the last updated
@@ -628,19 +625,19 @@ module.exports = [
             var user = req.session.user,
                 project = req.body.ProjectName;
 
-            log(user.username +' trying to delete "' + project + '"');
+            logger.log(user.username +' trying to delete "' + project + '"');
 
             // Get the project and call "destroy" on it
             return user.getProject(project)
                 .then(project => {
                     if (!project) {
-                        error(`project ${project} not found`);
+                        logger.error(`project ${project} not found`);
                         return res.status(400).send(`${project} not found!`);
                     }
 
                     return project.destroy()
                         .then(() => {
-                            trace(`project ${project.name} deleted`);
+                            logger.trace(`project ${project.name} deleted`);
                             return res.send('project deleted!');
                         });
                 });
@@ -656,7 +653,7 @@ module.exports = [
             var name = req.body.ProjectName,
                 user = req.session.user;
 
-            log(`${user.username} is publishing project ${name}`);
+            logger.log(`${user.username} is publishing project ${name}`);
             return setProjectPublic(name, user, true)
                 .then(() => res.send(`"${name}" is shared!`))
                 .catch(err => res.send(`ERROR: ${err}`));
@@ -672,7 +669,7 @@ module.exports = [
             var name = req.body.ProjectName,
                 user = req.session.user;
 
-            log(`${user.username} is unpublishing project ${name}`);
+            logger.log(`${user.username} is unpublishing project ${name}`);
 
             return setProjectPublic(name, user, false)
                 .then(() => res.send(`"${name}" is no longer shared`))
@@ -691,7 +688,7 @@ module.exports = [
             const username = req.params.owner;
 
             // return the names of all projects owned by :owner
-            log(`getting project names for ${username}`);
+            logger.log(`getting project names for ${username}`);
             return Users.get(username)
                 .then(user => {
                     if (!user) {
@@ -790,7 +787,7 @@ module.exports = [
             return this.storage.users.get(username)
                 .then(user => {
                     if (!user) {
-                        log(`Could not find user ${username}`);
+                        logger.log(`Could not find user ${username}`);
                         return res.status(400).send('ERROR: User not found');
                     }
                     return user.getProject(projectName);

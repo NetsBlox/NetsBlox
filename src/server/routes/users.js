@@ -4,9 +4,8 @@
 
 var middleware = require('./middleware'),
     NetworkTopology = require('../network-topology'),
-    debug = require('debug'),
-    log = debug('netsblox:api:Users:log'),
-    info = debug('netsblox:api:Users:info');
+    Logger = require('../logger'),
+    logger = new Logger('netsblox:api:Users');
 
 module.exports = [
     {
@@ -17,7 +16,7 @@ module.exports = [
         middleware: ['isLoggedIn'],
         Handler: function(req, res) {
             var username = req.session.username;
-            log('Deleting user "'+username+'"');
+            logger.log('Deleting user "'+username+'"');
             return this.storage.users.get(username)
                 .then(user => {
                     if (!user) {
@@ -36,7 +35,7 @@ module.exports = [
         Method: 'post',
         Note: '',
         Handler: function(req, res) {
-            log('received logout request!');
+            logger.log('received logout request!');
             middleware.tryLogIn(req, res, err => {
                 if (err) {
                     return res.status(400).send(err);
@@ -49,7 +48,7 @@ module.exports = [
                     socket.onLogout();
                 }
 
-                log(`${req.session.username} has logged out`);
+                logger.log(`${req.session.username} has logged out`);
                 // Delete the cookie
                 req.session.destroy();
                 return res.status(200).send('you have been logged out');
@@ -66,7 +65,7 @@ module.exports = [
                 username = req.session.username,
                 newPassword = req.body.NewPassword;
 
-            info('Changing password for '+username);
+            logger.info('Changing password for '+username);
             // Verify that the old password is correct
             this.storage.users.get(username)
                 .then(user => {

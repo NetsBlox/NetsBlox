@@ -3,8 +3,8 @@
 
 var R = require('ramda'),
     assert = require('assert'),
-    debug = require('debug'),
-    trace = debug('netsblox:api:utils:trace'),
+    Logger = require('./logger'),
+    logger = new Logger('netsblox:api:utils'),
     version = require('../../package.json').version;
 
 const APP = `NetsBlox ${version}, http://netsblox.org`;
@@ -82,11 +82,11 @@ var computeAspectRatioPadding = function(width, height, ratio){
     if (expectedHeight > height) {  // Add padding to the height
         diff = expectedHeight - height;
         top = bottom = diff/2;
-        trace(`new dims should be ${width}x${height+diff}`);
+        logger.trace(`new dims should be ${width}x${height+diff}`);
     } else {  // add padding to the width
         diff = ratio * height - width;
         left = right = diff/2;
-        trace(`new dims should be ${width+diff}x${height}`);
+        logger.trace(`new dims should be ${width+diff}x${height}`);
     }
     return {left, right, top, bottom};
 };
