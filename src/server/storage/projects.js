@@ -62,7 +62,7 @@
     const cacheKey = args => JSON.stringify(args[0]);
 
     // WARN CHECK might eat up rejected promises
-    cachedFindOne = memoize(cachedFindOne, {maxAge: 500,
+    cachedFindOne = memoize(cachedFindOne, {maxAge: 250,
         promise: 'done:finally', primitive: true,
         normalizer: cacheKey});
 
@@ -506,7 +506,7 @@
 
         //////////////// Recording messages (network traces) ////////////////
         getRecordStartTimes() {
-            return this.getRawProject(true)
+            return this.getRawProject()
                 .then(project => project.recordMessagesAfter || []);
         }
 
@@ -515,9 +515,11 @@
                 .then(records => Math.max.apply(null, records.map(record => record.time)));
         }
 
-        isRecordingMessages() {
-            return this.getLatestRecordStartTime()
-                .then(time => (Date.now() - time) < MAX_MSG_RECORD_DURATION);
+        isRecordingMessages(cache=false) {
+            return this.getRawProject(cache)
+                .then(project => project.recordMessagesAfter || [])
+                .then(records => Math.max.apply(null, records.map(record => record.time)))
+                .then( time => (Date.now() - time) < MAX_MSG_RECORD_DURATION);
         }
 
         startRecordingMessages(id, time=Date.now()) {  // Set (and return) the start recording time
@@ -599,8 +601,8 @@
         ProjectArchives = db.collection('project-archives');
     };
 
-    ProjectStorage.getRawProject = function (username, projectName) {
-        return cachedFindOne({owner: username, name: projectName});
+    ProjectStorage.getRawProject = function (username, projectName, cache=false) {
+        return findOne({owner: username, name: projectName}, cache);
     };
 
     ProjectStorage.getProjectId = function(owner, name) {
@@ -632,16 +634,18 @@
             });
     };
 
-    ProjectStorage.getRawProjectById = function (id, unmarkForDeletion=false) {
+    ProjectStorage.getRawProjectById = function (id, opts) {
+        const defaultOpts = {unmarkForDeletion: false, cache: false};
+        opts = {...defaultOpts, ...opts};
         try {
             id = typeof id === 'string' ? ObjectId(id) : id;
             const query = {_id: id};
-            if (unmarkForDeletion) {
+            if (opts.unmarkForDeletion) {
                 const update = {$set: {deleteAt: null}};
                 return Q(collection.findOneAndUpdate(query, update))
                     .then(result => result.value);
             } else {
-                return cachedFindOne(query);
+                return findOne(query, opts.cache);
             }
         } catch (e) {
             return Q(null);
