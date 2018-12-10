@@ -9,6 +9,7 @@
     const utils = require('../server-utils');
     const PublicProjects = require('./public-projects');
     const MAX_MSG_RECORD_DURATION = 1000 * 60 * 10;  // 10 min
+    const memoize = require('memoizee');
 
     const storeRoleBlob = function(role) {
         const content = _.clone(role);
@@ -48,6 +49,31 @@
         return project;
     };
 
+    let cachedFindOne = function(query) {
+        // make sure query is stringifiable if using primitive caching
+        // ObjectId is stringifiable
+        if (query._id) {
+            let id = query._id;
+            query._id = typeof id === 'string' ? ObjectId(id) : id;
+        }
+        return Q(collection.findOne(query));
+    };
+
+    const cacheKey = args => JSON.stringify(args[0]);
+
+    // WARN CHECK might eat up rejected promises
+    cachedFindOne = memoize(cachedFindOne, {maxAge: 250,
+        promise: 'done:finally', primitive: true,
+        normalizer: cacheKey});
+
+    const findOne = function(query, cache=false) {
+        if (cache === true) {
+            return cachedFindOne(query);
+        } else {
+            return Q(collection.findOne(query));
+        }
+    };
+
     class Project extends DataWrapper {
         constructor(params) {
             params.data = params.data || {};
@@ -66,8 +92,8 @@
             return this._id.toString();
         }
 
-        getRawProject() {
-            return Q(this._db.findOne(this.getStorageId()))
+        getRawProject(cache=false) {
+            return findOne(this.getStorageId(), cache)
                 .then(project => {
                     if (!project) {
                         let msg = `could not find project ${this.uuid()}`;
@@ -489,9 +515,11 @@
                 .then(records => Math.max.apply(null, records.map(record => record.time)));
         }
 
-        isRecordingMessages() {
-            return this.getLatestRecordStartTime()
-                .then(time => (Date.now() - time) < MAX_MSG_RECORD_DURATION);
+        isRecordingMessages(cache=false) {
+            return this.getRawProject(cache)
+                .then(project => project.recordMessagesAfter || [])
+                .then(records => Math.max.apply(null, records.map(record => record.time)))
+                .then( time => (Date.now() - time) < MAX_MSG_RECORD_DURATION);
         }
 
         startRecordingMessages(id, time=Date.now()) {  // Set (and return) the start recording time
@@ -573,8 +601,8 @@
         ProjectArchives = db.collection('project-archives');
     };
 
-    ProjectStorage.getRawProject = function (username, projectName) {
-        return Q(collection.findOne({owner: username, name: projectName}));
+    ProjectStorage.getRawProject = function (username, projectName, cache=false) {
+        return findOne({owner: username, name: projectName}, cache);
     };
 
     ProjectStorage.getProjectId = function(owner, name) {
@@ -606,16 +634,18 @@
             });
     };
 
-    ProjectStorage.getRawProjectById = function (id, unmarkForDeletion=false) {
+    ProjectStorage.getRawProjectById = function (id, opts) {
+        const defaultOpts = {unmarkForDeletion: false, cache: false};
+        opts = {...defaultOpts, ...opts};
         try {
             id = typeof id === 'string' ? ObjectId(id) : id;
             const query = {_id: id};
-            if (unmarkForDeletion) {
+            if (opts.unmarkForDeletion) {
                 const update = {$set: {deleteAt: null}};
                 return Q(collection.findOneAndUpdate(query, update))
                     .then(result => result.value);
             } else {
-                return Q(collection.findOne(query));
+                return findOne(query, opts.cache);
             }
         } catch (e) {
             return Q(null);

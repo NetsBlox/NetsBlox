@@ -77,7 +77,7 @@ NetworkTopology.prototype.setClientState = async function(clientId, projectId, r
 };
 
 NetworkTopology.prototype.getRoomState = function(projectId, refresh=false) {
-    return Projects.getRawProjectById(projectId, refresh)
+    return Projects.getRawProjectById(projectId, {unmarkForDeletion: refresh})
         .then(metadata => {
             const ids = Object.keys(metadata.roles).sort();
             const rolesInfo = {};
