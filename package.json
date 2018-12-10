@@ -83,7 +83,7 @@
   "devDependencies": {
     "axios": "^0.18.0",
     "expect": "^1.6.0",
-    "istanbul": "^0.4.5",
+    "istanbul": "^1.1.0-alpha.1",
     "mocha": "^5.2.0",
     "nodemon": "^1.18.7",
     "supertest": "^3.3.0",
