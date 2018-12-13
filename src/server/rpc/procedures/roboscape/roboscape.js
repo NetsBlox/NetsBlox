@@ -56,6 +56,7 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.clientPenalty = 0; // in seconds
     this.clientCounts = {};
     this.lastSeqNum = -1; // initially disabled
+    this.anki = false;
 };
 
 Robot.prototype.setTotalRate = function (rate) {
@@ -146,6 +147,14 @@ Robot.prototype.heartbeat = function () {
 Robot.prototype.isAlive = function () {
     return this.heartbeats <= 2;
 };
+
+Robot.prototype.isAnki = function () {
+    return this.anki;
+};
+
+Robot.prototype.setIsAnki = function(isAnki) {
+    this.anki = isAnki;
+}
 
 Robot.prototype.isMostlyAlive = function () {
     return this.heartbeats <= FORGET_TIME;
@@ -286,6 +295,32 @@ Robot.prototype.drive = function (left, right) {
     this.sendToRobot(message);
 };
 
+Robot.prototype.setLift = function (height) {
+    if(this.isAnki())
+    {
+        var message = Buffer.alloc(5);
+        message.write('l', 0, 1);
+        message.writeFloatLE(height, 1);
+        this.sendToRobot(message);
+        return true;
+    }
+
+    return false;
+};
+
+Robot.prototype.say = function (text) {
+    if(this.isAnki())
+    {
+        var message = Buffer.alloc(1 + text.length);
+        message.write('s', 0, 1);
+        message.write(text, 1);
+        this.sendToRobot(message);
+        return true;
+    }
+
+    return false;
+};
+
 Robot.prototype.commandToClient = function (command) {
     if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         var mac_addr = this.mac_addr;
@@ -368,6 +403,9 @@ Robot.prototype.onMessage = function (message) {
             this.setEncryption([]);
             this.resetRates();
         }
+    } else if (command === 'A' && message.length === 11) {
+        logger.log('robot is Anki ' + this.mac_addr);
+        this.setIsAnki(true);
     } else if (command === 'B' && message.length === 15) {
         this.sendToClient('beep', {
             msec: message.readInt16LE(11),
@@ -896,6 +934,20 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
             } else if (command.match(/^reset rates$/)) {
                 robot.resetRates();
                 return true;
+            }
+
+            // Vector-specific commands
+            if(robot.isAnki())
+            {
+                if (command.match(/^set lift ([\d\.]+)$/)) {
+                    robot.setSeqNum(seqNum);
+                    robot.setLift(parseFloat(+RegExp.$1));
+                    return true;
+                } else if (command.match(/^say (.+$)/)) {
+                    robot.setSeqNum(seqNum);
+                    robot.say(RegExp.$1);
+                    return true;
+                }
             }
         }
         return false;
