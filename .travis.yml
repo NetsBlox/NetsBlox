@@ -22,5 +22,6 @@ before_script:
   - ./cc-test-reporter before-build
 script:
   - npm test # explicit
+  - npm run test-client
 after_script:
   - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
