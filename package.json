@@ -85,6 +85,7 @@
     "expect": "^1.6.0",
     "istanbul": "^1.1.0-alpha.1",
     "mocha": "^5.2.0",
+    "mocha-chrome": "^1.1.0",
     "nodemon": "^1.18.7",
     "supertest": "^3.3.0",
     "uglify-js": "^3.4.9",
