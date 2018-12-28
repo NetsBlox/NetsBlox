@@ -8,9 +8,22 @@
 'use strict';
 
 var axios = require('axios'),
+    rpcUtils = require('../utils'),
     KEY = process.env.NASA_KEY,
     APOD_URL = 'https://api.nasa.gov/planetary/apod?api_key=' + KEY,
     MARS_URL = 'http://marsweather.ingenology.com/v1/latest/';
+
+
+async function fetchApod() {
+    const { data: body } = await axios.get(APOD_URL);
+    const info = {
+        date: body.date,
+        title: body.title,
+        link: body.url,
+        description: body.explanation
+    };
+    return info;
+}
 
 module.exports = {
 
@@ -19,16 +32,15 @@ module.exports = {
     // NASA's 'Astronomy Picture of the Day'
     apod: async function() {
         var socket = this.socket;
-        let { data: body } = await axios.get(APOD_URL);
         const msgType = 'Astronomy Pic of the Day';
-        const content = {
-            date: body.date,
-            title: body.title,
-            link: body.url,
-            description: body.explanation
-        };
+        const content = await fetchApod();
         socket.sendMessage(msgType, content);
         return true;
+    },
+
+    apodDetails: async function() {
+        const data = await fetchApod();
+        return rpcUtils.jsonToSnapList(data);
     },
 
     /**
