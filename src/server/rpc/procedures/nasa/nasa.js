@@ -7,8 +7,7 @@
 
 'use strict';
 
-var request = require('request'),
-    axios = require('axios'),
+var axios = require('axios'),
     KEY = process.env.NASA_KEY,
     APOD_URL = 'https://api.nasa.gov/planetary/apod?api_key=' + KEY,
     MARS_URL = 'http://marsweather.ingenology.com/v1/latest/';
@@ -18,23 +17,18 @@ module.exports = {
     serviceName: 'NASA',
 
     // NASA's 'Astronomy Picture of the Day'
-    apod: function() {
-        var response = this.response,
-            socket = this.socket;
-
-        request(APOD_URL, function(err, res, body) {
-            body = JSON.parse(body);
-            const msgType = 'Astronomy Pic of the Day';
-            const content = {
-                date: body.date,
-                title: body.title,
-                link: body.url,
-                description: body.explanation
-            };
-            socket.sendMessage(msgType, content);
-            return response.json(true);
-        });
-        return null;
+    apod: async function() {
+        var socket = this.socket;
+        let { data: body } = await axios.get(APOD_URL);
+        const msgType = 'Astronomy Pic of the Day';
+        const content = {
+            date: body.date,
+            title: body.title,
+            link: body.url,
+            description: body.explanation
+        };
+        socket.sendMessage(msgType, content);
+        return true;
     },
 
     /**
