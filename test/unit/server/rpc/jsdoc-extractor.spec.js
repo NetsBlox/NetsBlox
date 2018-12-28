@@ -18,9 +18,22 @@ describe('jsdoc-extractor', () => {
      */
     `;
 
-    describe.only('fnFinder', () => {
+    describe('fnFinder', () => {
         let testText = `let doStuff = a => a*2;
     function doStuff(){}
+    let doStuff = (lat, lon, response, query)=>{
+    let doStuff = (lat, lon, response, query)=>
+    let doStuff = arg=>{
+        GeoLocationRPC.doStuff = async function (address) {
+        GeoLocationRPC.doStuff = async function (address)
+      doStuff: function (address) {
+      doStuff: async function (address) {
+      doStuff: async function(address) {
+      doStuff : async function(address) {
+      doStuff : async function(address)
+    Googlemap.prototype.doStuff = function
+    GeoLocationRPC.doStuff = function (address) {
+    GeoLocationRPC.doStuff = function (address)
     GoogleMap.doStuff = function
     GoogleMap.doStuff = (asdf) =>`;
         let testLines = testText.split('\n');
@@ -29,40 +42,12 @@ describe('jsdoc-extractor', () => {
             assert.deepEqual(jp._findFn(testLines), 'doStuff');
         });
 
-        it('should find let fn = ()', () => {
-            let line = 'let reverseGeocode = (lat, lon, response, query)=>{';
-            assert.deepEqual(jp._findFn(line), 'reverseGeocode');
+        testLines.forEach(line => {
+            it(`should find fn in "${line}"`, () => {
+                assert.deepEqual(jp._findFn(line), 'doStuff');
+            });
         });
 
-        it('should find let fn = arg => ', () => {
-            let line = 'let reverseGeocode = arg=>{';
-            assert.deepEqual(jp._findFn(line), 'reverseGeocode');
-        });
-
-        let line1 = '  geolocate: async function (address) {';
-        it(`should "${line1}"`, () => {
-            assert.deepEqual(jp._findFn(line1), 'geolocate');
-        });
-
-        it('should find obj: function', () => {
-            let line = '  geolocate: function (address) {';
-            assert.deepEqual(jp._findFn(line), 'geolocate');
-        });
-
-        it('should find obj.obj = async function', () => {
-            let line = '    GeoLocationRPC.geolocate = async function (address) {';
-            assert.deepEqual(jp._findFn(line), 'geolocate');
-        });
-
-        it('should find obj.obj = function', () => {
-            let line = '    GeoLocationRPC.geolocate = function (address) {';
-            assert.deepEqual(jp._findFn(line), 'geolocate');
-        });
-
-        it('should know prototype is not the fn name', () => {
-            let line = 'Googlemap.prototype.doStuff = function';
-            assert.deepEqual(jp._findFn(line), 'doStuff');
-        });
     });
 
 
