@@ -18,7 +18,7 @@ describe('jsdoc-extractor', () => {
      */
     `;
 
-    describe('fnFinder', () => {
+    describe.only('fnFinder', () => {
         let testText = `let doStuff = a => a*2;
     function doStuff(){}
     GoogleMap.doStuff = function
@@ -26,7 +26,7 @@ describe('jsdoc-extractor', () => {
         let testLines = testText.split('\n');
 
         it('should support multiline', () => {
-            assert.deepEqual(jp._findFn(testLines[2]), 'doStuff');
+            assert.deepEqual(jp._findFn(testLines), 'doStuff');
         });
 
         it('should find let fn = ()', () => {
@@ -37,6 +37,21 @@ describe('jsdoc-extractor', () => {
         it('should find let fn = arg => ', () => {
             let line = 'let reverseGeocode = arg=>{';
             assert.deepEqual(jp._findFn(line), 'reverseGeocode');
+        });
+
+        let line1 = '  geolocate: async function (address) {';
+        it(`should "${line1}"`, () => {
+            assert.deepEqual(jp._findFn(line1), 'geolocate');
+        });
+
+        it('should find obj: function', () => {
+            let line = '  geolocate: function (address) {';
+            assert.deepEqual(jp._findFn(line), 'geolocate');
+        });
+
+        it('should find obj.obj = async function', () => {
+            let line = '    GeoLocationRPC.geolocate = async function (address) {';
+            assert.deepEqual(jp._findFn(line), 'geolocate');
         });
 
         it('should find obj.obj = function', () => {
@@ -57,7 +72,7 @@ describe('jsdoc-extractor', () => {
 
         it('should parse jsdoc comments', () => {
             assert.deepEqual(metadata.parsed.tags[1].name, 'limit');
-        }); 
+        });
 
         it('should simplify the metadata', () => {
             let simpleMetadata = jp._simplify(metadata.parsed);
