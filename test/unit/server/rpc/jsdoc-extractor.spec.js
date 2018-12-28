@@ -21,33 +21,33 @@ describe('jsdoc-extractor', () => {
     describe('fnFinder', () => {
         let testText = `let doStuff = a => a*2;
     function doStuff(){}
+    let doStuff = (lat, lon, response, query)=>{
+    let doStuff = (lat, lon, response, query)=>
+    let doStuff = arg=>{
+        GeoLocationRPC.doStuff = async function (address) {
+        GeoLocationRPC.doStuff = async function (address)
+      doStuff: function (address) {
+      doStuff: async function (address) {
+      doStuff: async function(address) {
+      doStuff : async function(address) {
+      doStuff : async function(address)
+    Googlemap.prototype.doStuff = function
+    GeoLocationRPC.doStuff = function (address) {
+    GeoLocationRPC.doStuff = function (address)
     GoogleMap.doStuff = function
     GoogleMap.doStuff = (asdf) =>`;
         let testLines = testText.split('\n');
 
         it('should support multiline', () => {
-            assert.deepEqual(jp._findFn(testLines[2]), 'doStuff');
+            assert.deepEqual(jp._findFn(testLines), 'doStuff');
         });
 
-        it('should find let fn = ()', () => {
-            let line = 'let reverseGeocode = (lat, lon, response, query)=>{';
-            assert.deepEqual(jp._findFn(line), 'reverseGeocode');
+        testLines.forEach(line => {
+            it(`should find fn in "${line}"`, () => {
+                assert.deepEqual(jp._findFn(line), 'doStuff');
+            });
         });
 
-        it('should find let fn = arg => ', () => {
-            let line = 'let reverseGeocode = arg=>{';
-            assert.deepEqual(jp._findFn(line), 'reverseGeocode');
-        });
-
-        it('should find obj.obj = function', () => {
-            let line = '    GeoLocationRPC.geolocate = function (address) {';
-            assert.deepEqual(jp._findFn(line), 'geolocate');
-        });
-
-        it('should know prototype is not the fn name', () => {
-            let line = 'Googlemap.prototype.doStuff = function';
-            assert.deepEqual(jp._findFn(line), 'doStuff');
-        });
     });
 
 
@@ -57,7 +57,7 @@ describe('jsdoc-extractor', () => {
 
         it('should parse jsdoc comments', () => {
             assert.deepEqual(metadata.parsed.tags[1].name, 'limit');
-        }); 
+        });
 
         it('should simplify the metadata', () => {
             let simpleMetadata = jp._simplify(metadata.parsed);
