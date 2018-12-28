@@ -7,74 +7,64 @@
 
 'use strict';
 
-var request = require('request'),
+var axios = require('axios'),
+    rpcUtils = require('../utils'),
     KEY = process.env.NASA_KEY,
     APOD_URL = 'https://api.nasa.gov/planetary/apod?api_key=' + KEY,
     MARS_URL = 'http://marsweather.ingenology.com/v1/latest/';
+
+
+async function fetchApod() {
+    const { data: body } = await axios.get(APOD_URL);
+    const info = {
+        date: body.date,
+        title: body.title,
+        link: body.url,
+        description: body.explanation
+    };
+    return info;
+}
 
 module.exports = {
 
     serviceName: 'NASA',
 
     // NASA's 'Astronomy Picture of the Day'
-    apod: function() {
-        var response = this.response,
-            socket = this.socket;
-
-        request(APOD_URL, function(err, res, body) {
-            body = JSON.parse(body);
-            const msgType = 'Astronomy Pic of the Day';
-            const content = {
-                date: body.date,
-                title: body.title,
-                link: body.url,
-                description: body.explanation
-            };
-            socket.sendMessage(msgType, content);
-            return response.json(true);
-        });
-        return null;
+    apod: async function() {
+        var socket = this.socket;
+        const msgType = 'Astronomy Pic of the Day';
+        const content = await fetchApod();
+        socket.sendMessage(msgType, content);
+        return true;
     },
 
-    // NASA's 'Astronomy Picture of the Day' media
-    apodMedia: function() {
-        var response = this.response;
+    apodDetails: async function() {
+        const data = await fetchApod();
+        return rpcUtils.jsonToSnapList(data);
+    },
 
-        request(APOD_URL, function(err, res, body) {
-            body = JSON.parse(body);
-            request.get(body.url).pipe(response);
-        });
-        return null;
+    /**
+     * NASA's 'Astronomy Picture of the Day' media
+     * @returns {String}
+     */
+    apodMedia: async function() {
+        let { data: body } = await axios.get(APOD_URL);
+        return body.url;
     },
 
     // Latest Mars data according to MAAS
-    marsHighTemp: function() {
-        var response = this.response;
-
-        request(MARS_URL, function(err, res, body) {
-            body = JSON.parse(body);
-            return response.json(body.report.max_temp_fahrenheit);
-        });
-        return null;
+    marsHighTemp: async function() {
+        let { data: body } = await axios.get(MARS_URL);
+        return body.report.max_temp_fahrenheit;
     },
 
-    marsLowTemp: function() {
-        var response = this.response;
-
-        request(MARS_URL, function(err, res, body) {
-            body = JSON.parse(body);
-            return response.json(body.report.min_temp_fahrenheit);
-        });
-        return null;
+    marsLowTemp: async function() {
+        let { data: body } = await axios.get(MARS_URL);
+        return body.report.min_temp_fahrenheit;
     },
 
-    marsWeather: function() {
-        var response = this.response;
-
-        request(MARS_URL, function(err, res, body) {
-            body = JSON.parse(body);
-            return response.json(body.report.atmo_opacity);
-        });
-        return null;
+    marsWeather: async function() {
+        let { data: body } = await axios.get(MARS_URL);
+        return body.report.atmo_opacity;
     }
 };
