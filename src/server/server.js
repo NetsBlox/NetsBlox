@@ -11,7 +11,8 @@ var express = require('express'),
     Storage = require('./storage/storage'),
     EXAMPLES = require('./examples'),
     Vantage = require('./vantage/vantage'),
-    isDevMode = process.env.ENV !== 'production',
+    ENV = process.env.ENV,
+    isDevMode = ENV !== 'production',
     DEFAULT_OPTIONS = {
         port: 8080,
         vantagePort: 1234,
@@ -287,6 +288,20 @@ Server.prototype.start = function(done) {
 
     return this.storage.connect()
         .then(() => {
+            if (ENV === 'test') {
+                try {
+                    const testUtils = require('../../test/assets/utils');
+                    if (/test/.test(this.storage._db.databaseName)) {
+                        console.log('resetting the database');
+                        await this.storage._db.dropDatabase();
+                        await fixtures.init(this.storage);
+                    } else {
+                        console.warn('skipping database reset');
+                    }
+                } catch (e) {
+                    console.log(e);
+                }
+            }
             this.configureRoutes();
             this._server = this.app.listen(this.opts.port, err => {
                 if (err) {
