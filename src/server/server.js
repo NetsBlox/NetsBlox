@@ -280,52 +280,48 @@ Server.prototype.addScraperSettings = function(userAgent, metaInfo) {
     }
 };
 
-Server.prototype.start = function(done) {
+Server.prototype.start = async function(done) {
     var opts = {};
     done = done || Utils.nop;
 
     opts.msgFilter = msg => !msg.namespace;
 
-    return this.storage.connect()
-        .then(() => {
-            if (ENV === 'test') {
-                try {
-                    const testUtils = require('../../test/assets/utils');
-                    if (/test/.test(this.storage._db.databaseName)) {
-                        console.log('resetting the database');
-                        await this.storage._db.dropDatabase();
-                        await fixtures.init(this.storage);
-                    } else {
-                        console.warn('skipping database reset');
-                    }
-                } catch (e) {
-                    console.log(e);
-                }
-            }
-            this.configureRoutes();
-            this._server = this.app.listen(this.opts.port, err => {
-                if (err) {
-                    return done(err);
-                }
+    await this.storage.connect();
+    if (ENV === 'test') {
+        const fixtures = require('../../test/fixtures');
+        if (/test/.test(this.storage._db.databaseName)) {
+            // eslint-disable-next-line no-console
+            console.log('resetting the database');
+            await this.storage._db.dropDatabase();
+            await fixtures.init(this.storage);
+        } else {
+            // eslint-disable-next-line no-console
+            console.warn('skipping database reset, test database should have the word test in the name.');
+        }
+    }
+    this.configureRoutes();
+    this._server = this.app.listen(this.opts.port, err => {
+        if (err) {
+            return done(err);
+        }
 
-                // eslint-disable-next-line no-console
-                console.log(`listening on port ${this.opts.port}`);
+        // eslint-disable-next-line no-console
+        console.log(`listening on port ${this.opts.port}`);
 
-                // Enable the websocket handling
-                this._wss = new WebSocketServer({server: this._server});
-                this._wss.on('connection', (socket, req) => {
-                    socket.upgradeReq = req;
-                    const client = new Client(this._logger, socket);
-                    NetworkTopology.onConnect(client);
-                });
-
-                // Enable Vantage
-                if (this.opts.vantage) {
-                    new Vantage(this).start(this.opts.vantagePort);
-                }
-                done();
-            });
+        // Enable the websocket handling
+        this._wss = new WebSocketServer({server: this._server});
+        this._wss.on('connection', (socket, req) => {
+            socket.upgradeReq = req;
+            const client = new Client(this._logger, socket);
+            NetworkTopology.onConnect(client);
         });
+
+        // Enable Vantage
+        if (this.opts.vantage) {
+            new Vantage(this).start(this.opts.vantagePort);
+        }
+        done();
+    });
 };
 
 Server.prototype.stop = function(done) {
