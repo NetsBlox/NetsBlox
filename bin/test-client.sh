@@ -21,8 +21,11 @@ if [ -z $initial_pid ]; then
     sleep 0.5
   done
   npx mocha-chrome http://localhost:8080/test --chrome-flags '["--no-sandbox"]'
-  kill %1
+  exit_code=$?
+  kill %1 # shutdown netsblox server (job id 1)
 else
   echo "server is already up with pid '$initial_pid'"
   npx mocha-chrome http://localhost:8080/test --chrome-flags '["--no-sandbox"]'
+  exit_code=$?
 fi
+exit $exit_code
