@@ -1,25 +1,27 @@
 language: node_js
 cache:
-    directories:
-        - node_modules
+  directories:
+    - node_modules
 env:
-    - CXX=g++-4.8 ENV=test
+  - CXX=g++-4.8 MONGO_URI=mongodb://127.0.0.1:27017/netsblox-tests ENV=test
 addons:
   apt:
-    sources:
+  sources:
     - ubuntu-toolchain-r-test
-    packages:
+  packages:
     - g++-4.8
 services:
-    - mongodb
+  - mongodb
 node_js:
-- '8.11.2'
+  - '8.11.2'
 install:
-- npm install
+  - npm install
 before_script:
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
   - ./cc-test-reporter before-build
-
+script:
+  - npm test # explicit
+  - npm run test-client
 after_script:
   - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
