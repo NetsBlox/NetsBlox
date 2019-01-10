@@ -201,6 +201,94 @@ describe('projects', function() {
         });
     });
 
+
+    describe.only('findOne caching..', function() {
+        let project;
+        const rId = 'r1-ID';
+        const query = {owner: 'brian', name: 'MultiRoles'};
+        const newName = 'newName';
+
+        beforeEach(async () => {
+            await utils.reset();
+            let proj = await Projects.get('brian', 'MultiRoles');
+            project = proj;
+        });
+
+        it('should be able opt out of caching', async function() {
+
+            let initialProj = await Projects.findOne(query, false);
+
+            // change the project in db
+            const change = {$set: {}};
+            change.$set[`roles.${rId}.ProjectName`] = newName;
+            await Q(Projects._collection.update({_id: initialProj._id}, change));
+
+            let reFetchedProj = await Projects.findOne(query, false);
+
+            let initialRoleName = initialProj.roles[rId].ProjectName;
+            let reFetchedRoleName = reFetchedProj.roles[rId].ProjectName;
+
+            // should see the updated name
+            assert.equal(reFetchedRoleName, newName);
+            assert(initialRoleName !== reFetchedRoleName);
+        });
+
+        it('should be able to cache results', async function() {
+
+            let initialProj = await Projects.findOne(query, true);
+
+            // change the project in db
+            const change = {$set: {}};
+            change.$set[`roles.${rId}.ProjectName`] = newName;
+            await Q(Projects._collection.update({_id: initialProj._id}, change));
+
+            let reFetchedProj = await Projects.findOne(query, true);
+
+            let initialRoleName = initialProj.roles[rId].ProjectName;
+            let reFetchedRoleName = reFetchedProj.roles[rId].ProjectName;
+
+            // should see the stale cached value
+            assert.deepEqual(reFetchedRoleName, initialRoleName);
+        });
+
+        it('should not cache null values', async function() {
+            const nullQuery = {owner: 'brian', name: 'newMultiRoles'};
+
+            // query for a non-existing record
+            let initialProj = await Projects.findOne(nullQuery, true);
+            assert.deepEqual(initialProj, null);
+
+            // create that record
+            const change = {$set: {}};
+            change.$set.name = 'newMultiRoles';
+            await Q(Projects._collection.update(query, change));
+
+            // should find that record
+            let reFetchedProj = await Projects.findOne(nullQuery, true);
+
+            assert(reFetchedProj !== null);
+            assert.equal(reFetchedProj.name, 'newMultiRoles');
+        });
+
+    });
+
+    describe('project by id', function() {
+        let project = null;
+        before(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'MultiRoles'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should not be able to get raw project by id', async function() {
+            let fetchedProj = await Projects.getRawProjectById(project.getId());
+            assert.deepEqual(fetchedProj.name, 'MultiRoles');
+        });
+
+    });
+
+
     describe('getLastUpdatedRoleName', function() {
         let project = null;
         before(done => {
