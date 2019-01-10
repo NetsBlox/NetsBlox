@@ -588,6 +588,7 @@
     ProjectStorage.init = function (_logger, db) {
         logger = _logger.fork('projects');
         collection = db.collection('projects');
+        this._collection = collection;
         // automatically garbage collect transient projects by setting "deleteAt"
         collection.createIndex(
             {deleteAt: 1},
@@ -599,6 +600,12 @@
             }
         );
         ProjectArchives = db.collection('project-archives');
+    };
+
+    // TODO duplicated! refactor global findone to this one
+    // todo make it private
+    ProjectStorage.findOne = function(query, cache) {
+        return findOne(query, cache)
     };
 
     ProjectStorage.getRawProject = function (username, projectName, cache=false) {
@@ -648,6 +655,7 @@
                 return findOne(query, opts.cache);
             }
         } catch (e) {
+            logger.error(e);
             return Q(null);
         }
     };
