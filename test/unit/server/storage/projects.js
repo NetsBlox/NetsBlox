@@ -252,7 +252,7 @@ describe('projects', function() {
         });
 
         it('should not cache null values', async function() {
-            const nullQuery = {owner: 'brian', name: 'newMultiRoles'};
+            const nullQuery = {owner: 'brian', name: newName};
 
             // query for a non-existing record
             let initialProj = await Projects.findOne(nullQuery, true);
@@ -260,14 +260,14 @@ describe('projects', function() {
 
             // create that record
             const change = {$set: {}};
-            change.$set.name = 'newMultiRoles';
+            change.$set.name = newName;
             await Q(Projects._collection.update(query, change));
 
             // should find that record
             let reFetchedProj = await Projects.findOne(nullQuery, true);
 
             assert(reFetchedProj !== null);
-            assert.equal(reFetchedProj.name, 'newMultiRoles');
+            assert.equal(reFetchedProj.name, newName);
         });
 
     });
