@@ -202,7 +202,7 @@ describe('projects', function() {
     });
 
 
-    describe.only('findOne caching..', function() {
+    describe('findOne caching..', function() {
         let project;
         const rId = 'r1-ID';
         const query = {owner: 'brian', name: 'MultiRoles'};
@@ -216,14 +216,14 @@ describe('projects', function() {
 
         it('should be able opt out of caching', async function() {
 
-            let initialProj = await Projects.findOne(query, false);
+            let initialProj = await Projects._findOne(query, false);
 
             // change the project in db
             const change = {$set: {}};
             change.$set[`roles.${rId}.ProjectName`] = newName;
             await Q(Projects._collection.update({_id: initialProj._id}, change));
 
-            let reFetchedProj = await Projects.findOne(query, false);
+            let reFetchedProj = await Projects._findOne(query, false);
 
             let initialRoleName = initialProj.roles[rId].ProjectName;
             let reFetchedRoleName = reFetchedProj.roles[rId].ProjectName;
@@ -235,14 +235,14 @@ describe('projects', function() {
 
         it('should be able to cache results', async function() {
 
-            let initialProj = await Projects.findOne(query, true);
+            let initialProj = await Projects._findOne(query, true);
 
             // change the project in db
             const change = {$set: {}};
             change.$set[`roles.${rId}.ProjectName`] = newName;
             await Q(Projects._collection.update({_id: initialProj._id}, change));
 
-            let reFetchedProj = await Projects.findOne(query, true);
+            let reFetchedProj = await Projects._findOne(query, true);
 
             let initialRoleName = initialProj.roles[rId].ProjectName;
             let reFetchedRoleName = reFetchedProj.roles[rId].ProjectName;
@@ -255,7 +255,7 @@ describe('projects', function() {
             const nullQuery = {owner: 'brian', name: newName};
 
             // query for a non-existing record
-            let initialProj = await Projects.findOne(nullQuery, true);
+            let initialProj = await Projects._findOne(nullQuery, true);
             assert.deepEqual(initialProj, null);
 
             // create that record
@@ -264,7 +264,7 @@ describe('projects', function() {
             await Q(Projects._collection.update(query, change));
 
             // should find that record
-            let reFetchedProj = await Projects.findOne(nullQuery, true);
+            let reFetchedProj = await Projects._findOne(nullQuery, true);
 
             assert(reFetchedProj !== null);
             assert.equal(reFetchedProj.name, newName);

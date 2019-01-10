@@ -610,9 +610,7 @@
         ProjectArchives = db.collection('project-archives');
     };
 
-    // TODO duplicated! refactor global findone to this one
-    // todo make it private
-    ProjectStorage.findOne = function(query, cache) {
+    ProjectStorage._findOne = function(query, cache) {
         return findOne(query, cache);
     };
 
