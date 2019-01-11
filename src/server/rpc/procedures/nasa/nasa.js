@@ -52,17 +52,26 @@ module.exports = {
         return body.url;
     },
 
+    /**
+     * @deprecated
+     */
     // Latest Mars data according to MAAS
     marsHighTemp: async function() {
         let { data: body } = await axios.get(MARS_URL);
         return body.report.max_temp_fahrenheit;
     },
 
+    /**
+     * @deprecated
+     */
     marsLowTemp: async function() {
         let { data: body } = await axios.get(MARS_URL);
         return body.report.min_temp_fahrenheit;
     },
 
+    /**
+     * @deprecated
+     */
     marsWeather: async function() {
         let { data: body } = await axios.get(MARS_URL);
         return body.report.atmo_opacity;
