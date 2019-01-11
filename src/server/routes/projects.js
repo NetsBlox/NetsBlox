@@ -725,6 +725,9 @@ module.exports = [
                             this._logger.error(err);
                             return res.status(400).send(err);
                         }
+                        res.set({
+                            'Cache-Control': 'private, max-age=60',
+                        });
                         this._logger.trace(`Applying aspect ratio for ${req.params.owner}'s ${name}`);
                         return applyAspectRatio(
                             thumbnail,
@@ -757,6 +760,10 @@ module.exports = [
                 this._logger.warn(`ERROR: Could not find example "${name}`);
                 return res.status(500).send('ERROR: Could not find example.');
             }
+
+            res.set({
+                'Cache-Control': 'public, max-age=3600',
+            });
 
             // Get the thumbnail
             var example = EXAMPLES[name];
