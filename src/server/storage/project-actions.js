@@ -16,6 +16,10 @@
 
     ProjectActions.store = function(action) {
         action.time = new Date();
+        if (action.args) { // check if the arguments take too much space
+            let argsSize = JSON.stringify(action.args).length * 2 / 1e+6;
+            if (argsSize > 14) throw new Error('Action too big to save in mongo.');
+        }
         return Q(collection.save(action))
             .catch(err => {
                 action = JSON.stringify(action);
