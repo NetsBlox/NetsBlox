@@ -49,7 +49,7 @@
         return project;
     };
 
-    let cachedFindOne = function(query) {
+    let _cachedFindOne = function(query) {
         // make sure query is stringifiable if using primitive caching
         // ObjectId is stringifiable
         if (query._id) {
@@ -62,9 +62,17 @@
     const cacheKey = args => JSON.stringify(args[0]);
 
     // WARN CHECK might eat up rejected promises
-    cachedFindOne = memoize(cachedFindOne, {maxAge: 250,
+    _cachedFindOne = memoize(_cachedFindOne, {maxAge: 250,
         promise: 'done:finally', primitive: true,
         normalizer: cacheKey});
+
+    const cachedFindOne = async query => {
+        let resp = await _cachedFindOne(query);
+        if (resp === null) {
+            _cachedFindOne.delete(query, true);
+        }
+        return resp;
+    };
 
     const findOne = function(query, cache=false) {
         if (cache === true) {
@@ -588,6 +596,7 @@
     ProjectStorage.init = function (_logger, db) {
         logger = _logger.fork('projects');
         collection = db.collection('projects');
+        this._collection = collection;
         // automatically garbage collect transient projects by setting "deleteAt"
         collection.createIndex(
             {deleteAt: 1},
@@ -599,6 +608,10 @@
             }
         );
         ProjectArchives = db.collection('project-archives');
+    };
+
+    ProjectStorage._findOne = function(query, cache) {
+        return findOne(query, cache);
     };
 
     ProjectStorage.getRawProject = function (username, projectName, cache=false) {
@@ -648,6 +661,7 @@
                 return findOne(query, opts.cache);
             }
         } catch (e) {
+            logger.error(e);
             return Q(null);
         }
     };
