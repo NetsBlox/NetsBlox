@@ -404,6 +404,12 @@ Client.MessageHandlers = {
         const req = this._projectRequests[id];
         delete this._projectRequests[id];
 
+        if (!req) {  // silent failure
+            const err = `Received unsolicited / timedout project response! ${JSON.stringify(project)}`;
+            this._logger.error(err);
+            return;
+        }
+
         const project = {
             ID: req.roleId,
             ProjectName: json.ProjectName,
@@ -480,9 +486,9 @@ Client.MessageHandlers = {
                 });
 
             const project = await Projects.getById(this.projectId);
-                    // For each role...
-                    //   - if it is occupied, request the content
-                    //   - else, use the content from the database
+            // For each role...
+            //   - if it is occupied, request the content
+            //   - else, use the content from the database
             return project.getRoleIds()
                 .then(ids => {
                     const fetchers = ids.map(id => {
