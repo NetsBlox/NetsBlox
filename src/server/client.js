@@ -407,7 +407,6 @@ Client.MessageHandlers = {
         if (!req) {  // silent failure
             const err = `Received unsolicited / timedout project response! ${JSON.stringify(project)}`;
             this._logger.error(err);
-            req.promise.reject(err);
             return;
         }
 
