@@ -364,8 +364,11 @@ Server.prototype.createRouter = function() {
         router.route(api.URL)[method]((req, res) => {
             if (api.Service) {
                 const args = (api.Parameters || '').split(',')
-                    .map(name => req.body[name] || 'undefined')
-                    .map(content => content.length < 50 ? content : '<omitted>')
+                    .map(name => {
+                        let content = req.body[name] || 'undefined';
+                        content = content.length < 50 ? content : '<omitted>';
+                        return `${name}: "${content}"`;
+                    })
                     .join(', ');
                 logger.trace(`received request ${api.Service}(${args})`);
             }
