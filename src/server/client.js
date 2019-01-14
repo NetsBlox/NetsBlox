@@ -150,10 +150,10 @@ class Client {
             result = Q();
 
         if (CONDENSED_MSGS.includes(type)) {
-            this._logger.trace(`received "${type}" message from ${this.username} (${this.uuid})`);
+            this._logger.trace(`received "${type}" message from ${this.toString()}`);
         } else if (!SILENT_MSGS.includes(type)) {
             let data = JSON.stringify(msg);
-            this._logger.trace(`received "${data}" message from ${this.username} (${this.uuid})`);
+            this._logger.trace(`received ${msg.type} message from ${this.toString()} "${data}"`);
         }
 
         this.lastSocketActivity = Date.now();
@@ -243,7 +243,8 @@ class Client {
 
     send (msg, silent) {
         // Set the defaults
-        msg.type = msg.type || 'message';
+        let type = msg.type  || 'message';
+        msg.type = type;
         if (msg.type === 'message') {
             msg.dstId = msg.dstId || Constants.EVERYONE;
             msg.content = msg.content || {};
@@ -251,7 +252,7 @@ class Client {
 
         msg = JSON.stringify(msg);
         if (!silent) {
-            this._logger.trace(`Sending message to ${this.uuid} "${msg}"`);
+            this._logger.trace(`Sending ${type} msg to ${this.toString()} "${msg}"`);
         }
 
         if (this.isSocketOpen()) {
@@ -358,6 +359,18 @@ class Client {
         this.roleId = roleId;
         this.username = username || this.uuid;
         this.loggedIn = Utils.isSocketUuid(this.username);
+    }
+
+    toString() {
+        let attrs = ['id', 'uuid', 'username', 'roleId', 'projectId'];
+        let str = attrs
+            .map(attr => {
+                let rv =  this[attr] ? `${attr}: ${this[attr]}` : undefined;
+                return rv;
+            })
+            .filter(it => it)
+            .join(', ');
+        return `clientSocket(${str})`;
     }
 }
 

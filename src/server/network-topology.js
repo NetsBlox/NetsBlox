@@ -119,8 +119,10 @@ NetworkTopology.prototype.onRoomUpdate = function(projectId, refresh=false) {
             msg.type = 'room-roles';
 
             const count = clients.length;
-            this._logger.info(`About to send room update for ${projectId} to ${count} clients`);
-            clients.forEach(client => client.send(msg));
+            if (count > 0) {
+                this._logger.info(`About to send room update for ${projectId} to ${count} clients`);
+                clients.forEach(client => client.send(msg));
+            } // if not close the room?
             return msg;
         });
 };
