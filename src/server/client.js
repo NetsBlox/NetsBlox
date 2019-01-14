@@ -359,6 +359,18 @@ class Client {
         this.username = username || this.uuid;
         this.loggedIn = Utils.isSocketUuid(this.username);
     }
+
+    toString() {
+        let attrs = ['id', 'uuid', 'username', 'roleId', 'projectId'];
+        let str = attrs
+            .map(attr => {
+                let rv =  this[attr] ? `${attr}: ${this[attr]}` : undefined;
+                return rv;
+            })
+            .filter(it => it)
+            .join(', ');
+        return `clientSocket(${str})`;
+    }
 }
 
 // From the WebSocket spec
