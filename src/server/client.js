@@ -487,9 +487,9 @@ Client.MessageHandlers = {
                 });
 
             const project = await Projects.getById(this.projectId);
-                    // For each role...
-                    //   - if it is occupied, request the content
-                    //   - else, use the content from the database
+            // For each role...
+            //   - if it is occupied, request the content
+            //   - else, use the content from the database
             return project.getRoleIds()
                 .then(ids => {
                     const fetchers = ids.map(id => {
