@@ -404,6 +404,13 @@ Client.MessageHandlers = {
         const req = this._projectRequests[id];
         delete this._projectRequests[id];
 
+        if (!req) {  // silent failure
+            const err = `Received unsolicited / timedout project response! ${JSON.stringify(project)}`;
+            this._logger.error(err);
+            req.promise.reject(err);
+            return;
+        }
+
         const project = {
             ID: req.roleId,
             ProjectName: json.ProjectName,
