@@ -53,6 +53,7 @@
     "google-trends-api": "^3.0.1",
     "jade": "^1.9.2",
     "jimp": "^0.2.28",
+    "jsdom": "^13.1.0",
     "json-query": "^2.2.2",
     "jsonwebtoken": "^7.2.1",
     "just.randomstring": "^0.1.1",
