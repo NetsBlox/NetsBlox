@@ -5,6 +5,10 @@ const parse = require('csv-parse');
 const fs = require('fs');
 
 const inputFile = process.argv[2];
+const headers = fs.readFileSync('./metobjects.headers', {encoding: 'utf8'})
+    .trim()
+    .split(',');
+
 const output = [];
 
 const parser = parse({
@@ -14,7 +18,11 @@ const parser = parse({
 parser.on('readable', function(){
     let record;
     while (record = this.read()) {
-        output.push(record);
+        let obj = {};
+        headers.forEach((attr, index) => {
+            obj[attr] = record[index];
+        });
+        output.push(obj);
     }
 });
 
@@ -24,7 +32,7 @@ parser.on('error', function(err){
 
 parser.on('end', function(){
     console.log('done');
-    // TODO load into database
+    console.log(output.slice(0,3));
 });
 
 console.log('piping', inputFile);
