@@ -38,7 +38,7 @@ GoogleStreetView.getViewFromLatLong = function(latitude, longitude, width, heigh
 
 /**
  * Get Street View image of a location from a location string
- * @param {String} address Address or Name of location
+ * @param {String} location Address or Name of location
  * @param {BoundedNumber<1,2000>} width Width of image
  * @param {BoundedNumber<1,2000>} height Height of image
  * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of 120
