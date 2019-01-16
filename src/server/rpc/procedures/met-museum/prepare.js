@@ -5,8 +5,8 @@ const parse = require('csv-parse');
 const fs = require('fs');
 const mongoose = require('mongoose');
 const MetObjectCol = require('./database');
+const request = require('request');
 
-const inputFile = process.argv[2];
 const headers = fs.readFileSync('./metobjects.headers', {encoding: 'utf8'})
     .trim()
     .split(',');
@@ -70,7 +70,13 @@ parser.on('end', async function(){
 
 async function start() {
     await MetObjectCol.deleteMany({}); // drop/clearout the collection
-    fs.createReadStream(inputFile)
+    const inputFile = process.argv[2];
+
+    const readStream = inputFile ?
+        fs.createReadStream(inputFile) :
+        request('https://media.githubusercontent.com/media/metmuseum/openaccess/master/MetObjects.csv');
+
+    readStream
         .pipe(parser);
 }
 
