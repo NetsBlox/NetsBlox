@@ -19,6 +19,8 @@ MetMuseum.getImages = function(id) {
         queryString: `/${id}`,
     };
 
+    // TODO limit only to public use items
+
     const parserFn = resp => {
         let images = [];
         let dom = new JSDOM(resp);
