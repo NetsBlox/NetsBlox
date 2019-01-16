@@ -1,5 +1,6 @@
 /*
  * Author: Miklos Maroti <mmaroti@gmail.com>
+ * Author2: Tim Darrah <timothy.s.darrah@vanderbilt.edu>
  * 
  * Robot to server messages:
  *  mac_addr[6] time[4] 'I': identification, sent every second
@@ -13,6 +14,9 @@
  *  mac_addr[6] time[4] 'L' led[1] cmd[1]: LED state change
  *  mac_addr[6] time[4] 'F' bits[1]: infra red detection event
  *  mac_addr[6] time[4] 'G' msec[2] pwr[1]: send infra red light
+ *
+ *  mac_addr[6] time[4] 'V' batteryVoltage[2] : robot battery voltage
+ *  mac_addr[6] time[4] 'M' message[2] : message from robot (TODO)
  * 
  * Server to robot messages:
  *  'S' left[2] right[2]: set driving speed
@@ -22,10 +26,18 @@
  *  'D' left[2] right[2]: drive certain distance
  *  'L' led[1] state[1]: change LED state
  *  'G' msec[2] pwr[1]: send infra red light
- * 
+ *
+ *  'd' direction[1] speed[1] : set driving speed (python robots)
+ *  't' direction[1] angle[1] dimeTurn[1] (bool) : turn (python robots)
+ *  'w' direction[1] [amount] : pan (python bots)
+ *  'e' direction[1] [amount] : tilt (python bots)
+ *  's' : stop (python bots)
+ *  'Q' : quit (python bots)
+ *  'V' : get voltage (python bots) 
+ *
  * Environment variables:
- *  ROBOSCAPE_PORT: set it to the UDP port (1973) to enable this module
- *  ROBOSCAPE_MODE: sets the NetsBlox interface type, can be "security", 
+ *   ROBOSCAPE_PORT: set it to the UDP port (1973) to enable this module
+ *   ROBOSCAPE_MODE: sets the NetsBlox interface type, can be "security", 
  *      "native" or "both" (default)
  */
 
@@ -34,9 +46,9 @@
 const logger = require('../utils/logger')('roboscape');
 var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
-    NetworkTopology = require('../../../network-topology'),
-    FORGET_TIME = 120, // forgetting a robot in seconds
-    RESPONSE_TIMEOUT = 200, // waiting for response in milliseconds
+    SocketManager = require('../../../socket-manager'),
+    FORGET_TIME = 10, // forgetting a robot in seconds
+    RESPONSE_TIMEOUT = 700, // waiting for response in milliseconds
     ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
 
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
@@ -209,6 +221,84 @@ Robot.prototype.setSpeed = function (left, right) {
     this.sendToRobot(message);
 };
 
+Robot.prototype.Quit = function () {
+    logger.log("sending quit signal to: " + this.mac_addr);
+    var message = Buffer.alloc(1);
+    message.write('Q', 0, 1);
+    this.sendToRobot(message);
+};
+
+Robot.prototype.Drive = function (dir, speed)
+{
+    if(speed < 0 || speed > 20)
+    {
+        logger.log("speed out of range for: " + this.mac_addr);
+        return false;
+    }
+    logger.log("driving direction: " + dir + " speed: " + speed);
+    try { var message = Buffer.alloc(3);
+    message.write('d', 0, 1);
+    message.writeInt8(dir, 1);
+    message.writeInt8(speed, 2); }
+    catch(e) { logger.log("message: ", e); }
+    this.sendToRobot(message);
+}
+
+Robot.prototype.Turn = function (dir, deg, dime)
+{
+    if(deg < 0 || deg > 180)
+    {
+        logger.log("turn angle out of range for: " + this.mac_addr);
+        return false;
+    }
+    logger.log("turning " + dir + " at angle " + deg + ", dime turn: " + dime + " for: " + this.mac_addr);
+    var message = Buffer.alloc(4);
+    message.write('t', 0, 1);
+    message.writeInt8(dir, 1);
+    message.writeUInt8(deg, 2);
+    message.writeInt8(dime, 3);
+    this.sendToRobot(message);
+}
+
+Robot.prototype.Pan = function (dir, amount)
+{
+    if(amount > 60 || amount < 0)
+    {
+        logger.log("pan angle out of range for: " + this.mac_addr);
+        return false;
+    }
+    logger.log("panning: " + dir + " " + amount + " units for: " + this.mac_addr);
+    var message = Buffer.alloc(3);
+    message.write('w', 0, 1);
+    message.writeInt8(dir, 1);
+    message.writeInt8(amount, 2);
+    this.sendToRobot(message);
+}
+
+Robot.prototype.Tilt = function (dir, amount)
+{
+    if(amount > 50 || amount < 0)
+    {
+        logger.log("Tilt angle out of range for: " + this.mac_addr);
+        return false;
+    }
+    logger.log("Tilting: " + dir + " " + amount + " units for: " + this.mac_addr);
+    var message = Buffer.alloc(3);
+    message.write('e', 0, 1);
+    message.writeInt8(dir, 1);
+    message.writeInt8(amount, 2);
+    this.sendToRobot(message);
+}
+
+
+Robot.prototype.Stop = function ()
+{
+    logger.log("stopping: " + this.mac_addr);
+    var message = Buffer.alloc(1);
+    message.write('s', 0, 1);
+    this.sendToRobot(message);
+}
+
 Robot.prototype.setLed = function (led, cmd) {
     if (!('' + cmd).startsWith('_')) {
         logger.log('set led ' + this.mac_addr + ' ' + led + ' ' + cmd);
@@ -256,6 +346,15 @@ Robot.prototype.infraLight = function (msec, pwr) {
     this.sendToRobot(message);
 };
 
+Robot.prototype.getVoltage = function () {
+    logger.log("get voltage " + this.mac_addr);
+    var promise = this.receiveFromRobot("voltage");
+    var message = Buffer.alloc(1);
+    message.write('V', 0, 1);
+    this.sendToRobot(message);
+    return promise;
+};
+
 Robot.prototype.getRange = function () {
     logger.log('get range ' + this.mac_addr);
     var promise = this.receiveFromRobot('range');
@@ -290,13 +389,17 @@ Robot.prototype.commandToClient = function (command) {
     if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         var mac_addr = this.mac_addr;
         this.sockets.forEach(function (uuid) {
-            var socket = NetworkTopology.getSocket(uuid);
+            var socket = SocketManager.getSocket(uuid);
             if (socket) {
-                const content = {
-                    robot: mac_addr,
-                    command: command
-                };
-                socket.sendMessage('robot command', content);
+                socket.send({
+                    type: 'message',
+                    dstId: socket.role,
+                    msgType: 'robot command',
+                    content: {
+                        robot: mac_addr,
+                        command: command
+                    }
+                });
             } else {
                 logger.log('socket not found for ' + uuid);
             }
@@ -324,10 +427,15 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     }
 
     this.sockets.forEach(function (uuid) {
-        var socket = NetworkTopology.getSocket(uuid);
+        var socket = SocketManager.getSocket(uuid);
         if (socket) {
             if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
-                socket.sendMessage(msgType, content);
+                socket.send({
+                    type: 'message',
+                    dstId: socket.role,
+                    msgType: msgType,
+                    content: content
+                });
             }
 
             if ((ROBOSCAPE_MODE === 'security' && msgType !== 'set led') ||
@@ -337,11 +445,15 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
                     text += ' ' + content[fields[i]];
                 }
 
-                const encryptedContent = {
-                    robot: myself.mac_addr,
-                    message: myself.encrypt(text.trim())
-                };
-                socket.sendMessage('robot message', encryptedContent);
+                socket.send({
+                    type: 'message',
+                    dstId: socket.role,
+                    msgType: 'robot message',
+                    content: {
+                        robot: myself.mac_addr,
+                        message: myself.encrypt(text.trim())
+                    }
+                });
             }
         } else {
             logger.log('socket not found for ' + uuid);
@@ -406,10 +518,14 @@ Robot.prototype.onMessage = function (message) {
                 this.buttonDownTime = 0;
             }
         }
-    } else if (command === 'R' && message.length === 13) {
+    } else if (command === 'R'){// && message.length === 13) {
         this.sendToClient('range', {
             range: message.readInt16LE(11),
-        }, ['time', 'range']);
+        }, ['range']);
+    } else if (command === 'V'){
+        this.sendToClient('voltage', {
+            voltage: parseFloat(message.readInt8(12).toString() + "." + message.readInt8(11).toString()),
+        }, ['voltage']);
     } else if (command === 'T' && message.length === 19) {
         this.sendToClient('ticks', {
             left: message.readInt32LE(11),
@@ -536,6 +652,7 @@ Robot.prototype.resetEncryption = function () {
     this.resetRates();
     this.setEncryption([]);
     this.playBlinks([3]);
+    logger.log("reset encryption.");
 };
 
 /*
@@ -559,6 +676,9 @@ RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
         logger.log('discovering ' + mac_addr + ' at ' + ip4_addr + ':' + ip4_port);
         robot = new Robot(mac_addr, ip4_addr, ip4_port);
         this._robots[mac_addr] = robot;
+        var message = Buffer.alloc(2);
+        message.write("AA", 0, 2);
+        this._robots[mac_addr].sendToRobot(message);
     } else {
         robot.updateAddress(ip4_addr, ip4_port);
     }
@@ -567,8 +687,7 @@ RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
 
 RoboScape.prototype._getRobot = function (robot) {
     robot = '' + robot;
-    if(robot.length < 4) return undefined;
-    if (robot.length === 12) {
+    if (robot.length === 6) {
         return RoboScape.prototype._robots[robot];
     }
     for (var mac_addr in RoboScape.prototype._robots) {
@@ -676,6 +795,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.setSpeed = function (robot, left, right) {
+        logger.log("setting speed");        
         robot = this._getRobot(robot);
         if (robot && robot.accepts(this.socket.uuid)) {
             robot.setSpeed(left, right);
@@ -684,6 +804,71 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
         return false;
     };
 
+    RoboScape.prototype.Quit = function (robot) {
+        logger.log("quitting");
+        robot = this._getRobot(robot);
+        if( robot && robot.accepts(this.socket.uuid)) {
+            robot.Quit();
+            return true;
+        }
+        return false;
+    };
+
+    RoboScape.prototype.Drive = function (robot, dir, speed)
+    {
+        robot = this._getRobot(robot);
+        if(robot && robot.accepts(this.socket.uuid))
+        {
+            robot.Drive(dir, speed);
+            return true;
+        }
+        return false;
+    }
+
+    RoboScape.prototype.Turn = function (robot, dir, deg, dime)
+    {
+        robot = this._getRobot(robot);
+        if(robot && robot.accepts(this.socket.uuid))
+        {
+            robot.Turn(dir, deg, dime);
+            return true;
+        }
+        return false;        
+    }
+
+    RoboScape.prototype.Pan = function (robot, dir, amount)
+    {
+        robot = this._getRobot(robot);
+        if(robot && robot.accepts(this.socket.uuid))
+        {
+            robot.Pan(dir, amount);
+            return true;
+        }
+        return false;
+    }
+
+    RoboScape.prototype.Tilt = function (robot, dir, amount)
+    {
+        robot = this._getRobot(robot);
+        if(robot && robot.accepts(this.socket.uuid))
+        {
+            robot.Tilt(dir, amount);
+            return true;
+        }
+        return false;
+    }
+
+    RoboScape.prototype.Stop = function (robot)
+    {
+        robot = this._getRobot(robot);
+        if(robot && robot.accepts(this.socket.uuid))
+        {
+            logger.log("Stop");
+            robot.Stop();
+            return true;
+        }
+        return false;
+    }
     /**
      * Sets one of the LEDs of the given robots.
      * @param {string} robot name of the robot (matches at the end)
@@ -742,6 +927,21 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
         if (robot && robot.accepts(this.socket.uuid)) {
             return robot.getRange().then(function (value) {
                 return value && value.range;
+            });
+        }
+        return false;
+    };
+
+    /**
+     * gets battery voltage
+     * @param {string} robot name of the robot (matches at the end)
+     * @returns {number} battery voltage
+     */
+    RoboScape.prototype.getVoltage = function (robot) {
+        robot = this._getRobot(robot);
+        if (robot && robot.accepts(this.socket.uuid)) {
+            return robot.getVoltage().then(function (value) {
+                return value && value.voltage;
             });
         }
         return false;
@@ -853,7 +1053,31 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
                 robot.setSeqNum(seqNum);
                 robot.setSpeed(+RegExp.$1, +RegExp.$2);
                 return true;
-            } else if (command.match(/^drive (-?\d+)[, ](-?\d+)$/)) {
+            } else if (command.match(/^quit$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Quit();
+                return true;
+            } else if (command.match(/^Drive (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Drive(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^Stop$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Stop();
+                return true;
+            } else if (command.match(/^Turn (-?\d+)[, ](-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Turn(+RegExp.$1, +RegExp.$2, +RegExp.$3);
+                return true;
+            } else if (command.match(/^Pan (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Pan(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^Tilt (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Tilt(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^drive ticks (-?\d+)[, ](-?\d+)$/)) {
                 robot.setSeqNum(seqNum);
                 robot.drive(+RegExp.$1, +RegExp.$2);
                 return true;
@@ -861,6 +1085,11 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
                 robot.setSeqNum(seqNum);
                 return robot.getRange().then(function (value) {
                     return value && value.range;
+                });
+            } else if (command.match(/^check voltage$/)) {
+                robot.setSeqNum(seqNum);
+                return robot.getVoltage().then(function (value) {
+                    return value && value.voltage;
                 });
             } else if (command.match(/^get ticks$/)) {
                 robot.setSeqNum(seqNum);
@@ -873,6 +1102,7 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
                 if (encryption[0] === '') {
                     encryption.splice(0, 1);
                 }
+                logger.log("set key here");
                 return robot.setEncryption(encryption.map(Number));
             } else if (command.match(/^set total rate (-?\d+)$/)) {
                 robot.setSeqNum(seqNum);
@@ -895,6 +1125,9 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
                 return true;
             } else if (command.match(/^reset rates$/)) {
                 robot.resetRates();
+                return true;
+            } else if (command.match(/^reset key$/)) {
+                robot.resetEncryption();
                 return true;
             }
         }
