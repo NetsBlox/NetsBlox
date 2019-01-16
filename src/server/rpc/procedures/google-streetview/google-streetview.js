@@ -10,7 +10,7 @@
 var key = process.env.GOOGLE_MAPS_KEY;
 
 const ApiConsumer = require('../utils/api-consumer');
-const GoogleStreetView = new ApiConsumer('google-streetview', 'https://maps.googleapis.com/maps/api/streetview?',{cache: {ttl: 7*24*60*60}});
+const GoogleStreetView = new ApiConsumer('google-streetview', 'https://maps.googleapis.com/maps/api/streetview',{cache: {ttl: 7*24*60*60}});
 
 GoogleStreetView.isSupported = () => {
     if(!key){
@@ -33,7 +33,7 @@ GoogleStreetView.isSupported = () => {
  * @returns {Image} Image of requested location with specified size and orientation
  */
 GoogleStreetView.getViewFromLatLong = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
-    return this._sendImage({queryString: `size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`, method: 'GET'});
+    return this._sendImage({queryString: `?size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`, method: 'GET'});
 };
 
 /**
@@ -47,7 +47,7 @@ GoogleStreetView.getViewFromLatLong = function(latitude, longitude, width, heigh
  * @returns {Image} Image of requested location with specified size and orientation
  */
 GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofview, heading, pitch) {
-    return this._sendImage({queryString: `size=${width}x${height}&location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`, method: 'GET'});
+    return this._sendImage({queryString: `?size=${width}x${height}&location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`, method: 'GET'});
 };
 
 GoogleStreetView.serviceName = 'GoogleStreetView';
