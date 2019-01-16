@@ -1,3 +1,4 @@
+#!/bin/env node
 // prepares and loads csv into the database
 // if other services need the same functionality this should be refactored to allow reuse.
 
