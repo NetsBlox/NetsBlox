@@ -11,13 +11,33 @@ const headers = fs.readFileSync('./metobjects.headers', {encoding: 'utf8'})
     .trim()
     .split(',');
 
-const records = [];
+let recCounter = 0;
+
+
+// counts and sorts the most common attributes in the dataset
+function calcStats(records) {
+    let availability = headers.map(attr => {
+        let count = records.filter(rec => rec[attr] && rec[attr] !== '').length;
+        return [attr, count];
+    });
+    availability.sort((a, b) => a[1] < b[1] ? -1 : 1);
+    console.log(availability);
+    return availability;
+}
+
+async function batchProcess(records) {
+    console.log(`saving ${records.length} records to the database..`);
+    await MetObjectCol.insertMany(records);
+}
+
+
+let recordsBatch = [];
 
 const parser = parse({
     delimiter: ','
 });
 
-parser.on('readable', function(){
+parser.on('readable', async function(){
     let record = this.read(); // skip the header row
     while (record = this.read()) {
         let obj = {};
@@ -28,8 +48,12 @@ parser.on('readable', function(){
                 obj[headers[index]] = value;
             }
         });
-        // could be optimized to not accumulate the records in memory and make pushes to database in batches
-        records.push(obj);
+        recordsBatch.push(obj);
+        if (recordsBatch.length === 1e+4) {
+            await batchProcess(recordsBatch);
+            recordsBatch = [];
+        }
+        recCounter++;
     }
 });
 
@@ -38,23 +62,16 @@ parser.on('error', function(err){
 });
 
 parser.on('end', async function(){
-    console.log(`finished parsing ${records.length} records`);
-    // console.log(records.slice(0,3));
-    // await MetObjectCol.insertMany(records);
+    await batchProcess(recordsBatch);
+    console.log(`finished processing ${recCounter} records`);
     mongoose.disconnect();
 });
 
-fs.createReadStream(inputFile)
-    .pipe(parser);
 
-
-// counts and sorts the most common attributes in the dataset
-function calcStats() {
-    let availability = headers.map(attr => {
-        let count = records.filter(rec => rec[attr] && rec[attr] !== '').length;
-        return [attr, count];
-    });
-    availability.sort((a, b) => a[1] < b[1] ? -1 : 1);
-    console.log(availability);
-    return availability;
+async function start() {
+    await MetObjectCol.deleteMany({}); // drop/clearout the collection
+    fs.createReadStream(inputFile)
+        .pipe(parser);
 }
+
+start();
