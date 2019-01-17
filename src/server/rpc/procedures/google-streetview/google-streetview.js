@@ -53,9 +53,9 @@ GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofv
 
 /**
  * Get Street View metadata of a location using coordinates.
- * Status explanation: "OK" Indicates that no errors occurred.
- * "ZERO_RESULTS" Indicates that no panorama could be found near the provided location.
- * "NOT_FOUND" Indicates that the address string provided in the location parameter could not be found.
+ * Status explanation: "OK": No errors occurred.
+ * "ZERO_RESULTS": No image could be found near the provided location.
+ * "NOT_FOUND": The location provided could not be found.
  * @param {Latitude} latitude Latitude coordinate of location
  * @param {Longitude} longitude Longitude coordinate of location
  * @param {BoundedNumber<1,2000>} width Width of image
@@ -65,7 +65,7 @@ GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofv
  * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
  * @returns {Object} Metadata infromation about the requested Street View.
  */
-GoogleStreetView.getMetadataFromLatLong = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
+GoogleStreetView.getInfoFromLatLong = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
     const queryOpts = {
         queryString: `/metadata?size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
     };
@@ -86,7 +86,7 @@ GoogleStreetView.getMetadataFromLatLong = function(latitude, longitude, width, h
  * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
  * @returns {Object} Metadata infromation about the requested Street View.
  */
-GoogleStreetView.getMetadataFromAddress = function(location, width, height, fieldofview, heading, pitch) {
+GoogleStreetView.getInfoFromAddress = function(location, width, height, fieldofview, heading, pitch) {
     const queryOpts = {
         queryString: `/metadata?size=${width}x${height}&location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
     };
