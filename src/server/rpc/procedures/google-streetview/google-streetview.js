@@ -58,8 +58,6 @@ GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofv
  * "NOT_FOUND": The location provided could not be found.
  * @param {Latitude} latitude Latitude coordinate of location
  * @param {Longitude} longitude Longitude coordinate of location
- * @param {BoundedNumber<1,2000>} width Width of image
- * @param {BoundedNumber<1,2000>} height Height of image
  * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of 120
  * @param {BoundedNumber<0,360>} heading Heading of view
  * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
@@ -67,7 +65,7 @@ GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofv
  */
 GoogleStreetView.getInfoFromLatLong = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
     const queryOpts = {
-        queryString: `/metadata?size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+        queryString: `/metadata?location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
     };
     const parserFn = resp => resp; // explicitly do nothing
     return this._sendStruct(queryOpts, parserFn);
@@ -79,8 +77,6 @@ GoogleStreetView.getInfoFromLatLong = function(latitude, longitude, width, heigh
  * "ZERO_RESULTS": No image could be found near the provided location.
  * "NOT_FOUND": The location provided could not be found.
  * @param {String} location Address or Name of location
- * @param {BoundedNumber<1,2000>} width Width of image
- * @param {BoundedNumber<1,2000>} height Height of image
  * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of 120
  * @param {BoundedNumber<0,360>} heading Heading of view
  * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
@@ -88,7 +84,7 @@ GoogleStreetView.getInfoFromLatLong = function(latitude, longitude, width, heigh
  */
 GoogleStreetView.getInfoFromAddress = function(location, width, height, fieldofview, heading, pitch) {
     const queryOpts = {
-        queryString: `/metadata?size=${width}x${height}&location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+        queryString: `/metadata?location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
     };
     const parserFn = resp => resp; // explicitly do nothing
     return this._sendStruct(queryOpts, parserFn);
@@ -98,16 +94,14 @@ GoogleStreetView.getInfoFromAddress = function(location, width, height, fieldofv
  * Check for availability of imagery at a location
  * @param {Latitude} latitude Latitude coordinate of location
  * @param {Longitude} longitude Longitude coordinate of location
- * @param {BoundedNumber<1,2000>} width Width of image
- * @param {BoundedNumber<1,2000>} height Height of image
  * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of 120
  * @param {BoundedNumber<0,360>} heading Heading of view
  * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
  * @returns {Boolean}
  */
-GoogleStreetView.isAvailable = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
+GoogleStreetView.isAvailable = function(latitude, longitude, fieldofview, heading, pitch) {
     const queryOpts = {
-        queryString: `/metadata?size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+        queryString: `/metadata?location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
     };
     const parserFn = resp => resp.status === 'OK';
     return this._sendStruct(queryOpts, parserFn);
