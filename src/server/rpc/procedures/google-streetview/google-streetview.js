@@ -94,6 +94,26 @@ GoogleStreetView.getInfoFromAddress = function(location, width, height, fieldofv
     return this._sendStruct(queryOpts, parserFn);
 };
 
+/**
+ * Check for availability of imagery at a location
+ * @param {Latitude} latitude Latitude coordinate of location
+ * @param {Longitude} longitude Longitude coordinate of location
+ * @param {BoundedNumber<1,2000>} width Width of image
+ * @param {BoundedNumber<1,2000>} height Height of image
+ * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of 120
+ * @param {BoundedNumber<0,360>} heading Heading of view
+ * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
+ * @returns {Boolean}
+ */
+GoogleStreetView.isAvailable = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
+    const queryOpts = {
+        queryString: `/metadata?size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+    };
+    const parserFn = resp => resp.status === 'OK';
+    return this._sendStruct(queryOpts, parserFn);
+};
+
+
 GoogleStreetView.serviceName = 'GoogleStreetView';
 
 module.exports = GoogleStreetView;
