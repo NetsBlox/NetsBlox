@@ -21,6 +21,23 @@ GoogleStreetView.isSupported = () => {
     return !!key;
 };
 
+
+/**
+ * Get Street View image of a location using coordinates
+ * @param {Latitude} latitude Latitude coordinate of location
+ * @param {Longitude} longitude Longitude coordinate of location
+ * @param {BoundedNumber<1,2000>} width Width of image
+ * @param {BoundedNumber<1,2000>} height Height of image
+ * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of 120
+ * @param {BoundedNumber<0,360>} heading Heading of view
+ * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
+ * @returns {Image} Image of requested location with specified size and orientation
+ * @deprecated
+ */
+GoogleStreetView.getViewFromLatLong = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
+    return this._sendImage({queryString: `?size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`, method: 'GET'});
+};
+
 /**
  * Get Street View image of a location using coordinates
  * @param {Latitude} latitude Latitude coordinate of location
@@ -32,9 +49,10 @@ GoogleStreetView.isSupported = () => {
  * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
  * @returns {Image} Image of requested location with specified size and orientation
  */
-GoogleStreetView.getViewFromLatLong = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
+GoogleStreetView.getView = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
     return this._sendImage({queryString: `?size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`, method: 'GET'});
 };
+
 
 /**
  * Get Street View image of a location from a location string
@@ -63,7 +81,7 @@ GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofv
  * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
  * @returns {Object} Metadata infromation about the requested Street View.
  */
-GoogleStreetView.getInfoFromLatLong = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
+GoogleStreetView.getInfo = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
     const queryOpts = {
         queryString: `/metadata?location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
     };
