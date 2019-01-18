@@ -215,7 +215,7 @@ MovieDB.searchMovie = function(title) {
             rsp.send(`${err}`);
         }
     });
-    
+
     return null;
 };
 
@@ -233,7 +233,7 @@ MovieDB.searchPerson = function(name) {
             rsp.status(400).send(`${err}`);
         }
     });
-    
+
     // explicitly state that we're async
     return null;
 };
