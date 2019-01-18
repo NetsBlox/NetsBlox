@@ -109,7 +109,7 @@ GoogleStreetView.getInfoFromAddress = function(location, width, height, fieldofv
 };
 
 /**
- * Check for availability of imagery at a location
+ * Check for availability of imagery at a location using coordinates
  * @param {Latitude} latitude Latitude coordinate of location
  * @param {Longitude} longitude Longitude coordinate of location
  * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of 120
@@ -120,6 +120,22 @@ GoogleStreetView.getInfoFromAddress = function(location, width, height, fieldofv
 GoogleStreetView.isAvailable = function(latitude, longitude, fieldofview, heading, pitch) {
     const queryOpts = {
         queryString: `/metadata?location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+    };
+    const parserFn = resp => resp.status === 'OK';
+    return this._sendStruct(queryOpts, parserFn);
+};
+
+/**
+ * Check for availability of imagery at a location using an address
+ * @param {String} location Address or Name of location
+ * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of 120
+ * @param {BoundedNumber<0,360>} heading Heading of view
+ * @param {BoundedNumber<-90,90>} pitch Pitch of view, 90 to point up, -90 to point down
+ * @returns {Boolean}
+ */
+GoogleStreetView.isAvailableFromAddress = function(location, fieldofview, heading, pitch) {
+    const queryOpts = {
+        queryString: `/metadata?location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
     };
     const parserFn = resp => resp.status === 'OK';
     return this._sendStruct(queryOpts, parserFn);
