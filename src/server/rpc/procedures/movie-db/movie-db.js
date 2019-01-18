@@ -201,37 +201,39 @@ var personCredits = function(id, field, subfield) {
 
 MovieDB.serviceName = 'MovieDB';
 
+/**
+ * Find information about a movie
+ * @param {String} title Title of movie
+ */
 MovieDB.searchMovie = function(title) {
     var rsp = this.response;
 
-    if(!title) {
-        rsp.status(400).send('Error: title is not defined');
-    } else {
-        mdb.searchMovie({ query: title }, (err,res) => {
-            if(!err) {
-                rsp.send(res.results.map(e=>e.id));
-            } else {
-                rsp.send(`${err}`);
-            }
-        });
-    }
+    mdb.searchMovie({ query: title }, (err,res) => {
+        if(!err) {
+            rsp.send(res.results.map(e=>e.id));
+        } else {
+            rsp.send(`${err}`);
+        }
+    });
+
     return null;
 };
 
+/**
+ * Find information about a person
+ * @param {String} name Name of person to search for
+ */
 MovieDB.searchPerson = function(name) {
     var rsp = this.response;
 
-    if(!name) {
-        rsp.status(400).send('Error: name is not defined');
-    } else {
-        mdb.searchPerson({ query: name }, (err,res) => {
-            if(!err) {
-                rsp.status(200).send(res.results.map(e=>e.id));
-            } else {
-                rsp.status(400).send(`${err}`);
-            }
-        });
-    }
+    mdb.searchPerson({ query: name }, (err,res) => {
+        if(!err) {
+            rsp.status(200).send(res.results.map(e=>e.id));
+        } else {
+            rsp.status(400).send(`${err}`);
+        }
+    });
+
     // explicitly state that we're async
     return null;
 };
