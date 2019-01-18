@@ -26,6 +26,7 @@ program
     .command('service-usage', 'scans the projects and reports the usage of services')
     .command('projects', 'list the user projects')
     .command('export-project <owner> <project>', 'export a project')
+    .command('export-user-projects <owner> <bool:includeUnsaved>', `export a user's projects`)
     .command('groups', 'manage user groups')
     .command('users', 'list the usernames')
     .command('user [sessionId]', 'display user information')

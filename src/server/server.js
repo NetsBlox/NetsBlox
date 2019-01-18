@@ -11,7 +11,8 @@ var express = require('express'),
     Storage = require('./storage/storage'),
     EXAMPLES = require('./examples'),
     Vantage = require('./vantage/vantage'),
-    isDevMode = process.env.ENV !== 'production',
+    ENV = process.env.ENV,
+    isDevMode = ENV !== 'production',
     DEFAULT_OPTIONS = {
         port: 8080,
         vantagePort: 1234,
@@ -37,7 +38,7 @@ var Server = function(opts) {
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
     this.app.set('query parser', string => {
-        return qs.parse(string, {parameterLimit: 10000, arrayLimit: 20000});
+        return qs.parse(string);
     });
 
     // Mongo variables
@@ -279,38 +280,48 @@ Server.prototype.addScraperSettings = function(userAgent, metaInfo) {
     }
 };
 
-Server.prototype.start = function(done) {
+Server.prototype.start = async function(done) {
     var opts = {};
     done = done || Utils.nop;
 
     opts.msgFilter = msg => !msg.namespace;
 
-    return this.storage.connect()
-        .then(() => {
-            this.configureRoutes();
-            this._server = this.app.listen(this.opts.port, err => {
-                if (err) {
-                    return done(err);
-                }
+    await this.storage.connect();
+    if (ENV === 'test') {
+        const fixtures = require('../../test/fixtures');
+        if (/test/.test(this.storage._db.databaseName)) {
+            // eslint-disable-next-line no-console
+            console.log('resetting the database');
+            await this.storage._db.dropDatabase();
+            await fixtures.init(this.storage);
+        } else {
+            // eslint-disable-next-line no-console
+            console.warn('skipping database reset, test database should have the word test in the name.');
+        }
+    }
+    this.configureRoutes();
+    this._server = this.app.listen(this.opts.port, err => {
+        if (err) {
+            return done(err);
+        }
 
-                // eslint-disable-next-line no-console
-                console.log(`listening on port ${this.opts.port}`);
+        // eslint-disable-next-line no-console
+        console.log(`listening on port ${this.opts.port}`);
 
-                // Enable the websocket handling
-                this._wss = new WebSocketServer({server: this._server});
-                this._wss.on('connection', (socket, req) => {
-                    socket.upgradeReq = req;
-                    const client = new Client(this._logger, socket);
-                    NetworkTopology.onConnect(client);
-                });
-
-                // Enable Vantage
-                if (this.opts.vantage) {
-                    new Vantage(this).start(this.opts.vantagePort);
-                }
-                done();
-            });
+        // Enable the websocket handling
+        this._wss = new WebSocketServer({server: this._server});
+        this._wss.on('connection', (socket, req) => {
+            socket.upgradeReq = req;
+            const client = new Client(this._logger, socket);
+            NetworkTopology.onConnect(client);
         });
+
+        // Enable Vantage
+        if (this.opts.vantage) {
+            new Vantage(this).start(this.opts.vantagePort);
+        }
+        done();
+    });
 };
 
 Server.prototype.stop = function(done) {
@@ -353,8 +364,11 @@ Server.prototype.createRouter = function() {
         router.route(api.URL)[method]((req, res) => {
             if (api.Service) {
                 const args = (api.Parameters || '').split(',')
-                    .map(name => req.body[name] || 'undefined')
-                    .map(content => content.length < 50 ? content : '<omitted>')
+                    .map(name => {
+                        let content = req.body[name] || 'undefined';
+                        content = content.length < 50 ? content : '<omitted>';
+                        return `${name}: "${content}"`;
+                    })
                     .join(', ');
                 logger.trace(`received request ${api.Service}(${args})`);
             }

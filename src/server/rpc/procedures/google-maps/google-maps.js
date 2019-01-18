@@ -333,36 +333,41 @@ GoogleMaps.getDistance = function(startLatitude, startLongitude, endLatitude, en
     );
 };
 
-var mapGetter = function(minMax, attr) {
-    return function() {
-        return this._getClientMap(this.caller.clientId)
-            .then(map => map[minMax][attr]);
-    };
-};
-
 /**
  * Get the maximum longitude of the current map.
  * @returns {Longitude}
  */
-GoogleMaps.maxLongitude = mapGetter('max', 'lon');
+GoogleMaps.maxLongitude = function() {
+    return this._getClientMap(this.caller.clientId)
+        .then(map => map.max.lon);
+};
 
 /**
  * Get the maximum latitude of the current map.
  * @returns {Longitude}
  */
-GoogleMaps.maxLatitude = mapGetter('max', 'lat');
+GoogleMaps.maxLatitude = function() {
+    return this._getClientMap(this.caller.clientId)
+        .then(map => map.max.lat);
+};
 
 /**
  * Get the minimum longitude of the current map.
  * @returns {Longitude}
  */
-GoogleMaps.minLongitude = mapGetter('min', 'lon');
+GoogleMaps.minLongitude = function() {
+    return this._getClientMap(this.caller.clientId)
+        .then(map => map.min.lon);
+};
 
 /**
  * Get the minimum latitude of the current map.
  * @returns {Longitude}
  */
-GoogleMaps.minLatitude = mapGetter('min', 'lat');
+GoogleMaps.minLatitude = function() {
+    return this._getClientMap(this.caller.clientId)
+        .then(map => map.min.lat);
+};
 
 GoogleMaps.isSupported = () => {
     if(!key){

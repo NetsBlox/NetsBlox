@@ -22,5 +22,8 @@ module.exports = [
     },
     {
         username: 'akos'
+    },
+    {
+        username: 'test'
     }
 ].map(addDefaults);
