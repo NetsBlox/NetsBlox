@@ -566,8 +566,26 @@ Robot.prototype.randomEncryption = function () {
     this.setSeqNum(-1);
     this.resetRates();
     this.setEncryption(keys);
-    this.playBlinks(blinks);
+
+    if(this.isAnki){
+        this.sendKeys(keys);
+    } else {
+        this.playBlinks(blinks);
+    }
 };
+
+// Send the key array as a message
+Robot.prototype.sendKeys = function (keys) {
+    var message = Buffer.alloc(2 + keys.length);
+    message.write('K', 0, 1);
+    message.writeUInt8(keys.length, 1);
+
+    for(let i = 0; i < keys.length; i++)
+    {
+        message.writeUInt8(keys[i], 2 + i);
+    }
+    this.sendToRobot(message);
+}
 
 Robot.prototype.resetEncryption = function () {
     this.setSeqNum(-1);
