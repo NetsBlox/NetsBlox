@@ -56,7 +56,7 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.clientPenalty = 0; // in seconds
     this.clientCounts = {};
     this.lastSeqNum = -1; // initially disabled
-    this.anki = false;
+    this.anki = false; // default to non-Anki
 };
 
 Robot.prototype.setTotalRate = function (rate) {
@@ -567,7 +567,7 @@ Robot.prototype.randomEncryption = function () {
     this.resetRates();
     this.setEncryption(keys);
 
-    if(this.isAnki){
+    if(this.isAnki()){
         this.sendKeys(keys);
     } else {
         this.playBlinks(blinks);
