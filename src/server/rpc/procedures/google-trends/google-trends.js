@@ -10,7 +10,7 @@ const request = require('request');
 const googleTrends = require('google-trends-api');
 const CacheManager = require('cache-manager');
 
-var countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?',
+var countryInfoBaseUrl = 'http://api.geonames.org/countryCodeJSON?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
     geoNamesUsername = process.env.GOOGLE_TRENDS_USERNAME || 'hamidzr';
 
