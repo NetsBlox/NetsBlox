@@ -28,6 +28,13 @@ function toCamelCase(text) {
     return cc;
 }
 
+
+function cleanDbRec(rec) {
+    delete rec._doc._id;
+    delete rec._doc.__v;
+    return rec._doc;
+}
+
 const headers = fs.readFileSync(__dirname + '/metobjects.headers', {encoding: 'utf8'})
     .trim()
     .split(',');
@@ -63,13 +70,8 @@ MetMuseum.advancedSearch = async function(field, query, offset, limit) {
     dbQuery[field] = new RegExp(`.*${query}.*`, 'i');
 
     let res = await MetObject.find(dbQuery).skip(offset).limit(limit);
-    res = res.map(rec => {
-        delete rec._doc._id;
-        delete rec._doc.__v;
-        return rec._doc;
-    });
 
-    return res;
+    return res.map(cleanDbRec);
 };
 
 
@@ -139,8 +141,15 @@ const featuredFields = [
 
 
 featuredFields.forEach(field => {
-    MetMuseum['searchBy' + toCamelCase(field)] = function(query, offset, limit) {
-        return this.advancedSearch(field, query, offset, limit);
+    MetMuseum['searchBy' + toCamelCase(field)] = async function(query) {
+        // build the database query
+        let dbQuery = {};
+        dbQuery[field] = new RegExp(`.*${query}.*`, 'i');
+        dbQuery['Is Public Domain'] = 'True';
+
+        let res = await MetObject.find(dbQuery).limit(20);
+        res = res.map(cleanDbRec);
+        return res;
     };
 });
 
