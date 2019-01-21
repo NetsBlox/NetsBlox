@@ -1,6 +1,7 @@
 /**
- * The Metropolitan Museum of Art is one of the world's largest and finest art museums.
- * https://metmuseum.github.io
+ * Access the Metropolitan Museum of Art's collection.
+ * For explanation on the different attributes for each object,
+ * visit https://metmuseum.github.io.
  * @service
  */
 
@@ -48,12 +49,14 @@ MetMuseum.fields = function() {
  * @param {Number=} limit limit the number of returned results (maximum of 50)
  * @returns {Array} results
  */
-MetMuseum.advancedSearch = async function(field, query, offset=0, limit=10) {
+MetMuseum.advancedSearch = async function(field, query, offset, limit) {
     // prepare and check the input
     field = toTitleCase(field);
     if (!headers.find(attr => attr === field)) throw new Error('bad field name');
-    if (offset === '') offset = 0; // should be handled by input-types or jsdoc-parser
+    if (offset === '') offset = 0;
+    if (limit === '') limit = 10;
     limit = Math.min(limit, 50); // limit the max requested documents
+
 
     // build the database query
     let dbQuery = {};
@@ -69,8 +72,9 @@ MetMuseum.advancedSearch = async function(field, query, offset=0, limit=10) {
     return res;
 };
 
+
 /**
- * Retrieves extended information about an object
+ * Retrieves extended information about a single object
  * @param {Number} id object id
  * @returns {Array} List of images
  */
@@ -131,6 +135,6 @@ featuredFields.forEach(field => {
     MetMuseum['searchBy' + toCamelCase(field)] = function(query, offset, limit) {
         return this.advancedSearch(field, query, offset, limit);
     };
-})
+});
 
 module.exports = MetMuseum;
