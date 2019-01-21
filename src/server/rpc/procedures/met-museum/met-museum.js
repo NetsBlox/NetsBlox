@@ -1,13 +1,13 @@
 /**
  * The Metropolitan Museum of Art is one of the world's largest and finest art museums.
+ * https://metmuseum.github.io
  * @service
  */
 
 const fs = require('fs');
 const MetObject = require('./database.js');
 const ApiConsumer = require('../utils/api-consumer');
-const { JSDOM } = require('jsdom');
-const MetMuseum = new ApiConsumer('metmuseum', 'https://www.metmuseum.org/art/collection/search', {cache: {ttl: 5*60}});
+const MetMuseum = new ApiConsumer('metmuseum', 'https://collectionapi.metmuseum.org/public/collection/v1', {cache: {ttl: 5*60}});
 
 
 
@@ -52,22 +52,13 @@ MetMuseum.search = async function(field, query, limit=10) {
  */
 MetMuseum.getImages = function(id) {
     const queryOpts = {
-        queryString: `/${id}`,
+        queryString: `/objects/${id}`,
     };
 
     // TODO limit only to public use items
 
     const parserFn = resp => {
-        let images = [];
-        let dom = new JSDOM(resp);
-        const carouselImages = dom.window.document.querySelectorAll('.met-carousel img');
-        carouselImages.forEach(el => images.push(el.getAttribute('data-largeimage')));
-
-        if (!images.length) {
-            const mainImageEl = dom.window.document.getElementById('artwork__image');
-            images.push(mainImageEl.src);
-        }
-        return images;
+        return resp.primaryImage;
     };
 
     return this._sendStruct(queryOpts, parserFn);
