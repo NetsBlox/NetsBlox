@@ -55,10 +55,15 @@ MetMuseum.getImages = function(id) {
         queryString: `/objects/${id}`,
     };
 
-    // TODO limit only to public use items
-
     const parserFn = resp => {
-        return resp.primaryImage;
+        let images = [];
+        if (resp.primaryImage) {
+            images.push(resp.primaryImage);
+            if (resp.additionalImages) {
+                images.push(...resp.additionalImages);
+            }
+        }
+        return images;
     };
 
     return this._sendStruct(queryOpts, parserFn);
