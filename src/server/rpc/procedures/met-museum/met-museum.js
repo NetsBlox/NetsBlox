@@ -10,31 +10,46 @@ const ApiConsumer = require('../utils/api-consumer');
 const MetMuseum = new ApiConsumer('metmuseum', 'https://collectionapi.metmuseum.org/public/collection/v1', {cache: {ttl: 5*60}});
 
 
+function toTitleCase(text) {
+    return text.toLowerCase()
+        .split(' ')
+        .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
+        .join(' ');
+}
 
 const headers = fs.readFileSync(__dirname + '/metobjects.headers', {encoding: 'utf8'})
     .trim()
     .split(',');
 
+/**
+ * Get a list of available attributes for museum's objects
+ * @returns {Array} available headers
+ */
 MetMuseum.fields = function() {
     return headers;
 };
 
 
 /**
- * searches the met museum!
- * @param {String} field blah
- * @param {String} query blah
- * @param {Number=} limit blah
+ * Search the Metropolitan Museum of Art
+ * @param {String} field field to search in
+ * @param {String} query text query to look for
+ * @param {Number=} offset limit the number of returned results (maximum of 50)
+ * @param {Number=} limit limit the number of returned results (maximum of 50)
  * @returns {Array} results
  */
-MetMuseum.search = async function(field, query, limit=10) {
+MetMuseum.advancedSearch = async function(field, query, offset=0, limit=10) {
+    // prepare and check the input
+    field = toTitleCase(field);
     if (!headers.find(attr => attr === field)) throw new Error('bad field name');
+    if (offset === '') offset = 0; // should be handled by input-types or jsdoc-parser
     limit = Math.min(limit, 50); // limit the max requested documents
 
+    // build the database query
     let dbQuery = {};
     dbQuery[field] = new RegExp(`.*${query}.*`, 'i');
 
-    let res = await MetObject.find(dbQuery).limit(limit);
+    let res = await MetObject.find(dbQuery).skip(offset).limit(limit);
     res = res.map(rec => {
         delete rec._doc._id;
         delete rec._doc.__v;
