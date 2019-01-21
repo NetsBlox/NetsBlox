@@ -44,10 +44,25 @@ MetMuseum.search = async function(field, query, limit=10) {
     return res;
 };
 
+/**
+ * Retrieves extended information about an object
+ * @param {Number} id object id
+ * @returns {Array} List of images
+ */
+MetMuseum.getInfo = function(id) {
+    const queryOpts = {
+        queryString: `/objects/${id}`,
+    };
+
+    const parserFn = resp => resp;
+
+    return this._sendStruct(queryOpts, parserFn);
+};
+
 
 /**
- * Retrieves the image links for an item
- * @param {Number} id item id
+ * Retrieves the image links for an object
+ * @param {Number} id object id
  * @returns {Array} List of images
  */
 MetMuseum.getImages = function(id) {
