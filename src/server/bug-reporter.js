@@ -1,7 +1,5 @@
 const mailer = require('./mailer');
 const Logger = require('./logger');
-const Buffer = require('buffer').Buffer;
-const zlib = require('zlib');
 const logger = new Logger('netsblox:bug-reporter');
 const Users = require('./storage/users');
 const version = require('./server-utils').version;
@@ -145,13 +143,6 @@ BugReporter.prototype.getUserEmail = function(username) {
         });
 };
 
-const strSize = s => {
-    const bytes = s => {
-        return ~-encodeURI(s).split(/%..|./).length;
-    };
-    return bytes(JSON.stringify(s)) / 1e+6; // in ~ mb
-};
-
 BugReporter.prototype.reportBug = function(subject, body, data) {
     // email this to the maintainer
     // Add server version?
@@ -169,16 +160,7 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
     if (this.maintainer) {
         subject += ` (${version})`;
         body += `\n\nNetsBlox Server ${version}`;
-
-        const contentStr = JSON.stringify(data.content);
-        if (strSize(contentStr) > 5) {
-            logger.trace('bug report content too big, compressing..');
-            let input = new Buffer(contentStr);
-            data.content = zlib.deflate(input);
-        } else {
-            data.content = contentStr;
-        }
-
+        data.content = JSON.stringify(data.content);
         const mailOpts = {
             from: 'bug-reporter',
             to: this.maintainer,
