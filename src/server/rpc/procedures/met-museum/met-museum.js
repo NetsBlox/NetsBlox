@@ -80,14 +80,15 @@ MetMuseum.advancedSearch = async function(field, query, offset, limit) {
  * @param {Number} id object id
  * @returns {Array} List of images
  */
-MetMuseum.getInfo = function(id) {
-    const queryOpts = {
-        queryString: `/objects/${id}`,
+MetMuseum.getInfo = async function(id) {
+    // could be updated to get info from museum's end point after it becomes stable
+    let dbQuery = {
+        'Object ID': id
     };
 
-    const parserFn = resp => resp;
+    let rec = await MetObject.findOne(dbQuery);
 
-    return this._sendStruct(queryOpts, parserFn);
+    return cleanDbRec(rec);
 };
 
 
