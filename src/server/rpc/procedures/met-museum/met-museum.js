@@ -17,6 +17,16 @@ function toTitleCase(text) {
         .join(' ');
 }
 
+// converts a phrase into camel case format
+function toCamelCase(text) {
+    // create uppercc
+    let cc = text.toLowerCase()
+        .split(' ')
+        .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
+        .join('');
+    return cc;
+}
+
 const headers = fs.readFileSync(__dirname + '/metobjects.headers', {encoding: 'utf8'})
     .trim()
     .split(',');
@@ -99,5 +109,28 @@ MetMuseum.getImages = function(id) {
     return this._sendStruct(queryOpts, parserFn);
 };
 
+
+const featuredFields = [
+    'Country',
+    'Artist Display Bio',
+    'Artist Display Name',
+    'Dimensions',
+    'Object Name',
+    'Classification',
+    'Title',
+    'Credit Line',
+    'Object Date',
+    'Medium',
+    'Repository',
+    'Department',
+    'Is Highlight'
+];
+
+
+featuredFields.forEach(field => {
+    MetMuseum['searchBy' + toCamelCase(field)] = function(query, offset, limit) {
+        return this.advancedSearch(field, query, offset, limit);
+    };
+})
 
 module.exports = MetMuseum;
