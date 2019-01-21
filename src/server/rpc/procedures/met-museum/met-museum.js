@@ -90,11 +90,18 @@ MetMuseum.getInfo = function(id) {
 
 
 /**
- * Retrieves the image links for an object
+ * Retrieves the image links for a public domain object
  * @param {Number} id object id
  * @returns {Array} List of images
  */
-MetMuseum.getImages = function(id) {
+MetMuseum.getImages = async function(id) {
+
+    let object =  await MetObject.findOne({'Object ID': `${id}`});
+
+    if (object['Is Public Domain'] !== 'True') {
+        throw new Error(`Object ${id} is not public domain.`);
+    }
+
     const queryOpts = {
         queryString: `/objects/${id}`,
     };
