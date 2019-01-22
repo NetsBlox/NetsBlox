@@ -2,6 +2,16 @@ var nodemailer = require('nodemailer');
 
 let transporterOpts;
 
+const strSize = s => {
+    const bytes = s => {
+        return ~-encodeURI(s).split(/%..|./).length;
+    };
+    return bytes(JSON.stringify(s)) / 1e+6; // in ~ mb
+};
+
+// attachment size threshold
+const MAX_SIZE = 9; // mb
+
 const hasSecureSMTPConf = () => {
     const vars = ['HOST', 'PORT', 'SECURE', 'USER', 'PASS'];
     vars.forEach(envVar => {
@@ -34,6 +44,13 @@ module.exports = {
         opts.from = opts.from || 'no-reply';
         if (!opts.from.includes('@')) {  // add domain
             opts.from += '@' + domain;
+        }
+        if (opts.attachments) { // replace/remove big attachments
+            opts.attachments.forEach(data => {
+                if ((typeof data.content === 'string' && strSize(data.content) > MAX_SIZE)) {
+                    throw new Error(`attachment ${data.filename} too big`);
+                }
+            });
         }
         return transporter.sendMail(opts);
     },
