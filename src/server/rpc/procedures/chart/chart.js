@@ -180,14 +180,14 @@ chart.draw = function(lines, options){
             lineWidth: 2
         };
     }
-    
+
     // if a specific number of ticks are requested
     if (options.xTicks) {
         if (options.isCategorical) throw 'can\'t change the number of xTicks in categorical charting';
         let tickStep = (stats.x.max - stats.x.min)/options.xTicks;
         opts.xTicks = [stats.x.min, tickStep, stats.x.max];
     }
-    
+
     let data = genGnuData(lines, options.labels, options.types, options.smooth);
     this._logger.trace('charting with options', opts);
     try {

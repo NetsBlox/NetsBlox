@@ -34,7 +34,7 @@ module.exports = {
         logger.trace(`Querying object by name: ${name}`);
 
         request.get(queryUrl, function (err, res) {
-            
+
             rsp.set('cache-control', 'private, no-store, max-age=0');
 
             var lines = res.body.split(/\r?\n/);

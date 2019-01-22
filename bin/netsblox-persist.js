@@ -21,7 +21,7 @@ if (!program.args.length === 2) {
 storage.connect()
     .then(() => {
         logger.trace('About to print projects for ' + program.args[0]);
-        
+
         return Projects.get(program.args[0], program.args[1]);
     })
     .then(project => {

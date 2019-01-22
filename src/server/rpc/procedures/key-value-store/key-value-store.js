@@ -152,7 +152,7 @@ KeyValueStore.parent = function(key) {
     if (keys.length) {
         keys.pop();
     }
-    
+
     return '/' + keys.join(SEP);
 };
 

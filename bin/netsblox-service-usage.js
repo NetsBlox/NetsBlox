@@ -18,7 +18,7 @@ program
 // in: project obj
 // out: promise of used services
 const checkForServices = project => {
-    
+
     return project.getRoles().then(roles => {
         // find services
         let services = roles.map(role => {
@@ -31,7 +31,7 @@ const checkForServices = project => {
             owner: project.owner,
             services,
         };
-        
+
         // return services and metadata
         return triple;
     });

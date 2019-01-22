@@ -82,7 +82,7 @@ let draw = (data, opts) => {
         .set('datafile separator \',\'');
 
     // if (data.length > 1) graph.set(`multiplot layout 1,2`) // this option is for drawing multiple charts
-    
+
     if (opts.title) graph.set(`title '${opts.title}'`);
     if (opts.xRange) graph.set(`xrange [${opts.xRange.min}:${opts.xRange.max}]`);
     if (opts.yRange) graph.set(`yrange [${opts.yRange.min}:${opts.yRange.max}]`);

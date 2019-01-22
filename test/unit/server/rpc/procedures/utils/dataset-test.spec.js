@@ -10,7 +10,7 @@ describe('dataset-test', function() {
     let dataset6 = [[['name'], ['age', 15]]];
     let dataset7 = [[['name', 'ellie'], ['age', 'abc']]];
     let dataset8 = [dataset3, dataset3];
-    
+
     let msg1 = 'The dataset is blank or has blank or invalid value';
     let msg2 = 'The dataset should only have two types of value';
     let msg3 = 'At least one point doesn\'t have both name and value';
@@ -23,7 +23,7 @@ describe('dataset-test', function() {
             assert(test.testValidArray(dataset3));
             assert(!(test.testValidArray(dataset4)));
         });
-        
+
         it ('should detect invalid dataset', function() {
             assert.equal(test.testValidDataset(dataset1, 'name', 'age'), '');
             assert.equal(test.testValidDataset(dataset3, 'name', 'age'), '');
@@ -32,15 +32,15 @@ describe('dataset-test', function() {
             assert.equal(test.testValidDataset(dataset6, 'name', 'age'), msg3);
             assert.equal(test.testValidDataset(dataset7, 'name', 'age'), msg5);
         });
-    
+
         it ('should detect valid multiple dataset', function() {
             assert.equal(test.testMultipleDatasets(dataset8, ['1', '2']), '');
         });
-    
+
         it ('should get the right field', function() {
             assert.deepEqual(test.getField(dataset1, 'age'), [15]);
         });
-        
+
         it('should get the right number of layers', function() {
             assert.equal(test.isMultipleDataset(dataset8), true);
             assert.equal(test.isMultipleDataset(dataset1), false);

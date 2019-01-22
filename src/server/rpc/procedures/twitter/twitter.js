@@ -159,7 +159,7 @@ module.exports = {
         keyword = encodeURI(keyword);
 
         options.url = options.url + keyword + '&count=' + count;
-        
+
         // repeat as many times as necessary
         var getTweets = () => {
             request(options, (err, res, body) => {
@@ -232,7 +232,7 @@ module.exports = {
             logger.trace('Enter valid parameters...');
             return 'screenName and count are required';
         }
-    
+
         options.url = options.url + 'screen_name=' + screenName + '&count=' + count;
 
         // populate array of tweets

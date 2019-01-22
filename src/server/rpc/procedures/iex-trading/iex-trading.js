@@ -21,7 +21,7 @@ const rewordError = err => {
  */
 StockConsumer.currentPrice = function(companySymbol) {
     companySymbol = companySymbol.toUpperCase();
-    
+
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.latestPrice')
         .catch(err => {
             const prettyError = rewordError(err);
@@ -93,7 +93,7 @@ StockConsumer.companyInformation = function(companySymbol) {
 */
 StockConsumer.dailyPercentChange = function(companySymbol) {
     companySymbol = companySymbol.toUpperCase();
-    
+
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.changePercent')
         .catch(err => {
             const prettyError = rewordError(err);
