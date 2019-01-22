@@ -1,16 +1,17 @@
 /**
  * The GoogleTrends Service provides access to the current Google trends.
  * For more information, check out https://trends.google.com/trends/.
+ * @deprecated
  * @service
  */
 const TrendsRPC = {};
 
 const logger = require('../utils/logger')('google-trends');
 const request = require('request');
-const googleTrends = require('google-trends-api');
+const googleTrends = 'google-trends-api'; // removed package
 const CacheManager = require('cache-manager');
 
-var countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?',
+var countryInfoBaseUrl = 'http://api.geonames.org/countryCodeJSON?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
     geoNamesUsername = process.env.GOOGLE_TRENDS_USERNAME || 'hamidzr';
 
@@ -81,5 +82,8 @@ TrendsRPC.byCountryCode = function (countryCode) {
 function showError(err, response) {
     response.json(err);
 }
+
+
+TrendsRPC.isSupported = () => false; // the provider is no longer providing this service
 
 module.exports = TrendsRPC;
