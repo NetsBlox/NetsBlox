@@ -8,7 +8,7 @@ const TrendsRPC = {};
 
 const logger = require('../utils/logger')('google-trends');
 const request = require('request');
-const googleTrends = require('google-trends-api');
+const googleTrends = 'google-trends-api'; // removed package
 const CacheManager = require('cache-manager');
 
 var countryInfoBaseUrl = 'http://api.geonames.org/countryCodeJSON?',
