@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 const MetObjectCol = require('./database');
 const request = require('request');
 
-const headers = fs.readFileSync('./metobjects.headers', {encoding: 'utf8'})
+const headers = fs.readFileSync(__dirname + '/metobjects.headers', {encoding: 'utf8'})
     .trim()
     .split(',');
 
