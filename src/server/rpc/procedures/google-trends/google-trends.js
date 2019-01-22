@@ -1,6 +1,7 @@
 /**
  * The GoogleTrends Service provides access to the current Google trends.
  * For more information, check out https://trends.google.com/trends/.
+ * @deprecated
  * @service
  */
 const TrendsRPC = {};
@@ -81,5 +82,8 @@ TrendsRPC.byCountryCode = function (countryCode) {
 function showError(err, response) {
     response.json(err);
 }
+
+
+TrendsRPC.isSupported = () => false; // the provider is no longer providing this service
 
 module.exports = TrendsRPC;
