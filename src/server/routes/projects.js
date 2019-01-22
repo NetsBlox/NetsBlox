@@ -153,7 +153,7 @@ module.exports = [
             while (collision &&
                 collision._id.toString() !== projectId &&
                 !collision.deleteAt  // delete existing a little early
-                ) {
+            ) {
                 name = `${basename} (${i})`;
                 i++;
                 collision = projectsByName[name];
