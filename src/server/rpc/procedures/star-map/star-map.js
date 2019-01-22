@@ -79,16 +79,16 @@ module.exports = {
 
 
         if(isNaN(scale) || scale>32.0 || scale < 1.0/128.0) {
-            rsp.status(400).send('Error: arcseconds_per_pixel is out of range. Valid values are between 1/128 and 32');        
+            rsp.status(400).send('Error: arcseconds_per_pixel is out of range. Valid values are between 1/128 and 32');
         }
         else if(!right_ascension || !declination) {
-            rsp.status(400).send('Error: right_ascension and declination not specified');        
+            rsp.status(400).send('Error: right_ascension and declination not specified');
         }
         else if(!width || isNaN(width) || width>4096 || height < 1) {
-            rsp.status(400).send('Error: width must be between 1-4096, got ' + width);        
+            rsp.status(400).send('Error: width must be between 1-4096, got ' + width);
         }
         else if(!height || isNaN(height) || height>4096 || height < 1) {
-            rsp.status(400).send('Error: height must be between 1-4096, got ' + width);        
+            rsp.status(400).send('Error: height must be between 1-4096, got ' + width);
         } else {
             url = baseUrl+`/ImgCutout/getjpeg?ra=${right_ascension}&dec=${declination}&width=${width}&height=${height}&scale=${scale}&opt=${options}`;
 

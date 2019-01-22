@@ -83,7 +83,7 @@ AirConsumer.qualityIndexByZipCode = function(zipCode) {
             logger.error('Could not get air quality index: ', err);
 
             throw err;
-        }).then((r) => (r.length > 0? r[0]: -1));    
+        }).then((r) => (r.length > 0? r[0]: -1));
 };
 
 /**

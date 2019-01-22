@@ -19,7 +19,7 @@ if ( KEY && !KEY.startsWith('Bearer ')) KEY = 'Bearer ' + KEY;
 
 var options = {
     url: baseURL,
-    headers: { 
+    headers: {
         'Authorization': KEY,
         'gzip': true
     },
@@ -62,7 +62,7 @@ module.exports = {
         options.url = options.url + 'screen_name=' + screenName + '&count=' + count;
 
         // repeat as many times as necessary
-        var getTweets = () => { 
+        var getTweets = () => {
             request(options, (err, res, body) => {
                 // check if user has any tweets
                 if ( body.length < 1 ) {
@@ -208,7 +208,7 @@ module.exports = {
                 if (rateCheck(res, response)) {
                     return;
                 }
-                var oldestDate = new Date(body[body.length-1].created_at); 
+                var oldestDate = new Date(body[body.length-1].created_at);
                 var diffDays = Math.round(Math.abs((oldestDate.getTime() - dateToday.getTime())/(oneDay)));
                 return response.json(body.length / diffDays);
             } catch (err) {

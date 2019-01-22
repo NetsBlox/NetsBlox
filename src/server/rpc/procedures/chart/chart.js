@@ -39,7 +39,7 @@ function calcRanges(lines, isCategorical){
     if (!isCategorical){
         stats.x = {
             min: Number.MAX_VALUE, max: -1 * Number.MAX_VALUE
-        }; 
+        };
     }
     lines.forEach(line => {
 
@@ -149,7 +149,7 @@ chart.draw = function(lines, options){
         y: stats.y.range !== 0 ? stats.y.range * 0.05 : 1
     };
 
-    //TODO auto set to boxes if categorical? 
+    //TODO auto set to boxes if categorical?
 
     let opts = {title: options.title, xLabel: options.xLabel, yLabel: options.yLabel, isCategorical: options.isCategorical};
     opts.yRange = {min: stats.y.min - relativePadding.y, max: stats.y.max + relativePadding.y};

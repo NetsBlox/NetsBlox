@@ -36,7 +36,7 @@ function pointsToInlineData(points){
 
 // if sharing a column, using can be used to select which columns relate (x & y)
 // returns a plot command string
-function dataToPlot(data, opts){ 
+function dataToPlot(data, opts){
     let settings = [],
         points = '';
     data.forEach(line => {

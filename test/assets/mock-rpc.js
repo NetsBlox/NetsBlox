@@ -1,7 +1,7 @@
 // I should probably rename this. This is a wrapper for testing the RPC's
 'use strict';
 
-// RPCs now contain the methods 
+// RPCs now contain the methods
 var Constants = require('../../src/common/constants'),
     getArgsFor = require('../../src/server/server-utils').getArgumentsFor,
     MockResponse = require('./mock-response'),
