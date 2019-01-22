@@ -129,7 +129,7 @@ var isLoggedIn = function(req, res, next) {
     logger.trace(`checking if logged in ${Object.keys(req.cookies)}`);
     tryLogIn(req, res, (err, success) => {
         if (err) {
-            return next(err); // why is error acting like success?
+            return next(err);
         }
 
         if (success) {
