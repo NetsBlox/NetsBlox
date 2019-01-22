@@ -31,7 +31,7 @@ const KeyValueStore = {};
 
 /**
  * Get the stored value
- * @param {String} key Key value is associated with 
+ * @param {String} key Key value is associated with
  */
 KeyValueStore.get = function(key) {
     var keys = getKeys(key),
@@ -72,7 +72,7 @@ KeyValueStore.get = function(key) {
 /**
  * Set the stored value
  * @param {String} key Key to use for retrieving the variable
- * @param {Object} value Value to associated with key 
+ * @param {Object} value Value to associated with key
  */
 KeyValueStore.put = function(key, value) {
     var keys = getKeys(key),
@@ -152,7 +152,7 @@ KeyValueStore.parent = function(key) {
     if (keys.length) {
         keys.pop();
     }
-    
+
     return '/' + keys.join(SEP);
 };
 

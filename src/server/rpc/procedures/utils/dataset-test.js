@@ -6,7 +6,7 @@ test.getField = (input, fieldName) => {
             return valuePair[0] === fieldName;
         })[1]);
     }, []);
-    
+
     let sample = stringResult[0];
     if (+sample && (+sample).toString().length === sample.length) {
         return stringResult.map((input) => +input);
@@ -48,7 +48,7 @@ test.testValidDataset = (rawDataset) => {
             return 'At least one point has name different from xAxis or yAxis';
         }
     }
-    
+
     let yValue = test.getField(rawDataset, yAxis);
     if (yValue.find((value) => typeof value !== 'number') !== undefined) {
         return 'yAxis values are not valid number';
@@ -77,7 +77,7 @@ test.isMultipleDataset = (rawArray) => {
         }
         return numLayers(rawArray[0]) + 1;
     };
-    
+
     return numLayers(rawArray) === 4;
 };
 

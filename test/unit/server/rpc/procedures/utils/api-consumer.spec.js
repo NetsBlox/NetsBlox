@@ -5,7 +5,7 @@ describe('ApiConsumer', function(){
         testRpc = new RPCMock(apiConsumer),
         assert = require('assert');
 
-    
+
     describe('cache manager filestorage store', function(){
         it('should be able to save and read data to and from cache', done=>{
             let cache = testRpc._rpc._cache;
