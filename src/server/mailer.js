@@ -48,7 +48,7 @@ module.exports = {
         if (opts.attachments) { // replace/remove big attachments
             opts.attachments.forEach(data => {
                 if ((typeof data.content === 'string' && strSize(data.content) > MAX_SIZE)) {
-                    data.content = 'attachment too big';
+                    throw new Error(`attachment ${data.filename} too big`);
                 }
             });
         }
