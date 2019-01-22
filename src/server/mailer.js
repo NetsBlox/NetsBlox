@@ -45,8 +45,12 @@ module.exports = {
         if (!opts.from.includes('@')) {  // add domain
             opts.from += '@' + domain;
         }
-        if (opts.attachments) { // filter invalid/toobig attachments
-            opts.attachments = opts.attachments.filter(data => !(typeof data.content === 'string' && strSize(data.content) > MAX_SIZE));
+        if (opts.attachments) { // replace/remove big attachments
+            opts.attachments.forEach(data => {
+                if ((typeof data.content === 'string' && strSize(data.content) > MAX_SIZE)) {
+                    data.content = 'attachment too big';
+                }
+            });
         }
         return transporter.sendMail(opts);
     },
