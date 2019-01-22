@@ -39,7 +39,7 @@ const parser = parse({
 });
 
 parser.on('readable', async function(){
-    let record = this.read(); // skip the header row
+    let record;
     while (record = this.read()) {
         let obj = {};
         record.forEach((value, index) => {
@@ -74,7 +74,7 @@ async function start() {
     const inputFile = process.argv[2];
 
     const readStream = inputFile ?
-        fs.createReadStream(inputFile) :
+        fs.createReadStream(inputFile, {start: 1}):
         request('https://media.githubusercontent.com/media/metmuseum/openaccess/master/MetObjects.csv');
 
     readStream
