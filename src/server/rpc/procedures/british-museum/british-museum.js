@@ -193,7 +193,7 @@ britishmuseum.itemDetails = function(itemId){
             }
         }
         let sparqlObj = {};
-        sparqlJson.results.bindings.forEach(it => { 
+        sparqlJson.results.bindings.forEach(it => {
             sparqlObj[it.pred.value] = setOrAppend(sparqlObj[it.pred.value], it.sub.value);
         });
 

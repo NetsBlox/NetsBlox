@@ -1,6 +1,6 @@
 /*
  * Author: Miklos Maroti <mmaroti@gmail.com>
- * 
+ *
  * Robot to server messages:
  *  mac_addr[6] time[4] 'I': identification, sent every second
  *  mac_addr[6] time[4] 'S' left[2] right[2]: driving speed response
@@ -13,7 +13,7 @@
  *  mac_addr[6] time[4] 'L' led[1] cmd[1]: LED state change
  *  mac_addr[6] time[4] 'F' bits[1]: infra red detection event
  *  mac_addr[6] time[4] 'G' msec[2] pwr[1]: send infra red light
- * 
+ *
  * Server to robot messages:
  *  'S' left[2] right[2]: set driving speed
  *  'B' msec[2] tone[2]: beep
@@ -22,10 +22,10 @@
  *  'D' left[2] right[2]: drive certain distance
  *  'L' led[1] state[1]: change LED state
  *  'G' msec[2] pwr[1]: send infra red light
- * 
+ *
  * Environment variables:
  *  ROBOSCAPE_PORT: set it to the UDP port (1973) to enable this module
- *  ROBOSCAPE_MODE: sets the NetsBlox interface type, can be "security", 
+ *  ROBOSCAPE_MODE: sets the NetsBlox interface type, can be "security",
  *      "native" or "both" (default)
  */
 
@@ -539,7 +539,7 @@ Robot.prototype.resetEncryption = function () {
 };
 
 /*
- * RoboScape - This constructor is called on the first 
+ * RoboScape - This constructor is called on the first
  * request to an RPC from a given room.
  * @constructor
  * @return {undefined}

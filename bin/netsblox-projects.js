@@ -24,7 +24,7 @@ const buffer = (word, len) => {
 storage.connect()
     .then(() => {
         logger.trace('About to print projects for ' + program.args[0]);
-        
+
         return Projects.getAllRawUserProjects(program.args[0]);
     })
     .then(projects => {

@@ -50,7 +50,6 @@
     "fs-extra": "^7.0.1",
     "geolib": "^2.0.18",
     "gnuplot": "^0.3.1",
-    "google-trends-api": "^3.0.1",
     "jade": "^1.9.2",
     "jimp": "^0.2.28",
     "json-query": "^2.2.2",

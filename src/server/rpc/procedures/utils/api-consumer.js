@@ -92,7 +92,7 @@ class ApiConsumer {
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
         parameters.push(fullUrl);
 
-        // NOTE: It is possible that an RPC will be made with a non-text request body, preventing this from generating a cache key. 
+        // NOTE: It is possible that an RPC will be made with a non-text request body, preventing this from generating a cache key.
         // Please override this method if you are developing an RPC with a body that will not stringify properly
         if (queryOptions.body) parameters.push(JSON.stringify(queryOptions.body));
         return parameters.join(' ');

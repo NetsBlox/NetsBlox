@@ -88,7 +88,7 @@ GeoLocationRPC.geolocate = function (address) {
         });
 };
 
-/** 
+/**
  * Get the name of the city nearest to the given latitude and longitude.
  *
  * @param {Latitude} latitude latitude of the target location
@@ -151,7 +151,7 @@ GeoLocationRPC.info = function (latitude, longitude) {
 
 /**
  * Find places near an earth coordinate (latitude, longitude) (maximum of 10 results)
- * @param {Latitude} latitude 
+ * @param {Latitude} latitude
  * @param {Longitude} longitude
  * @param {String=} keyword the keyword you want to search for, like pizza or cinema.
  * @param {Number=} radius search radius in meters (50km)
