@@ -52,15 +52,15 @@ MetMuseum.fields = function() {
  * Search the Metropolitan Museum of Art
  * @param {String} field field to search in
  * @param {String} query text query to look for
- * @param {Number=} offset limit the number of returned results (maximum of 50)
+ * @param {Number=} page used to paginate the results, in conjunction with limit
  * @param {Number=} limit limit the number of returned results (maximum of 50)
  * @returns {Array} results
  */
-MetMuseum.advancedSearch = async function(field, query, offset, limit) {
+MetMuseum.advancedSearch = async function(field, query, page, limit) {
     // prepare and check the input
     field = toTitleCase(field);
     if (!headers.find(attr => attr === field)) throw new Error('bad field name');
-    if (offset === '') offset = 0;
+    if (page === '') page = 0;
     if (limit === '') limit = 10;
     limit = Math.min(limit, 50); // limit the max requested documents
 
@@ -69,7 +69,7 @@ MetMuseum.advancedSearch = async function(field, query, offset, limit) {
     let dbQuery = {};
     dbQuery[field] = new RegExp(`.*${query}.*`, 'i');
 
-    let res = await MetObject.find(dbQuery).skip(offset).limit(limit);
+    let res = await MetObject.find(dbQuery).skip(page).limit(limit);
 
     return res.map(cleanDbRec);
 };
