@@ -309,7 +309,13 @@ module.exports = [
             const {roleId, projectId} = req.body;
             const project = await Projects.getById(projectId);
             const [client] = NetworkTopology.getSocketsAt(projectId, roleId);
-            const roleName = project.roles[roleId].ProjectName;
+            const role = project.roles[roleId];
+            if (!role) {
+                res.status(500).send(`no role with ID ${roleId}`);
+                this._logger.error(`user requested cloning a role with bad ID: ${roleId}`);
+                return;
+            }
+            const roleName = role.ProjectName;
 
             if (client) {  // Try to request the latest
                 try {
