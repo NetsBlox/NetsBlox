@@ -24,11 +24,20 @@ if [ -z $initial_pid ]; then
     sleep 0.5
   done
   npx mocha-chrome http://localhost:$port/test --chrome-flags '["--no-sandbox"]'
-  exit_code=$?
+  main_ec=$?
+  npx mocha-chrome http://localhost:$port/test/multi --chrome-flags '["--no-sandbox"]'
+  multi_ec=$?
   kill %1 # shutdown netsblox server (job id 1)
 else
   echo "server is already up with pid '$initial_pid'"
   npx mocha-chrome http://localhost:$port/test --chrome-flags '["--no-sandbox"]'
-  exit_code=$?
+  main_ec=$?
+  npx mocha-chrome http://localhost:$port/test/multi --chrome-flags '["--no-sandbox"]'
+  multi_ec=$?
 fi
-exit $exit_code
+
+if [ $main_ec -ne 0 ] || [ $multi_ec -ne 0 ]; then
+  exit 1 # error
+else
+  exit 0 # clean exit
+fi
