@@ -97,7 +97,7 @@ MetMuseum.getInfo = async function(id) {
  * @param {Number} id object id
  * @returns {Array} List of images
  */
-MetMuseum.getImages = async function(id) {
+MetMuseum.getImageUrls = async function(id) {
 
     let object =  await MetObject.findOne({'Object ID': `${id}`});
 
@@ -123,6 +123,15 @@ MetMuseum.getImages = async function(id) {
     return this._sendStruct(queryOpts, parserFn);
 };
 
+
+/**
+ * Retrieves the image from the url
+ * @param {String} url image url
+ * @returns {Object} costume
+ */
+MetMuseum.getImage = function(url) {
+    return this._sendImage({queryString: '', baseUrl:url});
+};
 
 const featuredFields = [
     'Country',
