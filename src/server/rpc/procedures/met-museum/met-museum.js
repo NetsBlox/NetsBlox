@@ -94,6 +94,7 @@ MetMuseum.getInfo = async function(id) {
 
 /**
  * Retrieves the image links for a public domain object
+ * Note: use costume loader library to load the images.
  * @param {Number} id object id
  * @returns {Array} List of images
  */
@@ -123,15 +124,6 @@ MetMuseum.getImageUrls = async function(id) {
     return this._sendStruct(queryOpts, parserFn);
 };
 
-
-/**
- * Retrieves the image from the url
- * @param {String} url image url
- * @returns {Object} costume
- */
-MetMuseum.getImage = function(url) {
-    return this._sendImage({queryString: '', baseUrl:url});
-};
 
 const featuredFields = [
     'Country',
