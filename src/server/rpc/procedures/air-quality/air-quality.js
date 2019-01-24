@@ -17,7 +17,7 @@ const logger = require('../utils/logger')('air-quality'),
     fs = require('fs'),
     geolib = require('geolib');
 
-const AirConsumer = new ApiConsumer('air-quality', `http://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&API_KEY=${API_KEY}`,{cache: {ttl: 30*60}});
+const AirConsumer = new ApiConsumer('AirQuality', `http://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&API_KEY=${API_KEY}`,{cache: {ttl: 30*60}});
 
 var reportingLocations = (function() {  // Parse csv
     var locationPath = path.join(__dirname, 'air-reporting-locations.csv'),
@@ -97,8 +97,6 @@ AirConsumer.aqi = function(latitude, longitude) {
     // For backwards compatibility, RPC had duplicate methods
     return this.qualityIndex(latitude, longitude);
 };
-
-AirConsumer.serviceName = 'AirQuality';
 
 AirConsumer.COMPATIBILITY = {
     path: 'air',

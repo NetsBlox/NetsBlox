@@ -9,7 +9,7 @@ const ApiConsumer = require('../utils/api-consumer'),
     gnuPlot = require('./node-gnuplot.js'),
     _ = require('lodash');
 
-let chart = new ApiConsumer('chart');
+let chart = new ApiConsumer('Chart');
 
 const defaults = {
     title: undefined,

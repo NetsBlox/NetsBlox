@@ -199,8 +199,6 @@ var personCredits = function(id, field, subfield) {
 };
 
 
-MovieDB.serviceName = 'MovieDB';
-
 /**
  * Find information about a movie
  * @param {String} title Title of movie

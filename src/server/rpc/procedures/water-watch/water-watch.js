@@ -4,7 +4,7 @@
  * @service
  */
 const ApiConsumer = require('../utils/api-consumer'),
-    waterwatch = new ApiConsumer('waterwatch','https://waterservices.usgs.gov/nwis/iv/?');
+    waterwatch = new ApiConsumer('WaterWatch','https://waterservices.usgs.gov/nwis/iv/?');
 
 
 // turn an options object into query friendly string
