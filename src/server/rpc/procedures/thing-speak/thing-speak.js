@@ -6,7 +6,7 @@
  * @service
  */
 const ApiConsumer = require('../utils/api-consumer');
-const thingspeakIoT = new ApiConsumer('thingspeakIoT',
+const thingspeakIoT = new ApiConsumer('Thingspeak',
     'https://api.thingspeak.com/channels/');
 const rpcUtils = require('../utils');
 

@@ -10,7 +10,7 @@
 var key = process.env.GOOGLE_MAPS_KEY;
 
 const ApiConsumer = require('../utils/api-consumer');
-const GoogleStreetView = new ApiConsumer('google-streetview', 'https://maps.googleapis.com/maps/api/streetview',{cache: {ttl: 7*24*60*60}});
+const GoogleStreetView = new ApiConsumer('GoogleStreetView', 'https://maps.googleapis.com/maps/api/streetview',{cache: {ttl: 7*24*60*60}});
 
 GoogleStreetView.isSupported = () => {
     if(!key){
@@ -141,7 +141,5 @@ GoogleStreetView.isAvailableFromAddress = function(location, fieldofview, headin
     return this._sendStruct(queryOpts, parserFn);
 };
 
-
-GoogleStreetView.serviceName = 'GoogleStreetView';
 
 module.exports = GoogleStreetView;

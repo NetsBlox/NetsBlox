@@ -6,7 +6,7 @@
 'use strict';
 
 const ApiConsumer = require('../utils/api-consumer');
-const Trivia = new ApiConsumer('trivia', 'http://jservice.io/api',{cache: {ttl: 0.5}});
+const Trivia = new ApiConsumer('Trivia', 'http://jservice.io/api',{cache: {ttl: 0.5}});
 
 /**
  * Get a random trivia question.
