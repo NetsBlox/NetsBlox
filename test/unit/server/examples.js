@@ -23,9 +23,9 @@ describe('examples', function() {
             assert(EXAMPLES.Movies.services.includes('MovieDB'));
         });
 
-        it('test GoogleTrends examples', function(){
-            assert(EXAMPLES.GoogleTrends.services.includes('GoogleTrends'));
-            assert(EXAMPLES.GoogleTrends.services.includes('staticmap'));
+        it('test AirQuality examples', function(){
+            assert(EXAMPLES.AirQuality.services.includes('staticmap'));
+            assert(EXAMPLES.AirQuality.services.includes('geolocation'));
         });
 
         it('test Quizzer examples', function(){
