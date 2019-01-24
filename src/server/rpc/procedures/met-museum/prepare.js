@@ -22,10 +22,10 @@ function calcStats(records) {
         return [attr, count];
     });
     availability.sort((a, b) => a[1] < b[1] ? -1 : 1);
-    console.log(availability);
     return availability;
 }
 
+/* eslint-disable no-console*/
 async function batchProcess(records) {
     console.log(`saving ${records.length} records to the database..`);
     await MetObjectCol.insertMany(records);
@@ -39,13 +39,12 @@ const parser = parse({
 });
 
 parser.on('readable', async function(){
-    let record;
-    while (record = this.read()) {
+    let record = this.read();
+    while (record) {
         let obj = {};
         record.forEach((value, index) => {
             if (value !== '') {
                 value = value.trim();
-                // TODO parse to appropriate datatype
                 obj[headers[index]] = value;
             }
         });
@@ -54,6 +53,7 @@ parser.on('readable', async function(){
             await batchProcess(recordsBatch);
             recordsBatch = [];
         }
+        record = this.read();
         recCounter++;
     }
 });
@@ -67,6 +67,7 @@ parser.on('end', async function(){
     console.log(`finished processing ${recCounter} records`);
     mongoose.disconnect();
 });
+/* eslint-enable no-console*/
 
 
 async function start() {
