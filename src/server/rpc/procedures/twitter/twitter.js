@@ -16,7 +16,7 @@ if (KEY && !KEY.startsWith('Bearer ')) KEY = 'Bearer ' + KEY;
 
 const TwitterConsumer = new ApiConsumer('twitter', 'https://api.twitter.com/1.1/', {
     cache: {
-        ttl: 5 * 60
+        ttl: 30
     }
 });
 
