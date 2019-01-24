@@ -24,7 +24,7 @@ var MockRPC = function(RPC, raw) {
     this.response = new MockResponse();
     this.request = new MockRequest();
 
-    this.rpcName = this._rpc.rpcName;
+    this.serviceName = this._rpc.serviceName;
 };
 
 MockRPC.prototype.getNewSocket = function() {
