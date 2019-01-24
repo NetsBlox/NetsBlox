@@ -36,7 +36,6 @@ describe('met-museum', function() {
     utils.verifyRPCInterfaces(metMuseumMock, [
         ['getInfo', ['id']],
         ['getImageUrls', ['id']],
-        ['getImage', ['url']],
         ['advancedSearch', ['field', 'query', 'page', 'limit']],
         ['fields', []],
         ...autoGenInterface,
