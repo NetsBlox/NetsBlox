@@ -14,17 +14,6 @@ const headers = fs.readFileSync(__dirname + '/metobjects.headers', {encoding: 'u
 
 let recCounter = 0;
 
-
-// counts and sorts the most common attributes in the dataset
-function calcStats(records) {
-    let availability = headers.map(attr => {
-        let count = records.filter(rec => rec[attr] && rec[attr] !== '').length;
-        return [attr, count];
-    });
-    availability.sort((a, b) => a[1] < b[1] ? -1 : 1);
-    return availability;
-}
-
 /* eslint-disable no-console*/
 async function batchProcess(records) {
     console.log(`saving ${records.length} records to the database..`);
