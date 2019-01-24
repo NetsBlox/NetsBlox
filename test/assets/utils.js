@@ -173,7 +173,7 @@ const sleep = delay => {
 
 module.exports = {
     verifyRPCInterfaces: function(rpc, interfaces) {
-        describe(`${rpc.rpcName} interfaces`, function() {
+        describe(`${rpc.serviceName} interfaces`, function() {
             interfaces.forEach(interface => {
                 var name = interface[0],
                     expected = interface[1] || [];
