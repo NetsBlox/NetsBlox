@@ -8,7 +8,7 @@
 const fs = require('fs');
 const MetObject = require('./database.js');
 const ApiConsumer = require('../utils/api-consumer');
-const MetMuseum = new ApiConsumer('metmuseum', 'https://collectionapi.metmuseum.org/public/collection/v1', {cache: {ttl: 5*60}});
+const MetMuseum = new ApiConsumer('MetMuseum', 'https://collectionapi.metmuseum.org/public/collection/v1', {cache: {ttl: 5*60}});
 
 
 function toTitleCase(text) {
@@ -38,6 +38,15 @@ function cleanDbRec(rec) {
 const headers = fs.readFileSync(__dirname + '/metobjects.headers', {encoding: 'utf8'})
     .trim()
     .split(',');
+
+async function getMetObject(id) {
+    let dbQuery = {
+        'Object ID': id
+    };
+    let rec = await MetObject.findOne(dbQuery);
+    if (!rec) throw new Error(`could not find an object with ID: ${id}`);
+    return cleanDbRec(rec);
+}
 
 /**
  * Get a list of available attributes for museum's objects
@@ -82,13 +91,7 @@ MetMuseum.advancedSearch = async function(field, query, page, limit) {
  */
 MetMuseum.getInfo = async function(id) {
     // could be updated to get info from museum's end point after it becomes stable
-    let dbQuery = {
-        'Object ID': id
-    };
-
-    let rec = await MetObject.findOne(dbQuery);
-
-    return cleanDbRec(rec);
+    return await getMetObject(id);
 };
 
 
@@ -100,10 +103,10 @@ MetMuseum.getInfo = async function(id) {
  */
 MetMuseum.getImageUrls = async function(id) {
 
-    let object =  await MetObject.findOne({'Object ID': `${id}`});
+    let object =  await getMetObject(id);
 
     if (object['Is Public Domain'] !== 'True') {
-        throw new Error(`Object ${id} is not public domain.`);
+        throw new Error(`object ${id} is not public domain.`);
     }
 
     const queryOpts = {
