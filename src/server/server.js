@@ -330,13 +330,9 @@ Server.prototype.stop = function(done) {
     this._server.close(done);
 };
 
-Server.prototype.createRouter = function() {
-    var router = express.Router({mergeParams: true}),
-        logger = this._logger.fork('api'),
-        routes;
-
-    // Load the routes from routes/
-    routes = fs.readdirSync(path.join(__dirname, 'routes'))
+// Load the routes from routes/ dir
+function loadRoutes(logger) {
+    const routes = fs.readdirSync(path.join(__dirname, 'routes'))
         .filter(name => path.extname(name) === '.js')  // Only read js files
         .filter(name => name !== 'middleware.js')  // ignore middleware file
         .map(name => __dirname + '/routes/' + name)  // Create the file path
@@ -345,6 +341,14 @@ Server.prototype.createRouter = function() {
             return require(filePath);
         })  // Load the routes
         .reduce((prev, next) => prev.concat(next), []);  // Merge all routes
+    return routes;
+}
+
+Server.prototype.createRouter = function() {
+    var router = express.Router({mergeParams: true}),
+        logger = this._logger.fork('api');
+
+    const routes = loadRoutes(logger);
 
     middleware.init(this);
 
