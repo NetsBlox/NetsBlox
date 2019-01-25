@@ -14,7 +14,8 @@ class ApiConsumer {
     constructor(name, baseUrl, opts) {
         // or set opts like this: { cache } = { }
         // must be a urlfriendly name
-        this._name = name;
+        if (!(/^[a-z0-9-]+$/i.test(name))) throw new Error(`service name ${name} must be a combination of characters, numbers, and "-"`);
+        this.serviceName = name;
         // set the defaults for the options
         opts = _.merge({
             cache: {
@@ -24,10 +25,10 @@ class ApiConsumer {
         },opts);
         if (!fs.existsSync(opts.cache.path)) fs.mkdirSync(opts.cache.path);
         this._baseUrl = baseUrl;
-        this._logger = newLogger(this._name);
+        this._logger = newLogger(this.serviceName);
         // setup api endpoint
         this.COMPATIBILITY = {
-            path: this._name
+            path: this.serviceName
         };
         this._remainingMsgs = {};
         // setup cache. maxsize is in bytes, ttl in seconds
@@ -36,7 +37,7 @@ class ApiConsumer {
             options: {
                 ttl: opts.cache.ttl,
                 maxsize: 1024*1000*100,
-                path: opts.cache.path + '/' + this._name,
+                path: opts.cache.path + '/' + this.serviceName,
                 preventfill: false,
                 reviveBuffers: true
             }
@@ -91,7 +92,10 @@ class ApiConsumer {
         parameters.push(queryOptions.method || 'GET');
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
         parameters.push(fullUrl);
-        if (queryOptions.body) parameters.push(queryOptions.body);
+
+        // NOTE: It is possible that an RPC will be made with a non-text request body, preventing this from generating a cache key.
+        // Please override this method if you are developing an RPC with a body that will not stringify properly
+        if (queryOptions.body) parameters.push(JSON.stringify(queryOptions.body));
         return parameters.join(' ');
     }
 

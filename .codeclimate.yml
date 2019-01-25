@@ -11,7 +11,7 @@ checks:
       threshold: 500
   method-complexity:
     config:
-      threshold: 5
+      threshold: 10
   method-count:
     config:
       threshold: 20
@@ -35,6 +35,7 @@ plugins:
     enabled: true
   eslint:
     enabled: true
+    channel: eslint-5
   fixme:
     enabled: true
   duplication:

@@ -7,7 +7,7 @@
  */
 
 const ApiConsumer = require('../utils/api-consumer');
-const StockConsumer = new ApiConsumer('iex-trading', 'https://api.iextrading.com/1.0',{cache: {ttl: 5*60}});
+const StockConsumer = new ApiConsumer('IEXTrading', 'https://api.iextrading.com/1.0',{cache: {ttl: 5*60}});
 const rewordError = err => {
     if (err.statusCode === 404) {
         return 'Unknown company symbol';
@@ -21,7 +21,7 @@ const rewordError = err => {
  */
 StockConsumer.currentPrice = function(companySymbol) {
     companySymbol = companySymbol.toUpperCase();
-    
+
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.latestPrice')
         .catch(err => {
             const prettyError = rewordError(err);
@@ -93,7 +93,7 @@ StockConsumer.companyInformation = function(companySymbol) {
 */
 StockConsumer.dailyPercentChange = function(companySymbol) {
     companySymbol = companySymbol.toUpperCase();
-    
+
     return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.changePercent')
         .catch(err => {
             const prettyError = rewordError(err);
@@ -126,7 +126,5 @@ StockConsumer.historicalClosingPrices = function(companySymbol, range) {
         });
 };
 
-
-StockConsumer.serviceName = 'IEXTrading';
 
 module.exports = StockConsumer;

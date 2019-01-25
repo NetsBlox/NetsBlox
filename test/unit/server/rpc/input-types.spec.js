@@ -133,6 +133,42 @@ describe('RPC Input Types', function() {
             });
         });
 
+
+
+        describe('BoundedString', function() {
+            const type = 'BoundedString';
+
+            it('should include minimum length', () => {
+                let rawInput = 'a';
+                typesParser[type](rawInput, 1, 180);
+            });
+
+            it('should not throw if within range', () => {
+                let rawInput = 'abc';
+                typesParser[type](rawInput, 2, 180);
+            });
+
+            it('should throw if less than min', () => {
+                let rawInput = 'a';
+                assert.throws(() => typesParser[type](rawInput, 4, 180), /4/);
+            });
+
+            it('should throw if more than max', () => {
+                let rawInput = 'abcdefg';
+                assert.throws(() => typesParser[type](rawInput, 2, 4), /4/);
+            });
+
+            it('should throw if below minimum (w/o max)', () => {
+                let rawInput = 'abc';
+                assert.throws(() => typesParser[type](rawInput, 5), /5/);
+            });
+
+            it('should accept if above minimum (w/o max)', () => {
+                const rawInput = 'abcdefg';
+                typesParser[type](rawInput, 5);
+            });
+        });
+
     });
 
 });

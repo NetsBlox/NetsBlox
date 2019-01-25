@@ -34,7 +34,7 @@ MockSocket.prototype.terminate = function() {
     this.emit('close');
 };
 
-/////////////////////////// test helpers /////////////////////////// 
+/////////////////////////// test helpers ///////////////////////////
 MockSocket.prototype.addResponse = function(type, fn) {
     this._responders[type] = fn;
 };

@@ -8,5 +8,5 @@ describe('serialization', function() {
         .filter(file => path.extname(file) === '.xml')
         .map(file => [file, fs.readFileSync(path.join(libPath, file), 'utf8')])
         .forEach(pair => it(`should parse ${pair[0]}`, utils.canLoadXml.bind(null, pair[1])));
-    
+
 });

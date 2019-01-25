@@ -7,8 +7,8 @@ var R = require('ramda'),
     UserAPI = require('./users'),
     RoomAPI = require('./rooms'),
     ProjectAPI = require('./projects'),
-    debug = require('debug'),
-    log = debug('netsblox:api:log'),
+    Logger = require('../logger'),
+    logger = new Logger('netsblox:api:log'),
     middleware = require('./middleware');
 
 const NetworkTopology = require('../network-topology');
@@ -40,7 +40,7 @@ module.exports = [
         Method: 'get',
         URL: 'ResetPW',
         Handler: function(req, res) {
-            log('password reset request:', req.query.Username);
+            logger.log('password reset request:', req.query.Username);
             var self = this,
                 username = req.query.Username;
 
@@ -52,21 +52,21 @@ module.exports = [
                         user.save();
                         return res.sendStatus(200);
                     } else {
-                        log('Could not find user to reset password (user "'+username+'")');
+                        logger.log('Could not find user to reset password (user "'+username+'")');
                         return res.status(400).send('ERROR: could not find user "'+username+'"');
                     }
                 })
                 .catch(e => {
-                    log('Server error when looking for user: "'+username+'". Error:', e);
+                    logger.log('Server error when looking for user: "'+username+'". Error:', e);
                     return res.status(500).send('ERROR: ' + e);
                 });
         }
     },
-    { 
+    {
         Method: 'post',  // post would make more sense...
         URL: 'SignUp',
         Handler: function(req, res) {
-            log('Sign up request:', req.body.Username, req.body.Email);
+            logger.log('Sign up request:', req.body.Username, req.body.Email);
             var self = this,
                 uname = req.body.Username,
                 password = req.body.Password,
@@ -74,7 +74,7 @@ module.exports = [
 
             // Must have an email and username
             if (!email || !uname) {
-                log('Invalid request to /SignUp');
+                logger.log('Invalid request to /SignUp');
                 return res.status(400).send('ERROR: need both username and email!');
             }
 
@@ -92,22 +92,22 @@ module.exports = [
                         newUser.save();
                         return res.send('User Created!');
                     }
-                    log('User "'+uname+'" already exists. Could not make new user.');
+                    logger.log('User "'+uname+'" already exists. Could not make new user.');
                     return res.status(401).send('ERROR: user exists');
                 });
         }
     },
-    { 
+    {
         Method: 'post',
         URL: 'SignUp/validate',
         Handler: function(req, res) {
-            log('Signup/validate request:', req.body.Username, req.body.Email);
+            logger.log('Signup/validate request:', req.body.Username, req.body.Email);
             var uname = req.body.Username,
                 email = req.body.Email;
 
             // Must have an email and username
             if (!email || !uname) {
-                log('Invalid request to /SignUp/validate');
+                logger.log('Invalid request to /SignUp/validate');
                 return res.status(400).send('ERROR: need both username and email!');
             }
 
@@ -116,7 +116,7 @@ module.exports = [
                     if (!user) {
                         return res.send('Valid User Signup Request!');
                     }
-                    log('User "'+uname+'" already exists.');
+                    logger.log('User "'+uname+'" already exists.');
                     return res.status(401).send('ERROR: user exists');
                 });
         }
@@ -190,7 +190,7 @@ module.exports = [
             try {
                 await middleware.login(req, res);
             } catch (err) {
-                log(`Login failed for "${username}": ${err}`);
+                logger.log(`Login failed for "${username}": ${err}`);
                 if (req.body.silent) {
                     return res.sendStatus(204);
                 } else {

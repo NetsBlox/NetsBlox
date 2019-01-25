@@ -4,7 +4,7 @@ describe('chart', function() {
         RPCMock = require('../../../../../assets/mock-rpc'),
         chart = new RPCMock(Chart),
         assert = require('assert');
-    
+
     utils.verifyRPCInterfaces(chart,[
         ['draw', ['lines', 'options']],
         ['defaultOptions', []],

@@ -3,9 +3,8 @@
 const _ = require('lodash');
 var Utils = _.extend(require('../utils'), require('../server-utils.js')),
 
-    debug = require('debug'),
-    log = debug('netsblox:api:rooms:log'),
-    warn = debug('netsblox:api:rooms:warn'),
+    Logger = require('../logger'),
+    logger = new Logger('netsblox:api:rooms'),
     utils = require('../server-utils'),
     NetworkTopology = require('../network-topology'),
     Projects = require('../storage/projects'),
@@ -65,7 +64,7 @@ module.exports = [
             // Add better auth!
             // TODO
             const project = await Projects.getById(projectId);
-            log(`removing collaborator ${userId} from project ${project.uuid()}`);
+            logger.log(`removing collaborator ${userId} from project ${project.uuid()}`);
             await project.removeCollaborator(userId);
 
             await NetworkTopology.onRoomUpdate(projectId);
@@ -82,7 +81,7 @@ module.exports = [
             const {evictedClientId, projectId} = req.body;
             const socket = NetworkTopology.getSocket(evictedClientId);
 
-            log(`evicting ${evictedClientId} from ${projectId}`);
+            logger.log(`evicting ${evictedClientId} from ${projectId}`);
             if (!socket) {  // user is not online
                 const err = `${evictedClientId} is not connected.`;
                 this._logger.warn(err);
@@ -97,7 +96,7 @@ module.exports = [
             }
 
             // Remove the user from the room!
-            log(`evicted ${evictedClientId} from ${projectId}`);
+            logger.log(`evicted ${evictedClientId} from ${projectId}`);
             socket.onEvicted();
             return NetworkTopology.onRoomUpdate(projectId)
                 .then(state => res.json(state));
@@ -125,7 +124,7 @@ module.exports = [
                 projectId
             ].join('-');
 
-            log(`${inviter} is inviting ${invitee} to ${roleId} at ${projectId}`);
+            logger.log(`${inviter} is inviting ${invitee} to ${roleId} at ${projectId}`);
 
             // Record the invitation
             invites[inviteId] = {
@@ -138,12 +137,12 @@ module.exports = [
             return Projects.getRawProjectById(projectId)
                 .then(metadata => {
                     if (!metadata) {
-                        log('guest invitation failed: project not found');
+                        logger.log('guest invitation failed: project not found');
                         return res.status(400).send('Project not found');
                     }
 
                     if (!metadata.roles[roleId]) {
-                        log('guest invitation failed: role not found');
+                        logger.log('guest invitation failed: role not found');
                         return res.status(400).send('Role not found');
                     }
 
@@ -207,7 +206,7 @@ module.exports = [
             // Ignore if the invite no longer exists
 
             if (invite) {
-                log(`${username} ${response ? 'accepted' : 'denied'} ` +
+                logger.log(`${username} ${response ? 'accepted' : 'denied'} ` +
                     `invitation (${id}) for ${invite.role} at ${invite.room}`);
             }
 
@@ -215,7 +214,7 @@ module.exports = [
                 return Projects.getById(projectId)
                     .then(project => {
                         if (!project) {
-                            warn(`room no longer exists "${invite.room} ${JSON.stringify(invites)}`);
+                            logger.warn(`room no longer exists "${invite.room} ${JSON.stringify(invites)}`);
                             throw new Error('project is no longer open');
                         }
 
@@ -310,7 +309,13 @@ module.exports = [
             const {roleId, projectId} = req.body;
             const project = await Projects.getById(projectId);
             const [client] = NetworkTopology.getSocketsAt(projectId, roleId);
-            const roleName = project.roles[roleId].ProjectName;
+            const role = project.roles[roleId];
+            if (!role) {
+                res.status(500).send(`no role with ID ${roleId}`);
+                this._logger.error(`user requested cloning a role with bad ID: ${roleId}`);
+                return;
+            }
+            const roleName = role.ProjectName;
 
             if (client) {  // Try to request the latest
                 try {
@@ -342,7 +347,7 @@ module.exports = [
                 inviteId = ['collab', inviter, invitee, projectId, Date.now()].join('-'),
                 inviteeSockets = NetworkTopology.socketsFor(invitee);
 
-            log(`${inviter} is inviting ${invitee} to ${projectId}`);
+            logger.log(`${inviter} is inviting ${invitee} to ${projectId}`);
 
             // Record the invitation
             invites[inviteId] = {
@@ -399,7 +404,7 @@ module.exports = [
                 return res.status(500).send('ERROR: invite no longer exists');
             }
 
-            log(`${username} ${response ? 'accepted' : 'denied'} ` +
+            logger.log(`${username} ${response ? 'accepted' : 'denied'} ` +
                 `collab invitation for ${invite.role} at ${invite.room}`);
 
             delete invites[inviteId];
@@ -408,7 +413,7 @@ module.exports = [
                 // TODO: update the inviter...
                 // Add the given user as a collaborator
                 const {projectId} = invite;
-                log(`project is not open "${projectId}`);
+                logger.log(`project is not open "${projectId}`);
                 return Projects.getById(projectId)
                     .then(project => {
                         if (project) {
@@ -428,7 +433,7 @@ module.exports = [
 });
 
 function getFriendSockets(user) {
-    log(`${user.username} requested friend list`);
+    logger.log(`${user.username} requested friend list`);
 
     return user.getGroupMembers()
         .then(usernames => {

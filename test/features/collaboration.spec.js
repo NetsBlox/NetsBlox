@@ -32,8 +32,8 @@ describe('collaboration', function() {
         });
 
         it('should block conflicting actions', async function() {
-            await p1._socket.receive({type: 'user-action', action:{id: 2}})
-            await p1._socket.receive({type: 'user-action', action:{id: 1}})
+            await p1._socket.receive({type: 'user-action', action:{id: 2}});
+            await p1._socket.receive({type: 'user-action', action:{id: 1}});
             let actions = p1._socket.messages().filter(msg => msg.type === 'user-action');
             assert.equal(actions.length, 1);
         });
@@ -117,7 +117,7 @@ describe('collaboration', function() {
         });
 
         it('should not return actions from unsaved roles', async function() {
-            const firstRoleId = user.roleId
+            const firstRoleId = user.roleId;
             const roleId = await project.getRoleId('role2');
             // Remove the client from the given role
             await NetworkTopology.setClientState(user.uuid, user.projectId, roleId, user.username);

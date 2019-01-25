@@ -1,19 +1,25 @@
 /**
  * The GoogleTrends Service provides access to the current Google trends.
  * For more information, check out https://trends.google.com/trends/.
+ * @deprecated
  * @service
  */
 const TrendsRPC = {};
 
 const logger = require('../utils/logger')('google-trends');
 const request = require('request');
-const googleTrends = require('google-trends-api');
+const googleTrends = 'google-trends-api'; // removed package
 const CacheManager = require('cache-manager');
 
-var countryInfoBaseUrl = 'http://ws.geonames.org/countryCodeJSON?',
+var countryInfoBaseUrl = 'http://api.geonames.org/countryCodeJSON?',
     cache = CacheManager.caching({store: 'memory', max: 1000, ttl: 36000}),
     geoNamesUsername = process.env.GOOGLE_TRENDS_USERNAME || 'hamidzr';
 
+/**
+ * Get trends information at a location
+ * @param {Latitude} latitude Latitude of location
+ * @param {Longitude} longitude Longitude of location
+ */
 TrendsRPC.byLocation = function (latitude, longitude) {
     // get location data eg: country, language
     // or we can use geocoder package
@@ -39,7 +45,10 @@ TrendsRPC.byLocation = function (latitude, longitude) {
     return null;  // explicitly return null since async
 };
 
-
+/**
+ * Get trends information for a country
+ * @param {String} countryCode Abbreviation of country to search
+ */
 TrendsRPC.byCountryCode = function (countryCode) {
     let response = this.response;
 
@@ -73,5 +82,8 @@ TrendsRPC.byCountryCode = function (countryCode) {
 function showError(err, response) {
     response.json(err);
 }
+
+
+TrendsRPC.isSupported = () => false; // the provider is no longer providing this service
 
 module.exports = TrendsRPC;

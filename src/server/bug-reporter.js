@@ -113,7 +113,8 @@ BugReporter.prototype.reportClientBug = function(socket, report) {
         .then(roomState => {
             report.room = roomState;
             return this.reportBug(subject, body, data);
-        });
+        })
+        .catch(err => logger.error(err));
 };
 
 BugReporter.prototype.getRoomState = function(socket) {

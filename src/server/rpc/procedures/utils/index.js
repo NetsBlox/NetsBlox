@@ -46,7 +46,6 @@ const jsonToSnapList = inputJson => {
 
     let keyVals = [];
     if (Array.isArray(inputJson)) {
-        inputJson = inputJson.filter(item => item);
         for (let i = 0; i < inputJson.length; i++) {
             keyVals.push(jsonToSnapList(inputJson[i]));
         }
