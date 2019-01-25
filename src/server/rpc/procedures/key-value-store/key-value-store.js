@@ -28,6 +28,11 @@ const validateKeys = function(keys) {
 
 const KeyValueStore = {};
 
+
+/**
+ * Get the stored value
+ * @param {String} key Key value is associated with
+ */
 KeyValueStore.get = function(key) {
     var keys = getKeys(key),
         response = this.response,
@@ -64,6 +69,11 @@ KeyValueStore.get = function(key) {
     return null;
 };
 
+/**
+ * Set the stored value
+ * @param {String} key Key to use for retrieving the variable
+ * @param {Object} value Value to associated with key
+ */
 KeyValueStore.put = function(key, value) {
     var keys = getKeys(key),
         response = this.response;
@@ -101,6 +111,10 @@ KeyValueStore.put = function(key, value) {
     return null;
 };
 
+/**
+ * Delete the stored value
+ * @param {String} key Key to remove from store
+ */
 KeyValueStore.delete = function(key) {
     var keys = getKeys(key),
         response = this.response,
@@ -138,7 +152,7 @@ KeyValueStore.parent = function(key) {
     if (keys.length) {
         keys.pop();
     }
-    
+
     return '/' + keys.join(SEP);
 };
 

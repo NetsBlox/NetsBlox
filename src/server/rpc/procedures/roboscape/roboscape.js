@@ -1,6 +1,6 @@
 /*
  * Author: Miklos Maroti <mmaroti@gmail.com>
- * 
+ *
  * Robot to server messages:
  *  mac_addr[6] time[4] 'I': identification, sent every second
  *  mac_addr[6] time[4] 'S' left[2] right[2]: driving speed response
@@ -13,7 +13,7 @@
  *  mac_addr[6] time[4] 'L' led[1] cmd[1]: LED state change
  *  mac_addr[6] time[4] 'F' bits[1]: infra red detection event
  *  mac_addr[6] time[4] 'G' msec[2] pwr[1]: send infra red light
- * 
+ *
  * Server to robot messages:
  *  'S' left[2] right[2]: set driving speed
  *  'B' msec[2] tone[2]: beep
@@ -22,10 +22,10 @@
  *  'D' left[2] right[2]: drive certain distance
  *  'L' led[1] state[1]: change LED state
  *  'G' msec[2] pwr[1]: send infra red light
- * 
+ *
  * Environment variables:
  *  ROBOSCAPE_PORT: set it to the UDP port (1973) to enable this module
- *  ROBOSCAPE_MODE: sets the NetsBlox interface type, can be "security", 
+ *  ROBOSCAPE_MODE: sets the NetsBlox interface type, can be "security",
  *      "native" or "both" (default)
  */
 
@@ -34,7 +34,7 @@
 const logger = require('../utils/logger')('roboscape');
 var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
-    SocketManager = require('../../../socket-manager'),
+    NetworkTopology = require('../../../network-topology'),
     FORGET_TIME = 120, // forgetting a robot in seconds
     RESPONSE_TIMEOUT = 200, // waiting for response in milliseconds
     ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
@@ -290,17 +290,13 @@ Robot.prototype.commandToClient = function (command) {
     if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         var mac_addr = this.mac_addr;
         this.sockets.forEach(function (uuid) {
-            var socket = SocketManager.getSocket(uuid);
+            var socket = NetworkTopology.getSocket(uuid);
             if (socket) {
-                socket.send({
-                    type: 'message',
-                    dstId: socket.role,
-                    msgType: 'robot command',
-                    content: {
-                        robot: mac_addr,
-                        command: command
-                    }
-                });
+                const content = {
+                    robot: mac_addr,
+                    command: command
+                };
+                socket.sendMessage('robot command', content);
             } else {
                 logger.log('socket not found for ' + uuid);
             }
@@ -328,15 +324,10 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     }
 
     this.sockets.forEach(function (uuid) {
-        var socket = SocketManager.getSocket(uuid);
+        var socket = NetworkTopology.getSocket(uuid);
         if (socket) {
             if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
-                socket.send({
-                    type: 'message',
-                    dstId: socket.role,
-                    msgType: msgType,
-                    content: content
-                });
+                socket.sendMessage(msgType, content);
             }
 
             if ((ROBOSCAPE_MODE === 'security' && msgType !== 'set led') ||
@@ -346,15 +337,11 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
                     text += ' ' + content[fields[i]];
                 }
 
-                socket.send({
-                    type: 'message',
-                    dstId: socket.role,
-                    msgType: 'robot message',
-                    content: {
-                        robot: myself.mac_addr,
-                        message: myself.encrypt(text.trim())
-                    }
-                });
+                const encryptedContent = {
+                    robot: myself.mac_addr,
+                    message: myself.encrypt(text.trim())
+                };
+                socket.sendMessage('robot message', encryptedContent);
             }
         } else {
             logger.log('socket not found for ' + uuid);
@@ -552,7 +539,7 @@ Robot.prototype.resetEncryption = function () {
 };
 
 /*
- * RoboScape - This constructor is called on the first 
+ * RoboScape - This constructor is called on the first
  * request to an RPC from a given room.
  * @constructor
  * @return {undefined}

@@ -120,11 +120,12 @@ function findFn(line){
         });
         return fnName;
     }
-    // regexlist to find the fn name in format of [regex string, mathgroup]
+    // regexlist to find the fn name in format of [regex string, matchgroup]
     const regexList = [
         [/function (\w+)\(/, 1],
         [/\w+\.(\w+)[\w\s]*=.*(function|=>)/, 1],
-        [/(let|var) (\w+) *= *(\w|\().*=>/, 2]
+        [/(let|var|const) (\w+) *= *(\w|\().*=>/, 2],
+        [/ *(\w+) *: *(async)? +function *\(.*\)/, 1],
     ];
 
     // use array.some to break the loop early
@@ -134,7 +135,7 @@ function findFn(line){
         if (match){
             fnName = match[group];
             return true;
-        } 
+        }
     });
 
     return fnName;

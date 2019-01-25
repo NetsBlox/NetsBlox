@@ -39,7 +39,7 @@ function addMidPoints(points){
     return pathPoints;
 }
 
-module.exports = { 
+module.exports = {
     center: () => {
         let nasa2 = nasaCenters.map(p => {
             return [p[0],p[1],clockToSeconds(p[2])];

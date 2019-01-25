@@ -1,4 +1,4 @@
-const Logger = require('../../../logger'),
+const newLogger = require('./logger'),
     CacheManager = require('cache-manager'),
     fsStore = require('cache-manager-fs'),
     fs = require('fs'),
@@ -14,7 +14,8 @@ class ApiConsumer {
     constructor(name, baseUrl, opts) {
         // or set opts like this: { cache } = { }
         // must be a urlfriendly name
-        this._name = name;
+        if (!(/^[a-z0-9-]+$/i.test(name))) throw new Error(`service name ${name} must be a combination of characters, numbers, and "-"`);
+        this.serviceName = name;
         // set the defaults for the options
         opts = _.merge({
             cache: {
@@ -24,10 +25,10 @@ class ApiConsumer {
         },opts);
         if (!fs.existsSync(opts.cache.path)) fs.mkdirSync(opts.cache.path);
         this._baseUrl = baseUrl;
-        this._logger = new Logger('netsblox:rpc:'+this._name);
+        this._logger = newLogger(this.serviceName);
         // setup api endpoint
         this.COMPATIBILITY = {
-            path: this._name
+            path: this.serviceName
         };
         this._remainingMsgs = {};
         // setup cache. maxsize is in bytes, ttl in seconds
@@ -36,7 +37,7 @@ class ApiConsumer {
             options: {
                 ttl: opts.cache.ttl,
                 maxsize: 1024*1000*100,
-                path: opts.cache.path + '/' + this._name,
+                path: opts.cache.path + '/' + this.serviceName,
                 preventfill: false,
                 reviveBuffers: true
             }
@@ -91,7 +92,10 @@ class ApiConsumer {
         parameters.push(queryOptions.method || 'GET');
         let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
         parameters.push(fullUrl);
-        if (queryOptions.body) parameters.push(queryOptions.body);
+
+        // NOTE: It is possible that an RPC will be made with a non-text request body, preventing this from generating a cache key.
+        // Please override this method if you are developing an RPC with a body that will not stringify properly
+        if (queryOptions.body) parameters.push(JSON.stringify(queryOptions.body));
         return parameters.join(' ');
     }
 
@@ -149,14 +153,14 @@ class ApiConsumer {
         if (msgs && msgs.length) {
             var msg = msgs.shift();
 
-            while (msgs.length && msg.dstId !== this.socket.role) {
+            while (msgs.length && msg.dstId !== this.socket.roleId) {
                 msg = msgs.shift();
             }
 
             // check that the socket is still at the role receiving the messages
-            if (msg && msg.dstId === this.socket.role) {
-                this._logger.trace('sending msg to', this.socket.uuid, this.socket.role);
-                this.socket.send(msg);
+            if (msg && msg.dstId === this.socket.roleId) {
+                this._logger.trace('sending msg to', this.socket.uuid, this.socket.roleId);
+                this.socket.sendMessage(msg.msgType, msg.content);
             }
 
             if (msgs.length) {
@@ -238,7 +242,7 @@ class ApiConsumer {
 
                 msgContents.forEach(content=>{
                     let msg = {
-                        dstId: this.socket.role,
+                        dstId: this.socket.roleId,
                         msgType,
                         content
                     };
@@ -290,7 +294,7 @@ class ApiConsumer {
         if (this._remainingMsgs[this.socket.uuid]) {
             msgCount = this._remainingMsgs[this.socket.uuid].length;
             delete this._remainingMsgs[this.socket.uuid];
-            this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.role);
+            this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
         }else {
             msgCount = 0;
             this._logger.trace('there are no messages in the queue to stop.');

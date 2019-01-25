@@ -3,6 +3,8 @@
 'use strict';
 
 const logger = require('../utils/logger')('n-player');
+const NetworkTopology = require('../../../network-topology');
+const Utils = require('../utils');
 
 /**
  * NPlayer - This constructor is called on the first request to an RPC
@@ -24,23 +26,22 @@ NPlayer.prototype.start = function() {
     // populate the players list
     this._state.players = [];
 
-    this._state.players = this.socket._room.sockets().map(socket => {
-        return {role: socket.role, socket: socket};
+    const sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId);
+    this._state.players = sockets.map(socket => {
+        return {
+            roleId: socket.roleId,
+            socket: socket
+        };
     });
 
     // set the active player to the current one
-    this._state.active = this._state.players.findIndex(player => player.role === this.socket.role);
+    this._state.active = this._state.players
+        .findIndex(player => player.roleId === this.socket.roleId);
 
-    logger.info(`Player #${this._state.active} (${this._state.players[this._state.active].role}) is (re)starting a ${this._state.players.length} player game`);
+    logger.info(`Player #${this._state.active} (${this._state.players[this._state.active].roleId}) is (re)starting a ${this._state.players.length} player game`);
 
     // Send the start message to everyone
-    this._state.players.forEach(player => player.socket.send({
-        type: 'message',
-        dstId: player.role,
-        msgType: 'start game',
-        content: {}
-    }));
-
+    sockets.forEach(socket => socket.sendMessage('start game'));
     return true;
 };
 
@@ -54,7 +55,7 @@ NPlayer.prototype.getActive = function() {
     if(this._state.players.length === 0) {
         return '';
     } else {
-        return this._state.players[this._state.active].role;
+        return this._state.players[this._state.active].roleId;
     }
 };
 
@@ -63,7 +64,7 @@ NPlayer.prototype.getPrevious = function() {
     if(this._state.previous == null || this._state.players.length == 0) {
         return '';
     } else {
-        return this._state.players[this._state.previous].role;
+        return this._state.players[this._state.previous].roleId;
     }
 };
 
@@ -72,8 +73,9 @@ NPlayer.prototype.getNext = function() {
     if(this._state.players.length == 0) {
         return '';
     } else {
-        var index = (this._state.active + 1) % this._state.players.length;
-        return this._state.players[index].role;
+        const index = (this._state.active + 1) % this._state.players.length;
+        const nextId = this._state.players[index].roleId;
+        return Utils.getRoleName(this.caller.projectId, nextId);
     }
 };
 
@@ -81,18 +83,18 @@ NPlayer.prototype.getNext = function() {
 // signal end of turn
 NPlayer.prototype.endTurn = function(next) {
 
-    if(this._state.active === null || this.socket.role != this._state.players[this._state.active].role ) {
+    if(this._state.active === null || this.socket.roleId != this._state.players[this._state.active].roleId) {
         // bail out if there's no game yet, or if it's somebody else's turn
         return false;
     } else {
 
-        logger.info(`Player #${this._state.active} (${this._state.players[this._state.active].role}) called endTurn`);
+        logger.info(`Player #${this._state.active} (${this._state.players[this._state.active].roleId}) called endTurn`);
 
         var nextIndex;
         if(next == undefined || next == '') {
             nextIndex = (this._state.active + 1) % this._state.players.length;
         } else {
-            nextIndex = this._state.players.findIndex(player => player.role === next);
+            nextIndex = this._state.players.findIndex(player => player.roleId === next);
             if(nextIndex === -1) {
                 logger.info('Role ' +next+ ' is not part of the game');
                 return false;
@@ -103,16 +105,10 @@ NPlayer.prototype.endTurn = function(next) {
         this._state.previous = this._state.active;
         this._state.active = nextIndex;
 
-        logger.info('Player #' +this._state.active+' ('+ this._state.players[this._state.active].role +') is the new active player');
+        logger.info('Player #' +this._state.active+' ('+ this._state.players[this._state.active].roleId +') is the new active player');
 
         // Send the play message to the newly activated player
-        this._state.players[this._state.active].socket.send({
-            type: 'message',
-            dstId: this._state.players[this._state.active].role,
-            msgType: 'start turn',
-            content: {
-            }
-        });
+        this._state.players[this._state.active].socket.sendMessage('start turn');
         return true;
     }
 };

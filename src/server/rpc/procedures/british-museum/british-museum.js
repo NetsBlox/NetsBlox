@@ -7,7 +7,7 @@
  */
 
 const ApiConsumer = require('../utils/api-consumer');
-let britishmuseum = new ApiConsumer('britishmuseum','https://collection.britishmuseum.org/',{cache: {ttl: 3600*24*30*6}});
+let britishmuseum = new ApiConsumer('BritishMuseum','https://collection.britishmuseum.org/',{cache: {ttl: 3600*24*30*6}});
 
 
 const prefix = `PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
@@ -193,7 +193,7 @@ britishmuseum.itemDetails = function(itemId){
             }
         }
         let sparqlObj = {};
-        sparqlJson.results.bindings.forEach(it => { 
+        sparqlJson.results.bindings.forEach(it => {
             sparqlObj[it.pred.value] = setOrAppend(sparqlObj[it.pred.value], it.sub.value);
         });
 

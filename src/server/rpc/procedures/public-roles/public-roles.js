@@ -2,26 +2,30 @@
 'use strict';
 
 const logger = require('../utils/logger')('public-roles');
+const Projects = require('../../../storage/projects');
 const PublicRoles = {};
 
 /**
  * Get the public role ID for the current role.
  */
 PublicRoles.getPublicRoleId = function() {
-    var socket = this.socket;
+    const {projectId, roleId, clientId} = this.caller;
+    return Projects.getRawProjectById(projectId)
+        .then(metadata => {
+            if (!metadata) {
+                logger.warn(`cannot get public id for ${clientId} project ${projectId} not found.`);
+                throw new Error('Project not found. Has it been deleted?');
+            }
 
-    return this.socket.getRoom().then(room => {
-        var owner = room.owner,
-            roomName = room.name,
-            roleId = socket.role;
+            if (!metadata.roles[roleId]) {
+                logger.warn(`cannot get public id for ${clientId} role ${roleId} at ${projectId} not found.`);
+                throw new Error('Role not found. Has it been deleted?');
+            }
 
-        logger.trace(`${this.socket.username} has requested public id`);
-        return [
-            roleId,
-            roomName,
-            owner
-        ].join('@');
-    });
+            const roleName = metadata.roles[roleId].ProjectName;
+            const {name, owner} = metadata;
+            return `${roleName}@${name}@${owner}`;
+        });
 };
 
 /**

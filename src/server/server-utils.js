@@ -3,8 +3,8 @@
 
 var R = require('ramda'),
     assert = require('assert'),
-    debug = require('debug'),
-    trace = debug('netsblox:api:utils:trace'),
+    Logger = require('./logger'),
+    logger = new Logger('netsblox:api:utils'),
     version = require('../../package.json').version;
 
 const APP = `NetsBlox ${version}, http://netsblox.org`;
@@ -16,21 +16,6 @@ var uuid = function(owner, name) {
 };
 
 // Helpers for routes
-var APP_REGEX = /app="([^"]+)"/;
-var getRoomXML = function(project) {
-    return project.getRoles()
-        .then(roles => {
-            roles = sortByDateField(roles, 'Updated', -1);
-
-            var roleXml = roles.map(role =>
-                `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
-            ).join('');
-            var app = roleXml.match(APP_REGEX)[1] || APP;
-
-            return `<room name="${project.name}" app="${app}">${roleXml}</room>`;
-        });
-};
-
 var serializeArray = function(content) {
     assert(content instanceof Array);
     return content.map(serialize).join(' ');
@@ -44,23 +29,13 @@ var serialize = function(service) {
 var serializeRole = (role, project) => {
     const owner = encodeURIComponent(project.owner);
     const name = encodeURIComponent(project.name);
+    const roleId = encodeURIComponent(role.ID);
     const src = role.SourceCode ?
         `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
-    return `RoomName=${name}&Owner=${owner}&ProjectID=${project.getId()}&` +
-        serialize(R.omit(['SourceCode', 'Media'], role)) +
+    return `ProjectID=${project.getId()}&RoleID=${roleId}&RoomName=${name}&` +
+        `Owner=${owner}&${serialize(R.omit(['SourceCode', 'Media'], role))}` +
         `&SourceCode=${src}`;
-};
-
-var joinActiveProject = function(userId, room, res) {
-    let openRole = room.getUnoccupiedRole();
-
-    trace(`room "${room.name}" is already active`);
-    return room.getRole(openRole).then(role => {
-        trace(`adding ${userId} to role "${openRole}" at "${room.name}"`);
-        let serialized = serializeRole(role, room.getProject());
-        return res.send(serialized);
-    });
 };
 
 // Function helpers
@@ -107,11 +82,11 @@ var computeAspectRatioPadding = function(width, height, ratio){
     if (expectedHeight > height) {  // Add padding to the height
         diff = expectedHeight - height;
         top = bottom = diff/2;
-        trace(`new dims should be ${width}x${height+diff}`);
+        logger.trace(`new dims should be ${width}x${height+diff}`);
     } else {  // add padding to the width
         diff = ratio * height - width;
         left = right = diff/2;
-        trace(`new dims should be ${width+diff}x${height}`);
+        logger.trace(`new dims should be ${width+diff}x${height}`);
     }
     return {left, right, top, bottom};
 };
@@ -239,9 +214,7 @@ module.exports = {
     serialize,
     serializeArray,
     serializeRole,
-    joinActiveProject,
     uuid,
-    getRoomXML,
     extractRpcs,
     computeAspectRatioPadding,
     isSocketUuid,

@@ -6,6 +6,7 @@
  *
  * @service
  */
+const logger = require('../utils/logger')('cloud-variables');
 const Storage = require('../../storage');
 const Q = require('q');
 
@@ -163,10 +164,7 @@ CloudVariables.deleteVariable = function(name, password) {
 
             // Clear the queued locks
             const id = variable._id;
-            const pendingLocks = this._queuedLocks[id] || [];
-            pendingLocks.forEach(lock => lock.promise.reject(new Error('Variable deleted')));
-            delete this._queuedLocks[id];
-
+            this._clearPendingLocks(id);
             return sharedVars.deleteOne({_id: id});
         })
         .then(() => 'OK');
@@ -225,6 +223,7 @@ CloudVariables._queueLockFor = function(variable) {
         promise: deferred
     };
 
+    logger.trace(`queued lock on ${id} for ${this.caller.clientId}`);
     this._queuedLocks[id].push(lock);
 
     // If the request is terminated, remove the lock from the queue
@@ -240,7 +239,10 @@ CloudVariables._queueLockFor = function(variable) {
         return deferred.reject(new Error('Canceled by user'));
     });
 
-    return deferred.promise;
+    // We need to ensure that the variable still exists in case it was deleted
+    // during the earlier queries
+    return this._checkVariableLock(id)
+        .then(() => deferred.promise);
 };
 
 CloudVariables._applyLock = function(id, clientId, username) {
@@ -257,9 +259,10 @@ CloudVariables._applyLock = function(id, clientId, username) {
         }
     };
 
-    setTimeout(() => this._checkStaleLock(id), MAX_LOCK_AGE+1);
+    setTimeout(() => this._checkVariableLock(id), MAX_LOCK_AGE+1);
     return sharedVars.updateOne({_id: id}, query)
         .then(res => {  // Ensure that the variable wasn't deleted during this application
+            logger.trace(`${clientId} locked variable ${id}`);
             if (res.matchedCount === 0) {
                 throw new Error('Variable deleted');
             }
@@ -268,12 +271,22 @@ CloudVariables._applyLock = function(id, clientId, username) {
         });
 };
 
-CloudVariables._checkStaleLock = function(id) {
+CloudVariables._clearPendingLocks = function(id) {
+    const pendingLocks = this._queuedLocks[id] || [];
+    pendingLocks.forEach(lock => lock.promise.reject(new Error('Variable deleted')));
+    delete this._queuedLocks[id];
+};
+
+CloudVariables._checkVariableLock = function(id) {
     const {sharedVars} = getCollections();
 
     return sharedVars.findOne({_id: id})
         .then(variable => {
-            if (isLockStale(variable)) {
+            if (!variable) {
+                logger.trace(`${id} has been deleted. Clearing locks.`);
+                return this._clearPendingLocks(id);
+            } else if (isLockStale(variable)) {
+                logger.trace(`releasing lock on ${id} (timeout).`);
                 return this._onUnlockVariable(id);
             }
         });
@@ -292,12 +305,13 @@ CloudVariables.unlockVariable = function(name, password) {
     validateVariableName(name);
 
     const {sharedVars} = getCollections();
+    const {clientId} = this.caller;
 
     return sharedVars.findOne({name: name})
         .then(variable => {
             ensureVariableExists(variable);
             ensureAuthorized(variable, password);
-            ensureOwnsMutex(variable, this.caller.clientId);
+            ensureOwnsMutex(variable, clientId);
 
             if (!isLocked(variable)) {
                 throw new Error('Variable not locked');
@@ -310,7 +324,14 @@ CloudVariables.unlockVariable = function(name, password) {
             };
 
             return sharedVars.updateOne({_id: variable._id}, query)
-                .then(() => this._onUnlockVariable(variable._id))
+                .then(result => {
+                    if(result.modifiedCount === 1) {
+                        logger.trace(`${clientId} unlocked ${name} (${variable._id})`);
+                    } else {
+                        logger.trace(`${clientId} tried to unlock ${name} but variable was deleted`);
+                    }
+                    return this._onUnlockVariable(variable._id);
+                })
                 .then(() => 'OK');
         });
 };

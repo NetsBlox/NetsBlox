@@ -20,17 +20,11 @@ describe('projects', function() {
         });
     };
 
-    before(function(done) {
-        utils.reset().nodeify(done);
-    });
+    before(() => utils.reset());
 
     let project = null;
-    beforeEach(function(done) {
-        getRoom().then(room => {
-            project = room.getProject();
-            done();
-        })
-            .catch(done);
+    beforeEach(async function() {
+        project = await getRoom();
     });
 
     afterEach(function(done) {
@@ -112,15 +106,12 @@ describe('projects', function() {
             .nodeify(done);
     });
 
-    it('should create cloned role', function(done) {
-        project.cloneRole('p1', 'clone1')
-            .then(() => project.getRole('clone1'))
-            .then(role => {
-                assert(role);
-                assert.equal(role.ProjectName, 'clone1');
-                done();
-            })
-            .catch(done);
+    it('should create cloned role', async function() {
+        const project = await Projects.get('brian', 'MultiRoles');
+        await project.cloneRole('r1', 'clone1');
+        const role = await project.getRole('clone1');
+        assert(role);
+        assert.equal(role.ProjectName, 'clone1');
     });
 
     it('should remove the project from db on destroy', function(done) {
@@ -133,56 +124,21 @@ describe('projects', function() {
             .catch(done);
     });
 
-    it('should update project name on room rename (inPlace)', function() {
-        return project.persist()
-            .then(() => project._room.changeName('name-changed', null, true))
-            .then(() => {
-                assert.equal(project.name, 'name-changed');
-                return Projects.get(OWNER, PROJECT_NAME);
-            })
-            .then(match => assert(!match));
-    });
-
-    it('should not create copy on room rename inPlace', function() {
-        return project.persist()
-            .then(() => project.addCollaborator('spartacus'))
-            .then(() => project._room.changeName('name-changed', null, true))
-            .then(() => project.getRawProject())
-            .then(data => {
-                assert.equal(data.name, 'name-changed');
-                assert(data.collaborators.includes('spartacus'));
-                return Projects.get(OWNER, PROJECT_NAME);
-            })
-            .then(match => assert(!match));
-    });
-
-    it('should create copy on room rename (!inPlace)', function() {
-        return project.persist()
-            .then(() => project.addCollaborator('spartacus'))
-            .then(() => project._room.changeName('name-changed'))
-            .then(() => project.getRawProject())
-            .then(data => {
-                assert(data.collaborators.includes('spartacus'));
-                return Projects.get(OWNER, PROJECT_NAME);
-            })
-            .then(original => original.destroy());
-    });
-
     it('should have the correct origin time', function() {
         let project = null;
         return Projects.get('brian', 'MultiRoles')
             .then(result => project = result)
             .then(() => project.getRawProject())
-            .then(data => assert.equal(data.originTime, project.originTime));
+            .then(data => assert.equal(
+                data.originTime.getTime(),
+                project.originTime.getTime()
+            ));
     });
 
     describe('deletion', function() {
-        beforeEach(function(done) {
-            getRoom().then(room => {
-                project = room.getProject();
-                project.destroy().then(() => done());
-            })
-                .catch(done);
+        beforeEach(async function() {
+            project = await getRoom();
+            await project.destroy();
         });
 
         [
@@ -244,6 +200,94 @@ describe('projects', function() {
                 .nodeify(done);
         });
     });
+
+
+    describe('findOne caching..', function() {
+        let project;
+        const rId = 'r1-ID';
+        const query = {owner: 'brian', name: 'MultiRoles'};
+        const newName = 'newName';
+
+        beforeEach(async () => {
+            await utils.reset();
+            let proj = await Projects.get('brian', 'MultiRoles');
+            project = proj;
+        });
+
+        it('should be able opt out of caching', async function() {
+
+            let initialProj = await Projects._findOne(query, false);
+
+            // change the project in db
+            const change = {$set: {}};
+            change.$set[`roles.${rId}.ProjectName`] = newName;
+            await Q(Projects._collection.update({_id: initialProj._id}, change));
+
+            let reFetchedProj = await Projects._findOne(query, false);
+
+            let initialRoleName = initialProj.roles[rId].ProjectName;
+            let reFetchedRoleName = reFetchedProj.roles[rId].ProjectName;
+
+            // should see the updated name
+            assert.equal(reFetchedRoleName, newName);
+            assert(initialRoleName !== reFetchedRoleName);
+        });
+
+        it('should be able to cache results', async function() {
+
+            let initialProj = await Projects._findOne(query, true);
+
+            // change the project in db
+            const change = {$set: {}};
+            change.$set[`roles.${rId}.ProjectName`] = newName;
+            await Q(Projects._collection.update({_id: initialProj._id}, change));
+
+            let reFetchedProj = await Projects._findOne(query, true);
+
+            let initialRoleName = initialProj.roles[rId].ProjectName;
+            let reFetchedRoleName = reFetchedProj.roles[rId].ProjectName;
+
+            // should see the stale cached value
+            assert.deepEqual(reFetchedRoleName, initialRoleName);
+        });
+
+        it('should not cache null values', async function() {
+            const nullQuery = {owner: 'brian', name: newName};
+
+            // query for a non-existing record
+            let initialProj = await Projects._findOne(nullQuery, true);
+            assert.deepEqual(initialProj, null);
+
+            // create that record
+            const change = {$set: {}};
+            change.$set.name = newName;
+            await Q(Projects._collection.update(query, change));
+
+            // should find that record
+            let reFetchedProj = await Projects._findOne(nullQuery, true);
+
+            assert(reFetchedProj !== null);
+            assert.equal(reFetchedProj.name, newName);
+        });
+
+    });
+
+    describe('project by id', function() {
+        let project = null;
+        before(done => {
+            utils.reset()
+                .then(() => Projects.get('brian', 'MultiRoles'))
+                .then(proj => project = proj)
+                .nodeify(done);
+        });
+
+        it('should not be able to get raw project by id', async function() {
+            let fetchedProj = await Projects.getRawProjectById(project.getId());
+            assert.deepEqual(fetchedProj.name, 'MultiRoles');
+        });
+
+    });
+
 
     describe('getLastUpdatedRoleName', function() {
         let project = null;
@@ -461,14 +505,13 @@ describe('projects', function() {
                 .nodeify(done);
         });
 
-        it('should get diff role id for cloned role', function(done) {
-            let firstId = null;
-            project.getRoleId('role')
-                .then(id => firstId = id)
-                .then(() => project.cloneRole('role', 'clonedRole'))
-                .then(() => project.getRoleId('role2'))
-                .then(id => assert.notEqual(firstId, id))
-                .nodeify(done);
+        it('should get diff role id for cloned role', async function() {
+            const firstId = await project.getRoleId('role');
+            await project.cloneRole('role', 'clonedRole');
+            const id = await project.getRoleId('clonedRole');
+            assert.notEqual(firstId, id);
+            const names = await project.getRoleNames();
+            assert(id);
         });
     });
 
@@ -714,6 +757,19 @@ describe('projects', function() {
 
         it('should return a string', function() {
             assert.equal(typeof project.getId(), 'string');
-        })
+        });
+    });
+
+    describe('toXML', function() {
+        before(() => utils.reset());
+
+        it('should generate project xml', async function() {
+            const project = await Projects.get('brian', 'PublicProject');
+            const xml = await project.toXML();
+            assert(xml, 'Did not generate XML');
+            assert(xml.startsWith('<room'));
+            assert(xml.includes('<project'));
+        });
+
     });
 });

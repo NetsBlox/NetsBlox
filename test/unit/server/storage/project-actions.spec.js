@@ -79,4 +79,18 @@ describe('project-actions', function() {
                 .nodeify(done);
         });
     });
+
+    describe('latest action id', function() {
+        beforeEach(() => utils.reset());
+
+        it('should be able to update the latest action id', async function() {
+            const projectId = 'test-action-id';
+            const roleId = `${projectId}-role`;
+            const newActionId = 10;
+
+            await ProjectActions.setLatestActionId(projectId, roleId, newActionId);
+            const currentActionId = await ProjectActions.getLatestActionId(projectId, roleId);
+            assert.equal(newActionId, currentActionId);
+        });
+    });
 });

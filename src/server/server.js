@@ -6,13 +6,13 @@ var express = require('express'),
     _ = require('lodash'),
     dot = require('dot'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
-    SocketManager = require('./socket-manager'),
-    RoomManager = require('./rooms/room-manager'),
+    NetworkTopology = require('./network-topology'),
     RPCManager = require('./rpc/rpc-manager'),
     Storage = require('./storage/storage'),
     EXAMPLES = require('./examples'),
     Vantage = require('./vantage/vantage'),
-    isDevMode = process.env.ENV !== 'production',
+    ENV = process.env.ENV,
+    isDevMode = ENV !== 'production',
     DEFAULT_OPTIONS = {
         port: 8080,
         vantagePort: 1234,
@@ -31,13 +31,14 @@ var express = require('express'),
 const CLIENT_ROOT = path.join(__dirname, '..', 'browser');
 const indexTpl = dot.template(fs.readFileSync(path.join(CLIENT_ROOT, 'index.dot')));
 const middleware = require('./routes/middleware');
+const Client = require('./client');
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
     this.opts = _.extend({}, DEFAULT_OPTIONS, opts);
     this.app = express();
     this.app.set('query parser', string => {
-        return qs.parse(string, {parameterLimit: 10000, arrayLimit: 20000});
+        return qs.parse(string);
     });
 
     // Mongo variables
@@ -46,8 +47,7 @@ var Server = function(opts) {
 
     // Group and RPC Managers
     this.rpcManager = RPCManager;
-    RoomManager.init(this._logger, this.storage);
-    SocketManager.init(this._logger, this.storage);
+    NetworkTopology.init(this._logger, Client);
 };
 
 Server.prototype.configureRoutes = function() {
@@ -79,47 +79,14 @@ Server.prototype.configureRoutes = function() {
 
     // Add deployment state endpoint info
     const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
-    this.app.get(`/${stateEndpoint}/rooms`, function(req, res) {
-        const rooms = RoomManager.getActiveRooms();
-        return res.json(rooms.map(room => {
-            const roles = {};
-            const project = room.getProject();
-            let lastUpdatedAt = null;
-
-            if (project) {
-                lastUpdatedAt = new Date(project.lastUpdatedAt);
-            }
-
-            room.getRoleNames().forEach(role => {
-                roles[role] = room.getSocketsAt(role).map(socket => {
-                    return {
-                        username: socket.username,
-                        uuid: socket.uuid
-                    };
-                });
-            });
-
-            return {
-                uuid: room.uuid,
-                name: room.name,
-                owner: room.owner,
-                collaborators: room.getCollaborators(),
-                lastUpdatedAt: lastUpdatedAt,
-                roles: roles
-            };
-        }));
-    });
 
     this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {
-        const sockets = SocketManager.sockets().map(socket => {
-            const room = socket.getRoomSync();
-            const roomName = room && Utils.uuid(room.owner, room.name);
-
+        const sockets = NetworkTopology.sockets().map(socket => {
             return {
-                uuid: socket.uuid,
+                clientId: socket.uuid,
                 username: socket.username,
-                room: roomName,
-                role: socket.role
+                projectId: socket.projectId,
+                roleId: socket.roleId
             };
         });
 
@@ -313,31 +280,48 @@ Server.prototype.addScraperSettings = function(userAgent, metaInfo) {
     }
 };
 
-Server.prototype.start = function(done) {
+Server.prototype.start = async function(done) {
     var opts = {};
     done = done || Utils.nop;
 
     opts.msgFilter = msg => !msg.namespace;
 
-    return this.storage.connect()
-        .then(() => {
-            this.configureRoutes();
-            this._server = this.app.listen(this.opts.port, err => {
-                if (err) {
-                    return done(err);
-                }
+    await this.storage.connect();
+    if (ENV === 'test') {
+        const fixtures = require('../../test/fixtures');
+        if (/test/.test(this.storage._db.databaseName)) {
+            // eslint-disable-next-line no-console
+            console.log('resetting the database');
+            await this.storage._db.dropDatabase();
+            await fixtures.init(this.storage);
+        } else {
+            // eslint-disable-next-line no-console
+            console.warn('skipping database reset, test database should have the word test in the name.');
+        }
+    }
+    this.configureRoutes();
+    this._server = this.app.listen(this.opts.port, err => {
+        if (err) {
+            return done(err);
+        }
 
-                // eslint-disable-next-line no-console
-                console.log(`listening on port ${this.opts.port}`);
-                this._wss = new WebSocketServer({server: this._server});
-                SocketManager.enable(this._wss);
-                // Enable Vantage
-                if (this.opts.vantage) {
-                    new Vantage(this).start(this.opts.vantagePort);
-                }
-                done();
-            });
+        // eslint-disable-next-line no-console
+        console.log(`listening on port ${this.opts.port}`);
+
+        // Enable the websocket handling
+        this._wss = new WebSocketServer({server: this._server});
+        this._wss.on('connection', (socket, req) => {
+            socket.upgradeReq = req;
+            const client = new Client(this._logger, socket);
+            NetworkTopology.onConnect(client);
         });
+
+        // Enable Vantage
+        if (this.opts.vantage) {
+            new Vantage(this).start(this.opts.vantagePort);
+        }
+        done();
+    });
 };
 
 Server.prototype.stop = function(done) {
@@ -382,7 +366,14 @@ Server.prototype.createRouter = function() {
 
         router.route(api.URL)[method]((req, res) => {
             if (api.Service) {
-                logger.trace(`received ${api.Service} request`);
+                const args = (api.Parameters || '').split(',')
+                    .map(name => {
+                        let content = req.body[name] || 'undefined';
+                        content = content.length < 50 ? content : '<omitted>';
+                        return `${name}: "${content}"`;
+                    })
+                    .join(', ');
+                logger.trace(`received request ${api.Service}(${args})`);
             }
             try {
                 const result = api.Handler.call(this, req, res);

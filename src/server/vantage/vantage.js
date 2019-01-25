@@ -8,12 +8,9 @@ var vantage = require('vantage')(),
     Query = require('../../common/data-query'),
     CONNECTED_STATE = [
         'CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'
-    ],
-    RoomManager = require('../rooms/room-manager'),
-    NO_USER_LABEL = '<vacant>';
+    ];
 
 var NetsBloxVantage = function(server) {
-    this.initRoomManagement(server);
 
     // get user info
     vantage
@@ -115,68 +112,6 @@ var NetsBloxVantage = function(server) {
                 .then(() => cb());
         });
 };
-
-NetsBloxVantage.prototype.initRoomManagement = function(server) {
-    vantage
-        .command('rooms', 'List all active rooms')
-        .option('-e, --entries', 'List the entries from the manager')
-        .option('-l, --long', 'Display long format')
-        .alias('rs')
-        //.option('--with-names', 'Include the group names')
-        .action(function(args, cb) {
-            // Get all groups
-            var header = '* * * * * * * Rooms * * * * * * * \n';
-            const rooms = RoomManager.getActiveRooms();
-            let text = rooms.map(function(room) {
-                var clients = room.getRoleNames()
-                    .map(role => {
-                        let clients = room.getSocketsAt(role),
-                            names = clients.length ?
-                                clients.map(c => c.username) : [NO_USER_LABEL];
-
-                        return `\t${role}: ${names.join(',')}`;
-                    });
-
-                const collabs = room.getCollaborators().join(' ');
-                return [
-                    `${room.uuid}:`,
-                    `projectId: ${room.getProjectId()}`,
-                    `collabs: ${collabs}`,
-                    `roles:\n${clients.join('\n')}\n`
-                ].join('\n   ');
-            }).join('\n');
-
-            if (args.options.entries) {
-                text = rooms.map(room => room.uuid).join('\n');
-            }
-            console.log(header+text);
-            return cb();
-        });
-
-    vantage
-        .command('ruuids', 'Get all room uuids')
-        .action((a, cb) => {
-            let uuids = RoomManager.getActiveRoomIds();
-            console.log(uuids);
-            cb();
-        });
-
-    vantage
-        .command('room <uuid>', 'Look up room info from global database')
-        .alias('r')
-        .action((args, cb) => {
-            server.storage.rooms.get(args.uuid, (err, room) => {
-                if (err || !room) {
-                    return cb(err || 'Room not found');
-                }
-                var prettyRoom = room.pretty();
-                console.log(prettyRoom);
-                cb();
-            });
-        });
-
-};
-
 
 NetsBloxVantage.checkSocket = function(args, nbSocket) {
     var socket = nbSocket._socket,
