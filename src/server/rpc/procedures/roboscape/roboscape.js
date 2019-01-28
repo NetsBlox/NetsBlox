@@ -910,6 +910,120 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
         }
         return false;
     };
+
+        /**
+     * Signals the pi-bot robot to disconnect from the server
+     * @param {string} robot name of the robot (matches at the end) 
+     */
+    RoboScape.prototype.Quit = function (robot) {
+        logger.log("quitting");
+        robot = this._getRobot(robot);
+        if( robot && robot.accepts(this.socket.uuid)) {
+            robot.Quit();
+            return true;
+        }
+        return false;
+    };
+
+    /** 
+     * Drive for the pi-bots
+     * @param {string} robot name of the robot (matches at the end) 
+     * @param {number} dir direction of travel (1-forward 2-reverse)
+     * @param {number} speed speed of travel (0-10 is good)
+     */
+    RoboScape.prototype.Drive = function (robot, dir, speed)
+    {
+        robot = this._getRobot(robot);
+        if(robot && robot.accepts(this.socket.uuid))
+        {
+            robot.Drive(dir, speed);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Turn function for the pi-bots
+     * @param {string} robot name of the robot (matches at the end)
+     * @param {number} dir direction to turn (3-left 4-right)
+     * @param {number} deg amount to turn in multiples of 5
+     * @param {boolean} dime 0 if not dime turn (motors spin in opposite directions)
+     */
+    RoboScape.prototype.Turn = function (robot, dir, deg, dime)
+    {
+        robot = this._getRobot(robot);
+        if(robot && robot.accepts(this.socket.uuid))
+        {
+            robot.Turn(dir, deg, dime);
+            return true;
+        }
+        return false;        
+    }
+
+    /**
+     * Pans the pi-bot robots camera
+     * @param {string} robot name of the robot (matches at the end)
+     * @param {number} dir 1-left 2-right
+     * @param {number} amount how far to pan in range (0-90]
+     */
+    RoboScape.prototype.Pan = function (robot, dir, amount)
+    {
+        robot = this._getRobot(robot);
+        if(robot && robot.accepts(this.socket.uuid))
+        {
+            robot.Pan(dir, amount);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Tilts the pi-bot robots camera
+     * @param {string} robot name of the robot (matches at the end)
+     * @param {number} dir 1-up 2-down
+     * @param {number} amount in range (0-60] for up and (0-40] for down
+     */
+    RoboScape.prototype.Tilt = function (robot, dir, amount)
+    {
+        robot = this._getRobot(robot);
+        if(robot && robot.accepts(this.socket.uuid))
+        {
+            robot.Tilt(dir, amount);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Stops the pi-bot robot
+     * @param {string} robot name of the robot (matches at the end)
+     */
+    RoboScape.prototype.Stop = function (robot)
+    {
+        robot = this._getRobot(robot);
+        if(robot && robot.accepts(this.socket.uuid))
+        {
+            logger.log("Stop");
+            robot.Stop();
+            return true;
+        }
+        return false;
+    }
+
+        /**
+     * gets battery voltage
+     * @param {string} robot name of the robot (matches at the end)
+     * @returns {number} battery voltage
+     */
+    RoboScape.prototype.getVoltage = function (robot) {
+        robot = this._getRobot(robot);
+        if (robot && robot.accepts(this.socket.uuid)) {
+            return robot.getVoltage().then(function (value) {
+                return value && value.voltage;
+            });
+        }
+        return false;
+    };
 }
 
 if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
@@ -998,6 +1112,35 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
             } else if (command.match(/^reset rates$/)) {
                 robot.resetRates();
                 return true;
+            } else if (command.match(/^quit$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Quit();
+                return true;
+            } else if (command.match(/^Drive (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Drive(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^Stop$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Stop();
+                return true;
+            } else if (command.match(/^Turn (-?\d+)[, ](-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Turn(+RegExp.$1, +RegExp.$2, +RegExp.$3);
+                return true;
+            } else if (command.match(/^Pan (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Pan(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^Tilt (-?\d+)[, ](-?\d+)$/)) {
+                robot.setSeqNum(seqNum);
+                robot.Tilt(+RegExp.$1, +RegExp.$2);
+                return true;
+            } else if (command.match(/^check voltage$/)) {
+                robot.setSeqNum(seqNum);
+                return robot.getVoltage().then(function (value) {
+                    return value && value.voltage;
+                });
             }
         }
         return false;
