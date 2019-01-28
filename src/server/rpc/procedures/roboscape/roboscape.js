@@ -15,6 +15,8 @@
  *  mac_addr[6] time[4] 'F' bits[1]: infra red detection event
  *  mac_addr[6] time[4] 'G' msec[2] pwr[1]: send infra red light
  *
+ *  mac_addr[6] time[4] 'V' batteryVoltage[2] : robot battery voltage
+ * 
  * Server to robot messages:
  *  'S' left[2] right[2]: set driving speed
  *  'B' msec[2] tone[2]: beep
@@ -23,7 +25,15 @@
  *  'D' left[2] right[2]: drive certain distance
  *  'L' led[1] state[1]: change LED state
  *  'G' msec[2] pwr[1]: send infra red light
- *
+ *  
+ * 'd' direction[1] speed[1] : set driving speed (python robots)
+ *  't' direction[1] angle[1] dimeTurn[1] (bool) : turn (python robots)
+ *  'w' direction[1] [amount] : pan (python bots)
+ *  'e' direction[1] [amount] : tilt (python bots)
+ *  's' : stop (python bots)
+ *  'Q' : quit (python bots)
+ *  'V' : get voltage (python bots)  
+
  * Environment variables:
  *  ROBOSCAPE_PORT: set it to the UDP port (1973) to enable this module
  *  ROBOSCAPE_MODE: sets the NetsBlox interface type, can be "security",
