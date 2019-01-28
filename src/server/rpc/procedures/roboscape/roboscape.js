@@ -69,6 +69,93 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.lastSeqNum = -1; // initially disabled
 };
 
+Robot.prototype.Quit = function () {
+    logger.log("sending quit signal to: " + this.mac_addr);
+    var message = Buffer.alloc(1);
+    message.write('Q', 0, 1);
+    this.sendToRobot(message);
+};
+
+Robot.prototype.Drive = function (dir, speed)
+{
+    if(speed < 0 || speed > 20)
+    {
+        logger.log("speed out of range for: " + this.mac_addr);
+        return false;
+    }
+    logger.log("driving direction: " + dir + " speed: " + speed);
+    try { var message = Buffer.alloc(3);
+    message.write('d', 0, 1);
+    message.writeInt8(dir, 1);
+    message.writeInt8(speed, 2); }
+    catch(e) { logger.log("message: ", e); }
+    this.sendToRobot(message);
+}
+
+Robot.prototype.Turn = function (dir, deg, dime)
+{
+    if(deg < 0 || deg > 180)
+    {
+        logger.log("turn angle out of range for: " + this.mac_addr);
+        return false;
+    }
+    logger.log("turning " + dir + " at angle " + deg + ", dime turn: " + dime + " for: " + this.mac_addr);
+    var message = Buffer.alloc(4);
+    message.write('t', 0, 1);
+    message.writeInt8(dir, 1);
+    message.writeUInt8(deg, 2);
+    message.writeInt8(dime, 3);
+    this.sendToRobot(message);
+}
+
+Robot.prototype.Pan = function (dir, amount)
+{
+    if(amount > 60 || amount < 0)
+    {
+        logger.log("pan angle out of range for: " + this.mac_addr);
+        return false;
+    }
+    logger.log("panning: " + dir + " " + amount + " units for: " + this.mac_addr);
+    var message = Buffer.alloc(3);
+    message.write('w', 0, 1);
+    message.writeInt8(dir, 1);
+    message.writeInt8(amount, 2);
+    this.sendToRobot(message);
+}
+
+Robot.prototype.Tilt = function (dir, amount)
+{
+    if(amount > 50 || amount < 0)
+    {
+        logger.log("Tilt angle out of range for: " + this.mac_addr);
+        return false;
+    }
+    logger.log("Tilting: " + dir + " " + amount + " units for: " + this.mac_addr);
+    var message = Buffer.alloc(3);
+    message.write('e', 0, 1);
+    message.writeInt8(dir, 1);
+    message.writeInt8(amount, 2);
+    this.sendToRobot(message);
+}
+
+Robot.prototype.Stop = function ()
+{
+    logger.log("stopping: " + this.mac_addr);
+    var message = Buffer.alloc(1);
+    message.write('s', 0, 1);
+    this.sendToRobot(message);
+}
+
+Robot.prototype.getVoltage = function () {
+    logger.log("get voltage " + this.mac_addr);
+    var promise = this.receiveFromRobot("voltage");
+    var message = Buffer.alloc(1);
+    message.write('V', 0, 1);
+    this.sendToRobot(message);
+    return promise;
+};
+
+
 Robot.prototype.setTotalRate = function (rate) {
     logger.log('set total rate ' + this.mac_addr + ' ' + rate);
     this.totalRate = Math.max(rate, 0);
