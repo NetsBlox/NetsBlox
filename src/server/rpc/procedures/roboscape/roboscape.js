@@ -534,6 +534,10 @@ Robot.prototype.onMessage = function (message) {
             msec: message.readInt16LE(11),
             pwr: Math.round(100 - message.readUInt8(13) / 2.55)
         }, ['time', 'msec', 'pwr']);
+    } else if (command === 'V'){
+        this.sendToClient('voltage', {
+            voltage: parseFloat(message.readInt8(12).toString() + "." + message.readInt8(11).toString()),
+        }, ['voltage']);
     } else {
         logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
