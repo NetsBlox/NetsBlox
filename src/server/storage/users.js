@@ -171,7 +171,7 @@
             // condition #2: account age
             const AGE_LIMIT_MINUTES = 60 * 24 * 1; // a week
             let age = (new Date().getTime() - this.createdAt) / 60000 ; // in minutes
-            if (age > AGE_LIMIT_MINUTES) rejections.push('this is an old account');
+            if (age > AGE_LIMIT_MINUTES) rejections.push(`this account has been created more than ${AGE_LIMIT_MINUTES} minutes ago`);
 
             return rejections;
         }
