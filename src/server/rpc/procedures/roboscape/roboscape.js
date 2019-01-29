@@ -94,7 +94,7 @@ Robot.prototype.piDrive = function (dir, speed)
         logger.log('message: ', e); 
     }
     this.sendToRobot(message);
-}
+};
 
 Robot.prototype.turn = function (dir, deg, dime)
 {
@@ -110,7 +110,7 @@ Robot.prototype.turn = function (dir, deg, dime)
     message.writeUInt8(deg, 2);
     message.writeInt8(dime, 3);
     this.sendToRobot(message);
-}
+};
 
 Robot.prototype.pan = function (dir, amount)
 {
@@ -125,7 +125,7 @@ Robot.prototype.pan = function (dir, amount)
     message.writeInt8(dir, 1);
     message.writeInt8(amount, 2);
     this.sendToRobot(message);
-}
+};
 
 Robot.prototype.tilt = function (dir, amount)
 {
@@ -140,7 +140,7 @@ Robot.prototype.tilt = function (dir, amount)
     message.writeInt8(dir, 1);
     message.writeInt8(amount, 2);
     this.sendToRobot(message);
-}
+};
 
 Robot.prototype.stop = function ()
 {
@@ -148,7 +148,7 @@ Robot.prototype.stop = function ()
     var message = Buffer.alloc(1);
     message.write('s', 0, 1);
     this.sendToRobot(message);
-}
+};
 
 Robot.prototype.getVoltage = function () {
     logger.log('get voltage ' + this.mac_addr);
