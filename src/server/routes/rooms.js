@@ -432,18 +432,16 @@ module.exports = [
     return api;
 });
 
-function getFriendSockets(user) {
+async function getFriendSockets(user) {
     logger.log(`${user.username} requested friend list`);
 
-    return user.getGroupMembers()
-        .then(usernames => {
-            let inGroup = {};
-            usernames.forEach(name => inGroup[name] = true);
-            return NetworkTopology.sockets()
-                .filter(socket => !Utils.isSocketUuid(socket.username))
-                .filter(socket => {
-                    return socket.username !== user.username &&
-                        inGroup[socket.username];
-                });
+    const usernames = await user.getGroupMembers();
+    let inGroup = {};
+    usernames.forEach(name => inGroup[name] = true);
+    return NetworkTopology.sockets()
+        .filter(socket => !Utils.isSocketUuid(socket.username))
+        .filter(socket => {
+            return socket.username !== user.username &&
+                inGroup[socket.username];
         });
 }
