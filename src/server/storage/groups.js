@@ -119,8 +119,14 @@
         return Q(collection.deleteOne({_id: id}));
     };
 
+    // find all groups belonging to a user
     GroupStore.findAllUserGroups = async function(owner) {
         let groupsArr = await Q(collection.find({owner}).toArray());
+        return groupsArr.map(group => new Group(group));
+    };
+
+    GroupStore.all = async function() {
+        let groupsArr = await Q(collection.find({}).toArray());
         return groupsArr.map(group => new Group(group));
     };
 

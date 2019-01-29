@@ -2,28 +2,22 @@
 
 require('epipebomb')();  // Allow piping to 'head'
 
-const Storage = require('../src/server/storage/storage'),
-    Logger = require('../src/server/logger'),
-    Groups = require('../src/server/storage/groups'),
-    logger = new Logger('netsblox:cli:projects'),
-    storage = new Storage(logger);
+const Groups = require('../src/server/storage/groups'),
+    { runWithStorage } = require('./utils');
 
 // List all the groups
-storage.connect()
-    .then(() => {
-        logger.trace('About to print all groups');
-        return Groups.all();
-    })
-    .then(groups => {
-        groups.forEach(group => {
-            console.log([
-                group.name,
-                group.members.join(','),
-            ].join('\t'));
-        });
-    })
-    .then(() => storage.disconnect())
-    .catch(err => {
-        logger.error(err);
-        return storage.disconnect();
-    });
+async function listGroups() {
+    const groups = await Groups.all();
+    for (let idx in groups) {
+        const group = groups[idx];
+        let members = await group.findMembers();
+        let mUsernames = members.map(m => m.username);
+        console.log([
+            group.name,
+            'members:',
+            mUsernames.join(','),
+        ].join('\t'));
+    }
+}
+
+runWithStorage(listGroups);
