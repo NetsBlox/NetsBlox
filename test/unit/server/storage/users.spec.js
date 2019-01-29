@@ -36,7 +36,8 @@ describe('users', function() {
         it('should not include users in groups from outside', function(done) {
             let alice = users[0];
             alice.getGroupMembers()
-                .then(names => {
+                .then(users => {
+                    let names = users.map(u => u.username);
                     assert(!names.some(name => name.includes('-class')));
                     done();
                 })
@@ -46,7 +47,8 @@ describe('users', function() {
         it('should only show users in groups', function(done) {
             let user = users[5];
             user.getGroupMembers()
-                .then(names => {
+                .then(users => {
+                    let names = users.map(u => u.username);
                     assert.equal(names.length, 3);
                     done();
                 })

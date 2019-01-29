@@ -79,7 +79,7 @@
         getGroupMembers() {
             this._logger.trace(`getting group members of ${this.groupId}`);
             return collection.find({groupId: this.groupId}, {username: 1}).toArray()
-                .then(data => data.map(d => d.username));
+                .then(users => users.map(user => new User(this._logger, user)));
         }
 
         getSharedProject(owner, name) {
