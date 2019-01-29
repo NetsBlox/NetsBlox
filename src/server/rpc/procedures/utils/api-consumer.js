@@ -1,36 +1,23 @@
-const newLogger = require('./logger'),
+const NBService = require('./service.js'),
     CacheManager = require('cache-manager'),
     fsStore = require('cache-manager-fs'),
-    fs = require('fs'),
     Q = require('q'),
     _ = require('lodash'),
     request = require('request'),
-    rp = require('request-promise'),
-    jsonQuery = require('json-query'),
-    utils = require('./index'),
-    MSG_SENDING_DELAY = 250;
+    rp = require('request-promise');
 
-class ApiConsumer {
+class ApiConsumer extends NBService {
     constructor(name, baseUrl, opts) {
-        // or set opts like this: { cache } = { }
-        // must be a urlfriendly name
-        if (!(/^[a-z0-9-]+$/i.test(name))) throw new Error(`service name ${name} must be a combination of characters, numbers, and "-"`);
-        this.serviceName = name;
-        // set the defaults for the options
         opts = _.merge({
             cache: {
                 ttl: 3600*24,
                 path: process.env.CACHE_DIR || 'cache',
             }
-        },opts);
-        if (!fs.existsSync(opts.cache.path)) fs.mkdirSync(opts.cache.path);
+        }, opts);
+        super(name);
+
         this._baseUrl = baseUrl;
-        this._logger = newLogger(this.serviceName);
-        // setup api endpoint
-        this.COMPATIBILITY = {
-            path: this.serviceName
-        };
-        this._remainingMsgs = {};
+
         // setup cache. maxsize is in bytes, ttl in seconds
         this._cache = CacheManager.caching({
             store: fsStore,
@@ -147,54 +134,6 @@ class ApiConsumer {
         }
     }
 
-    // private
-    _sendNext() {
-        var msgs = this._remainingMsgs[this.socket.uuid];
-        if (msgs && msgs.length) {
-            var msg = msgs.shift();
-
-            while (msgs.length && msg.dstId !== this.socket.roleId) {
-                msg = msgs.shift();
-            }
-
-            // check that the socket is still at the role receiving the messages
-            if (msg && msg.dstId === this.socket.roleId) {
-                this._logger.trace('sending msg to', this.socket.uuid, this.socket.roleId);
-                this.socket.sendMessage(msg.msgType, msg.content);
-            }
-
-            if (msgs.length) {
-                setTimeout(this._sendNext.bind(this), MSG_SENDING_DELAY);
-            } else {
-                delete this._remainingMsgs[this.socket.uuid];
-            }
-        } else {
-            delete this._remainingMsgs[this.socket.uuid];
-        }
-    }
-
-    /**
-     * processes and queries json object or strings
-     * @param  {json/string} json  [description]
-     * @param  {string} query query string from json-query package
-     * @return {json}       returns the value found withing the input json
-     */
-    _queryJson(json, query){
-        try {
-            if (typeof(json) === 'string') {
-                json = JSON.parse(json);
-            }
-        } catch (e) {
-            this._logger.error('input is not valid json');
-        }
-        return jsonQuery(query, {data: json}).value;
-    }
-
-
-    // creates snap friendly structure out of an array ofsimple keyValue json object or just single on of them.
-    _createSnapStructure(input){
-        return utils.jsonToSnapList(input);
-    }
 
     /**
      * request a full response sending back a data structure.
@@ -222,7 +161,6 @@ class ApiConsumer {
     }
 
     _sendMsgs(queryOptions,parserFn,msgType){
-        this._remainingMsgs[this.socket.uuid] = [];
         return this._requestData(queryOptions)
             .then(res => {
                 let msgContents;
@@ -233,23 +171,7 @@ class ApiConsumer {
                     this.response.status(500).send('');
                     return;
                 }
-                if (msgContents[0]) {
-                    let msgKeys = Object.keys(msgContents[0]);
-                    this.response.send(`sending ${msgContents.length} messages with message type: ${msgType} and following fields: ${msgKeys.join(', ')}`); // send back number of msgs
-                }else {
-                    this.response.send(`sending ${msgContents.length} messages with message type: ${msgType}`); // send back number of msgs
-                }
-
-                msgContents.forEach(content=>{
-                    let msg = {
-                        dstId: this.socket.roleId,
-                        msgType,
-                        content
-                    };
-                    this._remainingMsgs[this.socket.uuid].push(msg);
-                });
-                this._logger.trace(`initializing sending of ${msgContents.length} messages`);
-                this._sendNext();
+                this._sendMsgsQueue(msgContents, msgType);
             });
     }
 
@@ -262,7 +184,7 @@ class ApiConsumer {
     _sendAnswer(queryOptions,selector){
         return this._requestData(queryOptions)
             .then(res => {
-                let answer = this._queryJson(res,selector);
+                let answer = this.__queryJson(res,selector);
                 this._logger.trace('answer is', answer);
                 return answer;
             });
@@ -272,8 +194,7 @@ class ApiConsumer {
     _sendImage(queryOptions){
         return this._requestImage(queryOptions)
             .then(imageBuffer => {
-                utils.sendImageBuffer(this.response, imageBuffer);
-                this._logger.trace('sent the image');
+                this._sendImageBuffer(imageBuffer);
             }).catch(() => {
                 this.response.status(404).send('');
             });
@@ -285,21 +206,8 @@ class ApiConsumer {
         this._requestData(queryOptions)
             .then(res=> {
                 this._logger.trace('got response');
-                this._logger.trace(this._queryJson(res,selector));
+                this._logger.trace(this.__queryJson(res,selector));
             });
-    }
-
-    _stopMsgs(){
-        let msgCount;
-        if (this._remainingMsgs[this.socket.uuid]) {
-            msgCount = this._remainingMsgs[this.socket.uuid].length;
-            delete this._remainingMsgs[this.socket.uuid];
-            this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
-        }else {
-            msgCount = 0;
-            this._logger.trace('there are no messages in the queue to stop.');
-        }
-        return msgCount;
     }
 }
 
