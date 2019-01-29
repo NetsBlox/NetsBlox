@@ -7,6 +7,7 @@ var Utils = _.extend(require('../utils'), require('../server-utils.js')),
     logger = new Logger('netsblox:api:rooms'),
     utils = require('../server-utils'),
     NetworkTopology = require('../network-topology'),
+    Groups = require('../storage/groups'),
     Projects = require('../storage/projects'),
     invites = {};
 
@@ -434,14 +435,21 @@ module.exports = [
 
 async function getFriendSockets(user) {
     logger.log(`${user.username} requested friend list`);
+    const inGroup = {};
 
-    const usernames = await user.getGroupMembers();
-    let inGroup = {};
-    usernames.forEach(name => inGroup[name] = true);
+    let userGroups = await Groups.findAllUserGroups(user.username);
+    for (let index in userGroups) {
+        let members = await userGroups[index].findMembers();
+        members.forEach(m => inGroup[m.username] = true);
+    }
+
+    const peers = await user.getGroupMembers();
+    // OPT if user not in a group list and goes through all users without a group
+    peers.forEach(peer => inGroup[peer.username] = true);
     return NetworkTopology.sockets()
         .filter(socket => !Utils.isSocketUuid(socket.username))
         .filter(socket => {
-            return socket.username !== user.username &&
-                inGroup[socket.username];
+            return socket.username !== user.username && // is not the caller
+                inGroup[socket.username]; // is inGroup
         });
 }
