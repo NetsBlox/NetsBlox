@@ -4,11 +4,11 @@ const newLogger = require('./logger'),
     MSG_SENDING_DELAY = 250;
 
 class NBService {
-    constructor(name) {
+    constructor(serviceName) {
         // must be a urlfriendly name
-        if (!(/^[a-z0-9-]+$/i.test(name)))
-            throw new Error(`service name ${name} must be a combination of characters, numbers, and "-"`);
-        this.serviceName = name;
+        if (!utils.isValidServiceName(serviceName))
+            throw new Error(`service name ${serviceName} must be a combination of characters, numbers, and "-"`);
+        this.serviceName = serviceName;
 
         this._logger = newLogger(this.serviceName);
         // setup api endpoint
@@ -69,8 +69,7 @@ class NBService {
     }
 
 
-    // TODO rename this to sendmsgs and other instances to sth else
-    // throttles sending messages
+    // send messages (throttled)
     _sendMsgsQueue(contents, msgType){
         this._remainingMsgs[this.socket.uuid] = [];
         let msgContents = contents;
