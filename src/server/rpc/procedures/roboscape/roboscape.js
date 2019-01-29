@@ -27,7 +27,7 @@
  *  'G' msec[2] pwr[1]: send infra red light
  *  
  * 'd' direction[1] speed[1] : set driving speed (python robots)
- *  't' direction[1] angle[1] dimeTurn[1] (bool) : turn (python robots)
+ *  't' direction[1] angle[1] dimeturn[1] (bool) : turn (python robots)
  *  'w' direction[1] [amount] : pan (python bots)
  *  'e' direction[1] [amount] : tilt (python bots)
  *  's' : stop (python bots)
@@ -36,8 +36,8 @@
 
  * Environment variables:
  *  ROBOSCAPE_PORT: set it to the UDP port (1973) to enable this module
- *  ROBOSCAPE_MODE: sets the NetsBlox interface type, can be "security",
- *      "native" or "both" (default)
+ *  ROBOSCAPE_MODE: sets the NetsBlox interface type, can be 'security',
+ *      'native' or 'both' (default)
  */
 
 'use strict';
@@ -69,37 +69,37 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.lastSeqNum = -1; // initially disabled
 };
 
-Robot.prototype.Quit = function () {
-    logger.log("sending quit signal to: " + this.mac_addr);
+Robot.prototype.quit = function () {
+    logger.log('sending quit signal to: ' + this.mac_addr);
     var message = Buffer.alloc(1);
     message.write('Q', 0, 1);
     this.sendToRobot(message);
 };
 
-Robot.prototype.Drive = function (dir, speed)
+Robot.prototype.piDrive = function (dir, speed)
 {
     if(speed < 0 || speed > 20)
     {
-        logger.log("speed out of range for: " + this.mac_addr);
+        logger.log('speed out of range for: ' + this.mac_addr);
         return false;
     }
-    logger.log("driving direction: " + dir + " speed: " + speed);
+    logger.log('driving direction: ' + dir + ' speed: ' + speed);
     try { var message = Buffer.alloc(3);
     message.write('d', 0, 1);
     message.writeInt8(dir, 1);
     message.writeInt8(speed, 2); }
-    catch(e) { logger.log("message: ", e); }
+    catch(e) { logger.log('message: ', e); }
     this.sendToRobot(message);
 }
 
-Robot.prototype.Turn = function (dir, deg, dime)
+Robot.prototype.turn = function (dir, deg, dime)
 {
     if(deg < 0 || deg > 180)
     {
-        logger.log("turn angle out of range for: " + this.mac_addr);
+        logger.log('turn angle out of range for: ' + this.mac_addr);
         return false;
     }
-    logger.log("turning " + dir + " at angle " + deg + ", dime turn: " + dime + " for: " + this.mac_addr);
+    logger.log('turning ' + dir + ' at angle ' + deg + ', dime turn: ' + dime + ' for: ' + this.mac_addr);
     var message = Buffer.alloc(4);
     message.write('t', 0, 1);
     message.writeInt8(dir, 1);
@@ -108,14 +108,14 @@ Robot.prototype.Turn = function (dir, deg, dime)
     this.sendToRobot(message);
 }
 
-Robot.prototype.Pan = function (dir, amount)
+Robot.prototype.pan = function (dir, amount)
 {
     if(amount > 60 || amount < 0)
     {
-        logger.log("pan angle out of range for: " + this.mac_addr);
+        logger.log('pan angle out of range for: ' + this.mac_addr);
         return false;
     }
-    logger.log("panning: " + dir + " " + amount + " units for: " + this.mac_addr);
+    logger.log('panning: ' + dir + ' ' + amount + ' units for: ' + this.mac_addr);
     var message = Buffer.alloc(3);
     message.write('w', 0, 1);
     message.writeInt8(dir, 1);
@@ -123,14 +123,14 @@ Robot.prototype.Pan = function (dir, amount)
     this.sendToRobot(message);
 }
 
-Robot.prototype.Tilt = function (dir, amount)
+Robot.prototype.tilt = function (dir, amount)
 {
     if(amount > 50 || amount < 0)
     {
-        logger.log("Tilt angle out of range for: " + this.mac_addr);
+        logger.log('tilt angle out of range for: ' + this.mac_addr);
         return false;
     }
-    logger.log("Tilting: " + dir + " " + amount + " units for: " + this.mac_addr);
+    logger.log('tilting: ' + dir + ' ' + amount + ' units for: ' + this.mac_addr);
     var message = Buffer.alloc(3);
     message.write('e', 0, 1);
     message.writeInt8(dir, 1);
@@ -138,17 +138,17 @@ Robot.prototype.Tilt = function (dir, amount)
     this.sendToRobot(message);
 }
 
-Robot.prototype.Stop = function ()
+Robot.prototype.stop = function ()
 {
-    logger.log("stopping: " + this.mac_addr);
+    logger.log('stopping: ' + this.mac_addr);
     var message = Buffer.alloc(1);
     message.write('s', 0, 1);
     this.sendToRobot(message);
 }
 
 Robot.prototype.getVoltage = function () {
-    logger.log("get voltage " + this.mac_addr);
-    var promise = this.receiveFromRobot("voltage");
+    logger.log('get voltage ' + this.mac_addr);
+    var promise = this.receiveFromRobot('voltage');
     var message = Buffer.alloc(1);
     message.write('V', 0, 1);
     this.sendToRobot(message);
@@ -536,7 +536,7 @@ Robot.prototype.onMessage = function (message) {
         }, ['time', 'msec', 'pwr']);
     } else if (command === 'V'){
         this.sendToClient('voltage', {
-            voltage: parseFloat(message.readInt8(12).toString() + "." + message.readInt8(11).toString()),
+            voltage: parseFloat(message.readInt8(12).toString() + '.' + message.readInt8(11).toString()),
         }, ['voltage']);
     } else {
         logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
@@ -819,7 +819,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
     };
 
     /**
-     * Turns on the infra red LED.
+     * turns on the infra red LED.
      * @param {string} robot name of the robot (matches at the end)
      * @param {number} msec duration in milliseconds between 0 and 1000
      * @param {number} pwr power level between 0 and 100
@@ -865,7 +865,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
     };
 
     /**
-     * Drives the whiles for the specified ticks.
+     * piDrives the whiles for the specified ticks.
      * @param {string} robot name of the robot (matches at the end)
      * @param {number} left distance for left wheel in ticks
      * @param {number} right distance for right wheel in ticks
@@ -915,100 +915,100 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * Signals the pi-bot robot to disconnect from the server
      * @param {string} robot name of the robot (matches at the end) 
      */
-    RoboScape.prototype.Quit = function (robot) {
-        logger.log("quitting");
+    RoboScape.prototype.quit = function (robot) {
+        logger.log('quitting');
         robot = this._getRobot(robot);
         if( robot && robot.accepts(this.socket.uuid)) {
-            robot.Quit();
+            robot.quit();
             return true;
         }
         return false;
     };
 
     /** 
-     * Drive for the pi-bots
+     * piDrive for the pi-bots
      * @param {string} robot name of the robot (matches at the end) 
      * @param {number} dir direction of travel (1-forward 2-reverse)
      * @param {number} speed speed of travel (0-10 is good)
      */
-    RoboScape.prototype.Drive = function (robot, dir, speed)
+    RoboScape.prototype.piDrive = function (robot, dir, speed)
     {
         robot = this._getRobot(robot);
         if(robot && robot.accepts(this.socket.uuid))
         {
-            robot.Drive(dir, speed);
+            robot.piDrive(dir, speed);
             return true;
         }
         return false;
-    }
+    };
 
     /**
-     * Turn function for the pi-bots
+     * turn function for the pi-bots
      * @param {string} robot name of the robot (matches at the end)
      * @param {number} dir direction to turn (3-left 4-right)
      * @param {number} deg amount to turn in multiples of 5
      * @param {boolean} dime 0 if not dime turn (motors spin in opposite directions)
      */
-    RoboScape.prototype.Turn = function (robot, dir, deg, dime)
+    RoboScape.prototype.turn = function (robot, dir, deg, dime)
     {
         robot = this._getRobot(robot);
         if(robot && robot.accepts(this.socket.uuid))
         {
-            robot.Turn(dir, deg, dime);
+            robot.turn(dir, deg, dime);
             return true;
         }
         return false;        
-    }
+    };
 
     /**
-     * Pans the pi-bot robots camera
+     * pans the pi-bot robots camera
      * @param {string} robot name of the robot (matches at the end)
      * @param {number} dir 1-left 2-right
      * @param {number} amount how far to pan in range (0-90]
      */
-    RoboScape.prototype.Pan = function (robot, dir, amount)
+    RoboScape.prototype.pan = function (robot, dir, amount)
     {
         robot = this._getRobot(robot);
         if(robot && robot.accepts(this.socket.uuid))
         {
-            robot.Pan(dir, amount);
+            robot.pan(dir, amount);
             return true;
         }
         return false;
-    }
+    };
 
     /**
-     * Tilts the pi-bot robots camera
+     * tilts the pi-bot robots camera
      * @param {string} robot name of the robot (matches at the end)
      * @param {number} dir 1-up 2-down
      * @param {number} amount in range (0-60] for up and (0-40] for down
      */
-    RoboScape.prototype.Tilt = function (robot, dir, amount)
+    RoboScape.prototype.tilt = function (robot, dir, amount)
     {
         robot = this._getRobot(robot);
         if(robot && robot.accepts(this.socket.uuid))
         {
-            robot.Tilt(dir, amount);
+            robot.tilt(dir, amount);
             return true;
         }
         return false;
-    }
+    };
 
     /**
-     * Stops the pi-bot robot
+     * stops the pi-bot robot
      * @param {string} robot name of the robot (matches at the end)
      */
-    RoboScape.prototype.Stop = function (robot)
+    RoboScape.prototype.stop = function (robot)
     {
         robot = this._getRobot(robot);
         if(robot && robot.accepts(this.socket.uuid))
         {
-            logger.log("Stop");
-            robot.Stop();
+            logger.log('stop');
+            robot.stop();
             return true;
         }
         return false;
-    }
+    };
 
         /**
      * gets battery voltage
@@ -1114,27 +1114,27 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
                 return true;
             } else if (command.match(/^quit$/)) {
                 robot.setSeqNum(seqNum);
-                robot.Quit();
+                robot.quit();
                 return true;
-            } else if (command.match(/^Drive (-?\d+)[, ](-?\d+)$/)) {
+            } else if (command.match(/^piDrive (-?\d+)[, ](-?\d+)$/)) {
                 robot.setSeqNum(seqNum);
-                robot.Drive(+RegExp.$1, +RegExp.$2);
+                robot.piDrive(+RegExp.$1, +RegExp.$2);
                 return true;
-            } else if (command.match(/^Stop$/)) {
+            } else if (command.match(/^stop$/)) {
                 robot.setSeqNum(seqNum);
-                robot.Stop();
+                robot.stop();
                 return true;
-            } else if (command.match(/^Turn (-?\d+)[, ](-?\d+)[, ](-?\d+)$/)) {
+            } else if (command.match(/^turn (-?\d+)[, ](-?\d+)[, ](-?\d+)$/)) {
                 robot.setSeqNum(seqNum);
-                robot.Turn(+RegExp.$1, +RegExp.$2, +RegExp.$3);
+                robot.turn(+RegExp.$1, +RegExp.$2, +RegExp.$3);
                 return true;
-            } else if (command.match(/^Pan (-?\d+)[, ](-?\d+)$/)) {
+            } else if (command.match(/^pan (-?\d+)[, ](-?\d+)$/)) {
                 robot.setSeqNum(seqNum);
-                robot.Pan(+RegExp.$1, +RegExp.$2);
+                robot.pan(+RegExp.$1, +RegExp.$2);
                 return true;
-            } else if (command.match(/^Tilt (-?\d+)[, ](-?\d+)$/)) {
+            } else if (command.match(/^tilt (-?\d+)[, ](-?\d+)$/)) {
                 robot.setSeqNum(seqNum);
-                robot.Tilt(+RegExp.$1, +RegExp.$2);
+                robot.tilt(+RegExp.$1, +RegExp.$2);
                 return true;
             } else if (command.match(/^check voltage$/)) {
                 robot.setSeqNum(seqNum);
