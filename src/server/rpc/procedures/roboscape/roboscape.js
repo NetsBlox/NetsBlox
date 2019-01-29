@@ -84,11 +84,15 @@ Robot.prototype.piDrive = function (dir, speed)
         return false;
     }
     logger.log('driving direction: ' + dir + ' speed: ' + speed);
-    try { var message = Buffer.alloc(3);
-    message.write('d', 0, 1);
-    message.writeInt8(dir, 1);
-    message.writeInt8(speed, 2); }
-    catch(e) { logger.log('message: ', e); }
+    try { 
+        var message = Buffer.alloc(3);
+        message.write('d', 0, 1);
+        message.writeInt8(dir, 1);
+        message.writeInt8(speed, 2); 
+    }
+    catch(e) { 
+        logger.log('message: ', e); 
+    }
     this.sendToRobot(message);
 }
 
