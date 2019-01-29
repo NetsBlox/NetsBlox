@@ -1,6 +1,7 @@
 const NBService = require('./service.js'),
     CacheManager = require('cache-manager'),
     fsStore = require('cache-manager-fs'),
+    fs = require('fs'),
     Q = require('q'),
     _ = require('lodash'),
     request = require('request'),
@@ -19,6 +20,7 @@ class ApiConsumer extends NBService {
         this._baseUrl = baseUrl;
 
         // setup cache. maxsize is in bytes, ttl in seconds
+        if (!fs.existsSync(opts.cache.path)) fs.mkdirSync(opts.cache.path); // ensure path exists
         this._cache = CacheManager.caching({
             store: fsStore,
             options: {
