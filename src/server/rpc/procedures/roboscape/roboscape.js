@@ -34,9 +34,6 @@
 const logger = require('../utils/logger')('roboscape');
 var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
-    NetworkTopology = require('../../../network-topology'),
-    FORGET_TIME = 120, // forgetting a robot in seconds
-    RESPONSE_TIMEOUT = 200, // waiting for response in milliseconds
     ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
 
 /*

@@ -1,5 +1,11 @@
 'use strict';
 const getRPCLogger = require('../utils/logger');
+const NetworkTopology = require('../../../network-topology');
+const ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
+
+// these might be better defined as an attribute on the robot
+const FORGET_TIME = 120; // forgetting a robot in seconds
+const RESPONSE_TIMEOUT = 200; // waiting for response in milliseconds
 
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
