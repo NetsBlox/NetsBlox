@@ -56,7 +56,7 @@ RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
     if (!robot) {
         logger.log('discovering ' + mac_addr + ' at ' + ip4_addr + ':' + ip4_port);
-        robot = new Robot(mac_addr, ip4_addr, ip4_port);
+        robot = new Robot(mac_addr, ip4_addr, ip4_port, server);
         this._robots[mac_addr] = robot;
     } else {
         robot.updateAddress(ip4_addr, ip4_port);

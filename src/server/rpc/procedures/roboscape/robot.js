@@ -7,7 +7,7 @@ const ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
 const FORGET_TIME = 120; // forgetting a robot in seconds
 const RESPONSE_TIMEOUT = 200; // waiting for response in milliseconds
 
-var Robot = function (mac_addr, ip4_addr, ip4_port) {
+var Robot = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.mac_addr = mac_addr;
     this.ip4_addr = ip4_addr;
     this.ip4_port = ip4_port;
@@ -25,6 +25,7 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.clientCounts = {};
     this.lastSeqNum = -1; // initially disabled
     this._logger = getRPCLogger(`roboscape:${mac_addr}`);
+    this.server = aServer; // a handle to the udp server for communication with the robot
 };
 
 Robot.prototype.setTotalRate = function (rate) {
@@ -141,7 +142,7 @@ Robot.prototype.removeClientSocket = function (uuid) {
 };
 
 Robot.prototype.sendToRobot = function (message) {
-    server.send(message, this.ip4_port, this.ip4_addr, function (err) {
+    this.server.send(message, this.ip4_port, this.ip4_addr, function (err) {
         if (err) {
             this._logger.log('send error ' + err);
         }
