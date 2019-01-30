@@ -32,6 +32,7 @@
 'use strict';
 
 const logger = require('../utils/logger')('roboscape');
+const Robot = require('./robot');
 var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
     ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';

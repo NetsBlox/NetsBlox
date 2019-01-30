@@ -506,3 +506,5 @@ Robot.prototype.resetEncryption = function () {
     this.setEncryption([]);
     this.playBlinks([3]);
 };
+
+module.exports = Robot;
