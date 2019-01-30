@@ -1,4 +1,6 @@
 'use strict';
+const getRPCLogger = require('../utils/logger');
+
 var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.mac_addr = mac_addr;
     this.ip4_addr = ip4_addr;
@@ -16,21 +18,22 @@ var Robot = function (mac_addr, ip4_addr, ip4_port) {
     this.clientPenalty = 0; // in seconds
     this.clientCounts = {};
     this.lastSeqNum = -1; // initially disabled
+    this._logger = getRPCLogger(`roboscape:${mac_addr}`);
 };
 
 Robot.prototype.setTotalRate = function (rate) {
-    logger.log('set total rate ' + this.mac_addr + ' ' + rate);
+    this._logger.log('set total rate ' + this.mac_addr + ' ' + rate);
     this.totalRate = Math.max(rate, 0);
 };
 
 Robot.prototype.setClientRate = function (rate, penalty) {
-    logger.log('set client rate ' + this.mac_addr + ' ' + rate + ' ' + penalty);
+    this._logger.log('set client rate ' + this.mac_addr + ' ' + rate + ' ' + penalty);
     this.clientRate = Math.max(rate, 0);
     this.clientPenalty = Math.min(Math.max(penalty, 0), 60);
 };
 
 Robot.prototype.resetRates = function () {
-    logger.log('reset rate limits');
+    this._logger.log('reset rate limits');
     this.totalRate = 0;
     this.clientRate = 0;
     this.clientPenalty = 0;
@@ -63,18 +66,18 @@ Robot.prototype.accepts = function (clientId, seqNum) {
     }
 
     if (client.penalty > 0) {
-        logger.log(clientId + ' client penalty');
+        this._logger.log(clientId + ' client penalty');
         return false;
     }
 
     if (this.clientRate !== 0 && client.count + 1 > this.clientRate) {
-        logger.log(clientId + ' client rate violation');
+        this._logger.log(clientId + ' client rate violation');
         client.penalty = 1 + this.clientPenalty;
         return false;
     }
 
     if (this.totalRate !== 0 && this.totalCount + 1 > this.totalRate) {
-        logger.log(clientId + ' total rate violation');
+        this._logger.log(clientId + ' total rate violation');
         return false;
     }
 
@@ -114,7 +117,7 @@ Robot.prototype.isMostlyAlive = function () {
 Robot.prototype.addClientSocket = function (uuid) {
     var i = this.sockets.indexOf(uuid);
     if (i < 0) {
-        logger.log('register ' + uuid + ' ' + this.mac_addr);
+        this._logger.log('register ' + uuid + ' ' + this.mac_addr);
         this.sockets.push(uuid);
         return true;
     }
@@ -124,7 +127,7 @@ Robot.prototype.addClientSocket = function (uuid) {
 Robot.prototype.removeClientSocket = function (uuid) {
     var i = this.sockets.indexOf(uuid);
     if (i >= 0) {
-        logger.log('unregister ' + uuid + ' ' + this.mac_addr);
+        this._logger.log('unregister ' + uuid + ' ' + this.mac_addr);
         this.sockets.splice(i, 1);
         return true;
     }
@@ -134,7 +137,7 @@ Robot.prototype.removeClientSocket = function (uuid) {
 Robot.prototype.sendToRobot = function (message) {
     server.send(message, this.ip4_port, this.ip4_addr, function (err) {
         if (err) {
-            logger.log('send error ' + err);
+            this._logger.log('send error ' + err);
         }
     });
 };
@@ -161,7 +164,7 @@ Robot.prototype.setSpeed = function (left, right) {
     left = Math.max(Math.min(+left, 128), -128);
     right = Math.max(Math.min(+right, 128), -128);
 
-    logger.log('set speed ' + this.mac_addr + ' ' + left + ' ' + right);
+    this._logger.log('set speed ' + this.mac_addr + ' ' + left + ' ' + right);
     var message = Buffer.alloc(5);
     message.write('S', 0, 1);
     message.writeInt16LE(left, 1);
@@ -171,7 +174,7 @@ Robot.prototype.setSpeed = function (left, right) {
 
 Robot.prototype.setLed = function (led, cmd) {
     if (!('' + cmd).startsWith('_')) {
-        logger.log('set led ' + this.mac_addr + ' ' + led + ' ' + cmd);
+        this._logger.log('set led ' + this.mac_addr + ' ' + led + ' ' + cmd);
     }
 
     led = Math.min(Math.max(+led, 0), 1);
@@ -196,7 +199,7 @@ Robot.prototype.beep = function (msec, tone) {
     msec = Math.min(Math.max(+msec, 0), 1000);
     tone = Math.min(Math.max(+tone, 0), 20000);
 
-    logger.log('set beep ' + this.mac_addr + ' ' + msec + ' ' + tone);
+    this._logger.log('set beep ' + this.mac_addr + ' ' + msec + ' ' + tone);
     var message = Buffer.alloc(5);
     message.write('B', 0, 1);
     message.writeUInt16LE(msec, 1);
@@ -208,7 +211,7 @@ Robot.prototype.infraLight = function (msec, pwr) {
     msec = Math.min(Math.max(+msec, 0), 1000);
     pwr = Math.round(2.55 * (100 - Math.min(Math.max(+pwr, 0), 100)));
 
-    logger.log('infra light ' + this.mac_addr + ' ' + msec);
+    this._logger.log('infra light ' + this.mac_addr + ' ' + msec);
     var message = Buffer.alloc(4);
     message.write('G', 0, 1);
     message.writeUInt16LE(msec, 1);
@@ -217,7 +220,7 @@ Robot.prototype.infraLight = function (msec, pwr) {
 };
 
 Robot.prototype.getRange = function () {
-    logger.log('get range ' + this.mac_addr);
+    this._logger.log('get range ' + this.mac_addr);
     var promise = this.receiveFromRobot('range');
     var message = Buffer.alloc(1);
     message.write('R', 0, 1);
@@ -226,7 +229,7 @@ Robot.prototype.getRange = function () {
 };
 
 Robot.prototype.getTicks = function () {
-    logger.log('get ticks ' + this.mac_addr);
+    this._logger.log('get ticks ' + this.mac_addr);
     var promise = this.receiveFromRobot('ticks');
     var message = Buffer.alloc(1);
     message.write('T', 0, 1);
@@ -238,7 +241,7 @@ Robot.prototype.drive = function (left, right) {
     left = Math.max(Math.min(+left, 64), -64);
     right = Math.max(Math.min(+right, 64), -64);
 
-    logger.log('drive ' + this.mac_addr + ' ' + left + ' ' + right);
+    this._logger.log('drive ' + this.mac_addr + ' ' + left + ' ' + right);
     var message = Buffer.alloc(5);
     message.write('D', 0, 1);
     message.writeInt16LE(left, 1);
@@ -258,7 +261,7 @@ Robot.prototype.commandToClient = function (command) {
                 };
                 socket.sendMessage('robot command', content);
             } else {
-                logger.log('socket not found for ' + uuid);
+                this._logger.log('socket not found for ' + uuid);
             }
         });
     }
@@ -271,7 +274,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     content.time = this.timestamp;
 
     if (msgType !== 'set led') {
-        logger.log('event ' + msgType + ' ' + JSON.stringify(content));
+        this._logger.log('event ' + msgType + ' ' + JSON.stringify(content));
     }
 
     if (this.callbacks[msgType]) {
@@ -304,14 +307,14 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
                 socket.sendMessage('robot message', encryptedContent);
             }
         } else {
-            logger.log('socket not found for ' + uuid);
+            this._logger.log('socket not found for ' + uuid);
         }
     });
 };
 
 Robot.prototype.onMessage = function (message) {
     if (message.length < 11) {
-        logger.log('invalid message ' + this.ip4_addr + ':' + this.ip4_port +
+        this._logger.log('invalid message ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
         return;
     }
@@ -323,7 +326,7 @@ Robot.prototype.onMessage = function (message) {
 
     if (command === 'I' && message.length === 11) {
         if (this.timestamp < oldTimestamp) {
-            logger.log('robot was rebooted ' + this.mac_addr);
+            this._logger.log('robot was rebooted ' + this.mac_addr);
             this.setSeqNum(-1);
             this.setEncryption([]);
             this.resetRates();
@@ -397,7 +400,7 @@ Robot.prototype.onMessage = function (message) {
             pwr: Math.round(100 - message.readUInt8(13) / 2.55)
         }, ['time', 'msec', 'pwr']);
     } else {
-        logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
+        this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
     }
 };
@@ -423,7 +426,7 @@ Robot.prototype.encrypt = function (text, decrypt) {
 
         output += String.fromCharCode(code);
     }
-    logger.log('"' + text + '" ' + (decrypt ? 'decrypted' : 'encrypted') +
+    this._logger.log('"' + text + '" ' + (decrypt ? 'decrypted' : 'encrypted') +
         ' to "' + output + '"');
     return output;
 };
@@ -435,10 +438,10 @@ Robot.prototype.decrypt = function (text) {
 Robot.prototype.setEncryption = function (keys) {
     if (keys instanceof Array) {
         this.encryption = keys;
-        logger.log(this.mac_addr + ' encryption set to [' + keys + ']');
+        this._logger.log(this.mac_addr + ' encryption set to [' + keys + ']');
         return true;
     } else {
-        logger.log('invalid encryption key ' + keys);
+        this._logger.log('invalid encryption key ' + keys);
         return false;
     }
 };
