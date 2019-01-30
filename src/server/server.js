@@ -375,7 +375,7 @@ Server.prototype.createRouter = function() {
         logger.log(`adding "${method}" to ${api.URL}`);
 
         // Add the middleware
-        if (api.middleware) {
+        if (api.middleware && api.middleware.length > 0) {
             logger.trace(`adding "${method}" to ${api.URL}`);
             var args = api.middleware.map(name => (req, res, next) => {
                 if (req.method === 'OPTIONS') return next();
