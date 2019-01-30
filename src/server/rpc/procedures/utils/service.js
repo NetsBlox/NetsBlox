@@ -11,10 +11,6 @@ class NBService {
         this.serviceName = serviceName;
 
         this._logger = newLogger(this.serviceName);
-        // setup api endpoint
-        this.COMPATIBILITY = {
-            path: this.serviceName
-        };
         this._remainingMsgs = {};
     }
 
