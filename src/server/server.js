@@ -332,7 +332,8 @@ Server.prototype.stop = function(done) {
 
 // Load the routes from routes/ dir
 function loadRoutes(logger) {
-    const routes = fs.readdirSync(path.join(__dirname, 'routes'))
+    // load server routes
+    const serverRoutes = fs.readdirSync(path.join(__dirname, 'routes'))
         .filter(name => path.extname(name) === '.js')  // Only read js files
         .filter(name => name !== 'middleware.js')  // ignore middleware file
         .map(name => __dirname + '/routes/' + name)  // Create the file path
@@ -341,6 +342,22 @@ function loadRoutes(logger) {
             return require(filePath);
         })  // Load the routes
         .reduce((prev, next) => prev.concat(next), []);  // Merge all routes
+
+    // load service routes
+    const serviceRoutes = fs.readdirSync(path.join(__dirname, 'rpc/procedures'))
+        .filter(serviceDir => { // check if it has a routes file
+            return fs.readdirSync(path.join(__dirname, `rpc/procedures/${serviceDir}`))
+                .includes('routes.js');
+        })
+        .map(serviceDir => __dirname + `/rpc/procedures/${serviceDir}/routes.js`)
+        .map(filePath => {
+            logger.trace('about to load service route ' + filePath);
+            return require(filePath);
+        })  // Load the routes
+        .reduce((prev, next) => prev.concat(next), []);  // Merge all routes
+
+    const routes = [...serverRoutes, ...serviceRoutes];
+
     return routes;
 }
 
