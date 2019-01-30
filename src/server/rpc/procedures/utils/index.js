@@ -91,11 +91,16 @@ const getRoleName = (projectId, roleId) => {
         .then(names => names[0]);
 };
 
+const isValidServiceName = name => {
+    return /^[a-z0-9-]+$/i.test(name);
+};
+
 module.exports = {
     getRoleNames,
     getRoleName,
     sendImageBuffer,
     encodeQueryData,
     collectStream,
-    jsonToSnapList
+    jsonToSnapList,
+    isValidServiceName,
 };
