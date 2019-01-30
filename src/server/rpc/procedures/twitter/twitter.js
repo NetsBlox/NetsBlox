@@ -14,7 +14,7 @@ var KEY = process.env.TWITTER_BEARER_TOKEN;
 // make sure key starts with bearer
 if (KEY && !KEY.startsWith('Bearer ')) KEY = 'Bearer ' + KEY;
 
-const TwitterConsumer = new ApiConsumer('twitter', 'https://api.twitter.com/1.1/', {
+const TwitterConsumer = new ApiConsumer('Twitter', 'https://api.twitter.com/1.1/', {
     cache: {
         ttl: 30
     }
@@ -102,7 +102,7 @@ TwitterConsumer.tweets = function (screenName) {
 };
 
 
-// 
+//
 /**
  * Searches the most recent tweets
  * @param {String} keyword Keyword to search for
@@ -131,7 +131,7 @@ TwitterConsumer.search = function (keyword, count) {
 /**
  * Get how many tweets per day the user averages (most recent 200)
  * @param {String} screenName Name of user
- * @returns {Number} How many tweets per day the user averages 
+ * @returns {Number} How many tweets per day the user averages
  */
 TwitterConsumer.tweetsPerDay = function (screenName) {
     var oneDay = 24 * 60 * 60 * 1000, // hours*minutes*seconds*milliseconds
