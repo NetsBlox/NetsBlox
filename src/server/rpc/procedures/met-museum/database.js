@@ -1,4 +1,4 @@
-const serviceStorage = require('../../advancedStorage');
+const getServiceStorage = require('../../advancedStorage');
 const fs = require('fs');
 
 const schemaDef = {};
@@ -9,4 +9,4 @@ headers.forEach(attr => {
     schemaDef[attr] = String;
 });
 
-module.exports = serviceStorage('MetMuseum', schemaDef);
+module.exports = getServiceStorage('MetMuseum', schemaDef);
