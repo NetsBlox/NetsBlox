@@ -321,29 +321,30 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         // logger.log('send ' + robot + ' ' + command);
         robot = this._getRobot(robot);
 
-        if (robot && typeof command === 'string') {
-            if (command.match(/^backdoor[, ](.*)$/)) { // check if it is a backdoor
-                logger.log('executing ' + command);
-                command = RegExp.$1;
-            } else { // if not a backdoor handle seq number and encryption
-                // for replay attacks
-                robot.commandToClient(command);
+        if (!robot && typeof command !== 'string') return false;
 
-                command = robot.decrypt(command);
+        // figure out the raw command after processing special methods, encryption, seq and client rate
+        if (command.match(/^backdoor[, ](.*)$/)) { // check if it is a backdoor
+            logger.log('executing ' + command);
+            command = RegExp.$1;
+        } else { // if not a backdoor handle seq number and encryption
+            // for replay attacks
+            robot.commandToClient(command);
 
-                var seqNum = -1;
-                if (command.match(/^(\d+)[, ](.*)$/)) {
-                    seqNum = +RegExp.$1;
-                    command = RegExp.$2;
-                }
-                if (!robot.accepts(this.socket.uuid, seqNum)) {
-                    return false;
-                }
+            command = robot.decrypt(command);
+
+            var seqNum = -1;
+            if (command.match(/^(\d+)[, ](.*)$/)) {
+                seqNum = +RegExp.$1;
+                command = RegExp.$2;
             }
-            robot.setSeqNum(seqNum);
-            return robot.onCommand(command);
-        } // end of if (robot && typeof command === 'string')
-        return false;
+            if (!robot.accepts(this.socket.uuid, seqNum)) {
+                return false;
+            }
+        }
+
+        robot.setSeqNum(seqNum);
+        return robot.onCommand(command);
     };
 }
 

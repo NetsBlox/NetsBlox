@@ -506,6 +506,8 @@ Robot.prototype.onCommand = function(command) {
     ];
 
     let matchingCase = cases.find(aCase => command.match(aCase.regex));
+    if (!matchingCase) return false; // invalid command structure
+
     let rv = matchingCase.handler();
     if (rv === undefined) rv = true;
     return rv;
