@@ -274,11 +274,12 @@ Robot.prototype.commandToClient = function (command) {
     }
 };
 
-Robot.prototype.sendToClient = function (msgType, content, fields) {
+Robot.prototype.sendToClient = function (msgType, content) {
     var myself = this;
 
+    let fields = ['time', ...Object.keys(content)];
     content.robot = this.mac_addr;
-    content.time = this.timestamp; // TODO auto add time field to the messages
+    content.time = this.timestamp;
 
     if (msgType !== 'set led') {
         this._logger.log('event ' + msgType + ' ' + JSON.stringify(content));
@@ -343,24 +344,24 @@ Robot.prototype.onMessage = function (message) {
         this.sendToClient('beep', {
             msec: message.readInt16LE(11),
             tone: message.readInt16LE(13),
-        }, ['time', 'msec', 'tone']);
+        });
     } else if (command === 'S' && message.length === 15) {
         this.sendToClient('speed', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        }, ['time', 'left', 'right']);
+        });
     } else if (command === 'W' && message.length === 12) {
         state = message.readUInt8(11);
         this.sendToClient('whiskers', {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
-        }, ['time', 'left', 'right']);
+        });
     } else if (command === 'P' && message.length === 12) {
         state = message.readUInt8(11) == 0;
         if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
             this.sendToClient('button', {
                 pressed: state
-            }, ['time', 'pressed']);
+            });
         }
         if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
             if (state) {
@@ -380,33 +381,33 @@ Robot.prototype.onMessage = function (message) {
     } else if (command === 'R' && message.length === 13) {
         this.sendToClient('range', {
             range: message.readInt16LE(11),
-        }, ['time', 'range']);
+        });
     } else if (command === 'T' && message.length === 19) {
         this.sendToClient('ticks', {
             left: message.readInt32LE(11),
             right: message.readInt32LE(15),
-        }, ['time', 'left', 'right']);
+        });
     } else if (command === 'D' && message.length === 15) {
         this.sendToClient('drive', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        }, ['time', 'left', 'right']);
+        });
     } else if (command === 'L' && message.length === 13) {
         this.sendToClient('set led', {
             led: message.readUInt8(11),
             command: message.readUInt8(12)
-        }, ['time', 'led', 'command']);
+        });
     } else if (command === 'F' && message.length === 12) {
         state = message.readUInt8(11);
         this.sendToClient('infra event', {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
-        }, ['time', 'left', 'right']);
+        });
     } else if (command === 'G' && message.length === 14) {
         this.sendToClient('infra light', {
             msec: message.readInt16LE(11),
             pwr: Math.round(100 - message.readUInt8(13) / 2.55)
-        }, ['time', 'msec', 'pwr']);
+        });
     } else {
         this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
@@ -419,7 +420,7 @@ Robot.prototype.onCommand = function(command) {
         {
             regex: /^is alive$/,
             handler: () => {
-                this.sendToClient('alive', {}, ['time']);
+                this.sendToClient('alive', {});
                 return this.isAlive();
             }
         },
