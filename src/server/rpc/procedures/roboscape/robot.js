@@ -319,6 +319,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     });
 };
 
+// used for handling incoming message from the robot
 Robot.prototype.onMessage = function (message) {
     if (message.length < 11) {
         this._logger.log('invalid message ' + this.ip4_addr + ':' + this.ip4_port +
@@ -409,6 +410,66 @@ Robot.prototype.onMessage = function (message) {
     } else {
         this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
+    }
+};
+
+// handle user commands to the robot (through the 'send' rpc)
+Robot.prototype.onCommand = function(command, seqNum) {
+    if (command.match(/^is alive$/)) {
+        this.setSeqNum(seqNum);
+        this.sendToClient('alive', {}, ['time']);
+        return this.isAlive();
+    } else if (command.match(/^beep (-?\d+)[, ](-?\d+)$/)) {
+        this.setSeqNum(seqNum);
+        this.beep(+RegExp.$1, +RegExp.$2);
+        return true;
+    } else if (command.match(/^set speed (-?\d+)[, ](-?\d+)$/)) {
+        this.setSeqNum(seqNum);
+        this.setSpeed(+RegExp.$1, +RegExp.$2);
+        return true;
+    } else if (command.match(/^drive (-?\d+)[, ](-?\d+)$/)) {
+        this.setSeqNum(seqNum);
+        this.drive(+RegExp.$1, +RegExp.$2);
+        return true;
+    } else if (command.match(/^get range$/)) {
+        this.setSeqNum(seqNum);
+        return this.getRange().then(function (value) {
+            return value && value.range;
+        });
+    } else if (command.match(/^get ticks$/)) {
+        this.setSeqNum(seqNum);
+        return this.getTicks().then(function (value) {
+            return value && [value.left, value.right];
+        });
+    } else if (command.match(/^set key(| -?\d+([ ,]-?\d+)*)$/)) {
+        this.setSeqNum(seqNum);
+        var encryption = RegExp.$1.split(/[, ]/);
+        if (encryption[0] === '') {
+            encryption.splice(0, 1);
+        }
+        return this.setEncryption(encryption.map(Number));
+    } else if (command.match(/^set total rate (-?\d+)$/)) {
+        this.setSeqNum(seqNum);
+        this.setTotalRate(+RegExp.$1);
+        return true;
+    } else if (command.match(/^set client rate (-?\d+)[, ](-?\d+)$/)) {
+        this.setSeqNum(seqNum);
+        this.setClientRate(+RegExp.$1, +RegExp.$2);
+        return true;
+    } else if (command.match(/^set led (-?\d+)[, ](-?\d+)$/)) {
+        this.setSeqNum(seqNum);
+        this.setLed(+RegExp.$1, +RegExp.$2);
+        return true;
+    } else if (command.match(/^infra light (-?\d+)[, ](-?\d+)$/)) {
+        this.setSeqNum(seqNum);
+        this.infraLight(+RegExp.$1, +RegExp.$2);
+        return true;
+    } else if (command.match(/^reset seq$/)) {
+        this.setSeqNum(-1);
+        return true;
+    } else if (command.match(/^reset rates$/)) {
+        this.resetRates();
+        return true;
     }
 };
 
