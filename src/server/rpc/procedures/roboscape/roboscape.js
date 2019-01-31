@@ -52,6 +52,7 @@ var RoboScape = function () {
 RoboScape.serviceName = 'RoboScape';
 RoboScape.prototype._robots = {};
 
+// fetch the robot, create one if necessary
 RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
     if (!robot) {
@@ -355,8 +356,8 @@ server.on('message', function (message, remote) {
         logger.log('invalid message ' + remote.address + ':' +
             remote.port + ' ' + message.toString('hex'));
     } else {
-        var mac_addr = message.toString('hex', 0, 6);
-        var robot = RoboScape.prototype._addRobot(
+        var mac_addr = message.toString('hex', 0, 6); // pull out the mac address
+        var robot = RoboScape.prototype._addRobot( // gets a robot instance
             mac_addr, remote.address, remote.port);
         robot.onMessage(message);
     }
