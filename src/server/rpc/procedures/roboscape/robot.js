@@ -441,21 +441,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
         return this.getTicks().then(function (value) {
             return value && [value.left, value.right];
         });
-    } else if (command.match(/^set key(| -?\d+([ ,]-?\d+)*)$/)) {
-        this.setSeqNum(seqNum);
-        var encryption = RegExp.$1.split(/[, ]/);
-        if (encryption[0] === '') {
-            encryption.splice(0, 1);
-        }
-        return this.setEncryption(encryption.map(Number));
-    } else if (command.match(/^set total rate (-?\d+)$/)) {
-        this.setSeqNum(seqNum);
-        this.setTotalRate(+RegExp.$1);
-        return true;
-    } else if (command.match(/^set client rate (-?\d+)[, ](-?\d+)$/)) {
-        this.setSeqNum(seqNum);
-        this.setClientRate(+RegExp.$1, +RegExp.$2);
-        return true;
     } else if (command.match(/^set led (-?\d+)[, ](-?\d+)$/)) {
         this.setSeqNum(seqNum);
         this.setLed(+RegExp.$1, +RegExp.$2);
@@ -463,12 +448,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
     } else if (command.match(/^infra light (-?\d+)[, ](-?\d+)$/)) {
         this.setSeqNum(seqNum);
         this.infraLight(+RegExp.$1, +RegExp.$2);
-        return true;
-    } else if (command.match(/^reset seq$/)) {
-        this.setSeqNum(-1);
-        return true;
-    } else if (command.match(/^reset rates$/)) {
-        this.resetRates();
         return true;
     }
 };
