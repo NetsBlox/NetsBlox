@@ -158,6 +158,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
     /**
      * Returns true if the given robot is alive, sent messages in the
      * last two seconds.
+     * @param {string} robot name of the robot (matches at the end)
      * @returns {boolean} True if the robot is alive
      */
     RoboScape.prototype.isAlive = function (robot) {
