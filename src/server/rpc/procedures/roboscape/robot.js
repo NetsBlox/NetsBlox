@@ -427,21 +427,18 @@ Robot.prototype.onCommand = function(command) {
             regex: /^beep (-?\d+)[, ](-?\d+)$/,
             handler: () => {
                 this.beep(+RegExp.$1, +RegExp.$2);
-                return true;
             }
         },
         {
             regex: /^set speed (-?\d+)[, ](-?\d+)$/,
             handler: () => {
                 this.setSpeed(+RegExp.$1, +RegExp.$2);
-                return true;
             }
         },
         {
             regex: /^drive (-?\d+)[, ](-?\d+)$/,
             handler: () => {
                 this.drive(+RegExp.$1, +RegExp.$2);
-                return true;
             }
         },
         {
@@ -474,48 +471,44 @@ Robot.prototype.onCommand = function(command) {
             regex: /^set total rate (-?\d+)$/,
             handler: () => {
                 this.setTotalRate(+RegExp.$1);
-                return true;
             }
         },
         {
             regex: /^set client rate (-?\d+)[, ](-?\d+)$/,
             handler: () => {
                 this.setClientRate(+RegExp.$1, +RegExp.$2);
-                return true;
             }
         },
         {
             regex: /^set led (-?\d+)[, ](-?\d+)$/,
             handler: () => {
                 this.setLed(+RegExp.$1, +RegExp.$2);
-                return true;
             }
         },
         {
             regex: /^infra light (-?\d+)[, ](-?\d+)$/,
             handler: () => {
                 this.infraLight(+RegExp.$1, +RegExp.$2);
-                return true;
             }
         },
         {
             regex: /^reset seq$/,
             handler: () => {
                 this.setSeqNum(-1);
-                return true;
             }
         },
         {
             regex: /^reset rates$/,
             handler: () => {
                 this.resetRates();
-                return true;
             }
         },
     ];
 
     let matchingCase = cases.find(aCase => command.match(aCase.regex));
-    return matchingCase.handler();
+    let rv = matchingCase.handler();
+    if (rv === undefined) rv = true;
+    return rv;
 };
 
 Robot.prototype.encrypt = function (text, decrypt) {
