@@ -278,7 +278,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     var myself = this;
 
     content.robot = this.mac_addr;
-    content.time = this.timestamp;
+    content.time = this.timestamp; // TODO auto add time field to the messages
 
     if (msgType !== 'set led') {
         this._logger.log('event ' + msgType + ' ' + JSON.stringify(content));
@@ -415,62 +415,118 @@ Robot.prototype.onMessage = function (message) {
 
 // handle user commands to the robot (through the 'send' rpc)
 Robot.prototype.onCommand = function(command, seqNum) {
-    if (command.match(/^is alive$/)) {
-        this.setSeqNum(seqNum);
-        this.sendToClient('alive', {}, ['time']);
-        return this.isAlive();
-    } else if (command.match(/^beep (-?\d+)[, ](-?\d+)$/)) {
-        this.setSeqNum(seqNum);
-        this.beep(+RegExp.$1, +RegExp.$2);
-        return true;
-    } else if (command.match(/^set speed (-?\d+)[, ](-?\d+)$/)) {
-        this.setSeqNum(seqNum);
-        this.setSpeed(+RegExp.$1, +RegExp.$2);
-        return true;
-    } else if (command.match(/^drive (-?\d+)[, ](-?\d+)$/)) {
-        this.setSeqNum(seqNum);
-        this.drive(+RegExp.$1, +RegExp.$2);
-        return true;
-    } else if (command.match(/^get range$/)) {
-        this.setSeqNum(seqNum);
-        return this.getRange().then(function (value) {
-            return value && value.range;
-        });
-    } else if (command.match(/^get ticks$/)) {
-        this.setSeqNum(seqNum);
-        return this.getTicks().then(function (value) {
-            return value && [value.left, value.right];
-        });
-    } else if (command.match(/^set key(| -?\d+([ ,]-?\d+)*)$/)) {
-        this.setSeqNum(seqNum);
-        var encryption = RegExp.$1.split(/[, ]/);
-        if (encryption[0] === '') {
-            encryption.splice(0, 1);
-        }
-        return this.setEncryption(encryption.map(Number));
-    } else if (command.match(/^set total rate (-?\d+)$/)) {
-        this.setSeqNum(seqNum);
-        this.setTotalRate(+RegExp.$1);
-        return true;
-    } else if (command.match(/^set client rate (-?\d+)[, ](-?\d+)$/)) {
-        this.setSeqNum(seqNum);
-        this.setClientRate(+RegExp.$1, +RegExp.$2);
-        return true;
-    } else if (command.match(/^set led (-?\d+)[, ](-?\d+)$/)) {
-        this.setSeqNum(seqNum);
-        this.setLed(+RegExp.$1, +RegExp.$2);
-        return true;
-    } else if (command.match(/^infra light (-?\d+)[, ](-?\d+)$/)) {
-        this.setSeqNum(seqNum);
-        this.infraLight(+RegExp.$1, +RegExp.$2);
-        return true;
-    } else if (command.match(/^reset seq$/)) {
-        this.setSeqNum(-1);
-        return true;
-    } else if (command.match(/^reset rates$/)) {
-        this.resetRates();
-        return true;
-    }
+    const cases = [
+        {
+            regex: /^is alive$/,
+            handler: () => {
+                this.setSeqNum(seqNum);
+                this.sendToClient('alive', {}, ['time']);
+                return this.isAlive();
+            }
+        },
+        {
+            regex: /^beep (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.setSeqNum(seqNum);
+                this.beep(+RegExp.$1, +RegExp.$2);
+                return true;
+            }
+        },
+        {
+            regex: /^set speed (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.setSeqNum(seqNum);
+                this.setSpeed(+RegExp.$1, +RegExp.$2);
+                return true;
+            }
+        },
+        {
+            regex: /^drive (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.setSeqNum(seqNum);
+                this.drive(+RegExp.$1, +RegExp.$2);
+                return true;
+            }
+        },
+        {
+            regex: /^get range$/,
+            handler: () => {
+                this.setSeqNum(seqNum);
+                return this.getRange().then(function (value) {
+                    return value && value.range;
+                });
+            }
+        },
+        {
+            regex: /^get ticks$/,
+            handler: () => {
+                this.setSeqNum(seqNum);
+                return this.getTicks().then(function (value) {
+                    return value && [value.left, value.right];
+                });
+            }
+        },
+        {
+            regex: /^set key(| -?\d+([ ,]-?\d+)*)$/,
+            handler: () => {
+                this.setSeqNum(seqNum);
+                var encryption = RegExp.$1.split(/[, ]/);
+                if (encryption[0] === '') {
+                    encryption.splice(0, 1);
+                }
+                return this.setEncryption(encryption.map(Number));
+            }
+        },
+        {
+            regex: /^set total rate (-?\d+)$/,
+            handler: () => {
+                this.setSeqNum(seqNum);
+                this.setTotalRate(+RegExp.$1);
+                return true;
+            }
+        },
+        {
+            regex: /^set client rate (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.setSeqNum(seqNum);
+                this.setClientRate(+RegExp.$1, +RegExp.$2);
+                return true;
+            }
+        },
+        {
+            regex: /^set led (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.setSeqNum(seqNum);
+                this.setLed(+RegExp.$1, +RegExp.$2);
+                return true;
+            }
+        },
+        {
+            regex: /^infra light (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.setSeqNum(seqNum);
+                this.infraLight(+RegExp.$1, +RegExp.$2);
+                return true;
+            }
+        },
+        {
+            regex: /^reset seq$/,
+            handler: () => {
+                this.setSeqNum(-1);
+                return true;
+            }
+        },
+        {
+            regex: /^reset rates$/,
+            handler: () => {
+                this.resetRates();
+                return true;
+            }
+        },
+    ];
+
+    let matchingCase = cases.find(aCase => command.match(aCase.regex));
+    return matchingCase.handler();
 };
 
 Robot.prototype.encrypt = function (text, decrypt) {
