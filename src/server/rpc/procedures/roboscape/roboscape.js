@@ -340,7 +340,8 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
                     return false;
                 }
             }
-            return robot.onCommand(command, seqNum);
+            robot.setSeqNum(seqNum);
+            return robot.onCommand(command);
         } // end of if (robot && typeof command === 'string')
         return false;
     };

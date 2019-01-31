@@ -414,12 +414,11 @@ Robot.prototype.onMessage = function (message) {
 };
 
 // handle user commands to the robot (through the 'send' rpc)
-Robot.prototype.onCommand = function(command, seqNum) {
+Robot.prototype.onCommand = function(command) {
     const cases = [
         {
             regex: /^is alive$/,
             handler: () => {
-                this.setSeqNum(seqNum);
                 this.sendToClient('alive', {}, ['time']);
                 return this.isAlive();
             }
@@ -427,7 +426,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
         {
             regex: /^beep (-?\d+)[, ](-?\d+)$/,
             handler: () => {
-                this.setSeqNum(seqNum);
                 this.beep(+RegExp.$1, +RegExp.$2);
                 return true;
             }
@@ -435,7 +433,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
         {
             regex: /^set speed (-?\d+)[, ](-?\d+)$/,
             handler: () => {
-                this.setSeqNum(seqNum);
                 this.setSpeed(+RegExp.$1, +RegExp.$2);
                 return true;
             }
@@ -443,7 +440,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
         {
             regex: /^drive (-?\d+)[, ](-?\d+)$/,
             handler: () => {
-                this.setSeqNum(seqNum);
                 this.drive(+RegExp.$1, +RegExp.$2);
                 return true;
             }
@@ -451,7 +447,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
         {
             regex: /^get range$/,
             handler: () => {
-                this.setSeqNum(seqNum);
                 return this.getRange().then(function (value) {
                     return value && value.range;
                 });
@@ -460,7 +455,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
         {
             regex: /^get ticks$/,
             handler: () => {
-                this.setSeqNum(seqNum);
                 return this.getTicks().then(function (value) {
                     return value && [value.left, value.right];
                 });
@@ -469,7 +463,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
         {
             regex: /^set key(| -?\d+([ ,]-?\d+)*)$/,
             handler: () => {
-                this.setSeqNum(seqNum);
                 var encryption = RegExp.$1.split(/[, ]/);
                 if (encryption[0] === '') {
                     encryption.splice(0, 1);
@@ -480,7 +473,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
         {
             regex: /^set total rate (-?\d+)$/,
             handler: () => {
-                this.setSeqNum(seqNum);
                 this.setTotalRate(+RegExp.$1);
                 return true;
             }
@@ -488,7 +480,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
         {
             regex: /^set client rate (-?\d+)[, ](-?\d+)$/,
             handler: () => {
-                this.setSeqNum(seqNum);
                 this.setClientRate(+RegExp.$1, +RegExp.$2);
                 return true;
             }
@@ -496,7 +487,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
         {
             regex: /^set led (-?\d+)[, ](-?\d+)$/,
             handler: () => {
-                this.setSeqNum(seqNum);
                 this.setLed(+RegExp.$1, +RegExp.$2);
                 return true;
             }
@@ -504,7 +494,6 @@ Robot.prototype.onCommand = function(command, seqNum) {
         {
             regex: /^infra light (-?\d+)[, ](-?\d+)$/,
             handler: () => {
-                this.setSeqNum(seqNum);
                 this.infraLight(+RegExp.$1, +RegExp.$2);
                 return true;
             }
