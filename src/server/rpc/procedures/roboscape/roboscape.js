@@ -169,6 +169,7 @@ RoboScape.prototype._tbd = function (fnName, args) {
 };
 
 if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
+    /* eslint-disable no-unused-vars */
     /**
      * Returns true if the given robot is alive, sent messages in the
      * last two seconds.
@@ -272,6 +273,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
     RoboScape.prototype.setClientRate = function (robot, rate, penalty) {
         return this._tbd('setClientRate', arguments);
     };
+    /* eslint-enable no-unused-vars */
 }
 
 if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
