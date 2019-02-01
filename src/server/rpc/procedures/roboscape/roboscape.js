@@ -229,10 +229,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {number} range in centimeters
      */
     RoboScape.prototype.getRange = function (robot) {
-        return this._tbd('getRange', arguments)
-            .then(function (value) {
-                return value && value.range;
-            });
+        return this._tbd('getRange', arguments);
     };
 
     /**
@@ -241,10 +238,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {array} the number of ticks for the left and right wheels
      */
     RoboScape.prototype.getTicks = function (robot) {
-        return this._tbd('getTicks', arguments)
-            .then(function (value) {
-                return value && [value.left, value.right];
-            });
+        return this._tbd('getTicks', arguments);
     };
 
     /**
