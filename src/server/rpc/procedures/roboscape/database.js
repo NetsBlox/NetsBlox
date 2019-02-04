@@ -1,4 +1,4 @@
-const serviceStorage = require('../../advancedStorage');
+const getServiceStorage = require('../../advancedStorage');
 
 const schemaDef = {
     owner: String, // username of the owner
@@ -12,4 +12,4 @@ const schemaDef = {
     ]
 };
 
-module.exports = serviceStorage('Roboscape', schemaDef);
+module.exports = getServiceStorage('Roboscape', schemaDef);
