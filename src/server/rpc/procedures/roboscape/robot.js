@@ -274,9 +274,10 @@ Robot.prototype.commandToClient = function (command) {
     }
 };
 
-Robot.prototype.sendToClient = function (msgType, content, fields) {
+Robot.prototype.sendToClient = function (msgType, content) {
     var myself = this;
 
+    let fields = ['time', ...Object.keys(content)];
     content.robot = this.mac_addr;
     content.time = this.timestamp;
 
@@ -319,6 +320,7 @@ Robot.prototype.sendToClient = function (msgType, content, fields) {
     });
 };
 
+// used for handling incoming message from the robot
 Robot.prototype.onMessage = function (message) {
     if (message.length < 11) {
         this._logger.log('invalid message ' + this.ip4_addr + ':' + this.ip4_port +
@@ -342,24 +344,24 @@ Robot.prototype.onMessage = function (message) {
         this.sendToClient('beep', {
             msec: message.readInt16LE(11),
             tone: message.readInt16LE(13),
-        }, ['time', 'msec', 'tone']);
+        });
     } else if (command === 'S' && message.length === 15) {
         this.sendToClient('speed', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        }, ['time', 'left', 'right']);
+        });
     } else if (command === 'W' && message.length === 12) {
         state = message.readUInt8(11);
         this.sendToClient('whiskers', {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
-        }, ['time', 'left', 'right']);
+        });
     } else if (command === 'P' && message.length === 12) {
         state = message.readUInt8(11) == 0;
         if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
             this.sendToClient('button', {
                 pressed: state
-            }, ['time', 'pressed']);
+            });
         }
         if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
             if (state) {
@@ -379,37 +381,137 @@ Robot.prototype.onMessage = function (message) {
     } else if (command === 'R' && message.length === 13) {
         this.sendToClient('range', {
             range: message.readInt16LE(11),
-        }, ['time', 'range']);
+        });
     } else if (command === 'T' && message.length === 19) {
         this.sendToClient('ticks', {
             left: message.readInt32LE(11),
             right: message.readInt32LE(15),
-        }, ['time', 'left', 'right']);
+        });
     } else if (command === 'D' && message.length === 15) {
         this.sendToClient('drive', {
             left: message.readInt16LE(11),
             right: message.readInt16LE(13),
-        }, ['time', 'left', 'right']);
+        });
     } else if (command === 'L' && message.length === 13) {
         this.sendToClient('set led', {
             led: message.readUInt8(11),
             command: message.readUInt8(12)
-        }, ['time', 'led', 'command']);
+        });
     } else if (command === 'F' && message.length === 12) {
         state = message.readUInt8(11);
         this.sendToClient('infra event', {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
-        }, ['time', 'left', 'right']);
+        });
     } else if (command === 'G' && message.length === 14) {
         this.sendToClient('infra light', {
             msec: message.readInt16LE(11),
             pwr: Math.round(100 - message.readUInt8(13) / 2.55)
-        }, ['time', 'msec', 'pwr']);
+        });
     } else {
         this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
     }
+};
+
+// handle user commands to the robot (through the 'send' rpc)
+Robot.prototype.onCommand = function(command) {
+    const cases = [
+        {
+            regex: /^is alive$/,
+            handler: () => {
+                this.sendToClient('alive', {});
+                return this.isAlive();
+            }
+        },
+        {
+            regex: /^beep (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.beep(+RegExp.$1, +RegExp.$2);
+            }
+        },
+        {
+            regex: /^set speed (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.setSpeed(+RegExp.$1, +RegExp.$2);
+            }
+        },
+        {
+            regex: /^drive (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.drive(+RegExp.$1, +RegExp.$2);
+            }
+        },
+        {
+            regex: /^get range$/,
+            handler: () => {
+                return this.getRange().then(function (value) {
+                    return value && value.range;
+                });
+            }
+        },
+        {
+            regex: /^get ticks$/,
+            handler: () => {
+                return this.getTicks().then(function (value) {
+                    return value && [value.left, value.right];
+                });
+            }
+        },
+        {
+            regex: /^set key(| -?\d+([ ,]-?\d+)*)$/,
+            handler: () => {
+                var encryption = RegExp.$1.split(/[, ]/);
+                if (encryption[0] === '') {
+                    encryption.splice(0, 1);
+                }
+                return this.setEncryption(encryption.map(Number));
+            }
+        },
+        {
+            regex: /^set total rate (-?\d+)$/,
+            handler: () => {
+                this.setTotalRate(+RegExp.$1);
+            }
+        },
+        {
+            regex: /^set client rate (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.setClientRate(+RegExp.$1, +RegExp.$2);
+            }
+        },
+        {
+            regex: /^set led (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.setLed(+RegExp.$1, +RegExp.$2);
+            }
+        },
+        {
+            regex: /^infra light (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.infraLight(+RegExp.$1, +RegExp.$2);
+            }
+        },
+        {
+            regex: /^reset seq$/,
+            handler: () => {
+                this.setSeqNum(-1);
+            }
+        },
+        {
+            regex: /^reset rates$/,
+            handler: () => {
+                this.resetRates();
+            }
+        },
+    ];
+
+    let matchingCase = cases.find(aCase => command.match(aCase.regex));
+    if (!matchingCase) return false; // invalid command structure
+
+    let rv = matchingCase.handler();
+    if (rv === undefined) rv = true;
+    return rv;
 };
 
 Robot.prototype.encrypt = function (text, decrypt) {

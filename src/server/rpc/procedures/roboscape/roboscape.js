@@ -52,6 +52,7 @@ var RoboScape = function () {
 RoboScape.serviceName = 'RoboScape';
 RoboScape.prototype._robots = {};
 
+// fetch the robot, create one if necessary
 RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
     if (!robot) {
@@ -320,84 +321,30 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         // logger.log('send ' + robot + ' ' + command);
         robot = this._getRobot(robot);
 
-        if (robot && typeof command === 'string') {
-            if (command.match(/^backdoor[, ](.*)$/)) {
-                logger.log('executing ' + command);
-                command = RegExp.$1;
-            } else {
-                // for replay attacks
-                robot.commandToClient(command);
+        if (!robot && typeof command !== 'string') return false;
 
-                command = robot.decrypt(command);
+        // figure out the raw command after processing special methods, encryption, seq and client rate
+        if (command.match(/^backdoor[, ](.*)$/)) { // check if it is a backdoor
+            logger.log('executing ' + command);
+            command = RegExp.$1;
+        } else { // if not a backdoor handle seq number and encryption
+            // for replay attacks
+            robot.commandToClient(command);
 
-                var seqNum = -1;
-                if (command.match(/^(\d+)[, ](.*)$/)) {
-                    seqNum = +RegExp.$1;
-                    command = RegExp.$2;
-                }
-                if (!robot.accepts(this.socket.uuid, seqNum)) {
-                    return false;
-                }
+            command = robot.decrypt(command);
+
+            var seqNum = -1;
+            if (command.match(/^(\d+)[, ](.*)$/)) {
+                seqNum = +RegExp.$1;
+                command = RegExp.$2;
             }
-
-            if (command.match(/^is alive$/)) {
-                robot.setSeqNum(seqNum);
-                robot.sendToClient('alive', {}, ['time']);
-                return robot.isAlive();
-            } else if (command.match(/^beep (-?\d+)[, ](-?\d+)$/)) {
-                robot.setSeqNum(seqNum);
-                robot.beep(+RegExp.$1, +RegExp.$2);
-                return true;
-            } else if (command.match(/^set speed (-?\d+)[, ](-?\d+)$/)) {
-                robot.setSeqNum(seqNum);
-                robot.setSpeed(+RegExp.$1, +RegExp.$2);
-                return true;
-            } else if (command.match(/^drive (-?\d+)[, ](-?\d+)$/)) {
-                robot.setSeqNum(seqNum);
-                robot.drive(+RegExp.$1, +RegExp.$2);
-                return true;
-            } else if (command.match(/^get range$/)) {
-                robot.setSeqNum(seqNum);
-                return robot.getRange().then(function (value) {
-                    return value && value.range;
-                });
-            } else if (command.match(/^get ticks$/)) {
-                robot.setSeqNum(seqNum);
-                return robot.getTicks().then(function (value) {
-                    return value && [value.left, value.right];
-                });
-            } else if (command.match(/^set key(| -?\d+([ ,]-?\d+)*)$/)) {
-                robot.setSeqNum(seqNum);
-                var encryption = RegExp.$1.split(/[, ]/);
-                if (encryption[0] === '') {
-                    encryption.splice(0, 1);
-                }
-                return robot.setEncryption(encryption.map(Number));
-            } else if (command.match(/^set total rate (-?\d+)$/)) {
-                robot.setSeqNum(seqNum);
-                robot.setTotalRate(+RegExp.$1);
-                return true;
-            } else if (command.match(/^set client rate (-?\d+)[, ](-?\d+)$/)) {
-                robot.setSeqNum(seqNum);
-                robot.setClientRate(+RegExp.$1, +RegExp.$2);
-                return true;
-            } else if (command.match(/^set led (-?\d+)[, ](-?\d+)$/)) {
-                robot.setSeqNum(seqNum);
-                robot.setLed(+RegExp.$1, +RegExp.$2);
-                return true;
-            } else if (command.match(/^infra light (-?\d+)[, ](-?\d+)$/)) {
-                robot.setSeqNum(seqNum);
-                robot.infraLight(+RegExp.$1, +RegExp.$2);
-                return true;
-            } else if (command.match(/^reset seq$/)) {
-                robot.setSeqNum(-1);
-                return true;
-            } else if (command.match(/^reset rates$/)) {
-                robot.resetRates();
-                return true;
+            if (!robot.accepts(this.socket.uuid, seqNum)) {
+                return false;
             }
         }
-        return false;
+
+        robot.setSeqNum(seqNum);
+        return robot.onCommand(command);
     };
 }
 
@@ -411,8 +358,8 @@ server.on('message', function (message, remote) {
         logger.log('invalid message ' + remote.address + ':' +
             remote.port + ' ' + message.toString('hex'));
     } else {
-        var mac_addr = message.toString('hex', 0, 6);
-        var robot = RoboScape.prototype._addRobot(
+        var mac_addr = message.toString('hex', 0, 6); // pull out the mac address
+        var robot = RoboScape.prototype._addRobot( // gets a robot instance
             mac_addr, remote.address, remote.port);
         robot.onMessage(message);
     }
