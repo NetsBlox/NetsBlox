@@ -155,7 +155,8 @@ RoboScape.prototype.getRobots = function () {
 };
 
 
-RoboScape.prototype._tbd = function (fnName, args) {
+// performs the pre-checks and maps the incoming call to a robot action.
+RoboScape.prototype._passToRobot = function (fnName, args) {
     args = Array.from(args);
     let robotId = args.shift();
     const robot = this._getRobot(robotId);
@@ -177,7 +178,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot is alive
      */
     RoboScape.prototype.isAlive = function (robot) {
-        return this._tbd('isAlive', arguments);
+        return this._passToRobot('isAlive', arguments);
     };
 
     /**
@@ -188,7 +189,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.setSpeed = function (robot, left, right) {
-        return this._tbd('setSpeed', arguments);
+        return this._passToRobot('setSpeed', arguments);
     };
 
     /**
@@ -199,7 +200,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.setLed = function (robot, led, command) {
-        return this._tbd('setLed', arguments);
+        return this._passToRobot('setLed', arguments);
     };
 
     /**
@@ -210,7 +211,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.beep = function (robot, msec, tone) {
-        return this._tbd('beep', arguments);
+        return this._passToRobot('beep', arguments);
     };
 
     /**
@@ -221,7 +222,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.infraLight = function (robot, msec, pwr) {
-        return this._tbd('infraLight', arguments);
+        return this._passToRobot('infraLight', arguments);
     };
 
     /**
@@ -230,7 +231,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {number} range in centimeters
      */
     RoboScape.prototype.getRange = function (robot) {
-        return this._tbd('getRange', arguments);
+        return this._passToRobot('getRange', arguments);
     };
 
     /**
@@ -239,7 +240,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {array} the number of ticks for the left and right wheels
      */
     RoboScape.prototype.getTicks = function (robot) {
-        return this._tbd('getTicks', arguments);
+        return this._passToRobot('getTicks', arguments);
     };
 
     /**
@@ -250,7 +251,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.drive = function (robot, left, right) {
-        return this._tbd('drive', arguments);
+        return this._passToRobot('drive', arguments);
     };
 
     /**
@@ -260,7 +261,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.setTotalRate = function (robot, rate) {
-        return this._tbd('setTotalRate', arguments);
+        return this._passToRobot('setTotalRate', arguments);
     };
 
     /**
@@ -271,7 +272,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.setClientRate = function (robot, rate, penalty) {
-        return this._tbd('setClientRate', arguments);
+        return this._passToRobot('setClientRate', arguments);
     };
     /* eslint-enable no-unused-vars */
 }
