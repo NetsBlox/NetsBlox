@@ -119,4 +119,4 @@ async function start(aModel, aParserFn) {
         .pipe(parser);
 }
 
-module.exports = {start, program};
+module.exports = start;
