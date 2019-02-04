@@ -232,7 +232,7 @@ Robot.prototype.getRange = function () {
     var message = Buffer.alloc(1);
     message.write('R', 0, 1);
     this.sendToRobot(message);
-    return promise;
+    return promise.then(value => value && value.range);
 };
 
 Robot.prototype.getTicks = function () {
@@ -241,7 +241,7 @@ Robot.prototype.getTicks = function () {
     var message = Buffer.alloc(1);
     message.write('T', 0, 1);
     this.sendToRobot(message);
-    return promise;
+    return promise.then(value => value && [value.left, value.right]);
 };
 
 Robot.prototype.drive = function (left, right) {
@@ -445,17 +445,13 @@ Robot.prototype.onCommand = function(command) {
         {
             regex: /^get range$/,
             handler: () => {
-                return this.getRange().then(function (value) {
-                    return value && value.range;
-                });
+                return this.getRange();
             }
         },
         {
             regex: /^get ticks$/,
             handler: () => {
-                return this.getTicks().then(function (value) {
-                    return value && [value.left, value.right];
-                });
+                return this.getTicks();
             }
         },
         {

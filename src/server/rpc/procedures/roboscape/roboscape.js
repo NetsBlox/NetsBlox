@@ -53,7 +53,7 @@ RoboScape.serviceName = 'RoboScape';
 RoboScape.prototype._robots = {};
 
 // fetch the robot, create one if necessary
-RoboScape.prototype._addRobot = function (mac_addr, ip4_addr, ip4_port) {
+RoboScape.prototype._getOrCreateRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
     if (!robot) {
         logger.log('discovering ' + mac_addr + ' at ' + ip4_addr + ':' + ip4_port);
@@ -154,18 +154,35 @@ RoboScape.prototype.getRobots = function () {
     return Object.keys(RoboScape.prototype._robots);
 };
 
+
+//
+/**
+ * Performs the pre-checks and maps the incoming call to a robot action.
+ * @param {String} fnName name of the method/function to call on the robot object
+ * @param {Array} args array of arguments
+ */
+RoboScape.prototype._passToRobot = function (fnName, args) {
+    args = Array.from(args);
+    let robotId = args.shift();
+    const robot = this._getRobot(robotId);
+    if (robot && robot.accepts(this.socket.uuid)) {
+        let rv = robot[fnName].apply(robot, args);
+        if (rv === undefined) rv = true;
+        return rv;
+    }
+    return false;
+};
+
 if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
+    /* eslint-disable no-unused-vars */
     /**
      * Returns true if the given robot is alive, sent messages in the
      * last two seconds.
+     * @param {string} robot name of the robot (matches at the end)
      * @returns {boolean} True if the robot is alive
      */
     RoboScape.prototype.isAlive = function (robot) {
-        robot = this._getRobot(robot);
-        if (robot && robot.accepts(this.socket.uuid)) {
-            return robot.isAlive();
-        }
-        return false;
+        return this._passToRobot('isAlive', arguments);
     };
 
     /**
@@ -176,12 +193,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.setSpeed = function (robot, left, right) {
-        robot = this._getRobot(robot);
-        if (robot && robot.accepts(this.socket.uuid)) {
-            robot.setSpeed(left, right);
-            return true;
-        }
-        return false;
+        return this._passToRobot('setSpeed', arguments);
     };
 
     /**
@@ -192,12 +204,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.setLed = function (robot, led, command) {
-        robot = this._getRobot(robot);
-        if (robot && robot.accepts(this.socket.uuid)) {
-            robot.setLed(led, command);
-            return true;
-        }
-        return false;
+        return this._passToRobot('setLed', arguments);
     };
 
     /**
@@ -208,12 +215,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.beep = function (robot, msec, tone) {
-        robot = this._getRobot(robot);
-        if (robot && robot.accepts(this.socket.uuid)) {
-            robot.beep(msec, tone);
-            return true;
-        }
-        return false;
+        return this._passToRobot('beep', arguments);
     };
 
     /**
@@ -224,12 +226,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.infraLight = function (robot, msec, pwr) {
-        robot = this._getRobot(robot);
-        if (robot && robot.accepts(this.socket.uuid)) {
-            robot.infraLight(msec, pwr);
-            return true;
-        }
-        return false;
+        return this._passToRobot('infraLight', arguments);
     };
 
     /**
@@ -238,13 +235,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {number} range in centimeters
      */
     RoboScape.prototype.getRange = function (robot) {
-        robot = this._getRobot(robot);
-        if (robot && robot.accepts(this.socket.uuid)) {
-            return robot.getRange().then(function (value) {
-                return value && value.range;
-            });
-        }
-        return false;
+        return this._passToRobot('getRange', arguments);
     };
 
     /**
@@ -253,13 +244,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {array} the number of ticks for the left and right wheels
      */
     RoboScape.prototype.getTicks = function (robot) {
-        robot = this._getRobot(robot);
-        if (robot && robot.accepts(this.socket.uuid)) {
-            return robot.getTicks().then(function (value) {
-                return value && [value.left, value.right];
-            });
-        }
-        return false;
+        return this._passToRobot('getTicks', arguments);
     };
 
     /**
@@ -270,12 +255,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.drive = function (robot, left, right) {
-        robot = this._getRobot(robot);
-        if (robot && robot.accepts(this.socket.uuid)) {
-            robot.drive(left, right);
-            return true;
-        }
-        return false;
+        return this._passToRobot('drive', arguments);
     };
 
     /**
@@ -285,12 +265,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.setTotalRate = function (robot, rate) {
-        robot = this._getRobot(robot);
-        if (robot && robot.accepts(this.socket.uuid)) {
-            robot.setTotalRate(rate);
-            return true;
-        }
-        return false;
+        return this._passToRobot('setTotalRate', arguments);
     };
 
     /**
@@ -301,13 +276,9 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
      * @returns {boolean} True if the robot was found
      */
     RoboScape.prototype.setClientRate = function (robot, rate, penalty) {
-        robot = this._getRobot(robot);
-        if (robot && robot.accepts(this.socket.uuid)) {
-            robot.setClientRate(rate, penalty);
-            return true;
-        }
-        return false;
+        return this._passToRobot('setClientRate', arguments);
     };
+    /* eslint-enable no-unused-vars */
 }
 
 if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
@@ -359,7 +330,7 @@ server.on('message', function (message, remote) {
             remote.port + ' ' + message.toString('hex'));
     } else {
         var mac_addr = message.toString('hex', 0, 6); // pull out the mac address
-        var robot = RoboScape.prototype._addRobot( // gets a robot instance
+        var robot = RoboScape.prototype._getOrCreateRobot(
             mac_addr, remote.address, remote.port);
         robot.onMessage(message);
     }
