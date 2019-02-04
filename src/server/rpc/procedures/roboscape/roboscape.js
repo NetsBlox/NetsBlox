@@ -52,7 +52,7 @@ var RoboScape = function () {
 RoboScape.serviceName = 'RoboScape';
 RoboScape.prototype._robots = {};
 
-// fetch the robot, create one if necessary
+// fetch the robot and updates its address. creates one if necessary
 RoboScape.prototype._getOrCreateRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
     if (!robot) {
@@ -65,16 +65,20 @@ RoboScape.prototype._getOrCreateRobot = function (mac_addr, ip4_addr, ip4_port) 
     return robot;
 };
 
-RoboScape.prototype._getRobot = function (robot) {
-    robot = '' + robot;
-    if(robot.length < 4) return undefined;
-    if (robot.length === 12) {
-        return RoboScape.prototype._robots[robot];
+RoboScape.prototype._getRobot = function (robotId) {
+    robotId = '' + robotId;
+    let robot;
+    if(robotId.length < 4 || robotId.length > 12) return undefined;
+    if (robotId.length === 12) {
+        robot = this._robots[robotId];
+    } else { // try to guess the rest of the id
+        for (var mac_addr in this._robots) { // pick the first match
+            if (mac_addr.endsWith(robotId))
+                robot = this._robots[mac_addr];
+        }
     }
-    for (var mac_addr in RoboScape.prototype._robots) {
-        if (mac_addr.endsWith(robot))
-            return RoboScape.prototype._robots[mac_addr];
-    }
+
+    return robot;
 };
 
 RoboScape.prototype._heartbeat = function () {
