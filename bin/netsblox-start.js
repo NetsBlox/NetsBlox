@@ -12,6 +12,9 @@ const PORT = process.env.PORT || 8080;
 const VANTAGE_PORT = process.env.VANTAGE_PORT || 1234;
 const ENV = process.env.ENV;
 const isDevMode = ENV !== 'production';
+const DEBUG = process.env.DEBUG;
+
+if (isDevMode && !DEBUG) process.env.DEBUG = 'netsblox:*';
 
 app.use(express.static(__dirname + '/client/'));
 
