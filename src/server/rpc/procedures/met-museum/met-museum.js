@@ -5,10 +5,11 @@
  * @service
  */
 
-const fs = require('fs');
 const MetObject = require('./database.js');
 const ApiConsumer = require('../utils/api-consumer');
-const MetMuseum = new ApiConsumer('MetMuseum', 'https://collectionapi.metmuseum.org/public/collection/v1', {cache: {ttl: 5*60}});
+const DBConsumer = require('../utils/db-consumer');
+const MetApiConsumer = new ApiConsumer('MetMuseum', 'https://collectionapi.metmuseum.org/public/collection/v1', {cache: {ttl: 5*60}});
+const MetMuseum = new DBConsumer('MetMuseum', MetObject);
 
 
 function toTitleCase(text) {
@@ -18,44 +19,23 @@ function toTitleCase(text) {
         .join(' ');
 }
 
-// converts a phrase into camel case format
-function toCamelCase(text) {
-    // create uppercc
-    let cc = text.toLowerCase()
-        .split(' ')
-        .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
-        .join('');
-    return cc;
-}
-
-
-function cleanDbRec(rec) {
-    delete rec._doc._id;
-    delete rec._doc.__v;
-    return rec._doc;
-}
-
-const headers = fs.readFileSync(__dirname + '/metobjects.headers', {encoding: 'utf8'})
-    .trim()
-    .split(',');
-
 async function getMetObject(id) {
     let dbQuery = {
         'Object ID': id
     };
-    let rec = await MetObject.findOne(dbQuery);
+    let rec = await MetMuseum._model.findOne(dbQuery);
     if (!rec) throw new Error(`could not find an object with ID: ${id}`);
-    return cleanDbRec(rec);
+    return rec;
 }
+
 
 /**
  * Get a list of available attributes for museum's objects
  * @returns {Array} available headers
  */
 MetMuseum.fields = function() {
-    return headers;
+    return this._fields();
 };
-
 
 /**
  * Search the Metropolitan Museum of Art
@@ -65,24 +45,10 @@ MetMuseum.fields = function() {
  * @param {Number=} limit limit the number of returned results (maximum of 50)
  * @returns {Array} results
  */
-MetMuseum.advancedSearch = async function(field, query, page, limit) {
-    // prepare and check the input
+MetMuseum.advancedSearch = function(field, query, page, limit) {
     field = toTitleCase(field);
-    if (!headers.find(attr => attr === field)) throw new Error('bad field name');
-    if (page === '') page = 0;
-    if (limit === '') limit = 10;
-    limit = Math.min(limit, 50); // limit the max requested documents
-
-
-    // build the database query
-    let dbQuery = {};
-    dbQuery[field] = new RegExp(`.*${query}.*`, 'i');
-
-    let res = await MetObject.find(dbQuery).skip(page).limit(limit);
-
-    return res.map(cleanDbRec);
+    return this._advancedSearch(field, query, page, limit);
 };
-
 
 /**
  * Retrieves extended information about a single object
@@ -91,7 +57,8 @@ MetMuseum.advancedSearch = async function(field, query, page, limit) {
  */
 MetMuseum.getInfo = async function(id) {
     // could be updated to get info from museum's end point after it becomes stable
-    return await getMetObject(id);
+    let rec = await getMetObject(id);
+    return this._cleanDbRec(rec);
 };
 
 
@@ -124,7 +91,7 @@ MetMuseum.getImageUrls = async function(id) {
         return images;
     };
 
-    return this._sendStruct(queryOpts, parserFn);
+    return MetApiConsumer._sendStruct(queryOpts, parserFn);
 };
 
 
@@ -144,18 +111,6 @@ const featuredFields = [
     'Is Highlight'
 ];
 
-
-featuredFields.forEach(field => {
-    MetMuseum['searchBy' + toCamelCase(field)] = async function(query) {
-        // build the database query
-        let dbQuery = {};
-        dbQuery[field] = new RegExp(`.*${query}.*`, 'i');
-        dbQuery['Is Public Domain'] = 'True';
-
-        let res = await MetObject.find(dbQuery).limit(20);
-        res = res.map(cleanDbRec);
-        return res;
-    };
-});
+MetMuseum._genRPCs(featuredFields);
 
 module.exports = MetMuseum;
