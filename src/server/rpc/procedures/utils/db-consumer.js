@@ -34,7 +34,7 @@ class DBConsumer extends NBService {
 
     async _advancedSearch(field, query, page, limit) {
         // prepare and check the input
-        if (!this._fields.find(attr => attr === field)) throw new Error('bad field name');
+        if (!this._fields().find(attr => attr === field)) throw new Error('bad field name');
         if (page === '') page = 0;
         if (limit === '') limit = 10;
         limit = Math.min(limit, 50); // limit the max requested documents
