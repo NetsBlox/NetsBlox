@@ -155,13 +155,17 @@ RoboScape.prototype.getRobots = function () {
 };
 
 
-// performs the pre-checks and maps the incoming call to a robot action.
+//
+/**
+ * Performs the pre-checks and maps the incoming call to a robot action.
+ * @param {String} fnName name of the method/function to call on the robot object
+ * @param {Array} args array of arguments
+ */
 RoboScape.prototype._passToRobot = function (fnName, args) {
     args = Array.from(args);
     let robotId = args.shift();
     const robot = this._getRobot(robotId);
     if (robot && robot.accepts(this.socket.uuid)) {
-        console.log(`calling ${fnName} with "${args.join(', ')}"`);
         let rv = robot[fnName].apply(robot, args);
         if (rv === undefined) rv = true;
         return rv;
