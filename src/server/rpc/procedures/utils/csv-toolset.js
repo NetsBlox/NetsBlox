@@ -24,7 +24,7 @@ const modelFields = function(aModel) {
 
 // parserFn: called on each individual record object to transform if necessary
 const createCSVParser = function(parserFn) {
-    let recCounter = 0; // FIXME might need to attach to the parser obj
+    let recCounter = 0;
     const BATCH_SIZE = 1e+4;
     const headers = modelFields(model);
 
