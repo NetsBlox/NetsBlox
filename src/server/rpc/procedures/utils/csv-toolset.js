@@ -8,21 +8,14 @@
  - load and parse the csv contents
  - save records to the database
  - provide seeding helpers
-     - cli args: commander?
-     */
+ */
 
 const fs = require('fs');
 const parse = require('csv-parse');
 const mongoose = require('mongoose');
 const request = require('request');
-const Command = require('commander').Command;
-const program = new Command();
-let model; // TODO
 
-
-program
-    .option('--url <url>', 'direct url to a verified and expected csv file')
-    .option('--file <file>', 'path to a csv file');
+let model;
 
 const modelFields = function(aModel) {
     let fields = Object.keys(aModel.schema.paths);
@@ -95,26 +88,30 @@ const streamFromDisk = function(path, startLine=0) {
     return fs.createReadStream(path, {start: startLine});
 };
 
-async function start(aModel, aParserFn) {
-    program.parse(process.argv);
-    if (!program.url && !program.file) {
-    /* eslint-disable no-console*/
-        console.error('Missing required options. Get help with --help');
-        /* eslint-enable no-console*/
+async function start(aDbModel, opts) {
+    opts = {
+        recParser: undefined,
+        filePath: undefined,
+        url: undefined,
+        ...opts
+    };
+
+    if (!opts.filePath && !opts.url) {
+        // eslint-disable-next-line no-console
+        console.error('missing required source file');
         mongoose.disconnect();
         process.exit(1);
     }
 
-    model = aModel;
+    model = aDbModel;
 
     // drop/clearout the collection
     await model.deleteMany({}); // a better strategy?
-    const parser = createCSVParser(aParserFn);
 
-    const readStream = program.file ?
-        streamFromDisk(program.file):
-        streamFromUrl(program.url);
-
+    const parser = createCSVParser(opts.recParser);
+    const readStream = opts.filePath ?
+        streamFromDisk(opts.filePath):
+        streamFromUrl(opts.url);
     readStream
         .pipe(parser);
 }
