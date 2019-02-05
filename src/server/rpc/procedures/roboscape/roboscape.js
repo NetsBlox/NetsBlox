@@ -33,6 +33,7 @@
 
 const logger = require('../utils/logger')('roboscape');
 const Robot = require('./robot');
+const acl = require('./accessControl');
 var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
     ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
@@ -78,6 +79,7 @@ RoboScape.prototype._getRobot = function (robotId) {
         }
     }
 
+    // TODO regulate access
     return robot;
 };
 
@@ -123,6 +125,7 @@ RoboScape.prototype.eavesdrop = function (robots) {
  * @param {array} robots one or a list of robots
  */
 RoboScape.prototype.listen = function (robots) {
+    // TODO regulate access
     var state = this._state,
         uuid = this.socket.uuid;
 
@@ -154,8 +157,11 @@ RoboScape.prototype.listen = function (robots) {
  * Returns the MAC addresses of all robots.
  * @returns {array}
  */
-RoboScape.prototype.getRobots = function () {
-    return Object.keys(RoboScape.prototype._robots);
+RoboScape.prototype.getRobots = async function () {
+    // TODO of the connected robots return the ones that the caller has access to
+    const availableRobots = Object.keys(this._robots);
+    let robots = await acl.accessibleRobots('hamid', availableRobots);
+    return robots;
 };
 
 
@@ -166,6 +172,7 @@ RoboScape.prototype.getRobots = function () {
  * @param {Array} args array of arguments
  */
 RoboScape.prototype._passToRobot = function (fnName, args) {
+    // TODO regulate access
     args = Array.from(args);
     let robotId = args.shift();
     const robot = this._getRobot(robotId);
