@@ -54,8 +54,14 @@ const findRobotDocs = async function(robotIds) {
 
 // checks if username has access to robotId
 const hasAccess = async function(username, robotId) {
-    let rDoc = await findRobotDoc(robotId);
-    return hasAccessDoc(rDoc);
+    if (!robotId) throw new Error('missing robot id');
+    let rDoc = await _findRobotDoc(robotId);
+    return _hasAccessDoc(username, rDoc);
+};
+
+const ensureAuthorized = async function(username, robotId) {
+    if (!await hasAccess(username, robotId))
+        throw new Error('Unauthorized access.');
 };
 
 // returns accessible robot ids to this username
