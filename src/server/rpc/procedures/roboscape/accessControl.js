@@ -26,11 +26,10 @@ const _hasAccessDoc = function(username, doc) {
     return user && user.hasAccess;
 };
 
-const findRobotDoc = async function(robotId) {
+const _findRobotDoc = async function(robotId) {
     let queryRes = await RoboCol.findOne({robotId});
     if (queryRes) {
         let doc = queryRes._doc;
-        if (doc) logger.trace('fetched robot doc', doc);
         return doc;
     } else {
         return null;
@@ -38,7 +37,7 @@ const findRobotDoc = async function(robotId) {
 };
 
 // robotids: array of robotIds
-const findRobotDocs = async function(robotIds) {
+const _findRobotDocs = async function(robotIds) {
     // TODO find robots in batch
     let recs;
     logger.trace('finding robot docs for', robotIds);
@@ -46,13 +45,14 @@ const findRobotDocs = async function(robotIds) {
         recs = await RoboCol.find({}); // OPT streaming would be more efficient. memory issues..
         recs = recs.map(r => r._doc);
     } else {
-        let promises = robotIds.map(async id => await findRobotDoc(id)); // OPT batch in one query?
+        let promises = robotIds.map(async id => await _findRobotDoc(id)); // OPT batch in one query?
         recs = await Promise.all(promises);
     }
     return recs.filter(rec => !!rec); // return only valid docs
 };
 
 // checks if username has access to robotId
+// note: a guest user can access a public robot!
 const hasAccess = async function(username, robotId) {
     if (!robotId) throw new Error('missing robot id');
     let rDoc = await _findRobotDoc(robotId);
@@ -67,13 +67,14 @@ const ensureAuthorized = async function(username, robotId) {
 // returns accessible robot ids to this username
 // availableRobots: optional to help the search in database
 const accessibleRobots = async function(username, availableRobots) {
-    let docs = await findRobotDocs(availableRobots);
+    let docs = await _findRobotDocs(availableRobots);
     return docs
-        .filter(d => hasAccessDoc(username, d))
+        .filter(d => _hasAccessDoc(username, d))
         .map(rDoc => rDoc.robotId);
 };
 
 module.exports = {
     hasAccess,
     accessibleRobots,
+    ensureAuthorized,
 };
