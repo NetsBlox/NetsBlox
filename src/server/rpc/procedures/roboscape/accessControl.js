@@ -20,7 +20,7 @@ const logger = require('../utils/logger')('roboscape').fork('acl');
 // OPT if the doc structure used usernames as keys..
 const _hasAccessDoc = function(username, doc) {
     if (!doc) throw new Error('missing robot information');
-    if (doc.isPublic === true) return true;
+    if (doc.isPublic === true) return true; // if it is explicitly public/open
     if (doc.owner === username) return true; // give access to the owner
     let user = doc.users.find(u => u.username === username);
     return user && user.hasAccess;

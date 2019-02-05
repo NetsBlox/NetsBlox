@@ -51,7 +51,18 @@ var RoboScape = function () {
 };
 
 RoboScape.serviceName = 'RoboScape';
+// keeps a dictionary of robot objects keyed by mac_addr
 RoboScape.prototype._robots = {};
+
+RoboScape.prototype._ensureLoggedIn = function() {
+    if (this.caller.username !== undefined)
+        throw new Error('Login required.');
+};
+
+// input: FIXME robotid or robot object?!
+RoboScape.prototype._ensureAuthorized = async function(robotId) {
+    await acl.ensureAuthorized(this.caller.username, robotId);
+};
 
 // fetch the robot and updates its address. creates one if necessary
 RoboScape.prototype._getOrCreateRobot = function (mac_addr, ip4_addr, ip4_port) {
@@ -69,7 +80,9 @@ RoboScape.prototype._getOrCreateRobot = function (mac_addr, ip4_addr, ip4_port) 
 RoboScape.prototype._getRobot = function (robotId) {
     robotId = '' + robotId;
     let robot;
+
     if(robotId.length < 4 || robotId.length > 12) return undefined;
+
     if (robotId.length === 12) {
         robot = this._robots[robotId];
     } else { // try to guess the rest of the id
@@ -79,7 +92,7 @@ RoboScape.prototype._getRobot = function (robotId) {
         }
     }
 
-    // TODO regulate access
+    this._ensureAuthorized(robotId);
     return robot;
 };
 
@@ -125,7 +138,6 @@ RoboScape.prototype.eavesdrop = function (robots) {
  * @param {array} robots one or a list of robots
  */
 RoboScape.prototype.listen = function (robots) {
-    // TODO regulate access
     var state = this._state,
         uuid = this.socket.uuid;
 
@@ -158,9 +170,8 @@ RoboScape.prototype.listen = function (robots) {
  * @returns {array}
  */
 RoboScape.prototype.getRobots = async function () {
-    // TODO of the connected robots return the ones that the caller has access to
     const availableRobots = Object.keys(this._robots);
-    let robots = await acl.accessibleRobots('hamid', availableRobots);
+    let robots = await acl.accessibleRobots(this.caller.username, availableRobots);
     return robots;
 };
 
@@ -172,7 +183,6 @@ RoboScape.prototype.getRobots = async function () {
  * @param {Array} args array of arguments
  */
 RoboScape.prototype._passToRobot = function (fnName, args) {
-    // TODO regulate access
     args = Array.from(args);
     let robotId = args.shift();
     const robot = this._getRobot(robotId);
