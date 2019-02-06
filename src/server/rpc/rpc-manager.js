@@ -372,7 +372,7 @@ RPCManager.prototype.sendRPCError = function(response, error) {
     const isIntentionalError = err => err.name === 'Name';
     if (isIntentionalError(error)) {
         // less descriptive logs and send the error message to the user
-        this._logger.error(`Uncaught exception: ${error.message}`);
+        this._logger.error(`Error caught: ${error.message}`);
         if (response.headersSent) return;
         response.status(500).send(error.message);
     } else {
