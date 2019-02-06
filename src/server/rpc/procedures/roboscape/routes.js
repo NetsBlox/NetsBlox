@@ -4,14 +4,12 @@
 
 const logger = require('../utils/logger')('roboscape:routes');
 const RoboscapeCol = require('./database'); // roboscape model
-
 const genCrudRoutes = (model, baseEndpoint) => {
     const routes = [
         { // create
             URL: '',
             Parameters: '',
             Method: 'post',
-            note: 'create',
             // middleware: ['isLoggedIn'],
             Handler: function(req, res) {
                 const newEntry = req.body;
@@ -22,7 +20,6 @@ const genCrudRoutes = (model, baseEndpoint) => {
         { // read many
             URL: '',
             Method: 'get',
-            // middleware: ['isLoggedIn'],
             Handler: function(req, res) {
                 let query = res.locals.query || {};
                 logger.log('getting all robots', query);
@@ -57,9 +54,28 @@ const genCrudRoutes = (model, baseEndpoint) => {
         }
 
     ]
-        .map(r => {
-            r.URL = baseEndpoint + r.URL;
-            return r;
+        .map(route => { // handle the actual sending of the results
+            route.URL = baseEndpoint + route.URL;
+            let handler = route.Handler;
+            route.Handler = (req, res) => {
+                let rv = handler(req, res);
+                if (!rv.then) {
+                    res.status(200).send(rv);
+                } else {
+                    rv.then(val => {
+                        if (typeof val === 'object') {
+                            res.status(200).json(val);
+                        } else {
+                            res.status(200).send(val);
+                        }
+                    }).catch(e => {
+                        logger.error(e);
+                        // WARN could potentially leak information
+                        res.status(500).send(e.message);
+                    });
+                }
+            };
+            return route;
         });
     return routes;
 };
