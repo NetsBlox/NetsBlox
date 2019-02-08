@@ -1,5 +1,8 @@
 'use strict';
 var path = require('path');
+// eslint-disable-next-line no-unused-vars
+const heapdump = require('heapdump'); // trigger a heapdump with `kill -USR2 <pid>`
+
 require('dotenv').load({
     path: path.join(__dirname, '..', '.env'),
     silent: true
