@@ -1,4 +1,6 @@
-
+/*
+ * socket here refers to a Netsblox socket (instance of a client object)
+ */
 'use strict';
 
 const utils = require('./server-utils');

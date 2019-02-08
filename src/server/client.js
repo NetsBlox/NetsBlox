@@ -29,6 +29,7 @@ const NetsBloxAddress = require('./netsblox-address');
 const NetworkTopology = require('./network-topology');
 
 class Client {
+    // socket: pure websocket
     constructor (logger, socket) {
         // QUESTION what is this.id used for? and why is it changing counter
         this.id = (++counter);
