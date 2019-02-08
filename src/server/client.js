@@ -17,6 +17,8 @@ var counter = 0,
         'user-action'
     ];
 
+let clientCounter = 0;
+
 const Messages = require('./storage/messages');
 const ProjectActions = require('./storage/project-actions');
 const REQUEST_TIMEOUT = 60*1000;  // 1 minute
@@ -27,9 +29,11 @@ const NetsBloxAddress = require('./netsblox-address');
 const NetworkTopology = require('./network-topology');
 
 class Client {
+    // socket: pure websocket
     constructor (logger, socket) {
+        // QUESTION what is this.id used for? and why is it changing counter
         this.id = (++counter);
-        this._logger = logger.fork('client-'+this.id);
+        this._logger = logger.fork('client-' + ++clientCounter);
 
         this.loggedIn = false;
         this.projectId = null;
