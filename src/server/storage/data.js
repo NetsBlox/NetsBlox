@@ -15,7 +15,7 @@ class Data {
         }
     }
 
-    save(opts) {
+    save(opts={}) {
         return Q().then(() => this.prepare())
             .then(() => {
                 let data = this._saveable();
