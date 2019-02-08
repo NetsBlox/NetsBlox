@@ -245,6 +245,10 @@ module.exports = [
 
             return Projects.getById(projectId)
                 .then(project => {
+                    if (!project) {
+                        this._logger.error('trying to get trace end for non existing project', projectId, clientId);
+                        throw new Error('project not found');
+                    }
                     const endTime = Date.now();
                     return project.stopRecordingMessages(clientId)
                         .then(startTime => startTime && Messages.get(projectId, startTime, endTime));

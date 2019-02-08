@@ -79,6 +79,7 @@ NetworkTopology.prototype.setClientState = async function(clientId, projectId, r
 NetworkTopology.prototype.getRoomState = function(projectId, refresh=false) {
     return Projects.getRawProjectById(projectId, {unmarkForDeletion: refresh})
         .then(metadata => {
+            if (!metadata) throw new Error('could not find project', projectId);
             const ids = Object.keys(metadata.roles).sort();
             const rolesInfo = {};
             const roles = ids.map(id => [metadata.roles[id].ProjectName, id]);
