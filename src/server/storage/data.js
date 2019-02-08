@@ -15,12 +15,13 @@ class Data {
         }
     }
 
-    save() {
+    save(opts) {
         return Q().then(() => this.prepare())
             .then(() => {
                 let data = this._saveable();
 
-                this._logger.trace('saving', this.pretty());
+                if (!opts.silent)
+                    this._logger.trace('saving', this.pretty());
                 return this._db.update(this.getStorageId(), data, {upsert: true});
             })
             .then(result => {
