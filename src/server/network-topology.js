@@ -20,11 +20,14 @@ NetworkTopology.prototype.init = function(logger, Client) {
     };
 };
 
+// socket: new client object (netsblox websocket)
 NetworkTopology.prototype.onConnect = function(socket) {
     this._sockets.push(socket);
+    this._logger.trace(`client connected ${socket.toString()} total: ${this._sockets.length}`);
 };
 
 NetworkTopology.prototype.onDisconnect = function(socket) {
+    this._logger.trace(`client diconnected ${socket.toString()} total: ${this._sockets.length}`);
     const index = this._sockets.indexOf(socket);
     const hasSocket = index !== -1;
     if (hasSocket) {
