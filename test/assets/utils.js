@@ -171,20 +171,28 @@ const sleep = delay => {
     return deferred.promise;
 };
 
-module.exports = {
-    verifyRPCInterfaces: function(rpc, interfaces) {
-        describe(`${rpc.serviceName} interfaces`, function() {
-            interfaces.forEach(interface => {
-                var name = interface[0],
-                    expected = interface[1] || [];
+/**
+ * Verifies that an RPC includes a list of interfaces with specific argument names
+ * @param {Object} rpc RPC to verify interfaces of
+ * @param {Array[]} interfaces Array of interface descriptions (array containing name of interface and array of argument names)
+ * @param {String=} serviceName Allows for custom service name, default will use rpc.serviceName
+ */
+const verifyRPCInterfaces = function(rpc, interfaces, serviceName = null) {
+    describe(`${serviceName || rpc.serviceName} interfaces`, function() {
+        interfaces.forEach(interface => {
+            var name = interface[0],
+                expected = interface[1] || [];
 
-                it(`${name} args should be ${expected.join(', ')}`, function() {
-                    var args = rpc.getArgumentsFor(name);
-                    assert(_.isEqual(args, expected));
-                });
+            it(`${name} args should be ${expected.join(', ')}`, function() {
+                var args = rpc.getArgumentsFor(name);
+                assert(_.isEqual(args, expected));
             });
         });
-    },
+    });
+};
+
+module.exports = {
+    verifyRPCInterfaces: verifyRPCInterfaces,
     XML_Serializer: Client.XML_Serializer,
     canLoadXml: canLoadXml,
 
