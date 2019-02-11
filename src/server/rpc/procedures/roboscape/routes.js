@@ -35,10 +35,25 @@ const routes = [
         Parameters: '',
         Method: 'post',
         middleware: ['isLoggedIn', 'setUser'],
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             // TODO make sure robotIds are unique (duplicate robots)
             const newEntry = req.body;
-            return RoboscapeCol.create(newEntry);
+            newEntry.users = [];
+            newEntry.owner = req.session.user.username;
+            newEntry.ownedAt = new Date();
+
+            if (!newEntry.robotId) throw new Error('missing robot ID');
+
+
+            let rec = await RoboscapeCol.findOne({robotId: newEntry.robotId});
+            if (rec) {
+                logger.trace('updating existing rec', rec);
+                await RoboscapeCol.update({owner: newEntry.owner, ownedAt: newEntry.ownedAt});
+            } else {
+                logger.trace('creating new robot rec', newEntry);
+                await RoboscapeCol.create(newEntry);
+            }
+            return `owned robot ${req.body.robotId}`;
         }
     },
 
