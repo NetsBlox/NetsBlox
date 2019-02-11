@@ -171,6 +171,46 @@ const sleep = delay => {
     return deferred.promise;
 };
 
+
+/**
+ * Check a function repeatedly (every 25 ms) until either it is true or times out.
+ * @param {Function} fn Function to check
+ * @param {Number} maxWait Amount of time, in ms to repeat checking for 
+ */
+const waitUntil = function(fn, maxWait) {
+    let resolve, reject;
+    let promise = new Promise((res, rej) => {
+        resolve = res;
+        reject = rej;
+    });
+    
+    const deferred = {
+        resolve,
+        reject,
+        promise
+    };
+
+    var startTime = Date.now();
+
+    var check = function() {
+        let result = fn();
+        if (result || Date.now()-startTime > maxWait) {
+            if (result) {
+                deferred.resolve(result);
+            } else {
+                deferred.reject(result || '');
+            }
+        } else {
+            setTimeout(check, 25);
+        }
+    };
+
+    maxWait = maxWait || 6000;
+    check();
+
+    return deferred.promise;
+};
+
 /**
  * Verifies that an RPC includes a list of interfaces with specific argument names
  * @param {Object} rpc RPC to verify interfaces of
@@ -199,6 +239,7 @@ module.exports = {
     connect: connect,
     reset: reset,
     sleep: sleep,
+    waitUntil: waitUntil,
     logger: mainLogger,
     createRoom: createRoom,
     createSocket: createSocket,
