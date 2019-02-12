@@ -67,6 +67,7 @@ class ApiConsumer extends NBService {
                 uri: fullUrl,
                 method: queryOptions.method || 'GET',
                 body: queryOptions.body,
+                auth: queryOptions.auth,
                 headers: queryOptions.headers,
                 json: queryOptions.json !== undefined ? queryOptions.json : true
             });

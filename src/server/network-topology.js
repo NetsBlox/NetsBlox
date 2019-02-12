@@ -1,4 +1,6 @@
-
+/*
+ * socket here refers to a Netsblox socket (instance of a client object)
+ */
 'use strict';
 
 const utils = require('./server-utils');
@@ -20,11 +22,14 @@ NetworkTopology.prototype.init = function(logger, Client) {
     };
 };
 
+// socket: new client object (netsblox websocket)
 NetworkTopology.prototype.onConnect = function(socket) {
     this._sockets.push(socket);
+    this._logger.trace(`client connected ${socket.toString()} total: ${this._sockets.length}`);
 };
 
 NetworkTopology.prototype.onDisconnect = function(socket) {
+    this._logger.trace(`client diconnected ${socket.toString()} total: ${this._sockets.length}`);
     const index = this._sockets.indexOf(socket);
     const hasSocket = index !== -1;
     if (hasSocket) {
@@ -79,6 +84,7 @@ NetworkTopology.prototype.setClientState = async function(clientId, projectId, r
 NetworkTopology.prototype.getRoomState = function(projectId, refresh=false) {
     return Projects.getRawProjectById(projectId, {unmarkForDeletion: refresh})
         .then(metadata => {
+            if (!metadata) throw new Error('could not find project', projectId);
             const ids = Object.keys(metadata.roles).sort();
             const rolesInfo = {};
             const roles = ids.map(id => [metadata.roles[id].ProjectName, id]);

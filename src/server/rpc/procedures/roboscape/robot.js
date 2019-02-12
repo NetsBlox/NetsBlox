@@ -260,7 +260,7 @@ Robot.prototype.drive = function (left, right) {
 Robot.prototype.commandToClient = function (command) {
     if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         var mac_addr = this.mac_addr;
-        this.sockets.forEach(function (uuid) {
+        this.sockets.forEach(uuid => {
             var socket = NetworkTopology.getSocket(uuid);
             if (socket) {
                 const content = {

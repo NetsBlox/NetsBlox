@@ -107,7 +107,7 @@
 
         recordLogin() {
             this.lastLoginAt = Date.now();
-            this.save();
+            this.save({silent: true});
         }
 
         getNewNameFor(name, projectId) {

@@ -369,9 +369,18 @@ RPCManager.prototype.sendRPCResult = function(response, result) {
 };
 
 RPCManager.prototype.sendRPCError = function(response, error) {
-    this._logger.error(`Uncaught exception: ${error.toString()}`);
-    if (response.headersSent) return;
-    response.status(500).send(error.message);
+    const isIntentionalError = err => err.name === 'Name';
+    if (isIntentionalError(error)) {
+        // less descriptive logs and send the error message to the user
+        this._logger.error(`Error caught: ${error.message}`);
+        if (response.headersSent) return;
+        response.status(500).send(error.message);
+    } else {
+        // more verbose logs. hide the error message from user (generic error)
+        this._logger.error('Uncaught exception:', error);
+        if (response.headersSent) return;
+        response.status(500).send('something went wrong');
+    }
 };
 
 RPCManager.prototype.isRPCLoaded = function(rpcPath) {
