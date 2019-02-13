@@ -20,13 +20,12 @@ const BASE_ENDPOINT = 'roboscape/robots';
 
 
 // requires user
-const isRobotOwner = async function(req, res, next) {
+const isRobotOwner = async function(req, res) {
     let username = req.session.user.username;
     logger.trace(`checking if ${username} is the robot owner`);
     let robotDoc = await RoboscapeCol.findOne({_id: req.params._id});
     if (robotDoc.owner !== username)
         throw new Error('unauthorized.');
-    next();
 };
 
 const routes = [
