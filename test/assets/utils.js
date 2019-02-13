@@ -173,11 +173,12 @@ const sleep = delay => {
 
 
 /**
- * Check a function repeatedly (every 25 ms) until either it is true or times out.
+ * Poll a function repeatedly (every 25 ms) until either it is true or times out.
  * @param {Function} fn Function to check
- * @param {Number} maxWait Amount of time, in ms to repeat checking for 
+ * @param {Number} maxWait Amount of time, in ms to repeat polling for 
+ * @param {Number=} retryTime Time to wait, in ms, between checks
  */
-const waitUntil = function(fn, maxWait) {
+const waitUntil = function(fn, maxWait, retryTime = 25) {
     let resolve, reject;
     let promise = new Promise((res, rej) => {
         resolve = res;
@@ -201,7 +202,7 @@ const waitUntil = function(fn, maxWait) {
                 deferred.reject(result || '');
             }
         } else {
-            setTimeout(check, 25);
+            setTimeout(check, retryTime);
         }
     };
 
