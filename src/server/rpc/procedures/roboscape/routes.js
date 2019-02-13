@@ -41,8 +41,8 @@ const routes = [
             newEntry.users = [];
             newEntry.owner = req.session.user.username;
             newEntry.ownedAt = new Date();
-
             if (!newEntry.robotId) throw new Error('missing robot ID');
+            newEntry.robotId = newEntry.robotId.toLowerCase(); // lowercase ids
 
 
             let rec = await RoboscapeCol.findOne({robotId: newEntry.robotId});
@@ -78,6 +78,7 @@ const routes = [
         customMiddleware: [isRobotOwner],
         Handler: function(req, res) {
             const { _id } = req.params;
+            // NOTE if using robotId => lowecase
             return RoboscapeCol.findById(_id);
         }
     },
