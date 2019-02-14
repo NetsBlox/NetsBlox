@@ -3,6 +3,7 @@
 'use strict';
 
 const logger = require('../utils/logger')('roboscape:routes');
+const Users = require('../../../storage/users');
 const RoboscapeCol = require('./database'); // roboscape model
 
 const BASE_ENDPOINT = 'roboscape/robots';
@@ -39,7 +40,7 @@ const setUserAccess = async (mongoId, username, hasAccess) => {
 
     if (!robotRec) throw new Error('non-existing robot id');
 
-    // TODO check username exists (is a valid user)
+    if (await Users.get(username) === null) throw new Error('user not found');
 
     const curTime = new Date();
 

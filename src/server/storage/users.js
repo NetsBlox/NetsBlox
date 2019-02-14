@@ -170,6 +170,7 @@
         collection = db.collection('users');
     };
 
+    // it does not throw if the user is not found
     UserStorage.get = function (username) {
         // Retrieve the user
         return Q(collection.findOne({username}))
