@@ -127,7 +127,7 @@ const routes = [
         Method: 'put', // FIXME patch?
         middleware: ['isLoggedIn', 'setUser'],
         customMiddleware: [isRobotOwner],
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             // prevent update to questionable fields
             const whiteList = ['isPublic', 'users'];
             const changedEntry = req.body;
@@ -135,11 +135,8 @@ const routes = [
                 if (!whiteList.includes(attr)) throw new Error(`Cant change attribute ${attr}`);
             });
 
-            // TODO reject if the record exists
-
-            // TODO duplicate users
-
-            return RoboscapeCol.update({ _id: req.params._id }, { $set: changedEntry });
+            await RoboscapeCol.update({ _id: req.params._id }, { $set: changedEntry }, {upsert: false});
+            return 'ok';
         }
     },
 
