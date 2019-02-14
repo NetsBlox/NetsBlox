@@ -35,26 +35,28 @@ const setUserAccess = async (mongoId, username, hasAccess) => {
     // prevent update to questionable fields
     if (typeof hasAccess !== 'boolean' || !username) throw new Error('bad username or accesslevel.');
 
-    let rec = await findOne({_id: mongoId});
+    let robotRec = await findOne({_id: mongoId});
 
-    if (!rec) throw new Error('non-existing robot id');
+    if (!robotRec) throw new Error('non-existing robot id');
+
+    // TODO check username exists (is a valid user)
 
     const curTime = new Date();
 
-    rec = rec._doc;
-    let user = rec.users.find(user => user.username === username);
+    robotRec = robotRec._doc;
+    let user = robotRec.users.find(user => user.username === username);
     if (user) {
         user.hasAccess = hasAccess; // check is it editing the same object?
         user.updatedAt = curTime;
     } else {
-        rec.users.push({
+        robotRec.users.push({
             username,
             hasAccess,
             updatedAt: curTime,
         });
     }
 
-    return RoboscapeCol.update({ _id: mongoId }, rec);
+    return RoboscapeCol.update({ _id: mongoId }, robotRec);
 };
 
 
@@ -77,7 +79,12 @@ const routes = [
             let rec = await RoboscapeCol.findOne({robotId: newEntry.robotId});
             if (rec) {
                 logger.trace('updating existing rec', rec);
-                await RoboscapeCol.update({owner: newEntry.owner, ownedAt: newEntry.ownedAt});
+                if (rec._doc.owner === newEntry.owner) {
+                    // user already owns the robot
+                    return 'robot already owned';
+                } else { // refresh the doc, throw users out. del & recreate?
+                    await RoboscapeCol.update({owner: newEntry.owner, isPublic: true, ownedAt: newEntry.ownedAt, users: []});
+                }
             } else {
                 logger.trace('creating new robot rec', newEntry);
                 await RoboscapeCol.create(newEntry);
