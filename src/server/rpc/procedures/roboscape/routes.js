@@ -56,7 +56,8 @@ const setUserAccess = async (mongoId, username, hasAccess) => {
         });
     }
 
-    return RoboscapeCol.update({ _id: mongoId }, robotRec);
+    await RoboscapeCol.update({ _id: mongoId }, robotRec);
+    return robotRec;
 };
 
 
@@ -150,7 +151,7 @@ const routes = [
             const schema = ['username', 'hasAccess'];
             const body = req.body;
             // make sure the request body has the same keys as schema
-            if (schema.sort() === body.sort()) throw new Error('bad body structure, expected ' + schema.join(', '));
+            if (schema.sort() === Object.keys(body).sort()) throw new Error('bad body structure, expected ' + schema.join(', '));
             return setUserAccess(req.params._id, body.username, body.hasAccess);
         }
     },
