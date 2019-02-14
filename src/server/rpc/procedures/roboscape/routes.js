@@ -25,8 +25,9 @@ const isRobotOwner = async function(req, res) {
     let username = req.session.user.username;
     logger.trace(`checking if ${username} is the robot owner`);
     let robotDoc = await RoboscapeCol.findOne({_id: req.params._id});
+    if (!robotDoc) throw new Error('non-existing robot');
     if (robotDoc.owner !== username)
-        throw new Error('unaccessible or non-existing robot id.');
+        throw new Error('unauthorized');
 };
 
 const findOne = query => RoboscapeCol.findOne(query);
