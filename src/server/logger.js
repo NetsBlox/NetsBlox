@@ -64,7 +64,7 @@ Logger.prototype._log = function(level, content) {
     /* eslint-enable no-console*/
 
     // Prevent issues if no color available
-    logFunc(chalk[LEVELCOLORS[level].bg](chalk[LEVELCOLORS[level].fg](`${Date.now()} ${this._name}:${level}`)) + " " + content);
+    logFunc(chalk[LEVELCOLORS[level].bg](chalk[LEVELCOLORS[level].fg](`${Date.now()} ${this._name}:${level}`)) + ' ' + content);
 };
 
 Logger.prototype.fork = function(name) {
