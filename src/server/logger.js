@@ -35,11 +35,9 @@ const STDERR = ['warn', 'error'];
 
 var Logger = function(name) {
     this._name = name;
-    /* eslint-disable no-console*/
     LEVELS.forEach(lvl => {
         this[lvl] = this._log.bind(this, lvl);
     });
-    /* eslint-enable no-console*/
 };
 
 Logger.prototype._log = function(level, content) {
@@ -59,9 +57,11 @@ Logger.prototype._log = function(level, content) {
         }
     }
 
+    /* eslint-disable no-console*/
     // Determine which output to use
     let logFunc = STDERR.find(lvl => level === lvl)? console.error : console.log;
     logFunc = logFunc.bind(console);
+    /* eslint-enable no-console*/
 
     // Prevent issues if no color available
     logFunc(chalk[LEVELCOLORS[level].bg](chalk[LEVELCOLORS[level].fg](`${Date.now()} ${this._name}:${level}`)) + " " + content);
@@ -72,8 +72,8 @@ Logger.prototype.fork = function(name) {
 };
 
 // Inspired by debug package https://github.com/visionmedia/debug/
-Logger.prototype.names = []
-Logger.prototype.skips = []
+Logger.prototype.names = [];
+Logger.prototype.skips = [];
 
 // Get input from env variable
 let namespaces = process.env.DEBUG || '';
