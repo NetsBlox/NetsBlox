@@ -10,7 +10,7 @@ var Logger = function(name) {
     this._name = name;
     /* eslint-disable no-console*/
     levels.forEach(lvl => {
-        this[lvl] = debug(`${name}:${lvl}`);
+        this[lvl] = debug(`${name}:${lvl}`); // WARN the debug functions won't go out of scope (debug.instances) on their own
         if (STDERR.find(item => item === lvl)) {
             this[lvl].log = console.error.bind(console);
         } else { // send to stdout
@@ -22,6 +22,12 @@ var Logger = function(name) {
 
 Logger.prototype.fork = function(name) {
     return new Logger([this._name, name].join(':'));
+};
+
+Logger.prototype.destroy = function() {
+    levels.forEach(lvl => {
+        this[lvl].destroy();
+    });
 };
 
 module.exports = Logger;
