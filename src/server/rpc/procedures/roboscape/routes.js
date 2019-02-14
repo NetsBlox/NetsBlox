@@ -25,8 +25,38 @@ const isRobotOwner = async function(req, res) {
     logger.trace(`checking if ${username} is the robot owner`);
     let robotDoc = await RoboscapeCol.findOne({_id: req.params._id});
     if (robotDoc.owner !== username)
-        throw new Error('unauthorized.');
+        throw new Error('unaccessible or non-existing robot id.');
 };
+
+const findOne = query => RoboscapeCol.findOne(query);
+
+
+const setUserAccess = async (mongoId, username, hasAccess) => {
+    // prevent update to questionable fields
+    if (typeof hasAccess !== 'boolean' || !username) throw new Error('bad username or accesslevel.');
+
+    let rec = await findOne({_id: mongoId});
+
+    if (!rec) throw new Error('non-existing robot id');
+
+    const curTime = new Date();
+
+    rec = rec._doc;
+    let user = rec.users.find(user => user.username === username);
+    if (user) {
+        user.hasAccess = hasAccess; // check is it editing the same object?
+        user.updatedAt = curTime;
+    } else {
+        rec.users.push({
+            username,
+            hasAccess,
+            updatedAt: curTime,
+        });
+    }
+
+    return RoboscapeCol.update({ _id: mongoId }, rec);
+};
+
 
 const routes = [
     { // own, create the record if needed
@@ -95,9 +125,26 @@ const routes = [
                 if (!whiteList.includes(attr)) throw new Error(`Cant change attribute ${attr}`);
             });
 
+            // TODO reject if the record exists
+
             // TODO duplicate users
 
             return RoboscapeCol.update({ _id: req.params._id }, { $set: changedEntry });
+        }
+    },
+
+    { // change user access
+        URL: '/:_id/users',
+        Method: 'put',
+        middleware: ['isLoggedIn', 'setUser'],
+        customMiddleware: [isRobotOwner],
+        Handler: async function(req, res) {
+            // prevent update to questionable fields
+            const schema = ['username', 'hasAccess'];
+            const body = req.body;
+            // make sure the request body has the same keys as schema
+            if (schema.sort() === body.sort()) throw new Error('bad body structure, expected ' + schema.join(', '));
+            return setUserAccess(req.params._id, body.username, body.hasAccess);
         }
     },
 
