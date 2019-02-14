@@ -44,16 +44,54 @@ var Logger = function(name) {
 
 Logger.prototype._log = function(level, content) {
 
+    // Allow skips
+    if(Logger.prototype.skips.some((skip) => skip.test(this._name)))
+    {
+        return;
+    }
+
+    // Allow whitelist
+    if(Logger.prototype.names.length > 0){
+        
+        if(!Logger.prototype.names.some((name) => name.test(this._name)))
+        {
+            return;
+        }
+    }
+
     // Determine which output to use
     let logFunc = STDERR.find(lvl => level === lvl)? console.error : console.log;
     logFunc = logFunc.bind(console);
 
     // Prevent issues if no color available
-    logFunc(chalk[LEVELCOLORS[level].bg](chalk[LEVELCOLORS[level].fg](`${this._name}:${level}`)) + " " + content);
+    logFunc(chalk[LEVELCOLORS[level].bg](chalk[LEVELCOLORS[level].fg](`${Date.now()} ${this._name}:${level}`)) + " " + content);
 };
 
 Logger.prototype.fork = function(name) {
     return new Logger([this._name, name].join(':'));
 };
+
+// Inspired by debug package https://github.com/visionmedia/debug/
+Logger.prototype.names = []
+Logger.prototype.skips = []
+
+// Get input from env variable
+let namespaces = process.env.DEBUG || '';
+
+let split = namespaces.split(/[\s,]+/);
+
+// Set up filters 
+split.forEach((s) => {
+    if (s){
+        namespaces = s.replace(/\*/g, '.*?');
+
+        if (namespaces[0] === '-') {
+            Logger.prototype.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
+        } else {
+            Logger.prototype.names.push(new RegExp('^' + namespaces + '$'));
+        }
+    }
+});
+
 
 module.exports = Logger;
