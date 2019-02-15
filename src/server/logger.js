@@ -36,42 +36,57 @@ const LEVELS = ['trace', 'info', 'log', 'debug', 'warn', 'error'],
 // set which debug levels to send to stderr, the rest will go to stdout
 const STDERR = ['warn', 'error'];
 
-var Logger = function(name) {
-    this._name = name;
-    LEVELS.forEach(lvl => {
-        this[lvl] = this._log.bind(this, lvl);
-    });
-};
-
-Logger.prototype._log = function(level, content) {
-
-    // Allow skips
-    if(Logger.skips.some((skip) => skip.test(this._name)))
-    {
-        return;
+class Logger {
+    /**
+     * Create a new logger with a given namespace
+     * @param {String} name Name/namespace for this Logger 
+     */
+    constructor(name) {
+        this._name = name;
+        LEVELS.forEach(lvl => {
+            this[lvl] = this._log.bind(this, lvl);
+        });
     }
 
-    // Allow whitelist
-    if(Logger.names.length > 0){
-        
-        if(!Logger.names.some((name) => name.test(this._name)))
+    /**
+     * Prints a message to the correct stream based on logging level
+     * @param {String} level Logging level for message
+     * @param {String} content Message to print 
+     */
+    _log(level, content) {
+
+        // Allow skips
+        if(Logger.skips.some((skip) => skip.test(this._name)))
         {
             return;
         }
-    }
+    
+        // Allow whitelist
+        if(Logger.names.length > 0){
+            
+            if(!Logger.names.some((name) => name.test(this._name)))
+            {
+                return;
+            }
+        }
+    
+        /* eslint-disable no-console*/
+        // Determine which output to use
+        let logFunc = STDERR.find(lvl => level === lvl)? console.error : console.log;
+        logFunc = logFunc.bind(console);
+        /* eslint-enable no-console*/
+    
+        // Prevent issues if no color available
+        logFunc(LEVELCOLORS[level].bg(LEVELCOLORS[level].fg(`${Date.now()} ${this._name}:${level}`)) + ' ' + content);
+    };
 
-    /* eslint-disable no-console*/
-    // Determine which output to use
-    let logFunc = STDERR.find(lvl => level === lvl)? console.error : console.log;
-    logFunc = logFunc.bind(console);
-    /* eslint-enable no-console*/
-
-    // Prevent issues if no color available
-    logFunc(LEVELCOLORS[level].bg(LEVELCOLORS[level].fg(`${Date.now()} ${this._name}:${level}`)) + ' ' + content);
-};
-
-Logger.prototype.fork = function(name) {
-    return new Logger([this._name, name].join(':'));
+    /**
+     * Create a new logger at one level deeper in the same namespace
+     * @param {String} name 
+     */
+    fork(name) {
+        return new Logger([this._name, name].join(':'));
+    };
 };
 
 // Inspired by debug package https://github.com/visionmedia/debug/
@@ -95,6 +110,5 @@ split.forEach((s) => {
         }
     }
 });
-
 
 module.exports = Logger;
