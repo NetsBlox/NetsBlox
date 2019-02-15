@@ -1,12 +1,13 @@
 'use strict';
 
-const chalk = require('chalk');
+const chalk = require('chalk'),
+    moment = require('moment');
 
 // NOP color option to use default
 const nullcolor = (output) => output;
 
 // Stores logging levels and associated output colors
-const LEVELCOLORS = {
+const LEVELS = {
         'trace': {
             bg: nullcolor,
             fg: nullcolor
@@ -36,6 +37,9 @@ const LEVELCOLORS = {
 // set which debug levels to send to stderr, the rest will go to stdout
 const STDERR = ['warn', 'error'];
 
+// Get format from env variable
+let dateformat = process.env.DEBUG_DATE || 'MM.DD HH:mm:ss';
+
 class Logger {
     /**
      * Create a new logger with a given namespace
@@ -43,7 +47,7 @@ class Logger {
      */
     constructor(name) {
         this._name = name;
-        Object.keys(LEVELCOLORS).forEach(lvl => {
+        Object.keys(LEVELS).forEach(lvl => {
             this[lvl] = this._log.bind(this, lvl);
         });
     }
@@ -77,7 +81,7 @@ class Logger {
         /* eslint-enable no-console*/
     
         // Prevent issues if no color available
-        logFunc(LEVELCOLORS[level].bg(LEVELCOLORS[level].fg(`${Date.now()} ${this._name}:${level}`)) + ' ' + content);
+        logFunc(LEVELS[level].bg(LEVELS[level].fg(`${dateformat != ''? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`)) + ' ' + content);
     };
 
     /**
