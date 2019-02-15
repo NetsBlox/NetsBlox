@@ -67,7 +67,6 @@ class Logger {
         // Allow skips
         if(Logger.skips.some((skip) => skip.test(this._name)))
         {
-            console.log(this._name + " MATCHED NEG");
             return false;
         }
     
@@ -87,7 +86,7 @@ class Logger {
      * @param {String} message Message being ignored
      */
     _nop(message){
-        return;
+        return message;
     }
 
     /**
