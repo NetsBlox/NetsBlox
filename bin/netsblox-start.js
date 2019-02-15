@@ -1,7 +1,6 @@
 'use strict';
 var path = require('path');
 // eslint-disable-next-line no-unused-vars
-const heapdump = require('heapdump'); // trigger a heapdump with `kill -USR2 <pid>`
 
 require('dotenv').load({
     path: path.join(__dirname, '..', '.env'),
@@ -16,6 +15,8 @@ const VANTAGE_PORT = process.env.VANTAGE_PORT || 1234;
 const ENV = process.env.ENV;
 const isDevMode = ENV !== 'production';
 const DEBUG = process.env.DEBUG;
+
+if (ENV === 'production') require('heapdump'); // trigger a heapdump with `kill -USR2 <pid>`
 
 if (isDevMode && !DEBUG) process.env.DEBUG = 'netsblox:*';
 
