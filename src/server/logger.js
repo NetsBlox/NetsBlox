@@ -58,6 +58,15 @@ class Logger {
                 this[lvl] = this._nop;
             });
         }
+
+        // Create color from string hash if available
+        if(chalk.supportsColor.has16m === true){
+            this._color = {
+                r: 255,
+                g: 255,
+                b: 255
+            }
+        }
     }
 
     /**
@@ -90,6 +99,14 @@ class Logger {
     }
 
     /**
+     * Add color for this logger to a message
+     * @param {String} message Message to add color to
+     */
+    _colorize(message){
+        return chalk.rgb(this._color.r,this._color.g,this._color.b)(message);
+    }
+
+    /**
      * Prints a message to the correct stream based on logging level
      * @param {String} level Logging level for message
      * @param {String} content Message to print 
@@ -102,7 +119,13 @@ class Logger {
         /* eslint-enable no-console*/
     
         // Prevent issues if no color available
-        logFunc(LEVELS[level].bg(LEVELS[level].fg(`${dateformat != ''? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`)) + ' ' + content);
+        if(chalk.supportsColor.has16m === true){
+            // Color from hash of name
+            logFunc(LEVELS[level].bg(LEVELS[level].fg(`${dateformat != ''? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`)) + ' ' + this._colorize(content));
+        } else {
+            // Default to only colors for labels
+            logFunc(LEVELS[level].bg(LEVELS[level].fg(`${dateformat != ''? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`)) + ' ' + content);
+        }
     }
 
     /**
