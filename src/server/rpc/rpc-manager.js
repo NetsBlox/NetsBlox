@@ -369,10 +369,10 @@ RPCManager.prototype.sendRPCResult = function(response, result) {
 };
 
 RPCManager.prototype.sendRPCError = function(response, error) {
-    const isIntentionalError = err => err.name === 'Name';
+    const isIntentionalError = err => err.name === 'Error';
     if (isIntentionalError(error)) {
         // less descriptive logs and send the error message to the user
-        this._logger.error(`Error caught: ${error.message}`);
+        this._logger.warn(`Error caught: ${error.message}`);
         if (response.headersSent) return;
         response.status(500).send(error.message);
     } else {
