@@ -9,6 +9,7 @@ const FORGET_TIME = 120; // forgetting a robot in seconds
 const RESPONSE_TIMEOUT = 200; // waiting for response in milliseconds
 
 var Robot = function (mac_addr, ip4_addr, ip4_port, aServer) {
+    this.id = mac_addr;
     this.mac_addr = mac_addr;
     this.ip4_addr = ip4_addr;
     this.ip4_port = ip4_port;
