@@ -171,7 +171,7 @@ RoboScape.prototype.listen = function (robots) {
  */
 RoboScape.prototype.getRobots = async function () {
     const availableRobots = Object.keys(this._robots);
-    let robots = await acl.accessibleRobots(this.caller.username, availableRobots);
+    let robots = await acl.authorizedRobots(this.caller.username, availableRobots);
     return robots;
 };
 

@@ -1,18 +1,8 @@
 const RoboCol = require('./database');
 const logger = require('../utils/logger')('roboscape').fork('acl');
 
-// RoboCol.create({
-//     robotId: '00409d8f66f7',
-//     owner: 'hamid',
-//     ownedAt: new Date(),
-//     users: [
-//         {
-//             username: 'hamid',
-//             hasAccess: true,
-//             updatedAt: new Date(),
-//         }
-//     ]
-// });
+
+const MISSING_DOC_ALLOWED = true;
 
 // TODO indexing and use robotId as _id
 
@@ -48,7 +38,7 @@ const _findRobotDocs = async function(robotIds) {
         let promises = robotIds.map(async id => await _findRobotDoc(id)); // OPT batch in one query?
         recs = await Promise.all(promises);
     }
-    return recs.filter(rec => !!rec); // return only valid docs
+    return recs;
 };
 
 // checks if username has access to robotId
@@ -56,6 +46,7 @@ const _findRobotDocs = async function(robotIds) {
 const hasAccess = async function(username, robotId) {
     if (!robotId) throw new Error('missing robot id');
     let rDoc = await _findRobotDoc(robotId);
+    if (!rDoc) return MISSING_DOC_ALLOWED;
     return _hasAccessDoc(username, rDoc);
 };
 
@@ -66,15 +57,19 @@ const ensureAuthorized = async function(username, robotId) {
 
 // returns accessible robot ids to this username
 // availableRobots: optional to help the search in database
-const accessibleRobots = async function(username, availableRobots) {
+const authorizedRobots = async function(username, availableRobots) {
     let docs = await _findRobotDocs(availableRobots);
     return docs
-        .filter(d => _hasAccessDoc(username, d))
-        .map(rDoc => rDoc.robotId);
+        .map((doc, idx) => [doc, availableRobots[idx]])
+        .filter(([doc, rId]) => {
+            if (!doc) return MISSING_DOC_ALLOWED;
+            return _hasAccessDoc(username, doc);
+        })
+        .map(pair => pair[1]);
 };
 
 module.exports = {
     hasAccess,
-    accessibleRobots,
+    authorizedRobots,
     ensureAuthorized,
 };
