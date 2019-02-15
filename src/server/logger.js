@@ -3,6 +3,7 @@
 const chalk = require('chalk'),
     moment = require('moment'),
     ColorHash = require('color-hash');
+
 // NOP color option to use default
 const nullcolor = (output) => output;
 
