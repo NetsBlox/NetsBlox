@@ -2,31 +2,34 @@
 
 const chalk = require('chalk');
 
+// NOP color option to use default
+const nullcolor = (output) => output;
+
 const LEVELS = ['trace', 'info', 'log', 'debug', 'warn', 'error'],
     LEVELCOLORS = {
         'trace': {
-            bg: 'bgBlack',
-            fg: 'white'
+            bg: nullcolor,
+            fg: nullcolor
         }, 
         'info': {
-            bg: 'bgBlack',
-            fg: 'white'
+            bg: nullcolor,
+            fg: nullcolor
         },
         'log': {
-            bg: 'bgBlack',
-            fg: 'white'
+            bg: nullcolor,
+            fg: nullcolor
         },
         'debug': {
-            bg: 'bgBlack',
-            fg: 'white'
+            bg: nullcolor,
+            fg: nullcolor
         },
         'warn':  {
-            bg: 'bgYellow',
-            fg: 'black'
+            bg: chalk.bgYellow,
+            fg: chalk.black
         },
         'error': {
-            bg: 'bgRed',
-            fg: 'white'
+            bg: chalk.bgRed,
+            fg: chalk.white
         }
     };
 
@@ -64,7 +67,7 @@ Logger.prototype._log = function(level, content) {
     /* eslint-enable no-console*/
 
     // Prevent issues if no color available
-    logFunc(chalk[LEVELCOLORS[level].bg](chalk[LEVELCOLORS[level].fg](`${Date.now()} ${this._name}:${level}`)) + ' ' + content);
+    logFunc(LEVELCOLORS[level].bg(LEVELCOLORS[level].fg(`${Date.now()} ${this._name}:${level}`)) + ' ' + content);
 };
 
 Logger.prototype.fork = function(name) {
