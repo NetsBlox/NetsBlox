@@ -46,15 +46,15 @@ var Logger = function(name) {
 Logger.prototype._log = function(level, content) {
 
     // Allow skips
-    if(Logger.prototype.skips.some((skip) => skip.test(this._name)))
+    if(Logger.skips.some((skip) => skip.test(this._name)))
     {
         return;
     }
 
     // Allow whitelist
-    if(Logger.prototype.names.length > 0){
+    if(Logger.names.length > 0){
         
-        if(!Logger.prototype.names.some((name) => name.test(this._name)))
+        if(!Logger.names.some((name) => name.test(this._name)))
         {
             return;
         }
@@ -75,8 +75,8 @@ Logger.prototype.fork = function(name) {
 };
 
 // Inspired by debug package https://github.com/visionmedia/debug/
-Logger.prototype.names = [];
-Logger.prototype.skips = [];
+Logger.names = [];
+Logger.skips = [];
 
 // Get input from env variable
 let namespaces = process.env.DEBUG || '';
@@ -89,9 +89,9 @@ split.forEach((s) => {
         namespaces = s.replace(/\*/g, '.*?');
 
         if (namespaces[0] === '-') {
-            Logger.prototype.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
+            Logger.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
         } else {
-            Logger.prototype.names.push(new RegExp('^' + namespaces + '$'));
+            Logger.names.push(new RegExp('^' + namespaces + '$'));
         }
     }
 });
