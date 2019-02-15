@@ -61,11 +61,8 @@ class Logger {
 
         // Create color from string hash if available
         if(chalk.supportsColor.has16m === true){
-            this._color = {
-                r: 255,
-                g: 255,
-                b: 255
-            }
+            let r = 255, g = 255, b = 255;
+            this._colorize = chalk.rgb(r,g,b);
         }
     }
 
@@ -96,14 +93,6 @@ class Logger {
      */
     _nop(message){
         return message;
-    }
-
-    /**
-     * Add color for this logger to a message
-     * @param {String} message Message to add color to
-     */
-    _colorize(message){
-        return chalk.rgb(this._color.r,this._color.g,this._color.b)(message);
     }
 
     /**
