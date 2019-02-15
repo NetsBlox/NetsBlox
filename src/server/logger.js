@@ -1,8 +1,8 @@
 'use strict';
 
 const chalk = require('chalk'),
-    moment = require('moment');
-
+    moment = require('moment'),
+    ColorHash = require('color-hash');
 // NOP color option to use default
 const nullcolor = (output) => output;
 
@@ -38,7 +38,10 @@ const LEVELS = {
 const STDERR = ['warn', 'error'];
 
 // Get format from env variable
-let dateformat = process.env.DEBUG_DATE || 'MM.DD HH:mm:ss';
+const dateformat = process.env.DEBUG_DATE || 'MM.DD HH:mm:ss';
+
+// For hashing names to colors
+const colorHash = new ColorHash({lightness: 0.75});
 
 class Logger {
     /**
@@ -61,8 +64,8 @@ class Logger {
 
         // Create color from string hash if available
         if(chalk.supportsColor.has16m === true){
-            let r = 255, g = 255, b = 255;
-            this._colorize = chalk.rgb(r,g,b);
+            let hash = colorHash.hex(this._name);
+            this._colorize = chalk.hex(hash);
         }
     }
 
