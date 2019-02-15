@@ -39,7 +39,8 @@ const LEVELS = {
 const STDERR = ['warn', 'error'];
 
 // Get format from env variable
-const dateformat = process.env.DEBUG_DATE || 'MM.DD HH:mm:ss';
+const dateformat = process.env.DEBUG_DATE || 'MM.DD HH:mm:ss',
+    useColors = (process.env.DEBUG_COLORS || true) == true;
 
 // For hashing names to colors
 const colorHash = new ColorHash({lightness: 0.75});
@@ -112,12 +113,18 @@ class Logger {
         /* eslint-enable no-console*/
     
         // Prevent issues if no color available
-        if(chalk.supportsColor.has16m === true){
+        let tags = `${dateformat != ''? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`;
+
+        if(!useColors)
+        {
+            logFunc(tags + ' ' + content);
+        }
+        else if(chalk.supportsColor.has16m === true){
             // Color from hash of name
-            logFunc(LEVELS[level].bg(LEVELS[level].fg(`${dateformat != ''? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`)) + ' ' + this._colorize(content));
+            logFunc(LEVELS[level].bg(LEVELS[level].fg(tags)) + ' ' + this._colorize(content));
         } else {
             // Default to only colors for labels
-            logFunc(LEVELS[level].bg(LEVELS[level].fg(`${dateformat != ''? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`)) + ' ' + content);
+            logFunc(LEVELS[level].bg(LEVELS[level].fg(tags)) + ' ' + content);
         }
     }
 
