@@ -5,8 +5,8 @@ const chalk = require('chalk');
 // NOP color option to use default
 const nullcolor = (output) => output;
 
-const LEVELS = ['trace', 'info', 'log', 'debug', 'warn', 'error'],
-    LEVELCOLORS = {
+// Stores logging levels and associated output colors
+const LEVELCOLORS = {
         'trace': {
             bg: nullcolor,
             fg: nullcolor
@@ -43,7 +43,7 @@ class Logger {
      */
     constructor(name) {
         this._name = name;
-        LEVELS.forEach(lvl => {
+        Object.keys(LEVELCOLORS).forEach(lvl => {
             this[lvl] = this._log.bind(this, lvl);
         });
     }
@@ -90,7 +90,9 @@ class Logger {
 };
 
 // Inspired by debug package https://github.com/visionmedia/debug/
+// Namespaces to require a match from 
 Logger.names = [];
+// Namespaces to hide if matching
 Logger.skips = [];
 
 // Get input from env variable
