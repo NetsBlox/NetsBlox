@@ -47,9 +47,47 @@ class Logger {
      */
     constructor(name) {
         this._name = name;
-        Object.keys(LEVELS).forEach(lvl => {
-            this[lvl] = this._log.bind(this, lvl);
-        });
+
+        if(this._shouldBeEnabled())
+        {
+            Object.keys(LEVELS).forEach(lvl => {
+                this[lvl] = this._log.bind(this, lvl);
+            });
+        } else {
+            Object.keys(LEVELS).forEach(lvl => {
+                this[lvl] = this._nop;
+            });
+        }
+    }
+
+    /**
+     * Determine if this logger matches the requested filters.
+     */
+    _shouldBeEnabled() {
+        // Allow skips
+        if(Logger.skips.some((skip) => skip.test(this._name)))
+        {
+            console.log(this._name + " MATCHED NEG");
+            return false;
+        }
+    
+        // Allow whitelist
+        if(Logger.names.length > 0){
+            if(!Logger.names.some((name) => name.test(this._name)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Used for loggers not actually sending messages out.
+     * @param {String} message Message being ignored
+     */
+    _nop(message){
+        return;
     }
 
     /**
@@ -58,22 +96,6 @@ class Logger {
      * @param {String} content Message to print 
      */
     _log(level, content) {
-
-        // Allow skips
-        if(Logger.skips.some((skip) => skip.test(this._name)))
-        {
-            return;
-        }
-    
-        // Allow whitelist
-        if(Logger.names.length > 0){
-            
-            if(!Logger.names.some((name) => name.test(this._name)))
-            {
-                return;
-            }
-        }
-    
         /* eslint-disable no-console*/
         // Determine which output to use
         let logFunc = STDERR.find(lvl => level === lvl)? console.error : console.log;
