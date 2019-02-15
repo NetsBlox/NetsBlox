@@ -8,31 +8,31 @@ const nullcolor = (output) => output;
 
 // Stores logging levels and associated output colors
 const LEVELS = {
-        'trace': {
-            bg: nullcolor,
-            fg: nullcolor
-        }, 
-        'info': {
-            bg: nullcolor,
-            fg: nullcolor
-        },
-        'log': {
-            bg: nullcolor,
-            fg: nullcolor
-        },
-        'debug': {
-            bg: nullcolor,
-            fg: nullcolor
-        },
-        'warn':  {
-            bg: chalk.bgYellow,
-            fg: chalk.black
-        },
-        'error': {
-            bg: chalk.bgRed,
-            fg: chalk.white
-        }
-    };
+    'trace': {
+        bg: nullcolor,
+        fg: nullcolor
+    }, 
+    'info': {
+        bg: nullcolor,
+        fg: nullcolor
+    },
+    'log': {
+        bg: nullcolor,
+        fg: nullcolor
+    },
+    'debug': {
+        bg: nullcolor,
+        fg: nullcolor
+    },
+    'warn':  {
+        bg: chalk.bgYellow,
+        fg: chalk.black
+    },
+    'error': {
+        bg: chalk.bgRed,
+        fg: chalk.white
+    }
+};
 
 // set which debug levels to send to stderr, the rest will go to stdout
 const STDERR = ['warn', 'error'];
@@ -82,7 +82,7 @@ class Logger {
     
         // Prevent issues if no color available
         logFunc(LEVELS[level].bg(LEVELS[level].fg(`${dateformat != ''? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`)) + ' ' + content);
-    };
+    }
 
     /**
      * Create a new logger at one level deeper in the same namespace
@@ -90,8 +90,8 @@ class Logger {
      */
     fork(name) {
         return new Logger([this._name, name].join(':'));
-    };
-};
+    }
+}
 
 // Inspired by debug package https://github.com/visionmedia/debug/
 // Namespaces to require a match from 
