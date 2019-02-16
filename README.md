@@ -42,6 +42,7 @@ Next, just navigate to `localhost:8080` in a web browser to try it out!
 Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= 8) and a [MongoDB](https://www.mongodb.com/download-center?jmp=nav#community) database. By default, NetsBlox will expect MongoDB to be running locally (this can be changed by setting the `MONGO_URI` environment variable).
 
 Server protocol can also be set through `SERVER_PROTOCOL` environment variable.
+Host should be set using `HOST=.mydomain.com`.
 
 First clone the repository and install the dependencies.
 ```
