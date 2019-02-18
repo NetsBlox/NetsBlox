@@ -30,11 +30,11 @@ const _findRobotDoc = async function(robotId) {
 const _findRobotDocs = async function(robotIds) {
     // OPT find robots in batch
     let recs;
-    logger.trace('finding robot docs for', robotIds);
     if (!robotIds) {
         recs = await RoboCol.find({}); // OPT streaming would be more efficient. memory issues..
         recs = recs.map(r => r._doc);
     } else {
+        logger.trace('finding robot docs for', robotIds);
         let promises = robotIds.map(async id => await _findRobotDoc(id)); // OPT batch in one query?
         recs = await Promise.all(promises);
     }
@@ -56,11 +56,12 @@ const ensureAuthorized = async function(username, robotId) {
 };
 
 // returns accessible robot ids to this username
-// availableRobots: optional to help the search in database
-const authorizedRobots = async function(username, availableRobots) {
-    let docs = await _findRobotDocs(availableRobots);
+// interesetedRobots: optional to help the search in database
+const authorizedRobots = async function(username, interesetedRobots) {
+    if (interesetedRobots && interesetedRobots.length === 0) return [];
+    let docs = await _findRobotDocs(interesetedRobots);
     return docs
-        .map((doc, idx) => [doc, availableRobots[idx]])
+        .map((doc, idx) => [doc, interesetedRobots[idx]])
         .filter(([doc]) => {
             if (!doc) return MISSING_DOC_ALLOWED;
             return _hasAccessDoc(username, doc);
