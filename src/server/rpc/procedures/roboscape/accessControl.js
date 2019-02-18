@@ -28,7 +28,7 @@ const _findRobotDoc = async function(robotId) {
 
 // robotids: array of robotIds
 const _findRobotDocs = async function(robotIds) {
-    // TODO find robots in batch
+    // OPT find robots in batch
     let recs;
     logger.trace('finding robot docs for', robotIds);
     if (!robotIds) {
@@ -61,7 +61,7 @@ const authorizedRobots = async function(username, availableRobots) {
     let docs = await _findRobotDocs(availableRobots);
     return docs
         .map((doc, idx) => [doc, availableRobots[idx]])
-        .filter(([doc, rId]) => {
+        .filter(([doc]) => {
             if (!doc) return MISSING_DOC_ALLOWED;
             return _hasAccessDoc(username, doc);
         })

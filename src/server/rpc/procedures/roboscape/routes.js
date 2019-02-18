@@ -8,20 +8,15 @@ const RoboscapeCol = require('./database'); // roboscape model
 
 const BASE_ENDPOINT = 'roboscape/robots';
 
-/** TODO
+/**
  * routes for:
  * 1. getting/proving ownership of n robots
  * 2. modify robots' users => modify a robot record
  * 3. fetch my robots details
  */
 
-// TODO byId to by robotId
-
-// TODO separate routes for granting and revoking access?
-
-
 // requires user
-const isRobotOwner = async function(req, res) {
+const isRobotOwner = async function(req) {
     let username = req.session.user.username;
     logger.trace(`checking if ${username} is the robot owner`);
     let robotDoc = await RoboscapeCol.findOne({_id: req.params._id});
@@ -69,7 +64,7 @@ const routes = [
         Parameters: '',
         Method: 'post',
         middleware: ['isLoggedIn', 'setUser'],
-        Handler: async function(req, res) {
+        Handler: async function(req) {
             // TODO make sure robotIds are unique (duplicate robots)
             const newEntry = req.body;
             newEntry.users = [];
@@ -100,8 +95,8 @@ const routes = [
         URL: '',
         Method: 'get',
         middleware: ['isLoggedIn', 'setUser'],
-        Handler: function(req, res) {
-            let query = res.locals.query || {};
+        Handler: function(req) {
+            let query = req.locals.query || {};
             query = {
                 ...query,
                 owner: req.session.user.username, // ensure it's limited to the owner's robots
@@ -115,7 +110,7 @@ const routes = [
         Method: 'get',
         middleware: ['isLoggedIn', 'setUser'],
         customMiddleware: [isRobotOwner],
-        Handler: function(req, res) {
+        Handler: function(req) {
             const { _id } = req.params;
             // NOTE if using robotId => lowecase
             return RoboscapeCol.findById(_id);
@@ -127,7 +122,7 @@ const routes = [
         Method: 'put', // FIXME patch?
         middleware: ['isLoggedIn', 'setUser'],
         customMiddleware: [isRobotOwner],
-        Handler: async function(req, res) {
+        Handler: async function(req) {
             // prevent update to questionable fields
             const whiteList = ['isPublic', 'users'];
             const changedEntry = req.body;
@@ -145,7 +140,7 @@ const routes = [
         Method: 'put',
         middleware: ['isLoggedIn', 'setUser'],
         customMiddleware: [isRobotOwner],
-        Handler: async function(req, res) {
+        Handler: async function(req) {
             // prevent update to questionable fields
             const schema = ['username', 'hasAccess'];
             const body = req.body;
