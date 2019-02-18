@@ -53,16 +53,14 @@ class Logger {
     constructor(name) {
         this._name = name;
 
-        if(this._shouldBeEnabled())
-        {
-            Object.keys(LEVELS).forEach(lvl => {
+        Object.keys(LEVELS).forEach(lvl => {
+            if(this._shouldBeEnabled(lvl))
+            {
                 this[lvl] = this._log.bind(this, lvl);
-            });
-        } else {
-            Object.keys(LEVELS).forEach(lvl => {
+            } else {
                 this[lvl] = this._nop;
-            });
-        }
+            }
+        });
 
         // Create color from string hash if available
         if(chalk.supportsColor.has256 === true){
@@ -73,17 +71,27 @@ class Logger {
 
     /**
      * Determine if this logger matches the requested filters.
+     * @param {String=} level Level of logging to check for filter match, undefined for no level.
      */
-    _shouldBeEnabled() {
+    _shouldBeEnabled(level = undefined) {
+
+        let tempName = this._name;
+
+        // Add logging level to name
+        if(level !== undefined)
+        {
+            tempName += ":" + level;
+        }
+
         // Allow skips
-        if(Logger.skips.some((skip) => skip.test(this._name)))
+        if(Logger.skips.some((skip) => skip.test(tempName)))
         {
             return false;
         }
     
         // Allow whitelist
         if(Logger.names.length > 0){
-            if(!Logger.names.some((name) => name.test(this._name)))
+            if(!Logger.names.some((name) => name.test(tempName)))
             {
                 return false;
             }
@@ -151,7 +159,7 @@ let split = namespaces.split(/[\s,]+/);
 // Set up filters 
 split.forEach((s) => {
     if (s){
-        namespaces = s.replace(/\*/g, '.*');
+        namespaces = s.replace(/\*/g, '.*?');
 
         if (namespaces[0] === '-') {
             Logger.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
