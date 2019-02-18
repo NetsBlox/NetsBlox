@@ -96,9 +96,7 @@ const routes = [
         Method: 'get',
         middleware: ['isLoggedIn', 'setUser'],
         Handler: function(req) {
-            let query = req.locals.query || {};
-            query = {
-                ...query,
+            const query = {
                 owner: req.session.user.username, // ensure it's limited to the owner's robots
             };
             return RoboscapeCol.find(query);
