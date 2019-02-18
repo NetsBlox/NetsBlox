@@ -296,7 +296,7 @@ Robot.prototype.sendToClient = function (msgType, content) {
         callbacks.length = 0;
     }
 
-    this.sockets.forEach(async function (uuid) {
+    this.sockets.forEach(async uuid => {
         var socket = NetworkTopology.getSocket(uuid);
 
         await acl.ensureAuthorized(socket.username, myself.mac_addr); // should use robotId instead of mac_addr
