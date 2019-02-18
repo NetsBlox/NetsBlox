@@ -80,7 +80,7 @@ class Logger {
         // Add logging level to name
         if(level !== undefined)
         {
-            tempName += ":" + level;
+            tempName += ':' + level;
         }
 
         // Allow skips
