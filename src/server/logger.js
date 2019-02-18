@@ -119,7 +119,7 @@ class Logger {
         {
             logFunc(tags + ' ' + content);
         }
-        else if(chalk.supportsColor.has16m === true){
+        else if(chalk.supportsColor.has256 === true){
             // Color from hash of name
             logFunc(LEVELS[level].bg(LEVELS[level].fg(tags)) + ' ' + this._colorize(content));
         } else {
