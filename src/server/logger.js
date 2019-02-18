@@ -65,7 +65,7 @@ class Logger {
         }
 
         // Create color from string hash if available
-        if(chalk.supportsColor.has16m === true){
+        if(chalk.supportsColor.has256 === true){
             let hash = colorHash.hex(this._name);
             this._colorize = chalk.hex(hash);
         }
@@ -151,7 +151,7 @@ let split = namespaces.split(/[\s,]+/);
 // Set up filters 
 split.forEach((s) => {
     if (s){
-        namespaces = s.replace(/\*/g, '.*?');
+        namespaces = s.replace(/\*/g, '.*');
 
         if (namespaces[0] === '-') {
             Logger.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
