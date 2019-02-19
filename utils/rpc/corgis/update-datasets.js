@@ -18,8 +18,7 @@ let updateDatasets = (names) => {
         let directUrl = `https://think.cs.vt.edu/corgis/json/${dsName}/${dsName}.json?forcedownload=1`;
         let absolutePath = STORAGE_DIR + dsName + '.json';
         console.log('updating dataset', dsName, directUrl);
-        exec(`curl ${directUrl} -o ${absolutePath}`, (error, stdout, stderr)=>{
-        });
+        exec(`curl ${directUrl} -o ${absolutePath}`, ()=>{});
     });
 };
 
@@ -29,18 +28,18 @@ let discoverDatasets = () => {
     let deferred = Q.defer();
     let names = [];
     osmosis
-    .get('https://think.cs.vt.edu/corgis/json/index.html')
-    .find('.media-body a')
-    .set({name: '@href'})
-    .data(dataset => {
-        names.push(dataset.name.match(/(.*)\//)[1]);
-    })
-    .done(()=>{
-        deferred.resolve(names);
-    })
+        .get('https://think.cs.vt.edu/corgis/json/index.html')
+        .find('.media-body a')
+        .set({name: '@href'})
+        .data(dataset => {
+            names.push(dataset.name.match(/(.*)\//)[1]);
+        })
+        .done(()=>{
+            deferred.resolve(names);
+        })
     // .log(console.log)
     // .debug(console.log)
-    .error(deferred.reject);
+        .error(deferred.reject);
     return deferred.promise;
 };
 
@@ -49,5 +48,7 @@ discoverDatasets().then(names => {
     updateDatasets(names);
 });
 
-module.exports = discoverDatasets;
-module.exports = updateDatasets;
+module.exports = {
+    discoverDatasets,
+    updateDatasets,
+};
