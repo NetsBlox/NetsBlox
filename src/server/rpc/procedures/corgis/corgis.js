@@ -15,8 +15,12 @@ let loadDataset = dsName => {
                 reject(err);
             }
             if (data) {
-                data = JSON.parse(data);
-                resolve(data);
+                try {
+                    data = JSON.parse(data);
+                    resolve(data);
+                } catch (e) {
+                    reject(e);
+                }
             }
         }); // end of fse.readFile
     });
