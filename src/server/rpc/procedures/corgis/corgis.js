@@ -45,4 +45,10 @@ corgis.searchDataset = function(name,query){
 
 
 
+corgis.isSupported = function() {
+    const isNotProduction = (process.env.ENV !== 'production'); // unreleased service
+    const dataExists = fse.existsSync(STORAGE_DIR);
+    return (isNotProduction && dataExists);
+};
+
 module.exports = corgis;
