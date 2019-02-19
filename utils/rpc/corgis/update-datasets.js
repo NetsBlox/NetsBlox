@@ -45,6 +45,7 @@ let discoverDatasets = () => {
 };
 
 discoverDatasets().then(names => {
+    // console.log(names);
     updateDatasets(names);
 });
 
