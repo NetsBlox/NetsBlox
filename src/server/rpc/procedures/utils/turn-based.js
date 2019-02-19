@@ -1,6 +1,7 @@
 // A turn based base class to add turn based behavior to an RPC
 'use strict';
 var getArgs = require('../../../server-utils').getArgumentsFor;
+const NetworkTopology = require('../../../network-topology');
 
 class TurnBased {
 
@@ -11,26 +12,35 @@ class TurnBased {
 
         // replace "action" w/ a modified version
         this[action] = function() {
-            var socket = this.socket,
-                success;
+            const {projectId, roleId} = this.caller;
 
             // Filter
-            if (this._state._lastRoleToAct === socket.roleId) {
+            if (this._state._lastRoleToAct === roleId) {
                 return this.response.status(403).send('It\'s not your turn!');
             }
 
             // Call
-            success = this._rawAction.apply(this, arguments);
-
-            // Notify
-            if (success) {
-                socket._room.sockets().forEach(s => s.send({
-                    type: 'message',
-                    msgType: 'your turn',
-                    dstId: this._state._lastRoleToAct
-                }));
-                this._state._lastRoleToAct = socket.roleId;
+            const result = this._rawAction.apply(this, arguments);
+            if (result && result.then) {  // returned promise
+                return result.then(success => {
+                    if (success) {
+                        const nextId = this._state._lastRoleToAct;
+                        const sockets = NetworkTopology.getSocketsAt(projectId, nextId);
+                        sockets.forEach(s => s.sendMessage('your turn'));
+                        this._state._lastRoleToAct = roleId;
+                    }
+                });
+            } else {
+                // Notify
+                const success = result;
+                if (success) {
+                    const nextId = this._state._lastRoleToAct;
+                    const sockets = NetworkTopology.getSocketsAt(projectId, nextId);
+                    sockets.forEach(s => s.sendMessage('your turn'));
+                    this._state._lastRoleToAct = roleId;
+                }
             }
+
         };
         this[action].args = getArgs(this._rawAction);
 

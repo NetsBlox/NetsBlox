@@ -19,14 +19,29 @@ MockSocket.prototype.send = function(msg) {
     }
 };
 
-/////////////////////////// test helpers /////////////////////////// 
+MockSocket.prototype.emit = function(event) {
+    if (this._events[event]) {
+        let args = Array.prototype.slice.call(arguments, 1);
+        return this._events[event].apply(null, args);
+    }
+};
+
+MockSocket.prototype.ping = function() {
+    setTimeout(this.emit.bind(this, 'pong'));
+};
+
+MockSocket.prototype.terminate = function() {
+    this.emit('close');
+};
+
+/////////////////////////// test helpers ///////////////////////////
 MockSocket.prototype.addResponse = function(type, fn) {
     this._responders[type] = fn;
 };
 
 MockSocket.prototype.receive = function(json) {
     var msg = JSON.stringify(json);
-    this._events.message(msg);
+    return this.emit('message', msg);
 };
 
 MockSocket.prototype.message = function(index) {

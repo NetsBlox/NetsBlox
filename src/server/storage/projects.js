@@ -1,10 +1,15 @@
 (function(ProjectStorage) {
 
+    const assert = require('assert');
     const DataWrapper = require('./data');
+    const ObjectId = require('mongodb').ObjectId;
     const Q = require('q');
     const _ = require('lodash');
-    const blob = require('./blob-storage');
+    const blob = require('./blob');
     const utils = require('../server-utils');
+    const PublicProjects = require('./public-projects');
+    const MAX_MSG_RECORD_DURATION = 1000 * 60 * 10;  // 10 min
+    const memoize = require('memoizee');
 
     const storeRoleBlob = function(role) {
         const content = _.clone(role);
@@ -40,8 +45,41 @@
             project.roles = {};
             project.roles.myRole = utils.getEmptyRole('myRole');
         }
-        delete project._id;
+        // TODO: ensure that role names don't collide?
         return project;
+    };
+
+    let _cachedFindOne = function(query) {
+        // make sure query is stringifiable if using primitive caching
+        // ObjectId is stringifiable
+        if (query._id) {
+            let id = query._id;
+            query._id = typeof id === 'string' ? ObjectId(id) : id;
+        }
+        return Q(collection.findOne(query));
+    };
+
+    const cacheKey = args => JSON.stringify(args[0]);
+
+    // WARN CHECK might eat up rejected promises
+    _cachedFindOne = memoize(_cachedFindOne, {maxAge: 250,
+        promise: 'done:finally', primitive: true,
+        normalizer: cacheKey});
+
+    const cachedFindOne = async query => {
+        let resp = await _cachedFindOne(query);
+        if (resp === null) {
+            _cachedFindOne.delete(query, true);
+        }
+        return resp;
+    };
+
+    const findOne = function(query, cache=false) {
+        if (cache === true) {
+            return cachedFindOne(query);
+        } else {
+            return Q(collection.findOne(query));
+        }
     };
 
     class Project extends DataWrapper {
@@ -49,8 +87,7 @@
             params.data = params.data || {};
 
             super(params.db, params.data || {});
-            this._logger = params.logger.fork((this._room ? this._room.uuid : this.uuid));
-            this._room = params.room;
+            this._logger = params.logger.fork(this.uuid());
             this.collaborators = this.collaborators || [];
             this.originTime = params.data.originTime;
         }
@@ -59,71 +96,153 @@
             return utils.uuid(this.owner, this.name);
         }
 
-        fork(room) {
-            const params = {
-                room: room,
-                logger: this._logger,
-                lastUpdatedAt: Date.now(),
-                db: this._db
-            };
-            const data = this._saveable();
-            data.owner = room.owner;
-            params.data = data;
-
-            this._logger.trace(`creating fork: ${room.uuid}`);
-            return new Project(params);
+        getId() {
+            return this._id.toString();
         }
 
-        getRawProject() {
-            return this._db.findOne(this.getStorageId())
+        getRawProject(cache=false) {
+            return findOne(this.getStorageId(), cache)
                 .then(project => {
+                    if (!project) {
+                        let msg = `could not find project ${this.uuid()}`;
+                        this._logger.error(msg);
+                        throw new Error(msg);
+                    }
                     clean(project, this._logger);
                     return project;
                 });
         }
 
-        ///////////////////////// Roles ///////////////////////// 
-        setRawRole(role, content) {
-            if (this.isDeleted()) return Promise.reject('project has been deleted!');
-
-            const query = {$set: {}};
-            content.ProjectName = role;
-
-            query.$set[`roles.${role}`] = content;
-            return this._db.update(this.getStorageId(), query);
+        setOwner(name) {
+            const query = {$set: {owner: name}};
+            return this._execUpdate(query)
+                .then(() => this.owner = name);
         }
 
-        setRole(role, content) {
-            this._logger.trace(`updating role: ${role} in ${this.owner}/${this.name}`);
+        ///////////////////////// Roles /////////////////////////
+        getNewRoleId(name) {
+            return `${name}-${Date.now()}`;
+        }
+
+        setRawRole(name, content) {
+            if (this.isDeleted()) return Promise.reject('cannot setRawRole: project has been deleted!');
+
+            content.ProjectName = name;
+            this._logger.trace(`about to update role ${name}`);
+            return this.getRoleId(name)
+                .then(id => this.setRawRoleById(id, content));
+        }
+
+        setRawRoleById(id, content) {
+            assert(content.ProjectName);
+            const query = this.addSetRoleToQuery(id, content);
+            return this._execUpdate(query);
+        }
+
+        setRoleById(id, content) {
+            assert(content.ProjectName);
+            this.addRoleMetadata(content);
             return storeRoleBlob(content)
-                .then(content => this.setRawRole(role, content));
+                .then(content => this.setRawRoleById(id, content));
+        }
+
+        addSetRoleToQuery(id, content, query) {
+            query = query || {$set: {}};
+            id = id || this.getNewRoleId(content.ProjectName);
+            query.$set[`roles.${id}`] = content;
+
+            return query;
+        }
+
+        getRoleActionIdById(roleId) {
+            return this.getRoleById(roleId)
+                .then(role => utils.xml.actionId(role.SourceCode));
+        }
+
+        getRoleIds() {
+            return this.getRawProject()
+                .then(project => Object.keys(project.roles || {}));
+        }
+
+        getRoleIdsFor(names) {
+            return this.getRawProject()
+                .then(project => {
+                    let remainingIds = Object.keys(project.roles);
+                    let ids = names.map(name => {
+                        let id = null;
+                        for (let i = remainingIds.length; i--;) {
+                            id = remainingIds[i];
+                            if (project.roles[id].ProjectName === name) {
+                                remainingIds.splice(i, 1);
+                                return id;
+                            }
+                        }
+                        return null;
+                    });
+                    return ids;
+                });
+        }
+
+        getRoleId(name) {
+            return this.getRoleIdsFor([name])
+                .then(ids => ids[0]);
+        }
+
+        setRole(name, content) {
+            this._logger.trace(`updating role: ${name} in ${this.owner}/${this.name}`);
+            content.ProjectName = name;
+
+            this.addRoleMetadata(content);
+            return storeRoleBlob(content)
+                .then(content => this.setRawRole(name, content));
+        }
+
+        // Parse additional important fields
+        addRoleMetadata(content) {
+            content.Thumbnail = utils.xml.thumbnail(content.SourceCode);
+            content.Notes = utils.xml.notes(content.SourceCode);
+            content.Updated = new Date();
+            return content;
         }
 
         setRoles(roles) {
-            if (this.isDeleted()) return Promise.reject('project has been deleted!');
+            if (this.isDeleted()) return Promise.reject('cannot call setRoles: project has been deleted!');
             if (!roles.length) return Q();
 
             const query = {$set: {}};
-
+            let rawRoles = null;
             return Q.all(roles.map(role => storeRoleBlob(role)))
                 .then(roles => {
-                    if (this.isDeleted()) throw 'project has been deleted!';
-                    const names = roles.map(role => role.ProjectName);
-                    roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
+                    if (this.isDeleted()) return;
+                    rawRoles = roles;
+                    const names = rawRoles.map(role => role.ProjectName);
                     this._logger.trace(`updating roles: ${names.join(',')} in ${this.owner}/${this.name}`);
-                    return this._db.update(this.getStorageId(), query);
+                    return this.getRoleIdsFor(names);
+                })
+                .then(ids => {
+                    if (this.isDeleted()) throw new Error('cannot complete setRoles: project has been deleted!');
+                    rawRoles.forEach((role, i) => this.addSetRoleToQuery(ids[i], role, query));
+                    return this._execUpdate(query);
                 });
         }
 
-        getRawRole(role) {
+        getRawRoleById(id) {
             return this.getRawProject()
                 .then(project => {
-                    const content = project.roles[role];
-                    if (content) {
-                        content.ProjectName = role;
-                    }
-                    return content;
+                    const role = project.roles[id];
+                    role.ID = id;
+                    return role;
                 });
+        }
+
+        getRawRole(name) {
+            return this.getRawRoles()
+                .then(roles => roles.find(role => role.ProjectName === name));
+        }
+
+        getRoleById(role) {
+            return this.getRawRoleById(role)
+                .then(content => content && loadRoleContent(content));
         }
 
         getRole(role) {
@@ -135,10 +254,9 @@
             return this.getRawProject()
                 .then(project => {
                     return Object.keys(project.roles)
-                        .map(name => {
-                            const content = project.roles[name];
-                            content.ProjectName = name;
-                            return content;
+                        .map(id => {
+                            project.roles[id].ID = id;
+                            return project.roles[id];
                         });
                 });
         }
@@ -148,7 +266,7 @@
                 .then(roles => Q.all(roles.map(loadRoleContent)));
         }
 
-        getCopy(user) {
+        getCopyFor(user) {
             const owner = user.username;
             return this.getRawProject()
                 .then(raw => {
@@ -171,164 +289,149 @@
                 });
         }
 
-        cloneRole(role, newName) {
-            return this.getRawRole(role)
-                .then(content => this.setRawRole(newName, content));
+        getCopy() {
+            return this.getRawProject()
+                .then(metadata => {
+                    metadata.originTime = Date.now();
+                    metadata.collaborators = [];
+                    metadata.transient = true;
+
+                    const project = new Project({
+                        logger: this._logger,
+                        db: this._db,
+                        data: metadata
+                    });
+                    return project.create(metadata.roles);
+                });
         }
 
-        removeRole(role) {
-            if (this.isDeleted()) return Promise.reject('project has been deleted!');
-            var query = {$unset: {}};
-            query.$unset[`roles.${role}`] = '';
-            this._logger.trace(`removing role: ${role}`);
-            return this._db.update(this.getStorageId(), query);
+        getNewRoleName(basename) {
+            basename = basename || 'role';
+            return this.getRoleNames()
+                .then(names => {
+                    let i = 2;
+                    let name = basename;
+                    while (names.includes(name)) {
+                        name = `${basename} (${i})`;
+                        i++;
+                    }
+                    return name;
+                });
+        }
+
+        cloneRole(role, newName) {
+            let getNewName = null;
+
+            if (!newName) {
+                getNewName = this.getNewRoleName(role);
+            } else {
+                getNewName = Q(newName);
+            }
+
+            return this.getRawRole(role)
+                .then(content => {
+                    return getNewName
+                        .then(newName => this.setRawRole(newName, content));
+                });
+        }
+
+        removeRoleById(roleId) {
+            if (this.isDeleted()) return Promise.reject('cannot removeRole: project has been deleted!');
+            const query = {$unset: {}};
+            this._logger.trace(`removing role ${roleId} from ${this._id.toString()}`);
+            query.$unset[`roles.${roleId}`] = '';
+            return this._execUpdate(query);
+        }
+
+        removeRole(roleName) {
+            if (this.isDeleted()) return Promise.reject('cannot removeRole: project has been deleted!');
+            this._logger.trace(`removing role: ${roleName}`);
+            return this.getRoleId(roleName)
+                .then(roleId => {
+                    if (!roleId) return Promise.reject(`Could not find role named ${roleName} in ${this.uuid()}`);
+                    return this.removeRoleById(roleId);
+                });
         }
 
         renameRole(role, newName) {
-            if (this.isDeleted()) return Promise.reject('project has been deleted!');
-            var query = {$rename: {}};
-            query.$rename[`roles.${role}`] = `roles.${newName}`;
+            if (this.isDeleted()) return Promise.reject('cannot renameRole: project has been deleted!');
+            return this.getRoleId(role)
+                .then(id => this.setRoleName(id, newName));
+        }
 
-            this._logger.trace(`renaming role: ${role} -> ${newName}`);
-            return this._db.update(this.getStorageId(), query);
+        setRoleName(roleId, name) {
+            if (this.isDeleted()) return Promise.reject('cannot setRoleName: project has been deleted!');
+            const query = {$set: {}};
+            query.$set[`roles.${roleId}.ProjectName`] = name;
+
+            this._logger.trace(`setting role name of ${roleId} to ${name}`);
+            return this._execUpdate(query);
+        }
+
+        getRoleName (id) {
+            return this.getRawRoleById(id)
+                .then(data => data && data.ProjectName);
         }
 
         getRoleNames () {
             return this.getRawProject()
-                .then(project => Object.keys(project.roles));
+                .then(project => Object.keys(project.roles).map(id => project.roles[id].ProjectName));
         }
 
-        ///////////////////////// End Roles ///////////////////////// 
-        collectProjects() {
-            var sockets = this._room ?
-                this._room.getRoleNames()
-                    .map(name => this._room.getSocketsAt(name)[0])
-                    .filter(socket => !!socket) : [];
+        ///////////////////////// End Roles /////////////////////////
+        create(roleDict={}) {  // initial save
+            const data = {
+                name: this.name,
+                owner: this.owner,
+                transient: true,
+                lastUpdatedAt: new Date(),
+                originTime: this.originTime,
+                collaborators: this.collaborators,
+                deleteAt: null,
+                roles: roleDict
+            };
 
-            // Request the project from the first socket
-            // if the request fails, continue with the ones that succeed
-            const jsons = sockets.map(socket =>
-                socket.getProjectJson()
-                    .catch(err => {
-                        this._logger.warn('could not save project at ' +
-                            `${socket.roleId} in ${this.owner}/${this.name}: ${err}`);
-                        return null;
-                    })
-            );
-            return Q.all(jsons)
-                .then(roles => roles.filter(role => !!role));
-        }
-
-        collectSaveableRoles() {
-            return this.collectProjects()
-                .then(roles => Q.all(roles.map(role => storeRoleBlob(role))));
-        }
-
-
-        create(roleDict) {  // initial save
-            return this.collectSaveableRoles()
-                .then(roles => {
-                    roleDict = roleDict || {};
-                    const data = {
-                        name: this.name,
-                        owner: this.owner,
-                        transient: true,
-                        lastUpdatedAt: Date.now(),
-                        originTime: this.originTime,
-                        collaborators: this.collaborators,
-                        roles: roleDict
-                    };
-
-                    roles.forEach(role => roleDict[role.ProjectName] = role);
-                    return this._db.save(data);
+            return this._db.save(data)
+                .then(result => {
+                    const id = result.ops[0]._id;
+                    this._id = id;
                 })
                 .then(() => this);
         }
 
-        save() {
-            const query = {$set: {}};
-            const options = {};
-
-            this._logger.trace(`saving project ${this.owner}/${this.name}`);
-            return this.collectSaveableRoles()
-                .then(roles => {
-                    if (this.isDeleted()) throw 'project has been deleted!';
-                    const roleNames = roles.map(role => role.ProjectName);
-                    this._logger.trace(`updated roles are ${roleNames.join(',')}`);
-                    roles.forEach(role => query.$set[`roles.${role.ProjectName}`] = role);
-                    query.$set.lastUpdatedAt = Date.now();
-
-                    if (this._room) {  // update if attached to a room
-                        const nameChanged = this.name !== this._room.name;
-                        const ownerLoggedIn = utils.isSocketUuid(this.owner) &&
-                            this._room.owner !== this.owner;
-
-                        if (ownerLoggedIn) {
-                            query.$set.owner = this._room.owner;
-                        }
-
-                        if (nameChanged) {
-                            query.$set.name = this._room.name;
-                            return this.getRawProject()
-                                .then(project => {
-                                    if (this.isDeleted()) throw 'project has been deleted!';
-
-                                    if (!project.transient) {  // create a copy
-                                        this._logger.trace(`duplicating project (save as) ${this.name}->${this._room.name}`);
-                                        this.name = query.$set.name;
-                                        // covert the roles keys to match expected format
-                                        Object.keys(project.roles).forEach(roleId => {
-                                            project[`roles.${roleId}`] = project.roles[roleId];
-                                        });
-                                        delete project.roles;
-
-                                        this.originTime = Date.now();
-                                        project.originTime = this.originTime;
-                                        this._room.originTime = this.originTime;
-
-                                        query.$set = _.extend({}, project, query.$set);
-                                        options.upsert = true;
-                                    } else {
-                                        this._logger.trace(`renaming project ${this.name}->${this._room.name}`);
-                                    }
-                                });
-                        }
-                    }
-                    return Q();
-                })
-                .then(() => {
-                    if (this.isDeleted()) throw 'project has been deleted!';
-                    this._db.update(this.getStorageId(), query, options);
-                })
-                .then(() => {
-                    this._logger.trace(`saved project ${this.owner}/${this.name}`);
-                    this.owner = query.$set.owner || this.owner;
-                    this.name = query.$set.name || this.name;
-                })
-                .catch(err => {
-                    this._logger.warn(`project not saved: ${err}`);
-                    throw err;
-                });
+        getLastUpdatedRoleName() {
+            return this.getRawRoles()
+                .then(roles => utils.sortByDateField(roles, 'Updated', -1).shift().ProjectName);
         }
 
-        setActiveRole(role) {
-            this.activeRole = role;
+        getLastUpdatedRole() {
+            return this.getLastUpdatedRoleName().then(name => this.getRole(name));
         }
 
         persist() {
-            if (this.isDeleted()) return Promise.reject('project has been deleted!');
+            if (this.isDeleted()) return Promise.reject('cannot call persist: project has been deleted!');
             const query = {$set: {transient: false}};
             this._logger.trace(`persisting project ${this.owner}/${this.name}`);
-            return this._db.update(this.getStorageId(), query)
-                .then(() => this.save());
+            return this._execUpdate(query);
         }
 
         unpersist() {
-            if (this.isDeleted()) return Promise.reject('project has been deleted!');
+            if (this.isDeleted()) return Promise.reject('cannot call unpersist: project has been deleted!');
             const query = {$set: {transient: true}};
             this._logger.trace(`unpersisting project ${this.owner}/${this.name}`);
-            return this._db.update(this.getStorageId(), query)
-                .then(() => this.save());
+            return this._execUpdate(query);
+        }
+
+        archive() {  // Archive a copy of the current project
+            return this.getRawProject()
+                .then(project => {
+                    project.projectId = project._id;
+                    delete project._id;
+                    return ProjectArchives.save(project);
+                })
+                .then(result => {
+                    return result.ops[0]._id;
+                });
         }
 
         isTransient() {
@@ -337,16 +440,23 @@
         }
 
         setPublic(isPublic) {
-            if (this.isDeleted()) return Promise.reject('project has been deleted!');
+            if (this.isDeleted()) return Promise.reject('cannot call setPublic: project has been deleted!');
             const query = {$set: {Public: isPublic === true}};
-            return this._db.update(this.getStorageId(), query);
+            return this._execUpdate(query);
         }
 
         setName(name) {
-            if (this.isDeleted()) return Promise.reject('project has been deleted!');
+            if (this.isDeleted()) return Promise.reject('cannot setName: project has been deleted!');
             const query = {$set: {name: name}};
             this._logger.trace(`renaming project ${this.name}=>${name} for ${this.owner}`);
-            return this._db.update(this.getStorageId(), query)
+            return this.getRawProject()
+                .then(project => {
+                    const isPublic = project.Public === true;
+                    if (isPublic) {
+                        return PublicProjects.rename(this.owner, this.name, name);
+                    }
+                })
+                .then(() => this._execUpdate(query))
                 .then(() => this.name = name);
         }
 
@@ -371,17 +481,92 @@
         }
 
         _updateCollaborators() {
-            if (this.isDeleted()) return Promise.reject('project has been deleted!');
+            if (this.isDeleted()) return Promise.reject('cannot update collaborators: project has been deleted!');
 
             const query = {$set: {collaborators: this.collaborators}};
-            return this._db.update(this.getStorageId(), query);
+            return this._execUpdate(query);
+        }
+
+        _execUpdate(query/*, options*/) {
+            query.$set = query.$set || {};
+            query.$set.lastUpdatedAt = new Date();
+
+            const args = Array.prototype.slice.call(arguments);
+            args.unshift(this.getStorageId());
+
+            return Q(this._db.update.apply(this._db, args))
+                .then(res => {
+                    const {result} = res;
+                    // The project is always referencing the updated version
+                    // (even after upsert/"save as")
+                    if (result.upserted && result.upserted[0]) {
+                        this._id = result.upserted[0]._id;
+                    }
+                    return res;
+                });
         }
 
         getStorageId() {
             return {
-                name: this.name,
-                owner: this.owner
+                _id: this._id
             };
+        }
+
+        //////////////// Recording messages (network traces) ////////////////
+        getRecordStartTimes() {
+            return this.getRawProject()
+                .then(project => project.recordMessagesAfter || []);
+        }
+
+        getLatestRecordStartTime() {
+            return this.getRecordStartTimes()
+                .then(records => Math.max.apply(null, records.map(record => record.time)));
+        }
+
+        isRecordingMessages(cache=false) {
+            return this.getRawProject(cache)
+                .then(project => project.recordMessagesAfter || [])
+                .then(records => Math.max.apply(null, records.map(record => record.time)))
+                .then( time => (Date.now() - time) < MAX_MSG_RECORD_DURATION);
+        }
+
+        startRecordingMessages(id, time=Date.now()) {  // Set (and return) the start recording time
+            const query = {$push: {recordMessagesAfter: {id: id, time: time}}};
+            return this._execUpdate(query)
+                .then(() => time);
+        }
+
+        stopRecordingMessages(id) {
+            return this.getRecordStartTimes()
+                .then(records => {
+                    const minTime = Date.now() - MAX_MSG_RECORD_DURATION;
+                    let removed = null;
+
+                    // Remove one matching element from the list and
+                    // all that are below the minimum
+                    records = records.filter(record => {
+                        if (!removed && record.id === id) {
+                            removed = record;
+                            return false;
+                        }
+                        return record.time > minTime;
+                    });
+
+                    const query = {$set: {recordMessagesAfter: records}};
+                    return this._execUpdate(query)
+                        .then(() => removed && removed.time);
+                });
+        }
+
+        async toXML() {
+            let roles = await this.getRoles();
+            roles = utils.sortByDateField(roles, 'Updated', -1);
+
+            const roleXml = roles.map(role =>
+                `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
+            ).join('');
+
+            return `<room name="${this.name}" app="${utils.APP}">${roleXml}</room>`;
         }
 
         pretty() {
@@ -403,20 +588,39 @@
         }
     }
 
-    var EXTRA_KEYS = ['_room'];
-    Project.prototype.IGNORE_KEYS = DataWrapper.prototype.IGNORE_KEYS.concat(EXTRA_KEYS);
-
     // Project Storage
     var logger,
-        collection;
+        collection,
+        ProjectArchives;
 
     ProjectStorage.init = function (_logger, db) {
         logger = _logger.fork('projects');
         collection = db.collection('projects');
+        this._collection = collection;
+        // automatically garbage collect transient projects by setting "deleteAt"
+        collection.createIndex(
+            {deleteAt: 1},
+            {
+                expireAfterSeconds: 1,
+                partialFilterExpression: {
+                    transient: true
+                }
+            }
+        );
+        ProjectArchives = db.collection('project-archives');
     };
 
-    ProjectStorage.getRawProject = function (username, projectName) {
-        return collection.findOne({owner: username, name: projectName});
+    ProjectStorage._findOne = function(query, cache) {
+        return findOne(query, cache);
+    };
+
+    ProjectStorage.getRawProject = function (username, projectName, cache=false) {
+        return findOne({owner: username, name: projectName}, cache);
+    };
+
+    ProjectStorage.getProjectId = function(owner, name) {
+        return ProjectStorage.getRawProject(owner, name)
+            .then(project => project && project._id.toString());
     };
 
     ProjectStorage.get = function (username, projectName) {
@@ -429,6 +633,37 @@
                 };
                 return data ? new Project(params) : null;
             });
+    };
+
+    ProjectStorage.getById = function (id) {
+        return ProjectStorage.getRawProjectById(id)
+            .then(data => {
+                var params = {
+                    logger: logger,
+                    db: collection,
+                    data
+                };
+                return data ? new Project(params) : null;
+            });
+    };
+
+    ProjectStorage.getRawProjectById = function (id, opts) {
+        const defaultOpts = {unmarkForDeletion: false, cache: false};
+        opts = {...defaultOpts, ...opts};
+        try {
+            id = typeof id === 'string' ? ObjectId(id) : id;
+            const query = {_id: id};
+            if (opts.unmarkForDeletion) {
+                const update = {$set: {deleteAt: null}};
+                return Q(collection.findOneAndUpdate(query, update))
+                    .then(result => result.value);
+            } else {
+                return findOne(query, opts.cache);
+            }
+        } catch (e) {
+            logger.error(e);
+            return Q(null);
+        }
     };
 
     ProjectStorage.getTransientProject = function (username, projectName) {
@@ -489,6 +724,21 @@
             });
     };
 
+    ProjectStorage.getAllUserProjects = async function (username) {
+        try {
+            const rawProjects = await ProjectStorage.getAllRawUserProjects(username);
+            const projects = rawProjects.map(d => new Project({
+                logger: logger,
+                db: collection,
+                data: d
+            }));
+            return projects;
+        } catch (e) {
+            logger.error(`getting user projects errored: ${e}`);
+            throw e;
+        }
+    };
+
     ProjectStorage.getRawSharedProjects = function (username) {
         return collection.find({collaborators: username}).toArray();
     };
@@ -525,27 +775,34 @@
         return deferred.promise;
     };
 
-    // Create room from ActiveRoom (request projects from clients)
-    const getDefaultProjectData = function(user, room) {
-        return {
-            owner: user.username,
-            name: room.name,
-            originTime: room.originTime,
-            activeRole: user.roleId,
-            collaborators: room.getCollaborators(),
-            roles: {}
-        };
-    };
+    ProjectStorage.new = function(data) {
+        data.roles = data.roles || {};
+        data.originTime = data.originTime || new Date();
+        data.collaborators = data.collaborators || [];
+        data.name = data.name || 'untitled';
 
-    ProjectStorage.new = function(user, room) {
         const project = new Project({
             logger: logger,
             db: collection,
-            data: getDefaultProjectData(user, room),
-            room: room
+            data: data
         });
 
         return project.create();
+    };
+
+    ProjectStorage.destroy = function(projectId) {
+        return collection.deleteOne({_id: ObjectId(projectId)});
+    };
+
+    const DELETE_DELAY = 60*1000;
+    ProjectStorage.markForDeletion = async function(projectId) {
+        // Record that the project is now empty. This will be used to mark it for deletion
+        const query = {_id: ObjectId(projectId)};
+        const deleteAt = new Date(Date.now() + DELETE_DELAY);
+
+        return await collection.updateOne(query, {
+            $set: {deleteAt}
+        });
     };
 
 })(exports);

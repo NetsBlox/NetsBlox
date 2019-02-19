@@ -1,10 +1,17 @@
-const ApiConsumer = require('../utils/api-consumer');
+/**
+ * The BritishMuseum Service provides access to data from the British Museum collection.
+ * For more information, check out https://britishmuseum.org/
+ *
+ * Terms of use: https://collection.britishmuseum.org/resource/Termsofuse
+ * @service
+ */
 
-let britishmuseum = new ApiConsumer('britishmuseum','https://collection.britishmuseum.org/',{cache: {ttl: 3600*24*30*6}});
+const ApiConsumer = require('../utils/api-consumer');
+let britishmuseum = new ApiConsumer('BritishMuseum','https://collection.britishmuseum.org/',{cache: {ttl: 3600*24*30*6}});
 
 
 const prefix = `PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX crm: <http://erlangen-crm.org/current/>
+PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
 PREFIX fts: <http://www.ontotext.com/owlim/fts#>
 PREFIX btm: <http://www.researchspace.org/ontology/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>`;
@@ -88,6 +95,12 @@ britishmuseum._search = function(label, type, material, limit) {
     return this._sendStruct(queryOptions, searchParser);
 };
 
+/**
+ * Search for artifacts using a label
+ * @param {String} label Label to search for
+ * @param {BoundedNumber<0>=} limit Maximum number of artifacts to return
+ * @returns {Object} Table of artifacts found
+ */
 britishmuseum.searchByLabel = function(label, limit){
     limit = limit || DEFAULT_LIMIT;
 
@@ -105,6 +118,12 @@ britishmuseum.searchByLabel = function(label, limit){
 };
 
 
+/**
+ * Search for artifacts by type
+ * @param {String} type Type to search for
+ * @param {BoundedNumber<0>=} limit Maximum number of artifacts to return
+ * @returns {Object} Table of artifacts found
+ */
 britishmuseum.searchByType = function(type, limit){
     limit = limit || DEFAULT_LIMIT;
 
@@ -124,6 +143,12 @@ britishmuseum.searchByType = function(type, limit){
 };
 
 
+/**
+ * Search for artifacts by material
+ * @param {String} material Material to search for
+ * @param {BoundedNumber<0>=} limit Maximum number of artifacts to return
+ * @returns {Object} Table of artifacts found
+ */
 britishmuseum.searchByMaterial = function(material, limit){
     limit = limit || DEFAULT_LIMIT;
 
@@ -143,12 +168,15 @@ britishmuseum.searchByMaterial = function(material, limit){
 };
 
 
+/**
+ * Get details about an artifact
+ * @param {String} itemId ID of item to find details for
+ * @returns {Object} Table of details for item
+ */
 britishmuseum.itemDetails = function(itemId){
 
     let resourceUri = 'http://collection.britishmuseum.org/id/object/' + itemId;
-    // let resourceQueryOpts = {
-    //     queryString: 'resource?uri=' + resourceUri + '&format=json'
-    // };
+
     let detailsQuery = `SELECT DISTINCT ?obj ?pred ?sub WHERE { <${resourceUri}> ?pred ?sub. }`;
 
     queryOptions.body = detailsQuery;
@@ -165,7 +193,7 @@ britishmuseum.itemDetails = function(itemId){
             }
         }
         let sparqlObj = {};
-        sparqlJson.results.bindings.forEach(it => { 
+        sparqlJson.results.bindings.forEach(it => {
             sparqlObj[it.pred.value] = setOrAppend(sparqlObj[it.pred.value], it.sub.value);
         });
 
@@ -201,6 +229,13 @@ britishmuseum.itemDetails = function(itemId){
     return this._sendStruct(queryOptions, resourceParser);
 };
 
+/**
+ * Get image of an artifact
+ * @param {String} imageId ID of image to retrieve
+ * @param {BoundedNumber<1,2000>} maxWidth Width of image
+ * @param {BoundedNumber<1,2000>} maxHeight Height of image
+ * @returns {Image} Image of artifact found
+ */
 britishmuseum.getImage = function getImage(imageId, maxWidth, maxHeight) {
     // can set maxwidth and height
     maxWidth = maxWidth || 300;
@@ -215,3 +250,4 @@ britishmuseum.getImage = function getImage(imageId, maxWidth, maxHeight) {
 };
 
 module.exports = britishmuseum;
+

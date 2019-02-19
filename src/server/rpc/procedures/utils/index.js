@@ -1,5 +1,6 @@
 // a set of utilities to be used by rpcs
 const Q = require('q');
+const Projects = require('../../../storage/projects');
 
 // sets up the headers and send an image
 const sendImageBuffer = (response, imageBuffer, logger) => {
@@ -45,7 +46,6 @@ const jsonToSnapList = inputJson => {
 
     let keyVals = [];
     if (Array.isArray(inputJson)) {
-        inputJson = inputJson.filter(item => item);
         for (let i = 0; i < inputJson.length; i++) {
             keyVals.push(jsonToSnapList(inputJson[i]));
         }
@@ -69,9 +69,38 @@ const encodeQueryData = tuple => {
     return ret.join('&');
 };
 
+const getRoleNames = (projectId, roleIds) => {
+    roleIds = roleIds.filter(id => !!id);
+    return Projects.getRawProjectById(projectId)
+        .then(metadata => {
+            if (!metadata) {
+                throw new Error('Project not found');
+            }
+
+            try {
+                return roleIds.map(id => metadata.roles[id].ProjectName);
+            } catch (err) {
+                throw new Error('Role not found');
+            }
+        });
+
+};
+
+const getRoleName = (projectId, roleId) => {
+    return getRoleNames(projectId, [roleId])
+        .then(names => names[0]);
+};
+
+const isValidServiceName = name => {
+    return /^[a-z0-9-]+$/i.test(name);
+};
+
 module.exports = {
+    getRoleNames,
+    getRoleName,
     sendImageBuffer,
     encodeQueryData,
     collectStream,
-    jsonToSnapList
+    jsonToSnapList,
+    isValidServiceName,
 };

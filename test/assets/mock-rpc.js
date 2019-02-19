@@ -1,22 +1,51 @@
 // I should probably rename this. This is a wrapper for testing the RPC's
 'use strict';
 
-// RPCs now contain the methods 
+// RPCs now contain the methods
 var Constants = require('../../src/common/constants'),
     getArgsFor = require('../../src/server/server-utils').getArgumentsFor,
     MockResponse = require('./mock-response'),
     _ = require('lodash');
+
+const utils = require('./utils');
+const Client = utils.reqSrc('client');
+const NetworkTopology = utils.reqSrc('network-topology');
+const Logger = utils.reqSrc('logger');
+const MockSocket = require('./mock-websocket');
+let logger;
 
 var MockRPC = function(RPC, raw) {
     this._methods = [];
     this._rpc = typeof RPC === 'function' ? new RPC() : raw ? RPC : _.cloneDeep(RPC);
     this.createMethods(RPC);
 
-    this.socket = new MockSocket();
+    logger = new Logger('netsblox:test:services');
+    this.getNewSocket();
     this.response = new MockResponse();
+    this.request = new MockRequest();
+
+    this.serviceName = this._rpc.serviceName;
+};
+
+MockRPC.prototype.getNewSocket = function() {
+    if (this.socket) {
+        this.socket.onClose();
+    }
+    this.socket = new Client(logger, new MockSocket());
     this._rpc.socket = this.socket;
-    this._rpc.response = this.response;
-    this.rpcName = this._rpc.rpcName;
+    NetworkTopology.onConnect(this.socket);
+};
+
+MockRPC.prototype.setRequester = function(uuid, username) {
+    this.getNewSocket();
+
+    this.socket.uuid = uuid || this.socket.uuid;
+    if (this.socket.uuid[0] !== '_') {
+        this.socket.uuid = '_' + this.socket.uuid;
+    }
+
+    this.socket.username = username;
+    this.socket.loggedIn = !!username;
 };
 
 MockRPC.prototype.createMethods = function(RPC) {
@@ -40,38 +69,39 @@ MockRPC.prototype.getArgumentsFor = function(fnName) {
 
 MockRPC.prototype.addMethod = function(name) {
     this[name] = function() {
-        return this._rpc[name].apply(this._rpc, arguments);
+        const ctx = Object.create(this._rpc);
+        ctx.socket = this.socket;
+        ctx.response = this.response;
+        ctx.request = this.request;
+        ctx.caller = {
+            roleId: this.socket.roleId,
+            clientId: this.socket.uuid,
+            username: this.socket.username,
+            projectId: this.socket.projectId || 'testProject'
+        };
+        const args = JSON.stringify(Array.prototype.slice.call(arguments));
+        const id = ctx.caller.clientId || 'new client';
+        logger.trace(`${id} is calling ${name}(${args.substring(1, args.length-1)})`);
+        return this._rpc[name].apply(ctx, arguments);
     };
 };
 
-var MockSocket = function() {
-    this.reset();
+const MockRequest = function() {
+    this._events = {};
 };
 
-MockSocket.prototype.send = function(msg) {
-    this._messages.push(msg);
-};
-
-MockSocket.prototype.message = function(index) {
-    if (index < 0) {
-        return this._messages[this._messages+index];
-    } else {
-        return this._messages[index];
+MockRequest.prototype.abort = function() {
+    if (this._events.close) {
+        this._events.close();
     }
 };
 
-MockSocket.prototype.messages = function() {
-    return this._messages.slice();
-};
-
-MockSocket.prototype.reset = function() {
-    this.roleId = 'newRole';
-    this.uuid = 'someSocketUuid';
-
-    this._messages = [];
-    this._room = {
-        sockets: () => []
-    };
+MockRequest.prototype.on = function(event, fn) {
+    if (event === 'close') {
+        this._events.close = fn;
+    } else {
+        throw new Error('Unrecognized event listener:', event);
+    }
 };
 
 module.exports = MockRPC;

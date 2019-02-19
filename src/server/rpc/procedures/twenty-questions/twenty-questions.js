@@ -2,7 +2,7 @@
 
 'use strict';
 
-var Constants = require('../../../../common/constants');
+const NetworkTopology = require('../../../network-topology');
 
 let TwentyQuestions = function () {
     this._state = {};
@@ -26,25 +26,21 @@ TwentyQuestions.prototype.start = function (answer) {
     this._state.started = true;
     this._state.guessCount = 0;
     this._state.correctAnswer = answer.toLowerCase();
-    this._state.answerer = this.socket.roleId;
+    this._state.answerer = this.caller.roleId;
     // send start message to everyone
-    this.socket._room.sockets()
-        .forEach(socket => socket.send({
-            type: 'message',
-            dstId: Constants.EVERYONE,
-            msgType: 'start',
-            content: {}
-        }));
+    const sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId);
+    sockets.forEach(socket => socket.sendMessage('start'));
     return true;
 };
 
 TwentyQuestions.prototype.guess = function(guess) {
+    const sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId);
     // safeguard against guessing before a game has started
     if (!this._state.started) {
         return 'Game hasn\'t started yet...wait for the answerer to think of something!';
     }
     // safeguard against the answerer accidentally attempting to guess
-    if (this.socket.roleId === this._state.answerer) {
+    if (this.caller.roleId === this._state.answerer) {
         return 'You\'re not the guesser!';
     }
     // ensure valid guess
@@ -62,44 +58,25 @@ TwentyQuestions.prototype.guess = function(guess) {
     }
 
     this._state.guessCount++;
-    let msgSocket = {
-        type: 'message',
-        dstId: Constants.EVERYONE,
-        content: {
-            turn: this._state.guessCount
-        }
+    const content = {
+        turn: this._state.guessCount
     };
     // incorrect guess
     if (!correct) {
         // guesses are up! guesser loses...
         if (this._state.guessCount === 20) {
-            this.socket._room.sockets()
-                .forEach(socket => {
-                    let msg = msgSocket;
-                    msg.msgType = 'EndGame';
-                    msg.content.GuesserWin = false;
-                    socket.send(msg);
-                });
+            content.GuesserWin = false;
+            sockets.forEach(socket => socket.sendMessage('EndGame', content));
         // wait for answerer to answer the question
         } else {
-            this.socket._room.sockets()
-                .forEach(socket => {
-                    let msg = msgSocket;
-                    msg.msgType = 'EndGuesserTurn';
-                    msg.content.guess = guess;
-                    socket.send(msg);
-                });
+            content.guess = guess;
+            sockets.forEach(socket => socket.sendMessage('EndGuesserTurn', content));
         }
         return correct;
     }
     // correct guess, end the game
-    this.socket._room.sockets()
-        .forEach(socket => {
-            let msg = msgSocket;
-            msg.msgType = 'EndGame';
-            msg.content.GuesserWin = true;
-            socket.send(msg);
-        });
+    content.GuesserWin = true;
+    sockets.forEach(socket => socket.sendMessage('EndGame', content));
     return true;
 };
 
@@ -109,7 +86,7 @@ TwentyQuestions.prototype.answer = function(answer) {
         return this.response.send('Game hasn\'t started yet...think of something to be guessed!');
     }
     // safeguard against the guesser accidently attempting to answer
-    if (this.socket.roleId !== this._state.answerer) {
+    if (this.caller.roleId !== this._state.answerer) {
         return this.response.send('You\'re not the answerer!');
     }
     // ensure valid answer
@@ -117,16 +94,12 @@ TwentyQuestions.prototype.answer = function(answer) {
         return this.response.send('Answer the guess with yes/no!');
     }
     // end answerer's turn
-    this.socket._room.sockets()
-        .forEach(socket => socket.send({
-            type: 'message',
-            dstId: Constants.EVERYONE,
-            msgType: 'EndAnswererTurn',
-            content: {
-                turn: this._state.guessCount,
-                response: answer.toLowerCase()
-            }
-        }));
+    const content = {
+        turn: this._state.guessCount,
+        response: answer.toLowerCase()
+    };
+    const sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId);
+    sockets.forEach(socket => socket.sendMessage('EndAnswererTurn', content));
     return true;
 };
 

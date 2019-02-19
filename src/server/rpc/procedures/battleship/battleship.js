@@ -1,15 +1,15 @@
 'use strict';
 
-var debug = require('debug'),
-    error = debug('netsblox:rpc:battleship:error'),
-    trace = debug('netsblox:rpc:battleship:trace'),
-    Board = require('./board'),
-    TurnBased = require('../utils/turn-based'),
-    BattleshipConstants = require('./constants'),
-    Constants = require('../../../../common/constants'),
-    BOARD_SIZE = BattleshipConstants.BOARD_SIZE,
-    SHIPS = BattleshipConstants.SHIPS,
-    DIRS = BattleshipConstants.DIRS;
+const logger = require('../utils/logger')('battleship');
+const Board = require('./board');
+const TurnBased = require('../utils/turn-based');
+const BattleshipConstants = require('./constants');
+const BOARD_SIZE = BattleshipConstants.BOARD_SIZE;
+const SHIPS = BattleshipConstants.SHIPS;
+const DIRS = BattleshipConstants.DIRS;
+const NetworkTopology = require('../../../network-topology');
+const Utils = require('../utils');
+const Projects = require('../../../storage/projects');
 
 var isHorizontal = dir => dir === 'east' || dir === 'west';
 
@@ -25,16 +25,24 @@ class Battleship extends TurnBased {
 var isValidDim = dim => 0 <= dim && dim <= BOARD_SIZE;
 var checkRowCol = (row, col) => isValidDim(row) && isValidDim(col);
 
+/**
+ * Resets the game by clearing the board and reverting to the placing phase
+ * @returns {Boolean} If game was reset
+ */
 Battleship.prototype.reset = function() {
     this._state._STATE = BattleshipConstants.PLACING;
     this._state._boards = {};
     return true;
 };
 
+/**
+ * Begins the game, if board is ready
+ * @returns {Boolean} If game was started
+ */
 Battleship.prototype.start = function() {
     // Check that all boards are ready
     var roles = Object.keys(this._state._boards),
-        sockets = this.socket._room.sockets(),
+        sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId),
         shipsLeft,
         board;
 
@@ -55,18 +63,22 @@ Battleship.prototype.start = function() {
     }
 
     // If so, send the start! message
-    sockets.forEach(s => s.send({
-        type: 'message',
-        msgType: 'start',
-        dstId: Constants.EVERYONE
-    }));
+    sockets.forEach(s => s.sendMessage('start'));
 
     this._state._STATE = BattleshipConstants.SHOOTING;
     return true;
 };
 
+/**
+ * Place a ship on the board
+ * @param {String} ship Ship type to place
+ * @param {BoundedNumber<1,100>} row Row to place ship in
+ * @param {BoundedNumber<1,100>} column Column to place ship in
+ * @param {String} facing Direction to face
+ * @returns {Boolean} If piece was placed
+ */
 Battleship.prototype.placeShip = function(ship, row, column, facing) {
-    var role = this.socket.roleId,
+    var role = this.caller.roleId,
         len = SHIPS[ship];
 
     row--;
@@ -96,7 +108,7 @@ Battleship.prototype.placeShip = function(ship, row, column, facing) {
 
     // Create a board if none exists
     if (!this._state._boards[role]) {
-        trace(`creating board for ${role}`);
+        logger.trace(`creating board for ${role}`);
         this._state._boards[role] = new Board(BOARD_SIZE);
     }
 
@@ -105,11 +117,14 @@ Battleship.prototype.placeShip = function(ship, row, column, facing) {
     return result || 'Could not place ship - colliding with another ship!';
 };
 
+/**
+ * Fire a shot at the board
+ * @param {BoundedNumber<1,100>} row Row to fire at
+ * @param {BoundedNumber<1,100>} column Column to fire at
+ * @returns {Boolean} If ship was hit
+ */
 Battleship.prototype.fire = function(row, column) {
-    var socket = this.socket,
-        role = socket.roleId,
-        roles,
-        target = null;  // could be used to set the target role
+    const role = this.caller.roleId;
 
     row = row-1;
     column = column-1;
@@ -120,18 +135,17 @@ Battleship.prototype.fire = function(row, column) {
 
     // If target is not provided, try to get another role with a board.
     // If none exists, just try to get another role in the room
-    if (!target) {
-        trace('trying to infer a target');
-        roles = Object.keys(this._state._boards);
-        if (!roles.length) {
-            roles = socket._room.getRoleNames();
-            trace(`no other boards. Checking other roles in the room (${roles})`);
-        }
-
-        target = roles.filter(r => r !== role).shift();
+    logger.trace('trying to infer a target');
+    const roles = Object.keys(this._state._boards);
+    if (!roles.length) {
+        logger.trace(`no other boards. Checking other roles in the room (${roles})`);
+        this.response.send('Cannot fire with only a single player');
+        return false;
     }
 
-    trace(`${role} is firing at ${target} (${row}, ${column})`);
+    const target = roles.filter(r => r !== role).shift();
+
+    logger.trace(`${role} is firing at ${target} (${row}, ${column})`);
     if (!checkRowCol(row, column)) {
         this.response.status(400).send(`Invalid position (${row}, ${column})`);
         return false;
@@ -141,57 +155,88 @@ Battleship.prototype.fire = function(row, column) {
     //   - hit <target> <ship> <row> <col> <sunk>
     //   - miss <target> <row> <col>
     if (!this._state._boards[target]) {
-        error(`board doesn't exist for "${target}"`);
+        logger.error(`board doesn't exist for "${target}"`);
         this._state._boards[target] = new Board(BOARD_SIZE);
     }
 
-    var result = this._state._boards[target].fire(row, column),
-        msg;
+    const result = this._state._boards[target].fire(row, column);
 
     if (result) {
-        msg = {
-            type: 'message',
-            dstId: Constants.EVERYONE,
-            msgType: result.HIT ? BattleshipConstants.HIT : BattleshipConstants.MISS,
-            content: {
-                role: target,
-                row: row+1,
-                column: column+1,
-                ship: result.SHIP,
-                sunk: result.SUNK
-            }
-        };
-
-        socket._room.sockets().forEach(s => s.send(msg));
+        return Utils.getRoleName(this.caller.projectId, target)
+            .then(targetName => {
+                const sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId);
+                const msgType = result.HIT ? BattleshipConstants.HIT : BattleshipConstants.MISS;
+                const data = {
+                    role: targetName,
+                    row: row+1,
+                    column: column+1,
+                    ship: result.SHIP,
+                    sunk: result.SUNK
+                };
+                sockets.forEach(s => s.sendMessage(msgType, data));
+                this.response.send(!!result);
+                return !!result;
+            });
     }
 
     this.response.send(!!result);
     return !!result;
 };
 
+/**
+ * Get number of remaining ships of a role
+ * @param {String} roleID Name of role to use
+ * @returns {Number} Number of remaining ships
+ */
 Battleship.prototype.remainingShips = function(roleId) {
-    var role = roleId || this.socket.roleId;
+    if (roleId) {  // resolve the provided role name to a role ID
+        return Projects.getRawProjectById(this.caller.projectId)
+            .then(metadata => {
+                const role = Object.keys(metadata.roles).find(id => {
+                    return metadata.roles[id].ProjectName === roleId;
+                });
+
+                if (!this._state._boards[role]) {
+                    logger.error(`board doesn't exist for "${role}"`);
+                    this._state._boards[role] = new Board(BOARD_SIZE);
+                }
+
+                return this._state._boards[role].remaining();
+            });
+    }
+
+    const role = this.caller.roleId;
 
     if (!this._state._boards[role]) {
-        error(`board doesn't exist for "${role}"`);
+        logger.error(`board doesn't exist for "${role}"`);
         this._state._boards[role] = new Board(BOARD_SIZE);
     }
 
     return this._state._boards[role].remaining();
 };
 
+/**
+ * Get list of ship types
+ * @returns {Array} Types of ships
+ */
 Battleship.prototype.allShips = function() {
     return Object.keys(SHIPS);
 };
 
+/**
+ * Get length of a ship type
+ * @param {String} ship Type of ship
+ * @returns {Number} Length of ship type
+ */
 Battleship.prototype.shipLength = function(ship) {
     ship = (ship || '').toLowerCase();
 
     if (!SHIPS[ship]) {
         return `Ship "${ship}" not found!`;
     }
-    trace(`request for length of ${ship} (${SHIPS[ship]})`);
+    logger.trace(`request for length of ${ship} (${SHIPS[ship]})`);
     return SHIPS[ship];
 };
 
 module.exports = Battleship;
+

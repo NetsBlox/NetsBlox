@@ -8,6 +8,8 @@ node_modules/
 coverage/
 scratch/
 cache/
+notes/
+test/
 .env
 src/client/netsblox-build.js
 src/client/dist/

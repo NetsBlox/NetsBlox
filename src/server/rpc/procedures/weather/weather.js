@@ -1,17 +1,22 @@
+/**
+ * The Weather Service provides access to real-time weather data using OpenWeatherMap.
+ * For more information, check out https://openweathermap.org/.
+ *
+ * Terms of Service: https://openweathermap.org/terms
+ * @service
+ */
 // This is a static rpc collection. That is, it does not maintain state and is
 // shared across groups
 'use strict';
 
-var debug = require('debug'),
-    error = debug('netsblox:rpc:weather:error'),
-    trace = debug('netsblox:rpc:weather:trace'),
-    tuc = require('temp-units-conv'),
-    ApiConsumer = require('../utils/api-consumer'),
-    API_KEY = process.env.OPEN_WEATHER_MAP_KEY,
-    MAX_DISTANCE = +process.env.WEATHER_MAX_DISTANCE || Infinity,  // miles
-    geolib = require('geolib');
+const logger = require('../utils/logger')('weather');
+const tuc = require('temp-units-conv');
+const ApiConsumer = require('../utils/api-consumer');
+const API_KEY = process.env.OPEN_WEATHER_MAP_KEY;
+const MAX_DISTANCE = +process.env.WEATHER_MAX_DISTANCE || Infinity;  // miles
+const geolib = require('geolib');
 
-let weather = new ApiConsumer('Weather', 'http://api.openweathermap.org/data/2.5/weather?APPID='+API_KEY, {cache: {ttl: 60}});
+const weather = new ApiConsumer('Weather', 'http://api.openweathermap.org/data/2.5/weather?APPID='+API_KEY, {cache: {ttl: 60}});
 
 const isWithinMaxDistance = function(result, lat, lng) {
     var distance = geolib.getDistance(
@@ -19,26 +24,46 @@ const isWithinMaxDistance = function(result, lat, lng) {
         {latitude: result.coord.lat, longitude: result.coord.lon}
     );
     distance *= 0.000621371;
-    trace(`closest measurement is ${distance} miles from request`);
+    logger.trace(`closest measurement is ${distance} miles from request`);
     if (distance > MAX_DISTANCE) {
-        error(`No measurement within ${MAX_DISTANCE} miles of ${lat}, ${lng}`);
+        logger.error(`No measurement within ${MAX_DISTANCE} miles of ${lat}, ${lng}`);
     }
     return distance < MAX_DISTANCE;
 };
 
-weather.temp = function(latitude, longitude){
+/**
+ * Get the current temperature for a given location.
+ * @param {Latitude} latitude
+ * @param {Longitude} longitude
+ */
+weather.temperature = function(latitude, longitude){
     return this._requestData({queryString: '&lat=' + latitude + '&lon=' + longitude})
         .then(body => {
             var temp = 'unknown';
             if (body.main && isWithinMaxDistance(body, latitude, longitude)) {
                 temp = body.main.temp;
-                trace('Kelvin temp is '+temp+' fahrenheit is '+tuc.k2f(temp));
+                logger.trace('Kelvin temp is '+temp+' fahrenheit is '+tuc.k2f(temp));
                 temp = tuc.k2f(temp).toFixed(1);
             }
             return temp;
         });
 };
 
+/**
+ * Get the current temperature for a given location.
+ * @deprecated
+ * @param {Latitude} latitude
+ * @param {Longitude} longitude
+ */
+weather.temp = function(latitude, longitude) {
+    return this.temperature(latitude, longitude);
+};
+
+/**
+ * Get the current humidity for a given location.
+ * @param {Latitude} latitude
+ * @param {Longitude} longitude
+ */
 weather.humidity = function(latitude, longitude){
     return this._requestData({queryString: '&lat=' + latitude + '&lon=' + longitude})
         .then(body => {
@@ -50,7 +75,11 @@ weather.humidity = function(latitude, longitude){
         });
 };
 
-
+/**
+ * Get a short description of the current weather for a given location.
+ * @param {Latitude} latitude
+ * @param {Longitude} longitude
+ */
 weather.description = function(latitude, longitude){
     return this._requestData({queryString: '&lat=' + latitude + '&lon=' + longitude})
         .then(body => {
@@ -62,6 +91,11 @@ weather.description = function(latitude, longitude){
         });
 };
 
+/**
+ * Get the current wind speed for a given location.
+ * @param {Latitude} latitude
+ * @param {Longitude} longitude
+ */
 weather.windSpeed = function(latitude, longitude){
     return this._requestData({queryString: '&lat=' + latitude + '&lon=' + longitude})
         .then(body => {
@@ -73,6 +107,11 @@ weather.windSpeed = function(latitude, longitude){
         });
 };
 
+/**
+ * Get the current wind direction for a given location.
+ * @param {Latitude} latitude
+ * @param {Longitude} longitude
+ */
 weather.windAngle = function(latitude, longitude){
     return this._requestData({queryString: '&lat=' + latitude + '&lon=' + longitude})
         .then(body => {
@@ -84,6 +123,11 @@ weather.windAngle = function(latitude, longitude){
         });
 };
 
+/**
+ * Get a small icon of the current weather for a given location.
+ * @param {Latitude} latitude
+ * @param {Longitude} longitude
+ */
 weather.icon = function(latitude, longitude){
     return this._requestData({queryString: '&lat=' + latitude + '&lon=' + longitude})
         .then(body => {
@@ -127,34 +171,5 @@ weather.COMPATIBILITY =  {
         longitude: 'lng'
     }
 };
-
-// add argument validation for each rpc
-const order = (a, b, c) => {
-    return a <= b && b <= c;
-};
-
-const validateArgs = (latitude, longitude) => {
-    if (isNaN(+latitude)) return `Invalid latitude: ${latitude}`;
-    if (isNaN(+longitude)) return `Invalid longitude: ${longitude}`;
-
-    latitude = +latitude;
-    longitude = +longitude;
-    if (!order(-90, latitude, 90)) return `latitude out of range: ${latitude}`;
-    if (!order(-180, longitude, 180)) return `longitude out of range: ${longitude}`;
-};
-
-Object.keys(weather)
-    .filter(method => typeof weather[method] === 'function')
-    .forEach(method => {
-        var fn = weather[method];
-        weather[method] = function(latitude, longitude) {
-            var err = validateArgs(latitude, longitude);
-            if (err) {
-                trace(`invalid arguments: ${latitude}, ${longitude}`);
-                return this.response.send('ERROR: ' +  err);
-            }
-            return fn.call(this, latitude, longitude);
-        };
-    });
 
 module.exports = weather;

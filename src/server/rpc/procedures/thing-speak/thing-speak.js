@@ -1,5 +1,12 @@
+/**
+ * The ThingSpeak Service provides access to real-time and historical stock price data.
+ * For more information, check out https://thingspeak.com/.
+ *
+ * Terms of use: https://thingspeak.com/pages/terms
+ * @service
+ */
 const ApiConsumer = require('../utils/api-consumer');
-const thingspeakIoT = new ApiConsumer('thingspeakIoT',
+const thingspeakIoT = new ApiConsumer('Thingspeak',
     'https://api.thingspeak.com/channels/');
 const rpcUtils = require('../utils');
 
@@ -137,7 +144,12 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
     }
 };
 
-//put together the data from feeds and channel metadata
+/**
+ * Get various details about the channel, including location, fields, tags and name.
+ * @param {Number} id channel ID
+ * @returns {Object} Channel details.
+ */
+
 thingspeakIoT.channelDetails = function(id) {
     return this._requestData({queryString: id + '.json?'}).then( data => {
         let details = detailParser(data);

@@ -1,3 +1,9 @@
+/**
+ * The Pixabay Service provides access to free images released under Creative Commons CC0.
+ * For more information, check out https://pixabay.com
+ * @service
+ */
+
 const ApiConsumer = require('../utils/api-consumer');
 const pixabay = new ApiConsumer('Pixabay', 'https://pixabay.com/api/?');
 const KEY = process.env.PIXABAY;
@@ -43,18 +49,51 @@ function encodeQueryOptions(keywords, type, minHeight, self) {
 }
 
 
-['searchAll', 'searchPhoto', 'searchIllustration'].forEach(function (item) {
-    pixabay[item] = function (keywords, maxHeight, minHeight) {
-        return this._sendStruct(encodeQueryOptions(keywords, null, minHeight, item), parserFnGen(maxHeight));
-    };
-});
+/**
+ * Search Pixabay for a photo matching the keywords
+ * @param {String} keywords Search query
+ * @param {Number=} maxHeight Restrict query to images smaller than "maxHeight"
+ * @param {Number=} minHeight Restrict query to images larger than "minHeight"
+ */
+pixabay.searchPhoto = function (keywords, maxHeight, minHeight) {
+    return this._sendStruct(encodeQueryOptions(keywords, null, minHeight, 'searchPhoto'), parserFnGen(maxHeight));
+};
 
+/**
+ * Search Pixabay for an illustration matching the keywords
+ * @param {String} keywords Search query
+ * @param {Number=} maxHeight Restrict query to images smaller than "maxHeight"
+ * @param {Number=} minHeight Restrict query to images larger than "minHeight"
+ */
+pixabay.searchIllustration = function (keywords, maxHeight, minHeight) {
+    return this._sendStruct(encodeQueryOptions(keywords, null, minHeight, 'searchIllustration'), parserFnGen(maxHeight));
+};
+
+/**
+ * Search Pixabay for an image matching the keywords
+ * @param {String} keywords Search query
+ * @param {Number=} maxHeight Restrict query to images smaller than "maxHeight"
+ * @param {Number=} minHeight Restrict query to images larger than "minHeight"
+ */
+pixabay.searchAll = function (keywords, maxHeight, minHeight) {
+    return this._sendStruct(encodeQueryOptions(keywords, null, minHeight, 'searchAll'), parserFnGen(maxHeight));
+};
+
+/**
+ * Retrieve an image from Pixabay from the URL
+ * @param {String} url URL of the image to retrieve
+ */
 pixabay.getImage = function(url){
     return this._sendImage({queryString: '', baseUrl:url});
 };
 
-if(!process.env.PIXABAY) {
-    console.log('Warning: environment variable PIXABAY not defined, Pixabay RPC will not work.');
-} else {
-    module.exports = pixabay;
-}
+pixabay.isSupported = () => {
+    if(!process.env.PIXABAY) {
+        /* eslint-disable no-console*/
+        console.log('Warning: environment variable PIXABAY not defined, Pixabay RPC will not work.');
+        /* eslint-enable no-console*/
+    }
+    return !!process.env.PIXABAY;
+};
+
+module.exports = pixabay;

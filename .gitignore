@@ -6,7 +6,6 @@ node_modules/
 coverage/
 scratch/
 .env
-src/client/netsblox-build.js
 src/client/dist/
 .idea/
 blob-storage

@@ -3,32 +3,19 @@
 
 var R = require('ramda'),
     assert = require('assert'),
-    debug = require('debug'),
-    trace = debug('netsblox:api:utils:trace'),
+    Logger = require('./logger'),
+    logger = new Logger('netsblox:api:utils'),
     version = require('../../package.json').version;
 
 const APP = `NetsBlox ${version}, http://netsblox.org`;
+const SERVER_NAME = process.env.SERVER_NAME || 'netsblox';
+
 
 var uuid = function(owner, name) {
     return owner + '/' + name;
 };
 
 // Helpers for routes
-var APP_REGEX = /app="([^"]+)"/;
-var getRoomXML = function(project) {
-    return project.getRoles()
-        .then(roles => {
-            roles.sort(role => role.ProjectName === project.activeRole ? -1 : 1);
-
-            var roleXml = roles.map(role =>
-                `<role name="${role.ProjectName}">${role.SourceCode + role.Media}</role>`
-            ).join('');
-            var app = roleXml.match(APP_REGEX)[1] || APP;
-
-            return `<room name="${project.name}" app="${app}">${roleXml}</room>`;
-        });
-};
-
 var serializeArray = function(content) {
     assert(content instanceof Array);
     return content.map(serialize).join(' ');
@@ -42,23 +29,13 @@ var serialize = function(service) {
 var serializeRole = (role, project) => {
     const owner = encodeURIComponent(project.owner);
     const name = encodeURIComponent(project.name);
-    const src = role.SourceCode ? 
+    const roleId = encodeURIComponent(role.ID);
+    const src = role.SourceCode ?
         `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
-    return `RoomName=${name}&Owner=${owner}&` +
-        serialize(R.omit(['SourceCode', 'Media'], role)) + 
+    return `ProjectID=${project.getId()}&RoleID=${roleId}&RoomName=${name}&` +
+        `Owner=${owner}&${serialize(R.omit(['SourceCode', 'Media'], role))}` +
         `&SourceCode=${src}`;
-};
-
-var joinActiveProject = function(userId, room, res) {
-    let openRole = room.getUnoccupiedRole();
-
-    trace(`room "${room.name}" is already active`);
-    return room.getRole(openRole).then(role => {
-        trace(`adding ${userId} to role "${openRole}" at "${room.name}"`);
-        let serialized = serializeRole(role, room);
-        return res.send(serialized);
-    });
 };
 
 // Function helpers
@@ -89,7 +66,7 @@ var extractRpcs = function(projectXml){
         foundRpcs.forEach(txt=>{
             let match = txt.match(/getJSFromRPCStruct"><l>([a-zA-Z\-_0-9]+)<\/l>/);
             services.push(match[1]);
-        });                
+        });
     }
     return services;
 };
@@ -105,17 +82,17 @@ var computeAspectRatioPadding = function(width, height, ratio){
     if (expectedHeight > height) {  // Add padding to the height
         diff = expectedHeight - height;
         top = bottom = diff/2;
-        trace(`new dims should be ${width}x${height+diff}`);
+        logger.trace(`new dims should be ${width}x${height+diff}`);
     } else {  // add padding to the width
         diff = ratio * height - width;
         left = right = diff/2;
-        trace(`new dims should be ${width+diff}x${height}`);
+        logger.trace(`new dims should be ${width+diff}x${height}`);
     }
     return {left, right, top, bottom};
 };
 
 var isSocketUuid = function(name) {
-    return name[0] === '_';
+    return name && name[0] === '_';
 };
 
 var getEmptyRole = function(name) {
@@ -126,6 +103,14 @@ var getEmptyRole = function(name) {
         Media: '',
         MediaSize: 0
     };
+};
+
+var parseActionId = function(src) {
+    const startString = 'collabStartIndex="';
+    const startIndex = src.indexOf(startString);
+    const offset = startIndex + startString.length+1;
+    const endIndex = src.substring(offset).indexOf('"') + offset;
+    return +src.substring(offset-1, endIndex) || 0;
 };
 
 var parseField = function(src, field) {
@@ -202,22 +187,47 @@ SnapXml.format = function (string) {
     });
 };
 
+const sortByDateField = function(list, field, dir) {
+    dir = dir || 1;
+    return list.sort((r1, r2) => {
+        let [aTime, bTime] = [r1[field], r2[field]];
+        let [aDate, bDate] = [new Date(aTime), new Date(bTime)];
+        return aDate < bDate ? -dir : dir;
+    });
+};
+
+let lastId = '';
+const getNewClientId = function() {
+    let suffix = Date.now();
+
+    if (lastId.includes(suffix)) {
+        let count = +lastId.split('_')[2] || 1;
+        suffix += '_' + (count+1);
+    }
+
+    const clientId = '_' + SERVER_NAME + suffix;
+    lastId = clientId;
+    return clientId;
+};
+
 module.exports = {
     serialize,
     serializeArray,
     serializeRole,
-    joinActiveProject,
     uuid,
-    getRoomXML,
     extractRpcs,
     computeAspectRatioPadding,
     isSocketUuid,
     xml: {
         thumbnail: src => parseField(src, 'thumbnail'),
         notes: src => parseField(src, 'notes'),
+        actionId: parseActionId,
         format: SnapXml.format
     },
     getEmptyRole,
     getArgumentsFor,
-    APP 
+    APP,
+    version,
+    sortByDateField,
+    getNewClientId
 };

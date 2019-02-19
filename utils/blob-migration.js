@@ -25,7 +25,7 @@ MongoClient.connect(mongoURI)
         });
 
         cursor.once('end', () => {
-            if (process.argv[2] !== '--force') 
+            if (process.argv[2] !== '--force')
                 console.error('Did you back up the database? If so, call with "--force"');
 
             Q.all(transforms).then(() => db.close(true))

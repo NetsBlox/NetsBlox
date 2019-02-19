@@ -2,12 +2,13 @@
 [![Stories in Ready](https://img.shields.io/waffle/label/netsblox/netsblox/ready.svg)](http://waffle.io/NetsBlox/NetsBlox)
 [![Join the chat at https://gitter.im/NetsBlox/NetsBlox](https://badges.gitter.im/NetsBlox/NetsBlox.svg)](https://gitter.im/NetsBlox/NetsBlox?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 # NetsBlox
+
 NetsBlox is a visual programming language which allows people to develop networked programs.
 
 ## Overview
-Netsblox is an extension of _Snap!_ which allows users to use some distributed systems principles and develop networked apps. That is, users can create apps that can interact with other instances of Netsblox. An introduction to the new networking features can be found [here](https://github.com/NetsBlox/NetsBlox/wiki/Introduction-to-Distributed-Programming-in-NetsBlox)
+Netsblox is an extension of _Snap!_ which allows users to use some distributed computing concepts and develop network-enabled apps. That is, users can create apps that can interact with other instances of Netsblox. An introduction to the new networking capabilities can be found [here](https://github.com/NetsBlox/NetsBlox/wiki/Introduction-to-Distributed-Programming-in-NetsBlox)
 
-Currently, we have support for networked _events_ and _messages_ where a message is like an event except contains some additional information. For example, in the Tic-Tac-Toe example, the user is able to  create a "TicTacToe" message which contains the row and column that the user played in.
+Currently, we have support for _messages_ where a message is like a Snap! event except contains an additional data payload. For example, in the Tic-Tac-Toe example, the user is able to  create a "TicTacToe" message which contains *row* and *column* fields corresponding to the row and column that of the user's move.
 
 Along with the events and messages, we also currently support _remote procedure calls_. RPC's are implemented as REST endpoints on the server which can perform some of the more challenging computation for the student (allowing support to make more complicated apps) as well as providing access to extra utilities not otherwise available to the student.
 
@@ -38,7 +39,10 @@ In order to enable specific RPCs which use external APIs, you may have to set en
 
 Next, just navigate to `localhost:8080` in a web browser to try it out!
 ### Native
-Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= v6.0.0) and a [MongoDB](https://www.mongodb.com/download-center?jmp=nav#community) database. By default, NetsBlox will expect MongoDB to be running locally (this can be changed by setting the `MONGO_URI` environment variable).
+Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= 8) and a [MongoDB](https://www.mongodb.com/download-center?jmp=nav#community) database. By default, NetsBlox will expect MongoDB to be running locally (this can be changed by setting the `MONGO_URI` environment variable).
+
+Server protocol can also be set through `SERVER_PROTOCOL` environment variable.
+Host should be set using `HOST=.mydomain.com`.
 
 First clone the repository and install the dependencies.
 ```

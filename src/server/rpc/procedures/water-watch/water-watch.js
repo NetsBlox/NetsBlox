@@ -1,5 +1,10 @@
+/**
+ * The WaterWatch Service provides access to real-time water data.
+ * For more information, check out https://waterservices.usgs.gov/
+ * @service
+ */
 const ApiConsumer = require('../utils/api-consumer'),
-    waterwatch = new ApiConsumer('waterwatch','https://waterservices.usgs.gov/nwis/iv/?');
+    waterwatch = new ApiConsumer('WaterWatch','https://waterservices.usgs.gov/nwis/iv/?');
 
 
 // turn an options object into query friendly string
@@ -11,7 +16,15 @@ function encodeQueryData(options) {
     return ret.join('&');
 }
 
-
+/**
+ * Get the water data for sites within a bounding box.
+ * For help interpreting this data, see https://help.waterdata.usgs.gov/tutorials/surface-water-data/how-do-i-interpret-gage-height-and-streamflow-values
+ * @param {Latitude} minLatitude Minimum latitude of bounding box
+ * @param {Latitude} maxLatitude Maximum latitude of bounding box
+ * @param {Longitude} minLongitude Minimum longitude of bounding box
+ * @param {Longitude} maxLongitude Maximum longitude of bounding box
+ * @returns {Promise<String>} Messages sent of data
+ */
 waterwatch.gageHeight = function (minLatitude, maxLatitude, minLongitude, maxLongitude) {
     // https://help.waterdata.usgs.gov/codes-and-parameters/parameters
     // query descriptions: https://waterservices.usgs.gov/rest/IV-Test-Tool.html
@@ -43,6 +56,15 @@ waterwatch.gageHeight = function (minLatitude, maxLatitude, minLongitude, maxLon
     return this._sendMsgs(queryOptions, parser, 'gageHeight');
 };
 
+/**
+ * Get stream flow data for sites within a bounding box.
+ * For help interpreting this data, see https://help.waterdata.usgs.gov/tutorials/surface-water-data/how-do-i-interpret-gage-height-and-streamflow-values
+ * @param {Latitude} minLatitude Minimum latitude of bounding box
+ * @param {Latitude} maxLatitude Maximum latitude of bounding box
+ * @param {Longitude} minLongitude Minimum longitude of bounding box
+ * @param {Longitude} maxLongitude Maximum longitude of bounding box
+ * @returns {Promise<String>} Messages sent of data
+ */
 waterwatch.streamFlow = function (minLatitude, maxLatitude, minLongitude, maxLongitude) {
     var options = {'format':'json', 'bBox': [minLongitude,minLatitude,maxLongitude,maxLatitude], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00060'};
 
@@ -68,6 +90,14 @@ waterwatch.streamFlow = function (minLatitude, maxLatitude, minLongitude, maxLon
 
 };
 
+/**
+ * Get the water temperature data for sites within a bounding box.
+ * @param {Latitude} minLatitude Minimum latitude of bounding box
+ * @param {Latitude} maxLatitude Maximum latitude of bounding box
+ * @param {Longitude} minLongitude Minimum longitude of bounding box
+ * @param {Longitude} maxLongitude Maximum longitude of bounding box
+ * @returns {Promise<String>} Messages sent of data
+ */
 waterwatch.waterTemp = function (minLatitude, maxLatitude, minLongitude, maxLongitude) {
     var options = {'format':'json', 'bBox':[minLongitude,minLatitude,maxLongitude,maxLatitude], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00010'};
 
@@ -90,9 +120,12 @@ waterwatch.waterTemp = function (minLatitude, maxLatitude, minLongitude, maxLong
     return this._sendMsgs(queryOptions, parser, 'waterTemp');
 };
 
+/**
+ * Stop sending messages from this service.
+ * @returns {Number} Number of messages stopped.
+ */
 waterwatch.stop = function(){
-    this._stopMsgs();
-    return null;
+    return this._stopMsgs();
 };
 
 module.exports = waterwatch;
