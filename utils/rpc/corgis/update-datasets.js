@@ -1,9 +1,29 @@
 const fs = require('fs'),
     osmosis = require('osmosis'),
-    exec = require('child_process').exec,
     Q = require('q');
+const https = require('https');
 
 const STORAGE_DIR = process.env.CORGIS_DIR || 'datasets/';
+
+
+
+
+
+
+const downloadFile = function(url, dest, cb) {
+    const file = fs.createWriteStream(dest);
+    https.get(url, function(response) {
+        response.pipe(file);
+        file.on('finish', function() {
+            file.close(cb);  // close() is async, call cb after close completes.
+        });
+    }).on('error', function(err) { // Handle errors
+        fs.unlink(dest); // Delete the file async. (But we don't check the result)
+        if (cb) cb(err.message);
+    });
+};
+
+
 
 
 // in: array of dataset names
@@ -12,13 +32,12 @@ let updateDatasets = (names) => {
     if (!fs.existsSync(STORAGE_DIR)){
         fs.mkdirSync(STORAGE_DIR);
     }
-    console.log(names);
     names.forEach(dsName => {
         console.log('downloading for', dsName);
         let directUrl = `https://think.cs.vt.edu/corgis/json/${dsName}/${dsName}.json?forcedownload=1`;
         let absolutePath = STORAGE_DIR + dsName + '.json';
         console.log('updating dataset', dsName, directUrl);
-        exec(`curl ${directUrl} -o ${absolutePath}`, ()=>{});
+        downloadFile(directUrl, absolutePath, console.log);
     });
 };
 
@@ -46,7 +65,7 @@ let discoverDatasets = () => {
 discoverDatasets().then(names => {
     // console.log(names);
     updateDatasets(names);
-});
+}).catch(e => console.error(e));
 
 module.exports = {
     discoverDatasets,
