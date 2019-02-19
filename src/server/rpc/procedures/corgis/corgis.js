@@ -66,7 +66,7 @@ datasetsMetadata.forEach(ds => {
 
 corgis.isSupported = function() {
     const isNotProduction = (process.env.ENV !== 'production'); // unreleased service
-    const dataExists = fse.existsSync(STORAGE_DIR);
+    const dataExists = corgis.availableDatasets().length > 0;
     return (isNotProduction && dataExists);
 };
 
