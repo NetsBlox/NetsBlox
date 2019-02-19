@@ -249,5 +249,9 @@ britishmuseum.getImage = function getImage(imageId, maxWidth, maxHeight) {
     return null;
 };
 
+britishmuseum.isSupported = function() {
+    return false; // service is deprecated
+};
+
 module.exports = britishmuseum;
 
