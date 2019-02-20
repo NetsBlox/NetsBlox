@@ -1,3 +1,0 @@
-There's a DC motor example that uses the simpletools library in 
-
-...Documents\Learn\Examples\Motor\DC
