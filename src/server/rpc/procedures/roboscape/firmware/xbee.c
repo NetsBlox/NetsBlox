@@ -1,3 +1,7 @@
+/*
+documentation for Xbee S8B availabe at https://www.digi.com/resources/documentation/digidocs/PDFs/90002180.pdf
+*/
+
 #include "xbee.h"
 #include "simpletools.h"
 
