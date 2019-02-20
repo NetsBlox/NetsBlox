@@ -1,0 +1,14 @@
+libmx2125.c
+mx2125.h
+mx2125_tilt.c
+mx2125_accel.c
+mx2125_rotate.c
+>compiler=C
+>memtype=cmm main ram compact
+>optimize=-Os
+>-m32bit-doubles
+>-fno-exceptions
+>defs::-std=c99
+>-lm
+>-create_library
+>BOARD::ACTIVITYBOARD

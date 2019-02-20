@@ -1,0 +1,12 @@
+libservoAux.c
+servoAux.h -> servoAux.h
+servoAux.c -> servoAux.c
+>compiler=C
+>memtype=cmm main ram compact
+>optimize=-Os
+>-m32bit-doubles
+>-fno-exceptions
+>defs::-std=c99
+>-lm
+>-create_library
+>BOARD::ACTIVITYBOARD

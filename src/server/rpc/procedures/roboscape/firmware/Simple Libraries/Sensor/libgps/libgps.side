@@ -1,0 +1,26 @@
+libgps.c
+gps_altitude.c
+gps_changeBaud.c
+gps_close.c
+gps_fix.c
+gps_fixValid.c
+gps_heading.c
+gps_latitude.c
+gps_longitude.c
+gps_magneticVariation.c
+gps_open.c
+gps_rawDate.c
+gps_rawTime.c
+gps_run.c
+gps_satsTracked.c
+gps_velocity.c
+gps.h
+gps_txByte.c
+>compiler=C
+>memtype=cmm main ram compact
+>optimize=-Os
+>-m32bit-doubles
+>-fno-exceptions
+>-enable_pruning
+>-create_library
+>BOARD::ACTIVITYBOARD

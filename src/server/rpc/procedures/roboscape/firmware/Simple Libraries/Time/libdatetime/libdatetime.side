@@ -1,0 +1,23 @@
+libdatetime.c
+datetime.h
+datetime.c
+dt_fromTimeStr.c
+dt_fromDateStr.c
+dt_toTimeStr.c
+dt_toDateStr.c
+dt_fromEt.c
+dte_timeETV.c
+dte_dateETV.c
+dte_toCal.c
+dt_toEt.c
+dte_toJD.c
+dte_toSPD.c
+>compiler=C
+>memtype=cmm main ram compact
+>optimize=-Os
+>-m32bit-doubles
+>-fno-exceptions
+>defs::-std=c99
+>-lm
+>-create_library
+>BOARD::ACTIVITYBOARD

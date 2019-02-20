@@ -1,0 +1,20 @@
+libmma7455.c
+mma7455.h
+writeByte.c
+readByte.c
+init.c
+getxyz8.c
+getxyz10.c
+getMode.c
+setMode.c
+gRangec.c
+setOffset.c
+>compiler=C
+>memtype=cmm main ram compact
+>optimize=-Os
+>-m32bit-doubles
+>-fno-exceptions
+>defs::-std=c99
+>-lm
+>-create_library
+>BOARD::ACTIVITYBOARD

@@ -1,0 +1,15 @@
+libfdserial.c
+fdserial.h
+fdserial_utils.c
+pst.spin
+fdserial.c
+>compiler=C
+>memtype=cmm main ram compact
+>optimize=-Os
+>-m32bit-doubles
+>-Wall
+>-fno-exceptions
+>defs::-std=c99
+>-lm
+>-create_library
+>BOARD::GENERIC

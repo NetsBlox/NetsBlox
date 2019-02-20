@@ -1,0 +1,18 @@
+libws2812.c
+ws2812.h
+ws2812.c
+ws2812_open.c
+ws2812b_open.c
+ws2812_close.c
+ws2812_wheel.c
+ws2812_wheel_dim.c
+ws2812_driver.spin
+ws2812_start.c
+ws2812b_start.c
+ws2812_stop.c
+>compiler=C
+>memtype=cmm main ram compact
+>optimize=-Os
+>-fno-exceptions
+>-create_library
+>BOARD::ACTIVITYBOARD

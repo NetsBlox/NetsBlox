@@ -1,0 +1,11 @@
+libcompass3d.c
+compass3d.c
+compass3d.h
+>compiler=C
+>memtype=cmm main ram compact
+>optimize=-Os
+>-m32bit-doubles
+>-fno-exceptions
+>-lm
+>-create_library
+>BOARD::ACTIVITYBOARD
