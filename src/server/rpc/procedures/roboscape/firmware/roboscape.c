@@ -18,6 +18,8 @@ enum {
     INFRA_LIGHT_PIN = 5,
     INFRA_LEFT_PIN = 11,
     INFRA_RIGHT_PIN = 10,
+    PRESSED = 0,
+    LONG_HOLD_DURATION = 3000,
 };
 
 fdserial* xbee;
@@ -34,6 +36,15 @@ static const unsigned char server_port[2] = { 0x07, 0xb5 }; // 1973
 
 unsigned int time_ref = 0;
 unsigned int last_cnt = 0;
+
+// to keep track of time for user button
+unsigned int buttonState;     // current state of the button
+unsigned int lastButtonState = 1; // previous state of the button
+unsigned int startPressed = 0;    // the time button was pressed
+unsigned int endPressed = 0;      // the time button was released
+unsigned int timeHold = 0;        // the time button is hold
+unsigned int timeReleased = 0;    // the time button is released
+
 
 int get_time()
 {
@@ -233,9 +244,9 @@ int main()
             buffer[buffer_len++] = whiskers;
             xbee_send_api(xbee, buffer, buffer_len);
         }
-        temp = input(BUTTON_PIN);
-        if (button != temp) { // user button
-            button = temp;
+        buttonState = input(BUTTON_PIN);
+        if (button != buttonState) { // user button
+            button = buttonState;
             set_tx_headers('P');
             buffer[buffer_len++] = button;
             xbee_send_api(xbee, buffer, buffer_len);
@@ -247,5 +258,28 @@ int main()
             buffer[buffer_len++] = infrared;
             xbee_send_api(xbee, buffer, buffer_len);
         }
+
+        /* button state detection */
+        if (buttonState != lastButtonState) { // button state changed
+            lastButtonState = buttonState;
+
+            // the button was just pressed
+            if (buttonState == PRESSED) {
+                startPressed = get_time();
+                timeReleased = startPressed - endPressed;
+                // here we can compute for button idle time
+
+            } else { // the button was just released
+                endPressed = get_time();
+                timeHold = endPressed - startPressed;
+
+                if (timeHold >= LONG_HOLD_DURATION) {
+                    print("entering setup mode\n");
+                    setup_mode();
+                }
+
+            }
+        } /* end of button state detection */
+
     }
 }
