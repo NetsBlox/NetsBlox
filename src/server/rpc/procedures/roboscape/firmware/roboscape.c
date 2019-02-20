@@ -2,6 +2,7 @@
 #include "ping.h"
 #include "simpletools.h"
 #include "xbee.h"
+#include "melody.h"
 
 enum {
     BUFFER_SIZE = 200,
