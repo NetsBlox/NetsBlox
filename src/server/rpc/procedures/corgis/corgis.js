@@ -37,15 +37,19 @@ const datasetsMetadata = corgiDatasets.parseDatasetsInfo();
  */
 
 corgis.searchDataset = async function(name, query){
-    const data = await loadDataset(name);
-    this._logger.trace(data.length, 'results loaded');
+    let records = await loadDataset(name);
+    this._logger.trace(records.length, 'results loaded');
     if (!query) {
-        let sample = data[0];
+        let randRecordIdx = parseInt(Math.random()*records.length);
+        let sample = records[randRecordIdx];
         return this._createSnapStructure(sample);
     }
-    let queryRes = jsonQuery(query,{data}).value;
-    this._logger.trace(queryRes);
-    this.response.send(this._createSnapStructure(queryRes));
+    let queryRes = jsonQuery(query, {data: {records}});
+    let matchinRecords = queryRes.value;
+    let matchCount = Array.isArray(matchinRecords) ? matchinRecords.length : 1;
+    console.log(queryRes);
+    this._logger.trace('matching results:', matchCount);
+    return this._createSnapStructure(matchinRecords);
 };
 
 corgis.allDatasets = function() {
