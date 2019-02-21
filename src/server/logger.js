@@ -46,6 +46,11 @@ const dateformat = process.env.DEBUG_DATE || 'MM.DD HH:mm:ss',
 // For hashing names to colors
 const colorHash = new ColorHash({lightness: 0.75});
 
+// Options for utils.inspect
+const inspectOptions = {
+    colors: true,
+};
+
 class Logger {
     /**
      * Create a new logger with a given namespace
@@ -117,7 +122,9 @@ class Logger {
     _log(level, content) {
 
         // Format content
-        content = util.inspect(content);
+        if(typeof content !== 'string'){
+            content = util.inspect(content, inspectOptions);
+        }
 
         /* eslint-disable no-console*/
         // Determine which output to use
