@@ -137,7 +137,26 @@ class Logger {
         // Prevent issues if no color available
         let tags = `${dateformat != '' ? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`;
 
-        content.forEach((line) => {
+        content.forEach((line, idx) => {
+            
+            // Mark multi-line
+            if(content.length == 1)
+            {
+                line =  ' - ' + line;
+            } else {
+                if(idx == 0){                
+                    line =  ' v ' + line;
+                }
+                else if(idx == content.length - 1)
+                {
+                    line =  ' ^ ' + line;
+                }
+                else
+                {
+                    line =  ' | ' + line;
+                }
+            }
+            
             if (!useColors) {
                 logFunc(tags + ' ' + line);
             }
