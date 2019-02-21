@@ -119,12 +119,17 @@ class Logger {
      * @param {String} level Logging level for message
      * @param {String} content Message to print 
      */
-    _log(level, content) {
-
+    _log(level, ...content) {
+        
         // Format content
-        if(typeof content !== 'string'){
-            content = util.inspect(content, inspectOptions);
-        }
+        content = content.map((item) => {
+            if(typeof(item) == 'string')
+            {
+                return item;
+            } else {
+                return util.inspect(item, inspectOptions);
+            }
+        }).join(' ');
 
         /* eslint-disable no-console*/
         // Determine which output to use
