@@ -53,7 +53,6 @@ corgis.searchDataset = async function(name, query, limit){
     let matchinRecords = queryRes.value;
     if (!matchinRecords) throw new Error('no matching results');
     let matchCount = Array.isArray(matchinRecords) ? matchinRecords.length : 1;
-    console.log(queryRes);
     this._logger.trace('matching results:', matchCount);
     if (matchCount > LIST_SIZE_LIMIT) matchinRecords = matchinRecords.slice(0, limit);
     return this._createSnapStructure(matchinRecords);
