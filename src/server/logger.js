@@ -54,7 +54,7 @@ const inspectOptions = {
 class Logger {
     /**
      * Create a new logger with a given namespace
-     * @param {String} name Name/namespace for this Logger 
+     * @param {String} name Name/namespace for this Logger
      */
     constructor(name) {
         this._name = name;
@@ -113,7 +113,7 @@ class Logger {
     /**
      * Prints a message to the correct stream based on logging level
      * @param {String} level Logging level for message
-     * @param {String} content Message to print 
+     * @param {String} content Message to print
      */
     _log(level, ...content) {
 
@@ -138,13 +138,13 @@ class Logger {
         let tags = `${dateformat != '' ? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`;
 
         content.forEach((line, idx) => {
-            
+
             // Mark multi-line
             if(content.length == 1)
             {
                 line =  '> ' + line;
             } else {
-                if(idx == 0){                
+                if(idx == 0){
                     line =  'v ' + line;
                 }
                 else if(idx == content.length - 1)
@@ -156,7 +156,7 @@ class Logger {
                     line =  '| ' + line;
                 }
             }
-            
+
             if (!useColors) {
                 logFunc(tags + ' ' + line);
             }
@@ -172,7 +172,7 @@ class Logger {
 
     /**
      * Create a new logger at one level deeper in the same namespace
-     * @param {String} name 
+     * @param {String} name
      */
     fork(name) {
         return new Logger([this._name, name].join(':'));
@@ -180,7 +180,7 @@ class Logger {
 }
 
 // Inspired by debug package https://github.com/visionmedia/debug/
-// Namespaces to require a match from 
+// Namespaces to require a match from
 Logger.names = [];
 // Namespaces to hide if matching
 Logger.skips = [];
@@ -190,7 +190,7 @@ let namespaces = process.env.DEBUG || '';
 
 let split = namespaces.split(/[\s,]+/);
 
-// Set up filters 
+// Set up filters
 split.forEach((s) => {
     if (s) {
         namespaces = s.replace(/\*/g, '.*?');
