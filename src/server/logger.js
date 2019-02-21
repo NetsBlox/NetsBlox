@@ -2,7 +2,8 @@
 
 const chalk = require('chalk'),
     moment = require('moment'),
-    ColorHash = require('color-hash');
+    ColorHash = require('color-hash'),
+    util = require('util');
 
 // NOP color option to use default
 const nullcolor = (output) => output;
@@ -114,6 +115,10 @@ class Logger {
      * @param {String} content Message to print 
      */
     _log(level, content) {
+
+        // Format content
+        content = util.inspect(content);
+
         /* eslint-disable no-console*/
         // Determine which output to use
         let logFunc = STDERR.find(lvl => level === lvl)? console.error : console.log;
