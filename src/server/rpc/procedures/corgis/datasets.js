@@ -18,6 +18,7 @@ tags
 const STORAGE_DIR = process.env.CORGIS_DIR || 'datasets/';
 
 const readAvailableDatasetNames = () => {
+    if (!fse.existsSync(STORAGE_DIR)) return [];
     let files = fse.readdirSync(STORAGE_DIR);
     files = files.map(fName => fName.replace('.json', ''));
     return files;
