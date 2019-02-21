@@ -13,7 +13,7 @@ const LEVELS = {
     'trace': {
         bg: nullcolor,
         fg: nullcolor
-    }, 
+    },
     'info': {
         bg: nullcolor,
         fg: nullcolor
@@ -26,7 +26,7 @@ const LEVELS = {
         bg: nullcolor,
         fg: nullcolor
     },
-    'warn':  {
+    'warn': {
         bg: chalk.bgYellow,
         fg: chalk.black
     },
@@ -44,7 +44,7 @@ const dateformat = process.env.DEBUG_DATE || 'MM.DD HH:mm:ss',
     useColors = (process.env.DEBUG_COLORS || true) == true;
 
 // For hashing names to colors
-const colorHash = new ColorHash({lightness: 0.75});
+const colorHash = new ColorHash({ lightness: 0.75 });
 
 // Options for utils.inspect
 const inspectOptions = {
@@ -60,8 +60,7 @@ class Logger {
         this._name = name;
 
         Object.keys(LEVELS).forEach(lvl => {
-            if(this._shouldBeEnabled(lvl))
-            {
+            if (this._shouldBeEnabled(lvl)) {
                 this[lvl] = this._log.bind(this, lvl);
             } else {
                 this[lvl] = this._nop;
@@ -69,7 +68,7 @@ class Logger {
         });
 
         // Create color from string hash if available
-        if(chalk.supportsColor.has256 === true){
+        if (chalk.supportsColor.has256 === true) {
             let hash = colorHash.hex(this._name);
             this._colorize = chalk.hex(hash);
         }
@@ -84,21 +83,18 @@ class Logger {
         let tempName = this._name;
 
         // Add logging level to name
-        if(level !== undefined)
-        {
+        if (level !== undefined) {
             tempName += ':' + level;
         }
 
         // Allow skips
-        if(Logger.skips.some((skip) => skip.test(tempName)))
-        {
+        if (Logger.skips.some((skip) => skip.test(tempName))) {
             return false;
         }
-    
+
         // Allow whitelist
-        if(Logger.names.length > 0){
-            if(!Logger.names.some((name) => name.test(tempName)))
-            {
+        if (Logger.names.length > 0) {
+            if (!Logger.names.some((name) => name.test(tempName))) {
                 return false;
             }
         }
@@ -110,7 +106,7 @@ class Logger {
      * Used for loggers not actually sending messages out.
      * @param {String} message Message being ignored
      */
-    _nop(message){
+    _nop(message) {
         return message;
     }
 
@@ -120,37 +116,39 @@ class Logger {
      * @param {String} content Message to print 
      */
     _log(level, ...content) {
-        
+
         // Format content
         content = content.map((item) => {
-            if(typeof(item) == 'string')
-            {
+            if (typeof (item) == 'string') {
                 return item;
             } else {
                 return util.inspect(item, inspectOptions);
             }
         }).join(' ');
 
+        content = content.split('\n');
+
         /* eslint-disable no-console*/
         // Determine which output to use
-        let logFunc = STDERR.find(lvl => level === lvl)? console.error : console.log;
+        let logFunc = STDERR.find(lvl => level === lvl) ? console.error : console.log;
         logFunc = logFunc.bind(console);
         /* eslint-enable no-console*/
-    
-        // Prevent issues if no color available
-        let tags = `${dateformat != ''? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`;
 
-        if(!useColors)
-        {
-            logFunc(tags + ' ' + content);
-        }
-        else if(chalk.supportsColor.has256 === true){
-            // Color from hash of name
-            logFunc(LEVELS[level].bg(LEVELS[level].fg(tags)) + ' ' + this._colorize(content));
-        } else {
-            // Default to only colors for labels
-            logFunc(LEVELS[level].bg(LEVELS[level].fg(tags)) + ' ' + content);
-        }
+        // Prevent issues if no color available
+        let tags = `${dateformat != '' ? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`;
+
+        content.forEach((line) => {
+            if (!useColors) {
+                logFunc(tags + ' ' + line);
+            }
+            else if (chalk.supportsColor.has256 === true) {
+                // Color from hash of name
+                logFunc(LEVELS[level].bg(LEVELS[level].fg(tags)) + ' ' + this._colorize(line));
+            } else {
+                // Default to only colors for labels
+                logFunc(LEVELS[level].bg(LEVELS[level].fg(tags)) + ' ' + line);
+            }
+        });
     }
 
     /**
@@ -175,7 +173,7 @@ let split = namespaces.split(/[\s,]+/);
 
 // Set up filters 
 split.forEach((s) => {
-    if (s){
+    if (s) {
         namespaces = s.replace(/\*/g, '.*?');
 
         if (namespaces[0] === '-') {
