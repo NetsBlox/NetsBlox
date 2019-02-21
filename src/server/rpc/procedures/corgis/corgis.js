@@ -59,18 +59,26 @@ corgis.searchDataset = async function(name, query, limit){
     return this._createSnapStructure(matchinRecords);
 };
 
+/**
+ * Shows a list of corgis datasets with description, tags and links
+ * @returns {Object} list of corgis datasets
+ */
 corgis.allDatasets = function() {
     return datasetsMetadata;
 };
 
+/**
+ * Shows a list available of corgis datasets with description, tags and links
+ * @returns {Object} list of corgis datasets
+ */
 corgis.availableDatasets = function() {
     return datasetsMetadata.filter(it => it.isAvailable);
 };
 
 
 datasetsMetadata.forEach(ds => {
-    corgis[ds.id] = function(query) {
-        return corgis.searchDataset(ds.id, query);
+    corgis[ds.id] = function(query, limit) {
+        return corgis.searchDataset(ds.id, query, limit);
     };
 });
 
