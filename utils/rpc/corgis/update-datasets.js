@@ -28,6 +28,7 @@ const downloadFile = function(url, dest, cb) {
 
 // in: array of dataset names
 // out: downloads all the datasets to the predefined location
+/* eslint-disable no-console */
 let updateDatasets = (names) => {
     if (!fs.existsSync(STORAGE_DIR)){
         fs.mkdirSync(STORAGE_DIR);
@@ -66,6 +67,7 @@ discoverDatasets().then(names => {
     // console.log(names);
     updateDatasets(names);
 }).catch(e => console.error(e));
+/* eslint-enable no-console */
 
 module.exports = {
     discoverDatasets,
