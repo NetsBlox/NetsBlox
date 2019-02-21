@@ -41,13 +41,13 @@ MetMuseum.fields = function() {
  * Search the Metropolitan Museum of Art
  * @param {String} field field to search in
  * @param {String} query text query to look for
- * @param {Number=} page used to paginate the results, in conjunction with limit
+ * @param {Number=} skip used to paginate the results, number of records to skip from the begining
  * @param {Number=} limit limit the number of returned results (maximum of 50)
  * @returns {Array} results
  */
-MetMuseum.advancedSearch = function(field, query, page, limit) {
+MetMuseum.advancedSearch = function(field, query, skip, limit) {
     field = toTitleCase(field);
-    return this._advancedSearch(field, query, page, limit);
+    return this._advancedSearch(field, query, skip, limit);
 };
 
 /**

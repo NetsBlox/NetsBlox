@@ -32,10 +32,10 @@ class DBConsumer extends NBService {
         return fields.slice(0,fields.length-2); // exclude id and v
     }
 
-    async _advancedSearch(field, query, page, limit) {
+    async _advancedSearch(field, query, skip, limit) {
         // prepare and check the input
         if (!this._fields().find(attr => attr === field)) throw new Error('bad field name');
-        if (page === '') page = 0;
+        if (skip === '') skip = 0;
         if (limit === '') limit = 10;
         limit = Math.min(limit, 50); // limit the max requested documents
 
@@ -44,7 +44,7 @@ class DBConsumer extends NBService {
         let dbQuery = {};
         dbQuery[field] = new RegExp(`.*${query}.*`, 'i');
 
-        let res = await this._model.find(dbQuery).skip(page).limit(limit);
+        let res = await this._model.find(dbQuery).skip(skip).limit(limit);
 
         return res.map(this._cleanDbRec);
     }
