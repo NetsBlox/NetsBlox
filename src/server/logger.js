@@ -142,18 +142,18 @@ class Logger {
             // Mark multi-line
             if(content.length == 1)
             {
-                line =  ' - ' + line;
+                line =  '> ' + line;
             } else {
                 if(idx == 0){                
-                    line =  ' v ' + line;
+                    line =  'v ' + line;
                 }
                 else if(idx == content.length - 1)
                 {
-                    line =  ' ^ ' + line;
+                    line =  '^ ' + line;
                 }
                 else
                 {
-                    line =  ' | ' + line;
+                    line =  '| ' + line;
                 }
             }
             
