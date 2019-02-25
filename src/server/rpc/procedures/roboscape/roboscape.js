@@ -59,7 +59,6 @@ RoboScape.prototype._ensureLoggedIn = function() {
         throw new Error('Login required.');
 };
 
-// input: FIXME robotid or robot object?!
 RoboScape.prototype._ensureAuthorized = async function(robotId) {
     await acl.ensureAuthorized(this.caller.username, robotId);
 };

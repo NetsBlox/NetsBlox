@@ -4,8 +4,6 @@ const logger = require('../utils/logger')('roboscape').fork('acl');
 
 const MISSING_DOC_ALLOWED = true;
 
-// TODO indexing and use robotId as _id
-
 // given a robot db doc checks if user has access or not
 // OPT if the doc structure used usernames as keys..
 const _hasAccessDoc = function(username, doc) {

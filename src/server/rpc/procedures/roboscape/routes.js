@@ -65,7 +65,6 @@ const routes = [
         Method: 'post',
         middleware: ['isLoggedIn', 'setUser'],
         Handler: async function(req) {
-            // TODO make sure robotIds are unique (duplicate robots)
             const newEntry = req.body;
             newEntry.users = [];
             newEntry.owner = req.session.user.username;
@@ -73,7 +72,7 @@ const routes = [
             if (!newEntry.robotId) throw new Error('missing robot ID');
             newEntry.robotId = newEntry.robotId.toLowerCase(); // lowercase ids
 
-
+            // makes sure robotIds are unique (duplicate robots)
             let rec = await RoboscapeCol.findOne({robotId: newEntry.robotId});
             if (rec) {
                 logger.trace('updating existing rec', rec);
@@ -117,7 +116,7 @@ const routes = [
 
     { // update robot record
         URL: '/:_id',
-        Method: 'put', // FIXME patch?
+        Method: 'patch',
         middleware: ['isLoggedIn', 'setUser'],
         customMiddleware: [isRobotOwner],
         Handler: async function(req) {

@@ -1,7 +1,7 @@
 const getServiceStorage = require('../../advancedStorage');
 
 const schemaDef = {
-    robotId: {type: String, required: true},
+    robotId: {type: String, required: true, index: true},
     isPublic: {type: Boolean, default: true},
     owner: {type: String, required: true}, // username of the owner
     ownedAt: {type: Date, required: true}, // last date the user proved ownership of the robot
