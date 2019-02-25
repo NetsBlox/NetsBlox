@@ -8,7 +8,7 @@ var R = require('ramda'),
     RoomAPI = require('./rooms'),
     ProjectAPI = require('./projects'),
     Logger = require('../logger'),
-    logger = new Logger('netsblox:api:log'),
+    logger = new Logger('netsblox:api:basic'),
     middleware = require('./middleware');
 
 const NetworkTopology = require('../network-topology');
