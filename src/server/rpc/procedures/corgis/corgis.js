@@ -32,7 +32,7 @@ const datasetsMetadata = corgiDatasets.parseDatasetsInfo();
 /**
  * Search CORGIS' datasets as provided by https://think.cs.vt.edu/corgis/
  * Example queries:
- * cancer dataset: records[*Year<2000 && Area=Arizona]
+ * cancer dataset: [*Year<2000 && Area=Arizona]
  * @param {String} name dataset name
  * @param {String=} query search query. (read more: "npm json-query")
  * @param {Number=} limit limit the number of requested results. max 100.
@@ -41,7 +41,11 @@ const datasetsMetadata = corgiDatasets.parseDatasetsInfo();
 corgis.searchDataset = async function(name, query, limit){
     // TODO pagination option
     const LIST_SIZE_LIMIT = 100;
+    if (!query.startsWith('records')) query = 'records' + query;
+
+    limit = limit || 20;
     limit = Math.min(LIST_SIZE_LIMIT, limit);
+
     let records = await loadDataset(name);
     this._logger.trace(records.length, 'results loaded');
     if (!query) {
@@ -49,12 +53,13 @@ corgis.searchDataset = async function(name, query, limit){
         let sample = records[randRecordIdx];
         return this._createSnapStructure(sample);
     }
+
     let queryRes = jsonQuery(query, {data: {records}});
     let matchinRecords = queryRes.value;
     if (!matchinRecords) throw new Error('no matching results');
     let matchCount = Array.isArray(matchinRecords) ? matchinRecords.length : 1;
     this._logger.trace('matching results:', matchCount);
-    if (matchCount > LIST_SIZE_LIMIT) matchinRecords = matchinRecords.slice(0, limit);
+    if (matchCount > limit) matchinRecords = matchinRecords.slice(0, limit);
     return this._createSnapStructure(matchinRecords);
 };
 
