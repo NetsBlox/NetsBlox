@@ -19,7 +19,6 @@ class ClientList extends Array {
     }
 
     addClient(client) {
-        this.logger.trace(`adding a new client ${client.toString()}`);
         this.push(client);
     }
 
@@ -35,7 +34,6 @@ class ClientList extends Array {
     }
 
     removeClient(client) {
-        this.logger.trace(`removing a client ${client.toString()}`);
         const index = this.indexOf(client);
         this.splice(index, 1);
     }
