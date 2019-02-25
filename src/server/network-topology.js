@@ -7,14 +7,50 @@ const utils = require('./server-utils');
 const Projects = require('./storage/projects');
 const ProjectActions = require('./storage/project-actions');
 
+// active client list
+class ClientList extends Array {
+
+    constructor() {
+        super();
+    }
+
+    init(logger) {
+        this.logger = logger;
+    }
+
+    addClient(client) {
+        this.logger.trace(`adding a new client ${client.toString()}`);
+        this.push(client);
+    }
+
+    findClientByID(id) {
+        return this.find(client => {
+            return client.uuid === id || client.id === id;
+        });
+    }
+
+    isClientActive(client) {
+        let index = this.indexOf(client);
+        return index !== -1;
+    }
+
+    removeClient(client) {
+        this.logger.trace(`removing a client ${client.toString()}`);
+        const index = this.indexOf(client);
+        this.splice(index, 1);
+    }
+
+}
+
 var NetworkTopology = function() {
     this.initialized = false;
-    this._sockets = [];
+    this._sockets = new ClientList();
 };
 
 NetworkTopology.prototype.init = function(logger, Client) {
     this.initialized = true;
     this._logger = logger.fork('network-topology');
+    this._sockets.init(this._logger.fork('clients'));
 
     const self = this;
     Client.prototype.onClose = function() {
@@ -24,22 +60,22 @@ NetworkTopology.prototype.init = function(logger, Client) {
 
 // socket: new client object (netsblox websocket)
 NetworkTopology.prototype.onConnect = function(socket) {
-    this._sockets.push(socket);
     this._logger.trace(`client connected ${socket.toString()} total: ${this._sockets.length}`);
+    this._sockets.addClient(socket);
 };
 
+// input: client object (netsblox websocket)
 NetworkTopology.prototype.onDisconnect = function(socket) {
     this._logger.trace(`client diconnected ${socket.toString()} total: ${this._sockets.length}`);
-    const index = this._sockets.indexOf(socket);
-    const hasSocket = index !== -1;
+    let hasSocket = this._sockets.isClientActive(socket);
     if (hasSocket) {
-        this._sockets.splice(index, 1);
+        this._sockets.removeClient(socket);
         const {projectId, roleId} = socket;
         if (projectId && roleId) {
             this.onClientLeave(projectId, roleId);
         }
     } else {
-        this._logger.error(`Could not find socket: ${socket.username}`);
+        this._logger.error(`Could not find socket to disconnect: ${socket.toString()}`);
     }
     return hasSocket;
 };
