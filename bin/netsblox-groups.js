@@ -11,8 +11,4 @@ program
 
 program
     .command('list', 'list the existing groups')
-    .command('add-member <group> <username>', 'add member to the given group')
-    .command('rm-member <group> <username>', 'add member to the given group')
-    .command('new <group>', 'create new group')
-    .command('rm <group>', 'remove the given group')
     .parse(process.argv);

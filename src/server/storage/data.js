@@ -28,6 +28,7 @@ class Data {
                 if (result.writeError) {
                     this._logger.error('could not save to database: ' + result.errmsg);
                 }
+                return result.result;
             })
             .catch(err => {
                 this._logger.error(`save failed for ${this.name || this.username}: ${err}`);

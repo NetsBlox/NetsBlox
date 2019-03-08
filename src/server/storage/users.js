@@ -1,6 +1,7 @@
 (function(UserStorage) {
 
-    const Q = require('q');
+    const Q = require('q'),
+        ObjectId = require('mongodb').ObjectId;
     const Groups = require('./groups');
     var randomString = require('just.randomstring'),
         hash = require('../../common/sha512').hex_sha512,
@@ -31,6 +32,12 @@
                 this.hash = hash(password);
             }
             delete this.password;
+        }
+
+        // updates based on mongoid vs username
+        update() {
+            return this._db.updateOne({_id: this._id}, { $set: {email: this.email} })
+                .then(() => this);
         }
 
         setPassword(password) {
@@ -72,7 +79,7 @@
         getGroupMembers() {
             this._logger.trace(`getting group members of ${this.groupId}`);
             return collection.find({groupId: this.groupId}, {username: 1}).toArray()
-                .then(data => data.map(d => d.username));
+                .then(users => users.map(user => new User(this._logger, user)));
         }
 
         getSharedProject(owner, name) {
@@ -154,6 +161,27 @@
                 });
         }
 
+        async isNewWithRejections() {
+            let rejections = [];
+
+            // condition #1: must have no saved or transient project
+            let projects = await this.getAllRawProjects();
+            if (projects.length !== 0) rejections.push('user has projects');
+
+            // condition #2: account age
+            const AGE_LIMIT_MINUTES = 60 * 24 * 1; // a week
+            let age = (new Date().getTime() - this.createdAt) / 60000 ; // in minutes
+            if (age > AGE_LIMIT_MINUTES) rejections.push(`this account has been created more than ${AGE_LIMIT_MINUTES} minutes ago`);
+
+            return rejections;
+        }
+
+        // is it safe to allow deletion of this user?
+        async isNew() {
+            let objections = await this.isNewWithRejections();
+            return objections === 0;
+        }
+
         _emailTmpPassword(password) {
             mailer.sendMail({
                 to: this.email,
@@ -188,10 +216,29 @@
             });
     };
 
+    UserStorage.getById = function(id) {
+        this._logger.trace(`getting ${id}`);
+        if (typeof id === 'string') id = ObjectId(id);
+        return Q(collection.findOne({_id: id}))
+            .then(data => {
+                return new User(this._logger, data);
+            })
+            .catch(err => {
+                this._logger.error(`Error when getting user by id ${err}`);
+                throw new Error(`group ${id} not found`);
+            });
+
+    };
+
     UserStorage.names = function () {
         return collection.find().toArray()
             .then(users => users.map(user => user.username))
             .catch(e => this._logger.error('Could not get the user names!', e));
+    };
+
+    UserStorage.findGroupMembers = function (groupId) {
+        return collection.find({groupId: {$eq: groupId}}).toArray()
+            .then(users => users.map(user => new User(this._logger, user)));
     };
 
     UserStorage.forEach = function (fn) {
@@ -209,14 +256,18 @@
         return deferred.promise;
     };
 
-    UserStorage.new = function (username, email) {
+    UserStorage.new = function (username, email, groupId, password) {
+        groupId = groupId || null; // WARN what should be the default
         var createdAt = Date.now();
 
-        return new User(this._logger, {
+        let user = new User(this._logger, {
             username,
             email,
-            createdAt
+            createdAt,
+            groupId,
         });
+        if (password !== undefined) user.hash = hash(password);
+        return user;
     };
 
 })(exports);

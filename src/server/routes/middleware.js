@@ -1,6 +1,7 @@
 // Dictionary of all middleware functions for netsblox routes.
 var server,
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
+    Groups = require('../storage/groups'),
     COOKIE_ID = 'netsblox-cookie',
     jwt = require('jsonwebtoken'),
     NetworkTopology = require('../network-topology'),
@@ -213,6 +214,62 @@ var setUser = function(req, res, next) {
     });
 };
 
+// ====== group helper middlewares =======
+
+// check group write access
+let isGroupOwner = function(req, res, next) {
+    let groupId = req.params.id;
+    Groups.get(groupId)
+        .then( group => {
+            let owner = group.getOwner();
+            if (owner === req.session.username) {
+                next();
+            } else {
+                res.status(401).send('Unauthorized write attempt');
+            }
+        })
+        .catch(err => {
+            logger.error(err);
+            res.status(404).send(`Group not found: ${groupId}`);
+        });
+};
+
+// checks if the targeted groupuser exists
+let isValidMember = async function(req, res, next) {
+    let userId = req.params.userId;
+    if (!userId) return res.status(404).send('missing user (userId)');
+    let user = await server.storage.users.getById(userId);
+    if (!user) return res.status(404).send(`cant find user with user id ${userId}`);
+    next();
+};
+
+// checks to see if the user had activity on the server (eg has a project)
+// requires a validmember
+let memberIsNew = async function(req, res, next) {
+    let userId = req.params.userId;
+    let user = await server.storage.users.getById(userId);
+
+    let rejections = await user.isNewWithRejections();
+
+    if (rejections.length > 0) {
+        return res.status(403).send('this is a new/unused account.');
+    }
+    next();
+};
+
+// requires a validMember
+let canManageMember = async function(req, res, next) {
+    const groupId = req.params.id,
+        userId = req.params.userId;
+    let user = await server.storage.users.getById(userId);
+    if (!user.groupId || user.groupId !== groupId) {
+        res.status(403).send('unauthorized to make changes to this user');
+    } else {
+        next();
+    }
+};
+
+
 var setUsername = function(req, res, cb) {
     let result = null;
     if (arguments.length === 2) {
@@ -235,6 +292,10 @@ module.exports = {
     loadUser,
     setUser,
     setUsername,
+    isGroupOwner,
+    isValidMember,
+    memberIsNew,
+    canManageMember,
 
     // additional
     init: _server => {

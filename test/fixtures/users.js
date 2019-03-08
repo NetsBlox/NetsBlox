@@ -18,7 +18,8 @@ module.exports = [
         password: 'secretPassword'
     },
     {
-        username: 'hamid'
+        username: 'hamid',
+        password: 'monkey123'
     },
     {
         username: 'akos'
