@@ -1,6 +1,7 @@
 'use strict';
 const getRPCLogger = require('../utils/logger');
 const NetworkTopology = require('../../../network-topology');
+const acl = require('./accessControl');
 const ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
 
 // these might be better defined as an attribute on the robot
@@ -8,6 +9,7 @@ const FORGET_TIME = 120; // forgetting a robot in seconds
 const RESPONSE_TIMEOUT = 200; // waiting for response in milliseconds
 
 var Robot = function (mac_addr, ip4_addr, ip4_port, aServer) {
+    this.id = mac_addr;
     this.mac_addr = mac_addr;
     this.ip4_addr = ip4_addr;
     this.ip4_port = ip4_port;
@@ -294,8 +296,11 @@ Robot.prototype.sendToClient = function (msgType, content) {
         callbacks.length = 0;
     }
 
-    this.sockets.forEach(uuid => {
+    this.sockets.forEach(async uuid => {
         var socket = NetworkTopology.getSocket(uuid);
+
+        await acl.ensureAuthorized(socket.username, myself.mac_addr); // should use robotId instead of mac_addr
+
         if (socket) {
             if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
                 socket.sendMessage(msgType, content);

@@ -33,6 +33,7 @@
 
 const logger = require('../utils/logger')('roboscape');
 const Robot = require('./robot');
+const acl = require('./accessControl');
 var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
     ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
@@ -50,9 +51,19 @@ var RoboScape = function () {
 };
 
 RoboScape.serviceName = 'RoboScape';
+// keeps a dictionary of robot objects keyed by mac_addr
 RoboScape.prototype._robots = {};
 
-// fetch the robot, create one if necessary
+RoboScape.prototype._ensureLoggedIn = function() {
+    if (this.caller.username !== undefined)
+        throw new Error('Login required.');
+};
+
+RoboScape.prototype._ensureAuthorized = async function(robotId) {
+    await acl.ensureAuthorized(this.caller.username, robotId);
+};
+
+// fetch the robot and updates its address. creates one if necessary
 RoboScape.prototype._getOrCreateRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
     if (!robot) {
@@ -65,16 +76,30 @@ RoboScape.prototype._getOrCreateRobot = function (mac_addr, ip4_addr, ip4_port) 
     return robot;
 };
 
-RoboScape.prototype._getRobot = function (robot) {
-    robot = '' + robot;
-    if(robot.length < 4) return undefined;
-    if (robot.length === 12) {
-        return RoboScape.prototype._robots[robot];
+// find the robot object based on the partial id or returns undefined
+RoboScape.prototype._getRobot = async function (robotId) {
+    robotId = '' + robotId;
+    let robot;
+
+    if(robotId.length < 4 || robotId.length > 12) return undefined;
+
+    // autocomplete the robotId and find the robot object
+    if (robotId.length === 12) {
+        robot = this._robots[robotId];
+    } else { // try to guess the rest of the id
+        for (var mac_addr in this._robots) { // pick the first match
+            if (mac_addr.endsWith(robotId)) {
+                robotId = mac_addr;
+                robot = this._robots[robotId];
+            }
+        }
     }
-    for (var mac_addr in RoboScape.prototype._robots) {
-        if (mac_addr.endsWith(robot))
-            return RoboScape.prototype._robots[mac_addr];
-    }
+
+    // if couldn't find a live robot
+    if (!robot) return undefined;
+
+    await this._ensureAuthorized(robotId);
+    return robot;
 };
 
 RoboScape.prototype._heartbeat = function () {
@@ -118,7 +143,7 @@ RoboScape.prototype.eavesdrop = function (robots) {
  * Registers for receiving messages from the given robots.
  * @param {array} robots one or a list of robots
  */
-RoboScape.prototype.listen = function (robots) {
+RoboScape.prototype.listen = async function (robots) {
     var state = this._state,
         uuid = this.socket.uuid;
 
@@ -135,7 +160,7 @@ RoboScape.prototype.listen = function (robots) {
 
     var ok = true;
     for (var i = 0; i < robots.length; i++) {
-        var robot = this._getRobot(robots[i]);
+        var robot = await this._getRobot(robots[i]);
         if (robot) {
             state.registered[robot.mac_addr] = robot;
             robot.addClientSocket(uuid);
@@ -150,8 +175,10 @@ RoboScape.prototype.listen = function (robots) {
  * Returns the MAC addresses of all robots.
  * @returns {array}
  */
-RoboScape.prototype.getRobots = function () {
-    return Object.keys(RoboScape.prototype._robots);
+RoboScape.prototype.getRobots = async function () {
+    const availableRobots = Object.keys(this._robots);
+    let robots = await acl.authorizedRobots(this.caller.username, availableRobots);
+    return robots;
 };
 
 
@@ -161,10 +188,10 @@ RoboScape.prototype.getRobots = function () {
  * @param {String} fnName name of the method/function to call on the robot object
  * @param {Array} args array of arguments
  */
-RoboScape.prototype._passToRobot = function (fnName, args) {
+RoboScape.prototype._passToRobot = async function (fnName, args) {
     args = Array.from(args);
     let robotId = args.shift();
-    const robot = this._getRobot(robotId);
+    const robot = await this._getRobot(robotId);
     if (robot && robot.accepts(this.socket.uuid)) {
         let rv = robot[fnName].apply(robot, args);
         if (rv === undefined) rv = true;
@@ -288,9 +315,8 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
      * @param {string} command textual command
      * @returns {string} textual response
      */
-    RoboScape.prototype.send = function (robot, command) {
-        // logger.log('send ' + robot + ' ' + command);
-        robot = this._getRobot(robot);
+    RoboScape.prototype.send = async function (robot, command) {
+        robot = await this._getRobot(robot);
 
         if (!robot && typeof command !== 'string') return false;
 
