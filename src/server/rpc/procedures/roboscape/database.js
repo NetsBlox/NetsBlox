@@ -5,7 +5,7 @@ const schemaDef = {
     isPublic: {type: Boolean, default: true},
     owner: {type: String, required: true}, // username of the owner
     ownedAt: {type: Date, required: true}, // last date the user proved ownership of the robot
-    users: [ // users that ever had access to the robot
+    users: [ // users that ever had access to the robot for the current owner
         {
             username: {type: String, required: true},
             hasAccess: {type: Boolean, required: true},
