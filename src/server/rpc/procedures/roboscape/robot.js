@@ -477,13 +477,17 @@ Robot.prototype.onCommand = function(command) {
             }
         },
         {
-            regex: /^set cipher ([^ ]+)$/, // name of the cipher
+            regex: /^set encryption ([^ ]+)(| -?\d+([ ,]-?\d+)*)$/, // name of the cipher
             handler: () => {
-                let cipherName = RegExp.$1.toLoweCase();
-                return this.setEncryptionMethod(cipherName);
+                let cipherName = RegExp.$1.toLowerCase();
+                var key = RegExp.$2.split(/[, ]/);
+                if (key[0] === '') {
+                    key.splice(0, 1);
+                }
+                return this.setEncryptionMethod(cipherName) && this.setEncryptionKey(key);
             }
         },
-        {
+        { // deprecated
             regex: /^set key(| -?\d+([ ,]-?\d+)*)$/,
             handler: () => {
                 var encryption = RegExp.$1.split(/[, ]/);
@@ -576,6 +580,7 @@ Robot.prototype.setEncryptionMethod = function (name) {
         this._logger.warn('invalid cipher name ' + name);
         return false;
     }
+    this._logger.log('setting cipher to ' + name);
 
     this.encryptionMethod = ciphers[name];
     return true;
@@ -588,7 +593,7 @@ Robot.prototype.setEncryptionKey = function (keys) {
         return false;
     } else if (keys instanceof Array) {
         this.encryptionKey = keys;
-        this._logger.log(this.mac_addr + ' encryption set to [' + keys + ']');
+        this._logger.log(this.mac_addr + ' encryption key set to [' + keys + ']');
         return true;
     } else {
         this._logger.warn('invalid encryption key ' + keys);
