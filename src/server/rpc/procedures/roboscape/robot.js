@@ -3,6 +3,7 @@ const getRPCLogger = require('../utils/logger');
 const NetworkTopology = require('../../../network-topology');
 const acl = require('./accessControl');
 const ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
+const ciphers = require('./ciphers');
 
 // these might be better defined as an attribute on the robot
 const FORGET_TIME = 120; // forgetting a robot in seconds
@@ -17,7 +18,8 @@ var Robot = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.timestamp = -1; // time of last message in robot time
     this.sockets = []; // uuids of sockets of registered clients
     this.callbacks = {}; // callbacks keyed by msgType
-    this.encryption = []; // encryption key
+    this.encryptionKey = []; // encryption key
+    this.encryptionMethod = ciphers.caesar;
     this.buttonDownTime = 0; // last time button was pressed
     // rate control
     this.totalCount = 0; // in messages per second
@@ -342,7 +344,7 @@ Robot.prototype.onMessage = function (message) {
         if (this.timestamp < oldTimestamp) {
             this._logger.log('robot was rebooted ' + this.mac_addr);
             this.setSeqNum(-1);
-            this.setEncryption([]);
+            this.setEncryptionKey([]);
             this.resetRates();
         }
     } else if (command === 'B' && message.length === 15) {
@@ -460,13 +462,20 @@ Robot.prototype.onCommand = function(command) {
             }
         },
         {
+            regex: /^set cipher ([^ ]+)$/, // name of the cipher
+            handler: () => {
+                let cipherName = RegExp.$1.toLoweCase();
+                return this.setEncryptionMethod(cipherName);
+            }
+        },
+        {
             regex: /^set key(| -?\d+([ ,]-?\d+)*)$/,
             handler: () => {
                 var encryption = RegExp.$1.split(/[, ]/);
                 if (encryption[0] === '') {
                     encryption.splice(0, 1);
                 }
-                return this.setEncryption(encryption.map(Number));
+                return this.setEncryptionKey(encryption.map(Number));
             }
         },
         {
@@ -515,43 +524,45 @@ Robot.prototype.onCommand = function(command) {
     return rv;
 };
 
-Robot.prototype.encrypt = function (text, decrypt) {
-    if (typeof text !== 'string') {
-        return false;
-    } else if (this.encryption.length === 0) {
-        return text;
-    }
-
-    var output = '';
-    for (var i = 0; i < text.length; i++) {
-        var code = text.charCodeAt(i),
-            shift = +this.encryption[i % this.encryption.length];
-
-        code = decrypt ? code - shift : code + shift;
-        code = (code - 32) % (127 - 32);
-        if (code < 0) {
-            code += 127 - 32;
-        }
-        code += 32;
-
-        output += String.fromCharCode(code);
-    }
-    this._logger.log('"' + text + '" ' + (decrypt ? 'decrypted' : 'encrypted') +
-        ' to "' + output + '"');
+Robot.prototype.encrypt = function (text) {
+    let output = this.encryptionMethod.encrypt(text, this.encryptionKey);
+    this._logger.log('"' + text + '" encrypted to "' + output + '"');
     return output;
 };
 
 Robot.prototype.decrypt = function (text) {
-    return this.encrypt(text, true);
+    let output = this.encryptionMethod.decrypt(text, this.encryptionKey);
+    this._logger.log('"' + text + '" decrypted to "' + output + '"');
+    return output;
 };
 
-Robot.prototype.setEncryption = function (keys) {
-    if (keys instanceof Array) {
-        this.encryption = keys;
+
+// disable encryption and decryption with minimal changes
+Robot.prototype.disableEncryption = function () {
+    this.encryptionMethod = ciphers.plain;
+};
+
+Robot.prototype.setEncryptionMethod = function (name) {
+    if (!ciphers[name]) {
+        this._logger.warn('invalid cipher name ' + name);
+        return false;
+    }
+
+    this.encryptionMethod = ciphers[name];
+    return true;
+};
+
+// WARN keys number?
+Robot.prototype.setEncryptionKey = function (keys) {
+    if (!this.encryptionMethod) {
+        this._logger.warn('setting the key without a cipher ' + keys);
+        return false;
+    } else if (keys instanceof Array) {
+        this.encryptionKey = keys;
         this._logger.log(this.mac_addr + ' encryption set to [' + keys + ']');
         return true;
     } else {
-        this._logger.log('invalid encryption key ' + keys);
+        this._logger.warn('invalid encryption key ' + keys);
         return false;
     }
 };
@@ -600,14 +611,14 @@ Robot.prototype.randomEncryption = function () {
     blinks.push(3);
     this.setSeqNum(-1);
     this.resetRates();
-    this.setEncryption(keys);
+    this.setEncryptionKey(keys);
     this.playBlinks(blinks);
 };
 
 Robot.prototype.resetEncryption = function () {
     this.setSeqNum(-1);
     this.resetRates();
-    this.setEncryption([]);
+    this.setEncryptionKey([]);
     this.playBlinks([3]);
 };
 
