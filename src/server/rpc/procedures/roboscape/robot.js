@@ -51,10 +51,13 @@ Robot.prototype.resetRates = function () {
     this.clientCounts = {};
 };
 
+// resets the encryption
+// for backward compat sets it to caesar cipher with key [0]
 Robot.prototype.resetEncryption = function () {
     this._logger.log('resetting encryption');
-    this.encryptionMethod = null;
-    this.encryptionKey = null;
+    // null would make more sense but keeping backward compatibility here
+    this.encryptionMethod = ciphers.caesar;
+    this.encryptionKey = [0];
 };
 
 Robot.prototype.resetSeqNum = function () {
