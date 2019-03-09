@@ -51,6 +51,18 @@ Robot.prototype.resetRates = function () {
     this.clientCounts = {};
 };
 
+Robot.prototype.resetEncryption = function () {
+    this._logger.log('resetting encryption');
+    this.encryptionMethod = null;
+    this.encryptionKey = null;
+};
+
+Robot.prototype.resetSeqNum = function () {
+    this._logger.log('resetting seq numbering');
+    this.setSeqNum(-1);
+};
+
+
 Robot.prototype.updateAddress = function (ip4_addr, ip4_port) {
     this.ip4_addr = ip4_addr;
     this.ip4_port = ip4_port;
@@ -343,7 +355,7 @@ Robot.prototype.onMessage = function (message) {
     if (command === 'I' && message.length === 11) {
         if (this.timestamp < oldTimestamp) {
             this._logger.log('robot was rebooted ' + this.mac_addr);
-            this.setSeqNum(-1);
+            this.resetSeqNum();
             this.setEncryptionKey([]);
             this.resetRates();
         }
@@ -375,7 +387,7 @@ Robot.prototype.onMessage = function (message) {
                 this.buttonDownTime = new Date().getTime();
                 setTimeout(function (robot, pressed) {
                     if (robot.buttonDownTime === pressed) {
-                        robot.resetEncryption();
+                        robot.resetRobot();
                     }
                 }, 1000, this, this.buttonDownTime);
             } else {
@@ -505,7 +517,7 @@ Robot.prototype.onCommand = function(command) {
         {
             regex: /^reset seq$/,
             handler: () => {
-                this.setSeqNum(-1);
+                this.resetSeqNum();
             }
         },
         {
@@ -623,19 +635,19 @@ Robot.prototype.randomEncryption = function () {
         blinks.push(a & 0x1 ? 2 : 1);
     }
     blinks.push(3);
-    this.setSeqNum(-1);
+    this.resetSeqNum();
     this.resetRates();
+    // TODO make it compatible with speck keys
     this.setEncryptionKey(keys);
     this.playBlinks(blinks);
 };
 
-// resets encryption and sequencing
-Robot.prototype.resetEncryption = function () {
-    this._logger.log('resetting encryption and sequencing');
-    this.setSeqNum(-1);
+// resets encryption, sequencing, and rate limits
+Robot.prototype.resetRobot = function () {
+    this._logger.log('resetting robot');
+    this.resetSeqNum();
     this.resetRates();
-    this.setEncryptionMethod('plain');
-    this.setEncryptionKey();
+    this.resetEncryption();
     this.playBlinks([3]);
 };
 
