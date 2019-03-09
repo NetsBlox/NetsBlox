@@ -321,7 +321,7 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         if (!robot && typeof command !== 'string') return false;
 
         // figure out the raw command after processing special methods, encryption, seq and client rate
-        if (command.match(/^backdoor[, ](.*)$/)) { // check if it is a backdoor
+        if (command.match(/^backdoor[, ](.*)$/)) { // if it is a backdoor directly set the command
             logger.log('executing ' + command);
             command = RegExp.$1;
         } else { // if not a backdoor handle seq number and encryption
