@@ -645,7 +645,6 @@ Robot.prototype.randomEncryption = function () {
     blinks.push(3);
     this.resetSeqNum();
     this.resetRates();
-    // TODO make it compatible with speck keys
     this.setEncryptionKey(keys);
     this.playBlinks(blinks);
 };
