@@ -18,8 +18,8 @@ var Robot = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.timestamp = -1; // time of last message in robot time
     this.sockets = []; // uuids of sockets of registered clients
     this.callbacks = {}; // callbacks keyed by msgType
-    this.encryptionKey = []; // encryption key
-    this.encryptionMethod = ciphers.caesar;
+    this.encryptionKey = undefined; // encryption key
+    this.encryptionMethod = ciphers.plain;
     this.buttonDownTime = 0; // last time button was pressed
     // rate control
     this.totalCount = 0; // in messages per second
@@ -615,10 +615,13 @@ Robot.prototype.randomEncryption = function () {
     this.playBlinks(blinks);
 };
 
+// resets encryption and sequencing
 Robot.prototype.resetEncryption = function () {
+    this._logger.log('resetting encryption and sequencing');
     this.setSeqNum(-1);
     this.resetRates();
-    this.setEncryptionKey([]);
+    this.setEncryptionMethod('plain');
+    this.setEncryptionKey();
     this.playBlinks([3]);
 };
 
