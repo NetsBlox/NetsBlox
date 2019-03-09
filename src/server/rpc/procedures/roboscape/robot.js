@@ -18,8 +18,8 @@ var Robot = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.timestamp = -1; // time of last message in robot time
     this.sockets = []; // uuids of sockets of registered clients
     this.callbacks = {}; // callbacks keyed by msgType
-    this.encryptionKey = undefined; // encryption key
-    this.encryptionMethod = ciphers.plain;
+    this.encryptionKey = [0]; // encryption key
+    this.encryptionMethod = ciphers.caesar; // backward compat
     this.buttonDownTime = 0; // last time button was pressed
     // rate control
     this.totalCount = 0; // in messages per second
