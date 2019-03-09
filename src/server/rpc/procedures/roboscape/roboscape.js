@@ -328,7 +328,8 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
             // for replay attacks
             robot.commandToClient(command);
 
-            command = robot.decrypt(command);
+            if (robot._hasValidEncryptionSet()) // if encryption is set
+                command = robot.decrypt(command);
 
             var seqNum = -1;
             if (command.match(/^(\d+)[, ](.*)$/)) {

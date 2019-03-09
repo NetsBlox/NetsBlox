@@ -317,7 +317,7 @@ Robot.prototype.sendToClient = function (msgType, content) {
 
                 const encryptedContent = {
                     robot: myself.mac_addr,
-                    message: myself.encrypt(text.trim())
+                    message: this._hasValidEncryptionSet() ? myself.encrypt(text.trim()) : text.trim()
                 };
                 socket.sendMessage('robot message', encryptedContent);
             }
@@ -524,13 +524,27 @@ Robot.prototype.onCommand = function(command) {
     return rv;
 };
 
+
+// determines whether encryption/decryption can be activated or not
+Robot.prototype._hasValidEncryptionSet = function () {
+    let verdict = (this.encryptionKey && this.encryptionMethod && Array.isArray(this.encryptionKey) && this.encryptionKey.length !== 0);
+    return verdict;
+};
+
+
 Robot.prototype.encrypt = function (text) {
+    if (!this._hasValidEncryptionSet()) {
+        throw new Error('invalid encryption setup');
+    }
     let output = this.encryptionMethod.encrypt(text, this.encryptionKey);
     this._logger.log('"' + text + '" encrypted to "' + output + '"');
     return output;
 };
 
 Robot.prototype.decrypt = function (text) {
+    if (!this._hasValidEncryptionSet()) {
+        throw new Error('invalid encryption setup');
+    }
     let output = this.encryptionMethod.decrypt(text, this.encryptionKey);
     this._logger.log('"' + text + '" decrypted to "' + output + '"');
     return output;
