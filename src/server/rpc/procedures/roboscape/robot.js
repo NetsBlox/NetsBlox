@@ -591,9 +591,10 @@ Robot.prototype.setEncryptionKey = function (keys) {
     if (!this.encryptionMethod) {
         this._logger.warn('setting the key without a cipher ' + keys);
         return false;
-    } else if (keys instanceof Array) {
+    } else if (keys instanceof Array) { // all the supported ciphers require an array of numbers
+        keys = keys.map(num => parseInt(num));
         this.encryptionKey = keys;
-        this._logger.log(this.mac_addr + ' encryption key set to [' + keys + ']');
+        this._logger.log(this.mac_addr, 'encryption key set to', keys);
         return true;
     } else {
         this._logger.warn('invalid encryption key ' + keys);
