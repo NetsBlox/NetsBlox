@@ -1,3 +1,4 @@
+const Speck32 = require('./speck.js');
 
 // key is an array of shift values
 const caesarCipher = (text, key, decrypt=false) => {
@@ -25,6 +26,8 @@ const caesarCipher = (text, key, decrypt=false) => {
 };
 
 
+const speck32 = new Speck32();
+
 
 module.exports = {
     plain: { // ignores the second argument key
@@ -36,4 +39,9 @@ module.exports = {
         encrypt: (text, key) => caesarCipher(text, key, false),
         decrypt: (text, key) => caesarCipher(text, key, true),
     },
+
+    speck: {
+        encrypt: (text, key) => speck32.encryptAscii(text, key),
+        decrypt: (text, key) => speck32.decryptAscii(text, key),
+    }
 };
