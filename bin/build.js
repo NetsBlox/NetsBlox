@@ -18,6 +18,10 @@ while (match) {
     match = devHtml.match(re);
 }
 
+// don't duplicate the main.js file
+const RESERVED_FILE = 'main.js';
+srcFiles = srcFiles.filter(f => f !== RESERVED_FILE);
+
 if (!isDevEnv) console.log('concatting and minifying:', srcFiles);
 
 srcFiles = srcFiles.map(file => path.join(srcPath, file));

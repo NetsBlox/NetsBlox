@@ -36,7 +36,8 @@ describe('users', function() {
         it('should not include users in groups from outside', function(done) {
             let alice = users[0];
             alice.getGroupMembers()
-                .then(names => {
+                .then(users => {
+                    let names = users.map(u => u.username);
                     assert(!names.some(name => name.includes('-class')));
                     done();
                 })
@@ -46,7 +47,8 @@ describe('users', function() {
         it('should only show users in groups', function(done) {
             let user = users[5];
             user.getGroupMembers()
-                .then(names => {
+                .then(users => {
+                    let names = users.map(u => u.username);
                     assert.equal(names.length, 3);
                     done();
                 })
@@ -77,5 +79,28 @@ describe('users', function() {
                 .then(user => assert.notEqual(firstHash, user.hash))
                 .nodeify(done);
         });
+    });
+
+    it('should fail to update users username', async () => {
+        const newUsername = 'hamidz',
+            oldUsername = 'hamid';
+
+        let user = await Users.get(oldUsername);
+        user.username = newUsername;
+        await user.update();
+        let updatedUser = await Users.getById(user._id);
+        assert.deepEqual(updatedUser.username, oldUsername);
+
+    });
+
+    it('should update users email', async () => {
+        const newEmail = 'newBrianEmail@email.com';
+
+        let user = await Users.get('hamid');
+        user.email = newEmail;
+        await user.update();
+        let updatedUser = await Users.getById(user._id);
+        assert.deepEqual(updatedUser.email, newEmail);
+
     });
 });
