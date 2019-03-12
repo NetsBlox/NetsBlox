@@ -6,49 +6,57 @@ const chalk = require('chalk'),
     util = require('util');
 
 // NOP color option to use default
-const nullcolor = (output) => output;
+const nullcolor = output => output;
 
 // Stores logging levels and associated output colors
 const LEVELS = {
-    'trace': {
+    trace: {
         bg: nullcolor,
         fg: nullcolor
     },
-    'info': {
+    info: {
         bg: nullcolor,
         fg: nullcolor
     },
-    'log': {
+    log: {
         bg: nullcolor,
         fg: nullcolor
     },
-    'debug': {
+    debug: {
         bg: nullcolor,
         fg: nullcolor
     },
-    'warn': {
+    warn: {
         bg: chalk.bgYellow,
         fg: chalk.black
     },
-    'error': {
+    error: {
         bg: chalk.bgRed,
         fg: chalk.white
     }
 };
 
-// set which debug levels to send to stderr, the rest will go to stdout
+// Set which debug levels to send to stderr, the rest will go to stdout
 const STDERR = ['warn', 'error'];
 
+// Strings to use for disabling date output
+const disablestrings = ['none', 'off', 'disable', 'disabled'];
+
 // Get format from env variable
-const dateformat = process.env.DEBUG_DATE || 'MM.DD HH:mm:ss',
-    useColors = (process.env.DEBUG_COLORS || true) == true;
+var dateformat = process.env.DEBUG_DATE || 'MM.DD HH:mm:ss';
+const useColors = (process.env.DEBUG_COLORS || true) == true;
+
+// Disable date if requested
+if (disablestrings.indexOf(dateformat.toLowerCase()) !== -1) {
+    dateformat = '';
+}
 
 // For hashing names to colors
 const colorHash = new ColorHash({ lightness: 0.75 });
 
 // Options for utils.inspect
 const inspectOptions = {
-    colors: true,
+    colors: true
 };
 
 class Logger {
@@ -79,7 +87,6 @@ class Logger {
      * @param {String=} level Level of logging to check for filter match, undefined for no level.
      */
     _shouldBeEnabled(level = undefined) {
-
         let tempName = this._name;
 
         // Add logging level to name
@@ -88,13 +95,13 @@ class Logger {
         }
 
         // Allow skips
-        if (Logger.skips.some((skip) => skip.test(tempName))) {
+        if (Logger.skips.some(skip => skip.test(tempName))) {
             return false;
         }
 
         // Allow whitelist
         if (Logger.names.length > 0) {
-            if (!Logger.names.some((name) => name.test(tempName))) {
+            if (!Logger.names.some(name => name.test(tempName))) {
                 return false;
             }
         }
@@ -116,53 +123,55 @@ class Logger {
      * @param {String} content Message to print
      */
     _log(level, ...content) {
-
         // Format content
-        content = content.map((item) => {
-            if (typeof (item) == 'string') {
-                return item;
-            } else {
-                return util.inspect(item, inspectOptions);
-            }
-        }).join(' ');
+        content = content
+            .map(item => {
+                if (typeof item == 'string') {
+                    return item;
+                } else {
+                    return util.inspect(item, inspectOptions);
+                }
+            })
+            .join(' ');
 
         content = content.split('\n');
 
         /* eslint-disable no-console*/
         // Determine which output to use
-        let logFunc = STDERR.find(lvl => level === lvl) ? console.error : console.log;
+        let logFunc = STDERR.find(lvl => level === lvl)
+            ? console.error
+            : console.log;
         logFunc = logFunc.bind(console);
         /* eslint-enable no-console*/
 
         // Prevent issues if no color available
-        let tags = `${dateformat != '' ? moment().format(dateformat) + ' ' : ''}${this._name}:${level}`;
+        let tags = `${
+            dateformat != '' ? moment().format(dateformat) + ' ' : ''
+        }${this._name}:${level}`;
 
         content.forEach((line, idx) => {
-
             // Mark multi-line
-            if(content.length == 1)
-            {
-                line =  '> ' + line;
+            if (content.length == 1) {
+                line = '> ' + line;
             } else {
-                if(idx == 0){
-                    line =  'v ' + line;
-                }
-                else if(idx == content.length - 1)
-                {
-                    line =  '^ ' + line;
-                }
-                else
-                {
-                    line =  '| ' + line;
+                if (idx == 0) {
+                    line = 'v ' + line;
+                } else if (idx == content.length - 1) {
+                    line = '^ ' + line;
+                } else {
+                    line = '| ' + line;
                 }
             }
 
             if (!useColors) {
                 logFunc(tags + ' ' + line);
-            }
-            else if (chalk.supportsColor.has256 === true) {
+            } else if (chalk.supportsColor.has256 === true) {
                 // Color from hash of name
-                logFunc(LEVELS[level].bg(LEVELS[level].fg(tags)) + ' ' + this._colorize(line));
+                logFunc(
+                    LEVELS[level].bg(LEVELS[level].fg(tags)) +
+                        ' ' +
+                        this._colorize(line)
+                );
             } else {
                 // Default to only colors for labels
                 logFunc(LEVELS[level].bg(LEVELS[level].fg(tags)) + ' ' + line);
@@ -191,7 +200,7 @@ let namespaces = process.env.DEBUG || '';
 let split = namespaces.split(/[\s,]+/);
 
 // Set up filters
-split.forEach((s) => {
+split.forEach(s => {
     if (s) {
         namespaces = s.replace(/\*/g, '.*?');
 
