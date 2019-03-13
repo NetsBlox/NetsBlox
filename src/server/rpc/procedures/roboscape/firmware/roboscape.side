@@ -1,6 +1,8 @@
 roboscape.c
 xbee.h
 xbee.c
+melody.h
+melody.c
 >compiler=C
 >memtype=cmm main ram compact
 >optimize=-Os
