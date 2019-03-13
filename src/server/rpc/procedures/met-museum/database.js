@@ -9,4 +9,7 @@ headers.forEach(attr => {
     schemaDef[attr] = String;
 });
 
+schemaDef['Primary Image'] = String;
+schemaDef['Additional Images'] = [String];
+
 module.exports = getServiceStorage('MetMuseum', schemaDef);

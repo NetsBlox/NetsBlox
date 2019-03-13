@@ -6,9 +6,7 @@
  */
 
 const MetObject = require('./database.js');
-const ApiConsumer = require('../utils/api-consumer');
 const DBConsumer = require('../utils/db-consumer');
-const MetApiConsumer = new ApiConsumer('MetMuseum', 'https://collectionapi.metmuseum.org/public/collection/v1', {cache: {ttl: 5*60}});
 const MetMuseum = new DBConsumer('MetMuseum', MetObject);
 
 
@@ -72,26 +70,21 @@ MetMuseum.getImageUrls = async function(id) {
 
     let object =  await getMetObject(id);
 
-    if (object['Is Public Domain'] !== 'True') {
+    console.log(object);
+    if (object['Is Public Domain'].toLowerCase() !== 'true') {
         throw new Error(`object ${id} is not public domain.`);
     }
 
-    const queryOpts = {
-        queryString: `/objects/${id}`,
-    };
-
-    const parserFn = resp => {
-        let images = [];
-        if (resp.primaryImage) {
-            images.push(resp.primaryImage);
-            if (resp.additionalImages) {
-                images.push(...resp.additionalImages);
-            }
+    let images = [];
+    if (object['Primary Image']) {
+        images.push(object['Primary Image']);
+        if (object.additionalImages) {
+            images.push(...object['Additional Images']);
         }
-        return images;
-    };
+    }
 
-    return MetApiConsumer._sendStruct(queryOpts, parserFn);
+    this._logger.trace('found images', images);
+    return images;
 };
 
 
