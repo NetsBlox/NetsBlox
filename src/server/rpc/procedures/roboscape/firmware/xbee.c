@@ -1,3 +1,7 @@
+/*
+documentation for Xbee S8B availabe at https://www.digi.com/resources/documentation/digidocs/PDFs/90002180.pdf
+*/
+
 #include "xbee.h"
 #include "simpletools.h"
 
@@ -73,6 +77,7 @@ int xbee_recv_str(fdserial* xbee, const char* data, int timeout)
 
 void xbee_send_api(fdserial* xbee, const void* data, int len)
 {
+    print("sending:");
     fdserial_txChar(xbee, 0x7E);
     fdserial_txChar(xbee, (len >> 8) & 0xFF);
     fdserial_txChar(xbee, len & 0xFF);
@@ -80,8 +85,10 @@ void xbee_send_api(fdserial* xbee, const void* data, int len)
     while (len-- > 0) {
         char c = *(const char*)(data++);
         crc += c;
+        print(" %02x", c);
         fdserial_txChar(xbee, c);
     }
+    print("\n");
     fdserial_txChar(xbee, 0xff - crc);
 }
 
