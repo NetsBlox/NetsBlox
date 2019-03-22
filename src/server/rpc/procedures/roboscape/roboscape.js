@@ -322,8 +322,8 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
 
         // figure out the raw command after processing special methods, encryption, seq and client rate
         if (command.match(/^backdoor[, ](.*)$/)) { // if it is a backdoor directly set the command
-            logger.log('executing ' + command);
             command = RegExp.$1;
+            logger.log('executing ' + command);
         } else { // if not a backdoor handle seq number and encryption
             // for replay attacks
             robot.commandToClient(command);
@@ -339,9 +339,9 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
             if (!robot.accepts(this.socket.uuid, seqNum)) {
                 return false;
             }
+            robot.setSeqNum(seqNum);
         }
 
-        robot.setSeqNum(seqNum);
         return robot.onCommand(command);
     };
 }
