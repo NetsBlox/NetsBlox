@@ -1,4 +1,4 @@
-from netsblox/base
+FROM netsblox/base
 
 ADD . /netsblox
 WORKDIR /netsblox
