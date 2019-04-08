@@ -37,7 +37,25 @@ where `/path/to/directory/for/media` is the directory on the host machine to sto
 
 In order to enable specific RPCs which use external APIs, you may have to set environment variables using the `-e` flag (like `-e GOOGLE_MAPS_KEY=myGoogleMapsKey`) or pass in a list of environment variables through a file using `--env-file`. The list of all the environment variables are explained in the **RPC Support** section below.
 
+Note that addressing directories and files in windows is different from linux. For example the direcotry divider is `\` as opposted to `/`
+
 Next, just navigate to `localhost:8080` in a web browser to try it out!
+
+#### Development with Docker
+Setup and start MongoDB as described in the last step.
+
+Pull in and create a container running the base image for NetsBlox
+` docker run -it -p 8080:8080 -e MONGO_URI='mongodb://172.17.0.1:27017/netsblox' -v my/netsblox/dir/path:/netsblox --name nb-base netsblox/base /bin/bash`
+
+Helpful commands:
+- start stop the container: `docker start nb-base` `docker stop nb-base`
+- attach to the container to run commands: `docker attach nb-base` and detach by sending EOL: Ctrl+d
+
+Finally attach to the instance and follow native installation. You can run the server in dev mode using `ENV=dev npm run dev`
+
+Access and edit the source files at the address you specified in the beginning `my/netsblox/dir/path`
+
+
 ### Native
 Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= 8) and a [MongoDB](https://www.mongodb.com/download-center?jmp=nav#community) database. By default, NetsBlox will expect MongoDB to be running locally (this can be changed by setting the `MONGO_URI` environment variable).
 
