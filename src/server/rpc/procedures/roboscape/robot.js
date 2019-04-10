@@ -316,9 +316,10 @@ Robot.prototype.sendToClient = function (msgType, content) {
     this.sockets.forEach(async uuid => {
         var socket = NetworkTopology.getSocket(uuid);
 
-        await acl.ensureAuthorized(socket.username, myself.mac_addr); // should use robotId instead of mac_addr
-
         if (socket) {
+
+            await acl.ensureAuthorized(socket.username, myself.mac_addr); // should use robotId instead of mac_addr
+
             if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
                 socket.sendMessage(msgType, content);
             }

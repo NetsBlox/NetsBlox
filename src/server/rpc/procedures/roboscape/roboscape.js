@@ -145,7 +145,7 @@ RoboScape.prototype.eavesdrop = function (robots) {
  */
 RoboScape.prototype.listen = async function (robots) {
     var state = this._state,
-        uuid = this.socket.uuid;
+        uuid = this.caller.clientId;
 
     for (var mac_addr in state.registered) {
         if (this._robots[mac_addr]) {
@@ -172,7 +172,7 @@ RoboScape.prototype.listen = async function (robots) {
 };
 
 /**
- * Returns the MAC addresses of all robots.
+ * Returns the MAC addresses of all authorized robots.
  * @returns {array}
  */
 RoboScape.prototype.getRobots = async function () {
@@ -192,7 +192,7 @@ RoboScape.prototype._passToRobot = async function (fnName, args) {
     args = Array.from(args);
     let robotId = args.shift();
     const robot = await this._getRobot(robotId);
-    if (robot && robot.accepts(this.socket.uuid)) {
+    if (robot && robot.accepts(this.caller.clientId)) {
         let rv = robot[fnName].apply(robot, args);
         if (rv === undefined) rv = true;
         return rv;
@@ -336,7 +336,7 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
                 seqNum = +RegExp.$1;
                 command = RegExp.$2;
             }
-            if (!robot.accepts(this.socket.uuid, seqNum)) {
+            if (!robot.accepts(this.caller.clientId, seqNum)) {
                 return false;
             }
             robot.setSeqNum(seqNum);
