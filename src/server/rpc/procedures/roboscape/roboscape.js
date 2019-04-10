@@ -63,11 +63,6 @@ RoboScape.prototype._ensureAuthorized = async function(robotId) {
     await acl.ensureAuthorized(this.caller.username, robotId);
 };
 
-RoboScape.prototype._getSocketUuid = function() {
-    if (!this.socket) throw new Error('No active socket found.');
-    return this.socket.uuid;
-};
-
 // fetch the robot and updates its address. creates one if necessary
 RoboScape.prototype._getOrCreateRobot = function (mac_addr, ip4_addr, ip4_port) {
     var robot = this._robots[mac_addr];
@@ -150,7 +145,7 @@ RoboScape.prototype.eavesdrop = function (robots) {
  */
 RoboScape.prototype.listen = async function (robots) {
     var state = this._state,
-        uuid = this._getSocketUuid();
+        uuid = this.caller.clientId;
 
     for (var mac_addr in state.registered) {
         if (this._robots[mac_addr]) {
@@ -177,7 +172,7 @@ RoboScape.prototype.listen = async function (robots) {
 };
 
 /**
- * Returns the MAC addresses of all robots.
+ * Returns the MAC addresses of all authorized robots.
  * @returns {array}
  */
 RoboScape.prototype.getRobots = async function () {
@@ -197,7 +192,7 @@ RoboScape.prototype._passToRobot = async function (fnName, args) {
     args = Array.from(args);
     let robotId = args.shift();
     const robot = await this._getRobot(robotId);
-    if (robot && robot.accepts(this._getSocketUuid())) {
+    if (robot && robot.accepts(this.caller.clientId)) {
         let rv = robot[fnName].apply(robot, args);
         if (rv === undefined) rv = true;
         return rv;
@@ -341,7 +336,7 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
                 seqNum = +RegExp.$1;
                 command = RegExp.$2;
             }
-            if (!robot.accepts(this._getSocketUuid(), seqNum)) {
+            if (!robot.accepts(this.caller.clientId, seqNum)) {
                 return false;
             }
             robot.setSeqNum(seqNum);
