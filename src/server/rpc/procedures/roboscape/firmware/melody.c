@@ -118,60 +118,6 @@ enum {
 #define D8  4699
 #define DS8 4978
 
-//Mario main theme melody
-int mario_melody[] = {
-    E7, E7, 0, E7,
-    0, C7, E7, 0,
-    G7, 0, 0,  0,
-    G6, 0, 0, 0,
-
-    C7, 0, 0, G6,
-    0, 0, E6, 0,
-    0, A6, 0, B6,
-    0, AS6, A6, 0,
-
-    G6, E7, G7,
-    A7, 0, F7, G7,
-    0, E7, 0, C7,
-    D7, B6, 0, 0,
-
-    C7, 0, 0, G6,
-    0, 0, E6, 0,
-    0, A6, 0, B6,
-    0, AS6, A6, 0,
-
-    G6, E7, G7,
-    A7, 0, F7, G7,
-    0, E7, 0, C7,
-    D7, B6, 0, 0
-};
-//Mario main them tempo
-int mario_tempo[] = {
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-
-    9, 9, 9,
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-
-    9, 9, 9,
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-    12, 12, 12, 12,
-};
 
 //Underworld melody
 int underworld_melody[] = {
@@ -247,12 +193,6 @@ void play_melody(int melody[], int beats[], int length)
     freqout(PIEZO_SPEAKER_PIN, 0, 100);
 }
 
-
-void play_mario()
-{
-    print("playing mario\n");
-    play_melody(mario_melody, mario_tempo, ARRAY_SIZE(mario_melody));
-}
 
 void play_music1()
 {

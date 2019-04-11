@@ -6,8 +6,6 @@
  */
 void play_melody(int melody[], int beats[], int length);
 
-void play_mario();
-
 void play_music1();
 
 #endif //__XBEE_H__
