@@ -43,9 +43,15 @@ module.exports = {
                 rsp.status(400).send('Not found.');
             } else {
                 logger.trace(lines);
-                var objName = lines[0].split(':')[1].trim();
-                var ra = lines[1].split(':')[1].trim();
-                var dec = lines[2].split(':')[1].trim();
+                try {
+                    var objName = lines[0].split(':')[1].trim();
+                    var ra = lines[1].split(':')[1].trim();
+                    var dec = lines[2].split(':')[1].trim();
+                } catch (e) {
+                    logger.error('malfored response response to findObject');
+                    rsp.status(400).send('Not found.');
+                    return null;
+                }
                 ra = parseFloat(ra);
                 dec = parseFloat(dec);
                 logger.trace(`Found ${objName} at ra=${ra} dec=${dec}`);
