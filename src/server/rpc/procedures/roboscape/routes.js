@@ -72,15 +72,17 @@ const routes = [
             if (!newEntry.robotId) throw new Error('missing robot ID');
             newEntry.robotId = newEntry.robotId.toLowerCase(); // lowercase ids
 
+            logger.info(`${newEntry.owner} attempting to own ${newEntry.robotId}`);
+
             // makes sure robotIds are unique (duplicate robots)
             let rec = await RoboscapeCol.findOne({robotId: newEntry.robotId});
             if (rec) {
-                logger.trace('updating existing rec', rec);
+                logger.trace('updating existing rec', rec, 'to', newEntry);
                 if (rec._doc.owner === newEntry.owner) {
                     // user already owns the robot
                     return 'robot already owned';
                 } else { // refresh the doc, throw users out. del & recreate?
-                    await RoboscapeCol.update({owner: newEntry.owner, isPublic: true, ownedAt: newEntry.ownedAt, users: []});
+                    await RoboscapeCol.update({ _id: rec._id }, {owner: newEntry.owner, isPublic: true, ownedAt: newEntry.ownedAt, users: []});
                 }
             } else {
                 logger.trace('creating new robot rec', newEntry);
