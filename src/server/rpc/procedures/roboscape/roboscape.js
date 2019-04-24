@@ -318,7 +318,7 @@ if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
     RoboScape.prototype.send = async function (robot, command) {
         robot = await this._getRobot(robot);
 
-        if (!robot && typeof command !== 'string') return false;
+        if (!robot || typeof command !== 'string') return false;
 
         // figure out the raw command after processing special methods, encryption, seq and client rate
         if (command.match(/^backdoor[, ](.*)$/)) { // if it is a backdoor directly set the command
