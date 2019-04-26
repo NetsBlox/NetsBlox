@@ -27,6 +27,16 @@ const isRobotOwner = async function(req) {
 
 const findOne = query => RoboscapeCol.findOne(query);
 
+const sanitizeBody = (body, schema) => {
+    // make sure the request body has the same keys as schema
+    let newBody = {};
+    for (let attr of schema) {
+        if (body[attr] === undefined) throw new Error('bad body structure, expected ' + schema.join(', '));
+        newBody[attr] = body[attr];
+    }
+    return newBody;
+};
+
 
 const setUserAccess = async (mongoId, username, hasAccess) => {
     // prevent update to questionable fields
@@ -53,7 +63,7 @@ const setUserAccess = async (mongoId, username, hasAccess) => {
         });
     }
 
-    await RoboscapeCol.update({ _id: mongoId }, robotRec);
+    await RoboscapeCol.update({ _id: mongoId }, {$set: {users: robotRec.users}});
     return robotRec;
 };
 
@@ -140,9 +150,7 @@ const routes = [
         Handler: async function(req) {
             // prevent update to questionable fields
             const schema = ['username', 'hasAccess'];
-            const body = req.body;
-            // make sure the request body has the same keys as schema
-            if (schema.sort() === Object.keys(body).sort()) throw new Error('bad body structure, expected ' + schema.join(', '));
+            const body = sanitizeBody(req.body, schema);
             return setUserAccess(req.params._id, body.username, body.hasAccess);
         }
     },
