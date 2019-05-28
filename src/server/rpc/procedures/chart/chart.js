@@ -66,9 +66,9 @@ function calcRanges(lines, isCategorical){
 }
 
 function prepareData(input, options) {
-    // if the input is one line convert it to appropriate format
     const xShouldBeNumeric = !options.isCategorical && !options.isTimeSeries;
-
+    
+    // if the input is one line convert it to appropriate format
     if (Array.isArray(input) && !Array.isArray(input[0]) || !Array.isArray(input[0][0]) && input[0].length === 2){
         chart._logger.trace('one line input detected');
         input = [input];
