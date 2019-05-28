@@ -48,7 +48,8 @@ function dataToPlot(data, opts){
     return settings.join(', ') + points;
 }
 
-let draw = (data, opts) => {
+
+module.exports.draw = function(data, opts){
     // apply the defaults
     let graph = gnuplot();
     data = data.map(line => _.merge({}, lineDefaults, line));
@@ -95,8 +96,4 @@ let draw = (data, opts) => {
     graph.plot(dataToPlot(data, opts),{end: true});
 
     return graph;
-};
-
-module.exports = {
-    draw,
 };

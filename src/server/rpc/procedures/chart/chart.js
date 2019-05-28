@@ -69,21 +69,30 @@ function prepareData(input, options) {
     // if the input is one line convert it to appropriate format
     const xShouldBeNumeric = !options.isCategorical && !options.isTimeSeries;
 
-    if (! Array.isArray(input[0][0])){
+    if (Array.isArray(input) && !Array.isArray(input[0]) || !Array.isArray(input[0][0]) && input[0].length === 2){
         chart._logger.trace('one line input detected');
         input = [input];
     }
 
     input = input.map( line => {
+
+        chart._logger.info(line);
+
         if (!Array.isArray(line)) {
             chart._logger.warn('input is not an array!', line);
-            throw 'chart input is not an array';
+            throw 'Chart input must be an array';
         }
+
+        // If only one dimension is given
+        if(line.every(pt => !Array.isArray(pt))){
+            line = line.map((pt,idx) => ([idx, pt]));
+        }
+
         line.map(pt => {
             let [x,y] = pt;
             if (!Array.isArray(pt)) {
                 chart._logger.warn('input is not an array!', pt);
-                throw 'all input points should be in [x,y] form';
+                throw 'All input points should be in [x,y] form';
             }
             if (xShouldBeNumeric) pt[0] = parseFloat(pt[0]);
             pt[1] = parseFloat(pt[1]);
@@ -100,6 +109,11 @@ function prepareData(input, options) {
     return input;
 }
 
+/**
+ * Truncates a string with an elipsis if it is too long.
+ * @param {String} word String to truncate
+ * @param {Number} len Length
+ */
 function truncate(word, len) {
     if (word.length > len) {
         return word.substring(0, len) + '...';
@@ -108,7 +122,7 @@ function truncate(word, len) {
 }
 
 
-// generate gnuplot friendly line objects
+// Generate gnuplot friendly line objects
 function genGnuData(lines, lineTitles, lineTypes, smoothing){
     return lines.map((pts, idx) => {
         let lineObj = {points: pts};
@@ -131,6 +145,7 @@ chart.draw = function(lines, options){
         if (options[key] === 'null' || options[key] === ''){
             delete options[key];
         }
+
         if (options[key] === 'true') options[key] = true;
         if (options[key] === 'false') options[key] = false;
     });
@@ -150,23 +165,36 @@ chart.draw = function(lines, options){
         y: stats.y.range !== 0 ? stats.y.range * 0.05 : 1
     };
 
-    //TODO auto set to boxes if categorical?
+    //TODO auto set to boxes if categorical? 
 
-    let opts = {title: options.title, xLabel: options.xLabel, yLabel: options.yLabel, isCategorical: options.isCategorical};
-    opts.yRange = {min: stats.y.min - relativePadding.y, max: stats.y.max + relativePadding.y};
+    let opts = {
+        title: options.title,
+        xLabel: options.xLabel, 
+        yLabel: options.yLabel, 
+        isCategorical: options.isCategorical
+    };
+
+    opts.yRange = {
+        min: stats.y.min - relativePadding.y, 
+        max: stats.y.max + relativePadding.y
+    };
+
     if (options.yRange.length === 2) opts.yRange = {min: options.yRange[0], max: options.yRange[1]};
 
     if (!options.isCategorical){
         relativePadding.x = stats.x.range !== 0 ? stats.x.range * 0.05 : 1;
         opts.xRange = {min: stats.x.min - relativePadding.x, max: stats.x.max + relativePadding.x};
-        if (options.xRange.length === 2) opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
+
+        if (options.xRange.length === 2) {
+            opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
+        }
     }
 
     if (options.isTimeSeries) {
         opts.timeSeries = {
             axis: 'x',
             inputFormat: options.timeInputFormat,
-            outputFormat: options.timeDisplayFormat
+            outputFormat: options.timeDisplayFormat 
         };
     }
     // setup grid
@@ -192,7 +220,7 @@ chart.draw = function(lines, options){
     let data = genGnuData(lines, options.labels, options.types, options.smooth);
     this._logger.trace('charting with options', opts);
     try {
-        var chartStream =  gnuPlot.draw(data, opts);
+        var chartStream = gnuPlot.draw(data, opts);
     } catch (e) {
         this.response.status(500).send('error in drawing the plot. bad input.');
         return null;
