@@ -1,15 +1,15 @@
 /**
- * Charting service powered by Gnuplot
+ * Charting service powered by gnuplot
  *
  * @service
  */
 
-const ApiConsumer = require('../utils/api-consumer'),
+const NBService = require('../utils/service'),
     rpcUtils = require('../utils'),
     gnuPlot = require('./node-gnuplot.js'),
     _ = require('lodash');
 
-let chart = new ApiConsumer('Chart');
+let chart = new NBService('Chart');
 
 const defaults = {
     title: undefined,
@@ -73,6 +73,7 @@ function prepareData(input, options) {
         chart._logger.trace('one line input detected');
         input = [input];
     }
+
     input = input.map( line => {
         if (!Array.isArray(line)) {
             chart._logger.warn('input is not an array!', line);
@@ -261,6 +262,10 @@ chart.defaultOptions = function(){
 
 chart.COMPATIBILITY = {
     deprecatedMethods: ['drawBarChart', 'drawLineChart']
+};
+
+chart.isSupported = () => { 
+    return require('command-exists').sync('gnuplot');
 };
 
 module.exports = chart;
