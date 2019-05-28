@@ -292,8 +292,14 @@ chart.COMPATIBILITY = {
     deprecatedMethods: ['drawBarChart', 'drawLineChart']
 };
 
-chart.isSupported = () => { 
-    return require('command-exists').sync('gnuplot');
+chart.isSupported = () => {
+    if(!require('command-exists').sync('gnuplot')){
+        /* eslint-disable no-console*/
+        console.error('gnuplot is not installed, Chart RPC disabled.');
+        /* eslint-enable no-console*/
+        return false;
+    }
+    return true;
 };
 
 module.exports = chart;
