@@ -37,9 +37,7 @@ class DBConsumer extends NBService {
         if (skip === '') skip = 0;
         if (limit === '') limit = 10;
 
-        if(limit !== -1){
-            limit = Math.min(limit, 50); // limit the max requested documents
-        }
+        limit = Math.min(limit, 50); // limit the max requested documents
 
         if(!Array.isArray(field)){
             field = [field];
@@ -51,10 +49,20 @@ class DBConsumer extends NBService {
             if (!this._fields().find(attr => attr === field[i])) throw new Error('bad field name');
         
             // build the database query
-            dbQuery[field[i]] = new RegExp(`.*${query[i]}.*`, 'i');
+            if(typeof(query[i]) === 'string'){
+                dbQuery[field[i]] = new RegExp(`.*${query[i]}.*`, 'i');
+            } else {
+                dbQuery[field[i]] = query[i];
+            }
         }
-        let res = await this._model.find(dbQuery).skip(skip).limit(limit);
 
+        let res;
+
+        if(limit === -1){
+            res = await this._model.find(dbQuery).skip(skip);          
+        } else {
+            res = await this._model.find(dbQuery).skip(skip).limit(limit);
+        }
         return res.map(this._cleanDbRec);
     }
 
