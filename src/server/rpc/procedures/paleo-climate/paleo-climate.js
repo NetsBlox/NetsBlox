@@ -30,7 +30,6 @@ function seed() {
         filePath:  path.join(__dirname, 'composite.csv'),
         recParser:function(aRecord) { // optional
             if (isNaN(parseInt(aRecord.year))){
-                paleo._logger.warn(aRecord);
                 return null; 
             }else{
                 aRecord.year = parseInt(aRecord.year); 
@@ -48,8 +47,6 @@ function seed() {
             return aRecord;
         }
     };
-
-    paleo._logger.warn(opts);
   
     //make rec parser funciton and then call this with seeder 
     seeder(PaleoObject, opts);
@@ -77,42 +74,41 @@ paleo.dataTypes = function() {
     return ['Oxygen', 'Carbon Dioxide']; 
 }; 
 			
-paleo.getData = function(startyear = undefined, endyear = undefined, datatype = undefined, core = undefined){	// blank query gives total list
+paleo.getData = function(startyear = '', endyear = '', datatype = '', core = ''){	// blank query gives total list
 
     const fields = [];
     const queries = [];
 
-    if(startyear !== undefined || endyear !== undefined){
+    if(startyear !== '' || endyear !== ''){
         fields.push('year');
 
         const query = {};
 
-        if(startyear !== undefined){
+        if(startyear !== ''){
             query['$gte'] = Number.parseInt(startyear);
         }
 
-        if(endyear !== undefined){
+        if(endyear !== ''){
             query['$lte'] = Number.parseInt(endyear);
         }
 
         queries.push(query);
     }
 
-
-    if(datatype !== undefined){
+    if(datatype !== ''){
         fields.push('datatype');
 
         // Needs test for valid
         queries.push(datatype);
     }
 
-    if(core !== undefined){
+    if(core !== ''){
         fields.push('core');
 
         // Needs test for valid
         queries.push(core);
     }
-
+    
     return this._advancedSearch(fields, queries, 0, -1);
 };
 
