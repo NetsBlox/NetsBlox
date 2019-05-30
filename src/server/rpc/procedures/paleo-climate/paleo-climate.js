@@ -10,8 +10,8 @@ const path = require('path');
 const schemaDef = {
     core: String,
     datatype: String,
-    year: String,
-    value: String
+    year: Number,
+    value: Number
 };
 
 const PaleoObject = getServiceStorage ('paleo', schemaDef);
@@ -67,8 +67,7 @@ paleo.dataTypes = function() {
     return ['Oxygen', 'Carbon Dioxide']; 
 }; 
 			
-paleo.getData = function(startyear = '', endyear = '', datatype = '', core = ''){	// blank query gives total list
-
+paleo.getAllData = function(startyear = '', endyear = '', datatype = '', core = ''){	// blank query gives total list
     const fields = [];
     const queries = [];
 
@@ -89,28 +88,46 @@ paleo.getData = function(startyear = '', endyear = '', datatype = '', core = '')
     }
 
     if(datatype !== ''){
+        if(datatype === 'CO2'){
+            datatype = 'Carbon Dioxide';
+        }
+
+        if(datatype === 'O2'){
+            datatype = 'Oxygen';
+        }
+
         fields.push('datatype');
 
-        // Needs test for valid
+        // Test for valid
+        if(this.dataTypes().indexOf(datatype) === -1){
+            throw 'Invalid datatype';
+        }
+
         queries.push(datatype);
     }
 
     if(core !== ''){
         fields.push('core');
 
-        // Needs test for valid
+        // Test for valid
+        if(this.cores().indexOf(core) === -1){
+            throw 'Invalid datatype';
+        }
+
         queries.push(core);
     }
     
     const res = this._advancedSearch(fields, queries, 0, -1).then(list => {
-        console.log(list);
         return list.map(entry => {
             return [entry.year, entry.core, entry.datatype, entry.value];
         });
     });
 
-    console.log(res.length);
     return res;
+};
+
+paleo.getColumnData = function(startyear, endyear, datatype, core){
+    return paleo.getAllData(startyear, endyear, datatype, core).then(result => result.map(row => [row[0],row[3]]));    
 };
 
 paleo.serviceName = 'PaleoClimate';
