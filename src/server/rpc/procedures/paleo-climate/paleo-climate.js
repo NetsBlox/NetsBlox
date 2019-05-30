@@ -24,8 +24,6 @@ const featuredFields = [
     'value'
 ];
 
-paleo._genRPCs(featuredFields);
-
 function seed() {
     const opts = {
         url: undefined, 
@@ -58,7 +56,7 @@ function seed() {
 }
 
 // Test for existing data
-paleo.searchByCore('Dome C').then(result =>
+paleo._advancedSearch('core', 'Dome C').then(result =>
 {
     if(result.length === 0){
         paleo._logger.warn('No Paleo Climate RPC data found, attempting to load from composite.csv');
@@ -78,6 +76,45 @@ paleo.cores = function() {
 paleo.dataTypes = function() {
     return ['Oxygen', 'Carbon Dioxide']; 
 }; 
+			
+paleo.getData = function(startyear = undefined, endyear = undefined, datatype = undefined, core = undefined){	// blank query gives total list
+
+    const fields = [];
+    const queries = [];
+
+    if(startyear !== undefined || endyear !== undefined){
+        fields.push('year');
+
+        const query = {};
+
+        if(startyear !== undefined){
+            query['$gte'] = Number.parseInt(startyear);
+        }
+
+        if(endyear !== undefined){
+            query['$lte'] = Number.parseInt(endyear);
+        }
+
+        queries.push(query);
+    }
+
+
+    if(datatype !== undefined){
+        fields.push('datatype');
+
+        // Needs test for valid
+        queries.push(datatype);
+    }
+
+    if(core !== undefined){
+        fields.push('core');
+
+        // Needs test for valid
+        queries.push(core);
+    }
+
+    return this._advancedSearch(fields, queries, 0, -1);
+};
 
 paleo.serviceName = 'PaleoClimate';
 
