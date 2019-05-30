@@ -17,13 +17,6 @@ const schemaDef = {
 const PaleoObject = getServiceStorage ('paleo', schemaDef);
 const paleo = new DBConsumer('paleo', PaleoObject);
 
-const featuredFields = [
-    'core',
-    'datatype',
-    'year',
-    'value'
-];
-
 function seed() {
     const opts = {
         url: undefined, 
@@ -109,7 +102,15 @@ paleo.getData = function(startyear = '', endyear = '', datatype = '', core = '')
         queries.push(core);
     }
     
-    return this._advancedSearch(fields, queries, 0, -1);
+    const res = this._advancedSearch(fields, queries, 0, -1).then(list => {
+        console.log(list);
+        return list.map(entry => {
+            return [entry.year, entry.core, entry.datatype, entry.value];
+        });
+    });
+
+    console.log(res.length);
+    return res;
 };
 
 paleo.serviceName = 'PaleoClimate';

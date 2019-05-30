@@ -20,7 +20,6 @@ class DBConsumer extends NBService {
         this._model = model;
     }
 
-
     _cleanDbRec(rec) {
         delete rec._doc._id;
         delete rec._doc.__v;
@@ -59,13 +58,13 @@ class DBConsumer extends NBService {
         let res;
 
         if(limit === -1){
-            res = await this._model.find(dbQuery).skip(skip);          
+            res = await this._model.find(dbQuery).skip(skip);
         } else {
             res = await this._model.find(dbQuery).skip(skip).limit(limit);
         }
+        
         return res.map(this._cleanDbRec);
     }
-
 
     // create rpcs from a list of interesting fields
     _genRPCs(featuredFields) {
@@ -83,7 +82,6 @@ class DBConsumer extends NBService {
             };
         });
     }
-
 }
 
 module.exports = DBConsumer;
