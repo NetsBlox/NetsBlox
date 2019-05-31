@@ -1,7 +1,9 @@
 /**
- * access to NOAA paleo
+ * Access to NOAA Paleoclimatology ice core data
+ * https://www.ncdc.noaa.gov/data-access/paleoclimatology-data/datasets/ice-core
  * @service
  */
+
 const DBConsumer = require('../utils/db-consumer');
 const getServiceStorage = require('../../advancedStorage');
 const seeder = require('../utils/csv-loader');
@@ -17,6 +19,9 @@ const schemaDef = {
 const PaleoObject = getServiceStorage ('paleo', schemaDef);
 const paleo = new DBConsumer('paleo', PaleoObject);
 
+/**
+ * Sets up the database
+ */
 function seed() {
     const opts = {
         url: undefined, 
@@ -41,32 +46,43 @@ function seed() {
         }
     };
   
-    //make rec parser funciton and then call this with seeder 
     seeder(PaleoObject, opts);
 }
 
 // Test for existing data
 paleo._advancedSearch('core', 'Dome C').then(result =>
 {
+    // Database needs to be set up
     if(result.length === 0){
         paleo._logger.warn('No Paleo Climate RPC data found, attempting to load from composite.csv');
         seed();
     }
 });
 
-//get list of fields in database
-paleo.fields = function() {
-    return this._fields();
-};
-
+/**
+ * Get all valid names of ice cores
+ * @returns {Array}
+ */
 paleo.cores = function() {
     return ['Dome C', 'Law', 'WAIS', 'GRIP']; 
 }; 
 
+/**
+ * Get all valid names of data types
+ * @returns {Array}
+ */
 paleo.dataTypes = function() {
     return ['Oxygen', 'Carbon Dioxide']; 
 }; 
-			
+            
+/**
+ * Get data for all columns matching the given fields
+ * @param {Number=} startyear Year to begin data at
+ * @param {Number=} endyear Year to begin data at
+ * @param {String=} datatype Data type to retrieve
+ * @param {String=} core Core to get data from
+ * @returns {Array}
+ */
 paleo.getAllData = function(startyear = '', endyear = '', datatype = '', core = ''){	// blank query gives total list
     const fields = [];
     const queries = [];
@@ -76,6 +92,7 @@ paleo.getAllData = function(startyear = '', endyear = '', datatype = '', core = 
 
         const query = {};
 
+        // Range query for years
         if(startyear !== ''){
             query['$gte'] = Number.parseInt(startyear);
         }
@@ -88,6 +105,7 @@ paleo.getAllData = function(startyear = '', endyear = '', datatype = '', core = 
     }
 
     if(datatype !== ''){
+        // Allow shorthand
         if(datatype === 'CO2'){
             datatype = 'Carbon Dioxide';
         }
@@ -117,15 +135,22 @@ paleo.getAllData = function(startyear = '', endyear = '', datatype = '', core = 
         queries.push(core);
     }
     
-    const res = this._advancedSearch(fields, queries, 0, -1).then(list => {
+    // Perform search
+    return this._advancedSearch(fields, queries, 0, -1).then(list => {
         return list.map(entry => {
             return [entry.year, entry.core, entry.datatype, entry.value];
         });
     });
-
-    return res;
 };
-
+    
+/**
+ * Get years and one datatype column matching the given fields
+ * @param {Number} startyear Year to begin data at
+ * @param {Number} endyear Year to begin data at
+ * @param {String} datatype Data type to retrieve
+ * @param {String} core Core to get data from
+ * @returns {Array}
+ */
 paleo.getColumnData = function(startyear, endyear, datatype, core){
     return paleo.getAllData(startyear, endyear, datatype, core).then(result => result.map(row => [row[0],row[3]]));    
 };
