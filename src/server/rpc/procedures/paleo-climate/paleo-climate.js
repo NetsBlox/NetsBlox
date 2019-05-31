@@ -83,7 +83,7 @@ paleo.dataTypes = function() {
  * @param {String=} core Core to get data from
  * @returns {Array}
  */
-paleo.getAllData = function(startyear = '', endyear = '', datatype = '', core = ''){	// blank query gives total list
+paleo.getAllData = function(startyear, endyear, datatype, core){	// blank query gives total list
     const fields = [];
     const queries = [];
 
