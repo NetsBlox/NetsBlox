@@ -88,8 +88,6 @@ paleo.getAllData = function(startyear, endyear, datatype, core){	// blank query 
     const queries = [];
 
     if(startyear !== '' || endyear !== ''){
-        fields.push('year');
-
         const query = {};
 
         // Range query for years
@@ -101,6 +99,7 @@ paleo.getAllData = function(startyear, endyear, datatype, core){	// blank query 
             query['$lte'] = Number.parseInt(endyear);
         }
 
+        fields.push('year');
         queries.push(query);
     }
 
@@ -114,33 +113,29 @@ paleo.getAllData = function(startyear, endyear, datatype, core){	// blank query 
             datatype = 'Oxygen';
         }
 
-        fields.push('datatype');
-
         // Test for valid
         if(this.dataTypes().indexOf(datatype) === -1){
             throw 'Invalid datatype';
         }
 
+        fields.push('datatype');
         queries.push(datatype);
     }
 
     if(core !== ''){
-        fields.push('core');
-
         // Test for valid
         if(this.cores().indexOf(core) === -1){
             throw 'Invalid datatype';
         }
 
+        fields.push('core');
         queries.push(core);
     }
     
     // Perform search
-    return this._advancedSearch(fields, queries, 0, -1).then(list => {
-        return list.map(entry => {
-            return [entry.year, entry.core, entry.datatype, entry.value];
-        });
-    });
+    return this._advancedSearch(fields, queries, 0, -1).then(list => 
+        list.map(entry => [entry.year, entry.core, entry.datatype, entry.value])
+    );
 };
     
 /**
