@@ -57,6 +57,9 @@ paleo._advancedSearch('core', 'Dome C').then(result =>
         paleo._logger.warn('No Paleo Climate RPC data found, attempting to load from composite.csv');
         seed();
     }
+}).catch(() => {
+    paleo._logger.warn('No Paleo Climate RPC data found, attempting to load from composite.csv');
+    seed();
 });
 
 /**
