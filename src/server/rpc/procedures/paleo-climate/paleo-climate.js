@@ -107,9 +107,7 @@ paleo.getAllData = function(startyear, endyear, datatype, core){	// blank query 
         // Allow shorthand
         if(datatype === 'CO2'){
             datatype = 'Carbon Dioxide';
-        }
-
-        if(datatype === 'O2'){
+        } else if(datatype === 'O2'){
             datatype = 'Oxygen';
         }
 

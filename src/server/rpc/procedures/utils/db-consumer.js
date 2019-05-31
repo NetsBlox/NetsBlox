@@ -1,19 +1,24 @@
 const NBService = require('./service.js');
 
-// converts a phrase into camel case format
+/**
+ * Converts a phrase into camel case format
+ * @param {String} text 
+ */
 function toCamelCase(text) {
     // create uppercc
-    let cc = text.toLowerCase()
+    return text.toLowerCase()
         .split(' ')
         .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
         .join('');
-    return cc;
 }
 
+/**
+ * Base for RPC services using the database as a source
+ */
 class DBConsumer extends NBService {
     /**
-    * @param {string} serviceName a valid service name
-    * @param {object} model mongoose model
+    * @param {String} serviceName a valid service name
+    * @param {Object} model mongoose model
     */
     constructor(serviceName, model) {
         super(serviceName);
@@ -45,12 +50,15 @@ class DBConsumer extends NBService {
 
         let dbQuery = {};
         for(let i in field){
-            if (!this._fields().find(attr => attr === field[i])) throw new Error('bad field name');
+            if (!this._fields().find(attr => attr === field[i])){
+                throw new Error('bad field name');
+            }
         
-            // build the database query
+            // Build the database query
             if(typeof(query[i]) === 'string'){
                 dbQuery[field[i]] = new RegExp(`.*${query[i]}.*`, 'i');
             } else {
+                // Allow for query objects to be passed in
                 dbQuery[field[i]] = query[i];
             }
         }
@@ -66,7 +74,10 @@ class DBConsumer extends NBService {
         return res.map(this._cleanDbRec);
     }
 
-    // create rpcs from a list of interesting fields
+    /**
+     * Generates RPC functions from a list of fields
+     * @param {Array<String>} featuredFields Names of fields to generate functions for
+     */
     _genRPCs(featuredFields) {
         featuredFields.forEach(field => {
             // make sure the field exists
