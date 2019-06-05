@@ -13,30 +13,30 @@ const table2 = [
 
 const co2service = {};
 
-co2service.serviceName = "CO2Data";
+co2service.serviceName = 'CO2Data';
 /**
  *displays a table listing the year and month, and the corresponding interpolated and seasonal ppm values
  * @param {string} text - select which columns to display in the table, either "whole," "seasonal", or "interpolated"
  * @returns {array} table displaying the years and months from March 1958 to April 2019 and the data type inputted
  */
 co2service.getTable = function(text){
-    lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line, last) {
-        if (line.startsWith("#")) {
+    lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
+        if (line.startsWith('#')) {
             //pass
-        } else if (text.toUpperCase() === "INTERPOLATED"){
+        } else if (text.toUpperCase() === 'INTERPOLATED'){
 
             let year = line.substring(0, 4);
             let month = line.substring(4, 8).trim();
             let inter = line.substring(38, 44);
             let localArr = [year, month, inter/*, season*/];
             table1.push(localArr);
-        } else if (text.toUpperCase() === "SEASONAL") {
+        } else if (text.toUpperCase() === 'SEASONAL') {
             let year = line.substring(0, 4);
             let month = line.substring(4, 8).trim();
             let season = line.substring(50, 56);
             let localArr = [year, month/*, inter*/, season];
             table2.push(localArr);
-        } else if (text.toUpperCase() === "WHOLE") {
+        } else if (text.toUpperCase() === 'WHOLE') {
             let year = line.substring(0, 4);
             let month = line.substring(4, 8).trim();
             let inter = line.substring(38, 44);
@@ -47,14 +47,14 @@ co2service.getTable = function(text){
     });
 
     switch (text.toUpperCase()) {
-        case 'WHOLE':
-            return table;
-        case 'INTERPOLATED':
-            return table1;
-        case 'SEASONAL':
-            return table2;
-        default:
-            return [['Invalid text']];
+    case 'WHOLE':
+        return table;
+    case 'INTERPOLATED':
+        return table1;
+    case 'SEASONAL':
+        return table2;
+    default:
+        return [['Invalid text']];
     }
 };
 /**
@@ -78,7 +78,7 @@ co2service.getPPM = function(year, month, type) {
  * @returns {array} array - shows the different values that can be inputted into the "text" fields of the various related RPCs
  */
 co2service.showTypes = function(){
-    return ['seasonal', "interpolated", "whole"];
+    return ['seasonal', 'interpolated', 'whole'];
 };
 
 module.exports = co2service;
