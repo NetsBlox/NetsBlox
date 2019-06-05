@@ -75,10 +75,10 @@ co2service.getPPM = function(year, month, type) {
 };
 /**
  *displays the different message options that can be entered into the text field parameters of related RPCs
- * @returns {string} string - shows the different values that can be inputted into the "text" field of the various related RPCs
+ * @returns {array} array - shows the different values that can be inputted into the "text" fields of the various related RPCs
  */
 co2service.showTypes = function(){
-    return "seasonal, interpolated, whole -- for getTable; seasonal or interpolated -- for getPPM";
+    return ['seasonal', "interpolated", "whole"];
 };
 
 module.exports = co2service;
