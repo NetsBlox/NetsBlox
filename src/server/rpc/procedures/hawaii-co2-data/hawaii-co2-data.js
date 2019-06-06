@@ -16,47 +16,50 @@ const co2service = {};
 co2service.serviceName = 'CO2Data';
 /**
  *displays a table listing the year and month, and the corresponding interpolated and seasonal ppm values
- * @param {string} text - select which columns to display in the table, either "whole," "seasonal", or "interpolated"
  * @returns {array} table displaying the years and months from March 1958 to April 2019 and the data type inputted
  */
-co2service.getTable = function(text){
+co2service.getInterpolated = function(){
     lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
         if (line.startsWith('#')) {
             //pass
-        } else if (text.toUpperCase() === 'INTERPOLATED'){
-
+        } else {
             let year = line.substring(0, 4);
             let month = line.substring(4, 8).trim();
             let inter = line.substring(38, 44);
             let localArr = [year, month, inter/*, season*/];
             table1.push(localArr);
-        } else if (text.toUpperCase() === 'SEASONAL') {
+        }});
+    return table1;
+    };
+
+co2service.getSeasonal = function(){
+    lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
+        if (line.startsWith('#')) {
+            //pass
+        } else {
             let year = line.substring(0, 4);
             let month = line.substring(4, 8).trim();
             let season = line.substring(50, 56);
             let localArr = [year, month/*, inter*/, season];
             table2.push(localArr);
-        } else if (text.toUpperCase() === 'WHOLE') {
+        }});
+    return table2;
+    };
+co2service.getWhole = function(){
+    lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
+        if (line.startsWith('#')) {
+            //pass
+        } else {
             let year = line.substring(0, 4);
             let month = line.substring(4, 8).trim();
             let inter = line.substring(38, 44);
             let season = line.substring(50, 56);
             let localArr = [year, month, inter, season];
             table.push(localArr);
-        }
-    });
-
-    switch (text.toUpperCase()) {
-    case 'WHOLE':
-        return table;
-    case 'INTERPOLATED':
-        return table1;
-    case 'SEASONAL':
-        return table2;
-    default:
-        return [['Invalid text']];
-    }
+        }});
+    return table;
 };
+
 /**
  *returns the specified ppm value after inputting the year, month, and type of data
  * @param {BoundedNumber<1958,2019>} year - year between 1958 and 2019 to return the selected ppm of
@@ -65,7 +68,7 @@ co2service.getTable = function(text){
  * @returns {string} ppm value - the selected type of ppm that matches the inputted year and month
  */
 co2service.getPPM = function(year, month, type) {
-    let result = this.getTable(type);
+    let result = this.getWhole(type);
     let ppm = '';
     result.forEach(function (value) {
         if (value[0] === year.toString() && value[1] === month.toString())
