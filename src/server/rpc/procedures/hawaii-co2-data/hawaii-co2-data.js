@@ -1,6 +1,5 @@
 const lineReader = require('line-reader');
 const path = require('path');
-const logger = require('../utils/logger')('hawaii-co2-data');
 
 const table = [
     ['Year', 'Month', 'Interpolated ppm', 'Seasonally adjusted ppm']
@@ -12,6 +11,21 @@ const table2 = [
     ['Year', 'Month', 'Seasonally adjusted ppm']
 ];
 
+
+lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
+    if (!line.startsWith('#')) {
+        let year = line.substring(0, 4);
+        let month = line.substring(4, 8).trim();
+        let inter = line.substring(38, 44);
+        let season = line.substring(50, 56);
+        let wholeArr = [year, month, inter, season];
+        let interpolatedArr = [year, month, inter];
+        let seasonalArr = [year, month, season];
+        table.push(wholeArr);
+        table1.push(interpolatedArr);
+        table2.push(seasonalArr);
+    }});
+
 const co2service = {};
 
 co2service.serviceName = 'CO2Data';
@@ -22,16 +36,6 @@ co2service.serviceName = 'CO2Data';
  */
 
 co2service.getInterpolated = function(){
-    lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
-        if (line.startsWith('#')) {
-            //pass
-        } else {
-            let year = line.substring(0, 4);
-            let month = line.substring(4, 8).trim();
-            let inter = line.substring(38, 44);
-            let localArr = [year, month, inter/*, season*/];
-            table1.push(localArr);
-        }});
     return table1;
 };
 
@@ -41,16 +45,6 @@ co2service.getInterpolated = function(){
  */
 
 co2service.getSeasonal = function(){
-    lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
-        if (line.startsWith('#')) {
-            //pass
-        } else {
-            let year = line.substring(0, 4);
-            let month = line.substring(4, 8).trim();
-            let season = line.substring(50, 56);
-            let localArr = [year, month/*, inter*/, season];
-            table2.push(localArr);
-        }});
     return table2;
 };
 
@@ -60,17 +54,6 @@ co2service.getSeasonal = function(){
  */
 
 co2service.getWhole = function(){
-    lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
-        if (line.startsWith('#')) {
-            //pass
-        } else {
-            let year = line.substring(0, 4);
-            let month = line.substring(4, 8).trim();
-            let inter = line.substring(38, 44);
-            let season = line.substring(50, 56);
-            let localArr = [year, month, inter, season];
-            table.push(localArr);
-        }});
     return table;
 };
 /**
@@ -78,44 +61,31 @@ co2service.getWhole = function(){
  * @param {BoundedNumber<1958,2019>} year - year between 1958 and 2019 to return the selected ppm of
  * @param {BoundedNumber<1,12>=} month - numerical value of the month to return the selected ppm of
  * @param {string} type - select which type of data to be returned, either "seasonal" or "interpolated"
- * @returns {string} ppm value - the selected type of ppm that matches the inputted year and month
+ * @returns {String} ppm value - the selected type of ppm that matches the inputted year and month
  */
 co2service.getPPM = function(year, month, type) {
     let ppm = '';
     const ppmTable = [['Year', 'Month', 'ppm']];
     let result = this.getWhole(type);
-    let result1 = this.getInterpolated(type);
-    let result2 = this.getSeasonal(type);
+
     if (month === ''){
-        return (new Promise(function(resolve, reject) {
-            lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
-                if (line.startsWith(year)) {
-                    if (type.toUpperCase() === 'SEASONAL') {
-                        ppm = line.substring(50, 56);
-                        let year = line.substring(0,4);
-                        let month = line.substring(4,8).trim();
-                        let localArr = [year, month, ppm];
-                        ppmTable.push(localArr);
-                    } else if (type.toUpperCase() === 'INTERPOLATED') {
-                        ppm = line.substring(38, 44);
-                        let year = line.substring(0,4);
-                        let month = line.substring(4,8).trim();
-                        let localArr = [year, month, ppm];
-                        ppmTable.push(localArr);
-                    }
-                    logger.debug(ppmTable);
-                }
-            }, function(err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        })).then(function() {
-            return ppmTable;
+        result = result.filter(function(value) {
+            return value[0] === year.toString();
         });
 
+        result = result.map(function(value){
+
+            if (type.toUpperCase() === 'SEASONAL'){
+                return [value[0], value[1], value[3]];
+            }
+            else if (type.toUpperCase() === 'INTERPOLATED'){
+                return [value[0], value[1], value[2]];
+            }
+
+            return value[0];
+        });
+
+        return [...ppmTable, ...result];
     } else {
         result.forEach(function (value) {
             if (value[0] === year.toString() && value[1] === month.toString())
