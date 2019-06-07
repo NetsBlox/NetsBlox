@@ -5,8 +5,9 @@ describe('hawaii-co2-data', function() {
         co2 = new RPCMock(HawaiiCO2Service);
 
     utils.verifyRPCInterfaces(co2, [
-        ['getTable', ['text']],
+        ['getInterpolated', []],
+        ['getSeasonal', []],
+        ['getWhole', []],
         ['getPPM', ['year', 'month', 'type']],
-        ['showTypes', []],
     ]);
 });

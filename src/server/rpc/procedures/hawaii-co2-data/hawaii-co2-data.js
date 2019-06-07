@@ -15,10 +15,12 @@ const table2 = [
 const co2service = {};
 
 co2service.serviceName = 'CO2Data';
+
 /**
- *displays a table listing the year and month, and the corresponding interpolated and seasonal ppm values
- * @returns {array} table displaying the years and months from March 1958 to April 2019 and the data type inputted
+ *displays a table listing the year, month, and interpolated ppm values
+ * @returns {array} table displaying the years and months from March 1958 to April 2019 and the corresponding interpolated ppm values
  */
+
 co2service.getInterpolated = function(){
     lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
         if (line.startsWith('#')) {
@@ -33,6 +35,11 @@ co2service.getInterpolated = function(){
     return table1;
 };
 
+/**
+ *displays a table listing the year, month, and seasonally adjusted ppm values
+ * @returns {array} table displaying the years and months from March 1958 to April 2019 and the corresponding seasonal ppm values
+ */
+
 co2service.getSeasonal = function(){
     lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
         if (line.startsWith('#')) {
@@ -46,6 +53,12 @@ co2service.getSeasonal = function(){
         }});
     return table2;
 };
+
+/**
+ *displays a table listing the year, month, interpolated ppm values, and seasonally adjusted ppm values
+ * @returns {array} table displaying the years and months from March 1958 to April 2019 and the corresponding interpolated and seasonal ppm values
+ */
+
 co2service.getWhole = function(){
     lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
         if (line.startsWith('#')) {
@@ -60,10 +73,16 @@ co2service.getWhole = function(){
         }});
     return table;
 };
-
+/**
+ *returns the specified ppm value after inputting the year, month, and type of data
+ * @param {BoundedNumber<1958,2019>} year - year between 1958 and 2019 to return the selected ppm of
+ * @param {BoundedNumber<1,12>=} month - numerical value of the month to return the selected ppm of
+ * @param {string} type - select which type of data to be returned, either "seasonal" or "interpolated"
+ * @returns {string} ppm value - the selected type of ppm that matches the inputted year and month
+ */
 co2service.getPPM = function(year, month, type) {
     let ppm = '';
-    const ppmTable = [[year, month, ppm]];
+    const ppmTable = [['Year', 'Month', 'ppm']];
     let result = this.getWhole(type);
     let result1 = this.getInterpolated(type);
     let result2 = this.getSeasonal(type);
@@ -109,16 +128,6 @@ co2service.getPPM = function(year, month, type) {
         });
     }
     return ppm;
-};
-//pass
-
-
-/**
- *displays the different message options that can be entered into the text field parameters of related RPCs
- * @returns {array} array - shows the different values that can be inputted into the "text" fields of the various related RPCs
- */
-co2service.showTypes = function(){
-    return ['seasonal', 'interpolated', 'whole'];
 };
 
 module.exports = co2service;
