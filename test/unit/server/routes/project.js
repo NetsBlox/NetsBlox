@@ -12,14 +12,12 @@ describe('project routes', function() {
         Server,
         server;
 
-    before(function(done) {
-        utils.reset()
-            .then(() => {
-                Server = utils.reqSrc('server');
-                server = new Server(options);
-                api = supertest('http://localhost:'+port+'/api');
-                server.start(done);
-            });
+    before(async function() {
+        await utils.reset()
+        Server = utils.reqSrc('server');
+        server = new Server(options);
+        api = supertest('http://localhost:'+port+'/api');
+        return await server.start();
     });
 
     after(function(done) {

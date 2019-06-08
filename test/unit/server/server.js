@@ -19,14 +19,13 @@ describe('Server Tests', function() {
         username = 'test',
         server;
 
-    before(function(done) {
-        utils.reset().then(() => {
-            const Server = utils.reqSrc('server');
-            server = new Server(options);
-            server.start(done);
-            api = supertest('http://localhost:'+port+'/api');
-            index = supertest('http://localhost:'+port);
-        });
+    before(async  function() {
+        await utils.reset();
+        const Server = utils.reqSrc('server');
+        server = new Server(options);
+        await server.start();
+        api = supertest('http://localhost:'+port+'/api');
+        index = supertest('http://localhost:'+port);
     });
 
     after(function(done) {
