@@ -16,7 +16,7 @@ lineReader.eachLine(path.join(__dirname,'hurdat2-1851-2018-051019.txt'), functio
         let day = line.substring(6,8);
         let time = line.substring(10,14);
         let recordID = line.substring(15,17);
-        let status = line.substring(18,21);
+        let status = line.substring(18,21).trim();
         let latitude = line.substring(23,27);
         let longitude = '-' + line.substring(31,35);
         let maxWind = line.substring(39,41);
@@ -33,29 +33,47 @@ const hurricaneTracker = {};
 
 hurricaneTracker.serviceName = 'HurricaneInfo';
 
+/**
+ * returns a table displaying all of the recorded hurricanes and their respective information
+ * @returns {Array} table - displays hurricane information since 1851
+ */
+
 hurricaneTracker.parseTable = function(){
     return table;
 };
 
-hurricaneTracker.getHurricane = function(text){
+/**
+ *
+ * @param {string} name - name of the hurricane
+ * @param {string} year - year that the hurricane occurred in
+ * @returns {array} table - table with the information for all hurricanes matching the inputted name
+ */
+
+hurricaneTracker.getHurricane = function(name, year){
     let parsedTable = [table[0]];
     for (let i = 1; i < table.length; i++) {
-        if (table[i].includes(text.toUpperCase())) {
+        if (table[i][0] === name.toUpperCase() && table[i][1] === year.toString()){
             parsedTable.push(table[i]);
         }
     }
     if (parsedTable.length === 1) {
-        return 'Invalid Hurricane Name';
+        return 'Invalid Hurricane Name or Year';
     }
     else {
         return parsedTable;
     }
 };
 
-hurricaneTracker.getYearList = function(date){
+/**
+ *
+ * @param {string} year - year to display in the table
+ * @returns {array} table - table with the information for all hurricanes within the entered year
+ */
+
+hurricaneTracker.getDataForYear = function(year){
     let parsedTable = [table[0]];
     for (let i = 1; i < table.length; i++) {
-        if (table[i].includes(date)) {
+        if (table[i][1] === year.toString()) {
             parsedTable.push(table[i]);
         }
     }
@@ -67,24 +85,50 @@ hurricaneTracker.getYearList = function(date){
     }
 };
 
-hurricaneTracker.getLatitude = function(name){
+/**
+ *
+ * @param {string} name - name of the hurricane to get the latitude of
+ * @param {string} year - year that the hurricane occurred in
+ * @returns {Array} table - list of all of the latitudes of the hurricane matching the entered parameters
+ */
+
+hurricaneTracker.getLatitude = function(name, year){
+    let latitudes = [];
     for (let i = 1; i < table.length; i++) {
-        if (table[i].includes(name)) {
+        if (table[i][0] === name.toUpperCase() && table[i][1] === year.toString()) {
             let row = table[i];
-            return row[7];
+            latitudes.push(row[7]);
         }
     }
-    return 'Invalid name';
+    if (latitudes.length === 0) {
+        return 'Invalid name or year';
+    }
+    else {
+        return latitudes;
+    }
 };
 
-hurricaneTracker.getLongitude = function(name){
+/**
+ *
+ * @param {string} name - name of the hurricane to get the longitude of
+ * @param {string} year - year that the hurricane occurred in
+ * @returns {Array} table - list of all of the longitudes of the hurricane matching the entered parameters
+ */
+
+hurricaneTracker.getLongitude = function(name, year){
+    let longitudes = [];
     for (let i = 1; i < table.length; i++) {
-        if (table[i].includes(name)) {
+        if (table[i][0] === name.toUpperCase() && table[i][1] === year.toString()) {
             let row = table[i];
-            return row[8];
+            longitudes.push(row[8]);
         }
     }
-    return 'Invalid name';
+    if (longitudes.length === 0) {
+        return 'Invalid name or year';
+    }
+    else {
+        return longitudes;
+    }
 };
 /*hurricaneTracker.parseTable2 = function(){
     const table2 = [
