@@ -7,7 +7,7 @@ const table = [
 
 let name = '';
 
-lineReader.eachLine(path.join(__dirname,'hurdat2-1851-2018-051019.txt'), function (line, last) {
+lineReader.eachLine(path.join(__dirname,'hurdat2-1851-2018-051019.txt'), function (line) {
     if (line.startsWith('AL')){
         name = line.substring(19, 28).trim();
     } else {
