@@ -170,9 +170,11 @@ paleo._getAllData = function(startyear, endyear, datatype, core){	// blank query
     }
     
     // Perform search
-    return this._advancedSearch(fields, queries, 0, -1).then(list => 
-        list.map(entry => [entry.year, entry.core, entry.datatype, entry.value])
-    );
+    return this._advancedSearch(fields, queries, 0, -1).then(list => {
+        let formatted = list.map(entry => [entry.year, entry.core, entry.datatype, entry.value]);
+        formatted = formatted.filter((r, idx, list) => list.findIndex(row => row[0] === r[0]) >= idx);
+        return formatted.sort((a,b) => a[0] - b[0]);
+    });
 };
     
 /**
