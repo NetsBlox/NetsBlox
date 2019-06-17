@@ -147,7 +147,7 @@ paleo._getAllData = function(startyear, endyear, datatype, core){	// blank query
     if(datatype !== ''){
         // Allow shorthand
         if(Object.keys(this._shorthand).indexOf(datatype.toLowerCase()) !== -1){
-            datatype = this._shorthand[datatype];
+            datatype = this._shorthand[datatype.toLowerCase()];
         }
 
         // Test for valid
