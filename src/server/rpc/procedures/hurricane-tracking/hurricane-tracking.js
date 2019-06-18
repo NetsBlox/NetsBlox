@@ -26,6 +26,18 @@ lineReader.eachLine(path.join(__dirname,'hurdat2-1851-2018-051019.txt'), functio
     }
 });
 
+/*const table2 = ['name', 'year'];
+lineReader.eachLine(path.join(__dirname,'hurdat2-1851-2018-051019.txt'), function (line) {
+    if (line.startsWith('AL')){
+        name = line.substring(19, 28).trim();
+    }
+    else {
+        let year = line.substring(0,4);
+    }
+    let data = [name, year];
+    table2.push(data);
+});*/
+
 const hurricaneTracker = {};
 
 hurricaneTracker.serviceName = 'HurricaneInfo';
@@ -35,7 +47,7 @@ hurricaneTracker.serviceName = 'HurricaneInfo';
  * @returns {Array} table - displays hurricane information since 1851
  */
 
-hurricaneTracker.parseTable = function(){
+hurricaneTracker.getFullTable = function(){
     return table;
 };
 
@@ -67,11 +79,16 @@ hurricaneTracker.getHurricane = function(name, year){
  * @returns {array} table - table with the information for all hurricanes within the entered year
  */
 
-hurricaneTracker.getDataForYear = function(year){
-    let parsedTable = [table[0]];
+hurricaneTracker.getNamesForYear = function(year){
+
+/*
+    return table2;
+*/
+    let parsedTable = Array();
     for (let i = 1; i < table.length; i++) {
         if (table[i][1] === year.toString()) {
-            parsedTable.push(table[i]);
+            if (!parsedTable.includes(table[i][0]))
+                parsedTable.push(table[i][0]);
         }
     }
     if (parsedTable.length === 1) {
