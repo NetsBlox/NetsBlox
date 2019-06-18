@@ -5,9 +5,9 @@ describe('hurricane-tracking', function() {
         hurricaneTracking = new RPCMock(HurricaneInfo);
 
     utils.verifyRPCInterfaces(hurricaneTracking, [
-        ['parseTable', []],
+        ['getFullTable', []],
         ['getHurricane', ['name', 'year']],
-        ['getDataForYear', ['year']],
+        ['getNamesForYear', ['year']],
         ['getLatitude', ['name', 'year']],
         ['getLongitude', ['name', 'year']],
     ]);
