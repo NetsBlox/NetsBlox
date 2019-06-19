@@ -11,26 +11,82 @@ const key = process.env.PARALLELDOTS_KEY;
 DotsConsumer._parallelDotsRequest = function (query, text){
     let body = `api_key=${key}&text=${encodeURI(text)}`;
     return this._sendAnswer({queryString: query, method: 'POST',
-    headers: {
-        'Content-Type' : 'application/x-www-form-urlencoded',}, body: body})
+        headers: {
+            'Content-Type' : 'application/x-www-form-urlencoded',}, body: body})
         .catch(err => {
             throw err;
         });
-}
+};
 
 /**
  * @param {String} text
+ */
+DotsConsumer.sentiment = function( text ) {
+    return this._parallelDotsRequest('/sentiment', text);
+};
+
+/**
+ * @param {String} text1 Should be a long text (more than 2 words)
+ * @param {String} text2 Should be a long text (more than 2 words)
+ */
+DotsConsumer.similarity = function( text1, text2 ) {
+    let body = `api_key=${key}&text_1=${encodeURI(text1)}&text_2=${encodeURI(text2)}`;
+    return this._sendAnswer({queryString: '/similarity', method: 'POST',
+        headers: {
+            'Content-Type' : 'application/x-www-form-urlencoded',}, body: body})
+        .catch(err => {
+            throw err;
+        });
+};
+
+/**
+ * @param {String} text Long text to parse for Named Entities.
+ */
+DotsConsumer.ner = function( text ) {
+    return this._parallelDotsRequest('/ner', text);
+};
+
+/**
+ * @param {String} text Long text from which to extract keywords.
+ */
+DotsConsumer.keywords = function( text ) {
+    return this._parallelDotsRequest('/keywords', text);
+};
+
+/**
+ * @param {String} text Long text to categorize into IAB categories.
+ */
+DotsConsumer.taxonomy = function( text ) {
+    return this._parallelDotsRequest('/taxonomy', text);
+};
+
+/**
+ * @param {String} text  String to parse for emotional analysis
  */
 DotsConsumer.emotion = function( text ) {
     return this._parallelDotsRequest('/emotion', text);
-}
+};
 
 /**
- * @param {String} text
+ * @param {String} text String to parse for probability of sarcasm
  */
 DotsConsumer.sarcasm = function( text ) {
     return this._parallelDotsRequest('/sarcasm', text);
-}
+};
+
+/**
+ * @param {String} text  String to parse for its intent
+ */
+DotsConsumer.intent = function( text ) {
+    return this._parallelDotsRequest('/intent', text);
+};
+
+/**
+ * @param {String} text  String to parse for possible abuse
+ */
+DotsConsumer.abuse = function( text ) {
+    return this._parallelDotsRequest('/abuse', text);
+};
 
 
 DotsConsumer.isSupported = () => {
