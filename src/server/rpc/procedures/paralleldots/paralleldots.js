@@ -1,6 +1,9 @@
 /** 
+ * Uses ParallelDots AI to process or compare text for a variety of features.
+ * See the API documentation, at 
+ * http://apis.paralleldots.com/text_docs/index.html
  * 
- * 
+ * Terms of use: https://www.paralleldots.com/terms-and-conditions
  * @service
  */
 
