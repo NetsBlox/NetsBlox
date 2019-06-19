@@ -2,60 +2,60 @@ const lineReader = require('line-reader');
 const path = require('path');
 
 const table = [
-    ['timeDelta', 'oxygenIsotopeRatio', 'deepOceanTemp', 'surfaceTemp', 'seaLevel']
+    ['year', 'oxygenIsotopeRatio', 'deepOceanTemp', 'surfaceTemp', 'seaLevel']
 ];
 
 lineReader.eachLine(path.join(__dirname,'Table.txt'), function (line) {
-    let timeDelta = 2000 - line.substring(0, 7) * 1000000;
+    let year = 2000 - line.substring(0, 7) * 1000000;
     let oxygenIsotopeRatio = line.substring(8, 14);
     let deepOceanTemp = line.substring(16, 22);
     let surfaceTemp = line.substring(24, 30);
     let seaLevel = line.substring(32, 38).trim();
-    let data = [timeDelta, oxygenIsotopeRatio, deepOceanTemp, surfaceTemp, seaLevel];
+    let data = [year, oxygenIsotopeRatio, deepOceanTemp, surfaceTemp, seaLevel];
     table.push(data);
 });
 
 const table2 = [
-    ['timeDelta', 'oxygenIsotopeRatio']
+    ['year', 'oxygenIsotopeRatio']
 ];
 
 lineReader.eachLine(path.join(__dirname,'Table.txt'), function (line) {
-    let timeDelta = 2000 - line.substring(0, 7) * 1000000;
+    let year = 2000 - line.substring(0, 7) * 1000000;
     let oxygenIsotopeRatio = line.substring(8, 14);
-    let data = [timeDelta, oxygenIsotopeRatio];
+    let data = [year, oxygenIsotopeRatio];
     table2.push(data);
 });
 
 const table3 = [
-    ['timeDelta', 'deepOceanTemp']
+    ['year', 'deepOceanTemp']
 ];
 
 lineReader.eachLine(path.join(__dirname,'Table.txt'), function (line) {
-    let timeDelta = 2000 - line.substring(0, 7) * 1000000;
+    let year = 2000 - line.substring(0, 7) * 1000000;
     let deepOceanTemp = line.substring(16, 22);
-    let data = [timeDelta, deepOceanTemp];
+    let data = [year, deepOceanTemp];
     table3.push(data);
 });
 
 const table4 = [
-    ['timeDelta', 'surfaceTemp']
+    ['year', 'surfaceTemp']
 ];
 
 lineReader.eachLine(path.join(__dirname,'Table.txt'), function (line) {
-    let timeDelta = 2000 - line.substring(0, 7) * 1000000;
+    let year = 2000 - line.substring(0, 7) * 1000000;
     let surfaceTemp = line.substring(24, 30);
-    let data = [timeDelta, surfaceTemp];
+    let data = [year, surfaceTemp];
     table4.push(data);
 });
 
 const table5 = [
-    ['timeDelta', 'seaLevel']
+    ['year', 'seaLevel']
 ];
 
 lineReader.eachLine(path.join(__dirname,'Table.txt'), function (line) {
-    let timeDelta = 2000 - line.substring(0, 7) * 1000000;
+    let year = 2000 - line.substring(0, 7) * 1000000;
     let seaLevel = line.substring(32, 38).trim();
-    let data = [timeDelta, seaLevel];
+    let data = [year, seaLevel];
     table5.push(data);
 });
 
