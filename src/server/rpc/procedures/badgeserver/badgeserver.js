@@ -76,7 +76,7 @@ BadgeConsumer.getdata = function ( group, bucket, n ){
  * @param {String} signal  The arbitrary data you want to store in that bucket.
  */
 BadgeConsumer.setsignal = function ( group, bucket, signal ){
-    let body = `signal=${encodeURI(signal)}`;
+    let body = ''; //`signal=${encodeURI(signal)}`;
     return this._sendAnswer({queryString: '/badgerstate/signal/'+group+'/'+bucket+'/'+signal, method: 'POST',
         headers: {
             'Content-Type' : 'application/x-www-form-urlencoded',}, body: body})
