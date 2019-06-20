@@ -7,13 +7,14 @@
  */
 
 const ApiConsumer = require('../utils/api-consumer');
-const BadgeConsumer = new ApiConsumer('BadgeServer', 'http://rendupo.com:8000',{cache: {ttl: 1}});
+//const BadgeConsumer = new ApiConsumer('BadgeServer', 'http://rendupo.com:8000',{cache: {ttl: 1}});
+const BadgeConsumer = new ApiConsumer('BadgeServer', 'https://gallery.app.vanderbilt.edu',{cache: {ttl: 1}});
 
 /**
  * @param {String} groupid  The group that you want to join.
  */
 BadgeConsumer.join = function ( groupid ){
-    let body = `group-id=${encodeURI(groupid)}`;
+    let body = ''; //`group-id=${encodeURI(groupid)}`;
     return this._sendAnswer({queryString: '/badgerstate/join/'+groupid+'/', method: 'POST',
         headers: {
             'Content-Type' : 'application/x-www-form-urlencoded',}, body: body})
@@ -26,10 +27,10 @@ BadgeConsumer.join = function ( groupid ){
 /**
  * @param {String} groupid  The group whose participants you want to list.
  */
-BadgeConsumer.participants = function ( theid ){
+BadgeConsumer.participants = function ( groupid ){
     //let body = `group-id=${encodeURI(theid)}`;
     let body = '';
-    return this._sendAnswer({queryString: '/badgerstate/participants/'+theid+'/', method: 'GET',
+    return this._sendAnswer({queryString: '/badgerstate/participants/'+groupid+'/', method: 'GET',
         headers: {
             'Content-Type' : 'application/x-www-form-urlencoded',}, body: body})
         .catch(err => {
