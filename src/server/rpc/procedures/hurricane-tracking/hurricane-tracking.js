@@ -5,11 +5,14 @@ const table = [
     ['name', 'year', 'month', 'day', 'time', 'recordID', 'status', 'latitude', 'longitude', 'maxWind', 'minPressure']
 ];
 
-let name = '';
+let ALname = '';
+let EPname = '';
 
-lineReader.eachLine(path.join(__dirname,'hurdat2-1851-2018-051019.txt'), function (line) {
+const parseLine = function (type, line) {
     if (line.startsWith('AL')){
-        name = line.substring(19, 28).trim();
+        ALname = line.substring(19, 28).trim();
+    } else if (line.startsWith('EP')){
+        EPname = line.substring(19, 28).trim();
     } else {
         let year = line.substring(0, 4);
         let month = line.substring(4,6);
@@ -18,32 +21,16 @@ lineReader.eachLine(path.join(__dirname,'hurdat2-1851-2018-051019.txt'), functio
         let recordID = line.substring(15,17);
         let status = line.substring(18,21).trim();
         let latitude = line.substring(23,27);
-        let longitude = '-' + line.substring(31,35);
+        let longitude = '-' + line.substring(30,35).trim();
         let maxWind = line.substring(39,41);
         let minPressure = line.substring(43,47).trim();
-        let data = [name, year, month, day, time, recordID, status, latitude, longitude, maxWind, minPressure];
+        let data = [type === 'AL'? ALname : EPname, year, month, day, time, recordID, status, latitude, longitude, maxWind, minPressure];
         table.push(data);
     }
-});
+};
 
-/*lineReader.eachLine(path.join(__dirname,'hurdat2-nepac-1949-2017-050418.txt'), function (line) {
-    if (line.startsWith('EP')){
-        name = line.substring(19, 28).trim();
-    } else {
-        let year = line.substring(0, 4);
-        let month = line.substring(4,6);
-        let day = line.substring(6,8);
-        let time = line.substring(10,14);
-        let recordID = line.substring(15,17);
-        let status = line.substring(18,21).trim();
-        let latitude = line.substring(23,27);
-        let longitude = '-' + line.substring(31,35);
-        let maxWind = line.substring(39,41);
-        let minPressure = line.substring(43,47).trim();
-        let data = [name, year, month, day, time, recordID, status, latitude, longitude, maxWind, minPressure];
-        table.push(data);
-    }
-});*/
+lineReader.eachLine(path.join(__dirname,'hurdat2-1851-2018-051019.txt'), parseLine.bind(null, 'AL'));
+lineReader.eachLine(path.join(__dirname,'hurdat2-nepac-1949-2017-050418.txt'), parseLine.bind(null, 'EP'));
 
 const hurricaneTracker = {};
 
