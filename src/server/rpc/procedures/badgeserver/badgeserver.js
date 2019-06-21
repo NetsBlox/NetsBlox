@@ -58,9 +58,24 @@ BadgeConsumer.adddata = function ( group, bucket, thedata ){
  * @param {String} bucket  The 'bucket' whose data you're adding to (the participant).
  * @param {String} n  The number of records to get; 0 for all.
  */
-BadgeConsumer.getdata = function ( group, bucket, n ){
+BadgeConsumer.getdata_n = function ( group, bucket, n ){
     let body = '';
-    return this._sendAnswer({queryString: '/badgerstate/data/'+group+'/'+bucket+'/'+n, method: 'GET',
+    return this._sendAnswer({queryString: '/badgerstate/n-data/'+group+'/'+bucket+'/'+n, method: 'GET',
+        headers: {
+            'Content-Type' : 'application/x-www-form-urlencoded',}, body: body})
+        .catch(err => {
+            throw err;
+        });
+};
+
+/**
+ * @param {String} group  The group that you want to join.
+ * @param {String} bucket  The 'bucket' whose data you're adding to (the participant).
+ * @param {String} t  The timestamp marking the beginning of the data you'd like .
+ */
+BadgeConsumer.getdata_t = function ( group, bucket, t ){
+    let body = '';
+    return this._sendAnswer({queryString: '/badgerstate/data/'+group+'/'+bucket+'/'+t, method: 'GET',
         headers: {
             'Content-Type' : 'application/x-www-form-urlencoded',}, body: body})
         .catch(err => {
