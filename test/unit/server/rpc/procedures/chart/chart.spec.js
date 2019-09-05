@@ -17,6 +17,8 @@ describe('chart', function() {
         const opts = chart.defaultOptions();
         const expectedOpts = [
             'title',
+            'width',
+            'height',
             'labels',
             'types',
             'xRange',
