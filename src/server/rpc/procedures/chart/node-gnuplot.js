@@ -54,7 +54,7 @@ module.exports.draw = function(data, opts){
     let graph = gnuplot();
     data = data.map(line => _.merge({}, lineDefaults, line));
     opts = _.merge({}, optsDefaults, opts);
-    graph.set('term pngcairo')
+    graph.set(`term pngcairo size ${opts.width}, ${opts.height}`)
         .set(`loadpath '${__dirname}'`)
         .set('load \'xyborder.cfg\'')
 
