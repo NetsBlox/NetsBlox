@@ -13,6 +13,8 @@ let chart = new NBService('Chart');
 
 const defaults = {
     title: undefined,
+    width: 480,
+    height: 360,
     labels: [],
     types: [],
     xRange: [],
@@ -167,12 +169,7 @@ chart.draw = function(lines, options){
 
     //TODO auto set to boxes if categorical? 
 
-    let opts = {
-        title: options.title,
-        xLabel: options.xLabel, 
-        yLabel: options.yLabel, 
-        isCategorical: options.isCategorical
-    };
+    let opts = _.pick(options, ['title', 'width', 'height', 'xLabel', 'yLabel', 'isCategorical']);
 
     opts.yRange = {
         min: stats.y.min - relativePadding.y, 
