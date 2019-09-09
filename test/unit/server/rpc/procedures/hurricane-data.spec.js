@@ -1,4 +1,4 @@
-describe.only('hurricane-tracking', function() {
+describe('hurricane-tracking', function() {
     const utils = require('../../../../assets/utils');
     const HurricaneData = utils.reqSrc('rpc/procedures/hurricane-data/hurricane-data'),
         RPCMock = require('../../../../assets/mock-rpc'),
