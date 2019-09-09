@@ -29,7 +29,7 @@ HurricaneData._data = [];
             let longitude = '-' + line.substring(30,35).trim();
             let maxWind = line.substring(39,41);
             let minPressure = line.substring(43,47).trim();
-            let data = [name, year, month, day, time, recordID, status, latitude, longitude, maxWind, minPressure];
+
             HurricaneData._data.push({name, year, month, day, time, recordID, status,
                 latitude, longitude, maxWind, minPressure});
         }
@@ -56,7 +56,7 @@ HurricaneData._data = [];
 HurricaneData.getHurricaneData = function(name, year){
     name = name.toUpperCase();
     const measurements = HurricaneData._data
-        .filter(data => data.name === name && data.year == year)
+        .filter(data => data.name === name && data.year == year);
 
     return measurements;
 };
