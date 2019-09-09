@@ -20,7 +20,7 @@ OceanData._data = fs.readFileSync(path.join(__dirname,'Table.txt'), 'utf8')
         let deepOceanTemp = line.substring(16, 22);
         let surfaceTemp = line.substring(24, 30);
         let seaLevel = line.substring(32, 38).trim();
-        return {year, oxygenIsotopeRatio, deepOceanTemp, surfaceTemp, seaLevel}
+        return {year, oxygenIsotopeRatio, deepOceanTemp, surfaceTemp, seaLevel};
     });
 
 /**
