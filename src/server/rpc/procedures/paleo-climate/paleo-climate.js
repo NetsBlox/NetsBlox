@@ -23,7 +23,7 @@ const DATA_TYPES = ['Oxygen', 'Carbon Dioxide', 'Deuterium', 'Temperature'];
 /**
  * Sets up the database
  */
-function seed() {
+function importData() {
     const opts = {
         url: undefined, 
         filePath:  path.join(__dirname, 'composite.csv'),
@@ -55,26 +55,12 @@ function seed() {
 }
 
 // Test for existing data
-// FIXME: There is a simpler test that we could do here...
-PaleoClimate._advancedSearch('core', 'Dome C').then(result =>
-{
-    // Database needs to be set up
-    if(result.length === 0){
-        PaleoClimate._logger.warn('No Paleo Climate RPC data found, attempting to load from composite.csv');
-        seed();
+PaleoStorage.findOne({}).then(result => {
+    if (!result) {
+        PaleoClimate._logger.warn('No data found in database, importing from data files.');
+        importData();
     }
-}).catch(() => {
-    PaleoClimate._logger.warn('No Paleo Climate RPC data found, attempting to load from composite.csv');
-    seed();
 });
-
-/**
- * Get all valid names of ice cores
- * @returns {Array}
- */
-PaleoClimate.getIceCoreNames = function() {
-    return ['Dome C', 'Law', 'WAIS', 'GRIP', 'Vostok']; 
-}; 
 
 // Core meta-data
 PaleoClimate._coreMetadata = {
@@ -116,14 +102,13 @@ PaleoClimate._coreMetadata = {
     }
 };
 
-PaleoClimate._shorthand = {
-    'co2': 'Carbon Dioxide',
-    'o2': 'Oxygen',
-    'carbondioxide': 'Carbon Dioxide',
-    'oxy': 'Oxygen',
-    'carbon dioxide': 'Carbon Dioxide',
-    'oxygen': 'Oxygen',
-};
+/**
+ * Get all valid names of ice cores
+ * @returns {Array}
+ */
+PaleoClimate.getIceCoreNames = function() {
+    return Object.keys(PaleoClimate._coreMetadata); 
+}; 
 
 /**
  * Get data for all columns matching the given fields
@@ -154,11 +139,6 @@ PaleoClimate._getAllData = function(core, datatype, startyear='', endyear=''){	/
     }
 
     if(datatype !== ''){
-        // Allow shorthand
-        if(Object.keys(this._shorthand).indexOf(datatype.toLowerCase()) !== -1){
-            datatype = this._shorthand[datatype.toLowerCase()];
-        }
-
         // Test for valid
         if(!DATA_TYPES.includes(datatype)){
             throw 'Invalid datatype';
