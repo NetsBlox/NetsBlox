@@ -159,13 +159,14 @@ RPCManager.prototype.createRouter = function() {
     });
 
     // For each RPC, create the respective endpoints
+    const rpcNames = this.rpcs.map(rpc => rpc.serviceName);
+    this._logger.info(`Adding services: ${rpcNames.join(', ')}`);
     this.rpcs.forEach(this.addRoute.bind(this, router));
 
     return router;
 };
 
 RPCManager.prototype.addRoute = function(router, RPC) {
-    this._logger.info(`Adding route for ${RPC.serviceName}`);
     router.route(`/${RPC.serviceName}/:action`)
         .post(this.handleRPCRequest.bind(this, RPC));
 

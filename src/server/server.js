@@ -364,10 +364,10 @@ Server.prototype.createRouter = function() {
 
     middleware.init(this);
 
+    logger.trace('loading API routes');
     routes.forEach(api => {
         var method = api.Method.toLowerCase();
         api.URL = '/' + api.URL;
-        logger.trace(`adding "${method}" to ${api.URL}`);
 
         // Add the middleware
         if (api.middleware && api.middleware.length > 0) {
