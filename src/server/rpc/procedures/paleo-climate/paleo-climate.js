@@ -1,22 +1,19 @@
 /**
  * Access to NOAA Paleoclimatology ice core data
  * https://www.ncdc.noaa.gov/data-access/paleoclimatology-data/datasets/ice-core
+ *
  * @service
  */
 
 const DBConsumer = require('../utils/db-consumer');
 const getServiceStorage = require('../../advancedStorage');
-const seeder = require('../utils/csv-loader');
-const path = require('path');
-
-const schemaDef = {
+const schema = {
     core: String,
     datatype: String,
     year: Number,
     value: Number
 };
-
-const PaleoStorage = getServiceStorage ('PaleoClimate', schemaDef);
+const PaleoStorage = getServiceStorage ('PaleoClimate', schema);
 const PaleoClimate = new DBConsumer('PaleoClimate', PaleoStorage);
 const DATA_TYPES = ['Delta18O', 'Carbon Dioxide', 'Deuterium', 'Temperature'];
 
@@ -24,31 +21,6 @@ const DATA_TYPES = ['Delta18O', 'Carbon Dioxide', 'Deuterium', 'Temperature'];
  * Sets up the database
  */
 function importData() {
-    const opts = {
-        url: undefined, 
-        filePath:  path.join(__dirname, 'composite.csv'),
-        recParser:function(aRecord) { // optional
-            if (isNaN(parseInt(aRecord.year))){
-                return null; 
-            }else{
-                aRecord.year = parseInt(aRecord.year); 
-            } 
-            if (isNaN(parseFloat(aRecord.value))) {
-                return null; 
-            }else{
-                aRecord.CO2Concentration = parseFloat(aRecord.value); 
-            }
-            if (isNaN(parseFloat(aRecord.Error))){
-                delete aRecord.Error;
-            }else{
-                aRecord.Error = parseFloat(aRecord.Error); 
-            } 
-            return aRecord;
-        }
-    };
-  
-    seeder(PaleoStorage, opts);
-
     const records = require('./data');
     PaleoClimate._logger.info(`adding ${records.length} climate records`);
     PaleoStorage.insertMany(records);
