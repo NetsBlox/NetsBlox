@@ -8,6 +8,7 @@ const DBConsumer = require('../utils/db-consumer');
 const getServiceStorage = require('../../advancedStorage');
 const seeder = require('../utils/csv-loader');
 const path = require('path');
+const fs = require('fs');
 
 const schemaDef = {
     core: String,
@@ -16,8 +17,9 @@ const schemaDef = {
     value: Number
 };
 
-const PaleoObject = getServiceStorage ('paleo', schemaDef);
-const paleo = new DBConsumer('paleo', PaleoObject);
+const PaleoStorage = getServiceStorage ('PaleoClimate', schemaDef);
+const PaleoClimate = new DBConsumer('PaleoClimate', PaleoStorage);
+const DATA_TYPES = ['Oxygen', 'Carbon Dioxide', 'Deuterium', 'Temperature'];
 
 /**
  * Sets up the database
@@ -46,19 +48,24 @@ function seed() {
         }
     };
   
-    seeder(PaleoObject, opts);
+    seeder(PaleoStorage, opts);
+
+    const records = require('./data');
+    PaleoClimate._logger.info(`adding ${records.length} climate records`);
+    PaleoStorage.insertMany(records);
 }
 
 // Test for existing data
-paleo._advancedSearch('core', 'Dome C').then(result =>
+// FIXME: There is a simpler test that we could do here...
+PaleoClimate._advancedSearch('core', 'Dome C').then(result =>
 {
     // Database needs to be set up
     if(result.length === 0){
-        paleo._logger.warn('No Paleo Climate RPC data found, attempting to load from composite.csv');
+        PaleoClimate._logger.warn('No Paleo Climate RPC data found, attempting to load from composite.csv');
         seed();
     }
 }).catch(() => {
-    paleo._logger.warn('No Paleo Climate RPC data found, attempting to load from composite.csv');
+    PaleoClimate._logger.warn('No Paleo Climate RPC data found, attempting to load from composite.csv');
     seed();
 });
 
@@ -66,48 +73,51 @@ paleo._advancedSearch('core', 'Dome C').then(result =>
  * Get all valid names of ice cores
  * @returns {Array}
  */
-paleo.cores = function() {
-    return ['Dome C', 'Law', 'WAIS', 'GRIP']; 
+PaleoClimate.getIceCoreNames = function() {
+    return ['Dome C', 'Law', 'WAIS', 'GRIP', 'Vostok']; 
 }; 
 
 // Core meta-data
-paleo._longnames = {
-    'Dome C': 'Dome Charlie',
-    'Law': 'Law Dome',
-    'WAIS': 'West Antarctic Ice Sheet Divide',
-    'GRIP': 'Greenland Ice Core Project',
+PaleoClimate._coreMetadata = {
+    'Antarctic Composite CO2': {
+        name: 'Antarctic Composite CO2',
+        description: 'A composite dataset with records from various Antarctic ice cores.',
+        latitude: -75.09978,
+        longitude: 123.332196,
+    },
+    'Dome C': {
+        name: 'Dome Charlie',  // TODO: Change this
+        description: 'The European Project for Ice Coring in Antarctica began drilling in 1996, reaching 3270 meters deep.',
+        latitude: -75.09978,
+        longitude: 123.332196,
+    },
+    Law: {
+        name: 'Law Dome',
+        description: 'The Law Dome data comes from three ice cores in East Antarctica, drilled from 1987 to 1993.',
+        latitude: -66.733333,
+        longitude: 112.833333,
+    },
+    WAIS: {
+        name: 'West Antarctic Ice Sheet Divide',
+        description: 'The WAIS Divide Ice Core Project ran from 2005 to 2011, drilling 3405 meters deep, 50 meters above the bed of the sheet.',
+        latitude: -79.467472,
+        longitude: -112.086389,
+    },
+    GRIP: {
+        name: 'Greenland Ice Core Project',
+        description: 'The Greenland Ice Core Project ran from 1989 to 1995, drilling a 3029 meter ice core to the bed of the Greenland Ice Sheet.',
+        latitude: 72.579,
+        longitude: -37.565333,
+    },
+    Vostok: {
+        name: 'Vostok Ice Core',
+        description: 'In January 1998, the collaborative ice-drilling project between Russia, the United States, and France at the Russian Vostok station in East Antarctica yielded the deepest ice core ever recovered, reaching a depth of 3,623 m (Petit et al. 1997, 1999).',
+        latitude: -78.4644818,
+        longitude: 106.8317313,
+    }
 };
 
-paleo._descriptions = {
-    'Dome C': 'The European Project for Ice Coring in Antarctica began drilling in 1996, reaching 3270 meters deep.',
-    'Law': 'The Law Dome data comes from three ice cores in East Antarctica, drilled from 1987 to 1993.',
-    'WAIS': 'The WAIS Divide Ice Core Project ran from 2005 to 2011, drilling 3405 meters deep, 50 meters above the bed of the sheet.',
-    'GRIP': 'The Greenland Ice Core Project ran from 1989 to 1995, drilling a 3029 meter ice core to the bed of the Greenland Ice Sheet.',
-};
-
-paleo._latitudes = {
-    'Dome C': -75.09978,
-    'Law': -66.733333,
-    'WAIS': -79.467472,
-    'GRIP': 72.579,
-};
-
-paleo._longitudes = {
-    'Dome C': 123.332196,
-    'Law': 112.833333,
-    'WAIS': -112.086389,
-    'GRIP': -37.565333,
-};
-
-/**
- * Get all valid names of data types
- * @returns {Array}
- */
-paleo.dataTypes = function() {
-    return ['Oxygen', 'Carbon Dioxide']; 
-}; 
-         
-paleo._shorthand = {
+PaleoClimate._shorthand = {
     'co2': 'Carbon Dioxide',
     'o2': 'Oxygen',
     'carbondioxide': 'Carbon Dioxide',
@@ -124,7 +134,7 @@ paleo._shorthand = {
  * @param {String=} core Core to get data from
  * @returns {Array}
  */
-paleo._getAllData = function(startyear, endyear, datatype, core){	// blank query gives total list
+PaleoClimate._getAllData = function(core, datatype, startyear='', endyear=''){	// blank query gives total list
     const fields = [];
     const queries = [];
 
@@ -151,7 +161,7 @@ paleo._getAllData = function(startyear, endyear, datatype, core){	// blank query
         }
 
         // Test for valid
-        if(this.dataTypes().indexOf(datatype) === -1){
+        if(!DATA_TYPES.includes(datatype)){
             throw 'Invalid datatype';
         }
 
@@ -161,7 +171,7 @@ paleo._getAllData = function(startyear, endyear, datatype, core){	// blank query
 
     if(core !== ''){
         // Test for valid
-        if(this.cores().indexOf(core) === -1){
+        if(this.getIceCoreNames().indexOf(core) === -1){
             throw 'Invalid core';
         }
 
@@ -177,45 +187,68 @@ paleo._getAllData = function(startyear, endyear, datatype, core){	// blank query
     });
 };
     
+PaleoClimate._getColumnData = function(core, datatype, startyear, endyear){
+    return PaleoClimate._getAllData(core, datatype, startyear, endyear)
+        .then(result => result.map(row => [row[0],row[3]]));
+};
+
 /**
  * Get years and one datatype column matching the given fields
+ *
+ * @param {String} core Core to get data from
+ * @param {String} datatype Data type to retrieve
  * @param {Number} startyear Year to begin data at
  * @param {Number} endyear Year to begin data at
- * @param {String} datatype Data type to retrieve
- * @param {String} core Core to get data from
  * @returns {Array}
  */
-paleo.getColumnData = function(startyear, endyear, datatype, core){
-    return paleo._getAllData(startyear, endyear, datatype, core).then(result => result.map(row => [row[0],row[3]]));    
+PaleoClimate.getCarbonDioxideData = function(core, startyear, endyear){
+    return PaleoClimate._getColumnData(core, 'Carbon Dioxide', startyear, endyear);
+};
+
+// TODO: Add RPC annotations
+PaleoClimate.getOxygenData = function(core, startyear, endyear){
+    return PaleoClimate._getColumnData(core, 'Oxygen', startyear, endyear);
+};
+
+PaleoClimate.getDeuteriumData = function(core, startyear, endyear){
+    return PaleoClimate._getColumnData(core, 'Deuterium', startyear, endyear);
+};
+
+PaleoClimate.getTemperatureData = function(core, startyear, endyear){
+    return PaleoClimate._getColumnData(core, 'Temperature', startyear, endyear);
 };
 
 /**
  * Get metadata about a core. Returns full name, description, latitude, longitude, minimum date, maximum data, number of Carbon Dioxide datapoints, and number of Oxygen datapoints.
  * @param {String} core Name of core to get metadata of
  */
-paleo.getCoreMetadata = function(core){
+PaleoClimate.getCoreMetadata = function(core){
     // Test for valid
-    if(this.cores().indexOf(core) === -1){
-        throw 'Invalid core';
+    const metadata = this._coreMetadata[core];
+
+    if(!metadata) {
+        throw new Error('Invalid core');
     }
 
-    let longname = this._longnames[core];
-    let description = this._descriptions[core];
-    let lat = this._latitudes[core];
-    let lon = this._longitudes[core];
+    // TODO: This doesn't need to be recomputed each time...
+    return PaleoClimate._getAllData(core, '', '', '').then(result => {
+        const dataInfo = {};
+        DATA_TYPES
+            .forEach(type => dataInfo[type] = {count: 0, earliest: Infinity, latest: -Infinity});
 
-    return paleo._getAllData('', '', '', core).then(result => {
-        let dates = result.map(row => row[0]);
-        let mindate = Math.min(...dates);
-        let maxdate = Math.max(...dates);
-        let numco2points = result.filter(row => row[2] === 'Carbon Dioxide').length;
-        let numo2points = result.length - numco2points;
-    
-        return [longname, description, lat, lon, mindate, maxdate, numco2points, numo2points];    
+        result.forEach(row => {
+            const [date, , type] = row;
+            if (!dataInfo[type]) {
+                throw new Error(`Unrecognized data type "${type}" in dataset.`);
+            }
+            dataInfo[type].count += 1;
+            dataInfo[type].earliest = Math.min(dataInfo[type].earliest, date);
+            dataInfo[type].latest = Math.max(dataInfo[type].latest, date);
+        });
+
+        metadata.data = dataInfo;
+        return metadata;
     }); 
 };
 
-
-paleo.serviceName = 'PaleoClimate';
-
-module.exports = paleo;
+module.exports = PaleoClimate;
