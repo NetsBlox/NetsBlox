@@ -71,7 +71,7 @@ PaleoClimate._coreMetadata = {
         longitude: 123.332196,
     },
     'Dome C': {
-        name: 'Dome Charlie',  // TODO: Change this
+        name: 'Dome Charlie',
         description: 'The European Project for Ice Coring in Antarctica began drilling in 1996, reaching 3270 meters deep.',
         latitude: -75.09978,
         longitude: 123.332196,
