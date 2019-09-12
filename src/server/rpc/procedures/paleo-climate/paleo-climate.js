@@ -18,7 +18,7 @@ const schemaDef = {
 
 const PaleoStorage = getServiceStorage ('PaleoClimate', schemaDef);
 const PaleoClimate = new DBConsumer('PaleoClimate', PaleoStorage);
-const DATA_TYPES = ['Oxygen', 'Carbon Dioxide', 'Deuterium', 'Temperature'];
+const DATA_TYPES = ['Delta18O', 'Carbon Dioxide', 'Deuterium', 'Temperature'];
 
 /**
  * Sets up the database
@@ -172,7 +172,10 @@ PaleoClimate._getColumnData = function(core, datatype, startyear, endyear){
 };
 
 /**
- * Get years and one datatype column matching the given fields
+ * Get CO2 in ppm (parts per million) by year from the ice core.
+ *
+ * If a start and end year is provided, only measurements within the given range will be
+ * returned.
  *
  * @param {String} core Core to get data from
  * @param {String} datatype Data type to retrieve
@@ -184,24 +187,56 @@ PaleoClimate.getCarbonDioxideData = function(core, startyear, endyear){
     return PaleoClimate._getColumnData(core, 'Carbon Dioxide', startyear, endyear);
 };
 
-// TODO: Add RPC annotations
-PaleoClimate.getOxygenData = function(core, startyear, endyear){
-    return PaleoClimate._getColumnData(core, 'Oxygen', startyear, endyear);
+/**
+ * Get delta-O-18 in per mil (parts per thousand) by year from the ice core.
+ *
+ * If a start and end year is provided, only measurements within the given range will be
+ * returned.
+ *
+ * @param {String} core Ice core to get data from
+ * @param {Number} startyear
+ * @param {Number} endyear
+ * @returns {Array}
+ */
+PaleoClimate.getDelta18OData = function(core, startyear, endyear){
+    return PaleoClimate._getColumnData(core, 'Delta18O', startyear, endyear);
 };
 
+/**
+ * Get deuterium in per mil (parts per thousand) by year from the ice core.
+ *
+ * If a start and end year is provided, only measurements within the given range will be
+ * returned.
+ *
+ * @param {String} core Ice core to get data from
+ * @param {Number} startyear
+ * @param {Number} endyear
+ * @returns {Array}
+ */
 PaleoClimate.getDeuteriumData = function(core, startyear, endyear){
     return PaleoClimate._getColumnData(core, 'Deuterium', startyear, endyear);
 };
 
+/**
+ * Get temperature difference by year from the ice core.
+ *
+ * If a start and end year is provided, only measurements within the given range will be
+ * returned.
+ *
+ * @param {String} core Ice core to get data from
+ * @param {Number} startyear
+ * @param {Number} endyear
+ * @returns {Array}
+ */
 PaleoClimate.getTemperatureData = function(core, startyear, endyear){
     return PaleoClimate._getColumnData(core, 'Temperature', startyear, endyear);
 };
 
 /**
- * Get metadata about a core. Returns full name, description, latitude, longitude, minimum date, maximum data, number of Carbon Dioxide datapoints, and number of Oxygen datapoints.
+ * Get metadata about an ice core including statistics about the available data.
  * @param {String} core Name of core to get metadata of
  */
-PaleoClimate.getCoreMetadata = function(core){
+PaleoClimate.getIceCoreMetadata = function(core){
     // Test for valid
     const metadata = this._coreMetadata[core];
 
