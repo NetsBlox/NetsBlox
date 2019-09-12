@@ -8,7 +8,6 @@ const DBConsumer = require('../utils/db-consumer');
 const getServiceStorage = require('../../advancedStorage');
 const seeder = require('../utils/csv-loader');
 const path = require('path');
-const fs = require('fs');
 
 const schemaDef = {
     core: String,
