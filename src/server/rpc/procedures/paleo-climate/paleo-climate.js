@@ -185,8 +185,8 @@ PaleoClimate.getIceCoreNames = function() {
  *
  * @param {String} core Core to get data from
  * @param {String} datatype Data type to retrieve
- * @param {Number} startyear Year to begin data at
- * @param {Number} endyear Year to begin data at
+ * @param {Number=} startyear Year to begin data at
+ * @param {Number=} endyear Year to begin data at
  * @returns {Array}
  */
 PaleoClimate.getCarbonDioxideData = function(core, startyear, endyear){
@@ -200,8 +200,8 @@ PaleoClimate.getCarbonDioxideData = function(core, startyear, endyear){
  * returned.
  *
  * @param {String} core Ice core to get data from
- * @param {Number} startyear
- * @param {Number} endyear
+ * @param {Number=} startyear
+ * @param {Number=} endyear
  * @returns {Array}
  */
 PaleoClimate.getDelta18OData = function(core, startyear, endyear){
@@ -215,8 +215,8 @@ PaleoClimate.getDelta18OData = function(core, startyear, endyear){
  * returned.
  *
  * @param {String} core Ice core to get data from
- * @param {Number} startyear
- * @param {Number} endyear
+ * @param {Number=} startyear
+ * @param {Number=} endyear
  * @returns {Array}
  */
 PaleoClimate.getDeuteriumData = function(core, startyear, endyear){
@@ -230,8 +230,8 @@ PaleoClimate.getDeuteriumData = function(core, startyear, endyear){
  * returned.
  *
  * @param {String} core Ice core to get data from
- * @param {Number} startyear
- * @param {Number} endyear
+ * @param {Number=} startyear
+ * @param {Number=} endyear
  * @returns {Array}
  */
 PaleoClimate.getTemperatureData = function(core, startyear, endyear){
