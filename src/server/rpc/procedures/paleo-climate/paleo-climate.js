@@ -5,8 +5,10 @@
  * @service
  */
 
+const _ = require('lodash');
 const DBConsumer = require('../utils/db-consumer');
 const getServiceStorage = require('../../advancedStorage');
+const DATA_TYPES = ['Delta18O', 'Carbon Dioxide', 'Deuterium', 'Temperature'];
 const schema = {
     core: String,
     datatype: String,
@@ -15,15 +17,42 @@ const schema = {
 };
 const PaleoStorage = getServiceStorage ('PaleoClimate', schema);
 const PaleoClimate = new DBConsumer('PaleoClimate', PaleoStorage);
-const DATA_TYPES = ['Delta18O', 'Carbon Dioxide', 'Deuterium', 'Temperature'];
+const schemaMetadata = {core: String};
+DATA_TYPES
+    .forEach(type => schemaMetadata[type] = {count: Number, earliest: Number, latest: Number});
+const PaleoMetadata = getServiceStorage ('PaleoClimateMetadata', schemaMetadata);
 
 /**
  * Sets up the database
  */
 function importData() {
     const records = require('./data');
+
+    const metadata = {};
+    const initCoreMetadata = core => {
+        const stats = {core};
+        DATA_TYPES
+            .forEach(type => stats[type] = {count: 0, earliest: Infinity, latest: -Infinity});
+        return stats;
+    };
+
+    for (let i = records.length; i--;) {
+        const {core, datatype, year} = records[i];
+        if (!DATA_TYPES.includes(datatype)) {
+            throw new Error(`Unrecognized data type "${datatype}" in dataset.`);
+        }
+        if (!metadata[core]) {
+            metadata[core] = initCoreMetadata(core);
+        }
+        const dataStatistics = metadata[core][datatype];
+        dataStatistics.count += 1;
+        dataStatistics.earliest = Math.min(dataStatistics.earliest, year);
+        dataStatistics.latest = Math.max(dataStatistics.latest, year);
+    }
+
     PaleoClimate._logger.info(`adding ${records.length} climate records`);
     PaleoStorage.insertMany(records);
+    PaleoMetadata.insertMany(Object.values(metadata));
 }
 
 // Test for existing data
@@ -73,14 +102,6 @@ PaleoClimate._coreMetadata = {
         longitude: 106.8317313,
     }
 };
-
-/**
- * Get all valid names of ice cores
- * @returns {Array}
- */
-PaleoClimate.getIceCoreNames = function() {
-    return Object.keys(PaleoClimate._coreMetadata); 
-}; 
 
 /**
  * Get data for all columns matching the given fields
@@ -142,6 +163,14 @@ PaleoClimate._getColumnData = function(core, datatype, startyear, endyear){
     return PaleoClimate._getAllData(core, datatype, startyear, endyear)
         .then(result => result.map(row => [row[0],row[3]]));
 };
+
+/**
+ * Get all valid names of ice cores
+ * @returns {Array}
+ */
+PaleoClimate.getIceCoreNames = function() {
+    return Object.keys(PaleoClimate._coreMetadata); 
+}; 
 
 /**
  * Get CO2 in ppm (parts per million) by year from the ice core.
@@ -206,35 +235,19 @@ PaleoClimate.getTemperatureData = function(core, startyear, endyear){
 
 /**
  * Get metadata about an ice core including statistics about the available data.
+ *
  * @param {String} core Name of core to get metadata of
  */
-PaleoClimate.getIceCoreMetadata = function(core){
-    // Test for valid
+PaleoClimate.getIceCoreMetadata = async function(core){
     const metadata = this._coreMetadata[core];
 
     if(!metadata) {
         throw new Error('Invalid core');
     }
 
-    // TODO: This doesn't need to be recomputed each time...
-    return PaleoClimate._getAllData(core, '', '', '').then(result => {
-        const dataInfo = {};
-        DATA_TYPES
-            .forEach(type => dataInfo[type] = {count: 0, earliest: Infinity, latest: -Infinity});
-
-        result.forEach(row => {
-            const [date, , type] = row;
-            if (!dataInfo[type]) {
-                throw new Error(`Unrecognized data type "${type}" in dataset.`);
-            }
-            dataInfo[type].count += 1;
-            dataInfo[type].earliest = Math.min(dataInfo[type].earliest, date);
-            dataInfo[type].latest = Math.max(dataInfo[type].latest, date);
-        });
-
-        metadata.data = dataInfo;
-        return metadata;
-    }); 
+    const dataStatistics = await PaleoMetadata.findOne({core}).lean();
+    metadata.data = _.pick(dataStatistics, DATA_TYPES);
+    return metadata;
 };
 
 module.exports = PaleoClimate;
