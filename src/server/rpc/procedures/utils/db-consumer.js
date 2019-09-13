@@ -36,11 +36,8 @@ class DBConsumer extends NBService {
         return fields.slice(0,fields.length-2); // exclude id and v
     }
 
-    async _advancedSearch(field, query, skip = '', limit = '') {
+    async _advancedSearch(field, query, skip = 0, limit = 10) {
         // prepare and check the input
-        if (skip === '') skip = 0;
-        if (limit === '') limit = 10;
-
         limit = Math.min(limit, 50); // limit the max requested documents
 
         if(!Array.isArray(field)){

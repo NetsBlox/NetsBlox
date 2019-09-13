@@ -123,21 +123,21 @@ PaleoClimate._coreMetadata = {
     }
 };
 
-PaleoClimate._getColumnData = async function(core, datatype, startyear='', endyear='') {
+PaleoClimate._getColumnData = async function(core, datatype, startyear, endyear) {
     validateIceCore(core);
 
     const fields = ['core', 'datatype'];
     const queries = [core, datatype];
 
-    if(startyear !== '' || endyear !== ''){
+    if(startyear !== undefined || endyear !== undefined){
         const query = {};
 
         // Range query for years
-        if(startyear !== ''){
+        if(startyear !== undefined){
             query['$gte'] = Number.parseInt(startyear);
         }
 
-        if(endyear !== ''){
+        if(endyear !== undefined){
             query['$lte'] = Number.parseInt(endyear);
         }
 
