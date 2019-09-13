@@ -19,7 +19,7 @@ TwentyQuestions.prototype.start = function (answer) {
         return 'Game has already started...';
     }
     // ensure valid answer
-    if (answer === '') {
+    if (!answer) {
         return 'No answer received';
     }
     // set variables appropriately
@@ -44,7 +44,7 @@ TwentyQuestions.prototype.guess = function(guess) {
         return 'You\'re not the guesser!';
     }
     // ensure valid guess
-    if (guess === '') {
+    if (!guess) {
         return 'Enter a guess!';
     }
 
@@ -90,7 +90,7 @@ TwentyQuestions.prototype.answer = function(answer) {
         return this.response.send('You\'re not the answerer!');
     }
     // ensure valid answer
-    if (answer === '' || answer.toLowerCase() !== 'yes' && answer.toLowerCase() !== 'no') {
+    if (!answer || answer.toLowerCase() !== 'yes' && answer.toLowerCase() !== 'no') {
         return this.response.send('Answer the guess with yes/no!');
     }
     // end answerer's turn
