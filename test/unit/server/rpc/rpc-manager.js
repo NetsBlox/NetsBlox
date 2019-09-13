@@ -94,5 +94,12 @@ describe('rpc-manager', function() {
             RPCManager.parseArgValue(arg, '22')
                 .then(result => assert(!result.isValid));
         });
+
+        it('should set optional args to undefined if unset', async function() {
+            const arg = {optional: true};
+            const result = await RPCManager.parseArgValue(arg, '');
+            assert.equal(result.value, undefined);
+        });
+
     });
 });
