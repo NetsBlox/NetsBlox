@@ -1,6 +1,5 @@
 'use strict';
-var R = require('ramda'),
-    _ = require('lodash'),
+var _ = require('lodash'),
     Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     PublicProjects = require('../storage/public-projects'),
@@ -20,8 +19,7 @@ const DEFAULT_ROLE_NAME = 'myRole';
 const ExternalAPI = {};
 UserAPI.concat(ProjectAPI, RoomAPI)
     .filter(api => api.Service)
-    .map(R.omit.bind(R, 'Handler'))
-    .map(R.omit.bind(R, 'middleware'))
+    .map(desc => _.omit(desc, ['Handler', 'middleware']))
     .forEach(endpoint => {
         const name = endpoint.Service;
         const service = {};
