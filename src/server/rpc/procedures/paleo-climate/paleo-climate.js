@@ -157,7 +157,6 @@ PaleoClimate.getIceCoreNames = function() {
  * returned.
  *
  * @param {String} core Core to get data from
- * @param {String} datatype Data type to retrieve
  * @param {Number=} startyear Year to begin data at
  * @param {Number=} endyear Year to begin data at
  * @returns {Array}
