@@ -309,13 +309,13 @@ RPCManager.prototype.callRPC = function(name, ctx, args) {
 // out: {isValid: boolean, value, msg}
 RPCManager.prototype.parseArgValue = function (arg, input, ctx) {
     const inputStatus = {isValid: true, msg: '', value: input};
+    const isArgumentProvided = input !== '';
 
-    // is the argument provided or not?
-    if (input === '') {
+    if (!isArgumentProvided) {
+        inputStatus.value = undefined;
         if (!arg.optional) {
             inputStatus.msg = `${arg.name} is required.`;
             inputStatus.isValid = false;
-            inputStatus.value = undefined;
         }
     } else if (arg.type) {
         const typeName = arg.type.name;
