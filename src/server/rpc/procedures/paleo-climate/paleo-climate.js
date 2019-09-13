@@ -112,17 +112,11 @@ PaleoClimate._coreMetadata = {
     }
 };
 
-/**
- * Get data for all columns matching the given fields
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
- * @param {String=} datatype Data type to retrieve
- * @param {String=} core Core to get data from
- * @returns {Array}
- */
-PaleoClimate._getAllData = function(core, datatype, startyear='', endyear=''){	// blank query gives total list
-    const fields = [];
-    const queries = [];
+PaleoClimate._getColumnData = async function(core, datatype, startyear='', endyear='') {
+    validateIceCore(core);
+
+    const fields = ['core', 'datatype'];
+    const queries = [core, datatype];
 
     if(startyear !== '' || endyear !== ''){
         const query = {};
@@ -140,33 +134,12 @@ PaleoClimate._getAllData = function(core, datatype, startyear='', endyear=''){	/
         queries.push(query);
     }
 
-    if(datatype !== ''){
-        // Test for valid
-        if(!DATA_TYPES.includes(datatype)){
-            throw 'Invalid datatype';
-        }
-
-        fields.push('datatype');
-        queries.push(datatype);
-    }
-
-    if(core !== ''){
-        fields.push('core');
-        queries.push(core);
-    }
-    
     // Perform search
-    return this._advancedSearch(fields, queries, 0, -1).then(list => {
-        let formatted = list.map(entry => [entry.year, entry.core, entry.datatype, entry.value]);
-        formatted = formatted.filter((r, idx, list) => list.findIndex(row => row[0] === r[0]) >= idx);
-        return formatted.sort((a,b) => a[0] - b[0]);
-    });
-};
-    
-PaleoClimate._getColumnData = function(core, datatype, startyear, endyear){
-    validateIceCore(core);
-    return PaleoClimate._getAllData(core, datatype, startyear, endyear)
-        .then(result => result.map(row => [row[0],row[3]]));
+    const records = (await this._advancedSearch(fields, queries, 0, -1))
+        .sort((a,b) => a.year - b.year);
+
+    return _.sortedUniqBy(records, entry => entry.year)  // deduplicate by year
+        .map(entry => [entry.year, entry.value]);
 };
 
 /**
