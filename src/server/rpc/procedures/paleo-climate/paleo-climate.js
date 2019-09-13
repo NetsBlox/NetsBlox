@@ -63,6 +63,15 @@ PaleoStorage.findOne({}).then(result => {
     }
 });
 
+function validateIceCore(core) {
+    const validCores = PaleoClimate.getIceCoreNames();
+    if(!validCores.includes(core)) {
+        const coreList = validCores.slice(0, validCores.length-1).join(', ') +
+            `, or ${validCores[validCores.length-1]}`;
+        throw new Error(`Ice core is not valid. Expected ${coreList}`);
+    }
+}
+
 // Core meta-data
 PaleoClimate._coreMetadata = {
     'Antarctic Composite CO2': {
@@ -142,11 +151,6 @@ PaleoClimate._getAllData = function(core, datatype, startyear='', endyear=''){	/
     }
 
     if(core !== ''){
-        // Test for valid
-        if(this.getIceCoreNames().indexOf(core) === -1){
-            throw 'Invalid core';
-        }
-
         fields.push('core');
         queries.push(core);
     }
@@ -160,6 +164,7 @@ PaleoClimate._getAllData = function(core, datatype, startyear='', endyear=''){	/
 };
     
 PaleoClimate._getColumnData = function(core, datatype, startyear, endyear){
+    validateIceCore(core);
     return PaleoClimate._getAllData(core, datatype, startyear, endyear)
         .then(result => result.map(row => [row[0],row[3]]));
 };
@@ -239,12 +244,8 @@ PaleoClimate.getTemperatureData = function(core, startyear, endyear){
  * @param {String} core Name of core to get metadata of
  */
 PaleoClimate.getIceCoreMetadata = async function(core){
+    validateIceCore(core);
     const metadata = this._coreMetadata[core];
-
-    if(!metadata) {
-        throw new Error('Invalid core');
-    }
-
     const dataStatistics = await PaleoMetadata.findOne({core}).lean();
     metadata.data = _.pick(dataStatistics, DATA_TYPES);
     return metadata;
