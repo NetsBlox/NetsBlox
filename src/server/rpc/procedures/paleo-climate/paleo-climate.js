@@ -154,7 +154,7 @@ PaleoClimate._getColumnData = async function(core, datatype, startyear='', endye
 };
 
 /**
- * Get all valid names of ice cores
+ * Get names of ice cores with data available.
  * @returns {Array}
  */
 PaleoClimate.getIceCoreNames = function() {
