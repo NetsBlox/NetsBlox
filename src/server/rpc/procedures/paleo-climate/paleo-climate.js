@@ -1,6 +1,17 @@
 /**
- * Access to NOAA Paleoclimatology ice core data
+ * Access to NOAA Paleoclimatology ice core data.
+ *
+ * For more information, check out
  * https://www.ncdc.noaa.gov/data-access/paleoclimatology-data/datasets/ice-core
+ *
+ * Original datasets are available at
+ * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/antarctica2015co2composite.txt
+ * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/antarctica2015co2law.txt
+ * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/law/law2012d18o.txt
+ * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/antarctica2015co2wais.txt
+ * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/wdc05a2013d18o.txt
+ * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/epica_domec/edc3deuttemp2007.txt
+ * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/vostok/deutnat.txt
  *
  * @service
  */
