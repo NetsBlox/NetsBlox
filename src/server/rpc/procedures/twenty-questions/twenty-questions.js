@@ -1,4 +1,9 @@
-// This will help facilitate the game of "Twenty Questions"...keeping track of the answer, guess count, & player turn
+/**
+ * The TwentyQuestions Service aids in the creation of a multiplayer
+ * game of twenty questions.
+ *
+ * @service
+ */
 
 'use strict';
 
@@ -12,16 +17,36 @@ let TwentyQuestions = function () {
     this._state.started = false;
 };
 
-TwentyQuestions.prototype.start = function (answer) {
+TwentyQuestions.prototype._ensureGameStarted = function (started = true) {
+    if (this._state.started !== started) {
+        const msg = this._state.started ? 'Game has already started.':
+            'Game has not yet started.';
+        throw new Error(msg);
+    }
+};
 
-    // safeguard against starting in the middle of a game
-    if (this._state.started) {
-        return 'Game has already started...';
+TwentyQuestions.prototype._ensureCallerIsAnswerer = function () {
+    if (this.caller.roleId !== this._state.answerer) {
+        const msg = 'You\'re not the answerer!';
+        throw new Error(msg);
     }
-    // ensure valid answer
-    if (!answer) {
-        return 'No answer received';
+};
+
+TwentyQuestions.prototype._ensureCallerIsGuesser = function () {
+    if (this.caller.roleId === this._state.answerer) {
+        const msg = 'You\'re not the guesser!';
+        throw new Error(msg);
     }
+};
+
+/**
+ * Start a new game of twenty questions.
+ *
+ * @param {String} answer The word or phrase to guess
+ */
+TwentyQuestions.prototype.start = function (answer) {
+    this._ensureGameStarted(false);
+
     // set variables appropriately
     this._state.started = true;
     this._state.guessCount = 0;
@@ -33,20 +58,15 @@ TwentyQuestions.prototype.start = function (answer) {
     return true;
 };
 
+/**
+ * Guess the word or phrase.
+ *
+ * @param {String} guess word or phrase
+ */
 TwentyQuestions.prototype.guess = function(guess) {
     const sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId);
-    // safeguard against guessing before a game has started
-    if (!this._state.started) {
-        return 'Game hasn\'t started yet...wait for the answerer to think of something!';
-    }
-    // safeguard against the answerer accidentally attempting to guess
-    if (this.caller.roleId === this._state.answerer) {
-        return 'You\'re not the guesser!';
-    }
-    // ensure valid guess
-    if (!guess) {
-        return 'Enter a guess!';
-    }
+    this._ensureGameStarted();
+    this._ensureCallerIsGuesser();
 
     // split the guess
     var correct = false;
@@ -80,18 +100,18 @@ TwentyQuestions.prototype.guess = function(guess) {
     return true;
 };
 
+/**
+ * Answer a yes or no question about the secret word or phrase.
+ *
+ * @param {String} answer yes or no response to previous question
+ */
 TwentyQuestions.prototype.answer = function(answer) {
-    // safeguard against answering before a game has started
-    if (!this._state.started) {
-        return this.response.send('Game hasn\'t started yet...think of something to be guessed!');
-    }
-    // safeguard against the guesser accidently attempting to answer
-    if (this.caller.roleId !== this._state.answerer) {
-        return this.response.send('You\'re not the answerer!');
-    }
+    this._ensureGameStarted();
+    this._ensureCallerIsAnswerer();
+
     // ensure valid answer
-    if (!answer || answer.toLowerCase() !== 'yes' && answer.toLowerCase() !== 'no') {
-        return this.response.send('Answer the guess with yes/no!');
+    if (answer.toLowerCase() !== 'yes' && answer.toLowerCase() !== 'no') {
+        throw new Error('Answer the guess with yes or no!');
     }
     // end answerer's turn
     const content = {
@@ -103,12 +123,16 @@ TwentyQuestions.prototype.answer = function(answer) {
     return true;
 };
 
-// return whether or not the game has already started
+/**
+ * Check if the game has been started.
+ */
 TwentyQuestions.prototype.gameStarted = function() {
     return this._state.started;
 };
 
-// restart the game, resetting all the variables...
+/**
+ * Restart the game.
+ */
 TwentyQuestions.prototype.restart = function() {
     this._state.started = false;
     this._state.guessCount = 0;
