@@ -228,6 +228,13 @@ chart.draw = function(lines, options){
     }).catch(this._logger.error);
 };
 
+/**
+ * Get the default options for the "draw" RPC.
+ */
+chart.defaultOptions = function(){
+    return rpcUtils.jsonToSnapList(defaults);
+};
+
 chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
     let lines = [];
 
@@ -279,10 +286,6 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
 
 chart.drawBarChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
     return chart.drawLineChart.apply(this, arguments);
-};
-
-chart.defaultOptions = function(){
-    return rpcUtils.jsonToSnapList(defaults);
 };
 
 chart.COMPATIBILITY = {
