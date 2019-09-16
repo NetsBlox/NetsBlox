@@ -6,6 +6,7 @@ describe('paleo-climate', function() {
 
     utils.verifyRPCInterfaces(PaleoClimate, [
         ['getIceCoreNames', []],
+        ['getDataAvailability', []],
         ['getCarbonDioxideData', ['core', 'startyear', 'endyear']],
         ['getDelta18OData', ['core', 'startyear', 'endyear']],
         ['getDeuteriumData', ['core', 'startyear', 'endyear']],
