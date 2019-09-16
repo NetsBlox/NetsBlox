@@ -16,7 +16,7 @@ while (!dataRegex.test(lines[lines.length-1])) {
 const records = lines
     .map(line => {
         const [yearsBefore1950, value] = line.split('\t');
-        const core = 'WAIS';
+        const core = 'Law';
         const year = 1950 - yearsBefore1950;
         return {core, year, datatype: 'Carbon Dioxide', value};
     });
