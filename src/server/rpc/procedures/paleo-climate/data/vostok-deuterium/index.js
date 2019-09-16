@@ -15,8 +15,8 @@ while (!dataRegex.test(lines[lines.length-1])) {
 
 const records = lines
     .map(line => {
-        const [/*depth*/, yearsSince1950, deuterium, deltaTemp] = line.split('\t');
-        const year = 1950 - yearsSince1950;
+        const [/*depth*/, yearsBefore1950, deuterium, deltaTemp] = line.split('\t');
+        const year = 1950 - yearsBefore1950;
         const core = 'Vostok';
         return [
             {core, year, datatype: 'Deuterium', value: deuterium},

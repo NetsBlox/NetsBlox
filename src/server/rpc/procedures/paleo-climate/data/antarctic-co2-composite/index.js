@@ -15,9 +15,10 @@ while (!dataRegex.test(lines[lines.length-1])) {
 
 const records = lines
     .map(line => {
-        const [year, value] = line.split('\t');
-        const core = 'WAIS';
-        return {core, year, datatype: 'Delta18O', value};
+        const [yearsBefore1950, value] = line.split('\t');
+        const core = 'Antarctic Composite CO2';
+        const year = 1950 - yearsBefore1950;
+        return {core, year, datatype: 'Carbon Dioxide', value};
     });
 
 module.exports = records;
