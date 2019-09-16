@@ -188,6 +188,25 @@ PaleoClimate.getDataAvailability = async function() {
         dataStatistics.forEach(dataInfo => row.push(dataInfo[dataType].count));
         availabilityTable.push(row);
     });
+
+    const row = ['Date Range'];
+    dataStatistics.forEach(dataInfo => {
+        // Get the min/max date
+        const earliestDate = DATA_TYPES.map(type => dataInfo[type])
+            .map(stats => stats.earliest)
+            .reduce((min, next) => next < min ? next : min, Infinity);
+
+        const latestDate = DATA_TYPES.map(type => dataInfo[type])
+            .map(stats => stats.latest)
+            .reduce((max, next) => next > max ? next : max, -Infinity);
+
+        if (isFinite(earliestDate)) {
+            row.push(`${earliestDate} to ${latestDate}`);
+        } else {
+            row.push(null);
+        }
+    });
+    availabilityTable.push(row);
     return availabilityTable;
 };
 
