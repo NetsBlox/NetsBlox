@@ -46,21 +46,30 @@ function importData() {
             .forEach(type => stats[type] = {count: 0, earliest: Infinity, latest: -Infinity});
         return stats;
     };
+    PaleoClimate.getIceCoreNames().forEach(name => metadata[name] = initCoreMetadata(name));
 
     for (let i = records.length; i--;) {
         const {core, datatype, year} = records[i];
+        validateIceCore(core);
         if (!DATA_TYPES.includes(datatype)) {
             throw new Error(`Unrecognized data type "${datatype}" in dataset.`);
         }
-        if (!metadata[core]) {
-            metadata[core] = initCoreMetadata(core);
-        }
+
         const dataStatistics = metadata[core][datatype];
         dataStatistics.count += 1;
         dataStatistics.earliest = Math.min(dataStatistics.earliest, year);
         dataStatistics.latest = Math.max(dataStatistics.latest, year);
     }
 
+    PaleoClimate.getIceCoreNames().forEach(core => {
+        const totalCount = DATA_TYPES
+            .map(type => metadata[core][type].count)
+            .reduce((a,b) => a + b, 0);
+
+        if (totalCount === 0) {
+            PaleoClimate._logger.warn(`No data imported for ice core "${core}"`);
+        }
+    });
     PaleoClimate._logger.info(`adding ${records.length} climate records`);
     PaleoStorage.insertMany(records);
     PaleoMetadata.insertMany(Object.values(metadata));
@@ -69,7 +78,7 @@ function importData() {
 // Test for existing data
 PaleoStorage.findOne({}).then(result => {
     if (!result) {
-        PaleoClimate._logger.warn('No data found in database, importing from data files.');
+        PaleoClimate._logger.info('No data found in database, importing from data files.');
         importData();
     }
 });
