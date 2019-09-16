@@ -171,6 +171,27 @@ PaleoClimate.getIceCoreNames = function() {
 }; 
 
 /**
+ * Get a table showing the amount of available data for each ice core.
+ *
+ * @returns {Array}
+ */
+PaleoClimate.getDataAvailability = async function() {
+    const dataStatistics = await PaleoMetadata.find({}).lean();
+    const availabilityTable = [];
+
+    dataStatistics.sort((data1, data2) => data1.core < data2.core ? -1 : 1);
+    const coresHeader = [''].concat(dataStatistics.map(data => data.core));
+    availabilityTable.push(coresHeader);
+    // Add rows for each data type
+    DATA_TYPES.forEach(dataType => {
+        const row = [dataType];
+        dataStatistics.forEach(dataInfo => row.push(dataInfo[dataType].count));
+        availabilityTable.push(row);
+    });
+    return availabilityTable;
+};
+
+/**
  * Get CO2 in ppm (parts per million) by year from the ice core.
  *
  * If a start and end year is provided, only measurements within the given range will be
