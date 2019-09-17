@@ -9,7 +9,7 @@ describe('twentyquestions', function() {
         twentyquestions = new RPCMock(TwentyQuestions);
     });
 
-    utils.verifyRPCInterfaces(twentyquestions, [
+    utils.verifyRPCInterfaces('TwentyQuestions', [
         ['start', ['answer']],
         ['guess', ['guess']],
         ['answer', ['answer']],

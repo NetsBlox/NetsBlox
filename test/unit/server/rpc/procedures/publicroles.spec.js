@@ -6,7 +6,7 @@ describe('publicroles', function() {
     const RPCMock = require('../../../../assets/mock-rpc');
     const publicroles = new RPCMock(PublicRoles);
 
-    utils.verifyRPCInterfaces(publicroles, [
+    utils.verifyRPCInterfaces('PublicRoles', [
         ['requestPublicRoleId']
     ]);
 

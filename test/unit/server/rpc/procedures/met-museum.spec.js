@@ -1,8 +1,5 @@
 describe('met-museum', function() {
     const utils = require('../../../../assets/utils');
-    var MetMuseum = utils.reqSrc('rpc/procedures/met-museum/met-museum'),
-        RPCMock = require('../../../../assets/mock-rpc'),
-        metMuseumMock = new RPCMock(MetMuseum);
 
     // converts a phrase into camel case format
     function toCamelCase(text) {
@@ -33,7 +30,7 @@ describe('met-museum', function() {
     let autoGenInterface = featuredFields
         .map(attr => ['searchBy' + toCamelCase(attr), ['query']]);
 
-    utils.verifyRPCInterfaces(metMuseumMock, [
+    utils.verifyRPCInterfaces('MetMuseum', [
         ['getInfo', ['id']],
         ['getImageUrls', ['id']],
         ['advancedSearch', ['field', 'query', 'skip', 'limit']],

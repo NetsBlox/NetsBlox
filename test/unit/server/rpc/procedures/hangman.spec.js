@@ -4,7 +4,7 @@ describe('hangman', function() {
         RPCMock = require('../../../../assets/mock-rpc'),
         hangman = new RPCMock(Hangman);
 
-    utils.verifyRPCInterfaces(hangman, [
+    utils.verifyRPCInterfaces('Hangman', [
         ['guess', ['letter']],
         ['setWord',['word']],
         ['getWrongCount', []],
