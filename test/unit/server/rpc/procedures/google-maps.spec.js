@@ -14,7 +14,7 @@ describe('googlemaps', function() {
     });
 
     describe('interfaces', function() {
-        utils.verifyRPCInterfaces(googlemaps, [
+        utils.verifyRPCInterfaces('GoogleMaps', [
             ['getMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
             ['getSatelliteMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
             ['getTerrainMap', ['latitude', 'longitude', 'width', 'height', 'zoom']],
