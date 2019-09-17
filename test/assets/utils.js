@@ -17,6 +17,7 @@ const Storage = require(PROJECT_ROOT + '/src/server/storage/storage');
 const mainLogger = new Logger('netsblox:test');
 const storage = new Storage(mainLogger);
 const serverUtils = reqSrc('server-utils');
+const RPCManager = reqSrc('rpc/rpc-manager');
 const Projects = reqSrc('storage/projects');
 const NetworkTopology = reqSrc('network-topology');
 
@@ -172,15 +173,14 @@ const sleep = delay => {
 };
 
 module.exports = {
-    verifyRPCInterfaces: function(rpc, interfaces) {
-        describe(`${rpc.serviceName} interfaces`, function() {
+    verifyRPCInterfaces: function(serviceName, interfaces) {
+        describe(`${serviceName} interfaces`, function() {
             interfaces.forEach(interface => {
-                var name = interface[0],
-                    expected = interface[1] || [];
+                const [name, expected=[]] = interface;
 
                 it(`${name} args should be ${expected.join(', ')}`, function() {
-                    var args = rpc.getArgumentsFor(name);
-                    assert(_.isEqual(args, expected));
+                    const args = RPCManager.getArgumentsFor(serviceName, name);
+                    assert(_.isEqual(args, expected), `Found ${args.join(', ')}`);
                 });
             });
         });
