@@ -51,8 +51,14 @@ RPCManager.prototype.loadRPCs = function() {
             }
 
             // Register the rpc actions, method signatures
-            RPCConstructor.serviceName = RPCConstructor.serviceName ||
-                name.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join('');
+            if (RPCConstructor.serviceName) {
+                if (this.validateCustomServiceName(name, RPCConstructor.serviceName)) {
+                    this._logger.error(`\nInvalid service name for ${name}: ${RPCConstructor.serviceName}. \n\nSee https://github.com/NetsBlox/NetsBlox/wiki/Best-Practices-for-NetsBlox-Services#naming-conventions for more information.\n`);
+                    process.exit(1);
+                }
+            } else {
+                RPCConstructor.serviceName = this.getDefaultServiceName(name);
+            }
 
             RPCConstructor.COMPATIBILITY = RPCConstructor.COMPATIBILITY || {};
             _.merge(RPCConstructor.COMPATIBILITY, DEFAULT_COMPATIBILITY);
@@ -79,6 +85,16 @@ RPCManager.prototype.loadRPCs = function() {
             }
             return false;
         });
+};
+
+RPCManager.prototype.getDefaultServiceName = function(name) {
+    return name.split('-')
+        .map(w => w[0].toUpperCase() + w.slice(1))
+        .join('');
+};
+
+RPCManager.prototype.validateCustomServiceName = function(name, serviceName) {
+    return serviceName.toLowerCase() !== this.getDefaultServiceName(name).toLowerCase();
 };
 
 RPCManager.prototype.registerRPC = function(rpc) {
