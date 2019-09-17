@@ -42,19 +42,6 @@ RPCManager.prototype.loadRPCs = function() {
         .map(name => [name, path.join(PROCEDURES_DIR, name, name+'.js')])
         .filter(pair => fs.existsSync(pair[1]))
         .map(pair => [pair[0], pair[1], require(pair[1])])  // name, path, module
-        .filter(pair => {
-            let [name, /*path*/, service] = pair;
-            if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
-                if(service.isSupported && !service.isSupported()){
-                    /* eslint-disable no-console*/
-                    console.error(`${name} is not supported in this deployment. Skipping...`);
-                    /* eslint-enable no-console*/
-                    return false;
-                }
-                return true;
-            }
-            return false;
-        })
         .map(pair => {
             let [name, path, RPCConstructor] = pair;
 
@@ -79,6 +66,18 @@ RPCManager.prototype.loadRPCs = function() {
             this.registerRPC(RPCConstructor);
 
             return RPCConstructor;
+        })
+        .filter(service => {
+            if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
+                if(service.isSupported && !service.isSupported()){
+                    /* eslint-disable no-console*/
+                    console.error(`${service.serviceName} is not supported in this deployment. Skipping...`);
+                    /* eslint-enable no-console*/
+                    return false;
+                }
+                return true;
+            }
+            return false;
         });
 };
 

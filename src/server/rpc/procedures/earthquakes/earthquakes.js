@@ -13,13 +13,13 @@
 
 const logger = require('../utils/logger')('earthquakes');
 var moment = require('moment'),
-    R = require('ramda'),
+    _ = require('lodash'),
     request = require('request'),
     baseUrl = 'http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&';
 
 // Helpers
 var createParams = function(obj) {
-    return R.toPairs(obj)
+    return _.toPairs(obj)
         .filter(keyVal => keyVal[1] != null )
         .map(keyVal => keyVal.join('='))
         .join('&');

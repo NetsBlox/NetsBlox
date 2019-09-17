@@ -46,21 +46,30 @@ function importData() {
             .forEach(type => stats[type] = {count: 0, earliest: Infinity, latest: -Infinity});
         return stats;
     };
+    PaleoClimate.getIceCoreNames().forEach(name => metadata[name] = initCoreMetadata(name));
 
     for (let i = records.length; i--;) {
         const {core, datatype, year} = records[i];
+        validateIceCore(core);
         if (!DATA_TYPES.includes(datatype)) {
             throw new Error(`Unrecognized data type "${datatype}" in dataset.`);
         }
-        if (!metadata[core]) {
-            metadata[core] = initCoreMetadata(core);
-        }
+
         const dataStatistics = metadata[core][datatype];
         dataStatistics.count += 1;
         dataStatistics.earliest = Math.min(dataStatistics.earliest, year);
         dataStatistics.latest = Math.max(dataStatistics.latest, year);
     }
 
+    PaleoClimate.getIceCoreNames().forEach(core => {
+        const totalCount = DATA_TYPES
+            .map(type => metadata[core][type].count)
+            .reduce((a,b) => a + b, 0);
+
+        if (totalCount === 0) {
+            PaleoClimate._logger.warn(`No data imported for ice core "${core}"`);
+        }
+    });
     PaleoClimate._logger.info(`adding ${records.length} climate records`);
     PaleoStorage.insertMany(records);
     PaleoMetadata.insertMany(Object.values(metadata));
@@ -69,7 +78,7 @@ function importData() {
 // Test for existing data
 PaleoStorage.findOne({}).then(result => {
     if (!result) {
-        PaleoClimate._logger.warn('No data found in database, importing from data files.');
+        PaleoClimate._logger.info('No data found in database, importing from data files.');
         importData();
     }
 });
@@ -160,6 +169,46 @@ PaleoClimate._getColumnData = async function(core, datatype, startyear, endyear)
 PaleoClimate.getIceCoreNames = function() {
     return Object.keys(PaleoClimate._coreMetadata); 
 }; 
+
+/**
+ * Get a table showing the amount of available data for each ice core.
+ *
+ * @returns {Array}
+ */
+PaleoClimate.getDataAvailability = async function() {
+    const dataStatistics = await PaleoMetadata.find({}).lean();
+    const availabilityTable = [];
+
+    dataStatistics.sort((data1, data2) => data1.core < data2.core ? -1 : 1);
+    const coresHeader = [''].concat(dataStatistics.map(data => data.core));
+    availabilityTable.push(coresHeader);
+    // Add rows for each data type
+    DATA_TYPES.forEach(dataType => {
+        const row = [dataType];
+        dataStatistics.forEach(dataInfo => row.push(dataInfo[dataType].count));
+        availabilityTable.push(row);
+    });
+
+    const row = ['Date Range'];
+    dataStatistics.forEach(dataInfo => {
+        // Get the min/max date
+        const earliestDate = DATA_TYPES.map(type => dataInfo[type])
+            .map(stats => stats.earliest)
+            .reduce((min, next) => next < min ? next : min, Infinity);
+
+        const latestDate = DATA_TYPES.map(type => dataInfo[type])
+            .map(stats => stats.latest)
+            .reduce((max, next) => next > max ? next : max, -Infinity);
+
+        if (isFinite(earliestDate)) {
+            row.push(`${earliestDate} to ${latestDate}`);
+        } else {
+            row.push(null);
+        }
+    });
+    availabilityTable.push(row);
+    return availabilityTable;
+};
 
 /**
  * Get CO2 in ppm (parts per million) by year from the ice core.
