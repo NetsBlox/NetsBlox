@@ -155,7 +155,7 @@ PaleoClimate._getColumnData = async function(core, datatype, startyear, endyear)
     }
 
     // Perform search
-    const records = (await this._advancedSearch(fields, queries, 0, -1))
+    const records = (await this._advancedSearch(fields, queries))
         .sort((a,b) => a.year - b.year);
 
     return _.sortedUniqBy(records, entry => entry.year)  // deduplicate by year
