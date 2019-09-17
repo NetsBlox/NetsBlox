@@ -1,4 +1,4 @@
-describe('azure-translation', function() {
+describe('translation', function() {
     const utils = require('../../../../assets/utils');
 
     utils.verifyRPCInterfaces('Translation', [
