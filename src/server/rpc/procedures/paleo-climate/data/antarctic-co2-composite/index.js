@@ -5,7 +5,7 @@ const dataFile = path.join(__dirname, 'antarctica2015co2composite.txt');
 const lines = fs.readFileSync(dataFile, 'utf8').split('\n');
 
 // Remove all the headers and descriptions
-const dataRegex = /^[\d.]+\s+[\d.]+\s+[\d.]+/;
+const dataRegex = /^-?[\d.]+\s+[\d.]+\s+[\d.]+/;
 while (!dataRegex.test(lines[0])) {
     lines.shift();
 }
