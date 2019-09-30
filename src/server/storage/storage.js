@@ -20,13 +20,13 @@ var Storage = function() {
     this.onConnected = this._deferred.promise;
 };
 
-Storage.getDatabaseFromURI = function(mongoURI) {
+Storage.prototype.getDatabaseFromURI = function(mongoURI) {
     return mongoURI.replace(/^(mongodb:\/\/)?[a-zA-Z0-9-_:\.]+\/?/, '') || 'admin';
 };
 
 Storage.prototype.connect = function(mongoURI) {
     mongoURI = mongoURI || process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
-    const dbName = Storage.getDatabaseFromURI(mongoURI);
+    const dbName = this.getDatabaseFromURI(mongoURI);
     return Q(MongoClient.connect(mongoURI))
         .then(client => {
             const db = client.db(dbName);
