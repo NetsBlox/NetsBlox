@@ -7,6 +7,8 @@ var middleware = require('./middleware'),
     Logger = require('../logger'),
     logger = new Logger('netsblox:api:Users');
 
+const Storage = require('../storage/storage');
+
 module.exports = [
     {
         Service: 'cancelAccount',
@@ -17,7 +19,7 @@ module.exports = [
         Handler: function(req, res) {
             var username = req.session.username;
             logger.log('Deleting user "'+username+'"');
-            return this.storage.users.get(username)
+            return Storage.users.get(username)
                 .then(user => {
                     if (!user) {
                         return res.status(500).send(`Could not remove "${username}": user not found`);
@@ -67,7 +69,7 @@ module.exports = [
 
             logger.info('Changing password for '+username);
             // Verify that the old password is correct
-            this.storage.users.get(username)
+            Storage.users.get(username)
                 .then(user => {
                     if (!user || user.hash !== oldPassword) {
                         return res.status(403).send('ERROR: incorrect login');

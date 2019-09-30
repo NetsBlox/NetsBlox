@@ -10,26 +10,26 @@ var MongoClient = require('mongodb').MongoClient,
     PublicProjects = require('./public-projects');
 
 const ProjectActions = require('./project-actions');
+const Logger = require('../logger');
 
-var Storage = function(logger) {
-    this._logger = logger.fork('storage');
-
+var Storage = function() {
+    this._logger = new Logger('netsblox:storage');
     this.users = null;
     this.projects = null;
-    this.connected = false;
+    this._deferred = Q.defer();
+    this.onConnected = this._deferred.promise;
 };
 
-Storage.getDatabaseFromURI = function(mongoURI) {
+Storage.prototype.getDatabaseFromURI = function(mongoURI) {
     return mongoURI.replace(/^(mongodb:\/\/)?[a-zA-Z0-9-_:\.]+\/?/, '') || 'admin';
 };
 
 Storage.prototype.connect = function(mongoURI) {
     mongoURI = mongoURI || process.env.MONGO_URI || process.env.MONGOLAB_URI || 'mongodb://localhost:27017';
-    const dbName = Storage.getDatabaseFromURI(mongoURI);
+    const dbName = this.getDatabaseFromURI(mongoURI);
     return Q(MongoClient.connect(mongoURI))
         .then(client => {
             const db = client.db(dbName);
-            this.connected = true;
             this.users = Users;
             this.projects = Projects;
             Users.init(this._logger, db);
@@ -45,6 +45,7 @@ Storage.prototype.connect = function(mongoURI) {
             this._db = db;
             this._client = client;
             this._logger.info(`Connected to ${mongoURI}`);
+            this._deferred.resolve();
             return db;
         })
         .catch(err => {
@@ -59,6 +60,7 @@ Storage.prototype.connect = function(mongoURI) {
             console.error('    MONGO_URI=mongodb://some.ip.address:27017/ ./bin/netsblox start');
             console.error('');
             /* eslint-enable no-console */
+            this._deferred.reject(err);
             throw err;
         });
 };
@@ -67,4 +69,4 @@ Storage.prototype.disconnect = function() {
     return this._client.close(true);
 };
 
-module.exports = Storage;
+module.exports = new Storage();

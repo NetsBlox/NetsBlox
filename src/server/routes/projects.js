@@ -14,7 +14,7 @@ var _ = require('lodash'),
 const DEFAULT_ROLE_NAME = 'myRole';
 const Projects = require('../storage/projects');
 const Users = require('../storage/users');
-
+const Storage = require('../storage/storage');
 
 /**
  * Find and set the given project's public value.
@@ -390,7 +390,7 @@ module.exports = [
             var username = req.session.username;
             logger.log(`${username} requested shared project list from ${origin}`);
 
-            return this.storage.users.get(username)
+            return Storage.users.get(username)
                 .then(user => {
                     if (user) {
                         return user.getSharedProjects()
@@ -428,7 +428,7 @@ module.exports = [
             var username = req.session.username;
             logger.log(`${username} requested project list from ${origin}`);
 
-            return this.storage.users.get(username)
+            return Storage.users.get(username)
                 .then(user => {
                     if (user) {
                         return user.getProjects()
@@ -791,7 +791,7 @@ module.exports = [
                 projectName = req.query.ProjectName;
 
             this._logger.trace(`Retrieving the public project: ${projectName} from ${username}`);
-            return this.storage.users.get(username)
+            return Storage.users.get(username)
                 .then(user => {
                     if (!user) {
                         logger.log(`Could not find user ${username}`);
