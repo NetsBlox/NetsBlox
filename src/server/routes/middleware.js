@@ -8,6 +8,7 @@ var server,
     logger;
 const Q = require('q');
 const Users = require('../storage/users');
+const Storage = require('../storage/storage');
 
 var hasSocket = function(req, res, next) {
     var socketId = (req.body && req.body.socketId) ||
@@ -193,7 +194,7 @@ Session.prototype.destroy = function() {
 // Helpers
 var loadUser = function(username, res, next) {
     // Load the user and handle errors
-    server.storage.users.get(username)
+    Storage.users.get(username)
         .then(user => {
             if (!user) {
                 logger.error(`user not found: "${username}"`);
@@ -238,7 +239,7 @@ let isGroupOwner = function(req, res, next) {
 let isValidMember = async function(req, res, next) {
     let userId = req.params.userId;
     if (!userId) return res.status(404).send('missing user (userId)');
-    let user = await server.storage.users.getById(userId);
+    let user = await Storage.users.getById(userId);
     if (!user) return res.status(404).send(`cant find user with user id ${userId}`);
     next();
 };
@@ -247,7 +248,7 @@ let isValidMember = async function(req, res, next) {
 // requires a validmember
 let memberIsNew = async function(req, res, next) {
     let userId = req.params.userId;
-    let user = await server.storage.users.getById(userId);
+    let user = await Storage.users.getById(userId);
 
     let rejections = await user.isNewWithRejections();
 
@@ -261,7 +262,7 @@ let memberIsNew = async function(req, res, next) {
 let canManageMember = async function(req, res, next) {
     const groupId = req.params.id,
         userId = req.params.userId;
-    let user = await server.storage.users.getById(userId);
+    let user = await Storage.users.getById(userId);
     if (!user.groupId || user.groupId !== groupId) {
         res.status(403).send('unauthorized to make changes to this user');
     } else {

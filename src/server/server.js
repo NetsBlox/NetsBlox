@@ -41,8 +41,6 @@ var Server = function(opts) {
         return qs.parse(string);
     });
 
-    // Mongo variables
-    this.storage = new Storage(this._logger, opts);
     this._server = null;
 
     // Group and RPC Managers
@@ -115,7 +113,7 @@ Server.prototype.configureRoutes = function() {
             if (req.query.action === 'present') {
                 var username = req.query.Username;
 
-                return this.storage.publicProjects.get(username, projectName)
+                return Storage.publicProjects.get(username, projectName)
                     .then(project => {
                         if (project) {
                             metaInfo.image = {
@@ -287,14 +285,14 @@ Server.prototype.start = async function() {
 
     opts.msgFilter = msg => !msg.namespace;
 
-    await this.storage.connect();
+    await Storage.connect();
     if (ENV === 'test') {
         const fixtures = require('../../test/fixtures');
-        if (/test/.test(this.storage._db.databaseName)) {
+        if (/test/.test(Storage._db.databaseName)) {
             // eslint-disable-next-line no-console
             console.log('resetting the database');
-            await this.storage._db.dropDatabase();
-            await fixtures.init(this.storage);
+            await Storage._db.dropDatabase();
+            await fixtures.init(Storage);
         } else {
             // eslint-disable-next-line no-console
             console.warn('skipping database reset, test database should have the word test in the name.');
