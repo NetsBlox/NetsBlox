@@ -44,11 +44,10 @@ var Server = function(opts) {
     this._server = null;
 
     // Group and RPC Managers
-    this.rpcManager = RPCManager;
     NetworkTopology.init(this._logger, Client);
 };
 
-Server.prototype.configureRoutes = function() {
+Server.prototype.configureRoutes = async function() {
     this.app.use(express.static(__dirname + '/../browser/'));
     this.app.use(bodyParser.urlencoded({
         limit: '50mb',
@@ -70,11 +69,6 @@ Server.prototype.configureRoutes = function() {
     });
 
     // Add routes
-    this.app.use('/rpc', function(req, res, next) {
-        return middleware.tryLogIn(req, res, function() {
-            next();
-        }, true);
-    }, this.rpcManager.router);
     this.app.use('/api', this.createRouter());
 
     // Add deployment state endpoint info
@@ -154,6 +148,12 @@ Server.prototype.configureRoutes = function() {
     });
 
     // Import Service Endpoints:
+    await RPCManager.initialize();
+    this.app.use(
+        '/rpc',
+        (req, res, next) => middleware.tryLogIn(req, res, next, true),
+        RPCManager.router
+    );
     var RPC_ROOT = path.join(__dirname, 'rpc', 'libs'),
         RPC_INDEX = fs.readFileSync(path.join(RPC_ROOT, 'RPC'), 'utf8')
             .split('\n')
@@ -298,7 +298,7 @@ Server.prototype.start = async function() {
             console.warn('skipping database reset, test database should have the word test in the name.');
         }
     }
-    this.configureRoutes();
+    await this.configureRoutes();
     this._server = this.app.listen(this.opts.port);
     // eslint-disable-next-line no-console
     console.log(`listening on port ${this.opts.port}`);

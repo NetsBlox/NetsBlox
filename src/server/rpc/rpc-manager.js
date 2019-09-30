@@ -16,6 +16,9 @@ var fs = require('fs'),
     types = require('./input-types.js'),
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
+const ServerStorage = require('../storage/storage');
+const Storage = require('./storage');
+const DataService = require('./data-service');
 const DEFAULT_COMPATIBILITY = {arguments: {}};
 /**
  * RPCManager
@@ -26,7 +29,10 @@ var RPCManager = function() {
     this._logger = new Logger('netsblox:services');
     this.rpcRegistry = {};
     this._rpcInstances = {};
-    this.rpcs = this.loadRPCs();
+};
+
+RPCManager.prototype.initialize = async function() {
+    this.rpcs = await this.loadRPCs();
     this.router = this.createRouter();
     this.checkStaleServices();
 };
@@ -36,7 +42,12 @@ var RPCManager = function() {
  *
  * @return {Array<ProcedureConstructor>}
  */
-RPCManager.prototype.loadRPCs = function() {
+RPCManager.prototype.loadRPCs = async function() {
+    const DBServices = await this.loadRPCsFromDatabase();
+    return this.loadRPCsFromFS().concat(DBServices);
+};
+
+RPCManager.prototype.loadRPCsFromFS = function() {
     // Load the rpcs from the __dirname+'/procedures' directory
     return fs.readdirSync(PROCEDURES_DIR)
         .map(name => [name, path.join(PROCEDURES_DIR, name, name+'.js')])
@@ -60,15 +71,6 @@ RPCManager.prototype.loadRPCs = function() {
                 RPCConstructor.serviceName = this.getDefaultServiceName(name);
             }
 
-            RPCConstructor.COMPATIBILITY = RPCConstructor.COMPATIBILITY || {};
-            _.merge(RPCConstructor.COMPATIBILITY, DEFAULT_COMPATIBILITY);
-
-            if (typeof RPCConstructor === 'function') {
-                RPCConstructor.prototype._docs = RPCConstructor._docs;
-                RPCConstructor.prototype.serviceName = RPCConstructor.serviceName;
-                RPCConstructor.prototype.COMPATIBILITY = RPCConstructor.COMPATIBILITY;
-            }
-
             this.registerRPC(RPCConstructor);
 
             return RPCConstructor;
@@ -87,6 +89,18 @@ RPCManager.prototype.loadRPCs = function() {
         });
 };
 
+RPCManager.prototype.loadRPCsFromDatabase = async function() {
+    await ServerStorage.onConnected;
+    const DataServices = Storage.create('user-services').collection;
+    const serviceData = await DataServices.find({}).toArray();
+    const services = serviceData
+        .map(serviceInfo => new DataService(serviceInfo));
+
+    services.forEach(service => this.registerRPC(service));
+
+    return services;
+};
+
 RPCManager.prototype.getDefaultServiceName = function(name) {
     return name.split('-')
         .map(w => w[0].toUpperCase() + w.slice(1))
@@ -98,17 +112,26 @@ RPCManager.prototype.validateCustomServiceName = function(name, serviceName) {
 };
 
 RPCManager.prototype.registerRPC = function(rpc) {
-    var fnObj = rpc,
-        name = rpc.serviceName,
-        fnNames;
+    rpc.COMPATIBILITY = rpc.COMPATIBILITY || {};
+    _.merge(rpc.COMPATIBILITY, DEFAULT_COMPATIBILITY);
+
+    if (typeof rpc === 'function') {
+        rpc.prototype._docs = rpc._docs;
+        rpc.prototype.serviceName = rpc.serviceName;
+        rpc.prototype.COMPATIBILITY = rpc.COMPATIBILITY;
+    }
+
+    const name = rpc.serviceName;
 
     this.rpcRegistry[name] = {};
     this.rpcRegistry[name]._docs = rpc._docs;
+
+    let fnObj = rpc;
     if (typeof rpc === 'function') {
         fnObj = rpc.prototype;
     }
 
-    fnNames = Object.keys(fnObj)
+    const fnNames = Object.keys(fnObj)
         .filter(name => name[0] !== '_')
         .filter(name => !RESERVED_FN_NAMES.includes(name));
 
@@ -163,13 +186,14 @@ RPCManager.prototype.createRouter = function() {
         return serviceDoc;
     }
 
-    this.rpcs.forEach(rpc => {
-        router.route('/' + rpc.serviceName)
-            .get((req, res) => res.json(createServiceMetadata.call(this, rpc)));
+    this.rpcs.forEach(service => {
+        router.route('/' + service.serviceName)
+            .get((req, res) => res.json(createServiceMetadata.call(this, service)));
 
-        if (rpc.COMPATIBILITY.path) {
-            router.route('/' + rpc.COMPATIBILITY.path)
-                .get((req, res) => res.json(createServiceMetadata.call(this, rpc)));
+        service.COMPATIBILITY = service.COMPATIBILITY || {};
+        if (service.COMPATIBILITY.path) {
+            router.route('/' + service.COMPATIBILITY.path)
+                .get((req, res) => res.json(createServiceMetadata.call(this, service)));
         }
     });
 
