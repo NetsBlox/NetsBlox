@@ -90,7 +90,7 @@ RPCManager.prototype.loadRPCsFromFS = function() {
 };
 
 RPCManager.prototype.loadRPCsFromDatabase = async function() {
-    await ServerStorage.onConnected;  // TODO: find a better way to do this...
+    await ServerStorage.onConnected;
     const DataServices = Storage.create('user-services').collection;
     const serviceData = await DataServices.find({}).toArray();
     const services = serviceData
