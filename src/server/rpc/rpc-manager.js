@@ -308,20 +308,15 @@ RPCManager.prototype.callRPC = function(name, ctx, args) {
     if (ctx._docs) doc = ctx._docs.getDocFor(name);
     if (doc) {
         // assuming doc params are defined in order!
-        prepareInputs = Promise.all(doc.args.map((arg, idx) => {
-            if (arg.type) {
-                //let input = this.parseArgValue(arg, args[idx], ctx);
-                return this.parseArgValue(arg, args[idx], ctx)
-                    .then(input => {
-                        // if there was no errors update the arg with the parsed input
-                        if (input.isValid) {
-                            args[idx] = input.value;
-                        } else {
-                            // handle the error
-                            this._logger.warn(`${ctx.serviceName} -> ${name} input error:`, input.msg);
-                            if (input.msg) errors.push(input.msg);
-                        }
-                    });
+        prepareInputs = Promise.all(doc.args.map(async (arg, idx) => {
+            const input = await this.parseArgValue(arg, args[idx], ctx);
+            // if there was no errors update the arg with the parsed input
+            if (input.isValid) {
+                args[idx] = input.value;
+            } else {
+                // handle the error
+                this._logger.warn(`${ctx.serviceName} -> ${name} input error:`, input.msg);
+                if (input.msg) errors.push(input.msg);
             }
         }));
     }
