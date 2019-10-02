@@ -72,36 +72,32 @@ RPCManager.prototype.loadRPCsFromFS = function() {
         .filter(pair => fs.existsSync(pair[1]))
         .map(pair => [pair[0], pair[1], require(pair[1])])  // name, path, module
         .map(pair => {
-            let [name, path, RPCConstructor] = pair;
+            let [name, path, service] = pair;
 
-            RPCConstructor._docs = new Docs(path);
-            if (RPCConstructor.init) {
-                RPCConstructor.init(this._logger);
+            service._docs = new Docs(path);
+            if (service.init) {
+                service.init(this._logger);
             }
 
             // Register the rpc actions, method signatures
-            if (RPCConstructor.serviceName) {
-                if (this.validateCustomServiceName(name, RPCConstructor.serviceName)) {
-                    this._logger.error(`\nInvalid service name for ${name}: ${RPCConstructor.serviceName}. \n\nSee https://github.com/NetsBlox/NetsBlox/wiki/Best-Practices-for-NetsBlox-Services#naming-conventions for more information.\n`);
+            if (service.serviceName) {
+                if (this.validateCustomServiceName(name, service.serviceName)) {
+                    this._logger.error(`\nInvalid service name for ${name}: ${service.serviceName}. \n\nSee https://github.com/NetsBlox/NetsBlox/wiki/Best-Practices-for-NetsBlox-Services#naming-conventions for more information.\n`);
                     process.exit(1);
                 }
             } else {
-                RPCConstructor.serviceName = this.getDefaultServiceName(name);
+                service.serviceName = this.getDefaultServiceName(name);
             }
 
-            return RPCConstructor;
-        })
-        .filter(service => {
             if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
                 if(service.isSupported && !service.isSupported()){
                     /* eslint-disable no-console*/
-                    console.error(`${service.serviceName} is not supported in this deployment. Skipping...`);
+                    console.error(`${service.serviceName} is not supported in this deployment.`);
                     /* eslint-enable no-console*/
-                    return false;
                 }
-                return true;
             }
-            return false;
+
+            return service;
         });
 };
 
@@ -147,7 +143,7 @@ RPCManager.prototype.getServices = function() {
 };
 
 RPCManager.prototype.createRouter = function() {
-    var router = express.Router({mergeParams: true});
+    const router = express.Router({mergeParams: true});
 
     router.route('/').get((req, res) => {
         const ALL_RPC_NAMES = this.getServices().map(rpc => rpc.serviceName).sort();
@@ -444,7 +440,7 @@ RPCManager.prototype.sendRPCError = function(response, error) {
     }
 };
 
-RPCManager.prototype.isRPCLoaded = function(serviceName) {
+RPCManager.prototype.isServiceLoaded = function(serviceName) {
     return this.rpcRegistry[serviceName] && this.rpcRegistry[serviceName].isSupported();
 };
 

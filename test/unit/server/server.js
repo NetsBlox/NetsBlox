@@ -171,8 +171,7 @@ describe('Server Tests', function() {
     });
 
     describe('RPC Manager Tests', function() {
-        var uuid,
-            WebSocket = require('ws'),  // jshint ignore:line
+        var WebSocket = require('ws'),  // jshint ignore:line
             ROOM_NAME = 'ttt-test-room',
             api;
 
@@ -181,14 +180,6 @@ describe('Server Tests', function() {
         });
 
         // Testing an example RPC
-        describe('Basic tests', function() {
-            it('should exist', function(done) {
-                api.post('/guess?uuid='+uuid)
-                    .expect(400)
-                    .end(done);
-            });
-        });
-
         describe.skip('RPC tests', function() {
             var socket,
                 host = 'ws://localhost:'+port,
