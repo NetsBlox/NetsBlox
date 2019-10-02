@@ -71,21 +71,20 @@ ServiceCreation.getCreateFromTableOptions = function(data) {
 };
 
 const validateOptions = options => {
-    if (options.RPCs) {
-        if (!options.RPCs) {
-            throw new Error('"options" is not valid. "RPCs" must be a list.');
-        }
-
-        if (options.RPCs.length === 0) {
-            throw new Error('"options" is not valid. Cannot have empty list of RPCs');
-        }
-        options.RPCs.forEach(rpc => {
-            const {name='RPC'} = rpc;
-            if (!rpc.code && !rpc.query) {
-                throw new Error(`"options" is not valid. ${name} needs either "code" or "query"`);
-            }
-        });
+    if (!options.RPCs || Array.isArray(options.RPCs)) {
+        throw new Error('"options" is not valid. "RPCs" must be a list.');
     }
+
+    if (options.RPCs.length === 0) {
+        throw new Error('"options" is not valid. Cannot have empty list of RPCs');
+    }
+
+    options.RPCs.forEach(rpc => {
+        const {name='RPC'} = rpc;
+        if (!rpc.code && !rpc.query) {
+            throw new Error(`"options" is not valid. ${name} needs either "code" or "query"`);
+        }
+    });
 };
 
 const resolveOptions = (options, defaultOptions) => {
