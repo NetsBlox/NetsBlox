@@ -79,7 +79,7 @@ ServiceCreation.getCreateFromTableOptions = function(data) {
 };
 
 const validateOptions = options => {
-    if (!options.RPCs || Array.isArray(options.RPCs)) {
+    if (!options.RPCs || !Array.isArray(options.RPCs)) {
         throw new Error('"options" is not valid. "RPCs" must be a list.');
     }
 
