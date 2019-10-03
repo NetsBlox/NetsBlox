@@ -5,8 +5,7 @@ const ServiceEvents = require('../utils/service-events');
 let mongoCollection = null;
 const getDatabase = function() {
     if (!mongoCollection) {
-        // TODO: Different storage location? It would be better if the collection wasn't called "rpc"
-        mongoCollection = Storage.create('user-services').collection;
+        mongoCollection = Storage.createCollection('netsblox:services:community');
     }
     return mongoCollection;
 };
