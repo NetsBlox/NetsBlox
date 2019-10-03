@@ -37,7 +37,7 @@ var RPCManager = function() {
 
 RPCManager.prototype.onUpdateService = async function(name) {
     await ServerStorage.onConnected;
-    const DataServices = Storage.create('user-services').collection;
+    const DataServices = Storage.createCollection('netsblox:services:community');
     const serviceData = await DataServices.findOne({name});
     const service = new DataService(serviceData);
     this.registerRPC(service);
@@ -103,7 +103,7 @@ RPCManager.prototype.loadRPCsFromFS = function() {
 
 RPCManager.prototype.loadRPCsFromDatabase = async function() {
     await ServerStorage.onConnected;
-    const DataServices = Storage.create('user-services').collection;
+    const DataServices = Storage.createCollection('netsblox:services:community');
     const serviceData = await DataServices.find({}).toArray();
     const services = serviceData
         .map(serviceInfo => new DataService(serviceInfo));
