@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const Blocks = require('./blocks');
 const Storage = require('../../storage');
+const ServiceEvents = require('../utils/service-events');
 let mongoCollection = null;
 const getDatabase = function() {
     if (!mongoCollection) {
@@ -32,9 +33,6 @@ const ensureLoggedIn = function(caller) {
 const isAuthorized = (caller, service) => {
     return !service || caller.username === service.author;
 };
-
-// TODO: should we support 1D dataset? What would the methods look like?
-// TODO: Should we require users to provide a source for the data?
 
 /**
  * Get the default settings for a given dataset.
@@ -161,9 +159,14 @@ ServiceCreation.createServiceFromTable = async function(name, data, options) {
     }
     const query = {$set: service};
     await storage.updateOne({name}, query, {upsert: true});
-    // TODO: Update the services
+    ServiceEvents.emit(ServiceEvents.UPDATE, name);
 };
 
+/**
+ * Delete an existing service.
+ *
+ * @param {String} name Service name
+ */
 ServiceCreation.deleteService = async function(name) {
     ensureLoggedIn(this.caller);
     const storage = getDatabase();
@@ -172,7 +175,7 @@ ServiceCreation.deleteService = async function(name) {
         throw new Error(`Not allowed to delete ${name}. Only the author can do that!`);
     }
     await storage.deleteOne({name, author: this.caller.username});
-    // TODO: Update the RPCManager...
+    ServiceEvents.emit(ServiceEvents.DELETE, name);
     return 'OK';
 };
 

@@ -12,6 +12,7 @@ class DataService {
     }
 
     _initializeRPC(method) {
+        this._logger.info(`initializing ${method.name}`);
         const data = this._data.slice(1);  // skip headers
         const factory = this._getFunctionForMethod(method, this._data);
         if (!factory) return;

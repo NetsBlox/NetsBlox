@@ -197,7 +197,6 @@ RPCManager.prototype.createServiceMetadata = function(service) {
             }
             delete info.name;
             info.deprecated = info.deprecated || deprecatedMethods.includes(name);
-
             serviceDoc.rpcs[name] = info;
         });
 
