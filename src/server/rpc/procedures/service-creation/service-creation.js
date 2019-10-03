@@ -34,6 +34,16 @@ const isAuthorized = (caller, service) => {
     return !service || caller.username === service.author;
 };
 
+const fs = require('fs');
+const path = require('path');
+const normalizeServiceName = name => name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+const RESERVED_SERVICE_NAMES = fs.readdirSync(path.join(__dirname, '..'))
+    .map(normalizeServiceName);
+
+const isValidServiceName = name => {
+    return !RESERVED_SERVICE_NAMES.includes(normalizeServiceName(name));
+};
+
 /**
  * Get the default settings for a given dataset.
  *
@@ -154,9 +164,10 @@ ServiceCreation.createServiceFromTable = async function(name, data, options) {
 
     const storage = getDatabase();
     const existingService = await storage.findOne({name});
-    if (!isAuthorized(this.caller, existingService)) {
+    if (!isAuthorized(this.caller, existingService) || !isValidServiceName(name)) {
         throw new Error(`Service with name "${name}" already exists. Please choose a different name.`);
     }
+    
     const query = {$set: service};
     await storage.updateOne({name}, query, {upsert: true});
     ServiceEvents.emit(ServiceEvents.UPDATE, name);
