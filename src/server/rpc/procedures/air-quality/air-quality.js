@@ -2,6 +2,7 @@
  * The AirQuality Service provides access to real-time air quality data using the AirNowAPI.
  * For more information, check out https://docs.airnowapi.org/.
  * @service
+ * @category Science
  */
 
 // This will use the AirNowAPI to get air quality given a latitude and longitude.

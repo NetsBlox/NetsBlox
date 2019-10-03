@@ -1,3 +1,9 @@
+/**
+ * The Execute Service provides capabilities for executing blocks on the NetsBlox
+ * server. This is particularly useful for batching RPC requests.
+ *
+ * @service
+ */
 const Q = require('q');
 const execute = {};
 

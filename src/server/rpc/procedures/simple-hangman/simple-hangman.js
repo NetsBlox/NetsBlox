@@ -1,5 +1,12 @@
 // This is a hangman set of RPC's which will select a word for the student to
 // try to guess
+/**
+ * The SimpleHangman Service provides RPCs for playing single player hangman.
+ * The service will choose a word for the player to guess using the given RPCs.
+ *
+ * @service
+ * @category Games
+ */
 'use strict';
 
 // Word list

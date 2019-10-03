@@ -1,14 +1,13 @@
 /**
  * The Earthquakes Service provides access to historical earthquake data.
  * For more information, check out https://earthquake.usgs.gov/.
+ *
  * @service
+ * @category Science
  */
 // This will use the Seismi API to populate a list of recent earthquakes. All queries
 // will then be handled wrt this list stored in the filesystem. Hourly, we will update
 // our cache of this earthquake data.
-//
-// This is a static rpc collection. That is, it does not maintain state and is
-// shared across groups
 'use strict';
 
 const logger = require('../utils/logger')('earthquakes');

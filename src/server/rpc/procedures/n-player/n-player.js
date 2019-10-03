@@ -1,4 +1,11 @@
 // This is the NPlayer game RPC. It ensures round-robin turn taking with N players.
+/**
+ * The NPlayer Service utilities for ensuring round-robin turn taking with a set
+ * number of players (N).
+ *
+ * @service
+ * @category Games
+ */
 
 'use strict';
 
