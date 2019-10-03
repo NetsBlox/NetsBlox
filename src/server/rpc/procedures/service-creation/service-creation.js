@@ -110,7 +110,9 @@ const resolveOptions = (options, defaultOptions) => {
 
 const getBlockArgs = blockXml => {
     const inputs = blockXml.split(/<\/?inputs>/, 2).pop()
-        .split(/<\/?input>/g).filter(arg => !!arg);
+        .split(/<\/?input>/g)
+        .map(arg => arg.trim())
+        .filter(arg => !!arg);
     return inputs;
 };
 
