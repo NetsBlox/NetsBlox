@@ -1,3 +1,10 @@
+/**
+ * The Battleship Service provides helpful utilities for building a distributed
+ * game of battleship.
+ *
+ * @service
+ * @category Games
+ */
 'use strict';
 
 const logger = require('../utils/logger')('battleship');

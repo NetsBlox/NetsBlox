@@ -3,10 +3,10 @@
  * For more information, check out https://openweathermap.org/.
  *
  * Terms of Service: https://openweathermap.org/terms
+ *
  * @service
+ * @category Science
  */
-// This is a static rpc collection. That is, it does not maintain state and is
-// shared across groups
 'use strict';
 
 const logger = require('../utils/logger')('weather');

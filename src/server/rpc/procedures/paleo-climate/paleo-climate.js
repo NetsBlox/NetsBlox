@@ -14,6 +14,8 @@
  * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/vostok/deutnat.txt
  *
  * @service
+ * @category Science
+ * @category Climate
  */
 
 const _ = require('lodash');
