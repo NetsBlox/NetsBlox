@@ -5,6 +5,11 @@ describe('rpc-manager', function() {
         _ = require('lodash'),
         Q = require('q');
 
+    before(() =>{
+        RPCManager.loadRPCsFromFS()
+            .forEach(service => RPCManager.registerRPC(service));
+    });
+
     describe('sendRPCResult', function() {
         var response;
 
@@ -101,5 +106,18 @@ describe('rpc-manager', function() {
             assert.equal(result.value, undefined);
         });
 
+    });
+
+    describe('handleRPCRequest', function() {
+        it('should return 404 if RPC not found (valid service)', async function() {
+            const {Dev} = RPCManager.rpcRegistry;
+            const response = new MockResponse();
+            const request = {query:{}, params:{}};
+            request.query.uuid = 'abc123';
+            request.query.projectId = 'projectabc123';
+
+            RPCManager.handleRPCRequest(Dev, request, response);
+            assert.equal(response.code, 404);
+        });
     });
 });

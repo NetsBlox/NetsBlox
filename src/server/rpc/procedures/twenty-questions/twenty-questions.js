@@ -3,6 +3,7 @@
  * game of twenty questions.
  *
  * @service
+ * @category Games
  */
 
 'use strict';

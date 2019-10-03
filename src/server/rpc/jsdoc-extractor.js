@@ -73,11 +73,17 @@ function parseSource(source, searchScope) {
         return block;
     });
 
-    // Find the description
-    const description = blocks
-        .filter(block => block.parsed.tags.find(tag => tag.title === 'service'))
-        .map(block => block.parsed.description)
-        .pop();
+    // Find the description and categories
+    const serviceAnnotation = blocks
+        .find(block => block.parsed.tags.find(tag => tag.title === 'service'));
+
+    const description = serviceAnnotation && serviceAnnotation.parsed.description;
+    let categories = [];
+    if (serviceAnnotation) {
+        categories = serviceAnnotation.parsed.tags
+            .filter(tag => tag.title === 'category')
+            .map(tag => tag.description);
+    }
 
     const rpcDocs = blocks
         .filter(block => !block.parsed.tags.find(tag => tag.title === 'service'))
@@ -103,6 +109,7 @@ function parseSource(source, searchScope) {
 
     return {
         description,
+        categories,
         rpcs: rpcDocs
     };
 }
@@ -233,6 +240,7 @@ let Docs = function(servicePath) {
     const serviceDocs = parseService(servicePath);
     this.description = serviceDocs.description;
     this.rpcs = serviceDocs.rpcs.map(doc => doc.parsed);
+    this.categories = serviceDocs.categories;
 };
 
 // get a doc for an action

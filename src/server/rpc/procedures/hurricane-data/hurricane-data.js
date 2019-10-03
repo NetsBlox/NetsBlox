@@ -5,6 +5,7 @@
  * For more information, check out https://www.aoml.noaa.gov/hrd/data_sub/re_anal.html
  *
  * @service
+ * @category Science
  */
 const fs = require('fs');
 const path = require('path');

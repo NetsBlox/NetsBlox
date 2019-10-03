@@ -37,7 +37,7 @@ var RPCManager = function() {
 
 RPCManager.prototype.onUpdateService = async function(name) {
     await ServerStorage.onConnected;
-    const DataServices = Storage.create('user-services').collection;
+    const DataServices = Storage.createCollection('netsblox:services:community');
     const serviceData = await DataServices.findOne({name});
     const service = new DataService(serviceData);
     this.registerRPC(service);
@@ -103,7 +103,7 @@ RPCManager.prototype.loadRPCsFromFS = function() {
 
 RPCManager.prototype.loadRPCsFromDatabase = async function() {
     await ServerStorage.onConnected;
-    const DataServices = Storage.create('user-services').collection;
+    const DataServices = Storage.createCollection('netsblox:services:community');
     const serviceData = await DataServices.find({}).toArray();
     const services = serviceData
         .map(serviceInfo => new DataService(serviceInfo));
@@ -146,8 +146,14 @@ RPCManager.prototype.createRouter = function() {
     const router = express.Router({mergeParams: true});
 
     router.route('/').get((req, res) => {
-        const ALL_RPC_NAMES = this.getServices().map(rpc => rpc.serviceName).sort();
-        return res.send(ALL_RPC_NAMES);
+        const ALL_SERVICES = this.getServices()
+            .filter(service => service.isSupported())
+            .map(service => ({
+                name: service.serviceName,
+                categories: service._docs.categories
+            }));
+
+        return res.send(ALL_SERVICES);
     });
 
     const isServiceWithName = (name, service) => {
@@ -186,7 +192,7 @@ RPCManager.prototype.createServiceMetadata = function(service) {
     this.getMethodsFor(service.serviceName)
         .forEach(name => {
             let info;
-            if (service._docs && service._docs.getDocFor(name)) {
+            if (service._docs.getDocFor(name)) {
                 info = service._docs.getDocFor(name);
             } else {
                 // if the method has no docs build up sth similar
@@ -200,9 +206,8 @@ RPCManager.prototype.createServiceMetadata = function(service) {
             serviceDoc.rpcs[name] = info;
         });
 
-    if (service._docs) {
-        serviceDoc.description = service._docs.description;
-    }
+    serviceDoc.description = service._docs.description;
+    serviceDoc.categories = service._docs.categories;
     return serviceDoc;
 };
 
@@ -267,7 +272,7 @@ RPCManager.prototype.getArgumentsFor = function(serviceName, action) {
         if (typeof service === 'function') {
             fnObj = service.prototype;
         }
-        return utils.getArgumentsFor(fnObj[action]);
+        return fnObj[action] && utils.getArgumentsFor(fnObj[action]);
     }
 };
 
@@ -317,7 +322,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         return this.callRPC(action, ctx, args);
     } else {
         this._logger.log(`Invalid RPC:${RPC.serviceName}.${action}`);
-        return res.status(400).send('Invalid RPC');
+        return res.status(404).send('Invalid RPC');
     }
 };
 

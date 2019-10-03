@@ -1,4 +1,9 @@
-// This is a hangman set of RPC's which will mediate a game of hangman
+/**
+ * The Hangman Service provides helpers for mediating a distributed game of hangman.
+ *
+ * @service
+ * @category Games
+ */
 'use strict';
 
 const logger = require('../utils/logger')('hangman');
