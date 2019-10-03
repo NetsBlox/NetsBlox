@@ -146,8 +146,14 @@ RPCManager.prototype.createRouter = function() {
     const router = express.Router({mergeParams: true});
 
     router.route('/').get((req, res) => {
-        const ALL_RPC_NAMES = this.getServices().map(rpc => rpc.serviceName).sort();
-        return res.send(ALL_RPC_NAMES);
+        const ALL_SERVICES = this.getServices()
+            .filter(service => service.isSupported())
+            .map(service => ({
+                name: service.serviceName,
+                categories: service._docs.categories
+            }));
+
+        return res.send(ALL_SERVICES);
     });
 
     const isServiceWithName = (name, service) => {
@@ -186,7 +192,7 @@ RPCManager.prototype.createServiceMetadata = function(service) {
     this.getMethodsFor(service.serviceName)
         .forEach(name => {
             let info;
-            if (service._docs && service._docs.getDocFor(name)) {
+            if (service._docs.getDocFor(name)) {
                 info = service._docs.getDocFor(name);
             } else {
                 // if the method has no docs build up sth similar
@@ -201,9 +207,8 @@ RPCManager.prototype.createServiceMetadata = function(service) {
             serviceDoc.rpcs[name] = info;
         });
 
-    if (service._docs) {
-        serviceDoc.description = service._docs.description;
-    }
+    serviceDoc.description = service._docs.description;
+    serviceDoc.categories = service._docs.categories;
     return serviceDoc;
 };
 

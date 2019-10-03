@@ -72,6 +72,7 @@ class DataDocs {
     constructor(record) {
         this.record = record;
         this.description = record.help;
+        this.categories = ['Community'];
     }
 
     getDocFor(name) {
