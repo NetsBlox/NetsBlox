@@ -273,7 +273,7 @@ RPCManager.prototype.getArgumentsFor = function(serviceName, action) {
         if (typeof service === 'function') {
             fnObj = service.prototype;
         }
-        return utils.getArgumentsFor(fnObj[action]);
+        return fnObj[action] && utils.getArgumentsFor(fnObj[action]);
     }
 };
 
@@ -323,7 +323,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         return this.callRPC(action, ctx, args);
     } else {
         this._logger.log(`Invalid RPC:${RPC.serviceName}.${action}`);
-        return res.status(400).send('Invalid RPC');
+        return res.status(404).send('Invalid RPC');
     }
 };
 
