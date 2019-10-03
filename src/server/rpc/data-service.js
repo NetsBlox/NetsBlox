@@ -82,7 +82,7 @@ class DataDocs {
                 description: method.help,
                 args: method.arguments.map(argument => ({
                     name: argument,
-                    optional: true,
+                    optional: false,
                 })),
             };
         }

@@ -164,7 +164,7 @@ Server.prototype.configureRoutes = async function() {
 
                 // Check if we have loaded the dependent rpcs
                 for (var i = deps.length; i--;) {
-                    if (!RPCManager.isRPCLoaded(deps[i])) {
+                    if (!RPCManager.isServiceLoaded(deps[i])) {
                         // eslint-disable-next-line no-console
                         console.log(`Service ${displayName} not available because ${deps[i]} is not loaded`);
                         return false;
