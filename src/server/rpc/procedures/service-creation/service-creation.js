@@ -38,6 +38,7 @@ const path = require('path');
 const normalizeServiceName = name => name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 const RESERVED_SERVICE_NAMES = fs.readdirSync(path.join(__dirname, '..'))
     .map(normalizeServiceName);
+const MONGODB_DOC_TOO_LARGE = 'Attempt to write outside buffer bounds';
 
 const isValidServiceName = name => {
     return !RESERVED_SERVICE_NAMES.includes(normalizeServiceName(name));
@@ -183,8 +184,15 @@ ServiceCreation.createServiceFromTable = async function(name, data, options) {
     }
     
     const query = {$set: service};
-    await storage.updateOne({name}, query, {upsert: true});
-    ServiceEvents.emit(ServiceEvents.UPDATE, name);
+    try {
+        await storage.updateOne({name}, query, {upsert: true});
+        ServiceEvents.emit(ServiceEvents.UPDATE, name);
+    } catch (err) {
+        if (err.message === MONGODB_DOC_TOO_LARGE) {
+            throw new Error('Uploaded code is too large. Please decrease project size and try again.');
+        }
+        throw err;
+    }
 };
 
 /**
