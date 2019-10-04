@@ -8,10 +8,15 @@ const request = require('request-promise');
 const Q = require('q');
 const NetworkTopology = require('./network-topology');
 const ProjectActions = require('./storage/project-actions');
+const fs = require('fs');
+const path = require('path');
+const {promisify} = require('util');
+const writeFile = promisify(fs.writeFile);
 
 const BugReporter = function() {
     this.maintainer = process.env.MAINTAINER_EMAIL;
     this.reportUrl = process.env.REPORT_URL;
+    this.bugDir = process.env.BUG_DIR;
     if (this.reportUrl || this.maintainer) {
         const endpoints = [this.reportUrl, this.maintainer].filter(word => !!word).join(' and ');
         logger.trace(`sending bug reports to ${endpoints}`);
@@ -172,7 +177,11 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
         return mailer.sendMail(mailOpts);
     }
 
-    if (!this.maintainer && !this.reportUrl) {
+    if (this.bugDir) {
+        writeFile(path.join(this.bugDir, `${subject}-${version}.json`), JSON.stringify(data.content))
+    }
+
+    if (!this.maintainer && !this.reportUrl && !this.bugDir) {
         logger.warn('Not reporting bug reports. Set MAINTAINER_EMAIL or ' +
             'REPORT_URL in the environment to report bug reports.');
     }
