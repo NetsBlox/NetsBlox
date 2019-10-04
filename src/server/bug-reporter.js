@@ -178,7 +178,7 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
     }
 
     if (this.bugDir) {
-        writeFile(path.join(this.bugDir, `${subject}-${version}.json`), JSON.stringify(data.content))
+        writeFile(path.join(this.bugDir, `${subject}-${version}.json`), JSON.stringify(data.content));
     }
 
     if (!this.maintainer && !this.reportUrl && !this.bugDir) {
