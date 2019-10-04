@@ -1,6 +1,6 @@
 <context id="1">
   <inputs>
-    <input>data</input>
+    <input><%= dataVariable %></input>
   </inputs>
   <variables/>
   <script>
@@ -25,7 +25,7 @@
       <block s="reportGreaterThan">
         <block var="index"/>
         <block s="reportListLength">
-          <block var="data"/>
+          <block var="<%= dataVariable %>"/>
         </block>
       </block>
       <script>
@@ -33,7 +33,7 @@
           <l>row</l>
           <block s="reportListItem">
             <block var="index"/>
-            <block var="data"/>
+            <block var="<%= dataVariable %>"/>
           </block>
         </block>
         <block s="doIf">

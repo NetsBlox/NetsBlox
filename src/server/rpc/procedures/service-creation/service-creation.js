@@ -43,6 +43,17 @@ const isValidServiceName = name => {
     return !RESERVED_SERVICE_NAMES.includes(normalizeServiceName(name));
 };
 
+const getVariableNameForData = names => {
+    const basename = 'data';
+    let i = 2;
+    let name = basename;
+    while (names.includes(name)) {
+        name = `${basename}_${i}`;
+        i++;
+    }
+    return name;
+};
+
 /**
  * Get the default settings for a given dataset.
  *
@@ -53,13 +64,15 @@ ServiceCreation.getCreateFromTableOptions = function(data) {
     validateDataset(data);
 
     const fields = data[0];
+    const dataVariable = getVariableNameForData(fields);
     const indexField = fields[0];
+    // TODO: Handle single values better...
     const rpcOptions = fields.slice(1).map((field, i) => {
         const column = i + 2;
         return {
             name: `get${toUpperCamelCase(field)}Data`,
             help: `Get ${field} data for the given ${indexField}`,
-            query: Blocks.query({field: indexField, column}),
+            query: Blocks.query({field: indexField, column, dataVariable}),
             transform: Blocks.transform({field: indexField, column}),
         };
     });
@@ -67,7 +80,7 @@ ServiceCreation.getCreateFromTableOptions = function(data) {
     const getIndexFieldRPC = {
         name: `getAll${toUpperCamelCase(indexField)}Values`,
         help: `Get ${indexField} values with data available.`,
-        code: Blocks.getIndexFieldValues({field: indexField}),
+        code: Blocks.getIndexFieldValues({field: indexField, dataVariable}),
     };
 
     rpcOptions.push(getIndexFieldRPC);

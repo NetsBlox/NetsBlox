@@ -1,13 +1,13 @@
 <context>
   <inputs>
     <input><%= field %></input>
-    <input>data</input>
+    <input><%= dataVariable %></input>
   </inputs>
   <variables/>
   <block s="reportEquals">
     <block s="reportListItem">
       <l>1</l>
-      <block var="data"/>
+      <block var="<%= dataVariable %>"/>
     </block>
     <block var="<%= field %>"/>
   </block>
