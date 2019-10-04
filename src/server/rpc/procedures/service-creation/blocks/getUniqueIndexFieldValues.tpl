@@ -8,6 +8,7 @@
       <list>
         <l>results</l>
         <l>index</l>
+        <l>row</l>
       </list>
     </block>
     <block s="doSetVar">
@@ -28,15 +29,32 @@
         </block>
       </block>
       <script>
-        <block s="doAddToList">
+        <block s="doSetVar">
+          <l>row</l>
           <block s="reportListItem">
-            <l>1</l>
-            <block s="reportListItem">
-              <block var="index"/>
-              <block var="<%= dataVariable %>"/>
+            <block var="index"/>
+            <block var="<%= dataVariable %>"/>
+          </block>
+        </block>
+        <block s="doIf">
+          <block s="reportNot">
+            <block s="reportListContainsItem">
+              <block var="results"/>
+              <block s="reportListItem">
+                <l>1</l>
+                <block var="row"/>
+              </block>
             </block>
           </block>
-          <block var="results"/>
+          <script>
+            <block s="doAddToList">
+              <block s="reportListItem">
+                <l>1</l>
+                <block var="row"/>
+              </block>
+              <block var="results"/>
+            </block>
+          </script>
         </block>
         <block s="doChangeVar">
           <l>index</l>
@@ -48,10 +66,10 @@
       <block var="results"/>
     </block>
   </script>
-  <receiver></receiver>
-  <context id="227">
+  <receiver/>
+  <context>
     <inputs/>
     <variables/>
-    <receiver></receiver>
+    <receiver/>
   </context>
 </context>

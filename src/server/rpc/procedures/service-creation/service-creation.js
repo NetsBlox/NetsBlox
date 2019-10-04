@@ -55,6 +55,48 @@ const getVariableNameForData = names => {
     return name;
 };
 
+ServiceCreation._getConstantFields = function(data) {
+    const fields = data[0];
+    const constantColumns = fields.map((_, i) => i);
+    constantColumns.shift();  // ID is trivially constant
+
+    const fieldValues = {};
+
+    for (let i = data.length; i > 0; i--) {
+        const record = data[i];
+        if (!record || !record.length) continue;
+
+        const id = record[0];
+        if (!fieldValues[id]) {
+            fieldValues[id] = record;
+        } else {
+            const prevValues = fieldValues[id];
+            for (let c = constantColumns.length; c--;) {
+                const column = constantColumns[c];
+                if (prevValues[column] !== record[column]) {
+                    console.log(`Removing ${fields[column]} due to ${id}. Previous value ${prevValues[column]} !== ${record[column]}`);
+                    constantColumns.pop();
+                }
+            }
+        }
+    }
+
+    return constantColumns.map(c => fields[c]);
+};
+
+ServiceCreation._hasUniqueIndexField = function(data) {
+    const indices = {};
+    for (let i = data.length; i > 0; i--) {
+        if (!data[i] || !data[i].length) continue;
+        const id = data[i][0];
+        if (indices[id]) {
+            return false;
+        }
+        indices[id] = true;
+    }
+    return true;
+};
+
 /**
  * Get the default settings for a given dataset.
  *
@@ -65,26 +107,58 @@ ServiceCreation.getCreateFromTableOptions = function(data) {
     validateDataset(data);
 
     const fields = data[0];
-    const dataVariable = getVariableNameForData(fields);
     const indexField = fields[0];
-    // TODO: Handle single values better...
+    const constantFields = this._getConstantFields(data);
+    const dataVariable = getVariableNameForData(fields);
     const rpcOptions = fields.slice(1).map((field, i) => {
         const column = i + 2;
-        return {
-            name: `get${toUpperCamelCase(field)}Data`,
-            help: `Get ${field} data for the given ${indexField}`,
-            query: Blocks.query({field: indexField, column, dataVariable}),
-            transform: Blocks.transform({field: indexField, column}),
-        };
+        if (constantFields.includes(field)) {
+            return {
+                name: `get${toUpperCamelCase(field)}`,
+                help: `Get the ${field} for the given ${indexField}`,
+                code: Blocks.getColumnFromFirst({field: indexField, column, dataVariable}),
+            };
+        } else {
+            return {
+                name: `get${toUpperCamelCase(field)}Data`,
+                help: `Get ${field} data for the given ${indexField}`,
+                query: Blocks.query({field: indexField, column, dataVariable}),
+                transform: Blocks.transform({field: indexField, column}),
+            };
+        }
     });
 
-    const getIndexFieldRPC = {
-        name: `getAll${toUpperCamelCase(indexField)}Values`,
-        help: `Get ${indexField} values with data available.`,
-        code: Blocks.getIndexFieldValues({field: indexField, dataVariable}),
-    };
+    if (this._hasUniqueIndexField(data)) {
+        const column = 1;
+        const getRecordRPC = {
+            name: 'getRecord',
+            help: `Get data for the given ${indexField}.`,
+            query: Blocks.query({field: indexField, column, dataVariable}),
+        };
+        rpcOptions.unshift(getRecordRPC);
+        const getIndexFieldRPC = {
+            name: `getAll${toUpperCamelCase(indexField)}Values`,
+            help: `Get ${indexField} values with data available.`,
+            code: Blocks.getIndexFieldValues({dataVariable}),
+        };
+        rpcOptions.push(getIndexFieldRPC);
+    } else {
+        const column = 1;
+        const getRecordRPC = {
+            name: 'getRecords',
+            help: `Get all data for the given ${indexField}.`,
+            query: Blocks.query({field: indexField, column, dataVariable}),
+        };
+        rpcOptions.unshift(getRecordRPC);
 
-    rpcOptions.push(getIndexFieldRPC);
+        const getIndexFieldRPC = {
+            name: `getAll${toUpperCamelCase(indexField)}Values`,
+            help: `Get ${indexField} values with data available.`,
+            code: Blocks.getUniqueIndexFieldValues({dataVariable}),
+        };
+        rpcOptions.push(getIndexFieldRPC);
+    }
+
     return {
         help: `Dataset uploaded by ${this.caller.username}`,
         RPCs: rpcOptions

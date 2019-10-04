@@ -1,20 +1,14 @@
 <context id="1">
   <inputs>
+    <input><%= field %></input>
     <input><%= dataVariable %></input>
   </inputs>
   <variables/>
   <script>
     <block s="doDeclareVariables">
       <list>
-        <l>results</l>
         <l>index</l>
       </list>
-    </block>
-    <block s="doSetVar">
-      <l>results</l>
-      <block s="reportNewList">
-        <list/>
-      </block>
     </block>
     <block s="doSetVar">
       <l>index</l>
@@ -28,15 +22,28 @@
         </block>
       </block>
       <script>
-        <block s="doAddToList">
-          <block s="reportListItem">
-            <l>1</l>
+        <block s="doIf">
+          <block s="reportEquals">
             <block s="reportListItem">
-              <block var="index"/>
-              <block var="<%= dataVariable %>"/>
+              <l>1</l>
+              <block s="reportListItem">
+                <block var="index"/>
+                <block var="<%= dataVariable %>"/>
+              </block>
             </block>
+            <block var="<%= field %>"/>
           </block>
-          <block var="results"/>
+          <script>
+            <block s="doReport">
+              <block s="reportListItem">
+                <l><%= column %></l>
+                <block s="reportListItem">
+                  <block var="index"/>
+                  <block var="<%= dataVariable %>"/>
+                </block>
+              </block>
+            </block>
+          </script>
         </block>
         <block s="doChangeVar">
           <l>index</l>
@@ -45,13 +52,13 @@
       </script>
     </block>
     <block s="doReport">
-      <block var="results"/>
+      <l>NOT FOUND</l>
     </block>
   </script>
-  <receiver></receiver>
-  <context id="227">
+  <receiver/>
+  <context id="131">
     <inputs/>
     <variables/>
-    <receiver></receiver>
+    <receiver/>
   </context>
 </context>
