@@ -141,13 +141,16 @@ ServiceCreation.getCreateFromTableOptions = function(data) {
             query: Blocks.query({field: indexField, column, dataVariable}),
         };
         rpcOptions.unshift(getRecordRPC);
-        const getIndexFieldRPC = {
-            name: `getAll${toUpperCamelCase(indexField)}Values`,
-            help: `Get ${indexField} values with data available.`,
-            query: Blocks.reportTrue(),
-            transform: Blocks.transform({column}),
-        };
-        rpcOptions.push(getIndexFieldRPC);
+
+        fields.forEach((field, index) => {
+            const column = index + 1;
+            rpcOptions.push({
+                name: `getAll${toUpperCamelCase(field)}Values`,
+                help: `Get ${field} values with data available.`,
+                query: Blocks.reportTrue(),
+                transform: Blocks.transform({column}),
+            });
+        });
     } else {
         const column = 1;
         const getRecordRPC = {
