@@ -19,8 +19,10 @@ const validateDataset = data => {
 };
 
 const toUpperCamelCase = name => {
-    const words = name.split(/[^a-zA-Z0-9]/);
-    return words.map(word => word[0].toUpperCase() + word.slice(1)).join('');
+    const words = name.split(/[^a-zA-Z0-9\u00C0-\u02A0#$%]/);
+    return words
+        .filter(word => !!word)
+        .map(word => word[0].toUpperCase() + word.slice(1)).join('');
 };
 
 const ensureLoggedIn = function(caller) {
