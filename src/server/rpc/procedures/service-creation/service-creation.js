@@ -13,7 +13,7 @@ const getDatabase = function() {
 const ServiceCreation = {};
 
 const validateDataset = data => {
-    if (!Array.isArray(data[0])) {  // TODO: Should this be move to a new datatype?
+    if (!Array.isArray(data[0])) {  // TODO: Should this be moved to a new datatype?
         throw new Error('"data" must be a list of lists.');
     }
 };
@@ -74,8 +74,7 @@ ServiceCreation._getConstantFields = function(data) {
             for (let c = constantColumns.length; c--;) {
                 const column = constantColumns[c];
                 if (prevValues[column] !== record[column]) {
-                    console.log(`Removing ${fields[column]} due to ${id}. Previous value ${prevValues[column]} !== ${record[column]}`);
-                    constantColumns.pop();
+                    constantColumns.splice(c, 1);
                 }
             }
         }
@@ -97,6 +96,11 @@ ServiceCreation._hasUniqueIndexField = function(data) {
     return true;
 };
 
+ServiceCreation._cleanDataset = data => {
+    return data.filter(line => !!line)
+        .map(row => row.map(item => item.trim()));
+};
+
 /**
  * Get the default settings for a given dataset.
  *
@@ -104,6 +108,7 @@ ServiceCreation._hasUniqueIndexField = function(data) {
  */
 ServiceCreation.getCreateFromTableOptions = function(data) {
     ensureLoggedIn(this.caller);
+    data = this._cleanDataset(data);
     validateDataset(data);
 
     const fields = data[0];
@@ -263,7 +268,7 @@ ServiceCreation.createServiceFromTable = async function(name, data, options) {
         ServiceEvents.emit(ServiceEvents.UPDATE, name);
     } catch (err) {
         if (err.message === MONGODB_DOC_TOO_LARGE) {
-            throw new Error('Uploaded code is too large. Please decrease project size and try again.');
+            throw new Error('Uploaded code is too large. Please decrease project (or dataset) size and try again.');
         }
         throw err;
     }
