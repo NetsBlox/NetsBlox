@@ -1,6 +1,8 @@
 describe('service-creation', function() {
     const utils = require('../../../../assets/utils');
     const ServiceCreation = utils.reqSrc('rpc/procedures/service-creation/service-creation');
+    const RPCMock = require('../../../../assets/mock-rpc');
+    const service = new RPCMock(ServiceCreation);
     const assert = require('assert');
     // All entries from NetsBlox are sent as strings
     const toStringEntries = data => data.map(row => row.map(item => item.toString()));
@@ -51,6 +53,50 @@ describe('service-creation', function() {
             const constantFields = ServiceCreation._getConstantFields(cleanData);
             assert.equal(constantFields.length, 1);
             assert.equal(constantFields[0], 'name');
+        });
+    });
+
+    describe('getCreateFromTableOptions', function() {
+        before(() => service.setRequester('client_1', 'brian'));
+
+        it('should support # symbol', function() {
+            const data = toStringEntries([
+                ['id', '# counted'],
+                [1, 20]
+            ]);
+            const options = service.getCreateFromTableOptions(data);
+            const rpcNames = options.RPCs.map(rpc => rpc.name);
+            assert(rpcNames.includes('get#Counted'));
+        });
+
+        it('should support $ symbol', function() {
+            const data = toStringEntries([
+                ['id', '$ spent'],
+                [1, 20]
+            ]);
+            const options = service.getCreateFromTableOptions(data);
+            const rpcNames = options.RPCs.map(rpc => rpc.name);
+            assert(rpcNames.includes('get$Spent'), `Could not find get$Spent: ${rpcNames.join(', ')}`);
+        });
+
+        it('should support % symbol', function() {
+            const data = toStringEntries([
+                ['id', '% of total'],
+                [1, 20]
+            ]);
+            const options = service.getCreateFromTableOptions(data);
+            const rpcNames = options.RPCs.map(rpc => rpc.name);
+            assert(rpcNames.includes('get%OfTotal'), `Could not find get%OfTotal: ${rpcNames.join(', ')}`);
+        });
+
+        it('should support accented characters', function() {
+            const data = toStringEntries([
+                ['id', 'érdös number'],
+                [1, 20]
+            ]);
+            const options = service.getCreateFromTableOptions(data);
+            const rpcNames = options.RPCs.map(rpc => rpc.name);
+            assert(rpcNames.includes('getÉrdösNumber'), `Could not find getÉrdösNumber: ${rpcNames.join(', ')}`);
         });
     });
 });
