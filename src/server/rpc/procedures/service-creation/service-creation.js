@@ -144,7 +144,8 @@ ServiceCreation.getCreateFromTableOptions = function(data) {
         const getIndexFieldRPC = {
             name: `getAll${toUpperCamelCase(indexField)}Values`,
             help: `Get ${indexField} values with data available.`,
-            code: Blocks.getIndexFieldValues({dataVariable}),
+            query: Blocks.reportTrue(),
+            transform: Blocks.transform({column}),
         };
         rpcOptions.push(getIndexFieldRPC);
     } else {
