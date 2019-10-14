@@ -15,15 +15,13 @@ const parse = require('csv-parse');
 const mongoose = require('mongoose');
 const request = require('request');
 
-let model;
-
 const modelFields = function(aModel) {
     let fields = Object.keys(aModel.schema.paths);
     return fields.slice(0,fields.length-2); // exclude id and v
 };
 
 // parserFn: called on each individual record object to transform if necessary
-const createCSVParser = function(parserFn) {
+const createCSVParser = function(model, parserFn) {
     let recCounter = 0;
     const BATCH_SIZE = 1e+4;
     const headers = modelFields(model);
@@ -88,7 +86,7 @@ const streamFromDisk = function(path, startLine=0) {
     return fs.createReadStream(path, {start: startLine});
 };
 
-async function start(aDbModel, opts) {
+async function start(model, opts) {
     opts = {
         recParser: undefined,
         filePath: undefined,
@@ -103,15 +101,14 @@ async function start(aDbModel, opts) {
         process.exit(1);
     }
 
-    model = aDbModel;
-
     // drop/clearout the collection
     await model.deleteMany({}); // a better strategy?
 
-    const parser = createCSVParser(opts.recParser);
+    const parser = createCSVParser(model, opts.recParser);
     const readStream = opts.filePath ?
         streamFromDisk(opts.filePath):
         streamFromUrl(opts.url);
+
     readStream
         .pipe(parser);
 }
