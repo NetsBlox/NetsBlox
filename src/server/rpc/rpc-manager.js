@@ -21,6 +21,8 @@ const ServiceEvents = require('./procedures/utils/service-events');
 const Storage = require('./storage');
 const DataService = require('./data-service');
 const DEFAULT_COMPATIBILITY = {arguments: {}};
+const isProduction = process.env.ENV === 'production';
+
 /**
  * RPCManager
  *
@@ -89,12 +91,15 @@ RPCManager.prototype.loadRPCsFromFS = function() {
                 service.serviceName = this.getDefaultServiceName(name);
             }
 
-            if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
-                if(service.isSupported && !service.isSupported()){
-                    /* eslint-disable no-console*/
-                    console.error(`${service.serviceName} is not supported in this deployment.`);
-                    /* eslint-enable no-console*/
-                }
+            if(service.isSupported && !service.isSupported()){
+                /* eslint-disable no-console*/
+                console.error(`${service.serviceName} is not supported in this deployment.`);
+                /* eslint-enable no-console*/
+            } else if (isProduction && !service._docs.isEnabledInProduction()) {
+                /* eslint-disable no-console*/
+                console.error(`${service.serviceName} is not supported in production.`);
+                /* eslint-enable no-console*/
+                service.isSupported = () => false;
             }
 
             return service;
