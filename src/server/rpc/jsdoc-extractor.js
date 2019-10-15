@@ -79,10 +79,15 @@ function parseSource(source, searchScope) {
 
     const description = serviceAnnotation && serviceAnnotation.parsed.description;
     let categories = [];
+    let tags = [];
     if (serviceAnnotation) {
         categories = serviceAnnotation.parsed.tags
             .filter(tag => tag.title === 'category')
             .map(tag => tag.description);
+
+        tags = serviceAnnotation.parsed.tags
+            .map(tag => tag.title)
+            .filter(tag => !['category', 'service'].includes(tag));
     }
 
     const rpcDocs = blocks
@@ -110,6 +115,7 @@ function parseSource(source, searchScope) {
     return {
         description,
         categories,
+        tags,
         rpcs: rpcDocs
     };
 }
@@ -241,6 +247,7 @@ let Docs = function(servicePath) {
     this.description = serviceDocs.description;
     this.rpcs = serviceDocs.rpcs.map(doc => doc.parsed);
     this.categories = serviceDocs.categories;
+    this.tags = serviceDocs.tags;
 };
 
 // get a doc for an action
@@ -249,6 +256,10 @@ Docs.prototype.getDocFor = function(actionName) {
     let doc = this.rpcs.find(doc => doc.name === actionName);
     if (doc) return Object.assign({}, doc);
     return undefined;
+};
+
+Docs.prototype.isEnabledInProduction = function() {
+    return !this.tags.includes('alpha');
 };
 
 // public interface
