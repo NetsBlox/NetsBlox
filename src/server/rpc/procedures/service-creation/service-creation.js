@@ -1,3 +1,12 @@
+/**
+ *
+ * The ServiceCreation Service enables users to create custom services. Custom
+ * Services can be found under the "Community" section using the `call <RPC>`
+ * block.
+ *
+ * @alpha
+ * @service
+ */
 const _ = require('lodash');
 const Blocks = require('./blocks');
 const Storage = require('../../storage');
