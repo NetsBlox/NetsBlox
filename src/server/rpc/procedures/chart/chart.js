@@ -141,7 +141,7 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
  * @param {Array} lines a single line or list of lines. Each line should be in form of [[x1,y1], [x2,y2]]
  * @param {Object=} options Configuration for graph title, axes, and more
  */
-chart.draw = function(lines, options){
+chart.draw = function(lines, options={}){
     // process the options
     Object.keys(options).forEach(key => {
         if (options[key] === 'null' || options[key] === ''){
