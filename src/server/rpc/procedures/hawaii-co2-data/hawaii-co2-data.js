@@ -1,102 +1,61 @@
-const fs = require('fs');
-const path = require('path');
-
-const table = [
-    ['Year', 'Month', 'Interpolated ppm', 'Seasonally adjusted ppm']
-];
-const table1 = [
-    ['Year', 'Month', 'Interpolated ppm']
-];
-const table2 = [
-    ['Year', 'Month', 'Seasonally adjusted ppm']
-];
-
-fs.readFileSync(path.join(__dirname,'co2_mm_mlo.txt'), 'utf8').split('\n')
-    .forEach(function (line) {
-        if (!line.startsWith('#')) {
-            let year = line.substring(0, 4);
-            let month = line.substring(4, 8).trim();
-            let inter = line.substring(38, 44);
-            let season = line.substring(50, 56);
-            let wholeArr = [year, month, inter, season];
-            let interpolatedArr = [year, month, inter];
-            let seasonalArr = [year, month, season];
-            table.push(wholeArr);
-            table1.push(interpolatedArr);
-            table2.push(seasonalArr);
-        }
-    });
-
-const co2service = {};
-
-co2service.serviceName = 'HawaiiCO2Data';
-
 /**
- * displays a table listing the year, month, and interpolated ppm values
- * @returns {array} table displaying the years and months from March 1958 to April 2019 and the corresponding interpolated ppm values
+ * Access to NOAA Earth System Research Laboratory data collected from Mauna Loa, Hawaii.
+ *
+ * See https://www.esrl.noaa.gov/gmd/ccgg/trends/ for additional details.
+ *
+ * @service
+ * @category Science
+ * @category Climate
  */
-co2service.getInterpolated = function(){
-    return table1;
-};
+const data = (function() {
+    const fs = require('fs');
+    const path = require('path');
+    const filename = path.join(__dirname,'co2_mm_mlo.txt');
+    const lines = fs.readFileSync(filename, 'utf8').split('\n');
 
-/**
- *displays a table listing the year, month, and seasonally adjusted ppm values
- * @returns {array} table displaying the years and months from March 1958 to April 2019 and the corresponding seasonal ppm values
- */
-co2service.getSeasonal = function(){
-    return table2;
-};
-
-/**
- *displays a table listing the year, month, interpolated ppm values, and seasonally adjusted ppm values
- * @returns {array} table displaying the years and months from March 1958 to April 2019 and the corresponding interpolated and seasonal ppm values
- */
-co2service.getWhole = function(){
-    return table;
-};
-
-/**
- * returns the specified ppm value after inputting the year, month, and type of data
- * @param {BoundedNumber<1958,2019>} year - year between 1958 and 2019 to return the selected ppm of
- * @param {BoundedNumber<1,12>=} month - numerical value of the month to return the selected ppm of
- * @param {string} type - select which type of data to be returned, either "seasonal" or "interpolated"
- * @returns {String} ppm value - the selected type of ppm that matches the given year and month
- */
-co2service.getPPM = function(year, month, type) {
-    let ppm = '';
-    const ppmTable = [['Year', 'Month', 'ppm']];
-    let result = this.getWhole(type);
-
-    if (month === ''){
-        result = result.filter(function(value) {
-            return value[0] === year.toString();
-        });
-
-        result = result.map(function(value){
-
-            if (type.toUpperCase() === 'SEASONAL'){
-                return [value[0], value[1], value[3]];
-            }
-            else if (type.toUpperCase() === 'INTERPOLATED'){
-                return [value[0], value[1], value[2]];
-            }
-
-            return value[0];
-        });
-
-        return [...ppmTable, ...result];
-    } else {
-        result.forEach(function (value) {
-            if (value[0] === year.toString() && value[1] === month.toString())
-                if (type.toUpperCase() === 'INTERPOLATED') {
-                    ppm = value[2];
-                }
-                else if (type.toUpperCase() === 'SEASONAL'){
-                    ppm = value[3];
-                }
-        });
+    while (lines[0].startsWith('#')) {
+        lines.shift();
     }
-    return ppm;
+    return lines.map(line => {
+        const [,, date, avg, interpolated, trend] = line.split(/\s+/)
+            .map(txt => parseFloat(txt));
+        return {date, avg, interpolated, trend};
+    });
+})();
+
+const HawaiiCO2Data = {};
+HawaiiCO2Data.serviceName = 'HawaiiCO2Data';
+
+/**
+ * Get the mole fraction of CO2 (in parts per million) by year. Missing measurements
+ * are interpolated.
+ *
+ * If a start and end year is provided, only measurements within the given range will be
+ * returned.
+ *
+ * @param {Number=} startyear Year to begin data at
+ * @param {Number=} endyear Year to begin data at
+ * @returns {Array}
+ */
+HawaiiCO2Data.getCarbonDioxideData = function(startyear=-Infinity, endyear=Infinity){
+    return data.filter(datum => datum.date > startyear && datum.date < endyear)
+        .map(datum => [datum.date, datum.interpolated]);
 };
 
-module.exports = co2service;
+/**
+ * Get the mole fraction of CO2 (in parts per million) by year with the seasonal
+ * cycle removed.
+ *
+ * If a start and end year is provided, only measurements within the given range will be
+ * returned.
+ *
+ * @param {Number=} startyear Year to begin data at
+ * @param {Number=} endyear Year to begin data at
+ * @returns {Array}
+ */
+HawaiiCO2Data.getCO2TrendData = function(startyear=-Infinity, endyear=Infinity){
+    return data.filter(datum => datum.date > startyear && datum.date < endyear)
+        .map(datum => [datum.date, datum.trend]);
+};
+
+module.exports = HawaiiCO2Data;
