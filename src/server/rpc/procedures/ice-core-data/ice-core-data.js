@@ -28,12 +28,12 @@ const schema = {
     year: Number,
     value: Number
 };
-const PaleoStorage = getServiceStorage ('PaleoClimate', schema);
-const PaleoClimate = new DBConsumer('PaleoClimate', PaleoStorage);
+const IceCoreDataStorage = getServiceStorage ('IceCoreData', schema);
+const IceCoreData = new DBConsumer('IceCoreData', IceCoreDataStorage);
 const schemaMetadata = {core: String};
 DATA_TYPES
     .forEach(type => schemaMetadata[type] = {count: Number, earliest: Number, latest: Number});
-const PaleoMetadata = getServiceStorage ('PaleoClimateMetadata', schemaMetadata);
+const IceCoreMetadata = getServiceStorage ('IceCoreDataMetadata', schemaMetadata);
 
 /**
  * Sets up the database
@@ -48,7 +48,7 @@ function importData() {
             .forEach(type => stats[type] = {count: 0, earliest: Infinity, latest: -Infinity});
         return stats;
     };
-    PaleoClimate.getIceCoreNames().forEach(name => metadata[name] = initCoreMetadata(name));
+    IceCoreData.getIceCoreNames().forEach(name => metadata[name] = initCoreMetadata(name));
 
     for (let i = records.length; i--;) {
         const {core, datatype, year} = records[i];
@@ -63,30 +63,30 @@ function importData() {
         dataStatistics.latest = Math.max(dataStatistics.latest, year);
     }
 
-    PaleoClimate.getIceCoreNames().forEach(core => {
+    IceCoreData.getIceCoreNames().forEach(core => {
         const totalCount = DATA_TYPES
             .map(type => metadata[core][type].count)
             .reduce((a,b) => a + b, 0);
 
         if (totalCount === 0) {
-            PaleoClimate._logger.warn(`No data imported for ice core "${core}"`);
+            IceCoreData._logger.warn(`No data imported for ice core "${core}"`);
         }
     });
-    PaleoClimate._logger.info(`adding ${records.length} climate records`);
-    PaleoStorage.insertMany(records);
-    PaleoMetadata.insertMany(Object.values(metadata));
+    IceCoreData._logger.info(`adding ${records.length} climate records`);
+    IceCoreDataStorage.insertMany(records);
+    IceCoreMetadata.insertMany(Object.values(metadata));
 }
 
 // Test for existing data
-PaleoStorage.findOne({}).then(result => {
+IceCoreDataStorage.findOne({}).then(result => {
     if (!result) {
-        PaleoClimate._logger.info('No data found in database, importing from data files.');
+        IceCoreData._logger.info('No data found in database, importing from data files.');
         importData();
     }
 });
 
 function validateIceCore(core) {
-    const validCores = PaleoClimate.getIceCoreNames();
+    const validCores = IceCoreData.getIceCoreNames();
     if(!validCores.includes(core)) {
         const coreList = validCores.slice(0, validCores.length-1).join(', ') +
             `, or ${validCores[validCores.length-1]}`;
@@ -95,7 +95,7 @@ function validateIceCore(core) {
 }
 
 // Core meta-data
-PaleoClimate._coreMetadata = {
+IceCoreData._coreMetadata = {
     'Antarctic Composite CO2': {
         name: 'Antarctic Composite CO2',
         description: 'A composite dataset with records from various Antarctic ice cores.',
@@ -134,7 +134,7 @@ PaleoClimate._coreMetadata = {
     }
 };
 
-PaleoClimate._getColumnData = async function(core, datatype, startyear, endyear) {
+IceCoreData._getColumnData = async function(core, datatype, startyear, endyear) {
     validateIceCore(core);
 
     const fields = ['core', 'datatype'];
@@ -168,8 +168,8 @@ PaleoClimate._getColumnData = async function(core, datatype, startyear, endyear)
  * Get names of ice cores with data available.
  * @returns {Array}
  */
-PaleoClimate.getIceCoreNames = function() {
-    return Object.keys(PaleoClimate._coreMetadata); 
+IceCoreData.getIceCoreNames = function() {
+    return Object.keys(IceCoreData._coreMetadata); 
 }; 
 
 /**
@@ -177,8 +177,8 @@ PaleoClimate.getIceCoreNames = function() {
  *
  * @returns {Array}
  */
-PaleoClimate.getDataAvailability = async function() {
-    const dataStatistics = await PaleoMetadata.find({}).lean();
+IceCoreData.getDataAvailability = async function() {
+    const dataStatistics = await IceCoreMetadata.find({}).lean();
     const availabilityTable = [];
 
     dataStatistics.sort((data1, data2) => data1.core < data2.core ? -1 : 1);
@@ -223,8 +223,8 @@ PaleoClimate.getDataAvailability = async function() {
  * @param {Number=} endyear Year to begin data at
  * @returns {Array}
  */
-PaleoClimate.getCarbonDioxideData = function(core, startyear, endyear){
-    return PaleoClimate._getColumnData(core, 'Carbon Dioxide', startyear, endyear);
+IceCoreData.getCarbonDioxideData = function(core, startyear, endyear){
+    return IceCoreData._getColumnData(core, 'Carbon Dioxide', startyear, endyear);
 };
 
 /**
@@ -238,8 +238,8 @@ PaleoClimate.getCarbonDioxideData = function(core, startyear, endyear){
  * @param {Number=} endyear
  * @returns {Array}
  */
-PaleoClimate.getDelta18OData = function(core, startyear, endyear){
-    return PaleoClimate._getColumnData(core, 'Delta18O', startyear, endyear);
+IceCoreData.getDelta18OData = function(core, startyear, endyear){
+    return IceCoreData._getColumnData(core, 'Delta18O', startyear, endyear);
 };
 
 /**
@@ -253,8 +253,8 @@ PaleoClimate.getDelta18OData = function(core, startyear, endyear){
  * @param {Number=} endyear
  * @returns {Array}
  */
-PaleoClimate.getDeuteriumData = function(core, startyear, endyear){
-    return PaleoClimate._getColumnData(core, 'Deuterium', startyear, endyear);
+IceCoreData.getDeuteriumData = function(core, startyear, endyear){
+    return IceCoreData._getColumnData(core, 'Deuterium', startyear, endyear);
 };
 
 /**
@@ -268,8 +268,8 @@ PaleoClimate.getDeuteriumData = function(core, startyear, endyear){
  * @param {Number=} endyear
  * @returns {Array}
  */
-PaleoClimate.getTemperatureData = function(core, startyear, endyear){
-    return PaleoClimate._getColumnData(core, 'Temperature', startyear, endyear);
+IceCoreData.getTemperatureData = function(core, startyear, endyear){
+    return IceCoreData._getColumnData(core, 'Temperature', startyear, endyear);
 };
 
 /**
@@ -277,12 +277,12 @@ PaleoClimate.getTemperatureData = function(core, startyear, endyear){
  *
  * @param {String} core Name of core to get metadata of
  */
-PaleoClimate.getIceCoreMetadata = async function(core){
+IceCoreData.getIceCoreMetadata = async function(core){
     validateIceCore(core);
     const metadata = this._coreMetadata[core];
-    const dataStatistics = await PaleoMetadata.findOne({core}).lean();
+    const dataStatistics = await IceCoreMetadata.findOne({core}).lean();
     metadata.data = _.pick(dataStatistics, DATA_TYPES);
     return metadata;
 };
 
-module.exports = PaleoClimate;
+module.exports = IceCoreData;
