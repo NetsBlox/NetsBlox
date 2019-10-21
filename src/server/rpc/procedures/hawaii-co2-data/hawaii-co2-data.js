@@ -1,4 +1,4 @@
-const lineReader = require('line-reader');
+const fs = require('fs');
 const path = require('path');
 
 const table = [
@@ -11,30 +11,30 @@ const table2 = [
     ['Year', 'Month', 'Seasonally adjusted ppm']
 ];
 
-
-lineReader.eachLine(path.join(__dirname,'co2_mm_mlo.txt'), function (line) {
-    if (!line.startsWith('#')) {
-        let year = line.substring(0, 4);
-        let month = line.substring(4, 8).trim();
-        let inter = line.substring(38, 44);
-        let season = line.substring(50, 56);
-        let wholeArr = [year, month, inter, season];
-        let interpolatedArr = [year, month, inter];
-        let seasonalArr = [year, month, season];
-        table.push(wholeArr);
-        table1.push(interpolatedArr);
-        table2.push(seasonalArr);
-    }});
+fs.readFileSync(path.join(__dirname,'co2_mm_mlo.txt'), 'utf8').split('\n')
+    .forEach(function (line) {
+        if (!line.startsWith('#')) {
+            let year = line.substring(0, 4);
+            let month = line.substring(4, 8).trim();
+            let inter = line.substring(38, 44);
+            let season = line.substring(50, 56);
+            let wholeArr = [year, month, inter, season];
+            let interpolatedArr = [year, month, inter];
+            let seasonalArr = [year, month, season];
+            table.push(wholeArr);
+            table1.push(interpolatedArr);
+            table2.push(seasonalArr);
+        }
+    });
 
 const co2service = {};
 
-co2service.serviceName = 'CO2Data';
+co2service.serviceName = 'HawaiiCO2Data';
 
 /**
- *displays a table listing the year, month, and interpolated ppm values
+ * displays a table listing the year, month, and interpolated ppm values
  * @returns {array} table displaying the years and months from March 1958 to April 2019 and the corresponding interpolated ppm values
  */
-
 co2service.getInterpolated = function(){
     return table1;
 };
@@ -43,7 +43,6 @@ co2service.getInterpolated = function(){
  *displays a table listing the year, month, and seasonally adjusted ppm values
  * @returns {array} table displaying the years and months from March 1958 to April 2019 and the corresponding seasonal ppm values
  */
-
 co2service.getSeasonal = function(){
     return table2;
 };
@@ -52,16 +51,16 @@ co2service.getSeasonal = function(){
  *displays a table listing the year, month, interpolated ppm values, and seasonally adjusted ppm values
  * @returns {array} table displaying the years and months from March 1958 to April 2019 and the corresponding interpolated and seasonal ppm values
  */
-
 co2service.getWhole = function(){
     return table;
 };
+
 /**
- *returns the specified ppm value after inputting the year, month, and type of data
+ * returns the specified ppm value after inputting the year, month, and type of data
  * @param {BoundedNumber<1958,2019>} year - year between 1958 and 2019 to return the selected ppm of
  * @param {BoundedNumber<1,12>=} month - numerical value of the month to return the selected ppm of
  * @param {string} type - select which type of data to be returned, either "seasonal" or "interpolated"
- * @returns {String} ppm value - the selected type of ppm that matches the inputted year and month
+ * @returns {String} ppm value - the selected type of ppm that matches the given year and month
  */
 co2service.getPPM = function(year, month, type) {
     let ppm = '';
