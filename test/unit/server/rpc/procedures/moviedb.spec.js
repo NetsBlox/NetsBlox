@@ -1,10 +1,7 @@
 describe('moviedb', function() {
     const utils = require('../../../../assets/utils');
-    var MovieDB = utils.reqSrc('rpc/procedures/movie-db/movie-db'),
-        RPCMock = require('../../../../assets/mock-rpc'),
-        moviedb = new RPCMock(MovieDB);
 
-    utils.verifyRPCInterfaces(moviedb, [
+    utils.verifyRPCInterfaces('MovieDB', [
         ['searchMovie', ['title']],
         ['searchPerson', ['name']],
         ['movieTitle', ['id']],

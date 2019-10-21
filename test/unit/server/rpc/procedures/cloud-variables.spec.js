@@ -8,7 +8,7 @@ describe('cloud-variables', function() {
     const cloudvariables = new RPCMock(CloudVariables);
     const assert = require('assert');
 
-    utils.verifyRPCInterfaces(cloudvariables, [
+    utils.verifyRPCInterfaces('CloudVariables', [
         ['getVariable', ['name', 'password']],
         ['setVariable', ['name', 'value', 'password']],
         ['deleteVariable', ['name', 'password']],

@@ -1,10 +1,7 @@
 describe('iex-trading', function() {
     const utils = require('../../../../assets/utils');
-    var StockService = utils.reqSrc('rpc/procedures/iex-trading/iex-trading'),
-        RPCMock = require('../../../../assets/mock-rpc'),
-        stocks = new RPCMock(StockService);
 
-    utils.verifyRPCInterfaces(stocks, [
+    utils.verifyRPCInterfaces('IEXTrading', [
         ['currentPrice', ['companySymbol']],
         ['lastOpenPrice', ['companySymbol']],
         ['lastClosePrice', ['companySymbol']],

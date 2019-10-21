@@ -4,6 +4,7 @@ const Logger = require('../logger'),
     logger = new Logger('netsblox:routes:mobile-manager'),
 
     DEFAULT_NETSBLOX_URL = 'http://netsblox.herokuapp.com/';
+const Storage = require('../storage/storage');
 
 module.exports = [
     {
@@ -35,7 +36,7 @@ module.exports = [
                     'logged in to compile Android apps');
             }
 
-            return self.storage.users.get(username)
+            return Storage.users.get(username)
                 .then(user => {
                     if (user) {
                         self.mobileManager.emailProjectApk(project, user.email, baseURL, xml);

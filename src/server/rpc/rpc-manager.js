@@ -16,7 +16,13 @@ var fs = require('fs'),
     types = require('./input-types.js'),
     RESERVED_FN_NAMES = require('../../common/constants').RPC.RESERVED_FN_NAMES;
 
+const ServerStorage = require('../storage/storage');
+const ServiceEvents = require('./procedures/utils/service-events');
+const Storage = require('./storage');
+const DataService = require('./data-service');
 const DEFAULT_COMPATIBILITY = {arguments: {}};
+const isProduction = process.env.ENV === 'production';
+
 /**
  * RPCManager
  *
@@ -25,8 +31,27 @@ const DEFAULT_COMPATIBILITY = {arguments: {}};
 var RPCManager = function() {
     this._logger = new Logger('netsblox:services');
     this.rpcRegistry = {};
+    this.serviceMetadata = {};
     this._rpcInstances = {};
-    this.rpcs = this.loadRPCs();
+    ServiceEvents.on(ServiceEvents.UPDATE, this.onUpdateService.bind(this));
+    ServiceEvents.on(ServiceEvents.DELETE, this.onDeleteService.bind(this));
+};
+
+RPCManager.prototype.onUpdateService = async function(name) {
+    await ServerStorage.onConnected;
+    const DataServices = Storage.createCollection('netsblox:services:community');
+    const serviceData = await DataServices.findOne({name});
+    const service = new DataService(serviceData);
+    this.registerRPC(service);
+};
+
+RPCManager.prototype.onDeleteService = function(serviceName) {
+    delete this.rpcRegistry[serviceName];
+    delete this.serviceMetadata[serviceName];
+};
+
+RPCManager.prototype.initialize = async function() {
+    await this.loadRPCs();
     this.router = this.createRouter();
     this.checkStaleServices();
 };
@@ -36,143 +61,159 @@ var RPCManager = function() {
  *
  * @return {Array<ProcedureConstructor>}
  */
-RPCManager.prototype.loadRPCs = function() {
+RPCManager.prototype.loadRPCs = async function() {
+    const DBServices = await this.loadRPCsFromDatabase();
+    this.loadRPCsFromFS().concat(DBServices)
+        .forEach(service => this.registerRPC(service));
+};
+
+RPCManager.prototype.loadRPCsFromFS = function() {
     // Load the rpcs from the __dirname+'/procedures' directory
     return fs.readdirSync(PROCEDURES_DIR)
         .map(name => [name, path.join(PROCEDURES_DIR, name, name+'.js')])
         .filter(pair => fs.existsSync(pair[1]))
         .map(pair => [pair[0], pair[1], require(pair[1])])  // name, path, module
-        .filter(pair => {
-            let [name, /*path*/, service] = pair;
-            if (typeof service === 'function' || !!service && !_.isEmpty(service)) {
-                if(service.isSupported && !service.isSupported()){
-                    /* eslint-disable no-console*/
-                    console.error(`${name} is not supported in this deployment. Skipping...`);
-                    /* eslint-enable no-console*/
-                    return false;
-                }
-                return true;
-            }
-            return false;
-        })
         .map(pair => {
-            let [name, path, RPCConstructor] = pair;
+            let [name, path, service] = pair;
 
-            RPCConstructor._docs = new Docs(path);
-            if (RPCConstructor.init) {
-                RPCConstructor.init(this._logger);
+            service._docs = new Docs(path);
+            if (service.init) {
+                service.init(this._logger);
             }
 
             // Register the rpc actions, method signatures
-            RPCConstructor.serviceName = RPCConstructor.serviceName ||
-                name.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join('');
-
-            RPCConstructor.COMPATIBILITY = RPCConstructor.COMPATIBILITY || {};
-            _.merge(RPCConstructor.COMPATIBILITY, DEFAULT_COMPATIBILITY);
-
-            if (typeof RPCConstructor === 'function') {
-                RPCConstructor.prototype._docs = RPCConstructor._docs;
-                RPCConstructor.prototype.serviceName = RPCConstructor.serviceName;
-                RPCConstructor.prototype.COMPATIBILITY = RPCConstructor.COMPATIBILITY;
+            if (service.serviceName) {
+                if (this.validateCustomServiceName(name, service.serviceName)) {
+                    this._logger.error(`\nInvalid service name for ${name}: ${service.serviceName}. \n\nSee https://github.com/NetsBlox/NetsBlox/wiki/Best-Practices-for-NetsBlox-Services#naming-conventions for more information.\n`);
+                    process.exit(1);
+                }
+            } else {
+                service.serviceName = this.getDefaultServiceName(name);
             }
 
-            this.registerRPC(RPCConstructor);
+            if(service.isSupported && !service.isSupported()){
+                /* eslint-disable no-console*/
+                console.error(`${service.serviceName} is not supported in this deployment.`);
+                /* eslint-enable no-console*/
+            } else if (isProduction && !service._docs.isEnabledInProduction()) {
+                /* eslint-disable no-console*/
+                console.error(`${service.serviceName} is not supported in production.`);
+                /* eslint-enable no-console*/
+                service.isSupported = () => false;
+            }
 
-            return RPCConstructor;
+            return service;
         });
 };
 
+RPCManager.prototype.loadRPCsFromDatabase = async function() {
+    await ServerStorage.onConnected;
+    const DataServices = Storage.createCollection('netsblox:services:community');
+    const serviceData = await DataServices.find({}).toArray();
+    const services = serviceData
+        .map(serviceInfo => new DataService(serviceInfo));
+
+    return services;
+};
+
+RPCManager.prototype.getDefaultServiceName = function(name) {
+    return name.split('-')
+        .map(w => w[0].toUpperCase() + w.slice(1))
+        .join('');
+};
+
+RPCManager.prototype.validateCustomServiceName = function(name, serviceName) {
+    return serviceName.toLowerCase() !== this.getDefaultServiceName(name).toLowerCase();
+};
+
 RPCManager.prototype.registerRPC = function(rpc) {
-    var fnObj = rpc,
-        name = rpc.serviceName,
-        fnNames;
+    rpc.COMPATIBILITY = rpc.COMPATIBILITY || {};
+    Object.assign(rpc.COMPATIBILITY, DEFAULT_COMPATIBILITY);
 
-    this.rpcRegistry[name] = {};
-    this.rpcRegistry[name]._docs = rpc._docs;
     if (typeof rpc === 'function') {
-        fnObj = rpc.prototype;
+        rpc.prototype._docs = rpc._docs;
+        rpc.prototype.serviceName = rpc.serviceName;
+        rpc.prototype.COMPATIBILITY = rpc.COMPATIBILITY;
     }
 
-    fnNames = Object.keys(fnObj)
-        .filter(name => name[0] !== '_')
-        .filter(name => !RESERVED_FN_NAMES.includes(name));
+    const name = rpc.serviceName;
 
-    for (var i = fnNames.length; i--;) {
-        let args;
-        // find the associated doc
-        let doc = rpc._docs.getDocFor(fnNames[i]);
-        // get the argument names ( starting from doc )
-        if (doc) {
-            args = doc.args.map(arg => arg.name);
-        }else{
-            args = utils.getArgumentsFor(fnObj[fnNames[i]]);
-        }
-        this.rpcRegistry[name][fnNames[i]] = args;
-    }
+    rpc.isSupported = rpc.isSupported || (() => true);
+    this.rpcRegistry[name] = rpc;
+    this.serviceMetadata[name] = this.createServiceMetadata(rpc);
+};
+
+RPCManager.prototype.getServices = function() {
+    return Object.values(this.rpcRegistry);
 };
 
 RPCManager.prototype.createRouter = function() {
-    var router = express.Router({mergeParams: true});
-    const ALL_RPC_NAMES = this.rpcs.map(rpc => rpc.serviceName).sort();
+    const router = express.Router({mergeParams: true});
 
-    // Create the index for the rpcs
-    router.route('/').get((req, res) => res.send(ALL_RPC_NAMES));
+    router.route('/').get((req, res) => {
+        const ALL_SERVICES = this.getServices()
+            .filter(service => service.isSupported())
+            .map(service => ({
+                name: service.serviceName,
+                categories: service._docs.categories
+            }));
 
-    function createServiceMetadata(rpc) {
-        let methods = this.rpcRegistry[rpc.serviceName];
-        let serviceDoc = {rpcs:{}}; // stores info about service's methods
-        let deprecatedMethods = rpc.COMPATIBILITY.deprecatedMethods || [];
-        Object.keys(methods)
-            .filter(key => !key.startsWith('_'))
-            .forEach(name => {
-                let info; // a single rpc info
-                if (rpc._docs && rpc._docs.getDocFor(name)) {
-                    info = rpc._docs.getDocFor(name);
-                } else {
-                    // if the method has no docs build up sth similar
-                    info = {
-                        args: methods[name].map(argName => {
-                            return {name: argName};
-                        }),
-                    };
-                }
-                delete info.name;
-                info.deprecated = info.deprecated || deprecatedMethods.includes(name);
-
-                serviceDoc.rpcs[name] = info;
-            });
-
-        if (rpc._docs) {
-            serviceDoc.description = rpc._docs.description;
-        }
-        return serviceDoc;
-    }
-
-    this.rpcs.forEach(rpc => {
-        router.route('/' + rpc.serviceName)
-            .get((req, res) => res.json(createServiceMetadata.call(this, rpc)));
-
-        if (rpc.COMPATIBILITY.path) {
-            router.route('/' + rpc.COMPATIBILITY.path)
-                .get((req, res) => res.json(createServiceMetadata.call(this, rpc)));
-        }
+        return res.send(ALL_SERVICES);
     });
 
-    // For each RPC, create the respective endpoints
-    this.rpcs.forEach(this.addRoute.bind(this, router));
+    const isServiceWithName = (name, service) => {
+        const deprecatedName = service.COMPATIBILITY && service.COMPATIBILITY.path;
+        return service.serviceName === name || deprecatedName === name;
+    };
+    router.route('/:serviceName').get((req, res) => {
+        const {serviceName} = req.params;
+        const service = this.getServices().find(isServiceWithName.bind(null, serviceName));
+
+        if (!service || !service.isSupported()) {
+            return res.status(404).send(`Service "${serviceName}" is not available.`);
+        }
+
+        return res.json(this.serviceMetadata[service.serviceName]);
+    });
+
+    router.route('/:serviceName/:action').post((req, res) => {
+        const {serviceName} = req.params;
+        const service = this.getServices().find(isServiceWithName.bind(null, serviceName));
+
+        if (!service || !service.isSupported()) {
+            return res.status(404).send(`Service "${serviceName}" is not available.`);
+        }
+
+        return this.handleRPCRequest(service, req, res);
+    });
 
     return router;
 };
 
-RPCManager.prototype.addRoute = function(router, RPC) {
-    this._logger.info(`Adding route for ${RPC.serviceName}`);
-    router.route(`/${RPC.serviceName}/:action`)
-        .post(this.handleRPCRequest.bind(this, RPC));
+RPCManager.prototype.createServiceMetadata = function(service) {
+    let serviceDoc = {rpcs:{}}; // stores info about service's methods
+    let deprecatedMethods = service.COMPATIBILITY.deprecatedMethods || [];
 
-    if (RPC.COMPATIBILITY.path) {
-        router.route(`/${RPC.COMPATIBILITY.path}/:action`)
-            .post(this.handleRPCRequest.bind(this, RPC));
-    }
+    this.getMethodsFor(service.serviceName)
+        .forEach(name => {
+            let info;
+            if (service._docs.getDocFor(name)) {
+                info = service._docs.getDocFor(name);
+            } else {
+                // if the method has no docs build up sth similar
+                const argNames = this.getArgumentsFor(service.serviceName, name);
+                info = {
+                    args: argNames.map(argName => ({name: argName}))
+                };
+            }
+            delete info.name;
+            info.deprecated = info.deprecated || deprecatedMethods.includes(name);
+            serviceDoc.rpcs[name] = info;
+        });
+
+    serviceDoc.description = service._docs.description;
+    serviceDoc.categories = service._docs.categories;
+    return serviceDoc;
 };
 
 /**
@@ -184,7 +225,7 @@ RPCManager.prototype.addRoute = function(router, RPC) {
  * @return {RPC}
  */
 RPCManager.prototype.getRPCInstance = function(name, projectId) {
-    const RPC = this.rpcs.find(rpc => rpc.serviceName === name);
+    const RPC = this.getServices().find(rpc => rpc.serviceName === name);
 
     if (typeof RPC !== 'function') {  // stateless rpc
         return RPC;
@@ -206,8 +247,38 @@ RPCManager.prototype.getRPCInstance = function(name, projectId) {
     return projectRPCs[RPC.serviceName];
 };
 
-RPCManager.prototype.getArgumentsFor = function(service, action) {
-    return this.rpcRegistry[service] && this.rpcRegistry[service][action];
+RPCManager.prototype.getMethodsFor = function(serviceName) {
+    const service = this.rpcRegistry[serviceName];
+    if (!service) {
+        throw new Error(`Service not found: ${serviceName}`);
+    }
+
+    let fnObj = service;
+    if (typeof service === 'function') {
+        fnObj = service.prototype;
+    }
+
+    return Object.keys(fnObj)
+        .filter(name => name[0] !== '_')
+        .filter(name => !RESERVED_FN_NAMES.includes(name));
+};
+
+RPCManager.prototype.getArgumentsFor = function(serviceName, action) {
+    const service = this.rpcRegistry[serviceName];
+    if (!service) {
+        throw new Error(`Service not found: ${serviceName}`);
+    }
+
+    const doc = service._docs.getDocFor(action);
+    if (doc) {
+        return doc.args.map(arg => arg.name);
+    } else {
+        let fnObj = service;
+        if (typeof service === 'function') {
+            fnObj = service.prototype;
+        }
+        return fnObj[action] && utils.getArgumentsFor(fnObj[action]);
+    }
 };
 
 RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
@@ -256,7 +327,7 @@ RPCManager.prototype.handleRPCRequest = function(RPC, req, res) {
         return this.callRPC(action, ctx, args);
     } else {
         this._logger.log(`Invalid RPC:${RPC.serviceName}.${action}`);
-        return res.status(400).send('Invalid RPC');
+        return res.status(404).send('Invalid RPC');
     }
 };
 
@@ -268,20 +339,15 @@ RPCManager.prototype.callRPC = function(name, ctx, args) {
     if (ctx._docs) doc = ctx._docs.getDocFor(name);
     if (doc) {
         // assuming doc params are defined in order!
-        prepareInputs = Promise.all(doc.args.map((arg, idx) => {
-            if (arg.type) {
-                //let input = this.parseArgValue(arg, args[idx], ctx);
-                return this.parseArgValue(arg, args[idx], ctx)
-                    .then(input => {
-                        // if there was no errors update the arg with the parsed input
-                        if (input.isValid) {
-                            args[idx] = input.value;
-                        } else {
-                            // handle the error
-                            this._logger.warn(`${ctx.serviceName} -> ${name} input error:`, input.msg);
-                            if (input.msg) errors.push(input.msg);
-                        }
-                    });
+        prepareInputs = Promise.all(doc.args.map(async (arg, idx) => {
+            const input = await this.parseArgValue(arg, args[idx], ctx);
+            // if there was no errors update the arg with the parsed input
+            if (input.isValid) {
+                args[idx] = input.value;
+            } else {
+                // handle the error
+                this._logger.warn(`${ctx.serviceName} -> ${name} input error:`, input.msg);
+                if (input.msg) errors.push(input.msg);
             }
         }));
     }
@@ -308,13 +374,13 @@ RPCManager.prototype.callRPC = function(name, ctx, args) {
 // out: {isValid: boolean, value, msg}
 RPCManager.prototype.parseArgValue = function (arg, input, ctx) {
     const inputStatus = {isValid: true, msg: '', value: input};
+    const isArgumentProvided = input !== '';
 
-    // is the argument provided or not?
-    if (input === '') {
+    if (!isArgumentProvided) {
+        inputStatus.value = undefined;
         if (!arg.optional) {
             inputStatus.msg = `${arg.name} is required.`;
             inputStatus.isValid = false;
-            inputStatus.value = undefined;
         }
     } else if (arg.type) {
         const typeName = arg.type.name;
@@ -383,8 +449,8 @@ RPCManager.prototype.sendRPCError = function(response, error) {
     }
 };
 
-RPCManager.prototype.isRPCLoaded = function(rpcPath) {
-    return !!this.rpcRegistry[rpcPath] || this.rpcRegistry['/' + rpcPath];
+RPCManager.prototype.isServiceLoaded = function(serviceName) {
+    return this.rpcRegistry[serviceName] && this.rpcRegistry[serviceName].isSupported();
 };
 
 RPCManager.prototype.checkStaleServices = function() {

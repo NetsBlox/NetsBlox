@@ -1,25 +1,29 @@
 const NBService = require('./service.js');
 
-// converts a phrase into camel case format
+/**
+ * Converts a phrase into camel case format
+ * @param {String} text 
+ */
 function toCamelCase(text) {
     // create uppercc
-    let cc = text.toLowerCase()
+    return text.toLowerCase()
         .split(' ')
         .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
         .join('');
-    return cc;
 }
 
+/**
+ * Base for RPC services using the database as a source
+ */
 class DBConsumer extends NBService {
     /**
-    * @param {string} serviceName a valid service name
-    * @param {object} model mongoose model
+    * @param {String} serviceName a valid service name
+    * @param {Object} model mongoose model
     */
     constructor(serviceName, model) {
         super(serviceName);
         this._model = model;
     }
-
 
     _cleanDbRec(rec) {
         delete rec._doc._id;
@@ -32,25 +36,44 @@ class DBConsumer extends NBService {
         return fields.slice(0,fields.length-2); // exclude id and v
     }
 
-    async _advancedSearch(field, query, skip, limit) {
+    async _advancedSearch(field, query, skip = 0, limit = -1) {
         // prepare and check the input
-        if (!this._fields().find(attr => attr === field)) throw new Error('bad field name');
-        if (skip === '') skip = 0;
-        if (limit === '') limit = 10;
-        limit = Math.min(limit, 50); // limit the max requested documents
 
+        if(!Array.isArray(field)){
+            field = [field];
+            query = [query];
+        }
 
-        // build the database query
         let dbQuery = {};
-        dbQuery[field] = new RegExp(`.*${query}.*`, 'i');
+        for(let i in field){
+            if (!this._fields().find(attr => attr === field[i])){
+                throw new Error('bad field name');
+            }
+        
+            // Build the database query
+            if(typeof(query[i]) === 'string'){
+                dbQuery[field[i]] = new RegExp(`.*${query[i]}.*`, 'i');
+            } else {
+                // Allow for query objects to be passed in
+                dbQuery[field[i]] = query[i];
+            }
+        }
 
-        let res = await this._model.find(dbQuery).skip(skip).limit(limit);
+        let res;
 
+        if(limit === -1){
+            res = await this._model.find(dbQuery).skip(skip);
+        } else {
+            res = await this._model.find(dbQuery).skip(skip).limit(limit);
+        }
+        
         return res.map(this._cleanDbRec);
     }
 
-
-    // create rpcs from a list of interesting fields
+    /**
+     * Generates RPC functions from a list of fields
+     * @param {Array<String>} featuredFields Names of fields to generate functions for
+     */
     _genRPCs(featuredFields) {
         featuredFields.forEach(field => {
             // make sure the field exists
@@ -66,7 +89,6 @@ class DBConsumer extends NBService {
             };
         });
     }
-
 }
 
 module.exports = DBConsumer;

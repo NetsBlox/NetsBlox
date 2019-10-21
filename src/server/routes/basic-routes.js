@@ -1,6 +1,5 @@
 'use strict';
-var R = require('ramda'),
-    _ = require('lodash'),
+var _ = require('lodash'),
     Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     PublicProjects = require('../storage/public-projects'),
@@ -13,6 +12,7 @@ var R = require('ramda'),
 
 const NetworkTopology = require('../network-topology');
 const BugReporter = require('../bug-reporter');
+const Storage = require('../storage/storage');
 const Messages = require('../storage/messages');
 const Projects = require('../storage/projects');
 const DEFAULT_ROLE_NAME = 'myRole';
@@ -20,8 +20,7 @@ const DEFAULT_ROLE_NAME = 'myRole';
 const ExternalAPI = {};
 UserAPI.concat(ProjectAPI, RoomAPI)
     .filter(api => api.Service)
-    .map(R.omit.bind(R, 'Handler'))
-    .map(R.omit.bind(R, 'middleware'))
+    .map(desc => _.omit(desc, ['Handler', 'middleware']))
     .forEach(endpoint => {
         const name = endpoint.Service;
         const service = {};
@@ -41,11 +40,10 @@ module.exports = [
         URL: 'ResetPW',
         Handler: function(req, res) {
             logger.log('password reset request:', req.query.Username);
-            var self = this,
-                username = req.query.Username;
+            const username = req.query.Username;
 
             // Look up the email
-            self.storage.users.get(username)
+            Storage.users.get(username)
                 .then(user => {
                     if (user) {
                         delete user.hash;  // force tmp password creation
@@ -67,8 +65,7 @@ module.exports = [
         URL: 'SignUp',
         Handler: function(req, res) {
             logger.log('Sign up request:', req.body.Username, req.body.Email);
-            var self = this,
-                uname = req.body.Username,
+            var uname = req.body.Username,
                 password = req.body.Password,
                 email = req.body.Email;
 
@@ -84,10 +81,10 @@ module.exports = [
                 return res.status(400).send('ERROR: invalid username');
             }
 
-            return self.storage.users.get(uname)
+            return Storage.users.get(uname)
                 .then(user => {
                     if (!user) {
-                        var newUser = self.storage.users.new(uname, email);
+                        var newUser = Storage.users.new(uname, email);
                         newUser.hash = password || null;
                         newUser.save();
                         return res.send('User Created!');
@@ -111,7 +108,7 @@ module.exports = [
                 return res.status(400).send('ERROR: need both username and email!');
             }
 
-            this.storage.users.get(uname)
+            Storage.users.get(uname)
                 .then(user => {
                     if (!user) {
                         return res.send('Valid User Signup Request!');

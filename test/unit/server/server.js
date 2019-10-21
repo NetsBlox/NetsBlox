@@ -19,14 +19,13 @@ describe('Server Tests', function() {
         username = 'test',
         server;
 
-    before(function(done) {
-        utils.reset().then(() => {
-            const Server = utils.reqSrc('server');
-            server = new Server(options);
-            server.start(done);
-            api = supertest('http://localhost:'+port+'/api');
-            index = supertest('http://localhost:'+port);
-        });
+    before(async  function() {
+        await utils.reset();
+        const Server = utils.reqSrc('server');
+        server = new Server(options);
+        await server.start();
+        api = supertest('http://localhost:'+port+'/api');
+        index = supertest('http://localhost:'+port);
     });
 
     after(function(done) {
@@ -172,8 +171,7 @@ describe('Server Tests', function() {
     });
 
     describe('RPC Manager Tests', function() {
-        var uuid,
-            WebSocket = require('ws'),  // jshint ignore:line
+        var WebSocket = require('ws'),  // jshint ignore:line
             ROOM_NAME = 'ttt-test-room',
             api;
 
@@ -182,14 +180,6 @@ describe('Server Tests', function() {
         });
 
         // Testing an example RPC
-        describe('Basic tests', function() {
-            it('should exist', function(done) {
-                api.post('/guess?uuid='+uuid)
-                    .expect(400)
-                    .end(done);
-            });
-        });
-
         describe.skip('RPC tests', function() {
             var socket,
                 host = 'ws://localhost:'+port,

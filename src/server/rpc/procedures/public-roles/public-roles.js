@@ -1,4 +1,9 @@
-// This is a key value store that can be used across tables
+/**
+ * The PublicRoles Service provides access to the user's public role
+ * ID programmatically. This enables communication between projects.
+ *
+ * @service
+ */
 'use strict';
 
 const logger = require('../utils/logger')('public-roles');

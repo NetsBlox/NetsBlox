@@ -3,6 +3,7 @@
  * For more information, check out http://skyserver.sdss.org/dr14/en/home.aspx
  *
  * @service
+ * @category Science
  */
 // This is the Sky Map RPC. It wraps the web API of the Sloan Digital Sky Survey.
 

@@ -5,7 +5,7 @@ describe('geolocation', function() {
         assert = require('assert'),
         geocoding = new RPCMock(Geocoding);
 
-    utils.verifyRPCInterfaces(geocoding, [
+    utils.verifyRPCInterfaces('Geolocation', [
         ['city', ['latitude', 'longitude']],
         ['country', ['latitude', 'longitude']],
         ['countryCode', ['latitude', 'longitude']],

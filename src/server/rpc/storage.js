@@ -27,9 +27,13 @@
         return storage.delete(key);
     };
 
-    ///////////////// Stateful, Room-based RPC's /////////////////
     Storage.create = function(name) {
-        return new GenStorage(logger, db, 'rpc:' + name);
+        name = `netsblox:storage:rpc:${name}`;
+        return new GenStorage(logger, db, name);
+    };
+
+    Storage.createCollection = function(name) {
+        return new GenStorage(logger, db, name).collection;
     };
 
 })(exports);

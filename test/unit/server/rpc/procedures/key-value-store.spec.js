@@ -5,7 +5,7 @@ describe('kvstore', function() {
     const kvstore = new RPCMock(KVStore);
     const assert = require('assert');
 
-    utils.verifyRPCInterfaces(kvstore, [
+    utils.verifyRPCInterfaces('KeyValueStore', [
         ['get', ['key']],
         ['put', ['key', 'value']],
         ['delete', ['key']],

@@ -1,7 +1,9 @@
 /**
  * The Trivia Service provides access to trivia questions using the jservice API.
  * For more information, check out https://jservice.io.
+ *
  * @service
+ * @category Games
  */
 'use strict';
 

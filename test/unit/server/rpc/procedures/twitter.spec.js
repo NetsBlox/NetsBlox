@@ -1,10 +1,6 @@
 describe('twitter', function() {
     const utils = require('../../../../assets/utils');
-    var Twitter = utils.reqSrc('rpc/procedures/twitter/twitter'),
-        RPCMock = require('../../../../assets/mock-rpc'),
-        twitter = new RPCMock(Twitter);
-
-    utils.verifyRPCInterfaces(twitter, [
+    utils.verifyRPCInterfaces('Twitter', [
         ['recentTweets', ['screenName', 'count']],
         ['followers', ['screenName']],
         ['tweets', ['screenName']],

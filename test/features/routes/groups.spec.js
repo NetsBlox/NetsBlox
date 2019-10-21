@@ -22,17 +22,14 @@ const port = 8440,
 
 
 describe('groups', () => {
-    before(function(done) {
-        utils.reset().then(() => {
-            const Server = require('../../../src/server/server');
-            server = new Server(options);
-            server.start(async () => {
-                let res = await authenticator.login(user.username, user.password);
-                loginCookie = res.getResponseHeader('Set-Cookie')[0];
-                axios.defaults.headers.common['Cookie'] = loginCookie;
-                done();
-            });
-        });
+    before(async function() {
+        await utils.reset();
+        const Server = require('../../../src/server/server');
+        server = new Server(options);
+        await server.start();
+        let res = await authenticator.login(user.username, user.password);
+        loginCookie = res.getResponseHeader('Set-Cookie')[0];
+        axios.defaults.headers.common['Cookie'] = loginCookie;
     });
 
     describe('CRUD', () => {

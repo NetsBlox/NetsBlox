@@ -9,14 +9,14 @@ describe('Battleship Tests', function() {
         battleship = new RPCMock(Battleship);
     });
 
-    utils.verifyRPCInterfaces(battleship, [
+    utils.verifyRPCInterfaces('Battleship', [
         ['start'],
         ['reset'],
         ['allShips'],
         ['shipLength', ['ship']],
         ['placeShip', ['ship', 'row', 'column', 'facing']],
         ['fire', ['row', 'column']],
-        ['remainingShips', ['roleId']]
+        ['remainingShips', ['roleID']]
     ]);
 
     describe('basic commands', function() {

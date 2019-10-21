@@ -211,7 +211,9 @@ int main()
     xbee_send_api(xbee, "\x8\002SH", 4);
     xbee_send_api(xbee, "\x8\003C0", 4);
     xbee_send_api(xbee, "\x8\004MY", 4);
-
+    pause(500);
+    xbee_send_api(xbee, "\x8\005AI", 4);
+    
     int whiskers = 0;
     int button = 0;
     int infrared = 0;
@@ -228,6 +230,27 @@ int main()
                 set_tx_headers('I');
                 xbee_send_api(xbee, buffer, buffer_len);
             }
+        } else if (cmp_api_response(6, "\x88\005AI")) {
+            
+            // SSID not configured, likely new or incorrectly reset module
+            if(buffer[5] == 0x23){
+                print("restoring default settings...\n");
+                xbee_send_api(xbee, "\x8\000NR", 4);
+                pause(500);
+                // Set to default wifi AP
+                xbee_send_api(xbee, "\x8\000IDrobonet", 11);  
+                xbee_send_api(xbee, "\x8\000EE\002", 5);
+                xbee_send_api(xbee, "\x8\000PKcybercamp", 13);
+                xbee_send_api(xbee, "\x8\000WR", 4);
+                pause(1000);
+                // Reset module
+                xbee_send_api(xbee, "\x8\000FR", 4);
+                pause(1000); 
+                // Update values
+                xbee_send_api(xbee, "\x8\003C0", 4);
+                xbee_send_api(xbee, "\x8\004MY", 4);
+            }              
+                
         } else if (cmp_api_response(9, "\x88\001SL")) {
             memcpy(mac_addr + 2, buffer + 5, 4);
         } else if (cmp_api_response(7, "\x88\002SH")) {

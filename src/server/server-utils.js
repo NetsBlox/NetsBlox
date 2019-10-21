@@ -1,8 +1,8 @@
 // These are utils for server specific tasks
 'use strict';
 
-var R = require('ramda'),
-    assert = require('assert'),
+const _ = require('lodash');
+var assert = require('assert'),
     Logger = require('./logger'),
     logger = new Logger('netsblox:api:utils'),
     version = require('../../package.json').version;
@@ -22,8 +22,8 @@ var serializeArray = function(content) {
 };
 
 var serialize = function(service) {
-    var pairs = R.toPairs(service);
-    return encodeURI(pairs.map(R.join('=')).join('&'));
+    var pairs = _.toPairs(service);
+    return encodeURI(pairs.map(list => list.join('=')).join('&'));
 };
 
 var serializeRole = (role, project) => {
@@ -34,7 +34,7 @@ var serializeRole = (role, project) => {
         `<snapdata>+${encodeURIComponent(role.SourceCode + role.Media)}</snapdata>` :
         '';
     return `ProjectID=${project.getId()}&RoleID=${roleId}&RoomName=${name}&` +
-        `Owner=${owner}&${serialize(R.omit(['SourceCode', 'Media'], role))}` +
+        `Owner=${owner}&${serialize(_.omit(role, ['SourceCode', 'Media']))}` +
         `&SourceCode=${src}`;
 };
 

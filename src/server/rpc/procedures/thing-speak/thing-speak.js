@@ -130,18 +130,21 @@ thingspeakIoT.channelFeed = function(id, numResult) {
     return this._sendStruct(queryOptions, feedParser);
 };
 
+/**
+ * Request data from a private channel
+ *
+ * @param {String} id ID of the private channel feed
+ * @param {String} numResult Number of results to fetch
+ * @param {String} apiKey Thingspeak API key
+ */
 thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
-    if (apiKey !== '') {
-        let queryOptions = {
-            queryString: id + '/feeds.json?' + rpcUtils.encodeQueryData({
-                api_key: apiKey,
-                results: numResult,
-            }),
-        };
-        return this._sendStruct(queryOptions, feedParser);
-    } else {
-        this.response.status(404).send('API key is blank');
-    }
+    let queryOptions = {
+        queryString: id + '/feeds.json?' + rpcUtils.encodeQueryData({
+            api_key: apiKey,
+            results: numResult,
+        }),
+    };
+    return this._sendStruct(queryOptions, feedParser);
 };
 
 /**

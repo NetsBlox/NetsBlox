@@ -3,13 +3,7 @@ cache:
   directories:
     - node_modules
 env:
-  - CXX=g++-4.8 MONGO_URI=mongodb://127.0.0.1:27017/netsblox-tests ENV=test DEBUG=netsblox:test*
-addons:
-  apt:
-  sources:
-    - ubuntu-toolchain-r-test
-  packages:
-    - g++-4.8
+  - MONGO_URI=mongodb://127.0.0.1:27017/netsblox-tests ENV=test DEBUG=netsblox:test*
 services:
   - mongodb
 node_js:

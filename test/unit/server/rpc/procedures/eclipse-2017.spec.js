@@ -3,12 +3,10 @@ describe('Eclipse 2017', function() {
     const Eclipse = utils.reqSrc('rpc/procedures/eclipse-2017/eclipse-2017'),
         { cronString } = utils.reqSrc('rpc/procedures/eclipse-2017/utils'),
         assert = require('assert'),
-        RPCMock = require('../../../../assets/mock-rpc'),
         rpcStorage = utils.reqSrc('rpc/storage'),
-        eclipsePath = utils.reqSrc('../../utils/rpc/eclipse-2017/eclipsePath'),
-        eclipse = new RPCMock(Eclipse);
+        eclipsePath = utils.reqSrc('../../utils/rpc/eclipse-2017/eclipsePath');
 
-    utils.verifyRPCInterfaces(eclipse, [
+    utils.verifyRPCInterfaces('Eclipse2017', [
         ['stations', []],
         ['stationsInfo', []],
         ['eclipsePath', []],

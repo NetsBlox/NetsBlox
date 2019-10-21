@@ -9,10 +9,25 @@ const logger = require('../utils/logger')('dev');
 const dev = {};
 dev.isSupported = () => process.env.ENV !== 'production';
 
+/**
+ * A function responding with the provided argument.
+ * @param argument
+ */
 dev.echo = function (argument) {
     return argument;
 };
 
+/**
+ * A function throwing an error.
+ * @param msg Error message
+ */
+dev.throw = function(msg) {
+    throw new Error(msg);
+};
+
+/**
+ * A function returning an image.
+ */
 dev.image = function() {
     return utils.sendImageBuffer(this.response, buffer);
 };
