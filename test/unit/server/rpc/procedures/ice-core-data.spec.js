@@ -1,7 +1,7 @@
-describe('paleo-climate', function() {
+describe('ice-core-data', function() {
     const utils = require('../../../../assets/utils');
 
-    utils.verifyRPCInterfaces('PaleoClimate', [
+    utils.verifyRPCInterfaces('IceCoreData', [
         ['getIceCoreNames', []],
         ['getDataAvailability', []],
         ['getCarbonDioxideData', ['core', 'startyear', 'endyear']],
