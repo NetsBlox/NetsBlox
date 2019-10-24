@@ -64,7 +64,7 @@ NetworkTopology.prototype.onConnect = function(socket) {
 
 // input: client object (netsblox websocket)
 NetworkTopology.prototype.onDisconnect = function(socket) {
-    this._logger.trace(`client diconnected ${socket.toString()} total: ${this._sockets.length}`);
+    this._logger.trace(`client disconnected ${socket.toString()} total: ${this._sockets.length}`);
     let hasSocket = this._sockets.isClientActive(socket);
     if (hasSocket) {
         this._sockets.removeClient(socket);

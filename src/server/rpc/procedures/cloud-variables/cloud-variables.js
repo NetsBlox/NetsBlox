@@ -401,7 +401,6 @@ CloudVariables.setUserVariable = function(name, value) {
 /**
  * Delete the user variable for the current user.
  * @param {String} name Variable name
- * @param {String} value
  */
 CloudVariables.deleteUserVariable = function(name) {
     const {userVars} = getCollections();

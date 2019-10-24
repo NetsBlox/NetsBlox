@@ -198,8 +198,6 @@ class ApiConsumer extends NBService {
         return this._requestImage(queryOptions)
             .then(imageBuffer => {
                 this._sendImageBuffer(imageBuffer);
-            }).catch(() => {
-                this.response.status(404).send('');
             });
     }
 

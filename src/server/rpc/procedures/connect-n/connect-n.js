@@ -2,6 +2,7 @@
  * The ConnectN Service provides helpers for building games like Connect-4 and Tic-Tac-Toe.
  *
  * @service
+ * @category Games
  */
 
 'use strict';

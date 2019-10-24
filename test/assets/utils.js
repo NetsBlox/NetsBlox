@@ -15,8 +15,8 @@ const Socket = require('./mock-websocket');
 const Logger = require(PROJECT_ROOT + '/src/server/logger');
 const Storage = require(PROJECT_ROOT + '/src/server/storage/storage');
 const mainLogger = new Logger('netsblox:test');
-const storage = new Storage(mainLogger);
 const serverUtils = reqSrc('server-utils');
+const RPCManager = reqSrc('rpc/rpc-manager');
 const Projects = reqSrc('storage/projects');
 const NetworkTopology = reqSrc('network-topology');
 
@@ -131,7 +131,7 @@ let connection = null;
 const connect = function() {
     const mongoUri = 'mongodb://127.0.0.1:27017/netsblox-tests';
     if (!connection) {
-        connection = storage.connect(mongoUri);
+        connection = Storage.connect(mongoUri);
     }
     return connection;
 };
@@ -160,9 +160,9 @@ const reset = function() {
     return connect()
         .then(_db => db = _db)
         .then(() => db.dropDatabase())
-        .then(() => fixtures.init(storage))
+        .then(() => fixtures.init(Storage))
         .then(() => logger.info('Finished loading test fixtures!'))
-        .then(() => storage._db);
+        .then(() => Storage._db);
 };
 
 const sleep = delay => {
@@ -172,15 +172,14 @@ const sleep = delay => {
 };
 
 module.exports = {
-    verifyRPCInterfaces: function(rpc, interfaces) {
-        describe(`${rpc.serviceName} interfaces`, function() {
+    verifyRPCInterfaces: function(serviceName, interfaces) {
+        describe(`${serviceName} interfaces`, function() {
             interfaces.forEach(interface => {
-                var name = interface[0],
-                    expected = interface[1] || [];
+                const [name, expected=[]] = interface;
 
                 it(`${name} args should be ${expected.join(', ')}`, function() {
-                    var args = rpc.getArgumentsFor(name);
-                    assert(_.isEqual(args, expected));
+                    const args = RPCManager.getArgumentsFor(serviceName, name);
+                    assert(_.isEqual(args, expected), `Found ${args.join(', ')}`);
                 });
             });
         });

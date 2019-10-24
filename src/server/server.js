@@ -41,16 +41,13 @@ var Server = function(opts) {
         return qs.parse(string);
     });
 
-    // Mongo variables
-    this.storage = new Storage(this._logger, opts);
     this._server = null;
 
     // Group and RPC Managers
-    this.rpcManager = RPCManager;
     NetworkTopology.init(this._logger, Client);
 };
 
-Server.prototype.configureRoutes = function() {
+Server.prototype.configureRoutes = async function() {
     this.app.use(express.static(__dirname + '/../browser/'));
     this.app.use(bodyParser.urlencoded({
         limit: '50mb',
@@ -72,11 +69,6 @@ Server.prototype.configureRoutes = function() {
     });
 
     // Add routes
-    this.app.use('/rpc', function(req, res, next) {
-        return middleware.tryLogIn(req, res, function() {
-            next();
-        }, true);
-    }, this.rpcManager.router);
     this.app.use('/api', this.createRouter());
 
     // Add deployment state endpoint info
@@ -115,7 +107,7 @@ Server.prototype.configureRoutes = function() {
             if (req.query.action === 'present') {
                 var username = req.query.Username;
 
-                return this.storage.publicProjects.get(username, projectName)
+                return Storage.publicProjects.get(username, projectName)
                     .then(project => {
                         if (project) {
                             metaInfo.image = {
@@ -156,6 +148,12 @@ Server.prototype.configureRoutes = function() {
     });
 
     // Import Service Endpoints:
+    await RPCManager.initialize();
+    this.app.use(
+        '/rpc',
+        (req, res, next) => middleware.tryLogIn(req, res, next, true),
+        RPCManager.router
+    );
     var RPC_ROOT = path.join(__dirname, 'rpc', 'libs'),
         RPC_INDEX = fs.readFileSync(path.join(RPC_ROOT, 'RPC'), 'utf8')
             .split('\n')
@@ -166,7 +164,7 @@ Server.prototype.configureRoutes = function() {
 
                 // Check if we have loaded the dependent rpcs
                 for (var i = deps.length; i--;) {
-                    if (!RPCManager.isRPCLoaded(deps[i])) {
+                    if (!RPCManager.isServiceLoaded(deps[i])) {
                         // eslint-disable-next-line no-console
                         console.log(`Service ${displayName} not available because ${deps[i]} is not loaded`);
                         return false;
@@ -287,20 +285,20 @@ Server.prototype.start = async function() {
 
     opts.msgFilter = msg => !msg.namespace;
 
-    await this.storage.connect();
+    await Storage.connect();
     if (ENV === 'test') {
         const fixtures = require('../../test/fixtures');
-        if (/test/.test(this.storage._db.databaseName)) {
+        if (/test/.test(Storage._db.databaseName)) {
             // eslint-disable-next-line no-console
             console.log('resetting the database');
-            await this.storage._db.dropDatabase();
-            await fixtures.init(this.storage);
+            await Storage._db.dropDatabase();
+            await fixtures.init(Storage);
         } else {
             // eslint-disable-next-line no-console
             console.warn('skipping database reset, test database should have the word test in the name.');
         }
     }
-    this.configureRoutes();
+    await this.configureRoutes();
     this._server = this.app.listen(this.opts.port);
     // eslint-disable-next-line no-console
     console.log(`listening on port ${this.opts.port}`);
@@ -364,10 +362,10 @@ Server.prototype.createRouter = function() {
 
     middleware.init(this);
 
+    logger.trace('loading API routes');
     routes.forEach(api => {
         var method = api.Method.toLowerCase();
         api.URL = '/' + api.URL;
-        logger.trace(`adding "${method}" to ${api.URL}`);
 
         // Add the middleware
         if (api.middleware && api.middleware.length > 0) {

@@ -5,7 +5,7 @@ describe('chart', function() {
         chart = new RPCMock(Chart),
         assert = require('assert');
 
-    utils.verifyRPCInterfaces(chart,[
+    utils.verifyRPCInterfaces('Chart',[
         ['draw', ['lines', 'options']],
         ['defaultOptions', []],
         ['drawBarChart', ['dataset', 'xAxisTag', 'yAxisTag','datasetTag', 'title']],
@@ -17,6 +17,8 @@ describe('chart', function() {
         const opts = chart.defaultOptions();
         const expectedOpts = [
             'title',
+            'width',
+            'height',
             'labels',
             'types',
             'xRange',

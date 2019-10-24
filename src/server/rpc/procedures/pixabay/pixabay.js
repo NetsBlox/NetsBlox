@@ -11,7 +11,7 @@ const rpcUtils = require('../utils');
 
 function parserFnGen(maxHeight) {
     let optimalSize;
-    if (maxHeight == '' || maxHeight > 640) {
+    if (!maxHeight || maxHeight > 640) {
         optimalSize = ['_640', '_640'];
     } else if (maxHeight < 360) {
         optimalSize = ['_640', '_180'];

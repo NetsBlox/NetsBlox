@@ -9,7 +9,7 @@ describe('twentyquestions', function() {
         twentyquestions = new RPCMock(TwentyQuestions);
     });
 
-    utils.verifyRPCInterfaces(twentyquestions, [
+    utils.verifyRPCInterfaces('TwentyQuestions', [
         ['start', ['answer']],
         ['guess', ['guess']],
         ['answer', ['answer']],
@@ -38,19 +38,15 @@ describe('twentyquestions', function() {
 
             it('should return an error when starting a started game', function () {
                 twentyquestions.start('books');
-                assert.equal(twentyquestions.start('books'), 'Game has already started...');
-            });
-
-            it('should return an error when entering invalid answer', function () {
-                assert.equal(twentyquestions.start(''), 'No answer received');
+                assert.throws(() => twentyquestions.start('books'), /Game has already started./);
             });
 
             it ('should return an error when guessing before game started', function () {
-                assert.equal(twentyquestions.guess('books'), 'Game hasn\'t started yet...wait for the answerer to think of something!');
+                assert.throws(() => twentyquestions.guess('books'), /Game has not yet started./);
             });
 
             it ('should return an error when answering before game started', function () {
-                assert.equal(twentyquestions.answer('yes').response, 'Game hasn\'t started yet...think of something to be guessed!');
+                assert.throws(() => twentyquestions.answer('yes'), /Game has not yet started./);
             });
 
             describe('for answerer', function () {
@@ -58,11 +54,11 @@ describe('twentyquestions', function() {
                     twentyquestions.start('books');
                 });
                 it ('should return an error when guessing as an answerer', function () {
-                    assert.equal(twentyquestions.guess('books'), 'You\'re not the guesser!');
+                    assert.throws(() => twentyquestions.guess('books'), /You're not the guesser!/);
                 });
 
                 it ('should return an error when invalid answer', function () {
-                    assert.equal(twentyquestions.answer('y').response, 'Answer the guess with yes/no!');
+                    assert.throws(() => twentyquestions.answer('y'), /Answer the guess with yes or no!/);
                 });
             });
 
@@ -73,12 +69,8 @@ describe('twentyquestions', function() {
                     twentyquestions.socket.roleId = 'guesser';
                 });
 
-                it ('should return an error when guessing as an answerer', function () {
-                    assert.equal(twentyquestions.guess(''), 'Enter a guess!');
-                });
-
                 it ('should return an error when invalid answer', function () {
-                    assert.equal(twentyquestions.answer('yes').response, 'You\'re not the answerer!');
+                    assert.throws(() => twentyquestions.answer('yes'), /You're not the answerer!/);
                 });
 
                 it('should return false when incorrect guess', function () {

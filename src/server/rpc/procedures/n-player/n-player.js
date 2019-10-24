@@ -1,4 +1,11 @@
 // This is the NPlayer game RPC. It ensures round-robin turn taking with N players.
+/**
+ * The NPlayer Service utilities for ensuring round-robin turn taking with a set
+ * number of players (N).
+ *
+ * @service
+ * @category Games
+ */
 
 'use strict';
 
@@ -91,7 +98,7 @@ NPlayer.prototype.endTurn = function(next) {
         logger.info(`Player #${this._state.active} (${this._state.players[this._state.active].roleId}) called endTurn`);
 
         var nextIndex;
-        if(next == undefined || next == '') {
+        if(next == undefined) {
             nextIndex = (this._state.active + 1) % this._state.players.length;
         } else {
             nextIndex = this._state.players.findIndex(player => player.roleId === next);

@@ -10,7 +10,7 @@ describe('simple hangman', function() {
         hangman._rpc._state.word = 'battleship';
     });
 
-    utils.verifyRPCInterfaces(hangman, [
+    utils.verifyRPCInterfaces('SimpleHangman', [
         ['restart'],
         ['getCurrentlyKnownWord'],
         ['guess', ['letter']],

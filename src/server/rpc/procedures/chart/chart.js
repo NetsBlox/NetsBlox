@@ -13,6 +13,8 @@ let chart = new NBService('Chart');
 
 const defaults = {
     title: undefined,
+    width: 480,
+    height: 360,
     labels: [],
     types: [],
     xRange: [],
@@ -139,7 +141,7 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
  * @param {Array} lines a single line or list of lines. Each line should be in form of [[x1,y1], [x2,y2]]
  * @param {Object=} options Configuration for graph title, axes, and more
  */
-chart.draw = function(lines, options){
+chart.draw = function(lines, options={}){
     // process the options
     Object.keys(options).forEach(key => {
         if (options[key] === 'null' || options[key] === ''){
@@ -167,12 +169,7 @@ chart.draw = function(lines, options){
 
     //TODO auto set to boxes if categorical? 
 
-    let opts = {
-        title: options.title,
-        xLabel: options.xLabel, 
-        yLabel: options.yLabel, 
-        isCategorical: options.isCategorical
-    };
+    let opts = _.pick(options, ['title', 'width', 'height', 'xLabel', 'yLabel', 'isCategorical']);
 
     opts.yRange = {
         min: stats.y.min - relativePadding.y, 
@@ -231,6 +228,13 @@ chart.draw = function(lines, options){
     }).catch(this._logger.error);
 };
 
+/**
+ * Get the default options for the "draw" RPC.
+ */
+chart.defaultOptions = function(){
+    return rpcUtils.jsonToSnapList(defaults);
+};
+
 chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
     let lines = [];
 
@@ -282,10 +286,6 @@ chart.drawLineChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
 
 chart.drawBarChart = function(dataset, xAxisTag, yAxisTag, datasetTag, title){
     return chart.drawLineChart.apply(this, arguments);
-};
-
-chart.defaultOptions = function(){
-    return rpcUtils.jsonToSnapList(defaults);
 };
 
 chart.COMPATIBILITY = {

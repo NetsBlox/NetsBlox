@@ -45,8 +45,9 @@ MetMuseum.fields = function() {
  * @param {Number=} limit limit the number of returned results (maximum of 50)
  * @returns {Array} results
  */
-MetMuseum.advancedSearch = function(field, query, skip, limit) {
+MetMuseum.advancedSearch = function(field, query, skip, limit=10) {
     field = toTitleCase(field);
+    limit = Math.min(limit, 50);
     return this._advancedSearch(field, query, skip, limit);
 };
 
