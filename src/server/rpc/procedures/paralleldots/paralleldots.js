@@ -27,8 +27,8 @@ DotsConsumer._parallelDotsRequest = function (query, text){
         queryString: query,
         method: 'POST',
         headers: {'Content-Type' : 'application/x-www-form-urlencoded'},
-        body: body}
-    );
+        body: body
+    });
 };
 
 /**
@@ -45,12 +45,11 @@ DotsConsumer.sentiment = async function( text ) {
  */
 DotsConsumer.similarity = function( text1, text2 ) {
     let body = `api_key=${key}&text_1=${encodeURI(text1)}&text_2=${encodeURI(text2)}`;
-    return this._sendAnswer({queryString: '/similarity', method: 'POST',
-        headers: {
-            'Content-Type' : 'application/x-www-form-urlencoded',}, body: body})
-        .catch(err => {
-            throw err;
-        });
+    return this._sendAnswer({
+        queryString: '/similarity', method: 'POST',
+        headers: {'Content-Type' : 'application/x-www-form-urlencoded'},
+        body: body
+    });
 };
 
 /**
