@@ -1,4 +1,4 @@
-const Speck32 = require('./speckjs/src/ciphers/speckNative.js');
+const Speck32 = require('./speck.js');
 
 // key is an array of shift values
 const caesarCipher = (text, key, decrypt=false) => {
