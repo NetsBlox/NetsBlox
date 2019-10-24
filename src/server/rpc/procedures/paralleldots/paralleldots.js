@@ -8,7 +8,7 @@
  */
 
 const ApiConsumer = require('../utils/api-consumer');
-const DotsConsumer = new ApiConsumer('ParallelDots', 'https://apis.paralleldots.com/v4',{cache: {ttl: 5*60}});
+const ParallelDots = new ApiConsumer('ParallelDots', 'https://apis.paralleldots.com/v4',{cache: {ttl: 5*60}});
 const key = process.env.PARALLELDOTS_KEY;
 
 const toLowerCaseKeys = object => {
@@ -21,7 +21,7 @@ const toLowerCaseKeys = object => {
     return result;
 };
 
-DotsConsumer._parallelDotsRequest = function (query, text){
+ParallelDots._parallelDotsRequest = function (query, text){
     let body = `api_key=${key}&text=${encodeURI(text)}`;
     return this._sendAnswer({
         queryString: query,
@@ -36,7 +36,7 @@ DotsConsumer._parallelDotsRequest = function (query, text){
  *
  * @param {String} text
  */
-DotsConsumer.getSentiment = async function( text ) {
+ParallelDots.getSentiment = async function(text) {
     const result = await this._parallelDotsRequest('/sentiment', text);
     return result.sentiment;
 };
@@ -47,7 +47,7 @@ DotsConsumer.getSentiment = async function( text ) {
  * @param {String} text1 Long text (more than 2 words)
  * @param {String} text2 Long text (more than 2 words)
  */
-DotsConsumer.getSimilarity = async function( text1, text2 ) {
+ParallelDots.getSimilarity = async function(text1, text2) {
     const body = `api_key=${key}&text_1=${encodeURI(text1)}&text_2=${encodeURI(text2)}`;
     const result = await this._sendAnswer({
         queryString: '/similarity', method: 'POST',
@@ -62,7 +62,7 @@ DotsConsumer.getSimilarity = async function( text1, text2 ) {
  *
  * @param {String} text
  */
-DotsConsumer.getNamedEntities = async function( text ) {
+ParallelDots.getNamedEntities = async function(text) {
     const result = await this._parallelDotsRequest('/ner', text);
     return result.entities;
 };
@@ -72,7 +72,7 @@ DotsConsumer.getNamedEntities = async function( text ) {
  *
  * @param {String} text
  */
-DotsConsumer.getKeywords = async function( text ) {
+ParallelDots.getKeywords = async function(text) {
     const result = await this._parallelDotsRequest('/keywords', text);
     return result.keywords;
 };
@@ -85,7 +85,7 @@ DotsConsumer.getKeywords = async function( text ) {
  *
  * @param {String} text
  */
-DotsConsumer.getTaxonomy = async function( text ) {
+ParallelDots.getTaxonomy = async function(text) {
     const result = await this._parallelDotsRequest('/taxonomy', text);
     return result.taxonomy;
 };
@@ -95,7 +95,7 @@ DotsConsumer.getTaxonomy = async function( text ) {
  *
  * @param {String} text
  */
-DotsConsumer.getEmotion = async function( text ) {
+ParallelDots.getEmotion = async function(text) {
     const result = await this._parallelDotsRequest('/emotion', text);
     return toLowerCaseKeys(result.emotion);
 };
@@ -105,7 +105,7 @@ DotsConsumer.getEmotion = async function( text ) {
  *
  * @param {String} text
  */
-DotsConsumer.getSarcasmProbability = async function( text ) {
+ParallelDots.getSarcasmProbability = async function(text) {
     const result = await this._parallelDotsRequest('/sarcasm', text);
     return result.Sarcastic;
 };
@@ -115,7 +115,7 @@ DotsConsumer.getSarcasmProbability = async function( text ) {
  *
  * @param {String} text
  */
-DotsConsumer.getIntent = async function( text ) {
+ParallelDots.getIntent = async function(text) {
     const result = await this._parallelDotsRequest('/intent', text);
     return result.intent;
 };
@@ -125,12 +125,12 @@ DotsConsumer.getIntent = async function( text ) {
  *
  * @param {String} text
  */
-DotsConsumer.getAbuse = function( text ) {
+ParallelDots.getAbuse = function(text) {
     return this._parallelDotsRequest('/abuse', text);
 };
 
 
-DotsConsumer.isSupported = () => {
+ParallelDots.isSupported = () => {
     if(!key){
         /* eslint-disable no-console*/
         console.error('PARALLELDOTS_KEY is missing.');
@@ -139,4 +139,4 @@ DotsConsumer.isSupported = () => {
     return !!key;
 };
 
-module.exports = DotsConsumer;
+module.exports = ParallelDots;
