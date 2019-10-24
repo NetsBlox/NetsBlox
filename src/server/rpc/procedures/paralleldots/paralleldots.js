@@ -11,21 +11,32 @@ const ApiConsumer = require('../utils/api-consumer');
 const DotsConsumer = new ApiConsumer('ParallelDots', 'https://apis.paralleldots.com/v4',{cache: {ttl: 5*60}});
 const key = process.env.PARALLELDOTS_KEY;
 
+const toLowerCaseKeys = object => {
+    const result = {};
+    // Correct inconsistencies in capitalization from ParallelDots
+    Object.entries(object).forEach(entry => {
+        const [key, value] = entry;
+        result[key.toLowerCase()] = value;
+    });
+    return result;
+};
+
 DotsConsumer._parallelDotsRequest = function (query, text){
     let body = `api_key=${key}&text=${encodeURI(text)}`;
-    return this._sendAnswer({queryString: query, method: 'POST',
-        headers: {
-            'Content-Type' : 'application/x-www-form-urlencoded',}, body: body})
-        .catch(err => {
-            throw err;
-        });
+    return this._sendAnswer({
+        queryString: query,
+        method: 'POST',
+        headers: {'Content-Type' : 'application/x-www-form-urlencoded'},
+        body: body}
+    );
 };
 
 /**
  * @param {String} text
  */
-DotsConsumer.sentiment = function( text ) {
-    return this._parallelDotsRequest('/sentiment', text);
+DotsConsumer.sentiment = async function( text ) {
+    const result = await this._parallelDotsRequest('/sentiment', text);
+    return result.sentiment;
 };
 
 /**
@@ -45,43 +56,49 @@ DotsConsumer.similarity = function( text1, text2 ) {
 /**
  * @param {String} text Long text to parse for Named Entities.
  */
-DotsConsumer.ner = function( text ) {
-    return this._parallelDotsRequest('/ner', text);
+DotsConsumer.ner = async function( text ) {
+    const result = await this._parallelDotsRequest('/ner', text);
+    return result.entities;
 };
 
 /**
  * @param {String} text Long text from which to extract keywords.
  */
-DotsConsumer.keywords = function( text ) {
-    return this._parallelDotsRequest('/keywords', text);
+DotsConsumer.keywords = async function( text ) {
+    const result = await this._parallelDotsRequest('/keywords', text);
+    return result.keywords;
 };
 
 /**
  * @param {String} text Long text to categorize into IAB categories.
  */
-DotsConsumer.taxonomy = function( text ) {
-    return this._parallelDotsRequest('/taxonomy', text);
+DotsConsumer.taxonomy = async function( text ) {
+    const result = await this._parallelDotsRequest('/taxonomy', text);
+    return result.taxonomy;
 };
 
 /**
  * @param {String} text  String to parse for emotional analysis
  */
-DotsConsumer.emotion = function( text ) {
-    return this._parallelDotsRequest('/emotion', text);
+DotsConsumer.emotion = async function( text ) {
+    const result = await this._parallelDotsRequest('/emotion', text);
+    return toLowerCaseKeys(result.emotion);
 };
 
 /**
  * @param {String} text String to parse for probability of sarcasm
  */
-DotsConsumer.sarcasm = function( text ) {
-    return this._parallelDotsRequest('/sarcasm', text);
+DotsConsumer.sarcasm = async function( text ) {
+    const result = await this._parallelDotsRequest('/sarcasm', text);
+    return toLowerCaseKeys(result);
 };
 
 /**
  * @param {String} text  String to parse for its intent
  */
-DotsConsumer.intent = function( text ) {
-    return this._parallelDotsRequest('/intent', text);
+DotsConsumer.intent = async function( text ) {
+    const result = await this._parallelDotsRequest('/intent', text);
+    return result.intent;
 };
 
 /**
