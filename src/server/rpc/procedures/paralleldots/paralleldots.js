@@ -21,7 +21,7 @@ const toLowerCaseKeys = object => {
     return result;
 };
 
-ParallelDots._parallelDotsRequest = function (query, text){
+ParallelDots._parallelDotsRequest = function(query, text){
     let body = `api_key=${key}&text=${encodeURI(text)}`;
     return this._sendAnswer({
         queryString: query,
