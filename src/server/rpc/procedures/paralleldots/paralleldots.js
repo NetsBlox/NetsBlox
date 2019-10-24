@@ -32,78 +32,100 @@ DotsConsumer._parallelDotsRequest = function (query, text){
 };
 
 /**
+ * Find the overall sentiment of the given text along with the confidence score.
+ *
  * @param {String} text
  */
-DotsConsumer.sentiment = async function( text ) {
+DotsConsumer.getSentiment = async function( text ) {
     const result = await this._parallelDotsRequest('/sentiment', text);
     return result.sentiment;
 };
 
 /**
- * @param {String} text1 Should be a long text (more than 2 words)
- * @param {String} text2 Should be a long text (more than 2 words)
+ * Find the similarity between two snippets of text.
+ *
+ * @param {String} text1 Long text (more than 2 words)
+ * @param {String} text2 Long text (more than 2 words)
  */
-DotsConsumer.similarity = function( text1, text2 ) {
-    let body = `api_key=${key}&text_1=${encodeURI(text1)}&text_2=${encodeURI(text2)}`;
-    return this._sendAnswer({
+DotsConsumer.getSimilarity = async function( text1, text2 ) {
+    const body = `api_key=${key}&text_1=${encodeURI(text1)}&text_2=${encodeURI(text2)}`;
+    const result = await this._sendAnswer({
         queryString: '/similarity', method: 'POST',
         headers: {'Content-Type' : 'application/x-www-form-urlencoded'},
         body: body
     });
+    return result.similarity_score;
 };
 
 /**
- * @param {String} text Long text to parse for Named Entities.
+ * Identify named entities in the given text.
+ *
+ * @param {String} text
  */
-DotsConsumer.ner = async function( text ) {
+DotsConsumer.getNamedEntities = async function( text ) {
     const result = await this._parallelDotsRequest('/ner', text);
     return result.entities;
 };
 
 /**
- * @param {String} text Long text from which to extract keywords.
+ * Extract keywords from the given text along with their confidence score.
+ *
+ * @param {String} text
  */
-DotsConsumer.keywords = async function( text ) {
+DotsConsumer.getKeywords = async function( text ) {
     const result = await this._parallelDotsRequest('/keywords', text);
     return result.keywords;
 };
 
 /**
- * @param {String} text Long text to categorize into IAB categories.
+ * Classify the given text into IAB categories.
+ *
+ * For more information about IAB categories, see
+ * https://www.iab.com/guidelines/iab-quality-assurance-guidelines-qag-taxonomy/
+ *
+ * @param {String} text
  */
-DotsConsumer.taxonomy = async function( text ) {
+DotsConsumer.getTaxonomy = async function( text ) {
     const result = await this._parallelDotsRequest('/taxonomy', text);
     return result.taxonomy;
 };
 
 /**
- * @param {String} text  String to parse for emotional analysis
+ * Find the emotion in the given text.
+ *
+ * @param {String} text
  */
-DotsConsumer.emotion = async function( text ) {
+DotsConsumer.getEmotion = async function( text ) {
     const result = await this._parallelDotsRequest('/emotion', text);
     return toLowerCaseKeys(result.emotion);
 };
 
 /**
- * @param {String} text String to parse for probability of sarcasm
+ * Compute the probability of sarcasm for the given text.
+ *
+ * @param {String} text
  */
-DotsConsumer.sarcasm = async function( text ) {
+DotsConsumer.getSarcasmProbability = async function( text ) {
     const result = await this._parallelDotsRequest('/sarcasm', text);
-    return toLowerCaseKeys(result);
+    return result.Sarcastic;
 };
 
 /**
- * @param {String} text  String to parse for its intent
+ * Get the intent of the given text along with the confidence score.
+ *
+ * @param {String} text
  */
-DotsConsumer.intent = async function( text ) {
+DotsConsumer.getIntent = async function( text ) {
     const result = await this._parallelDotsRequest('/intent', text);
     return result.intent;
 };
 
 /**
- * @param {String} text  String to parse for possible abuse
+ * Classify the given text as abuse, hate speech, or neither.
+ *
+ * @param {String} text
  */
-DotsConsumer.abuse = function( text ) {
+DotsConsumer.getAbuse = function( text ) {
     return this._parallelDotsRequest('/abuse', text);
 };
 
