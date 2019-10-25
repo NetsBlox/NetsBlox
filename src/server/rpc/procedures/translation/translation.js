@@ -4,6 +4,7 @@
  *
  * Terms of use: https://www.microsoft.com/en-us/servicesagreement
  * @service
+ * @category Language
  */
 
 const ApiConsumer = require('../utils/api-consumer');
