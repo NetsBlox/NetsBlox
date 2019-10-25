@@ -436,17 +436,11 @@ RPCManager.prototype.sendRPCResult = function(response, result) {
 
 RPCManager.prototype.sendRPCError = function(response, error) {
     const isIntentionalError = err => err.name === 'Error';
-    if (isIntentionalError(error)) {
-        // less descriptive logs and send the error message to the user
-        this._logger.warn(`Error caught: ${error.message}`);
-        if (response.headersSent) return;
-        response.status(500).send(error.message);
-    } else {
-        // more verbose logs. hide the error message from user (generic error)
+    if (!isIntentionalError(error)) {
         this._logger.error('Uncaught exception:', error);
-        if (response.headersSent) return;
-        response.status(500).send('something went wrong');
     }
+    if (response.headersSent) return;
+    response.status(500).send(error.message);
 };
 
 RPCManager.prototype.isServiceLoaded = function(serviceName) {
