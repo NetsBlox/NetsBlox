@@ -83,7 +83,7 @@ function parseSource(source, searchScope) {
     if (serviceAnnotation) {
         categories = serviceAnnotation.parsed.tags
             .filter(tag => tag.title === 'category')
-            .map(tag => tag.description);
+            .map(tag => tag.description.split(';').map(c => c.trim()));
 
         tags = serviceAnnotation.parsed.tags
             .map(tag => tag.title)
