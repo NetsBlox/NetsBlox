@@ -66,7 +66,7 @@ class Client {
         return this.projectId;
     }
 
-    sendEditMsg (msg) {
+    async sendEditMsg (msg) {
         if (!this.hasProject()) {
             this._logger.error(`Trying to send edit msg w/o project ${this.uuid}`);
             return;
@@ -75,41 +75,40 @@ class Client {
         // accept the event here and broadcast to everyone
         const projectId = this.projectId;
         const roleId = this.roleId;
-        return this.canApplyAction(msg.action)
-            .then(canApply => {
-                const sockets = NetworkTopology.getSocketsAt(projectId, roleId);
-                if (canApply) {
-                    if (sockets.length > 1) {
-                        sockets.forEach(socket => socket.send(msg));
-                    }
-                    msg.projectId = projectId;
-                    // Only set the role's action id if not user action
-                    msg.roleId = roleId;
+        const {canApply, actionId} = await this.canApplyAction(msg.action);
+        const sockets = NetworkTopology.getSocketsAt(projectId, roleId);
 
-                    if (!msg.action.isUserAction) {
-                        return ProjectActions.setLatestActionId(projectId, roleId, msg.action.id)
-                            .then(() => ProjectActions.store(msg));
-                    } else {
-                        return ProjectActions.store(msg);
-                    }
-                } else {
-                    msg.type = 'action-rejected';
-                    this.send(msg);
-                }
-            });
+        if (canApply) {
+            if (sockets.length > 1) {
+                sockets.forEach(socket => socket.send(msg));
+            }
+            msg.projectId = projectId;
+            // Only set the role's action id if not user action
+            msg.roleId = roleId;
+
+            if (!msg.action.isUserAction) {
+                await ProjectActions.setLatestActionId(projectId, roleId, msg.action.id);
+            }
+            return await ProjectActions.store(msg);
+        } else {
+            const prettyId = `${this.uuid} at ${this.roleId} in ${this.projectId}`;
+            this._logger.log(`rejecting action with id ${msg.action.id} ` +
+                `(${actionId}) from ${prettyId}`);
+
+            msg.error = {
+                message: 'Concurrent action already accepted.',
+                actionId: actionId,
+            };
+            msg.type = 'action-rejected';
+            this.send(msg);
+        }
     }
 
     async canApplyAction(action) {
         const startRole = this.roleId;
         const actionId = await ProjectActions.getLatestActionId(this.projectId, this.roleId);
-
-        const accepted = actionId < action.id && this.roleId === startRole;
-        if (!accepted) {
-            const prettyId = `${this.uuid} at ${this.roleId} in ${this.projectId}`;
-            this._logger.log(`rejecting action with id ${action.id} ` +
-                `(${actionId}) from ${prettyId}`);
-        }
-        return accepted;
+        const canApply = actionId < action.id && this.roleId === startRole;
+        return {canApply, actionId};
     }
 
     _initialize () {
