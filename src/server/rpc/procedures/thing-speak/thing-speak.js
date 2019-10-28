@@ -58,7 +58,7 @@ let searchParser = responses => {
         let details = detailParser(item);
         if (!details.latitude) return null;
         return details;
-    })).reduce((results, singleRes) => results.concat(singleRes));
+    })).reduce((results, singleRes) => results.concat(singleRes), []);
     return searchResults;
 };
 
