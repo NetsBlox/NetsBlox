@@ -50,6 +50,11 @@ class ApiConsumer extends NBService {
             json: boolean to show indicate if the response is json or not. default: true
         }
      */
+    _getFullUrl(queryOptions){
+        const queryString = (queryOptions.queryString || '').replace(/^\??/, '?');
+        return (queryOptions.baseUrl || this._baseUrl) + queryString;
+    }
+
     _requestData(queryOptions){
         // when extending use urlencoding such as 'urlencode' to encode the query parameters
         // TODO implement a defaults object
@@ -58,7 +63,7 @@ class ApiConsumer extends NBService {
             let promises = queryOptions.map( qo => this._requestData(qo));
             return Promise.all(promises);
         }
-        let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
+        const fullUrl = this._getFullUrl(queryOptions);
         this._logger.trace('requesting data for', fullUrl);
         if (queryOptions.body) this._logger.trace('with the body', queryOptions.body);
         return this._cache.wrap(this._getCacheKey(queryOptions), ()=>{
@@ -80,7 +85,7 @@ class ApiConsumer extends NBService {
     _getCacheKey(queryOptions){
         let parameters = [];
         parameters.push(queryOptions.method || 'GET');
-        let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
+        const fullUrl = this._getFullUrl(queryOptions);
         parameters.push(fullUrl);
 
         // NOTE: It is possible that an RPC will be made with a non-text request body, preventing this from generating a cache key.
@@ -96,7 +101,7 @@ class ApiConsumer extends NBService {
      */
     _requestImage(queryOptions){
         let logger = this._logger;
-        let fullUrl = (queryOptions.baseUrl || this._baseUrl) + queryOptions.queryString;
+        const fullUrl = this._getFullUrl(queryOptions);
         let requestImage = () => {
             logger.trace('requesting image from', fullUrl);
             var imgResponse = request.get(fullUrl);

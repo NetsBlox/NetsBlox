@@ -62,10 +62,14 @@ const jsonToSnapList = inputJson => {
 };
 
 // turns a tuple-like object into query friendly string
-const encodeQueryData = tuple => {
+const encodeQueryData = (query, encode=true) => {
     let ret = [];
-    for (let d in tuple)
-        ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(tuple[d]));
+
+    Object.entries(query).forEach(entry => {
+        if (encode) entry = entry.map(d => encodeURIComponent(d));
+        const [key, value] = entry;
+        ret.push(`${key}=${value}`);
+    });
     return ret.join('&');
 };
 

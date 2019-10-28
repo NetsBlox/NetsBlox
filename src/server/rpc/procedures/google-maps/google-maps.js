@@ -8,32 +8,31 @@
 'use strict';
 
 const logger = require('../utils/logger')('google-maps');
-const request = require('request');
+const utils = require('../utils');
+const ApiConsumer = require('../utils/api-consumer');
 const SphericalMercator = require('sphericalmercator');
 const geolib = require('geolib');
 const merc = new SphericalMercator({size:256});
-const CacheManager = require('cache-manager');
 const Storage = require('../../storage');
-
-// TODO: Change this cache to mongo or something (file?)
-const cache = CacheManager.caching({store: 'memory', max: 1000, ttl: Infinity});
+const PRECISION = 7; // 6 or 5 is probably safe
 const key = process.env.GOOGLE_MAPS_KEY;
 
 var storage;
 
 // Retrieving a static map image
-var baseUrl = 'https://maps.googleapis.com/maps/api/staticmap',
-    getStorage = function() {
-        if (!storage) {
-            const oneHour = 3600;
-            storage = Storage.create('google-maps').collection;
-            storage.createIndex({ lastReadWrite: 1 }, { expireAfterSeconds: oneHour });
-        }
-        return storage;
-    };
+const getStorage = function() {
+    if (!storage) {
+        const oneHour = 3600;
+        storage = Storage.create('google-maps').collection;
+        storage.createIndex({ lastReadWrite: 1 }, { expireAfterSeconds: oneHour });
+    }
+    return storage;
+};
 
-const GoogleMaps = {};
+const baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
 
+// We will rely on the default maxsize limit of the cache
+const GoogleMaps = new ApiConsumer('GoogleMaps', baseUrl, {cache: {ttl: Infinity}});
 GoogleMaps._coordsAt = function(x, y, map) {
     x = Math.ceil(x / map.scale);
     y = Math.ceil(y / map.scale);
@@ -59,21 +58,19 @@ GoogleMaps._pixelsAt = function(lat, lon, map) {
     return pixelsXY;
 };
 
+GoogleMaps._getGoogleParams = function(options, precisionLimit=PRECISION) {
+    const centerLat = parseFloat(options.center.lat).toFixed(precisionLimit);
+    const centerLon = parseFloat(options.center.lon).toFixed(precisionLimit);
+    const params = {
+        size: `${options.width}x${options.height}`,
+        scale: options.scale,
+        center: `${centerLat},${centerLon}`,
+        key: key,
+        zoom: options.zoom || 12,
+        maptype: options.mapType
+    };
 
-// precisionLimit if present would limit the precision of coordinate parameters
-GoogleMaps._getGoogleParams = function(options, precisionLimit) {
-    // Create the params for Google
-    var params = [];
-    params.push('size=' + options.width + 'x' + options.height);
-    params.push('scale=' + options.scale);
-    // reduce lat lon precisionLimit to a reasonable value to reduce cache misses
-    let centerLat = precisionLimit ? parseFloat(options.center.lat).toFixed(precisionLimit) : options.center.lat;
-    let centerLon = precisionLimit ? parseFloat(options.center.lon).toFixed(precisionLimit) : options.center.lon;
-    params.push('center=' + centerLat + ',' + centerLon);
-    params.push('key=' + key);
-    params.push('zoom='+(options.zoom || '12'));
-    params.push('maptype='+(options.mapType));
-    return params.join('&');
+    return utils.encodeQueryData(params, false);
 };
 
 GoogleMaps._getClientMap = function(clientId) {
@@ -117,59 +114,23 @@ GoogleMaps._recordUserMap = function(caller, map) {
         .then(() => logger.trace(`Stored map for ${caller.clientId}: ${JSON.stringify(map)}`));
 };
 
-GoogleMaps._getMap = function(latitude, longitude, width, height, zoom, mapType) {
-    let scale = width <= 640 && height <= 640 ? 1 : 2;
-    var response = this.response,
-        options = {
-            center: {
-                lat: latitude,
-                lon: longitude,
-            },
-            width: (width / scale),
-            height: (height / scale),
-            zoom: zoom,
-            scale,
-            mapType: mapType || 'roadmap'
+GoogleMaps._getMap = async function(latitude, longitude, width, height, zoom, mapType) {
+    const scale = width <= 640 && height <= 640 ? 1 : 2;
+    const options = {
+        center: {
+            lat: latitude,
+            lon: longitude,
         },
-        params = this._getGoogleParams(options),
-        url = baseUrl+'?'+params;
+        width: (width / scale),
+        height: (height / scale),
+        zoom: zoom,
+        scale,
+        mapType: mapType || 'roadmap'
+    };
+    const queryString = this._getGoogleParams(options, PRECISION);
 
-    // Check the cache
-    this._recordUserMap(this.caller, options).then(() => {
-
-        // allow the lookups that are "close" to an already visited location hit the cache
-        const PRECISION = 7; // 6 or 5 is probably safe
-        const cacheKey = this._getGoogleParams(options, PRECISION);
-        cache.wrap(cacheKey, cacheCallback => {
-            // Get the image -> not in cache!
-            logger.trace('request params:', options);
-            logger.trace('url is '+url);
-            logger.trace('Requesting new image from google!');
-            var mapResponse = request.get(url);
-            delete mapResponse.headers['cache-control'];
-
-            // Gather the data...
-            var result = new Buffer(0);
-            mapResponse.on('data', function(data) {
-                result = Buffer.concat([result, data]);
-            });
-            mapResponse.on('end', function() {
-                return cacheCallback(null, result);
-            });
-        }, (err, imageBuffer) => {
-            // Send the response to the user
-            logger.trace('Sending the response!');
-            // Set the headers
-            response.set('cache-control', 'private, no-store, max-age=0');
-            response.set('content-type', 'image/png');
-            response.set('content-length', imageBuffer.length);
-            response.set('connection', 'close');
-
-            response.status(200).send(imageBuffer);
-            logger.trace('Sent the response!');
-        });
-
-    });
+    await this._recordUserMap(this.caller, options);
+    return this._sendImage({queryString});
 };
 
 /**
