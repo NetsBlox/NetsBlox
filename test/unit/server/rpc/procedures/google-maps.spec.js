@@ -90,10 +90,10 @@ describe('googlemaps', function() {
             assert.equal(outCoords, expectedCoords);
         });
 
-        it('should not round coordinates', function() {
-            let params = googlemaps._rpc._getGoogleParams(opts);
+        it('should not round coordinates (large precision)', function() {
+            let params = googlemaps._rpc._getGoogleParams(opts, 13);
             let outCoords = params.match(/center=(.*)&key/)[1];
-            const expectedCoords = '36.2645738345627,-82.54322767345268';
+            const expectedCoords = '36.2645738345627,-82.5432276734526';
             assert.equal(outCoords, expectedCoords);
         });
 
