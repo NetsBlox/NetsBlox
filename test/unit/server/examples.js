@@ -1,14 +1,14 @@
-const assert = require('assert');
 // test if the services are being extracted/identified correctly.
 describe('examples', function() {
-    const ROOT_DIR = '../../../',
-        EXAMPLES = require(ROOT_DIR + 'src/server/examples');
+    const assert = require('assert');
+    const ROOT_DIR = '../../../';
+    const EXAMPLES = require(ROOT_DIR + 'src/server/examples');
 
     describe('testing if services are being detected and populated correctly', function() {
 
         it('test Earthquakes examples', function() {
-            assert(EXAMPLES.Earthquakes.services.includes('earthquakes'));
-            assert(EXAMPLES.Earthquakes.services.includes('staticmap'));
+            assert(EXAMPLES.Earthquakes.services.includes('Earthquakes'));
+            assert(EXAMPLES.Earthquakes.services.includes('GoogleMaps'));
         });
 
         it('test Story examples', function(){
@@ -16,7 +16,7 @@ describe('examples', function() {
         });
 
         it('test Weather examples', function(){
-            assert(EXAMPLES.Weather.services.includes('weather'));
+            assert(EXAMPLES.Weather.services.includes('Weather'));
         });
 
         it('test Movies examples', function(){
@@ -24,14 +24,31 @@ describe('examples', function() {
         });
 
         it('test AirQuality examples', function(){
-            assert(EXAMPLES.AirQuality.services.includes('staticmap'));
-            assert(EXAMPLES.AirQuality.services.includes('geolocation'));
+            assert(EXAMPLES.AirQuality.services.includes('GoogleMaps'));
+            assert(EXAMPLES.AirQuality.services.includes('Geolocation'));
         });
 
         it('test Quizzer examples', function(){
-            assert(EXAMPLES.Quizzer.services.includes('kv-store'));
+            assert(EXAMPLES.Quizzer.services.includes('KeyValueStore'));
         });
 
+    });
+
+    describe('Service usage', () => {
+        function isLowerCase(letter) {
+            return letter === letter.toLowerCase();
+        }
+
+        Object.entries(EXAMPLES).forEach(entry => {
+            const [name, content] = entry;
+            it(`should not use old service names in ${name}`, function() {
+                const names = content.services.filter(name => isLowerCase(name));
+                assert(
+                    names.length === 0,
+                    `Found old service names: ${names.join(', ')}`
+                );
+            });
+        });
     });
 
     describe('project source creation', () => {
