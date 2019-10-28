@@ -16,7 +16,7 @@ describe('examples', function() {
         });
 
         it('test Weather examples', function(){
-            assert(EXAMPLES.Weather.services.includes('weather'));
+            assert(EXAMPLES.Weather.services.includes('Weather'));
         });
 
         it('test Movies examples', function(){
