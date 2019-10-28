@@ -74,7 +74,7 @@ describe('googlemaps', function() {
         const opts = {
             center: {
                 lat: 36.2645738345627,
-                lon: -82.54322767345267,
+                lon: -82.5432276734527,
             },
             width: (640 / 1),
             height: (480 / 1),
@@ -84,16 +84,16 @@ describe('googlemaps', function() {
         };
 
         it('should round coordinates properly', function() {
-            let params = googlemaps._rpc._getGoogleParams(opts, 4);
-            let outCoords = params.match(/center=(.*)&key/)[1];
+            const params = googlemaps._rpc._getGoogleParams(opts, 4);
+            const outCoords = params.match(/center=(.*)&key/)[1];
             const expectedCoords = '36.2646,-82.5432';
             assert.equal(outCoords, expectedCoords);
         });
 
         it('should not round coordinates (large precision)', function() {
-            let params = googlemaps._rpc._getGoogleParams(opts, 13);
-            let outCoords = params.match(/center=(.*)&key/)[1];
-            const expectedCoords = '36.2645738345627,-82.5432276734526';
+            const params = googlemaps._rpc._getGoogleParams(opts, 13);
+            const outCoords = params.match(/center=(.*)&key/)[1];
+            const expectedCoords = '36.2645738345627,-82.5432276734527';
             assert.equal(outCoords, expectedCoords);
         });
 
