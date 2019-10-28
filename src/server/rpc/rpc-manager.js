@@ -162,8 +162,15 @@ RPCManager.prototype.createRouter = function() {
     });
 
     const isServiceWithName = (name, service) => {
+        name = name.toLowerCase();
+        if (service.serviceName.toLowerCase() === name) {
+            return true;
+        }
         const deprecatedName = service.COMPATIBILITY && service.COMPATIBILITY.path;
-        return service.serviceName === name || deprecatedName === name;
+        if (deprecatedName) {
+            return deprecatedName.toLowerCase() === name;
+        }
+        return false;
     };
     router.route('/:serviceName').get((req, res) => {
         const {serviceName} = req.params;
