@@ -3,6 +3,7 @@
  *
  * See https://www.esrl.noaa.gov/gmd/ccgg/trends/ for additional details.
  *
+ * @alpha
  * @service
  * @category Science
  * @category Climate
