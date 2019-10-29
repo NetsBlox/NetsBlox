@@ -12,10 +12,19 @@
         actionIdCollection = db.collection('latest-action-ids');
 
         collection.createIndex({'action.id': 1});
+        collection.createIndex({
+            projectId: 1,
+            roleId: 1,
+            notSaved: 1,
+            'action.id': 1,
+        });
+        const oneDay = 3600 * 24;
+        collection.createIndex({ time: 1 }, { expireAfterSeconds: oneDay });
     };
 
     ProjectActions.store = function(action) {
         action.time = new Date();
+        // TODO: Should this store it in the blob? It's not ok to just lose large actions...
         if (action.args) { // check if the arguments take too much space
             let argsSize = JSON.stringify(action.args).length * 2 / 1e+6;
             if (argsSize > 14) throw new Error('Action too big to save in mongo.');
@@ -27,7 +36,7 @@
             });
     };
 
-    ProjectActions.getActionsAfter = function(projectId, roleId, actionId) {
+    ProjectActions.getActionsAfter = async function(projectId, roleId, actionId) {
         logger.trace(`getting actions after ${actionId} in ${projectId} at role: ${roleId}`);
         let cursor = collection.find({
             projectId: projectId,
@@ -35,7 +44,13 @@
             notSaved: {$ne: true},
             'action.id': {$gt: actionId}
         });
-        return Q(cursor.sort({'action.id': 1}).toArray());
+
+        const actions = await cursor.sort({'action.id': 1}).toArray();
+        const earliestId = actions[0].action.id;
+        if (earliestId > actionId + 1) {
+            throw new Error(`Could not retrieve actions before ${earliestId} (requested actions after ${actionId}).`);
+        }
+        return actions;
     };
 
     ProjectActions.clearActionsAfter = function(projectId, roleId, actionId, endTime) {
