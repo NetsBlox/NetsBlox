@@ -3,7 +3,7 @@
 # runs the client tests in a headless chrome
 
 [ -z $PORT ] && port=8080 || port=$PORT
-# WARN if running multilple instances, VANTAGE_PORTs might collide
+# WARN if running multiple instances, VANTAGE_PORTs might collide
 
 # check if server is currently running: get the pid
 function serverPid()
@@ -14,6 +14,19 @@ function serverPid()
 
 initial_pid=$(serverPid)
 
+function runTests()
+{
+  npx mocha-chrome http://localhost:$port/test --chrome-flags '["--no-sandbox"]'
+  exit_code=$?
+
+  if [[ $exit_code -eq 0 ]]; then
+      npx mocha-chrome http://localhost:$port/test/multi --chrome-flags '["--no-sandbox"]'
+      exit_code=$?
+  fi
+
+  echo $exit_code
+}
+
 # only start and stop the server if it's not up already
 if [ -z $initial_pid ]; then
   echo "starting the server..."
@@ -23,12 +36,10 @@ if [ -z $initial_pid ]; then
     echo waiting for the server to startup..
     sleep 0.5
   done
-  npx mocha-chrome http://localhost:$port/test --chrome-flags '["--no-sandbox"]'
-  exit_code=$?
+  exit_code=$(runTests)
   kill %1 # shutdown netsblox server (job id 1)
 else
   echo "server is already up with pid '$initial_pid'"
-  npx mocha-chrome http://localhost:$port/test --chrome-flags '["--no-sandbox"]'
-  exit_code=$?
+  exit_code=$(runTests)
 fi
 exit $exit_code
