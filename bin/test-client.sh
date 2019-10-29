@@ -23,8 +23,6 @@ function runTests()
       npx mocha-chrome http://localhost:$port/test/multi --chrome-flags '["--no-sandbox"]'
       exit_code=$?
   fi
-
-  echo $exit_code
 }
 
 # only start and stop the server if it's not up already
@@ -36,10 +34,11 @@ if [ -z $initial_pid ]; then
     echo waiting for the server to startup..
     sleep 0.5
   done
-  exit_code=$(runTests)
+  runTests
+
   kill %1 # shutdown netsblox server (job id 1)
 else
   echo "server is already up with pid '$initial_pid'"
-  exit_code=$(runTests)
+  runTests
 fi
 exit $exit_code
