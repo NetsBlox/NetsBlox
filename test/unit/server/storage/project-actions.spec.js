@@ -55,6 +55,15 @@ describe('project-actions', function() {
                 .then(actions => assert.equal(actions.length, 1, pretty(actions)))
                 .nodeify(done);
         });
+
+        it('should throw error if missing actions', async function() {
+            try {
+                await ProjectActions.getActionsAfter(projectId, roleId, 9);
+                throw new Error('Did not throw error while getting actions');
+            } catch (err) {
+                assert(err.message.includes('Could not retrieve actions before'), err.message);
+            }
+        });
     });
 
     describe('clearActionsAfter', function() {
