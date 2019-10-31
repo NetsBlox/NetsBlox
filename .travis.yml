@@ -14,7 +14,7 @@ before_script:
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
   - ./cc-test-reporter before-build
-  - apt-get update && apt-get install iproute2 -y
+  - sudo apt-get update && sudo apt-get install iproute2 -y
 script:
   - npm test && npm run test-client
 after_script:
