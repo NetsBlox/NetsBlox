@@ -8,7 +8,7 @@
 # check if server is currently running: get the pid
 function serverPid()
 {
-  local pid=$(netstat -nltp 2>/dev/null | grep $port | head -n 1 | grep -Eo '[0-9]+/node' | cut -d '/' -f 1)
+  local pid=$(ss -nltp 2>/dev/null | grep $port | head -n 1 | sed  's/.*"node",pid=//' | sed 's/,.*//')
   echo $pid
 }
 
@@ -29,6 +29,7 @@ function runTests()
 if [ -z $initial_pid ]; then
   echo "starting the server..."
   npm start >/dev/null &
+
   # wait while server hasn't started listening yet
   while [ -z $(serverPid) ]; do
     echo waiting for the server to startup..
