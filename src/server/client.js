@@ -343,18 +343,24 @@ class Client {
             });
     }
 
-    requestActionsAfter (actionId) {
+    async requestActionsAfter (actionId) {
         if (!this.projectId) {
             this._logger.error(`User requested actions without project: ${this.username}`);
             this.send({type: 'request-actions-complete'});
             return;
         }
 
-        return ProjectActions.getActionsAfter(this.projectId, this.roleId, actionId)
-            .then(actions => {
-                actions.forEach(action => this.send(action));
-                this.send({type: 'request-actions-complete'});
+        try {
+            const actions = await ProjectActions.getActionsAfter(this.projectId, this.roleId, actionId);
+            actions.forEach(action => this.send(action));
+            this.send({type: 'request-actions-complete'});
+        } catch (err) {
+            this.send({
+                type: 'reload-project',
+                message: 'Could not retrieve latest changes from collaborators.',
+                err,
             });
+        }
     }
 
     setState(projectId, roleId, username) {

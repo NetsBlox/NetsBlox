@@ -86,15 +86,12 @@ describe('collaboration', function() {
                 });
         });
 
-        it('should send request-actions-complete', function(done) {
+        it('should send request-actions-complete', async function() {
             let messageCount = user._socket.messages().length;
-            user._socket.receive({type: 'request-actions', actionId: 9})
-                .then(() => {
-                    let msgs = user._socket.messages().slice(messageCount);
-                    let completeMsg = msgs.find(msg => msg.type === 'request-actions-complete');
-                    assert(completeMsg);
-                })
-                .nodeify(done);
+            await user._socket.receive({type: 'request-actions', actionId: 9});
+            let msgs = user._socket.messages().slice(messageCount);
+            let completeMsg = msgs.find(msg => msg.type === 'request-actions-complete');
+            assert(completeMsg);
         });
 
         it('should not return actions from old roles', async function() {
