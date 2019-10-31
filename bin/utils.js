@@ -1,8 +1,5 @@
 /* eslint-disable no-console*/
-const Storage = require('../src/server/storage/storage'),
-    Logger = require('../src/server/logger'),
-    logger = new Logger('netsblox:cli'),
-    storage = new Storage(logger);
+const storage = require('../src/server/storage/storage');
 
 async function runWithStorage(fn, args) {
     try {
