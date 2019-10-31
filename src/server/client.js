@@ -356,8 +356,8 @@ class Client {
             this.send({type: 'request-actions-complete'});
         } catch (err) {
             this.send({
-                type: 'refresh',
-                message: 'Could not retrieve latest changes from collaborators. Please reload the project.',
+                type: 'reload-project',
+                message: 'Could not retrieve latest changes from collaborators.',
                 err,
             });
         }
