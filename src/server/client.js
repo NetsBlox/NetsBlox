@@ -129,8 +129,13 @@ class Client {
                 var msg = JSON.parse(data);
                 return this.onMessage(msg);
             } catch (err) {
-                this._logger.error(`failed to parse message: ${err} (${data})`);
-                BugReporter.reportInvalidSocketMessage(err, data, this);
+                if (err.name === 'SyntaxError') {
+                    this._logger.error(`failed to parse message: ${err} (${data})`);
+                    BugReporter.reportInvalidSocketMessage(err, data, this);
+                } else {
+                    this._logger.error(`${data} threw exception ${err}`);
+                    throw err;
+                }
             }
         });
 
@@ -160,9 +165,8 @@ class Client {
         this.onClose(this);
     }
 
-    onMessage (msg) {
-        let type = msg.type,
-            result = Q();
+    async onMessage (msg) {
+        let type = msg.type;
 
         if (CONDENSED_MSGS.includes(type)) {
             this._logger.trace(`received "${type}" message from ${this.toString()}`);
@@ -173,12 +177,10 @@ class Client {
 
         this.lastSocketActivity = Date.now();
         if (Client.MessageHandlers[type]) {
-            result = Client.MessageHandlers[type].call(this, msg) || Q();
+            await Client.MessageHandlers[type].call(this, msg);
         } else {
             this._logger.warn('message "' + JSON.stringify(msg) + '" not recognized');
         }
-        return result.catch(err =>
-            this._logger.error(`${JSON.stringify(msg)} threw exception ${err}`));
     }
 
     checkAlive() {
