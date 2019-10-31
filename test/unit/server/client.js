@@ -178,4 +178,68 @@ describe('client (ws)', function() {
         });
     });
 
+    describe('ws', function() {
+        let bob, steve;
+        before(async function() {
+            await utils.reset();
+            const project = await utils.createRoom({
+                name: 'ws-tests',
+                owner: 'alice',
+                roles: {
+                    role1: ['alice'],
+                    role2: ['bob', 'steve'],
+                    role3: [],
+                    role4: ['eve'],
+                }
+            });
+            const [/*id1*/, id2] = await project.getRoleIdsFor(['role1', 'role2']);
+            const projectId = project.getId();
+            [bob, steve] = NetworkTopology.getSocketsAt(projectId, id2);
+        });
+
+        describe('user-action', function() {
+            const UserActions = utils.reqSrc('storage/user-actions');
+            before(async function() {
+                await bob._socket.receive({
+                    type: 'user-action',
+                    action: {
+                        id: 1,
+                        type: 'moveBlock',
+                        args: []
+                    }
+                });
+
+                await steve._socket.receive({
+                    type: 'user-action',
+                    action: {
+                        id: 2,
+                        type: 'openProject',
+                        args: []
+                    }
+                });
+            });
+
+            it('should record action', async function() {
+                const actions = await UserActions.session(steve.uuid);
+                assert.equal(actions.length, 1);
+                assert.equal(actions[0].type, 'openProject');
+            });
+
+            it('should broadcast non-"openProject" actions to collabs', function() {
+                const actions = steve._socket.messages()
+                    .filter(msg => msg.type === 'user-action')
+                    .filter(msg => msg.action.type === 'openProject');
+
+                assert.equal(actions.length, 0, 'Collaborator received openProject action');
+            });
+
+            it('should not broadcast "openProject" to collabs', function() {
+                const actions = bob._socket.messages()
+                    .filter(msg => msg.type === 'user-action')
+                    .filter(msg => msg.action.type === 'openProject');
+                assert.equal(actions.length, 0, 'Collaborator received openProject action');
+            });
+        });
+    });
+
 });

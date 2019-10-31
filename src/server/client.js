@@ -104,6 +104,18 @@ class Client {
         }
     }
 
+    async recordAction(msg) {
+        const projectId = this.hasProject() ? this.projectId : 'n/a';
+        const record = {};
+
+        record.username = this.username === this.uuid ? null : this.username;
+        record.projectId = projectId;
+        record.sessionId = this.uuid;
+        record.action = msg.action;
+
+        return await UserActions.record(record);  // Store action in the database by sessionId
+    }
+
     async canApplyAction(action) {
         const startRole = this.roleId;
         const actionId = await ProjectActions.getLatestActionId(this.projectId, this.roleId);
@@ -415,8 +427,11 @@ Client.MessageHandlers = {
             });
     },
 
-    'user-action': function(msg) {
-        return this.sendEditMsg(msg);
+    'user-action': async function(msg) {
+        if (msg.action.type !== 'openProject') {
+            await this.sendEditMsg(msg);
+        }
+        return this.recordAction(msg);
     },
 
     'project-response': function(msg) {
@@ -552,24 +567,6 @@ Client.MessageHandlers = {
 
     'share-msg-type': function(msg) {
         this.sendToEveryone(msg);
-    },
-
-    // message for recording user actions
-    'record-action': function(msg) {
-        var sessionId = this.uuid + '/' + msg.sessionId,  // unique for the given editing session
-            projectId = 'n/a',
-            record = {};
-
-        if (this.hasProject()) {
-            projectId = this.projectId;
-        }
-
-        record.username = this.username === this.uuid ? null : this.username;
-        record.sessionId = sessionId;
-        record.projectId = projectId;
-        record.action = msg.action;
-
-        UserActions.record(record);  // Store action in the database by sessionId
     },
 
     'request-actions': function(msg) {
