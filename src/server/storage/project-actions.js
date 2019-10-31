@@ -46,6 +46,10 @@
         });
 
         const actions = await cursor.sort({'action.id': 1}).toArray();
+        if (!actions.length) {
+            throw new Error(`No project actions found (requested actions after ${actionId}).`);
+        }
+
         const earliestId = actions[0].action.id;
         if (earliestId > actionId + 1) {
             throw new Error(`Could not retrieve actions before ${earliestId} (requested actions after ${actionId}).`);

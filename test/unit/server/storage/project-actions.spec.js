@@ -1,7 +1,6 @@
 describe('project-actions', function() {
     const utils = require('../../../assets/utils');
     const _ = require('lodash');
-    const Q = require('q');
     const assert = require('assert');
     const ProjectActions = utils.reqSrc('storage/project-actions');
     const Projects = utils.reqSrc('storage/projects');
@@ -58,10 +57,10 @@ describe('project-actions', function() {
 
         it('should throw error if missing actions', async function() {
             try {
-                await ProjectActions.getActionsAfter(projectId, roleId, 9);
+                await ProjectActions.getActionsAfter(projectId, roleId, 1000);
                 throw new Error('Did not throw error while getting actions');
             } catch (err) {
-                assert(err.message.includes('Could not retrieve actions before'), err.message);
+                assert(err.message.includes('requested actions'), err.message);
             }
         });
     });
