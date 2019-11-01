@@ -2,11 +2,10 @@
 require('epipebomb')();  // Allow piping to 'head'
 
 var Command = require('commander').Command,
-    Storage = require('../src/server/storage/storage'),
+    storage = require('../src/server/storage/storage'),
     Logger = require('../src/server/logger'),
     Projects = require('../src/server/storage/projects'),
     logger = new Logger('netsblox:cli:projects'),
-    storage = new Storage(logger),
     program = new Command();
 
 program
