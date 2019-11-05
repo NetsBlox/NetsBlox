@@ -26,7 +26,7 @@ Trivia.getRandomQuestion = function() {
         'invalid_count'
     ];
 
-    return this._requestData({queryString: '/random'})
+    return this._requestData({path: '/random'})
         .then(questions => {
             const [question] = questions.map(q => {
                 const cleanedQ = {};
@@ -45,7 +45,7 @@ Trivia.getRandomQuestion = function() {
  * @returns {Promise<String>}
  */
 Trivia.random = function() {
-    return this._requestData({queryString: '/random'})
+    return this._requestData({path: '/random'})
         .then(questions => {
             for (var i = questions.length; i--;) {
                 const content = {

@@ -31,14 +31,16 @@ TranslationConsumer._get_guid = function () {
 TranslationConsumer.translate = function(text, from, to) {
     let body = [{'Text' : text}];
     let guid = this._get_guid();
-    let query = `translate?api-version=3.0&to=${to}`;
+    let query = `?api-version=3.0&to=${to}`;
 
     if(from)
     {
         query = query + `&from=${from}`;
     }
 
-    return this._sendAnswer({queryString: query,
+    return this._sendAnswer({
+        path: 'translate',
+        queryString: query,
         method: 'POST',
         headers: {
             'Content-Type' : 'application/json',
@@ -67,7 +69,9 @@ TranslationConsumer.toEnglish = function(text) {
 TranslationConsumer.detectLanguage = function(text) {
     let body = [{'Text' : text}];
     let guid = this._get_guid();
-    return this._sendAnswer({queryString: 'detect?api-version=3.0',
+    return this._sendAnswer({
+        path: 'detect',
+        queryString: '?api-version=3.0',
         method: 'POST',
         headers: {
             'Content-Type' : 'application/json',
@@ -84,7 +88,9 @@ TranslationConsumer.detectLanguage = function(text) {
  * @returns {Array} List of languages supported by the translator
  */
 TranslationConsumer.getSupportedLanguages = function() {
-    return this._sendAnswer({queryString: 'languages?api-version=3.0&scope=translation',
+    return this._sendAnswer({
+        path: 'languages',
+        queryString: '?api-version=3.0&scope=translation',
         headers: {
             'Content-Type' : 'application/json',
             'Ocp-Apim-Subscription-Key' : key}}, '.translation')

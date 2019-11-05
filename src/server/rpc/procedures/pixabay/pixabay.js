@@ -84,7 +84,7 @@ pixabay.searchAll = function (keywords, maxHeight, minHeight) {
  * @param {String} url URL of the image to retrieve
  */
 pixabay.getImage = function(url){
-    return this._sendImage({queryString: '', baseUrl:url});
+    return this._sendImage({url});
 };
 
 pixabay.isSupported = () => {

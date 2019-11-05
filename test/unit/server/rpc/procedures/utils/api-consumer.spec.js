@@ -19,6 +19,38 @@ describe('ApiConsumer', function(){
         });
     });
 
+    describe.only('_getFullUrl', () => {
+        const baseUrl = 'https://abc.com';
+        const service = testRpc._rpc;
+
+        it('should override url with "url" option', function() {
+            const options = {baseUrl, queryString: 'a=b&c=d'};
+            options.url = 'http://github.com';
+            const url = service._getFullUrl(options);
+            assert.equal(url, options.url);
+        });
+
+        it('should add ? before query string', function() {
+            const url = service._getFullUrl({baseUrl, queryString: 'a=b&c=d'});
+            assert.equal(url, `${baseUrl}?a=b&c=d`);
+        });
+
+        it('should not add ? before query string if exists', function() {
+            const url = service._getFullUrl({baseUrl, queryString: '?a=b&c=d'});
+            assert.equal(url, `${baseUrl}?a=b&c=d`);
+        });
+
+        it('should add / before path', function() {
+            const url = service._getFullUrl({baseUrl, path: 'test/path'});
+            assert.equal(url, `${baseUrl}/test/path`);
+        });
+
+        it('should not add / before path if exists', function() {
+            const url = service._getFullUrl({baseUrl, path: '/test/path'});
+            assert.equal(url, `${baseUrl}/test/path`);
+        });
+    });
+
     describe('requestData', ()=>{
 
         it('should get correct data from the endpoint', done => {

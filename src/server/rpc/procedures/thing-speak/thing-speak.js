@@ -79,10 +79,10 @@ thingspeakIoT._paginatedQueryOpts = function(queryOpts, limit) {
 
 thingspeakIoT.searchByTag = function(tag, limit) {
     let queryOptions = {
-        queryString: tag !== '' ? 'public.json?' +
-            rpcUtils.encodeQueryData({
-                tag: encodeURIComponent(tag),
-            }) : 'public.json',
+        path: 'public.json',
+        queryString: tag && rpcUtils.encodeQueryData({
+            tag: encodeURIComponent(tag),
+        }),
     };
     limit = limit || 15;
     return this._paginatedQueryOpts(queryOptions, limit).then(queryOptsList => {
@@ -92,12 +92,13 @@ thingspeakIoT.searchByTag = function(tag, limit) {
 
 thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) {
     let queryOptions = {
-        queryString: 'public.json?' +
+        path: 'public.json',
+        queryString: '?' +
             rpcUtils.encodeQueryData({
                 latitude: latitude,
                 longitude: longitude,
                 distance: distance === '' ? 100 : distance
-            })
+            }),
     };
     limit = limit || 15;
     return this._paginatedQueryOpts(queryOptions, limit).then(queryOptsList => {
@@ -106,7 +107,8 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) 
 
 thingspeakIoT.searchByTagAndLocation= function(tag, latitude, longitude, distance) {
     let queryOptions = {
-        queryString: 'public.json?' +
+        path: 'public.json',
+        queryString: '?' +
         rpcUtils.encodeQueryData({
             latitude: latitude,
             longitude: longitude,
@@ -123,7 +125,8 @@ thingspeakIoT.searchByTagAndLocation= function(tag, latitude, longitude, distanc
 
 thingspeakIoT.channelFeed = function(id, numResult) {
     let queryOptions = {
-        queryString: id + '/feeds.json?' + rpcUtils.encodeQueryData({
+        path: id + '/feeds.json',
+        queryString: '?' + rpcUtils.encodeQueryData({
             results: numResult,
         }),
     };
@@ -139,7 +142,8 @@ thingspeakIoT.channelFeed = function(id, numResult) {
  */
 thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
     let queryOptions = {
-        queryString: id + '/feeds.json?' + rpcUtils.encodeQueryData({
+        path: id + '/feeds.json',
+        queryString: '?' + rpcUtils.encodeQueryData({
             api_key: apiKey,
             results: numResult,
         }),
@@ -153,25 +157,26 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
  * @returns {Object} Channel details.
  */
 
-thingspeakIoT.channelDetails = function(id) {
-    return this._requestData({queryString: id + '.json?'}).then( data => {
-        let details = detailParser(data);
-        return this._requestData({queryString: id + '/feeds.json?results=10'})
-            .then( resp => {
-                details.updated_at = new Date(resp.channel.updated_at);
-                details.total_entries = resp.channel.last_entry_id;
-                details.fields = [];
-                for(var prop in resp.channel) {
-                    if (resp.channel.hasOwnProperty(prop) && prop.match(/field\d/)) {
-                        let match = prop.match(/field\d/)[0];
-                        details.fields.push(resp.channel[match]);
-                    }
-                }
-                details.feeds = feedParser(resp);
-                this._logger.info(`channel ${id} details`, details);
-                return rpcUtils.jsonToSnapList(details);
-            });
-    });
+thingspeakIoT.channelDetails = async function(id) {
+    const data = await this._requestData({path: id + '.json'});
+    let details = detailParser(data);
+    const options = {
+        path: id + '/feeds.json',
+        queryString: '?results=10'
+    };
+    const resp = await this._requestData(options);
+    details.updated_at = new Date(resp.channel.updated_at);
+    details.total_entries = resp.channel.last_entry_id;
+    details.fields = [];
+    for(let prop in resp.channel) {
+        if (resp.channel.hasOwnProperty(prop) && prop.match(/field\d/)) {
+            let match = prop.match(/field\d/)[0];
+            details.fields.push(resp.channel[match]);
+        }
+    }
+    details.feeds = feedParser(resp);
+    this._logger.info(`channel ${id} details`, details);
+    return rpcUtils.jsonToSnapList(details);
 };
 
 module.exports = thingspeakIoT;

@@ -22,10 +22,10 @@ const toLowerCaseKeys = object => {
     return result;
 };
 
-ParallelDots._parallelDotsRequest = function(query, text){
+ParallelDots._parallelDotsRequest = function(path, text){
     let body = `api_key=${key}&text=${encodeURI(text)}`;
     return this._sendAnswer({
-        queryString: query,
+        path: path,
         method: 'POST',
         headers: {'Content-Type' : 'application/x-www-form-urlencoded'},
         body: body
@@ -51,7 +51,7 @@ ParallelDots.getSentiment = async function(text) {
 ParallelDots.getSimilarity = async function(text1, text2) {
     const body = `api_key=${key}&text_1=${encodeURI(text1)}&text_2=${encodeURI(text2)}`;
     const result = await this._sendAnswer({
-        queryString: '/similarity', method: 'POST',
+        path: '/similarity', method: 'POST',
         headers: {'Content-Type' : 'application/x-www-form-urlencoded'},
         body: body
     });

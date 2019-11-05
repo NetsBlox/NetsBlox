@@ -55,7 +55,8 @@ const queryOptions = {
         'accept-language': 'en,fa;q=0.8'
     },
     method: 'POST',
-    queryString: 'sparql?',
+    path: 'sparql',
+    queryString: '?',
     body: undefined,
     json: false
 };
@@ -242,7 +243,8 @@ britishmuseum.getImage = function getImage(imageId, maxWidth, maxHeight) {
     maxHeight = maxHeight || 300;
     this._sendImage({
         baseUrl: 'http://www.britishmuseum.org/collectionimages/',
-        queryString: `AN${imageId.substr(0,5)}/AN${imageId}_001_l.jpg?maxwidth=${maxWidth}&maxheight=${maxHeight}`,
+        path: `AN${imageId.substr(0,5)}/AN${imageId}_001_l.jpg`,
+        queryString: `maxwidth=${maxWidth}&maxheight=${maxHeight}`,
         cache: true
     });
 
