@@ -17,7 +17,7 @@ class ApiConsumer extends NBService {
         }, opts);
         super(name);
 
-        this._baseUrl = baseUrl;
+        this._baseUrl = baseUrl.replace(/\?$/, '').replace(/\/$/, '');
 
         // setup cache. maxsize is in bytes, ttl in seconds
         if (!fs.existsSync(opts.cache.path)) fs.mkdirSync(opts.cache.path); // ensure path exists
