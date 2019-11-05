@@ -6,7 +6,7 @@ const dataFile = path.join(__dirname, 'gripd18o.txt');
 const lines = fs.readFileSync(dataFile, 'utf8').split('\n');
 
 // Remove all the headers and descriptions
-const dataRegex = /^-?[\d.]+\s+-?[\d.]+\s+-?[\d.]+/;
+const dataRegex = /^[\d.]+\s+-?[\d.]+\s+-?[\d.]+/;
 while (!dataRegex.test(lines[0])) {
     lines.shift();
 }
@@ -22,7 +22,7 @@ const records = lines
             core: core,
             year: 1950 - yearBP,
             datatype: 'Delta18O',
-            value: parseFloat(value)
+            value: value
         };
     });
 
