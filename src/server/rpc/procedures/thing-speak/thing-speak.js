@@ -69,9 +69,9 @@ thingspeakIoT._paginatedQueryOpts = function(queryOpts, limit) {
         const pages = Math.min(availablePages, Math.ceil(limit/perPage));
         let queryOptsList = [];
         for(let i = 1; i <= pages; i++){
-            queryOptsList.push({
-                queryString: queryOpts.queryString + `&page=${i}`
-            });
+            const options = Object.assign({}, queryOpts);
+            options.queryString += `&page=${i}`;
+            queryOptsList.push(options);
         }
         return queryOptsList;
     });
