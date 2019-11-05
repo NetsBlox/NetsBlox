@@ -42,6 +42,7 @@ class ApiConsumer extends NBService {
 
     /**
         queryOptions = {
+            path,
             queryString,
             baseUrl,
             method,
@@ -51,8 +52,12 @@ class ApiConsumer extends NBService {
         }
      */
     _getFullUrl(queryOptions){
-        const queryString = (queryOptions.queryString || '').replace(/^\??/, '?');
-        return (queryOptions.baseUrl || this._baseUrl) + queryString;
+        const queryString = queryOptions.queryString ?
+            queryOptions.queryString.replace(/^\??/, '?') : '';
+        const path = queryOptions.path ?
+            queryOptions.path.replace(/^\/?/, '/') : '';
+        const baseUrl = queryOptions.baseUrl || this._baseUrl;  // TODO: Does anyone use this option?
+        return queryOptions.url || baseUrl + path + queryString;
     }
 
     _requestData(queryOptions){
