@@ -19,7 +19,7 @@ describe('ApiConsumer', function(){
         });
     });
 
-    describe.only('_getFullUrl', () => {
+    describe('_getFullUrl', () => {
         const baseUrl = 'https://abc.com';
         const service = testRpc._rpc;
 
