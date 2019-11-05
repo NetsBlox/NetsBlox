@@ -83,7 +83,8 @@ GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofv
  */
 GoogleStreetView.getInfo = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
     const queryOpts = {
-        queryString: `/metadata?location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+        path: '/metadata',
+        queryString: `?location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
     };
     const parserFn = resp => resp; // explicitly do nothing
     return this._sendStruct(queryOpts, parserFn);
@@ -102,7 +103,8 @@ GoogleStreetView.getInfo = function(latitude, longitude, width, height, fieldofv
  */
 GoogleStreetView.getInfoFromAddress = function(location, width, height, fieldofview, heading, pitch) {
     const queryOpts = {
-        queryString: `/metadata?location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+        path: '/metadata',
+        queryString: `?location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
     };
     const parserFn = resp => resp; // explicitly do nothing
     return this._sendStruct(queryOpts, parserFn);
@@ -119,7 +121,8 @@ GoogleStreetView.getInfoFromAddress = function(location, width, height, fieldofv
  */
 GoogleStreetView.isAvailable = function(latitude, longitude, fieldofview, heading, pitch) {
     const queryOpts = {
-        queryString: `/metadata?location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+        path: '/metadata',
+        queryString: `?location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
     };
     const parserFn = resp => resp.status === 'OK';
     return this._sendStruct(queryOpts, parserFn);
@@ -135,7 +138,8 @@ GoogleStreetView.isAvailable = function(latitude, longitude, fieldofview, headin
  */
 GoogleStreetView.isAvailableFromAddress = function(location, fieldofview, heading, pitch) {
     const queryOpts = {
-        queryString: `/metadata?location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+        path: '/metadata',
+        queryString: `?location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
     };
     const parserFn = resp => resp.status === 'OK';
     return this._sendStruct(queryOpts, parserFn);

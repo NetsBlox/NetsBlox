@@ -293,7 +293,7 @@ MovieDB.personCrewReleaseDates = function(id) { return personCredits.call(this, 
 MovieDB.personCrewTitles = function(id) { return personCredits.call(this, id, 'crew', 'title'); };
 
 MovieDB.getImage = function(path){
-    return this._sendImage({queryString: path});
+    return this._sendImage({path});
 };
 
 MovieDB.isSupported = function() {

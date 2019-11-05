@@ -18,7 +18,7 @@ const logger = require('../utils/logger')('air-quality'),
     fs = require('fs'),
     geolib = require('geolib');
 
-const AirConsumer = new ApiConsumer('AirQuality', `http://www.airnowapi.org/aq/observation/zipCode/current/?format=application/json&API_KEY=${API_KEY}`,{cache: {ttl: 30*60}});
+const AirConsumer = new ApiConsumer('AirQuality', 'http://www.airnowapi.org/aq/observation/zipCode/current/',{cache: {ttl: 30*60}});
 
 var reportingLocations = (function() {  // Parse csv
     var locationPath = path.join(__dirname, 'air-reporting-locations.csv'),
@@ -39,6 +39,10 @@ var reportingLocations = (function() {  // Parse csv
             };
         });
 })();
+
+const queryString = function(zipCode) {
+    return `?format=application/json&API_KEY=${API_KEY}&zipCode=${zipCode}`;
+};
 
 /**
  * Get ZIP code of closest reporting location for coordinates
@@ -78,7 +82,7 @@ AirConsumer.qualityIndexByZipCode = function(zipCode) {
 
     logger.trace(`Requesting air quality at ${zipCode}`);
 
-    return this._sendAnswer({queryString: `&zipCode=${zipCode}`}, '.AQI')
+    return this._sendAnswer({queryString: queryString(zipCode)}, '.AQI')
         .catch(err => {
 
             logger.error('Could not get air quality index: ', err);

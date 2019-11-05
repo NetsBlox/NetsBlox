@@ -45,7 +45,8 @@ TwitterConsumer.isSupported = () => {
  */
 TwitterConsumer.recentTweets = function (screenName, count) {
     return this._requestData({
-        queryString: `statuses/user_timeline.json?screen_name=${screenName}&count=${count}`,
+        path: 'statuses/user_timeline.json',
+        queryString: `?screen_name=${screenName}&count=${count}`,
         headers: {
             Authorization: KEY,
             gzip: 'true'
@@ -68,7 +69,8 @@ TwitterConsumer.recentTweets = function (screenName, count) {
  */
 TwitterConsumer.followers = function (screenName) {
     return this._sendAnswer({
-        queryString: `users/show.json?screen_name=${screenName}`,
+        path: 'users/show.json',
+        queryString: `?screen_name=${screenName}`,
         headers: {
             Authorization: KEY,
             gzip: 'true'
@@ -88,7 +90,8 @@ TwitterConsumer.followers = function (screenName) {
  */
 TwitterConsumer.tweets = function (screenName) {
     return this._sendAnswer({
-        queryString: `users/show.json?screen_name=${screenName}`,
+        path: 'users/show.json',
+        queryString: `?screen_name=${screenName}`,
         headers: {
             Authorization: KEY,
             gzip: 'true'
@@ -111,7 +114,8 @@ TwitterConsumer.tweets = function (screenName) {
  */
 TwitterConsumer.search = function (keyword, count) {
     return this._requestData({
-        queryString: `search/tweets.json?q=${encodeURI(keyword)}&count=${count}`,
+        path: 'search/tweets.json',
+        queryString: `?q=${encodeURI(keyword)}&count=${count}`,
         headers: {
             Authorization: KEY,
             gzip: 'true'
@@ -138,7 +142,8 @@ TwitterConsumer.tweetsPerDay = function (screenName) {
         dateToday = new Date();
 
     return this._requestData({
-        queryString: `statuses/user_timeline.json?screen_name=${screenName}&count=200`,
+        path: 'statuses/user_timeline.json',
+        queryString: `?screen_name=${screenName}&count=200`,
         headers: {
             Authorization: KEY,
             gzip: 'true'
@@ -163,7 +168,8 @@ TwitterConsumer.tweetsPerDay = function (screenName) {
  */
 TwitterConsumer.favorites = function (screenName, count) {
     return this._requestData({
-        queryString: `favorites/list.json?screen_name=${screenName}&count=${count}`,
+        path: 'favorites/list.json',
+        queryString: `?screen_name=${screenName}&count=${count}`,
         headers: {
             Authorization: KEY,
             gzip: 'true'
@@ -187,7 +193,8 @@ TwitterConsumer.favorites = function (screenName, count) {
  */
 TwitterConsumer.favoritesCount = function (screenName) {
     return this._sendAnswer({
-        queryString: `users/show.json?screen_name=${screenName}`,
+        path: 'users/show.json',
+        queryString: `?screen_name=${screenName}`,
         headers: {
             Authorization: KEY,
             gzip: 'true'

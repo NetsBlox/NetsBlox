@@ -17,7 +17,7 @@ class ApiConsumer extends NBService {
         }, opts);
         super(name);
 
-        this._baseUrl = baseUrl;
+        this._baseUrl = baseUrl.replace(/\?$/, '').replace(/\/$/, '');
 
         // setup cache. maxsize is in bytes, ttl in seconds
         if (!fs.existsSync(opts.cache.path)) fs.mkdirSync(opts.cache.path); // ensure path exists
@@ -42,6 +42,8 @@ class ApiConsumer extends NBService {
 
     /**
         queryOptions = {
+            url,
+            path,
             queryString,
             baseUrl,
             method,
@@ -51,8 +53,13 @@ class ApiConsumer extends NBService {
         }
      */
     _getFullUrl(queryOptions){
-        const queryString = (queryOptions.queryString || '').replace(/^\??/, '?');
-        return (queryOptions.baseUrl || this._baseUrl) + queryString;
+        const queryString = queryOptions.queryString ?
+            queryOptions.queryString.replace(/^\??/, '?') : '';
+        const path = queryOptions.path ?
+            queryOptions.path.replace(/^\/?/, '/') : '';
+
+        const baseUrl = queryOptions.baseUrl || this._baseUrl;
+        return queryOptions.url || (baseUrl + path + queryString);
     }
 
     _requestData(queryOptions){

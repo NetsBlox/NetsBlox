@@ -78,7 +78,7 @@ MetMuseum.getImageUrls = async function(id) {
     }
 
     const queryOpts = {
-        queryString: `/objects/${id}`,
+        path: `/objects/${id}`,
     };
 
     const parserFn = resp => {

@@ -21,8 +21,12 @@ const rewordError = err => {
  */
 StockConsumer.currentPrice = function(companySymbol) {
     companySymbol = companySymbol.toUpperCase();
+    const options = {
+        path: `/stock/${companySymbol}/quote`,
+        queryString: 'displayPercent=true',
+    };
 
-    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.latestPrice')
+    return this._sendAnswer(options, '.latestPrice')
         .catch(err => {
             const prettyError = rewordError(err);
             if (prettyError) {
@@ -39,8 +43,12 @@ StockConsumer.currentPrice = function(companySymbol) {
  */
 StockConsumer.lastOpenPrice = function(companySymbol) {
     companySymbol = companySymbol.toUpperCase();
+    const options = {
+        path: `/stock/${companySymbol}/quote`,
+        queryString: 'displayPercent=true',
+    };
 
-    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.open')
+    return this._sendAnswer(options, '.open')
         .catch(err => {
             const prettyError = rewordError(err);
             if (prettyError) {
@@ -57,8 +65,12 @@ StockConsumer.lastOpenPrice = function(companySymbol) {
  */
 StockConsumer.lastClosePrice = function(companySymbol) {
     companySymbol = companySymbol.toUpperCase();
+    const options = {
+        path: `/stock/${companySymbol}/quote`,
+        queryString: 'displayPercent=true',
+    };
 
-    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.close')
+    return this._sendAnswer(options, '.close')
         .catch(err => {
             const prettyError = rewordError(err);
             if (prettyError) {
@@ -75,8 +87,12 @@ StockConsumer.lastClosePrice = function(companySymbol) {
  */
 StockConsumer.companyInformation = function(companySymbol) {
     companySymbol = companySymbol.toUpperCase();
+    const options = {
+        path: `/stock/${companySymbol}/quote`,
+        queryString: 'displayPercent=true',
+    };
 
-    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`})
+    return this._sendAnswer(options)
         .catch(err => {
             const prettyError = rewordError(err);
             if (prettyError) {
@@ -93,8 +109,12 @@ StockConsumer.companyInformation = function(companySymbol) {
 */
 StockConsumer.dailyPercentChange = function(companySymbol) {
     companySymbol = companySymbol.toUpperCase();
+    const options = {
+        path: `/stock/${companySymbol}/quote`,
+        queryString: 'displayPercent=true',
+    };
 
-    return this._sendAnswer({queryString: `/stock/${companySymbol}/quote?displayPercent=true`}, '.changePercent')
+    return this._sendAnswer(options, '.changePercent')
         .catch(err => {
             const prettyError = rewordError(err);
             if (prettyError) {
@@ -113,7 +133,7 @@ StockConsumer.dailyPercentChange = function(companySymbol) {
 StockConsumer.historicalClosingPrices = function(companySymbol, range) {
     companySymbol = companySymbol.toUpperCase();
 
-    return this._requestData({queryString: `/stock/${companySymbol}/chart/${range}`})
+    return this._requestData({path: `/stock/${companySymbol}/chart/${range}`})
         .then(res => {
             return res.map(price => [price.date, price.close]);
         })
