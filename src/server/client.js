@@ -357,7 +357,7 @@ class Client {
             });
     }
 
-    async requestActionsAfter (actionId) {
+    async requestActionsAfter (actionId, silent) {
         if (!this.projectId) {
             this._logger.error(`User requested actions without project: ${this.username}`);
             this.send({type: 'request-actions-complete'});
@@ -369,11 +369,13 @@ class Client {
             actions.forEach(action => this.send(action));
             this.send({type: 'request-actions-complete'});
         } catch (err) {
-            this.send({
-                type: 'reload-project',
-                message: 'Could not retrieve latest changes from collaborators.',
-                err,
-            });
+            if (!silent) {
+                this.send({
+                    type: 'reload-project',
+                    message: 'Could not retrieve latest changes from collaborators.',
+                    err: err.message,
+                });
+            }
         }
     }
 
@@ -572,8 +574,8 @@ Client.MessageHandlers = {
     },
 
     'request-actions': function(msg) {
-        const actionId = msg.actionId;
-        return this.requestActionsAfter(actionId);
+        const {actionId, silent=true} = msg;
+        return this.requestActionsAfter(actionId, silent);
     }
 };
 
