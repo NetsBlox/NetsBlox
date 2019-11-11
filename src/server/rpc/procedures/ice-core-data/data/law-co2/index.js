@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const assert = require('assert');
 
 const dataFile = path.join(__dirname, 'antarctica2015co2law.txt');
 const lines = fs.readFileSync(dataFile, 'utf8').split('\n');
@@ -21,4 +22,6 @@ const records = lines
         return {core, year, datatype: 'Carbon Dioxide', value};
     });
 
+const EXPECTED_RECORD_COUNT = 136;
+assert.equal(records.length, EXPECTED_RECORD_COUNT);
 module.exports = records;

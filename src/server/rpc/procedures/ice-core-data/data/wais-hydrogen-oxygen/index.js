@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const assert = require('assert');
 
 const dataFile = path.join(__dirname, 'wdc05a2013d18o.txt');
 const lines = fs.readFileSync(dataFile, 'utf8').split('\n');
@@ -20,4 +21,6 @@ const records = lines
         return {core, year, datatype: 'Delta18O', value};
     });
 
+const EXPECTED_RECORD_COUNT = 1220;
+assert.equal(records.length, EXPECTED_RECORD_COUNT);
 module.exports = records;
