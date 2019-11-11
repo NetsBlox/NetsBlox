@@ -1,5 +1,5 @@
 /**
- * The ThingSpeak Service provides access to real-time and historical stock price data.
+ * The ThingSpeak Service provides access to the ThingSpeak IoT analytics platform.
  * For more information, check out https://thingspeak.com/.
  *
  * Terms of use: https://thingspeak.com/pages/terms
