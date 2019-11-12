@@ -146,5 +146,11 @@ StockConsumer.historicalClosingPrices = function(companySymbol, range) {
         });
 };
 
+StockConsumer.isSupported = function() {
+    /* eslint-disable no-console */
+    console.error('IEXTrading API is no longer available as it has migrated to IEXCloud.');
+    /* eslint-enable no-console */
+    return false;
+};
 
 module.exports = StockConsumer;
