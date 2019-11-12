@@ -262,7 +262,7 @@ IceCoreData.getDeuteriumData = function(core, startyear, endyear){
 };
 
 /**
- * Get temperature difference (in Celsius) by year from the ice core.
+ * Get temperature difference in Celsius by year from the ice core.
  *
  * If a start and end year is provided, only measurements within the given range will be
  * returned.
