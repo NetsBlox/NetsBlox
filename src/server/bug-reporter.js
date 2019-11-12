@@ -162,6 +162,11 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
             logger.warn(`Failed to report bug to URL. ${err.message}`));
     }
 
+    if (this.bugDir) {
+        const filename = `${subject}-${version}-${Date.now()}.json`;
+        writeFile(path.join(this.bugDir, filename), JSON.stringify(data.content));
+    }
+
     if (this.maintainer) {
         subject += ` (${version})`;
         body += `\n\nNetsBlox Server ${version}`;
@@ -175,10 +180,6 @@ BugReporter.prototype.reportBug = function(subject, body, data) {
         };
 
         return mailer.sendMail(mailOpts);
-    }
-
-    if (this.bugDir) {
-        writeFile(path.join(this.bugDir, `${subject}-${version}.json`), JSON.stringify(data.content));
     }
 
     if (!this.maintainer && !this.reportUrl && !this.bugDir) {
