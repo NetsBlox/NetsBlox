@@ -7,6 +7,7 @@
  * @alpha
  * @service
  * @category Science
+ * @category Climate
  */
 const fs = require('fs');
 const path = require('path');
