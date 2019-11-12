@@ -24,8 +24,8 @@ const data = (function() {
     });
 })();
 
-const HawaiiCO2Data = {};
-HawaiiCO2Data.serviceName = 'HawaiiCO2Data';
+const MaunaLoaCO2Data = {};
+MaunaLoaCO2Data.serviceName = 'MaunaLoaCO2Data';
 
 /**
  * Get the mole fraction of CO2 (in parts per million) by year. Missing measurements
@@ -38,7 +38,7 @@ HawaiiCO2Data.serviceName = 'HawaiiCO2Data';
  * @param {Number=} endyear Year to begin data at
  * @returns {Array}
  */
-HawaiiCO2Data.getCarbonDioxideData = function(startyear=-Infinity, endyear=Infinity){
+MaunaLoaCO2Data.getRawCO2 = function(startyear=-Infinity, endyear=Infinity){
     return data.filter(datum => datum.date > startyear && datum.date < endyear)
         .map(datum => [datum.date, datum.interpolated]);
 };
@@ -54,9 +54,9 @@ HawaiiCO2Data.getCarbonDioxideData = function(startyear=-Infinity, endyear=Infin
  * @param {Number=} endyear Year to begin data at
  * @returns {Array}
  */
-HawaiiCO2Data.getCO2TrendData = function(startyear=-Infinity, endyear=Infinity){
+MaunaLoaCO2Data.getCO2Trend = function(startyear=-Infinity, endyear=Infinity){
     return data.filter(datum => datum.date > startyear && datum.date < endyear)
         .map(datum => [datum.date, datum.trend]);
 };
 
-module.exports = HawaiiCO2Data;
+module.exports = MaunaLoaCO2Data;
