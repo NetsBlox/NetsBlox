@@ -18,8 +18,8 @@ function getCoreName(yearBP) {
         return 'Siple Dome';
     } else if (yearBP < 60000) {
         return 'TALDICE';
-    } else if (yearBP < 115000) {  // FIXME
-        return 'EDML';  // TODO: This *could* be Dome C
+    } else if (yearBP < 115000) {
+        return 'EDML';
     } else if (yearBP < 155000) {
         return 'Dome C';
     } else if (yearBP < 393000) {
