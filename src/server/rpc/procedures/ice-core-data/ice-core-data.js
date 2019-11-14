@@ -100,12 +100,6 @@ function validateIceCore(core) {
 
 // Core meta-data
 IceCoreData._coreMetadata = {
-    'Antarctic Composite CO2': {
-        name: 'Antarctic Composite CO2',
-        description: 'A composite dataset with records from various Antarctic ice cores.',
-        latitude: -75.09978,
-        longitude: 123.332196,
-    },
     'Dome C': {
         name: 'Dome Charlie',
         description: 'The European Project for Ice Coring in Antarctica began drilling in 1996, reaching 3270 meters deep.',
