@@ -11,20 +11,8 @@
  * @category Science
  * @category Climate
  */
-const path = require('path');
-const fs = require('fs');
-
 const OceanData = {};
-OceanData._data = fs.readFileSync(path.join(__dirname,'Table.txt'), 'utf8')
-    .split('\n')
-    .map(function (line) {
-        let year = 2000 - line.substring(0, 7) * 1000000;
-        let oxygenIsotopeRatio = line.substring(8, 14);
-        let deepOceanTemp = line.substring(16, 22);
-        let surfaceTemp = line.substring(24, 30);
-        let seaLevel = line.substring(32, 38).trim();
-        return {year, oxygenIsotopeRatio, deepOceanTemp, surfaceTemp, seaLevel};
-    });
+OceanData._data = require('./data');
 
 /**
  * Get historical oxygen isotope ratio values by year.
@@ -37,7 +25,7 @@ OceanData.getOxygenRatio = function(){
 };
 
 /**
- * Get historical deep ocean temperatures by year.
+ * Get historical deep ocean temperatures in Celsius by year.
  *
  * @returns {Array} temperatures - a list of deep ocean temperatures by year
  */
@@ -47,7 +35,7 @@ OceanData.getDeepOceanTemp = function(){
 };
 
 /**
- * Get historical surface ocean temperatures by year.
+ * Get historical surface ocean temperatures in Celsius by year.
  *
  * @returns {Array} temperatures - a list of surface ocean temperatures by year
  */
