@@ -60,15 +60,13 @@ BugReporter.prototype.reportInvalidSocketMessage = function(err, msg, socket) {
         .catch(err => logger.error(err));
 };
 
-BugReporter.prototype.reportPotentialCompilerBug = function(err, block, ctx) {
+BugReporter.prototype.reportPotentialCompilerBug = function(err, block) {
     const subject = 'Potential Snap2Js Bug';
-    const username = ctx.socket.username;
     const data = {
         // Add compiler version, netsblox version...
         filename: `block-${snap2jsVersion}.xml`,
         content: {
             bugType: 'Snap2Js',
-            username: username,
             version: snap2jsVersion,
             error: err.message,
             timestamp: new Date(),
@@ -77,20 +75,17 @@ BugReporter.prototype.reportPotentialCompilerBug = function(err, block, ctx) {
         }
     };
 
-    return this.createBody('compile block function', err, username)
-        .then(body => this.reportBug(subject, body, data))
-        .catch(err => logger.error(err));
+    const body = `Failed to compile block function: \n${err.stack.replace('\n', '\n\n')}`;
+    this.reportBug(subject, body, data);
 };
 
-BugReporter.prototype.createBody = function(action, err, username) {
+BugReporter.prototype.createBody = async function(action, err, username) {
     let body = `Failed to ${action}: \n${err.stack.replace('\n', '\n\n')}`;
-    return this.getUserEmail(username)
-        .then(email => {
-            if (email) {
-                body += `\nUser email: ${email}`;
-            }
-            return body;
-        });
+    const email = await this.getUserEmail(username);
+    if (email) {
+        body += `\nUser email: ${email}`;
+    }
+    return body;
 };
 
 BugReporter.prototype.reportClientBug = function(socket, report) {

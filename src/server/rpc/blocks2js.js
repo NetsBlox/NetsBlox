@@ -5,6 +5,7 @@ const backend = require('snap2js/src/backend');
 const helpers = require('snap2js/src/backend-helpers');
 const Logger = require('../logger');
 const logger = new Logger('netsblox:rpc:blocks2js');
+const BugReporter = require('../bug-reporter');
 
 const context = snap2js.newContext();
 const blocks2js = Object.create(snap2js);
@@ -271,7 +272,18 @@ blocks2js.generateCodeFromState = function(state) {
     state.initCode += 'project.stage.messageTypes = [];\n' +
         state.stage.messageTypes
             .map(type => `project.stage.messageTypes.push(${JSON.stringify(type)})`).join(';\n');
+
     return snap2js.generateCodeFromState.call(this, state);
+};
+
+blocks2js.compile = function(src) {
+    const options = {allowWarp: false};
+    try {
+        return snap2js.compile(src, options);
+    } catch(e) {
+        BugReporter.reportPotentialCompilerBug(e, src);
+        throw new Error(`Unable to compile blocks: ${e.message}`);
+    }
 };
 
 module.exports = blocks2js;
