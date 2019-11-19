@@ -8,7 +8,13 @@ class DataService {
         this._data = record.data;
         this._docs = new DataDocs(record);
         this.COMPATIBILITY = {};
-        record.methods.forEach(method => this._initializeRPC(method));
+        record.methods.forEach(method => {
+            try {
+                this._initializeRPC(method);
+            } catch (err) {
+                this._logger.error(`Unable to load ${record.name}.${method.name}`);
+            }
+        });
     }
 
     _initializeRPC(method) {
