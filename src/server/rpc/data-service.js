@@ -1,4 +1,5 @@
 const blocks2js = require('./blocks2js');
+const InputTypes = require('./input-types');
 const createLogger = require('./procedures/utils/logger');
 
 class DataService {
@@ -11,10 +12,10 @@ class DataService {
         record.methods.forEach(method => this._initializeRPC(method));
     }
 
-    _initializeRPC(method) {
+    async _initializeRPC(method) {
         this._logger.info(`initializing ${method.name}`);
         const data = this._data.slice(1);  // skip headers
-        const factory = this._getFunctionForMethod(method, this._data);
+        const factory = await this._getFunctionForMethod(method, this._data);
         if (!factory) return;
 
         this[method.name] = async function() {
@@ -27,29 +28,18 @@ class DataService {
 
     }
 
-    _getFunctionForMethod(method, data) {
+    async _getFunctionForMethod(method, data) {
         if (method.code) {
-            const factory = blocks2js.compile(method.code);
-            const env = blocks2js.newContext();
-            return () => factory(env);
+            const fn = await InputTypes.parse.Function(method.code);
+            return () => fn;
         } else if (method.query) {
-            const factory = blocks2js.compile(method.query.code);
-            const env = blocks2js.newContext();
-
-            let getTransformFn = () => row => row;
-            if (method.transform) {
-                getTransformFn = blocks2js.compile(method.transform.code);
-            }
-
-            let getCombineFn = () => (list, item) => list.concat([item]);
-            if (method.combine) {
-                getCombineFn = blocks2js.compile(method.combine.code);
-            }
+            const queryFn = await InputTypes.parse.Function(method.query.code);
+            const transformFn = method.transform ?
+                await InputTypes.parse.Function(method.transform.code) : row => row;
+            const combineFn = method.combine ?
+                await InputTypes.parse.Function(method.combine.code) : (list, item) => list.concat([item]);
 
             return () => async function() {
-                const queryFn = factory(env);
-                const transformFn = getTransformFn(env);
-                const combineFn = getCombineFn(env);
                 const [queryArgs, transformArgs, combineArgs] = this._getArgs(method, arguments);
 
                 let results = [];
