@@ -38,6 +38,7 @@ var RPCManager = function() {
 };
 
 RPCManager.prototype.onUpdateService = async function(name) {
+    await this.onDeleteService(name);
     await ServerStorage.onConnected;
     const DataServices = Storage.createCollection('netsblox:services:community');
     const serviceData = await DataServices.findOne({name});
@@ -45,7 +46,12 @@ RPCManager.prototype.onUpdateService = async function(name) {
     this.registerRPC(service);
 };
 
-RPCManager.prototype.onDeleteService = function(serviceName) {
+RPCManager.prototype.onDeleteService = async function(serviceName) {
+    const service = this.rpcRegistry[serviceName];
+    if (service) {
+        await service.onDelete();
+    }
+
     delete this.rpcRegistry[serviceName];
     delete this.serviceMetadata[serviceName];
 };
