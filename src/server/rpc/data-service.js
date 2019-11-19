@@ -1,4 +1,3 @@
-const blocks2js = require('./blocks2js');
 const InputTypes = require('./input-types');
 const createLogger = require('./procedures/utils/logger');
 
