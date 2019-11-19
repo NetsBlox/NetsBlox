@@ -47,7 +47,6 @@ RPCManager.prototype.onUpdateService = async function(name) {
 };
 
 RPCManager.prototype.onDeleteService = async function(serviceName) {
-    // TODO: If it is a data service, delete the cache!
     const service = this.rpcRegistry[serviceName];
     if (service) {
         await service.onDelete();
