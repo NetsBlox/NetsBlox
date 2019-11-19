@@ -1,5 +1,11 @@
 const blocks2js = require('./blocks2js');
 const createLogger = require('./procedures/utils/logger');
+const CacheManager = require('cache-manager');
+const fsStore = require('cache-manager-fs');
+const {CACHE_DIR='cache'} = process.env;
+const fs = require('fs');
+const {promisify} = require('util');
+const rm_rf = promisify(require('rimraf'));
 
 class DataService {
     constructor(record) {
@@ -8,13 +14,18 @@ class DataService {
         this._data = record.data;
         this._docs = new DataDocs(record);
         this.COMPATIBILITY = {};
+        ensureExists(this._getCacheDir());
         record.methods.forEach(method => {
             try {
                 this._initializeRPC(method);
             } catch (err) {
-                this._logger.error(`Unable to load ${record.name}.${method.name}`);
+                this._logger.error(`Unable to load ${record.name}.${method.name}: ${err.message}`);
             }
         });
+    }
+
+    _getCacheDir() {
+        return `${CACHE_DIR}/Community/${this.serviceName}`;
     }
 
     _initializeRPC(method) {
@@ -23,12 +34,30 @@ class DataService {
         const factory = this._getFunctionForMethod(method, this._data);
         if (!factory) return;
 
-        this[method.name] = async function() {
-            const fn = factory();
-            const args = Array.prototype.slice.call(arguments);
-            args.push(data);
+        const cache = CacheManager.caching({
+            store: fsStore,
+            options: {
+                ttl: 3600 * 24 * 14,
+                maxsize: 1024*1000,
+                path: `${this._getCacheDir()}/${method.name}`,
+                preventfill: false,
+                reviveBuffers: true
+            }
+        });
 
-            return await fn.apply(this, args);
+        this[method.name] = async function() {
+            const args = Array.prototype.slice.call(arguments);
+            const id = args.join('|');
+
+            return cache.wrap(
+                id,
+                async () => {
+                    const fn = factory();
+                    args.push(data);
+
+                    return await fn.apply(this, args);
+                },
+            );
         };
 
     }
@@ -94,6 +123,10 @@ class DataService {
             return args;
         });
     }
+
+    async onDelete() {
+        await rm_rf(this._getCacheDir());
+    }
 }
 
 class DataDocs {
@@ -115,6 +148,18 @@ class DataDocs {
                 })),
             };
         }
+    }
+}
+
+const path = require('path');
+function ensureExists(filepath) {
+    const parentDir = path.dirname(filepath);
+    if (parentDir !== filepath) {
+        ensureExists(parentDir);
+    }
+
+    if (!fs.existsSync(filepath)) {
+        fs.mkdirSync(filepath); 
     }
 }
 

@@ -7,6 +7,7 @@ module.exports = {
             'init',
             'serviceName',
             'isSupported',
+            'onDelete',
             'COMPATIBILITY'
         ]
     }
