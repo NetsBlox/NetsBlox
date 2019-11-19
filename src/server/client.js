@@ -1,6 +1,3 @@
-/*
- * This is a socket for NetsBlox that wraps a standard WebSocket
- */
 'use strict';
 var counter = 0,
     Q = require('q'),
@@ -19,6 +16,7 @@ var counter = 0,
 
 let clientCounter = 0;
 
+const assert = require('assert');
 const Messages = require('./storage/messages');
 const ProjectActions = require('./storage/project-actions');
 const REQUEST_TIMEOUT = 60*1000;  // 1 minute
@@ -29,8 +27,7 @@ const NetsBloxAddress = require('./netsblox-address');
 const NetworkTopology = require('./network-topology');
 
 class Client {
-    // socket: pure websocket
-    constructor (logger, socket) {
+    constructor (logger, websocket) {
         // QUESTION what is this.id used for? and why is it changing counter
         this.id = (++counter);
         this._logger = logger.fork('client-' + ++clientCounter);
@@ -41,7 +38,7 @@ class Client {
 
         this.user = null;
         this.username = this.uuid;
-        this._socket = socket;
+        this._socket = websocket;
         this._projectRequests = {};  // saving
         this.lastSocketActivity = Date.now();
         this.nextHeartbeat = null;
@@ -226,19 +223,13 @@ class Client {
         this.loggedIn = false;
     }
 
-    getNewName (name) {
-        var promise;
-
+    async getNewName (name) {
         if (this.user) {
-            promise = this.user.getNewName(name);
-        } else {
-            promise = Q(name);
+            name = await this.user.getNewName(name);
         }
 
-        return promise.then(name => {
-            this._logger.info(`generated unique name for ${this.username} - ${name}`);
-            return name;
-        });
+        this._logger.info(`generated unique name for ${this.username} - ${name}`);
+        return name;
     }
 
     onEvicted () {
@@ -324,37 +315,31 @@ class Client {
             });
     }
 
-    sendMessageTo (msg, dstId) {
-        return NetsBloxAddress.new(dstId, this.projectId, this.roleId)
-            .then(address => {
-                const states = address.resolve();
-                const clients = states
-                    .map(state => {
-                        const [projectId, roleId] = state;
-                        return NetworkTopology.getSocketsAt(projectId, roleId);
-                    })
-                    .reduce((l1, l2) => l1.concat(l2), []);
+    async sendMessageTo (msg, dstId) {
+        const address = await NetsBloxAddress.new(dstId, this.projectId, this.roleId);
+        const states = address.resolve();
+        const clients = states
+            .map(state => {
+                const [projectId, roleId] = state;
+                return NetworkTopology.getSocketsAt(projectId, roleId);
+            })
+            .reduce((l1, l2) => l1.concat(l2), []);
 
-                clients.forEach(client => {
-                    msg.dstId = Constants.EVERYONE;
-                    client.send(msg);
-                });
+        clients.forEach(client => {
+            msg.dstId = Constants.EVERYONE;
+            client.send(msg);
+        });
 
-                return address.getPublicIds();
-            });
+        return address.getPublicIds();
     }
 
-    saveMessage (msg, srcProjectId) {
+    async saveMessage (msg, srcProjectId) {
         // Check if the room should save the message
-        return Projects.getById(srcProjectId)
-            .then(project => {
-                if (project) {
-                    return project.isRecordingMessages(true) // OPT initiates a database query
-                        .then(isRecording => isRecording && Messages.save(msg));
-                } else {
-                    this._logger.error(`Will not save messages: unknown project ${srcProjectId}`);
-                }
-            });
+        const project = await Projects.getById(srcProjectId);
+        assert(project, `Project not found: ${srcProjectId}`);
+        if (project && await project.isRecordingMessages(true)) {
+            await Messages.save(msg);
+        }
     }
 
     async requestActionsAfter (actionId, silent) {
@@ -422,7 +407,7 @@ Client.MessageHandlers = {
 
     'message': function(msg) {
         const dstIds = typeof msg.dstId !== 'object' ? [msg.dstId] : msg.dstId.contents;
-        return Q.all(dstIds.map(dstId => this.sendMessageTo(msg, dstId)))
+        return Promise.all(dstIds.map(dstId => this.sendMessageTo(msg, dstId)))
             .then(recipients => {
                 msg.recipients = recipients.reduce((l1, l2) => l1.concat(l2), []);
                 msg.dstId = dstIds;
@@ -530,42 +515,34 @@ Client.MessageHandlers = {
             // For each role...
             //   - if it is occupied, request the content
             //   - else, use the content from the database
-            return project.getRoleIds()
-                .then(ids => {
-                    const fetchers = ids.map(id => {
-                        const occupant = occupantForRole[id];
-                        if (occupant) {
-                            return occupant.getProjectJson()
-                                .catch(err => {
-                                    this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
-                                    return project.getRoleById(id);
-                                });
-                        }
-                        return project.getRoleById(id);
-                    });
+            const ids = await project.getRoleIds();
+            const fetchers = ids.map(id => {
+                const occupant = occupantForRole[id];
+                if (occupant) {
+                    return occupant.getProjectJson()
+                        .catch(err => {
+                            this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
+                            return project.getRoleById(id);
+                        });
+                }
+                return project.getRoleById(id);
+            });
 
-                    return Q.all(fetchers);
-                })
-                .then(roles => {
-                    const roleContents = roles.map(content =>
-                        Utils.xml.format('<role name="@">', content.ProjectName)
-                        + content.SourceCode + content.Media + '</role>'
-                    );
-                    return Utils.xml.format('<room name="@" app="@">', project.name, Utils.APP) +
-                        roleContents.join('') + '</room>';
-                })
-                .then(xml => {
-                    this._logger.trace(`Exporting project for ${projectId}` +
-                        ` to ${this.username}`);
+            const roles = await Promise.all(fetchers);
+            const roleContents = roles.map(content =>
+                Utils.xml.format('<role name="@">', content.ProjectName)
+                + content.SourceCode + content.Media + '</role>'
+            );
+            const xml = Utils.xml.format('<room name="@" app="@">', project.name, Utils.APP) +
+                roleContents.join('') + '</room>';
+            this._logger.trace(`Exporting project for ${projectId}` +
+                ` to ${this.username}`);
 
-                    this.send({
-                        type: 'export-room',
-                        content: xml,
-                        action: msg.action
-                    });
-                })
-                .catch(() =>
-                    this._logger.error(`Could not collect projects from ${this.projectId}`));
+            this.send({
+                type: 'export-room',
+                content: xml,
+                action: msg.action
+            });
         }
     },
 
