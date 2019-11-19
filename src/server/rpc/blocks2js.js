@@ -193,35 +193,18 @@ context.reportRPCError = function() {
     return this.project.rpcError;
 };
 
-// Add the timeout
-const TIMEOUT = 2000;
 context.__start = function(project) {
-    project.startTime = Date.now();
     project.rpcError = null;
 };
 
-context.callMaybeAsync = function(self, fn) {
-    let args = [].slice.call(arguments, 2);
-
-    // Check if the timeout has passed
-    self.project.startTime = self.project.startTime || Date.now();
-    if (Date.now() > (self.project.startTime + TIMEOUT)) {
-        return context.SPromise.reject(new Error('Timeout Exceeded'));
+// Add the timeout
+const TIMEOUT = 2000;
+context.doYield = function(startTime) {
+    if (Date.now() > (startTime + TIMEOUT)) {
+        throw new Error('Timeout Exceeded');
     }
-
-    // Wait for any args to resolve
-    let result = context.SPromise.all(args);
-
-    result = result.then(args => fn.apply(self, args));
-
-    return result;
 };
 
-context.doWarp = function() {
-    // Disable warping when executing on the server
-};
-
-// Make this a promise?
 function ServerResponse() {
     this.deferred = Q.defer();
     this.promise = this.deferred.promise;
