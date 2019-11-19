@@ -133,14 +133,16 @@ types.Object = input => {
 };
 
 types.Function = async (blockXml, ctx) => {
-    // Set the role name,
-    const metadata = await Projects.getRawProjectById(ctx.caller.projectId);
     let roleName = '';
     let roleNames = [''];
-    if (metadata) {
-        roleNames = Object.values(metadata.roles)
-            .map(role => role.ProjectName);
-        roleName = metadata.roles[ctx.caller.roleId].ProjectName;
+
+    if (ctx) {
+        const metadata = await Projects.getRawProjectById(ctx.caller.projectId);
+        if (metadata) {
+            roleNames = Object.values(metadata.roles)
+                .map(role => role.ProjectName);
+            roleName = metadata.roles[ctx.caller.roleId].ProjectName;
+        }
     }
 
     let factory = blocks2js.compile(blockXml);
@@ -150,8 +152,12 @@ types.Function = async (blockXml, ctx) => {
         project.roleName = roleName;
         project.roleNames = roleNames;
     };
-    const fn = factory(env);
-    return fn;
+    env.doYield = env.doYield.bind(null, Date.now());
+    const fn = await factory(env);
+    return function() {
+        env.doYield = env.doYield.bind(null, Date.now());
+        return fn.apply(this, arguments);
+    };
 };
 
 module.exports = {
