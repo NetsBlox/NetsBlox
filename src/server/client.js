@@ -405,15 +405,13 @@ Client.MessageHandlers = {
         this.send({type: 'connected'});
     },
 
-    'message': function(msg) {
-        const dstIds = typeof msg.dstId !== 'object' ? [msg.dstId] : msg.dstId.contents;
-        return Promise.all(dstIds.map(dstId => this.sendMessageTo(msg, dstId)))
-            .then(recipients => {
-                msg.recipients = recipients.reduce((l1, l2) => l1.concat(l2), []);
-                msg.dstId = dstIds;
-                msg.srcProjectId = this.projectId;
-                return this.saveMessage(msg, this.projectId);
-            });
+    'message': async function(msg) {
+        const dstIds = msg.dstId instanceof Array ? msg.dstId : [msg.dstId];
+        const recipients = await Promise.all(dstIds.map(dstId => this.sendMessageTo(msg, dstId)));
+        msg.recipients = recipients.reduce((l1, l2) => l1.concat(l2), []);
+        msg.dstId = dstIds;
+        msg.srcProjectId = this.projectId;
+        return this.saveMessage(msg, this.projectId);
     },
 
     'user-action': async function(msg) {
