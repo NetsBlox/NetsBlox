@@ -19,6 +19,8 @@ class DataService {
 
     async _initializeRPC(method) {
         this._logger.info(`initializing ${method.name}`);
+        this[method.name] = () => this._methodLoading(method.name);
+
         const data = this._data.slice(1);  // skip headers
         const factory = await this._getFunctionForMethod(method, this._data);
         if (!factory) return;
@@ -31,6 +33,10 @@ class DataService {
             return await fn.apply(this, args);
         };
 
+    }
+
+    _methodLoading(name) {
+        throw new Error(`RPC "${name}" not yet ready. Please retry.`);
     }
 
     async _getFunctionForMethod(method, data) {
