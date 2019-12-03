@@ -72,7 +72,7 @@ KeyValueStore.get = function(key) {
 /**
  * Set the stored value
  * @param {String} key Key to use for retrieving the variable
- * @param {Object} value Value to associated with key
+ * @param {Any} value Value to associated with key
  */
 KeyValueStore.put = function(key, value) {
     var keys = getKeys(key),
