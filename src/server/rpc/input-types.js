@@ -160,6 +160,8 @@ types.Function = async (blockXml, ctx) => {
     };
 };
 
+types.Any = input => input;
+
 module.exports = {
     parse: types,
     getNBType
