@@ -19,7 +19,7 @@ backend.getJSFromRPCStruct =
 
 backend.doSocketRequest =
 backend.doSocketMessage = function(node) {
-    let args = node.inputs.map(input => this.generateCode(input));
+    let args = node.inputsAsCode(this);
 
     args.unshift(node.type);
     return helpers.callStatementWithArgs.apply(null, args);
