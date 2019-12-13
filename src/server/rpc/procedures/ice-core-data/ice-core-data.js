@@ -32,12 +32,12 @@ const schema = {
     year: Number,
     value: Number
 };
-const IceCoreDataStorage = getServiceStorage ('IceCoreData', schema);
+const IceCoreDataStorage = getServiceStorage('IceCoreData', schema);
 const IceCoreData = new DBConsumer('IceCoreData', IceCoreDataStorage);
 const schemaMetadata = {core: String};
 DATA_TYPES
     .forEach(type => schemaMetadata[type] = {count: Number, earliest: Number, latest: Number});
-const IceCoreMetadata = getServiceStorage ('IceCoreDataMetadata', schemaMetadata);
+const IceCoreMetadata = getServiceStorage('IceCoreDataMetadata', schemaMetadata);
 
 /**
  * Sets up the database
@@ -100,6 +100,12 @@ function validateIceCore(core) {
 
 // Core meta-data
 IceCoreData._coreMetadata = {
+    'Antarctic Composite': {
+        name: 'Antarctic Composite',
+        description: 'A composite dataset with records from various Antarctic ice cores.',
+        latitude: -75.09978,
+        longitude: 123.332196,
+    },
     'Dome C': {
         name: 'Dome Charlie',
         description: 'The European Project for Ice Coring in Antarctica began drilling in 1996, reaching 3270 meters deep.',
