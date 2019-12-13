@@ -22,11 +22,12 @@ const records = lines
         const core = 'Dome C';
         return [
             {core, year, datatype: 'Deuterium', value: deuterium},
-            {core, year, datatype: 'Temperature', value: deltaTemp}
+            {core, year, datatype: 'Temperature', value: deltaTemp},
+            {core: 'Antarctic Composite', year, datatype: 'Temperature', value: deltaTemp},
         ];
     })
     .reduce((l1, l2) => l1.concat(l2));
 
-const EXPECTED_RECORD_COUNT = 5788 * 2;
+const EXPECTED_RECORD_COUNT = 5788 * 3;
 assert.equal(EXPECTED_RECORD_COUNT, records.length);
 module.exports = records;

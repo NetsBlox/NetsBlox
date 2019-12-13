@@ -46,11 +46,15 @@ const records = lines
         const [yearsBefore1950, value] = line.split('\t');
         const core = getCoreName(parseFloat(yearsBefore1950));
         const year = 1950 - yearsBefore1950;
-        return {core, year, datatype: 'Carbon Dioxide', value};
-    });
+        return [
+            {core, year, datatype: 'Carbon Dioxide', value},
+            {core: 'Antarctic Composite', year, datatype: 'Carbon Dioxide', value},
+        ];
+    })
+    .reduce((l1, l2) => l1.concat(l2), []);
 
-const EXPECTED_RECORD_COUNT = 1901;
+const EXPECTED_RECORD_COUNT = 1901*2;
 assert.equal(records.length, EXPECTED_RECORD_COUNT);
 
-const CORE_NAMES = ['Law', 'Dome C', 'WAIS', 'Vostok'];
+const CORE_NAMES = ['Law', 'Dome C', 'WAIS', 'Vostok', 'Antarctic Composite'];
 module.exports = records.filter(record => CORE_NAMES.includes(record.core));
