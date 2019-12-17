@@ -10,6 +10,7 @@ describe('service-creation', function() {
     utils.verifyRPCInterfaces('ServiceCreation', [
         ['getCreateFromTableOptions', ['data']],
         ['createServiceFromTable', ['name', 'data', 'options']],
+        ['deleteService', ['name']],
     ]);
 
     describe('getConstantFields ', function() {
