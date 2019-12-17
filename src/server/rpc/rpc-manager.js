@@ -54,6 +54,7 @@ RPCManager.prototype.onDeleteService = async function(serviceName) {
 
     delete this.rpcRegistry[serviceName];
     delete this.serviceMetadata[serviceName];
+    return !!service;
 };
 
 RPCManager.prototype.initialize = async function() {

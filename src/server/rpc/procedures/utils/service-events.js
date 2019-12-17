@@ -12,7 +12,7 @@ class ServiceEvents {
     emit (event) {
         const args = Array.prototype.slice.call(arguments, 1);
         this.ensureValidEvent(event);
-        this._handlers[event].forEach(fn => fn.apply(null, args));
+        return this._handlers[event].map(fn => fn.apply(null, args));
     }
 
     on (event, fn) {

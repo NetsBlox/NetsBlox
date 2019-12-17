@@ -304,8 +304,7 @@ ServiceCreation.deleteService = async function(name) {
         throw new Error(`Not allowed to delete ${name}. Only the author can do that!`);
     }
     await storage.deleteOne({name, author: this.caller.username});
-    ServiceEvents.emit(ServiceEvents.DELETE, name);
-    return 'OK';
+    return ServiceEvents.emit(ServiceEvents.DELETE, name).shift();
 };
 
 module.exports = ServiceCreation;
