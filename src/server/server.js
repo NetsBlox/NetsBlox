@@ -156,24 +156,24 @@ Server.prototype.configureRoutes = async function() {
     );
     const RPC_ROOT = path.join(__dirname, 'rpc', 'libs');
     const RPC_INDEX = fs.readFileSync(path.join(RPC_ROOT, 'LIBS'), 'utf8')
-            .split('\n')
-            .filter(line => {
-                var parts = line.split('\t'),
-                    deps = parts[2] ? parts[2].split(' ') : [],
-                    displayName = parts[1];
+        .split('\n')
+        .filter(line => {
+            const parts = line.split('\t');
+            const deps = parts[2] ? parts[2].split(' ') : [];
+            const displayName = parts[1];
 
-                // Check if we have loaded the dependent rpcs
-                for (var i = deps.length; i--;) {
-                    if (!RPCManager.isServiceLoaded(deps[i])) {
-                        // eslint-disable-next-line no-console
-                        console.log(`Service ${displayName} not available because ${deps[i]} is not loaded`);
-                        return false;
-                    }
+            // Check if we have loaded the dependent rpcs
+            for (let i = deps.length; i--;) {
+                if (!RPCManager.isServiceLoaded(deps[i])) {
+                    // eslint-disable-next-line no-console
+                    console.log(`Service ${displayName} not available because ${deps[i]} is not loaded`);
+                    return false;
                 }
-                return true;
-            })
-            .map(line => line.split('\t').splice(0, 2).join('\t'))
-            .join('\n');
+            }
+            return true;
+        })
+        .map(line => line.split('\t').splice(0, 2).join('\t'))
+        .join('\n');
 
     this.app.get('/servicelibs/:filename', (req, res) => {
         if (req.params.filename === 'SERVICELIBS') {
