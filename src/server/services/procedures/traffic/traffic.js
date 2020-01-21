@@ -14,7 +14,8 @@ let pendingEventsFor = {};
 
 // Helper function to send the messages to the client
 var sendNext = function(socket) {
-    const events = pendingEventsFor[socket.uuid] || [];
+    const {clientId} = socket;
+    const events = pendingEventsFor[clientId] || [];
     let event = events.shift();  // retrieve the first message
 
     while (events.length && event.roleId !== socket.roleId) {
@@ -29,7 +30,7 @@ var sendNext = function(socket) {
     if (events.length) {
         setTimeout(sendNext, 250, socket);
     } else {
-        delete pendingEventsFor[socket.uuid];
+        delete pendingEventsFor[clientId];
     }
 };
 
@@ -39,7 +40,6 @@ BingTraffic.search = function(westLongitude, northLatitude, eastLongitude, south
 
     // for bounding box
     var response = this.response,
-        socket = this.socket,
         url = baseUrl + southLatitude + ',' + westLongitude + ',' + northLatitude +
             ',' + eastLongitude + '?key=' + API_KEY;
 
@@ -81,14 +81,14 @@ BingTraffic.search = function(westLongitude, northLatitude, eastLongitude, south
 
             pendingEventsFor[this.caller.clientId] = results;
         }
-        sendNext(socket);
+        sendNext(this.socket);
         response.sendStatus(200);
     });
     return null;
 };
 
 BingTraffic.stop = function() {
-    delete pendingEventsFor[this.socket.uuid];
+    delete pendingEventsFor[this.caller.clientId];
     return 'stopped';
 };
 

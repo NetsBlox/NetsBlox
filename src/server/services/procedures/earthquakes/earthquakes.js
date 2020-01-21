@@ -36,10 +36,11 @@ var Earthquakes = {};
 Earthquakes._remainingMsgs = {};
 
 Earthquakes._sendNext = function(socket) {
-    var msgs = Earthquakes._remainingMsgs[socket.uuid];
+    const {clientId} = socket;
+    const msgs = Earthquakes._remainingMsgs[clientId];
     if (msgs && msgs.length) {
         // send an earthquake message
-        var msg = msgs.shift();
+        let msg = msgs.shift();
 
         while (msgs.length && msg.dstId !== socket.roleId) {
             msg = msgs.shift();
@@ -53,10 +54,10 @@ Earthquakes._sendNext = function(socket) {
         if (msgs.length) {
             setTimeout(Earthquakes._sendNext, DELAY, socket);
         } else {
-            delete Earthquakes._remainingMsgs[socket.uuid];
+            delete Earthquakes._remainingMsgs[clientId];
         }
     } else {
-        delete Earthquakes._remainingMsgs[socket.uuid];
+        delete Earthquakes._remainingMsgs[clientId];
     }
 };
 
@@ -64,8 +65,8 @@ Earthquakes._sendNext = function(socket) {
  * Stop sending earthquake messages
  */
 Earthquakes.stop = function() {
-    var uuid = this.socket.uuid;
-    delete Earthquakes._remainingMsgs[uuid];
+    const {clientId} = this.caller;
+    delete Earthquakes._remainingMsgs[clientId];
     return '';
 };
 
@@ -82,8 +83,8 @@ Earthquakes.stop = function() {
  * @param {Number=} maxMagnitude Maximum magnitude of earthquakes to report
  */
 Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongitude, startTime, endTime, minMagnitude, maxMagnitude) {
-    var socket = this.socket,
-        response = this.response,
+    const {clientId} = this.caller;
+    var response = this.response,
         options = {
             minlatitude: minLatitude,
             minlongitude: minLongitude,
@@ -138,10 +139,11 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
         });
 
         if (msgs.length) {
-            Earthquakes._remainingMsgs[socket.uuid] = msgs;
-            Earthquakes._sendNext(socket);
+            Earthquakes._remainingMsgs[clientId] = msgs;
+            Earthquakes._sendNext(this.socket);
         }
     });
+
     return null;
 };
 

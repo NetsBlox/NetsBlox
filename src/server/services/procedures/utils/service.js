@@ -17,7 +17,7 @@ class NBService {
     // private
     // used internally for sending messages
     __sendNext() {
-        var msgs = this._remainingMsgs[this.socket.uuid];
+        var msgs = this._remainingMsgs[this.caller.clientId];
         if (msgs && msgs.length) {
             var msg = msgs.shift();
 
@@ -27,17 +27,17 @@ class NBService {
 
             // check that the socket is still at the role receiving the messages
             if (msg && msg.dstId === this.socket.roleId) {
-                this._logger.trace('sending msg to', this.socket.uuid, this.socket.roleId);
+                this._logger.trace('sending msg to', this.caller.clientId, this.socket.roleId);
                 this.socket.sendMessage(msg.msgType, msg.content);
             }
 
             if (msgs.length) {
                 setTimeout(this.__sendNext.bind(this), MSG_SENDING_DELAY);
             } else {
-                delete this._remainingMsgs[this.socket.uuid];
+                delete this._remainingMsgs[this.caller.clientId];
             }
         } else {
-            delete this._remainingMsgs[this.socket.uuid];
+            delete this._remainingMsgs[this.caller.clientId];
         }
     }
 
@@ -67,7 +67,7 @@ class NBService {
 
     // send messages (throttled)
     _sendMsgsQueue(contents, msgType){
-        this._remainingMsgs[this.socket.uuid] = [];
+        this._remainingMsgs[this.caller.clientId] = [];
         let msgContents = contents;
         if (msgContents[0]) {
             let msgKeys = Object.keys(msgContents[0]);
@@ -82,7 +82,7 @@ class NBService {
                 msgType,
                 content
             };
-            this._remainingMsgs[this.socket.uuid].push(msg);
+            this._remainingMsgs[this.caller.clientId].push(msg);
         });
         this._logger.trace(`initializing sending of ${msgContents.length} messages`);
         this.__sendNext();
@@ -97,10 +97,10 @@ class NBService {
     // stops sending of the messages
     _stopMsgs(){
         let msgCount;
-        if (this._remainingMsgs[this.socket.uuid]) {
-            msgCount = this._remainingMsgs[this.socket.uuid].length;
-            delete this._remainingMsgs[this.socket.uuid];
-            this._logger.trace('stopped sending messages for uuid:',this.socket.uuid, this.socket.roleId);
+        if (this._remainingMsgs[this.caller.clientId]) {
+            msgCount = this._remainingMsgs[this.caller.clientId].length;
+            delete this._remainingMsgs[this.caller.clientId];
+            this._logger.trace('stopped sending messages for uuid:',this.caller.clientId, this.socket.roleId);
         }else {
             msgCount = 0;
             this._logger.trace('there are no messages in the queue to stop.');
