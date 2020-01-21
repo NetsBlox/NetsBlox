@@ -382,6 +382,11 @@ class ServicesPrivateAPI {
                 this.logger.warn(`Could not find socket: ${message.clientId}`);
             }
         });
+        this.on(Messages.SendMessageToRoom, message => {
+            const {projectId, type, contents} = message;
+            const sockets = NetworkTopology.getSocketsAtProject(projectId);
+            sockets.forEach(socket => socket.sendMessage(type, contents));
+        });
     }
 
     on(msgClass, fn) {

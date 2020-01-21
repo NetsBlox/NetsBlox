@@ -151,7 +151,6 @@ class ServicesAPI {
         this.logger.info(`Received request to ${serviceName} for ${rpcName} (from ${uuid})`);
 
         const ctx = {};
-        ctx.socket = new RemoteClient(uuid);
         ctx.response = res;
         ctx.request = req;
         ctx.caller = {
@@ -160,6 +159,7 @@ class ServicesAPI {
             roleId,
             clientId: uuid
         };
+        ctx.socket = new RemoteClient(projectId, roleId, uuid);
 
         // Get the arguments
         const oldFieldNameFor = this.getDeprecatedArgName(serviceName, rpcName) || {};

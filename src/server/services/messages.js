@@ -49,8 +49,18 @@ class SendMessage extends Message {
     }
 }
 
+class SendMessageToRoom extends Message {
+    constructor(projectId, type, contents) {
+        super(...arguments);
+        this.projectId = projectId;
+        this.type = type;
+        this.contents = contents;
+    }
+}
+
 Messages.parse = Message.parse;
 Messages.SendMessage = SendMessage;
+Messages.SendMessageToRoom = SendMessageToRoom;
 Messages.ServiceMetadata = ServiceMetadata;
 Messages.CallRPC = CallRPC;
 Messages.RPCResult = RPCResult;
