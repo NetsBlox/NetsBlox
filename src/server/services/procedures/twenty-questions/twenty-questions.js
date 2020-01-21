@@ -8,8 +8,6 @@
 
 'use strict';
 
-const NetworkTopology = require('../../../network-topology');
-
 let TwentyQuestions = function () {
     this._state = {};
     this._state.correctAnswer = null;
@@ -53,9 +51,7 @@ TwentyQuestions.prototype.start = function (answer) {
     this._state.guessCount = 0;
     this._state.correctAnswer = answer.toLowerCase();
     this._state.answerer = this.caller.roleId;
-    // send start message to everyone
-    const sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId);
-    sockets.forEach(socket => socket.sendMessage('start'));
+    this.socket.sendMessageToRoom('start');
     return true;
 };
 
@@ -65,7 +61,6 @@ TwentyQuestions.prototype.start = function (answer) {
  * @param {String} guess word or phrase
  */
 TwentyQuestions.prototype.guess = function(guess) {
-    const sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId);
     this._ensureGameStarted();
     this._ensureCallerIsGuesser();
 
@@ -87,17 +82,17 @@ TwentyQuestions.prototype.guess = function(guess) {
         // guesses are up! guesser loses...
         if (this._state.guessCount === 20) {
             content.GuesserWin = false;
-            sockets.forEach(socket => socket.sendMessage('EndGame', content));
+            this.socket.sendMessageToRoom('EndGame', content);
         // wait for answerer to answer the question
         } else {
             content.guess = guess;
-            sockets.forEach(socket => socket.sendMessage('EndGuesserTurn', content));
+            this.socket.sendMessageToRoom('EndGuesserTurn', content);
         }
         return correct;
     }
     // correct guess, end the game
     content.GuesserWin = true;
-    sockets.forEach(socket => socket.sendMessage('EndGame', content));
+    this.socket.sendMessageToRoom('EndGame', content);
     return true;
 };
 
@@ -119,8 +114,7 @@ TwentyQuestions.prototype.answer = function(answer) {
         turn: this._state.guessCount,
         response: answer.toLowerCase()
     };
-    const sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId);
-    sockets.forEach(socket => socket.sendMessage('EndAnswererTurn', content));
+    this.socket.sendMessageToRoom('EndAnswererTurn', content);
     return true;
 };
 
