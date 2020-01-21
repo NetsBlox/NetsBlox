@@ -95,12 +95,18 @@ const getRoleName = (projectId, roleId) => {
         .then(names => names[0]);
 };
 
+const getRoleIds = async projectId => {
+    const metadata = await Projects.getRawProjectById(projectId);
+    return Object.keys(metadata.roles);
+};
+
 const isValidServiceName = name => {
     return /^[a-z0-9-]+$/i.test(name);
 };
 
 module.exports = {
     getRoleNames,
+    getRoleIds,
     getRoleName,
     sendImageBuffer,
     encodeQueryData,

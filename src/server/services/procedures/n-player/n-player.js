@@ -1,7 +1,9 @@
-// This is the NPlayer game RPC. It ensures round-robin turn taking with N players.
 /**
- * The NPlayer Service utilities for ensuring round-robin turn taking with a set
- * number of players (N).
+ * The NPlayer Service provides helpers RPCs for ensuring round-robin turn taking
+ * among the roles in the project's room.
+ *
+ * Each role will receive a "start game" message at the start and then "start turn"
+ * message when it is the given role's turn to act.
  *
  * @service
  * @category Games
@@ -10,7 +12,6 @@
 'use strict';
 
 const logger = require('../utils/logger')('n-player');
-const NetworkTopology = require('../../../network-topology');
 const Utils = require('../utils');
 
 /**
@@ -27,81 +28,61 @@ const NPlayer = function() {
     this._state.players = [];
 };
 
-// start the game
-NPlayer.prototype.start = function() {
-
-    // populate the players list
-    this._state.players = [];
-
-    const sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId);
-    this._state.players = sockets.map(socket => {
-        return {
-            roleId: socket.roleId,
-            socket: socket
-        };
-    });
-
-    // set the active player to the current one
+NPlayer.prototype.start = async function() {
+    this._state.players = await Utils.getRoleIds(this.caller.projectId);
     this._state.active = this._state.players
-        .findIndex(player => player.roleId === this.socket.roleId);
+        .findIndex(roleId => roleId === this.socket.roleId);
 
-    logger.info(`Player #${this._state.active} (${this._state.players[this._state.active].roleId}) is (re)starting a ${this._state.players.length} player game`);
+    logger.info(`Player #${this._state.active} (${this._state.players[this._state.active]}) is (re)starting a ${this._state.players.length} player game`);
 
     // Send the start message to everyone
-    sockets.forEach(socket => socket.sendMessage('start game'));
+    this.socket.sendMessageToRoom('start game');
     return true;
 };
 
-// get the number of players
 NPlayer.prototype.getN = function() {
     return this._state.players.length;
 };
 
-// get the active role
 NPlayer.prototype.getActive = function() {
     if(this._state.players.length === 0) {
         return '';
     } else {
-        return this._state.players[this._state.active].roleId;
+        return this._state.players[this._state.active];
     }
 };
 
-// get the previous role
 NPlayer.prototype.getPrevious = function() {
     if(this._state.previous == null || this._state.players.length == 0) {
         return '';
     } else {
-        return this._state.players[this._state.previous].roleId;
+        return this._state.players[this._state.previous];
     }
 };
 
-// get the next role
 NPlayer.prototype.getNext = function() {
     if(this._state.players.length == 0) {
         return '';
     } else {
         const index = (this._state.active + 1) % this._state.players.length;
-        const nextId = this._state.players[index].roleId;
+        const nextId = this._state.players[index];
         return Utils.getRoleName(this.caller.projectId, nextId);
     }
 };
 
-
-// signal end of turn
 NPlayer.prototype.endTurn = function(next) {
-
-    if(this._state.active === null || this.socket.roleId != this._state.players[this._state.active].roleId) {
+    if(this._state.active === null || this.socket.roleId != this._state.players[this._state.active]) {
         // bail out if there's no game yet, or if it's somebody else's turn
         return false;
     } else {
 
-        logger.info(`Player #${this._state.active} (${this._state.players[this._state.active].roleId}) called endTurn`);
+        logger.info(`Player #${this._state.active} (${this._state.players[this._state.active]}) called endTurn`);
 
         var nextIndex;
         if(next == undefined) {
             nextIndex = (this._state.active + 1) % this._state.players.length;
         } else {
-            nextIndex = this._state.players.findIndex(player => player.roleId === next);
+            nextIndex = this._state.players.findIndex(roleId => roleId === next);
             if(nextIndex === -1) {
                 logger.info('Role ' +next+ ' is not part of the game');
                 return false;
@@ -112,10 +93,11 @@ NPlayer.prototype.endTurn = function(next) {
         this._state.previous = this._state.active;
         this._state.active = nextIndex;
 
-        logger.info('Player #' +this._state.active+' ('+ this._state.players[this._state.active].roleId +') is the new active player');
+        logger.info('Player #' +this._state.active+' ('+ this._state.players[this._state.active]+') is the new active player');
 
         // Send the play message to the newly activated player
-        this._state.players[this._state.active].socket.sendMessage('start turn');
+        const player = this._state.players[this._state.active];
+        this.socket.sendMessageToRole(player, 'start turn');
         return true;
     }
 };
