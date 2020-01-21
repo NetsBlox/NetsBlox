@@ -7,7 +7,6 @@ var express = require('express'),
     dot = require('dot'),
     Utils = _.extend(require('./utils'), require('./server-utils.js')),
     NetworkTopology = require('./network-topology'),
-    RPCManager = require('./rpc/rpc-manager'),
     Storage = require('./storage/storage'),
     EXAMPLES = require('./examples'),
     Vantage = require('./vantage/vantage'),
@@ -32,6 +31,8 @@ const CLIENT_ROOT = path.join(__dirname, '..', 'browser');
 const indexTpl = dot.template(fs.readFileSync(path.join(CLIENT_ROOT, 'index.dot')));
 const middleware = require('./routes/middleware');
 const Client = require('./client');
+const Messages = require('./services/messages');
+const assert = require('assert');
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -147,42 +148,6 @@ Server.prototype.configureRoutes = async function() {
         });
     });
 
-    // Import Service Endpoints:
-    await RPCManager.initialize();
-    this.app.use(
-        '/rpc',
-        (req, res, next) => middleware.tryLogIn(req, res, next, true),
-        RPCManager.router
-    );
-    const RPC_ROOT = path.join(__dirname, 'rpc', 'libs');
-    const RPC_INDEX = fs.readFileSync(path.join(RPC_ROOT, 'LIBS'), 'utf8')
-        .split('\n')
-        .filter(line => {
-            const parts = line.split('\t');
-            const deps = parts[2] ? parts[2].split(' ') : [];
-            const displayName = parts[1];
-
-            // Check if we have loaded the dependent rpcs
-            for (let i = deps.length; i--;) {
-                if (!RPCManager.isServiceLoaded(deps[i])) {
-                    // eslint-disable-next-line no-console
-                    console.log(`Service ${displayName} not available because ${deps[i]} is not loaded`);
-                    return false;
-                }
-            }
-            return true;
-        })
-        .map(line => line.split('\t').splice(0, 2).join('\t'))
-        .join('\n');
-
-    this.app.get('/servicelibs/:filename', (req, res) => {
-        if (req.params.filename === 'SERVICELIBS') {
-            res.send(RPC_INDEX);
-        } else {
-            res.sendFile(path.join(RPC_ROOT, req.params.filename));
-        }
-    });
-
     this.app.get('/Examples/EXAMPLES', (req, res) => {
         // if no name requested, get index
         Q(this.getExamplesIndex(req.query.metadata === 'true'))
@@ -224,7 +189,6 @@ Server.prototype.configureRoutes = async function() {
         return room.getRole(role)
             .then(content => res.send(content.SourceCode));
     });
-
 };
 
 Server.prototype.getExamplesIndex = function(withMetadata) {
@@ -306,6 +270,8 @@ Server.prototype.start = async function() {
         const client = new Client(this._logger, socket);
         NetworkTopology.onConnect(client);
     });
+    const servicesApi = new ServicesPrivateAPI(this._logger);
+    servicesApi.listen('tcp://127.0.0.1:1235');
 
     // Enable Vantage
     if (this.opts.vantage) {
@@ -333,12 +299,12 @@ function loadRoutes(logger) {
         .reduce((prev, next) => prev.concat(next), []);  // Merge all routes
 
     // load service routes
-    const serviceRoutes = fs.readdirSync(path.join(__dirname, 'rpc/procedures'))
+    const serviceRoutes = fs.readdirSync(path.join(__dirname, 'services', 'procedures'))
         .filter(serviceDir => { // check if it has a routes file
-            return fs.readdirSync(path.join(__dirname, `rpc/procedures/${serviceDir}`))
+            return fs.readdirSync(path.join(__dirname, 'services','procedures', serviceDir))
                 .includes('routes.js');
         })
-        .map(serviceDir => __dirname + `/rpc/procedures/${serviceDir}/routes.js`)
+        .map(serviceDir => `./services/procedures/${serviceDir}/routes.js`)
         .map(filePath => {
             logger.trace('about to load service route ' + filePath);
             return require(filePath);
@@ -400,5 +366,45 @@ Server.prototype.createRouter = function() {
     });
     return router;
 };
+
+class ServicesPrivateAPI {
+    constructor(logger) {
+        const {Dealer} = require('zeromq');
+        this.receiver = new Dealer();
+        this.messageHandlers = {};
+        this.logger = logger.fork('services');
+
+        this.on(Messages.SendMessage, message => {
+            const socket = NetworkTopology.getSocket(message.clientId);
+            if (socket) {
+                socket.sendMessage(message.type, message.contents);
+            } else {
+                this.logger.warn(`Could not find socket: ${message.clientId}`);
+            }
+        });
+    }
+
+    on(msgClass, fn) {
+        const typeName = msgClass.name;
+        assert(Messages[typeName], 'Invalid Message Type: ' + typeName);
+        if (!this.messageHandlers[typeName]) {
+            this.messageHandlers[typeName] = [];
+        }
+
+        this.messageHandlers[typeName].push(fn);
+    }
+
+    async listen(address) {
+        await this.receiver.bind(address);
+        while (true) {
+            const msgs = await this.receiver.receive();
+            for (let i = 0; i < msgs.length; i++) {
+                const message = Messages.parse(msgs[i]);
+                const handlers = this.messageHandlers[message.getType()] || [];
+                handlers.forEach(fn => fn(message));
+            }
+        }
+    }
+}
 
 module.exports = Server;

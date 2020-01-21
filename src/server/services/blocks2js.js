@@ -74,7 +74,7 @@ context.doSocketMessage = function() {
 
     msgType.fields.forEach((name, i) => message.content[name] = args[i]);
 
-    this.project.ctx.socket.onMessage(message);
+    this.project.ctx.socket.onMessage(message);  // TODO: Could this be updated to `sendMessage`
 };
 
 context.reportStageWidth = function() {

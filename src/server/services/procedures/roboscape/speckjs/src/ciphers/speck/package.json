@@ -1,0 +1,35 @@
+{
+  "name": "speck.js",
+  "version": "0.1.0",
+  "description": "Speck block cipher in JavaScript",
+  "main": "index.js",
+  "scripts": {
+    "test": "gulp && mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hax/speck.js.git"
+  },
+  "keywords": [
+    "speck",
+    "cipher"
+  ],
+  "author": "hax <johnhax@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hax/speck.js/issues"
+  },
+  "homepage": "https://github.com/hax/speck.js",
+  "devDependencies": {
+    "gulp": "^3.8.7",
+    "gulp-concat": "^2.3.4",
+    "gulp-rimraf": "^0.1.0",
+    "gulp-sourcemaps": "^1.1.1",
+    "gulp-sweetjs": "SirPepe/gulp-sweetjs",
+    "gulp-uglify": "^0.3.1",
+    "js-yaml": "^3.1.0",
+    "merge-stream": "^0.1.5",
+    "mocha": "^1.21.4",
+    "sweet.js": "^0.7.0"
+  }
+}

@@ -1,6 +1,6 @@
 'use strict';
 var MongoClient = require('mongodb').MongoClient,
-    RPCStore = require('../rpc/storage'),
+    //RPCStore = require('../services/storage'),
     Users = require('./users'),
     Q = require('q'),
     Projects = require('./projects'),
@@ -35,7 +35,7 @@ Storage.prototype.connect = function(mongoURI) {
             Users.init(this._logger, db);
             Projects.init(this._logger, db);
             Groups.init(this._logger, db);
-            RPCStore.init(this._logger, db);
+            //RPCStore.init(this._logger, db);
             UserActions.init(this._logger, db);
             PublicProjects.init(this._logger, db);
             Messages.init(this._logger, db);
