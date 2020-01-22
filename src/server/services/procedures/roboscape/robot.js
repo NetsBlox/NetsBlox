@@ -1,6 +1,5 @@
 'use strict';
 const getRPCLogger = require('../utils/logger');
-const NetworkTopology = require('../../../network-topology');
 const acl = require('./accessControl');
 const ROBOSCAPE_MODE = process.env.ROBOSCAPE_MODE || 'both';
 const ciphers = require('./ciphers');
@@ -140,20 +139,22 @@ Robot.prototype.isMostlyAlive = function () {
     return this.heartbeats <= FORGET_TIME;
 };
 
-Robot.prototype.addClientSocket = function (uuid) {
-    var i = this.sockets.indexOf(uuid);
+Robot.prototype.addClientSocket = function (socket) {
+    const {clientId} = socket;
+    var i = this.sockets.findIndex(s => s.clientId === clientId);
     if (i < 0) {
-        this._logger.log('register ' + uuid + ' ' + this.mac_addr);
-        this.sockets.push(uuid);
+        this._logger.log('register ' + clientId + ' ' + this.mac_addr);
+        this.sockets.push(socket);
         return true;
     }
     return false;
 };
 
-Robot.prototype.removeClientSocket = function (uuid) {
-    var i = this.sockets.indexOf(uuid);
+Robot.prototype.removeClientSocket = function (socket) {
+    const {clientId} = socket;
+    var i = this.sockets.findIndex(s => s.clientId === clientId);
     if (i >= 0) {
-        this._logger.log('unregister ' + uuid + ' ' + this.mac_addr);
+        this._logger.log('unregister ' + clientId + ' ' + this.mac_addr);
         this.sockets.splice(i, 1);
         return true;
     }
@@ -278,17 +279,12 @@ Robot.prototype.drive = function (left, right) {
 Robot.prototype.commandToClient = function (command) {
     if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
         var mac_addr = this.mac_addr;
-        this.sockets.forEach(uuid => {
-            var socket = NetworkTopology.getSocket(uuid);
-            if (socket) {
-                const content = {
-                    robot: mac_addr,
-                    command: command
-                };
-                socket.sendMessage('robot command', content);
-            } else {
-                this._logger.log('socket not found for ' + uuid);
-            }
+        this.sockets.forEach(socket => {
+            const content = {
+                robot: mac_addr,
+                command: command
+            };
+            socket.sendMessage('robot command', content);
         });
     }
 };
@@ -313,32 +309,25 @@ Robot.prototype.sendToClient = function (msgType, content) {
         callbacks.length = 0;
     }
 
-    this.sockets.forEach(async uuid => {
-        var socket = NetworkTopology.getSocket(uuid);
+    this.sockets.forEach(async socket => {
+        await acl.ensureAuthorized(socket.username, myself.mac_addr); // should use robotId instead of mac_addr
 
-        if (socket) {
+        if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
+            socket.sendMessage(msgType, content);
+        }
 
-            await acl.ensureAuthorized(socket.username, myself.mac_addr); // should use robotId instead of mac_addr
-
-            if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
-                socket.sendMessage(msgType, content);
+        if ((ROBOSCAPE_MODE === 'security' && msgType !== 'set led') ||
+            ROBOSCAPE_MODE === 'both') {
+            var text = msgType;
+            for (var i = 0; i < fields.length; i++) {
+                text += ' ' + content[fields[i]];
             }
 
-            if ((ROBOSCAPE_MODE === 'security' && msgType !== 'set led') ||
-                ROBOSCAPE_MODE === 'both') {
-                var text = msgType;
-                for (var i = 0; i < fields.length; i++) {
-                    text += ' ' + content[fields[i]];
-                }
-
-                const encryptedContent = {
-                    robot: myself.mac_addr,
-                    message: this._hasValidEncryptionSet() ? myself.encrypt(text.trim()) : text.trim()
-                };
-                socket.sendMessage('robot message', encryptedContent);
-            }
-        } else {
-            this._logger.log('socket not found for ' + uuid);
+            const encryptedContent = {
+                robot: myself.mac_addr,
+                message: this._hasValidEncryptionSet() ? myself.encrypt(text.trim()) : text.trim()
+            };
+            socket.sendMessage('robot message', encryptedContent);
         }
     });
 };

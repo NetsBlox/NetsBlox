@@ -144,12 +144,11 @@ RoboScape.prototype.eavesdrop = function (robots) {
  * @param {array} robots one or a list of robots
  */
 RoboScape.prototype.listen = async function (robots) {
-    var state = this._state,
-        uuid = this.caller.clientId;
+    var state = this._state;
 
     for (var mac_addr in state.registered) {
         if (this._robots[mac_addr]) {
-            this._robots[mac_addr].removeClientSocket(uuid);
+            this._robots[mac_addr].removeClientSocket(this.socket);
         }
     }
     state.registered = {};
@@ -163,7 +162,7 @@ RoboScape.prototype.listen = async function (robots) {
         var robot = await this._getRobot(robots[i]);
         if (robot) {
             state.registered[robot.mac_addr] = robot;
-            robot.addClientSocket(uuid);
+            robot.addClientSocket(this.socket);
         } else {
             ok = false;
         }
