@@ -79,14 +79,14 @@ NPlayer.prototype.endTurn = function(next) {
         logger.info(`Player #${this._state.active} (${this._state.players[this._state.active]}) called endTurn`);
 
         var nextIndex;
-        if(next == undefined) {
-            nextIndex = (this._state.active + 1) % this._state.players.length;
-        } else {
+        if(next) {
             nextIndex = this._state.players.findIndex(roleId => roleId === next);
             if(nextIndex === -1) {
                 logger.info('Role ' +next+ ' is not part of the game');
                 return false;
             }
+        } else {
+            nextIndex = (this._state.active + 1) % this._state.players.length;
         }
 
         // save previous player's index, and make the next player active
