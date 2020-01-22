@@ -1,10 +1,8 @@
 // A turn based base class to add turn based behavior to an RPC
 'use strict';
-var getArgs = require('../../../server-utils').getArgumentsFor;
-const NetworkTopology = require('../../../network-topology');
+const getArgs = require('../../../server-utils').getArgumentsFor;
 
 class TurnBased {
-
     constructor(action, reset) {
         this._state = {};
         this._state._lastRoleToAct = null;
@@ -12,7 +10,7 @@ class TurnBased {
 
         // replace "action" w/ a modified version
         this[action] = function() {
-            const {projectId, roleId} = this.caller;
+            const {roleId} = this.caller;
 
             // Filter
             if (this._state._lastRoleToAct === roleId) {
@@ -25,18 +23,15 @@ class TurnBased {
                 return result.then(success => {
                     if (success) {
                         const nextId = this._state._lastRoleToAct;
-                        const sockets = NetworkTopology.getSocketsAt(projectId, nextId);
-                        sockets.forEach(s => s.sendMessage('your turn'));
+                        this.socket.sendMessageToRole(nextId, 'your turn');
                         this._state._lastRoleToAct = roleId;
                     }
                 });
             } else {
-                // Notify
                 const success = result;
                 if (success) {
                     const nextId = this._state._lastRoleToAct;
-                    const sockets = NetworkTopology.getSocketsAt(projectId, nextId);
-                    sockets.forEach(s => s.sendMessage('your turn'));
+                    this.socket.sendMessageToRole(nextId, 'your turn');
                     this._state._lastRoleToAct = roleId;
                 }
             }

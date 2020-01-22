@@ -14,7 +14,6 @@ const BattleshipConstants = require('./constants');
 const BOARD_SIZE = BattleshipConstants.BOARD_SIZE;
 const SHIPS = BattleshipConstants.SHIPS;
 const DIRS = BattleshipConstants.DIRS;
-const NetworkTopology = require('../../../network-topology');
 const Utils = require('../utils');
 const Projects = require('../../../storage/projects');
 
@@ -49,7 +48,6 @@ Battleship.prototype.reset = function() {
 Battleship.prototype.start = function() {
     // Check that all boards are ready
     var roles = Object.keys(this._state._boards),
-        sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId),
         shipsLeft,
         board;
 
@@ -69,9 +67,7 @@ Battleship.prototype.start = function() {
         }
     }
 
-    // If so, send the start! message
-    sockets.forEach(s => s.sendMessage('start'));
-
+    this.socket.sendMessageToRoom('start');
     this._state._STATE = BattleshipConstants.SHOOTING;
     return true;
 };
@@ -171,7 +167,6 @@ Battleship.prototype.fire = function(row, column) {
     if (result) {
         return Utils.getRoleName(this.caller.projectId, target)
             .then(targetName => {
-                const sockets = NetworkTopology.getSocketsAtProject(this.caller.projectId);
                 const msgType = result.HIT ? BattleshipConstants.HIT : BattleshipConstants.MISS;
                 const data = {
                     role: targetName,
@@ -180,7 +175,7 @@ Battleship.prototype.fire = function(row, column) {
                     ship: result.SHIP,
                     sunk: result.SUNK
                 };
-                sockets.forEach(s => s.sendMessage(msgType, data));
+                this.socket.sendMessageToRoom(msgType, data);
                 this.response.send(!!result);
                 return !!result;
             });
