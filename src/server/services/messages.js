@@ -20,26 +20,6 @@ class Message {
     }
 }
 
-class ServiceMetadata extends Message {
-    constructor(metadata, compatibility) {
-        super(...arguments);
-        this.metadata = metadata;
-        this.compatibility = compatibility;
-    }
-}
-
-class CallRPC extends Message {
-    constructor() {
-        super(...arguments);
-    }
-}
-
-class RPCResult extends Message {
-    constructor() {
-        super(...arguments);
-    }
-}
-
 class SendMessage extends Message {
     constructor(clientId, type, contents) {
         super(...arguments);
@@ -58,10 +38,18 @@ class SendMessageToRoom extends Message {
     }
 }
 
+class SendMessageToRole extends Message {
+    constructor(projectId, roleId, type, contents) {
+        super(...arguments);
+        this.projectId = projectId;
+        this.roleId = roleId;
+        this.type = type;
+        this.contents = contents;
+    }
+}
+
 Messages.parse = Message.parse;
 Messages.SendMessage = SendMessage;
 Messages.SendMessageToRoom = SendMessageToRoom;
-Messages.ServiceMetadata = ServiceMetadata;
-Messages.CallRPC = CallRPC;
-Messages.RPCResult = RPCResult;
+Messages.SendMessageToRole = SendMessageToRole;
 module.exports = Messages;

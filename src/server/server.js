@@ -387,6 +387,11 @@ class ServicesPrivateAPI {
             const sockets = NetworkTopology.getSocketsAtProject(projectId);
             sockets.forEach(socket => socket.sendMessage(type, contents));
         });
+        this.on(Messages.SendMessageToRole, message => {
+            const {projectId, roleId, type, contents} = message;
+            const sockets = NetworkTopology.getSocketsAt(projectId, roleId);
+            sockets.forEach(socket => socket.sendMessage(type, contents));
+        });
     }
 
     on(msgClass, fn) {
