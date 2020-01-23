@@ -1,4 +1,4 @@
-describe.only('services-worker', function() {
+describe('services-worker', function() {
     const utils = require('../../../assets/utils');
     const Logger = utils.reqSrc('./logger');
     const ServicesWorker = utils.reqSrc('./services/services-worker');

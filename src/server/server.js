@@ -396,7 +396,12 @@ class ServicesPrivateAPI {
         this.on(Messages.SendMessage, message => {
             const socket = NetworkTopology.getSocket(message.clientId);
             if (socket) {
-                socket.sendMessage(message.type, message.contents);
+                const hasChangedSituation = message.projectId !== socket.projectId ||
+                    message.roleId !== socket.roleId;
+
+                if (!hasChangedSituation) {
+                    socket.sendMessage(message.type, message.contents);
+                }
             } else {
                 this.logger.warn(`Could not find socket: ${message.clientId}`);
             }

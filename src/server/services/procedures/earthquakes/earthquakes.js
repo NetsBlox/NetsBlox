@@ -31,25 +31,15 @@ let stringToDate = string => {
     return new Date(string);
 };
 
-var DELAY = 250;
-var Earthquakes = {};
+const DELAY = 250;
+const Earthquakes = {};
 Earthquakes._remainingMsgs = {};
 
 Earthquakes._sendNext = function(socket) {
     const {clientId} = socket;
     const msgs = Earthquakes._remainingMsgs[clientId];
     if (msgs && msgs.length) {
-        // send an earthquake message
-        let msg = msgs.shift();
-
-        while (msgs.length && msg.dstId !== socket.roleId) {
-            msg = msgs.shift();
-        }
-
-        // check that the socket is still at the role receiving the messages
-        if (msg && msg.dstId === socket.roleId) {
-            socket.sendMessage('Earthquake', msg.content);
-        }
+        socket.sendMessage('Earthquake', msgs.shift());
 
         if (msgs.length) {
             setTimeout(Earthquakes._sendNext, DELAY, socket);
@@ -126,17 +116,12 @@ Earthquakes.byRegion = function(minLatitude, maxLatitude, minLongitude, maxLongi
             logger.log('Could not parse earthquakes (returning empty array): ' + e);
         }
 
-        const msgs = earthquakes.map(quake => {
-            return {
-                dstId: this.caller.roleId,
-                content: {
-                    latitude: quake.geometry.coordinates[1],
-                    longitude: quake.geometry.coordinates[0],
-                    size: quake.properties.mag,
-                    time: quake.properties.time
-                }
-            };
-        });
+        const msgs = earthquakes.map(quake => ({
+            latitude: quake.geometry.coordinates[1],
+            longitude: quake.geometry.coordinates[0],
+            size: quake.properties.mag,
+            time: quake.properties.time
+        }));
 
         if (msgs.length) {
             Earthquakes._remainingMsgs[clientId] = msgs;

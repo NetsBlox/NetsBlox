@@ -1,13 +1,9 @@
 describe('twentyquestions', function() {
     const utils = require('../../../../assets/utils');
-    var TwentyQuestions = utils.reqSrc('services/procedures/twenty-questions/twenty-questions'),
-        RPCMock = require('../../../../assets/mock-rpc'),
-        twentyquestions = new RPCMock(TwentyQuestions),
-        assert = require('assert');
-
-    before(function () {
-        twentyquestions = new RPCMock(TwentyQuestions);
-    });
+    const TwentyQuestions = utils.reqSrc('services/procedures/twenty-questions/twenty-questions');
+    const RPCMock = require('../../../../assets/mock-rpc');
+    const twentyquestions = new RPCMock(TwentyQuestions);
+    const assert = require('assert');
 
     utils.verifyRPCInterfaces('TwentyQuestions', [
         ['start', ['answer']],

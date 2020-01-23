@@ -21,8 +21,10 @@ class Message {
 }
 
 class SendMessage extends Message {
-    constructor(clientId, type, contents) {
+    constructor(projectId, roleId, clientId, type, contents) {
         super(...arguments);
+        this.projectId = projectId;
+        this.roleId = roleId;
         this.clientId = clientId;
         this.type = type;
         this.contents = contents;

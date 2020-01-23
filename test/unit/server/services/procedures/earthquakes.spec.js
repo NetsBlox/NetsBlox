@@ -30,39 +30,23 @@ describe('earthquakes', function() {
             assert.equal(args.length, 0);
         });
 
-        it('should remove entry from remainingMsgs', function() {
-            var uuid = earthquakes.socket.uuid,
-                remainingMsgs = earthquakes._rpc._remainingMsgs;
+        it('should remove entry from remainingMsgs', async function() {
+            const clientId = earthquakes.socket.uuid;
+            const remainingMsgs = earthquakes._rpc._remainingMsgs;
 
-            remainingMsgs[uuid] = [];
-            earthquakes.stop(remainingMsgs);
-            assert(!remainingMsgs[uuid]);
+            remainingMsgs[clientId] = [];
+            console.log(remainingMsgs);
+            await earthquakes.stop();
+            console.log(remainingMsgs);
+            assert(
+                !remainingMsgs[clientId],
+                `Did not remove message queue: ${typeof remainingMsgs[clientId]}`
+            );
         });
     });
 
     describe('sendNext', function() {
         var socket;
-
-        describe('changing roles', function() {
-            before(function() {
-                var remainingMsgs = earthquakes._rpc._remainingMsgs;
-
-                socket = earthquakes.socket;
-                remainingMsgs[socket.uuid] = [{dstId: 'someOldRole'}];
-                earthquakes._rpc._sendNext(socket);
-            });
-
-            it('should stop sending if the socket changes roles', function() {
-                const msgs = socket._socket.messages()
-                    .filter(msg => msg.type === 'message');
-
-                assert.equal(msgs.length, 0);
-            });
-
-            it('should remove remaining msgs record', function() {
-                assert(!earthquakes._rpc._remainingMsgs[socket.uuid]);
-            });
-        });
 
         describe('no earthquakes found', function() {
             it('should not fail if no earthquakes found', function() {

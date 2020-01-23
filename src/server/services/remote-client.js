@@ -37,7 +37,13 @@ class RemoteClient {
     }
 
     async sendMessage(type, contents={}) {
-        await channel.trySend(new SendMessage(this.clientId, type, contents));
+        await channel.trySend(new SendMessage(
+            this.projectId,
+            this.roleId,
+            this.clientId,
+            type,
+            contents
+        ));
     }
 
     async sendMessageToRole(roleId, type, contents={}) {
