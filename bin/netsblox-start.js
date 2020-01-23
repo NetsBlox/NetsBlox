@@ -16,8 +16,6 @@ const ENV = process.env.ENV;
 const isDevMode = ENV !== 'production';
 const DEBUG = process.env.DEBUG;
 
-if (ENV === 'production') require('heapdump'); // trigger a heapdump with `kill -USR2 <pid>`
-
 if (isDevMode && !DEBUG) process.env.DEBUG = 'netsblox:*';
 
 app.use(express.static(__dirname + '/client/'));

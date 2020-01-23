@@ -16,7 +16,7 @@
     "docker": "docker run -it -p 8080:8080 --env-file .env -e MONGO_URI='mongodb://172.17.0.1:27017/netsblox' -v $PWD:/netsblox netsblox/base bash"
   },
   "engines": {
-    "node": ">= 8.0.0"
+    "node": ">= 12.0.0"
   },
   "repository": {
     "type": "git",
@@ -52,7 +52,6 @@
     "fse": "^4.0.1",
     "geolib": "^2.0.18",
     "gnuplot": "^0.3.1",
-    "heapdump": "^0.3.12",
     "jade": "^1.9.2",
     "jimp": "^0.2.28",
     "json-query": "^2.2.2",
