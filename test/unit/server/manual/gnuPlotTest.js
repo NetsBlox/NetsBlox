@@ -1,4 +1,4 @@
-const gnuPlot = require('./../../../../src/server/rpc/procedures/chart/node-gnuplot.js'),
+const gnuPlot = require('./../../../../src/server/services/procedures/chart/node-gnuplot.js'),
     fs = require('fs'),
     timeSData = require('./testLines.json');
 

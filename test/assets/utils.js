@@ -1,9 +1,7 @@
-/*global Client*/
 const  _ = require('lodash');
 const assert = require('assert');
 const fixtures = require('../fixtures');
 
-// load the *exact* XML_Serializer from Snap!... pretty hacky...
 const path = require('path');
 const fs = require('fs');
 const Q = require('q');
@@ -14,14 +12,16 @@ const Client = reqSrc('client');
 const Socket = require('./mock-websocket');
 const Logger = require(PROJECT_ROOT + '/src/server/logger');
 const Storage = require(PROJECT_ROOT + '/src/server/storage/storage');
+const ServiceStorage = reqSrc('services/storage');
 const mainLogger = new Logger('netsblox:test');
 const serverUtils = reqSrc('server-utils');
-const RPCManager = reqSrc('rpc/rpc-manager');
+const Services = reqSrc('services/api').services;
 const Projects = reqSrc('storage/projects');
 const NetworkTopology = reqSrc('network-topology');
 
 NetworkTopology.init(new Logger('netsblox:test'), Client);
 
+// load the *exact* XML_Serializer from Snap!... pretty hacky...
 (function() {
     var clientDir = path.join(PROJECT_ROOT, 'src', 'browser'),
         srcFiles = ['morphic.js', 'xml.js', 'store.js', 'actions.js'],
@@ -128,12 +128,16 @@ const sendEmptyRole = function(msg) {
 };
 
 let connection = null;
-const connect = function() {
+const connect = async function() {
     const mongoUri = 'mongodb://127.0.0.1:27017/netsblox-tests';
     if (!connection) {
-        connection = Storage.connect(mongoUri);
+        connection = Storage.connect(mongoUri)
+            .then(async db => {
+                await ServiceStorage.init(logger, db);
+                return db;
+            });
     }
-    return connection;
+    return await connection;
 };
 
 const clearCache = function() {
@@ -157,7 +161,7 @@ const reset = function() {
     let modulesToRefresh = routes.concat('../../src/server/server');
     clearCache.apply(null, modulesToRefresh);
 
-    return connect()
+    return Q(connect())
         .then(_db => db = _db)
         .then(() => db.dropDatabase())
         .then(() => fixtures.init(Storage))
@@ -174,11 +178,16 @@ const sleep = delay => {
 module.exports = {
     verifyRPCInterfaces: function(serviceName, interfaces) {
         describe(`${serviceName} interfaces`, function() {
+            before(async () => {
+                await connect();
+                await Services.initialize();
+            });
+
             interfaces.forEach(interface => {
                 const [name, expected=[]] = interface;
 
                 it(`${name} args should be ${expected.join(', ')}`, function() {
-                    const args = RPCManager.getArgumentsFor(serviceName, name);
+                    const args = Services.getArgumentsFor(serviceName, name);
                     assert(_.isEqual(args, expected), `Found ${args.join(', ')}`);
                 });
             });

@@ -8,15 +8,14 @@ var Constants = require('../../src/common/constants'),
     _ = require('lodash');
 
 const utils = require('./utils');
-const Client = utils.reqSrc('client');
 const NetworkTopology = utils.reqSrc('network-topology');
 const Logger = utils.reqSrc('logger');
-const MockSocket = require('./mock-websocket');
 let logger;
 
-var MockRPC = function(RPC, raw) {
+var MockRPC = function(RPC) {
     this._methods = [];
-    this._rpc = typeof RPC === 'function' ? new RPC() : raw ? RPC : _.cloneDeep(RPC);
+    this._rpc = typeof RPC === 'function' ?
+        new RPC() : _.cloneDeep(RPC);
     this.createMethods(RPC);
 
     logger = new Logger('netsblox:test:services');
@@ -28,10 +27,7 @@ var MockRPC = function(RPC, raw) {
 };
 
 MockRPC.prototype.getNewSocket = function() {
-    if (this.socket) {
-        this.socket.onClose();
-    }
-    this.socket = new Client(logger, new MockSocket());
+    this.socket = new MockClient();
     this._rpc.socket = this.socket;
     NetworkTopology.onConnect(this.socket);
 };
@@ -64,7 +60,7 @@ MockRPC.prototype.getArgumentsFor = function(fnName) {
     if (this._methods.includes(fnName)) {
         return getArgsFor(this._rpc[fnName]);
     }
-    throw new Error(`${fnName} is not supported by the RPC!`);
+    throw new Error(`${fnName} is not supported by the Service!`);
 };
 
 MockRPC.prototype.addMethod = function(name) {
@@ -102,6 +98,15 @@ MockRequest.prototype.on = function(event, fn) {
     } else {
         throw new Error('Unrecognized event listener:', event);
     }
+};
+
+const MockClient = function() {
+    this.roleId = 'myRole-' + Date.now();
+    this.uuid = 'uuid-' + Date.now();
+};
+
+MockClient.prototype.sendMessage =
+MockClient.prototype.sendMessageToRoom = function() {
 };
 
 module.exports = MockRPC;

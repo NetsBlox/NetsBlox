@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+  </head>
+  <body>
+    <input type="text" value="" id="text"/>
+    <input type="text" value="1 2 3 4" id="keys"/>
+    <button onclick="encrypt()">Encrypt</button>
+    <button onclick="decrypt()">Decrypt</button>
+    <p id="output"></p>
+    <script src="bundle.js"></script>
+    <script charset="utf-8">
+      const Speck = require('speck3264'),
+        utils = require('utils');
+
+      const s = new Speck();
+
+      function getKeys() {
+        let keys =  document.getElementById('keys').value
+        .split(' ')
+        .map(key => parseInt(key));
+
+        // display generated round keys
+        getOutputEl().innerText = s._expandKey(keys).join(', ');
+
+        return keys;
+      }
+
+      function getTextEl() {
+        return document.getElementById('text');
+      }
+
+      function getOutputEl() {
+        return document.getElementById('output');
+      }
+
+      function encrypt() {
+        let rv = s.encryptAscii(getTextEl().value, getKeys());
+        console.log(rv);
+      }
+
+      function decrypt() {
+        let rv = s.decryptAscii(getTextEl().value, getKeys());
+        console.log(rv);
+        getTextEl().value = rv;
+      }
+
+      function encrypt() {
+        let rv = s.encryptAscii(getTextEl().value, getKeys());
+        console.log(rv);
+        getTextEl().value = rv;
+      }
+
+    </script>
+  </body>
+</html>
