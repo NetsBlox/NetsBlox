@@ -1,9 +1,12 @@
-describe('rpc-manager', function() {
-    var RPCManager = require('../../../../src/server/rpc/rpc-manager'),
-        MockResponse = require('../../../assets/mock-response'),
-        assert = require('assert'),
-        _ = require('lodash'),
-        Q = require('q');
+describe('services-worker', function() {
+    const utils = require('../../../assets/utils');
+    const Logger = utils.reqSrc('./logger');
+    const ServicesWorker = utils.reqSrc('./services/services-worker');
+    const Services = new ServicesWorker(new Logger('netsblox:test:services'));
+    const MockResponse = require('../../../assets/mock-response');
+    const assert = require('assert');
+    const _ = require('lodash');
+    const Q = require('q');
 
     before(() =>{
         RPCManager.loadRPCsFromFS()
@@ -108,16 +111,4 @@ describe('rpc-manager', function() {
 
     });
 
-    describe('handleRPCRequest', function() {
-        it('should return 404 if RPC not found (valid service)', async function() {
-            const {Dev} = RPCManager.rpcRegistry;
-            const response = new MockResponse();
-            const request = {query:{}, params:{}};
-            request.query.uuid = 'abc123';
-            request.query.projectId = 'projectabc123';
-
-            RPCManager.handleRPCRequest(Dev, request, response);
-            assert.equal(response.code, 404);
-        });
-    });
 });

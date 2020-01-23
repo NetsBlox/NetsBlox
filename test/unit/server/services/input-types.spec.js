@@ -1,5 +1,5 @@
 describe('RPC Input Types', function() {
-    const typesParser = require('../../../../src/server/rpc/input-types').parse;
+    const typesParser = require('../../../../src/server/services/input-types').parse;
     const assert = require('assert');
 
     describe('Any', function() {

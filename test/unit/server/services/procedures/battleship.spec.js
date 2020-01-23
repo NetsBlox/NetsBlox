@@ -1,6 +1,6 @@
 describe('Battleship Tests', function() {
     const utils = require('../../../../assets/utils');
-    var Battleship = utils.reqSrc('rpc/procedures/battleship/battleship'),
+    var Battleship = utils.reqSrc('services/procedures/battleship/battleship'),
         RPCMock = require('../../../../assets/mock-rpc'),
         battleship = new RPCMock(Battleship),
         assert = require('assert');

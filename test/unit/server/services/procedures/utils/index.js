@@ -1,4 +1,4 @@
-const utils = require('../../../../../../src/server/rpc/procedures/utils/index'),
+const utils = require('../../../../../../src/server/services/procedures/utils/index'),
     _ = require('lodash'),
     assert = require('assert');
 

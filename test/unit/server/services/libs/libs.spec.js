@@ -3,7 +3,7 @@ describe('rpc libs', function() {
     var fs = require('fs'),
         path = require('path'),
         PROJECT_ROOT = path.join(__dirname, '..', '..', '..', '..', '..'),
-        libPath = path.join(PROJECT_ROOT, 'src', 'server', 'rpc', 'libs');
+        libPath = path.join(PROJECT_ROOT, 'src', 'server', 'services', 'libs');
 
     // Read in the xml files and test each of them
     fs.readdirSync(libPath)

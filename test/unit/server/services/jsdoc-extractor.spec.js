@@ -2,7 +2,7 @@ describe('jsdoc-extractor', () => {
 
     const assert = require('assert'),
         utils = require('../../../assets/utils.js'),
-        jp = utils.reqSrc('rpc/jsdoc-extractor.js');
+        jp = utils.reqSrc('services/jsdoc-extractor.js');
 
 
     let comment = `
