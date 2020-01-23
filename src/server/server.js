@@ -33,6 +33,7 @@ const middleware = require('./routes/middleware');
 const Client = require('./client');
 const Messages = require('./services/messages');
 const assert = require('assert');
+const request = require('request');
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -48,16 +49,17 @@ var Server = function(opts) {
     NetworkTopology.init(this._logger, Client);
 };
 
-Server.prototype.configureRoutes = async function() {
+Server.prototype.configureRoutes = async function(servicesURL) {
     this.app.use(express.static(__dirname + '/../browser/'));
+
+    // Session & Cookie settings
+    this.app.use(cookieParser());
+
     this.app.use(bodyParser.urlencoded({
         limit: '50mb',
         extended: true
     }));
     this.app.use(bodyParser.json({limit: '50mb'}));
-
-    // Session & Cookie settings
-    this.app.use(cookieParser());
 
     // CORS
     this.app.use(function(req, res, next) {
@@ -71,6 +73,18 @@ Server.prototype.configureRoutes = async function() {
 
     // Add routes
     this.app.use('/api', this.createRouter());
+    if (servicesURL) {
+        this.app.use('/services', (req, res) => {
+            const url = servicesURL + req.originalUrl.replace('/services', '');
+            return request({
+                method: req.method,
+                uri: url,
+                body: req.body,
+                json: true,
+            }).pipe(res);
+        });
+    }
+
 
     // Add deployment state endpoint info
     const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
@@ -258,7 +272,7 @@ Server.prototype.start = async function() {
             console.warn('skipping database reset, test database should have the word test in the name.');
         }
     }
-    await this.configureRoutes();
+    await this.configureRoutes(this.opts.servicesURL);
     this._server = this.app.listen(this.opts.port);
     // eslint-disable-next-line no-console
     console.log(`listening on port ${this.opts.port}`);
