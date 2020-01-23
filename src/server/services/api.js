@@ -96,14 +96,11 @@ class ServicesAPI {
         });
 
         router.route('/:serviceName/:rpcName')
-            .all((req, res, next) => {
-                if (this.validateRPCRequest(req, res)) {
-                    next();
-                }
-            })
             .post((req, res) => {
-                const {serviceName, rpcName} = req.params;
-                return this.invokeRPC(serviceName, rpcName, req, res);
+                if (this.validateRPCRequest(req, res)) {
+                    const {serviceName, rpcName} = req.params;
+                    return this.invokeRPC(serviceName, rpcName, req, res);
+                }
             });
 
         return router;
