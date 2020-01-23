@@ -282,7 +282,7 @@ Server.prototype.start = async function() {
         NetworkTopology.onConnect(client);
     });
     const servicesApi = new ServicesPrivateAPI(this._logger);
-    servicesApi.listen('tcp://127.0.0.1:' + process.env.NETSBLOX_API_PORT);
+    servicesApi.listen('tcp://127.0.0.1:' + (process.env.NETSBLOX_API_PORT || '1357'));
 
     // Enable Vantage
     if (this.opts.vantage) {
