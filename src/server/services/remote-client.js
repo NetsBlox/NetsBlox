@@ -1,7 +1,7 @@
 const {SendMessage, SendMessageToRoom, SendMessageToRole} = require('./messages');
 const {Dealer} = require('zeromq');
 const sender = new Dealer();
-sender.connect('tcp://127.0.0.1:1235');
+sender.connect('tcp://127.0.0.1:' + process.env.NETSBLOX_API_PORT);
 
 class QueuedSender {
     constructor() {

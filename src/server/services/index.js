@@ -72,10 +72,11 @@ async function listen(port) {
     });
 
     app.listen(+port);
-    console.log('listening on port', port);
 }
 
 if (require.main === module) {
     listen(process.env.PORT || 6000);
 }
+
+module.exports = listen;
 

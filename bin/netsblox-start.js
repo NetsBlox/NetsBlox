@@ -1,16 +1,10 @@
 'use strict';
-var path = require('path');
-// eslint-disable-next-line no-unused-vars
-
+const path = require('path');
 require('dotenv').load({
     path: path.join(__dirname, '..', '.env'),
     silent: true
 });
 
-var express = require('express'),
-    app = express();
-
-const PORT = process.env.PORT || 8080;
 const VANTAGE_PORT = process.env.VANTAGE_PORT || 1234;
 const ENV = process.env.ENV;
 const isDevMode = ENV !== 'production';
@@ -20,13 +14,6 @@ if (ENV === 'production') require('heapdump'); // trigger a heapdump with `kill 
 
 if (isDevMode && !DEBUG) process.env.DEBUG = 'netsblox:*';
 
-app.use(express.static(__dirname + '/client/'));
-
-app.get('/', function(req, res) {
-    res.redirect('/snap.html');
-});
-
-
 function isVantageEnabled() {
     const VANTAGE_ENABLED = process.env.VANTAGE_ENABLED === 'true';
     if (ENV === 'production') return false;
@@ -35,14 +22,57 @@ function isVantageEnabled() {
     return isDevMode;
 }
 
-// Set the group manager
-var opts = {
-    port: PORT,
-    vantagePort: VANTAGE_PORT,
-    vantage: isVantageEnabled(),
-};
+const Command = require('commander').Command;
+const program = new Command();
+program
+    .option('-s, --services', 'Only start services server')
+    .option('-c, --core', 'Only start server providing core functionality')
+    .parse(process.argv);
 
-var Server = require('../src/server/server'),
-    server = new Server(opts);
+if (program.core && program.services) {
+    throw new Error('--core and --services options cannot be used together');
+}
 
-server.start();
+const startAll = !program.core && !program.services;
+const port = +(process.env.PORT || 8080);
+process.env.NETSBLOX_API_PORT = process.env.NETSBLOX_API_PORT || 1357;
+if (startAll) {
+    const {spawn} = require('child_process');
+    const servicesBin = path.join(__dirname, '..', 'src', 'server', 'services', 'index.js');
+    const servicesPort = port + 1;
+    process.env.PORT = servicesPort;
+    const opts = {env: process.env};
+    const services = spawn('node', [servicesBin], opts);
+    services.stdout.pipe(process.stdout);
+    services.stderr.pipe(process.stderr);
+    process.env.SERVICES_URL = 'http://localhost:' + servicesPort;
+}
+
+if (program.services) {
+    const startServices = require('../src/server/services');
+    const port = process.env.PORT || 8081;
+    startServices(port)
+        .then(() => {
+            console.log(`Services available at http://localhost:${port}.`);
+        })
+        .catch(err => {
+            console.error('Unable to start services:', err);
+        });
+} else {
+    const Server = require('../src/server/server');
+    const opts = {
+        port: port,
+        vantagePort: VANTAGE_PORT,
+        vantage: isVantageEnabled(),
+        servicesURL: process.env.SERVICES_URL,
+        useServiceProxy: isSetToTrue(process.env.PROXY_RPCS) || startAll
+    };
+
+    const server = new Server(opts);
+
+    server.start();
+}
+
+function isSetToTrue(envValue) {
+    return envValue && (envValue.toLowerCase() === 'true' || envValue === '1');
+}
