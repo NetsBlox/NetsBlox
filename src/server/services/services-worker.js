@@ -102,7 +102,6 @@ class ServicesWorker {
     }
 
     async loadRPCsFromDatabase() {
-        // TODO: Update
         await ServerStorage.onConnected;
         const DataServices = Storage.createCollection('netsblox:services:community');
         const serviceData = await DataServices.find({}).toArray();
@@ -168,7 +167,6 @@ class ServicesWorker {
         serviceDoc.description = service._docs.description;
         serviceDoc.categories = service._docs.categories;
         serviceDoc.isSupported = service.isSupported();
-        // TODO: Add old names?
         return serviceDoc;
     }
 
@@ -375,20 +373,3 @@ class ServicesWorker {
 }
 
 module.exports = ServicesWorker;
-
-if (require.main === module) {
-    runWorker();
-}
-
-async function runWorker() {
-    const {parentPort} = require('worker_threads');
-    const worker = new ServicesWorker(parentPort);
-
-    await ServerStorage.connect();
-    Storage.init(ServerStorage._logger, ServerStorage._db);
-    await worker.initialize();
-
-    parentPort.on('message', msg => {
-        console.log('WORKER RECEIVED:', msg);
-    });
-}

@@ -1,9 +1,5 @@
-//const path = require('path');
-//const {Worker} = require('worker_threads');
 const express = require('express');
-const Message = require('./messages');
 const Q = require('q');
-const assert = require('assert');
 const RemoteClient = require('./remote-client');
 const Services = require('./services-worker');
 const Logger = require('../logger');
@@ -15,16 +11,6 @@ class ServicesAPI {
 
         this.logger = new Logger('netsblox:services');
         this.services = new Services(this.logger);
-        // TODO: Remove this...
-        //this.services.on(Message.ServiceMetadata, message => {
-            //const isInitialLoad = !this.serviceMetadata;
-            //this.setServiceMetadata(message.metadata);
-            //this.serviceCompatibilityInfo = message.compatibility;
-            //if (isInitialLoad) {
-                //this.loading.resolve();
-            //}
-        //});
-        // TODO: Add handlers for sending messages, etc
     }
 
     async initialize() {
@@ -171,32 +157,5 @@ class ServicesAPI {
         return this.services.invoke(ctx, serviceName, rpcName, args);
     }
 }
-
-//class Services {
-    //constructor() {
-        //const filename = path.join(__dirname, 'services-worker.js');
-        //this.worker = new Worker(filename);
-        //this.messageHandlers = {};
-        //this.worker.on('message', data => {
-            //const message = Message.parse(data);
-            //const handlers = this.messageHandlers[data.type] || [];
-            //handlers.forEach(fn => fn(message));
-        //});
-    //}
-
-    //invoke() {
-        //this.worker.postMessage();
-    //}
-
-    //on(msgType, fn) {
-        //const typeName = msgType.name;
-        //assert(Message[typeName], 'Invalid Message Type: ' + typeName);
-        //if (!this.messageHandlers[typeName]) {
-            //this.messageHandlers[typeName] = [];
-        //}
-
-        //this.messageHandlers[typeName].push(fn);
-    //}
-//}
 
 module.exports = new ServicesAPI();
