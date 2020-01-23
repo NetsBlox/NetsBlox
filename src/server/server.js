@@ -15,7 +15,7 @@ var express = require('express'),
     DEFAULT_OPTIONS = {
         port: 8080,
         vantagePort: 1234,
-        vantage: isDevMode
+        vantage: isDevMode,
     },
 
     // Routes
@@ -114,6 +114,7 @@ Server.prototype.configureRoutes = async function(servicesURL) {
                     isDevMode: isDevMode,
                     googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
                     clientId: Utils.getNewClientId(),
+                    servicesUrl: this.getPublicServicesUrl(),
                     baseUrl,
                     url: url
                 };
@@ -255,10 +256,6 @@ Server.prototype.addScraperSettings = function(userAgent, metaInfo) {
 };
 
 Server.prototype.start = async function() {
-    var opts = {};
-
-    opts.msgFilter = msg => !msg.namespace;
-
     await Storage.connect();
     if (ENV === 'test') {
         const fixtures = require('../../test/fixtures');
@@ -329,6 +326,14 @@ function loadRoutes(logger) {
 
     return routes;
 }
+
+Server.prototype.getPublicServicesUrl = function() {
+    if (this.opts.useServiceProxy) {
+        return null;
+    }
+
+    return this.opts.servicesURL;
+};
 
 Server.prototype.createRouter = function() {
     var router = express.Router({mergeParams: true}),
