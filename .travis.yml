@@ -7,7 +7,7 @@ env:
 services:
   - mongodb
 node_js:
-  - '8.11.2'
+  - 12.14.1
 install:
   - npm install
 before_script:
