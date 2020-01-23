@@ -2,7 +2,7 @@ describe('publicroles', function() {
     const utils = require('../../../../assets/utils');
     const Projects = utils.reqSrc('storage/projects');
     const assert = require('assert');
-    const PublicRoles = utils.reqSrc('rpc/procedures/public-roles/public-roles');
+    const PublicRoles = utils.reqSrc('services/procedures/public-roles/public-roles');
     const RPCMock = require('../../../../assets/mock-rpc');
     const publicroles = new RPCMock(PublicRoles);
 

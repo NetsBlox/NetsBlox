@@ -1,6 +1,6 @@
 describe('service-creation', function() {
     const utils = require('../../../../assets/utils');
-    const ServiceCreation = utils.reqSrc('rpc/procedures/service-creation/service-creation');
+    const ServiceCreation = utils.reqSrc('services/procedures/service-creation/service-creation');
     const RPCMock = require('../../../../assets/mock-rpc');
     const service = new RPCMock(ServiceCreation);
     const assert = require('assert');

@@ -1,6 +1,6 @@
 describe('twentyquestions', function() {
     const utils = require('../../../../assets/utils');
-    var TwentyQuestions = utils.reqSrc('rpc/procedures/twenty-questions/twenty-questions'),
+    var TwentyQuestions = utils.reqSrc('services/procedures/twenty-questions/twenty-questions'),
         RPCMock = require('../../../../assets/mock-rpc'),
         twentyquestions = new RPCMock(TwentyQuestions),
         assert = require('assert');

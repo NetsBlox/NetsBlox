@@ -1,6 +1,6 @@
 describe('geolocation', function() {
     const utils = require('../../../../assets/utils');
-    var Geocoding = utils.reqSrc('rpc/procedures/geolocation/geolocation'),
+    var Geocoding = utils.reqSrc('services/procedures/geolocation/geolocation'),
         RPCMock = require('../../../../assets/mock-rpc'),
         assert = require('assert'),
         geocoding = new RPCMock(Geocoding);

@@ -1,7 +1,7 @@
 describe('Eclipse 2017', function() {
     const utils = require('../../../../assets/utils');
-    const Eclipse = utils.reqSrc('rpc/procedures/eclipse-2017/eclipse-2017'),
-        { cronString } = utils.reqSrc('rpc/procedures/eclipse-2017/utils'),
+    const Eclipse = utils.reqSrc('services/procedures/eclipse-2017/eclipse-2017'),
+        { cronString } = utils.reqSrc('services/procedures/eclipse-2017/utils'),
         assert = require('assert'),
         rpcStorage = utils.reqSrc('rpc/storage'),
         eclipsePath = utils.reqSrc('../../utils/rpc/eclipse-2017/eclipsePath');
