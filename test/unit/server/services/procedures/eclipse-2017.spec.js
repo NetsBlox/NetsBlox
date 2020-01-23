@@ -3,7 +3,7 @@ describe('Eclipse 2017', function() {
     const Eclipse = utils.reqSrc('services/procedures/eclipse-2017/eclipse-2017'),
         { cronString } = utils.reqSrc('services/procedures/eclipse-2017/utils'),
         assert = require('assert'),
-        rpcStorage = utils.reqSrc('rpc/storage'),
+        rpcStorage = utils.reqSrc('services/storage'),
         eclipsePath = utils.reqSrc('../../utils/rpc/eclipse-2017/eclipsePath');
 
     utils.verifyRPCInterfaces('Eclipse2017', [

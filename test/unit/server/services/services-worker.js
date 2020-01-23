@@ -1,4 +1,4 @@
-describe('services-worker', function() {
+describe.only('services-worker', function() {
     const utils = require('../../../assets/utils');
     const Logger = utils.reqSrc('./logger');
     const ServicesWorker = utils.reqSrc('./services/services-worker');
@@ -9,8 +9,8 @@ describe('services-worker', function() {
     const Q = require('q');
 
     before(() =>{
-        RPCManager.loadRPCsFromFS()
-            .forEach(service => RPCManager.registerRPC(service));
+        Services.loadRPCsFromFS()
+            .forEach(service => Services.registerRPC(service));
     });
 
     describe('sendRPCResult', function() {
@@ -25,19 +25,19 @@ describe('services-worker', function() {
                 name: 'brian',
                 test: true
             };
-            RPCManager.sendRPCResult(response, data);
+            Services.sendRPCResult(response, data);
             assert(Array.isArray(response.response));
             assert.deepEqual(data, _.fromPairs(response.response));
         });
 
         it('should not auto-send if returned "null"', function() {
-            RPCManager.sendRPCResult(response, null);
+            Services.sendRPCResult(response, null);
             assert(!response.headersSent);
         });
 
         it('should convert list of objects to Snap-friendly format', function() {
             const objs = [{name: 'brian'}, {name: 'hamid'}];
-            RPCManager.sendRPCResult(response, objs);
+            Services.sendRPCResult(response, objs);
 
             const sentData = response.response;
             assert.equal(sentData[0][0][0], 'name');
@@ -46,7 +46,7 @@ describe('services-worker', function() {
 
         it('should send promise result (if not sent)', function(done) {
             var result = Q(4);
-            RPCManager.sendRPCResult(response, result)
+            Services.sendRPCResult(response, result)
                 .then(() => {
                     assert(response.headersSent);
                     assert.equal(response.response, 4);
@@ -58,7 +58,7 @@ describe('services-worker', function() {
             var result = Q().then(() => response.send('hello'))
                 .then(() => 4);
 
-            RPCManager.sendRPCResult(response, result)
+            Services.sendRPCResult(response, result)
                 .then(() => {
                     assert(response.headersSent);
                     assert.equal(response.response, 'hello');
@@ -77,7 +77,7 @@ describe('services-worker', function() {
                 throw Error('test exception');
             });
 
-            RPCManager.sendRPCResult(response, result);
+            Services.sendRPCResult(response, result);
             response.status = function(code) {
                 assert.equal(code, 500);
                 done();
@@ -94,18 +94,18 @@ describe('services-worker', function() {
         };
 
         it('should be able to parse parameterized types', function() {
-            return RPCManager.parseArgValue(arg, '12')
+            return Services.parseArgValue(arg, '12')
                 .then(result => assert.equal(typeof result.value, 'number'));
         });
 
         it('should pass params to type parser', function() {
-            RPCManager.parseArgValue(arg, '22')
+            Services.parseArgValue(arg, '22')
                 .then(result => assert(!result.isValid));
         });
 
         it('should set optional args to undefined if unset', async function() {
             const arg = {optional: true};
-            const result = await RPCManager.parseArgValue(arg, '');
+            const result = await Services.parseArgValue(arg, '');
             assert.equal(result.value, undefined);
         });
 
