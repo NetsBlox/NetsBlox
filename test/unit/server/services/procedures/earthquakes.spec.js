@@ -35,9 +35,7 @@ describe('earthquakes', function() {
             const remainingMsgs = earthquakes._rpc._remainingMsgs;
 
             remainingMsgs[clientId] = [];
-            console.log(remainingMsgs);
             await earthquakes.stop();
-            console.log(remainingMsgs);
             assert(
                 !remainingMsgs[clientId],
                 `Did not remove message queue: ${typeof remainingMsgs[clientId]}`

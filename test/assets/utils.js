@@ -1,9 +1,7 @@
-/*global Client*/
 const  _ = require('lodash');
 const assert = require('assert');
 const fixtures = require('../fixtures');
 
-// load the *exact* XML_Serializer from Snap!... pretty hacky...
 const path = require('path');
 const fs = require('fs');
 const Q = require('q');

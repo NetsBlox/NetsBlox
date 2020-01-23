@@ -56,7 +56,7 @@ Earthquakes._sendNext = function(socket) {
  */
 Earthquakes.stop = function() {
     const {clientId} = this.caller;
-    delete Earthquakes._remainingMsgs[clientId];
+    delete this._remainingMsgs[clientId];
     return '';
 };
 

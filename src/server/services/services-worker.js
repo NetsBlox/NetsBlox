@@ -56,10 +56,9 @@ class ServicesWorker {
     }
 
     async loadRPCs() {
-        const DBServices = []; //await this.loadRPCsFromDatabase();
+        const DBServices = await this.loadRPCsFromDatabase();
         this.loadRPCsFromFS().concat(DBServices)
             .forEach(service => this.registerRPC(service));
-        //this.onServiceChange();
     }
 
     loadRPCsFromFS() {
