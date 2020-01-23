@@ -18,8 +18,7 @@ class ServicesAPI {
     }
 
     isServiceLoaded(name) {
-        const service = this.services.metadata[name];
-        return service && service.isSupported;
+        return this.services.isServiceLoaded(name);
     }
 
     getServices() {
@@ -75,7 +74,7 @@ class ServicesAPI {
 
         router.route('/').get((req, res) => {
             const metadata = Object.entries(this.services.metadata)
-                .filter(nameAndMetadata => nameAndMetadata[1].isSupported)
+                .filter(nameAndMetadata => this.isServiceLoaded(nameAndMetadata[0]))
                 .map(pair => {
                     const [name, metadata] = pair;
                     return {
@@ -88,30 +87,24 @@ class ServicesAPI {
 
         router.route('/:serviceName').get((req, res) => {
             const serviceName = this.getValidServiceName(req.params.serviceName);
-            const service = this.services.metadata[serviceName];
 
-            if (!service || !service.isSupported) {
+            if (!this.isServiceLoaded(serviceName)) {
                 return res.status(404).send(`Service "${serviceName}" is not available.`);
             }
 
             return res.json(this.services.metadata[serviceName]);
         });
 
-        router.route('/:serviceName/:rpcName').post((req, res) => {
-            const {serviceName, rpcName} = req.params;
-            const service = this.getServiceMetadata(serviceName);
-
-            if (!service || !service.isSupported) {
-                return res.status(404).send(`Service "${serviceName}" is not available.`);
-            }
-
-            if (!this.exists(serviceName, rpcName)) {
-                this.logger.log(`Invalid RPC: ${serviceName}.${rpcName}`);
-                return res.status(404).send('Invalid RPC');
-            }
-
-            return this.handleRPCRequest(serviceName, rpcName, req, res);
-        });
+        router.route('/:serviceName/:rpcName')
+            .all((req, res, next) => {
+                if (this.validateRPCRequest(req, res)) {
+                    next();
+                }
+            })
+            .post((req, res) => {
+                const {serviceName, rpcName} = req.params;
+                return this.invokeRPC(serviceName, rpcName, req, res);
+            });
 
         return router;
     }
@@ -126,13 +119,25 @@ class ServicesAPI {
         return service.rpcs[rpcName].args.map(arg => arg.name);
     }
 
-    handleRPCRequest(serviceName, rpcName, req, res) {
-        const {projectId, roleId, uuid} = req.query;
+    validateRPCRequest(req, res) {
+        const {serviceName, rpcName} = req.params;
+        const {projectId, uuid} = req.query;
 
         if(!uuid || !projectId) {
-            return res.status(400).send('Project ID and client ID are required.');
+            res.status(400).send('Project ID and client ID are required.');
+        } else if (!this.isServiceLoaded(serviceName)) {
+            res.status(404).send(`Service "${serviceName}" is not available.`);
+        } else if (!this.exists(serviceName, rpcName)) {
+            res.status(404).send(`RPC "${rpcName}" is not available.`);
+        } else {
+            return true;
         }
 
+        return false;
+    }
+
+    invokeRPC(serviceName, rpcName, req, res) {
+        const {projectId, roleId, uuid} = req.query;
         const expectedArgs = this.getArgumentNames(serviceName, rpcName);
         this.logger.info(`Received request to ${serviceName} for ${rpcName} (from ${uuid})`);
 

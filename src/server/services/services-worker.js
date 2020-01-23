@@ -166,7 +166,6 @@ class ServicesWorker {
 
         serviceDoc.description = service._docs.description;
         serviceDoc.categories = service._docs.categories;
-        serviceDoc.isSupported = service.isSupported();
         return serviceDoc;
     }
 
