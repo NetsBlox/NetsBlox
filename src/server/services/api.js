@@ -26,13 +26,15 @@ class ServicesAPI {
     }
 
     getServiceNameFromDeprecated(name) {
-        return Object.entries(this.services.compatibility)
+        const deprecatedService = Object.entries(this.services.compatibility)
             .find(pair => {
                 const [validName, info] = pair;
                 if (info.path && info.path.toLowerCase() === name) {
                     return validName;
                 }
-            }) || [null];
+            });
+
+        return deprecatedService ? deprecatedService[0] : null;
     }
 
     getValidServiceName(name) {
@@ -97,8 +99,9 @@ class ServicesAPI {
 
         router.route('/:serviceName/:rpcName')
             .post((req, res) => {
-                if (this.validateRPCRequest(req, res)) {
-                    const {serviceName, rpcName} = req.params;
+                const serviceName = this.getValidServiceName(req.params.serviceName);
+                if (this.validateRPCRequest(serviceName, req, res)) {
+                    const {rpcName} = req.params;
                     return this.invokeRPC(serviceName, rpcName, req, res);
                 }
             });
@@ -116,8 +119,8 @@ class ServicesAPI {
         return service.rpcs[rpcName].args.map(arg => arg.name);
     }
 
-    validateRPCRequest(req, res) {
-        const {serviceName, rpcName} = req.params;
+    validateRPCRequest(serviceName, req, res) {
+        const {rpcName} = req.params;
         const {projectId, uuid} = req.query;
 
         if(!uuid || !projectId) {
