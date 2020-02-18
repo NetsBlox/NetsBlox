@@ -3,6 +3,7 @@ const Q = require('q');
 const RemoteClient = require('./remote-client');
 const Services = require('./services-worker');
 const Logger = require('../logger');
+const ApiKeys = require('./api-keys');
 
 class ServicesAPI {
     constructor() {
@@ -136,30 +137,40 @@ class ServicesAPI {
         return false;
     }
 
-    invokeRPC(serviceName, rpcName, req, res) {
+    async invokeRPC(serviceName, rpcName, req, res) {
         const {projectId, roleId, uuid} = req.query;
-        const expectedArgs = this.getArgumentNames(serviceName, rpcName);
+        const {username} = req.session;
         this.logger.info(`Received request to ${serviceName} for ${rpcName} (from ${uuid})`);
 
         const ctx = {};
         ctx.response = res;
         ctx.request = req;
         ctx.caller = {
-            username: req.session.username,
+            username,
             projectId,
             roleId,
             clientId: uuid
         };
+        const apiKey = this.services.getApiKey(serviceName);
+        if (apiKey) {
+            console.log('api key is', apiKey)
+            ctx.apiKey = await ApiKeys.get(username, apiKey);
+            console.log('api key is', ctx.apiKey)
+        }
         ctx.socket = new RemoteClient(projectId, roleId, uuid);
 
-        // Get the arguments
+        const args = this.getArguments(serviceName, rpcName, req);
+
+        return this.services.invoke(ctx, serviceName, rpcName, args);
+    }
+
+    getArguments(serviceName, rpcName, req) {
+        const expectedArgs = this.getArgumentNames(serviceName, rpcName);
         const oldFieldNameFor = this.getDeprecatedArgName(serviceName, rpcName) || {};
-        const args = expectedArgs.map(argName => {
+        return expectedArgs.map(argName => {
             const oldName = oldFieldNameFor[argName];
             return req.body.hasOwnProperty(argName) ? req.body[argName] : req.body[oldName];
         });
-
-        return this.services.invoke(ctx, serviceName, rpcName, args);
     }
 }
 

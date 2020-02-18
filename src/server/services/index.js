@@ -5,6 +5,7 @@ const express = require('express');
 const middleware = require('../routes/middleware');
 const Storage = require('../storage/storage');
 const ServiceStorage = require('./storage');
+const ApiKeys = require('./api-keys');
 const Logger = require('../logger');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
@@ -35,6 +36,7 @@ async function listen(port) {
 
     await Storage.connect();
     await ServiceStorage.init(logger, Storage._db);
+    await ApiKeys.init(Storage._db, logger);
     middleware.init({_logger: logger});
     await ServicesAPI.initialize();
     app.use(

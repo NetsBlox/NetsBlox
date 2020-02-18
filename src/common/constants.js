@@ -8,7 +8,8 @@ module.exports = {
             'serviceName',
             'isSupported',
             'onDelete',
-            'COMPATIBILITY'
+            'COMPATIBILITY',
+            'apiKey'
         ]
     }
 };
