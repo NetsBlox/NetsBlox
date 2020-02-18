@@ -5,6 +5,7 @@ const logoPath = path.join(__dirname, '..', '..', '..', '..', '..', 'netsblox_lo
 const buffer = fs.readFileSync(logoPath);
 const utils = require('../utils');
 const logger = require('../utils/logger')('dev');
+const _ = require('lodash');
 
 const dev = {};
 dev.isSupported = () => process.env.ENV !== 'production';
@@ -55,6 +56,13 @@ dev.detectAbort = function() {
 
     setTimeout(() => aborted || deferred.resolve('not aborted'), 3000);
     return deferred.promise;
+};
+
+/**
+ * Return the caller info as detected by the server.
+ */
+dev.callerInfo = function() {
+    return _.omit(this.caller, ['response', 'request', 'socket', 'apiKey']);
 };
 
 module.exports = dev;
