@@ -31,4 +31,7 @@ program
     .command('groups', 'manage user groups')
     .command('users', 'list the usernames')
     .command('user [sessionId]', 'display user information')
+    .command('keys', 'list all API keys')
+    .command('add-key <username> <key> <value>', 'set an API key for a given user')
+    .command('del-key <username> <key>', 'delete an API key for a given user')
     .parse(process.argv);

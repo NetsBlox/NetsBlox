@@ -348,6 +348,11 @@ class ServicesWorker {
         return this.rpcRegistry[serviceName] && this.rpcRegistry[serviceName].isSupported();
     }
 
+    getApiKey(serviceName) {
+        const service = this.getServiceInstance(serviceName);
+        return service.apiKey;
+    }
+
     checkStaleServices() {
         const minutes = 60*1000;
         this.removeStaleRPCInstances();
