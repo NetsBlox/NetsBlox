@@ -80,6 +80,7 @@ Server.prototype.configureRoutes = async function(servicesURL) {
                 method: req.method,
                 uri: url,
                 body: req.body,
+                headers: req.headers,
                 json: true,
             }).pipe(res);
         });
