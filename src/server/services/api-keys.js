@@ -7,9 +7,7 @@ class APIKeys {
 
     async get(username, apiKey) {
         const {name} = apiKey;
-        console.log('getting key:', {name, username});
         const userKey = await this.collection.findOne({name, username});
-        console.log('found key:', userKey);
         if (userKey) {
             return apiKey.withValue(userKey.value);
         }

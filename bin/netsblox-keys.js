@@ -10,7 +10,9 @@ async function listKeys() {
     ApiKeys.init(Storage._db);
     const keys = await ApiKeys.all();
     keys.forEach(key => {
+        /* esline-disable no-console */
         console.log([key.username, key.name, key.value].join('\t'));
+        /* esline-enable no-console */
     });
 }
 

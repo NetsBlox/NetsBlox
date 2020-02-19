@@ -11,7 +11,9 @@ const { runWithStorage } = require('./utils');
 program.arguments('<username> <key>');
 program.parse(process.argv);
 if (program.args.length !== 2) {
+    /* esline-disable no-console */
     console.log('usage: netsblox del-key <username> <key>');
+    /* esline-enable no-console */
     process.exit(1);
 }
 

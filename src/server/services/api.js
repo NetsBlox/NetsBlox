@@ -153,9 +153,7 @@ class ServicesAPI {
         };
         const apiKey = this.services.getApiKey(serviceName);
         if (apiKey) {
-            console.log('api key is', apiKey)
             ctx.apiKey = await ApiKeys.get(username, apiKey);
-            console.log('api key is', ctx.apiKey)
         }
         ctx.socket = new RemoteClient(projectId, roleId, uuid);
 
