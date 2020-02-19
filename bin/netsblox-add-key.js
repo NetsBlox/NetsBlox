@@ -11,9 +11,9 @@ const { runWithStorage } = require('./utils');
 program.arguments('<username> <key> <value>');
 program.parse(process.argv);
 if (program.args.length !== 3) {
-    /* esline-disable no-console */
+    /* eslint-disable no-console */
     console.log('usage: netsblox add-key <username> <key> <value>');
-    /* esline-enable no-console */
+    /* eslint-enable no-console */
     process.exit(1);
 }
 
