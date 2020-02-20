@@ -81,12 +81,7 @@ AirConsumer.qualityIndexByZipCode = function(zipCode) {
     logger.trace(`Requesting air quality at ${zipCode}`);
 
     return this._sendAnswer({queryString}, '.AQI')
-        .catch(err => {
-
-            logger.error('Could not get air quality index: ', err);
-
-            throw err;
-        }).then((r) => (r.length > 0? r[0]: -1));
+        .then((r) => (r.length > 0? r[0]: -1));
 };
 
 /**

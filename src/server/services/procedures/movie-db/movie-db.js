@@ -8,19 +8,28 @@
 
 'use strict';
 
-const ApiClient = require('moviedb');
+const Q = require('q');
+const MovieDBClient = require('moviedb');
 const ApiConsumer = require('../utils/api-consumer');
 
 // Retrieving static images
 const baseUrl = 'https://image.tmdb.org/t/p/w500';
 const MovieDB = new ApiConsumer('MovieDB', baseUrl);
-const {TheMovieDBKey} = require('../utils/api-key');
+const {TheMovieDBKey, InvalidKeyError} = require('../utils/api-key');
 ApiConsumer.setRequiredApiKey(MovieDB, TheMovieDBKey);
-MovieDB._getApiClient = function() {
-    return new ApiClient(this.apiKey.value);
+MovieDB._callApiMethod = async function(method, query) {
+    const client = new MovieDBClient(this.apiKey.value);
+    try {
+        return await Q.ninvoke(client, method, query);
+    } catch (err) {
+        if (err.message.includes('Unauthorized')) {
+            throw new InvalidKeyError(this.apiKey);
+        }
+        throw err;
+    }
 };
 
-var movieInfo = function(id, field) {
+var movieInfo = async function(id, field) {
     var rsp = this.response;
 
     if(!field) {
@@ -29,31 +38,24 @@ var movieInfo = function(id, field) {
         rsp.status(400).send('Error: movie ID not specified');
     } else {
         id = +id; // convert it to a number
-        this._getApiClient().movieInfo({ id: id }, (err,res) => {
-            if(!err) {
-                if(res[field]) {
-                    // treat list of objects in a special way
-                    if(field == 'genres'
-                        || field == 'production_companies'
-                        || field == 'production_countries'
-                        || field == 'spoken_languages' ) {
-                        rsp.status(200).send(res[field].map(g => g.name));
-                    } else {
-                        rsp.status(200).send(''+res[field]);
-                    }
-                } else {
-                    rsp.status(400).send('Error: requested field name does not exist');
-                }
+        const res = await this._callApiMethod('movieInfo', { id: id });
+        if(res[field]) {
+            // treat list of objects in a special way
+            if(field == 'genres'
+                || field == 'production_companies'
+                || field == 'production_countries'
+                || field == 'spoken_languages' ) {
+                rsp.status(200).send(res[field].map(g => g.name));
             } else {
-                rsp.status(400).send(`${err}`);
+                rsp.status(200).send(''+res[field]);
             }
-        });
+        } else {
+            rsp.status(400).send('Error: requested field name does not exist');
+        }
     }
-    // explicitly state that we're async
-    return null;
 };
 
-var personInfo = function(id, field) {
+var personInfo = async function(id, field) {
     var rsp = this.response;
 
     if(!field) {
@@ -63,23 +65,16 @@ var personInfo = function(id, field) {
     } else {
         id = +id; // convert it to a number
 
-        this._getApiClient().personInfo({ id: id }, (err,res) => {
-            if(!err) {
-                if(res[field]) {
-                    rsp.status(200).send(''+res[field]);
-                } else {
-                    rsp.status(400).send('Error: requested field name does not exist');
-                }
-            } else {
-                rsp.status(400).send(`${err}`);
-            }
-        });
+        const res = await this._callApiMethod('personInfo', { id: id });
+        if(res[field]) {
+            rsp.status(200).send(''+res[field]);
+        } else {
+            rsp.status(400).send('Error: requested field name does not exist');
+        }
     }
-    // explicitly state that we're async
-    return null;
 };
 
-var movieCredits = function(id, field, subfield) {
+var movieCredits = async function(id, field, subfield) {
     var rsp = this.response;
 
     if(!field) {
@@ -89,38 +84,31 @@ var movieCredits = function(id, field, subfield) {
     } else {
         id = +id; // convert it to a number
 
-        this._getApiClient().movieCredits({ id: id }, (err,res) => {
-            if(!err) {
-                if(res[field]) {
-                    // treat cast and crew in a special way
-                    if(field == 'cast' || field == 'crew') {
-                        if(!subfield || subfield == 'id') {
-                            rsp.status(200).send(res[field].map(obj => obj.id));
-                        } else {
-                            if(res[field].length == 0) {
-                                rsp.status(200).send([]);
-                            } else if(!res[field][0][subfield]) {
-                                rsp.status(400).send('Error: requested subfield name does not exist');
-                            } else {
-                                rsp.status(200).send(res[field].map(obj => obj[subfield]));
-                            }
-                        }
-                    } else {
-                        rsp.status(200).send(''+res[field]);
-                    }
+        const res = await this._callApiMethod('movieCredits', { id: id });
+        if(res[field]) {
+            // treat cast and crew in a special way
+            if(field == 'cast' || field == 'crew') {
+                if(!subfield || subfield == 'id') {
+                    rsp.status(200).send(res[field].map(obj => obj.id));
                 } else {
-                    rsp.status(400).send('Error: requested field name does not exist');
+                    if(res[field].length == 0) {
+                        rsp.status(200).send([]);
+                    } else if(!res[field][0][subfield]) {
+                        rsp.status(400).send('Error: requested subfield name does not exist');
+                    } else {
+                        rsp.status(200).send(res[field].map(obj => obj[subfield]));
+                    }
                 }
             } else {
-                rsp.status(400).send(`${err}`);
+                rsp.status(200).send(''+res[field]);
             }
-        });
+        } else {
+            rsp.status(400).send('Error: requested field name does not exist');
+        }
     }
-    // explicitly state that we're async
-    return null;
 };
 
-var personImages = function(id, field, subfield) {
+var personImages = async function(id, field, subfield) {
     var rsp = this.response;
 
     if(!field) {
@@ -130,38 +118,31 @@ var personImages = function(id, field, subfield) {
     } else {
         id = +id; // convert it to a number
 
-        this._getApiClient().personImages({ id: id }, (err,res) => {
-            if(!err) {
-                if(res[field]) {
-                    // treat profiles in a special way
-                    if(field == 'profiles') {
-                        if(!subfield || subfield == 'file_path') {
-                            rsp.status(200).send(res[field].map(obj => obj.file_path));
-                        } else {
-                            if(res[field].length == 0) {
-                                rsp.status(200).send([]);
-                            } else if(!res[field][0][subfield]) {
-                                rsp.status(400).send('Error: requested subfield name does not exist');
-                            } else {
-                                rsp.status(200).send(res[field].map(obj => obj[subfield]));
-                            }
-                        }
-                    } else {
-                        rsp.status(200).send(''+res[field]);
-                    }
+        const res = await this._callApiMethod('personImages', { id: id });
+        if(res[field]) {
+            // treat profiles in a special way
+            if(field == 'profiles') {
+                if(!subfield || subfield == 'file_path') {
+                    rsp.status(200).send(res[field].map(obj => obj.file_path));
                 } else {
-                    rsp.status(400).send('Error: requested field name does not exist');
+                    if(res[field].length == 0) {
+                        rsp.status(200).send([]);
+                    } else if(!res[field][0][subfield]) {
+                        rsp.status(400).send('Error: requested subfield name does not exist');
+                    } else {
+                        rsp.status(200).send(res[field].map(obj => obj[subfield]));
+                    }
                 }
             } else {
-                rsp.status(400).send(`${err}`);
+                rsp.status(200).send(''+res[field]);
             }
-        });
+        } else {
+            rsp.status(400).send('Error: requested field name does not exist');
+        }
     }
-    // explicitly state that we're async
-    return null;
 };
 
-var personCredits = function(id, field, subfield) {
+var personCredits = async function(id, field, subfield) {
     var rsp = this.response;
 
     if(!field) {
@@ -171,73 +152,46 @@ var personCredits = function(id, field, subfield) {
     } else {
         id = +id; // convert it to a number
 
-        this._getApiClient().personMovieCredits({ id: id }, (err,res) => {
-            if(!err) {
-                if(res[field]) {
-                    // treat cast and crew in a special way
-                    if(field == 'cast' || field == 'crew') {
-                        if(!subfield || subfield == 'id') {
-                            rsp.status(200).send(res[field].map(obj => obj.id));
-                        } else {
-                            if(res[field].length == 0) {
-                                rsp.status(200).send([]);
-                            } else if(!res[field][0][subfield]) {
-                                rsp.status(400).send('Error: requested subfield name does not exist');
-                            } else {
-                                rsp.status(200).send(res[field].map(obj => obj[subfield]));
-                            }
-                        }
-                    } else {
-                        rsp.status(200).send(''+res[field]);
-                    }
+        const res = await this._callApiMethod('personMovieCredits', { id: id });
+        if(res[field]) {
+            // treat cast and crew in a special way
+            if(field == 'cast' || field == 'crew') {
+                if(!subfield || subfield == 'id') {
+                    rsp.status(200).send(res[field].map(obj => obj.id));
                 } else {
-                    rsp.status(400).send('Error: requested field name does not exist');
+                    if(res[field].length == 0) {
+                        rsp.status(200).send([]);
+                    } else if(!res[field][0][subfield]) {
+                        rsp.status(400).send('Error: requested subfield name does not exist');
+                    } else {
+                        rsp.status(200).send(res[field].map(obj => obj[subfield]));
+                    }
                 }
             } else {
-                rsp.status(400).send(`${err}`);
+                rsp.status(200).send(''+res[field]);
             }
-        });
+        } else {
+            rsp.status(400).send('Error: requested field name does not exist');
+        }
     }
-    // explicitly state that we're async
-    return null;
 };
-
 
 /**
  * Find information about a movie
  * @param {String} title Title of movie
  */
-MovieDB.searchMovie = function(title) {
-    var rsp = this.response;
-
-    this._getApiClient().searchMovie({ query: title }, (err,res) => {
-        if(!err) {
-            rsp.send(res.results.map(e=>e.id));
-        } else {
-            rsp.send(`${err}`);
-        }
-    });
-
-    return null;
+MovieDB.searchMovie = async function(title) {
+    const res = this._callApiMethod('searchMovie', { query: title });
+    return res.results.map(e => e.id);
 };
 
 /**
  * Find information about a person
  * @param {String} name Name of person to search for
  */
-MovieDB.searchPerson = function(name) {
-    var rsp = this.response;
-
-    this._getApiClient().searchPerson({ query: name }, (err,res) => {
-        if(!err) {
-            rsp.status(200).send(res.results.map(e=>e.id));
-        } else {
-            rsp.status(400).send(`${err}`);
-        }
-    });
-
-    // explicitly state that we're async
-    return null;
+MovieDB.searchPerson = async function(name) {
+    const res = await this._callApiMethod('searchPerson', { query: name });
+    return res.results.map(e => e.id);
 };
 
 MovieDB.movieBackdropPath = function(id) { return movieInfo.call(this, id, 'backdrop_path'); };

@@ -6,8 +6,9 @@
 
 'use strict';
 
+const Q = require('q');
 const logger = require('../utils/logger')('traffic');
-const {BingMapsKey} = require('../utils/api-key');
+const {BingMapsKey, InvalidKeyError} = require('../utils/api-key');
 const utils = require('../utils');
 const request = require('request');
 const baseUrl = 'http://dev.virtualearth.net/REST/v1/Traffic/Incidents/';
@@ -38,33 +39,36 @@ var sendNext = function(socket) {
 const BingTraffic = {};
 utils.setRequiredApiKey(BingTraffic, BingMapsKey);
 BingTraffic.search = function(westLongitude, northLatitude, eastLongitude, southLatitude) {
-
-    // for bounding box
-    var response = this.response,
-        url = baseUrl + southLatitude + ',' + westLongitude + ',' + northLatitude +
-            ',' + eastLongitude + '?key=' + this.apiKey.value;
+    const boundingBox = [
+        southLatitude,
+        westLongitude,
+        northLatitude,
+        eastLongitude
+    ];
+    const url = baseUrl + boundingBox.join(',') + '?key=' + this.apiKey.value;
+    const deferred = Q.defer();
 
     logger.trace(`Requesting traffic accidents in ${westLongitude},${northLatitude},${eastLongitude},${southLatitude}`);
     request(url, (err, res, body) => {
 
         if (err) {
-            logger.trace('Error:' + err);
-            return response.send('Could not access 3rd party API');
+            logger.warn(`Request failed: ${err.message}`);
+            return deferred.reject(new Error(`Could not access API: ${err.message}`));
         }
 
         try {
             body = JSON.parse(body);
         } catch(e) {
-            logger.trace('Non-JSON data...');
-            return response.send('Bad API Result: ' + body);
+            throw new Error('Invalid API response: ' + body);
         }
 
         if (body.statusCode == 400) {
-            logger.trace('Invalid parameters...');
-            return response.send('The area is too big! Try zooming in more.');
+            return deferred.reject(new Error('The area is too big! Try zooming in more.'));
+        } else if (body.statusCode === 401) {
+            return deferred.reject(new InvalidKeyError(this.apiKey));
         }
 
-        var type = ['Accident', 'Congestion', 'Disabled Vehicle', 'Mass Transit', 'Miscellaneous',
+        const type = ['Accident', 'Congestion', 'Disabled Vehicle', 'Mass Transit', 'Miscellaneous',
             'Other', 'Planned Event', 'Road Hazard', 'Construction', 'Alert', 'Weather'];
 
         // build the list of traffic incidents
@@ -83,9 +87,10 @@ BingTraffic.search = function(westLongitude, northLatitude, eastLongitude, south
             pendingEventsFor[this.caller.clientId] = results;
         }
         sendNext(this.socket);
-        response.sendStatus(200);
+        this.response.sendStatus(200);
+        deferred.resolve();
     });
-    return null;
+    return deferred.promise;
 };
 
 BingTraffic.stop = function() {

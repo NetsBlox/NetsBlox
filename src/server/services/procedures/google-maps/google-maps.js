@@ -146,9 +146,7 @@ GoogleMaps._getMap = async function(latitude, longitude, width, height, zoom, ma
  */
 GoogleMaps.getMap = function(latitude, longitude, width, height, zoom){
 
-    this._getMap(latitude, longitude, width, height, zoom, 'roadmap');
-
-    return null;
+    return this._getMap(latitude, longitude, width, height, zoom, 'roadmap');
 };
 
 /**
@@ -162,9 +160,7 @@ GoogleMaps.getMap = function(latitude, longitude, width, height, zoom){
  */
 GoogleMaps.getSatelliteMap = function(latitude, longitude, width, height, zoom){
 
-    this._getMap(latitude, longitude, width, height, zoom, 'satellite');
-
-    return null;
+    return this._getMap(latitude, longitude, width, height, zoom, 'satellite');
 };
 
 /**
@@ -178,9 +174,7 @@ GoogleMaps.getSatelliteMap = function(latitude, longitude, width, height, zoom){
  */
 GoogleMaps.getTerrainMap = function(latitude, longitude, width, height, zoom){
 
-    this._getMap(latitude, longitude, width, height, zoom, 'terrain');
-
-    return null;
+    return this._getMap(latitude, longitude, width, height, zoom, 'terrain');
 };
 
 /**
