@@ -5,7 +5,10 @@
  * Terms of service: https://developers.google.com/maps/terms
  * @service
  */
+const {GoogleMapsKey} = require('../utils/api-key');
+const utils = require('../utils');
 const GeoLocationRPC = {};
+utils.setRequiredAPIKey(GeoLocationRPC, GoogleMapsKey);
 const logger = require('../utils/logger')('geolocation');
 
 const CacheManager = require('cache-manager');
@@ -168,7 +171,7 @@ GeoLocationRPC.nearbySearch = function (latitude, longitude, keyword, radius) {
             location: latitude + ',' + longitude,
             radius: radius,
             // rankby: 'distance',
-            key: GEOCODER_API
+            key: this.apiKey.value
         },
         json: true
     };
@@ -200,14 +203,5 @@ function showError(err, response) {
     // if we can't answer their question return snap null
     response.send('null');
 }
-
-GeoLocationRPC.isSupported = function() {
-    if(!process.env.GOOGLE_GEOCODING_API){
-        /* eslint-disable no-console*/
-        console.error('GOOGLE_GEOCODING_API is missing.');
-        /* eslint-enable no-console*/
-    }
-    return !!process.env.GOOGLE_GEOCODING_API;
-};
 
 module.exports = GeoLocationRPC;

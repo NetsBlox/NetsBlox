@@ -7,7 +7,8 @@
 'use strict';
 
 const logger = require('../utils/logger')('traffic');
-const API_KEY = process.env.BING_TRAFFIC_KEY;
+const {BingMapsKey} = require('../utils/api-key');
+const utils = require('../utils');
 const request = require('request');
 const baseUrl = 'http://dev.virtualearth.net/REST/v1/Traffic/Incidents/';
 let pendingEventsFor = {};
@@ -35,13 +36,13 @@ var sendNext = function(socket) {
 };
 
 const BingTraffic = {};
-
+utils.setRequiredAPIKey(BingTraffic, BingMapsKey);
 BingTraffic.search = function(westLongitude, northLatitude, eastLongitude, southLatitude) {
 
     // for bounding box
     var response = this.response,
         url = baseUrl + southLatitude + ',' + westLongitude + ',' + northLatitude +
-            ',' + eastLongitude + '?key=' + API_KEY;
+            ',' + eastLongitude + '?key=' + this.apiKey.value;
 
     logger.trace(`Requesting traffic accidents in ${westLongitude},${northLatitude},${eastLongitude},${southLatitude}`);
     request(url, (err, res, body) => {
@@ -99,13 +100,6 @@ BingTraffic.COMPATIBILITY = {
         eastLongitude: 'eastLng',
         westLongitude: 'westLng'
     }
-};
-
-BingTraffic.isSupported = function() {
-    if (!API_KEY) {
-        logger.trace('Env variable BING_TRAFFIC_KEY is not set thus the traffic service is disabled.');
-    }
-    return !!API_KEY;
 };
 
 module.exports = BingTraffic;
