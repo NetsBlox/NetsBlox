@@ -10,7 +10,7 @@
 const {AzureTranslationKey} = require('../utils/api-key');
 const ApiConsumer = require('../utils/api-consumer');
 const TranslationConsumer = new ApiConsumer('Translation', 'https://api.cognitive.microsofttranslator.com/',{cache: {ttl: 12 * 60 * 60}});
-ApiConsumer.setRequiredAPIKey(TranslationConsumer, AzureTranslationKey);
+ApiConsumer.setRequiredApiKey(TranslationConsumer, AzureTranslationKey);
 
 /**
  * Generates a GUID-like string

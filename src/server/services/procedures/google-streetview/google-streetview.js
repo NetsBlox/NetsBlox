@@ -10,7 +10,7 @@
 const {GoogleMapsKey} = require('../utils/api-key');
 const ApiConsumer = require('../utils/api-consumer');
 const GoogleStreetView = new ApiConsumer('GoogleStreetView', 'https://maps.googleapis.com/maps/api/streetview',{cache: {ttl: 7*24*60*60}});
-ApiConsumer.setRequiredAPIKey(GoogleStreetView, GoogleMapsKey);
+ApiConsumer.setRequiredApiKey(GoogleStreetView, GoogleMapsKey);
 
 /**
  * Get Street View image of a location using coordinates

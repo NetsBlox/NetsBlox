@@ -225,8 +225,8 @@ class ApiConsumer extends NBService {
             });
     }
 
-    static setRequiredAPIKey(service, apiKey) {
-        utils.setRequiredAPIKey(service, apiKey);
+    static setRequiredApiKey(service, apiKey) {
+        utils.setRequiredApiKey(service, apiKey);
     }
 }
 

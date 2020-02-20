@@ -11,7 +11,7 @@
 const ApiConsumer = require('../utils/api-consumer');
 const {ParallelDotsKey} = require('../utils/api-key');
 const ParallelDots = new ApiConsumer('ParallelDots', 'https://apis.paralleldots.com/v4',{cache: {ttl: 5*60}});
-ApiConsumer.setRequiredAPIKey(ParallelDots, ParallelDotsKey);
+ApiConsumer.setRequiredApiKey(ParallelDots, ParallelDotsKey);
 
 const toLowerCaseKeys = object => {
     const result = {};

@@ -104,7 +104,7 @@ const isValidServiceName = name => {
     return /^[a-z0-9-]+$/i.test(name);
 };
 
-const setRequiredAPIKey = (service, apiKey) => {
+const setRequiredApiKey = (service, apiKey) => {
     service.apiKey = apiKey;
     service.isSupported = function() {
         if(!this.apiKey.value){
@@ -125,5 +125,5 @@ module.exports = {
     collectStream,
     jsonToSnapList,
     isValidServiceName,
-    setRequiredAPIKey,
+    setRequiredApiKey,
 };

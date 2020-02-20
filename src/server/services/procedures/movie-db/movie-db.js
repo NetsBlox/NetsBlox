@@ -15,7 +15,7 @@ const ApiConsumer = require('../utils/api-consumer');
 const baseUrl = 'https://image.tmdb.org/t/p/w500';
 const MovieDB = new ApiConsumer('MovieDB', baseUrl);
 const {TheMovieDBKey} = require('../utils/api-key');
-ApiConsumer.setRequiredAPIKey(MovieDB, TheMovieDBKey);
+ApiConsumer.setRequiredApiKey(MovieDB, TheMovieDBKey);
 MovieDB._getApiClient = function() {
     return new ApiClient(this.apiKey.value);
 };

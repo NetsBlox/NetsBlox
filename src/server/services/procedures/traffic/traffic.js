@@ -36,7 +36,7 @@ var sendNext = function(socket) {
 };
 
 const BingTraffic = {};
-utils.setRequiredAPIKey(BingTraffic, BingMapsKey);
+utils.setRequiredApiKey(BingTraffic, BingMapsKey);
 BingTraffic.search = function(westLongitude, northLatitude, eastLongitude, southLatitude) {
 
     // for bounding box

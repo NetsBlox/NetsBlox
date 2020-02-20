@@ -7,7 +7,7 @@
 const ApiConsumer = require('../utils/api-consumer');
 const pixabay = new ApiConsumer('Pixabay', 'https://pixabay.com/api/?');
 const {PixabayKey} = require('../utils/api-key');
-ApiConsumer.setRequiredAPIKey(pixabay, PixabayKey);
+ApiConsumer.setRequiredApiKey(pixabay, PixabayKey);
 const rpcUtils = require('../utils');
 
 function parserFnGen(maxHeight) {

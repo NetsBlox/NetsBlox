@@ -8,7 +8,7 @@
 const {GoogleMapsKey} = require('../utils/api-key');
 const utils = require('../utils');
 const GeoLocationRPC = {};
-utils.setRequiredAPIKey(GeoLocationRPC, GoogleMapsKey);
+utils.setRequiredApiKey(GeoLocationRPC, GoogleMapsKey);
 const logger = require('../utils/logger')('geolocation');
 
 const CacheManager = require('cache-manager');

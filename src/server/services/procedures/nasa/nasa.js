@@ -15,7 +15,7 @@ const MARS_URL = 'http://marsweather.ingenology.com/v1/latest/';
 
 const NASA = {};
 NASA.serviceName = 'NASA';
-utils.setRequiredAPIKey(NASA, NASAKey);
+utils.setRequiredApiKey(NASA, NASAKey);
 
 NASA._fetchApod = async function() {
     const { data: body } = await axios.get(this._apodUrl());

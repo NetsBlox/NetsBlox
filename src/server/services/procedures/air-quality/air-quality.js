@@ -19,7 +19,7 @@ const logger = require('../utils/logger')('air-quality'),
     geolib = require('geolib');
 
 const AirConsumer = new ApiConsumer('AirQuality', 'http://www.airnowapi.org/aq/observation/zipCode/current/',{cache: {ttl: 30*60}});
-ApiConsumer.setRequiredAPIKey(AirConsumer, AirNowKey);
+ApiConsumer.setRequiredApiKey(AirConsumer, AirNowKey);
 
 var reportingLocations = (function() {  // Parse csv
     var locationPath = path.join(__dirname, 'air-reporting-locations.csv'),

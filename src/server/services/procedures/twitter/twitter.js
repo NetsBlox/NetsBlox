@@ -15,7 +15,7 @@ const TwitterConsumer = new ApiConsumer('Twitter', 'https://api.twitter.com/1.1/
         ttl: 30
     }
 });
-ApiConsumer.setRequiredAPIKey(TwitterConsumer, TwitterKey);
+ApiConsumer.setRequiredApiKey(TwitterConsumer, TwitterKey);
 
 function rateCheck(response, res) {
     if (response.statusCode == 429) {

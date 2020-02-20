@@ -17,7 +17,7 @@ const MAX_DISTANCE = +process.env.WEATHER_MAX_DISTANCE || Infinity;  // miles
 const geolib = require('geolib');
 
 const weather = new ApiConsumer('Weather', 'http://api.openweathermap.org/data/2.5/weather', {cache: {ttl: 60}});
-ApiConsumer.setRequiredAPIKey(weather, OpenWeatherMapKey);
+ApiConsumer.setRequiredApiKey(weather, OpenWeatherMapKey);
 
 const isWithinMaxDistance = function(result, lat, lng) {
     var distance = geolib.getDistance(
