@@ -8,7 +8,7 @@
 
 'use strict';
 
-const {NASAKey} = require('../utils/api-key');
+const {NASAKey, InvalidKeyError} = require('../utils/api-key');
 const utils = require('../utils');
 const axios = require('axios');
 const MARS_URL = 'http://marsweather.ingenology.com/v1/latest/';
@@ -17,8 +17,20 @@ const NASA = {};
 NASA.serviceName = 'NASA';
 utils.setRequiredApiKey(NASA, NASAKey);
 
+NASA._getUrl = async function(url) {
+    try {
+        return await axios.get(url);
+    } catch (err) {
+        if (err.response.status === 403) {
+            throw new InvalidKeyError(this.apiKey);
+        }
+        throw err;
+    }
+};
+
 NASA._fetchApod = async function() {
-    const { data: body } = await axios.get(this._apodUrl());
+    const request = await this._getUrl(this._apodUrl());
+    const body = request.data;
     const info = {
         date: body.date,
         title: body.title,
@@ -50,7 +62,7 @@ NASA.apodDetails = async function() {
  * @returns {String}
  */
 NASA.apodMedia = async function() {
-    let { data: body } = await axios.get(this._apodUrl());
+    let { data: body } = await this._getUrl(this._apodUrl());
     return body.url;
 };
 
@@ -59,7 +71,7 @@ NASA.apodMedia = async function() {
  * @deprecated
  */
 NASA.marsHighTemp = async function() {
-    let { data: body } = await axios.get(MARS_URL);
+    let { data: body } = await this._getUrl(MARS_URL);
     return body.report.max_temp_fahrenheit;
 };
 
@@ -67,7 +79,7 @@ NASA.marsHighTemp = async function() {
  * @deprecated
  */
 NASA.marsLowTemp = async function() {
-    let { data: body } = await axios.get(MARS_URL);
+    let { data: body } = await this._getUrl(MARS_URL);
     return body.report.min_temp_fahrenheit;
 };
 
@@ -75,7 +87,7 @@ NASA.marsLowTemp = async function() {
  * @deprecated
  */
 NASA.marsWeather = async function() {
-    let { data: body } = await axios.get(MARS_URL);
+    let { data: body } = await this._getUrl(MARS_URL);
     return body.report.atmo_opacity;
 };
 

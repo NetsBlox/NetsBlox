@@ -9,7 +9,7 @@
  */
 
 const ApiConsumer = require('../utils/api-consumer');
-const {ParallelDotsKey} = require('../utils/api-key');
+const {ParallelDotsKey, InvalidKeyError} = require('../utils/api-key');
 const ParallelDots = new ApiConsumer('ParallelDots', 'https://apis.paralleldots.com/v4',{cache: {ttl: 5*60}});
 ApiConsumer.setRequiredApiKey(ParallelDots, ParallelDotsKey);
 
@@ -23,14 +23,18 @@ const toLowerCaseKeys = object => {
     return result;
 };
 
-ParallelDots._parallelDotsRequest = function(path, text){
+ParallelDots._parallelDotsRequest = async function(path, text){
     let body = `api_key=${this.apiKey.value}&text=${encodeURI(text)}`;
-    return this._sendAnswer({
+    const response = await this._sendAnswer({
         path: path,
         method: 'POST',
         headers: {'Content-Type' : 'application/x-www-form-urlencoded'},
         body: body
     });
+    if (response.code === 400) {
+        throw new InvalidKeyError(this.apiKey);
+    }
+    return response;
 };
 
 /**

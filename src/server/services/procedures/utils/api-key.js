@@ -64,3 +64,11 @@ module.exports.TwitterKey = new ApiKey(
     'https://developer.twitter.com/en/docs/basics/authentication/oauth-2-0',
     'TWITTER_BEARER_TOKEN'
 );
+
+class InvalidKeyError extends Error {
+    constructor(apiKey) {
+        const message = `Invalid API key. Please update your ${apiKey.name} API key.`;
+        super(message);
+    }
+}
+module.exports.InvalidKeyError = InvalidKeyError;
