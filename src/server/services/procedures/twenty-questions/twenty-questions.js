@@ -5,7 +5,6 @@
  * @service
  * @category Games
  */
-
 'use strict';
 
 let TwentyQuestions = function () {

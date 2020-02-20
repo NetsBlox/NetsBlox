@@ -5,8 +5,6 @@
  * @service
  * @category Science
  */
-// This is the Sky Map RPC. It wraps the web API of the Sloan Digital Sky Survey.
-
 'use strict';
 
 const logger = require('../utils/logger')('star-map');

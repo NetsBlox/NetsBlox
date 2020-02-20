@@ -1,5 +1,3 @@
-// This is a hangman set of RPC's which will select a word for the student to
-// try to guess
 /**
  * The SimpleHangman Service provides RPCs for playing single player hangman.
  * The service will choose a word for the player to guess using the given RPCs.
@@ -9,8 +7,7 @@
  */
 'use strict';
 
-// Word list
-const words = ['accurate','address', 'afford','alert','analyze','ancestor',
+const WORD_BANK = ['accurate','address', 'afford','alert','analyze','ancestor',
     'annual','apparent','appropriate','arena','arrest','ascend','assist','attempt',
     'attentive','attractive','awkward','baggage','basic','benefit','blend','blossom',
     'burrow','calculate','capable','captivity','carefree','century','chamber',
@@ -36,12 +33,11 @@ var SimpleHangman = function() {
     this._state.wrongGuesses = 0;
     this._state.knownIndices = [];
 
-    this._restart();
+    this._reset();
 };
 
-// Actions
 SimpleHangman.prototype.restart = function() {
-    this._restart();
+    this._reset();
     return true;
 };
 
@@ -80,15 +76,14 @@ SimpleHangman.prototype.getWrongCount = function() {
     return this._state.wrongGuesses;
 };
 
-// Private
 /**
  * Get a new random word
  *
  * @return {undefined}
  */
-SimpleHangman.prototype._restart = function() {
-    var index = Math.floor(Math.random()*words.length);
-    this._state.word = words[index];
+SimpleHangman.prototype._reset = function() {
+    const index = Math.floor(Math.random()*WORD_BANK.length);
+    this._state.word = WORD_BANK[index];
     this._state.wrongGuesses = 0;
     this._state.knownIndices = [];
 };

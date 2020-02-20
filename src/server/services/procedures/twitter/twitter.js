@@ -5,7 +5,6 @@
  * Terms of use: https://twitter.com/en/tos
  * @service
  */
-// This will use the Twitter API to allow the client to execute certain Twitter functions within NetsBlox
 
 'use strict';
 const {TwitterKey} = require('../utils/api-key');

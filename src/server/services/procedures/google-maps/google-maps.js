@@ -182,11 +182,10 @@ GoogleMaps.getTerrainMap = function(latitude, longitude, width, height, zoom){
  * @param {Longitude} longitude Longitude coordinate
  * @returns {Number} Map x coordinate of the given longitude
  */
-GoogleMaps.getXFromLongitude = function(longitude) {
-    return this._getClientMap(this.caller.clientId).then(mapInfo => {
-        let pixels = this._pixelsAt(0,longitude, mapInfo);
-        return pixels.x;
-    });
+GoogleMaps.getXFromLongitude = async function(longitude) {
+    const mapInfo = await this._getClientMap(this.caller.clientId);
+    let pixels = this._pixelsAt(0, longitude, mapInfo);
+    return pixels.x;
 };
 
 /**
@@ -194,11 +193,10 @@ GoogleMaps.getXFromLongitude = function(longitude) {
  * @param {Latitude} latitude Latitude coordinate
  * @returns {Number} Map y coordinate of the given latitude
  */
-GoogleMaps.getYFromLatitude = function(latitude) {
-    return this._getClientMap(this.caller.clientId).then(mapInfo => {
-        let pixels = this._pixelsAt(latitude,0, mapInfo);
-        return pixels.y;
-    });
+GoogleMaps.getYFromLatitude = async function(latitude) {
+    const mapInfo = await this._getClientMap(this.caller.clientId);
+    let pixels = this._pixelsAt(latitude, 0, mapInfo);
+    return pixels.y;
 };
 
 /**
@@ -206,11 +204,10 @@ GoogleMaps.getYFromLatitude = function(latitude) {
  * @param {Number} x x value of map image
  * @returns {Longitude} Longitude of the x value from the image
  */
-GoogleMaps.getLongitudeFromX = function(x){
-    return this._getClientMap(this.caller.clientId).then(mapInfo => {
-        let coords = this._coordsAt(x,0, mapInfo);
-        return coords.lon;
-    });
+GoogleMaps.getLongitudeFromX = async function(x){
+    const mapInfo = await this._getClientMap(this.caller.clientId);
+    let coords = this._coordsAt(x, 0, mapInfo);
+    return coords.lon;
 };
 
 /**
@@ -218,11 +215,10 @@ GoogleMaps.getLongitudeFromX = function(x){
  * @param {Number} y y value of map image
  * @returns {Latitude} Latitude of the y value from the image
  */
-GoogleMaps.getLatitudeFromY = function(y){
-    return this._getClientMap(this.caller.clientId).then(mapInfo => {
-        let coords = this._coordsAt(0,y, mapInfo);
-        return coords.lat;
-    });
+GoogleMaps.getLatitudeFromY = async function(y){
+    const mapInfo = await this._getClientMap(this.caller.clientId);
+    let coords = this._coordsAt(0, y, mapInfo);
+    return coords.lat;
 };
 
 /**
@@ -312,18 +308,18 @@ GoogleMaps.maxLatitude = function() {
  * Get the minimum longitude of the current map.
  * @returns {Longitude}
  */
-GoogleMaps.minLongitude = function() {
-    return this._getClientMap(this.caller.clientId)
-        .then(map => map.min.lon);
+GoogleMaps.minLongitude = async function() {
+    const map = await this._getClientMap(this.caller.clientId);
+    return map.min.lon;
 };
 
 /**
  * Get the minimum latitude of the current map.
  * @returns {Longitude}
  */
-GoogleMaps.minLatitude = function() {
-    return this._getClientMap(this.caller.clientId)
-        .then(map => map.min.lat);
+GoogleMaps.minLatitude = async function() {
+    const map = await this._getClientMap(this.caller.clientId);
+    return map.min.lat;
 };
 
 // Map of argument name to old field name

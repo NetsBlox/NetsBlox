@@ -12,7 +12,7 @@ dev.isSupported = () => process.env.ENV !== 'production';
 
 /**
  * A function responding with the provided argument.
- * @param argument
+ * @param{Any} argument
  */
 dev.echo = function (argument) {
     return argument;
@@ -20,7 +20,7 @@ dev.echo = function (argument) {
 
 /**
  * A function throwing an error.
- * @param msg Error message
+ * @param{String} msg Error message
  */
 dev.throw = function(msg) {
     throw new Error(msg);

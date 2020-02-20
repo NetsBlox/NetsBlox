@@ -106,7 +106,7 @@
     GroupStore.get = async function(id) {
         logger.trace(`getting group ${id}`);
         if (typeof id === 'string') id = ObjectId(id);
-        let data =  await Q(collection.findOne({_id: id}));
+        let data = await Q(collection.findOne({_id: id}));
         if (data) {
             return new Group(data);
         } else {
