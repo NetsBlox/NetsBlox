@@ -7,6 +7,8 @@ const NBService = require('./service.js'),
     request = require('request'),
     rp = require('request-promise');
 
+const utils = require('./index');
+
 class ApiConsumer extends NBService {
     constructor(name, baseUrl, opts) {
         opts = _.merge({
@@ -221,6 +223,10 @@ class ApiConsumer extends NBService {
                 this._logger.trace('got response');
                 this._logger.trace(this.__queryJson(res,selector));
             });
+    }
+
+    static setRequiredApiKey(service, apiKey) {
+        utils.setRequiredApiKey(service, apiKey);
     }
 }
 

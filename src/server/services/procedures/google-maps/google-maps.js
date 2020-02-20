@@ -10,12 +10,12 @@
 const logger = require('../utils/logger')('google-maps');
 const utils = require('../utils');
 const ApiConsumer = require('../utils/api-consumer');
+const {GoogleMapsKey} = require('../utils/api-key');
 const SphericalMercator = require('sphericalmercator');
 const geolib = require('geolib');
 const merc = new SphericalMercator({size:256});
 const Storage = require('../../storage');
 const PRECISION = 7; // 6 or 5 is probably safe
-const key = process.env.GOOGLE_MAPS_KEY;
 
 var storage;
 
@@ -31,8 +31,10 @@ const getStorage = function() {
 
 const baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
 
+
 // We will rely on the default maxsize limit of the cache
 const GoogleMaps = new ApiConsumer('GoogleMaps', baseUrl, {cache: {ttl: Infinity}});
+ApiConsumer.setRequiredApiKey(GoogleMaps, GoogleMapsKey);
 GoogleMaps._coordsAt = function(x, y, map) {
     x = Math.ceil(x / map.scale);
     y = Math.ceil(y / map.scale);
@@ -65,7 +67,7 @@ GoogleMaps._getGoogleParams = function(options, precisionLimit=PRECISION) {
         size: `${options.width}x${options.height}`,
         scale: options.scale,
         center: `${centerLat},${centerLon}`,
-        key: key,
+        key: this.apiKey.value,
         zoom: options.zoom || 12,
         maptype: options.mapType
     };
@@ -330,14 +332,6 @@ GoogleMaps.minLatitude = function() {
         .then(map => map.min.lat);
 };
 
-GoogleMaps.isSupported = () => {
-    if(!key){
-        /* eslint-disable no-console*/
-        console.error('GOOGLE_MAPS_KEY is missing.');
-        /* eslint-enable no-console*/
-    }
-    return !!key;
-};
 // Map of argument name to old field name
 GoogleMaps.COMPATIBILITY = {
     path: 'staticmap',

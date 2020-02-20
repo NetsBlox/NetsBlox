@@ -6,7 +6,8 @@
 
 const ApiConsumer = require('../utils/api-consumer');
 const pixabay = new ApiConsumer('Pixabay', 'https://pixabay.com/api/?');
-const KEY = process.env.PIXABAY;
+const {PixabayKey} = require('../utils/api-key');
+ApiConsumer.setRequiredApiKey(pixabay, PixabayKey);
 const rpcUtils = require('../utils');
 
 function parserFnGen(maxHeight) {
@@ -29,7 +30,7 @@ function parserFnGen(maxHeight) {
     };
 }
 
-function encodeQueryOptions(keywords, type, minHeight, self) {
+pixabay._encodeQueryOptions = function(keywords, type, minHeight, self) {
     if (self === 'searchAll') {
         type = 'all';
     } else if (self === 'searchPhoto') {
@@ -39,14 +40,14 @@ function encodeQueryOptions(keywords, type, minHeight, self) {
     }
     return {
         queryString: rpcUtils.encodeQueryData({
-            key: KEY,
+            key: this.apiKey.value,
             q: encodeURIComponent(keywords),
             image_type: type,
             safesearch: true,
             min_height: (minHeight || 0)
         })
     };
-}
+};
 
 
 /**
@@ -56,7 +57,7 @@ function encodeQueryOptions(keywords, type, minHeight, self) {
  * @param {Number=} minHeight Restrict query to images larger than "minHeight"
  */
 pixabay.searchPhoto = function (keywords, maxHeight, minHeight) {
-    return this._sendStruct(encodeQueryOptions(keywords, null, minHeight, 'searchPhoto'), parserFnGen(maxHeight));
+    return this._sendStruct(this._encodeQueryOptions(keywords, null, minHeight, 'searchPhoto'), parserFnGen(maxHeight));
 };
 
 /**
@@ -66,7 +67,7 @@ pixabay.searchPhoto = function (keywords, maxHeight, minHeight) {
  * @param {Number=} minHeight Restrict query to images larger than "minHeight"
  */
 pixabay.searchIllustration = function (keywords, maxHeight, minHeight) {
-    return this._sendStruct(encodeQueryOptions(keywords, null, minHeight, 'searchIllustration'), parserFnGen(maxHeight));
+    return this._sendStruct(this._encodeQueryOptions(keywords, null, minHeight, 'searchIllustration'), parserFnGen(maxHeight));
 };
 
 /**
@@ -76,7 +77,7 @@ pixabay.searchIllustration = function (keywords, maxHeight, minHeight) {
  * @param {Number=} minHeight Restrict query to images larger than "minHeight"
  */
 pixabay.searchAll = function (keywords, maxHeight, minHeight) {
-    return this._sendStruct(encodeQueryOptions(keywords, null, minHeight, 'searchAll'), parserFnGen(maxHeight));
+    return this._sendStruct(this._encodeQueryOptions(keywords, null, minHeight, 'searchAll'), parserFnGen(maxHeight));
 };
 
 /**
@@ -85,15 +86,6 @@ pixabay.searchAll = function (keywords, maxHeight, minHeight) {
  */
 pixabay.getImage = function(url){
     return this._sendImage({url});
-};
-
-pixabay.isSupported = () => {
-    if(!process.env.PIXABAY) {
-        /* eslint-disable no-console*/
-        console.log('Warning: environment variable PIXABAY not defined, Pixabay RPC will not work.');
-        /* eslint-enable no-console*/
-    }
-    return !!process.env.PIXABAY;
 };
 
 module.exports = pixabay;

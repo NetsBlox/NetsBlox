@@ -7,9 +7,10 @@
  * @category Language
  */
 
+const {AzureTranslationKey} = require('../utils/api-key');
 const ApiConsumer = require('../utils/api-consumer');
 const TranslationConsumer = new ApiConsumer('Translation', 'https://api.cognitive.microsofttranslator.com/',{cache: {ttl: 12 * 60 * 60}});
-const key = process.env.AZURE_TRANSLATION_KEY;
+ApiConsumer.setRequiredApiKey(TranslationConsumer, AzureTranslationKey);
 
 /**
  * Generates a GUID-like string
@@ -44,7 +45,7 @@ TranslationConsumer.translate = function(text, from, to) {
         method: 'POST',
         headers: {
             'Content-Type' : 'application/json',
-            'Ocp-Apim-Subscription-Key' : key,
+            'Ocp-Apim-Subscription-Key' : this.apiKey.value,
             'X-ClientTraceId' : guid},
         body: body}, '.translations .text[0]')
         .catch(err => {
@@ -75,7 +76,7 @@ TranslationConsumer.detectLanguage = function(text) {
         method: 'POST',
         headers: {
             'Content-Type' : 'application/json',
-            'Ocp-Apim-Subscription-Key' : key,
+            'Ocp-Apim-Subscription-Key' : this.apiKey.value,
             'X-ClientTraceId' : guid},
         body: body}, '.language[0]')
         .catch(err => {
@@ -93,21 +94,10 @@ TranslationConsumer.getSupportedLanguages = function() {
         queryString: '?api-version=3.0&scope=translation',
         headers: {
             'Content-Type' : 'application/json',
-            'Ocp-Apim-Subscription-Key' : key}}, '.translation')
+            'Ocp-Apim-Subscription-Key' : this.apiKey.value}}, '.translation')
         .catch(err => {
             throw err;
         });
-};
-
-
-
-TranslationConsumer.isSupported = () => {
-    if(!key){
-        /* eslint-disable no-console*/
-        console.error('AZURE_TRANSLATION_KEY is missing.');
-        /* eslint-enable no-console*/
-    }
-    return !!key;
 };
 
 module.exports = TranslationConsumer;

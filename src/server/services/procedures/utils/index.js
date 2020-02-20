@@ -104,6 +104,18 @@ const isValidServiceName = name => {
     return /^[a-z0-9-]+$/i.test(name);
 };
 
+const setRequiredApiKey = (service, apiKey) => {
+    service.apiKey = apiKey;
+    service.isSupported = function() {
+        if(!this.apiKey.value){
+            /* eslint-disable no-console*/
+            console.error(this.apiKey.envVar + ' is missing.');
+            /* eslint-enable no-console*/
+        }
+        return !!this.apiKey.value;
+    };
+};
+
 module.exports = {
     getRoleNames,
     getRoleIds,
@@ -113,4 +125,5 @@ module.exports = {
     collectStream,
     jsonToSnapList,
     isValidServiceName,
+    setRequiredApiKey,
 };
