@@ -4,10 +4,6 @@
  * @service
  * @category Science
  */
-
-// This will use the AirNowAPI to get air quality given a latitude and longitude.
-// If we start to run out of API requests, they have the entire dataset available
-// for download online.
 'use strict';
 
 const ApiConsumer = require('../utils/api-consumer');
