@@ -39,11 +39,9 @@ async function listen(port) {
     await ApiKeys.init(Storage._db, logger);
     middleware.init({_logger: logger});
     await ServicesAPI.initialize();
-    app.use(
-        '/',
-        (req, res, next) => middleware.tryLogIn(req, res, next, true),
-        ServicesAPI.router
-    );
+    app.use((req, res, next) => middleware.tryLogIn(req, res, next, true));
+    app.use('/keys', middleware.isLoggedIn, ApiKeys.router());
+    app.use('/', ServicesAPI.router());
     const RPC_ROOT = path.join(__dirname, 'libs');
     const RPC_INDEX = fs.readFileSync(path.join(RPC_ROOT, 'LIBS'), 'utf8')
         .split('\n')
