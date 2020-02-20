@@ -232,15 +232,14 @@ class ServicesWorker {
         }
     }
 
-    callRPC(name, ctx, args) {
+    async callRPC(name, ctx, args) {
         let doc = null;
-        let prepareInputs = Promise.resolve();
         const errors = [];
 
         if (ctx._docs) doc = ctx._docs.getDocFor(name);
         if (doc) {
             // assuming doc params are defined in order!
-            prepareInputs = Promise.all(doc.args.map(async (arg, idx) => {
+            await Promise.all(doc.args.map(async (arg, idx) => {
                 const input = await this.parseArgValue(arg, args[idx], ctx);
                 // if there was no errors update the arg with the parsed input
                 if (input.isValid) {
@@ -253,22 +252,19 @@ class ServicesWorker {
             }));
         }
 
-        return prepareInputs
-            .then(() => {
-                // provide user feedback if there was an error
-                if (errors.length > 0) return ctx.response.status(500).send(errors.join('\n'));
+        // provide user feedback if there was an error
+        if (errors.length > 0) return ctx.response.status(500).send(errors.join('\n'));
 
-                let prettyArgs = JSON.stringify(args);
-                prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
-                this._logger.log(`calling ${ctx.serviceName}.${name}(${prettyArgs}) ${ctx.caller.clientId}`);
+        let prettyArgs = JSON.stringify(args);
+        prettyArgs = prettyArgs.substring(1, prettyArgs.length-1);  // remove brackets
+        this._logger.log(`calling ${ctx.serviceName}.${name}(${prettyArgs}) ${ctx.caller.clientId}`);
 
-                try {
-                    const result = ctx[name].apply(ctx, args);
-                    return this.sendRPCResult(ctx.response, result);
-                } catch (err) {
-                    this.sendRPCError(ctx.response, err);
-                }
-            });
+        try {
+            const result = ctx[name].apply(ctx, args);
+            return this.sendRPCResult(ctx.response, result);
+        } catch (err) {
+            this.sendRPCError(ctx.response, err);
+        }
     }
 
     // in: arg obj and input value

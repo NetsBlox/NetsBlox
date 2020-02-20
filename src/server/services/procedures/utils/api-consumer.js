@@ -70,7 +70,7 @@ class ApiConsumer extends NBService {
         // TODO implement a defaults object
         if (Array.isArray(queryOptions)) {
             this._logger.trace('requesting data from', queryOptions.length, 'sources');
-            let promises = queryOptions.map( qo => this._requestData(qo));
+            let promises = queryOptions.map(qo => this._requestData(qo));
             return Promise.all(promises);
         }
         const fullUrl = this._getFullUrl(queryOptions);

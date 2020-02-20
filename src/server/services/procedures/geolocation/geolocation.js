@@ -73,7 +73,6 @@ let reverseGeocode = (lat, lon, response, query)=>{
  * @param {String} address target address
  * @returns {Object}
  */
-
 GeoLocationRPC.geolocate = function (address) {
     let response = this.response;
 
