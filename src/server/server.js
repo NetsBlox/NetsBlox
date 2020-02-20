@@ -76,13 +76,18 @@ Server.prototype.configureRoutes = async function(servicesURL) {
     if (servicesURL) {
         this.app.use('/services', (req, res) => {
             const url = servicesURL + req.originalUrl.replace('/services', '');
-            return request({
+            const proxyReq = request({
                 method: req.method,
                 uri: url,
                 body: req.body,
                 headers: req.headers,
                 json: true,
-            }).pipe(res);
+            });
+            proxyReq.on('error', err => {
+                this._logger.warn(`Error occurred on call to ${url}: ${err}`);
+                res.sendStatus(500);
+            });
+            return proxyReq.pipe(res);
         });
     }
 
