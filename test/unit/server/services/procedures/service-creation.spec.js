@@ -67,7 +67,7 @@ describe('service-creation', function() {
             ]);
             const options = service.getCreateFromTableOptions(data);
             const rpcNames = options.RPCs.map(rpc => rpc.name);
-            assert(rpcNames.includes('get#Counted'));
+            assert(rpcNames.includes('get#CountedColumn'));
         });
 
         it('should support $ symbol', function() {
@@ -77,7 +77,7 @@ describe('service-creation', function() {
             ]);
             const options = service.getCreateFromTableOptions(data);
             const rpcNames = options.RPCs.map(rpc => rpc.name);
-            assert(rpcNames.includes('get$Spent'), `Could not find get$Spent: ${rpcNames.join(', ')}`);
+            assert(rpcNames.includes('get$SpentColumn'), `Could not find get$Spent: ${rpcNames.join(', ')}`);
         });
 
         it('should support % symbol', function() {
@@ -87,7 +87,7 @@ describe('service-creation', function() {
             ]);
             const options = service.getCreateFromTableOptions(data);
             const rpcNames = options.RPCs.map(rpc => rpc.name);
-            assert(rpcNames.includes('get%OfTotal'), `Could not find get%OfTotal: ${rpcNames.join(', ')}`);
+            assert(rpcNames.includes('get%OfTotalColumn'), `Could not find get%OfTotal: ${rpcNames.join(', ')}`);
         });
 
         it('should support accented characters', function() {
@@ -97,7 +97,7 @@ describe('service-creation', function() {
             ]);
             const options = service.getCreateFromTableOptions(data);
             const rpcNames = options.RPCs.map(rpc => rpc.name);
-            assert(rpcNames.includes('getÉrdösNumber'), `Could not find getÉrdösNumber: ${rpcNames.join(', ')}`);
+            assert(rpcNames.includes('getÉrdösNumberColumn'), `Could not find getÉrdösNumber: ${rpcNames.join(', ')}`);
         });
     });
 });
