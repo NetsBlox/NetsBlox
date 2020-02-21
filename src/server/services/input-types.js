@@ -152,10 +152,10 @@ types.Function = async (blockXml, ctx) => {
         project.roleName = roleName;
         project.roleNames = roleNames;
     };
-    env.doYield = env.doYield.bind(null, Date.now());
     const fn = await factory(env);
+    const {doYield} = env;
     return function() {
-        env.doYield = env.doYield.bind(null, Date.now());
+        env.doYield = doYield.bind(null, Date.now());
         return fn.apply(this, arguments);
     };
 };
