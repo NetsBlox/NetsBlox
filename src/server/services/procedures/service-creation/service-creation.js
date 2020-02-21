@@ -181,6 +181,14 @@ ServiceCreation.getCreateFromTableOptions = function(data) {
         rpcOptions.push(getIndexFieldRPC);
     }
 
+    if (data.length < 2000) {
+        rpcOptions.push({
+            name: 'getTable',
+            help: 'Get the entire dataset as a table',
+            code: Blocks.getTable({fields})
+        });
+    }
+
     return {
         help: `Dataset uploaded by ${this.caller.username}`,
         RPCs: rpcOptions
