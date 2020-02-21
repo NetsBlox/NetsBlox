@@ -239,26 +239,33 @@ ServiceCreation.createServiceFromTable = async function(name, data, options) {
     options = resolveOptions(options, defaultOptions);
 
     const methods = options.RPCs.map(rpc => {
-        const {name, help='', code, query, transform} = rpc;
+        const {name, help='', code, query, transform, combine} = rpc;
         const method = {name, help};
 
         if (code) {
-            method.arguments = getBlockArgs(code);
+            method.arguments = getBlockArgs(code).slice(0, -1);
             method.code = code;
         } else {  // use query and transform instead
             method.query = {
                 arguments: getBlockArgs(query),
                 code: query
             };
+            method.arguments = method.query.arguments.slice(0, -1);
             if (transform) {
                 method.transform = {
                     arguments: getBlockArgs(transform),
                     code: transform
                 };
+                method.arguments.push(...method.transform.arguments.slice(0, -1));
             }
-            method.arguments = method.query.arguments.slice();
+            if (combine) {
+                method.combine = {
+                    arguments: getBlockArgs(combine),
+                    code: combine
+                };
+                method.arguments.push(...method.combine.arguments.slice(0, -2));
+            }
         }
-        method.arguments.pop();  // remove the "data" argument
 
         return method;
     });

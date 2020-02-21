@@ -109,7 +109,7 @@ class DataService {
     _getArgs(method, allArgs) {
         const queryArgCount = method.query.arguments.length-1;
         const transformArgCount = method.transform ? method.transform.arguments.length-1 : 0;
-        const combineArgCount = method.combine ? method.combine.arguments.length-1 : 0;
+        const combineArgCount = method.combine ? method.combine.arguments.length - 2 : 0;
 
         let startIndex = 0;
         return [queryArgCount, transformArgCount, combineArgCount].map(count => {
