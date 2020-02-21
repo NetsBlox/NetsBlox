@@ -124,52 +124,54 @@ ServiceCreation.getCreateFromTableOptions = function(data) {
 
     const fields = data[0];
     const indexField = fields[0];
-    const constantFields = this._getConstantFields(data);
     const dataVariable = getVariableNameForData(fields);
-    const rpcOptions = fields.slice(1).map((field, i) => {
-        const column = i + 2;
-        if (constantFields.includes(field)) {
-            return {
-                name: `get${toUpperCamelCase(field)}`,
-                help: `Get the ${field} for the given ${indexField}`,
-                code: Blocks.getColumnFromFirst({field: indexField, column, dataVariable}),
-            };
-        } else {
-            return {
-                name: `get${toUpperCamelCase(field)}Data`,
-                help: `Get ${field} data for the given ${indexField}`,
-                query: Blocks.query({field: indexField, column, dataVariable}),
-                transform: Blocks.transform({field: indexField, column}),
-            };
-        }
-    });
+    const rpcOptions = [];
 
     if (this._hasUniqueIndexField(data)) {
-        const column = 1;
-        const getRecordRPC = {
-            name: 'getRecord',
-            help: `Get data for the given ${indexField}.`,
-            query: Blocks.query({field: indexField, column, dataVariable}),
-        };
-        rpcOptions.unshift(getRecordRPC);
-
         fields.forEach((field, index) => {
             const column = index + 1;
             rpcOptions.push({
-                name: `getAll${toUpperCamelCase(field)}Values`,
+                name: `get${toUpperCamelCase(field)}Column`,
                 help: `Get ${field} values with data available.`,
                 query: Blocks.reportTrue(),
                 transform: Blocks.transform({column}),
             });
+
+            if (index > 0) {
+                rpcOptions.push({
+                    name: `get${toUpperCamelCase(field)}By${toUpperCamelCase(indexField)}`,
+                    help: `Get ${field} values with data available.`,
+                    query: Blocks.reportTrue(),
+                    transform: Blocks.getColumns({column}),
+                });
+            }
+        });
+        rpcOptions.push({
+            name: 'getValue',
+            help: `Get value given a ${indexField} value and column name.`,
+            code: Blocks.getValue({fields, dataVariable}),
         });
     } else {
         const column = 1;
-        const getRecordRPC = {
-            name: 'getRecords',
-            help: `Get all data for the given ${indexField}.`,
-            query: Blocks.query({field: indexField, column, dataVariable}),
-        };
-        rpcOptions.unshift(getRecordRPC);
+        const constantFields = this._getConstantFields(data);
+        const getFieldsByIndexField = fields.slice(1).map((field, i) => {
+            const column = i + 2;
+            if (constantFields.includes(field)) {
+                return {
+                    name: `get${toUpperCamelCase(field)}For${toUpperCamelCase(indexField)}`,
+                    help: `Get the ${field} for the given ${indexField}`,
+                    code: Blocks.getColumnFromFirst({field: indexField, column, dataVariable}),
+                };
+            } else {
+                return {
+                    name: `get${toUpperCamelCase(field)}`,
+                    help: `Get ${field} data for the given ${indexField}`,
+                    query: Blocks.query({field: indexField, column, dataVariable}),
+                    transform: Blocks.transform({field: indexField, column}),
+                };
+            }
+        });
+        rpcOptions.push(...getFieldsByIndexField);
 
         const getIndexFieldRPC = {
             name: `getAll${toUpperCamelCase(indexField)}Values`,
