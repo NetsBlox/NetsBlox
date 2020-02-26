@@ -148,7 +148,6 @@ class APIKeys {
 
         router.route('/:id').options((req, res) => {
             res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, PATCH, DELETE');
-            console.log('Options for delete!');
             res.sendStatus(204);
         });
         router.route('/:id').delete(async (req, res) => {
