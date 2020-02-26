@@ -7,7 +7,6 @@ const ApiKeys = require('./api-keys');
 
 class ServicesAPI {
     constructor() {
-        this.router = this.createRouter();
         this.loading = Q.defer();
 
         this.logger = new Logger('netsblox:services');
@@ -72,7 +71,7 @@ class ServicesAPI {
         return null;
     }
 
-    createRouter() {
+    router() {
         const router = express.Router({mergeParams: true});
 
         router.route('/').get((req, res) => {
