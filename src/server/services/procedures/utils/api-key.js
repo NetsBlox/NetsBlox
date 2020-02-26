@@ -1,19 +1,19 @@
 class ApiKey {
-    constructor(name, helpUrl, envVar) {
-        this.name = name;
+    constructor(provider, helpUrl, envVar) {
+        this.provider = provider;
         this.helpUrl = helpUrl;
         this.envVar = envVar || this.getDefaultEnvVar();
         this.value = process.env[this.envVar];
     }
 
     getDefaultEnvVar() {
-        const capName = this.name.split(' ')
+        const capName = this.provider.split(' ')
             .map(word => word.toUpperCase()).join('_');
         return capName + '_KEY';
     }
 
     withValue(value) {
-        const apiKey = new ApiKey(this.name, this.helpUrl, this.envVar);
+        const apiKey = new ApiKey(this.provider, this.helpUrl, this.envVar);
         apiKey.value = value;
         return apiKey;
     }
@@ -67,7 +67,7 @@ module.exports.TwitterKey = new ApiKey(
 
 class InvalidKeyError extends Error {
     constructor(apiKey) {
-        const message = `Invalid API key. Please update your ${apiKey.name} API key.`;
+        const message = `Invalid API key. Please update your ${apiKey.provider} API key.`;
         super(message);
     }
 }
