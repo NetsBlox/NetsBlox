@@ -4,6 +4,7 @@ const Users = require('../storage/users');
 const assert = require('assert');
 const ObjectId = require('mongodb').ObjectId;
 const _ = require('lodash');
+const APIKey = require('./procedures/utils/api-key');
 
 class APIKeys {
     async init(db, logger) {
@@ -102,6 +103,19 @@ class APIKeys {
         return this.collection.find({}).toArray();
     }
 
+    getAllApiKeys() {
+        return Object.values(APIKey)
+            .filter(value => value.constructor.name === 'ApiKey');
+    }
+
+    getApiProviders() {
+        return this.getAllApiKeys()
+            .map(key => ({
+                provider: key.provider,
+                url: key.helpUrl,
+            }));
+    }
+
     router() {
         const router = express.Router({mergeParams: true});
         const EDITABLE_DOC_KEYS = ['value', 'isGroupDefault', 'groups'];
@@ -110,6 +124,22 @@ class APIKeys {
             const {username} = req.session;
             const {group} = req.query;
             res.json(await this.list(username, group));
+        });
+
+        router.route('/providers').get(async (req, res) => {
+            res.json(this.getApiProviders());
+        });
+
+        router.route('/:type').post(async (req, res) => {
+            const {type} = req.params;
+            const {username} = req.session;
+            const {value, isGroupDefault, groups} = req.body;
+
+            if (!value) {
+                return res.status(400).send('Missing required field: value');
+            }
+            const result = await this.create(username, type, value, isGroupDefault, groups);
+            res.send(result.insertedId);
         });
 
         router.route('/').patch(async (req, res) => {
