@@ -160,7 +160,7 @@ class APIKeys {
                 update,
                 {returnNewDocument: true}
             );
-            res.json(doc);
+            res.json(doc.value);
         });
 
         router.route('/:provider').post(async (req, res) => {
