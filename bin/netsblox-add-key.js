@@ -10,7 +10,7 @@ const ApiKeys = require('../src/server/services/api-keys');
 const { runWithStorage } = require('./utils');
 
 program
-    .arguments('<username> <key> <value>')
+    .arguments('<username> <provider> <value>')
     .option('-g, --groups <groups>', 'groups using the given key')
     .option('-a, --all-groups', 'set default key for the given user\'s groups');
 
@@ -22,7 +22,7 @@ if (program.args.length !== 3) {
     process.exit(1);
 }
 
-const [username, key, value] = program.args;
+const [username, provider, value] = program.args;
 
 async function addKey() {
     const groupNames = program.groups ? program.groups.split(',') : [];
@@ -33,7 +33,7 @@ async function addKey() {
     const isGroupDefault = !!program.allGroups;
 
     ApiKeys.init(Storage._db);
-    await ApiKeys.create(username, key, value, isGroupDefault, groupIds);
+    await ApiKeys.create(username, provider, value, isGroupDefault, groupIds);
 }
 
 runWithStorage(addKey);
