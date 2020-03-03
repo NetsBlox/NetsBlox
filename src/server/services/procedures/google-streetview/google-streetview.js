@@ -26,7 +26,9 @@ ApiConsumer.setRequiredApiKey(GoogleStreetView, GoogleMapsKey);
  */
 GoogleStreetView.getViewFromLatLong = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
     const key = this.apiKey.value;
-    return this._sendImage({queryString: `?size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`, method: 'GET'});
+    const cacheKey = `size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}`;
+    const queryString = `?${cacheKey}&key=${key}`;
+    return this._sendImage({queryString, cacheKey, method: 'GET'});
 };
 
 /**
@@ -42,7 +44,9 @@ GoogleStreetView.getViewFromLatLong = function(latitude, longitude, width, heigh
  */
 GoogleStreetView.getView = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
     const key = this.apiKey.value;
-    return this._sendImage({queryString: `?size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`, method: 'GET'});
+    const cacheKey = `size=${width}x${height}&location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}`;
+    const queryString = `?${cacheKey}&key=${key}`;
+    return this._sendImage({queryString, cacheKey, method: 'GET'});
 };
 
 
@@ -58,7 +62,9 @@ GoogleStreetView.getView = function(latitude, longitude, width, height, fieldofv
  */
 GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofview, heading, pitch) {
     const key = this.apiKey.value;
-    return this._sendImage({queryString: `?size=${width}x${height}&location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`, method: 'GET'});
+    const cacheKey = `size=${width}x${height}&location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}`;
+    const queryString = `?${cacheKey}&key=${key}`;
+    return this._sendImage({queryString, cacheKey, method: 'GET'});
 };
 
 
@@ -76,9 +82,11 @@ GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofv
  */
 GoogleStreetView.getInfo = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
     const key = this.apiKey.value;
+    const cacheKey = `location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}`;
     const queryOpts = {
         path: '/metadata',
-        queryString: `?location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+        queryString: `?${cacheKey}&key=${key}`,
+        cacheKey
     };
     const parserFn = resp => resp; // explicitly do nothing
     return this._sendStruct(queryOpts, parserFn);
@@ -97,9 +105,11 @@ GoogleStreetView.getInfo = function(latitude, longitude, width, height, fieldofv
  */
 GoogleStreetView.getInfoFromAddress = function(location, width, height, fieldofview, heading, pitch) {
     const key = this.apiKey.value;
+    const cacheKey = `location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}`;
     const queryOpts = {
         path: '/metadata',
-        queryString: `?location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+        queryString: `?${cacheKey}&key=${key}`,
+        cacheKey
     };
     const parserFn = resp => resp; // explicitly do nothing
     return this._sendStruct(queryOpts, parserFn);
@@ -116,9 +126,11 @@ GoogleStreetView.getInfoFromAddress = function(location, width, height, fieldofv
  */
 GoogleStreetView.isAvailable = function(latitude, longitude, fieldofview, heading, pitch) {
     const key = this.apiKey.value;
+    const cacheKey = `location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}`;
     const queryOpts = {
         path: '/metadata',
-        queryString: `?location=${latitude},${longitude}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+        queryString: `?${cacheKey}&key=${key}`,
+        cacheKey
     };
     const parserFn = resp => resp.status === 'OK';
     return this._sendStruct(queryOpts, parserFn);
@@ -134,9 +146,11 @@ GoogleStreetView.isAvailable = function(latitude, longitude, fieldofview, headin
  */
 GoogleStreetView.isAvailableFromAddress = function(location, fieldofview, heading, pitch) {
     const key = this.apiKey.value;
+    const cacheKey = `location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}`;
     const queryOpts = {
         path: '/metadata',
-        queryString: `?location=${location}&fov=${fieldofview}&heading=${heading}&pitch=${pitch}&key=${key}`
+        queryString: `?${cacheKey}&key=${key}`,
+        cacheKey
     };
     const parserFn = resp => resp.status === 'OK';
     return this._sendStruct(queryOpts, parserFn);

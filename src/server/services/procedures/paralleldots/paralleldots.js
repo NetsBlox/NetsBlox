@@ -29,7 +29,8 @@ ParallelDots._parallelDotsRequest = async function(path, text){
         path: path,
         method: 'POST',
         headers: {'Content-Type' : 'application/x-www-form-urlencoded'},
-        body: body
+        body: body,
+        cacheKey: {path, text}
     });
     if (response.code === 400) {
         throw new InvalidKeyError(this.apiKey);
@@ -58,7 +59,8 @@ ParallelDots.getSimilarity = async function(text1, text2) {
     const result = await this._sendAnswer({
         path: '/similarity', method: 'POST',
         headers: {'Content-Type' : 'application/x-www-form-urlencoded'},
-        body: body
+        body: body,
+        cacheKey: {method: 'similarity', text1, text2}
     });
     return result.similarity_score;
 };

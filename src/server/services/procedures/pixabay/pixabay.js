@@ -30,7 +30,7 @@ function parserFnGen(maxHeight) {
     };
 }
 
-pixabay._encodeQueryOptions = function(keywords, type, minHeight, self) {
+pixabay._encodeQueryOptions = function(keywords, type, minHeight=0, self) {
     if (self === 'searchAll') {
         type = 'all';
     } else if (self === 'searchPhoto') {
@@ -38,14 +38,16 @@ pixabay._encodeQueryOptions = function(keywords, type, minHeight, self) {
     } else if (self === 'searchIllustration') {
         type = 'illustration';
     }
+    const query = encodeURIComponent(keywords);
     return {
         queryString: rpcUtils.encodeQueryData({
             key: this.apiKey.value,
-            q: encodeURIComponent(keywords),
+            q: query,
             image_type: type,
             safesearch: true,
-            min_height: (minHeight || 0)
-        })
+            min_height: minHeight
+        }),
+        cacheKey: {query, type, minHeight}
     };
 };
 
