@@ -73,10 +73,11 @@ AirConsumer.qualityIndex = function(latitude, longitude) {
  */
 AirConsumer.qualityIndexByZipCode = function(zipCode) {
     const queryString = `?format=application/json&API_KEY=${this.apiKey.value}&zipCode=${zipCode}`;
+    const cacheKey = {zipCode};
 
     logger.trace(`Requesting air quality at ${zipCode}`);
 
-    return this._sendAnswer({queryString}, '.AQI')
+    return this._sendAnswer({queryString, cacheKey}, '.AQI')
         .then((r) => (r.length > 0? r[0]: -1));
 };
 

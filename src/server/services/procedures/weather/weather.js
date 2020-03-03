@@ -32,8 +32,13 @@ const isWithinMaxDistance = function(result, lat, lng) {
     return distance < MAX_DISTANCE;
 };
 
-weather._queryString = function(latitude, longitude) {
-    return `APPID=${this.apiKey.value}&lat=${latitude}&lon=${longitude}`;
+weather._getWeatherData = function(latitude, longitude) {
+    const cacheKey = `lat=${latitude}&lon=${longitude}`;
+    const queryOptions = {
+        queryString: `APPID=${this.apiKey.value}&${cacheKey}`,
+        cacheKey,
+    };
+    return this._requestData(queryOptions);
 };
 
 /**
@@ -42,7 +47,7 @@ weather._queryString = function(latitude, longitude) {
  * @param {Longitude} longitude
  */
 weather.temperature = function(latitude, longitude){
-    return this._requestData({queryString: this._queryString(latitude, longitude)})
+    return this._getWeatherData(latitude, longitude)
         .then(body => {
             var temp = 'unknown';
             if (body.main && isWithinMaxDistance(body, latitude, longitude)) {
@@ -70,7 +75,7 @@ weather.temp = function(latitude, longitude) {
  * @param {Longitude} longitude
  */
 weather.humidity = function(latitude, longitude){
-    return this._requestData({queryString: this._queryString(latitude, longitude)})
+    return this._getWeatherData(latitude, longitude)
         .then(body => {
             var humidity = 'unknown';
             if (isWithinMaxDistance(body, latitude, longitude)) {
@@ -86,7 +91,7 @@ weather.humidity = function(latitude, longitude){
  * @param {Longitude} longitude
  */
 weather.description = function(latitude, longitude){
-    return this._requestData({queryString: this._queryString(latitude, longitude)})
+    return this._getWeatherData(latitude, longitude)
         .then(body => {
             var description = 'unknown';
             if (isWithinMaxDistance(body, latitude, longitude)) {
@@ -102,7 +107,7 @@ weather.description = function(latitude, longitude){
  * @param {Longitude} longitude
  */
 weather.windSpeed = function(latitude, longitude){
-    return this._requestData({queryString: this._queryString(latitude, longitude)})
+    return this._getWeatherData(latitude, longitude)
         .then(body => {
             var speed = 'unknown';
             if (isWithinMaxDistance(body, latitude, longitude)) {
@@ -118,7 +123,7 @@ weather.windSpeed = function(latitude, longitude){
  * @param {Longitude} longitude
  */
 weather.windAngle = function(latitude, longitude){
-    return this._requestData({queryString: this._queryString(latitude, longitude)})
+    return this._getWeatherData(latitude, longitude)
         .then(body => {
             var deg = 'unknown';
             if (isWithinMaxDistance(body, latitude, longitude)) {
@@ -134,7 +139,7 @@ weather.windAngle = function(latitude, longitude){
  * @param {Longitude} longitude
  */
 weather.icon = function(latitude, longitude){
-    return this._requestData({queryString: this._queryString(latitude, longitude)})
+    return this._getWeatherData(latitude, longitude)
         .then(body => {
             // Return sunny if unknown
             var iconName = '01d.png';

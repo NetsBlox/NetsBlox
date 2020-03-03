@@ -37,7 +37,8 @@ TwitterConsumer.recentTweets = function (screenName, count) {
         headers: {
             Authorization: this.apiKey.value,
             gzip: 'true'
-        }
+        },
+        cacheKey: {method: 'recentTweets', screenName, count},
     }).then(res => {
         return res.map(tweet => `( ${tweet.retweet_count} RTs, ${tweet.favorite_count} Favs) ${tweet.text}`);
     })
@@ -61,7 +62,8 @@ TwitterConsumer.followers = function (screenName) {
         headers: {
             Authorization: this.apiKey.value,
             gzip: 'true'
-        }
+        },
+        cacheKey: {method: 'followers', screenName},
     }, '.followers_count').catch(err => {
         if (rateCheck(err, this.response)) {
             return;
@@ -82,7 +84,8 @@ TwitterConsumer.tweets = function (screenName) {
         headers: {
             Authorization: this.apiKey.value,
             gzip: 'true'
-        }
+        },
+        cacheKey: {method: 'tweets', screenName},
     }, '.statuses_count').catch(err => {
         if (rateCheck(err, this.response)) {
             return;
@@ -106,7 +109,8 @@ TwitterConsumer.search = function (keyword, count) {
         headers: {
             Authorization: this.apiKey.value,
             gzip: 'true'
-        }
+        },
+        cacheKey: {method: 'search', keyword, count},
     }).then(res => {
         return res.statuses.map(tweet => `( ${tweet.retweet_count} RTs, ${tweet.favorite_count} Favs) @${tweet.user.screen_name}: ${tweet.text}`);
     })
@@ -134,7 +138,8 @@ TwitterConsumer.tweetsPerDay = function (screenName) {
         headers: {
             Authorization: this.apiKey.value,
             gzip: 'true'
-        }
+        },
+        cacheKey: {method: 'tweetsPerDay', screenName},
     }).then(res => {
         var oldestDate = new Date(res[res.length - 1].created_at);
         var diffDays = Math.round(Math.abs((oldestDate.getTime() - dateToday.getTime()) / (oneDay)));
@@ -160,7 +165,8 @@ TwitterConsumer.favorites = function (screenName, count) {
         headers: {
             Authorization: this.apiKey.value,
             gzip: 'true'
-        }
+        },
+        cacheKey: {method: 'favorites', screenName, count},
     }).then(res => {
         return res.map(fav => `@${fav.user.screen_name}: ${fav.text}`);
     })
@@ -185,7 +191,8 @@ TwitterConsumer.favoritesCount = function (screenName) {
         headers: {
             Authorization: this.apiKey.value,
             gzip: 'true'
-        }
+        },
+        cacheKey: {method: 'favoritesCount', screenName},
     }, '.favourites_count').catch(err => {
         if (rateCheck(err, this.response)) {
             return;

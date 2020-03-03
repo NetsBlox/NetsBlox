@@ -60,13 +60,15 @@ GoogleMaps._pixelsAt = function(lat, lon, map) {
     return pixelsXY;
 };
 
-GoogleMaps._getGoogleParams = function(options, precisionLimit=PRECISION) {
-    const centerLat = parseFloat(options.center.lat).toFixed(precisionLimit);
-    const centerLon = parseFloat(options.center.lon).toFixed(precisionLimit);
+GoogleMaps._toPrecision = function(number, precisionLimit) {
+    return parseFloat(number).toFixed(precisionLimit);
+};
+
+GoogleMaps._getGoogleParams = function(options) {
     const params = {
         size: `${options.width}x${options.height}`,
         scale: options.scale,
-        center: `${centerLat},${centerLon}`,
+        center: `${options.center.lat},${options.center.lon}`,
         key: this.apiKey.value,
         zoom: options.zoom || 12,
         maptype: options.mapType
@@ -120,8 +122,8 @@ GoogleMaps._getMap = async function(latitude, longitude, width, height, zoom, ma
     const scale = width <= 640 && height <= 640 ? 1 : 2;
     const options = {
         center: {
-            lat: latitude,
-            lon: longitude,
+            lat: GoogleMaps._toPrecision(latitude, PRECISION),
+            lon: GoogleMaps._toPrecision(longitude, PRECISION)
         },
         width: (width / scale),
         height: (height / scale),
@@ -129,10 +131,11 @@ GoogleMaps._getMap = async function(latitude, longitude, width, height, zoom, ma
         scale,
         mapType: mapType || 'roadmap'
     };
-    const queryString = this._getGoogleParams(options, PRECISION);
+    const queryString = this._getGoogleParams(options);
+    const cacheKey = JSON.stringify(options);
 
     await this._recordUserMap(this.caller, options);
-    return this._sendImage({queryString});
+    return this._sendImage({queryString, cacheKey});
 };
 
 /**
