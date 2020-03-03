@@ -105,7 +105,10 @@ class ApiConsumer extends NBService {
     }
 
     _getCacheKey(queryOptions){
-        if (queryOptions.cacheKey) return queryOptions.cacheKey;
+        if (queryOptions.cacheKey) {
+            return typeof queryOptions.cacheKey === 'string' ? queryOptions.cacheKey :
+                JSON.stringify(queryOptions.cacheKey);
+        }
         let parameters = [];
         parameters.push(queryOptions.method || 'GET');
         const fullUrl = this._getFullUrl(queryOptions);
