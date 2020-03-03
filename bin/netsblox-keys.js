@@ -11,7 +11,7 @@ async function listKeys() {
     const keys = await ApiKeys.all();
     keys.forEach(key => {
         /* eslint-disable no-console */
-        console.log([key._id, key.owner, key.type, key.value].join('\t'));
+        console.log([key._id, key.owner, key.provider, key.value, key.isGroupDefault, key.groups.join(',')].join('\t'));
         /* eslint-enable no-console */
     });
 }
