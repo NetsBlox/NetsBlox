@@ -48,7 +48,6 @@ function tryLogIn (req, res, cb, skipRefresh) {
 
     req.session = req.session || new Session(res);
     if (cookie) {
-        // verify the cookie is valid
         logger.trace('validating cookie');
         jwt.verify(cookie, sessionSecret, (err, token) => {
             if (err) {
