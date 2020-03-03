@@ -157,7 +157,8 @@ class ApiConsumer extends NBService {
         if (queryOptions.cache === false) {
             return requestImage();
         } else {
-            return this._cache.wrap(fullUrl, () => {
+            const cacheKey = this._getCacheKey(queryOptions);
+            return this._cache.wrap(cacheKey, () => {
                 return requestImage();
             });
         }
