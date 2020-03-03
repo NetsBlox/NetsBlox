@@ -1,4 +1,4 @@
-describe.only('api-keys', function() {
+describe('api-keys', function() {
     const utils = require('../../../assets/utils');
     const APIKeys = utils.reqSrc('services/api-keys');
     const APIKey = utils.reqSrc('services/procedures/utils/api-key');
