@@ -69,32 +69,17 @@ describe('googlemaps', function() {
 
     });
 
-    describe('getGoogleParams', function() {
-
-        const opts = {
-            center: {
-                lat: 36.2645738345627,
-                lon: -82.5432276734527,
-            },
-            width: (640 / 1),
-            height: (480 / 1),
-            zoom: 15,
-            scale: 1,
-            mapType: 'roadmap'
-        };
+    describe('toPrecision', function() {
+        const latitude = 36.2645738345627;
 
         it('should round coordinates properly', function() {
-            const params = googlemaps._rpc._getGoogleParams(opts, 4);
-            const outCoords = params.match(/center=(.*)&key/)[1];
-            const expectedCoords = '36.2646,-82.5432';
-            assert.equal(outCoords, expectedCoords);
+            const rounded = googlemaps._rpc._toPrecision(latitude, 4);
+            assert.equal(rounded, 36.2646);
         });
 
         it('should not round coordinates (large precision)', function() {
-            const params = googlemaps._rpc._getGoogleParams(opts, 13);
-            const outCoords = params.match(/center=(.*)&key/)[1];
-            const expectedCoords = '36.2645738345627,-82.5432276734527';
-            assert.equal(outCoords, expectedCoords);
+            const rounded = googlemaps._rpc._toPrecision(latitude, 13);
+            assert.equal(rounded, 36.2645738345627);
         });
 
     });
