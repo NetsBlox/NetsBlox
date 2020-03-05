@@ -20,7 +20,8 @@ ApiConsumer.setRequiredApiKey(MovieDB, TheMovieDBKey);
 MovieDB._callApiMethod = async function(method, query) {
     const client = new MovieDBClient(this.apiKey.value);
     try {
-        return await Q.ninvoke(client, method, query);
+        const results = await Q.ninvoke(client, method, query);
+        return results[0];
     } catch (err) {
         if (err.message.includes('Unauthorized')) {
             throw new InvalidKeyError(this.apiKey);
@@ -181,7 +182,7 @@ var personCredits = async function(id, field, subfield) {
  * @param {String} title Title of movie
  */
 MovieDB.searchMovie = async function(title) {
-    const res = this._callApiMethod('searchMovie', { query: title });
+    const res = await this._callApiMethod('searchMovie', { query: title });
     return res.results.map(e => e.id);
 };
 
