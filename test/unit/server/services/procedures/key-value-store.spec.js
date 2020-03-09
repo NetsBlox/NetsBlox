@@ -4,6 +4,7 @@ describe('KeyValueStore', function() {
     const RPCMock = require('../../../../assets/mock-rpc');
     const kvstore = new RPCMock(KVStore);
     const assert = require('assert');
+    const Services = utils.reqSrc('services/api').services;
 
     async function assertThrowsAsync(fn) {
         try {
@@ -66,6 +67,27 @@ describe('KeyValueStore', function() {
             it('should fail if invalid password', async function() {
                 await assertThrowsAsync(() => kvstore.get('hi', 'huh?'));
             });
+        });
+    });
+
+    describe('put', function() {
+        before(async () => {
+            await utils.connect();
+            await Services.initialize();
+        });
+
+        it('should be able to handle concurrent calls to "put"', async function() {
+            const keys = [...new Array(10)].map((k, i) => `key_${i}`);
+            const putKeys = keys.map((key, value) => {
+                kvstore.put(key, value);
+            });
+
+            await Promise.all(putKeys);
+            // Check that they were all created
+            const checkKeys = keys.map(async (key, value) => {
+                assert.equal(await kvstore.get(key), value);
+            });
+            await Promise.all(checkKeys);
         });
     });
 

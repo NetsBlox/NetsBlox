@@ -15,9 +15,13 @@ const PASSWORD_KEY = '__password__';
 const getKeys = key => key.split(SEP).filter(k => k !== '');  // rm empty strings
 
 let StorageData = null;
+let getStorageData = null;
 const getStore = async function() {
-    if (!StorageData) {  // FIXME:
-        StorageData = (await Storage.get(NAME)) || {};
+    if (!StorageData) {
+        if (!getStorageData) {
+            getStorageData = Storage.get(NAME);
+        }
+        StorageData = (await getStorageData) || {};
     }
     return StorageData;
 };
@@ -70,10 +74,10 @@ KeyValueStore.get = async function(key, password) {
     logger.trace(`getting key "${key}"`);
     let result = await getStore();
     while (result && i < keys.length) {
-        result = result[keys[i]];
-        if (!result) {
+        if (!result.hasOwnProperty(keys[i])) {
             throwKeyNotFound(key);
         }
+        result = result[keys[i]];
 
         ensureAuthorized(result, password);
         i++;
@@ -110,7 +114,7 @@ KeyValueStore.put = async function(key, value, password) {
         i = 0;
 
     while (result && i < keys.length-1) {
-        if (!result[keys[i]]) {  // create nonexistent keys
+        if (!result.hasOwnProperty(keys[i])) {  // create nonexistent keys
             result[keys[i]] = {};
         }
         isPasswordUsed = isPasswordUsed || ensureAuthorized(result, password);
