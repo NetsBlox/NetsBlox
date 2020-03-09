@@ -88,11 +88,10 @@ KeyValueStore.get = async function(key, password) {
         if (Array.isArray(result)) {
             return result;
         }
-        logger.warn(`invalid key: ${key} (get) -> key is an object`);
-        return false;
+        return Object.keys(result).sort()
+            .map(childKey => key + '/' + childKey);
     }
 
-    logger.trace(`retrieved value: ${key} -> ${result}`);
     return result;
 };
 
