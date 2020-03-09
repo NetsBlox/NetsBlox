@@ -10,8 +10,8 @@ const logger = require('../utils/logger')('key-value-store');
 const Storage = require('../../storage');
 const NAME = 'KeyValueStore';
 const SEP = '/';
-const PASSWORD_KEY = '__password__';
-const VALUE_KEY = '__value__';
+const PASSWORD_KEY = '__p';
+const VALUE_KEY = '__v';
 const RESERVED_KEY_NAMES = [PASSWORD_KEY, VALUE_KEY];
 
 const getKeys = key => key.split(SEP).filter(k => k !== '');  // rm empty strings
