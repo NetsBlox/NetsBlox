@@ -1,19 +1,49 @@
-// This is a key value store that can be used across tables
+/**
+ * The KeyValueStore Service provides basic storage functionality using a hierarchical
+ * key-value storage (similar to CloudVariables).
+ *
+ * @service
+ */
 'use strict';
 
 const logger = require('../utils/logger')('key-value-store');
-var Storage = require('../../storage'),
-    NAME = 'KeyValueStore',
-    SEP = '/';
+const Storage = require('../../storage');
+const NAME = 'KeyValueStore';
+const SEP = '/';
+const PASSWORD_KEY = '__password__';
 
-var getKeys = key => key.split(SEP).filter(k => k !== '');  // rm empty strings
+const getKeys = key => key.split(SEP).filter(k => k !== '');  // rm empty strings
 
-var getStore = function() {
-    return Storage.get(NAME)
-        .then(result => result || {});
+let StorageData = null;
+const getStore = async function() {
+    if (!StorageData) {  // FIXME:
+        StorageData = (await Storage.get(NAME)) || {};
+    }
+    return StorageData;
 };
 
-var saveStore = function(store) {
+const ensureAuthorized = function(result, password) {
+    if (result[PASSWORD_KEY]) {
+        if (result[PASSWORD_KEY] !== password) {
+            throw new Error('Unauthorized: incorrect password');
+        }
+        return true;
+    }
+    return false;
+};
+
+const getValue = function(result) {
+    if (result[PASSWORD_KEY]) {
+        return result.value;
+    }
+    return result;
+};
+
+const throwKeyNotFound = function(keyName) {
+    throw new Error(`Key not found: ${keyName}`);
+};
+
+const saveStore = function(store) {
     return Storage.save(NAME, store);
 };
 
@@ -21,131 +51,116 @@ const validateKeys = function(keys) {
     const validName = /^[\w _()-]+$/;
     keys.forEach(key => {
         if (!validName.test(key)) {
-            throw new Error(`Invalid key: ${key}`);
+            throw new Error(`Invalid key name: ${key}`);
         }
     });
 };
 
 const KeyValueStore = {};
 
-
 /**
  * Get the stored value
- * @param {String} key Key value is associated with
+ * @param {String} key Fetch value for the given key
+ * @param {String=} password Password (if password-protected)
  */
-KeyValueStore.get = function(key) {
-    var keys = getKeys(key),
-        response = this.response,
-        i = 0;
+KeyValueStore.get = async function(key, password) {
+    const keys = getKeys(key);
+    let i = 0;
 
     logger.trace(`getting key "${key}"`);
-    getStore()
-        .then(result => {
-            while (result && i < keys.length) {
-                result = result[keys[i]];
-                if (!result) {
-                    logger.warn(`invalid key: ${key} (get)`);
-                    return response.json(false);
-                }
-                i++;
-            }
+    let result = await getStore();
+    while (result && i < keys.length) {
+        result = result[keys[i]];
+        if (!result) {
+            throwKeyNotFound(key);
+        }
 
-            if (typeof result === 'object') {
-                if (Array.isArray(result)) {
-                    return response.json(result);
-                }
-                logger.warn(`invalid key: ${key} (get) -> key is an object`);
-                return response.json(false);
-            }
+        ensureAuthorized(result, password);
+        i++;
+    }
 
-            logger.trace(`retrieved value: ${key} -> ${result}`);
-            return response.json(result);
-        })
-        .catch(err => {
-            logger.error(`Could not retrieve key ${keys[0]}: ${err}`);
-            return response.json(false);
-        });
+    result = getValue(result);
+    if (typeof result === 'object') {
+        if (Array.isArray(result)) {
+            return result;
+        }
+        logger.warn(`invalid key: ${key} (get) -> key is an object`);
+        return false;
+    }
 
-    return null;
+    logger.trace(`retrieved value: ${key} -> ${result}`);
+    return result;
 };
 
 /**
  * Set the stored value
  * @param {String} key Key to use for retrieving the variable
  * @param {Any} value Value to associated with key
+ * @param {String=} password Password (if password-protected)
  */
-KeyValueStore.put = function(key, value) {
-    var keys = getKeys(key),
-        response = this.response;
+KeyValueStore.put = async function(key, value, password) {
+    const keys = getKeys(key);
+    let isPasswordUsed = false;
 
     logger.trace(`Looking up key "${key}"`);
 
     validateKeys(keys);
-    getStore()
-        .then(store => {
-            var result = store,
-                i = 0;
+    const store = await getStore();
+    let result = store,
+        i = 0;
 
-            while (result && i < keys.length-1) {
-                if (!result[keys[i]]) {  // create nonexistent keys
-                    result[keys[i]] = {};
-                }
-                result = result[keys[i]];
-                i++;
-            }
+    while (result && i < keys.length-1) {
+        if (!result[keys[i]]) {  // create nonexistent keys
+            result[keys[i]] = {};
+        }
+        isPasswordUsed = isPasswordUsed || ensureAuthorized(result, password);
+        result = result[keys[i]];
+        i++;
+    }
 
-            result[keys[i]] = value;
+    if (password && !isPasswordUsed) {
+        value = {value};
+        value[PASSWORD_KEY] = password;
+    }
+    result[keys[i]] = value;
 
-            logger.trace(`about to save ${JSON.stringify(store)}`);
-            return saveStore(store);
-        })
-        .then(result => {
-            logger.trace(`set "${key}" to "${value}"`);
-            return response.json(result);
-        })
-        .catch(err => {
-            logger.error(`Could not save key "${key}": ${err}`);
-            return response.json(false);
-        });
-
-    return null;
+    logger.trace(`about to save ${JSON.stringify(store)}`);
+    return await saveStore(store);
 };
 
 /**
  * Delete the stored value
  * @param {String} key Key to remove from store
+ * @param {String=} password Password (if password-protected)
  */
-KeyValueStore.delete = function(key) {
-    var keys = getKeys(key),
-        response = this.response,
-        i = 0;
+KeyValueStore.delete = async function(key, password) {
+    const keys = getKeys(key);
+    let i = 0;
 
-    getStore()
-        .then(result => {
-            while (result && i < keys.length-1) {
-                result = result[keys[i]];
-                if (!result) {
-                    logger.warn(`invalid key: ${key} (delete)`);
-                    return response.json(false);
-                }
-                i++;
-            }
+    let result = await getStore();
+    while (result && i < keys.length-1) {
+        result = result[keys[i]];
+        if (!result) {
+            throwKeyNotFound(key);
+        }
+        ensureAuthorized(result, password);
+        i++;
+    }
 
-            if (typeof result !== 'object') {
-                logger.warn(`invalid key: ${key} (delete)`);
-                return response.json(false);
-            }
+    if (typeof result !== 'object') {
+        throwKeyNotFound(key);
+    }
 
-            delete result[keys[i]];
-            logger.trace(`successfully removed key ${key}`);
-            return saveStore(result);
-        })
-        .then(() => response.json(true))
-        .catch(e => logger.error(`deleting ${key} failed: ${e}`));
-
-    return null;
+    delete result[keys[i]];
+    logger.trace(`successfully removed key ${key}`);
+    await saveStore(result);
+    return true;
 };
 
+/**
+ * Get the ID of the parent key.
+ * @param {String} key
+ */
 KeyValueStore.parent = function(key) {
     var keys = getKeys(key);
 
@@ -156,30 +171,26 @@ KeyValueStore.parent = function(key) {
     return '/' + keys.join(SEP);
 };
 
-KeyValueStore.child = function(key) {
-    var keys = getKeys(key),
-        response = this.response,
-        i = 0;
+/**
+ * Get the IDs of the child keys.
+ * @param {String} key
+ * @param {String=} password Password (if password-protected)
+ */
+KeyValueStore.child = async function(key, password) {
+    let result = await getStore();
+    const keys = getKeys(key);
+    let i = 0;
+    while (result && i < keys.length) {
+        result = result[keys[i]];
+        if (typeof result !== 'object') {
+            throwKeyNotFound(key);
+        }
+        ensureAuthorized(result, password);
+        i++;
+    }
 
-    getStore()
-        .then(result => {
-            while (result && i < keys.length) {
-                result = result[keys[i]];
-                if (typeof result !== 'object') {
-                    logger.warn(`invalid key: "${key}" (child)`);
-                    return response.json([]);
-                }
-                i++;
-            }
-            return response.json(
-                Object.keys(result)
-                    .sort()
-                    .map(k => key + '/' + k)
-            );
-        })
-        .catch(e => logger.error(`getting children failed: ${e}`));
-
-    return null;
+    return Object.keys(result).sort()
+        .map(k => key + '/' + k);
 };
 
 KeyValueStore.COMPATIBILITY = {
