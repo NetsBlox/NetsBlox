@@ -21,9 +21,10 @@ let getStorageData = null;
 const getStore = async function() {
     if (!StorageData) {
         if (!getStorageData) {
-            getStorageData = Storage.get(NAME);
+            getStorageData = Storage.get(NAME)
+                .then(data => data || {});
         }
-        StorageData = (await getStorageData) || {};
+        StorageData = await getStorageData;
     }
     return StorageData;
 };
