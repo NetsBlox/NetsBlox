@@ -6,6 +6,11 @@ describe('KeyValueStore', function() {
     const assert = require('assert');
     const Services = utils.reqSrc('services/api').services;
 
+    before(async () => {
+        await utils.connect();
+        await Services.initialize();
+    });
+
     async function assertThrowsAsync(fn) {
         try {
             await fn();
@@ -71,10 +76,6 @@ describe('KeyValueStore', function() {
     });
 
     describe('put', function() {
-        before(async () => {
-            await utils.connect();
-            await Services.initialize();
-        });
 
         it('should be able to handle concurrent calls to "put"', async function() {
             const keys = [...new Array(10)].map((k, i) => `key_${i}`);
