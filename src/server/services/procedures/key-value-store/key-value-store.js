@@ -15,9 +15,13 @@ const PASSWORD_KEY = '__password__';
 const getKeys = key => key.split(SEP).filter(k => k !== '');  // rm empty strings
 
 let StorageData = null;
+let getStorageData = null;
 const getStore = async function() {
     if (!StorageData) {  // FIXME:
-        StorageData = (await Storage.get(NAME)) || {};
+        if (!getStorageData) {
+            getStorageData = Storage.get(NAME);
+        }
+        StorageData = (await getStorageData) || {};
     }
     return StorageData;
 };
