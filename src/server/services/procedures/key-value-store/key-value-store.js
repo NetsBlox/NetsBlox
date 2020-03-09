@@ -104,7 +104,6 @@ KeyValueStore.get = async function(key, password) {
         return formatChildKeys(key, result);
     }
 
-    logger.trace(`retrieved value: ${key} -> ${result}`);
     return result;
 };
 

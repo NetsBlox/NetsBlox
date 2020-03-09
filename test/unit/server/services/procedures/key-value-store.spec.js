@@ -55,6 +55,19 @@ describe('KeyValueStore', function() {
             assert.equal(result, 234);
         });
 
+        it('should get nested keys if called on directory', async () => {
+            const keys = [
+                'get_child_keys/1',
+                'get_child_keys/2',
+                'get_child_keys/3',
+            ];
+            await Promise.all(keys.map((k, i) => kvstore.put(k, i)));
+            const result = await kvstore.get('get_child_keys');
+            result.forEach((actualKey, i) => {
+                assert.equal(actualKey, keys[i]);
+            });
+        });
+
         describe('passwords', function() {
             before(async () => {
                 await kvstore.put('hi', 56, 'secret');
