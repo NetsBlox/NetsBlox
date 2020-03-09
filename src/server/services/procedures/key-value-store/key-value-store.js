@@ -11,6 +11,8 @@ const Storage = require('../../storage');
 const NAME = 'KeyValueStore';
 const SEP = '/';
 const PASSWORD_KEY = '__password__';
+const VALUE_KEY = '__value__';
+const RESERVED_KEY_NAMES = [PASSWORD_KEY, VALUE_KEY];
 
 const getKeys = key => key.split(SEP).filter(k => k !== '');  // rm empty strings
 
@@ -38,7 +40,7 @@ const ensureAuthorized = function(result, password) {
 
 const getValue = function(result) {
     if (result[PASSWORD_KEY]) {
-        return result.value;
+        return result[VALUE_KEY];
     }
     return result;
 };
@@ -57,7 +59,17 @@ const validateKeys = function(keys) {
         if (!validName.test(key)) {
             throw new Error(`Invalid key name: ${key}`);
         }
+        if (RESERVED_KEY_NAMES.includes(key)) {
+            throw new Error(`Invalid key name: ${key}`);
+        }
     });
+};
+
+const formatChildKeys = function(key, data) {
+    const childKeys = Object.keys(data);
+    return childKeys.sort()
+        .filter(key => !RESERVED_KEY_NAMES.includes(key))
+        .map(k => key + '/' + k);
 };
 
 const KeyValueStore = {};
@@ -88,8 +100,7 @@ KeyValueStore.get = async function(key, password) {
         if (Array.isArray(result)) {
             return result;
         }
-        logger.warn(`invalid key: ${key} (get) -> key is an object`);
-        return false;
+        return formatChildKeys(key, result);
     }
 
     logger.trace(`retrieved value: ${key} -> ${result}`);
@@ -122,11 +133,12 @@ KeyValueStore.put = async function(key, value, password) {
         i++;
     }
 
+    const entry = result[keys[i]] || {};
+    entry[VALUE_KEY] = value;
     if (password && !isPasswordUsed) {
-        value = {value};
-        value[PASSWORD_KEY] = password;
+        entry[PASSWORD_KEY] = password;
     }
-    result[keys[i]] = value;
+    result[keys[i]] = entry;
 
     logger.trace(`about to save ${JSON.stringify(store)}`);
     return await saveStore(store);
@@ -193,8 +205,7 @@ KeyValueStore.child = async function(key, password) {
         i++;
     }
 
-    return Object.keys(result).sort()
-        .map(k => key + '/' + k);
+    return formatChildKeys(key, result);
 };
 
 KeyValueStore.COMPATIBILITY = {
