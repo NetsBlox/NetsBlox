@@ -17,7 +17,7 @@ const getKeys = key => key.split(SEP).filter(k => k !== '');  // rm empty string
 let StorageData = null;
 let getStorageData = null;
 const getStore = async function() {
-    if (!StorageData) {  // FIXME:
+    if (!StorageData) {
         if (!getStorageData) {
             getStorageData = Storage.get(NAME);
         }
