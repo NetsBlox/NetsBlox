@@ -9,7 +9,7 @@ Storage.prototype.save = function(key, value) {
         _id: key,
         value
     };
-    return this.collection.save(data)
+    return this.collection.update(data, {upsert: true})
         .then(result => {
             if (result.writeError) {
                 this.logger.error(`could not save to ${key}: ${result.errmsg}`);
