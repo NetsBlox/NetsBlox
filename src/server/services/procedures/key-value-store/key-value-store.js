@@ -39,7 +39,7 @@ const ensureAuthorized = function(result, password) {
 };
 
 const getValue = function(result) {
-    if (result[PASSWORD_KEY]) {
+    if (result[VALUE_KEY]) {
         return result[VALUE_KEY];
     }
     return result;
