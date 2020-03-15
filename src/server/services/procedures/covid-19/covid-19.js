@@ -67,7 +67,7 @@ COVID19.getLocationsWithData = function() {
  * @param{String} country
  * @param{String=} state
  */
-COVID19.getLocationsCoordinates = function(country, state='') {
+COVID19.getLocationCoordinates = function(country, state='') {
     const row = data.getRow(CONFIRMED, country, state);
     if (!row) throw new Error('Location not found.');
 
