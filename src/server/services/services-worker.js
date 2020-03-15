@@ -117,7 +117,7 @@ class ServicesWorker {
     }
 
     validateCustomServiceName(name, serviceName) {
-        return serviceName.toLowerCase() !== this.getDefaultServiceName(name).toLowerCase();
+        return serviceName.toLowerCase().replace(/-/g, '') !== this.getDefaultServiceName(name).toLowerCase();
     }
 
     registerRPC(rpc) {
