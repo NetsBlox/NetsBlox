@@ -43,12 +43,15 @@ function dataToPlot(data, opts){
     data.forEach(line => {
         let smoothing = line.smoothing ? `smooth ${line.smoothing}` : '';
         let columnSelection = opts.isCategorical ? '2:xtic(1)' : '1:2';
-        settings.push(`'-' using ${columnSelection} title '${line.title}' with ${line.type} ${smoothing}`);
+        settings.push(`'-' using ${columnSelection} title ${escape(line.title)} with ${line.type} ${smoothing}`);
         points += pointsToInlineData(line.points);
     });
     return settings.join(', ') + points;
 }
 
+function escape(string) {
+    return `"${string.replace(/"/g, '\\"')}"`;
+}
 
 module.exports.draw = function(data, opts) {
     // apply the defaults
@@ -70,7 +73,7 @@ module.exports.draw = function(data, opts) {
         .set('datafile separator \',\'');
 
 
-    if (opts.title) graph.set(`title '${opts.title}'`);
+    if (opts.title) graph.set(`title ${escape(opts.title)}`);
     if (opts.xRange) graph.set(`xrange [${opts.xRange.min}:${opts.xRange.max}]`);
     if (opts.yRange) graph.set(`yrange [${opts.yRange.min}:${opts.yRange.max}]`);
     if (opts.outputName) graph.set(`output '${opts.outputName}'`);
@@ -79,8 +82,8 @@ module.exports.draw = function(data, opts) {
     if (opts.xTicks) graph.set(`xtics ${opts.xTicks.join(', ')}`);
     if (opts.timeSeries.axis) {
         graph.set(`${opts.timeSeries.axis}data time`);
-        graph.set(`timefmt '${opts.timeSeries.inputFormat}'`);
-        graph.set(`format ${opts.timeSeries.axis} '${opts.timeSeries.outputFormat}'`);
+        graph.set(`timefmt ${escape(opts.timeSeries.inputFormat)}`);
+        graph.set(`format ${opts.timeSeries.axis} ${escape(opts.timeSeries.outputFormat)}`);
     }
 
     graph.plot(dataToPlot(data, opts),{end: true});
