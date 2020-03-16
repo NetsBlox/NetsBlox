@@ -105,7 +105,6 @@ function parseDataFile(data) {
                 }
                 break;
 
-            case '\'':
             case '"':
                 isQuoted = !isQuoted;
                 break;
