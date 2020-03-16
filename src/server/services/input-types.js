@@ -137,7 +137,7 @@ types.Function = async (blockXml, ctx) => {
     let roleNames = [''];
 
     if (ctx) {
-        const metadata = await Projects.getRawProjectById(ctx.caller.projectId);
+        const metadata = await Projects.getProjectMetadataById(ctx.caller.projectId);
         if (metadata) {
             roleNames = Object.values(metadata.roles)
                 .map(role => role.ProjectName);

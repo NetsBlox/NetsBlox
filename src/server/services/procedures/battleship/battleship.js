@@ -192,7 +192,7 @@ Battleship.prototype.fire = function(row, column) {
  */
 Battleship.prototype.remainingShips = function(roleId) {
     if (roleId) {  // resolve the provided role name to a role ID
-        return Projects.getRawProjectById(this.caller.projectId)
+        return Projects.getProjectMetadataById(this.caller.projectId)
             .then(metadata => {
                 const role = Object.keys(metadata.roles).find(id => {
                     return metadata.roles[id].ProjectName === roleId;

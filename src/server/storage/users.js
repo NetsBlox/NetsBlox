@@ -91,7 +91,7 @@
             return Projects.getUserProjects(this.username);
         }
 
-        getRawProjects() {
+        getProjectMetadatas() {
             return Projects.getRawUserProjects(this.username);
         }
 

@@ -36,7 +36,7 @@ module.exports = [
             const {projectId} = req.body;
             let collaborators = null;
 
-            return Projects.getRawProjectById(projectId)
+            return Projects.getProjectMetadataById(projectId)
                 .then(metadata => {
                     collaborators = metadata.collaborators;
                     return getFriendSockets(req.session.user);
@@ -135,7 +135,7 @@ module.exports = [
             };
 
             // If the user is online, send the invitation via ws to the browser
-            return Projects.getRawProjectById(projectId)
+            return Projects.getProjectMetadataById(projectId)
                 .then(metadata => {
                     if (!metadata) {
                         logger.log('guest invitation failed: project not found');

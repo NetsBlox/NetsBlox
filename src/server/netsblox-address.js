@@ -14,7 +14,7 @@ class NetsBloxAddress {
     }
 
     getPublicIds () {  // get the public role IDs for the given dst ID
-        return Projects.getRawProjectById(this.projectId, {cache: true})
+        return Projects.getProjectMetadataById(this.projectId, {cache: true})
             .then(metadata => {
                 if (!metadata) {
                     throw new Error('Project no longer exists. Cannot resolve address');
@@ -44,7 +44,7 @@ NetsBloxAddress.new = function(dstId, srcProjectId, srcRoleId) {
             roleName = idChunks.pop();
 
         // Resolve the role, owner, project name
-        return Projects.getRawProject(ownerId, roomName, true)
+        return Projects.getProjectMetadata(ownerId, roomName, true)
             .then(metadata => {
                 const projectId = metadata._id.toString();
                 let roleId = null;
@@ -63,7 +63,7 @@ NetsBloxAddress.new = function(dstId, srcProjectId, srcRoleId) {
             });
 
     } else {
-        return Projects.getRawProjectById(srcProjectId, {cache: true})
+        return Projects.getProjectMetadataById(srcProjectId, {cache: true})
             .then(metadata => {
                 if (!metadata) {
                     throw new Error(`No source project found: ${srcProjectId}`);

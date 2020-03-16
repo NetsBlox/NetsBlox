@@ -100,7 +100,7 @@
             return this._id.toString();
         }
 
-        getRawProject(cache=false) {
+        getProjectMetadata(cache=false) {
             return findOne(this.getStorageId(), cache)
                 .then(project => {
                     if (!project) {
@@ -160,12 +160,12 @@
         }
 
         getRoleIds() {
-            return this.getRawProject()
+            return this.getProjectMetadata()
                 .then(project => Object.keys(project.roles || {}));
         }
 
         getRoleIdsFor(names) {
-            return this.getRawProject()
+            return this.getProjectMetadata()
                 .then(project => {
                     let remainingIds = Object.keys(project.roles);
                     let ids = names.map(name => {
@@ -227,7 +227,7 @@
         }
 
         getRawRoleById(id) {
-            return this.getRawProject()
+            return this.getProjectMetadata()
                 .then(project => {
                     const role = project.roles[id];
                     role.ID = id;
@@ -251,7 +251,7 @@
         }
 
         getRawRoles() {
-            return this.getRawProject()
+            return this.getProjectMetadata()
                 .then(project => {
                     return Object.keys(project.roles)
                         .map(id => {
@@ -268,7 +268,7 @@
 
         getCopyFor(user) {
             const owner = user.username;
-            return this.getRawProject()
+            return this.getProjectMetadata()
                 .then(raw => {
 
                     return user.getNewName(raw.name)
@@ -290,7 +290,7 @@
         }
 
         getCopy() {
-            return this.getRawProject()
+            return this.getProjectMetadata()
                 .then(metadata => {
                     metadata.originTime = Date.now();
                     metadata.collaborators = [];
@@ -374,7 +374,7 @@
         }
 
         getRoleNames () {
-            return this.getRawProject()
+            return this.getProjectMetadata()
                 .then(project => Object.keys(project.roles).map(id => project.roles[id].ProjectName));
         }
 
@@ -423,7 +423,7 @@
         }
 
         archive() {  // Archive a copy of the current project
-            return this.getRawProject()
+            return this.getProjectMetadata()
                 .then(project => {
                     project.projectId = project._id;
                     delete project._id;
@@ -435,7 +435,7 @@
         }
 
         isTransient() {
-            return this.getRawProject()
+            return this.getProjectMetadata()
                 .then(project => !!project.transient);
         }
 
@@ -449,7 +449,7 @@
             if (this.isDeleted()) return Promise.reject('cannot setName: project has been deleted!');
             const query = {$set: {name: name}};
             this._logger.trace(`renaming project ${this.name}=>${name} for ${this.owner}`);
-            return this.getRawProject()
+            return this.getProjectMetadata()
                 .then(project => {
                     const isPublic = project.Public === true;
                     if (isPublic) {
@@ -514,7 +514,7 @@
 
         //////////////// Recording messages (network traces) ////////////////
         getRecordStartTimes() {
-            return this.getRawProject()
+            return this.getProjectMetadata()
                 .then(project => project.recordMessagesAfter || []);
         }
 
@@ -524,7 +524,7 @@
         }
 
         isRecordingMessages(cache=false) {
-            return this.getRawProject(cache)
+            return this.getProjectMetadata(cache)
                 .then(project => project.recordMessagesAfter || [])
                 .then(records => Math.max.apply(null, records.map(record => record.time)))
                 .then( time => (Date.now() - time) < MAX_MSG_RECORD_DURATION);
@@ -614,17 +614,17 @@
         return findOne(query, cache);
     };
 
-    ProjectStorage.getRawProject = function (username, projectName, cache=false) {
+    ProjectStorage.getProjectMetadata = function (username, projectName, cache=false) {
         return findOne({owner: username, name: projectName}, cache);
     };
 
     ProjectStorage.getProjectId = function(owner, name) {
-        return ProjectStorage.getRawProject(owner, name)
+        return ProjectStorage.getProjectMetadata(owner, name)
             .then(project => project && project._id.toString());
     };
 
     ProjectStorage.get = function (username, projectName) {
-        return ProjectStorage.getRawProject(username, projectName)
+        return ProjectStorage.getProjectMetadata(username, projectName)
             .then(data => {
                 var params = {
                     logger: logger,
@@ -636,7 +636,7 @@
     };
 
     ProjectStorage.getById = function (id) {
-        return ProjectStorage.getRawProjectById(id)
+        return ProjectStorage.getProjectMetadataById(id)
             .then(data => {
                 var params = {
                     logger: logger,
@@ -647,7 +647,7 @@
             });
     };
 
-    ProjectStorage.getRawProjectById = function (id, opts) {
+    ProjectStorage.getProjectMetadataById = function (id, opts) {
         const defaultOpts = {unmarkForDeletion: false, cache: false};
         opts = {...defaultOpts, ...opts};
         try {
