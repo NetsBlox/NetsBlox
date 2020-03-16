@@ -75,7 +75,7 @@ const encodeQueryData = (query, encode=true) => {
 
 const getRoleNames = (projectId, roleIds) => {
     roleIds = roleIds.filter(id => !!id);
-    return Projects.getRawProjectById(projectId)
+    return Projects.getProjectMetadataById(projectId)
         .then(metadata => {
             if (!metadata) {
                 throw new Error('Project not found');
@@ -96,7 +96,7 @@ const getRoleName = (projectId, roleId) => {
 };
 
 const getRoleIds = async projectId => {
-    const metadata = await Projects.getRawProjectById(projectId);
+    const metadata = await Projects.getProjectMetadataById(projectId);
     return Object.keys(metadata.roles);
 };
 

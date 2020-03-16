@@ -302,7 +302,7 @@ class Client {
 
     getPublicId () {
         // Look up the current project, role names
-        return Projects.getRawProjectById(this.projectId)
+        return Projects.getProjectMetadataById(this.projectId)
             .then(metadata => {
                 if (!metadata.roles[this.roleId]) {
                     throw new Error('Role not found');
@@ -477,7 +477,7 @@ Client.MessageHandlers = {
 
     'permission-elevation-request': function(msg) {
         const {projectId} = msg;
-        return Projects.getRawProjectById(this.projectId)
+        return Projects.getProjectMetadataById(this.projectId)
             .then(metadata => {
                 const {owner} = metadata;
                 const sockets = NetworkTopology.getSocketsAtProject(projectId);

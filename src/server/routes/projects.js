@@ -468,7 +468,7 @@ module.exports = [
             const user = req.session.user;
 
             // Check if the name will conflict with any currently saved projects
-            return user.getRawProjects()
+            return user.getProjectMetadatas()
                 .then(projects => {
                     const conflict = projects
                         .find(project => project.name === name && project._id.toString() !== projectId);
@@ -695,7 +695,7 @@ module.exports = [
                         return res.status(400).send('Invalid username');
                     }
 
-                    return user.getRawProjects()
+                    return user.getProjectMetadatas()
                         .then(projects => {
                             const names = projects
                                 .filter(project => !publicOnly || !!project.Public)
@@ -716,7 +716,7 @@ module.exports = [
                 aspectRatio = +req.query.aspectRatio || 0;
 
             // return the names of all projects owned by :owner
-            return Projects.getRawProject(req.params.owner, name)
+            return Projects.getProjectMetadata(req.params.owner, name)
                 .then(project => {
                     if (project) {
                         const thumbnail = getProjectThumbnail(project);

@@ -128,7 +128,7 @@ describe('projects', function() {
         let project = null;
         return Projects.get('brian', 'MultiRoles')
             .then(result => project = result)
-            .then(() => project.getRawProject())
+            .then(() => project.getProjectMetadata())
             .then(data => assert.equal(
                 data.originTime.getTime(),
                 project.originTime.getTime()
@@ -282,7 +282,7 @@ describe('projects', function() {
         });
 
         it('should not be able to get raw project by id', async function() {
-            let fetchedProj = await Projects.getRawProjectById(project.getId());
+            let fetchedProj = await Projects.getProjectMetadataById(project.getId());
             assert.deepEqual(fetchedProj.name, 'MultiRoles');
         });
 
@@ -333,7 +333,7 @@ describe('projects', function() {
             query.$set.name = newName;
 
             return project._execUpdate(query)
-                .then(() => project.getRawProject())
+                .then(() => project.getProjectMetadata())
                 .then(json => {
                     const {lastUpdatedAt} = json;
                     assert(lastUpdatedAt >= startTime, 'last update time not recorded');
@@ -423,7 +423,7 @@ describe('projects', function() {
         });
 
         it('should not keep old role name', function(done) {
-            project.getRawProject()
+            project.getProjectMetadata()
                 .then(() => project.getRoleNames())
                 .then(names => assert(!names.includes('role')))
                 .nodeify(done);
@@ -657,7 +657,7 @@ describe('projects', function() {
             project.startRecordingMessages('test', 1000)
                 .then(() => project.startRecordingMessages())
                 .then(time => project.stopRecordingMessages('test', time))
-                .then(() => project.getRawProject())
+                .then(() => project.getProjectMetadata())
                 .then(raw => assert(!raw.recordMessagesAfter.includes(1000)))
                 .nodeify(done);
         });
@@ -734,14 +734,14 @@ describe('projects', function() {
         });
 
         it('should store archive in project-archives', () => {
-            return project.getRawProject()
+            return project.getProjectMetadata()
                 .then(result => Q(archives.findOne({projectId: result._id})))
                 .then(archive => assert(archive));
         });
 
         it('should not update archive on project edit', () => {
             return project.setName('someNewName')
-                .then(() => project.getRawProject())
+                .then(() => project.getProjectMetadata())
                 .then(result => Q(archives.findOne({projectId: result._id})))
                 .then(archive => assert.equal(archive.name, 'PublicProject'));
         });

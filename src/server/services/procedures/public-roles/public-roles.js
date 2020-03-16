@@ -15,7 +15,7 @@ const PublicRoles = {};
  */
 PublicRoles.getPublicRoleId = function() {
     const {projectId, roleId, clientId} = this.caller;
-    return Projects.getRawProjectById(projectId)
+    return Projects.getProjectMetadataById(projectId)
         .then(metadata => {
             if (!metadata) {
                 logger.warn(`cannot get public id for ${clientId} project ${projectId} not found.`);
