@@ -9,23 +9,25 @@ Data.types = {
 Data.rawData = {};
 
 Data.getData = function(type, country, state='') {
-    const rows = Data.rawData[type];
     if (state !== '') {
-        const row = rows.slice(1).find(row => {
-            const [s, c] = row;
-            return equalStrings(c, country) && equalStrings(s, state);
-        });
-        return row && addDatesToCounts(type, row.slice(4));
+        const row = Data.getRow(type, country, state);
+        return addDatesToCounts(type, row.slice(4));
     } else {
+        const rows = Data.rawData[type];
         const matchingRows = rows.slice(1).filter(row => {
             const [, c] = row;
             return equalStrings(c, country);
         });
 
+        if (matchingRows.length === 0) {
+            return locationNotFound();
+        }
+
         const counts = matchingRows.reduce((counts, row) => {
             const values = row.slice(4);
             return _.zipWith(counts, values,(c1=0, c2=0) => c1 + c2);
         }, []);
+
         return addDatesToCounts(type, counts);
     }
 };
@@ -35,7 +37,7 @@ Data.getRow = function(type, country, state='') {
     return rows.slice(1).find(row => {
         const [s, c] = row;
         return equalStrings(c, country) && equalStrings(s, state);
-    });
+    }) || locationNotFound();
 };
 
 Data.getAllData = function() {
@@ -43,6 +45,13 @@ Data.getAllData = function() {
         .reduce((combined, data) => {
             return combined.concat(data.slice(1));
         }, []);
+};
+
+Data.setUpdateInterval = function(duration) {
+    if (this._intervalId) {
+        clearInterval(this._intervalId);
+    }
+    this._intervalId = setInterval(fetchLatestData, duration);
 };
 
 function equalStrings(s1, s2) {
@@ -105,14 +114,12 @@ function parseDataFile(data) {
     });
 }
 
+function locationNotFound() {
+    throw new Error('Location not found.');
+}
+
 fetchLatestData();
 
-Data.setUpdateInterval = function(duration) {
-    if (this._intervalId) {
-        clearInterval(this._intervalId);
-    }
-    this._intervalId = setInterval(fetchLatestData, duration);
-};
 const hour = 1000*60*60;
 Data.setUpdateInterval(6*hour);
 
