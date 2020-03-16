@@ -4,7 +4,6 @@
  *
  * For more information, check out https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases
  *
- * @alpha
  * @service
  * @category Science
  */
