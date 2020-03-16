@@ -1,5 +1,6 @@
 const axios = require('axios');
 const _ = require('lodash');
+const COUNTRY_ALIASES = require('./countries');
 const Data = {};
 Data.types = {
     DEATH: 'Deaths',
@@ -16,7 +17,7 @@ Data.getData = function(type, country, state='') {
         const rows = Data.rawData[type];
         const matchingRows = rows.slice(1).filter(row => {
             const [, c] = row;
-            return equalStrings(c, country);
+            return isCountry(c, country);
         });
 
         if (matchingRows.length === 0) {
@@ -36,7 +37,7 @@ Data.getRow = function(type, country, state='') {
     const rows = Data.rawData[type];
     return rows.slice(1).find(row => {
         const [s, c] = row;
-        return equalStrings(c, country) && equalStrings(s, state);
+        return isCountry(c, country) && equalStrings(s, state);
     }) || locationNotFound();
 };
 
@@ -54,8 +55,20 @@ Data.setUpdateInterval = function(duration) {
     this._intervalId = setInterval(fetchLatestData, duration);
 };
 
+function isCountry(country, other) {
+    const validNames = [country];
+    if (COUNTRY_ALIASES[country]) {
+        validNames.push(...COUNTRY_ALIASES[country]);
+    }
+    return validNames.find(country => equalStrings(country, other));
+}
+
 function equalStrings(s1, s2) {
-    return s1.toLowerCase() === s2.toLowerCase();
+    return normalizeString(s1) === normalizeString(s2);
+}
+
+function normalizeString(string) {
+    return string.toLowerCase().replace(/[^a-z]/g, '');
 }
 
 function addDatesToCounts(type, values) {
