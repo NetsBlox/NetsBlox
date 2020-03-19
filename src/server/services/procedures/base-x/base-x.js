@@ -69,7 +69,7 @@ async function baseXRequest(url, username, password) {
 
     try {
         const response = await axios.get(url, opts);
-        return parseResponse(response.data);
+        return this._parseResponse(response.data);
     } catch (err) {
         throw new Error(rewordError(err));
     }
@@ -80,14 +80,15 @@ function rewordError(err) {
     return response.data;
 }
 
-function parseResponse(data) {
+BaseX._parseResponse = function(data) {
     const isXmlData = typeof data === 'string' && data.startsWith('<');
     if (isXmlData) {
-        const xml = parseXml(data);
-        return toJsonML(xml.children[0]);
+        const xml = parseXml(`<root>${data}</root>`);
+        const results = toJsonML(xml.children[0]).slice(1);
+        return results.length === 1 ? results.pop() : results;
     } else {
         return data;
     }
-}
+};
 
 module.exports = BaseX;
