@@ -20,7 +20,7 @@ const BaseX = {};
  */
 BaseX.query = async function(url, database, query, username, password) {
     url = `${url}/rest/${database}?query=${encodeURIComponent(query)}`;
-    return baseXRequest(url, username, password);
+    return this._baseXRequest(url, username, password);
 };
 
 function toJsonML(xml) {
@@ -57,10 +57,10 @@ function toJsonML(xml) {
  */
 BaseX.command = function(url, command, username, password) {
     url = `${url}/rest?command=${encodeURIComponent(command)}`;
-    return baseXRequest(url, username, password);
+    return this._baseXRequest(url, username, password);
 };
 
-async function baseXRequest(url, username, password) {
+BaseX._baseXRequest = async function(url, username, password) {
     const opts = {headers: {}};
     if (username && password) {
         const auth = Buffer.from(`${username}:${password}`).toString('base64');
@@ -71,13 +71,17 @@ async function baseXRequest(url, username, password) {
         const response = await axios.get(url, opts);
         return this._parseResponse(response.data);
     } catch (err) {
-        throw new Error(rewordError(err));
+        throw rewordError(err);
     }
-}
+};
 
 function rewordError(err) {
-    const {response} = err;
-    return response.data;
+    const isAxiosError = !!err.response;
+    if (isAxiosError) {
+        const {response} = err;
+        return new Error(response.data);
+    }
+    return err;
 }
 
 BaseX._parseResponse = function(data) {
