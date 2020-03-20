@@ -35,11 +35,12 @@ function toJsonML(xml) {
         jsonml.push(xml.attributes);
     }
 
-    const hasTextContents = xml.children.length && xml.children[0].type === 'text';
+    const hasTextContents = xml.children.length === 1 && xml.children[0].type === 'text';
     if (hasTextContents) {
         jsonml.push(toJsonML(xml.children[0]));
     } else {
-        jsonml.push(...xml.children.map(toJsonML));
+        const childElements = xml.children.filter(child => child.type !== 'text');
+        jsonml.push(...childElements.map(toJsonML));
     }
 
     return jsonml;
