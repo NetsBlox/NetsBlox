@@ -11,21 +11,6 @@
     const MAX_MSG_RECORD_DURATION = 1000 * 60 * 10;  // 10 min
     const memoize = require('memoizee');
 
-    const storeRoleBlob = function(role) {
-        const content = _.clone(role);
-        return Q.all([
-            blob.store(content.SourceCode),
-            blob.store(content.Media)
-        ])
-            .then(hashes => {
-                const [srcHash, mediaHash] = hashes;
-
-                content.SourceCode = srcHash;
-                content.Media = mediaHash;
-                return content;
-            });
-    };
-
     const loadRoleContent = function(role) {
         return Q.all([
             blob.get(role.SourceCode),
@@ -120,10 +105,6 @@
         }
 
         ///////////////////////// Roles /////////////////////////
-        getNewRoleId(name) {
-            return `${name}-${Date.now()}`;
-        }
-
         setRawRole(name, content) {
             if (this.isDeleted()) return Promise.reject('cannot setRawRole: project has been deleted!');
 
@@ -141,14 +122,14 @@
 
         setRoleById(id, content) {
             assert(content.ProjectName);
-            this.addRoleMetadata(content);
-            return storeRoleBlob(content)
+            ProjectStorage.addRoleMetadata(content);
+            return ProjectStorage.uploadRoleToBlob(content)
                 .then(content => this.setRawRoleById(id, content));
         }
 
         addSetRoleToQuery(id, content, query) {
             query = query || {$set: {}};
-            id = id || this.getNewRoleId(content.ProjectName);
+            id = id || ProjectStorage.getNewRoleId(content.ProjectName);
             query.$set[`roles.${id}`] = content;
 
             return query;
@@ -192,17 +173,9 @@
             this._logger.trace(`updating role: ${name} in ${this.owner}/${this.name}`);
             content.ProjectName = name;
 
-            this.addRoleMetadata(content);
-            return storeRoleBlob(content)
+            ProjectStorage.addRoleMetadata(content);
+            return ProjectStorage.uploadRoleToBlob(content)
                 .then(content => this.setRawRole(name, content));
-        }
-
-        // Parse additional important fields
-        addRoleMetadata(content) {
-            content.Thumbnail = utils.xml.thumbnail(content.SourceCode);
-            content.Notes = utils.xml.notes(content.SourceCode);
-            content.Updated = new Date();
-            return content;
         }
 
         setRoles(roles) {
@@ -211,7 +184,7 @@
 
             const query = {$set: {}};
             let rawRoles = null;
-            return Q.all(roles.map(role => storeRoleBlob(role)))
+            return Q.all(roles.map(role => ProjectStorage.uploadRoleToBlob(role)))
                 .then(roles => {
                     if (this.isDeleted()) return;
                     rawRoles = roles;
@@ -266,27 +239,20 @@
                 .then(roles => Q.all(roles.map(loadRoleContent)));
         }
 
-        getCopyFor(user) {
-            const owner = user.username;
-            return this.getProjectMetadata()
-                .then(raw => {
+        async getCopyFor(owner, overrides={}) {
+            const metadata = await this.getProjectMetadata();
+            metadata.originTime = Date.now();
+            metadata.owner = owner;
+            metadata.collaborators = [];
+            metadata.transient = true;
+            _.extend(metadata, overrides);
 
-                    return user.getNewName(raw.name)
-                        .then(name => {
-                            raw.originTime = Date.now();
-                            raw.name = name;
-                            raw.owner = owner;
-                            raw.collaborators = [];
-                            raw.transient = true;
-
-                            const project = new Project({
-                                logger: this._logger,
-                                db: this._db,
-                                data: raw
-                            });
-                            return project.create(raw.roles);
-                        });
-                });
+            const project = new Project({
+                logger: this._logger,
+                db: this._db,
+                data: metadata
+            });
+            return project.create(metadata.roles);
         }
 
         getCopy() {
@@ -379,7 +345,7 @@
         }
 
         ///////////////////////// End Roles /////////////////////////
-        create(roleDict={}) {  // initial save
+        create(roleDict) {  // initial save
             const data = {
                 name: this.name,
                 owner: this.owner,
@@ -388,10 +354,10 @@
                 originTime: this.originTime,
                 collaborators: this.collaborators,
                 deleteAt: null,
-                roles: roleDict
+                roles: roleDict || this.roles || {}
             };
 
-            return this._db.save(data)
+            return this._db.insert(data)
                 .then(result => {
                     const id = result.ops[0]._id;
                     this._id = id;
@@ -610,6 +576,10 @@
         ProjectArchives = db.collection('project-archives');
     };
 
+    ProjectStorage.getCollection = function() {
+        return this._collection;
+    };
+
     ProjectStorage._findOne = function(query, cache) {
         return findOne(query, cache);
     };
@@ -775,11 +745,14 @@
         return deferred.promise;
     };
 
+    const PROJECT_DEFAULTS = {
+        name: 'untitled',
+        collaborators: [],
+        roles: {},
+    };
     ProjectStorage.new = function(data) {
-        data.roles = data.roles || {};
         data.originTime = data.originTime || new Date();
-        data.collaborators = data.collaborators || [];
-        data.name = data.name || 'untitled';
+        data = _.extend({}, PROJECT_DEFAULTS, data);
 
         const project = new Project({
             logger: logger,
@@ -794,6 +767,14 @@
         return collection.deleteOne({_id: ObjectId(projectId)});
     };
 
+    ProjectStorage.update = function(projectId, query) {
+        return this.updateCustom({_id: ObjectId(projectId)}, query);
+    };
+
+    ProjectStorage.updateCustom = function(selector, query) {
+        return collection.updateOne(selector, query);
+    };
+
     const DELETE_DELAY = 60*1000;
     ProjectStorage.markForDeletion = async function(projectId) {
         // Record that the project is now empty. This will be used to mark it for deletion
@@ -804,5 +785,29 @@
             $set: {deleteAt}
         });
     };
+
+    ProjectStorage.addRoleMetadata = content => {
+        content.Thumbnail = utils.xml.thumbnail(content.SourceCode);
+        content.Notes = utils.xml.notes(content.SourceCode);
+        content.Updated = new Date();
+        return content;
+    };
+
+    ProjectStorage.getNewRoleId = name => {
+        return `${name}-${Date.now()}`;
+    };
+
+    ProjectStorage.uploadRoleToBlob = async function(role) {
+        const content = _.clone(role);
+        const [srcHash, mediaHash] = await Promise.all([
+            blob.store(content.SourceCode),
+            blob.store(content.Media)
+        ]);
+
+        content.SourceCode = srcHash;
+        content.Media = mediaHash;
+        return content;
+    };
+
 
 })(exports);
