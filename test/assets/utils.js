@@ -175,6 +175,16 @@ const sleep = delay => {
     return deferred.promise;
 };
 
+async function shouldThrow(fn, Err, msg) {
+    try {
+        await fn();
+    } catch (err) {
+        assert.equal(err.constructor.name, Err.name);
+        return;
+    }
+    throw new Error(msg || `Expected fn to throw ${Err.name}`);
+}
+
 module.exports = {
     verifyRPCInterfaces: function(serviceName, interfaces) {
         describe(`${serviceName} interfaces`, function() {
@@ -203,6 +213,7 @@ module.exports = {
     createRoom: createRoom,
     createSocket: createSocket,
     sendEmptyRole: sendEmptyRole,
+    shouldThrow,
 
     reqSrc
 };

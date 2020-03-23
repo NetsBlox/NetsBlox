@@ -19,8 +19,8 @@ function seed(storage) {
             let project = null;
 
             // create, set role data, publish!
-            const {owner, name} = data;
-            return storage.projects.new({owner, name})
+            const {owner, name, collaborators} = data;
+            return storage.projects.new({owner, name, collaborators})
                 .then(_project => project = _project)
                 .then(() => {
                     const promises = data.roles.map(role =>

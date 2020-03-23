@@ -94,6 +94,12 @@ NetworkTopology.prototype.getSocketsAtProject = function(projectId) {
     return this._sockets.filter(socket => socket.projectId === projectId);
 };
 
+NetworkTopology.prototype.isProjectActive = function(projectId, skipId) {
+    const sockets = this.getSocketsAtProject(projectId)
+        .filter(clientId => clientId !== skipId);
+    return sockets.length > 0;
+};
+
 NetworkTopology.prototype.setClientState = async function(clientId, projectId, roleId, username) {
     const client = this.getSocket(clientId);
 
