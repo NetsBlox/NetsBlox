@@ -10,7 +10,7 @@ class UserNotFound extends RequestError {
 class ProjectNotFound extends RequestError {
     constructor(name) {
         const msg = name ? `Could not find project "${name}"` :
-            'Project not found.';
+            'Project not found';
         super(msg);
     }
 }
