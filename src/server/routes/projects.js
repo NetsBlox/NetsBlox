@@ -14,11 +14,6 @@ const ProjectsData = require('../storage/projects');
 const Projects = new (require('../api/core/projects'))(logger);
 const Users = require('../storage/users');
 
-// Select a preview from a project (retrieve them from the roles)
-var getProjectThumbnail = function(project) {
-    return Projects.getProjectInfo(project).Thumbnail;
-};
-
 ////////////////////// Project Helpers //////////////////////
 var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
     return Jimp.read(buffer)
@@ -351,42 +346,26 @@ module.exports = [
         Method: 'get',
         URL: 'projects/:owner/:project/thumbnail',
         middleware: ['setUsername'],
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             var name = req.params.project,
                 aspectRatio = +req.query.aspectRatio || 0;
 
             // return the names of all projects owned by :owner
-            return ProjectsData.getProjectMetadata(req.params.owner, name)
-                .then(project => {
-                    if (project) {
-                        const thumbnail = getProjectThumbnail(project);
-                        if (!thumbnail) {
-                            const err = `could not find thumbnail for ${name}`;
-                            this._logger.error(err);
-                            return res.status(400).send(err);
-                        }
-                        res.set({
-                            'Cache-Control': 'private, max-age=60',
-                        });
-                        this._logger.trace(`Applying aspect ratio for ${req.params.owner}'s ${name}`);
-                        return applyAspectRatio(
-                            thumbnail,
-                            aspectRatio
-                        ).then(buffer => {
-                            this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
-                            res.contentType('image/png');
-                            res.end(buffer, 'binary');
-                        });
-                    } else {
-                        const err = `could not find project ${name}`;
-                        this._logger.error(err);
-                        return res.status(400).send(err);
-                    }
-                })
-                .catch(err => {
-                    this._logger.error(`padding image failed: ${err}`);
-                    res.serverError(err);
-                });
+            const project = Projects.getProjectSafe(req.params.owner, name);
+            const thumbnail = Projects.getProjectInfo(project).Thumbnail;
+            if (!thumbnail) {
+                const err = `could not find thumbnail for ${name}`;
+                this._logger.error(err);
+                return res.status(400).send(err);
+            }
+            res.set({
+                'Cache-Control': 'private, max-age=60',
+            });
+            this._logger.trace(`Applying aspect ratio for ${req.params.owner}'s ${name}`);
+            const buffer = await applyAspectRatio(thumbnail, aspectRatio);
+            this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
+            res.contentType('image/png');
+            res.end(buffer, 'binary');
         }
     },
     {
