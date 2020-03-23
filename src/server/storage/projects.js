@@ -245,7 +245,9 @@
             metadata.owner = owner;
             metadata.collaborators = [];
             metadata.transient = true;
-            _.extend(metadata, overrides);
+            for (let key in overrides) {
+                metadata[key] = overrides[key];
+            }
 
             const project = new Project({
                 logger: this._logger,
@@ -349,7 +351,7 @@
             const data = {
                 name: this.name,
                 owner: this.owner,
-                transient: true,
+                transient: this.transient,
                 lastUpdatedAt: new Date(),
                 originTime: this.originTime,
                 collaborators: this.collaborators,

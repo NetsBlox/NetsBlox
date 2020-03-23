@@ -35,17 +35,17 @@ class Projects {
         // Save the latest role content (include xml in the req)
         // TODO
         // make a copy of the project for the given user and save it!
-        const name = `Copy of ${project.name || 'untitled'}`;
-        const uniqName = this._getProjectName(username, name, project.getId());
+        const name = `Copy of ${project.name}`;
+        const uniqName = await this._getProjectName(username, name, project.getId());
         const overrides = {
             name: uniqName,
-            transient: true
+            transient: false
         };
-        await project.getCopyFor(username, overrides);
+        const copy = await project.getCopyFor(username, overrides);
         this.logger.trace(`${username} saved a copy of project: ${name}`);
         return {
             name: uniqName,
-            projectId: project.getId()
+            projectId: copy.getId()
         };
     }
 

@@ -62,6 +62,35 @@ describe('projects', function() {
         });
     });
 
+    describe('saveProjectCopy', function() {
+        it('should create new project', async function() {
+            await Projects.saveProjectCopy(username, project);
+            const allProjects = await ProjectsStorage.getAllUserProjects(username);
+            assert.equal(allProjects.length, projects.length + 1);
+        });
+
+        it('should start with "Copy of..." ', async function() {
+            await Projects.saveProjectCopy(username, project);
+            const allProjects = await ProjectsStorage.getAllUserProjects(username);
+            const copy = allProjects.find(project => project.name.startsWith('Copy of'));
+            assert(copy);
+        });
+
+        it('should contain same roles', async function() {
+            await Projects.saveProjectCopy(username, project);
+            const allProjects = await ProjectsStorage.getAllUserProjects(username);
+            const copy = allProjects.find(project => project.name.startsWith('Copy of'));
+            assert.deepEqual(copy.roles, project.roles);
+        });
+
+        it('should save copy', async function() {
+            await Projects.saveProjectCopy(username, project);
+            const allProjects = await ProjectsStorage.getAllUserProjects(username);
+            const copy = allProjects.find(project => project.name.startsWith('Copy of'));
+            assert(!copy.transient, 'Copy is set to transient');
+        });
+    });
+
     describe('deleteProject', function() {
         it('should delete the project', async function() {
             await Projects.deleteProject(project);
