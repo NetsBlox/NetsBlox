@@ -269,18 +269,17 @@ class Projects {
     async setProjectName(projectId, name) {
         // Resolve conflicts with transient, marked for deletion projects
         const project = await this.getProjectSafe(projectId);
-        const projects = await ProjectsData.getAllRawUserProjects(project.owner);
+        const projects = await ProjectsData.getAllUserProjects(project.owner);
         const projectsByName = _.fromPairs(projects.map(p => [p.name, p]));
 
         const basename = name;
         let i = 2;
         let collision = projectsByName[name];
         while (collision &&
-            collision._id.toString() !== projectId &&
+            collision.getId() !== projectId &&
             !collision.deleteAt  // delete existing a little early
         ) {
-            name = `${basename} (${i})`;
-            i++;
+            name = `${basename} (${i++})`;
             collision = projectsByName[name];
         }
 

@@ -237,7 +237,22 @@ describe('projects', function() {
     });
 
     describe('setProjectName', function() {
+        it('should set project name', async function() {
+            const projectId = project.getId();
+            const name = 'myNewName';
+            await Projects.setProjectName(projectId, name);
+            const newProject = await Projects.getProjectSafe(projectId);
+            assert.equal(newProject.name, name);
+        });
+
         it('should ensure non-colliding name', async function() {
+            const projectId = project.getId();
+            const [, otherProject] = projects;
+            const {name} = otherProject;
+            await Projects.setProjectName(projectId, name);
+            const newProject = await Projects.getProjectSafe(projectId);
+            assert.notEqual(newProject.name, name);
+            assert(newProject.name.includes(name));
         });
     });
 });
