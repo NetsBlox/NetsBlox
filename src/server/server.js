@@ -27,6 +27,7 @@ var express = require('express'),
     // Session and cookie info
     cookieParser = require('cookie-parser');
 
+const {RequestError} = require('./api/core/errors');
 const CLIENT_ROOT = path.join(__dirname, '..', 'browser');
 const indexTpl = dot.template(fs.readFileSync(path.join(CLIENT_ROOT, 'index.dot')));
 const middleware = require('./routes/middleware');
@@ -363,7 +364,7 @@ Server.prototype.createRouter = function() {
             router.use.apply(router, args);
         }
 
-        router.route(api.URL)[method]((req, res) => {
+        router.route(api.URL)[method](async (req, res) => {
             if (api.Service) {
                 const args = (api.Parameters || '').split(',')
                     .map(name => {
@@ -375,16 +376,10 @@ Server.prototype.createRouter = function() {
                 logger.trace(`received request ${api.Service}(${args})`);
             }
             try {
-                const result = api.Handler.call(this, req, res);
-                if (result && result.then) {
-                    result.catch(err => {
-                        logger.error(`error occurred in ${api.URL}:`, err);
-                        res.status(500).send(err.message);
-                    });
-                }
+                await api.Handler.call(this, req, res);
             } catch (err) {
-                logger.error(`error occurred in ${api.URL}:`, err);
-                res.status(500).send(err.message);
+                const statusCode = err instanceof RequestError ? 400 : 500;
+                res.status(statusCode).send(`ERROR: ${err.message}`);
             }
         });
     });
