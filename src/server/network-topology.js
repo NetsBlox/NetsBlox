@@ -96,7 +96,7 @@ NetworkTopology.prototype.getSocketsAtProject = function(projectId) {
 
 NetworkTopology.prototype.isProjectActive = function(projectId, skipId) {
     const sockets = this.getSocketsAtProject(projectId)
-        .filter(clientId => clientId !== skipId);
+        .filter(socket => socket.uuid !== skipId);
     return sockets.length > 0;
 };
 
