@@ -41,6 +41,21 @@ describe('projects', function() {
             await Projects.getProjectSafe(project.owner, project.name);
         });
 
+        it('should not keep unsaved project on save as', async function() {
+            const unsaved = await project.getCopy({
+                name: 'UnsavedProject',
+                transient: true
+            });
+            const [roleId] = Object.keys(unsaved.roles);
+            const name = 'newName';
+            await Projects.saveProject(unsaved, roleId, roleData, name);
+
+            await utils.shouldThrow(
+                () => Projects.getProjectSafe(unsaved.owner, unsaved.name),
+                Errors.ProjectNotFound
+            );
+        });
+
         it('should save project', async function() {
             const [roleId] = Object.keys(project.roles);
             await Projects.saveProject(project, roleId, roleData);
@@ -145,6 +160,12 @@ describe('projects', function() {
             await Projects.newProject(username);
             const allProjects = await ProjectsStorage.getAllUserProjects(username);
             assert.equal(allProjects.length, projects.length + 1);
+        });
+
+        it('should be transient', async function() {
+            const {projectId} = await Projects.newProject(username);
+            const newProject = await Projects.getProjectSafe(projectId);
+            assert(newProject.transient, 'New project should be transient.');
         });
 
         it('should create role', async function() {
