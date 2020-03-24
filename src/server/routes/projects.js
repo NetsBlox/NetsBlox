@@ -351,7 +351,7 @@ module.exports = [
                 aspectRatio = +req.query.aspectRatio || 0;
 
             // return the names of all projects owned by :owner
-            const project = Projects.getProjectSafe(req.params.owner, name);
+            const project = await Projects.getProjectSafe(req.params.owner, name);
             const thumbnail = Projects.getProjectInfo(project).Thumbnail;
             if (!thumbnail) {
                 const err = `could not find thumbnail for ${name}`;
