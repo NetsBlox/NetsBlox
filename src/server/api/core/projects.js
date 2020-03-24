@@ -59,11 +59,10 @@ class Projects {
     async _saveProjectAs(project, name, roleId, roleData, overwrite=false) {
         // Only copy original if it has already been saved
         const {owner} = project;
-        const isAlreadySaved = project.transient;
+        const isAlreadySaved = !project.transient;
         if (isAlreadySaved) {
             this.logger.trace(`Original project already saved. Copying original ${project.name}`);
-            const copy = project.getCopy();
-            await copy.persist();
+            project = await project.getCopy({transient: false});
         }
 
         if (overwrite) {
