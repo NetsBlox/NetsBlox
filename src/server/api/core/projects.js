@@ -29,6 +29,7 @@ class Projects {
         }
 
         await this.saveRole(project, roleId, roleData);
+        return project;
     }
 
     async saveProjectCopy(username, project) {
@@ -73,6 +74,7 @@ class Projects {
         }
         await this._setProjectName(owner, project.getId(), name);  // TODO: optimize
         await this.saveRole(project, roleId, roleData);
+        return project;
     }
 
     async deleteProject(project) {

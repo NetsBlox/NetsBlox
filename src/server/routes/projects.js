@@ -104,8 +104,18 @@ module.exports = [
             };
 
             const project = await Projects.getProjectSafe(projectId);
-            await Projects.saveProject(project, roleId, roleData, projectName, overwrite);
-            return res.status(200).send({name: projectName, projectId, roleId});
+            const saved = await Projects.saveProject(
+                project,
+                roleId,
+                roleData,
+                projectName,
+                overwrite
+            );
+            return res.status(200).send({
+                name: projectName,
+                projectId: saved.getId(),
+                roleId
+            });
         }
     },
     {

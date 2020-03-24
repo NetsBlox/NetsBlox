@@ -30,14 +30,21 @@ describe('projects', function() {
             const name = 'newName';
             await Projects.saveProject(project, roleId, roleData, name);
 
-            const newProject = await ProjectsStorage.getProjectMetadataById(project.getId());
-            assert.equal(newProject.name, name);
+            await Projects.getProjectSafe(project.owner, name);
+        });
+
+        it('should keep original project on save as', async function() {
+            const [roleId] = Object.keys(project.roles);
+            const name = 'newName';
+            await Projects.saveProject(project, roleId, roleData, name);
+
+            await Projects.getProjectSafe(project.owner, project.name);
         });
 
         it('should save project', async function() {
             const [roleId] = Object.keys(project.roles);
             await Projects.saveProject(project, roleId, roleData);
-            const newProject = await ProjectsStorage.getProjectMetadataById(project.getId());
+            const newProject = await Projects.getProjectSafe(project.owner, project.name);
             assert.equal(newProject.roles[roleId].ProjectName, roleData.ProjectName);
         });
 
@@ -45,9 +52,9 @@ describe('projects', function() {
             const [roleId] = Object.keys(project.roles);
             const [, otherProject] = projects;
             const {name} = otherProject;
-            await Projects.saveProject(project, roleId, roleData, name);
+            const saved = await Projects.saveProject(project, roleId, roleData, name);
 
-            const newProject = await ProjectsStorage.getProjectMetadataById(project.getId());
+            const newProject = await ProjectsStorage.getProjectMetadataById(saved.getId());
             assert.equal(newProject.name, `${name} (2)`);
         });
 
@@ -55,9 +62,9 @@ describe('projects', function() {
             const [roleId] = Object.keys(project.roles);
             const [, otherProject] = projects;
             const {name} = otherProject;
-            await Projects.saveProject(project, roleId, roleData, name, true);
+            const saved = await Projects.saveProject(project, roleId, roleData, name, true);
 
-            const newProject = await ProjectsStorage.getProjectMetadataById(project.getId());
+            const newProject = await ProjectsStorage.getProjectMetadataById(saved.getId());
             assert.equal(newProject.name, name);
         });
     });
