@@ -105,6 +105,7 @@ class Projects {
             owner,
             name,
             roles: {},
+            transient: true,
         };
         projectData.roles[roleId] = roleData;
         const project = await ProjectsData.new(projectData);
