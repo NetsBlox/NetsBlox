@@ -238,7 +238,7 @@ class Projects {
     }
 
     getProjectInfo(project) {  // TODO: Convert this to ProjectPreview class
-        const roles = Object.keys(project.roles).map(k => project.roles[k]);
+        const roles = Object.values(project.roles);
         const preview = {
             ProjectName: project.name,
             Public: !!project.public

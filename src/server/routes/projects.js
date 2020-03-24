@@ -347,10 +347,9 @@ module.exports = [
         URL: 'projects/:owner/:project/thumbnail',
         middleware: ['setUsername'],
         Handler: async function(req, res) {
-            var name = req.params.project,
-                aspectRatio = +req.query.aspectRatio || 0;
+            const name = req.params.project;
+            const aspectRatio = +req.query.aspectRatio || 0;
 
-            // return the names of all projects owned by :owner
             const project = await Projects.getProjectSafe(req.params.owner, name);
             const thumbnail = Projects.getProjectInfo(project).Thumbnail;
             if (!thumbnail) {
@@ -371,35 +370,26 @@ module.exports = [
     {
         Method: 'get',
         URL: 'examples/:name/thumbnail',
-        Handler: function(req, res) {
-            var name = req.params.name,
-                aspectRatio = +req.query.aspectRatio || 0;
+        Handler: async function(req, res) {
+            const {name} = req.params;
+            const aspectRatio = +req.query.aspectRatio || 0;
+            const example = EXAMPLES[name];
 
-            if (!EXAMPLES.hasOwnProperty(name)) {
+            if (!example) {
                 this._logger.warn(`ERROR: Could not find example "${name}`);
-                return res.status(500).send('ERROR: Could not find example.');
+                return res.status(404).send('ERROR: Could not find example.');
             }
 
             res.set({
                 'Cache-Control': 'public, max-age=3600',
             });
 
-            // Get the thumbnail
-            var example = EXAMPLES[name];
-            return example.getRoleNames()
-                .then(names => example.getRole(names.shift()))
-                .then(content => {
-                    const thumbnail = Utils.xml.thumbnail(content.SourceCode);
-                    return applyAspectRatio(thumbnail, aspectRatio);
-                })
-                .then(buffer => {
-                    res.contentType('image/png');
-                    res.end(buffer, 'binary');
-                })
-                .fail(err => {
-                    this._logger.error(`padding image failed: ${err}`);
-                    res.serverError(err);
-                });
+            const names = await example.getRoleNames();
+            const content = await example.getRole(names.shift());
+            const thumbnail = Utils.xml.thumbnail(content.SourceCode);
+            const buffer = await applyAspectRatio(thumbnail, aspectRatio);
+            res.contentType('image/png');
+            res.end(buffer, 'binary');
         }
     },
     {

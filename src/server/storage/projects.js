@@ -257,20 +257,8 @@
             return project.create(metadata.roles);
         }
 
-        getCopy() {
-            return this.getProjectMetadata()
-                .then(metadata => {
-                    metadata.originTime = Date.now();
-                    metadata.collaborators = [];
-                    metadata.transient = true;
-
-                    const project = new Project({
-                        logger: this._logger,
-                        db: this._db,
-                        data: metadata
-                    });
-                    return project.create(metadata.roles);
-                });
+        getCopy(overrides) {
+            return this.getCopyFor(this.owner, overrides);
         }
 
         getNewRoleName(basename) {
