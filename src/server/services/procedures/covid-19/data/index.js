@@ -91,7 +91,7 @@ async function fetchDataFile(type) {
 }
 
 function parseDataFile(data) {
-    const rows = data.split('\n').map(line => {
+    const rows = data.trim().split('\n').map(line => {
         const columns = [];
         let isQuoted = false;
         let chunk = '';
