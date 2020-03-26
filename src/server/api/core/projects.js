@@ -123,7 +123,9 @@ class Projects {
 
     async importProject(owner, roles, name, roleName, clientId) {
         name = await this._getProjectName(owner, name);
-        const rolesWithIds = roles.map(roleData => {
+
+        const rolesMetadata = await Promise.all(roles.map(ProjectsData.uploadRoleToBlob));
+        const rolesWithIds = rolesMetadata.map(roleData => {
             const roleId = ProjectsData.getNewRoleId(roleData.ProjectName);
             return [roleId, roleData];
         });

@@ -252,7 +252,12 @@ describe('projects', function() {
 
     describe('importProject', function() {
         const roles = ['firstRole', 'secondRole']
-            .map(name => SUtils.getEmptyRole(name));
+            .map(name => {
+                const role = SUtils.getEmptyRole(name);
+                role.SourceCode = '<room><empty source code/></room>';
+                role.Media = '<media/>';
+                return role;
+            });
         const name = 'ImportedProject';
 
         it('should create new project', async function() {
@@ -290,6 +295,26 @@ describe('projects', function() {
             const newProject = await Projects.getProjectSafe(projectId);
             const roleIds = await newProject.getRoleIds();
             assert.equal(roleIds.length, roles.length);
+        });
+
+        it('should upload role data to blob', async function() {
+            const {projectId} = await Projects.importProject(
+                username,
+                roles,
+                name,
+                'firstRole',
+                'someClientId'
+            );
+            const newProject = await Projects.getProjectSafe(projectId);
+            const [roleId] = await newProject.getRoleIds();
+            const newRole = newProject.roles[roleId];
+            const originalRole = roles.find(role => role.ProjectName === newRole.ProjectName);
+            const sourceCodeHash = newRole.SourceCode;
+            assert.notEqual(
+                sourceCodeHash,
+                originalRole.SourceCode,
+                'Role metadata should store hash - not the original xml'
+            );
         });
     });
 
