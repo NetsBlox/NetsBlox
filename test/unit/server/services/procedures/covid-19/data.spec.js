@@ -10,4 +10,9 @@ Anhui,Mainland China,1/22/2020 17:00,1,,\n`;
         const [doc] = data.parse(testCSV);
         assert(doc.recovered === 0);
     });
+
+    it('should resolve "Democratic Republic of the Congo"', function() {
+        const country = data.resolveCountry('Democratic Republic of the Congo');
+        assert.equal(country, 'Congo (Kinshasa)');
+    });
 });
