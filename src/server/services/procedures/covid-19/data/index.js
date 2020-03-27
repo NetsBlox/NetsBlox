@@ -5,6 +5,7 @@ const COUNTRY_ALIASES = require('./countries');
 const BASE_URL = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/';
 const START_DATE = '01-22-2020';
 const NULL_LAT_LNG = -9999;
+const State = require('./state');
 
 const TYPES = {
     DEATH: 'deaths',
@@ -75,7 +76,6 @@ class COVIDData {
 
     async importReport(report, date) {
         const docs = this.parse(report);
-        console.log('importing', docs.length, 'docs');
         docs.forEach(doc => doc.date = date);
         await this._model.insertMany(docs);
     }
@@ -100,11 +100,40 @@ class COVIDData {
         assert(!isNaN(doc[field]), `Missing ${field}: ${JSON.stringify(doc)}`);
     }
 
+    resolveCountry(countryString) {
+        const match = COUNTRY_ALIASES.find(aliases => aliases
+            .find(alias => equalStrings(countryString, alias))
+        );
+        if (match) {
+            return match[0];
+        }
+        return countryString;
+    }
+
+    resolveState(stateString) {
+        return State.fromCode(stateString.toUpperCase()) || stateString;
+    }
+
     parseRow(row, columnNames) {
+        const country = this.resolveCountry(this.getColumn(row, columnNames, 'country'));
+        let state = this.getColumn(row, columnNames, 'state');
+        let city = this.getColumn(row, columnNames, 'admin2') || '';
+        if (country === 'US' && state.includes(',')) {
+            const chunks = state.split(',').map(c => c.trim());
+            if (this.resolveCountry(chunks[1]) === 'US') {
+                [state] = chunks;
+            } else {
+                [city] = chunks;
+                const stateCode = chunks[1].replace(/\./g, '')
+                    .substring(0, 2);
+                state = State.fromCodeSafe(stateCode);
+            }
+        }
+
         return {
-            country: this.getColumn(row, columnNames, 'country'),
-            state: this.getColumn(row, columnNames, 'state'),
-            city: this.getColumn(row, columnNames, 'admin2') || '',
+            country,
+            state,
+            city,
             latitude: parseFloat(this.getColumn(row, columnNames, 'lat') || NULL_LAT_LNG),
             longitude: parseFloat(this.getColumn(row, columnNames, 'long') || NULL_LAT_LNG),
             confirmed: parseInt(this.getColumn(row, columnNames, 'confirmed') || '0'),
@@ -158,15 +187,8 @@ class COVIDData {
     }
 
     async getData(type, country, state, city) {
-        const query = {country};
-        if (state) {
-            query.state = state;
-        }
-        if (city) {
-            query.city = city;
-        }
+        const query = this.getQuery(country, state, city);
         const docs = await this._model.find(query).sort({date: 1});
-        console.log('docs:', docs);
         if (docs.length === 0) return locationNotFound();
 
         const countsByDate = docs
@@ -189,14 +211,32 @@ class COVIDData {
         return countsByDate;
     }
 
+    getQuery(country, state, city) {
+        const query = {country: anyCase(this.resolveCountry(country))};
+        if (state) {
+            query.state = anyCase(this.resolveState(state));
+        }
+        if (city) {
+            query.city = city;
+        }
+        return query;
+    }
+
     async getAllLocations() {
         const docs = await this._model.find({}, {country: 1, state: 1, city: 1});
-        console.log('found', docs.length, 'docs');
         const sortedDocs = _.sortBy(docs, ['country', 'state', 'city']);
         return _.sortedUniqBy(
             sortedDocs,
             doc => doc.country + doc.state + doc.city
         );
+    }
+
+    async getLocation(country, state, city) {
+        const query = this.getQuery(country, state, city);
+        ['latitude', 'longitude']
+            .forEach(field => query[field] = {$ne: NULL_LAT_LNG});
+        const location = await this._model.findOne(query);
+        return location || locationNotFound();
     }
 }
 
@@ -206,110 +246,30 @@ function nextDay(date) {
     return nextDay;
 }
 
-// TODO: Update this
-//Data.getRow = function(type, country, state='') {
-    //const rows = Data.rawData[type];
-    //return rows.slice(1).find(row => {
-        //const [s, c] = row;
-        //return isCountry(c, country) && equalStrings(s, state);
-    //}) || locationNotFound();
-//};
-
-//Data.getAllData = function() {
-    //return Object.values(Data.rawData)
-        //.reduce((combined, data) => {
-            //return combined.concat(data.slice(1));
-        //}, []);
-//};
-
-//Data.setUpdateInterval = function(duration) {
-    //if (this._intervalId) {
-        //clearInterval(this._intervalId);
-    //}
-    //this._intervalId = setInterval(fetchLatestData, duration);
-//};
-
-//function isCountry(country, other) {
-    //const validNames = [country];
-    //if (COUNTRY_ALIASES[country]) {
-        //validNames.push(...COUNTRY_ALIASES[country]);
-    //}
-    //return validNames.find(country => equalStrings(country, other));
-//}
-
-//function equalStrings(s1, s2) {
-    //return normalizeString(s1) === normalizeString(s2);
-//}
-
-//function normalizeString(string) {
-    //return string.toLowerCase()
-        //.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        //.replace(/[^a-z]/g, '');
-//}
-
-function addDatesToCounts(type, values) {
-    const columnNames = Data.rawData[type][0];
-    const dates = columnNames.slice(4);
-    return _.zip(dates, values);
+function anyCase(text) {
+    return new RegExp(text, 'i');
 }
 
-//async function fetchLatestData() {
-    //await Promise.all(Object.values(Data.types).map(fetchDataFile));
-//}
+function isCountry(country, other) {
+    const validNames = [country];
+    if (COUNTRY_ALIASES[country]) {
+        validNames.push(...COUNTRY_ALIASES[country]);
+    }
+    return validNames.find(country => equalStrings(country, other));
+}
 
-//async function fetchDataFile(type) {
-    //const filename = `time_series_19-covid-${type}.csv`;
-    //const url = `https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/${filename}`;
-    //`https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/03-25-2020.csv`
-    //const {data} = await axios.get(url);
-    //Data.rawData[type] = parseDataFile(data);
-//}
+function equalStrings(s1, s2) {
+    return normalizeString(s1) === normalizeString(s2);
+}
 
-//function parseDataFile(data) {
-    //const rows = data.trim().split('\n').map(line => {
-        //const columns = [];
-        //let isQuoted = false;
-        //let chunk = '';
-
-        //for (let i = 0; i < line.length; i++) {
-            //switch (line[i]) {
-            //case ',':
-                //if (isQuoted) {
-                    //chunk += ',';
-                //} else {
-                    //columns.push(chunk);
-                    //chunk = '';
-                //}
-                //break;
-
-            //case '"':
-                //isQuoted = !isQuoted;
-                //break;
-
-            //default:
-                //chunk += line[i];
-                //break;
-            //}
-        //}
-        //columns.push(chunk);
-        //return columns;
-    //});
-
-    //return rows.map((row, index) => {
-        //if (index === 0) {
-            //return row;
-        //}
-        //return row.map((value, index) => index > 3 ? +value : value);
-    //});
-//}
+function normalizeString(string) {
+    return string.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z]/g, '');
+}
 
 function locationNotFound() {
     throw new Error('Location not found.');
 }
-
-//fetchLatestData();
-
-//const hour = 1000*60*60;
-//Data.setUpdateInterval(6*hour);
 
 module.exports = COVIDData;

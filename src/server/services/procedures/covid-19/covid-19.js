@@ -58,7 +58,7 @@ COVID19.getConfirmedCounts = async function(country, state='', city='') {
  * @param{String=} city City
  */
 COVID19.getDeathCounts = async function(country, state='', city='') {
-    return await this._data.getData(DEATH, country, state);
+    return await this._data.getData(DEATH, country, state, city);
 };
 
 /**
@@ -92,8 +92,9 @@ COVID19.getLocationsWithData = async function() {
  * @param{String=} state
  * @param{String=} city City
  */
-COVID19.getLocationCoordinates = function(country, state='', city='') {
-    const data = this._data.getRow(CONFIRMED, country, state, city);
+COVID19.getLocationCoordinates = async function(country, state='', city='') {
+    const data = await this._data.getLocation(country, state, city);
+    console.log('found', data);
     return _.pick(data, ['latitude', 'longitude']);
 };
 
