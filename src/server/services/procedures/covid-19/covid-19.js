@@ -70,19 +70,19 @@ COVID19.getDeathCounts = async function(country, state='', city='') {
  * @param{String=} state State or province
  * @param{String=} city City
  */
-COVID19.getRecoveredCounts = async function(country, state='') {
-    return await this._data.getData(RECOVERED, country, state);
+COVID19.getRecoveredCounts = async function(country, state='', city='') {
+    return await this._data.getData(RECOVERED, country, state, city);
 };
 
 /**
- * Get a list of all countries (and states) with data available.
+ * Get a list of all countries (and states, cities) with data available.
  */
-COVID19.getLocationsWithData = function() {
-    const locations = this._data.getAllData().map(row => {
-        const {state, country, city} = row;
+COVID19.getLocationsWithData = async function() {
+    const locations = await this._data.getAllLocations();
+    return locations.map(loc => {
+        const {state, country, city} = loc;
         return [country, state, city];
     });
-    return _.uniq(locations);
 };
 
 /**

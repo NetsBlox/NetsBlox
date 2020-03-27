@@ -104,7 +104,7 @@ class COVIDData {
         return {
             country: this.getColumn(row, columnNames, 'country'),
             state: this.getColumn(row, columnNames, 'state'),
-            city: this.getColumn(row, columnNames, 'admin2'),
+            city: this.getColumn(row, columnNames, 'admin2') || '',
             latitude: parseFloat(this.getColumn(row, columnNames, 'lat') || NULL_LAT_LNG),
             longitude: parseFloat(this.getColumn(row, columnNames, 'long') || NULL_LAT_LNG),
             confirmed: parseInt(this.getColumn(row, columnNames, 'confirmed') || '0'),
@@ -136,7 +136,7 @@ class COVIDData {
                     if (isQuoted) {
                         chunk += ',';
                     } else {
-                        columns.push(chunk);
+                        columns.push(chunk.trim());
                         chunk = '';
                     }
                     break;
@@ -158,7 +158,6 @@ class COVIDData {
     }
 
     async getData(type, country, state, city) {
-        // TODO: Find all matches, if more than one, combine them
         const query = {country};
         if (state) {
             query.state = state;
@@ -188,27 +187,16 @@ class COVIDData {
                 return counts;
             }, []);
         return countsByDate;
-        //if (state !== '') {
-            //const row = Data.getRow(type, country, state);
-            //return addDatesToCounts(type, row.slice(4));
-        //} else {
-            //const rows = Data.rawData[type];
-            //const matchingRows = rows.slice(1).filter(row => {
-                //const [, c] = row;
-                //return isCountry(c, country);
-            //});
+    }
 
-            //if (matchingRows.length === 0) {
-                //return locationNotFound();
-            //}
-
-            //const counts = matchingRows.reduce((counts, row) => {
-                //const values = row.slice(4);
-                //return _.zipWith(counts, values,(c1=0, c2=0) => c1 + c2);
-            //}, []);
-
-            //return addDatesToCounts(type, counts);
-        //}
+    async getAllLocations() {
+        const docs = await this._model.find({}, {country: 1, state: 1, city: 1});
+        console.log('found', docs.length, 'docs');
+        const sortedDocs = _.sortBy(docs, ['country', 'state', 'city']);
+        return _.sortedUniqBy(
+            sortedDocs,
+            doc => doc.country + doc.state + doc.city
+        );
     }
 }
 
