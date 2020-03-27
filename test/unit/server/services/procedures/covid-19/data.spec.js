@@ -15,4 +15,9 @@ Anhui,Mainland China,1/22/2020 17:00,1,,\n`;
         const country = data.resolveCountry('Democratic Republic of the Congo');
         assert.equal(country, 'Congo (Kinshasa)');
     });
+
+    it('should remove diacritics from "Réunion"', function() {
+        const country = data.resolveCountry('Réunion');
+        assert.equal(country, 'Reunion');
+    });
 });
