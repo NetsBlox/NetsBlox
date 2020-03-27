@@ -2,6 +2,14 @@ describe('RPC Input Types', function() {
     const typesParser = require('../../../../src/server/services/input-types').parse;
     const assert = require('assert');
 
+    describe('String', function() {
+        it('should convert to a string', () => {
+            let rawInput = 0;
+            let parsedInput = typesParser.String(rawInput);
+            assert.equal(typeof parsedInput, 'string');
+        });
+    });
+
     describe('Any', function() {
         it('should leave as a string', () => {
             let rawInput = '4.253';

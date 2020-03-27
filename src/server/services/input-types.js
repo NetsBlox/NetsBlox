@@ -160,6 +160,7 @@ types.Function = async (blockXml, ctx) => {
     };
 };
 
+types.String = input => input.toString();
 types.Any = input => input;
 
 module.exports = {
