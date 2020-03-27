@@ -215,9 +215,9 @@ class COVIDData {
     }
 
     getQuery(country, state, city) {
-        const query = {country: anyCase(this.resolveCountry(country))};
+        const query = {country: this.resolveCountry(country)};
         if (state) {
-            query.state = anyCase(this.resolveState(state));
+            query.state = this.resolveState(state);
         }
         if (city) {
             query.city = city;
@@ -247,10 +247,6 @@ function nextDay(date) {
     const nextDay = new Date(date);
     nextDay.setDate(date.getDate() + 1);
     return nextDay;
-}
-
-function anyCase(text) {
-    return new RegExp(text, 'i');
 }
 
 function equalStrings(s1, s2) {
