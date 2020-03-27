@@ -253,14 +253,6 @@ function anyCase(text) {
     return new RegExp(text, 'i');
 }
 
-function isCountry(country, other) {
-    const validNames = [country];
-    if (COUNTRY_ALIASES[country]) {
-        validNames.push(...COUNTRY_ALIASES[country]);
-    }
-    return validNames.find(country => equalStrings(country, other));
-}
-
 function equalStrings(s1, s2) {
     return normalizeString(s1) === normalizeString(s2);
 }
