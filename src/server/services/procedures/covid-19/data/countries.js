@@ -7,4 +7,5 @@ module.exports = [
     ['United Arab Emirates', 'UAE'],
     ['United Kingdom', 'UK'],
     ['China', 'Mainland China'],
+    ['Cote d\'Ivoire'],
 ];
