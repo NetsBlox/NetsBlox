@@ -29,11 +29,9 @@ class COVIDData {
         this._intervalId = setInterval(() => this.checkUpdate(), duration);
     }
 
-    async checkUpdate() {  // TODO: test me!
+    async checkUpdate() {
         const latest = await this._model.find().sort({date: 1}).limit(1);
         const needsUpdate = !latest || !this.isToday(latest.date);
-        console.log('\n\n>> latest', latest);
-        console.log('\n\n>> needsUpdate', needsUpdate);
         if (needsUpdate) {
             const today = new Date();
             const report = this.fetchDailyReport(today);
@@ -69,7 +67,6 @@ class COVIDData {
     async fetchDailyReport(date=new Date()) {
         date = date || new Date();
         const url = `${BASE_URL}${this.getDateString(date)}.csv`;
-        console.log('fetching data for', this.getDateString(date));
         const {data} = await axios.get(url);
         return data;
     }

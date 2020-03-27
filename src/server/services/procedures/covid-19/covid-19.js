@@ -94,7 +94,6 @@ COVID19.getLocationsWithData = async function() {
  */
 COVID19.getLocationCoordinates = async function(country, state='', city='') {
     const data = await this._data.getLocation(country, state, city);
-    console.log('found', data);
     return _.pick(data, ['latitude', 'longitude']);
 };
 
