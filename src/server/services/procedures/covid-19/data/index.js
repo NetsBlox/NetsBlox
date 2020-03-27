@@ -26,16 +26,22 @@ class COVIDData {
         if (this._intervalId) {
             clearInterval(this._intervalId);
         }
-        this._intervalId = setInterval(() => this.checkUpdate(), duration);
+        this._intervalId = setInterval(() => this.checkUpdates(), duration);
     }
 
-    async checkUpdate() {
-        const latest = await this._model.find().sort({date: 1}).limit(1);
-        const needsUpdate = !latest || !this.isToday(latest.date);
+    async checkUpdates() {
+        const [latest] = await this._model.find().sort({date: -1}).limit(1);
+        const needsUpdate = !latest || !this.isToday(new Date(latest.date));
         if (needsUpdate) {
             const today = new Date();
-            const report = this.fetchDailyReport(today);
-            await this.importReport(report, today);
+            try {
+                const report = await this.fetchDailyReport(today);
+                await this.importReport(report, today);
+            } catch (err) {
+                if (!err.response || err.response.status !== 404) {
+                    throw err;
+                }
+            }
         }
     }
 
