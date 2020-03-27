@@ -3,9 +3,9 @@ describe('COVID-19', function() {
 
     utils.verifyRPCInterfaces('COVID-19', [
         ['getLocationsWithData'],
-        ['getLocationCoordinates', ['country', 'state']],
-        ['getRecoveredCounts', ['country', 'state']],
-        ['getDeathCounts', ['country', 'state']],
-        ['getConfirmedCounts', ['country', 'state']],
+        ['getLocationCoordinates', ['country', 'state', 'city']],
+        ['getRecoveredCounts', ['country', 'state', 'city']],
+        ['getDeathCounts', ['country', 'state', 'city']],
+        ['getConfirmedCounts', ['country', 'state', 'city']],
     ]);
 });
