@@ -110,7 +110,7 @@ class COVIDData {
         if (match) {
             return match[0];
         }
-        return countryString;
+        return removeDiacritics(countryString);
     }
 
     resolveState(stateString) {
@@ -254,9 +254,12 @@ function equalStrings(s1, s2) {
 }
 
 function normalizeString(string) {
-    return string.toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    return removeDiacritics(string.toLowerCase())
         .replace(/[^a-z]/g, '');
+}
+
+function removeDiacritics(string) {
+    return string.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 function locationNotFound() {
