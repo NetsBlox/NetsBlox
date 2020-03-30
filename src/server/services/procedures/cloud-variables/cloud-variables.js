@@ -120,7 +120,7 @@ CloudVariables.getVariable = function(name, password) {
  * Set a cloud variable.
  * If a password is provided on creation, the variable will be password-protected.
  * @param {String} name Variable name
- * @param {String} value Value to store in variable
+ * @param {Any} value Value to store in variable
  * @param {String=} password Password (if password-protected)
  */
 CloudVariables.setVariable = function(name, value, password) {
@@ -379,7 +379,7 @@ CloudVariables.getUserVariable = function(name) {
 /**
  * Set the value of the user cloud variable for the current user.
  * @param {String} name Variable name
- * @param {String} value
+ * @param {Any} value
  */
 CloudVariables.setUserVariable = function(name, value) {
     ensureLoggedIn(this.caller);
