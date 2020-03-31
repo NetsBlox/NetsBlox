@@ -274,22 +274,15 @@ module.exports = [
     },
     {
         Service: 'deleteProject',
-        Parameters: 'ProjectName,RoomName',
+        Parameters: 'ProjectName',
         Method: 'Post',
         Note: '',
         middleware: ['isLoggedIn'],
         Handler: async function(req, res) {
-            const {username} = req.session.username;
+            const {username} = req.session;
             const name = req.body.ProjectName;
-
-            // Get the project and call "destroy" on it
-            const project = await ProjectsData.getProjectMetadata(username, name);
-            if (!project) {
-                logger.error(`project ${project} not found`);
-                return res.status(400).send(`${project} not found!`);
-            }
+            const project = await Projects.getProjectSafe(username, name);
             await Projects.deleteProject(project);
-            logger.trace(`project ${project.name} deleted`);
             return res.send('project deleted!');
         }
     },
