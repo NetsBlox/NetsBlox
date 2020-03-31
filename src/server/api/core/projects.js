@@ -32,10 +32,21 @@ class Projects {
         return project;
     }
 
-    async saveProjectCopy(username, project) {
+    async saveProjectCopy(username, project, clientId) {
         // Save the latest role content (include xml in the req)
         // TODO
         // make a copy of the project for the given user and save it!
+        const projectInfo = await this._saveProjectCopy(username, project);
+        await NetworkTopology.setClientState(
+            clientId,
+            projectInfo.projectId,
+            undefined,
+            username
+        );
+        return projectInfo;
+    }
+
+    async _saveProjectCopy(username, project) {
         const name = `Copy of ${project.name}`;
         const uniqName = await this._getProjectName(username, name, project.getId());
         const overrides = {

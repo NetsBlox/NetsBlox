@@ -366,7 +366,7 @@ class Client {
 
     setState(projectId, roleId, username) {
         this.projectId = projectId && projectId.toString();
-        this.roleId = roleId;
+        this.roleId = roleId || this.roleId;
         this.username = username || this.uuid;
         this.loggedIn = Utils.isSocketUuid(this.username);
     }

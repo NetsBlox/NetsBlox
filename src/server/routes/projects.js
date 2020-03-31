@@ -129,10 +129,10 @@ module.exports = [
             // Save the latest role content (include xml in the req)
             // TODO
             const {username} = req.session;
-            const {projectId} = req.body;
+            const {projectId, clientId} = req.body;
 
             const project = await ProjectsData.getById(projectId);
-            const result = await Projects.saveProjectCopy(username, project);
+            const result = await Projects.saveProjectCopy(username, project, clientId);
             return res.status(200).send(result);
         }
     },
