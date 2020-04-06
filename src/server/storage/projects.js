@@ -739,6 +739,7 @@
         name: 'untitled',
         collaborators: [],
         roles: {},
+        transient: true
     };
     ProjectStorage.new = function(data) {
         data.originTime = data.originTime || new Date();
