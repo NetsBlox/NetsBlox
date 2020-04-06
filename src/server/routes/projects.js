@@ -5,96 +5,16 @@ var _ = require('lodash'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
     middleware = require('./middleware'),
     NetworkTopology = require('../network-topology'),
-    PublicProjects = require('../storage/public-projects'),
     EXAMPLES = require('../examples'),
     Logger = require('../logger'),
     logger = new Logger('netsblox:api:projects'),
     Jimp = require('jimp');
 
-const DEFAULT_ROLE_NAME = 'myRole';
-const Projects = require('../storage/projects');
+const ProjectsData = require('../storage/projects');
+const Projects = new (require('../api/core/projects'))(logger);
 const Users = require('../storage/users');
-const Storage = require('../storage/storage');
-
-/**
- * Find and set the given project's public value.
- *
- * @param {String} name
- * @param {User} user
- * @param {Boolean} value
- * @return {Boolean} success
- */
-var setProjectPublic = function(name, user, value) {
-
-    return user.getProject(name)
-        .then(project => {
-            if (project) {
-                return project.setPublic(value).then(() => {
-                    if (value) {
-                        PublicProjects.publish(project);
-                    } else {
-                        PublicProjects.unpublish(project);
-                    }
-                });
-            }
-
-            throw Error('project not found');
-        });
-};
-
-// Select a preview from a project (retrieve them from the roles)
-var getProjectInfo = function(project) {
-
-    const roles = Object.keys(project.roles).map(k => project.roles[k]);
-    const preview = {
-        ProjectName: project.name,
-        Public: !!project.public
-    };
-
-    let role;
-    for (var i = roles.length; i--;) {
-        role = roles[i];
-        // Get the most recent time
-        preview.Updated = Math.max(
-            preview.Updated || 0,
-            new Date(role.Updated).getTime()
-        );
-
-        // Notes
-        preview.Notes = preview.Notes || role.Notes;
-        preview.Thumbnail = preview.Thumbnail ||
-            (role.Thumbnail instanceof Array ? role.Thumbnail[0] : role.Thumbnail);
-    }
-    preview.Updated = new Date(preview.Updated);
-    preview.Public = project.Public;
-    preview.Owner = project.owner;
-    preview.ID = project._id.toString();
-    return preview;
-};
-
-var getProjectMetadata = function(project, origin='') {
-    let metadata = getProjectInfo(project);
-    metadata.Thumbnail = `${origin}/api/projects/${project.owner}/${project.name}/thumbnail`;
-    return metadata;
-};
-
-var getProjectThumbnail = function(project) {
-    return getProjectInfo(project).Thumbnail;
-};
 
 ////////////////////// Project Helpers //////////////////////
-var sendProjectTo = function(project, res) {
-    return project.getLastUpdatedRole()
-        .then(role => {
-            const uuid = Utils.uuid(project.owner, project.name);
-            logger.trace(`project ${uuid} is not active. Selected role "${role.ProjectName}"`);
-
-            let serialized = Utils.serializeRole(role, project);
-            return res.send(serialized);
-        })
-        .catch(err => res.status(500).send('ERROR: ' + err));
-};
-
 var padImage = function (buffer, ratio) {  // Pad the image to match the given aspect ratio
     return Jimp.read(buffer)
         .then(image => {
@@ -133,38 +53,7 @@ module.exports = [
         Handler: async function(req, res) {
             const {projectId} = req.body;
             let {name} = req.body;
-
-            // Resolve conflicts with transient, marked for deletion projects
-            const project = await Projects.getById(projectId);
-            if (!project) {
-                return res.status(400).send('Project Not Found');
-            }
-
-            // Get a valid name
-            const projects = await Projects.getAllRawUserProjects(project.owner);
-            const projectsByName = {};
-
-            projects
-                .forEach(project => projectsByName[project.name] = project);
-
-            const basename = name;
-            let i = 2;
-            let collision = projectsByName[name];
-            while (collision &&
-                collision._id.toString() !== projectId &&
-                !collision.deleteAt  // delete existing a little early
-            ) {
-                name = `${basename} (${i})`;
-                i++;
-                collision = projectsByName[name];
-            }
-
-            if (collision && collision.deleteAt) {
-                await Projects.destroy(collision._id);
-            }
-
-            await project.setName(name);
-            const state = await NetworkTopology.onRoomUpdate(projectId);
+            const state = await Projects.setProjectName(projectId, name);
             res.json(state);
         }
     },
@@ -173,45 +62,14 @@ module.exports = [
         Parameters: 'clientId,roleName',
         Method: 'Post',
         Note: '',
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             const {clientId} = req.body;
-            let {roleName} = req.body;
+            const {roleName} = req.body;
 
-            const name = 'untitled';
-            let user = null;
-            let userId = clientId;
-
-            roleName = roleName || DEFAULT_ROLE_NAME;
-
-            let project = null;
-            return Q.nfcall(middleware.trySetUser, req, res)
-                .then(loggedIn => {
-                    if (loggedIn) {
-                        user = req.session.user;
-                        userId = req.session.username;
-                    }
-
-                    return Projects.new({owner: userId})
-                        .then(newProject => {
-                            project = newProject;
-                            const projectId = project._id.toString();
-                            return project.setRole(roleName, Utils.getEmptyRole(roleName))
-                                .then(() => user ? user.getNewNameFor(name, projectId) : name)
-                                .then(name => project.setName(name));
-                        });
-                })
-                .then(() => project.getRoleId(roleName))
-                .then(roleId => {
-                    const projectId = project.getId();
-                    this._logger.trace(`Created new project: ${projectId} (${roleName})`);
-                    return NetworkTopology.setClientState(clientId, projectId, roleId, userId)
-                        .then(() => res.send({
-                            projectId,
-                            roleId,
-                            name: project.name,
-                            roleName
-                        }));
-                });
+            await Q.nfcall(middleware.tryLogIn, req, res);
+            const userId = req.session.username || clientId;
+            const state = await Projects.newProject(userId, roleName, clientId);
+            res.send(state);
         }
     },
     {
@@ -219,31 +77,13 @@ module.exports = [
         Parameters: 'clientId,projectId,name,role,roles',
         Method: 'Post',
         Note: '',
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             const {clientId, name, roles} = req.body;
             let {role} = req.body;
             const userId = req.session ? req.session.username : clientId;
-            const user = req.session && req.session.user;
 
-            return Projects.new({owner: userId})
-                .then(project => {
-                    role = role || DEFAULT_ROLE_NAME;
-                    return project.setRoles(roles)
-                        .then(() => user ? user.getNewName(name) : name)
-                        .then(name => project.setName(name))
-                        .then(() => project.getRoleId(role))
-                        .then(roleId => {
-                            const projectId = project.getId();
-                            return NetworkTopology.setClientState(clientId, projectId, roleId, userId)
-                                .then(state => {
-                                    res.json({
-                                        state,
-                                        roleId,
-                                        projectId
-                                    });
-                                });
-                        });
-                });
+            const state = await Projects.importProject(userId, roles, name, role, clientId);
+            return res.json(state);
         }
     },
     {
@@ -251,92 +91,31 @@ module.exports = [
         Parameters: 'roleId,roleName,projectName,projectId,ownerId,overwrite,srcXml,mediaXml',
         Method: 'Post',
         Note: '',
-        middleware: ['isLoggedIn', 'setUser'],
-        Handler: function(req, res) {
-            // Check permissions
-            // TODO
-            const {user} = req.session;
+        middleware: ['isLoggedIn'],
+        Handler: async function(req, res) {
+            // TODO: Check permissions?
+            const {username} = req.session;  // TODO: Check permissions
             const {roleId, ownerId, projectId, overwrite, roleName} = req.body;
-            let {projectName} = req.body;
-            const {srcXml, mediaXml} = req.body;
+            const {projectName, srcXml, mediaXml} = req.body;
+            const roleData = {
+                ProjectName: roleName,
+                SourceCode: srcXml,
+                Media: mediaXml
+            };
 
-            // Get any projects with colliding name
-            //   - if they are currently opened
-            //     - rename room
-            //     - set to transient
-            //   - else
-            //     - delete
-            //
-            // Get the project
-            //   - set the name
-            //   - set the role content
-            //   - persist
-            //
-            let project = null;
-            logger.trace(`Saving ${roleId} from ${projectName} (${projectId})`);
-            return Projects.getById(projectId)
-                .then(_project => {
-                    // if project name is different from save name,
-                    // it is "Save as" (make a copy)
-
-                    project = _project;
-                    if (!project) {
-                        throw new Error('Project not found.');
-                    }
-
-                    const isSaveAs = project.name !== projectName;
-
-                    if (isSaveAs) {
-                        // Only copy original if it has already been saved
-                        logger.trace(`Detected "save as". Saving ${project.name} as ${projectName}`);
-                        return project.isTransient()
-                            .then(isTransient => {
-                                if (!isTransient) {
-                                    logger.trace(`Original project already saved. Copying original ${project.name}`);
-                                    return project.getCopy()  // save the original
-                                        .then(copy => copy.persist());
-                                }
-                            })
-                            .then(() => Projects.get(ownerId, projectName))
-                            .then(existingProject => {  // overwrite or rename any collisions
-                                if (!existingProject || existingProject.getId().toString() === projectId) {
-                                    return null;
-                                }
-                                const collision = existingProject;
-                                const isActive = NetworkTopology.getSocketsAtProject(collision.getId()).length > 0;
-                                if (isActive) {
-                                    logger.trace('found name collision with open project. Renaming and unpersisting.');
-                                    return user.getNewName(projectName)
-                                        .then(name => collision.setName(name))
-                                        .then(() => collision.unpersist());
-                                } else if (overwrite) {
-                                    // FIXME: What if this is occupied by users with a patchy ws connection?
-                                    logger.trace(`found name collision with project. Overwriting ${project.name}.`);
-                                    return collision.destroy();
-                                } else {  // rename the project
-                                    return user.getNewName(projectName)
-                                        .then(name => projectName = name);
-                                }
-                            });
-                    }
-                })
-                .then(() => project.setName(projectName))  // update room name
-                .then(() => NetworkTopology.onRoomUpdate(projectId))
-                .then(() => project.archive())
-                .then(() => {
-                    const roleData = {
-                        ProjectName: roleName,
-                        SourceCode: srcXml,
-                        Media: mediaXml
-                    };
-                    return project.setRoleById(roleId, roleData);
-                })
-                .then(() => project.persist())
-                .then(() => res.status(200).send({name: projectName, projectId, roleId}))
-                .catch(err => {
-                    logger.error(`Error saving ${projectId}:`, err);
-                    return res.status(500).send(err.message);
-                });
+            const project = await Projects.getProjectSafe(projectId);
+            const saved = await Projects.saveProject(
+                project,
+                roleId,
+                roleData,
+                projectName,
+                overwrite
+            );
+            return res.status(200).send({
+                name: projectName,
+                projectId: saved.getId(),
+                roleId
+            });
         }
     },
     {
@@ -344,39 +123,17 @@ module.exports = [
         Parameters: 'clientId,projectId',
         Method: 'Post',
         Note: '',
-        middleware: ['isLoggedIn', 'setUser'],
-        Handler: function(req, res) {
+        middleware: ['isLoggedIn'],
+        Handler: async function(req, res) {
+            // TODO: auth
             // Save the latest role content (include xml in the req)
             // TODO
-            const {user} = req.session;
-            const {projectId} = req.body;
+            const {username} = req.session;
+            const {projectId, clientId} = req.body;
 
-            // make a copy of the project for the given user and save it!
-            let name = null;
-            let project = null;
-            return user.getNewName(name)
-                .then(_name => {
-                    name = _name;
-                    return Projects.getById(projectId);
-                })
-                .then(project => {
-                    if (!project) {
-                        throw new Error('Project not found.');
-                    }
-                    name = `Copy of ${project.name || 'untitled'}`;
-                    return project.getCopyFor(user);
-                })
-                .then(_project => project = _project)
-                .then(() => project.setName(name))
-                .then(() => project.persist())
-                .then(() => {
-                    logger.trace(`${user.username} saved a copy of project: ${name}`);
-                    const result = {
-                        name,
-                        projectId: project.getId()
-                    };
-                    return res.status(200).send(result);
-                });
+            const project = await ProjectsData.getById(projectId);
+            const result = await Projects.saveProjectCopy(username, project, clientId);
+            return res.status(200).send(result);
         }
     },
     {
@@ -385,76 +142,33 @@ module.exports = [
         Method: 'Get',
         Note: '',
         middleware: ['isLoggedIn', 'noCache'],
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             const origin = `${process.env.SERVER_PROTOCOL || req.protocol}://${req.get('host')}`;
-            var username = req.session.username;
+            const {username} = req.session;
             logger.log(`${username} requested shared project list from ${origin}`);
 
-            return Storage.users.get(username)
-                .then(user => {
-                    if (user) {
-                        return user.getSharedProjects()
-                            .then(projects => {
-                                logger.trace(`found shared project list (${projects.length}) ` +
-                                    `for ${username}: ${projects.map(proj => proj.name)}`);
-
-                                const previews = projects.map(project => getProjectMetadata(project, origin));
-                                const names = JSON.stringify(previews.map(preview =>
-                                    preview.ProjectName));
-
-                                logger.info(`shared projects for ${username} are ${names}`);
-
-                                if (req.query.format === 'json') {
-                                    return res.json(previews);
-                                } else {
-                                    return res.send(Utils.serializeArray(previews));
-                                }
-                            });
-                    }
-                    return res.status(404);
-                })
-                .catch(e => {
-                    this._logger.error(`could not find user ${username}: ${e}`);
-                    return res.status(500).send('ERROR: ' + e);
-                });
+            const previews = await Projects.getSharedProjectList(username, origin);
+            if (req.query.format === 'json') {
+                return res.json(previews);
+            } else {
+                return res.send(Utils.serializeArray(previews));
+            }
         }
     },
     {
         Service: 'getProjectList',
         Method: 'Get',
         middleware: ['isLoggedIn', 'noCache'],
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             const origin = `${req.protocol}://${req.get('host')}`;
-            var username = req.session.username;
-            logger.log(`${username} requested project list from ${origin}`);
+            const {username} = req.session;
 
-            return Storage.users.get(username)
-                .then(user => {
-                    if (user) {
-                        return user.getProjects()
-                            .then(projects => {
-                                logger.trace(`found project list (${projects.length}) ` +
-                                    `for ${username}: ${projects.map(proj => proj.name)}`);
-
-                                const previews = projects.map(project => getProjectMetadata(project, origin));
-                                logger.info(`Projects for ${username} are ${JSON.stringify(
-                                    previews.map(preview => preview.ProjectName)
-                                )}`
-                                );
-
-                                if (req.query.format === 'json') {
-                                    return res.json(previews);
-                                } else {
-                                    return res.send(Utils.serializeArray(previews));
-                                }
-                            });
-                    }
-                    return res.status(404);
-                })
-                .catch(e => {
-                    this._logger.error(`Could not find user ${username}: ${e}`);
-                    return res.status(500).send('ERROR: ' + e);
-                });
+            const previews = await Projects.getProjectList(username, origin);
+            if (req.query.format === 'json') {
+                return res.json(previews);
+            } else {
+                return res.send(Utils.serializeArray(previews));
+            }
         }
     },
     {
@@ -462,20 +176,12 @@ module.exports = [
         Parameters: 'projectId,name',
         Method: 'post',
         Note: '',
-        middleware: ['isLoggedIn', 'noCache', 'setUser'],
-        Handler: function(req, res) {
+        middleware: ['isLoggedIn', 'noCache'],
+        Handler: async function(req, res) {
             const {projectId, name} = req.body;
-            const user = req.session.user;
-
-            // Check if the name will conflict with any currently saved projects
-            return user.getProjectMetadatas()
-                .then(projects => {
-                    const conflict = projects
-                        .find(project => project.name === name && project._id.toString() !== projectId);
-
-                    logger.log(`${user.username} is checking if "${name}" conflicts w/ any saved names (${!!conflict})`);
-                    return res.send(`hasConflicting=${!!conflict}`);
-                });
+            const {username} = req.session;
+            const hasConflict = await Projects.hasConflictingStoredProject(username, name, projectId);
+            return res.send(`hasConflicting=${hasConflict}`);
         }
     },
     {
@@ -486,9 +192,7 @@ module.exports = [
         middleware: ['isLoggedIn', 'noCache'],
         Handler: function(req, res) {
             const {clientId, projectId} = req.body;
-            const userCount = NetworkTopology.getSocketsAtProject(projectId)
-                .filter(socket => socket.uuid !== clientId).length;
-            const active = userCount > 0;
+            const active = NetworkTopology.isProjectActive(projectId, clientId);
 
             return res.json({active});
         }
@@ -498,37 +202,16 @@ module.exports = [
         Parameters: 'projectId',
         Method: 'post',
         Note: '',
-        middleware: ['isLoggedIn', 'noCache', 'setUser'],
-        Handler: function(req, res) {
+        middleware: ['isLoggedIn', 'noCache'],
+        Handler: async function(req, res) {
             const {projectId} = req.body;
-            const {user} = req.session;
+            const {username} = req.session;
 
-            logger.log(`${user.username} joining project ${projectId}`);
-            // Join the given project
-            return Projects.getById(projectId)
-                .then(project => {
-                    if (project) {
+            logger.log(`${username} joining project ${projectId}`);
+            const {role, project} = await Projects.getRoleToJoin(projectId);
+            const serialized = Utils.serializeRole(role, project);
+            return res.send(serialized);
 
-                        return project.getRawRoles()
-                            .then(metadata => {  // Get an unoccupied role
-                                const occupiedRoles = NetworkTopology.getSocketsAtProject(projectId)
-                                    .map(socket => socket.roleId);
-                                const unoccupiedRoles = metadata
-                                    .filter(data => !occupiedRoles.includes(data.ID));
-                                const roleChoices = unoccupiedRoles.length ?
-                                    unoccupiedRoles : metadata;
-
-                                const roleId = Utils.sortByDateField(roleChoices, 'Updated', -1).shift().ID;
-                                return project.getRoleById(roleId);
-                            })
-                            .then(role => {
-                                const serialized = Utils.serializeRole(role, project);
-                                return res.send(serialized);
-                            });
-                    } else {
-                        return res.send('ERROR: Project not found');
-                    }
-                });
         }
     },
     {
@@ -536,28 +219,18 @@ module.exports = [
         Parameters: 'owner,projectName',
         Method: 'post',
         Note: '',
-        middleware: ['isLoggedIn', 'noCache', 'setUser'],
-        Handler: function(req, res) {
+        middleware: ['isLoggedIn', 'noCache'],
+        Handler: async function(req, res) {
             const {owner, projectName} = req.body;
-            const {user, username} = req.session;
+            const {username} = req.session;
 
             // Check permissions
             // TODO
-
+            
             logger.trace(`${username} opening project ${owner}/${projectName}`);
-            return Projects.get(owner, projectName)
-                .then(project => {
-                    if (project) {
-                        if (username !== owner) {  // send a copy
-                            return project.getCopyFor(user)
-                                .then(copy => sendProjectTo(copy, res));
-                        }
-
-                        return sendProjectTo(project, res);
-                    } else {
-                        res.send('ERROR: Project not found');
-                    }
-                });
+            const {project, role} = await Projects.getProjectByName(owner, projectName, username);
+            const serialized = Utils.serializeRole(role, project);
+            return res.send(serialized);
         }
     },
     {
@@ -565,7 +238,7 @@ module.exports = [
         Parameters: 'projectId',
         Method: 'post',
         Note: '',
-        middleware: ['isLoggedIn', 'noCache', 'setUser'],
+        middleware: ['isLoggedIn', 'noCache'],
         Handler: async function(req, res) {
             const {projectId} = req.body;
             const {username} = req.session;
@@ -574,12 +247,7 @@ module.exports = [
 
             // Get the projectName
             logger.trace(`${username} opening project ${projectId}`);
-            const project = await Projects.getById(projectId);
-
-            if (!project) {
-                return res.status(404).send('Project not found');
-            }
-
+            const project = await Projects.getProjectSafe(projectId);
             const xml = await project.toXML();
             res.set('Content-Type', 'text/xml');
             return res.send(xml);
@@ -590,57 +258,32 @@ module.exports = [
         Parameters: 'projectId,roleId',
         Method: 'post',
         Note: '',
-        middleware: ['isLoggedIn', 'noCache', 'setUser'],
-        Handler: function(req, res) {
+        middleware: ['isLoggedIn', 'noCache'],
+        Handler: async function(req, res) {
             const {projectId} = req.body;
             let {roleId} = req.body;
             const {username} = req.session;
 
             // Get the projectName
             logger.trace(`${username} opening project ${projectId}`);
-            let project;
-            return Projects.getById(projectId)
-                .then(result => {  // if no roleId specified, get the last updated
-                    project = result;
-                    if (!roleId) {
-                        return project.getLastUpdatedRole()
-                            .then(role => roleId = role.ID);
-                    }
-                })
-                .then(() => project.getRoleById(roleId))
-                .then(role => {
-                    const serialized = Utils.serializeRole(role, project);
-                    return res.send(serialized);
-                })
-                .catch(err => res.status(500).send('ERROR: ' + err));
+            // TODO: Add auth
+            const {project, role} = await Projects.getProject(projectId, roleId);
+            const serialized = Utils.serializeRole(role, project);
+            return res.send(serialized);
         }
     },
     {
         Service: 'deleteProject',
-        Parameters: 'ProjectName,RoomName',
+        Parameters: 'ProjectName',
         Method: 'Post',
         Note: '',
-        middleware: ['isLoggedIn', 'setUser'],
-        Handler: function(req, res) {
-            var user = req.session.user,
-                project = req.body.ProjectName;
-
-            logger.log(user.username +' trying to delete "' + project + '"');
-
-            // Get the project and call "destroy" on it
-            return user.getProject(project)
-                .then(project => {
-                    if (!project) {
-                        logger.error(`project ${project} not found`);
-                        return res.status(400).send(`${project} not found!`);
-                    }
-
-                    return project.destroy()
-                        .then(() => {
-                            logger.trace(`project ${project.name} deleted`);
-                            return res.send('project deleted!');
-                        });
-                });
+        middleware: ['isLoggedIn'],
+        Handler: async function(req, res) {
+            const {username} = req.session;
+            const name = req.body.ProjectName;
+            const project = await Projects.getProjectSafe(username, name);
+            await Projects.deleteProject(project);
+            return res.send('project deleted!');
         }
     },
     {
@@ -648,15 +291,13 @@ module.exports = [
         Parameters: 'ProjectName',
         Method: 'Post',
         Note: '',
-        middleware: ['isLoggedIn', 'setUser'],
-        Handler: function(req, res) {
-            var name = req.body.ProjectName,
-                user = req.session.user;
+        middleware: ['isLoggedIn'],
+        Handler: async function(req, res) {
+            const name = req.body.ProjectName;
+            const {username} = req.session;
 
-            logger.log(`${user.username} is publishing project ${name}`);
-            return setProjectPublic(name, user, true)
-                .then(() => res.send(`"${name}" is shared!`))
-                .catch(err => res.send(`ERROR: ${err}`));
+            await Projects.publishProject(username, name);
+            res.send(`"${name}" is shared!`);
         }
     },
     {
@@ -664,16 +305,13 @@ module.exports = [
         Parameters: 'ProjectName',
         Method: 'Post',
         Note: '',
-        middleware: ['isLoggedIn', 'setUser'],
-        Handler: function(req, res) {
-            var name = req.body.ProjectName,
-                user = req.session.user;
+        middleware: ['isLoggedIn'],
+        Handler: async function(req, res) {
+            const name = req.body.ProjectName;
+            const {username} = req.session;
 
-            logger.log(`${user.username} is unpublishing project ${name}`);
-
-            return setProjectPublic(name, user, false)
-                .then(() => res.send(`"${name}" is no longer shared`))
-                .catch(err => res.send(`ERROR: ${err}`));
+            await Projects.unpublishProject(username, name);
+            res.send(`"${name}" is no longer shared!`);
         }
     },
 
@@ -711,103 +349,63 @@ module.exports = [
         Method: 'get',
         URL: 'projects/:owner/:project/thumbnail',
         middleware: ['setUsername'],
-        Handler: function(req, res) {
-            var name = req.params.project,
-                aspectRatio = +req.query.aspectRatio || 0;
+        Handler: async function(req, res) {
+            const name = req.params.project;
+            const aspectRatio = +req.query.aspectRatio || 0;
 
-            // return the names of all projects owned by :owner
-            return Projects.getProjectMetadata(req.params.owner, name)
-                .then(project => {
-                    if (project) {
-                        const thumbnail = getProjectThumbnail(project);
-                        if (!thumbnail) {
-                            const err = `could not find thumbnail for ${name}`;
-                            this._logger.error(err);
-                            return res.status(400).send(err);
-                        }
-                        res.set({
-                            'Cache-Control': 'private, max-age=60',
-                        });
-                        this._logger.trace(`Applying aspect ratio for ${req.params.owner}'s ${name}`);
-                        return applyAspectRatio(
-                            thumbnail,
-                            aspectRatio
-                        ).then(buffer => {
-                            this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
-                            res.contentType('image/png');
-                            res.end(buffer, 'binary');
-                        });
-                    } else {
-                        const err = `could not find project ${name}`;
-                        this._logger.error(err);
-                        return res.status(400).send(err);
-                    }
-                })
-                .catch(err => {
-                    this._logger.error(`padding image failed: ${err}`);
-                    res.serverError(err);
-                });
+            const project = await Projects.getProjectSafe(req.params.owner, name);
+            const thumbnail = Projects.getProjectInfo(project).Thumbnail;
+            if (!thumbnail) {
+                const err = `could not find thumbnail for ${name}`;
+                this._logger.error(err);
+                return res.status(400).send(err);
+            }
+            res.set({
+                'Cache-Control': 'private, max-age=60',
+            });
+            this._logger.trace(`Applying aspect ratio for ${req.params.owner}'s ${name}`);
+            const buffer = await applyAspectRatio(thumbnail, aspectRatio);
+            this._logger.trace(`Sending thumbnail for ${req.params.owner}'s ${name}`);
+            res.contentType('image/png');
+            res.end(buffer, 'binary');
         }
     },
     {
         Method: 'get',
         URL: 'examples/:name/thumbnail',
-        Handler: function(req, res) {
-            var name = req.params.name,
-                aspectRatio = +req.query.aspectRatio || 0;
+        Handler: async function(req, res) {
+            const {name} = req.params;
+            const aspectRatio = +req.query.aspectRatio || 0;
+            const example = EXAMPLES[name];
 
-            if (!EXAMPLES.hasOwnProperty(name)) {
+            if (!example) {
                 this._logger.warn(`ERROR: Could not find example "${name}`);
-                return res.status(500).send('ERROR: Could not find example.');
+                return res.status(404).send('ERROR: Could not find example.');
             }
 
             res.set({
                 'Cache-Control': 'public, max-age=3600',
             });
 
-            // Get the thumbnail
-            var example = EXAMPLES[name];
-            return example.getRoleNames()
-                .then(names => example.getRole(names.shift()))
-                .then(content => {
-                    const thumbnail = Utils.xml.thumbnail(content.SourceCode);
-                    return applyAspectRatio(thumbnail, aspectRatio);
-                })
-                .then(buffer => {
-                    res.contentType('image/png');
-                    res.end(buffer, 'binary');
-                })
-                .fail(err => {
-                    this._logger.error(`padding image failed: ${err}`);
-                    res.serverError(err);
-                });
+            const names = await example.getRoleNames();
+            const content = await example.getRole(names.shift());
+            const thumbnail = Utils.xml.thumbnail(content.SourceCode);
+            const buffer = await applyAspectRatio(thumbnail, aspectRatio);
+            res.contentType('image/png');
+            res.end(buffer, 'binary');
         }
     },
     {
         Method: 'get',
         URL: 'RawPublic',
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             var username = req.query.Username,
                 projectName = req.query.ProjectName;
 
             this._logger.trace(`Retrieving the public project: ${projectName} from ${username}`);
-            return Storage.users.get(username)
-                .then(user => {
-                    if (!user) {
-                        logger.log(`Could not find user ${username}`);
-                        return res.status(400).send('ERROR: User not found');
-                    }
-                    return user.getProject(projectName);
-                })
-                .then(project => {
-                    if (project && project.Public) {
-                        return project.toXML()
-                            .then(xml => res.send(xml));
-                    } else {
-                        return res.status(400).send('ERROR: Project not available');
-                    }
-                })
-                .catch(err => res.status(500).send(`ERROR: ${err}`));
+            const project = await Projects.getPublicProject(username, projectName);
+            const xml = await project.toXML();
+            res.send(xml);
         }
     }
 

@@ -245,7 +245,9 @@
             metadata.owner = owner;
             metadata.collaborators = [];
             metadata.transient = true;
-            _.extend(metadata, overrides);
+            for (let key in overrides) {
+                metadata[key] = overrides[key];
+            }
 
             const project = new Project({
                 logger: this._logger,
@@ -255,20 +257,8 @@
             return project.create(metadata.roles);
         }
 
-        getCopy() {
-            return this.getProjectMetadata()
-                .then(metadata => {
-                    metadata.originTime = Date.now();
-                    metadata.collaborators = [];
-                    metadata.transient = true;
-
-                    const project = new Project({
-                        logger: this._logger,
-                        db: this._db,
-                        data: metadata
-                    });
-                    return project.create(metadata.roles);
-                });
+        getCopy(overrides) {
+            return this.getCopyFor(this.owner, overrides);
         }
 
         getNewRoleName(basename) {
@@ -349,7 +339,7 @@
             const data = {
                 name: this.name,
                 owner: this.owner,
-                transient: true,
+                transient: this.transient,
                 lastUpdatedAt: new Date(),
                 originTime: this.originTime,
                 collaborators: this.collaborators,
@@ -749,6 +739,7 @@
         name: 'untitled',
         collaborators: [],
         roles: {},
+        transient: true
     };
     ProjectStorage.new = function(data) {
         data.originTime = data.originTime || new Date();
