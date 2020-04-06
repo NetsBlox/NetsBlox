@@ -179,7 +179,11 @@ async function shouldThrow(fn, Err, msg) {
     try {
         await fn();
     } catch (err) {
-        assert.equal(err.constructor.name, Err.name);
+        if (err instanceof Error) {
+            assert.equal(err.constructor.name, Err.name);
+        } else {
+            console.error(`Caught ${typeof err}:`, err);
+        }
         return;
     }
     throw new Error(msg || `Expected fn to throw ${Err.name}`);
