@@ -33,77 +33,55 @@ describe('projects', function() {
             .catch(done);
     });
 
-    it('should return undefined for non-existent role', function(done) {
-        project.getRole('i-am-not-real')
-            .then(role => assert.equal(role, undefined))
-            .then(() => done())
-            .catch(done);
+    it('should return undefined for non-existent role', async function() {
+        const role = await project.getRole('i-am-not-real');
+        assert.equal(role, undefined);
     });
 
-    it('should start as transient', function(done) {
-        project.isTransient()
-            .then(isTransient => assert(isTransient))
-            .then(() => done())
-            .catch(done);
+    it('should start as transient', async function() {
+        const isTransient = await project.isTransient();
+        assert(isTransient);
     });
 
-    it('should set transient to true', function(done) {
-        project.persist()
-            .then(() => project.isTransient())
-            .then(isTransient => assert(!isTransient))
-            .then(() => done())
-            .catch(done);
+    it('should set transient to true', async function() {
+        await project.persist();
+        const isTransient = await project.isTransient();
+        assert(!isTransient);
     });
 
-    it('should set transient to true across duplicate projects', function(done) {
-        Projects.get(OWNER, PROJECT_NAME)
-            .then(p2 => {
-                project.persist()
-                    .then(() => p2.isTransient())
-                    .then(isTransient => assert(!isTransient))
-                    .then(() => done())
-                    .catch(done);
-            });
+    it('should set transient to true across duplicate projects', async () => {
+        const p2 = await Projects.get(OWNER, PROJECT_NAME);
+        await project.persist();
+        const isTransient = await p2.isTransient();
+        assert(!isTransient);
     });
 
-    it('should get role by id', function(done) {
-        Projects.get('brian', 'MultiRoles')
-            .then(project => project.getRoleById('r1-ID'))
-            .then(role => assert(role))
-            .nodeify(done);
+    it('should get role by id', async function() {
+        const project = await Projects.get('brian', 'MultiRoles');
+        const role = await project.getRoleById('r1-ID');
+        assert(role);
     });
 
-    it('should get role', function(done) {
-        project.getRoleNames()
-            .then(() => project.getRole('p1'))
-            .then(role => {
-                assert.equal(role.ProjectName, 'p1');
-                assert.notEqual(role.SourceCode.length, 128);
-            })
-            .nodeify(done);
+    it('should get role', async function() {
+        const role = await project.getRole('p1');
+        assert.equal(role.ProjectName, 'p1');
+        assert.notEqual(role.SourceCode.length, 128);
     });
 
-    it('should rename role', function(done) {
-        project.renameRole('p1', 'newName')
-            .then(() => project.getRole('p1'))
-            .then(role => assert(!role, 'original role still exists'))
-            .then(() => project.getRole('newName'))
-            .then(role => {
-                assert(role);
-                assert.equal(role.ProjectName, 'newName');
-                done();
-            })
-            .catch(done);
+    it('should rename role', async function() {
+        await project.renameRole('p1', 'newName');
+        const originalRole = await project.getRole('p1');
+        assert(!originalRole, 'original role still exists');
+        const role = await project.getRole('newName');
+        assert(role);
+        assert.equal(role.ProjectName, 'newName');
     });
 
-    it('should not change id on rename role', function(done) {
-        let roleId = null;
-        project.getRoleId('p1')
-            .then(id => roleId = id)
-            .then(() => project.renameRole('p1', 'newName'))
-            .then(() => project.getRoleId('newName'))
-            .then(id => assert.equal(id, roleId))
-            .nodeify(done);
+    it('should not change id on rename role', async function() {
+        const roleId = await project.getRoleId('p1');
+        await project.renameRole('p1', 'newName');
+        const id = await project.getRoleId('newName');
+        assert.equal(id, roleId);
     });
 
     it('should create cloned role', async function() {
@@ -114,25 +92,19 @@ describe('projects', function() {
         assert.equal(role.ProjectName, 'clone1');
     });
 
-    it('should remove the project from db on destroy', function(done) {
-        project.destroy()
-            .then(() => Projects.get(OWNER, PROJECT_NAME))
-            .then(data => {
-                assert(!data);
-                done();
-            })
-            .catch(done);
+    it('should remove the project from db on destroy', async function() {
+        await project.destroy();
+        const data = await Projects.get(OWNER, PROJECT_NAME);
+        assert(!data);
     });
 
-    it('should have the correct origin time', function() {
-        let project = null;
-        return Projects.get('brian', 'MultiRoles')
-            .then(result => project = result)
-            .then(() => project.getProjectMetadata())
-            .then(data => assert.equal(
-                data.originTime.getTime(),
-                project.originTime.getTime()
-            ));
+    it('should have the correct origin time', async function() {
+        const project = await Projects.get('brian', 'MultiRoles');
+        const data = await project.getProjectMetadata();
+        assert.equal(
+            data.originTime.getTime(),
+            project.originTime.getTime()
+        );
     });
 
     describe('deletion', function() {
@@ -167,24 +139,21 @@ describe('projects', function() {
     describe('setName', function() {
         // setName should change the name in place and not create a copy
 
-        before(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(project => project.setName('MyNewProject'))
-                .then(() => done());
+        before(async () => {
+            await utils.reset();
+            const project = await Projects.get('brian', 'PublicProject');
+            await project.setName('MyNewProject');
         });
 
-        it('should not create a copy of saved project', function(done) {
+        it('should not create a copy of saved project', async function() {
             // check for the old version
-            Projects.get('brian', 'PublicProject')
-                .then(project => assert(!project))
-                .then(() => done());
+            const project = await Projects.get('brian', 'PublicProject');
+            assert(!project);
         });
 
-        it('should update the project version in public-projects', function(done) {
-            PublicProjects.get('brian', 'MyNewProject')
-                .then(project => assert(project))
-                .nodeify(done);
+        it('should update the project version in public-projects', async function() {
+            const project = await PublicProjects.get('brian', 'MyNewProject');
+            assert(project);
         });
     });
 
@@ -193,11 +162,10 @@ describe('projects', function() {
             assert(project._id);
         });
 
-        it('should have an _id field on get from database', function(done) {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(project => assert(project._id))
-                .nodeify(done);
+        it('should have an _id field on get from database', async function() {
+            await utils.reset();
+            const project = await Projects.get('brian', 'PublicProject');
+            assert(project._id);
         });
     });
 
@@ -274,11 +242,9 @@ describe('projects', function() {
 
     describe('project by id', function() {
         let project = null;
-        before(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'MultiRoles'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        before(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'MultiRoles');
         });
 
         it('should not be able to get raw project by id', async function() {
@@ -291,39 +257,31 @@ describe('projects', function() {
 
     describe('getLastUpdatedRoleName', function() {
         let project = null;
-        before(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'MultiRoles'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        before(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'MultiRoles');
         });
 
-        it('should return a name', done => {
-            project.getLastUpdatedRoleName()
-                .then(name => assert.equal(typeof name, 'string'))
-                .nodeify(done);
+        it('should return a name', async () => {
+            const name = await project.getLastUpdatedRoleName();
+            assert.equal(typeof name, 'string');
         });
 
-        it('should return the last role based on the "Updated" field', done => {
-            project.getRawRole('r2')
-                .then(role => {
-                    let time = new Date(role.Updated).getTime();
-                    role.Updated = new Date(time + 100000);
-                    return project.setRawRole('r1', role);
-                })
-                .then(() => project.getLastUpdatedRoleName())
-                .then(name => assert.equal(name, 'r1'))
-                .nodeify(done);
+        it('should return the last role based on the "Updated" field', async () => {
+            const role = await project.getRawRole('r2');
+            let time = new Date(role.Updated).getTime();
+            role.Updated = new Date(time + 100000);
+            await project.setRawRole('r1', role);
+            const name = await project.getLastUpdatedRoleName();
+            assert.equal(name, 'r1');
         });
     });
 
     describe('execUpdate', function() {
         let project = null;
-        before(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'MultiRoles'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        before(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'MultiRoles');
         });
 
         it('should record the update time ', function() {
@@ -343,166 +301,127 @@ describe('projects', function() {
 
     describe('removeRole', function() {
         let project = null;
-        before(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'MultiRoles'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        before(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'MultiRoles');
         });
 
-        it('should remove role by name', function(done) {
-            project.removeRole('r1')
-                .then(() => project.getRoleNames())
-                .nodeify(done);
+        it('should remove role by name', async () => {
+            await project.removeRole('r1');
+            const names = await project.getRoleNames();
+            assert(!names.includes('r1'), 'Role name has not been removed');
         });
 
-        it('should reject promise if name doesn\'t exist', function(done) {
-            project.removeRole('r1000')
-                .then(() => project.getRoleNames())
-                .catch(() => done());
+        it('should reject promise if name doesn\'t exist', async function() {
+            await utils.shouldThrow(() => project.removeRole('r1000'));
         });
     });
 
     describe('getLastUpdatedRole', function() {
         let project = null;
-        before(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'MultiRoles'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        before(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'MultiRoles');
         });
 
-        it('should return a role', done => {
-            project.getLastUpdatedRole()
-                .then(role => assert(role.ProjectName))
-                .nodeify(done);
+        it('should return a role', async () => {
+            const role = await project.getLastUpdatedRole();
+            assert(role.ProjectName);
         });
 
-        it('should not return a raw role', done => {
-            project.getLastUpdatedRole()
-                .then(role => assert.equal(role.SourceCode[0], '<'))
-                .nodeify(done);
+        it('should not return a raw role', async () => {
+            const role = await project.getLastUpdatedRole();
+            assert.equal(role.SourceCode[0], '<');
         });
 
-        it('should return the last role based on the "Updated" field', done => {
-            project.getRawRole('r2')
-                .then(role => {
-                    let time = new Date(role.Updated).getTime();
-                    role.Updated = new Date(time + 100000);
-                    return project.setRawRole('r1', role);
-                })
-                .then(() => project.getLastUpdatedRole())
-                .then(role => assert.equal(role.ProjectName, 'r1'))
-                .nodeify(done);
+        it('should return the last role based on the "Updated" field', async () => {
+            const rawRole = await project.getRawRole('r2');
+            const time = new Date(rawRole.Updated).getTime();
+            rawRole.Updated = new Date(time + 100000);
+            await project.setRawRole('r1', rawRole);
+            const role = await project.getLastUpdatedRole();
+            assert.equal(role.ProjectName, 'r1');
         });
     });
 
     describe('setRawRoleById', function() {
         let roleName = 'role';
         let roleId = null;
-        beforeEach(done => {
-            let content = null;
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .then(() => project.getRawRole('role'))
-                .then(role => {
-                    content = role;
-                    content.ProjectName = 'NewName';
-                    return project.getRoleId(roleName)
-                        .then(id => roleId = id);
-                })
-                .then(() => project.setRawRoleById(roleId, content))
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
+            const content = await project.getRawRole('role');
+            content.ProjectName = 'NewName';
+            roleId = await project.getRoleId(roleName);
+            await project.setRawRoleById(roleId, content);
         });
 
-        it('should add new role name', function(done) {
-            project.getRoleNames()
-                .then(names => assert(names.includes('NewName')))
-                .nodeify(done);
+        it('should add new role name', async () => {
+            const names = await project.getRoleNames();
+            assert(names.includes('NewName'));
         });
 
-        it('should not keep old role name', function(done) {
-            project.getProjectMetadata()
-                .then(() => project.getRoleNames())
-                .then(names => assert(!names.includes('role')))
-                .nodeify(done);
+        it('should not keep old role name', async function() {
+            await project.getProjectMetadata();
+            const names = await project.getRoleNames();
+            assert(!names.includes('role'));
         });
 
-        it('should not change the role id', function(done) {
-            project.getRoleId('NewName')
-                .then(id => assert.equal(id, roleId))
-                .nodeify(done);
+        it('should not change the role id', async function() {
+            const id = await project.getRoleId('NewName');
+            assert.equal(id, roleId);
         });
 
-        it.skip('should get new role id', function(done) {
-            project.getRoleId('NewName')
-                .then(id => assert(id))
-                .nodeify(done);
+        it.skip('should get new role id', async function() {
+            const id = await project.getRoleId('NewName');
+            assert(id);
         });
 
-        it('should add new role id', function(done) {
-            project.getRoleIds()
-                .then(ids => assert.equal(ids.length, 1, `expected one id but got: ${ids.join(',')}`))
-                .nodeify(done);
+        it('should add new role id', async function() {
+            const ids = await project.getRoleIds();
+            assert.equal(ids.length, 1, `expected one id but got: ${ids.join(',')}`);
         });
     });
 
     describe('renameRole', function() {
         let firstId = null;
-        beforeEach(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .then(() => project.getRoleId('role'))
-                .then(id => firstId = id)
-                .then(() => project.renameRole('role', 'role2'))
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
+            firstId = await project.getRoleId('role');
+            await project.renameRole('role', 'role2');
         });
 
-        it('should preserve the role id on rename', function(done) {
-            project.getRoleId('role2')
-                .then(id => assert.equal(firstId, id))
-                .nodeify(done);
+        it('should preserve the role id on rename', async function() {
+            const id = await project.getRoleId('role2');
+            assert.equal(firstId, id);
         });
 
-        it('should remove the old role', function(done) {
-            project.getRoleNames()
-                .then(names => assert(!names.includes('role')))
-                .nodeify(done);
+        it('should remove the old role', async function() {
+            const names = await project.getRoleNames();
+            assert(!names.includes('role'));
         });
     });
 
     describe('getRoleId', function() {
         let project = null;
-        beforeEach(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
         });
 
-        it('should get the role id', function(done) {
-            project.getRoleId('role')
-                .then(id => assert(id))
-                .nodeify(done);
+        it('should get the role id', async function() {
+            const id = await project.getRoleId('role');
+            assert(id);
         });
 
-        it('should preserve the role id on setRawRole', function(done) {
-            let firstId = null;
-            let content = null;
-
-            project.getRawRole('role')
-                .then(role => {
-                    content = role;
-                    content.ProjectName = 'NewName';
-                })
-                .then(() => project.getRoleId('role'))
-                .then(id => firstId = id)
-                .then(() => project.setRawRoleById(firstId, content))
-                .then(() => project.getRoleId('NewName'))
-                .then(id => assert.equal(firstId, id))
-                .nodeify(done);
+        it('should preserve the role id on setRawRole', async function() {
+            const content = await project.getRawRole('role');
+            content.ProjectName = 'NewName';
+            const firstId = await project.getRoleId('role');
+            await project.setRawRoleById(firstId, content);
+            const id = await project.getRoleId('NewName');
+            assert.equal(firstId, id);
         });
 
         it('should get diff role id for cloned role', async function() {
@@ -510,240 +429,201 @@ describe('projects', function() {
             await project.cloneRole('role', 'clonedRole');
             const id = await project.getRoleId('clonedRole');
             assert.notEqual(firstId, id);
-            const names = await project.getRoleNames();
             assert(id);
         });
     });
 
     describe('setRawRole', function() {
-        beforeEach(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .then(() => project.getRawRole('role'))
-                .then(content => project.setRawRole('r2', content))
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
+            const content = await project.getRawRole('role');
+            await project.setRawRole('r2', content);
         });
 
-        it('should update the role name', function(done) {
-            project.getRoleNames()
-                .then(names => assert(names.includes('r2')))
-                .nodeify(done);
+        it('should update the role name', async function() {
+            const names = await project.getRoleNames();
+            assert(names.includes('r2'));
         });
 
-        it('should update the role id', function(done) {
-            let firstId = null;
-            project.getRoleId('role')
-                .then(id => firstId = id)
-                .then(() => project.getRoleId('r2'))
-                .then(secondId => assert.notEqual(firstId, secondId))
-                .nodeify(done);
+        it('should update the role id', async function() {
+            const firstId = await project.getRoleId('role');
+            const secondId = await project.getRoleId('r2');
+            assert.notEqual(firstId, secondId);
         });
     });
 
     describe('cloneRole', function() {
-        beforeEach(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .then(() => project.cloneRole('role', 'clonedRole'))
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
+            await project.cloneRole('role', 'clonedRole');
         });
 
-        it('should create a new role name', function(done) {
-            project.getRoleNames()
-                .then(names => assert.equal(names.length, 2))
-                .nodeify(done);
+        it('should create a new role name', async function() {
+            const names = await project.getRoleNames();
+            assert.equal(names.length, 2);
         });
 
-        it('should create a new role id', function(done) {
-            project.getRoleIds()
-                .then(ids => assert.notEqual(ids[0], ids[1]))
-                .nodeify(done);
+        it('should create a new role id', async function() {
+            const [id1, id2] = await project.getRoleIds();
+            assert.notEqual(id1, id2);
         });
     });
 
     describe('getRoleIds', function() {
-        beforeEach(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
         });
 
-        it('should return role id(s)', function(done) {
-            project.getRoleIds()
-                .then(ids => assert.equal(ids.length, 1))
-                .nodeify(done);
+        it('should return role id(s)', async function() {
+            const ids = await project.getRoleIds();
+            assert.equal(ids.length, 1);
         });
     });
 
     describe('getRoleNames', function() {
-        beforeEach(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
         });
 
-        it('should be able to get role names', function(done) {
-            project.getRoleNames()
-                .then(names => assert.equal(names[0], 'role'))
-                .nodeify(done);
+        it('should be able to get role names', async function() {
+            const [name] = await project.getRoleNames();
+            assert.equal(name, 'role');
         });
     });
 
     describe('getRecordStartTime', function() {
-        beforeEach(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
         });
 
-        it('should not be recording messages by default', done => {
-            project.isRecordingMessages()
-                .then(recording => assert(!recording))
-                .nodeify(done);
+        it('should not be recording messages by default', async () => {
+            const recording = await project.isRecordingMessages();
+            assert(!recording);
         });
 
-        it('should not be recording messages by default', done => {
-            project.isRecordingMessages()
-                .then(recording => assert(!recording))
-                .nodeify(done);
+        it('should not be recording messages by default', async () => {
+            const recording = await project.isRecordingMessages();
+            assert(!recording);
         });
     });
 
     describe('getLatestRecordStartTime', function() {
-        beforeEach(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
         });
 
-        it('should have default startTime of -Infinity', done => {
-            project.getLatestRecordStartTime()
-                .then(time => assert.equal(time, -Infinity))
-                .nodeify(done);
+        it('should have default startTime of -Infinity', async () => {
+            const time = await project.getLatestRecordStartTime();
+            assert.equal(time, -Infinity);
         });
 
-        it('should return latest time', done => {
+        it('should return latest time', async () => {
             const times = [1000, 1500, 1200];
-            Q.all(times.map(time => project.startRecordingMessages(`u${time}`, time)))
-                .then(() => project.getLatestRecordStartTime())
-                .then(time => assert.equal(time, 1500))
-                .nodeify(done);
+            await Promise.all(times.map(time => project.startRecordingMessages(`u${time}`, time)));
+            const time = await project.getLatestRecordStartTime();
+            assert.equal(time, 1500);
         });
     });
 
     describe('stopRecordingMessages', function() {
-        beforeEach(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
         });
 
-        it('should unset start time if matching', done => {
-            project.startRecordingMessages('test')
-                .then(time => project.stopRecordingMessages('test'))
-                .then(() => project.getLatestRecordStartTime())
-                .then(time => assert.equal(time, -Infinity))
-                .nodeify(done);
+        it('should unset start time if matching', async () => {
+            await project.startRecordingMessages('test');
+            await project.stopRecordingMessages('test');
+            const time = await project.getLatestRecordStartTime();
+            assert.equal(time, -Infinity);
         });
 
-        it('should remove (clean up) old start times', done => {
-            project.startRecordingMessages('test', 1000)
-                .then(() => project.startRecordingMessages())
-                .then(time => project.stopRecordingMessages('test', time))
-                .then(() => project.getProjectMetadata())
-                .then(raw => assert(!raw.recordMessagesAfter.includes(1000)))
-                .nodeify(done);
+        it('should remove (clean up) old start times', async () => {
+            await project.startRecordingMessages('test', 1000);
+            const time = await project.startRecordingMessages();
+            await project.stopRecordingMessages('test', time);
+            const raw = await project.getProjectMetadata();
+            assert(!raw.recordMessagesAfter.includes(1000));
         });
     });
 
     describe('isRecordingMessages', function() {
-        beforeEach(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
         });
 
-        it('should be recording messages after starting recording', () => {
-            return project.startRecordingMessages('test')
-                .then(() => project.isRecordingMessages())
-                .then(recording => assert(recording));
+        it('should be recording messages after starting recording', async () => {
+            await project.startRecordingMessages('test');
+            const recording = await project.isRecordingMessages();
+            assert(recording);
         });
 
-        it('should still record msgs while one person is recording', done => {
+        it('should still record msgs while one person is recording', async () => {
             // Two people start recording
-            Q.all([
+            await Promise.all([
                 project.startRecordingMessages('p1'),
                 project.startRecordingMessages('p2')
-            ])
-                .then(() => project.stopRecordingMessages('p1'))
-                .then(() => project.isRecordingMessages())
-                .then(recording => assert(recording))
-                .nodeify(done);
+            ]);
+            await project.stopRecordingMessages('p1');
+            const recording = await project.isRecordingMessages();
+            assert(recording);
         });
 
-        it('should not be recording if timeout reached', done => {
-            project.startRecordingMessages('test', 10000)
-                .then(() => project.isRecordingMessages())
-                .then(recording => assert(!recording))
-                .nodeify(done);
+        it('should not be recording if timeout reached', async () => {
+            await project.startRecordingMessages('test', 10000);
+            const recording = await project.isRecordingMessages();
+            assert(!recording);
         });
     });
 
     describe('startRecordingMessages', function() {
         let result = null;
-        beforeEach(done => {
-            utils.reset()
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(proj => project = proj)
-                .then(() => project.startRecordingMessages('test'))
-                .then(res => result = res)
-                .nodeify(done);
+        beforeEach(async () => {
+            await utils.reset();
+            project = await Projects.get('brian', 'PublicProject');
+            result = await project.startRecordingMessages('test');
         });
 
-        it('should set the start time', done => {
-            project.getLatestRecordStartTime()
-                .then(time => assert(time) && assert.equal(time, result))
-                .nodeify(done);
+        it('should set the start time', async () => {
+            const time = await project.getLatestRecordStartTime();
+            assert(time);
+            assert.equal(time, result);
         });
 
-        it('should be recording messages', done => {
-            project.isRecordingMessages()
-                .then(recording => assert(recording))
-                .nodeify(done);
+        it('should be recording messages', async () => {
+            const recording = await project.isRecordingMessages();
+            assert(recording);
         });
     });
 
     describe('archive', function() {
         let archives, project;
 
-        before(done => {
-            utils.reset()
-                .then(db => archives = db.collection('project-archives'))
-                .then(() => Projects.get('brian', 'PublicProject'))
-                .then(result => project = result)
-                .then(() => project.archive())
-                .nodeify(done);
+        before(async () => {
+            const db = await utils.reset();
+            archives = db.collection('project-archives');
+            project = await Projects.get('brian', 'PublicProject');
+            await project.archive();
         });
 
-        it('should store archive in project-archives', () => {
-            return project.getProjectMetadata()
-                .then(result => Q(archives.findOne({projectId: result._id})))
-                .then(archive => assert(archive));
+        it('should store archive in project-archives', async () => {
+            const result = await project.getProjectMetadata();
+            const archive = await archives.findOne({projectId: result._id});
+            assert(archive);
         });
 
-        it('should not update archive on project edit', () => {
-            return project.setName('someNewName')
-                .then(() => project.getProjectMetadata())
-                .then(result => Q(archives.findOne({projectId: result._id})))
-                .then(archive => assert.equal(archive.name, 'PublicProject'));
+        it('should not update archive on project edit', async () => {
+            await project.setName('someNewName');
+            const result = await project.getProjectMetadata();
+            const archive = await archives.findOne({projectId: result._id});
+            assert.equal(archive.name, 'PublicProject');
         });
     });
 
