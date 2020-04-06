@@ -1,6 +1,6 @@
 describe('projects', function() {
     const assert = require('assert');
-    const utils = require('../../../assets/utils');
+    const utils = require('../../../../assets/utils');
     const Logger = utils.reqSrc('./logger');
     const ProjectsAPI = utils.reqSrc('./api/core/projects');
     const Errors = utils.reqSrc('./api/core/errors');
