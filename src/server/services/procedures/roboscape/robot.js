@@ -255,6 +255,15 @@ Robot.prototype.getRange = function () {
     return promise.then(value => value && value.range);
 };
 
+Robot.prototype.getLight = function () {
+    this._logger.log('get light ' + this.mac_addr);
+    var promise = this.receiveFromRobot('light sensor');
+    var message = Buffer.alloc(1);
+    message.write('l', 0, 1);
+    this.sendToRobot(message);
+    return promise.then(value => value && value.intensity);
+};
+
 Robot.prototype.getTicks = function () {
     this._logger.log('get ticks ' + this.mac_addr);
     var promise = this.receiveFromRobot('ticks');
@@ -433,6 +442,10 @@ Robot.prototype.onMessage = function (message) {
             msec: message.readInt16LE(11),
             pwr: Math.round(100 - message.readUInt8(13) / 2.55)
         });
+    } else if (command === 'l' && message.length === 12) {
+        this.sendToClient('light sensor', {
+            intensity: message.readUInt8(11)
+        });
     } else {
         this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
@@ -522,6 +535,12 @@ Robot.prototype.onCommand = function(command) {
             regex: /^infra light (-?\d+)[, ](-?\d+)$/,
             handler: () => {
                 this.infraLight(+RegExp.$1, +RegExp.$2);
+            }
+        },
+        {
+            regex: /^get light$/,
+            handler: () => {
+                return this.getLight();
             }
         },
         {
