@@ -391,8 +391,21 @@ Robot.prototype.onMessage = function (message) {
             }
         }
     } else if (command === 'R' && message.length === 13) {
+        // Single range response message
         this.sendToClient('range', {
             range: message.readInt16LE(11),
+        });
+    } else if (command === 'R' && message.length > 13) {
+        // Lidar response Message
+        let range = [];
+
+        // Read all returned distances
+        for (let i = 11; i+1 < message.length; i += 2){
+            range.push(message.readInt16LE(i));           
+        }
+
+        this.sendToClient('range', {
+            range: range,
         });
     } else if (command === 'T' && message.length === 19) {
         this.sendToClient('ticks', {
