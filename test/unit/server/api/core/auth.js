@@ -1,4 +1,4 @@
-describe.only('auth', function() {
+describe('auth', function() {
     const utils = require('../../../../assets/utils');
     const Auth = utils.reqSrc('./api/core/auth');
     const P = Auth.Permission;
