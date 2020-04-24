@@ -31,6 +31,16 @@ class CustomServicesHosts {
         }
     }
 
+    async getUserHosts(requestor, username) {
+        await Auth.ensureAuthorized(requestor, P.User.READ(username));
+        const user = await Users.get(username);
+        if (!user) {
+            throw new Errors.UserNotFound(username);
+        }
+
+        return user.servicesHosts;
+    }
+
     async getGroupHosts(requestor, groupId) {
         await Auth.ensureAuthorized(requestor, P.Group.READ(groupId));
         const group = await Groups.get(groupId)
