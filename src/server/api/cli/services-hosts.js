@@ -8,63 +8,55 @@ program
     .description('List custom services for the given user/group.')
     .option('-g, --group', 'Lookup group rather than user')
     .option('-a, --all', 'Show all services hosts for the given user.')
-    .action((id, opts) => {
-        initAndRun(async function() {
-            const hosts = await getHosts(id, opts);
-            hosts.forEach(host => console.log(host));
-        });
-    });
+    .action((id, opts) => initAndRun(async function() {
+        const hosts = await getHosts(id, opts);
+        hosts.forEach(host => console.log(host));
+    }));
 
 program
     .command('add <id> <url>')
     .description('Add services host for the given user/group.')
     .option('-g, --group', 'Lookup group rather than user.')
     .option('-c, --categories <categories>', 'Comma-separated list of categories for the service.', '')
-    .action((id, url, opts) => {
-        initAndRun(async function() {
-            const categories = opts.categories.split(',').filter(cat => cat);
-            const hosts = await getHosts(id, opts);
-            hosts.push({url, categories});
-            if (opts.group) {
-                await ServicesHosts.setGroupServicesHosts(null, id, hosts);
-            } else {
-                await ServicesHosts.setUserServicesHosts(null, id, hosts);
-            }
-        });
-    });
+    .action((id, url, opts) => initAndRun(async function() {
+        const categories = opts.categories.split(',').filter(cat => cat);
+        const hosts = await getHosts(id, opts);
+        hosts.push({url, categories});
+        if (opts.group) {
+            await ServicesHosts.setGroupServicesHosts(null, id, hosts);
+        } else {
+            await ServicesHosts.setUserServicesHosts(null, id, hosts);
+        }
+    }));
 
 program
     .command('rm <id> <url>')
     .description('Remove services host for the given user/group.')
     .option('-g, --group', 'Lookup group rather than user.')
-    .action((id, url, opts) => {
-        initAndRun(async function() {
-            const hosts = await getHosts(id, opts);
-            const index = hosts.findIndex(host => host.url == url);
-            if (index > -1) {
-                hosts.splice(index, 1);
-                if (opts.group) {
-                    await ServicesHosts.setGroupServicesHosts(null, id, hosts);
-                } else {
-                    await ServicesHosts.setUserServicesHosts(null, id, hosts);
-                }
+    .action((id, url, opts) => initAndRun(async function() {
+        const hosts = await getHosts(id, opts);
+        const index = hosts.findIndex(host => host.url == url);
+        if (index > -1) {
+            hosts.splice(index, 1);
+            if (opts.group) {
+                await ServicesHosts.setGroupServicesHosts(null, id, hosts);
+            } else {
+                await ServicesHosts.setUserServicesHosts(null, id, hosts);
             }
-        });
-    });
+        }
+    }));
 
 program
     .command('clear <id>')
     .description('Unregister all services hosts for the given user/group.')
     .option('-g, --group', 'Lookup group rather than user.')
-    .action((id, opts) => {
-        initAndRun(async function() {
-            if (opts.group) {
-                await ServicesHosts.deleteGroupServicesHosts(null, id);
-            } else {
-                await ServicesHosts.deleteUserServicesHosts(null, id);
-            }
-        });
-    });
+    .action((id, opts) => initAndRun(async function() {
+        if (opts.group) {
+            await ServicesHosts.deleteGroupServicesHosts(null, id);
+        } else {
+            await ServicesHosts.deleteUserServicesHosts(null, id);
+        }
+    }));
 
 async function getHosts(id, opts) {
     if (opts.group) {

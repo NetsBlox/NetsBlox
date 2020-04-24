@@ -2,6 +2,7 @@
 const storage = require('../../storage/storage');
 const Auth = require('../core/auth');
 const {RequestError} = require('../core/errors');
+let TESTING = process.env.ENV === 'test';
 
 async function runWithStorage(fn, args) {
     let exitCode = 0;
@@ -16,8 +17,10 @@ async function runWithStorage(fn, args) {
             console.error(err);
         }
     } finally {
-        await storage.disconnect();
-        process.exit(exitCode);
+        if (!TESTING) {
+            await storage.disconnect();
+            process.exit(exitCode);
+        }
     }
 }
 
