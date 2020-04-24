@@ -9,7 +9,6 @@ module.exports = async function(app) {
         .map(filename => filename.replace(/\.js$/, ''));
 
     routeFiles.forEach(file => {
-        console.log('>>> adding route:', `/api/v2/${file}`);
         app.use(`/api/v2/${file}`, require(`./${file}`));
     });
 };

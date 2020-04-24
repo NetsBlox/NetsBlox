@@ -94,7 +94,6 @@ async function isGroupOwnerOrMember(username, groupId) {
 async function isGroupOwner(username, groupId) {
     const group = await Groups.get(groupId)
         .catch(err => {
-            console.log('err', err);
             if (err.message.includes('not found')) {
                 err = new Errors.GroupNotFound();
             }
