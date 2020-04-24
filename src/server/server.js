@@ -35,6 +35,7 @@ const Client = require('./client');
 const Messages = require('./services/messages');
 const assert = require('assert');
 const request = require('request');
+const CustomServicesHosts = require('./api/core/services-hosts');
 const RestAPI = require('./api/rest');
 
 var Server = function(opts) {
@@ -111,64 +112,69 @@ Server.prototype.configureRoutes = async function(servicesURL) {
     });
 
     // Initial page
-    this.app.get('/', middleware.noCache, (req, res) => {
-        return middleware.setUsername(req, res).then(() => {
-            var baseUrl = `${process.env.SERVER_PROTOCOL || req.protocol}://${req.get('host')}`,
-                url = baseUrl + req.originalUrl,
-                projectName = req.query.ProjectName,
-                metaInfo = {
-                    title: 'NetsBlox',
-                    username: req.session.username,
-                    isDevMode: isDevMode,
-                    googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
-                    clientId: Utils.getNewClientId(),
-                    servicesUrl: this.getPublicServicesUrl(),
-                    baseUrl,
-                    url: url
-                };
+    this.app.get('/', middleware.noCache, async (req, res) => {
+        await middleware.setUsername(req, res);
+        const {username} = req.session;
+        const servicesHosts = username ? await CustomServicesHosts.getServicesHosts(username, username) : [];
+        const defaultServicesUrl = this.getPublicServicesUrl();
+        if (defaultServicesUrl) {
+            servicesHosts.unshift({
+                categories: [],
+                url: defaultServicesUrl
+            });
+        }
+
+        const baseUrl = `${process.env.SERVER_PROTOCOL || req.protocol}://${req.get('host')}`,
+            url = baseUrl + req.originalUrl,
+            projectName = req.query.ProjectName,
+            metaInfo = {
+                title: 'NetsBlox',
+                username: req.session.username,
+                isDevMode: isDevMode,
+                googleAnalyticsKey: process.env.GOOGLE_ANALYTICS,
+                clientId: Utils.getNewClientId(),
+                servicesHosts,
+                baseUrl,
+                url,
+            };
 
 
-            if (req.query.action === 'present') {
-                var username = req.query.Username;
+        if (req.query.action === 'present') {
+            const owner = req.query.Username;
 
-                return Storage.publicProjects.get(username, projectName)
-                    .then(project => {
-                        if (project) {
-                            metaInfo.image = {
-                                url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`),
-                                width: 640,
-                                height: 480
-                            };
-                            metaInfo.title = project.projectName;
-                            metaInfo.description = project.notes;
-                            this.addScraperSettings(req.headers['user-agent'], metaInfo);
-                        }
-                        return res.send(indexTpl(metaInfo));
-                    });
-            } else if (req.query.action === 'example' && EXAMPLES[projectName]) {
+            const project = await Storage.publicProjects.get(owner, projectName);
+            if (project) {
                 metaInfo.image = {
-                    url: baseUrl + encodeURI(`/api/examples/${projectName}/thumbnail`),
+                    url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`),
                     width: 640,
                     height: 480
                 };
-                metaInfo.title = projectName;
-                var example = EXAMPLES[projectName];
-
-                return example.getRoleNames()
-                    .then(names => example.getRole(names.shift()))
-                    .then(content => {
-                        const src = content.SourceCode;
-                        const startIndex = src.indexOf('<notes>');
-                        const endIndex = src.indexOf('</notes>');
-                        const notes = src.substring(startIndex + 7, endIndex);
-
-                        metaInfo.description = notes;
-                        this.addScraperSettings(req.headers['user-agent'], metaInfo);
-                        return res.send(indexTpl(metaInfo));
-                    });
+                metaInfo.title = project.projectName;
+                metaInfo.description = project.notes;
+                this.addScraperSettings(req.headers['user-agent'], metaInfo);
             }
             return res.send(indexTpl(metaInfo));
-        });
+        } else if (req.query.action === 'example' && EXAMPLES[projectName]) {
+            metaInfo.image = {
+                url: baseUrl + encodeURI(`/api/examples/${projectName}/thumbnail`),
+                width: 640,
+                height: 480
+            };
+            metaInfo.title = projectName;
+            var example = EXAMPLES[projectName];
+
+            const names = await example.getRoleNames();
+            const content = await example.getRole(names.shift());
+            const src = content.SourceCode;
+            const startIndex = src.indexOf('<notes>');
+            const endIndex = src.indexOf('</notes>');
+            const notes = src.substring(startIndex + 7, endIndex);
+
+            metaInfo.description = notes;
+            this.addScraperSettings(req.headers['user-agent'], metaInfo);
+            return res.send(indexTpl(metaInfo));
+        }
+        return res.send(indexTpl(metaInfo));
     });
 
     this.app.get('/Examples/EXAMPLES', (req, res) => {
