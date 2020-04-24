@@ -189,6 +189,24 @@ async function shouldThrow(fn, Err, msg) {
     throw new Error(msg || `Expected fn to throw ${Err.name}`);
 }
 
+function suiteName(filename) {
+    return filename
+        .replace(PROJECT_ROOT, '')
+        .replace(new RegExp('/test/(unit/server|[a-z]+)/'), '')
+        .replace(/\.js$/, '');
+}
+
+async function expect(fn, err) {
+    const start = Date.now();
+    const maxEndTime = start + 1500;
+    while (!await fn()) {
+        await sleep(25);
+        if (Date.now() > maxEndTime) {
+            throw err;
+        }
+    }
+}
+
 module.exports = {
     verifyRPCInterfaces: function(serviceName, interfaces) {
         describe(`${serviceName} interfaces`, function() {
@@ -219,6 +237,9 @@ module.exports = {
     sendEmptyRole: sendEmptyRole,
     shouldThrow,
     fixtures,
+    suiteName,
+    expect,
+    nop: () => {},
 
     reqSrc
 };
