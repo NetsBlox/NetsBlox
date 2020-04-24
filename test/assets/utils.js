@@ -218,6 +218,7 @@ module.exports = {
     createSocket: createSocket,
     sendEmptyRole: sendEmptyRole,
     shouldThrow,
+    fixtures,
 
     reqSrc
 };

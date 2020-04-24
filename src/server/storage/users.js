@@ -13,6 +13,7 @@
     class User extends DataWrapper {
 
         constructor(logger, data) {
+            data.servicesHosts = data.servicesHosts || [];
             super(collection, data);
             this._logger = logger.fork(data.username);
         }
@@ -269,6 +270,10 @@
         });
         if (password !== undefined) user.hash = hash(password);
         return user;
+    };
+
+    UserStorage.updateCustom = function(selector, query) {
+        return collection.updateOne(selector, query);
     };
 
 })(exports);
