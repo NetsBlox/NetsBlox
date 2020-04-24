@@ -35,7 +35,6 @@ const Client = require('./client');
 const Messages = require('./services/messages');
 const assert = require('assert');
 const request = require('request');
-const CustomServicesHosts = require('./api/core/services-hosts');
 const RestAPI = require('./api/rest');
 
 var Server = function(opts) {
