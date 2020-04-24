@@ -20,6 +20,6 @@ before_script:
   - ./cc-test-reporter before-build
   - sudo apt-get update && sudo apt-get install iproute2 -y
 script:
-  - npm test && npm run test-client
+  - npm run test-ci && npm run test-client
 after_script:
   - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
