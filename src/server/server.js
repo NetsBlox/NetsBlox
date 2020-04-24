@@ -35,6 +35,8 @@ const Client = require('./client');
 const Messages = require('./services/messages');
 const assert = require('assert');
 const request = require('request');
+const CustomServicesHosts = require('./api/core/services-hosts');
+const RestAPI = require('./api/rest');
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -73,6 +75,7 @@ Server.prototype.configureRoutes = async function(servicesURL) {
 
     // Add routes
     this.app.use('/api', this.createRouter());
+    RestAPI(this.app);
     if (servicesURL) {
         this.app.use('/services', (req, res) => {
             const url = servicesURL + req.originalUrl.replace('/services', '');

@@ -5,14 +5,15 @@
  *
  * and the password will be set to "password"
  */
-function addDefaults(user) {
+const Users = {};
+Users.addDefaults = function (user) {
     user.email = user.email || `${user.username}@netsblox.org`;
     user.password = user.password || 'password';
 
     return user;
-}
+};
 
-module.exports = [
+Users.defaultUsers = [
     {
         username: 'brian',
         password: 'secretPassword'
@@ -27,4 +28,6 @@ module.exports = [
     {
         username: 'test'
     }
-].map(addDefaults);
+].map(Users.addDefaults);
+
+module.exports = Users;
