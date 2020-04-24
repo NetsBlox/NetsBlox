@@ -33,10 +33,10 @@ ServicesHostsRouter.route('/group/:id')
         res.sendStatus(200);
     }));
 
-ServicesHostsRouter.route('/all/:name')
+ServicesHostsRouter.route('/all/:name?')
     .get(handleErrors(async (req, res) => {
-        const {name} = req.params;
         const {username} = req.session;
+        const {name = username} = req.params;
         const hosts = await ServicesHosts.getServicesHosts(username, name);
         res.json(hosts);
     }));
