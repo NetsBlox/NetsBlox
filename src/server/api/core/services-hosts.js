@@ -2,31 +2,37 @@ const Logger = require('../../logger');
 const Users = require('../../storage/users');
 const Groups = require('../../storage/groups');
 const Errors = require('./errors');
+const Auth = require('./auth');
+const P = Auth.Permission;
 
 class CustomServicesHosts {
     constructor() {
         this.logger = new Logger('netsblox:custom-services-hosts');
     }
 
-    async setUserServicesHosts(username, servicesHosts) {
+    async setUserServicesHosts(requestor, username, servicesHosts) {
+        await Auth.ensureAuthorized(requestor, P.User.WRITE(username));
         const result = await Users.updateCustom({username}, {$set: {servicesHosts}});
         if (result.matchedCount === 0) {
             throw new Errors.UserNotFound(username);
         }
     }
 
-    async deleteUserServicesHosts(name) {
-        return this.setUserServicesHosts(name, []);
+    async deleteUserServicesHosts(requestor, name) {
+        await Auth.ensureAuthorized(requestor, P.User.WRITE(name));
+        return this.setUserServicesHosts(requestor, name, []);
     }
 
-    async setGroupServicesHosts(groupId, servicesHosts) {
+    async setGroupServicesHosts(requestor, groupId, servicesHosts) {
+        await Auth.ensureAuthorized(requestor, P.Group.WRITE(groupId));
         const result = await Groups.update(groupId, {$set: {servicesHosts}});
         if (result.matchedCount === 0) {
             throw new Errors.GroupNotFound();
         }
     }
 
-    async getGroupHosts(groupId) {
+    async getGroupHosts(requestor, groupId) {
+        await Auth.ensureAuthorized(requestor, P.Group.READ(groupId));
         const group = await Groups.get(groupId)
             .catch(err => {
                 if (err.message.includes('not found')) {
@@ -38,11 +44,13 @@ class CustomServicesHosts {
         return group.servicesHosts;
     }
 
-    async deleteGroupServicesHosts(groupId) {
-        return this.setGroupServicesHosts(groupId, []);
+    async deleteGroupServicesHosts(requestor, groupId) {
+        await Auth.ensureAuthorized(requestor, P.Group.WRITE(groupId));
+        return this.setGroupServicesHosts(requestor, groupId, []);
     }
 
-    async getAllHosts(username) {
+    async getServicesHosts(requestor, username) {
+        await Auth.ensureAuthorized(requestor, P.User.READ(username));
         const user = await Users.get(username);
         if (!user) {
             throw new Errors.UserNotFound(username);

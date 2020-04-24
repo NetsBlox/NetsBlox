@@ -23,6 +23,13 @@ class GroupNotFound extends RequestError {
     }
 }
 
+class Unauthorized extends RequestError {
+    constructor(username, action) {
+        const msg = `Unauthorized: ${username} is not allowed to ${action}.`;
+        super(msg);
+    }
+}
+
 class InvalidArgument extends RequestError {
     constructor(name, type) {
         const msg = `Invalid argument "${name}". ${type} expected.`;
@@ -31,6 +38,7 @@ class InvalidArgument extends RequestError {
 }
 
 module.exports.UserNotFound = UserNotFound;
+module.exports.Unauthorized = Unauthorized;
 module.exports.InvalidArgument = InvalidArgument;
 module.exports.GroupNotFound = GroupNotFound;
 module.exports.ProjectNotFound = ProjectNotFound;

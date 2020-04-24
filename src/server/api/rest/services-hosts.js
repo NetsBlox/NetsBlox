@@ -1,42 +1,43 @@
 const ServicesHosts = require('../core/services-hosts');
 const ServicesHostsRouter = require('express').Router();
-const {handleErrors, ensureLoggedIn} = require('./utils');
+const {handleErrors, setUsername} = require('./utils');
 
-// TODO: Ensure current user is "name"
+ServicesHostsRouter.use(setUsername);
 ServicesHostsRouter.route('/user/:name')
     .get(handleErrors(async (req, res) => {
         const {name} = req.params;
-        const hosts = await ServicesHosts.getUserHosts(name);
+        const {username} = req.session;
+        const hosts = await ServicesHosts.getUserHosts(username, name);
         res.json(hosts);
     }))
     .post(handleErrors(async (req, res) => {
         const {name} = req.params;
+        const {username} = req.session;
         const servicesHosts = req.body;
-        await ServicesHosts.setUserServicesHosts(name, servicesHosts);
+        await ServicesHosts.setUserServicesHosts(username, name, servicesHosts);
         res.sendStatus(200);
     }));
 
 ServicesHostsRouter.route('/group/:id')
-    //.use(ensureLoggedIn)
     .get(handleErrors(async (req, res) => {
-        // TODO: Ensure current user is owner or member
         const {id} = req.params;
-        const hosts = await ServicesHosts.getGroupHosts(id);
+        const {username} = req.session;
+        const hosts = await ServicesHosts.getGroupHosts(username, id);
         res.json(hosts);
     }))
     .post(handleErrors(async (req, res) => {
-        // TODO: Ensure current user is owner or member
         const {id} = req.params;
+        const {username} = req.session;
         const servicesHosts = req.body;
-        await ServicesHosts.setGroupServicesHosts(id, servicesHosts);
+        await ServicesHosts.setGroupServicesHosts(username, id, servicesHosts);
         res.sendStatus(200);
     }));
 
 ServicesHostsRouter.route('/all/:name')
     .get(handleErrors(async (req, res) => {
-        // TODO: Ensure current user is "name"
         const {name} = req.params;
-        const hosts = await ServicesHosts.getAllHosts(name);
+        const {username} = req.session;
+        const hosts = await ServicesHosts.getServicesHosts(username, name);
         res.json(hosts);
     }));
 

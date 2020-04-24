@@ -1,6 +1,6 @@
 const {RequestError} = require('../core/errors');
 const Utils = {};
-const {isLoggedIn} = require('../../routes/middleware');
+const {setUsername} = require('../../routes/middleware');
 
 Utils.handleErrors = fn => {
     return async (req, res) => {
@@ -13,6 +13,6 @@ Utils.handleErrors = fn => {
     };
 };
 
-Utils.ensureLoggedIn = isLoggedIn;
+Utils.setUsername = setUsername;
 
 module.exports = Utils;
