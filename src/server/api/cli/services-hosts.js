@@ -10,6 +10,7 @@ program
     .option('-a, --all', 'Show all services hosts for the given user.')
     .action((id, opts) => initAndRun(async function() {
         const hosts = await getHosts(id, opts);
+        /* eslint-disable-next-line no-console */
         hosts.forEach(host => console.log(host));
     }));
 
