@@ -19,39 +19,32 @@ class COVIDData {
         this.types = TYPES;
         this._intervalId = null;
         const hour = 1000*60*60;
-        this.setUpdateInterval(3*hour);
+        this.setUpdateInterval(4*hour);
     }
 
     setUpdateInterval(duration) {
         if (this._intervalId) {
             clearInterval(this._intervalId);
         }
-        this._intervalId = setInterval(() => this.checkUpdates(), duration);
+        this._intervalId = setInterval(() => this.importMissingData(), duration);
     }
 
-    async checkUpdates() {
-        const [latest] = await this._model.find().sort({date: -1}).limit(1);
-        const needsUpdate = !latest || !this.isToday(new Date(latest.date));
-        if (needsUpdate) {
-            const today = new Date();
-            try {
-                const report = await this.fetchDailyReport(today);
-                await this.importReport(report, today);
-            } catch (err) {
-                if (!err.response || err.response.status !== 404) {
-                    throw err;
-                }
-            }
-        }
-    }
-
-    async importPastData() {
+    async importMissingData() {
         let day = new Date(START_DATE);
+        const skipDates = await this.existingDates();
         while (!this.isToday(day)) {
-            const report = await this.fetchDailyReport(day);
-            await this.importReport(report, day);
+            const dateString = this.getDateString(day);
+            if (!skipDates.includes(dateString)) {
+                const report = await this.fetchDailyReport(day);
+                await this.importReport(report, day);
+            }
             day = nextDay(day);
         }
+    }
+
+    async existingDates() {
+        const dates = await this._model.distinct('date');
+        return dates.map(d => this.getDateString(d)).sort();
     }
 
     isToday(date) {
