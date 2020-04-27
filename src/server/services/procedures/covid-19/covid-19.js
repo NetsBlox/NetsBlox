@@ -7,7 +7,6 @@
  * @service
  * @category Science
  */
-const logger = require('../utils/logger')('covid-19');
 const _ = require('lodash');
 const getServiceStorage = require('../../advancedStorage');
 const schema = {
@@ -28,12 +27,7 @@ const Data = require('./data');
 COVID19._data = new Data(COVID19Storage);
 const {DEATH, CONFIRMED, RECOVERED} = COVID19._data.types;
 
-COVID19Storage.findOne({}).then(result => {
-    if (!result) {
-        logger.info('No data found in database, importing latest from JHU...');
-        COVID19._data.importPastData();
-    }
-});
+COVID19._data.importMissingData();
 
 /**
  * Get number of confirmed cases of COVID-19 by date for a specific country and state.
