@@ -33,7 +33,7 @@ var uglySrc = {};
 srcFiles
     .forEach(file => uglySrc[file] = fs.readFileSync(file, 'utf8'));
 
-var ugly = require('uglify-js');
+var ugly = require('uglify-es');
 
 var final_code = src;
 
