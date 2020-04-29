@@ -94,7 +94,7 @@
     "mocha-chrome": "^1.1.0",
     "nodemon": "^1.18.10",
     "supertest": "^3.4.2",
-    "uglify-js": "^3.4.9",
+    "uglify-es": "^3.3.9",
     "xmlhttprequest": "^1.8.0"
   }
 }
