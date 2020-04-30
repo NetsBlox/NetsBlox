@@ -1,4 +1,4 @@
-describe.only('geolocation', function() {
+describe('geolocation', function() {
     const assert = require('assert').strict;
     const utils = require('../../../../assets/utils');
     var Geocoding = utils.reqSrc('services/procedures/geolocation/geolocation'),
