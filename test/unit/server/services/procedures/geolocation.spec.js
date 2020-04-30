@@ -1,8 +1,8 @@
-describe('geolocation', function() {
+describe.only('geolocation', function() {
+    const assert = require('assert').strict;
     const utils = require('../../../../assets/utils');
     var Geocoding = utils.reqSrc('services/procedures/geolocation/geolocation'),
         RPCMock = require('../../../../assets/mock-rpc'),
-        assert = require('assert'),
         geocoding = new RPCMock(Geocoding);
 
     utils.verifyRPCInterfaces('Geolocation', [
@@ -17,19 +17,26 @@ describe('geolocation', function() {
     ]);
 
     describe('geolocate', function() {
-        it('should use proper key for caching', done => {
-            geocoding.geolocate('Moscow, Russia')
-                .then(() => {
-                    geocoding.geolocate('1025 16th Ave S, Nashville, TN 37212')
-                        .then(response => {
-                            let lat = response[0][1];
-                            let long = response[1][1];
-                            assert.equal(Math.floor(lat), 36);
-                            assert.equal(Math.floor(long), -87);
-                            done();
-                        })
-                        .catch(done);
-                });
+        it('should use proper key for caching', async () => {
+            await geocoding.geolocate('Moscow, Russia');
+            const response = await geocoding.geolocate('1025 16th Ave S, Nashville, TN 37212');
+            const [[,lat], [,long]] = response;
+            assert.equal(Math.floor(lat), 36);
+            assert.equal(Math.floor(long), -87);
+        });
+    });
+
+    describe('nearbySearch', function() {
+        let defaultApiKey;
+        before(() => defaultApiKey = geocoding.unwrap().apiKey);
+        after(() => geocoding.unwrap().apiKey = defaultApiKey);
+
+        it('should throw error if API key is invalid', async function() {
+            geocoding.apiKey = geocoding.unwrap().apiKey.withValue('invalidKey');
+            await assert.rejects(
+                () => geocoding.nearbySearch(36, -87, 'pizza'),
+                /The provided API key is invalid/
+            );
         });
     });
 });
