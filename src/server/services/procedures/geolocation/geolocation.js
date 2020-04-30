@@ -47,7 +47,7 @@ let reverseGeocode = (lat, lon, response, query)=>{
         logger.trace('Geocoding (not cached)', lat, lon);
         geocoder.reverse({lat, lon})
             .then(function(res) {
-            // only intereseted in the first match
+                // only interested in the first match
                 res = queryJson(res[0], query);
                 if (res === null) return cacheCallback('not found', null);
                 // send the response to user
@@ -61,7 +61,7 @@ let reverseGeocode = (lat, lon, response, query)=>{
         if(results){
             logger.trace('answering with',results);
             response.send(results);
-        }else {
+        } else {
             showError(err, response);
         }
     });
@@ -97,7 +97,6 @@ GeoLocationRPC.geolocate = function (address) {
  * @param {Longitude} longitude longitude of the target location
  * @returns {String} city name
  */
-
 GeoLocationRPC.city = function (latitude, longitude) {
     reverseGeocode(latitude, longitude, this.response, '.city');
     return null;
