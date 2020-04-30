@@ -158,9 +158,7 @@ GeoLocationRPC.info = function (latitude, longitude) {
  * @param {String=} keyword the keyword you want to search for, like pizza or cinema.
  * @param {Number=} radius search radius in meters (50km)
  */
-
 GeoLocationRPC.nearbySearch = function (latitude, longitude, keyword, radius) {
-    let response = this.response;
     radius = radius || 50000; // default to 50KM
 
     let requestOptions = {
