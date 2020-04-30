@@ -179,24 +179,23 @@ GeoLocationRPC.nearbySearch = function (latitude, longitude, keyword, radius) {
         requestOptions.qs.keyword = keyword;
     }
 
-    return cache.wrap(coordsToCacheKey(latitude, longitude) + keyword + radius, () => {
-        return rp(requestOptions).then(res=>{
-            let places = res.results;
-            places = places.map(place => {
-                return [['latitude',place.geometry.location.lat],['longitude',place.geometry.location.lng],['name',place.name],['types',place.types]];
-            });
-            // keep the 10 best results
-            places = places.slice(0,10);
-            return places;
-        });
-    }).catch(err => {
-        logger.error('Error in searching for places',err);
-        showError('Failed to find places',response);
+    return cache.wrap(coordsToCacheKey(latitude, longitude) + keyword + radius, async () => {
+        const res = await rp(requestOptions);
+        if (res.error_message) {
+            throw new Error(res.error_message);
+        }
+        const places = res.results;
+        // keep the 10 best results
+        const topResults = places.slice(0, 10)
+            .map(place => [
+                ['latitude', place.geometry.location.lat],
+                ['longitude', place.geometry.location.lng],
+                ['name', place.name],
+                ['types', place.types],
+            ]);
+        return topResults;
     });
-
 };
-
-
 
 function showError(err, response) {
     // if we can't answer their question return snap null
