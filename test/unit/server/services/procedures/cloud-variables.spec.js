@@ -77,7 +77,7 @@ describe('cloud-variables', function() {
             const client2 = '_netsblox_2';
 
             beforeEach(() => {
-                cloudvariables._rpc._setMaxLockAge(5 * 1000 * 60);
+                cloudvariables.unwrap()._setMaxLockAge(5 * 1000 * 60);
                 cloudvariables.setRequester(client1);
                 return utils.reset()
                     .then(() => cloudvariables.setVariable(name, initialValue))
@@ -161,7 +161,7 @@ describe('cloud-variables', function() {
             it('should apply next lock if lock times out', function() {
                 return cloudvariables.unlockVariable(name)
                     .then(() => {
-                        cloudvariables._rpc._setMaxLockAge(200);
+                        cloudvariables.unwrap()._setMaxLockAge(200);
 
                         return cloudvariables.lockVariable(name);
                     })
@@ -182,7 +182,7 @@ describe('cloud-variables', function() {
                     .catch(err => {  // Ensure that it throws exception
                         assert(err.message.includes('anceled'));
 
-                        const queuedLocks = cloudvariables._rpc._queuedLocks;
+                        const queuedLocks = cloudvariables.unwrap()._queuedLocks;
                         assert.deepEqual(queuedLocks, {});
                         done();
                     });
@@ -197,7 +197,7 @@ describe('cloud-variables', function() {
                     .catch(err => {  // Ensure that it throws exception
                         assert(err.message.includes('Variable deleted'));
 
-                        const queuedLocks = cloudvariables._rpc._queuedLocks;
+                        const queuedLocks = cloudvariables.unwrap()._queuedLocks;
                         assert.deepEqual(queuedLocks, {});
                         done();
                     });

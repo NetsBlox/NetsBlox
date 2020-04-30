@@ -60,10 +60,10 @@ describe('googlemaps', function() {
         };
 
         it('should handle wraparound at map boundaries', function(){
-            let coords = googlemaps._rpc._coordsAt(-170, 90, map);
+            let coords = googlemaps.unwrap()._coordsAt(-170, 90, map);
             assert(coords.lon > -180 && coords.lon < 180);
             map.center.lon = +150;
-            coords = googlemaps._rpc._coordsAt(170, 90, map);
+            coords = googlemaps.unwrap()._coordsAt(170, 90, map);
             assert(coords.lon > -180 && coords.lon < 180);
         });
 
@@ -73,12 +73,12 @@ describe('googlemaps', function() {
         const latitude = 36.2645738345627;
 
         it('should round coordinates properly', function() {
-            const rounded = googlemaps._rpc._toPrecision(latitude, 4);
+            const rounded = googlemaps.unwrap()._toPrecision(latitude, 4);
             assert.equal(rounded, 36.2646);
         });
 
         it('should not round coordinates (large precision)', function() {
-            const rounded = googlemaps._rpc._toPrecision(latitude, 13);
+            const rounded = googlemaps.unwrap()._toPrecision(latitude, 13);
             assert.equal(rounded, 36.2645738345627);
         });
 

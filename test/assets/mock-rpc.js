@@ -1,4 +1,4 @@
-// I should probably rename this. This is a wrapper for testing the RPC's
+// I should probably rename this. This is a wrapper for testing services
 'use strict';
 
 // RPCs now contain the methods
@@ -12,23 +12,23 @@ const NetworkTopology = utils.reqSrc('network-topology');
 const Logger = utils.reqSrc('logger');
 let logger;
 
-var MockRPC = function(RPC) {
+var MockRPC = function(Service) {
     this._methods = [];
-    this._rpc = typeof RPC === 'function' ?
-        new RPC() : _.cloneDeep(RPC);
-    this.createMethods(RPC);
+    this._service = typeof Service === 'function' ?
+        new Service() : _.cloneDeep(Service);
+    this.createMethods(Service);
 
     logger = new Logger('netsblox:test:services');
     this.getNewSocket();
     this.response = new MockResponse();
     this.request = new MockRequest();
 
-    this.serviceName = this._rpc.serviceName;
+    this.serviceName = this._service.serviceName;
 };
 
 MockRPC.prototype.getNewSocket = function() {
     this.socket = new MockClient();
-    this._rpc.socket = this.socket;
+    this.unwrap().socket = this.socket;
     NetworkTopology.onConnect(this.socket);
 };
 
@@ -44,8 +44,8 @@ MockRPC.prototype.setRequester = function(uuid, username) {
     this.socket.loggedIn = !!username;
 };
 
-MockRPC.prototype.createMethods = function(RPC) {
-    var fnObj = typeof RPC === 'function' ? RPC.prototype : RPC,
+MockRPC.prototype.createMethods = function(Service) {
+    var fnObj = typeof Service === 'function' ? Service.prototype : Service,
         publicFns = Object.keys(fnObj)
             .filter(name => name[0] !== '_')
             .filter(name => !Constants.RPC.RESERVED_FN_NAMES.includes(name));
@@ -58,14 +58,14 @@ MockRPC.prototype.createMethods = function(RPC) {
 
 MockRPC.prototype.getArgumentsFor = function(fnName) {
     if (this._methods.includes(fnName)) {
-        return getArgsFor(this._rpc[fnName]);
+        return getArgsFor(this._service[fnName]);
     }
     throw new Error(`${fnName} is not supported by the Service!`);
 };
 
 MockRPC.prototype.addMethod = function(name) {
     this[name] = function() {
-        const ctx = Object.create(this._rpc);
+        const ctx = Object.create(this._service);
         ctx.socket = this.socket;
         ctx.response = this.response;
         ctx.request = this.request;
@@ -79,12 +79,12 @@ MockRPC.prototype.addMethod = function(name) {
         const args = JSON.stringify(Array.prototype.slice.call(arguments));
         const id = ctx.caller.clientId || 'new client';
         logger.trace(`${id} is calling ${name}(${args.substring(1, args.length-1)})`);
-        return this._rpc[name].apply(ctx, arguments);
+        return this._service[name].apply(ctx, arguments);
     };
 };
 
 MockRPC.prototype.unwrap = function() {
-    return this._rpc;
+    return this._service;
 };
 
 const MockRequest = function() {

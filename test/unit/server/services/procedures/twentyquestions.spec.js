@@ -100,7 +100,7 @@ describe('twentyquestions', function() {
                     for (let i = 1; i <= 5; i++) {
                         twentyquestions.guess('book');
                     }
-                    assert.equal(twentyquestions._rpc._state.guessCount, 5);
+                    assert.equal(twentyquestions.unwrap()._state.guessCount, 5);
                 });
             });
         });

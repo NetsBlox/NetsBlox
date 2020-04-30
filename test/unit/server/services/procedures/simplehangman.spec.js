@@ -7,7 +7,7 @@ describe('simple hangman', function() {
 
     beforeEach(function() {
         hangman = new RPCMock(SimpleHangman);
-        hangman._rpc._state.word = 'battleship';
+        hangman.unwrap()._state.word = 'battleship';
     });
 
     utils.verifyRPCInterfaces('SimpleHangman', [
@@ -25,19 +25,19 @@ describe('simple hangman', function() {
 
         it('should reset word', function() {
             hangman.restart();
-            assert.notEqual(hangman._rpc._state.word, 'battleship');
+            assert.notEqual(hangman.unwrap()._state.word, 'battleship');
         });
 
         it('should reset wrong guesses', function() {
-            hangman._rpc._state.wrongGuesses = 100;
+            hangman.unwrap()._state.wrongGuesses = 100;
             hangman.restart();
-            assert.equal(hangman._rpc._state.wrongGuesses, 0);
+            assert.equal(hangman.unwrap()._state.wrongGuesses, 0);
         });
 
         it('should reset known indices', function() {
-            hangman._rpc._state.knownIndices = [1,2,3];
+            hangman.unwrap()._state.knownIndices = [1,2,3];
             hangman.restart();
-            assert.equal(hangman._rpc._state.knownIndices.length, 0);
+            assert.equal(hangman.unwrap()._state.knownIndices.length, 0);
         });
     });
 
@@ -45,7 +45,7 @@ describe('simple hangman', function() {
 
         it('should replace unknown letters w/ _', function() {
             var displayedWord;
-            hangman._rpc._state.knownIndices = [1, 3, 5, 7];
+            hangman.unwrap()._state.knownIndices = [1, 3, 5, 7];
             displayedWord = hangman.getCurrentlyKnownWord();
             assert.equal(displayedWord, '_a_t_e_h__'.split('').join(' '));
         });
@@ -55,18 +55,18 @@ describe('simple hangman', function() {
 
         describe('incorrect', function() {
             it('should increment wrong guesses', function() {
-                var oldBadGuesses = hangman._rpc._state.wrongGuesses;
+                var oldBadGuesses = hangman.unwrap()._state.wrongGuesses;
                 hangman.guess('z');
-                assert.equal(hangman._rpc._state.wrongGuesses, oldBadGuesses+1);
+                assert.equal(hangman.unwrap()._state.wrongGuesses, oldBadGuesses+1);
             });
 
         });
 
         describe('correct', function() {
             it('should not increment wrong guesses', function() {
-                var oldBadGuesses = hangman._rpc._state.wrongGuesses;
+                var oldBadGuesses = hangman.unwrap()._state.wrongGuesses;
                 hangman.guess('a');
-                assert.equal(hangman._rpc._state.wrongGuesses, oldBadGuesses);
+                assert.equal(hangman.unwrap()._state.wrongGuesses, oldBadGuesses);
             });
 
             it('should update the display word', function() {
@@ -82,7 +82,7 @@ describe('simple hangman', function() {
 
     describe('isWordGuessed', function() {
         it('should return true if entire word has been guessed', function() {
-            var letters = hangman._rpc._state.word.split('');
+            var letters = hangman.unwrap()._state.word.split('');
 
             letters.forEach(letter => hangman.guess(letter));
             assert(hangman.isWordGuessed());
@@ -91,7 +91,7 @@ describe('simple hangman', function() {
 
     describe('getWrongCount', function() {
         it('should return the wrongGuesses value', function() {
-            hangman._rpc._state.wrongGuesses = 100;
+            hangman.unwrap()._state.wrongGuesses = 100;
             assert.equal(hangman.getWrongCount(), 100);
         });
     });
