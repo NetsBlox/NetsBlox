@@ -75,11 +75,16 @@ MockRPC.prototype.addMethod = function(name) {
             username: this.socket.username,
             projectId: this.socket.projectId || 'testProject'
         };
+        ctx.apiKey = this.apiKey;
         const args = JSON.stringify(Array.prototype.slice.call(arguments));
         const id = ctx.caller.clientId || 'new client';
         logger.trace(`${id} is calling ${name}(${args.substring(1, args.length-1)})`);
         return this._rpc[name].apply(ctx, arguments);
     };
+};
+
+MockRPC.prototype.unwrap = function() {
+    return this._rpc;
 };
 
 const MockRequest = function() {
