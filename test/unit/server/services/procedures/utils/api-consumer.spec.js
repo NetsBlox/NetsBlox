@@ -1,14 +1,14 @@
 describe('ApiConsumer', function(){
     const ApiConsumer = require('../../../../../../src/server/services/procedures/utils/api-consumer.js'),
         apiConsumer = new ApiConsumer('testConsumer',''),
-        RPCMock = require('../../../../../assets/mock-rpc'),
+        RPCMock = require('../../../../../assets/mock-service'),
         testRpc = new RPCMock(apiConsumer),
         assert = require('assert');
 
 
     describe('cache manager filestorage store', function(){
         it('should be able to save and read data to and from cache', done=>{
-            let cache = testRpc._rpc._cache;
+            let cache = testRpc.unwrap()._cache;
             cache.set('foo', 'bar', function(err) {
                 if (err) { throw err; }
                 cache.get('foo', function(err, result) {
@@ -21,7 +21,7 @@ describe('ApiConsumer', function(){
 
     describe('_getFullUrl', () => {
         const baseUrl = 'https://abc.com';
-        const service = testRpc._rpc;
+        const service = testRpc.unwrap();
 
         it('should override url with "url" option', function() {
             const options = {baseUrl, queryString: 'a=b&c=d'};
@@ -68,18 +68,18 @@ describe('ApiConsumer', function(){
         });
 
         it('should get response from the cache', done => {
-            let cache = testRpc._rpc._cache;
+            let cache = testRpc.unwrap()._cache;
             let queryOpts = {
                 queryString: '',
                 baseUrl: 'http://google.com',
                 json: false
             };
 
-            let requestCacheKey = testRpc._rpc._getCacheKey(queryOpts);
+            let requestCacheKey = testRpc.unwrap()._getCacheKey(queryOpts);
             // cache the key for this request to 'response'
             cache.set(requestCacheKey, 'response', function(err) {
                 if (err) { throw err; }
-                testRpc._rpc._requestData(queryOpts)
+                testRpc.unwrap()._requestData(queryOpts)
                     .then(data => {
                     // requesting for the same key should return 'response' as data
                         assert.deepEqual(data,'response');
@@ -112,7 +112,7 @@ describe('ApiConsumer', function(){
             };
             apiConsumer._requestData(queryOpts).catch( () => {
                 // check if it is cached or not
-                testRpc._rpc._cache.get(queryOpts.baseUrl + queryOpts.queryString, function(err, result) {
+                testRpc.unwrap()._cache.get(queryOpts.baseUrl + queryOpts.queryString, function(err, result) {
                     assert.equal(err,null);
                     assert.equal(result,null);
                     done();

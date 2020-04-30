@@ -2,7 +2,7 @@
 describe('ConnectN Tests', function() {
     const utils = require('../../../../assets/utils');
     var ConnectN = utils.reqSrc('services/procedures/connect-n/connect-n.js'),
-        RPCMock = require('../../../../assets/mock-rpc'),
+        RPCMock = require('../../../../assets/mock-service'),
         assert = require('assert'),
         connectn;
 
@@ -15,7 +15,7 @@ describe('ConnectN Tests', function() {
             var board;
 
             connectn.newGame(-4),
-            board = connectn._rpc._state.board;
+            board = connectn.unwrap()._state.board;
             assert.equal(board.length, 3);
         });
 
@@ -23,12 +23,12 @@ describe('ConnectN Tests', function() {
             var board;
 
             connectn.newGame(null, -4);
-            board = connectn._rpc._state.board;
+            board = connectn.unwrap()._state.board;
             assert.equal(board[0].length, 3);
         });
 
         it('should default to 3 rows; 3 columns', function() {
-            var board = connectn._rpc._state.board;
+            var board = connectn.unwrap()._state.board;
 
             connectn.newGame();
             assert.equal(board.length, 3);
@@ -55,7 +55,7 @@ describe('ConnectN Tests', function() {
         });
 
         it('should not play if winner is found', function() {
-            connectn._rpc._state._winner = 'cat';
+            connectn.unwrap()._state._winner = 'cat';
             connectn.socket.roleId = 'p1';
 
             try {

@@ -1,9 +1,9 @@
 describe('BaseX', function() {
     const utils = require('../../../../assets/utils');
-    const RPCMock = require('../../../../assets/mock-rpc');
+    const RPCMock = require('../../../../assets/mock-service');
     const assert = require('assert').strict;
     const mockService = new RPCMock(utils.reqSrc('services/procedures/base-x/base-x'));
-    const BaseX = mockService._rpc;
+    const BaseX = mockService.unwrap();
 
     utils.verifyRPCInterfaces('BaseX', [
         ['query', ['url', 'database', 'query', 'username', 'password']],

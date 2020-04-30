@@ -1,7 +1,7 @@
 describe('twentyquestions', function() {
     const utils = require('../../../../assets/utils');
     const TwentyQuestions = utils.reqSrc('services/procedures/twenty-questions/twenty-questions');
-    const RPCMock = require('../../../../assets/mock-rpc');
+    const RPCMock = require('../../../../assets/mock-service');
     const twentyquestions = new RPCMock(TwentyQuestions);
     const assert = require('assert');
 
@@ -100,7 +100,7 @@ describe('twentyquestions', function() {
                     for (let i = 1; i <= 5; i++) {
                         twentyquestions.guess('book');
                     }
-                    assert.equal(twentyquestions._rpc._state.guessCount, 5);
+                    assert.equal(twentyquestions.unwrap()._state.guessCount, 5);
                 });
             });
         });

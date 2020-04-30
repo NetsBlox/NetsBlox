@@ -1,7 +1,7 @@
 describe('earthquakes', function() {
     const utils = require('../../../../assets/utils');
     var EarthQuakes = utils.reqSrc('services/procedures/earthquakes/earthquakes'),
-        RPCMock = require('../../../../assets/mock-rpc'),
+        RPCMock = require('../../../../assets/mock-service'),
         earthquakes,
         assert = require('assert');
 
@@ -32,7 +32,7 @@ describe('earthquakes', function() {
 
         it('should remove entry from remainingMsgs', async function() {
             const clientId = earthquakes.socket.uuid;
-            const remainingMsgs = earthquakes._rpc._remainingMsgs;
+            const remainingMsgs = earthquakes.unwrap()._remainingMsgs;
 
             remainingMsgs[clientId] = [];
             await earthquakes.stop();
@@ -48,11 +48,11 @@ describe('earthquakes', function() {
 
         describe('no earthquakes found', function() {
             it('should not fail if no earthquakes found', function() {
-                var remainingMsgs = earthquakes._rpc._remainingMsgs;
+                var remainingMsgs = earthquakes.unwrap()._remainingMsgs;
 
                 socket = earthquakes.socket;
                 remainingMsgs[socket.uuid] = [];
-                earthquakes._rpc._sendNext(socket);
+                earthquakes.unwrap()._sendNext(socket);
             });
         });
     });
