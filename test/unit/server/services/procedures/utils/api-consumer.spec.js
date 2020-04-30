@@ -1,7 +1,7 @@
 describe('ApiConsumer', function(){
     const ApiConsumer = require('../../../../../../src/server/services/procedures/utils/api-consumer.js'),
         apiConsumer = new ApiConsumer('testConsumer',''),
-        RPCMock = require('../../../../../assets/mock-rpc'),
+        RPCMock = require('../../../../../assets/mock-service'),
         testRpc = new RPCMock(apiConsumer),
         assert = require('assert');
 

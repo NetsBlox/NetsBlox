@@ -1,7 +1,7 @@
 describe('earthquakes', function() {
     const utils = require('../../../../assets/utils');
     var EarthQuakes = utils.reqSrc('services/procedures/earthquakes/earthquakes'),
-        RPCMock = require('../../../../assets/mock-rpc'),
+        RPCMock = require('../../../../assets/mock-service'),
         earthquakes,
         assert = require('assert');
 

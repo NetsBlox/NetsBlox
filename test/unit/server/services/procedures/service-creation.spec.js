@@ -1,7 +1,7 @@
 describe('service-creation', function() {
     const utils = require('../../../../assets/utils');
     const ServiceCreation = utils.reqSrc('services/procedures/service-creation/service-creation');
-    const RPCMock = require('../../../../assets/mock-rpc');
+    const RPCMock = require('../../../../assets/mock-service');
     const service = new RPCMock(ServiceCreation);
     const assert = require('assert');
     // All entries from NetsBlox are sent as strings

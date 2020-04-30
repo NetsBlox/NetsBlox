@@ -1,7 +1,7 @@
 describe('simple hangman', function() {
     const utils = require('../../../../assets/utils');
     var SimpleHangman = utils.reqSrc('services/procedures/simple-hangman/simple-hangman'),
-        RPCMock = require('../../../../assets/mock-rpc'),
+        RPCMock = require('../../../../assets/mock-service'),
         hangman = new RPCMock(SimpleHangman),
         assert = require('assert');
 

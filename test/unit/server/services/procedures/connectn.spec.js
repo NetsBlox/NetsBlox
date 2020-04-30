@@ -2,7 +2,7 @@
 describe('ConnectN Tests', function() {
     const utils = require('../../../../assets/utils');
     var ConnectN = utils.reqSrc('services/procedures/connect-n/connect-n.js'),
-        RPCMock = require('../../../../assets/mock-rpc'),
+        RPCMock = require('../../../../assets/mock-service'),
         assert = require('assert'),
         connectn;
 

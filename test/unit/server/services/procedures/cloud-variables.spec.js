@@ -4,7 +4,7 @@ describe('cloud-variables', function() {
     const Q = require('q');
     const utils = require('../../../../assets/utils');
     const CloudVariables = utils.reqSrc('services/procedures/cloud-variables/cloud-variables');
-    const RPCMock = require('../../../../assets/mock-rpc');
+    const RPCMock = require('../../../../assets/mock-service');
     const cloudvariables = new RPCMock(CloudVariables);
     const assert = require('assert');
 
