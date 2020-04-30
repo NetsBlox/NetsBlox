@@ -17,7 +17,6 @@ const Storage = require('./storage');
 const DataService = require('./data-service');
 const DEFAULT_COMPATIBILITY = {arguments: {}};
 const isProduction = process.env.ENV === 'production';
-//const Message = require('./worker-messages');
 
 class ServicesWorker {
     constructor(logger) {
