@@ -44,7 +44,9 @@ NASA._apodUrl = function() {
     return 'https://api.nasa.gov/planetary/apod?api_key=' + this.apiKey.value;
 };
 
-// NASA's 'Astronomy Picture of the Day'
+/**
+ * Fetch the "Astronomy Picture of the Day" from NASA
+ */
 NASA.apod = async function() {
     const msgType = 'Astronomy Pic of the Day';
     const content = await this._fetchApod();
@@ -52,6 +54,9 @@ NASA.apod = async function() {
     return true;
 };
 
+/**
+ * Fetch additional information about the "Astronomy Picture of the Day"
+ */
 NASA.apodDetails = async function() {
     return await this._fetchApod();
 };

@@ -36,11 +36,17 @@ var SimpleHangman = function() {
     this._reset();
 };
 
+/**
+ * Restart the current game.
+ */
 SimpleHangman.prototype.restart = function() {
     this._reset();
     return true;
 };
 
+/**
+ * Get the current word with where unknown letters are replaced with "_".
+ */
 SimpleHangman.prototype.getCurrentlyKnownWord = function() {
     var letters = this._state.word.split('').map(() => '_');
 
@@ -52,6 +58,10 @@ SimpleHangman.prototype.getCurrentlyKnownWord = function() {
     return letters.join(' ');
 };
 
+/**
+ * Guess a letter in the current word.
+ * @param {String} letter
+ */
 SimpleHangman.prototype.guess = function(letter) {
     var indices,
         added;
@@ -66,11 +76,17 @@ SimpleHangman.prototype.guess = function(letter) {
     return indices;
 };
 
+/**
+ * Check if the current word has been guessed correctly.
+ */
 SimpleHangman.prototype.isWordGuessed = function() {
     var isComplete = this._state.word.length === this._state.knownIndices.length;
     return isComplete;
 };
 
+/**
+ * Get the current number of incorrect guesses.
+ */
 SimpleHangman.prototype.getWrongCount = function() {
     logger.trace('wrong count is '+this._state.wrongGuesses);
     return this._state.wrongGuesses;

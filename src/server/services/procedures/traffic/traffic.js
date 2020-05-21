@@ -38,6 +38,18 @@ var sendNext = function(socket) {
 
 const BingTraffic = {};
 utils.setRequiredApiKey(BingTraffic, BingMapsKey);
+
+/**
+ * Search for traffic accidents in a given region. Results are sent as messages in the format:
+ *
+ * Message type: Traffic
+ * fields: latitude, longitude, type
+ *
+ * @param {Number} westLongitude
+ * @param {Number} northLatitude
+ * @param {Number} eastLongitude
+ * @param {Number} southLatitude
+ */
 BingTraffic.search = function(westLongitude, northLatitude, eastLongitude, southLatitude) {
     const boundingBox = [
         southLatitude,
@@ -93,6 +105,9 @@ BingTraffic.search = function(westLongitude, northLatitude, eastLongitude, south
     return deferred.promise;
 };
 
+/**
+ * Stop any pending requested messages (search results).
+ */
 BingTraffic.stop = function() {
     delete pendingEventsFor[this.caller.clientId];
     return 'stopped';
