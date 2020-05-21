@@ -1,3 +1,8 @@
+/**
+ * The Corgis Service provides access to CORGIS datasets from https://corgis-edu.github.io/corgis/.
+ *
+ * @service
+ */
 const ApiConsumer = require('../utils/api-consumer'),
     jsonQuery = require('json-query'),
     corgiDatasets = require('./datasets.js'),
