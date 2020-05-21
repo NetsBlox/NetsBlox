@@ -178,7 +178,8 @@ var personCredits = async function(id, field, subfield) {
 };
 
 /**
- * Find information about a movie
+ * Search for a given movie and return movie IDs.
+ *
  * @param {String} title Title of movie
  */
 MovieDB.searchMovie = async function(title) {
@@ -187,7 +188,8 @@ MovieDB.searchMovie = async function(title) {
 };
 
 /**
- * Find information about a person
+ * Search for a given actor and return person IDs.
+ *
  * @param {String} name Name of person to search for
  */
 MovieDB.searchPerson = async function(name) {
@@ -195,62 +197,327 @@ MovieDB.searchPerson = async function(name) {
     return res.results.map(e => e.id);
 };
 
+/**
+ * Get the image path for a given movie backdrop.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieBackdropPath = function(id) { return movieInfo.call(this, id, 'backdrop_path'); };
+
+/**
+ * Get the budget for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieBudget = function(id) { return movieInfo.call(this, id, 'budget'); };
+/**
+ * Get the genres of a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieGenres = function(id) { return movieInfo.call(this, id, 'genres'); };
+/**
+ * Get the original language of a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieOriginalLanguage = function(id) { return movieInfo.call(this, id, 'original_language'); };
+/**
+ * Get the original title of a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieOriginalTitle = function(id) { return movieInfo.call(this, id, 'original_title'); };
+/**
+ * Get an overview for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieOverview = function(id) { return movieInfo.call(this, id, 'overview'); };
+/**
+ * Get the popularity for a given movie.
+ *
+ * For more information, check out https://developers.themoviedb.org/3/getting-started/popularity
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.moviePopularity = function(id) { return movieInfo.call(this, id, 'popularity'); };
+/**
+ * Get the poster path for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.moviePosterPath = function(id) { return movieInfo.call(this, id, 'poster_path'); };
+/**
+ * Get the production companies for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieProductionCompanies = function(id) { return movieInfo.call(this, id, 'production_companies'); };
+/**
+ * Get the countries in which a given movie was produced.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieProductionCountries = function(id) { return movieInfo.call(this, id, 'production_countries'); };
+/**
+ * Get the release data for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieReleaseDate = function(id) { return movieInfo.call(this, id, 'release_date'); };
+/**
+ * Get the revenue for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieRevenue = function(id) { return movieInfo.call(this, id, 'revenue'); };
+/**
+ * Get the runtime for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieRuntime = function(id) { return movieInfo.call(this, id, 'runtime'); };
+/**
+ * Get the spoken languages for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieSpokenLanguages = function(id) { return movieInfo.call(this, id, 'spoken_languages'); };
+/**
+ * Get the tagline for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieTagline = function(id) { return movieInfo.call(this, id, 'tagline'); };
+/**
+ * Get the title for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieTitle = function(id) { return movieInfo.call(this, id, 'title'); };
+/**
+ * Get the average vote for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieVoteAverage = function(id) { return movieInfo.call(this, id, 'vote_average'); };
+/**
+ * Get the vote count for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieVoteCount = function(id) { return movieInfo.call(this, id, 'vote_count'); };
 
+/**
+ * Get the biography for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personBiography = function(id) { return personInfo.call(this, id, 'biography'); };
+/**
+ * Get the birthday of a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personBirthday = function(id) { return personInfo.call(this, id, 'birthday'); };
+/**
+ * Get the death date of a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personDeathday = function(id) { return personInfo.call(this, id, 'deathday'); };
+/**
+ * Get the gender of a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personGender = function(id) { return personInfo.call(this, id, 'gender'); };
+/**
+ * Get the name of a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personName = function(id) { return personInfo.call(this, id, 'name'); };
+/**
+ * Get the place of birth for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personPlaceOfBirth = function(id) { return personInfo.call(this, id, 'place_of_birth'); };
+/**
+ * Get the popularity of a given person.
+ *
+ * For more information, check out https://developers.themoviedb.org/3/getting-started/popularity
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personPopularity = function(id) { return personInfo.call(this, id, 'popularity'); };
+/**
+ * Get the profile path for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personProfilePath = function(id) { return personInfo.call(this, id, 'profile_path'); };
 
+/**
+ * Get the cast characters for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieCastCharacters = function(id) { return movieCredits.call(this, id, 'cast', 'character'); };
+/**
+ * Get the cast names for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieCastNames = function(id) { return movieCredits.call(this, id, 'cast', 'name'); };
+/**
+ * Get the cast IDs for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieCastPersonIDs = function(id) { return movieCredits.call(this, id, 'cast', 'id'); };
+/**
+ * Get the cast profile paths for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieCastProfilePaths = function(id) { return movieCredits.call(this, id, 'cast', 'profile_path'); };
+/**
+ * Get the crew names for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieCrewNames = function(id) { return movieCredits.call(this, id, 'crew', 'name'); };
+/**
+ * Get the crew jobs for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieCrewJobs = function(id) { return movieCredits.call(this, id, 'crew', 'job'); };
+/**
+ * Get the crew IDs for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieCrewPersonIDs = function(id) { return movieCredits.call(this, id, 'crew', 'id'); };
+/**
+ * Get the crew profile paths for a given movie.
+ *
+ * @param {String} id Movie ID
+ */
 MovieDB.movieCrewProfilePaths = function(id) { return movieCredits.call(this, id, 'crew', 'profile_path'); };
 
+/**
+ * Get the image paths for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personImageFilePaths = function(id) { return personImages.call(this, id, 'profiles', 'file_path'); };
+/**
+ * Get the image aspect ratios for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personImageAspectRatios = function(id) { return personImages.call(this, id, 'profiles', 'aspect_ratio'); };
+/**
+ * Get the image heights for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personImageHeights = function(id) { return personImages.call(this, id, 'profiles', 'height'); };
+/**
+ * Get the image widths for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personImageWidths = function(id) { return personImages.call(this, id, 'profiles', 'width'); };
+/**
+ * Get the image vote counts for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personImageVoteCounts = function(id) { return personImages.call(this, id, 'profiles', 'vote_count'); };
 
+/**
+ * Get the characters played by a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCastCharacters = function(id) { return personCredits.call(this, id, 'cast', 'character'); };
+/**
+ * Get the movies in which a given person was cast.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCastMovieIDs = function(id) { return personCredits.call(this, id, 'cast', 'id'); };
+/**
+ * Get the original titles in which a given person was cast.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCastOriginalTitles = function(id) { return personCredits.call(this, id, 'cast', 'original_title'); };
+/**
+ * Get the cast poster paths for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCastPosterPaths = function(id) { return personCredits.call(this, id, 'cast', 'poster_path'); };
+/**
+ * Get the cast release dates for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCastReleaseDates = function(id) { return personCredits.call(this, id, 'cast', 'release_date'); };
+/**
+ * Get the cast titles for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCastTitles = function(id) { return personCredits.call(this, id, 'cast', 'title'); };
+/**
+ * Get the movie IDs for which a given person was a member of the crew.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCrewMovieIDs = function(id) { return personCredits.call(this, id, 'crew', 'id'); };
+/**
+ * Get the crew jobs for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCrewJobs = function(id) { return personCredits.call(this, id, 'crew', 'job'); };
+/**
+ * Get the original titles for which a given person was a member of the crew.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCrewOriginalTitles = function(id) { return personCredits.call(this, id, 'crew', 'original_title'); };
+/**
+ * Get the poster paths for movies in which a given person was a member of the crew.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCrewPosterPaths = function(id) { return personCredits.call(this, id, 'crew', 'poster_path'); };
+/**
+ * Get the release dates for movies in which a given person was a member of the crew.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCrewReleaseDates = function(id) { return personCredits.call(this, id, 'crew', 'release_date'); };
+/**
+ * Get the crew titles for a given person.
+ *
+ * @param {String} id Person ID
+ */
 MovieDB.personCrewTitles = function(id) { return personCredits.call(this, id, 'crew', 'title'); };
 
+/**
+ * Get an image from a path.
+ *
+ * @param {String} path
+ */
 MovieDB.getImage = function(path){
     return this._sendImage({path});
 };
