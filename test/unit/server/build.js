@@ -1,9 +1,9 @@
 describe('build', function() {
-    describe('es5 client js', function() {
+    describe('client js', function() {
         let fs = require('fs'),
             path = require('path'),
             srcPath = path.join(__dirname, '..', '..', '..', 'src', 'browser'),
-            ugly = require('uglify-js');
+            ugly = require('uglify-es');
 
         // Get the given js files
         let devHtml = fs.readFileSync(path.join(srcPath, 'index.dev.html'), 'utf8'),
@@ -18,7 +18,7 @@ describe('build', function() {
         }
 
         srcFiles.forEach(filename => {
-            it(`should use es5 in ${filename}`, function() {
+            it(`should build ${filename} without error`, function() {
                 this.timeout(5000);
                 ugly.minify(path.join(srcPath, filename)).code;
             });
