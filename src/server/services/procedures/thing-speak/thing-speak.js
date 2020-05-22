@@ -77,6 +77,12 @@ thingspeakIoT._paginatedQueryOpts = function(queryOpts, limit) {
     });
 };
 
+/**
+ * Search for ThingSpeak channels by tag.
+ *
+ * @param {String} tag
+ * @param {Number=} limit
+ */
 thingspeakIoT.searchByTag = function(tag, limit) {
     let queryOptions = {
         path: 'public.json',
@@ -90,6 +96,14 @@ thingspeakIoT.searchByTag = function(tag, limit) {
     });
 };
 
+/**
+ * Search for channels by location.
+ *
+ * @param {Latitude} latitude
+ * @param {Longitude} longitude
+ * @param {Number=} distance
+ * @param {Number=} limit
+ */
 thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) {
     let queryOptions = {
         path: 'public.json',
@@ -97,7 +111,7 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) 
             rpcUtils.encodeQueryData({
                 latitude: latitude,
                 longitude: longitude,
-                distance: distance === '' ? 100 : distance
+                distance: !distance ? 100 : distance
             }),
     };
     limit = limit || 15;
@@ -105,6 +119,14 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) 
         return this._sendStruct(queryOptsList, searchParser);
     });};
 
+/**
+ * Search for channels by tag and location.
+ *
+ * @param {String} tag
+ * @param {Latitude} latitude
+ * @param {Longitude} longitude
+ * @param {Number=} distance
+ */
 thingspeakIoT.searchByTagAndLocation= function(tag, latitude, longitude, distance) {
     let queryOptions = {
         path: 'public.json',
@@ -112,7 +134,7 @@ thingspeakIoT.searchByTagAndLocation= function(tag, latitude, longitude, distanc
         rpcUtils.encodeQueryData({
             latitude: latitude,
             longitude: longitude,
-            distance: distance === '' ? 100 : distance
+            distance: !distance ? 100 : distance
         })
     };
     return this._paginatedQueryOpts(queryOptions, 10000).then(queryOptsList => {
@@ -123,6 +145,12 @@ thingspeakIoT.searchByTagAndLocation= function(tag, latitude, longitude, distanc
         });
     });};
 
+/**
+ * Get channel feed.
+ *
+ * @param {String} id
+ * @param {Number} numResult
+ */
 thingspeakIoT.channelFeed = function(id, numResult) {
     let queryOptions = {
         path: id + '/feeds.json',
@@ -137,7 +165,7 @@ thingspeakIoT.channelFeed = function(id, numResult) {
  * Request data from a private channel
  *
  * @param {String} id ID of the private channel feed
- * @param {String} numResult Number of results to fetch
+ * @param {Number} numResult Number of results to fetch
  * @param {String} apiKey Thingspeak API key
  */
 thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {

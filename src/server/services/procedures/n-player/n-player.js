@@ -28,6 +28,9 @@ const NPlayer = function() {
     this._state.players = [];
 };
 
+/**
+ * Start a new turn-based game.
+ */
 NPlayer.prototype.start = async function() {
     this._state.players = await Utils.getRoleIds(this.caller.projectId);
     this._state.active = this._state.players
@@ -40,10 +43,16 @@ NPlayer.prototype.start = async function() {
     return true;
 };
 
+/**
+ * Get the number of detected players in the game.
+ */
 NPlayer.prototype.getN = function() {
     return this._state.players.length;
 };
 
+/**
+ * Get the player whose turn it currently is.
+ */
 NPlayer.prototype.getActive = function() {
     if(this._state.players.length === 0) {
         return '';
@@ -52,6 +61,9 @@ NPlayer.prototype.getActive = function() {
     }
 };
 
+/**
+ * Get the player who played last.
+ */
 NPlayer.prototype.getPrevious = function() {
     if(this._state.previous == null || this._state.players.length == 0) {
         return '';
@@ -60,6 +72,9 @@ NPlayer.prototype.getPrevious = function() {
     }
 };
 
+/**
+ * Get the player who will be active next.
+ */
 NPlayer.prototype.getNext = function() {
     if(this._state.players.length == 0) {
         return '';
@@ -70,6 +85,11 @@ NPlayer.prototype.getNext = function() {
     }
 };
 
+/**
+ * End your current turn.
+ *
+ * @param {String=} next Specify the player to go next
+ */
 NPlayer.prototype.endTurn = function(next) {
     if(this._state.active === null || this.socket.roleId != this._state.players[this._state.active]) {
         // bail out if there's no game yet, or if it's somebody else's turn

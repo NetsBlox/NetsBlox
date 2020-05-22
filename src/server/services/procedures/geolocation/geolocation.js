@@ -102,34 +102,81 @@ GeoLocationRPC.city = function (latitude, longitude) {
     return null;
 };
 
+/**
+ * Get the name of the county (or closest equivalent) nearest to the given latitude and longitude.
+ * If the country does not have counties, it will return the corresponding division for administrative level 2.
+ *
+ * For more information on administrative divisions, check out https://en.wikipedia.org/wiki/List_of_administrative_divisions_by_country
+ *
+ * @param {Latitude} latitude latitude of the target location
+ * @param {Longitude} longitude longitude of the target location
+ * @returns {String} county name
+ */
 GeoLocationRPC['county*'] = function (latitude, longitude) {
     reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level2long');
     return null;
 };
 
+/**
+ * Get the name of the state (or closest equivalent) nearest to the given latitude and longitude.
+ * If the country does not have states, it will return the corresponding division for administrative level 1.
+ *
+ * For more information on administrative divisions, check out https://en.wikipedia.org/wiki/List_of_administrative_divisions_by_country
+ *
+ * @param {Latitude} latitude latitude of the target location
+ * @param {Longitude} longitude longitude of the target location
+ * @returns {String} state name
+ */
 GeoLocationRPC['state*'] = function (latitude, longitude) {
     reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level1long');
     return null;
 };
 
+/**
+ * Get the code for the state (or closest equivalent) nearest to the given latitude and longitude.
+ * If the country does not have states, it will return the corresponding division for administrative level 1.
+ *
+ * For more information on administrative divisions, check out https://en.wikipedia.org/wiki/List_of_administrative_divisions_by_country
+ *
+ * @param {Latitude} latitude latitude of the target location
+ * @param {Longitude} longitude longitude of the target location
+ * @returns {String} state name
+ */
 GeoLocationRPC['stateCode*'] = function (latitude, longitude) {
     reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level1short');
     return null;
 };
 
-// reverse geocode and send back a specific detail
+/**
+ * Get the name of the country nearest to the given latitude and longitude.
+ *
+ * @param {Latitude} latitude latitude of the target location
+ * @param {Longitude} longitude longitude of the target location
+ * @returns {String} country name
+ */
 GeoLocationRPC.country = function (latitude, longitude) {
     reverseGeocode(latitude, longitude, this.response, '.country');
     return null;
 };
 
-// reverse geocode and send back a specific detail
+/**
+ * Get the code for the country nearest to the given latitude and longitude.
+ *
+ * @param {Latitude} latitude latitude of the target location
+ * @param {Longitude} longitude longitude of the target location
+ * @returns {String} country name
+ */
 GeoLocationRPC.countryCode = function (latitude, longitude) {
     reverseGeocode(latitude, longitude, this.response, '.countryCode');
     return null;
 };
 
-// administrative levels
+/**
+ * Get administrative division information for the given latitude and longitude.
+ *
+ * @param {Latitude} latitude latitude of the target location
+ * @param {Longitude} longitude longitude of the target location
+ */
 GeoLocationRPC.info = function (latitude, longitude) {
     return geocoder.reverse({lat: latitude, lon: longitude})
         .then( res => {
