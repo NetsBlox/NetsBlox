@@ -87,6 +87,8 @@ NPlayer.prototype.getNext = function() {
 
 /**
  * End your current turn.
+ *
+ * @param {String=} next Specify the player to go next
  */
 NPlayer.prototype.endTurn = function(next) {
     if(this._state.active === null || this.socket.roleId != this._state.players[this._state.active]) {
