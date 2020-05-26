@@ -16,6 +16,7 @@ var counter = 0,
 
 let clientCounter = 0;
 
+const _ = require('lodash');
 const assert = require('assert');
 const Messages = require('./storage/messages');
 const ProjectActions = require('./storage/project-actions');
@@ -536,11 +537,8 @@ Client.MessageHandlers = {
             this._logger.trace(`Exporting project for ${projectId}` +
                 ` to ${this.username}`);
 
-            this.send({
-                type: 'export-room',
-                content: xml,
-                action: msg.action
-            });
+            _.extend(msg, {content: xml});
+            this.send(msg);
         }
     },
 
