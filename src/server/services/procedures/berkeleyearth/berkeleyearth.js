@@ -30,48 +30,110 @@ const regionsDictionary = {
 /**
  * Get the monthly anomaly data for a region
  * @param {String} country Name of country
- * @returns {Array} Current price for the specified stock
+ * @returns {Array<Array>} Monthly data points
  */
 BerkeleyEarth.monthlyAnomaly = function (country) {
-    country = country.toLowerCase();
+    return this._getCountryData(country, 'monthly');
+};
 
+/**
+ * Get the 12 month averaged anomaly data for a region
+ * @param {String} country Name of country
+ * @returns {Array<Array>} Monthly data points
+ */
+BerkeleyEarth.annualAnomaly = function (country) {
+    return this._getCountryData(country, 'annual');
+};
+
+/**
+ * Get the 5-year averaged anomaly data for a region
+ * @param {String} country Name of country
+ * @returns {Array<Array>} Monthly data points
+ */
+BerkeleyEarth.fiveYearAnomaly = function (country) {
+    return this._getCountryData(country, '5year');
+};
+
+/**
+ * Get the 10-year averaged anomaly data for a region
+ * @param {String} country Name of country
+ * @returns {Array<Array>} Monthly data points
+ */
+BerkeleyEarth.tenYearAnomaly = function (country) {
+    return this._getCountryData(country, '10year');
+};
+
+/**
+ * Get the 20-year averaged anomaly data for a region
+ * @param {String} country Name of country
+ * @returns {Array<Array>} Monthly data points
+ */
+BerkeleyEarth.twentyYearAnomaly = function (country) {
+    return this._getCountryData(country, '20year');
+};
+
+const dataColumns = {
+    'monthly': 2,
+    'annual': 4,
+    '5year': 6,
+    '10year': 8,
+    '20year': 10,
+};
+
+/**
+ * Requests the data for a country/region
+ * @param {String} country Country/region to get data for
+ * @param {String} type Type of data to return
+ * @returns {Array<Array>} Parsed data
+ */
+BerkeleyEarth._getCountryData = function (country, type) {
+    country = country.toLowerCase();
     const options = {
         path: `Regional/TAVG/Text/${country}-TAVG-Trend.txt`,
         queryString: 'displayPercent=true',
     };
-
     // Check for special region names
-    if(Object.keys(regionsDictionary).indexOf(country) !== -1){
+    if (Object.keys(regionsDictionary).indexOf(country) !== -1) {
         options.path = regionsDictionary[country];
     }
-
-    return this._requestData(options).then(res => {
-        // Parse data file        
-        let lines = res.split('\n');
-        let data = [];
-
-        for (let line of lines){
-            // Skip comments and empty lines
-            if(line.length < 1 || line.startsWith('%')){
-                continue;
-            }
-
-            let parts = line.trim().split(/ +/);
-            if (parts.length < 10 || parts[2] == 'NaN'){
-                continue;
-            }
-
-            data.push([parts[0], parts[1], parts[2]]);
-        }
-
-        return data;
-    }).catch(err => {
+    return this._requestData(options).then(this._extractData.bind(this, type)).catch(err => {
         const prettyError = rewordError(err);
         if (prettyError) {
             return this.response.status(500).send(prettyError);
         }
         throw err;
     });
+};
+
+/**
+ * Handles parsing the retrieved document
+ * @param {String} type Type of data to retrieve
+ * @param {} res Response from server
+ * @returns {Array<Array>} Parsed data
+ */
+BerkeleyEarth._extractData = function(type, res) {
+    let lines = res.split('\n');
+    let data = [];
+    
+    // Validate data type
+    if(Object.keys(dataColumns).indexOf(type) === -1){
+        return this.response.status(500).send('Invalid data type requested');
+    }
+
+    const dataColumn = dataColumns[type];
+
+    for (let line of lines) {
+        // Skip comments and empty lines
+        if (line.length < 1 || line.startsWith('%')) {
+            continue;
+        }
+        let parts = line.trim().split(/ +/);
+        if (parts.length < 10 || parts[dataColumn] == 'NaN') {
+            continue;
+        }
+        data.push([parseInt(parts[0]) + parseInt(parts[1]) / 12, parts[dataColumn]]);
+    }
+    return data;
 };
 
 module.exports = BerkeleyEarth;
