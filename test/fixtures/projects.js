@@ -57,5 +57,11 @@ module.exports = [
         name: 'SharedProject',
         roles: ['r1', 'r2'],
         collaborators: ['brian']
+    },
+    {
+        owner: 'brian',
+        name: 'SharedProject',
+        roles: ['r1', 'r2'],
+        collaborators: ['test']
     }
 ].map(addDefaults);
