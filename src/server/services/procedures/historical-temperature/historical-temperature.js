@@ -87,10 +87,9 @@ const dataColumns = {
  * @returns {Array<Array>} Parsed data
  */
 BerkeleyEarth._getCountryData = function (country, type) {
-    country = country.toLowerCase().trim();
+    country = country.toLowerCase().trim().replace(/\s+/, '-');
     const options = {
-        path: `Regional/TAVG/Text/${country}-TAVG-Trend.txt`,
-        queryString: 'displayPercent=true',
+        path: `Regional/TAVG/Text/${country}-TAVG-Trend.txt`
     };
     // Check for special region names
     if (Object.keys(regionsDictionary).indexOf(country) !== -1) {
@@ -127,7 +126,7 @@ BerkeleyEarth._extractData = function(type, res) {
         if (line.length < 1 || line.startsWith('%')) {
             continue;
         }
-        let parts = line.trim().split(/ +/);
+        let parts = line.trim().split(/\s+/);
         if (parts.length < 10 || parts[dataColumn] == 'NaN') {
             continue;
         }
