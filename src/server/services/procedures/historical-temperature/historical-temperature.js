@@ -10,14 +10,14 @@
  */
 
 const ApiConsumer = require('../utils/api-consumer');
-const BerkeleyEarth = new ApiConsumer('BerkeleyEarth', 'http://berkeleyearth.lbl.gov/auto/', { cache: { ttl: 60 * 60 * 24 * 30 } });
+const BerkeleyEarth = new ApiConsumer('HistoricalTemperature', 'http://berkeleyearth.lbl.gov/auto/', { cache: { ttl: 60 * 60 * 24 * 30 } });
 const rewordError = err => {
     if (err.statusCode === 404) {
         return 'Unknown country or region';
     }
 };
 
-/**
+/*
  * Associates less obviously named regions to their URLs
  */
 const regionsDictionary = {
@@ -87,7 +87,7 @@ const dataColumns = {
  * @returns {Array<Array>} Parsed data
  */
 BerkeleyEarth._getCountryData = function (country, type) {
-    country = country.toLowerCase();
+    country = country.toLowerCase().trim();
     const options = {
         path: `Regional/TAVG/Text/${country}-TAVG-Trend.txt`,
         queryString: 'displayPercent=true',
