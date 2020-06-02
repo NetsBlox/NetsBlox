@@ -2,6 +2,9 @@
  * Access to Berkeley Earth data
  *
  * See http://berkeleyearth.org/data/ for additional details.
+ * 
+ * Use 'all land' for all land area, 'global' for all surface area,
+ * or 'northern hemisphere' and 'southern hemisphere' for the land in those hemispheres.
  *
  * @alpha
  * @service
@@ -22,6 +25,7 @@ const rewordError = err => {
  */
 const regionsDictionary = {
     allland: 'Global/Complete_TAVG_complete.txt',
+    'all-land': 'Global/Complete_TAVG_complete.txt',
     global: 'Global/Land_and_Ocean_complete.txt',
     northern: 'Regional/TAVG/Text/northern-hemisphere-TAVG-Trend.txt',
     southern: 'Regional/TAVG/Text/southern-hemisphere-TAVG-Trend.txt',
@@ -31,47 +35,47 @@ const regionsDictionary = {
 
 /**
  * Get the monthly anomaly data for a region
- * @param {String} country Name of country
+ * @param {String} region Name of region/country
  * @returns {Array<Array>} Monthly data points
  */
-BerkeleyEarth.monthlyAnomaly = function (country) {
-    return this._getCountryData(country, 'monthly');
+BerkeleyEarth.monthlyAnomaly = function (region) {
+    return this._getCountryData(region, 'monthly');
 };
 
 /**
  * Get the 12 month averaged anomaly data for a region
- * @param {String} country Name of country
+ * @param {String} region Name of region/country
  * @returns {Array<Array>} Monthly data points
  */
-BerkeleyEarth.annualAnomaly = function (country) {
-    return this._getCountryData(country, 'annual');
+BerkeleyEarth.annualAnomaly = function (region) {
+    return this._getCountryData(region, 'annual');
 };
 
 /**
  * Get the 5-year averaged anomaly data for a region
- * @param {String} country Name of country
+ * @param {String} region Name of region/country
  * @returns {Array<Array>} Monthly data points
  */
-BerkeleyEarth.fiveYearAnomaly = function (country) {
-    return this._getCountryData(country, '5year');
+BerkeleyEarth.fiveYearAnomaly = function (region) {
+    return this._getCountryData(region, '5year');
 };
 
 /**
  * Get the 10-year averaged anomaly data for a region
- * @param {String} country Name of country
+ * @param {String} region Name of region/country
  * @returns {Array<Array>} Monthly data points
  */
-BerkeleyEarth.tenYearAnomaly = function (country) {
-    return this._getCountryData(country, '10year');
+BerkeleyEarth.tenYearAnomaly = function (region) {
+    return this._getCountryData(region, '10year');
 };
 
 /**
  * Get the 20-year averaged anomaly data for a region
- * @param {String} country Name of country
+ * @param {String} region Name of region/country
  * @returns {Array<Array>} Monthly data points
  */
-BerkeleyEarth.twentyYearAnomaly = function (country) {
-    return this._getCountryData(country, '20year');
+BerkeleyEarth.twentyYearAnomaly = function (region) {
+    return this._getCountryData(region, '20year');
 };
 
 const dataColumns = {
