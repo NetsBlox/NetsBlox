@@ -14,7 +14,8 @@
 
 const ApiConsumer = require('../utils/api-consumer');
 const BerkeleyEarth = new ApiConsumer('HistoricalTemperature', 'http://berkeleyearth.lbl.gov/auto/', { cache: { ttl: 60 * 60 * 24 * 30 } });
-const rewordError = err => {
+
+BerkeleyEarth._rewordError = err => {
     if (err.statusCode === 404) {
         return 'Unknown country or region';
     }
@@ -78,7 +79,8 @@ BerkeleyEarth.twentyYearAnomaly = function (region) {
     return this._getCountryData(region, '20year');
 };
 
-const dataColumns = {
+// Indices for data columns
+BerkeleyEarth._dataColumns = {
     'monthly': 2,
     'annual': 4,
     '5year': 6,
@@ -102,7 +104,7 @@ BerkeleyEarth._getCountryData = function (country, type) {
         options.path = regionsDictionary[country];
     }
     return this._requestData(options).then(this._extractData.bind(this, type)).catch(err => {
-        const prettyError = rewordError(err);
+        const prettyError = this._rewordError(err);
         if (prettyError) {
             return this.response.status(500).send(prettyError);
         }
@@ -121,11 +123,11 @@ BerkeleyEarth._extractData = function(type, res) {
     let data = [];
     
     // Validate data type
-    if(Object.keys(dataColumns).indexOf(type) === -1){
+    if(Object.keys(this._dataColumns).indexOf(type) === -1){
         return this.response.status(500).send('Invalid data type requested');
     }
 
-    const dataColumn = dataColumns[type];
+    const dataColumn = this._dataColumns[type];
 
     for (let line of lines) {
         // Skip comments and empty lines
