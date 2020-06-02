@@ -25,6 +25,8 @@ const regionsDictionary = {
     global: 'Global/Land_and_Ocean_complete.txt',
     northern: 'Regional/TAVG/Text/northern-hemisphere-TAVG-Trend.txt',
     southern: 'Regional/TAVG/Text/southern-hemisphere-TAVG-Trend.txt',
+    'northern-hemisphere': 'Regional/TAVG/Text/northern-hemisphere-TAVG-Trend.txt',
+    'southern-hemisphere': 'Regional/TAVG/Text/southern-hemisphere-TAVG-Trend.txt',
 };
 
 /**
@@ -132,6 +134,9 @@ BerkeleyEarth._extractData = function(type, res) {
         }
         data.push([parseInt(parts[0]) + parseInt(parts[1]) / 12, parts[dataColumn]]);
     }
+
+    // Fix some files being ordered incorrectly
+    data = data.sort((a, b) => a[0] - b[0]);
     return data;
 };
 
