@@ -1,6 +1,7 @@
-describe('services-hosts', function() {
+const utils = require('../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const assert = require('assert').strict;
-    const utils = require('../../../../assets/utils');
     const ServicesHostsAPI = utils.reqSrc('./api/core/services-hosts');
     const Errors = utils.reqSrc('./api/core/errors');
     const Users = utils.reqSrc('./storage/users');

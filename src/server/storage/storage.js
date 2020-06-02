@@ -8,6 +8,7 @@ var MongoClient = require('mongodb').MongoClient,
     Messages = require('./messages'),
     PublicProjects = require('./public-projects');
 
+const Libraries = require('./libraries');
 const ProjectActions = require('./project-actions');
 const Logger = require('../logger');
 
@@ -38,6 +39,7 @@ Storage.prototype.connect = function(mongoURI) {
             PublicProjects.init(this._logger, db);
             Messages.init(this._logger, db);
             ProjectActions.init(this._logger, db);
+            Libraries.init(this._logger, db);
             this.publicProjects = PublicProjects;
 
             this._db = db;
