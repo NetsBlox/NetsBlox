@@ -15,12 +15,6 @@
 const ApiConsumer = require('../utils/api-consumer');
 const BerkeleyEarth = new ApiConsumer('HistoricalTemperature', 'http://berkeleyearth.lbl.gov/auto/', { cache: { ttl: 60 * 60 * 24 * 30 } });
 
-BerkeleyEarth._rewordError = err => {
-    if (err.statusCode === 404) {
-        return 'Unknown country or region';
-    }
-};
-
 /*
  * Associates less obviously named regions to their URLs
  */
@@ -99,14 +93,15 @@ BerkeleyEarth._getCountryData = function (country, type) {
     const options = {
         path: `Regional/TAVG/Text/${country}-TAVG-Trend.txt`
     };
+
     // Check for special region names
     if (Object.keys(regionsDictionary).indexOf(country) !== -1) {
         options.path = regionsDictionary[country];
     }
+
     return this._requestData(options).then(this._extractData.bind(this, type)).catch(err => {
-        const prettyError = this._rewordError(err);
-        if (prettyError) {
-            return this.response.status(500).send(prettyError);
+        if (err.statusCode === 404) {
+            throw new Error('Unknown country or region');
         }
         throw err;
     });
