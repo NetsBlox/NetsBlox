@@ -46,10 +46,11 @@ class Libraries {
         const options = {upsert: true};
 
         const library = await LibraryStorage.collection.findOne({owner, name, public: true});
+        let needsApproval = false;
         if (library) {
             library.blocks = libraryXML;
             library.notes = notes;
-            const needsApproval = await this._isApprovalRequired(owner, name, library);
+            needsApproval = await this._isApprovalRequired(owner, name, library);
             if (needsApproval) {
                 updates.$set.public = false;
                 updates.$set.needsApproval = true;
@@ -57,6 +58,7 @@ class Libraries {
         }
 
         await LibraryStorage.collection.updateOne(query, updates, options);
+        return needsApproval;
     }
 
     async publishLibrary(requestor, owner, name) {

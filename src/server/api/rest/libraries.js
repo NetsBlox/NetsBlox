@@ -21,8 +21,8 @@ LibrariesRouter.route('/user/:owner/:name')
         const {owner, name} = req.params;
         const {username} = req.session;
         const {blocks, notes} = req.body;
-        await Libraries.saveLibrary(username, owner, name, blocks, notes);
-        res.sendStatus(200);
+        const needsApproval = await Libraries.saveLibrary(username, owner, name, blocks, notes);
+        res.json({needsApproval});
     }))
     .delete(handleErrors(async (req, res) => {
         const {owner, name} = req.params;
@@ -35,8 +35,8 @@ LibrariesRouter.route('/user/:owner/:name/publish')
     .post(handleErrors(async (req, res) => {
         const {owner, name} = req.params;
         const {username} = req.session;
-        await Libraries.publishLibrary(username, owner, name);
-        res.sendStatus(200);
+        const needsApproval = await Libraries.publishLibrary(username, owner, name);
+        res.json({needsApproval});
     }));
 
 LibrariesRouter.route('/user/:owner/:name/unpublish')
