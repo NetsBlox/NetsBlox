@@ -83,6 +83,12 @@ Perms.addPermissionSet('Library', {
             new Errors.Unauthorized(requestor, `save library to "${username}"`)
         );
     },
+    DELETE: function(owner) {
+        return requestor => assert(
+            owner === requestor,
+            new Errors.Unauthorized(requestor, 'delete library')
+        );
+    },
 });
 
 class Authorization {

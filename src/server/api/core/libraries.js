@@ -11,6 +11,12 @@ class Libraries {
         this.logger = new Logger('netsblox:libraries');
     }
 
+    async deleteLibrary(requestor, owner, name) {
+        await Auth.ensureAuthorized(requestor, P.Library.DELETE(owner));
+        const result = await LibraryStorage.collection.deleteOne({owner, name});
+        return result.deletedCount === 1;
+    }
+
     async getLibrary(requestor, owner, name) {
         const library = await this._getLibrary(owner, name);
         await Auth.ensureAuthorized(requestor, P.Library.READ(owner, library));
@@ -19,19 +25,37 @@ class Libraries {
 
     async getLibraries(requestor, owner) {
         await Auth.ensureAuthorized(requestor, P.Library.LIST(owner));
-        return await LibraryStorage.collection.find({owner}).toArray();
+        const options = {
+            projection: {name: 1, owner: 1, notes: 1, public: 1, needsApproval: 1}
+        };
+        return await LibraryStorage.collection.find({owner}, options).toArray();
     }
 
     async getPublicLibraries() {
-        return await LibraryStorage.collection.find({public: true}).toArray();
+        const options = {
+            projection: {name: 1, owner: 1, notes: 1}
+        };
+        return await LibraryStorage.collection.find({public: true}, options).toArray();
     }
 
-    async saveLibrary(requestor, owner, name, libraryXML, description) {
+    async saveLibrary(requestor, owner, name, libraryXML, notes) {
         await Auth.ensureAuthorized(requestor, P.Library.WRITE(owner));
         this.ensureValidName(name);
         const query = {owner, name};
-        const updates = {$set: {blocks: libraryXML, description}};
+        const updates = {$set: {blocks: libraryXML, notes}};
         const options = {upsert: true};
+
+        const library = await LibraryStorage.collection.findOne({owner, name, public: true});
+        if (library) {
+            library.blocks = libraryXML;
+            library.notes = notes;
+            const needsApproval = await this._isApprovalRequired(owner, name, library);
+            if (needsApproval) {
+                updates.$set.public = false;
+                updates.$set.needsApproval = true;
+            }
+        }
+
         await LibraryStorage.collection.updateOne(query, updates, options);
     }
 
@@ -66,15 +90,15 @@ class Libraries {
         return library;
     }
 
-    async _isApprovalRequired(owner, name) {
+    async _isApprovalRequired(owner, name, library) {
         const isProfaneName = profaneChecker.isProfane(name);
         if (isProfaneName) {
             return true;
         }
 
-        const library = await this._getLibrary(owner, name);
+        library = library || await this._getLibrary(owner, name);
         return library.blocks.includes('reportJSFunction') ||
-            profaneChecker.isProfane(library.description) ||
+            profaneChecker.isProfane(library.notes) ||
             profaneChecker.isProfane(library.blocks);
     }
 

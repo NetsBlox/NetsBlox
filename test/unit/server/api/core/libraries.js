@@ -11,6 +11,24 @@ describe(utils.suiteName(__filename), function() {
 
     beforeEach(() => utils.reset(true));
 
+    describe('deleteLibrary', function() {
+        const lib = {owner: requestor, name: 'testLib', blocks: 'test'};
+        beforeEach(() => utils.fixtures.libraries.seed(lib));
+
+        it('should be able to delete own library', async function() {
+            await LibrariesAPI.deleteLibrary(lib.owner, lib.owner, lib.name);
+            const libraries = await LibrariesAPI.getLibraries(requestor, requestor);
+            assert.equal(libraries.length, 0);
+        });
+
+        it('should not allow delete other user\'s library', async function() {
+            await utils.shouldThrow(
+                () => LibrariesAPI.deleteLibrary(otherUser, lib.owner, lib.name),
+                Errors.Unauthorized
+            );
+        });
+    });
+
     describe('getLibrary', function() {
         const lib = {owner: requestor, name: 'testLib', blocks: 'test'};
         const publib = {
@@ -52,6 +70,12 @@ describe(utils.suiteName(__filename), function() {
             assert.equal(libraries[0].owner, requestor);
         });
 
+        it('should not include blocks', async function() {
+            const libraries = await LibrariesAPI.getLibraries(requestor, requestor);
+            const libWithBlocks = libraries.find(lib => lib.blocks);
+            assert(!libWithBlocks);
+        });
+
         it('should only include own libraries', async function() {
             const libraries = await LibrariesAPI.getLibraries(requestor, requestor);
             const otherLib = libraries.find(lib => lib.owner !== requestor);
@@ -79,6 +103,11 @@ describe(utils.suiteName(__filename), function() {
             libraries = await LibrariesAPI.getPublicLibraries();
         });
 
+        it('should not include blocks', async function() {
+            const libWithBlocks = libraries.find(lib => lib.blocks);
+            assert(!libWithBlocks);
+        });
+
         it('should get all public libraries', async function() {
             assert.equal(libraries.length, 2);
         });
@@ -94,15 +123,13 @@ describe(utils.suiteName(__filename), function() {
     });
 
     describe('saveLibrary', function() {
-        const libs = [
-            {
-                owner: requestor,
-                name: 'testLib',
-                blocks: 'test',
-                public: true,
-            },
-        ];
-        beforeEach(() => utils.fixtures.libraries.seed(...libs));
+        const lib = {
+            owner: requestor,
+            name: 'testLib',
+            blocks: 'test',
+            public: true,
+        };
+        beforeEach(() => utils.fixtures.libraries.seed(lib));
 
         it('should update library xml', async () => {
             await LibrariesAPI.saveLibrary(
@@ -134,6 +161,19 @@ describe(utils.suiteName(__filename), function() {
             );
             const [lib] = await LibrariesAPI.getLibraries(requestor, requestor);
             assert(lib.public);
+        });
+
+        it('should require approval if adding profanity', async () => {
+            await LibrariesAPI.saveLibrary(
+                requestor,
+                requestor,
+                'testLib',
+                '<comment>damn</comment>',
+                'some description',
+            );
+            const [lib] = await LibrariesAPI.getLibraries(requestor, requestor);
+            assert(!lib.public);
+            assert(lib.needsApproval);
         });
     });
 

@@ -5,9 +5,8 @@ const {handleErrors, setUsername} = require('./utils');
 LibrariesRouter.use(setUsername);
 LibrariesRouter.route('/user/')
     .get(handleErrors(async (req, res) => {
-        const {name} = req.params;
         const {username} = req.session;
-        const libraries = await Libraries.getLibraries(username, name);
+        const libraries = await Libraries.getLibraries(username, username);
         res.json(libraries);
     }));
 
@@ -21,8 +20,14 @@ LibrariesRouter.route('/user/:owner/:name')
     .post(handleErrors(async (req, res) => {
         const {owner, name} = req.params;
         const {username} = req.session;
-        const libraryXML = req.body;
-        await Libraries.saveLibrary(username, owner, name, libraryXML);
+        const {blocks, notes} = req.body;
+        await Libraries.saveLibrary(username, owner, name, blocks, notes);
+        res.sendStatus(200);
+    }))
+    .delete(handleErrors(async (req, res) => {
+        const {owner, name} = req.params;
+        const {username} = req.session;
+        await Libraries.deleteLibrary(username, owner, name);
         res.sendStatus(200);
     }));
 
