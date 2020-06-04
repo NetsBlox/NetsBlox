@@ -2,16 +2,13 @@ describe('users', function() {
     const utils = require('../../../assets/utils');
     const assert = require('assert');
     const Users = utils.reqSrc('storage/users');
-    const Q = require('q');
 
-    before(function(done) {
-        utils.reset().then(() => done());
-    });
+    before(() => utils.reset());
 
     describe('getGroupMembers', function() {
         let users = null;
 
-        before(function(done) {
+        before(async function() {
             const groups = [undefined, 'class1', 'class2'];
             // Create three users in each group
             users = groups.map(groupId =>  // make three users for each
@@ -22,15 +19,16 @@ describe('users', function() {
 
             users.map(user => user.hash = 123);
 
-            return Q.all(users.map(user => user.save().then(() => {
+            for (let i = 0; i < users.length; i++) {
+                const user = users[i];
+                await user.save();
                 let groupId = undefined;
                 if (user.username.includes('-')) {
                     let index = user.username.indexOf('-');
                     groupId = user.username.substring(index + 1);
                 }
-                return user.setGroupId(groupId);
-            })))
-                .nodeify(done);
+                await user.setGroupId(groupId);
+            }
         });
 
         it('should not include users in groups from outside', function(done) {
@@ -57,27 +55,19 @@ describe('users', function() {
     });
 
     describe('setPassword', function() {
-        it('should update user password in memory', function(done) {
-            let firstHash = null;
-            Users.get('brian')
-                .then(user => {
-                    firstHash = user.hash;
-                    return user.setPassword('someNewPasswordForMemoryTest')
-                        .then(() => assert.notEqual(firstHash, user.hash));
-                })
-                .nodeify(done);
+        it('should update user password in memory', async function() {
+            const user = await Users.get('brian');
+            const firstHash = user.hash;
+            await user.setPassword('someNewPasswordForMemoryTest');
+            assert.notEqual(firstHash, user.hash);
         });
 
-        it('should update user password in database', function(done) {
-            let firstHash = null;
-            Users.get('brian')
-                .then(user => {
-                    firstHash = user.hash;
-                    return user.setPassword('someNewPasswordForDBTest');
-                })
-                .then(() => Users.get('brian'))
-                .then(user => assert.notEqual(firstHash, user.hash))
-                .nodeify(done);
+        it('should update user password in database', async function() {
+            let user = await Users.get('brian');
+            const firstHash = user.hash;
+            await user.setPassword('someNewPasswordForDBTest');
+            user = await Users.get('brian');
+            assert.notEqual(firstHash, user.hash);
         });
     });
 
