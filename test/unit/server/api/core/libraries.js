@@ -117,8 +117,9 @@ describe(utils.suiteName(__filename), function() {
         });
 
         it('should only contain public libraries', async function() {
-            const arePublic = libraries.every(lib => lib.public);
-            assert(arePublic);
+            const privateLibrary = libraries.find(lib => !lib.name.includes('public'));
+            const privName = privateLibrary && privateLibrary.name;
+            assert(!privateLibrary, `Found private library: ${privName}`);
         });
     });
 
@@ -137,16 +138,16 @@ describe(utils.suiteName(__filename), function() {
                 requestor,
                 'testLib',
                 'newXML',
-                'some description',
+                'some notes',
             );
-            const [lib] = await LibrariesAPI.getLibraries(requestor, requestor);
-            assert.equal(lib.blocks, 'newXML');
+            const xml = await LibrariesAPI.getLibrary(requestor, requestor, lib.name);
+            assert.equal(xml, 'newXML');
         });
 
         it('should throw error if invalid name', async () => {
             await utils.shouldThrow(
                 () => LibrariesAPI.saveLibrary(requestor, requestor, 'test@me',
-                    'newXML', 'some description'),
+                    'newXML', 'some notes'),
                 Errors.RequestError,
             );
         });
@@ -157,7 +158,7 @@ describe(utils.suiteName(__filename), function() {
                 requestor,
                 'testLib',
                 'newXML',
-                'some description',
+                'some notes',
             );
             const [lib] = await LibrariesAPI.getLibraries(requestor, requestor);
             assert(lib.public);
@@ -169,7 +170,7 @@ describe(utils.suiteName(__filename), function() {
                 requestor,
                 'testLib',
                 '<comment>damn</comment>',
-                'some description',
+                'some notes',
             );
             const [lib] = await LibrariesAPI.getLibraries(requestor, requestor);
             assert(!lib.public);
@@ -190,7 +191,7 @@ describe(utils.suiteName(__filename), function() {
         const profaneDesc = {
             owner: requestor,
             name: 'profaneDesc',
-            description: 'asshole'
+            notes: 'asshole'
         };
         const profaneName = {
             owner: requestor,
@@ -231,7 +232,7 @@ describe(utils.suiteName(__filename), function() {
             assert(needsApproval);
         });
 
-        it('should require approval for profane description', async () => {
+        it('should require approval for profane notes', async () => {
             const needsApproval = await LibrariesAPI.publishLibrary(
                 profaneDesc.owner,
                 profaneDesc.owner,
