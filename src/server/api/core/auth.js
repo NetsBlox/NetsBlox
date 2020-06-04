@@ -11,7 +11,7 @@ class Permissions {
 
 class PermissionSet {
     constructor(name, perms) {
-        const VALID_PERMISSIONS = ['READ', 'WRITE', 'CREATE', 'DELETE'];
+        const VALID_PERMISSIONS = ['LIST', 'READ', 'WRITE', 'CREATE', 'DELETE'];
         const actions = Object.keys(perms);
         this.validateActions(actions, VALID_PERMISSIONS);
         VALID_PERMISSIONS.forEach(action => {
@@ -61,6 +61,32 @@ Perms.addPermissionSet('User', {
         return requestor => assert(
             username === requestor,
             new Errors.Unauthorized(requestor, `edit user "${username}"`)
+        );
+    },
+});
+Perms.addPermissionSet('Library', {
+    LIST: function(username) {
+        return requestor => assert(
+            username === requestor,
+            new Errors.Unauthorized(requestor, `view libraries belonging to "${username}"`)
+        );
+    },
+    READ: function(username, library) {
+        return requestor => assert(
+            username === requestor || library.public,
+            new Errors.Unauthorized(requestor, `view private library belonging to "${username}"`)
+        );
+    },
+    WRITE: function(username) {
+        return requestor => assert(
+            username === requestor,
+            new Errors.Unauthorized(requestor, `save library to "${username}"`)
+        );
+    },
+    DELETE: function(owner) {
+        return requestor => assert(
+            owner === requestor,
+            new Errors.Unauthorized(requestor, 'delete library')
         );
     },
 });

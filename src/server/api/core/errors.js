@@ -15,6 +15,13 @@ class ProjectNotFound extends RequestError {
     }
 }
 
+class LibraryNotFound extends RequestError {
+    constructor(owner, name) {
+        const msg = `Could not find library "${name}" for "${owner}"`;
+        super(msg);
+    }
+}
+
 class GroupNotFound extends RequestError {
     constructor(name) {
         const msg = name ? `Could not find group "${name}"` :
@@ -42,4 +49,5 @@ module.exports.Unauthorized = Unauthorized;
 module.exports.InvalidArgument = InvalidArgument;
 module.exports.GroupNotFound = GroupNotFound;
 module.exports.ProjectNotFound = ProjectNotFound;
+module.exports.LibraryNotFound = LibraryNotFound;
 module.exports.RequestError = RequestError;

@@ -16,6 +16,7 @@ describe('auth', function() {
     it('should ignore auth if disabled', async function() {
         Auth.disable();
         await Auth.ensureAuthorized('brian', P.User.WRITE('hamid'));
+        Auth.enable();
     });
 
     it.skip('should allow group owner to edit members', async function() {

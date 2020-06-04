@@ -152,7 +152,7 @@ const clearCache = function() {
     });
 };
 
-const reset = function() {
+const reset = function(seedDefaults=true) {
     let db = null;
     // TODO: load the seed data
     // Reload the server and the paths
@@ -164,7 +164,8 @@ const reset = function() {
     return Q(connect())
         .then(_db => db = _db)
         .then(() => db.dropDatabase())
-        .then(() => fixtures.init(Storage))
+        .then(() => fixtures.init(Storage, db))
+        .then(() => seedDefaults && fixtures.seedDefaults(Storage))
         .then(() => logger.info('Finished loading test fixtures!'))
         .then(() => Storage._db);
 };
@@ -180,7 +181,7 @@ async function shouldThrow(fn, Err, msg) {
         await fn();
     } catch (err) {
         if (err instanceof Error) {
-            assert.equal(err.constructor.name, Err.name);
+            assert.equal(err.constructor.name, Err.name, `Expected ${Err.name}. Found ${err}`);
         } else {
             console.error(`Caught ${typeof err}:`, err);
         }

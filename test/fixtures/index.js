@@ -6,10 +6,13 @@ const PublicProjects = require('../../src/server/storage/public-projects');
 
 const Fixtures = {};
 Fixtures.Users = require('./users');
+Fixtures.libraries = require('./libraries');
 
-let storage = null;
-Fixtures.init = async function (_storage) {
-    storage = _storage;
+Fixtures.init = function (storage, db) {
+    Fixtures.libraries.init(storage, db);
+};
+
+Fixtures.seedDefaults = async function (storage) {
     // Add the users and the projects from the respective files!
     const {defaultUsers} = Fixtures.Users;
     const createUsers = defaultUsers.map(data => {  // create the users
