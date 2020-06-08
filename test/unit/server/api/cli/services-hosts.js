@@ -69,7 +69,7 @@ describe(utils.suiteName(__filename), function() {
                     const group = await Groups.get(groupId);
                     return group.servicesHosts.length === 1;
                 },
-                'Services hosts not cleared for group'
+                'Services host not added to group'
             );
         });
 
@@ -91,7 +91,7 @@ describe(utils.suiteName(__filename), function() {
                 await utils.expect(
                     async () => {
                         const group = await Groups.get(groupId);
-                        return group.servicesHosts.length === 1;
+                        return group.servicesHosts.length === 0;
                     },
                     'Services hosts not cleared for group'
                 );
