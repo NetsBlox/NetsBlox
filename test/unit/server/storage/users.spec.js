@@ -1,6 +1,6 @@
 describe('users', function() {
     const utils = require('../../../assets/utils');
-    const assert = require('assert');
+    const assert = require('assert').strict;
     const Users = utils.reqSrc('storage/users');
 
     before(() => utils.reset());
@@ -42,15 +42,11 @@ describe('users', function() {
                 .catch(done);
         });
 
-        it('should only show users in groups', function(done) {
+        it('should only show users in groups', async function() {
             let user = users[5];
-            user.getGroupMembers()
-                .then(users => {
-                    let names = users.map(u => u.username);
-                    assert.equal(names.length, 3);
-                    done();
-                })
-                .catch(done);
+            const members = await user.getGroupMembers();
+            const names = members.map(u => u.username);
+            assert.equal(names.length, 3);
         });
     });
 
@@ -71,7 +67,7 @@ describe('users', function() {
         });
     });
 
-    it('should fail to update users username', async () => {
+    it('should fail to update username', async () => {
         const newUsername = 'hamidz',
             oldUsername = 'hamid';
 

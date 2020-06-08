@@ -210,11 +210,11 @@
         return user;
     };
 
-    UserStorage.getById = function(id) {
+    UserStorage.getById = async function(id) {
         this._logger.trace(`getting ${id}`);
         if (typeof id === 'string') id = ObjectId(id);
         try {
-            const data = collection.findOne({_id: id});
+            const data = await collection.findOne({_id: id});
             return new User(this._logger, data);
         } catch (err) {
             this._logger.error(`Error when getting user by id ${err}`);
