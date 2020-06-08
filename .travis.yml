@@ -23,5 +23,3 @@ script:
   - npm run test-ci && npm run test-client
 after_script:
   - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
-addons:
-    chrome: stable
