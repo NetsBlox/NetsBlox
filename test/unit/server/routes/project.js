@@ -13,11 +13,11 @@ describe('project routes', function() {
         server;
 
     before(async function() {
-        await utils.reset()
+        await utils.reset();
         Server = utils.reqSrc('server');
         server = new Server(options);
         api = supertest('http://localhost:'+port+'/api');
-        return await server.start();
+        return await server.start(false);
     });
 
     after(function(done) {
@@ -45,19 +45,13 @@ describe('project routes', function() {
                 .end(done);
         });
 
-        it('should apply aspect ratio', function(done) {
-            api.get(`/projects/brian/PublicProject/thumbnail?aspectRatio=1.61`)
-                .then(res => {
-                    assert(res.header['content-type'], 'image/png');
-                    return Promise.all([Jimp.read(res.body), Jimp.read(thumbnail161)]);
-                })
-                .then(([resp, expected]) => {
-                    assert(resp.bitmap.width, expected.bitmap.width, 'image does not match expected (padded) image width');
-                    assert(resp.bitmap.height, expected.bitmap.height, 'image does not match expected (padded) image height');
-                    done();
-                })
-                .catch(done);
-
+        it('should apply aspect ratio', async function() {
+            const res = await api.get(`/projects/brian/PublicProject/thumbnail?aspectRatio=1.61`)
+            assert(res.header['content-type'], 'image/png');
+            assert.equal(res.statusCode, 200);
+            const [resp, expected] = await Promise.all([Jimp.read(res.body), Jimp.read(thumbnail161)]);
+            assert(resp.bitmap.width, expected.bitmap.width, 'image does not match expected (padded) image width');
+            assert(resp.bitmap.height, expected.bitmap.height, 'image does not match expected (padded) image height');
         });
 
         // Examples

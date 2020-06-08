@@ -1,5 +1,4 @@
-const supertest = require('supertest'),
-    axios = require('axios'),
+const axios = require('axios'),
     AuthHandler = require('../../utils/auth'),
     assert = require('assert'),
     groupActions = require('./groupActions'),
@@ -26,7 +25,7 @@ describe('groups', () => {
         await utils.reset();
         const Server = require('../../../src/server/server');
         server = new Server(options);
-        await server.start();
+        await server.start(false);
         let res = await authenticator.login(user.username, user.password);
         loginCookie = res.getResponseHeader('Set-Cookie')[0];
         axios.defaults.headers.common['Cookie'] = loginCookie;

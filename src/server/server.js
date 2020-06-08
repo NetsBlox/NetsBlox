@@ -269,9 +269,9 @@ Server.prototype.addScraperSettings = function(userAgent, metaInfo) {
     }
 };
 
-Server.prototype.start = async function() {
+Server.prototype.start = async function(seedDatabase=ENV === 'test') {
     await Storage.connect();
-    if (ENV === 'test') {
+    if (seedDatabase) {
         const fixtures = require('../../test/fixtures');
         if (/test/.test(Storage._db.databaseName)) {
             // eslint-disable-next-line no-console
