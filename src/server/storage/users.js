@@ -1,7 +1,7 @@
 (function(UserStorage) {
 
-    const Q = require('q'),
-        ObjectId = require('mongodb').ObjectId;
+    const Q = require('q');
+    const ObjectId = require('mongodb').ObjectId;
     const Groups = require('./groups');
     var randomString = require('just.randomstring'),
         hash = require('../../common/sha512').hex_sha512,
@@ -59,11 +59,11 @@
                 });
         }
 
-        getGroup() {
+        async getGroup() {
             if (this.groupId) {
-                return Groups.get(this.groupId);
+                return await Groups.get(this.groupId);
             }
-            return Q(null);
+            return null;
         }
 
         setGroupId(groupId) {
@@ -200,47 +200,37 @@
     };
 
     // it does not throw if the user is not found
-    UserStorage.get = function (username) {
+    UserStorage.get = async function (username) {
         // Retrieve the user
-        return Q(collection.findOne({username}))
-            .then(data => {
-                let user = null;
-                if (data) {
-                    user = new User(this._logger, data);
-                } else {
-                    this._logger.warn('Invalid username when get users from storage');
-                }
-                return user;
-            })
-            .catch(err => {
-                this._logger.error(`Error when retrieving user: ${err}`);
-                throw err;
-            });
+        const data = await collection.findOne({username});
+        let user = data && new User(this._logger, data);
+        if (!user) {
+            this._logger.warn('Invalid username when get users from storage');
+        }
+        return user;
     };
 
-    UserStorage.getById = function(id) {
+    UserStorage.getById = async function(id) {
         this._logger.trace(`getting ${id}`);
         if (typeof id === 'string') id = ObjectId(id);
-        return Q(collection.findOne({_id: id}))
-            .then(data => {
-                return new User(this._logger, data);
-            })
-            .catch(err => {
-                this._logger.error(`Error when getting user by id ${err}`);
-                throw new Error(`group ${id} not found`);
-            });
+        try {
+            const data = await collection.findOne({_id: id});
+            return new User(this._logger, data);
+        } catch (err) {
+            this._logger.error(`Error when getting user by id ${err}`);
+            throw new Error(`user ${id} not found`);
+        }
 
     };
 
-    UserStorage.names = function () {
-        return collection.find().toArray()
-            .then(users => users.map(user => user.username))
-            .catch(e => this._logger.error('Could not get the user names!', e));
+    UserStorage.names = async function () {
+        const users = await collection.find().toArray();
+        return users.map(user => user.username);
     };
 
-    UserStorage.findGroupMembers = function (groupId) {
-        return collection.find({groupId: {$eq: groupId}}).toArray()
-            .then(users => users.map(user => new User(this._logger, user)));
+    UserStorage.findGroupMembers = async function (groupId) {
+        const users = await collection.find({groupId: {$eq: groupId}}).toArray();
+        return users.map(user => new User(this._logger, user));
     };
 
     UserStorage.forEach = function (fn) {
