@@ -4,7 +4,6 @@
  * 
  * For more information, check out https://www.aoml.noaa.gov/hrd/data_sub/re_anal.html
  *
- * @alpha
  * @service
  * @category Science
  * @category Climate

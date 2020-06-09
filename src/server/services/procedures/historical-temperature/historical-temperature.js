@@ -6,7 +6,6 @@
  * Use 'all land' for all land area, 'global' for all surface area,
  * or 'northern hemisphere' and 'southern hemisphere' for the land in those hemispheres.
  *
- * @alpha
  * @service
  * @category Science
  * @category Climate
