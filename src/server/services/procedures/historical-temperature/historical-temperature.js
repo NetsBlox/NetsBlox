@@ -13,6 +13,7 @@
 
 const ApiConsumer = require('../utils/api-consumer');
 const BerkeleyEarth = new ApiConsumer('HistoricalTemperature', 'http://berkeleyearth.lbl.gov/auto/', { cache: { ttl: 60 * 60 * 24 * 30 } });
+const _ = require('lodash');
 
 /*
  * Associates less obviously named regions to their URLs
@@ -112,12 +113,12 @@ BerkeleyEarth._getCountryData = function (country, type) {
  * @param {} res Response from server
  * @returns {Array<Array>} Parsed data
  */
-BerkeleyEarth._extractData = function(type, res) {
+BerkeleyEarth._extractData = function (type, res) {
     let lines = res.split('\n');
     let data = [];
-    
+
     // Validate data type
-    if(Object.keys(this._dataColumns).indexOf(type) === -1){
+    if (Object.keys(this._dataColumns).indexOf(type) === -1) {
         return this.response.status(500).send('Invalid data type requested');
     }
 
@@ -137,6 +138,9 @@ BerkeleyEarth._extractData = function(type, res) {
 
     // Fix some files being ordered incorrectly
     data = data.sort((a, b) => a[0] - b[0]);
+
+    // Remove duplicates
+    data = _.sortedUniqBy(data, row => row[0]);
     return data;
 };
 
