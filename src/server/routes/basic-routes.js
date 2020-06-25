@@ -2,7 +2,6 @@
 var _ = require('lodash'),
     Q = require('q'),
     Utils = _.extend(require('../utils'), require('../server-utils.js')),
-    PublicProjects = require('../storage/public-projects'),
     UserAPI = require('./users'),
     RoomAPI = require('./rooms'),
     ProjectAPI = require('./projects'),
@@ -262,12 +261,31 @@ module.exports = [
     {
         Method: 'get',
         URL: 'Projects/PROJECTS',
-        Handler: function(req, res) {
-            var start = +req.query.start || 0,
-                end = Math.min(+req.query.end, start+1);
+        Handler: async function(req, res) {
+            const start = +req.query.start || 0;
+            const end = Math.min(+req.query.end, start+1);
 
-            return PublicProjects.list(start, end)
-                .then(projects => res.send(projects));
+            const projects = await Projects.getPublicProjects(start, end);
+            const metadata = projects.map(project => {
+                const roles = Object.values(project.roles);
+                const [lastEditedRole] = Utils.sortByDateField(
+                    roles,
+                    'Updated',
+                    -1
+                );
+                const services = _.uniq(roles.flatMap(role => role.Services || []));
+
+                return {
+                    owner: project.owner,
+                    projectName: project.name,
+                    primaryRoleName: lastEditedRole.ProjectName,
+                    roleNames: roles.map(role => role.ProjectName),
+                    thumbnail: lastEditedRole.Thumbnail,
+                    notes: lastEditedRole.Notes,
+                    services,
+                };
+            });
+            res.json(metadata);
         }
     },
     {

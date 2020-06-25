@@ -4,7 +4,6 @@ describe('projects', function() {
     const Q = require('q');
     const assert = require('assert');
     const Projects = utils.reqSrc('storage/projects');
-    const PublicProjects = utils.reqSrc('storage/public-projects');
     const OWNER = 'brian';
     const PROJECT_NAME = 'test-projects-' + Date.now();
     const getRoom = function() {
@@ -152,7 +151,7 @@ describe('projects', function() {
         });
 
         it('should update the project version in public-projects', async function() {
-            const project = await PublicProjects.get('brian', 'MyNewProject');
+            const project = await Projects.getPublicProject('brian', 'MyNewProject');
             assert(project);
         });
     });
