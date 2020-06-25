@@ -7,7 +7,6 @@
     const _ = require('lodash');
     const blob = require('./blob');
     const utils = require('../server-utils');
-    const PublicProjects = require('./public-projects');
     const MAX_MSG_RECORD_DURATION = 1000 * 60 * 10;  // 10 min
     const memoize = require('memoizee');
 
@@ -406,12 +405,6 @@
             const query = {$set: {name: name}};
             this._logger.trace(`renaming project ${this.name}=>${name} for ${this.owner}`);
             return this.getProjectMetadata()
-                .then(project => {
-                    const isPublic = project.Public === true;
-                    if (isPublic) {
-                        return PublicProjects.rename(this.owner, this.name, name);
-                    }
-                })
                 .then(() => this._execUpdate(query))
                 .then(() => this.name = name);
         }
@@ -716,6 +709,24 @@
             });
     };
 
+    ProjectStorage.getPublicProjects = async function(start = 0, end) {
+        end = end || start + 25;
+        const opts = {
+            limit: end-start,
+            skip: start,
+            projection: {_id: 0},
+        };
+        logger.trace(`Requesting public projects from ${start} to ${end}`);
+        return await collection.find({Public: true}, opts).toArray();
+    };
+
+    ProjectStorage.getPublicProject = async function(owner, name) {
+        return await collection.findOne(
+            {owner, name, Public: true},
+            {projection: {_id: 0}}
+        );
+    };
+
     ProjectStorage.getCollection = function () {
         return collection;
     };
@@ -780,6 +791,7 @@
     ProjectStorage.addRoleMetadata = content => {
         content.Thumbnail = utils.xml.thumbnail(content.SourceCode);
         content.Notes = utils.xml.notes(content.SourceCode);
+        content.Services = utils.extractRpcs(content.SourceCode);
         content.Updated = new Date();
         return content;
     };

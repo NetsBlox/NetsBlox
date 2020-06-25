@@ -2,7 +2,6 @@ const projects = require('./projects');
 const Groups = require('../../src/server/storage/groups');
 const groups = require('./groups');
 const hash = require('../../src/common/sha512').hex_sha512;
-const PublicProjects = require('../../src/server/storage/public-projects');
 
 const Fixtures = {};
 Fixtures.Users = require('./users');
@@ -36,7 +35,6 @@ Fixtures.seedDefaults = async function (storage) {
         await Promise.all(promises);
         if (data.Public) {
             await project.setPublic(true);
-            await PublicProjects.publish(project);
         }
         if (!data.transient) {
             await project.persist();

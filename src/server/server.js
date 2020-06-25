@@ -142,14 +142,14 @@ Server.prototype.configureRoutes = async function(servicesURL) {
         if (req.query.action === 'present') {
             const owner = req.query.Username;
 
-            const project = await Storage.publicProjects.get(owner, projectName);
+            const project = await Storage.projects.getPublicProject(owner, projectName);
             if (project) {
                 metaInfo.image = {
-                    url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.projectName}/thumbnail`),
+                    url: baseUrl + encodeURI(`/api/projects/${project.owner}/${project.name}/thumbnail`),
                     width: 640,
                     height: 480
                 };
-                metaInfo.title = project.projectName;
+                metaInfo.title = project.name;
                 metaInfo.description = project.notes;
                 this.addScraperSettings(req.headers['user-agent'], metaInfo);
             }
