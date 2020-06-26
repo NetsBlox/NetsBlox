@@ -27,7 +27,7 @@ EarthOrbit._data3 = [];
 // converting time to year CE
 let timeConversion = function(time) {
     return (2000 + 1000*time);
-}
+};
 
 // adjusting values to decimal numbers
 let adjustValue = function(value) {
@@ -36,7 +36,7 @@ let adjustValue = function(value) {
     } else {
         return value;
     }
-}
+};
 
 // reading and importing obliquity, eccentricity, and longitude data
 const importData2004 = function(line) {
@@ -50,21 +50,21 @@ const importData2004 = function(line) {
     obliquity = adjustValue(obliquity);
     longitude = adjustValue(longitude);
     EarthOrbit._data1.push({year, eccentricity, obliquity, longitude});
-}
+};
 
 // reading and importing insolation data
 const importDataInsol = function(line) {
     let [year, value] = line.trim().split(/\s+/);
     year = timeConversion(year);
     EarthOrbit._data2.push({year, value});
-}
+};
 
 // reading and importing precession data
 const importDataPrec = function(line) {
     let [year, value] = line.trim().split(/\s+/);
     year = timeConversion(year);
     EarthOrbit._data3.push({year, value});
-}
+};
 
 let lines1 = fs.readFileSync(path.join(__dirname, 'INSOLP.LA2004.BTL.ASC'), 'utf8').split('\n');
 lines1.splice(0,1);
@@ -95,7 +95,7 @@ EarthOrbit.get2004Longitude = function(startyear, endyear) {
     return this._data1
         .map(data => [data.year, Number(data.longitude)])
         .filter(data => data[0] >= startyear && data[0] <= endyear);
-}
+};
 
 /**
  * Get obliquity by year.
@@ -111,7 +111,7 @@ EarthOrbit.get2004Obliquity = function(startyear, endyear) {
     return this._data1
         .map(data => [data.year, Number(data.obliquity)])
         .filter(data => data[0] >= startyear && data[0] <= endyear);
-}
+};
 
 /**
  * Get eccentricity by year.
@@ -127,7 +127,7 @@ EarthOrbit.get2004Eccentricity = function(startyear, endyear) {
     return this._data1
         .map(data => [data.year, Number(data.eccentricity)])
         .filter(data => data[0] >= startyear && data[0] <= endyear);
-}
+};
 
 /**
  * Get insolation by year.
@@ -143,7 +143,7 @@ EarthOrbit.get2004Insolation = function(startyear, endyear) {
     return this._data2
         .map(data => [data.year, Number(data.value)])
         .filter(data => data[0] >= startyear && data[0] <= endyear);
-}
+};
 
 /**
  * Get precession by year.
@@ -159,6 +159,6 @@ EarthOrbit.get2004Precession = function(startyear, endyear) {
     return this._data3
         .map(data => [data.year, Number(data.value)])
         .filter(data => data[0] >= startyear && data[0] <= endyear);
-}
+};
 
 module.exports = EarthOrbit;
