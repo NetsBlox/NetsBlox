@@ -38,9 +38,10 @@ var SimpleHangman = function() {
 
 /**
  * Restart the current game.
+ * @param {String=} word New word to guess
  */
-SimpleHangman.prototype.restart = function() {
-    this._reset();
+SimpleHangman.prototype.restart = function(word) {
+    this._reset(word);
     return true;
 };
 
@@ -97,9 +98,12 @@ SimpleHangman.prototype.getWrongCount = function() {
  *
  * @return {undefined}
  */
-SimpleHangman.prototype._reset = function() {
-    const index = Math.floor(Math.random()*WORD_BANK.length);
-    this._state.word = WORD_BANK[index];
+SimpleHangman.prototype._reset = function(word) {
+    if (!word) {
+        const index = Math.floor(Math.random()*WORD_BANK.length);
+        word = WORD_BANK[index];
+    }
+    this._state.word = word;
     this._state.wrongGuesses = 0;
     this._state.knownIndices = [];
 };

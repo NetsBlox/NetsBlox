@@ -11,7 +11,7 @@ describe('simple hangman', function() {
     });
 
     utils.verifyRPCInterfaces('SimpleHangman', [
-        ['restart'],
+        ['restart', ['word']],
         ['getCurrentlyKnownWord'],
         ['guess', ['letter']],
         ['isWordGuessed'],
@@ -26,6 +26,11 @@ describe('simple hangman', function() {
         it('should reset word', function() {
             hangman.restart();
             assert.notEqual(hangman.unwrap()._state.word, 'battleship');
+        });
+
+        it('should reset w/ explicit word', function() {
+            hangman.restart('someWord');
+            assert.equal(hangman.unwrap()._state.word, 'someWord');
         });
 
         it('should reset wrong guesses', function() {
