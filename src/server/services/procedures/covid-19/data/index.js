@@ -193,14 +193,10 @@ class COVIDData {
 
     async getData(type, country, state, city) {
         const query = this.getQuery(country, state, city);
-        // What is the best way to handle this when there are many documents?
-        //const docs = await this._model.find(query).sort({date: 1});  // FIXME
-
         const docs = await this.getMergedAndSortedDocs(query, type);
         if (docs.length === 0) return locationNotFound();
 
         return docs;
-
     }
 
     async getMergedAndSortedDocs(query, type) {
