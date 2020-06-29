@@ -191,8 +191,8 @@ class COVIDData {
         return rows;
     }
 
-    async getData(type, country, state, city) {
-        const query = this.getQuery(country, state, city);
+    async getData(type, country, state, county) {
+        const query = this.getQuery(country, state, county);
         const docs = await this.getMergedAndSortedDocs(query, type);
         if (docs.length === 0) return locationNotFound();
 
@@ -230,13 +230,13 @@ class COVIDData {
         return deferred.promise;
     }
 
-    getQuery(country, state, city) {
+    getQuery(country, state, county) {
         const query = {country: this.resolveCountry(country)};
         if (state) {
             query.state = this.resolveState(state);
         }
-        if (city) {
-            query.city = city;
+        if (county) {
+            query.county = county;
         }
         return query;
     }
