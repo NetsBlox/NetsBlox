@@ -1,6 +1,7 @@
 const assert = require('assert');
 const axios = require('axios');
 const _ = require('lodash');
+const Q = require('q');
 const COUNTRY_ALIASES = require('./countries');
 const BASE_URL = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/';
 const START_DATE = '01-22-2020';
@@ -138,9 +139,17 @@ class COVIDData {
         };
     }
 
+    formatDate(normalizedDate) {
+        const [year, month, day] = normalizedDate.split('/');
+        return `${month}/${day}/${year}`;
+    }
+
     normalizeDate(dateString) {
         const date = new Date(dateString);
-        return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+        const month = (date.getMonth() + 1).toString();
+        const day = date.getDate().toString();
+        const year = date.getFullYear();
+        return `${year}/${month.padStart(2, '0')}/${day.padStart(2, '0')}`;
     }
 
     getColumn(row, columnNames, name) {
@@ -184,27 +193,41 @@ class COVIDData {
 
     async getData(type, country, state, city) {
         const query = this.getQuery(country, state, city);
-        const docs = await this._model.find(query).sort({date: 1});
+        const docs = await this.getMergedAndSortedDocs(query, type);
         if (docs.length === 0) return locationNotFound();
 
-        const countsByDate = docs
-            .map(doc => [this.normalizeDate(doc.date), doc[type]])
-            .reduce((counts, dateAndCount) => {
-                const [docDate, docCount] = dateAndCount;
-                const lastRow = counts[counts.length - 1];
-                if (lastRow) {
-                    const [lastDate, lastCount] = lastRow;
-                    if (lastDate === docDate) {
-                        lastRow[1] = lastCount + docCount;
-                    } else {
-                        counts.push([docDate, docCount]);
-                    }
-                } else {
-                    counts.push([docDate, docCount]);
-                }
-                return counts;
-            }, []);
-        return countsByDate;
+        return docs;
+    }
+
+    async getMergedAndSortedDocs(query, type) {
+        const deferred = Q.defer();
+        const stream = this._model.find(query).stream();
+        const countsByDate = {};
+
+        stream.on('data', doc => {
+            const date = this.normalizeDate(doc.date);
+            if (!countsByDate[date]) {
+                countsByDate[date] = 0;
+            }
+            countsByDate[date] += doc[type];
+        });
+
+        let error;
+        stream.on('error', err => error = err);
+        stream.on('close', () => {
+            if (error) {
+                return deferred.reject(error);
+            }
+            const sortedCounts = Object.entries(countsByDate)
+                .sort((p1, p2) => p1[0] < p2[0] ? -1 : 1)
+                .map(pair => {
+                    const [dateString, count] = pair;
+                    return [this.formatDate(dateString), count];
+                });
+
+            deferred.resolve(sortedCounts );
+        });
+        return deferred.promise;
     }
 
     getQuery(country, state, city) {
