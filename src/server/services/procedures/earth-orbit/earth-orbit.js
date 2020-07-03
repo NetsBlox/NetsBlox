@@ -45,7 +45,7 @@ let checkInputYear = function(startyear, endyear) {
         endyear = 1000000;
     }
     return [startyear, endyear];
-}
+};
 
 // Normalize all time values to decimal numbers so that they can be used for computations. 
 // For example, converting 10506D-05 to 0.10506

@@ -32,7 +32,7 @@ let checkInputYear = function(startyear, endyear) {
         endyear = 0;
     }
     return [startyear, endyear];
-}
+};
 
 // converting time to year CE, note: the present is 1950 here because we are using the BP present
 let timeConversion = function(time) {
