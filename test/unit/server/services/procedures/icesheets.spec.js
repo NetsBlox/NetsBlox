@@ -1,12 +1,10 @@
-describe('icesheets', function() {
+describe('Icesheets', function() {
     const utils = require('../../../../assets/utils');
 
-    utils.verifyRPCInterfaces('EarthOrbit', [
-        ['getd180', ['startyear', 'endyear']],
-        ['getd180error', ['startyear', 'endyear']],
-        ['getAveSedRates', ['startyear', 'endyear']],
-        ['getNormalizedSedRates', ['startyear', 'endyear']],
-        ['gets95Time', ['startyear', 'endyear']],
-        ['getsspecMapTime', ['startyear', 'endyear']]
+    utils.verifyRPCInterfaces('Icesheets', [
+        ['getDelta18O', ['startyear', 'endyear']],
+        ['getDelta18Oerror', ['startyear', 'endyear']],
+        ['getAverageSedimentationRates', ['startyear', 'endyear']],
+        ['getNormalizedSedimentaionRates', ['startyear', 'endyear']]
     ]);
 });
