@@ -1,5 +1,6 @@
 /**
- * Access to 2004 Astronomical Solutions for Earth Paleoclimates.
+ * Access to Astronomical Solutions for Earth Paleoclimates. There are three researches (in 1993, 2004, and 2010) about 
+ * earth orbital parameters' data. This service only uses the 2004 data. 
  *
  * For more information, check out
  * http://vo.imcce.fr/insola/earth/online/earth/earth.html
@@ -18,6 +19,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const assert = require('assert');
 
 const EarthOrbit = {};
 
@@ -36,17 +38,6 @@ let timeConversion = function(time) {
     return (2000 + 1000*time);
 };
 
-// Initialize startyear to -1000000 CE and endyear to 1000000 CE if no inputs are given.
-let checkInputYear = function(startyear, endyear) {
-    if(startyear == null) {
-        startyear = -1000000;
-    }
-    if(endyear == null) {
-        endyear = 1000000;
-    }
-    return [startyear, endyear];
-};
-
 // Normalize all time values to decimal numbers so that they can be used for computations. 
 // For example, converting 10506D-05 to 0.10506
 let parseDecimalValue = function(value) {
@@ -58,7 +49,7 @@ let parseDecimalValue = function(value) {
 };
 
 // reading and importing obliquity, eccentricity, and longitude data
-const importData2004 = function(line) {
+const importObliEccLongiData = function(line) {
     let [year, eccentricity, obliquity, longitude] = line.trim().split(/\s+/);
     if(year.charAt(year.length-1)=='.') {
         year = timeConversion(Number(year.substring(0,year.length-1)));
@@ -68,21 +59,22 @@ const importData2004 = function(line) {
     eccentricity = parseDecimalValue(eccentricity);
     obliquity = parseDecimalValue(obliquity);
     longitude = parseDecimalValue(longitude);
+    [year, eccentricity, obliquity, longitude].forEach(value=>assert(!isNaN(Number(value))));
     EarthOrbit._dataEccOblLongi.push({year, eccentricity, obliquity, longitude});
 };
 
-// reading and importing insolation data
-const importDataInsol = function(line) {
-    let [year, value] = line.trim().split(/\s+/);
+const importInsolationData = function(line) {
+    let [year, insolation] = line.trim().split(/\s+/);
+    [year, insolation].forEach(value=>assert(!isNaN(Number(value))));
     year = timeConversion(year);
-    EarthOrbit._dataInsolation.push({year, value});
+    EarthOrbit._dataInsolation.push({year, insolation});
 };
 
-// reading and importing precession data
-const importDataPrec = function(line) {
-    let [year, value] = line.trim().split(/\s+/);
+const importPrecessionData = function(line) {
+    let [year, precession] = line.trim().split(/\s+/);
+    [year, precession].forEach(value=>assert(!isNaN(Number(value))));
     year = timeConversion(year);
-    EarthOrbit._dataPrecession.push({year, value});
+    EarthOrbit._dataPrecession.push({year, precession});
 };
 
 let lines1 = fs.readFileSync(path.join(__dirname, 'INSOLP.LA2004.BTL.ASC'), 'utf8').split('\n');
@@ -90,15 +82,15 @@ lines1.splice(0,1);
 lines1.reverse();
 lines1.splice(0,1);
 let lines2 = fs.readFileSync(path.join(__dirname, 'INSOLN.LA2004.BTL.250.ASC'), 'utf8').split('\n');
-lines1.concat(lines2).forEach(line=>importData2004(line));
+lines1.concat(lines2).forEach(line=>importObliEccLongiData(line));
 
 fs.readFileSync(path.join(__dirname, 'insolation.txt'), 'utf8')
     .split('\n')
-    .forEach(line=>importDataInsol(line));
+    .forEach(line=>importInsolationData(line));
 
 fs.readFileSync(path.join(__dirname, 'precession.txt'), 'utf8')
     .split('\n')
-    .forEach(line=>importDataPrec(line));
+    .forEach(line=>importPrecessionData(line));
 
 /**
  * Get longitude of perihelion from moving equinox by year. For more information about this, please visit:
@@ -111,8 +103,7 @@ fs.readFileSync(path.join(__dirname, 'precession.txt'), 'utf8')
  * @param {Number=} endyear Year to begin data at
  * @returns {Array} longitude - longitude of perihelion from moving equinox
  */
-EarthOrbit.get2004Longitude = function(startyear, endyear) {
-    [startyear,endyear] = checkInputYear(endyear,startyear);
+EarthOrbit.getLongitude = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataEccOblLongi
         .map(data => [data.year, Number(data.longitude)])
         .filter(data => data[0] >= startyear && data[0] <= endyear);
@@ -129,8 +120,7 @@ EarthOrbit.get2004Longitude = function(startyear, endyear) {
  * @param {Number=} endyear Year to begin data at
  * @returns {Array} obliquity
  */
-EarthOrbit.get2004Obliquity = function(startyear, endyear) {
-    [startyear,endyear] = checkInputYear(endyear,startyear);
+EarthOrbit.getObliquity = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataEccOblLongi
         .map(data => [data.year, Number(data.obliquity)])
         .filter(data => data[0] >= startyear && data[0] <= endyear);
@@ -147,8 +137,7 @@ EarthOrbit.get2004Obliquity = function(startyear, endyear) {
  * @param {Number=} endyear Year to begin data at
  * @returns {Array} eccentricity
  */
-EarthOrbit.get2004Eccentricity = function(startyear, endyear) {
-    [startyear,endyear] = checkInputYear(endyear,startyear);
+EarthOrbit.getEccentricity = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataEccOblLongi
         .map(data => [data.year, Number(data.eccentricity)])
         .filter(data => data[0] >= startyear && data[0] <= endyear);
@@ -164,10 +153,9 @@ EarthOrbit.get2004Eccentricity = function(startyear, endyear) {
  * @param {Number=} endyear Year to begin data at
  * @returns {Array} insolation
  */
-EarthOrbit.get2004Insolation = function(startyear, endyear) {
-    [startyear,endyear] = checkInputYear(endyear,startyear);
+EarthOrbit.getInsolation = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataInsolation
-        .map(data => [data.year, Number(data.value)])
+        .map(data => [data.year, Number(data.insolation)])
         .filter(data => data[0] >= startyear && data[0] <= endyear);
 };
 
@@ -182,10 +170,9 @@ EarthOrbit.get2004Insolation = function(startyear, endyear) {
  * @param {Number=} endyear Year to begin data at
  * @returns {Array} precession
  */
-EarthOrbit.get2004Precession = function(startyear, endyear) {
-    [startyear,endyear] = checkInputYear(endyear,startyear);
+EarthOrbit.getPrecession = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataPrecession
-        .map(data => [data.year, Number(data.value)])
+        .map(data => [data.year, Number(data.precession)])
         .filter(data => data[0] >= startyear && data[0] <= endyear);
 };
 
