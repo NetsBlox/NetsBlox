@@ -111,7 +111,7 @@ PaleoceanOxygenIsotopes.getAverageSedimentationRates = function(startyear = -Inf
  * @param {Number=} endyear Year to begin data at
  * @returns {Array} normalized sedimentation rate
  */
-PaleoceanOxygenIsotopes.getNormalizedSedimentaionRates = function(startyear = -Infinity, endyear = Infinity) {
+PaleoceanOxygenIsotopes.getNormalizedSedimentationRates = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataSedim
         .map(data => [data.adjustTime, data.normalizedSedRates])
         .filter(data => data[0] >= startyear && data[0] <= endyear);
