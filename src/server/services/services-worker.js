@@ -227,7 +227,10 @@ class ServicesWorker {
             if (typeof service === 'function') {
                 fnObj = service.prototype;
             }
-            return fnObj[action] && utils.getArgumentsFor(fnObj[action]);
+            if (!fnObj[action]) {
+                throw new Error(`RPC not found: ${serviceName}.${action}`);
+            }
+            return utils.getArgumentsFor(fnObj[action]);
         }
     }
 
