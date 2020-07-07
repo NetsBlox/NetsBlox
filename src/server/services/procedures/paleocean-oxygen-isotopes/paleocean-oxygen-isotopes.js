@@ -29,27 +29,27 @@ let timeConversion = function(time) {
     return (1950 - 1000*time);
 };
 
-const importDelta18OData = function(line) {
+const parseDelta18OData = function(line) {
     let [time, d18O, error] = line.trim().split(/\s+/);
     [time, d18O, error].forEach(value=>assert(!isNaN(Number(value))));
-    let adjustTime = timeConversion(time);
-    PaleoceanOxygenIsotopes._dataDelta18O.push({adjustTime, d18O, error});
+    let year = timeConversion(time);
+    return {year, d18O, error};
 };
 
-const importSedimentationRatesData = function(line) {
+const parseSedimentationRatesData = function(line) {
     let [time, averagedSedRates, normalizedSedRates] = line.trim().split(/\s+/);
     [time, averagedSedRates, normalizedSedRates].forEach(value=>assert(!isNaN(Number(value))));
-    let adjustTime = timeConversion(time);
-    PaleoceanOxygenIsotopes._dataSedim.push({adjustTime, averagedSedRates, normalizedSedRates});
+    let year = timeConversion(time);
+    return {year, averagedSedRates, normalizedSedRates};
 };
 
-fs.readFileSync(path.join(__dirname, 'Pliocene-Pleistocene Benthic d18O Stack.txt'), 'utf8')
+PaleoceanOxygenIsotopes._dataDelta18O = fs.readFileSync(path.join(__dirname, 'Pliocene-Pleistocene Benthic d18O Stack.txt'), 'utf8')
     .split('\n')
-    .forEach(line=>importDelta18OData(line));
+    .map(line=>parseDelta18OData(line));
 
-fs.readFileSync(path.join(__dirname, 'Sedimentation Rates.txt'), 'utf8')
+PaleoceanOxygenIsotopes._dataSedim = fs.readFileSync(path.join(__dirname, 'Sedimentation Rates.txt'), 'utf8')
     .split('\n')
-    .forEach(line=>importSedimentationRatesData(line));
+    .map(line=>parseSedimentationRatesData(line));
 
 /**
  * Get delta 18O value (unit: per mill. It is a parts per thousand unit, often used directly to 
@@ -65,8 +65,8 @@ fs.readFileSync(path.join(__dirname, 'Sedimentation Rates.txt'), 'utf8')
  */
 PaleoceanOxygenIsotopes.getDelta18O = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataDelta18O
-        .map(data => [data.adjustTime, data.d18O])
-        .filter(data => data[0] >= startyear && data[0] <= endyear);
+        .filter(data => data.year >= startyear && data.year <= endyear)
+        .map(data => [data.year, data.d18O]);
 };
 
 /**
@@ -81,8 +81,8 @@ PaleoceanOxygenIsotopes.getDelta18O = function(startyear = -Infinity, endyear = 
  */
 PaleoceanOxygenIsotopes.getDelta18OError = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataDelta18O
-        .map(data => [data.adjustTime, data.error])
-        .filter(data => data[0] >= startyear && data[0] <= endyear);
+        .filter(data => data.year >= startyear && data.year <= endyear)
+        .map(data => [data.year, data.error]);
 };
 
 /**
@@ -97,8 +97,8 @@ PaleoceanOxygenIsotopes.getDelta18OError = function(startyear = -Infinity, endye
  */
 PaleoceanOxygenIsotopes.getAverageSedimentationRates = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataSedim
-        .map(data => [data.adjustTime, data.averagedSedRates])
-        .filter(data => data[0] >= startyear && data[0] <= endyear);
+        .filter(data => data.year >= startyear && data.year <= endyear)
+        .map(data => [data.year, data.averagedSedRates]);
 };
 
 /**
@@ -113,8 +113,8 @@ PaleoceanOxygenIsotopes.getAverageSedimentationRates = function(startyear = -Inf
  */
 PaleoceanOxygenIsotopes.getNormalizedSedimentationRates = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataSedim
-        .map(data => [data.adjustTime, data.normalizedSedRates])
-        .filter(data => data[0] >= startyear && data[0] <= endyear);
+        .filter(data => data.year >= startyear && data.year <= endyear)
+        .map(data => [data.year, data.normalizedSedRates]);
 };
 
 module.exports = PaleoceanOxygenIsotopes;
