@@ -9,6 +9,8 @@ describe('cloud-variables', function() {
     const assert = require('assert');
 
     utils.verifyRPCInterfaces('CloudVariables', [
+        ['lockVariable', ['name', 'password']],
+        ['unlockVariable', ['name', 'password']],
         ['getVariable', ['name', 'password']],
         ['setVariable', ['name', 'value', 'password']],
         ['deleteVariable', ['name', 'password']],
