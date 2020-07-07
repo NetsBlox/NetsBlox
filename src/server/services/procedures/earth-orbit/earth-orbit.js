@@ -79,6 +79,7 @@ const parsePrecessionData = function(line) {
 
 EarthOrbit._dataEccOblLongi = fs.readFileSync(path.join(__dirname, 'INSOLP.LA2004.BTL.ASC'), 'utf8').split('\n')
     .slice(1, -1)
+    .reverse()
     .concat(fs.readFileSync(path.join(__dirname, 'INSOLN.LA2004.BTL.250.ASC'), 'utf8').split('\n'))
     .map(line => parseObliEccLongiData(line));
 
