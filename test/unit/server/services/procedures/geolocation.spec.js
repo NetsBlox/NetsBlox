@@ -6,6 +6,7 @@ describe('geolocation', function() {
         geocoding = new RPCMock(Geocoding);
 
     utils.verifyRPCInterfaces('Geolocation', [
+        ['nearbySearch', ['latitude', 'longitude', 'keyword', 'radius']],
         ['city', ['latitude', 'longitude']],
         ['country', ['latitude', 'longitude']],
         ['countryCode', ['latitude', 'longitude']],

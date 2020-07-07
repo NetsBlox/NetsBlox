@@ -7,7 +7,8 @@ describe('publicroles', function() {
     const publicroles = new RPCMock(PublicRoles);
 
     utils.verifyRPCInterfaces('PublicRoles', [
-        ['requestPublicRoleId']
+        ['getPublicRoleId'],
+        ['requestPublicRoleId'],
     ]);
 
     describe('getPublicRoleId', function() {

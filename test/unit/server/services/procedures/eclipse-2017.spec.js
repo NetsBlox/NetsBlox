@@ -7,6 +7,9 @@ describe('Eclipse 2017', function() {
         eclipsePath = utils.reqSrc('../../utils/rpc/eclipse-2017/eclipsePath');
 
     utils.verifyRPCInterfaces('Eclipse2017', [
+        ['availableStations', ['maxReadingMedian', 'maxDistanceFromCenter', 'latitude', 'longitude', 'maxDistanceFromPoint']],
+        ['selectSectionBased', ['numSections', 'perSection']],
+        ['selectPointBased'],
         ['stations', []],
         ['stationsInfo', []],
         ['eclipsePath', []],

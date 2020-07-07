@@ -224,6 +224,16 @@ module.exports = {
                     assert(_.isEqual(args, expected), `Found ${args.join(', ')}`);
                 });
             });
+
+            it(`should not have any untested RPCs`, function() {
+                const expectedRPCs = interfaces.map(pair => pair[0]);
+                const actualRPCs = Services.getMethodsFor(serviceName);
+                const untestedRPCs = _.difference(actualRPCs, expectedRPCs);
+                assert(
+                    untestedRPCs.length === 0,
+                    `Found extra (untested) RPCs: ${untestedRPCs.join(', ')}`
+                );
+            });
         });
     },
     XML_Serializer: Client.XML_Serializer,
