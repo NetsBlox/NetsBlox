@@ -13,6 +13,56 @@ describe('service-creation', function() {
         ['deleteService', ['name']],
     ]);
 
+    describe('createServiceFromTable', function() {
+        const data = toStringEntries([
+            ['id', 'name', 'value'],
+            [1, 'brian', 1],
+            [2, 'steve', 2],
+        ]);
+
+        it('should require login', async function() {
+            await assert.rejects(
+                () => service.createServiceFromTable('testName', data)
+            );
+        });
+
+        it('should reject if no RPC name', async function() {
+            const options = {RPCs: [[['help', 'serviceName'], []]]};
+            service.setRequester('client_1234', 'brian');
+            await assert.rejects(
+                () => service.createServiceFromTable('testName', data, options),
+                /name/
+            );
+        });
+
+        it('should disallow RPC named "serviceName"', async function() {
+            const options = {RPCs: [[['name', 'serviceName'], []]]};
+            service.setRequester('client_1234', 'brian');
+            await assert.rejects(
+                () => service.createServiceFromTable('testName', data, options),
+                /serviceName/
+            );
+        });
+
+        it('should disallow RPC names starting with _', async function() {
+            const options = {RPCs: [[['name', '_name'], []]]};
+            service.setRequester('client_1234', 'brian');
+            await assert.rejects(
+                () => service.createServiceFromTable('testName', data, options),
+                /_name/
+            );
+        });
+
+        it('should disallow RPC without implementation', async function() {
+            const options = {RPCs: [[['name', 'testRPC']]]};
+            service.setRequester('client_1234', 'brian');
+            await assert.rejects(
+                () => service.createServiceFromTable('testName', data, options),
+                /code.*query/
+            );
+        });
+    });
+
     describe('getConstantFields ', function() {
         it('should detect constant fields', function() {
             const data = toStringEntries([
