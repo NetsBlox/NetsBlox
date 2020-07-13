@@ -47,12 +47,23 @@ const isAuthorized = (caller, service) => {
 const fs = require('fs');
 const path = require('path');
 const normalizeServiceName = name => name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+const RESERVED_RPC_NAMES = ['serviceName', 'COMPATIBILITY'];
 const RESERVED_SERVICE_NAMES = fs.readdirSync(path.join(__dirname, '..'))
     .map(normalizeServiceName);
 const MONGODB_DOC_TOO_LARGE = 'Attempt to write outside buffer bounds';
 
 const isValidServiceName = name => {
     return !RESERVED_SERVICE_NAMES.includes(normalizeServiceName(name));
+};
+
+const ensureValidRPCName = name => {
+    if (!name) {
+        throw new Error('missing name');
+    } else if (name.startsWith('_')) {
+        throw new Error(`RPC name cannot start with _ (${name})`);
+    } else if (RESERVED_RPC_NAMES.includes(name)) {
+        throw new Error(`Invalid name: ${name}. Please choose a different name.`);
+    }
 };
 
 const getVariableNameForData = names => {
@@ -206,10 +217,15 @@ const validateOptions = options => {
         throw new Error('"options" is not valid. Cannot have empty list of RPCs');
     }
 
-    options.RPCs.forEach(rpc => {
-        const {name='RPC'} = rpc;
-        if (!rpc.code && !rpc.query) {
-            throw new Error(`"options" is not valid. ${name} needs either "code" or "query"`);
+    options.RPCs.forEach((rpc, i) => {
+        const {name} = rpc;
+        try {
+            ensureValidRPCName(name);
+            if (!rpc.code && !rpc.query) {
+                throw new Error(`"options" is not valid. ${name} needs either "code" or "query"`);
+            }
+        } catch (err) {
+            throw new Error(`RPC #${i} is invalid: ${err.message}`);
         }
     });
 };
