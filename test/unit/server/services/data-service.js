@@ -3,7 +3,7 @@ describe('data-service', function() {
     const utils = require('../../../assets/utils');
     const DataService = utils.reqSrc('services/data-service');
     const ServiceSpec = require('./data-service.json');
-    const service = new DataService(ServiceSpec);
+    const service = new DataService(ServiceSpec, false);
 
     describe('docs', function() {
         ServiceSpec.methods.forEach(method => {
@@ -27,7 +27,14 @@ describe('data-service', function() {
             assert.deepEqual(age, ['28']);
         });
 
-        it('should getAgeData for "brian" (query-transform-combine)', async function() {
+        it('should getAgeSumExplicit (query-transform-combine)', async function() {
+            const sum = await service.getAgeSumExplicit();
+            assert.deepEqual(sum, 65);
+        });
+
+        it('should getAgeSum (query-transform-combine)', async function() {
+            const sum = await service.getAgeSum();
+            assert.deepEqual(sum, 65);
         });
 
         it('should getAgeData for "brian" (code)', async function() {

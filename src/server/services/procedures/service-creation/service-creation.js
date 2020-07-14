@@ -190,6 +190,7 @@ ServiceCreation.getCreateFromTableOptions = function(data) {
             query: Blocks.reportTrue(),
             transform: Blocks.transform({column}),
             combine: Blocks.combineIfUnique(),
+            initialValue: [],
         };
         rpcOptions.push(getIndexFieldRPC);
     }
