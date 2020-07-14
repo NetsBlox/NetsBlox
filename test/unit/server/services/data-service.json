@@ -125,7 +125,7 @@
             "initialValue": 0
         },
         {
-            "name" : "getAgeSumExplicit",
+            "name" : "getAgeSumExplicitRingArgs",
             "help" : "",
             "query" : {
                 "arguments" : [],
