@@ -28,44 +28,28 @@ class DataService {
         return `${CACHE_DIR}/Community/${this.serviceName}`;
     }
 
-    async _initializeRPC(method) {
-        this._logger.info(`initializing ${method.name}`);
-        this[method.name] = () => this._methodLoading(method.name);
-
-        const data = this._data.slice(1);  // skip headers
-        const factory = await this._getFunctionForMethod(method, this._data);
-        if (!factory) return;
-
+    async _initializeRPC(methodSpec) {
+        const method = new DataServiceMethod(this._data, methodSpec);
         const cache = CacheManager.caching({
             store: fsStore,
             options: {
                 ttl: 3600 * 24 * 14,
                 maxsize: 1024*1000,
-                path: `${this._getCacheDir()}/${method.name}`,
+                path: `${this._getCacheDir()}/${methodSpec.name}`,
                 preventfill: false,
                 reviveBuffers: true
             }
         });
 
-        this[method.name] = async function() {
+        this[methodSpec.name] = function() {
             const args = Array.prototype.slice.call(arguments);
             const id = args.join('|');
 
             return cache.wrap(
                 id,
-                async () => {
-                    const fn = factory();
-                    args.push(data);
-
-                    return await fn.apply(this, args);
-                },
+                async () => await method.invoke(...args)
             );
         };
-
-    }
-
-    _methodLoading(name) {
-        throw new Error(`RPC "${name}" not yet ready. Please retry.`);
     }
 
     async _getFunctionForMethod(method, data) {
@@ -143,6 +127,95 @@ class DataDocs {
                 })),
             };
         }
+    }
+}
+
+class DataServiceMethod {
+    constructor(data, spec) {
+        this.data = data;
+        this.spec = spec;
+        this._compiled = null;
+        const seconds = 1000;
+        this.cacheTTL = 30*seconds;
+        this.clearCacheID = null;
+    }
+
+    async invoke() {
+        const factory = await this.func();
+        const fn = factory();
+        const data = this.data.slice(1);  // skip headers
+        const args = Array.prototype.slice.call(arguments);
+        args.push(data);
+
+        return await fn.apply(this, args);
+    }
+
+    async func() {
+        if (!this._compiled) {
+            this._compiled = await this.compile();
+            if (this.clearCacheID) {
+                clearTimeout(this.clearCacheID);
+            }
+            this.clearCacheID = setTimeout(
+                () => this.clearCache(),
+                this.cacheTTL
+            );
+        }
+        return this._compiled;
+    }
+
+    clearCache() {
+        this.clearCacheID = null;
+        this._compiled = null;
+    }
+
+    async compile(data=this.data, spec=this.spec) {
+        if (spec.code) {
+            const fn = await InputTypes.parse.Function(spec.code);
+            return () => fn;
+        } else if (spec.query) {
+            const queryFn = await InputTypes.parse.Function(spec.query.code);
+            const transformFn = spec.transform ?
+                await InputTypes.parse.Function(spec.transform.code) : row => row;
+            const combineFn = spec.combine ?
+                await InputTypes.parse.Function(spec.combine.code) : (list, item) => list.concat([item]);
+
+            return () => async function() {
+                const [queryArgs, transformArgs, combineArgs] = this._getArgs(spec, arguments);
+
+                let results = [];
+                for (let i = 1; i < data.length; i++) {
+                    const args = queryArgs.slice();
+                    const row = data[i];
+                    args.push(row);
+                    if (await queryFn.apply(null, args)) {
+                        let args = transformArgs.slice();
+                        args.push(row);
+                        const value = await transformFn.apply(null, args);
+
+                        args = combineArgs.slice();
+                        args.push(results, value);
+
+                        results = await combineFn.apply(null, args);
+                    }
+                }
+
+                return results;
+            };
+        }
+    }
+
+    _getArgs(method, allArgs) {
+        const queryArgCount = method.query.arguments.length-1;
+        const transformArgCount = method.transform ? method.transform.arguments.length-1 : 0;
+        const combineArgCount = method.combine ? method.combine.arguments.length - 2 : 0;
+
+        let startIndex = 0;
+        return [queryArgCount, transformArgCount, combineArgCount].map(count => {
+            const args = Array.prototype.slice.call(allArgs, startIndex, startIndex + count);
+            startIndex += count;
+            return args;
+        });
     }
 }
 
