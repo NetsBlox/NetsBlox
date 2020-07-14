@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const InputTypes = require('./input-types');
 const createLogger = require('./procedures/utils/logger');
 const CacheManager = require('cache-manager');
@@ -8,7 +9,7 @@ const {promisify} = require('util');
 const rm_rf = promisify(require('rimraf'));
 
 class DataService {
-    constructor(record) {
+    constructor(record, cache=true) {
         this.serviceName = record.name;
         this._logger = createLogger(this.serviceName);
         this._data = record.data;
@@ -17,7 +18,7 @@ class DataService {
         ensureExists(this._getCacheDir());
         record.methods.forEach(method => {
             try {
-                this._initializeRPC(method);
+                this._initializeRPC(method, cache);
             } catch (err) {
                 this._logger.error(`Unable to load ${record.name}.${method.name}: ${err.message}`);
             }
@@ -28,28 +29,34 @@ class DataService {
         return `${CACHE_DIR}/Community/${this.serviceName}`;
     }
 
-    async _initializeRPC(methodSpec) {
+    async _initializeRPC(methodSpec, useCache) {
         const method = new DataServiceMethod(this._data, methodSpec);
-        const cache = CacheManager.caching({
-            store: fsStore,
-            options: {
-                ttl: 3600 * 24 * 14,
-                maxsize: 1024*1000,
-                path: `${this._getCacheDir()}/${methodSpec.name}`,
-                preventfill: false,
-                reviveBuffers: true
-            }
-        });
+        if (useCache) {
+            const cache = CacheManager.caching({
+                store: fsStore,
+                options: {
+                    ttl: 3600 * 24 * 14,
+                    maxsize: 1024*1000,
+                    path: `${this._getCacheDir()}/${methodSpec.name}`,
+                    preventfill: false,
+                    reviveBuffers: true
+                }
+            });
 
-        this[methodSpec.name] = function() {
-            const args = Array.prototype.slice.call(arguments);
-            const id = args.join('|');
+            this[methodSpec.name] = function() {
+                const args = Array.prototype.slice.call(arguments);
+                const id = args.join('|');
 
-            return cache.wrap(
-                id,
-                async () => await method.invoke(...args)
-            );
-        };
+                return cache.wrap(
+                    id,
+                    async () => await method.invoke(...args)
+                );
+            };
+        } else {
+            this[methodSpec.name] = async function() {
+                return await method.invoke(...arguments);
+            };
+        }
     }
 
     async _getFunctionForMethod(method, data) {
@@ -177,14 +184,37 @@ class DataServiceMethod {
             const queryFn = await InputTypes.parse.Function(spec.query.code);
             const transformFn = spec.transform ?
                 await InputTypes.parse.Function(spec.transform.code) : row => row;
-            const combineFn = spec.combine ?
-                await InputTypes.parse.Function(spec.combine.code) : (list, item) => list.concat([item]);
+
+            let combineFn, initialValue;
+            if (spec.combine) {
+                combineFn = await InputTypes.parse.Function(spec.combine.code);
+                initialValue = spec.initialValue !== undefined ?
+                    spec.initialValue : null;
+            } else {
+                combineFn = (list, item) => list.concat([item]);
+                initialValue = [];
+            }
+            const hasInitialValue = initialValue !== null;
 
             return () => async function() {
                 const [queryArgs, transformArgs, combineArgs] = this._getArgs(spec, arguments);
+                const startIndex = hasInitialValue ? 1 : 2;
+                let results;
 
-                let results = [];
-                for (let i = 1; i < data.length; i++) {
+                if (hasInitialValue) {
+                    results = _.cloneDeep(initialValue);
+                } else {
+                    const args = queryArgs.slice();
+                    const row = data[1];
+                    args.push(row);
+                    if (await queryFn.apply(null, args)) {
+                        let args = transformArgs.slice();
+                        args.push(row);
+                        results = await transformFn.apply(null, args);
+                    }
+                }
+
+                for (let i = startIndex; i < data.length; i++) {
                     const args = queryArgs.slice();
                     const row = data[i];
                     args.push(row);
