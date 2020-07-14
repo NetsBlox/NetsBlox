@@ -266,7 +266,7 @@ ServiceCreation.createServiceFromTable = async function(name, data, options) {
     options = resolveOptions(options, defaultOptions);
 
     const methods = options.RPCs.map(rpc => {
-        const {name, help='', code, query, transform, combine} = rpc;
+        const {name, help='', code, query, transform, combine, initialValue} = rpc;
         const method = {name, help};
 
         if (code) {
@@ -291,6 +291,7 @@ ServiceCreation.createServiceFromTable = async function(name, data, options) {
                     code: combine
                 };
                 method.arguments.push(...method.combine.arguments.slice(0, -2));
+                method.initialValue = initialValue;
             }
         }
 
