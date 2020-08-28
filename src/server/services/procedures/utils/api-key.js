@@ -19,6 +19,10 @@ class ApiKey {
     }
 }
 
+module.exports.SmithsonianKey = new ApiKey(
+    'Smithsonian',
+    'https://api.data.gov/signup/'
+);
 module.exports.GoogleMapsKey = new ApiKey(
     'Google Maps',
     'https://developers.google.com/maps/documentation/maps-static/get-api-key#get_key'
