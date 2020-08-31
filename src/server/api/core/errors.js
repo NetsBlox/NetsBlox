@@ -7,6 +7,12 @@ class UserNotFound extends RequestError {
     }
 }
 
+class IncorrectUserOrPassword extends RequestError {
+    constructor() {
+        super('Incorrect username or password');
+    }
+}
+
 class ProjectNotFound extends RequestError {
     constructor(name) {
         const msg = name ? `Could not find project "${name}"` :
