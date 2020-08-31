@@ -108,7 +108,7 @@ async function login(req, res) {
             await authStrategy.authenticate(username, pwdOrHash);
             user = await Users.findWithStrategy(username, strategy);
 
-            if (!user) {  // TODO: Should we be creating these automatically?
+            if (!user) {
                 const email = await authStrategy.getEmail(username, pwdOrHash);
                 user = Users.new(username, email);
                 user.linkedAccounts.push({username, type: strategy});
