@@ -15,6 +15,8 @@ const Storage = require('../storage/storage');
 const Messages = require('../storage/messages');
 const Projects = require('../storage/projects');
 const DEFAULT_ROLE_NAME = 'myRole';
+const Strategies = require('../api/core/strategies');
+const {RequestError} = require('../api/core/errors');
 
 const ExternalAPI = {};
 UserAPI.concat(ProjectAPI, RoomAPI)
@@ -174,18 +176,13 @@ module.exports = [
         }
     },
     {
-        Method: 'post',
-        URL: '',  // login method
+        Method: 'get',
+        URL: '',
         Handler: async function(req, res) {
-            const projectId = req.body.projectId;
-            let username = req.body.__u;
-            let user = null;
-
-            // Should check if the user has a valid cookie. If so, log them in with it!
-            // Explicit login
             try {
                 await middleware.login(req, res);
             } catch (err) {
+                const username = req.body.__u;
                 logger.log(`Login failed for "${username}": ${err}`);
                 if (req.body.silent) {
                     return res.sendStatus(204);
@@ -194,8 +191,32 @@ module.exports = [
                 }
             }
 
-            username = req.session.username;
-            user = req.session.user;
+            const user = req.session.user;
+            return res.json(user.pretty());
+        }
+    },
+    {
+        Method: 'post',
+        URL: '',  // login method
+        Handler: async function(req, res) {
+            const projectId = req.body.projectId;
+
+            // Should check if the user has a valid cookie. If so, log them in with it!
+            // Explicit login
+            try {
+                await middleware.login(req, res);
+            } catch (err) {
+                const username = req.body.__u;
+                logger.log(`Login failed for "${username}": ${err}`);
+                if (req.body.silent) {
+                    return res.sendStatus(204);
+                } else {
+                    return res.status(403).send(err.message);
+                }
+            }
+
+            const username = req.session.username;
+            const user = req.session.user;
 
             // Update the project if logging in from the netsblox app
             if (projectId) {  // update project owner
@@ -219,6 +240,41 @@ module.exports = [
             } else {
                 return res.status(200).json(ExternalAPI);
             }
+        }
+    },
+    {
+        Method: 'post',
+        URL: 'linkAccount/:strategy',
+        middleware: ['isLoggedIn'],
+        Handler: async function(req, res) {
+            const {username, password} = req.body;
+            const {strategy} = req.params;
+            const authStrategy = Strategies.find(strategy);
+            await authStrategy.authenticate(username, password);
+            const user = await Storage.users.findWithStrategy(username, strategy);
+            if (user) {
+                throw new RequestError(`${username} is already linked to a NetsBlox account.`);
+            }
+
+            const result = await Storage.users.collection.updateOne(
+                {username: req.session.username},
+                {$push: {linkedAccounts: {username, type: strategy}}}
+            );
+            return res.send(result.modifiedCount === 1);
+        }
+    },
+    {
+        Method: 'post',
+        URL: 'unlinkAccount/',
+        middleware: ['isLoggedIn'],
+        Handler: async function(req, res) {
+            const account = req.body;
+            const {username} = req.session;
+            const result = await Storage.users.collection.updateOne(
+                {username},
+                {$pull: {linkedAccounts: account}}
+            );
+            res.send(result.modifiedCount === 1);
         }
     },
     // get start/end network traces

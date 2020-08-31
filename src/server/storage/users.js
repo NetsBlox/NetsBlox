@@ -14,6 +14,7 @@
 
         constructor(logger, data) {
             data.servicesHosts = data.servicesHosts || [];
+            data.linkedAccounts = data.linkedAccounts || [];
             super(collection, data);
             this._logger = logger.fork(data.username);
         }
@@ -197,6 +198,7 @@
     UserStorage.init = function (logger, db) {
         this._logger = logger.fork('users');
         collection = db.collection('users');
+        this.collection = collection;
     };
 
     // it does not throw if the user is not found
@@ -208,6 +210,14 @@
             this._logger.warn('Invalid username when get users from storage');
         }
         return user;
+    };
+
+    UserStorage.findWithStrategy = async function (username, strategy) {
+        const query = {linkedAccounts: {$elemMatch: {username, type: strategy}}};
+        const data = await collection.findOne(query);
+        if (data) {
+            return new User(this._logger, data);
+        }
     };
 
     UserStorage.getById = async function(id) {

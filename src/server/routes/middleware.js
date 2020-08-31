@@ -9,6 +9,7 @@ var server,
 const Q = require('q');
 const Users = require('../storage/users');
 const Storage = require('../storage/storage');
+const Strategies = require('../api/core/strategies');
 
 var hasSocket = function(req, res, next) {
     var socketId = (req.body && req.body.socketId) ||
@@ -68,8 +69,8 @@ function tryLogIn (req, res, cb, skipRefresh) {
     }
 }
 
-function login(req, res) {
-    const hash = req.body.__h;
+async function login(req, res) {
+    const pwdOrHash = req.body.__h;
     const isUsingCookie = !req.body.__u;
     const {clientId} = req.body;
     let loggedIn = false;
@@ -77,53 +78,79 @@ function login(req, res) {
 
     if (req.loggedIn) return Promise.resolve();
 
-    return Q.nfcall(tryLogIn, req, res)
-        .then(() => {
-            loggedIn = req.loggedIn;
-            username = username || req.session.username;
+    await Q.nfcall(tryLogIn, req, res);
+    loggedIn = req.loggedIn;
+    username = username || req.session.username;
 
-            if (!username) {
-                logger.log('"passive" login failed - no session found!');
-                throw new Error('No session found');
-            }
-            logger.log(`Logging in as ${username}`);
+    if (!username) {
+        logger.log('"passive" login failed - no session found!');
+        throw new Error('No session found');
+    }
+    logger.log(`Logging in as ${username}`);
 
-            return Users.get(username);
-        })
-        .then(user => {
-
+    const {strategy} = req.query;
+    let user = null;
+    if (!loggedIn) {
+        if (!strategy) {
+            user = await Users.get(username);
             if (!user) {  // incorrect username
                 logger.log(`Could not find user "${username}"`);
                 throw new Error(`Could not find user "${username}"`);
             }
 
-            if (!loggedIn) {  // login, if needed
-                const correctPassword = user.hash === hash;
-                if (!correctPassword) {
-                    logger.log(`Incorrect password attempt for ${user.username}`);
-                    throw new Error('Incorrect password');
+            const correctPassword = user.hash === pwdOrHash;
+            if (!correctPassword) {
+                logger.log(`Failed authentication attempt for ${user.username} (${strategy})`);
+                throw new Error('Incorrect password');
+            }
+        } else {
+            const authStrategy = Strategies.find(strategy);
+            await authStrategy.authenticate(username, pwdOrHash);
+            user = await Users.findWithStrategy(username, strategy);
+
+            if (!user) {
+                const email = await authStrategy.getEmail(username, pwdOrHash);
+                user = Users.new(username, email);
+                user.linkedAccounts.push({username, type: strategy});
+                let saved = false;
+                let count = 1;
+                const strategySuffix = strategy.toLowerCase()
+                    .replace(/[^a-zA-Z]/g, '');
+                while (!saved) {
+                    const userData = user._saveable();
+                    const result = await Users.collection.updateOne(
+                        user.getStorageId(),
+                        {$setOnInsert: userData},
+                        {upsert: true},
+                    );
+                    saved = result.upsertedCount === 1;
+                    if (!saved) {
+                        count++;
+                        user.username = `${username}${count}_${strategySuffix}`;
+                    }
                 }
-                logger.log(`"${user.username}" has logged in.`);
             }
+        }
+    }
 
-            req.session.user = user;
-            user.recordLogin();
+    user = user || await Users.get(username);
+    logger.log(`"${user.username}" has logged in.`);
+    req.session.user = user;
+    user.recordLogin();
 
-            if (!isUsingCookie) {  // save the cookie, if needed
-                saveLogin(res, user, req.body.remember);
-            }
+    if (!isUsingCookie) {  // save the cookie, if needed
+        saveLogin(res, user, req.body.remember);
+    }
 
-            const socket = NetworkTopology.getSocket(clientId);
-            if (socket) {
-                socket.username = username;
-            }
+    const socket = NetworkTopology.getSocket(clientId);
+    if (socket) {
+        socket.username = username;
+    }
 
-            req.loggedIn = true;
-            req.session = req.session || new Session(res);
-            req.session.username = user.username;
-            req.session.user = user;
-        });
-
+    req.loggedIn = true;
+    req.session = req.session || new Session(res);
+    req.session.username = user.username;
+    req.session.user = user;
 }
 
 var isLoggedIn = function(req, res, next) {
