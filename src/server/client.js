@@ -137,7 +137,7 @@ class Client {
             }
         });
 
-        this._socket.on('close', () => this.close());
+        this._socket.on('close', () => this.close(this.connError));
 
         // change the heartbeat to use ping/pong from the ws spec
         this.keepAlive();
@@ -150,7 +150,7 @@ class Client {
         });
     }
 
-    close () {
+    close (err) {
         this._logger.trace(`closed socket for ${this.uuid} (${this.username})`);
         if (this.nextHeartbeat) {
             clearTimeout(this.nextHeartbeat);
@@ -160,7 +160,7 @@ class Client {
         }
         this.onclose.forEach(fn => fn.call(this));
         this.onclose = [];  // ensure no double-calling of close
-        this.onClose(this);
+        this.onClose(err);
     }
 
     async onMessage (msg) {
@@ -183,9 +183,13 @@ class Client {
 
     checkAlive() {
         const sinceLastMsg = Date.now() - this.lastSocketActivity;
-        if (sinceLastMsg > 2*Client.HEARTBEAT_INTERVAL || this.isSocketDead()) {
+        const hasTimedOut = sinceLastMsg > 2*Client.HEARTBEAT_INTERVAL;
+        if (hasTimedOut) {
+            this.connError = new Error('Websocket is unresponsive (timeout)');
             this._socket.terminate();
-            this.close();
+        } else if (this.isSocketDead()) {
+            this.connError = new Error('Websocket is broken');
+            this._socket.terminate();
         } else {
             if (this.nextHeartbeatCheck) {
                 clearTimeout(this.nextHeartbeatCheck);
