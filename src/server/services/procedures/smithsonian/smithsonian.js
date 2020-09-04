@@ -7,112 +7,87 @@
 'use strict';
 
 const ApiConsumer = require('../utils/api-consumer');
-const {SmithsonianKey} = require('../utils/api-key');
+const {DataDotGovKey} = require('../utils/api-key');
 const Smithsonian = new ApiConsumer('Smithsonian', 'https://api.si.edu/openaccess/api/v1.0', {cache: {ttl: 5*60}});
-ApiConsumer.setRequiredApiKey(Smithsonian, SmithsonianKey);
+ApiConsumer.setRequiredApiKey(Smithsonian, DataDotGovKey);
+
+function listify(item) {
+    return item === undefined ? [] : item instanceof Array ? item : [item];
+}
 
 /**
  * Searches the EDAN db and returns up to count ids denoting matching historical objects
  * 
  * @param {String} term Term to search for
- * @param {BoundedNumber<0>} start Starting index of search (default 0)
- * @param {BoundedNumber<0>} count Maximum number of ids to return (default 10)
- * @returns {Array} Up to count matching ids
+ * @param {BoundedNumber<0>} skip Number of items to skip from search search
+ * @param {BoundedNumber<0>} count Maximum number of items to return
+ * @returns {Array} Up to count matches, each being [id, title, types[], authors[], topics[], notes[], physicalDescriptions[], sources[]]
  */
-Smithsonian.search = function(term, start, count) {
-    return this._requestData({path:'search', queryString:`api_key=${this.apiKey.value}&q=${term}&start=${start}&rows=${count}`})
-        .then(res => {
-            let ids = [];
-            for (const item of res.response.rows) {
-                if ('online_media' in item.content.descriptiveNonRepeating) {
-                    ids.push(item.id);
+Smithsonian.search = function(term, skip, count) {
+    return this._requestData({path:'search', queryString:`api_key=${this.apiKey.value}&q=${term}&start=${skip}&rows=${count}`}).then(res => {
+        let ids = [];
+        for (const item of res.response.rows) {
+            if (!('online_media' in item.content.descriptiveNonRepeating)) continue; // unfortunately they don't have built-in support for filtering to only with img
+
+            const notes = [];
+            if ('notes' in item.content.freetext) {
+                for (const note of listify(item.content.freetext.notes)) {
+                    notes.push(note.content);
                 }
             }
-            return ids;
-        })
-        .catch(err => this.response.status(500).send(err));
-};
 
-/**
- * Looks up the entry with given id and returns its db entry
- * 
- * @param {String} id Id to look up
- */
-Smithsonian._content = function(id) {
-    return this._requestData({path:`content/${id}`, queryString:`api_key=${this.apiKey.value}`});
-};
-/**
- * Gets the content for the given id and queries the returned JSON object using the provided query
- * 
- * @param {String} id Id to look up
- * @param {String} query JSON query string to use
- */
-Smithsonian._contentQuery = function(id, query) {
-    return this._content(id).then(res => this.__queryJson(res, query)).catch(err => this.response.status(500).send(err));
-};
-
-/** 
- * Gets the title for the given object
- * 
- * @param {String} id Id to use (see search)
- */
-Smithsonian.title = id => Smithsonian._contentQuery(id, 'response.title');
-/** 
- * Gets the stored hash for the given object
- * 
- * @param {String} id Id to use (see search)
- */
-Smithsonian.hash = id => Smithsonian._contentQuery(id, 'response.hash');
-/** 
- * Gets the stored doc signature for the given object
- * 
- * @param {String} id Id to use (see search)
- */
-Smithsonian.docSignature = id => Smithsonian._contentQuery(id, 'response.docSignature');
-/** 
- * Gets the timestamp for the given object
- * 
- * @param {String} id Id to use (see search)
- */
-Smithsonian.timestamp = id => Smithsonian._contentQuery(id, 'response.timestamp');
-/** 
- * Gets the last time the given object was updated
- * 
- * @param {String} id Id to use (see search)
- */
-Smithsonian.lastTimeUpdated = id => Smithsonian._contentQuery(id, 'response.lastTimeUpdated');
-/** 
- * Gets the unit code for the given object
- * 
- * @param {String} id Id to use (see search)
- */
-Smithsonian.unitCode = id => Smithsonian._contentQuery(id, 'response.unitCode');
-
-/**
- * Gets the thumbnail urls (0 or more) associated with the given object
- * 
- * @param {String} id Id to use (see search)
- */
-Smithsonian.thumbnailUrls = function(id) {
-    return Smithsonian._content(id)
-        .then(res => {
-            let urls = [];
-            for (const item of res.response.content.descriptiveNonRepeating.online_media.media) {
-                urls.push(item.thumbnail);
+            const physicalDescriptions = [];
+            if ('physicalDescription' in item.content.freetext) {
+                for (const desc of listify(item.content.freetext.physicalDescription)) {
+                    physicalDescriptions.push(`${desc.label} -- ${desc.content}`); // '--' serves as a separator for the user
+                }
             }
-            return urls;
-        })
-        .catch(err => this.response.status(500).send(err));
+
+            const sources = [];
+            if ('dataSource' in item.content.freetext) {
+                for (const src of listify(item.content.freetext.dataSource)) {
+                    sources.push(`${src.label} -- ${src.content}`); // '--' serves as a separator for the user
+                }
+            }
+
+            const entry = [
+                item.id,
+                item.title,
+                listify(item.content.indexedStructured.object_type),
+                listify(item.content.indexedStructured.name),
+                listify(item.content.indexedStructured.topic),
+                notes,
+                physicalDescriptions,
+                sources,
+            ];
+            ids.push(entry);
+        }
+        return ids;
+    });
 };
+
 /**
- * Gets a thumbnail associated with the given object
+ * Gets the image urls (0 or more) associated with the given object
  * 
- * @param {String} id Id to use (see search)
+ * @param {Array} entry Entry returned from search()
  */
-Smithsonian.thumbnail = function(id) {
-    return this.thumbnailUrls(id)
-        .then(urls => this._sendImage({url:urls[0]}))
-        .catch(err => this.response.status(500).send(err));
+Smithsonian.imageURLs = function(entry) {
+    return this._requestData({path:`content/${entry[0]}`, queryString:`api_key=${this.apiKey.value}`}).then(res => {
+        let urls = [];
+        for (const item of listify(res.response.content.descriptiveNonRepeating.online_media.media)) {
+            urls.push(item.thumbnail);
+        }
+        return urls;
+    });
+};
+
+/**
+ * Gets an image associated with the given object
+ * 
+ * @param {Array} entry Entry returned from search()
+ */
+Smithsonian.getImage = function(entry) {
+    return this.imageURLs(entry).then(urls => this._sendImage({url:urls[0]}));
 };
 
 module.exports = Smithsonian;
