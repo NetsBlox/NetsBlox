@@ -1,0 +1,19 @@
+version: '3'
+services:
+    mongo:
+        image: 'mongo:latest'
+    netsblox:
+        restart: always
+        build:
+            dockerfile: Dockerfile
+            context: ./
+        volumes:
+            - /netsblox/node_modules
+            - ./:/netsblox
+        environment:
+            - MONGO_URI=mongodb://mongo/netsblox
+        depends_on:
+            - mongo
+        ports:
+            - '8080:8080'
+            - '8081:8081'
