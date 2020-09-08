@@ -10,57 +10,52 @@ function listify(item) {
 }
 
 /**
- * Searches the NYPL db an returns up to count ids denoting matching items.
+ * Search the New York Public Library collection.
  * 
- * @param {String} term Term to search for
- * @param {BoundedNumber<1>} per_page Maximum number of items to return for any given page
- * @param {BoundedNumber<1>} page Page number of results to get
- * @returns {Array} Up to per_page matching entries, each being [uuid, title, digitized date, item id, image id]
+ * @param {String} term Search term
+ * @param {BoundedNumber<1>=} perPage Maximum number of items in a page of results (default 50)
+ * @param {BoundedNumber<1>=} page Page number of results to get (default 1)
+ * @returns {Array} Up to perPage matching objects
  */
-NYPL.search = function(term, per_page, page) {
+NYPL.search = function(term, perPage = 50, page = 1) {
     return this._requestData({
         path:'items/search',
-        queryString:`q=${term}&per_page=${per_page}&page=${page}&publicDomainOnly=true`,
+        queryString:`q=${term}&per_page=${perPage}&page=${page}&publicDomainOnly=true`,
         headers:{Authorization:`Token token=${this.apiKey.value}`},
     }).then(res => {
-        const results = res.nyplAPI.response.result;
-        if (results === undefined) return [];
-
         const ret = [];
-        for (const item of listify(results)) {
+        for (const item of listify(res.nyplAPI.response.result)) {
+            const uuid = item.uuid;
             const itemURL = item.apiItemURL;
             const itemID = itemURL.substr(itemURL.lastIndexOf('/') + 1);
-            ret.push([item.uuid, item.title, item.dateDigitized, itemID, item.imageID]);
+            const title = item.title;
+            const dateDigitized = item.dateDigitized;
+            ret.push({ uuid, itemID, title, dateDigitized });
         }
         return ret;
     });
 };
 
 /**
- * Gets detailed info for the given entry returned from search().
+ * Details about the item.
  * 
- * @param {Array} entry Entry returned from search()
- * @returns {Array} A list of [date issued, place, publisher, genres[], subjects[]]
+ * @param {String} uuid uuid of the object
+ * @returns {Array} Item details
  */
-NYPL.details = function(entry) {
+NYPL.details = function(uuid) {
     return this._requestData({
-        path:`items/mods/${entry[0]}`,
+        path:`items/mods/${uuid}`,
         headers:{Authorization:`Token token=${this.apiKey.value}`},
     }).then(res => {
         const mods = res.nyplAPI.response.mods;
+        if (mods === undefined) return {};
 
         let dateIssued = mods.originInfo.dateIssued;
-        if ('$' in dateIssued) {
-            dateIssued = dateIssued.$;
-        }
-        else if (dateIssued instanceof Array && dateIssued.length == 2) {
-            dateIssued = `${dateIssued[0].$}-${dateIssued[1].$}`;
-        }
-        else {
-            dateIssued = 'Unknown';
-        }
+        if ('$' in dateIssued) dateIssued = dateIssued.$;
+        else if (dateIssued instanceof Array && dateIssued.length == 2) dateIssued = `${dateIssued[0].$}-${dateIssued[1].$}`;
+        else dateIssued = 'Unknown';
 
-        const place = mods.originInfo.place.placeTerm.$;
+        const location = mods.originInfo.place.placeTerm.$;
         const publisher = mods.originInfo.publisher.$;
 
         const genres = [];
@@ -75,32 +70,40 @@ NYPL.details = function(entry) {
             }
         }
 
-        return [dateIssued, place, publisher, genres, subjects];
+        return {dateIssued, location, publisher, genres, subjects};
     });
 };
 
 /**
- * Gets the image links associated with the given entry returned from search().
+ * Get the image links for the object.
  * 
- * @param {Array} entry An entry returned from search()
+ * @param {String} itemID itemID of the object
  * @returns {Array} An array of imgurls[]
  */
-NYPL.imageURLs = function(entry) {
+NYPL.imageURLs = function(itemID) {
     return this._requestData({
-        path:`items/${entry[3]}`,
+        path:`items/${itemID}`,
         headers:{Authorization:`Token token=${this.apiKey.value}`},
     }).then(res => {
-        return listify(res.nyplAPI.response.capture[0].imageLinks.imageLink); // high-res tiff is also available but omitting for safety (very large files)
+        const capture = res.nyplAPI.response.capture;
+        return capture === undefined ? [] : listify(capture[0].imageLinks.imageLink); // high-res tiff is also available but omitting for safety (very large files)
     });
 };
 
+NYPL._pickImageURL = function(urls) {
+    for (const preference of ['t=w', 't=r']) {
+        for (const url of urls) if (url.includes(preference)) return url;
+    }
+    return urls[0];
+};
+
 /**
- * Gets an image for the given entry returned from search().
+ * Get an image of the object.
  * 
- * @param {Array} entry An entry returned from search()
+ * @param {String} itemID itemID of the object
  */
-NYPL.getImage = function(entry) {
-    return this.imageURLs(entry).then(urls => this._sendImage({url:urls[0]}));
+NYPL.getImage = function(itemID) {
+    return this.imageURLs(itemID).then(urls => urls.length == 0 ? '' : this._sendImage({url:this._pickImageURL(urls)})).catch(() => '');
 };
 
 module.exports = NYPL;
