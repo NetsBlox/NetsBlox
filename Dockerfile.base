@@ -1,5 +1,5 @@
-FROM node:8.15-jessie
-MAINTAINER Hamid Zare <hamid.zare@vanderbilt.edu>
+FROM node:lts
+MAINTAINER Brian Broll <brian.broll@vanderbilt.edu>
 
 ENV ENV production
 ENV DEBUG netsblox*
@@ -8,7 +8,7 @@ ENV NETSBLOX_BLOB_DIR /blob-data
 RUN echo installing dependencies..
 
 RUN apt update
-RUN apt install build-essential libgd-dev libcairo2-dev libcairo2-dev libpango1.0-dev libgd2-dev -y
+RUN apt install build-essential libgd-dev libcairo2-dev libcairo2-dev libpango1.0-dev libgd2-dev cmake -y
 
 RUN echo compiling and installing Gnuplot..
 RUN mkdir /tmp/gnuInstall -p
