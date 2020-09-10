@@ -19,7 +19,7 @@ Smithsonian._raw_search = function(term, count, skip, filter) {
     return this._requestData({path:'search', queryString:`api_key=${this.apiKey.value}&q=${term}&start=${skip}&rows=${count}`}).then(res => {
         const items = [];
         for (const item of res.response.rows) {
-            if (!filter(item)) continue; // unfortunately they don't have built-in support for filtering to only with img
+            if (!filter(item)) continue; // unfortunately they don't have built-in support for our filtering needs
 
             const notes = [];
             if ('notes' in item.content.freetext) {
@@ -62,7 +62,7 @@ Smithsonian._raw_search = function(term, count, skip, filter) {
  * @param {BoundedNumber<0>=} skip Number of items to skip from beginning
  * @returns {Array} Up to count matches, each being [id, title, types[], authors[], topics[], notes[], physicalDescriptions[], sources[]]
  */
-Smithsonian.searchUnfiltered = function(term, count = 100, skip = 0) {
+Smithsonian.search = function(term, count = 100, skip = 0) {
     return this._raw_search(term, count, skip, () => true);
 };
 
@@ -74,7 +74,7 @@ Smithsonian.searchUnfiltered = function(term, count = 100, skip = 0) {
  * @param {BoundedNumber<0>=} skip Number of items to skip from beginning
  * @returns {Array} Up to count matches, each being [id, title, types[], authors[], topics[], notes[], physicalDescriptions[], sources[]]
  */
-Smithsonian.searchFiltered = function(term, count = 100, skip = 0) {
+Smithsonian.searchForImages = function(term, count = 100, skip = 0) {
     return this._raw_search(term, count, skip, item => {
         const desc = item.content.descriptiveNonRepeating;
         return 'online_media' in desc && listify(desc.online_media.media).length != 0;
@@ -82,11 +82,11 @@ Smithsonian.searchFiltered = function(term, count = 100, skip = 0) {
 };
 
 /**
- * Gets the image urls (0 or more) associated with the given object
+ * Get the image URLs (0 or more) associated with the given object
  * 
  * @param {String} id ID of an object returned from search
  */
-Smithsonian.imageURLs = function(id) {
+Smithsonian.getImageURLs = function(id) {
     return this._requestData({path:`content/${id}`, queryString:`api_key=${this.apiKey.value}`}).then(res => {
         const online_media = res.response.content.descriptiveNonRepeating.online_media;
         if (online_media === undefined) return [];
@@ -102,7 +102,7 @@ Smithsonian.imageURLs = function(id) {
 };
 
 /**
- * Gets an image associated with the given object
+ * Get an image associated with the given object
  * 
  * @param {String} id ID of an object returned from search
  */

@@ -11,6 +11,7 @@ function listify(item) {
 
 /**
  * Search the New York Public Library collection.
+ * Search results are arranged in pages - only one page is returned each call.
  * 
  * @param {String} term Search term
  * @param {BoundedNumber<1>=} perPage Maximum number of items in a page of results (default 50)
@@ -37,12 +38,12 @@ NYPL.search = function(term, perPage = 50, page = 1) {
 };
 
 /**
- * Details about the item.
+ * Get details about the item.
  * 
  * @param {String} uuid uuid of the object
  * @returns {Array} Item details
  */
-NYPL.details = function(uuid) {
+NYPL.getDetails = function(uuid) {
     return this._requestData({
         path:`items/mods/${uuid}`,
         headers:{Authorization:`Token token=${this.apiKey.value}`},
@@ -75,12 +76,12 @@ NYPL.details = function(uuid) {
 };
 
 /**
- * Get the image links for the object.
+ * Get the image URLs (0 or more) for the object.
  * 
  * @param {String} itemID itemID of the object
  * @returns {Array} An array of imgurls[]
  */
-NYPL.imageURLs = function(itemID) {
+NYPL.getImageURLs = function(itemID) {
     return this._requestData({
         path:`items/${itemID}`,
         headers:{Authorization:`Token token=${this.apiKey.value}`},
