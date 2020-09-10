@@ -15,11 +15,23 @@ function listify(item) {
     return item === undefined ? [] : item instanceof Array ? item : [item];
 }
 
-Smithsonian._raw_search = function(term, count, skip, filter) {
-    return this._requestData({path:'search', queryString:`api_key=${this.apiKey.value}&q=${term}&start=${skip}&rows=${count}`}).then(res => {
-        const items = [];
+Smithsonian._raw_search = async function(term, count, skipBeforeFilter, filter) {
+    if (skipBeforeFilter < 0) skipBeforeFilter = 0;
+    if (count <= 0) return []; // if somehow either of these is negative, correct it to zero
+
+    // to get count matches even when filtering we have to call in a loop because they don't support that on their side
+    const matches = [];
+    for (;;) {
+        const res = await this._requestData({path:'search', queryString:`api_key=${this.apiKey.value}&q=${term}&start=${skipBeforeFilter}&rows=${count}`});
+        const res_count = res.response.rows.length;
+
         for (const item of res.response.rows) {
-            if (!filter(item)) continue; // unfortunately they don't have built-in support for our filtering needs
+            if (matches.length >= count) break; // if we have enough, stop adding
+            skipBeforeFilter += 1;
+
+            const desc = item.content.descriptiveNonRepeating;
+            const hasImage = 'online_media' in desc && listify(desc.online_media.media).length != 0;
+            if (filter && !hasImage) continue; // unfortunately they don't have built-in support for our filtering needs
 
             const notes = [];
             if ('notes' in item.content.freetext) {
@@ -48,10 +60,13 @@ Smithsonian._raw_search = function(term, count, skip, filter) {
             const authors = listify(item.content.indexedStructured.name);
             const topics = listify(item.content.indexedStructured.topic);
 
-            items.push({ id, title, types, authors, topics, notes, physicalDescriptions, sources });
+            matches.push({ id, title, types, authors, topics, notes, physicalDescriptions, sources, hasImage });
         }
-        return items;
-    });
+
+        // if we have enough or ran out, stop
+        if (matches.length >= count || res_count < count) break;
+    }
+    return {matches, nextSkip: skipBeforeFilter};
 };
 
 /**
@@ -60,10 +75,10 @@ Smithsonian._raw_search = function(term, count, skip, filter) {
  * @param {String} term Term to search for
  * @param {BoundedNumber<0>=} count Maximum number of items to return
  * @param {BoundedNumber<0>=} skip Number of items to skip from beginning
- * @returns {Array} Up to count matches, each being [id, title, types[], authors[], topics[], notes[], physicalDescriptions[], sources[]]
+ * @returns {Array} Up to count matches and the skip value of the next page of matches
  */
 Smithsonian.search = function(term, count = 100, skip = 0) {
-    return this._raw_search(term, count, skip, () => true);
+    return this._raw_search(term, count, skip, false);
 };
 
 /**
@@ -71,14 +86,11 @@ Smithsonian.search = function(term, count = 100, skip = 0) {
  * 
  * @param {String} term Term to search for
  * @param {BoundedNumber<0>=} count Maximum number of items to return
- * @param {BoundedNumber<0>=} skip Number of items to skip from beginning
- * @returns {Array} Up to count matches, each being [id, title, types[], authors[], topics[], notes[], physicalDescriptions[], sources[]]
+ * @param {BoundedNumber<0>=} skipBeforeFilter Number of items to skip from beginning before filtering
+ * @returns {Array} Up to count matches and the skip value of the next page of matches
  */
-Smithsonian.searchForImages = function(term, count = 100, skip = 0) {
-    return this._raw_search(term, count, skip, item => {
-        const desc = item.content.descriptiveNonRepeating;
-        return 'online_media' in desc && listify(desc.online_media.media).length != 0;
-    });
+Smithsonian.searchForImages = function(term, count = 100, skipBeforeFilter = 0) {
+    return this._raw_search(term, count, skipBeforeFilter, true);
 };
 
 /**
