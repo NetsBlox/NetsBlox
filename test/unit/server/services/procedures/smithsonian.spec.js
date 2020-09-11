@@ -3,7 +3,7 @@ describe('smithsonian', function() {
 
     utils.verifyRPCInterfaces('Smithsonian', [
         ['search', ['term', 'count', 'skip']],
-        ['searchForImages', ['term', 'count', 'skipBeforeFilter']],
+        ['searchImageContent', ['term', 'count', 'skip']],
         ['getImageURLs', ['id']],
         ['getImage', ['id']]
     ]);

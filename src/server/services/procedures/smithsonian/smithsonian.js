@@ -15,82 +15,112 @@ function listify(item) {
     return item === undefined ? [] : item instanceof Array ? item : [item];
 }
 
-Smithsonian._raw_search = async function(term, count, skipBeforeFilter, filter) {
-    if (skipBeforeFilter < 0) skipBeforeFilter = 0;
-    if (count <= 0) return []; // if somehow either of these is negative, correct it to zero
+// any more than 1000 results in their API restricting it down to 10
+const MAX_GRAB_COUNT = 1000;
 
-    // to get count matches even when filtering we have to call in a loop because they don't support that on their side
+Smithsonian._raw_search = async function(term, count, skip) {
+    const data = await this._requestData({path:'search', queryString:`api_key=${this.apiKey.value}&q=${term}&start=${skip}&rows=${count}`});
+
     const matches = [];
-    for (;;) {
-        const res = await this._requestData({path:'search', queryString:`api_key=${this.apiKey.value}&q=${term}&start=${skipBeforeFilter}&rows=${count}`});
-        const res_count = res.response.rows.length;
+    for (const item of data.response.rows) {
+        if (matches.length >= count) break; // if we have enough, stop adding
+        skip += 1;
 
-        for (const item of res.response.rows) {
-            if (matches.length >= count) break; // if we have enough, stop adding
-            skipBeforeFilter += 1;
+        const desc = item.content.descriptiveNonRepeating;
+        const hasImage = 'online_media' in desc && listify(desc.online_media.media).length != 0;
 
-            const desc = item.content.descriptiveNonRepeating;
-            const hasImage = 'online_media' in desc && listify(desc.online_media.media).length != 0;
-            if (filter && !hasImage) continue; // unfortunately they don't have built-in support for our filtering needs
-
-            const notes = [];
-            if ('notes' in item.content.freetext) {
-                for (const note of listify(item.content.freetext.notes)) {
-                    notes.push(note.content);
-                }
+        const notes = [];
+        if ('notes' in item.content.freetext) {
+            for (const note of listify(item.content.freetext.notes)) {
+                notes.push(note.content);
             }
-
-            const physicalDescriptions = [];
-            if ('physicalDescription' in item.content.freetext) {
-                for (const desc of listify(item.content.freetext.physicalDescription)) {
-                    physicalDescriptions.push([desc.label, desc.content]);
-                }
-            }
-
-            const sources = [];
-            if ('dataSource' in item.content.freetext) {
-                for (const src of listify(item.content.freetext.dataSource)) {
-                    sources.push([src.label, src.content]);
-                }
-            }
-
-            const id = item.id;
-            const title = item.title;
-            const types = listify(item.content.indexedStructured.object_type);
-            const authors = listify(item.content.indexedStructured.name);
-            const topics = listify(item.content.indexedStructured.topic);
-
-            matches.push({ id, title, types, authors, topics, notes, physicalDescriptions, sources, hasImage });
         }
 
-        // if we have enough or ran out, stop
-        if (matches.length >= count || res_count < count) break;
+        const physicalDescriptions = [];
+        if ('physicalDescription' in item.content.freetext) {
+            for (const desc of listify(item.content.freetext.physicalDescription)) {
+                physicalDescriptions.push([desc.label, desc.content]);
+            }
+        }
+
+        const sources = [];
+        if ('dataSource' in item.content.freetext) {
+            for (const src of listify(item.content.freetext.dataSource)) {
+                sources.push([src.label, src.content]);
+            }
+        }
+
+        const id = item.id;
+        const title = item.title;
+        const types = listify(item.content.indexedStructured.object_type);
+        const authors = listify(item.content.indexedStructured.name);
+        const topics = listify(item.content.indexedStructured.topic);
+
+        matches.push({ id, title, types, authors, topics, notes, physicalDescriptions, sources, hasImage });
     }
-    return {matches, nextSkip: skipBeforeFilter};
+    return matches;
 };
 
 /**
  * Search and return up to count matching items
  * 
  * @param {String} term Term to search for
- * @param {BoundedNumber<0>=} count Maximum number of items to return
+ * @param {BoundedNumber<1,1000>=} count Maximum number of items to return
  * @param {BoundedNumber<0>=} skip Number of items to skip from beginning
- * @returns {Array} Up to count matches and the skip value of the next page of matches
+ * @returns {Array} Up to count matches
  */
 Smithsonian.search = function(term, count = 100, skip = 0) {
-    return this._raw_search(term, count, skip, false);
+    if (skip < 0) skip = 0;
+    if (count <= 0) return []; // if somehow either of these is invalid, correct it
+
+    return this._raw_search(term, count, skip);
+};
+
+Smithsonian._raw_filter = async function(term, count, skip) {
+    const batch = await this.search(term, count, skip);
+
+    const filtered = [];
+    for (const item of batch) {
+        if (item.hasImage) filtered.push(item);
+    }
+    return filtered;
 };
 
 /**
  * Search and return up to count matching items (only ones with images)
  * 
  * @param {String} term Term to search for
- * @param {BoundedNumber<0>=} count Maximum number of items to return
- * @param {BoundedNumber<0>=} skipBeforeFilter Number of items to skip from beginning before filtering
- * @returns {Array} Up to count matches and the skip value of the next page of matches
+ * @param {BoundedNumber<1,1000>=} count Maximum number of items to return
+ * @param {BoundedNumber<0>=} skip Number of items to skip from beginning
+ * @returns {Array} Up to count matches
  */
-Smithsonian.searchForImages = function(term, count = 100, skipBeforeFilter = 0) {
-    return this._raw_search(term, count, skipBeforeFilter, true);
+Smithsonian.searchImageContent = async function(term, count = 100, skip = 0) {
+    if (skip < 0) skip = 0;
+    if (count <= 0) return []; // if somehow either of these is invalid, correct it
+
+    let matches = undefined;
+    let real_skip = 0;
+
+    // discard skip items 
+    while (matches === undefined) {
+        const filtered = await this._raw_filter(term, MAX_GRAB_COUNT, real_skip);
+        real_skip += MAX_GRAB_COUNT;
+
+        const len = filtered.length;
+        if (len <= skip) skip -= len; // if less than skip count, we just discard all of them
+        else matches = filtered.slice(skip, skip + Math.min(count, len - skip)); // otherwise we take up to count items from tail, and are done with skip logic
+    }
+
+    // take more items until we fill have count items in total
+    while (matches.length < count) {
+        const filtered = await this._raw_filter(term, MAX_GRAB_COUNT, real_skip);
+        real_skip += MAX_GRAB_COUNT;
+
+        const needed = count - matches.length;
+        matches = matches.concat(filtered.slice(0, Math.min(filtered.length, needed))); // take at most what we need
+    }
+
+    return matches;
 };
 
 /**
