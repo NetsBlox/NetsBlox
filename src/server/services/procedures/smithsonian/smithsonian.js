@@ -149,7 +149,7 @@ Smithsonian.getImageURLs = function(id) {
  * @param {String} id ID of an object returned from search
  */
 Smithsonian.getImage = function(id) {
-    return this.imageURLs(id).then(urls => urls.length == 0 ? '' : this._sendImage({url:urls[0]})).catch(() => '');
+    return this.getImageURLs(id).then(urls => urls.length == 0 ? '' : this._sendImage({url:urls[0]})).catch(() => '');
 };
 
 module.exports = Smithsonian;

@@ -107,7 +107,7 @@ NYPL._pickImageURL = function(urls) {
  * @param {String} itemID itemID of the object
  */
 NYPL.getImage = function(itemID) {
-    return this.imageURLs(itemID).then(urls => urls.length == 0 ? '' : this._sendImage({url:this._pickImageURL(urls)})).catch(() => '');
+    return this.getImageURLs(itemID).then(urls => urls.length == 0 ? '' : this._sendImage({url:this._pickImageURL(urls)})).catch(() => '');
 };
 
 module.exports = NYPL;
