@@ -78,7 +78,7 @@
     "request": "^2.88.0",
     "request-promise": "^4.2.4",
     "rimraf": "^2.6.3",
-    "snap2js": "^1.5.1",
+    "snap2js": "^1.6.0",
     "sphericalmercator": "^1.0.5",
     "temp-units-conv": "^0.1.1",
     "turf": "^3.0.14",

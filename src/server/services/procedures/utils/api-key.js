@@ -19,6 +19,15 @@ class ApiKey {
     }
 }
 
+module.exports.NewYorkPublicLibraryKey = new ApiKey(
+    'New York Public Library',
+    'http://api.repo.nypl.org/sign_up' // key is 'Authentication Token' from account info
+);
+module.exports.DataDotGovKey = new ApiKey(
+    'Data.gov',
+    'https://api.data.gov/signup/',
+    'DATA_GOV_KEY'
+);
 module.exports.GoogleMapsKey = new ApiKey(
     'Google Maps',
     'https://developers.google.com/maps/documentation/maps-static/get-api-key#get_key'

@@ -1,0 +1,49 @@
+name: Push Docker Hub
+
+on:
+  push:
+    branches:
+      - master
+  release:
+    types:
+      - published
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+        
+      - name: Get Release Tags
+        id: get_release_tags
+        run: |
+          echo "::set-env name=RELEASE_TAG::$(echo ${GITHUB_REF} | sed -E 's/.*v?([0-9]+)\.([0-9]+)\.([0-9]+)?/\1.\2.\3,\1.\2,\1/')"
+          echo "::set-env name=TAG::stable"
+        if: github.event_name == 'release'
+
+      - name: Get Push Tags
+        id: get_push_tags
+        run: |
+          echo "::set-env name=TAG::latest"
+          echo "::set-env name=RELEASE_TAG::$(echo ${GITHUB_REF:11})"
+        if: github.event_name == 'push'
+        
+      - name: Publish to Docker Hub
+        uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          name: netsblox/base
+          dockerfile: Dockerfile.base
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          tags: "${{ env.TAG }},${{ env.RELEASE_TAG }}"
+
+      - name: Publish to Docker Hub
+        uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          name: netsblox/server
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          tags: "${{ env.TAG }},${{ env.RELEASE_TAG }}"

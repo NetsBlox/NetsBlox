@@ -23,7 +23,7 @@ NetworkTopology.init(new Logger('netsblox:test'), Client);
 
 // load the *exact* XML_Serializer from Snap!... pretty hacky...
 (function() {
-    var clientDir = path.join(PROJECT_ROOT, 'src', 'browser'),
+    var clientDir = path.join(PROJECT_ROOT, 'src', 'browser', 'src'),
         srcFiles = ['morphic.js', 'xml.js', 'store.js', 'actions.js'],
         src;
 
