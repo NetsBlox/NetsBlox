@@ -84,7 +84,7 @@ NYPL.getDetails = async function(uuid) {
  * @param {String} itemID itemID of the object
  * @returns {Array} An array of imgurls[]
  */
-NYPL.getImageURLs = async function(itemID) {
+NYPL._getImageURLs = async function(itemID) {
     const res = await this._requestData({
         path:`items/${itemID}`,
         headers:{Authorization:`Token token=${this.apiKey.value}`},
@@ -107,7 +107,7 @@ NYPL._pickImageURL = function(urls) {
  * @param {String} itemID itemID of the object
  */
 NYPL.getImage = function(itemID) {
-    return this.getImageURLs(itemID).then(urls => urls.length == 0 ? '' : this._sendImage({url:this._pickImageURL(urls)})).catch(() => '');
+    return this._getImageURLs(itemID).then(urls => urls.length == 0 ? '' : this._sendImage({url:this._pickImageURL(urls)})).catch(() => '');
 };
 
 module.exports = NYPL;

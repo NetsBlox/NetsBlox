@@ -128,7 +128,7 @@ Smithsonian.searchImageContent = async function(term, count = 100, skip = 0) {
  * 
  * @param {String} id ID of an object returned from search
  */
-Smithsonian.getImageURLs = function(id) {
+Smithsonian._getImageURLs = function(id) {
     return this._requestData({path:`content/${id}`, queryString:`api_key=${this.apiKey.value}`}).then(res => {
         const online_media = res.response.content.descriptiveNonRepeating.online_media;
         if (online_media === undefined) return [];
@@ -149,7 +149,7 @@ Smithsonian.getImageURLs = function(id) {
  * @param {String} id ID of an object returned from search
  */
 Smithsonian.getImage = function(id) {
-    return this.getImageURLs(id).then(urls => urls.length == 0 ? '' : this._sendImage({url:urls[0]})).catch(() => '');
+    return this._getImageURLs(id).then(urls => urls.length == 0 ? '' : this._sendImage({url:urls[0]})).catch(() => '');
 };
 
 module.exports = Smithsonian;
