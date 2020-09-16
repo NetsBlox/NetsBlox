@@ -40,6 +40,16 @@ NYPL.search = async function(term, perPage = 50, page = 1) {
     return ret;
 };
 
+NYPL._searchForKey = function(json, key) {
+    if (json instanceof Array) {
+        for (const item of json) {
+            if (key in item) return item[key];
+        }
+        return undefined;
+    }
+    else return json[key];
+};
+
 /**
  * Get details about the item.
  * 
@@ -55,23 +65,28 @@ NYPL.getDetails = async function(uuid) {
     const mods = res.nyplAPI.response.mods;
     if (mods === undefined) return {};
 
-    let dateIssued = mods.originInfo.dateIssued;
-    if ('$' in dateIssued) dateIssued = dateIssued.$;
+    let dateIssued = this._searchForKey(mods.originInfo, 'dateIssued');
+    if (dateIssued !== undefined && '$' in dateIssued) dateIssued = dateIssued.$;
     else if (dateIssued instanceof Array && dateIssued.length == 2) dateIssued = `${dateIssued[0].$}-${dateIssued[1].$}`;
     else dateIssued = 'Unknown';
 
-    const location = mods.originInfo.place.placeTerm.$;
-    const publisher = mods.originInfo.publisher.$;
+    let location = this._searchForKey(mods.originInfo, 'place');
+    if (location !== undefined && 'placeTerm' in location && '$' in location.placeTerm) location = location.placeTerm.$;
+    else location = 'Unknown';
+
+    let publisher = this._searchForKey(mods.originInfo, 'publisher');
+    if (publisher !== undefined && '$' in publisher) publisher = publisher.$;
+    else publisher = 'Unknown';
 
     const genres = [];
     for (const genre of listify(mods.genre)) {
-        genres.push(genre.$);
+        if ('$' in genre) genres.push(genre.$);
     }
 
     const subjects = [];
     for (const subject of listify(mods.subject)) {
-        if ('topic' in subject) {
-            subjects.push(subject.topic.$);
+        for (const subtopic of listify(subject.topic)) {
+            if ('$' in subtopic) subjects.push(subtopic.$);
         }
     }
 
