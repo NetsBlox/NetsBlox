@@ -16,40 +16,52 @@ OceanData._data = require('./data');
 /**
  * Get historical oxygen isotope ratio values by year.
  *
+ * @param {Number=} startYear earliest year to include in results
+ * @param {Number=} endYear latest year to include in results
  * @returns {Array} ratios - a list of oxygen isotope ratios by year
  */
-OceanData.getOxygenRatio = function(){
+OceanData.getOxygenRatio = function(startYear = Number.NEGATIVE_INFINITY, endYear = Number.POSITIVE_INFINITY){
     return this._data
+        .filter(data => startYear <= data.year && data.year <= endYear)
         .map(data => [data.year, data.oxygenIsotopeRatio]);
 };
 
 /**
  * Get historical deep ocean temperatures in Celsius by year.
  *
+ * @param {Number=} startYear earliest year to include in results
+ * @param {Number=} endYear latest year to include in results
  * @returns {Array} temperatures - a list of deep ocean temperatures by year
  */
-OceanData.getDeepOceanTemp = function(){
+OceanData.getDeepOceanTemp = function(startYear = Number.NEGATIVE_INFINITY, endYear = Number.POSITIVE_INFINITY){
     return this._data
+        .filter(data => startYear <= data.year && data.year <= endYear)
         .map(data => [data.year, data.deepOceanTemp]);
 };
 
 /**
  * Get historical surface ocean temperatures in Celsius by year.
  *
+ * @param {Number=} startYear earliest year to include in results
+ * @param {Number=} endYear latest year to include in results
  * @returns {Array} temperatures - a list of surface ocean temperatures by year
  */
-OceanData.getSurfaceTemp = function(){
+OceanData.getSurfaceTemp = function(startYear = Number.NEGATIVE_INFINITY, endYear = Number.POSITIVE_INFINITY){
     return this._data
+        .filter(data => startYear <= data.year && data.year <= endYear)
         .map(data => [data.year, data.surfaceTemp]);
 };
 
 /**
  * Get historical sea level in meters by year.
  *
+ * @param {Number=} startYear earliest year to include in results
+ * @param {Number=} endYear latest year to include in results
  * @returns {Array} meters - change in sea level (in meters) by year
  */
-OceanData.getSeaLevel = function(){
+OceanData.getSeaLevel = function(startYear = Number.NEGATIVE_INFINITY, endYear = Number.POSITIVE_INFINITY){
     return this._data
+        .filter(data => startYear <= data.year && data.year <= endYear)
         .map(data => [data.year, data.seaLevel]);
 };
 
