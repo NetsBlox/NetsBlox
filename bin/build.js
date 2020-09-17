@@ -2,62 +2,60 @@
 'use strict';
 
 const isDevEnv = process.env.ENV !== 'production';
-var fs = require('fs-extra'),
-    path = require('path'),
-    srcPath = path.join(__dirname, '..', 'src', 'browser');
+const fsp = require('fs').promises;
+const path = require('path');
+const srcPath = path.join(__dirname, '..', 'src', 'browser');
+const util = require('util');
+const execFile = util.promisify(require('child_process').execFile);
+const nop = () => {};
 
-// Get the given js files
-var devHtml = fs.readFileSync(path.join(srcPath, 'index.dev.html'), 'utf8'),
-    re = /text\/javascript" src="(.*)">/,
-    match = devHtml.match(re),
-    srcFiles = [];
+process.chdir(srcPath);
+build().catch(err => console.error(err));
 
-while (match) {
-    srcFiles.push(match[1]);
-    devHtml = devHtml.substring(match.index + match[0].length);
-    match = devHtml.match(re);
-}
+async function build() {
+    // Get the given js files
+    var devHtml = await fsp.readFile('index.dev.html', 'utf8'),
+        re = /text\/javascript" src="(.*)">/,
+        match = devHtml.match(re),
+        srcFiles = [];
 
-// don't duplicate the main.js file
-const RESERVED_FILE = 'main.js';
-srcFiles = srcFiles.filter(f => f !== RESERVED_FILE);
-
-if (!isDevEnv) console.log('concatting and minifying:', srcFiles);
-
-srcFiles = srcFiles.map(file => path.join(srcPath, file));
-var src = srcFiles
-    .map(file => fs.readFileSync(file, 'utf8'))
-    .join('\n');
-
-var uglySrc = {};
-srcFiles
-    .forEach(file => uglySrc[file] = fs.readFileSync(file, 'utf8'));
-
-var ugly = require('uglify-es');
-
-var final_code = src;
-
-if (isDevEnv) {  // don't minify in dev
-    console.log('Dev environment detected - skipping build optimizations. If you ' +
-        'change to a production env, be sure to rebuild with:');
-    console.log('');
-    console.log('    npm run postinstall');
-    console.log('');
-} else {
-    console.log('dev src length:', src.length);
-
-    const result = ugly.minify(uglySrc);
-    final_code = result.code;
-    if (result.error) {
-        console.error(result.error);
-        throw result.error;
+    while (match) {
+        srcFiles.push(match[1]);
+        devHtml = devHtml.substring(match.index + match[0].length);
+        match = devHtml.match(re);
     }
-    console.log('output length:', final_code.length);
-    console.log('compression ratio:', 1-(final_code.length/src.length));
-}
 
-const outputPath = path.join(srcPath, 'dist', 'app.min.js');
-fs.ensureDir(path.dirname(outputPath))
-    .then(() => fs.writeFileSync(outputPath, final_code))
-    .catch(err => console.error(err));
+    // don't duplicate the main.js file
+    const RESERVED_FILE = 'main.js';
+    srcFiles = srcFiles.filter(f => !f.endsWith(RESERVED_FILE));
+
+    if (isDevEnv) {  // don't minify in dev
+        console.log('Dev environment detected - skipping build optimizations. If you ' +
+            'change to a production env, be sure to rebuild with:');
+        console.log('');
+        console.log('    npm run postinstall');
+        console.log('');
+    } else {
+        const srcPath = path.join('dist', 'app.js');
+        const minPath = srcPath.replace(/\.js$/, '.min.js');
+        await fsp.mkdir(path.dirname(srcPath)).catch(nop);
+        await srcFiles.reduce(async (prevTask, file) => {
+            await prevTask;
+            await fsp.appendFile(srcPath, await fsp.readFile(file));
+        }, fsp.unlink(srcPath));
+        try {
+            await execFile(
+                'closure-compiler',
+                ['--js', srcPath, '--js_output_file', minPath]
+            );
+        } catch (err) {
+            throw new Error('Unable to compile JS. Is the closure-compiler installed?');
+        }
+
+        const srcLength = (await fsp.readFile(srcPath, 'utf8')).length;
+        const minLength = (await fsp.readFile(minPath, 'utf8')).length;
+        console.log('output length:', srcLength);
+        console.log('compression ratio:', 1-(minLength/srcLength));
+    }
+}
 /* eslint-enable no-console */
