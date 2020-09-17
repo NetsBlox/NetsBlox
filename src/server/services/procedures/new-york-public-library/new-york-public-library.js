@@ -1,3 +1,10 @@
+/**
+ * The New York Public Library (NYPL) Service provides access to NYPL's online repository of historical items.
+ * 
+ * @alpha
+ * @service
+ * @category History
+ */
 'use strict';
 
 const ApiConsumer = require('../utils/api-consumer');
@@ -82,7 +89,7 @@ NYPL.getDetails = async function(uuid) {
  * Get the image URLs (0 or more) for the object.
  * 
  * @param {String} itemID itemID of the object
- * @returns {Array} An array of imgurls[]
+ * @returns {Array} An array of img urls
  */
 NYPL._getImageURLs = async function(itemID) {
     const res = await this._requestData({
