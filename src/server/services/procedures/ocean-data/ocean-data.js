@@ -20,7 +20,7 @@ OceanData._data = require('./data');
  * @param {Number=} endYear latest year to include in results
  * @returns {Array} ratios - a list of oxygen isotope ratios by year
  */
-OceanData.getOxygenRatio = function(startYear = Number.NEGATIVE_INFINITY, endYear = Number.POSITIVE_INFINITY){
+OceanData.getOxygenRatio = function(startYear = -Infinity, endYear = Infinity){
     return this._data
         .filter(data => startYear <= data.year && data.year <= endYear)
         .map(data => [data.year, data.oxygenIsotopeRatio]);
@@ -33,7 +33,7 @@ OceanData.getOxygenRatio = function(startYear = Number.NEGATIVE_INFINITY, endYea
  * @param {Number=} endYear latest year to include in results
  * @returns {Array} temperatures - a list of deep ocean temperatures by year
  */
-OceanData.getDeepOceanTemp = function(startYear = Number.NEGATIVE_INFINITY, endYear = Number.POSITIVE_INFINITY){
+OceanData.getDeepOceanTemp = function(startYear = -Infinity, endYear = Infinity){
     return this._data
         .filter(data => startYear <= data.year && data.year <= endYear)
         .map(data => [data.year, data.deepOceanTemp]);
@@ -46,7 +46,7 @@ OceanData.getDeepOceanTemp = function(startYear = Number.NEGATIVE_INFINITY, endY
  * @param {Number=} endYear latest year to include in results
  * @returns {Array} temperatures - a list of surface ocean temperatures by year
  */
-OceanData.getSurfaceTemp = function(startYear = Number.NEGATIVE_INFINITY, endYear = Number.POSITIVE_INFINITY){
+OceanData.getSurfaceTemp = function(startYear = -Infinity, endYear = Infinity){
     return this._data
         .filter(data => startYear <= data.year && data.year <= endYear)
         .map(data => [data.year, data.surfaceTemp]);
@@ -59,7 +59,7 @@ OceanData.getSurfaceTemp = function(startYear = Number.NEGATIVE_INFINITY, endYea
  * @param {Number=} endYear latest year to include in results
  * @returns {Array} meters - change in sea level (in meters) by year
  */
-OceanData.getSeaLevel = function(startYear = Number.NEGATIVE_INFINITY, endYear = Number.POSITIVE_INFINITY){
+OceanData.getSeaLevel = function(startYear = -Infinity, endYear = Infinity){
     return this._data
         .filter(data => startYear <= data.year && data.year <= endYear)
         .map(data => [data.year, data.seaLevel]);
