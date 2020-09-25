@@ -357,7 +357,6 @@ class Client {
         try {
             const actions = await ProjectActions.getActionsAfter(this.projectId, this.roleId, actionId);
             actions.forEach(action => this.send(action));
-            this.send({type: 'request-actions-complete'});
         } catch (err) {
             if (!silent) {
                 this.send({
@@ -367,6 +366,7 @@ class Client {
                 });
             }
         }
+        this.send({type: 'request-actions-complete'});
     }
 
     setState(projectId, roleId, username) {
