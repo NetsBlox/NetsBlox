@@ -1,10 +1,13 @@
 /**
- * Provides access to images from various websites typically called this<X>doesnotexist.com.
- * These are images of X generated from random noise by (typically) a GAN.
+ * This service uses Artificial Intelligence (AI) to make random, realistic images.
+ * For a list of example websites, see https://thisxdoesnotexist.com/.
+ * These are typically made by a Generative Adversarial neural Network (GAN).
+ * Put simply, this involves two AIs: one to make images and another to guess if they're real or fake, and making them compete to mutually improve.
+ * For more information, see https://en.wikipedia.org/wiki/Generative_adversarial_network.
  * 
  * @alpha
  * @service
- * @category Science
+ * @category ArtificialIntelligence
  */
 'use strict';
 
@@ -12,20 +15,20 @@
 // most are supported, but some were not applicable or inaccessible for direct download.
 
 const logger = require('../utils/logger')('this-x-does-not-exist');
-const request = require('request');
+const axios = require('axios');
 
 const TXDNE = {};
 
-TXDNE._getX = function(rsp, url) {
+TXDNE._getX = async function(rsp, url) {
     logger.info(`requesting image from: ${url}`);
-    request.get({url, encoding: null}, (err, res, body) => {
-        rsp.set('content-type', 'image/jpeg');
-        rsp.set('content-length', body.length);
-        rsp.set('connection', 'close');
-        rsp.status(200).send(body);
-        logger.info('sent the image');
-    });
-    return null; // we're async
+    let resp = await axios({url, method: 'GET', responseType: 'arraybuffer'});
+    
+    rsp.set('content-type', 'image/jpeg');
+    rsp.set('content-length', resp.data.length);
+    rsp.set('connection', 'close');
+
+    logger.info('sent the image');
+    return rsp.status(200).send(resp.data);
 };
 
 /**
