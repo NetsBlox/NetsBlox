@@ -41,13 +41,17 @@ NYPL.search = async function(term, perPage = 50, page = 1) {
 };
 
 NYPL._searchForKey = function(json, key) {
-    if (json instanceof Array) {
-        for (const item of json) {
-            if (key in item) return item[key];
-        }
-        return undefined;
+    for (const item of listify(json)) {
+        if (key in item) return item[key];
     }
-    else return json[key];
+    return undefined;
+};
+NYPL._getPath = function(obj, path, default_val) {
+    for (const p of path) {
+        if (obj === undefined) return default_val;
+        obj = obj[p];
+    }
+    return obj;
 };
 
 /**
@@ -70,13 +74,8 @@ NYPL.getDetails = async function(uuid) {
     else if (dateIssued instanceof Array && dateIssued.length == 2) dateIssued = `${dateIssued[0].$}-${dateIssued[1].$}`;
     else dateIssued = 'Unknown';
 
-    let location = this._searchForKey(mods.originInfo, 'place');
-    if (location !== undefined && 'placeTerm' in location && '$' in location.placeTerm) location = location.placeTerm.$;
-    else location = 'Unknown';
-
-    let publisher = this._searchForKey(mods.originInfo, 'publisher');
-    if (publisher !== undefined && '$' in publisher) publisher = publisher.$;
-    else publisher = 'Unknown';
+    const location = this._getPath(this._searchForKey(mods.originInfo, 'place'), ['placeTerm', '$'], 'Unknown');
+    const publisher = this._getPath(this._searchForKey(mods.originInfo, 'publisher'), ['$'], 'Unknown');
 
     const genres = [];
     for (const genre of listify(mods.genre)) {
