@@ -1,0 +1,26 @@
+---
+version: "3"
+services:
+  mongo:
+    image: mongo
+    volumes:
+      - netsblox-data:/data/db
+  server:
+    restart: always
+    environment:
+      - "MONGO_URI=mongodb://mongo:27017/netsblox"
+      - "NETSBLOX_BLOB_DIR=/netsblox-blob"
+      - "ROBOSCAPE=1973"
+    image: netsblox/server:stable
+    volumes:
+      - netsblox-projects:/netsblox-blob
+    ports:
+        - "8080:8080"
+        - "8081:8081"
+        - "1973:1973"
+    depends_on:
+      - mongo
+
+volumes:
+    netsblox-data:
+    netsblox-projects:
