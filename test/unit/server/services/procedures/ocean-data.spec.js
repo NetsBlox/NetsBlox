@@ -2,9 +2,9 @@ describe('ocean-data', function() {
     const utils = require('../../../../assets/utils');
 
     utils.verifyRPCInterfaces('OceanData', [
-        ['getOxygenRatio', []],
-        ['getDeepOceanTemp', []],
-        ['getSurfaceTemp', []],
-        ['getSeaLevel', []],
+        ['getOxygenRatio', ['startYear', 'endYear']],
+        ['getDeepOceanTemp', ['startYear', 'endYear']],
+        ['getSurfaceTemp', ['startYear', 'endYear']],
+        ['getSeaLevel', ['startYear', 'endYear']],
     ]);
 });
