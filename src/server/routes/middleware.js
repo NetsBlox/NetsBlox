@@ -217,14 +217,27 @@ var saveLogin = function(res, user, remember) {
     refreshCookie(res, cookie);
 };
 
+function getCookieOptions() {
+    const options = {
+        httpOnly: true,
+    };
+
+    if (process.env.HOST !== undefined) {
+        options.domain = process.env.HOST;
+    }
+    if (process.env.SERVER_PROTOCOL === 'https') {
+        options.sameSite = 'None';
+        options.secure = true;
+    }
+
+    return options;
+}
+
 var refreshCookie = function(res, cookie) {
     var token = jwt.sign(cookie, sessionSecret),
-        options = {
-            httpOnly: true
-        },
+        options = getCookieOptions(),
         date;
 
-    if (process.env.HOST !== undefined) options.domain = process.env.HOST;
     if (cookie.remember) {
         date = new Date();
         date.setDate(date.getDate() + 14);  // valid for 2 weeks
@@ -242,10 +255,8 @@ var Session = function(res) {
 
 Session.prototype.destroy = function() {
     // TODO: Change this to a blacklist
-    const options = {
-        httpOnly: true,
-        expires: new Date(0)
-    };
+    const options = getCookieOptions();
+    options.expires = new Date(0);
 
     if (process.env.HOST !== undefined) options.domain = process.env.HOST;
 
