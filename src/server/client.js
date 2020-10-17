@@ -347,15 +347,9 @@ class Client {
         }
     }
 
-    async requestActionsAfter (actionId, silent) {
-        if (!this.projectId) {
-            this._logger.error(`User requested actions without project: ${this.username}`);
-            this.send({type: 'request-actions-complete'});
-            return;
-        }
-
+    async requestActionsAfter (projectId, roleId, actionId, silent) {
         try {
-            const actions = await ProjectActions.getActionsAfter(this.projectId, this.roleId, actionId);
+            const actions = await ProjectActions.getActionsAfter(projectId, roleId, actionId);
             actions.forEach(action => this.send(action));
         } catch (err) {
             if (!silent) {
@@ -551,8 +545,8 @@ Client.MessageHandlers = {
     },
 
     'request-actions': function(msg) {
-        const {actionId, silent=true} = msg;
-        return this.requestActionsAfter(actionId, silent);
+        const {projectId, roleId, actionId, silent=true} = msg;
+        return this.requestActionsAfter(projectId, roleId, actionId, silent);
     }
 };
 
