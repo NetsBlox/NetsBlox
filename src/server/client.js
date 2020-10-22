@@ -324,11 +324,10 @@ class Client {
         const address = await NetsBloxAddress.new(dstId, this.projectId, this.roleId);
         const states = address.resolve();
         const clients = states
-            .map(state => {
+            .flatMap(state => {
                 const [projectId, roleId] = state;
                 return NetworkTopology.getSocketsAt(projectId, roleId);
-            })
-            .reduce((l1, l2) => l1.concat(l2), []);
+            });
 
         clients.forEach(client => {
             msg.dstId = Constants.EVERYONE;
@@ -407,7 +406,7 @@ Client.MessageHandlers = {
     'message': async function(msg) {
         const dstIds = msg.dstId instanceof Array ? msg.dstId : [msg.dstId];
         const recipients = await Promise.all(dstIds.map(dstId => this.sendMessageTo(msg, dstId)));
-        msg.recipients = recipients.reduce((l1, l2) => l1.concat(l2), []);
+        msg.recipients = recipients.flat();
         msg.dstId = dstIds;
         msg.srcProjectId = this.projectId;
         return this.saveMessage(msg, this.projectId);
