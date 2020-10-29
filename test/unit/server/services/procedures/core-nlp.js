@@ -1,4 +1,4 @@
-describe.only('CoreNLP', function() {
+describe('CoreNLP', function() {
     const utils = require('../../../../assets/utils');
     const NLP = utils.reqSrc('services/procedures/core-nlp/core-nlp');
     const ServiceMock = require('../../../../assets/mock-service');
