@@ -7,7 +7,7 @@ var fs = require('fs'),
     path = require('path'),
     utils = require('../server-utils'),
     JsonToSnapList = require('./procedures/utils').jsonToSnapList,
-    types = require('./input-types.js');
+    InputTypes = require('./input-types.js');
 
 const {Docs} = require('./jsdoc-extractor.js');
 const {RESERVED_FN_NAMES} = require('../../common/constants').RPC;
@@ -285,7 +285,7 @@ class ServicesWorker {
             const typeName = arg.type.name;
             const recordError = err => {
                 inputStatus.isValid = false;
-                const netsbloxType = types.getNBType(typeName);
+                const netsbloxType = InputTypes.getNBType(typeName);
                 inputStatus.msg = `"${arg.name}" is not a valid ${netsbloxType}.`;
                 if (err.message.includes(netsbloxType)) {
                     inputStatus.msg = `"${arg.name}" is not valid. ` + err.message;
@@ -294,11 +294,11 @@ class ServicesWorker {
                 }
             };
 
-            if (types.parse.hasOwnProperty(typeName)) { // if we have the type handler
+            if (InputTypes.parse.hasOwnProperty(typeName)) { // if we have the type handler
                 try {
                     const args = [input].concat(arg.type.params);
                     args.push(ctx);
-                    return Promise.resolve(types.parse[typeName].apply(null, args))
+                    return Promise.resolve(InputTypes.parse[typeName].apply(null, args))
                         .then(value => {
                             inputStatus.value = value;
                             return inputStatus;
