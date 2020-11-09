@@ -9,14 +9,14 @@
  */
 
 const axios = require('axios');
-const nlp = {};
+const CoreNLP = {};
 
 /*
  * Get a list of all supported annotators.
  *
  * Complete list available at https://stanfordnlp.github.io/CoreNLP/annotators.html
  */
-nlp.getAnnotators = function() {
+CoreNLP.getAnnotators = function() {
     return [
         'tokenize',
         'cleanxml',
@@ -51,7 +51,7 @@ nlp.getAnnotators = function() {
  * @param{String} text
  * @param{Array<String>=} annotators
  */
-nlp.annotate = async function(text, annotators=['tokenize', 'ssplit', 'pos']) {
+CoreNLP.annotate = async function(text, annotators=['tokenize', 'ssplit', 'pos']) {
     const qsData = JSON.stringify({
         annotators: annotators.join(','),
         outputFormat: 'json',
@@ -61,5 +61,5 @@ nlp.annotate = async function(text, annotators=['tokenize', 'ssplit', 'pos']) {
     return response.data;
 };
 
-nlp.serviceName = 'CoreNLP';
-module.exports = nlp;
+CoreNLP.serviceName = 'CoreNLP';
+module.exports = CoreNLP;
