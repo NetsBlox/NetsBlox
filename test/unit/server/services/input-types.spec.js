@@ -40,6 +40,14 @@ describe('RPC Input Types', function() {
 
             assert.throws(() => typesParser[type](rawInput));
         });
+
+        it('should throw invalid nested types', () => {
+            assert.throws(() => typesParser.Array(['text'], 'Number'));
+        });
+
+        it('should support nested types', () => {
+            typesParser.Array([1, 2], 'Number');
+        });
     });
 
     describe('Object', function() {

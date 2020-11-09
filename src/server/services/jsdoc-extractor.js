@@ -58,7 +58,12 @@ function InputType(parsed) {
     this.name = parsed.expression ? parsed.expression.name : parsed.name;
     this.params = [];
     if (parsed.type === 'TypeApplication') {
-        this.params = parsed.applications.map(param => param.value);
+        this.params = parsed.applications.map(param => {
+            if (param.type === 'NameExpression') {
+                return param.name;
+            }
+            return param.value;
+        });
     }
 }
 
