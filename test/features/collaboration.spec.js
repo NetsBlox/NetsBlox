@@ -52,6 +52,7 @@ describe('collaboration', function() {
     describe('requesting actions', function() {
         let user = null;
         let project = null;
+        let roleId;
         beforeEach(async () => {
             await utils.reset();
             project = await utils.createRoom({
@@ -62,28 +63,29 @@ describe('collaboration', function() {
                     role2: []
                 }
             });
-            const roleId = await project.getRoleId('role');
+            roleId = await project.getRoleId('role');
             [user] = NetworkTopology.getSocketsAt(project.getId(), roleId);
             await twentyActions.reduce((a, b) => a.then(() => user._socket.receive(b)), Q());
         });
 
-        it('should be able to request missing actions', function(done) {
+        it('should be able to request missing actions', async function() {
             const TIMEOUT = Date.now() + 2000;
-            let messageCount = user._socket.messages().length;
-            user._socket.receive({type: 'request-actions', actionId: 9})
-                .then(() => {
-                    let checkMsgs = function() {
-                        let msgs = user._socket.messages().slice(messageCount)
-                            .filter(msg => msg.type === 'user-action');
+            const messageCount = user._socket.messages().length;
+            const actionRequest = {
+                type: 'request-actions',
+                projectId: project.getId(),
+                roleId: roleId,
+                actionId: 9
+            };
+            await user._socket.receive(actionRequest);
+            let msgs = user._socket.messages().slice(messageCount)
+                .filter(msg => msg.type === 'user-action');
+            while (msgs.length < 10 && Date.now() < TIMEOUT) {
+                msgs = user._socket.messages().slice(messageCount)
+                    .filter(msg => msg.type === 'user-action');
 
-                        if (msgs.length === 10) {
-                            done();
-                        } else if (Date.now() < TIMEOUT) {
-                            setTimeout(checkMsgs, 50);
-                        }
-                    };
-                    checkMsgs();
-                });
+                await sleep(50);
+            }
         });
 
         it('should send request-actions-complete', async function() {
@@ -129,4 +131,8 @@ describe('collaboration', function() {
             assert.equal(msgs.length, 0, 'Should be empty: ' + JSON.stringify(msgs));
         });
     });
+
+    async function sleep(time) {
+        return new Promise(resolve => setTimeout(resolve, time));
+    }
 });
