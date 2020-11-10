@@ -90,7 +90,8 @@ class COVIDData {
         this.ensureNumeric(doc, 'confirmed');
         this.ensureNumeric(doc, 'deaths');
         this.ensureNumeric(doc, 'recovered');
-        assert(doc.country, `Missing country: ${JSON.stringify(doc)}`);
+        const hasZeroCount = !(doc.confirmed + doc.deaths + doc.recovered);
+        assert(doc.country || hasZeroCount, `Missing country: ${JSON.stringify(doc)}`);
     }
 
     ensureNumeric(doc, field) {
