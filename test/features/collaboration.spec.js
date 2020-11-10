@@ -68,7 +68,7 @@ describe('collaboration', function() {
             await twentyActions.reduce((a, b) => a.then(() => user._socket.receive(b)), Q());
         });
 
-        it.only('should be able to request missing actions', async function() {
+        it('should be able to request missing actions', async function() {
             const TIMEOUT = Date.now() + 2000;
             const messageCount = user._socket.messages().length;
             const actionRequest = {
