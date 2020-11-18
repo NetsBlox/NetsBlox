@@ -2,14 +2,13 @@
  * This service accesses data from the human mortality database,
  * which tabulates death rates broken down by age group and gender
  * for various countries.
+ * For more information, see https://www.mortality.org/.
  * 
  * @alpha
  * @service
- * @category Health
+ * @category Science
  */
 'use strict';
-
-// source: https://www.mortality.org/
 
 const logger = require('../utils/logger')('mortality');
 const axios = require('axios');
@@ -17,6 +16,10 @@ const axios = require('axios');
 // this is a direct download link to the CSV file - if you need details on the structure,
 // download it, or check https://www.mortality.org/, which has much more detail.
 const DATA_SOURCE = 'https://www.mortality.org/Public/STMF/Outputs/stmf.csv';
+
+// maximum lifetime of any given download of DATA_SOURCE.
+// downloads are cached for fast reuse, but will be discarded after this amount of time (milliseconds).
+const DATA_SOURCE_LIFETIME = 1 * 24 * 60 * 60 * 1000; // 1 day
 
 // maps from country code to country name - keys should be uppercase only.
 // the metatable containing this info appears to not be well structured for automation.
@@ -78,8 +81,9 @@ function dictPathOrEmptyInit(dict, path) {
 }
 
 let CACHED_DATA = undefined;
+let CACHE_TIME_STAMP = undefined;
 async function getData() {
-    if (CACHED_DATA !== undefined) return CACHED_DATA;
+    if (CACHED_DATA !== undefined && Date.now() - CACHE_TIME_STAMP <= DATA_SOURCE_LIFETIME) return CACHED_DATA;
 
     logger.info(`requesting data from ${DATA_SOURCE}`);
     const resp = await axios({url: DATA_SOURCE, method: 'GET'});
@@ -124,6 +128,7 @@ async function getData() {
 
     logger.info('restructure complete - caching result');
     CACHED_DATA = res;
+    CACHE_TIME_STAMP = Date.now();
     return res;
 }
 
@@ -136,7 +141,7 @@ const mortality = {};
  *
  * @returns {Array}
  */
-mortality.getEverything = getData;
+mortality.getAllData = getData;
 
 /**
  * Gets a list of all the countries represented in the data.
@@ -151,48 +156,51 @@ mortality.getCountries = async function() {
 /**
  * Gets all the data associated with the given country.
  * This is an object organized by year, then by week, then broken down by gender.
- * If the specified country is not in the data, returns an empty object (no rows).
  *
  * @param {String} country Name of the country to look up
  * @returns {Array}
  */
 mortality.getDataForCountry = async function(country) {
-    return (await getData())[country] || {};
+    return (await getData())[country] || `country '${country}' is not in the database`;
 };
 
 /**
  * Gets all the data associated with the given country and year.
  * This is an object organized by week, then broken down by gender.
- * If the specified country and year are not in the data, returns an empty object (no rows).
+ * If the specified year is not in the database for said country, returns an empty object (no rows).
  *
  * @param {String} country Country to look up
- * @param {Number} year Year to look up
+ * @param {BoundedNumber<1990>} year Year to look up
  * @returns {Array}
  */
 mortality.getDataForCountryAndYear = async function(country, year) {
-    return (await this.getDataForCountry(country))[year] || {};
+    const data = (await getData())[country];
+    if (data === undefined) return `country '${country}' is not in the database`;
+    else return data[year] || {};
 };
 
 /**
  * Gets all the data associated with the given country, year, and week.
  * This is an object with data broken down by gender.
- * If the specified country, year, and week are not in the data, returns an empty object (no rows).
+ * If the specified year and week are not in the database for said country, returns an empty object (no rows).
  *
  * @param {String} country Country to look up
- * @param {Number} year Year to look up
+ * @param {BoundedNumber<1990>} year Year to look up
  * @param {BoundedNumber<1, 52>} week Week in year to look up
  * @returns {Array}
  */
 mortality.getDataForCountryYearAndWeek = async function(country, year, week) {
-    return (await this.getDataForCountryAndYear(country, year))[week] || {};
+    const data = (await getData())[country];
+    if (data === undefined) return `country '${country}' is not in the database`;
+    else return (data[year] || {})[week] || {};
 };
 
 /**
  * Gets all the data associated with the given year.
  * This is an object organized by country, then by week, then broken down by gender.
- * If the specified year is not in the data, returns an empty object (no rows).
+ * If the specified year is not in the database, returns an empty object (no rows).
  *
- * @param {Number} year Year to look up
+ * @param {BoundedNumber<1990>} year Year to look up
  * @returns {Array}
  */
 mortality.getDataForYear = async function(year) {
@@ -208,9 +216,9 @@ mortality.getDataForYear = async function(year) {
 /**
  * Gets all the data associated with the given year and week.
  * This is an object organized by country, then broken down by gender.
- * If the specified year and week are not in the data, returns an empty object (no rows).
+ * If the specified year and week are not in the database, returns an empty object (no rows).
  *
- * @param {Number} year Year to look up
+ * @param {BoundedNumber<1990>} year Year to look up
  * @param {BoundedNumber<1, 52>} week Week in year to look up
  * @returns {Array}
  */
