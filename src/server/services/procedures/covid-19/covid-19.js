@@ -24,7 +24,8 @@ const COVID19Storage = getServiceStorage('COVID-19', schema);
 const COVID19 = {};
 COVID19.serviceName = 'COVID-19';
 const Data = require('./data');
-COVID19._data = new Data(COVID19Storage);
+const logger = require('../utils/logger')('covid-19');
+COVID19._data = new Data(logger, COVID19Storage);
 const {DEATH, CONFIRMED, RECOVERED} = COVID19._data.types;
 
 COVID19._data.importMissingData();

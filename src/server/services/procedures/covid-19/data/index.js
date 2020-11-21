@@ -15,7 +15,8 @@ const TYPES = {
 };
 
 class COVIDData {
-    constructor(model) {
+    constructor(logger, model) {
+        this.logger = logger;
         this._model = model;
         this.types = TYPES;
         this._intervalId = null;
@@ -32,7 +33,10 @@ class COVIDData {
 
     async importMissingData() {
         let day = new Date(START_DATE);
-        const skipDates = await this.existingDates();
+        const skipDates = (await this.existingDates()).sort();
+        const mostRecentDate = skipDates.length ?
+            skipDates[skipDates.length-1] : START_DATE;
+        this.logger.info(`importing missing data since ${mostRecentDate}`);
         while (!this.isToday(day)) {
             const dateString = this.getDateString(day);
             if (!skipDates.includes(dateString)) {
