@@ -5,11 +5,8 @@ var Storage = function(_logger, _db, name) {
 };
 
 Storage.prototype.save = function(key, value) {
-    var data = {
-        _id: key,
-        value
-    };
-    return this.collection.update(data, {upsert: true})
+    const query = {_id: key};
+    return this.collection.updateOne(query, {$set: {value}}, {upsert: true})
         .then(result => {
             if (result.writeError) {
                 this.logger.error(`could not save to ${key}: ${result.errmsg}`);
