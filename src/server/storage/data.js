@@ -22,7 +22,7 @@ class Data {
 
                 if (!opts.silent)
                     this._logger.trace('saving', this.pretty());
-                return this._db.update(this.getStorageId(), data, {upsert: true});
+                return this._db.updateOne(this.getStorageId(), {$set: data}, {upsert: true});
             })
             .then(result => {
                 if (result.writeError) {

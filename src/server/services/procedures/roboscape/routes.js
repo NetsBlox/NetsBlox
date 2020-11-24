@@ -63,7 +63,7 @@ const setUserAccess = async (mongoId, username, hasAccess) => {
         });
     }
 
-    await RoboscapeCol.update({ _id: mongoId }, {$set: {users: robotRec.users}});
+    await RoboscapeCol.updateOne({ _id: mongoId }, {$set: {users: robotRec.users}});
     return robotRec;
 };
 
@@ -92,7 +92,7 @@ const routes = [
                     // user already owns the robot
                     return 'robot already owned';
                 } else { // refresh the doc, throw users out. del & recreate?
-                    await RoboscapeCol.update({ _id: rec._id }, {owner: newEntry.owner, isPublic: true, ownedAt: newEntry.ownedAt, users: []});
+                    await RoboscapeCol.updateOne({ _id: rec._id }, {owner: newEntry.owner, isPublic: true, ownedAt: newEntry.ownedAt, users: []});
                 }
             } else {
                 logger.trace('creating new robot rec', newEntry);
@@ -139,7 +139,7 @@ const routes = [
                 if (!whiteList.includes(attr)) throw new Error(`Cant change attribute ${attr}`);
             });
 
-            await RoboscapeCol.update({ _id: req.params._id }, { $set: changedEntry }, {upsert: false});
+            await RoboscapeCol.updateOne({ _id: req.params._id }, { $set: changedEntry }, {upsert: false});
             return 'ok';
         }
     },
