@@ -48,7 +48,7 @@
             const query = {$set: {hash: newHash}};
 
             this.hash = newHash;
-            return this._db.update(this.getStorageId(), query);
+            return this._db.updateOne(this.getStorageId(), query);
         }
 
         getProject(name) {
@@ -71,7 +71,7 @@
             this._logger.trace(`setting groupId of ${this.username} to ${groupId}`);
             const query = {$set: {groupId: groupId}};
             this.groupId = groupId;
-            return this._db.update(this.getStorageId(), query);
+            return this._db.updateOne(this.getStorageId(), query);
         }
 
         getStorageId() {
