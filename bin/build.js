@@ -42,7 +42,7 @@ async function build() {
         await srcFiles.reduce(async (prevTask, file) => {
             await prevTask;
             await fsp.appendFile(srcPath, await fsp.readFile(file));
-        }, fsp.unlink(srcPath));
+        }, unlinkFile(srcPath));
         try {
             await execFile(
                 'closure-compiler',
@@ -56,6 +56,16 @@ async function build() {
         const minLength = (await fsp.readFile(minPath, 'utf8')).length;
         console.log('output length:', srcLength);
         console.log('compression ratio:', 1-(minLength/srcLength));
+    }
+}
+
+async function unlinkFile(path) {
+    try {
+        await fsp.unlink(path).catch(nop);
+    } catch (err) {
+        if (err.code !== 'ENOENT') {
+            throw err;
+        }
     }
 }
 /* eslint-enable no-console */
