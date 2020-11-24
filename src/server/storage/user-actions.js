@@ -9,17 +9,15 @@
         collection = db.collection('netsblox:storage:user-actions');
     };
 
-    UserActionData.record = function(event) {
-        var preprocess = Q();
+    UserActionData.record = async function(event) {
         if (!event.sessionId) {
             logger.error('No sessionId found for event:', event);
         }
 
         if (!event.action) {
             logger.error('No action found for event:', event);
-            return Q();
+            return;
         }
-        logger.trace(`about to store event from session: ${event.sessionId}`);
 
         // If openProject, store the project in the blob
         if (event.action.type === 'openProject' && event.action.args.length) {
@@ -30,16 +28,16 @@
                     code = xml.substring(11, endOfCode),
                     media = xml.substring(endOfCode).replace('</snapdata>', '');
 
-                preprocess = Q.all([code, media].map(data => blob.store(data)))
+                await Promise.all([code, media].map(data => blob.store(data)))
                     .then(hashes => event.action.args[0] = hashes);
             } else if (xml) {  // store the xml in one chunk in the blob
-                preprocess = Q.all([xml].map(data => blob.store(data)))
+                await Promise.all([xml].map(data => blob.store(data)))
                     .then(hashes => event.action.args[0] = hashes);
             }
         }
 
-        return preprocess.then(() => collection.save(event))
-            .then(() => logger.trace(`successfully recorded event from session ${event.sessionId}`));
+        await collection.insertOne(event);
+        logger.trace(`recorded event from session ${event.sessionId}`);
     };
 
     // query-ing
