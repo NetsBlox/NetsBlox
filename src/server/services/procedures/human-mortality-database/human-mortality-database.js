@@ -80,6 +80,16 @@ function dictPathOrEmptyInit(dict, path) {
     return dict;
 }
 
+// year should be the full 4-digit year.
+// day is the 0-based index of the day.
+// so dateFromYearAndDay(2020, 0) is January 1, 2020
+function dateFromYearAndDay(year, day) {
+    return new Date(year, 0, day + 1);
+}
+function getDateString(date) {
+    return `${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
+}
+
 let CACHED_DATA = undefined;
 let CACHE_TIME_STAMP = undefined;
 async function getData() {
@@ -101,7 +111,8 @@ async function getData() {
         const country = countryCodeToCountry(vals[0].trim().toUpperCase());
         const year = parseInt(vals[1]);
         const week = parseInt(vals[2]);
-        const entry = dictPathOrEmptyInit(res, [country, year, week]);
+        const date = dateFromYearAndDay(year, (week - 1) * 7);
+        const entry = dictPathOrEmptyInit(res, [country, getDateString(date)]);
 
         const data = {
             'deaths 0-14': parseFloat(vals[4]),
@@ -121,7 +132,7 @@ async function getData() {
         switch (vals[3].trim().toLowerCase()) {
         case 'm': entry['male'] = data; break;
         case 'f': entry['female'] = data; break;
-        case 'b': entry['total'] = data; break;
+        case 'b': entry['both'] = data; break;
         default: logger.warn('unknown gender specifier in raw data source'); break;
         }
     }
@@ -160,75 +171,29 @@ mortality.getCountries = async function() {
  * @param {String} country Name of the country to look up
  * @returns {Array}
  */
-mortality.getDataForCountry = async function(country) {
-    return (await getData())[country] || `country '${country}' is not in the database`;
+mortality.getAllDataForCountry = async function(country) {
+    const res = (await getData())[country];
+    if (res === undefined) return this.response.status(400).send(`country '${country}' is not in the database`);
+    else return res;
 };
 
 /**
- * Gets all the data associated with the given country and year.
- * This is an object organized by week, then broken down by gender.
- * If the specified year is not in the database for said country, returns an empty object (no rows).
+ * Gets the time series data for the given country, filtered to the specified gender and category.
  *
- * @param {String} country Country to look up
- * @param {BoundedNumber<1990>} year Year to look up
+ * @param {String} country Name of the country to look up
+ * @param {String=} gender Gender group for filtering. Defaults to 'both'.
+ * @param {String=} category Category for filtering. Defaults to 'deaths total'.
  * @returns {Array}
  */
-mortality.getDataForCountryAndYear = async function(country, year) {
-    const data = (await getData())[country];
-    if (data === undefined) return `country '${country}' is not in the database`;
-    else return data[year] || {};
-};
-
-/**
- * Gets all the data associated with the given country, year, and week.
- * This is an object with data broken down by gender.
- * If the specified year and week are not in the database for said country, returns an empty object (no rows).
- *
- * @param {String} country Country to look up
- * @param {BoundedNumber<1990>} year Year to look up
- * @param {BoundedNumber<1, 52>} week Week in year to look up
- * @returns {Array}
- */
-mortality.getDataForCountryYearAndWeek = async function(country, year, week) {
-    const data = (await getData())[country];
-    if (data === undefined) return `country '${country}' is not in the database`;
-    else return (data[year] || {})[week] || {};
-};
-
-/**
- * Gets all the data associated with the given year.
- * This is an object organized by country, then by week, then broken down by gender.
- * If the specified year is not in the database, returns an empty object (no rows).
- *
- * @param {BoundedNumber<1990>} year Year to look up
- * @returns {Array}
- */
-mortality.getDataForYear = async function(year) {
-    const data = await getData();
+mortality.getTimeSeries = async function(country, gender='both', category='deaths total') {
+    const countryData = await this.getAllDataForCountry(country);
     const res = {};
-    for (const country in data) {
-        const vals = data[country][year];
-        if (vals !== undefined) res[country] = vals;
-    }
-    return res;
-};
-
-/**
- * Gets all the data associated with the given year and week.
- * This is an object organized by country, then broken down by gender.
- * If the specified year and week are not in the database, returns an empty object (no rows).
- *
- * @param {BoundedNumber<1990>} year Year to look up
- * @param {BoundedNumber<1, 52>} week Week in year to look up
- * @returns {Array}
- */
-mortality.getDataForYearAndWeek = async function(year, week) {
-    const data = await getData();
-    const res = {};
-    for (const country in data) {
-        const temp = data[country][year];
-        const vals = temp && temp[week];
-        if (vals !== undefined) res[country] = vals;
+    for (const date in countryData) {
+        const genderData = countryData[date][gender];
+        if (genderData === undefined) return this.response(400).send(`gender '${gender}' is not in the database`);
+        const datum = genderData[category];
+        if (datum === undefined) return this.response(400).send(`category '${category}' is not in the database`);
+        res[date] = datum;
     }
     return res;
 };
