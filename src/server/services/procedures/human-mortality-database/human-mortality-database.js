@@ -190,9 +190,9 @@ mortality.getTimeSeries = async function(country, gender='both', category='death
     const res = {};
     for (const date in countryData) {
         const genderData = countryData[date][gender];
-        if (genderData === undefined) return this.response(400).send(`gender '${gender}' is not in the database`);
+        if (genderData === undefined) return this.response.status(400).send(`gender '${gender}' is not in the database`);
         const datum = genderData[category];
-        if (datum === undefined) return this.response(400).send(`category '${category}' is not in the database`);
+        if (datum === undefined) return this.response.status(400).send(`category '${category}' is not in the database`);
         res[date] = datum;
     }
     return res;
