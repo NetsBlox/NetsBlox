@@ -21,6 +21,25 @@ const DATA_SOURCE = 'https://www.mortality.org/Public/STMF/Outputs/stmf.csv';
 // downloads are cached for fast reuse, but will be discarded after this amount of time (milliseconds).
 const DATA_SOURCE_LIFETIME = 1 * 24 * 60 * 60 * 1000; // 1 day
 
+const CATEGORIES = [
+    'deaths 0-14',
+    'deaths 15-64',
+    'deaths 65-74',
+    'deaths 75-84',
+    'deaths 85+',
+    'deaths total',
+
+    'rate 0-14',
+    'rate 15-64',
+    'rate 65-74',
+    'rate 75-84',
+    'rate 85+',
+    'rate total',
+];
+const GENDERS = [
+    'male', 'female', 'both',
+];
+
 // maps from country code to country name - keys should be uppercase only.
 // the metatable containing this info appears to not be well structured for automation.
 // so we have to update this part manually from https://www.mortality.org/Public/STMF/Outputs/stmf.xlsx.
@@ -62,6 +81,7 @@ const COUNTRY_CODES = {
     'SVK': 'Slovakia',
     'SVN': 'Slovenia',
     'SWE': 'Sweden',
+    'TWN': 'Taiwan',
     'USA': 'USA',    
 };
 function countryCodeToCountry(code) {
@@ -114,6 +134,7 @@ async function getData() {
         const date = dateFromYearAndDay(year, (week - 1) * 7);
         const entry = dictPathOrEmptyInit(res, [country, getDateString(date)]);
 
+        // NOTE: if they/we ever add/remove/rename categories here, REMEMBER TO ALSO DO IT ABOVE (global variable CATEGORIES).
         const data = {
             'deaths 0-14': parseFloat(vals[4]),
             'deaths 15-64': parseFloat(vals[5]),
@@ -129,6 +150,7 @@ async function getData() {
             'rate 85+': parseFloat(vals[14]),
             'rate total': parseFloat(vals[15]),
         };
+        // NOTE: if they/we ever add/remove/rename genders here, REMEMBER TO ALSO DO IT ABOVE (global variable GENDERS).
         switch (vals[3].trim().toLowerCase()) {
         case 'm': entry['male'] = data; break;
         case 'f': entry['female'] = data; break;
@@ -148,7 +170,7 @@ const mortality = {};
 /**
  * Get all the mortality data - potentially a lot of data.
  * Only use this if you truly need access to all data.
- * This is an object organized by country, then by year, then by week, then broken down by gender.
+ * This is an object organized by country, then by date (mm/dd/yyyy), then by gender, then by category.
  *
  * @returns {Array}
  */
@@ -163,6 +185,20 @@ mortality.getAllData = getData;
 mortality.getCountries = async function() {
     return Object.keys(await getData());
 };
+/**
+ * Gets a list of all the valid genders represented in the data.
+ * These can be used in a query.
+ *
+ * @returns {Array}
+ */
+mortality.getGenders = () => GENDERS;
+/**
+ * Gets a list of all the categories represented in the data.
+ * These can be used in a query.
+ *
+ * @returns {Array}
+ */
+mortality.getCategories = () => CATEGORIES;
 
 /**
  * Gets all the data associated with the given country.
@@ -179,6 +215,7 @@ mortality.getAllDataForCountry = async function(country) {
 
 /**
  * Gets the time series data for the given country, filtered to the specified gender and category.
+ * Note: returned data uses the mm/dd/yyyy date format.
  *
  * @param {String} country Name of the country to look up
  * @param {String=} gender Gender group for filtering. Defaults to 'both'.
