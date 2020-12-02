@@ -1,7 +1,11 @@
 /**
- * This service accesses data from the human mortality database,
- * which tabulates death rates broken down by age group and gender
- * for various countries.
+ * This service accesses data from the human mortality database which tabulates
+ * death rates broken down by age group and gender for various countries.
+ *
+ * Note: for countries that don't report separate male and female death counts,
+ * the gender breakdowns are just the total multiplied by a rough estimate
+ * of the percent of people in that country who are male/female.
+ *
  * For more information, see https://www.mortality.org/.
  * 
  * @alpha
@@ -172,12 +176,16 @@ const mortality = {};
  * Only use this if you truly need access to all data.
  * This is an object organized by country, then by date (mm/dd/yyyy), then by gender, then by category.
  *
+ * Note: for countries that don't report separate male and female death counts,
+ * the gender breakdowns are just the total multiplied by a rough estimate
+ * of the percent of people in that country who are male/female.
+ *
  * @returns {Array}
  */
 mortality.getAllData = getData;
 
 /**
- * Gets a list of all the countries represented in the data.
+ * Get a list of all the countries represented in the data.
  * These are not the country names, but a unique identifier for them.
  *
  * @returns {Array}
@@ -186,14 +194,14 @@ mortality.getCountries = async function() {
     return Object.keys(await getData());
 };
 /**
- * Gets a list of all the valid genders represented in the data.
+ * Get a list of all the valid genders represented in the data.
  * These can be used in a query.
  *
  * @returns {Array}
  */
 mortality.getGenders = () => GENDERS;
 /**
- * Gets a list of all the categories represented in the data.
+ * Get a list of all the categories represented in the data.
  * These can be used in a query.
  *
  * @returns {Array}
@@ -201,9 +209,13 @@ mortality.getGenders = () => GENDERS;
 mortality.getCategories = () => CATEGORIES;
 
 /**
- * Gets all the data associated with the given country.
+ * Get all the data associated with the given country.
  * This is an object organized by year, then by week, then broken down by gender.
  *
+ * Note: for countries that don't report separate male and female death counts,
+ * the gender breakdowns are just the total multiplied by a rough estimate
+ * of the percent of people in that country who are male/female.
+ * 
  * @param {String} country Name of the country to look up
  * @returns {Array}
  */
@@ -214,8 +226,12 @@ mortality.getAllDataForCountry = async function(country) {
 };
 
 /**
- * Gets the time series data for the given country, filtered to the specified gender and category.
- * Note: returned data uses the mm/dd/yyyy date format.
+ * Get the time series data for the given country, filtered to the specified gender and category
+ * in month/day/year format.
+ *
+ * Note: for countries that don't report separate male and female death counts,
+ * the gender breakdowns are just the total multiplied by a rough estimate
+ * of the percent of people in that country who are male/female.
  *
  * @param {String} country Name of the country to look up
  * @param {String=} gender Gender group for filtering. Defaults to 'both'.
