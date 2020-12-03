@@ -193,7 +193,7 @@ Sensor.prototype.getAccelerometer = async function () {
     message.write('A', 0, 1);
     this.sendToSensor(message);
     const resp = await response;
-    return {x:resp.x, y:resp.y, z:resp.z};   
+    return [resp.x, resp.y, resp.z];   
 };
 
 Sensor.prototype.commandToClient = function (command) {

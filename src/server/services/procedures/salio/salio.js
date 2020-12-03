@@ -19,9 +19,33 @@
 const logger = require('../utils/logger')('SalIO');
 const Sensor = require('./sensor');
 const acl = require('../roboscape/accessControl');
+const { assert } = require('console');
 var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
     SALIO_MODE = process.env.SALIO_MODE || 'both';
+
+const DIRECTIONS = [
+    [[0, 0, 1], 'up'],
+    [[0, 0, -1], 'down'],
+    [[0, 1, 0], 'vertical'],
+    [[0, -1, 0], 'upside down'],
+    [[1, 0, 0], 'left'],
+    [[-1, 0, 0], 'right'],  
+];
+
+function dotProduct(a, b) {
+    let total = 0;
+    for (var i = 0; i < a.length; ++i) {
+        total += a[i] * b[i];
+    }
+    return total;
+}
+function magnitude(a) {
+    return Math.sqrt(dotProduct(a, a));
+}
+function angle(a, b) {
+    return Math.acos(dotProduct(a, b) / (magnitude(a) * magnitude(b)));
+}
 
 /*
  * SalIO - This constructor is called on the first
@@ -201,6 +225,22 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      */
     SalIO.prototype.getAccelerometer = function (sensor) {
         return this._passToSensor('getAccelerometer', arguments);
+    };
+    /**
+     * Gets the current accelerometer snapshot from the sensor.
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getAccelerometerDirection = async function (sensor) {
+        const v = await this.getAccelerometer(sensor);
+        const best = [Infinity, 'unknown'];
+        for (const dir of DIRECTIONS) {
+            const t = angle(v, dir[0]);
+            if (t < best[0]) {
+                best[0] = t;
+                best[1] = dir[1];
+            }
+        }
+        return best[1];
     };
 
     /**
