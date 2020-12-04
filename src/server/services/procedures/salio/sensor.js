@@ -8,6 +8,35 @@ const ciphers = require('../roboscape/ciphers');
 const FORGET_TIME = 120; // forgetting a sensor in seconds
 const RESPONSE_TIMEOUT = 500; // ms
 
+const DIRECTIONS = [
+    [[0, 0, 1], 'up'],
+    [[0, 0, -1], 'down'],
+    [[0, 1, 0], 'vertical'],
+    [[0, -1, 0], 'upside down'],
+    [[1, 0, 0], 'left'],
+    [[-1, 0, 0], 'right'],  
+];
+
+function dotProduct(a, b) {
+    let total = 0;
+    for (var i = 0; i < a.length; ++i) {
+        total += a[i] * b[i];
+    }
+    return total;
+}
+function magnitude(a) {
+    return Math.sqrt(dotProduct(a, a));
+}
+function scale(a, f) {
+    return a.map(x => x * f);
+}
+function normalize(a) {
+    return scale(a, 1.0 / magnitude(a));
+}
+function angle(a, b) {
+    return Math.acos(dotProduct(a, b) / (magnitude(a) * magnitude(b)));
+}
+
 var Sensor = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.id = mac_addr;
     this.mac_addr = mac_addr;
@@ -192,8 +221,32 @@ Sensor.prototype.getAccelerometer = async function () {
     const message = Buffer.alloc(1);
     message.write('A', 0, 1);
     this.sendToSensor(message);
-    const resp = await response;
-    return [resp.x, resp.y, resp.z];   
+    const res = await response;
+    return [res.x, res.y, res.z];
+};
+Sensor.prototype.getAccelerometerNormalized = async function () {
+    return normalize(await this.getAccelerometer());  
+};
+Sensor.prototype.getAccelerometerDirection = async function () {
+    const v = await this.getAccelerometer();
+    const best = [Infinity, undefined];
+    for (const dir of DIRECTIONS) {
+        const t = angle(v, dir[0]);
+        if (t < best[0]) {
+            best[0] = t;
+            best[1] = dir[1];
+        }
+    }
+    return best[1];
+};
+
+Sensor.prototype.getProximity = async function () {
+    this._logger.log('get proximity ' + this.mac_addr);
+    const response = this.receiveFromSensor('proximity');
+    const message = Buffer.alloc(1);
+    message.write('P', 0, 1);
+    this.sendToSensor(message);
+    return (await response).prox;
 };
 
 Sensor.prototype.commandToClient = function (command) {
@@ -272,13 +325,15 @@ Sensor.prototype.onMessage = function (message) {
             this.setEncryptionKey([]);
             this.resetRates();
         }
-    } else if (command === 'W' && message.length === 12) {
+    } 
+    else if (command === 'W' && message.length === 12) {
         state = message.readUInt8(11);
         this.sendToClient('whiskers', {
             left: (state & 0x2) == 0,
             right: (state & 0x1) == 0
         });
-    } else if (command === 'P' && message.length === 12) {
+    }
+    else if (command === 'P' && message.length === 12) {
         state = message.readUInt8(11) == 0;
         if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
             this.sendToClient('button', {
@@ -300,13 +355,20 @@ Sensor.prototype.onMessage = function (message) {
                 this.buttonDownTime = 0;
             }
         }
-    } else if (command === 'A' && message.length === 23) {
+    }
+    else if (command === 'A' && message.length === 23) {
         this.sendToClient('accelerometer', {
             x: message.readFloatBE(11),
             y: message.readFloatBE(15),
             z: message.readFloatBE(19),
         });
-    } else {
+    }
+    else if (command === 'P' && message.length === 15) {
+        this.sendToClient('proximity', {
+            prox: message.readFloatBE(11),
+        });
+    }
+    else {
         this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
     }
@@ -325,7 +387,25 @@ Sensor.prototype.onCommand = function(command) {
         {
             regex: /^get accelerometer$/,
             handler: () => {
-                return this.getVitals();
+                return this.getAccelerometer();
+            }
+        },
+        {
+            regex: /^get accelerometer normalized$/,
+            handler: () => {
+                return this.getAccelerometerNormalized();
+            }
+        },
+        {
+            regex: /^get accelerometer direction$/,
+            handler: () => {
+                return this.getAccelerometerDirection();
+            }
+        },
+        {
+            regex: /^get proximity$/,
+            handler: () => {
+                return this.getProximity();
             }
         },
         {

@@ -1,3 +1,11 @@
+/**
+ * SalIO is meant to be used with the SalIO app for android.
+ * It allows your android device to be used as a sensor which is accessible from inside Netsblox.
+ * 
+ * @alpha
+ * @service
+ */
+
 /*
  * Based on the RoboScape procedure.
  *
@@ -19,33 +27,9 @@
 const logger = require('../utils/logger')('SalIO');
 const Sensor = require('./sensor');
 const acl = require('../roboscape/accessControl');
-const { assert } = require('console');
 var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
     SALIO_MODE = process.env.SALIO_MODE || 'both';
-
-const DIRECTIONS = [
-    [[0, 0, 1], 'up'],
-    [[0, 0, -1], 'down'],
-    [[0, 1, 0], 'vertical'],
-    [[0, -1, 0], 'upside down'],
-    [[1, 0, 0], 'left'],
-    [[-1, 0, 0], 'right'],  
-];
-
-function dotProduct(a, b) {
-    let total = 0;
-    for (var i = 0; i < a.length; ++i) {
-        total += a[i] * b[i];
-    }
-    return total;
-}
-function magnitude(a) {
-    return Math.sqrt(dotProduct(a, a));
-}
-function angle(a, b) {
-    return Math.acos(dotProduct(a, b) / (magnitude(a) * magnitude(b)));
-}
 
 /*
  * SalIO - This constructor is called on the first
@@ -180,7 +164,7 @@ SalIO.prototype.listen = async function (sensors) {
 };
 
 /**
- * Returns the MAC addresses of all authorized sensors.
+ * Returns the addresses of all authorized sensors.
  * @returns {array}
  */
 SalIO.prototype.getSensors = async function () {
@@ -189,7 +173,6 @@ SalIO.prototype.getSensors = async function () {
     return sensors;
 };
 
-//
 /**
  * Performs the pre-checks and maps the incoming call to a sensor action.
  * @param {String} fnName name of the method/function to call on the sensor object
@@ -220,27 +203,44 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
-     * Gets the current accelerometer snapshot from the sensor.
+     * Gets the current accelerometer output from the sensor.
+     * This is a 3D vector with units of m/s².
      * @param {string} sensor name of the sensor (matches at the end)
      */
     SalIO.prototype.getAccelerometer = function (sensor) {
         return this._passToSensor('getAccelerometer', arguments);
     };
     /**
-     * Gets the current accelerometer snapshot from the sensor.
+     * As getAccelerometer, but scaled to a magnitude of 1.
      * @param {string} sensor name of the sensor (matches at the end)
      */
-    SalIO.prototype.getAccelerometerDirection = async function (sensor) {
-        const v = await this.getAccelerometer(sensor);
-        const best = [Infinity, 'unknown'];
-        for (const dir of DIRECTIONS) {
-            const t = angle(v, dir[0]);
-            if (t < best[0]) {
-                best[0] = t;
-                best[1] = dir[1];
-            }
-        }
-        return best[1];
+    SalIO.prototype.getAccelerometerNormalized = function (sensor) {
+        return this._passToSensor('getAccelerometerNormalized', arguments);
+    };
+    /**
+     * Gets a string representation of the general orientation of the device based on the accelerometer output.
+     * In general, the values represent the direction the screen is facing. Possible values:
+     *     "up" - the device (screen) is facing up.
+     *     "down" - the device is facing down.
+     *     "vertical" - the device is upright.
+     *     "upside down" - the device is vertical, but upside down.
+     *     "left" - the device is horizontal, lying on its left side (facing the screen).
+     *     "right" - the device is horizontal, lying on its right side (facing the screen).
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getAccelerometerDirection = function (sensor) {
+        return this._passToSensor('getAccelerometerDirection', arguments);
+    };
+
+    /**
+     * Gets the current output of the proximity sensor.
+     * This is a distance measured in cm.
+     * Note that some devices only have binary proximity sensors (near/far), which will take discrete two values.
+     * If the device does not have a proximity sensor, returns 0.
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getProximity = function (sensor) {
+        return this._passToSensor('getProximity', arguments);
     };
 
     /**
