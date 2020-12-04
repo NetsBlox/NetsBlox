@@ -10,7 +10,7 @@ class CommunityService {
         if (!Service) {
             throw new Error(`Unsupported community service type: ${data.type}`);
         }
-        return new Service(data);
+        return new Service(...arguments);
     }
 }
 
