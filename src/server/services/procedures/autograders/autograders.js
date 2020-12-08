@@ -118,6 +118,7 @@ Autograders.getAutograders = async function() {
 Autograders.getAutograderConfig = async function(name) {
     ensureLoggedIn(this.caller);
     const storage = getDatabase();
+    const author = this.caller.username;
     const autograder = await storage.findOne({author, name});
     if (!autograder) {
         throw new Error('Autograder not found.');
