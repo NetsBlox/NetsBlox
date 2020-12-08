@@ -1,0 +1,387 @@
+/* globals NetsBloxExtensions, snapEquals, fontHeight, Point, DialogBoxMorph,
+ ScrollFrameMorph, nop, HandleMorph, List, Extension, ToggleMorph, BlockMorph,
+ Color, SpriteMorph, localize, TextMorph, MorphicPreferences, WHITE*/
+(function() {
+    const config = AUTOGRADER_CONFIG;
+
+    class CustomBlockAutograder extends Extension {
+        constructor(ide) {  /* TODO: Use an API wrapper instead? */
+            super(config.name);
+            this.ide = ide;
+            this.currentAssignment = null;
+            this.resultsDialog = null;
+            this.assignments = config.assignments.map(assignment =>
+                new Assignment(
+                    assignment.name,
+                    assignment['starter template'],
+                    assignment.tests.map(testConfig => {
+                        if (testConfig.type === 'CustomBlockTest') {
+                            return new ExactOutputTestCase(ide, testConfig.spec, testConfig.inputs, testConfig.output);
+                        } else {
+                            throw new Error(`Unknown test type: ${testConfig.type}`);
+                        }
+                    })
+                )
+            );
+        }
+
+        getMenu() {
+            const dict = {};
+            if (this.currentAssignment) {
+                dict[`Grade assignment`] = () => this.grade(this.currentAssignment);
+                dict['~'] = '~';
+                const submenu = {};
+                this.assignments.forEach(assignment => {
+                    submenu[assignment.name] = () => this.loadAssignment(assignment);
+                });
+                dict['Switch to...'] = submenu;
+            } else {
+                this.assignments.forEach(assignment => {
+                    dict[`Start ${assignment.name}`] = () => this.loadAssignment(assignment);
+                });
+            }
+
+            return dict;
+        }
+
+        async showResults(testResults) {
+            if (!this.resultsDialog) {
+                const world = this.ide.world();
+                const dialog = new DialogBoxMorph().withKey('GradeAssignment');
+                const frame = new ScrollFrameMorph();
+                frame.acceptsDrops = false;
+                frame.contents.acceptsDrops = false;
+                frame.color = dialog.color;
+                frame.fixLayout = nop;
+
+                dialog.labelString = `${this.currentAssignment.name} Results`;
+                dialog.createLabel();
+                dialog.addBody(frame);
+                dialog.addButton('ok', 'Rerun');
+                dialog.addButton('cancel', 'Close');
+                dialog.ok = () => this.grade(this.currentAssignment);
+                dialog.cancel = () => {
+                    this.resultsDialog = null;
+                    DialogBoxMorph.prototype.cancel.call(dialog);
+                };
+
+                dialog.fixLayout = function () {
+                    var th = fontHeight(this.titleFontSize) + this.titlePadding * 2,
+                        x = 0,
+                        y = 0,
+                        fp;
+                    this.buttons.fixLayout();
+                    this.body.setPosition(this.position().add(new Point(
+                        this.padding,
+                        th + this.padding
+                    )));
+                    this.body.setExtent(new Point(
+                        this.width() - this.padding * 2,
+                        this.height() - this.padding * 3 - th - this.buttons.height()
+                    ));
+                    fp = this.body.position();
+                    frame.contents.children.forEach(function (icon) {
+                        icon.setPosition(fp.add(new Point(x, y)));
+                        y += icon.height();
+                    });
+                    frame.contents.adjustBounds();
+                    this.label.setCenter(this.center());
+                    this.label.setTop(this.top() + (th - this.label.height()) / 2);
+                    this.buttons.setCenter(this.center());
+                    this.buttons.setBottom(this.bottom() - this.padding);
+
+                    /* refresh shadow */
+                    this.removeShadow();
+                    this.addShadow();
+                };
+
+                dialog.popUp(world);
+                dialog.setExtent(new Point(400, 300));
+                dialog.setCenter(world.center());
+
+                new HandleMorph(
+                    dialog,
+                    300,
+                    280,
+                    dialog.corner,
+                    dialog.corner
+                );
+                this.resultsDialog = dialog;
+            }
+
+            const frame = this.resultsDialog.body;
+            frame.contents.children = testResults.map(result => {
+                const {testCase} = result;
+                let message = testCase.getName(result);
+                /* TODO: Add details on click? */
+                const icon = new ToggleMorph(
+                    'checkbox',
+                    null,
+                    nop,
+                    message,
+                    () => result.status
+                );
+                const RED = new Color(250, 50, 50);
+                const GREEN = new Color(0, 200, 0);
+                icon.color = result.status ? GREEN : RED;
+                icon.trigger = nop;
+                icon.mouseClickLeft = () => this.onTestClicked(icon.world(), testCase);
+                icon.mouseDownLeft = nop;
+                icon.mouseEnter = nop;
+                icon.mouseLeave = nop;
+                icon.isDraggable = false;
+                icon.userMenu = nop;
+                icon.parent = frame.contents;
+                return icon;
+            });
+            const descText = localize(`The automated tests for the assignment are shown below. \nClick on a test to view the specific test case.\n`);
+            const testDesc = new TextMorph(
+                descText,
+                null,
+                null,
+                true,
+                false,
+                'center',
+                null,
+                null,
+                MorphicPreferences.isFlat ? null : new Point(1, 1),
+                WHITE
+            );
+            frame.contents.addChildFirst(testDesc);
+            frame.contents.adjustBounds();
+            this.resultsDialog.fixLayout();
+        }
+
+        onTestClicked(world, testCase) {
+            this.blockifyTest(world, testCase);
+            /* TODO */
+        }
+
+        async blockifyTest(world, testCase) {
+            const block = testCase.getCustomBlockInstance(...testCase.inputs);
+            const equalsBlock = SpriteMorph.prototype.blockForSelector('reportEquals', true);
+            let expectedValue;
+            /* FIXME: Get the report */
+            if (typeof testCase.output === 'boolean') {
+                expectedValue = testCase.output ?
+                    SpriteMorph.prototype.blockForSelector('reportBoolean', true) :
+                    SpriteMorph.prototype.blockForSelector('reportFalse', true);
+            } else {
+                expectedValue = toSnap(testCase.output);
+            }
+            const [left, right] = equalsBlock.inputs();
+            equalsBlock.replaceInput(left, block);
+            equalsBlock.replaceInput(right, expectedValue);
+            equalsBlock.pickUp(world);
+        }
+
+        async loadAssignment(assignment) {
+            let message = `Would you like to start ${assignment.name}?`;
+
+            if (this.currentAssignment) {
+                const isReload = this.currentAssignment === assignment;
+                message = isReload ?
+                    `Would you like to reload ${assignment.name}?` :
+                    `Would you like to stop working on ${this.currentAssignment.name}\n\nand switch to ${assignment.name}?`;
+                
+            }
+
+            const title = `Start ${assignment.name}`;
+            const confirmed = await this.ide.confirm(message, title);
+            if (confirmed) {
+                const xml = await assignment.fetch();
+                this.ide.droppedText(xml);
+                this.currentAssignment = assignment;
+                if (this.resultsDialog) {
+                    this.resultsDialog.destroy();
+                    this.resultsDialog = null;
+                }
+            }
+        }
+
+        async grade(assignment) {
+            const testResults = await assignment.grade();
+            this.showResults(testResults);
+        }
+    }
+
+    class Assignment {
+        constructor(name, url, tests) {
+            this.name = name;
+            this.url = url;
+            this.tests = tests;
+        }
+
+        async fetch() {
+            const response = await fetch(this.url);
+            return await response.text();
+        }
+
+        async grade() {
+            return await Promise.all(this.tests.map(test => test.run()));
+        }
+    }
+
+    class CustomBlockTestCase {
+        constructor(ide, spec, inputs, testFn) {
+            this.ide = ide;
+            this.blockSpec = spec;
+            this.inputs = inputs;
+            this.test = testFn;
+            this.description = null;
+        }
+
+        async run() {
+            try {
+                const result = await this.evalBlock(...this.inputs.map(toSnap));
+                if (await this.test(result)) {
+                    return new TestResult(this, true);
+                } else {
+                    return new FailingTest(this, result, this.output);
+                }
+            } catch (err) {
+                return new ErroredTest(this, err);
+            }
+        }
+
+        getName(result) {
+            const spec = this.blockSpec;
+            let index = 0;
+            const testCaseName = BlockMorph.prototype.parseSpec(spec)
+                .map(spec => {
+                    const isInput = !BlockMorph.prototype.labelPart(spec);
+                    if (isInput) {
+                        return JSON.stringify(this.inputs[index++]);
+                    }
+                    return spec;
+                })
+                .join(' ');
+            let displayText = `"${testCaseName}" ${this.description}`;
+            if (!result.status && result.getFailureReason()) {
+                displayText += ` (${result.getFailureReason()})`;
+            }
+            return displayText;
+        }
+
+        getCustomBlockDefinition(spec) {
+            return this.ide.stage.globalBlocks.find(
+                block => block.spec === spec
+            );
+        }
+
+        getCustomBlockInstance() {
+            const definition = this.getCustomBlockDefinition(this.blockSpec);
+            const block = definition.blockInstance();
+            const inputs = Array.prototype.slice.call(arguments, 0);
+            zip(block.inputs(), inputs).forEach(pair => {
+                const [input, value] = pair;
+                if (value instanceof List) {
+                    const valueAsBlock = value.blockify();
+                    block.replaceInput(input, valueAsBlock);
+                } else {
+                    input.setContents(value);
+                }
+            });
+            return block;
+        }
+
+        async evalBlock() {
+            const block = this.getCustomBlockInstance(...arguments);
+            const {threads} = this.ide.stage;
+
+            return new Promise((resolve, reject) => {
+                const process = threads.startProcess(
+                    block,
+                    this.ide.stage,
+                    true,
+                    false,
+                    resolve,
+                );
+                const handleError = process.handleError;
+                process.handleError = function(error) {
+                    reject(error);
+                    return handleError.call(this, ...arguments);
+                };
+            });
+        }
+
+    }
+
+    class ExactOutputTestCase extends CustomBlockTestCase {
+        constructor(ide, spec, inputs, output) {
+            super(ide, spec, inputs, actual => snapEquals(actual, toSnap(output)));
+            this.output = output;
+            this.description = `should report ${JSON.stringify(output)}`;
+        }
+    }
+
+    class TestResult {
+        constructor(testCase, status) {
+            this.testCase = testCase;
+            this.status = status;
+        }
+
+        getFailureReason() {
+            return '';
+        }
+    }
+
+    class FailingTest extends TestResult {
+        constructor(testCase, actual, expected) {
+            super(testCase, false);
+            this.actual = actual;
+            this.expected = expected;
+        }
+
+        getFailureReason() {
+            if (this.actual !== null) {
+                return `reported "${JSON.stringify(toJS(this.actual))}"`;
+            } else {
+                return 'did not report';
+            }
+        }
+    }
+
+    class ErroredTest extends TestResult {
+        constructor(testCase, error) {
+            super(testCase, false);
+            this.error = error;
+        }
+
+        getFailureReason() {
+            return 'error!';
+        }
+    }
+
+    function zip() {
+        const lists = new Array(...arguments);
+        const len = Math.min(...lists.map(l => l.length));
+        const result = [];
+
+        for (let i = 0; i < len; i++) {
+            result.push(lists.map(l => l[i]));
+        }
+
+        return result;
+    }
+
+    function toSnap(data) {
+        if (Array.isArray(data)) {
+            const contents = data.map(toSnap);
+            return new List(contents);
+        } else if (typeof data === 'object') {
+            return toSnap(Object.entries(data));
+        }
+        return data;
+    }
+
+    function toJS(data) {
+        if (data instanceof List) {
+            return data.asArray().map(toJS);
+        } else {
+            return data;
+        }
+    }
+
+    NetsBloxExtensions.register(CustomBlockAutograder);
+})();
