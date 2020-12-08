@@ -112,7 +112,6 @@ Autograders.getAutograders = async function() {
 /**
  * Fetch the autograder configuration.
  *
- * @param {String=} author
  * @param {String} name
  */
 Autograders.getAutograderConfig = async function(name) {
