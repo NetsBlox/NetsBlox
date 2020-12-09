@@ -15,16 +15,11 @@ module.exports = [
                 return res.sendStatus(404);
             }
 
-            try {
-                const code = AutograderCode.replace(
-                    'AUTOGRADER_CONFIG',
-                    JSON.stringify(autograder.config)
-                );
-                return res.send(code);
-            } catch (err) {
-                console.log(err.stack);
-                return res.send(err.message);
-            }
+            const code = AutograderCode.replace(
+                'AUTOGRADER_CONFIG',
+                JSON.stringify(autograder.config)
+            );
+            return res.send(code);
         }
     },
 ];

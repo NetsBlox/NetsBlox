@@ -2,7 +2,7 @@
  * The Autograders service enables users to create custom autograders for
  * use within NetsBlox.
  *
- * For more information, check out INSERT_URL_HERE
+ * For more information, check out https://github.com/NetsBlox/NetsBlox/wiki/Autograders-Overview
  *
  * @service
  * @alpha
@@ -40,9 +40,6 @@ const validateAssignment = assignment => {
     assignment.tests.forEach(test => {
         assert(test.type, 'Unspecified type of test!');
     });
-    if (assignment['starter template']) {
-        // TODO: check that it is a valid URL?
-    }
 };
 
 const validateConfig = config => {
@@ -65,7 +62,7 @@ const Autograders = {};
 /**
  * Create an autograder using the supplied configuration.
  *
- * @param {Object} config
+ * @param {Object} configuration
  */
 Autograders.createAutograder = async function(config) {
     ensureLoggedIn(this.caller);
