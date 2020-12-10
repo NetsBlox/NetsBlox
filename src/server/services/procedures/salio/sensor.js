@@ -227,7 +227,7 @@ Sensor.prototype.getAccelerometer = async function () {
 Sensor.prototype.getAccelerometerNormalized = async function () {
     return normalize(await this.getAccelerometer());  
 };
-Sensor.prototype.getAccelerometerDirection = async function () {
+Sensor.prototype.getFacingDirection = async function () {
     const v = await this.getAccelerometer();
     const best = [Infinity, undefined];
     for (const dir of DIRECTIONS) {
@@ -240,13 +240,96 @@ Sensor.prototype.getAccelerometerDirection = async function () {
     return best[1];
 };
 
+Sensor.prototype.getGravity = async function () {
+    this._logger.log('get gravity ' + this.mac_addr);
+    const response = this.receiveFromSensor('gravity');
+    const message = Buffer.alloc(1);
+    message.write('G', 0, 1);
+    this.sendToSensor(message);
+    const res = await response;
+    return [res.x, res.y, res.z];
+};
+Sensor.prototype.getGravityNormalized = async function () {
+    return normalize(await this.getGravity());  
+};
+
+Sensor.prototype.getLinearAcceleration = async function () {
+    this._logger.log('get linear acceleration ' + this.mac_addr);
+    const response = this.receiveFromSensor('linear');
+    const message = Buffer.alloc(1);
+    message.write('L', 0, 1);
+    this.sendToSensor(message);
+    const res = await response;
+    return [res.x, res.y, res.z];
+};
+Sensor.prototype.getLinearAccelerationNormalized = async function () {
+    return normalize(await this.getLinearAcceleration());  
+};
+
+Sensor.prototype.getGyroscope = async function () {
+    this._logger.log('get gyroscope ' + this.mac_addr);
+    const response = this.receiveFromSensor('gyroscope');
+    const message = Buffer.alloc(1);
+    message.write('Y', 0, 1);
+    this.sendToSensor(message);
+    const res = await response;
+    return [res.x, res.y, res.z];
+};
+Sensor.prototype.getRotation = async function () {
+    this._logger.log('get rotation ' + this.mac_addr);
+    const response = this.receiveFromSensor('rotation');
+    const message = Buffer.alloc(1);
+    message.write('R', 0, 1);
+    this.sendToSensor(message);
+    const res = await response;
+    return [res.x, res.y, res.z, res.w];
+};
+Sensor.prototype.getGameRotation = async function () {
+    this._logger.log('get game rotation ' + this.mac_addr);
+    const response = this.receiveFromSensor('gamerotation');
+    const message = Buffer.alloc(1);
+    message.write('r', 0, 1);
+    this.sendToSensor(message);
+    const res = await response;
+    return [res.x, res.y, res.z];
+};
+
+Sensor.prototype.getMagneticFieldVector = async function () {
+    this._logger.log('get mag field ' + this.mac_addr);
+    const response = this.receiveFromSensor('magfield');
+    const message = Buffer.alloc(1);
+    message.write('M', 0, 1);
+    this.sendToSensor(message);
+    const res = await response;
+    return [res.x, res.y, res.z];
+};
+Sensor.prototype.getMagneticFieldVectorNormalized = async function () {
+    return normalize(await this.getMagneticFieldVector());  
+};
+
 Sensor.prototype.getProximity = async function () {
     this._logger.log('get proximity ' + this.mac_addr);
     const response = this.receiveFromSensor('proximity');
     const message = Buffer.alloc(1);
     message.write('P', 0, 1);
     this.sendToSensor(message);
-    return (await response).prox;
+    return (await response).proximity;
+};
+Sensor.prototype.getStepCount = async function () {
+    this._logger.log('get step count ' + this.mac_addr);
+    const response = this.receiveFromSensor('stepcount');
+    const message = Buffer.alloc(1);
+    message.write('S', 0, 1);
+    this.sendToSensor(message);
+    return (await response).count;
+};
+Sensor.prototype.getLightLevel = async function () {
+    this._logger.log('get light level ' + this.mac_addr);
+    const response = this.receiveFromSensor('lightlevel');
+    const message = Buffer.alloc(1);
+    message.write('l', 0, 1);
+    this.sendToSensor(message);
+    return (await response).level;
 };
 
 Sensor.prototype.commandToClient = function (command) {
@@ -363,9 +446,62 @@ Sensor.prototype.onMessage = function (message) {
             z: message.readFloatBE(19),
         });
     }
+    else if (command === 'G' && message.length === 23) {
+        this.sendToClient('gravity', {
+            x: message.readFloatBE(11),
+            y: message.readFloatBE(15),
+            z: message.readFloatBE(19),
+        });
+    }
+    else if (command === 'L' && message.length === 23) {
+        this.sendToClient('linear', {
+            x: message.readFloatBE(11),
+            y: message.readFloatBE(15),
+            z: message.readFloatBE(19),
+        });
+    }
+    else if (command === 'Y' && message.length === 23) {
+        this.sendToClient('gyroscope', {
+            x: message.readFloatBE(11),
+            y: message.readFloatBE(15),
+            z: message.readFloatBE(19),
+        });
+    }
+    else if (command === 'R' && message.length === 27) {
+        this.sendToClient('rotation', {
+            x: message.readFloatBE(11),
+            y: message.readFloatBE(15),
+            z: message.readFloatBE(19),
+            w: message.readFloatBE(23),
+        });
+    }
+    else if (command === 'r' && message.length === 23) {
+        this.sendToClient('gamerotation', {
+            x: message.readFloatBE(11),
+            y: message.readFloatBE(15),
+            z: message.readFloatBE(19),
+        });
+    }
+    else if (command === 'M' && message.length === 23) {
+        this.sendToClient('magfield', {
+            x: message.readFloatBE(11),
+            y: message.readFloatBE(15),
+            z: message.readFloatBE(19),
+        });
+    }
     else if (command === 'P' && message.length === 15) {
         this.sendToClient('proximity', {
-            prox: message.readFloatBE(11),
+            proximity: message.readFloatBE(11),
+        });
+    }
+    else if (command === 'S' && message.length === 15) {
+        this.sendToClient('stepcount', {
+            count: message.readFloatBE(11),
+        });
+    }
+    else if (command === 'l' && message.length === 15) {
+        this.sendToClient('lightlevel', {
+            level: message.readFloatBE(11),
         });
     }
     else {
@@ -397,15 +533,81 @@ Sensor.prototype.onCommand = function(command) {
             }
         },
         {
-            regex: /^get accelerometer direction$/,
+            regex: /^get facing direction$/,
             handler: () => {
-                return this.getAccelerometerDirection();
+                return this.getFacingDirection();
+            }
+        },
+        {
+            regex: /^get gravity$/,
+            handler: () => {
+                return this.getGravity();
+            }
+        },
+        {
+            regex: /^get gravity normalized$/,
+            handler: () => {
+                return this.getGravityNormalized();
+            }
+        },
+        {
+            regex: /^get linear acceleration$/,
+            handler: () => {
+                return this.getLinearAcceleration();
+            }
+        },
+        {
+            regex: /^get linear acceleration normalized$/,
+            handler: () => {
+                return this.getLinearAccelerationNormalized();
+            }
+        },
+        {
+            regex: /^get gyroscope$/,
+            handler: () => {
+                return this.getGyroscope();
+            }
+        },
+        {
+            regex: /^get rotation$/,
+            handler: () => {
+                return this.getRotation();
+            }
+        },
+        {
+            regex: /^get game rotation$/,
+            handler: () => {
+                return this.getGameRotation();
+            }
+        },
+        {
+            regex: /^get magnetic field vector$/,
+            handler: () => {
+                return this.getMagneticFieldVector();
+            }
+        },
+        {
+            regex: /^get magnetic field vector normalized$/,
+            handler: () => {
+                return this.getMagneticFieldVectorNormalized();
             }
         },
         {
             regex: /^get proximity$/,
             handler: () => {
                 return this.getProximity();
+            }
+        },
+        {
+            regex: /^get step count$/,
+            handler: () => {
+                return this.getStepCount();
+            }
+        },
+        {
+            regex: /^get light level$/,
+            handler: () => {
+                return this.getLightLevel();
             }
         },
         {

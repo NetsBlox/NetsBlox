@@ -228,8 +228,90 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      *     "right" - the device is horizontal, lying on its right side (facing the screen).
      * @param {string} sensor name of the sensor (matches at the end)
      */
-    SalIO.prototype.getAccelerometerDirection = function (sensor) {
-        return this._passToSensor('getAccelerometerDirection', arguments);
+    SalIO.prototype.getFacingDirection = function (sensor) {
+        return this._passToSensor('getFacingDirection', arguments);
+    };
+
+    /**
+     * Gets the current output of the gravity vector sensor.
+     * This is a 3D vector with units of m/s².
+     * This is similar to the Accelerometer, but tries to account for noise from linear movement.
+     * If the device does not support this sensor, returns (0, 0, 0).
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getGravity = function (sensor) {
+        return this._passToSensor('getGravity', arguments);
+    };
+    /**
+     * As getGravity, but scaled to a magnitude of 1.
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getGravityNormalized = function (sensor) {
+        return this._passToSensor('getGravityNormalized', arguments);
+    };
+
+    /**
+     * Gets the current output of the linear acceleration sensor.
+     * This is a 3D vector with units of m/s².
+     * If the device does not support this sensor, returns (0, 0, 0).
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getLinearAcceleration = function (sensor) {
+        return this._passToSensor('getLinearAcceleration', arguments);
+    };
+    /**
+     * As getLinearAcceleration, but scaled to a magnitude of 1.
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getLinearAccelerationNormalized = function (sensor) {
+        return this._passToSensor('getLinearAccelerationNormalized', arguments);
+    };
+
+    /**
+     * Gets the current output of the gyroscope, which measures rotational acceleration.
+     * This is a 3D vector with units of rad/s² around each axis.
+     * If the device does not support this sensor, returns (0, 0, 0).
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getGyroscope = function (sensor) {
+        return this._passToSensor('getGyroscope', arguments);
+    };
+    /**
+     * Gets the current output of the rotation sensor, which measures rotational orientation.
+     * This is a 4D vector with units of rad around each of the 3 axes, plus a scalar component.
+     * For most uses, getGameRotation is more convenient.
+     * If the device does not support this sensor, returns (0, 0, 0).
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getRotation = function (sensor) {
+        return this._passToSensor('getRotation', arguments);
+    };
+    /**
+     * Gets the current output of the game rotation sensor, which measures rotational orientation.
+     * This is a 3D vector with units of rad around each axis from some standard basis.
+     * Due to the arbitrary basis of getRotation, this is more appropriate for use in games.
+     * If the device does not support this sensor, returns (0, 0, 0).
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getGameRotation = function (sensor) {
+        return this._passToSensor('getGameRotation', arguments);
+    };
+
+    /**
+     * Gets the current output of the magnetic field sensor.
+     * This is a 3D vector with units of μT (micro teslas) in each direction.
+     * If the device does not support this sensor, returns (0, 0, 0).
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getMagneticFieldVector = function (sensor) {
+        return this._passToSensor('getMagneticFieldVector', arguments);
+    };
+    /**
+     * As getMagneticFieldVector, but scaled to a magnitude of 1.
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getMagneticFieldVectorNormalized = function (sensor) {
+        return this._passToSensor('getMagneticFieldVectorNormalized', arguments);
     };
 
     /**
@@ -241,6 +323,23 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      */
     SalIO.prototype.getProximity = function (sensor) {
         return this._passToSensor('getProximity', arguments);
+    };
+    /**
+     * Gets the current output of the step counter.
+     * This measures the number of steps taken since the device was started.
+     * If the device does not have a step counter, returns 0.
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getStepCount = function (sensor) {
+        return this._passToSensor('getStepCount', arguments);
+    };
+    /**
+     * gets the current output of the light sensor.
+     * If the device does not have a light level sensor, returns 0.
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getLightLevel = function (sensor) {
+        return this._passToSensor('getLightLevel', arguments);
     };
 
     /**
