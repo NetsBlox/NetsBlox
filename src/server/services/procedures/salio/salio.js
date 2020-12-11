@@ -315,6 +315,16 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
+     * Gets the current location of the device.
+     * This is a latitude longitude pair in degrees.
+     * If the device does not have location enabled, returns (0, 0).
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getLocation = function (sensor) {
+        return this._passToSensor('getLocation', arguments);
+    };
+
+    /**
      * Gets the current output of the proximity sensor.
      * This is a distance measured in cm.
      * Note that some devices only have binary proximity sensors (near/far), which will take discrete two values.

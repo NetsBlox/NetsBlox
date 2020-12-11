@@ -332,6 +332,16 @@ Sensor.prototype.getLightLevel = async function () {
     return (await response).level;
 };
 
+Sensor.prototype.getLocation = async function () {
+    this._logger.log('get location ' + this.mac_addr);
+    const response = this.receiveFromSensor('location');
+    const message = Buffer.alloc(1);
+    message.write('X', 0, 1);
+    this.sendToSensor(message);
+    const res = await response;
+    return [res.lat, res.long];
+};
+
 Sensor.prototype.commandToClient = function (command) {
     if (SALIO_MODE === 'security' || SALIO_MODE === 'both') {
         var mac_addr = this.mac_addr;
@@ -489,6 +499,12 @@ Sensor.prototype.onMessage = function (message) {
             z: message.readFloatBE(19),
         });
     }
+    else if (command === 'X' && message.length === 19) {
+        this.sendToClient('location', {
+            lat: message.readFloatBE(11),
+            long: message.readFloatBE(15),
+        });
+    }
     else if (command === 'P' && message.length === 15) {
         this.sendToClient('proximity', {
             proximity: message.readFloatBE(11),
@@ -590,6 +606,12 @@ Sensor.prototype.onCommand = function(command) {
             regex: /^get magnetic field vector normalized$/,
             handler: () => {
                 return this.getMagneticFieldVectorNormalized();
+            }
+        },
+        {
+            regex: /^get location$/,
+            handler: () => {
+                return this.getLocation();
             }
         },
         {
