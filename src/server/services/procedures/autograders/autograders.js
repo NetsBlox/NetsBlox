@@ -48,10 +48,6 @@ const validateConfig = config => {
     assert(config.name);
 };
 
-const isAuthorized = (caller, extension) => {
-    return !extension || caller.username === extension.author;
-};
-
 const ensureLoggedIn = function(caller) {
     if (!caller.username) {
         throw new Error('Login required.');
@@ -68,22 +64,18 @@ Autograders.createAutograder = async function(config) {
     ensureLoggedIn(this.caller);
     config = preprocessConfig(config);
     const storage = getDatabase();
-    const existing = await storage.findOne({name: config.name});
-    if (!isAuthorized(this.caller, existing)) {
-        throw new Error(`Autograder named ${config.name} already exists. Please choose a different name.`);
-    }
-
+    const author = this.caller.username;
     const extension = {
         type: 'Autograder',
         name: config.name,
-        author: this.caller.username,
+        author,
         createdAt: new Date(),
         version: '0.0.1',
         config,
     };
     const query = {$set: extension};
     try {
-        await storage.updateOne({name: config.name}, query, {upsert: true});
+        await storage.updateOne({author, name: config.name}, query, {upsert: true});
     } catch (err) {
         if (err.message === MONGODB_DOC_TOO_LARGE) {
             throw new Error('Upload is too large. Please decrease the size and try again.');

@@ -5,12 +5,12 @@ const getDatabase = require('./storage');
 
 module.exports = [
     {  // fetch autograder
-        URL: 'autograders/:name.js',
+        URL: 'autograders/:author/:name.js',
         Method: 'get',
         Handler: async function(req, res) {
-            const {name} = req.params;
+            const {author, name} = req.params;
             const storage = getDatabase();
-            const autograder = await storage.findOne({name});
+            const autograder = await storage.findOne({author, name});
             if (!autograder) {
                 return res.sendStatus(404);
             }
