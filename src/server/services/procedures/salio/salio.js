@@ -24,6 +24,8 @@
 
 'use strict';
 
+const {PromiseSocket} = require('promise-socket');
+
 const logger = require('../utils/logger')('SalIO');
 const Sensor = require('./sensor');
 const acl = require('../roboscape/accessControl');
@@ -203,7 +205,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
-     * Gets the current accelerometer output from the sensor.
+     * Get the current accelerometer output from the sensor.
      * This is a 3D vector with units of m/s².
      * @param {string} sensor name of the sensor (matches at the end)
      */
@@ -218,7 +220,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
         return this._passToSensor('getAccelerometerNormalized', arguments);
     };
     /**
-     * Gets a string representation of the general orientation of the device based on the accelerometer output.
+     * Get a string representation of the general orientation of the device based on the accelerometer output.
      * In general, the values represent the direction the screen is facing. Possible values:
      *     "up" - the device (screen) is facing up.
      *     "down" - the device is facing down.
@@ -233,7 +235,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
-     * Gets the current output of the gravity vector sensor.
+     * Get the current output of the gravity vector sensor.
      * This is a 3D vector with units of m/s².
      * This is similar to the Accelerometer, but tries to account for noise from linear movement.
      * If the device does not support this sensor, returns (0, 0, 0).
@@ -251,7 +253,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
-     * Gets the current output of the linear acceleration sensor.
+     * Get the current output of the linear acceleration sensor.
      * This is a 3D vector with units of m/s².
      * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
@@ -268,7 +270,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
-     * Gets the current output of the gyroscope, which measures rotational acceleration.
+     * Get the current output of the gyroscope, which measures rotational acceleration.
      * This is a 3D vector with units of rad/s² around each axis.
      * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
@@ -277,7 +279,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
         return this._passToSensor('getGyroscope', arguments);
     };
     /**
-     * Gets the current output of the rotation sensor, which measures rotational orientation.
+     * Get the current output of the rotation sensor, which measures rotational orientation.
      * This is a 4D vector with units of rad around each of the 3 axes, plus a scalar component.
      * For most uses, getGameRotation is more convenient.
      * If the device does not support this sensor, returns (0, 0, 0).
@@ -287,7 +289,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
         return this._passToSensor('getRotation', arguments);
     };
     /**
-     * Gets the current output of the game rotation sensor, which measures rotational orientation.
+     * Get the current output of the game rotation sensor, which measures rotational orientation.
      * This is a 3D vector with units of rad around each axis from some standard basis.
      * Due to the arbitrary basis of getRotation, this is more appropriate for use in games.
      * If the device does not support this sensor, returns (0, 0, 0).
@@ -298,7 +300,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
-     * Gets the current output of the magnetic field sensor.
+     * Get the current output of the magnetic field sensor.
      * This is a 3D vector with units of μT (micro teslas) in each direction.
      * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
@@ -315,7 +317,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
-     * Gets the current location of the device.
+     * Get the current location of the device.
      * This is a latitude longitude pair in degrees.
      * If the device does not have location enabled, returns (0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
@@ -325,7 +327,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
-     * Gets the current output of the proximity sensor.
+     * Get the current output of the proximity sensor.
      * This is a distance measured in cm.
      * Note that some devices only have binary proximity sensors (near/far), which will take discrete two values.
      * If the device does not have a proximity sensor, returns 0.
@@ -335,7 +337,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
         return this._passToSensor('getProximity', arguments);
     };
     /**
-     * Gets the current output of the step counter.
+     * Get the current output of the step counter.
      * This measures the number of steps taken since the device was started.
      * If the device does not have a step counter, returns 0.
      * @param {string} sensor name of the sensor (matches at the end)
@@ -344,12 +346,32 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
         return this._passToSensor('getStepCount', arguments);
     };
     /**
-     * gets the current output of the light sensor.
+     * Get the current output of the light sensor.
      * If the device does not have a light level sensor, returns 0.
      * @param {string} sensor name of the sensor (matches at the end)
      */
     SalIO.prototype.getLightLevel = function (sensor) {
         return this._passToSensor('getLightLevel', arguments);
+    };
+
+    /**
+     * Get the most recent image snapshot from the sensor.
+     * @param {string} sensor name of the sensor (matches at the end)
+     */
+    SalIO.prototype.getImage = async function (sensor) {
+        const sensorObj = await this._getSensor(sensor);
+        const ip = sensorObj.ip4_addr;
+
+        const socket = new PromiseSocket();
+        await socket.connect(8889, ip);
+        await socket.writeAll('D');
+        const bin = await socket.readAll();
+
+        const rsp = this.response;
+        rsp.set('content-type', 'image/jpeg');
+        rsp.set('content-length', bin.length);
+        rsp.set('connection', 'close');
+        return rsp.status(200).send(bin);
     };
 
     /**

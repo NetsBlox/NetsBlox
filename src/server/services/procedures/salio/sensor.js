@@ -418,13 +418,6 @@ Sensor.prototype.onMessage = function (message) {
             this.setEncryptionKey([]);
             this.resetRates();
         }
-    } 
-    else if (command === 'W' && message.length === 12) {
-        state = message.readUInt8(11);
-        this.sendToClient('whiskers', {
-            left: (state & 0x2) == 0,
-            right: (state & 0x1) == 0
-        });
     }
     else if (command === 'P' && message.length === 12) {
         state = message.readUInt8(11) == 0;
