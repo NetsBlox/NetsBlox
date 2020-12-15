@@ -2,7 +2,6 @@ const Alexa = require('ask-sdk-core');
 const express = require('express');
 const { ExpressAdapter } = require('ask-sdk-express-adapter');
 
-const router = express();
 const skillBuilder = Alexa.SkillBuilders.custom();
 
 const LaunchRequestHandler = {
@@ -104,6 +103,16 @@ skillBuilder.addRequestHandlers(
 
 const skill = skillBuilder.create();
 const adapter = new ExpressAdapter(skill, true, true);
-router.post('/alexa', adapter.getRequestHandlers());
 
-module.exports = router;
+
+if (require.main === module) {
+    const app = express();
+    app.get('/test', (req, res) => res.send('working'));
+    app.use('/', adapter.getRequestHandlers());
+    const port = process.env.PORT || 4675;
+    app.listen(port);
+} else {
+    const router = express();
+    router.post('/alexa', adapter.getRequestHandlers());
+    module.exports = router;
+}
