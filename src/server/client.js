@@ -480,7 +480,7 @@ Client.MessageHandlers = {
     'request-actions': function(msg) {
         const {projectId, roleId, actionId, silent=true} = msg;
         return this.requestActionsAfter(projectId, roleId, actionId, silent);
-    }
+    },
 
     // TODO: The following handler is deprecated and should be removed after the
     // next release (ie, in 2 releases so there is time to transition away).
