@@ -11,7 +11,7 @@ var _ = require('lodash'),
     Jimp = require('jimp');
 
 const ProjectsData = require('../storage/projects');
-const Projects = new (require('../api/core/projects'))(logger);
+const Projects = require('../api/core/projects');
 const Users = require('../storage/users');
 
 ////////////////////// Project Helpers //////////////////////

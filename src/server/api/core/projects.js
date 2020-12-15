@@ -2,16 +2,59 @@
  * The core functionality for the NetsBlox API pertaining to interacting
  * with projects.
  */
-const ProjectsData = require('../../storage/projects');
+const Logger = require('../../logger');
+const ProjectsStorage = require('../../storage/projects');
 const UsersData = require('../../storage/users');
 const NetworkTopology = require('../../network-topology');
 const Utils = require('../../server-utils.js');
 const Errors = require('./errors');
 const _ = require('lodash');
+const Auth = require('./auth');
+const P = Auth.Permission;
 
 class Projects {
-    constructor(logger) {
-        this.logger = logger.fork('projects');
+    constructor() {
+        this.logger = new Logger('netsblox:projects');
+    }
+
+    async exportProject(requestor, projectId) {
+        const project = await ProjectsStorage.getById(projectId);
+        await Auth.ensureAuthorized(requestor, P.Project.READ(project));
+
+        const occupantForRole = {};
+
+        // Get the first occupant for each role
+        NetworkTopology.getSocketsAtProject(projectId).reverse()
+            .forEach(socket => {
+                occupantForRole[socket.roleId] = socket;
+            });
+
+        // For each role...
+        //   - if it is occupied, request the content
+        //   - else, use the content from the database
+        const ids = await project.getRoleIds();
+        const fetchers = ids.map(id => {
+            const occupant = occupantForRole[id];
+            if (occupant) {
+                return occupant.getProjectJson()
+                    .catch(err => {
+                        this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
+                        return project.getRoleById(id);
+                    });
+            }
+            return project.getRoleById(id);
+        });
+
+        const roles = await Promise.all(fetchers);
+        const roleContents = roles.map(content =>
+            Utils.xml.format('<role name="@">', content.ProjectName)
+            + content.SourceCode + content.Media + '</role>'
+        );
+        const xml = Utils.xml.format('<room name="@" app="@">', project.name, Utils.APP) +
+            roleContents.join('') + '</room>';
+        this.logger.trace(`Exporting project ${projectId} for ${requestor}`);
+
+        return xml;
     }
 
     async saveProject(project, roleId, roleData, name, overwrite=false) {
@@ -78,7 +121,7 @@ class Projects {
         }
 
         if (overwrite) {
-            const collision = await ProjectsData.get(owner, name);
+            const collision = await ProjectsStorage.get(owner, name);
             if (collision) {
                 await this.deleteProject(collision);
             }
@@ -102,7 +145,7 @@ class Projects {
 
     async _setProjectPublished(owner, name, isPublished=false) {
         const query = {owner, name};
-        const result = await ProjectsData.updateCustom(query, {$set: {Public: isPublished}});
+        const result = await ProjectsStorage.updateCustom(query, {$set: {Public: isPublished}});
         if (result.matchedCount === 0) {
             throw new Errors.ProjectNotFound(name);
         }
@@ -111,7 +154,7 @@ class Projects {
     async newProject(owner, roleName='myRole', clientId=null) {
         const name = await this._getProjectName(owner, 'untitled');
         const roleId = `${roleName}-${Date.now()}`;
-        const roleData = await ProjectsData.uploadRoleToBlob(Utils.getEmptyRole(roleName));
+        const roleData = await ProjectsStorage.uploadRoleToBlob(Utils.getEmptyRole(roleName));
         const projectData = {
             owner,
             name,
@@ -119,7 +162,7 @@ class Projects {
             transient: true,
         };
         projectData.roles[roleId] = roleData;
-        const project = await ProjectsData.new(projectData);
+        const project = await ProjectsStorage.new(projectData);
         const projectId = project.getId();
 
         this.logger.trace(`Created new project: ${projectId} (${roleName})`);
@@ -135,9 +178,9 @@ class Projects {
     async importProject(owner, roles, name, roleName, clientId) {
         name = await this._getProjectName(owner, name);
 
-        const rolesMetadata = await Promise.all(roles.map(ProjectsData.uploadRoleToBlob));
+        const rolesMetadata = await Promise.all(roles.map(ProjectsStorage.uploadRoleToBlob));
         const rolesWithIds = rolesMetadata.map(roleData => {
-            const roleId = ProjectsData.getNewRoleId(roleData.ProjectName);
+            const roleId = ProjectsStorage.getNewRoleId(roleData.ProjectName);
             return [roleId, roleData];
         });
         const rolesDict = _.fromPairs(rolesWithIds);
@@ -150,7 +193,7 @@ class Projects {
             name,
             roles: rolesDict
         };
-        const project = await ProjectsData.new(projectData);
+        const project = await ProjectsStorage.new(projectData);
         const projectId = project.getId();
         const state = await NetworkTopology.setClientState(clientId, projectId, roleId, owner);
         return {
@@ -163,7 +206,7 @@ class Projects {
     async getSharedProjectList(username, origin='') {
         await this._ensureValidUser(username);
 
-        const projects = await ProjectsData.getSharedProjects(username);
+        const projects = await ProjectsStorage.getSharedProjects(username);
         this.logger.trace(`found ${projects.length} shared projects ` +
             `for ${username}`);
 
@@ -179,20 +222,20 @@ class Projects {
     async getProjectList(username, origin='') {
         await this._ensureValidUser(username);
 
-        const projects = await ProjectsData.getUserProjects(username);
+        const projects = await ProjectsStorage.getUserProjects(username);
         this.logger.trace(`found ${projects.length} projects for ${username}`);
         const previews = projects.map(project => this._getProjectMetadata(project, origin));
         return previews;
     }
 
     async hasConflictingStoredProject(username, name, projectId) {
-        const projects = await ProjectsData.getAllUserProjects(username);
+        const projects = await ProjectsStorage.getAllUserProjects(username);
         const isColliding = project => project.getId() !== projectId && project.name === name;
         return !!projects.find(isColliding);
     }
 
     async getProjectByName(owner, name, requestor) {
-        let project = await ProjectsData.get(owner, name);
+        let project = await ProjectsStorage.get(owner, name);
         if (!project) throw new Errors.ProjectNotFound(name);
         if (requestor && requestor !== owner) {  // send a copy
             project = await project.getCopyFor(requestor);
@@ -218,8 +261,8 @@ class Projects {
 
     async getProjectSafe(projectIdOrOwner, name) {
         const project = arguments.length === 2 ?
-            await ProjectsData.get(projectIdOrOwner, name) :
-            await ProjectsData.getById(projectIdOrOwner);
+            await ProjectsStorage.get(projectIdOrOwner, name) :
+            await ProjectsStorage.getById(projectIdOrOwner);
 
         if (!project) throw new Errors.ProjectNotFound(name);
         return project;
@@ -284,7 +327,7 @@ class Projects {
     async setProjectName(projectId, name) {
         // Resolve conflicts with transient, marked for deletion projects
         const project = await this.getProjectSafe(projectId);
-        const projects = await ProjectsData.getAllUserProjects(project.owner);
+        const projects = await ProjectsStorage.getAllUserProjects(project.owner);
         const projectsByName = _.fromPairs(projects.map(p => [p.name, p]));
 
         const basename = name;
@@ -299,7 +342,7 @@ class Projects {
         }
 
         if (collision && collision.deleteAt) {
-            await ProjectsData.destroy(collision._id);
+            await ProjectsStorage.destroy(collision._id);
         }
 
         await project.setName(name);
@@ -309,11 +352,11 @@ class Projects {
 
     async _setProjectName(ownerId, projectId, name) {
         const uniqName = await this._getProjectName(ownerId, name, projectId);
-        await ProjectsData.update(projectId, {$set: {name: uniqName}});
+        await ProjectsStorage.update(projectId, {$set: {name: uniqName}});
     }
 
     async _getProjectName(ownerId, basename, projectId=null) {
-        const metadata = (await ProjectsData.getAllUserProjects(ownerId))
+        const metadata = (await ProjectsStorage.getAllUserProjects(ownerId))
             .filter(metadata => metadata.getId() !== projectId);
         const takenNames = metadata.map(md => md.name);
         let name = basename;
@@ -327,4 +370,4 @@ class Projects {
     }
 }
 
-module.exports = Projects;
+module.exports = new Projects();
