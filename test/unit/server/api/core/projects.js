@@ -1,21 +1,38 @@
 describe('projects', function() {
     const assert = require('assert');
     const utils = require('../../../../assets/utils');
-    const Logger = utils.reqSrc('./logger');
     const ProjectsAPI = utils.reqSrc('./api/core/projects');
     const Errors = utils.reqSrc('./api/core/errors');
     const SUtils = utils.reqSrc('./server-utils');
     let ProjectsStorage;
-    let Projects = null;
     let projects, project;
     const username = 'brian';
+    const otherUser = 'nobody';
 
     beforeEach(async () => {
         await utils.reset();
-        Projects = new ProjectsAPI(new Logger('netsblox:test'));
         ProjectsStorage = utils.reqSrc('./storage/projects');
         projects = await ProjectsStorage.getUserProjects(username);
         [project] = projects;
+    });
+
+    describe('exportProject', function() {
+        it('should export project', async function() {
+            const xml = await ProjectsAPI.exportProject(username, project.getId());
+            assert(xml.startsWith('<room'));
+        });
+
+        it('should fetch latest role content in export', async function() {
+            // TODO
+        });
+
+        it('should not export other user projects', async function() {
+            const privateProject = projects.find(project => !project.Public);
+            await utils.shouldThrow(
+                () => ProjectsAPI.exportProject(otherUser, privateProject.getId()),
+                Errors.Unauthorized
+            );
+        });
     });
 
     describe('saveProject', function() {
@@ -28,17 +45,17 @@ describe('projects', function() {
         it('should save project w/ new name', async function() {
             const [roleId] = Object.keys(project.roles);
             const name = 'newName';
-            await Projects.saveProject(project, roleId, roleData, name);
+            await ProjectsAPI.saveProject(project, roleId, roleData, name);
 
-            await Projects.getProjectSafe(project.owner, name);
+            await ProjectsAPI.getProjectSafe(project.owner, name);
         });
 
         it('should keep original project on save as', async function() {
             const [roleId] = Object.keys(project.roles);
             const name = 'newName';
-            await Projects.saveProject(project, roleId, roleData, name);
+            await ProjectsAPI.saveProject(project, roleId, roleData, name);
 
-            await Projects.getProjectSafe(project.owner, project.name);
+            await ProjectsAPI.getProjectSafe(project.owner, project.name);
         });
 
         it('should not keep unsaved project on save as', async function() {
@@ -48,18 +65,18 @@ describe('projects', function() {
             });
             const [roleId] = Object.keys(unsaved.roles);
             const name = 'newName';
-            await Projects.saveProject(unsaved, roleId, roleData, name);
+            await ProjectsAPI.saveProject(unsaved, roleId, roleData, name);
 
             await utils.shouldThrow(
-                () => Projects.getProjectSafe(unsaved.owner, unsaved.name),
+                () => ProjectsAPI.getProjectSafe(unsaved.owner, unsaved.name),
                 Errors.ProjectNotFound
             );
         });
 
         it('should save project', async function() {
             const [roleId] = Object.keys(project.roles);
-            await Projects.saveProject(project, roleId, roleData);
-            const newProject = await Projects.getProjectSafe(project.owner, project.name);
+            await ProjectsAPI.saveProject(project, roleId, roleData);
+            const newProject = await ProjectsAPI.getProjectSafe(project.owner, project.name);
             assert.equal(newProject.roles[roleId].ProjectName, roleData.ProjectName);
         });
 
@@ -67,7 +84,7 @@ describe('projects', function() {
             const [roleId] = Object.keys(project.roles);
             const [, otherProject] = projects;
             const {name} = otherProject;
-            const saved = await Projects.saveProject(project, roleId, roleData, name);
+            const saved = await ProjectsAPI.saveProject(project, roleId, roleData, name);
 
             const newProject = await ProjectsStorage.getProjectMetadataById(saved.getId());
             assert.equal(newProject.name, `${name} (2)`);
@@ -77,7 +94,7 @@ describe('projects', function() {
             const [roleId] = Object.keys(project.roles);
             const [, otherProject] = projects;
             const {name} = otherProject;
-            const saved = await Projects.saveProject(project, roleId, roleData, name, true);
+            const saved = await ProjectsAPI.saveProject(project, roleId, roleData, name, true);
 
             const newProject = await ProjectsStorage.getProjectMetadataById(saved.getId());
             assert.equal(newProject.name, name);
@@ -86,27 +103,27 @@ describe('projects', function() {
 
     describe('saveProjectCopy', function() {
         it('should create new project', async function() {
-            await Projects.saveProjectCopy(username, project);
+            await ProjectsAPI.saveProjectCopy(username, project);
             const allProjects = await ProjectsStorage.getAllUserProjects(username);
             assert.equal(allProjects.length, projects.length + 1);
         });
 
         it('should start with "Copy of..." ', async function() {
-            await Projects.saveProjectCopy(username, project);
+            await ProjectsAPI.saveProjectCopy(username, project);
             const allProjects = await ProjectsStorage.getAllUserProjects(username);
             const copy = allProjects.find(project => project.name.startsWith('Copy of'));
             assert(copy);
         });
 
         it('should contain same roles', async function() {
-            await Projects.saveProjectCopy(username, project);
+            await ProjectsAPI.saveProjectCopy(username, project);
             const allProjects = await ProjectsStorage.getAllUserProjects(username);
             const copy = allProjects.find(project => project.name.startsWith('Copy of'));
             assert.deepEqual(copy.roles, project.roles);
         });
 
         it('should save copy', async function() {
-            await Projects.saveProjectCopy(username, project);
+            await ProjectsAPI.saveProjectCopy(username, project);
             const allProjects = await ProjectsStorage.getAllUserProjects(username);
             const copy = allProjects.find(project => project.name.startsWith('Copy of'));
             assert(!copy.transient, 'Copy is set to transient');
@@ -115,7 +132,7 @@ describe('projects', function() {
 
     describe('deleteProject', function() {
         it('should delete the project', async function() {
-            await Projects.deleteProject(project);
+            await ProjectsAPI.deleteProject(project);
             const proj = await ProjectsStorage.getProjectMetadataById(project.getId());
             assert(!proj, 'Project not deleted.');
         });
@@ -123,14 +140,14 @@ describe('projects', function() {
 
     describe('publishProject', function() {
         it('should publish projects', async function() {
-            await Projects.publishProject(project.owner, project.name);
+            await ProjectsAPI.publishProject(project.owner, project.name);
             const p = await ProjectsStorage.getProjectMetadataById(project.getId());
             assert(p.Public);
         });
 
         it('should throw error if not found', async function() {
             await utils.shouldThrow(
-                () => Projects.publishProject(project.owner, 'IDontExist'),
+                () => ProjectsAPI.publishProject(project.owner, 'IDontExist'),
                 Errors.ProjectNotFound
             );
         });
@@ -142,14 +159,14 @@ describe('projects', function() {
         });
 
         it('should set Public to false', async function() {
-            await Projects.unpublishProject(project.owner, project.name);
+            await ProjectsAPI.unpublishProject(project.owner, project.name);
             const p = await ProjectsStorage.getProjectMetadataById(project.getId());
             assert(!p.Public);
         });
 
         it('should throw err if project not found', async function() {
             await utils.shouldThrow(
-                () => Projects.publishProject(project.owner, 'IDontExist'),
+                () => ProjectsAPI.publishProject(project.owner, 'IDontExist'),
                 Errors.ProjectNotFound
             );
         });
@@ -157,59 +174,59 @@ describe('projects', function() {
 
     describe('newProject', function() {
         it('should create new project', async function() {
-            await Projects.newProject(username);
+            await ProjectsAPI.newProject(username);
             const allProjects = await ProjectsStorage.getAllUserProjects(username);
             assert.equal(allProjects.length, projects.length + 1);
         });
 
         it('should be transient', async function() {
-            const {projectId} = await Projects.newProject(username);
-            const newProject = await Projects.getProjectSafe(projectId);
+            const {projectId} = await ProjectsAPI.newProject(username);
+            const newProject = await ProjectsAPI.getProjectSafe(projectId);
             assert(newProject.transient, 'New project should be transient.');
         });
 
         it('should create role', async function() {
-            const {projectId} = await Projects.newProject(username);
-            const project = await Projects.getProjectSafe(projectId);
+            const {projectId} = await ProjectsAPI.newProject(username);
+            const project = await ProjectsAPI.getProjectSafe(projectId);
             const roleCount = Object.keys(project.roles).length;
             assert.equal(roleCount, 1);
         });
 
         it('should create role content', async function() {
-            const {projectId} = await Projects.newProject(username);
-            const project = await Projects.getProjectSafe(projectId);
+            const {projectId} = await ProjectsAPI.newProject(username);
+            const project = await ProjectsAPI.getProjectSafe(projectId);
             const [roleContent] = Object.values(project.roles);
             assert(roleContent.ProjectName, 'Role is missing project name.');
         });
 
         it('should create non-colliding project name', async function() {
-            const state1 = await Projects.newProject(username);
-            const state2 = await Projects.newProject(username);
+            const state1 = await ProjectsAPI.newProject(username);
+            const state2 = await ProjectsAPI.newProject(username);
             assert.notEqual(state1.name, state2.name);
         });
     });
 
     describe('getSharedProjectList', function() {
         it('should get projects shared w/ user', async function() {
-            const sharedProjects = await Projects.getSharedProjectList(username);
+            const sharedProjects = await ProjectsAPI.getSharedProjectList(username);
             assert.equal(sharedProjects.length, 1);
             assert.equal(sharedProjects[0].ProjectName, 'SharedProject');
         });
 
         it('should not get projects shared by user', async function() {
-            const sharedProjects = await Projects.getSharedProjectList('hamid');
+            const sharedProjects = await ProjectsAPI.getSharedProjectList('hamid');
             assert.equal(sharedProjects.length, 0);
         });
     });
 
     describe('getProjectList', function() {
         it('should get projects owned by user', async function() {
-            const projList = await Projects.getProjectList(username);
+            const projList = await ProjectsAPI.getProjectList(username);
             assert.equal(projects.length, projList.length);
         });
 
         it('should convert projects to preview format', async function() {
-            const projList = await Projects.getProjectList(username);
+            const projList = await ProjectsAPI.getProjectList(username);
             projList.forEach((preview, i) => {
                 const project = projects[i];
                 assert.equal(project.name, preview.ProjectName);
@@ -221,7 +238,7 @@ describe('projects', function() {
         it('should get role given a project and role ID', async function() {
             const projectId = project.getId();
             const [roleId] = Object.keys(project.roles);
-            const {role} = await Projects.getProject(projectId, roleId);
+            const {role} = await ProjectsAPI.getProject(projectId, roleId);
             assert.equal(role.ID, roleId);
         });
 
@@ -231,20 +248,20 @@ describe('projects', function() {
 
     describe('getPublicProject', function() {
         it('should return project', async function() {
-            const project = await Projects.getPublicProject(username, 'PublicProject');
+            const project = await ProjectsAPI.getPublicProject(username, 'PublicProject');
             assert(project);
         });
 
         it('should throw error if project not found', async function() {
             await utils.shouldThrow(
-                () => Projects.getPublicProject(username, 'IDontExist'),
+                () => ProjectsAPI.getPublicProject(username, 'IDontExist'),
                 Errors.ProjectNotFound
             );
         });
 
         it('should throw error if project not public', async function() {
             await utils.shouldThrow(
-                () => Projects.getPublicProject(username, 'MultiRoles'),
+                () => ProjectsAPI.getPublicProject(username, 'MultiRoles'),
                 Errors.ProjectNotFound
             );
         });
@@ -261,7 +278,7 @@ describe('projects', function() {
         const name = 'ImportedProject';
 
         it('should create new project', async function() {
-            await Projects.importProject(
+            await ProjectsAPI.importProject(
                 username,
                 roles,
                 name,
@@ -273,39 +290,39 @@ describe('projects', function() {
         });
 
         it('should choose non-colliding name', async function() {
-            const {projectId} = await Projects.importProject(
+            const {projectId} = await ProjectsAPI.importProject(
                 username,
                 roles,
                 project.name,
                 'firstRole',
                 'someClientId'
             );
-            const newProject = await Projects.getProjectSafe(projectId);
+            const newProject = await ProjectsAPI.getProjectSafe(projectId);
             assert.notEqual(newProject.name, project.name);
         });
 
         it('should import both roles', async function() {
-            const {projectId} = await Projects.importProject(
+            const {projectId} = await ProjectsAPI.importProject(
                 username,
                 roles,
                 name,
                 'firstRole',
                 'someClientId'
             );
-            const newProject = await Projects.getProjectSafe(projectId);
+            const newProject = await ProjectsAPI.getProjectSafe(projectId);
             const roleIds = await newProject.getRoleIds();
             assert.equal(roleIds.length, roles.length);
         });
 
         it('should upload role data to blob', async function() {
-            const {projectId} = await Projects.importProject(
+            const {projectId} = await ProjectsAPI.importProject(
                 username,
                 roles,
                 name,
                 'firstRole',
                 'someClientId'
             );
-            const newProject = await Projects.getProjectSafe(projectId);
+            const newProject = await ProjectsAPI.getProjectSafe(projectId);
             const [roleId] = await newProject.getRoleIds();
             const newRole = newProject.roles[roleId];
             const originalRole = roles.find(role => role.ProjectName === newRole.ProjectName);
@@ -322,8 +339,8 @@ describe('projects', function() {
         it('should set project name', async function() {
             const projectId = project.getId();
             const name = 'myNewName';
-            await Projects.setProjectName(projectId, name);
-            const newProject = await Projects.getProjectSafe(projectId);
+            await ProjectsAPI.setProjectName(projectId, name);
+            const newProject = await ProjectsAPI.getProjectSafe(projectId);
             assert.equal(newProject.name, name);
         });
 
@@ -331,8 +348,8 @@ describe('projects', function() {
             const projectId = project.getId();
             const [, otherProject] = projects;
             const {name} = otherProject;
-            await Projects.setProjectName(projectId, name);
-            const newProject = await Projects.getProjectSafe(projectId);
+            await ProjectsAPI.setProjectName(projectId, name);
+            const newProject = await ProjectsAPI.getProjectSafe(projectId);
             assert.notEqual(newProject.name, name);
             assert(newProject.name.includes(name));
         });
