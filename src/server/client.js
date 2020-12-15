@@ -51,28 +51,14 @@ class Client {
         this._logger.trace('created');
     }
 
-    hasProject (silent) {
-        const hasProject = !!this.projectId;
-        if (!hasProject && !silent) {
-            this._logger.error('user has no project!');
-        }
-        return hasProject;
-    }
-
     isOwner () {  // TODO: move to auth stuff...
         // TODO: update
         return this.projectId;
     }
 
-    async sendEditMsg (msg) {
-        if (!this.hasProject()) {
-            this._logger.error(`Trying to send edit msg w/o project ${this.uuid}`);
-            return;
-        }
-
+    async sendEditMsg (msg) {  // TODO: validate the msg fields?
         // accept the event here and broadcast to everyone
-        const projectId = this.projectId;
-        const roleId = this.roleId;
+        const {projectId, roleId} = msg;
         const {canApply, actionId} = await this.canApplyAction(msg.action);
         const sockets = NetworkTopology.getSocketsAt(projectId, roleId);
 
@@ -103,11 +89,12 @@ class Client {
     }
 
     async recordAction(msg) {
-        const projectId = this.hasProject() ? this.projectId : 'n/a';
+        const {projectId, roleId} = msg;
         const record = {};
 
         record.username = this.username === this.uuid ? null : this.username;
         record.projectId = projectId;
+        record.roleId = roleId;
         record.sessionId = this.uuid;
         record.action = msg.action;
 
@@ -485,58 +472,46 @@ Client.MessageHandlers = {
             });
     },
 
-    'request-room-state': function() {
-        if (this.hasProject()) {
-            return NetworkTopology.getRoomState(this.projectId)
-                .then(msg => {
-                    msg.type = 'room-roles';
-                    this.send(msg);
-                });
-        }
-    },
-
     ///////////// Import/Export /////////////
     'export-room': async function(msg) {
-        if (this.hasProject()) {
-            const projectId = this.projectId;
-            const occupantForRole = {};
+        const {projectId} = msg;
+        const occupantForRole = {};
 
-            // Get the first occupant for each role
-            NetworkTopology.getSocketsAtProject(projectId).reverse()
-                .forEach(socket => {
-                    occupantForRole[socket.roleId] = socket;
-                });
-
-            const project = await Projects.getById(this.projectId);
-            // For each role...
-            //   - if it is occupied, request the content
-            //   - else, use the content from the database
-            const ids = await project.getRoleIds();
-            const fetchers = ids.map(id => {
-                const occupant = occupantForRole[id];
-                if (occupant) {
-                    return occupant.getProjectJson()
-                        .catch(err => {
-                            this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
-                            return project.getRoleById(id);
-                        });
-                }
-                return project.getRoleById(id);
+        // Get the first occupant for each role
+        NetworkTopology.getSocketsAtProject(projectId).reverse()
+            .forEach(socket => {
+                occupantForRole[socket.roleId] = socket;
             });
 
-            const roles = await Promise.all(fetchers);
-            const roleContents = roles.map(content =>
-                Utils.xml.format('<role name="@">', content.ProjectName)
-                + content.SourceCode + content.Media + '</role>'
-            );
-            const xml = Utils.xml.format('<room name="@" app="@">', project.name, Utils.APP) +
-                roleContents.join('') + '</room>';
-            this._logger.trace(`Exporting project for ${projectId}` +
-                ` to ${this.username}`);
+        const project = await Projects.getById(this.projectId);
+        // For each role...
+        //   - if it is occupied, request the content
+        //   - else, use the content from the database
+        const ids = await project.getRoleIds();
+        const fetchers = ids.map(id => {
+            const occupant = occupantForRole[id];
+            if (occupant) {
+                return occupant.getProjectJson()
+                    .catch(err => {
+                        this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
+                        return project.getRoleById(id);
+                    });
+            }
+            return project.getRoleById(id);
+        });
 
-            _.extend(msg, {content: xml});
-            this.send(msg);
-        }
+        const roles = await Promise.all(fetchers);
+        const roleContents = roles.map(content =>
+            Utils.xml.format('<role name="@">', content.ProjectName)
+            + content.SourceCode + content.Media + '</role>'
+        );
+        const xml = Utils.xml.format('<room name="@" app="@">', project.name, Utils.APP) +
+            roleContents.join('') + '</room>';
+        this._logger.trace(`Exporting project for ${projectId}` +
+            ` to ${this.username}`);
+
+        _.extend(msg, {content: xml});
+        this.send(msg);
     },
 
     'share-msg-type': function(msg) {
