@@ -10,6 +10,7 @@
 
 const axios = require('axios');
 const CoreNLP = {};
+const {CORE_NLP_HOST='https://corenlp.run'} = process.env;
 
 /*
  * Get a list of all supported annotators.
@@ -56,7 +57,7 @@ CoreNLP.annotate = async function(text, annotators=['tokenize', 'ssplit', 'pos']
         annotators: annotators.join(','),
         outputFormat: 'json',
     });
-    const url = `https://corenlp.run/?properties=${qsData}`;
+    const url = `${CORE_NLP_HOST}?properties=${qsData}`;
     const response = await axios.post(url, text);
     return response.data;
 };
