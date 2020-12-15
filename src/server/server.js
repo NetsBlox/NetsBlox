@@ -330,11 +330,10 @@ function loadRoutes(logger) {
                 .includes('routes.js');
         })
         .map(serviceDir => `./services/procedures/${serviceDir}/routes.js`)
-        .map(filePath => {
+        .flatMap(filePath => {
             logger.trace('about to load service route ' + filePath);
             return require(filePath);
-        })  // Load the routes
-        .reduce((prev, next) => prev.concat(next), []);  // Merge all routes
+        });
 
     const routes = [...serverRoutes, ...serviceRoutes];
 
@@ -359,37 +358,42 @@ Server.prototype.createRouter = function() {
 
     logger.trace('loading API routes');
     routes.forEach(api => {
-        var method = api.Method.toLowerCase();
-        api.URL = '/' + api.URL;
+        const isRouter = !api.Method;
+        if (isRouter) {
+            router.use(api);
+        } else {
+            var method = api.Method.toLowerCase();
+            api.URL = '/' + api.URL;
 
-        // Add the middleware
-        if (api.middleware && api.middleware.length > 0) {
-            var args = api.middleware.map(name => (req, res, next) => {
-                if (req.method === 'OPTIONS') return next();
-                return middleware[name](req, res, next);
+            // Add the middleware
+            if (api.middleware && api.middleware.length > 0) {
+                var args = api.middleware.map(name => (req, res, next) => {
+                    if (req.method === 'OPTIONS') return next();
+                    return middleware[name](req, res, next);
+                });
+                args.unshift(api.URL);
+                router.use.apply(router, args);
+            }
+
+            router.route(api.URL)[method](async (req, res) => {
+                if (api.Service) {
+                    const args = (api.Parameters || '').split(',')
+                        .map(name => {
+                            let content = req.body[name] || 'undefined';
+                            content = content.length < 50 ? content : '<omitted>';
+                            return `${name}: "${content}"`;
+                        })
+                        .join(', ');
+                    logger.trace(`received request ${api.Service}(${args})`);
+                }
+                try {
+                    await api.Handler.call(this, req, res);
+                } catch (err) {
+                    const statusCode = err instanceof RequestError ? 400 : 500;
+                    res.status(statusCode).send(`ERROR: ${err.message}`);
+                }
             });
-            args.unshift(api.URL);
-            router.use.apply(router, args);
         }
-
-        router.route(api.URL)[method](async (req, res) => {
-            if (api.Service) {
-                const args = (api.Parameters || '').split(',')
-                    .map(name => {
-                        let content = req.body[name] || 'undefined';
-                        content = content.length < 50 ? content : '<omitted>';
-                        return `${name}: "${content}"`;
-                    })
-                    .join(', ');
-                logger.trace(`received request ${api.Service}(${args})`);
-            }
-            try {
-                await api.Handler.call(this, req, res);
-            } catch (err) {
-                const statusCode = err instanceof RequestError ? 400 : 500;
-                res.status(statusCode).send(`ERROR: ${err.message}`);
-            }
-        });
     });
     return router;
 };
