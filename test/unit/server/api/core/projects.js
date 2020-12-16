@@ -122,6 +122,14 @@ describe('projects', function() {
             assert.deepEqual(copy.roles, project.roles);
         });
 
+        it('should have no collaborators', async function() {
+            const project = projects.find(proj => proj.collaborators.length);
+            await ProjectsAPI.saveProjectCopy(username, project);
+            const allProjects = await ProjectsStorage.getAllUserProjects(username);
+            const copy = allProjects.find(project => project.name.startsWith('Copy of'));
+            assert.deepEqual(copy.collaborators, []);
+        });
+
         it('should save copy', async function() {
             await ProjectsAPI.saveProjectCopy(username, project);
             const allProjects = await ProjectsStorage.getAllUserProjects(username);
