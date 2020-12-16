@@ -23,10 +23,10 @@ describe('projects', function() {
             // TODO: Check all the roles
         });
 
-        it('should throw unauthorized if non-existent project', async function() {
+        it('should throw not found if non-existent project', async function() {
             await utils.shouldThrow(
                 () => ProjectsAPI.exportProject(otherUser, 'IDontExist'),
-                Errors.Unauthorized
+                Errors.ProjectNotFound
             );
         });
 
