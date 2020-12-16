@@ -8,7 +8,7 @@ describe('autograders', function() {
     utils.verifyRPCInterfaces('Autograders', [
         ['getAutograders'],
         ['getAutograderConfig', ['name']],
-        ['createAutograder', ['config']],
+        ['createAutograder', ['configuration']],
     ]);
 
 
