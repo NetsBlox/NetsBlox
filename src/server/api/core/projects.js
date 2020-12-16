@@ -147,9 +147,7 @@ class Projects {
     async _setProjectPublished(owner, name, isPublished=false) {
         const query = {owner, name};
         const result = await ProjectsStorage.updateCustom(query, {$set: {Public: isPublished}});
-        if (result.matchedCount === 0) {
-            throw new Errors.ProjectNotFound(name);
-        }
+        assert(result.matchedCount === 0, new ProjectNotFound(name));
     }
 
     async newProject(owner, roleName='myRole', clientId=null) {
@@ -237,7 +235,7 @@ class Projects {
 
     async getProjectByName(owner, name, requestor) {
         let project = await ProjectsStorage.get(owner, name);
-        if (!project) throw new Errors.ProjectNotFound(name);
+        assert(project, new ProjectNotFound(name));
         if (requestor && requestor !== owner) {  // send a copy
             project = await project.getCopyFor(requestor);
         }
@@ -256,7 +254,7 @@ class Projects {
     async getPublicProject(owner, name) {
         await this._ensureValidUser(owner);
         const project = await this.getProjectSafe(owner, name);
-        if (!project.Public) throw new Errors.ProjectNotFound(name);
+        assert(project.Public, new ProjectNotFound(name));
         return project;
     }
 
@@ -265,7 +263,7 @@ class Projects {
             await ProjectsStorage.get(projectIdOrOwner, name) :
             await ProjectsStorage.getById(projectIdOrOwner);
 
-        if (!project) throw new Errors.ProjectNotFound(name);
+        assert(project, new ProjectNotFound(name));
         return project;
     }
 
@@ -288,7 +286,7 @@ class Projects {
 
     async _ensureValidUser(username) {
         const user = await UsersData.get(username);
-        if (!user) throw new Errors.UserNotFound(username);
+        assert(user, new UserNotFound(username));
     }
 
     _getProjectMetadata(project, origin='') {
