@@ -39,7 +39,7 @@ describe('projects', function() {
         });
     });
 
-    describe.only('exportRole', function() {
+    describe('exportRole', function() {
         it('should export role', async function() {
             const [roleId] = await project.getRoleIds();
             const xml = await ProjectsAPI.exportRole(username, project.getId(), roleId);
