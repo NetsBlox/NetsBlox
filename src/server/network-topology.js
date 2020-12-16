@@ -50,7 +50,10 @@ NetworkTopology.prototype.init = function(logger, _Client) {
     this._sockets.init(this._logger.fork('clients'));
 
     Client = _Client;
-    Client.prototype.onClose = err => this.onDisconnect(this, err);
+    const self = this;
+    Client.prototype.onClose = function(err) {
+        return self.onDisconnect(this, err);
+    };
 };
 
 // socket: new client object (netsblox websocket)

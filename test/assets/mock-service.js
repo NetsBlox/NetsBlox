@@ -28,10 +28,11 @@ class MockService {
 
     getNewSocket (uuid=`_netsblox${Date.now()}`) {
         const socket = new MockWebsocket();
-        console.log(socket.on('message', () => {}));
         const client = NetworkTopology.onConnect(socket, uuid);
-        this.socket = client;
+        this.socket = new MockRemoteClient(client);
+
         this.unwrap().socket = this.socket;
+        return client;
     }
 
     setRequester (uuid, username) {
@@ -110,16 +111,16 @@ class MockRequest {
     }
 }
 
-class MockClient {
-    constructor() {
+class MockRemoteClient {
+    constructor(client) {
         this.roleId = 'myRole-' + Date.now();
         this.uuid = 'uuid-' + Date.now();
-        this._socket = new MockWebsocket();
+        this._client = client;
     }
 }
 
-MockClient.prototype.sendMessage =
-MockClient.prototype.sendMessageToRoom = function() {
+MockRemoteClient.prototype.sendMessage =
+MockRemoteClient.prototype.sendMessageToRoom = function() {
 };
 
 module.exports = MockService;

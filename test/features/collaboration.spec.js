@@ -4,43 +4,35 @@ describe('collaboration', function() {
     const NetworkTopology = utils.reqSrc('network-topology');
     const Q = require('q');
     const _ = require('lodash');
-    const twentyActions = _.range(20).map(i => {
-        return {
-            type: 'user-action',
-            action: {id: i}
-        };
-    });
+    let projectId, roleId;
 
     describe('basic', function() {
         let p1, p2;
-        beforeEach(() => {
-            return utils.reset()
-                .then(() => utils.createRoom({
-                    name: 'test-room',
-                    owner: 'brian',
-                    roles: {
-                        role: ['brian', 'cassie'],
-                        role2: []
-                    }
-                }))
-                .then(project => {
-                    return project.getRoleId('role')
-                        .then(roleId => {
-                            [p1, p2] = NetworkTopology.getSocketsAt(project.getId(), roleId);
-                        });
-                });
+        beforeEach(async () => {
+            await utils.reset();
+            const project = await utils.createRoom({
+                name: 'test-room',
+                owner: 'brian',
+                roles: {
+                    role: ['brian', 'cassie'],
+                    role2: []
+                }
+            });
+            projectId = project.getId();
+            roleId = await project.getRoleId('role');
+            [p1, p2] = NetworkTopology.getSocketsAt(project.getId(), roleId);
         });
 
         it('should block conflicting actions', async function() {
-            await p1._socket.receive({type: 'user-action', action:{id: 2}});
-            await p1._socket.receive({type: 'user-action', action:{id: 1}});
+            await p1._socket.receive(userAction(projectId, roleId, 2));
+            await p1._socket.receive(userAction(projectId, roleId, 1));
             let actions = p1._socket.messages().filter(msg => msg.type === 'user-action');
             assert.equal(actions.length, 1);
         });
 
         it('should send actions to all users', async function() {
-            await p1._socket.receive({type: 'user-action', action:{id: 2}});
-            await p1._socket.receive({type: 'user-action', action:{id: 3}});
+            await p1._socket.receive(userAction(projectId, roleId, 2));
+            await p1._socket.receive(userAction(projectId, roleId, 3));
             let actions = p1._socket.messages().filter(msg => msg.type === 'user-action');
             assert.equal(actions.length, 2);
 
@@ -63,9 +55,16 @@ describe('collaboration', function() {
                     role2: []
                 }
             });
+            projectId = project.getId();
             roleId = await project.getRoleId('role');
             [user] = NetworkTopology.getSocketsAt(project.getId(), roleId);
-            await twentyActions.reduce((a, b) => a.then(() => user._socket.receive(b)), Q());
+            const twentyActions = _.range(20)
+                .map(i => userAction(projectId, roleId, i));
+
+            await twentyActions.reduce(
+                (a, b) => a.then(() => user._socket.receive(b)),
+                Promise.resolve()
+            );
         });
 
         it('should be able to request missing actions', async function() {
@@ -73,13 +72,14 @@ describe('collaboration', function() {
             const messageCount = user._socket.messages().length;
             const actionRequest = {
                 type: 'request-actions',
-                projectId: project.getId(),
-                roleId: roleId,
+                projectId,
+                roleId,
                 actionId: 9
             };
             await user._socket.receive(actionRequest);
             let msgs = user._socket.messages().slice(messageCount)
                 .filter(msg => msg.type === 'user-action');
+
             while (msgs.length < 10 && Date.now() < TIMEOUT) {
                 msgs = user._socket.messages().slice(messageCount)
                     .filter(msg => msg.type === 'user-action');
@@ -134,5 +134,14 @@ describe('collaboration', function() {
 
     async function sleep(time) {
         return new Promise(resolve => setTimeout(resolve, time));
+    }
+
+    function userAction(projectId, roleId, id=1) {
+        return {
+            type: 'user-action',
+            projectId,
+            roleId,
+            action:{id}
+        };
     }
 });
