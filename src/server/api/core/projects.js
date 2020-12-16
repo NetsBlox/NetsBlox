@@ -147,7 +147,7 @@ class Projects {
     async _setProjectPublished(owner, name, isPublished=false) {
         const query = {owner, name};
         const result = await ProjectsStorage.updateCustom(query, {$set: {Public: isPublished}});
-        assert(result.matchedCount === 0, new ProjectNotFound(name));
+        assert(result.matchedCount !== 0, new ProjectNotFound(name));
     }
 
     async newProject(owner, roleName='myRole', clientId=null) {
