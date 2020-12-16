@@ -14,8 +14,6 @@ var counter = 0,
         'user-action'
     ];
 
-let clientCounter = 0;
-
 const _ = require('lodash');
 const assert = require('assert');
 const Messages = require('./storage/messages');
@@ -28,10 +26,9 @@ const NetsBloxAddress = require('./netsblox-address');
 const NetworkTopology = require('./network-topology');
 
 class Client {
-    constructor (logger, websocket) {
-        // QUESTION what is this.id used for? and why is it changing counter
-        this.id = (++counter);
-        this._logger = logger.fork('client-' + ++clientCounter);
+    constructor (logger, websocket, uuid) {
+        this.uuid = uuid;
+        this._logger = logger.fork(uuid);
 
         this.loggedIn = false;
         this.projectId = null;
@@ -49,6 +46,11 @@ class Client {
         this._initialize();
 
         this._logger.trace('created');
+    }
+
+    reconnect(websocket) {
+        this._socket = websocket;
+        this.connError = null;
     }
 
     isOwner () {  // TODO: move to auth stuff...
@@ -124,7 +126,19 @@ class Client {
             }
         });
 
-        this._socket.on('close', () => this.close(this.connError));
+        this._socket.on('close', () => {
+            if (!this.connError) {
+                return this.close();
+            } else {
+                const brokenSocket = this._socket;
+                setTimeout(() => {
+                    const reconnected = this._socket !== brokenSocket;
+                    if (!reconnected) {
+                        this.close(this.connError);
+                    }
+                }, 5 * Client.HEARTBEAT_INTERVAL);
+            }
+        });
 
         // change the heartbeat to use ping/pong from the ws spec
         this.keepAlive();
@@ -377,17 +391,6 @@ Client.prototype.CLOSED = 3;
 
 Client.MessageHandlers = {
     'pong': function() {
-    },
-
-    'set-uuid': function(msg) {
-        const {clientId} = msg;
-        if (this.uuid && this.uuid !== clientId) {
-            throw new Error(`client ${this.uuid} tried to reset clientId to ${clientId}`);
-        }
-
-        this.uuid = clientId;
-        this.username = this.username || clientId;
-        this.send({type: 'connected'});
     },
 
     'message': async function(msg) {

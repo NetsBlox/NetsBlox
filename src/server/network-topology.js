@@ -23,9 +23,7 @@ class ClientList extends Array {
     }
 
     findClientByID(id) {
-        return this.find(client => {
-            return client.uuid === id || client.id === id;
-        });
+        return this.find(client => client.uuid === id);
     }
 
     isClientActive(client) {
@@ -45,21 +43,30 @@ var NetworkTopology = function() {
     this._sockets = new ClientList();
 };
 
-NetworkTopology.prototype.init = function(logger, Client) {
+let Client = null;
+NetworkTopology.prototype.init = function(logger, _Client) {
     this.initialized = true;
     this._logger = logger.fork('network-topology');
     this._sockets.init(this._logger.fork('clients'));
 
+    Client = _Client;
     const self = this;
-    Client.prototype.onClose = function() {
-        self.onDisconnect(this);
+    Client.prototype.onClose = function(err) {
+        return self.onDisconnect(this, err);
     };
 };
 
 // socket: new client object (netsblox websocket)
-NetworkTopology.prototype.onConnect = function(socket) {
-    this._logger.trace(`client connected ${socket.toString()} total: ${this._sockets.length}`);
-    this._sockets.addClient(socket);
+NetworkTopology.prototype.onConnect = function(socket, uuid) {
+    let client = this._sockets.findClientByID(uuid);
+    if (client) {
+        client.reconnect(socket);
+    } else {
+        client = new Client(this._logger, socket, uuid);
+        this._sockets.addClient(client);
+    }
+    this._logger.trace(`client (re)connected ${client.toString()} total: ${this._sockets.length}`);
+    return client;
 };
 
 // input: client object (netsblox websocket)
