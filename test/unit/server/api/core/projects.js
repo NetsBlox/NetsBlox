@@ -51,16 +51,16 @@ describe('projects', function() {
             // TODO
         });
 
-        it('should throw unauthorized if non-existent project', async function() {
+        it('should throw "project not found" if non-existent project', async function() {
             await utils.shouldThrow(
-                () => ProjectsAPI.exportRole(otherUser, 'IDontExist', 'NotReal'),
+                () => ProjectsAPI.exportRole(username, 'IDontExist', 'NotReal'),
                 Errors.ProjectNotFound
             );
         });
 
-        it('should throw unauthorized if non-existent role', async function() {
+        it('should throw "role not found" if non-existent role', async function() {
             await utils.shouldThrow(
-                () => ProjectsAPI.exportRole(otherUser, project.getId(), 'NotReal'),
+                () => ProjectsAPI.exportRole(username, project.getId(), 'NotReal'),
                 Errors.ProjectRoleNotFound
             );
         });
