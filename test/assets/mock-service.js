@@ -4,6 +4,7 @@
 const Constants = require('../../src/common/constants');
 const getArgsFor = require('../../src/server/server-utils').getArgumentsFor;
 const MockResponse = require('./mock-response');
+const MockWebsocket = require('./mock-websocket');
 const _ = require('lodash');
 const utils = require('./utils');
 const NetworkTopology = utils.reqSrc('network-topology');
@@ -25,10 +26,12 @@ class MockService {
         this.serviceName = this._service.serviceName;
     }
 
-    getNewSocket () {
-        this.socket = new MockClient();
+    getNewSocket (uuid=`_netsblox${Date.now()}`) {
+        const socket = new MockWebsocket();
+        console.log(socket.on('message', () => {}));
+        const client = NetworkTopology.onConnect(socket, uuid);
+        this.socket = client;
         this.unwrap().socket = this.socket;
-        NetworkTopology.onConnect(this.socket);
     }
 
     setRequester (uuid, username) {
@@ -111,6 +114,7 @@ class MockClient {
     constructor() {
         this.roleId = 'myRole-' + Date.now();
         this.uuid = 'uuid-' + Date.now();
+        this._socket = new MockWebsocket();
     }
 }
 
