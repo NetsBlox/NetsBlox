@@ -20,16 +20,56 @@ describe('projects', function() {
         it('should export project', async function() {
             const xml = await ProjectsAPI.exportProject(username, project.getId());
             assert(xml.startsWith('<room'));
+            // TODO: Check all the roles
         });
 
-        it('should fetch latest role content in export', async function() {
-            // TODO
+        it('should throw unauthorized if non-existent project', async function() {
+            await utils.shouldThrow(
+                () => ProjectsAPI.exportProject(otherUser, 'IDontExist'),
+                Errors.Unauthorized
+            );
         });
 
         it('should not export other user projects', async function() {
             const privateProject = projects.find(project => !project.Public);
             await utils.shouldThrow(
                 () => ProjectsAPI.exportProject(otherUser, privateProject.getId()),
+                Errors.Unauthorized
+            );
+        });
+    });
+
+    describe.only('exportRole', function() {
+        it('should export role', async function() {
+            const [roleId] = await project.getRoleIds();
+            const xml = await ProjectsAPI.exportRole(username, project.getId(), roleId);
+            assert(xml.startsWith('<role'), `Expected role XML but found: ${xml}`);
+            assert(xml.includes('<media'), `Role XML missing <media/>: ${xml}`);
+        });
+
+        it('should fetch latest role content in export', async function() {
+            // TODO
+        });
+
+        it('should throw unauthorized if non-existent project', async function() {
+            await utils.shouldThrow(
+                () => ProjectsAPI.exportRole(otherUser, 'IDontExist', 'NotReal'),
+                Errors.ProjectNotFound
+            );
+        });
+
+        it('should throw unauthorized if non-existent role', async function() {
+            await utils.shouldThrow(
+                () => ProjectsAPI.exportRole(otherUser, project.getId(), 'NotReal'),
+                Errors.ProjectRoleNotFound
+            );
+        });
+
+        it('should not export other user projects', async function() {
+            const privateProject = projects.find(project => !project.Public);
+            const [roleId] = await privateProject.getRoleIds();
+            await utils.shouldThrow(
+                () => ProjectsAPI.exportRole(otherUser, privateProject.getId(), roleId),
                 Errors.Unauthorized
             );
         });

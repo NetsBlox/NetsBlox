@@ -21,6 +21,14 @@ class ProjectNotFound extends RequestError {
     }
 }
 
+class ProjectRoleNotFound extends RequestError {
+    constructor(name) {
+        const msg = name ? `Could not find the given role in "${name}"` :
+            'Role not found';
+        super(msg);
+    }
+}
+
 class LibraryNotFound extends RequestError {
     constructor(owner, name) {
         const msg = `Could not find library "${name}" for "${owner}"`;
@@ -83,5 +91,6 @@ module.exports.InvalidArgument = InvalidArgument;
 module.exports.InvalidArgumentType = InvalidArgumentType;
 module.exports.GroupNotFound = GroupNotFound;
 module.exports.ProjectNotFound = ProjectNotFound;
+module.exports.ProjectRoleNotFound = ProjectRoleNotFound;
 module.exports.LibraryNotFound = LibraryNotFound;
 module.exports.RequestError = RequestError;
