@@ -298,8 +298,8 @@ Server.prototype.start = async function(seedDatabase=ENV === 'test') {
                 this._logger.warn(`Invalid initial ws message: ${type}`);
                 return;
             }
-            NetworkTopology.onConnect(socket, clientId);
-            socket.send({type: 'connected'});
+            const client = NetworkTopology.onConnect(socket, clientId);
+            client.send({type: 'connected'});
         });
     });
     const servicesApi = new ServicesPrivateAPI(this._logger);
