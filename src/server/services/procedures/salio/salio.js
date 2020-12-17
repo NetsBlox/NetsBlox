@@ -205,6 +205,43 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
+     * Get the orientation of the device relative to the Earth's magnetic reference frame.
+     * This is returned as a list of 3 values:
+     * 1. The azimuth angle, effectively the compass heading [-pi, pi].
+     * 2. The pitch (vertical tilt) angle [-pi/2, pi/2].
+     * 3. The roll angle [-pi/2,pi/2].
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @returns {boolean} The orientation angles relative to the Earth's magnetic field.
+     */
+    SalIO.prototype.getOrientation = function (sensor) {
+        return this._passToSensor('getOrientation', arguments);
+    };
+    /**
+     * Get the compass heading in radians [-pi, pi].
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @returns {boolean} The compass heading in radians.
+     */
+    SalIO.prototype.getCompassHeading = function (sensor) {
+        return this._passToSensor('getCompassHeading', arguments);
+    };
+    /**
+     * Get the name of the closest compass direction (N, NE, E, SE, etc.).
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @returns {boolean} The compass direction name
+     */
+    SalIO.prototype.getCompassDirection = function (sensor) {
+        return this._passToSensor('getCompassDirection', arguments);
+    };
+    /**
+     * Get the name of the closest compass cardinal direction (N, E, S, W).
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @returns {boolean} The compass cardinal direction name
+     */
+    SalIO.prototype.getCompassCardinalDirection = function (sensor) {
+        return this._passToSensor('getCompassCardinalDirection', arguments);
+    };
+
+    /**
      * Get the current accelerometer output from the sensor.
      * This is a 3D vector with units of m/s².
      * @param {string} sensor name of the sensor (matches at the end)

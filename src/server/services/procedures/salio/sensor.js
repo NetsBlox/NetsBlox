@@ -6,15 +6,33 @@ const ciphers = require('../roboscape/ciphers');
 
 // these might be better defined as an attribute on the sensor
 const FORGET_TIME = 120; // forgetting a sensor in seconds
-const RESPONSE_TIMEOUT = 500; // ms
+const RESPONSE_TIMEOUT = 1000; // ms
 
-const DIRECTIONS = [
+const DIRECTIONS_3D = [
     [[0, 0, 1], 'up'],
     [[0, 0, -1], 'down'],
     [[0, 1, 0], 'vertical'],
     [[0, -1, 0], 'upside down'],
     [[1, 0, 0], 'left'],
     [[-1, 0, 0], 'right'],  
+];
+const COMPASS_DIRECTIONS_4 = [
+    [0, 'N'],
+    [Math.PI / 2, 'E'],
+    [-Math.PI / 2, 'W'],
+    [Math.PI, 'S'],
+    [-Math.PI, 'S'],
+];
+const COMPASS_DIRECTIONS_8 = [
+    [0, 'N'],
+    [Math.PI / 4, 'NE'],
+    [-Math.PI / 4, 'NW'],
+    [Math.PI / 2, 'E'],
+    [-Math.PI / 2, 'W'],
+    [3 * Math.PI / 4, 'SE'],
+    [-3 * Math.PI / 4, 'SW'],
+    [Math.PI, 'S'],
+    [-Math.PI, 'S'],
 ];
 
 function dotProduct(a, b) {
@@ -35,6 +53,30 @@ function normalize(a) {
 }
 function angle(a, b) {
     return Math.acos(dotProduct(a, b) / (magnitude(a) * magnitude(b)));
+}
+
+function closestVector(val, def) {
+    let best = [Infinity, undefined];
+    for (const dir of def) {
+        const t = angle(val, dir[0]);
+        if (t < best[0]) best = [t, dir[1]];
+    }
+    return best[1];
+}
+function closestScalar(val, def) {
+    let best = [Infinity, undefined];
+    for (const dir of def) {
+        const t = Math.abs(val - dir[0]);
+        if (t < best[0]) best = [t, dir[1]];
+    }
+    return best[1];
+}
+
+// if arr contains only defined values, returns arr, otherwise throws Error(errorMsg)
+function completedOrThrow(arr, errorMsg) {
+    if (arr === undefined) throw new Error(errorMsg);
+    for (const val of arr) if (val === undefined) throw new Error(errorMsg);
+    return arr;
 }
 
 var Sensor = function (mac_addr, ip4_addr, ip4_port, aServer) {
@@ -215,6 +257,25 @@ Sensor.prototype.receiveFromSensor = function (msgType, timeout) {
     });
 };
 
+Sensor.prototype.getOrientation = async function () {
+    this._logger.log('get orientation ' + this.mac_addr);
+    const response = this.receiveFromSensor('orientation');
+    const message = Buffer.alloc(1);
+    message.write('O', 0, 1);
+    this.sendToSensor(message);
+    const res = await response;
+    return completedOrThrow([res.azimuth, res.pitch, res.roll], 'orientation sensor not supported or disabled');
+};
+Sensor.prototype.getCompassHeading = async function () {
+    return (await this.getOrientation())[0];
+};
+Sensor.prototype.getCompassDirection = async function () {
+    return closestScalar(await this.getCompassHeading(), COMPASS_DIRECTIONS_8);
+};
+Sensor.prototype.getCompassCardinalDirection = async function () {
+    return closestScalar(await this.getCompassHeading(), COMPASS_DIRECTIONS_4);
+};
+
 Sensor.prototype.getAccelerometer = async function () {
     this._logger.log('get accelerometer ' + this.mac_addr);
     const response = this.receiveFromSensor('accelerometer');
@@ -222,22 +283,13 @@ Sensor.prototype.getAccelerometer = async function () {
     message.write('A', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return [res.x, res.y, res.z];
+    return completedOrThrow([res.x, res.y, res.z], 'accelerometer not supported or disabled');
 };
 Sensor.prototype.getAccelerometerNormalized = async function () {
     return normalize(await this.getAccelerometer());  
 };
 Sensor.prototype.getFacingDirection = async function () {
-    const v = await this.getAccelerometer();
-    const best = [Infinity, undefined];
-    for (const dir of DIRECTIONS) {
-        const t = angle(v, dir[0]);
-        if (t < best[0]) {
-            best[0] = t;
-            best[1] = dir[1];
-        }
-    }
-    return best[1];
+    return closestVector(await this.getAccelerometer(), DIRECTIONS_3D);
 };
 
 Sensor.prototype.getGravity = async function () {
@@ -247,7 +299,7 @@ Sensor.prototype.getGravity = async function () {
     message.write('G', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return [res.x, res.y, res.z];
+    return completedOrThrow([res.x, res.y, res.z], 'gravity sensor not supported or disabled');
 };
 Sensor.prototype.getGravityNormalized = async function () {
     return normalize(await this.getGravity());  
@@ -260,7 +312,7 @@ Sensor.prototype.getLinearAcceleration = async function () {
     message.write('L', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return [res.x, res.y, res.z];
+    return completedOrThrow([res.x, res.y, res.z], 'linear acceleration sensor not supported or disabled');
 };
 Sensor.prototype.getLinearAccelerationNormalized = async function () {
     return normalize(await this.getLinearAcceleration());  
@@ -273,7 +325,7 @@ Sensor.prototype.getGyroscope = async function () {
     message.write('Y', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return [res.x, res.y, res.z];
+    return completedOrThrow([res.x, res.y, res.z], 'gyroscope not supported or disabled');
 };
 Sensor.prototype.getRotation = async function () {
     this._logger.log('get rotation ' + this.mac_addr);
@@ -282,7 +334,7 @@ Sensor.prototype.getRotation = async function () {
     message.write('R', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return [res.x, res.y, res.z, res.w];
+    return completedOrThrow([res.x, res.y, res.z, res.w], 'rotation sensor not supported or disabled');
 };
 Sensor.prototype.getGameRotation = async function () {
     this._logger.log('get game rotation ' + this.mac_addr);
@@ -291,7 +343,7 @@ Sensor.prototype.getGameRotation = async function () {
     message.write('r', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return [res.x, res.y, res.z];
+    return completedOrThrow([res.x, res.y, res.z], 'game rotation sensor not supported or disabled');
 };
 
 Sensor.prototype.getMagneticFieldVector = async function () {
@@ -301,7 +353,7 @@ Sensor.prototype.getMagneticFieldVector = async function () {
     message.write('M', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return [res.x, res.y, res.z];
+    return completedOrThrow([res.x, res.y, res.z], 'magnetic field sensor not supported or disabled');
 };
 Sensor.prototype.getMagneticFieldVectorNormalized = async function () {
     return normalize(await this.getMagneticFieldVector());  
@@ -313,7 +365,7 @@ Sensor.prototype.getProximity = async function () {
     const message = Buffer.alloc(1);
     message.write('P', 0, 1);
     this.sendToSensor(message);
-    return (await response).proximity;
+    return completedOrThrow((await response).proximity, 'proximity sensor not supported or disabled');
 };
 Sensor.prototype.getStepCount = async function () {
     this._logger.log('get step count ' + this.mac_addr);
@@ -321,7 +373,7 @@ Sensor.prototype.getStepCount = async function () {
     const message = Buffer.alloc(1);
     message.write('S', 0, 1);
     this.sendToSensor(message);
-    return (await response).count;
+    return completedOrThrow((await response).count, 'step counter not supported or disabled');
 };
 Sensor.prototype.getLightLevel = async function () {
     this._logger.log('get light level ' + this.mac_addr);
@@ -329,7 +381,7 @@ Sensor.prototype.getLightLevel = async function () {
     const message = Buffer.alloc(1);
     message.write('l', 0, 1);
     this.sendToSensor(message);
-    return (await response).level;
+    return completedOrThrow((await response).level, 'light sensor not supported or disabled');
 };
 
 Sensor.prototype.getLocation = async function () {
@@ -339,7 +391,7 @@ Sensor.prototype.getLocation = async function () {
     message.write('X', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return [res.lat, res.long];
+    return completedOrThrow([res.lat, res.long], 'location not supported or disabled');
 };
 
 Sensor.prototype.commandToClient = function (command) {
@@ -442,76 +494,83 @@ Sensor.prototype.onMessage = function (message) {
             }
         }
     }
-    else if (command === 'A' && message.length === 23) {
-        this.sendToClient('accelerometer', {
+    else if (command === 'O') {
+        this.sendToClient('orientation', message.length === 23 ? {
+            azimuth: message.readFloatBE(11),
+            pitch: message.readFloatBE(15),
+            roll: message.readFloatBE(19),
+        } : {});
+    }
+    else if (command === 'A') {
+        this.sendToClient('accelerometer', message.length === 23 ? {
             x: message.readFloatBE(11),
             y: message.readFloatBE(15),
             z: message.readFloatBE(19),
-        });
+        } : {});
     }
-    else if (command === 'G' && message.length === 23) {
-        this.sendToClient('gravity', {
+    else if (command === 'G') {
+        this.sendToClient('gravity', message.length === 23 ? {
             x: message.readFloatBE(11),
             y: message.readFloatBE(15),
             z: message.readFloatBE(19),
-        });
+        } : {});
     }
-    else if (command === 'L' && message.length === 23) {
-        this.sendToClient('linear', {
+    else if (command === 'L') {
+        this.sendToClient('linear', message.length === 23 ? {
             x: message.readFloatBE(11),
             y: message.readFloatBE(15),
             z: message.readFloatBE(19),
-        });
+        } : {});
     }
-    else if (command === 'Y' && message.length === 23) {
-        this.sendToClient('gyroscope', {
+    else if (command === 'Y') {
+        this.sendToClient('gyroscope', message.length === 23 ? {
             x: message.readFloatBE(11),
             y: message.readFloatBE(15),
             z: message.readFloatBE(19),
-        });
+        } : {});
     }
-    else if (command === 'R' && message.length === 27) {
-        this.sendToClient('rotation', {
+    else if (command === 'R') {
+        this.sendToClient('rotation', message.length === 27 ? {
             x: message.readFloatBE(11),
             y: message.readFloatBE(15),
             z: message.readFloatBE(19),
             w: message.readFloatBE(23),
-        });
+        } : {});
     }
-    else if (command === 'r' && message.length === 23) {
-        this.sendToClient('gamerotation', {
+    else if (command === 'r') {
+        this.sendToClient('gamerotation', message.length === 23 ? {
             x: message.readFloatBE(11),
             y: message.readFloatBE(15),
             z: message.readFloatBE(19),
-        });
+        } : {});
     }
-    else if (command === 'M' && message.length === 23) {
-        this.sendToClient('magfield', {
+    else if (command === 'M') {
+        this.sendToClient('magfield', message.length === 23 ? {
             x: message.readFloatBE(11),
             y: message.readFloatBE(15),
             z: message.readFloatBE(19),
-        });
+        } : {});
     }
-    else if (command === 'X' && message.length === 19) {
-        this.sendToClient('location', {
+    else if (command === 'X') {
+        this.sendToClient('location', message.length === 19 ? {
             lat: message.readFloatBE(11),
             long: message.readFloatBE(15),
-        });
+        } : {});
     }
-    else if (command === 'P' && message.length === 15) {
-        this.sendToClient('proximity', {
+    else if (command === 'P') {
+        this.sendToClient('proximity', message.length === 15 ? {
             proximity: message.readFloatBE(11),
-        });
+        } : {});
     }
-    else if (command === 'S' && message.length === 15) {
-        this.sendToClient('stepcount', {
+    else if (command === 'S') {
+        this.sendToClient('stepcount', message.length === 15 ? {
             count: message.readFloatBE(11),
-        });
+        } : {});
     }
-    else if (command === 'l' && message.length === 15) {
-        this.sendToClient('lightlevel', {
+    else if (command === 'l') {
+        this.sendToClient('lightlevel', message.length === 15 ? {
             level: message.readFloatBE(11),
-        });
+        } : {});
     }
     else {
         this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
@@ -527,6 +586,30 @@ Sensor.prototype.onCommand = function(command) {
             handler: () => {
                 this.sendToClient('alive', {});
                 return this.isAlive();
+            }
+        },
+        {
+            regex: /^get orientation$/,
+            handler: () => {
+                return this.getOrientation();
+            }
+        },
+        {
+            regex: /^get compass heading$/,
+            handler: () => {
+                return this.getCompassHeading();
+            }
+        },
+        {
+            regex: /^get compass direction$/,
+            handler: () => {
+                return this.getCompassDirection();
+            }
+        },
+        {
+            regex: /^get compass cardinal direction$/,
+            handler: () => {
+                return this.getCompassCardinalDirection();
             }
         },
         {
