@@ -292,10 +292,11 @@ Server.prototype.start = async function(seedDatabase=ENV === 'test') {
     this._wss = new WebSocketServer({server: this._server});
     this._wss.on('connection', (socket, req) => {
         socket.upgradeReq = req;
-        socket.on('message', data => {
+        socket.once('message', data => {
             const {type, clientId} = JSON.parse(data);
             if (type !== 'set-uuid') {
                 this._logger.warn(`Invalid initial ws message: ${type}`);
+                socket.close();
                 return;
             }
             const client = NetworkTopology.onConnect(socket, clientId);
