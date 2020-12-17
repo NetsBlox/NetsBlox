@@ -93,7 +93,8 @@ Perms.addPermissionSet('Library', {
 Perms.addPermissionSet('Project', {
     READ: function(project) {
         return requestor => assert(
-            project.Public || project.collaborators.concat(project.owner).includes(requestor),
+            project &&
+                (project.Public || project.collaborators.concat(project.owner).includes(requestor)),
             new Errors.Unauthorized(requestor, 'read project'),
         );
     }

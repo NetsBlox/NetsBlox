@@ -7,7 +7,8 @@ const ProjectsStorage = require('../../storage/projects');
 const UsersData = require('../../storage/users');
 const NetworkTopology = require('../../network-topology');
 const Utils = require('../../server-utils.js');
-const Errors = require('./errors');
+const {ProjectNotFound, ProjectRoleNotFound, UserNotFound} = require('./errors');
+const assert = require('assert');
 const _ = require('lodash');
 const Auth = require('./auth');
 const P = Auth.Permission;
@@ -19,40 +20,40 @@ class Projects {
 
     async exportProject(requestor, projectId) {
         const project = await ProjectsStorage.getById(projectId);
+        assert(project, new ProjectNotFound());
         await Auth.ensureAuthorized(requestor, P.Project.READ(project));
 
-        const occupantForRole = {};
-
-        // Get the first occupant for each role
-        NetworkTopology.getSocketsAtProject(projectId).reverse()
-            .forEach(socket => {
-                occupantForRole[socket.roleId] = socket;
-            });
-
-        // For each role...
-        //   - if it is occupied, request the content
-        //   - else, use the content from the database
-        const ids = await project.getRoleIds();
-        const fetchers = ids.map(id => {
-            const occupant = occupantForRole[id];
-            if (occupant) {
-                return occupant.getProjectJson()
-                    .catch(err => {
-                        this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
-                        return project.getRoleById(id);
-                    });
-            }
-            return project.getRoleById(id);
-        });
-
-        const roles = await Promise.all(fetchers);
-        const roleContents = roles.map(content =>
-            Utils.xml.format('<role name="@">', content.ProjectName)
-            + content.SourceCode + content.Media + '</role>'
+        const roleIds = await project.getRoleIds();
+        const roleContents = await Promise.all(
+            roleIds.map(roleId => this.exportRole(requestor, projectId, roleId, project))
         );
+
         const xml = Utils.xml.format('<room name="@" app="@">', project.name, Utils.APP) +
             roleContents.join('') + '</room>';
         this.logger.trace(`Exporting project ${projectId} for ${requestor}`);
+
+        return xml;
+    }
+
+    async exportRole(requestor, projectId, roleId, project=null) {
+        if (!project) {
+            project = await ProjectsStorage.getById(projectId);
+            assert(project, new ProjectNotFound());
+        }
+        await Auth.ensureAuthorized(requestor, P.Project.READ(project));
+        const isValidRoleId = project.roles[roleId];
+        assert(isValidRoleId, new ProjectRoleNotFound(project.name));
+
+        // TODO: Can I ensure that I am getting the latest?
+        const [occupant] = NetworkTopology.getSocketsAt(projectId, roleId);
+        const content = occupant ? 
+            await occupant.getProjectJson().catch(err => {
+                this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
+                return project.getRoleById(roleId);
+            }) : await project.getRoleById(roleId);
+
+        const xml = Utils.xml.format('<role name="@">', content.ProjectName)
+            + content.SourceCode + content.Media + '</role>';
 
         return xml;
     }
@@ -146,9 +147,7 @@ class Projects {
     async _setProjectPublished(owner, name, isPublished=false) {
         const query = {owner, name};
         const result = await ProjectsStorage.updateCustom(query, {$set: {Public: isPublished}});
-        if (result.matchedCount === 0) {
-            throw new Errors.ProjectNotFound(name);
-        }
+        assert(result.matchedCount !== 0, new ProjectNotFound(name));
     }
 
     async newProject(owner, roleName='myRole', clientId=null) {
@@ -236,7 +235,7 @@ class Projects {
 
     async getProjectByName(owner, name, requestor) {
         let project = await ProjectsStorage.get(owner, name);
-        if (!project) throw new Errors.ProjectNotFound(name);
+        assert(project, new ProjectNotFound(name));
         if (requestor && requestor !== owner) {  // send a copy
             project = await project.getCopyFor(requestor);
         }
@@ -255,7 +254,7 @@ class Projects {
     async getPublicProject(owner, name) {
         await this._ensureValidUser(owner);
         const project = await this.getProjectSafe(owner, name);
-        if (!project.Public) throw new Errors.ProjectNotFound(name);
+        assert(project.Public, new ProjectNotFound(name));
         return project;
     }
 
@@ -264,7 +263,7 @@ class Projects {
             await ProjectsStorage.get(projectIdOrOwner, name) :
             await ProjectsStorage.getById(projectIdOrOwner);
 
-        if (!project) throw new Errors.ProjectNotFound(name);
+        assert(project, new ProjectNotFound(name));
         return project;
     }
 
@@ -287,7 +286,7 @@ class Projects {
 
     async _ensureValidUser(username) {
         const user = await UsersData.get(username);
-        if (!user) throw new Errors.UserNotFound(username);
+        assert(user, new UserNotFound(username));
     }
 
     _getProjectMetadata(project, origin='') {
