@@ -53,8 +53,6 @@ class FSBackend {
     store(id, data) {
         const [dirname, filename] = this.getDirectoryAndFile(id);
 
-        this.logger.info(`storing data in the blob: ${id}`);
-
         // store the data and return the hash
         this._verifyExists();
         return Q.nfcall(fse.ensureDir, dirname)
@@ -62,7 +60,6 @@ class FSBackend {
                 if (!exists.sync(filename)) {
                     return Q.nfcall(fs.writeFile, filename, data);
                 } else {
-                    this.logger.trace(`data already stored. skipping write ${id}`);
                     return Q();
                 }
             })
