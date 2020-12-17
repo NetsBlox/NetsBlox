@@ -73,10 +73,14 @@ function closestScalar(val, def) {
 }
 
 // if arr contains only defined values, returns arr, otherwise throws Error(errorMsg)
-function completedOrThrow(arr, errorMsg) {
-    if (arr === undefined) throw new Error(errorMsg);
+function definedArrOrThrow(arr, errorMsg) {
     for (const val of arr) if (val === undefined) throw new Error(errorMsg);
     return arr;
+}
+// if val is defined, returns val, otherwise throws Error(errorMsg)
+function definedOrThrow(val, errorMsg) {
+    if (val === undefined) throw new Error(errorMsg);
+    return val;
 }
 
 var Sensor = function (mac_addr, ip4_addr, ip4_port, aServer) {
@@ -264,7 +268,7 @@ Sensor.prototype.getOrientation = async function () {
     message.write('O', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return completedOrThrow([res.azimuth, res.pitch, res.roll], 'orientation sensor not supported or disabled');
+    return definedArrOrThrow([res.azimuth, res.pitch, res.roll], 'orientation sensor not supported or disabled');
 };
 Sensor.prototype.getCompassHeading = async function () {
     return (await this.getOrientation())[0];
@@ -283,7 +287,7 @@ Sensor.prototype.getAccelerometer = async function () {
     message.write('A', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return completedOrThrow([res.x, res.y, res.z], 'accelerometer not supported or disabled');
+    return definedArrOrThrow([res.x, res.y, res.z], 'accelerometer not supported or disabled');
 };
 Sensor.prototype.getAccelerometerNormalized = async function () {
     return normalize(await this.getAccelerometer());  
@@ -299,7 +303,7 @@ Sensor.prototype.getGravity = async function () {
     message.write('G', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return completedOrThrow([res.x, res.y, res.z], 'gravity sensor not supported or disabled');
+    return definedArrOrThrow([res.x, res.y, res.z], 'gravity sensor not supported or disabled');
 };
 Sensor.prototype.getGravityNormalized = async function () {
     return normalize(await this.getGravity());  
@@ -312,7 +316,7 @@ Sensor.prototype.getLinearAcceleration = async function () {
     message.write('L', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return completedOrThrow([res.x, res.y, res.z], 'linear acceleration sensor not supported or disabled');
+    return definedArrOrThrow([res.x, res.y, res.z], 'linear acceleration sensor not supported or disabled');
 };
 Sensor.prototype.getLinearAccelerationNormalized = async function () {
     return normalize(await this.getLinearAcceleration());  
@@ -325,7 +329,7 @@ Sensor.prototype.getGyroscope = async function () {
     message.write('Y', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return completedOrThrow([res.x, res.y, res.z], 'gyroscope not supported or disabled');
+    return definedArrOrThrow([res.x, res.y, res.z], 'gyroscope not supported or disabled');
 };
 Sensor.prototype.getRotation = async function () {
     this._logger.log('get rotation ' + this.mac_addr);
@@ -334,7 +338,7 @@ Sensor.prototype.getRotation = async function () {
     message.write('R', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return completedOrThrow([res.x, res.y, res.z, res.w], 'rotation sensor not supported or disabled');
+    return definedArrOrThrow([res.x, res.y, res.z, res.w], 'rotation sensor not supported or disabled');
 };
 Sensor.prototype.getGameRotation = async function () {
     this._logger.log('get game rotation ' + this.mac_addr);
@@ -343,7 +347,7 @@ Sensor.prototype.getGameRotation = async function () {
     message.write('r', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return completedOrThrow([res.x, res.y, res.z], 'game rotation sensor not supported or disabled');
+    return definedArrOrThrow([res.x, res.y, res.z], 'game rotation sensor not supported or disabled');
 };
 
 Sensor.prototype.getMagneticFieldVector = async function () {
@@ -353,7 +357,7 @@ Sensor.prototype.getMagneticFieldVector = async function () {
     message.write('M', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return completedOrThrow([res.x, res.y, res.z], 'magnetic field sensor not supported or disabled');
+    return definedArrOrThrow([res.x, res.y, res.z], 'magnetic field sensor not supported or disabled');
 };
 Sensor.prototype.getMagneticFieldVectorNormalized = async function () {
     return normalize(await this.getMagneticFieldVector());  
@@ -365,7 +369,7 @@ Sensor.prototype.getProximity = async function () {
     const message = Buffer.alloc(1);
     message.write('P', 0, 1);
     this.sendToSensor(message);
-    return completedOrThrow((await response).proximity, 'proximity sensor not supported or disabled');
+    return definedOrThrow((await response).proximity, 'proximity sensor not supported or disabled');
 };
 Sensor.prototype.getStepCount = async function () {
     this._logger.log('get step count ' + this.mac_addr);
@@ -373,7 +377,7 @@ Sensor.prototype.getStepCount = async function () {
     const message = Buffer.alloc(1);
     message.write('S', 0, 1);
     this.sendToSensor(message);
-    return completedOrThrow((await response).count, 'step counter not supported or disabled');
+    return definedOrThrow((await response).count, 'step counter not supported or disabled');
 };
 Sensor.prototype.getLightLevel = async function () {
     this._logger.log('get light level ' + this.mac_addr);
@@ -381,7 +385,7 @@ Sensor.prototype.getLightLevel = async function () {
     const message = Buffer.alloc(1);
     message.write('l', 0, 1);
     this.sendToSensor(message);
-    return completedOrThrow((await response).level, 'light sensor not supported or disabled');
+    return definedOrThrow((await response).level, 'light sensor not supported or disabled');
 };
 
 Sensor.prototype.getLocation = async function () {
@@ -391,7 +395,7 @@ Sensor.prototype.getLocation = async function () {
     message.write('X', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return completedOrThrow([res.lat, res.long], 'location not supported or disabled');
+    return definedArrOrThrow([res.lat, res.long], 'location not supported or disabled');
 };
 
 Sensor.prototype.commandToClient = function (command) {
