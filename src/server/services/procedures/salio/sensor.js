@@ -3,6 +3,7 @@ const getRPCLogger = require('../utils/logger');
 const acl = require('../roboscape/accessControl');
 const SALIO_MODE = process.env.SALIO_MODE || 'both';
 const ciphers = require('../roboscape/ciphers');
+const common = require('./common');
 
 // these might be better defined as an attribute on the sensor
 const FORGET_TIME = 120; // forgetting a sensor in seconds
@@ -34,54 +35,6 @@ const COMPASS_DIRECTIONS_8 = [
     [Math.PI, 'S'],
     [-Math.PI, 'S'],
 ];
-
-function dotProduct(a, b) {
-    let total = 0;
-    for (var i = 0; i < a.length; ++i) {
-        total += a[i] * b[i];
-    }
-    return total;
-}
-function magnitude(a) {
-    return Math.sqrt(dotProduct(a, a));
-}
-function scale(a, f) {
-    return a.map(x => x * f);
-}
-function normalize(a) {
-    return scale(a, 1.0 / magnitude(a));
-}
-function angle(a, b) {
-    return Math.acos(dotProduct(a, b) / (magnitude(a) * magnitude(b)));
-}
-
-function closestVector(val, def) {
-    let best = [Infinity, undefined];
-    for (const dir of def) {
-        const t = angle(val, dir[0]);
-        if (t < best[0]) best = [t, dir[1]];
-    }
-    return best[1];
-}
-function closestScalar(val, def) {
-    let best = [Infinity, undefined];
-    for (const dir of def) {
-        const t = Math.abs(val - dir[0]);
-        if (t < best[0]) best = [t, dir[1]];
-    }
-    return best[1];
-}
-
-// if arr contains only defined values, returns arr, otherwise throws Error(errorMsg)
-function definedArrOrThrow(arr, errorMsg) {
-    for (const val of arr) if (val === undefined) throw new Error(errorMsg);
-    return arr;
-}
-// if val is defined, returns val, otherwise throws Error(errorMsg)
-function definedOrThrow(val, errorMsg) {
-    if (val === undefined) throw new Error(errorMsg);
-    return val;
-}
 
 var Sensor = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.id = mac_addr;
@@ -268,134 +221,145 @@ Sensor.prototype.getOrientation = async function () {
     message.write('O', 0, 1);
     this.sendToSensor(message);
     const res = await response;
-    return definedArrOrThrow([res.azimuth, res.pitch, res.roll], 'orientation sensor not supported or disabled');
+    return common.definedArrOrThrow([res.azimuth, res.pitch, res.roll], 'orientation sensor not enabled or failed to auth');
 };
 Sensor.prototype.getCompassHeading = async function () {
     return (await this.getOrientation())[0];
 };
 Sensor.prototype.getCompassDirection = async function () {
-    return closestScalar(await this.getCompassHeading(), COMPASS_DIRECTIONS_8);
+    return common.closestScalar(await this.getCompassHeading(), COMPASS_DIRECTIONS_8);
 };
 Sensor.prototype.getCompassCardinalDirection = async function () {
-    return closestScalar(await this.getCompassHeading(), COMPASS_DIRECTIONS_4);
+    return common.closestScalar(await this.getCompassHeading(), COMPASS_DIRECTIONS_4);
 };
 
-Sensor.prototype.getAccelerometer = async function () {
+Sensor.prototype.getAccelerometer = async function (sensor, args) {
     this._logger.log('get accelerometer ' + this.mac_addr);
     const response = this.receiveFromSensor('accelerometer');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('A', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
     const res = await response;
-    return definedArrOrThrow([res.x, res.y, res.z], 'accelerometer not supported or disabled');
+    return common.definedArrOrThrow([res.x, res.y, res.z], 'accelerometer not enabled or failed to auth');
 };
-Sensor.prototype.getAccelerometerNormalized = async function () {
-    return normalize(await this.getAccelerometer());  
+Sensor.prototype.getAccelerometerNormalized = async function (sensor, args) {
+    return common.normalize(await this.getAccelerometer(sensor, args));  
 };
-Sensor.prototype.getFacingDirection = async function () {
-    return closestVector(await this.getAccelerometer(), DIRECTIONS_3D);
+Sensor.prototype.getFacingDirection = async function (sensor, args) {
+    return common.closestVector(await this.getAccelerometer(sensor, args), DIRECTIONS_3D);
 };
 
-Sensor.prototype.getGravity = async function () {
+Sensor.prototype.getGravity = async function (sensor, args) {
     this._logger.log('get gravity ' + this.mac_addr);
     const response = this.receiveFromSensor('gravity');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('G', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
     const res = await response;
-    return definedArrOrThrow([res.x, res.y, res.z], 'gravity sensor not supported or disabled');
+    return common.definedArrOrThrow([res.x, res.y, res.z], 'gravity sensor not enabled or failed to auth');
 };
-Sensor.prototype.getGravityNormalized = async function () {
-    return normalize(await this.getGravity());  
+Sensor.prototype.getGravityNormalized = async function (sensor, args) {
+    return common.normalize(await this.getGravity(sensor, args));  
 };
 
-Sensor.prototype.getLinearAcceleration = async function () {
+Sensor.prototype.getLinearAcceleration = async function (sensor, args) {
     this._logger.log('get linear acceleration ' + this.mac_addr);
     const response = this.receiveFromSensor('linear');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('L', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
     const res = await response;
-    return definedArrOrThrow([res.x, res.y, res.z], 'linear acceleration sensor not supported or disabled');
+    return common.definedArrOrThrow([res.x, res.y, res.z], 'linear acceleration sensor not enabled or failed to auth');
 };
-Sensor.prototype.getLinearAccelerationNormalized = async function () {
-    return normalize(await this.getLinearAcceleration());  
+Sensor.prototype.getLinearAccelerationNormalized = async function (sensor, args) {
+    return common.normalize(await this.getLinearAcceleration(sensor, args));  
 };
 
-Sensor.prototype.getGyroscope = async function () {
+Sensor.prototype.getGyroscope = async function (sensor, args) {
     this._logger.log('get gyroscope ' + this.mac_addr);
     const response = this.receiveFromSensor('gyroscope');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('Y', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
     const res = await response;
-    return definedArrOrThrow([res.x, res.y, res.z], 'gyroscope not supported or disabled');
+    return common.definedArrOrThrow([res.x, res.y, res.z], 'gyroscope not enabled or failed to auth');
 };
-Sensor.prototype.getRotation = async function () {
+Sensor.prototype.getRotation = async function (sensor, args) {
     this._logger.log('get rotation ' + this.mac_addr);
     const response = this.receiveFromSensor('rotation');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('R', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
     const res = await response;
-    return definedArrOrThrow([res.x, res.y, res.z, res.w], 'rotation sensor not supported or disabled');
+    return common.definedArrOrThrow([res.x, res.y, res.z, res.w], 'rotation sensor not enabled or failed to auth');
 };
-Sensor.prototype.getGameRotation = async function () {
+Sensor.prototype.getGameRotation = async function (sensor, args) {
     this._logger.log('get game rotation ' + this.mac_addr);
     const response = this.receiveFromSensor('gamerotation');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('r', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
     const res = await response;
-    return definedArrOrThrow([res.x, res.y, res.z], 'game rotation sensor not supported or disabled');
+    return common.definedArrOrThrow([res.x, res.y, res.z], 'game rotation sensor not enabled or failed to auth');
 };
 
-Sensor.prototype.getMagneticFieldVector = async function () {
+Sensor.prototype.getMagneticFieldVector = async function (sensor, args) {
     this._logger.log('get mag field ' + this.mac_addr);
     const response = this.receiveFromSensor('magfield');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('M', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
     const res = await response;
-    return definedArrOrThrow([res.x, res.y, res.z], 'magnetic field sensor not supported or disabled');
+    return common.definedArrOrThrow([res.x, res.y, res.z], 'magnetic field sensor not enabled or failed to auth');
 };
-Sensor.prototype.getMagneticFieldVectorNormalized = async function () {
-    return normalize(await this.getMagneticFieldVector());  
+Sensor.prototype.getMagneticFieldVectorNormalized = async function (sensor, args) {
+    return common.normalize(await this.getMagneticFieldVector(sensor, args));  
 };
 
-Sensor.prototype.getProximity = async function () {
+Sensor.prototype.getProximity = async function (sensor, args) {
     this._logger.log('get proximity ' + this.mac_addr);
     const response = this.receiveFromSensor('proximity');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('P', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
-    return definedOrThrow((await response).proximity, 'proximity sensor not supported or disabled');
+    return common.definedOrThrow((await response).proximity, 'proximity sensor not enabled or failed to auth');
 };
-Sensor.prototype.getStepCount = async function () {
+Sensor.prototype.getStepCount = async function (sensor, args) {
     this._logger.log('get step count ' + this.mac_addr);
     const response = this.receiveFromSensor('stepcount');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('S', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
-    return definedOrThrow((await response).count, 'step counter not supported or disabled');
+    return common.definedOrThrow((await response).count, 'step counter not enabled or failed to auth');
 };
-Sensor.prototype.getLightLevel = async function () {
+Sensor.prototype.getLightLevel = async function (sensor, args) {
     this._logger.log('get light level ' + this.mac_addr);
     const response = this.receiveFromSensor('lightlevel');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('l', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
-    return definedOrThrow((await response).level, 'light sensor not supported or disabled');
+    return common.definedOrThrow((await response).level, 'light sensor not enabled or failed to auth');
 };
 
-Sensor.prototype.getLocation = async function () {
+Sensor.prototype.getLocation = async function (sensor, args) {
     this._logger.log('get location ' + this.mac_addr);
     const response = this.receiveFromSensor('location');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('X', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
     const res = await response;
-    return definedArrOrThrow([res.lat, res.long], 'location not supported or disabled');
+    return common.definedArrOrThrow([res.lat, res.long], 'location not enabled or failed to auth');
 };
 
 Sensor.prototype.commandToClient = function (command) {

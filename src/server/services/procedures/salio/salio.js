@@ -29,9 +29,12 @@ const {PromiseSocket} = require('promise-socket');
 const logger = require('../utils/logger')('SalIO');
 const Sensor = require('./sensor');
 const acl = require('../roboscape/accessControl');
+const common = require('./common');
 var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
     SALIO_MODE = process.env.SALIO_MODE || 'both';
+
+const SALIO_TCP_PORT = 8889; // tcp port used by the SalIO app
 
 /*
  * SalIO - This constructor is called on the first
@@ -211,33 +214,37 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * 2. The pitch (vertical tilt) angle [-pi/2, pi/2].
      * 3. The roll angle [-pi/2,pi/2].
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
      * @returns {boolean} The orientation angles relative to the Earth's magnetic field.
      */
-    SalIO.prototype.getOrientation = function (sensor) {
+    SalIO.prototype.getOrientation = function (sensor, password) {
         return this._passToSensor('getOrientation', arguments);
     };
     /**
      * Get the compass heading in radians [-pi, pi].
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
      * @returns {boolean} The compass heading in radians.
      */
-    SalIO.prototype.getCompassHeading = function (sensor) {
+    SalIO.prototype.getCompassHeading = function (sensor, password) {
         return this._passToSensor('getCompassHeading', arguments);
     };
     /**
      * Get the name of the closest compass direction (N, NE, E, SE, etc.).
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
      * @returns {boolean} The compass direction name
      */
-    SalIO.prototype.getCompassDirection = function (sensor) {
+    SalIO.prototype.getCompassDirection = function (sensor, password) {
         return this._passToSensor('getCompassDirection', arguments);
     };
     /**
      * Get the name of the closest compass cardinal direction (N, E, S, W).
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
      * @returns {boolean} The compass cardinal direction name
      */
-    SalIO.prototype.getCompassCardinalDirection = function (sensor) {
+    SalIO.prototype.getCompassCardinalDirection = function (sensor, password) {
         return this._passToSensor('getCompassCardinalDirection', arguments);
     };
 
@@ -245,15 +252,19 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the current accelerometer output from the sensor.
      * This is a 3D vector with units of m/s².
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} accelerometer output
      */
-    SalIO.prototype.getAccelerometer = function (sensor) {
+    SalIO.prototype.getAccelerometer = function (sensor, password) {
         return this._passToSensor('getAccelerometer', arguments);
     };
     /**
      * As getAccelerometer, but scaled to a magnitude of 1.
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} accelerometer output, with magnitude 1
      */
-    SalIO.prototype.getAccelerometerNormalized = function (sensor) {
+    SalIO.prototype.getAccelerometerNormalized = function (sensor, password) {
         return this._passToSensor('getAccelerometerNormalized', arguments);
     };
     /**
@@ -266,8 +277,10 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      *     "left" - the device is horizontal, lying on its left side (facing the screen).
      *     "right" - the device is horizontal, lying on its right side (facing the screen).
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {string} name of facing direction
      */
-    SalIO.prototype.getFacingDirection = function (sensor) {
+    SalIO.prototype.getFacingDirection = function (sensor, password) {
         return this._passToSensor('getFacingDirection', arguments);
     };
 
@@ -275,54 +288,62 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the current output of the gravity vector sensor.
      * This is a 3D vector with units of m/s².
      * This is similar to the Accelerometer, but tries to account for noise from linear movement.
-     * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} output of gravity sensor
      */
-    SalIO.prototype.getGravity = function (sensor) {
+    SalIO.prototype.getGravity = function (sensor, password) {
         return this._passToSensor('getGravity', arguments);
     };
     /**
      * As getGravity, but scaled to a magnitude of 1.
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} output of gravity sensor, with magnitude 1
      */
-    SalIO.prototype.getGravityNormalized = function (sensor) {
+    SalIO.prototype.getGravityNormalized = function (sensor, password) {
         return this._passToSensor('getGravityNormalized', arguments);
     };
 
     /**
      * Get the current output of the linear acceleration sensor.
      * This is a 3D vector with units of m/s².
-     * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} linear acceleration vector
      */
-    SalIO.prototype.getLinearAcceleration = function (sensor) {
+    SalIO.prototype.getLinearAcceleration = function (sensor, password) {
         return this._passToSensor('getLinearAcceleration', arguments);
     };
     /**
      * As getLinearAcceleration, but scaled to a magnitude of 1.
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} linear acceleration vector, with magnitude 1
      */
-    SalIO.prototype.getLinearAccelerationNormalized = function (sensor) {
+    SalIO.prototype.getLinearAccelerationNormalized = function (sensor, password) {
         return this._passToSensor('getLinearAccelerationNormalized', arguments);
     };
 
     /**
      * Get the current output of the gyroscope, which measures rotational acceleration.
      * This is a 3D vector with units of rad/s² around each axis.
-     * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} output of gyroscope
      */
-    SalIO.prototype.getGyroscope = function (sensor) {
+    SalIO.prototype.getGyroscope = function (sensor, password) {
         return this._passToSensor('getGyroscope', arguments);
     };
     /**
      * Get the current output of the rotation sensor, which measures rotational orientation.
      * This is a 4D vector with units of rad around each of the 3 axes, plus a scalar component.
      * For most uses, getGameRotation is more convenient.
-     * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} 4D rotational vector
      */
-    SalIO.prototype.getRotation = function (sensor) {
+    SalIO.prototype.getRotation = function (sensor, password) {
         return this._passToSensor('getRotation', arguments);
     };
     /**
@@ -331,8 +352,10 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Due to the arbitrary basis of getRotation, this is more appropriate for use in games.
      * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} 3D rotational vector
      */
-    SalIO.prototype.getGameRotation = function (sensor) {
+    SalIO.prototype.getGameRotation = function (sensor, password) {
         return this._passToSensor('getGameRotation', arguments);
     };
 
@@ -341,15 +364,19 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * This is a 3D vector with units of μT (micro teslas) in each direction.
      * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} magnetic field vector
      */
-    SalIO.prototype.getMagneticFieldVector = function (sensor) {
+    SalIO.prototype.getMagneticFieldVector = function (sensor, password) {
         return this._passToSensor('getMagneticFieldVector', arguments);
     };
     /**
      * As getMagneticFieldVector, but scaled to a magnitude of 1.
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} magnetic field vector, with magnitude 1
      */
-    SalIO.prototype.getMagneticFieldVectorNormalized = function (sensor) {
+    SalIO.prototype.getMagneticFieldVectorNormalized = function (sensor, password) {
         return this._passToSensor('getMagneticFieldVectorNormalized', arguments);
     };
 
@@ -358,8 +385,10 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * This is a latitude longitude pair in degrees.
      * If the device does not have location enabled, returns (0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Array} latitude and longitude
      */
-    SalIO.prototype.getLocation = function (sensor) {
+    SalIO.prototype.getLocation = function (sensor, password) {
         return this._passToSensor('getLocation', arguments);
     };
 
@@ -369,8 +398,10 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Note that some devices only have binary proximity sensors (near/far), which will take discrete two values.
      * If the device does not have a proximity sensor, returns 0.
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Number} distance from proximity sensor in cm
      */
-    SalIO.prototype.getProximity = function (sensor) {
+    SalIO.prototype.getProximity = function (sensor, password) {
         return this._passToSensor('getProximity', arguments);
     };
     /**
@@ -378,37 +409,54 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * This measures the number of steps taken since the device was started.
      * If the device does not have a step counter, returns 0.
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Number} number of steps taken
      */
-    SalIO.prototype.getStepCount = function (sensor) {
+    SalIO.prototype.getStepCount = function (sensor, password) {
         return this._passToSensor('getStepCount', arguments);
     };
     /**
      * Get the current output of the light sensor.
      * If the device does not have a light level sensor, returns 0.
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Number} current light level reading
      */
-    SalIO.prototype.getLightLevel = function (sensor) {
+    SalIO.prototype.getLightLevel = function (sensor, password) {
         return this._passToSensor('getLightLevel', arguments);
     };
 
     /**
      * Get the most recent image snapshot from the sensor.
      * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
      */
-    SalIO.prototype.getImage = async function (sensor) {
+    SalIO.prototype.getImage = async function (sensor, password) {
         const sensorObj = await this._getSensor(sensor);
+        if (sensorObj === undefined) return false; // false simulates other RPC failures
         const ip = sensorObj.ip4_addr;
 
-        const socket = new PromiseSocket();
-        await socket.connect(8889, ip);
-        await socket.writeAll('D');
-        const bin = await socket.readAll();
+        const msg = Buffer.alloc(9);
+        msg.write('D', 0, 1);
+        msg.writeBigInt64BE(common.gracefullPasswordParse(password), 1);
 
-        const rsp = this.response;
-        rsp.set('content-type', 'image/jpeg');
-        rsp.set('content-length', bin.length);
-        rsp.set('connection', 'close');
-        return rsp.status(200).send(bin);
+        const socket = new PromiseSocket();
+        socket.setTimeout(1000); // allow one second of inactivity for starting connection
+        try {
+            await socket.connect(SALIO_TCP_PORT, ip);
+            await socket.writeAll(msg);
+            const bin = await socket.readAll();
+            if (bin.length === 0) throw 0; // failed request, return the default error message
+
+            const rsp = this.response;
+            rsp.set('content-type', 'image/jpeg');
+            rsp.set('content-length', bin.length);
+            rsp.set('connection', 'close');
+            return rsp.status(200).send(bin);
+        }
+        catch (err) {
+            throw new Error('get image not enabled or failed to auth');
+        }
     };
 
     /**
