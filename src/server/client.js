@@ -371,7 +371,7 @@ class Client {
     }
 
     toString() {
-        let attrs = ['id', 'uuid', 'username', 'roleId', 'projectId'];
+        let attrs = ['uuid', 'username', 'roleId', 'projectId'];
         let str = attrs
             .map(attr => {
                 let rv =  this[attr] ? `${attr}: ${this[attr]}` : undefined;
