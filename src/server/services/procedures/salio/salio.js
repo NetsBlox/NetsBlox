@@ -230,6 +230,15 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
         return this._passToSensor('getCompassHeading', arguments);
     };
     /**
+     * Get the compass heading in degrees [-180, 180].
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {boolean} The compass heading in radians.
+     */
+    SalIO.prototype.getCompassHeadingDegrees = async function (sensor, password) {
+        return this._passToSensor('getCompassHeadingDegrees', arguments);
+    };
+    /**
      * Get the name of the closest compass direction (N, NE, E, SE, etc.).
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current (numeric) password for the sensor
@@ -441,7 +450,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
         msg.writeBigInt64BE(common.gracefullPasswordParse(password), 1);
 
         const socket = new PromiseSocket();
-        socket.setTimeout(1000); // allow one second of inactivity for starting connection
+        socket.setTimeout(5000); // allow some time for starting connection and encoding result (well over worst case)
         try {
             await socket.connect(SALIO_TCP_PORT, ip);
             await socket.writeAll(msg);

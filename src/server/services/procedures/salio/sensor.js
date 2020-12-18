@@ -7,7 +7,7 @@ const common = require('./common');
 
 // these might be better defined as an attribute on the sensor
 const FORGET_TIME = 120; // forgetting a sensor in seconds
-const RESPONSE_TIMEOUT = 1000; // ms
+const RESPONSE_TIMEOUT = 5000; // ms (well over worst case)
 
 const DIRECTIONS_3D = [
     [[0, 0, 1], 'up'],
@@ -214,23 +214,27 @@ Sensor.prototype.receiveFromSensor = function (msgType, timeout) {
     });
 };
 
-Sensor.prototype.getOrientation = async function () {
+Sensor.prototype.getOrientation = async function (sensor, args) {
     this._logger.log('get orientation ' + this.mac_addr);
     const response = this.receiveFromSensor('orientation');
-    const message = Buffer.alloc(1);
+    const message = Buffer.alloc(9);
     message.write('O', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
     const res = await response;
     return common.definedArrOrThrow([res.azimuth, res.pitch, res.roll], 'orientation sensor not enabled or failed to auth');
 };
-Sensor.prototype.getCompassHeading = async function () {
-    return (await this.getOrientation())[0];
+Sensor.prototype.getCompassHeading = async function (sensor, args) {
+    return (await this.getOrientation(sensor, args))[0];
 };
-Sensor.prototype.getCompassDirection = async function () {
-    return common.closestScalar(await this.getCompassHeading(), COMPASS_DIRECTIONS_8);
+Sensor.prototype.getCompassHeadingDegrees = async function (sensor, args) {
+    return await this.getCompassHeading(sensor, args) * 180 / Math.PI;
 };
-Sensor.prototype.getCompassCardinalDirection = async function () {
-    return common.closestScalar(await this.getCompassHeading(), COMPASS_DIRECTIONS_4);
+Sensor.prototype.getCompassDirection = async function (sensor, args) {
+    return common.closestScalar(await this.getCompassHeading(sensor, args), COMPASS_DIRECTIONS_8);
+};
+Sensor.prototype.getCompassCardinalDirection = async function (sensor, args) {
+    return common.closestScalar(await this.getCompassHeading(sensor, args), COMPASS_DIRECTIONS_4);
 };
 
 Sensor.prototype.getAccelerometer = async function (sensor, args) {
@@ -566,6 +570,12 @@ Sensor.prototype.onCommand = function(command) {
             regex: /^get compass heading$/,
             handler: () => {
                 return this.getCompassHeading();
+            }
+        },
+        {
+            regex: /^get compass heading degrees$/,
+            handler: () => {
+                return this.getCompassHeadingDegrees();
             }
         },
         {
