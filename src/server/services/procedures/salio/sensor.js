@@ -4,6 +4,7 @@ const acl = require('../roboscape/accessControl');
 const SALIO_MODE = process.env.SALIO_MODE || 'both';
 const ciphers = require('../roboscape/ciphers');
 const common = require('./common');
+const { definedOrThrow } = require('./common');
 
 // these might be better defined as an attribute on the sensor
 const FORGET_TIME = 120; // forgetting a sensor in seconds
@@ -212,6 +213,37 @@ Sensor.prototype.receiveFromSensor = function (msgType, timeout) {
             resolve(false);
         }, timeout || RESPONSE_TIMEOUT);
     });
+};
+
+Sensor.prototype.clearControls = async function (sensor, args) {
+    this._logger.log('clear controls ' + this.mac_addr);
+    const response = this.receiveFromSensor('clearcontrols');
+    const message = Buffer.alloc(9);
+    message.write('C', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    this.sendToSensor(message);
+    return definedOrThrow((await response).res, 'failed clear or failed auth');
+};
+Sensor.prototype.addButton = async function (sensor, args) {
+    this._logger.log('add button ' + this.mac_addr);
+    const response = this.receiveFromSensor('addbutton');
+    const message = Buffer.alloc(37);
+    message.write('B', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeFloatBE(args[1], 9);
+    message.writeFloatBE(args[2], 13);
+    message.writeFloatBE(args[3], 17);
+    message.writeFloatBE(args[4], 21);
+    message.writeInt32BE(args[5], 25);
+    message.writeInt32BE(args[6], 29);
+    message.writeInt32BE(args[7], 33);
+    const text = Buffer.from(args[8], 'utf8');
+    this.sendToSensor(Buffer.concat([message, text]));
+    
+    const err = (await response).err;
+    if (err === undefined) throw new Error('failed add button or failed auth');
+    if (err !== null) throw new Error(err);
+    return true;
 };
 
 Sensor.prototype.getOrientation = async function (sensor, args) {
@@ -466,6 +498,18 @@ Sensor.prototype.onMessage = function (message) {
             }
         }
     }
+    else if (command === 'C') {
+        this.sendToClient('clearcontrols', message.length === 11 ? { res: true } : {});
+    }
+    else if (command === 'B') {
+        let err = undefined;
+        if (message.length === 12) switch (message[11]) {
+            case 0: err = null; break;
+            case 1: err = 'too many controls'; break;
+            default: err = 'unknown error'; break;
+        }
+        this.sendToClient('addbutton', { err });
+    }
     else if (command === 'O') {
         this.sendToClient('orientation', message.length === 23 ? {
             azimuth: message.readFloatBE(11),
@@ -558,6 +602,12 @@ Sensor.prototype.onCommand = function(command) {
             handler: () => {
                 this.sendToClient('alive', {});
                 return this.isAlive();
+            }
+        },
+        {
+            regex: /^clear controls$/,
+            handler: () => {
+                return this.clearControls();
             }
         },
         {

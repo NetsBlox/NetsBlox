@@ -195,6 +195,17 @@ SalIO.prototype._passToSensor = async function (fnName, args) {
     return false;
 };
 
+/**
+ * Get the color code for the specified red green and blue levels.
+ * @param {BoundedNumber<0, 255>} red red level (0-255).
+ * @param {BoundedNumber<0, 255>} green green level (0-255).
+ * @param {BoundedNumber<0, 255>} blue blue level (0-255).
+ * @returns {boolean} The orientation angles relative to the Earth's magnetic field.
+ */
+SalIO.prototype.getColor = function (red, green, blue) {
+    return 0xff000000 | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff);
+};
+
 if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /* eslint-disable no-unused-vars */
     /**
@@ -208,6 +219,33 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
+     * Clears all custom controls from the device.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {boolean} The orientation angles relative to the Earth's magnetic field.
+     */
+    SalIO.prototype.clearControls = function (sensor, password) {
+        return this._passToSensor('clearControls', arguments);
+    };
+    /**
+     * Add a custom button to the device.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
+     * @param {BoundedNumber<0, 100>} width Width of the button (percentage).
+     * @param {BoundedNumber<0, 100>} height Height of the button (percentage).
+     * @param {Number} color Color code of the button.
+     * @param {Number} textColor Color code of the button text (if any).
+     * @param {Number} id Numeric identifier for use in event logic (two buttons with the same if would fire the same event).
+     * @param {string} text The text to display on the button.
+     * @returns {boolean} The orientation angles relative to the Earth's magnetic field.
+     */
+    SalIO.prototype.addButton = function (sensor, password, x, y, width, height, color, textColor, id, text) {
+        return this._passToSensor('addButton', arguments);
+    };
+
+    /**
      * Get the orientation of the device relative to the Earth's magnetic reference frame.
      * This is returned as a list of 3 values:
      * 1. The azimuth angle, effectively the compass heading [-pi, pi].
@@ -215,7 +253,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * 3. The roll angle [-pi/2,pi/2].
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current (numeric) password for the sensor
-     * @returns {boolean} The orientation angles relative to the Earth's magnetic field.
+     * @returns {Array} The orientation angles relative to the Earth's magnetic field.
      */
     SalIO.prototype.getOrientation = function (sensor, password) {
         return this._passToSensor('getOrientation', arguments);
@@ -224,7 +262,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the compass heading in radians [-pi, pi].
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current (numeric) password for the sensor
-     * @returns {boolean} The compass heading in radians.
+     * @returns {Number} The compass heading in radians.
      */
     SalIO.prototype.getCompassHeading = function (sensor, password) {
         return this._passToSensor('getCompassHeading', arguments);
@@ -233,7 +271,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the compass heading in degrees [-180, 180].
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current (numeric) password for the sensor
-     * @returns {boolean} The compass heading in radians.
+     * @returns {Number} The compass heading in radians.
      */
     SalIO.prototype.getCompassHeadingDegrees = async function (sensor, password) {
         return this._passToSensor('getCompassHeadingDegrees', arguments);
@@ -242,7 +280,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the name of the closest compass direction (N, NE, E, SE, etc.).
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current (numeric) password for the sensor
-     * @returns {boolean} The compass direction name
+     * @returns {String} The compass direction name
      */
     SalIO.prototype.getCompassDirection = function (sensor, password) {
         return this._passToSensor('getCompassDirection', arguments);
@@ -251,7 +289,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the name of the closest compass cardinal direction (N, E, S, W).
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current (numeric) password for the sensor
-     * @returns {boolean} The compass cardinal direction name
+     * @returns {String} The compass cardinal direction name
      */
     SalIO.prototype.getCompassCardinalDirection = function (sensor, password) {
         return this._passToSensor('getCompassCardinalDirection', arguments);
