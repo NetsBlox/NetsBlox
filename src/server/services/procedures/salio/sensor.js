@@ -37,6 +37,8 @@ const COMPASS_DIRECTIONS_8 = [
     [-Math.PI, 'S'],
 ];
 
+const MAX_ACTION_LISTENERS = 128;
+
 var Sensor = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.id = mac_addr;
     this.mac_addr = mac_addr;
@@ -58,6 +60,9 @@ var Sensor = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.lastSeqNum = -1; // initially disabled
     this._logger = getRPCLogger(`salio:${mac_addr}`);
     this.server = aServer; // a handle to the udp server for communication with the sensor
+
+    this.actionListeners = {}; // maps event id to list of listener actions
+    this.actionListenersCount = 0; // number of listeners (used to enforce max count)
 };
 
 Sensor.prototype.setTotalRate = function (rate) {
@@ -213,6 +218,47 @@ Sensor.prototype.receiveFromSensor = function (msgType, timeout) {
             resolve(false);
         }, timeout || RESPONSE_TIMEOUT);
     });
+};
+
+Sensor.prototype.authenticate = async function (sensor, args) {
+    this._logger.log('authenticate ' + this.mac_addr);
+    const response = this.receiveFromSensor('auth');
+    const message = Buffer.alloc(9);
+    message.write('a', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    this.sendToSensor(message);
+    return definedOrThrow((await response).res, 'sensor offline or failed to auth');
+};
+Sensor.prototype.getListenersCount = async function (sensor, args) {
+    if (!await this.authenticate(sensor, args)) return false;
+    this._logger.log('get listeners count ' + this.mac_addr);
+    return this.actionListenersCount;
+};
+Sensor.prototype.clearListeners = async function (sensor, args) {
+    if (!await this.authenticate(sensor, args)) return false;
+    this._logger.log('clear listeners ' + this.mac_addr);
+    this.actionListeners = {};
+    this.actionListenersCount = 0;
+    return true;
+};
+Sensor.prototype.addListener = async function (sensor, args) {
+    if (!await this.authenticate(sensor, args)) return false;
+    this._logger.log('add listeners ' + this.mac_addr);
+    if (this.actionListenersCount >= MAX_ACTION_LISTENERS) {
+        throw new Error('too many action listeners');
+    }
+    const id = args[1];
+    const action = args[2];
+
+    let event = this.actionListeners[id];
+    if (event === undefined) {
+        event = [];
+        this.actionListeners[id] = event;
+    }
+    event.push(action);
+    this.actionListenersCount += 1;
+
+    return true;
 };
 
 Sensor.prototype.clearControls = async function (sensor, args) {
@@ -498,6 +544,9 @@ Sensor.prototype.onMessage = function (message) {
             }
         }
     }
+    else if (command === 'a') {
+        this.sendToClient('auth', message.length === 11 ? { res: true } : {});
+    }
     else if (command === 'C') {
         this.sendToClient('clearcontrols', message.length === 11 ? { res: true } : {});
     }
@@ -509,6 +558,20 @@ Sensor.prototype.onMessage = function (message) {
             default: err = 'unknown error'; break;
         }
         this.sendToClient('addbutton', { err });
+    }
+    else if (command === 'b' && message.length === 15) {
+        const id = message.readUInt32BE(11);
+        const event = this.actionListeners[id];
+        if (event !== undefined) {
+            for (const listener of event) {
+                try {
+                    listener();
+                }
+                catch (ex) {
+                    this._logger.log(ex);
+                }
+            }
+        }
     }
     else if (command === 'O') {
         this.sendToClient('orientation', message.length === 23 ? {
@@ -605,7 +668,37 @@ Sensor.prototype.onCommand = function(command) {
             }
         },
         {
+            regex: /^authenticate$/,
+            handler: () => {
+                return this.authenticate();
+            }
+        },
+        {
+            regex: /^get listeners count$/,
+            handler: () => {
+                return this.getListenersCount();
+            }
+        },
+        {
+            regex: /^clear listeners$/,
+            handler: () => {
+                return this.clearListeners();
+            }
+        },
+        {
+            regex: /^add listener$/,
+            handler: () => {
+                return this.addListener();
+            }
+        },
+        {
             regex: /^clear controls$/,
+            handler: () => {
+                return this.clearControls();
+            }
+        },
+        {
+            regex: /^add button$/,
             handler: () => {
                 return this.clearControls();
             }

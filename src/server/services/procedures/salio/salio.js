@@ -219,10 +219,19 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
+     * Checks for successful authentication.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {boolean} True if authentication is successful, otherwise false.
+     */
+    SalIO.prototype.authenticate = function (sensor, password) {
+        return this._passToSensor('authenticate', arguments);
+    };
+    /**
      * Clears all custom controls from the device.
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current (numeric) password for the sensor
-     * @returns {boolean} The orientation angles relative to the Earth's magnetic field.
+     * @returns {boolean} True if the action is successful, false otherwise.
      */
     SalIO.prototype.clearControls = function (sensor, password) {
         return this._passToSensor('clearControls', arguments);
@@ -236,13 +245,42 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} width Width of the button (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the button (percentage).
      * @param {Number} color Color code of the button.
-     * @param {Number} textColor Color code of the button text (if any).
-     * @param {Number} id Numeric identifier for use in event logic (two buttons with the same if would fire the same event).
-     * @param {string} text The text to display on the button.
-     * @returns {boolean} The orientation angles relative to the Earth's magnetic field.
+     * @param {Number} textColor Color code of the button text (if any)
+     * @param {Number} id Event ID to raise when the button is pressed
+     * @param {string} text The text to display on the button
+     * @returns {boolean} True if the action is successful, false otherwise.
      */
     SalIO.prototype.addButton = function (sensor, password, x, y, width, height, color, textColor, id, text) {
         return this._passToSensor('addButton', arguments);
+    };
+    /**
+     * Get the number of active action listeners for events from the given device.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {Number} Number of active action listioners
+     */
+    SalIO.prototype.getListenersCount = function (sensor, password) {
+        return this._passToSensor('getListenersCount', arguments);
+    };
+    /**
+     * Removes all listeners for events coming from the given device.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @returns {boolean} True if the action is successful, false otherwise.
+     */
+    SalIO.prototype.clearListeners = function (sensor, password) {
+        return this._passToSensor('clearListeners', arguments);
+    };
+    /**
+     * Adds a new listener for an event coming from the given device.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current (numeric) password for the sensor
+     * @param {Number} id Event ID to listen for
+     * @param {Function} action Action to perform when the event is raised
+     * @returns {boolean} True if the action is successful, false otherwise.
+     */
+    SalIO.prototype.addListener = function (sensor, password, id, action) {
+        return this._passToSensor('addListener', arguments);
     };
 
     /**
