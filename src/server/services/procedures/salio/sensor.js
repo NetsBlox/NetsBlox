@@ -37,7 +37,7 @@ const COMPASS_DIRECTIONS_8 = [
     [-Math.PI, 'S'],
 ];
 
-const MAX_ACTION_LISTENERS = 128;
+const MAX_ACTION_LISTENERS = 10000;
 
 var Sensor = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.id = mac_addr;
@@ -61,8 +61,7 @@ var Sensor = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this._logger = getRPCLogger(`salio:${mac_addr}`);
     this.server = aServer; // a handle to the udp server for communication with the sensor
 
-    this.actionListeners = {}; // maps event id to list of listener actions
-    this.actionListenersCount = 0; // number of listeners (used to enforce max count)
+    this.customEvents = {}; // Map<ID, Map<Name, Map<ClientID, Socket>>>
 };
 
 Sensor.prototype.setTotalRate = function (rate) {
@@ -228,37 +227,6 @@ Sensor.prototype.authenticate = async function (sensor, args) {
     message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     this.sendToSensor(message);
     return definedOrThrow((await response).res, 'sensor offline or failed to auth');
-};
-Sensor.prototype.getListenersCount = async function (sensor, args) {
-    if (!await this.authenticate(sensor, args)) return false;
-    this._logger.log('get listeners count ' + this.mac_addr);
-    return this.actionListenersCount;
-};
-Sensor.prototype.clearListeners = async function (sensor, args) {
-    if (!await this.authenticate(sensor, args)) return false;
-    this._logger.log('clear listeners ' + this.mac_addr);
-    this.actionListeners = {};
-    this.actionListenersCount = 0;
-    return true;
-};
-Sensor.prototype.addListener = async function (sensor, args) {
-    if (!await this.authenticate(sensor, args)) return false;
-    this._logger.log('add listeners ' + this.mac_addr);
-    if (this.actionListenersCount >= MAX_ACTION_LISTENERS) {
-        throw new Error('too many action listeners');
-    }
-    const id = args[1];
-    const action = args[2];
-
-    let event = this.actionListeners[id];
-    if (event === undefined) {
-        event = [];
-        this.actionListeners[id] = event;
-    }
-    event.push(action);
-    this.actionListenersCount += 1;
-
-    return true;
 };
 
 Sensor.prototype.clearControls = async function (sensor, args) {
@@ -561,14 +529,18 @@ Sensor.prototype.onMessage = function (message) {
     }
     else if (command === 'b' && message.length === 15) {
         const id = message.readUInt32BE(11);
-        const event = this.actionListeners[id];
-        if (event !== undefined) {
-            for (const listener of event) {
-                try {
-                    listener();
-                }
-                catch (ex) {
-                    this._logger.log(ex);
+        const customEvent = this.customEvents[id];
+        if (customEvent !== undefined) {
+            for (const name in customEvent) {
+                const listeners = customEvent[name];
+                for (const clientID in listeners) {
+                    const socket = listeners[clientID];
+                    try {
+                        socket.sendMessage(name, {});
+                    }
+                    catch (ex) {
+                        this._logger.log(ex);
+                    }
                 }
             }
         }

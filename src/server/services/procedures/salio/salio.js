@@ -169,6 +169,69 @@ SalIO.prototype.listen = async function (sensors) {
 };
 
 /**
+ * Removes all the registered listeners for the given sensor.
+ * @param {string} sensor name of the sensor (matches at the end)
+ * @returns {boolean} Always returns true (success).
+ */
+SalIO.prototype.removeAllEvents = async function (sensor) {
+    const _sensor = await this._getSensor(sensor);
+    for (const id in _sensor.customEvents) {
+        const customEvent = _sensor.customEvents[id];
+        for (const name in customEvent) {
+            const listeners = customEvent[name];
+            delete listeners[this.socket.clientId];
+        }
+    }
+    return true;
+};
+/**
+ * Removes a specific event listener that was previously registerd.
+ * If the specified event id or name was not previously registered, does nothing.
+ * @param {string} sensor name of the sensor (matches at the end)
+ * @param {BoundedNumber<0>} id numeric event id
+ * @param {string} event name of the mapped event to remove
+ * @returns {boolean} Always returns true (success).
+ */
+SalIO.prototype.removeEvent = async function (sensor, id, event) {
+    const _sensor = await this._getSensor(sensor);
+    const customEvent = _sensor.customEvents[id];
+    if (customEvent !== undefined) {
+        const listeners = customEvent[event];
+        if (listeners !== undefined) {
+            delete listeners[this.socket.clientId];
+        }
+    }
+    return true;
+};
+/**
+ * Adds a custom mapping from a numeric event id to a custom message type.
+ * @param {string} sensor name of the sensor (matches at the end)
+ * @param {string} password current password for the sensor
+ * @param {BoundedNumber<0>} id numeric event id
+ * @param {string} event name of the mapped event to add
+ * @returns {boolean} True on success, otherwise throws an error.
+ */
+SalIO.prototype.addEvent = async function (sensor, password, id, event) {
+    const _sensor = await this._getSensor(sensor);
+    if (!_sensor) throw new Error('failed to connect to sensor');
+    await _sensor.authenticate(_sensor, [password]); // throws on failure - we want this
+
+    let customEvent = _sensor.customEvents[id];
+    if (customEvent == undefined) {
+        customEvent = {};
+        _sensor.customEvents[id] = customEvent;
+    }
+    let listeners = customEvent[event];
+    if (listeners === undefined) {
+        listeners = {};
+        customEvent[event] = listeners;
+    }
+    listeners[this.socket.clientId] = this.socket;
+
+    return true;
+};
+
+/**
  * Returns the addresses of all authorized sensors.
  * @returns {array}
  */
@@ -221,7 +284,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Checks for successful authentication.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {boolean} True if authentication is successful, otherwise false.
      */
     SalIO.prototype.authenticate = function (sensor, password) {
@@ -230,7 +293,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Clears all custom controls from the device.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {boolean} True if the action is successful, false otherwise.
      */
     SalIO.prototype.clearControls = function (sensor, password) {
@@ -239,7 +302,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Add a custom button to the device.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the button (percentage).
@@ -256,7 +319,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Get the number of active action listeners for events from the given device.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Number} Number of active action listioners
      */
     SalIO.prototype.getListenersCount = function (sensor, password) {
@@ -265,7 +328,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Removes all listeners for events coming from the given device.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {boolean} True if the action is successful, false otherwise.
      */
     SalIO.prototype.clearListeners = function (sensor, password) {
@@ -274,12 +337,12 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Adds a new listener for an event coming from the given device.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @param {Number} id Event ID to listen for
-     * @param {Function} action Action to perform when the event is raised
+     * @param {string} listener name of the listener event (message type) to raise
      * @returns {boolean} True if the action is successful, false otherwise.
      */
-    SalIO.prototype.addListener = function (sensor, password, id, action) {
+    SalIO.prototype.addListener = function (sensor, password, id, listener) {
         return this._passToSensor('addListener', arguments);
     };
 
@@ -290,7 +353,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * 2. The pitch (vertical tilt) angle [-pi/2, pi/2].
      * 3. The roll angle [-pi/2,pi/2].
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} The orientation angles relative to the Earth's magnetic field.
      */
     SalIO.prototype.getOrientation = function (sensor, password) {
@@ -299,7 +362,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Get the compass heading in radians [-pi, pi].
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Number} The compass heading in radians.
      */
     SalIO.prototype.getCompassHeading = function (sensor, password) {
@@ -308,7 +371,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Get the compass heading in degrees [-180, 180].
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Number} The compass heading in radians.
      */
     SalIO.prototype.getCompassHeadingDegrees = async function (sensor, password) {
@@ -317,7 +380,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Get the name of the closest compass direction (N, NE, E, SE, etc.).
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {String} The compass direction name
      */
     SalIO.prototype.getCompassDirection = function (sensor, password) {
@@ -326,7 +389,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Get the name of the closest compass cardinal direction (N, E, S, W).
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {String} The compass cardinal direction name
      */
     SalIO.prototype.getCompassCardinalDirection = function (sensor, password) {
@@ -337,7 +400,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the current accelerometer output from the sensor.
      * This is a 3D vector with units of m/s².
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} accelerometer output
      */
     SalIO.prototype.getAccelerometer = function (sensor, password) {
@@ -346,7 +409,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * As getAccelerometer, but scaled to a magnitude of 1.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} accelerometer output, with magnitude 1
      */
     SalIO.prototype.getAccelerometerNormalized = function (sensor, password) {
@@ -362,7 +425,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      *     "left" - the device is horizontal, lying on its left side (facing the screen).
      *     "right" - the device is horizontal, lying on its right side (facing the screen).
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {string} name of facing direction
      */
     SalIO.prototype.getFacingDirection = function (sensor, password) {
@@ -374,7 +437,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * This is a 3D vector with units of m/s².
      * This is similar to the Accelerometer, but tries to account for noise from linear movement.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} output of gravity sensor
      */
     SalIO.prototype.getGravity = function (sensor, password) {
@@ -383,7 +446,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * As getGravity, but scaled to a magnitude of 1.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} output of gravity sensor, with magnitude 1
      */
     SalIO.prototype.getGravityNormalized = function (sensor, password) {
@@ -394,7 +457,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the current output of the linear acceleration sensor.
      * This is a 3D vector with units of m/s².
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} linear acceleration vector
      */
     SalIO.prototype.getLinearAcceleration = function (sensor, password) {
@@ -403,7 +466,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * As getLinearAcceleration, but scaled to a magnitude of 1.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} linear acceleration vector, with magnitude 1
      */
     SalIO.prototype.getLinearAccelerationNormalized = function (sensor, password) {
@@ -414,7 +477,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the current output of the gyroscope, which measures rotational acceleration.
      * This is a 3D vector with units of rad/s² around each axis.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} output of gyroscope
      */
     SalIO.prototype.getGyroscope = function (sensor, password) {
@@ -425,7 +488,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * This is a 4D vector with units of rad around each of the 3 axes, plus a scalar component.
      * For most uses, getGameRotation is more convenient.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} 4D rotational vector
      */
     SalIO.prototype.getRotation = function (sensor, password) {
@@ -437,7 +500,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Due to the arbitrary basis of getRotation, this is more appropriate for use in games.
      * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} 3D rotational vector
      */
     SalIO.prototype.getGameRotation = function (sensor, password) {
@@ -449,7 +512,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * This is a 3D vector with units of μT (micro teslas) in each direction.
      * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} magnetic field vector
      */
     SalIO.prototype.getMagneticFieldVector = function (sensor, password) {
@@ -458,7 +521,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * As getMagneticFieldVector, but scaled to a magnitude of 1.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} magnetic field vector, with magnitude 1
      */
     SalIO.prototype.getMagneticFieldVectorNormalized = function (sensor, password) {
@@ -470,7 +533,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * This is a latitude longitude pair in degrees.
      * If the device does not have location enabled, returns (0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Array} latitude and longitude
      */
     SalIO.prototype.getLocation = function (sensor, password) {
@@ -483,7 +546,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Note that some devices only have binary proximity sensors (near/far), which will take discrete two values.
      * If the device does not have a proximity sensor, returns 0.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Number} distance from proximity sensor in cm
      */
     SalIO.prototype.getProximity = function (sensor, password) {
@@ -494,7 +557,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * This measures the number of steps taken since the device was started.
      * If the device does not have a step counter, returns 0.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Number} number of steps taken
      */
     SalIO.prototype.getStepCount = function (sensor, password) {
@@ -504,7 +567,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the current output of the light sensor.
      * If the device does not have a light level sensor, returns 0.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      * @returns {Number} current light level reading
      */
     SalIO.prototype.getLightLevel = function (sensor, password) {
@@ -514,7 +577,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Get the most recent image snapshot from the sensor.
      * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current (numeric) password for the sensor
+     * @param {string} password current password for the sensor
      */
     SalIO.prototype.getImage = async function (sensor, password) {
         const sensorObj = await this._getSensor(sensor);
