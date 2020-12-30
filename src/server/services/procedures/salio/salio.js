@@ -307,14 +307,49 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the button (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the button (percentage).
-     * @param {Number} color Color code of the button.
-     * @param {Number} textColor Color code of the button text (if any)
+     * @param {Number=} color Color code of the button itself (defaults to light blue).
+     * @param {Number=} textColor Color code of the button text (if any) (defaults to white).
      * @param {Number} id Event ID to raise when the button is pressed
      * @param {string} text The text to display on the button
      * @returns {boolean} True if the action is successful, false otherwise.
      */
-    SalIO.prototype.addButton = function (sensor, password, x, y, width, height, color, textColor, id, text) {
+    SalIO.prototype.addButton = function (sensor, password, x, y, width, height, color=this.getColor(66, 135, 245), textColor=this.getColor(255, 255, 255), id, text) {
+        arguments[6] = color;
+        arguments[7] = textColor;
         return this._passToSensor('addButton', arguments);
+    };
+    /**
+     * Add a custom checkbox to the device.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current password for the sensor
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
+     * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
+     * @param {Number=} textColor Color code of the text (if any) (defaults to black).
+     * @param {bool=} state Initial check state of the checkbox (defaults to false).
+     * @param {Number} id Event ID to raise when the checkbox is pressed (will also send a 'state' value in the message).
+     * @param {string} text The text to display next to the checkbox
+     * @returns {boolean} True if the action is successful, false otherwise.
+     */
+    SalIO.prototype.addCheckbox = function (sensor, password, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, text) {
+        arguments[4] = checkColor;
+        arguments[5] = textColor;
+        return this._passToSensor('addCheckbox', arguments);
+    };
+    /**
+     * Add a custom label to the device.
+     * Labels are similar to buttons except they cannot be clicked.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current password for the sensor
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
+     * @param {Number=} textColor Color code of the button text (if any) (defaults to black).
+     * @param {string} text The text to display on the button
+     * @returns {boolean} True if the action is successful, false otherwise.
+     */
+    SalIO.prototype.addLabel = function (sensor, password, x, y, textColor=this.getColor(0, 0, 0), text) {
+        arguments[4] = textColor;
+        return this._passToSensor('addLabel', arguments);
     };
     /**
      * Get the number of active action listeners for events from the given device.

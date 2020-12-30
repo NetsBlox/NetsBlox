@@ -259,6 +259,43 @@ Sensor.prototype.addButton = async function (sensor, args) {
     if (err !== null) throw new Error(err);
     return true;
 };
+Sensor.prototype.addLabel = async function (sensor, args) {
+    this._logger.log('add label ' + this.mac_addr);
+    const response = this.receiveFromSensor('addlabel');
+    const message = Buffer.alloc(21);
+    message.write('g', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeFloatBE(args[1], 9);
+    message.writeFloatBE(args[2], 13);
+    message.writeInt32BE(args[3], 17);
+    const text = Buffer.from(args[4], 'utf8');
+    this.sendToSensor(Buffer.concat([message, text]));
+    
+    const err = (await response).err;
+    if (err === undefined) throw new Error('failed add button or failed auth');
+    if (err !== null) throw new Error(err);
+    return true;
+};
+Sensor.prototype.addCheckbox = async function (sensor, args) {
+    this._logger.log('add checkbox ' + this.mac_addr);
+    const response = this.receiveFromSensor('addcheckbox');
+    const message = Buffer.alloc(30);
+    message.write('Z', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeFloatBE(args[1], 9);
+    message.writeFloatBE(args[2], 13);
+    message.writeInt32BE(args[3], 17);
+    message.writeInt32BE(args[4], 21);
+    message[25] = args[5] ? 1 : 0;
+    message.writeInt32BE(args[6], 26);
+    const text = Buffer.from(args[7], 'utf8');
+    this.sendToSensor(Buffer.concat([message, text]));
+    
+    const err = (await response).err;
+    if (err === undefined) throw new Error('failed add button or failed auth');
+    if (err !== null) throw new Error(err);
+    return true;
+};
 
 Sensor.prototype.getOrientation = async function (sensor, args) {
     this._logger.log('get orientation ' + this.mac_addr);
@@ -468,6 +505,24 @@ Sensor.prototype.sendToClient = function (msgType, content) {
     });
 };
 
+Sensor.prototype._fireRawCustomEvent = function(id, content) {
+    const customEvent = this.customEvents[id];
+    if (customEvent !== undefined) {
+        for (const name in customEvent) {
+            const listeners = customEvent[name];
+            for (const clientID in listeners) {
+                const socket = listeners[clientID];
+                try {
+                    socket.sendMessage(name, content);
+                }
+                catch (ex) {
+                    this._logger.log(ex);
+                }
+            }
+        }
+    }
+};
+
 // used for handling incoming message from the sensor
 Sensor.prototype.onMessage = function (message) {
     if (message.length < 11) {
@@ -518,6 +573,15 @@ Sensor.prototype.onMessage = function (message) {
     else if (command === 'C') {
         this.sendToClient('clearcontrols', message.length === 11 ? { res: true } : {});
     }
+    else if (command === 'g') {
+        let err = undefined;
+        if (message.length === 12) switch (message[11]) {
+            case 0: err = null; break;
+            case 1: err = 'too many controls'; break;
+            default: err = 'unknown error'; break;
+        }
+        this.sendToClient('addlabel', { err });
+    }
     else if (command === 'B') {
         let err = undefined;
         if (message.length === 12) switch (message[11]) {
@@ -529,21 +593,21 @@ Sensor.prototype.onMessage = function (message) {
     }
     else if (command === 'b' && message.length === 15) {
         const id = message.readUInt32BE(11);
-        const customEvent = this.customEvents[id];
-        if (customEvent !== undefined) {
-            for (const name in customEvent) {
-                const listeners = customEvent[name];
-                for (const clientID in listeners) {
-                    const socket = listeners[clientID];
-                    try {
-                        socket.sendMessage(name, {});
-                    }
-                    catch (ex) {
-                        this._logger.log(ex);
-                    }
-                }
-            }
+        this._fireRawCustomEvent(id, {});
+    }
+    else if (command === 'Z') {
+        let err = undefined;
+        if (message.length === 12) switch (message[11]) {
+            case 0: err = null; break;
+            case 1: err = 'too many controls'; break;
+            default: err = 'unknown error'; break;
         }
+        this.sendToClient('addcheckbox', { err });
+    }
+    else if (command === 'z' && message.length === 16) {
+        const id = message.readUInt32BE(11);
+        const state = message[15] !== 0;
+        this._fireRawCustomEvent(id, { state });
     }
     else if (command === 'O') {
         this.sendToClient('orientation', message.length === 23 ? {
@@ -646,24 +710,6 @@ Sensor.prototype.onCommand = function(command) {
             }
         },
         {
-            regex: /^get listeners count$/,
-            handler: () => {
-                return this.getListenersCount();
-            }
-        },
-        {
-            regex: /^clear listeners$/,
-            handler: () => {
-                return this.clearListeners();
-            }
-        },
-        {
-            regex: /^add listener$/,
-            handler: () => {
-                return this.addListener();
-            }
-        },
-        {
             regex: /^clear controls$/,
             handler: () => {
                 return this.clearControls();
@@ -672,7 +718,19 @@ Sensor.prototype.onCommand = function(command) {
         {
             regex: /^add button$/,
             handler: () => {
-                return this.clearControls();
+                return this.addButton();
+            }
+        },
+        {
+            regex: /^add checkbox$/,
+            handler: () => {
+                return this.addCheckbox();
+            }
+        },
+        {
+            regex: /^add label$/,
+            handler: () => {
+                return this.addLabel();
             }
         },
         {
