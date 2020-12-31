@@ -6,13 +6,13 @@ const ciphers = require('../roboscape/ciphers');
 const common = require('./common');
 const { definedOrThrow } = require('./common');
 
-// occupied protocols:
+// network protocols (UDP unless otherwise stated)
 // A - accelerometer
 // a - authenticate
 // B - add custom button control
 // b - button press event
 // C - clear custom controls
-// D - image snapshot
+// D - image snapshot (TCP)
 // G - gravity
 // g - add custom label control
 // I - heartbeat
@@ -24,6 +24,7 @@ const { definedOrThrow } = require('./common');
 // R - rotation vector
 // r - game rotation vector
 // S - step counter
+// W - get toggle state
 // X - location
 // Y - gyroscope
 // y - add custom radiobutton control
@@ -340,6 +341,20 @@ Sensor.prototype.addRadioButton = async function (sensor, args) {
     if (err === undefined) throw new Error('failed add radio button or failed auth');
     if (err !== null) throw new Error(err);
     return true;
+};
+
+Sensor.prototype.getToggleState = async function (sensor, args) {
+    this._logger.log('get toggle state ' + this.mac_addr);
+    const response = this.receiveFromSensor('gettogglestate');
+    const message = Buffer.alloc(13);
+    message.write('W', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeInt32BE(args[1], 9);
+    this.sendToSensor(message);
+    
+    const state = (await response).state;
+    if (state === undefined) throw new Error('toggleable with given id did not exist or failed auth');
+    return state;
 };
 
 Sensor.prototype.getOrientation = async function (sensor, args) {
@@ -663,6 +678,14 @@ Sensor.prototype.onMessage = function (message) {
         const state = message[15] !== 0;
         this._fireRawCustomEvent(id, { id, state });
     }
+    else if (command === 'W') {
+        let state = undefined;
+        if (message.length === 12) switch (message[11]) {
+            case 0: state = false; break;
+            case 1: state = true; break;
+        }
+        this.sendToClient('gettogglestate', { state });
+    }
     else if (command === 'O') {
         this.sendToClient('orientation', message.length === 23 ? {
             azimuth: message.readFloatBE(11),
@@ -791,6 +814,12 @@ Sensor.prototype.onCommand = function(command) {
             regex: /^add label$/,
             handler: () => {
                 return this.addLabel();
+            }
+        },
+        {
+            regex: /^get toggle state$/,
+            handler: () => {
+                return this.getToggleState();
             }
         },
         {

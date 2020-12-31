@@ -403,6 +403,17 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
+     * Gets the toggle state of any toggleable custom control.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current password for the sensor
+     * @param {Number} id numeric id of the toggleable control to read
+     * @returns {boolean} True or False, depending on the toggle state
+     */
+    SalIO.prototype.getToggleState = function (sensor, password, id) {
+        return this._passToSensor('getToggleState', arguments);
+    };
+
+    /**
      * Get the orientation of the device relative to the Earth's magnetic reference frame.
      * This is returned as a list of 3 values:
      * 1. The azimuth angle, effectively the compass heading [-pi, pi].
