@@ -337,6 +337,27 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
         return this._passToSensor('addCheckbox', arguments);
     };
     /**
+     * Add a custom radio button to the device.
+     * A radio button is like a checkbox, but they are arranged into groups.
+     * Only one radio button in each group may be checked.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current password for the sensor
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
+     * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
+     * @param {Number=} textColor Color code of the text (if any) (defaults to black).
+     * @param {bool=} state Initial check state of the radio button (defaults to false) - All false in a group is OK, but you should avoid setting multiple explicitly to true.
+     * @param {Number} id Event ID to raise when the checkbox is pressed (will also send a 'state' value in the message).
+     * @param {Number} group Group number to use for for selection logic.
+     * @param {string} text The text to display next to the checkbox
+     * @returns {boolean} True if the action is successful, false otherwise.
+     */
+    SalIO.prototype.addRadioButton = function (sensor, password, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, group, text) {
+        arguments[4] = checkColor;
+        arguments[5] = textColor;
+        return this._passToSensor('addRadioButton', arguments);
+    };
+    /**
      * Add a custom label to the device.
      * Labels are similar to buttons except they cannot be clicked.
      * @param {string} sensor name of the sensor (matches at the end)

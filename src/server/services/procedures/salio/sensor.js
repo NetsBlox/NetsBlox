@@ -6,6 +6,30 @@ const ciphers = require('../roboscape/ciphers');
 const common = require('./common');
 const { definedOrThrow } = require('./common');
 
+// occupied protocols:
+// A - accelerometer
+// a - authenticate
+// B - add custom button control
+// b - button press event
+// C - clear custom controls
+// D - image snapshot
+// G - gravity
+// g - add custom label control
+// I - heartbeat
+// L - linear acceleration
+// l - light level
+// M - magnetic field
+// O - orientation calculator
+// P - proximity
+// R - rotation vector
+// r - game rotation vector
+// S - step counter
+// X - location
+// Y - gyroscope
+// y - add custom radiobutton control
+// Z - add custom checkbox control
+// z - checkbox press event
+
 // these might be better defined as an attribute on the sensor
 const FORGET_TIME = 120; // forgetting a sensor in seconds
 const RESPONSE_TIMEOUT = 5000; // ms (well over worst case)
@@ -293,6 +317,27 @@ Sensor.prototype.addCheckbox = async function (sensor, args) {
     
     const err = (await response).err;
     if (err === undefined) throw new Error('failed add button or failed auth');
+    if (err !== null) throw new Error(err);
+    return true;
+};
+Sensor.prototype.addRadioButton = async function (sensor, args) {
+    this._logger.log('add radio button ' + this.mac_addr);
+    const response = this.receiveFromSensor('addradiobutton');
+    const message = Buffer.alloc(34);
+    message.write('y', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeFloatBE(args[1], 9);
+    message.writeFloatBE(args[2], 13);
+    message.writeInt32BE(args[3], 17);
+    message.writeInt32BE(args[4], 21);
+    message[25] = args[5] ? 1 : 0;
+    message.writeInt32BE(args[6], 26);
+    message.writeInt32BE(args[7], 30);
+    const text = Buffer.from(args[8], 'utf8');
+    this.sendToSensor(Buffer.concat([message, text]));
+    
+    const err = (await response).err;
+    if (err === undefined) throw new Error('failed add radio button or failed auth');
     if (err !== null) throw new Error(err);
     return true;
 };
@@ -593,7 +638,7 @@ Sensor.prototype.onMessage = function (message) {
     }
     else if (command === 'b' && message.length === 15) {
         const id = message.readUInt32BE(11);
-        this._fireRawCustomEvent(id, {});
+        this._fireRawCustomEvent(id, {id});
     }
     else if (command === 'Z') {
         let err = undefined;
@@ -604,10 +649,19 @@ Sensor.prototype.onMessage = function (message) {
         }
         this.sendToClient('addcheckbox', { err });
     }
+    else if (command === 'y') {
+        let err = undefined;
+        if (message.length === 12) switch (message[11]) {
+            case 0: err = null; break;
+            case 1: err = 'too many controls'; break;
+            default: err = 'unknown error'; break;
+        }
+        this.sendToClient('addradiobutton', { err });
+    }
     else if (command === 'z' && message.length === 16) {
         const id = message.readUInt32BE(11);
         const state = message[15] !== 0;
-        this._fireRawCustomEvent(id, { state });
+        this._fireRawCustomEvent(id, { id, state });
     }
     else if (command === 'O') {
         this.sendToClient('orientation', message.length === 23 ? {
@@ -725,6 +779,12 @@ Sensor.prototype.onCommand = function(command) {
             regex: /^add checkbox$/,
             handler: () => {
                 return this.addCheckbox();
+            }
+        },
+        {
+            regex: /^add radio button$/,
+            handler: () => {
+                return this.addRadioButton();
             }
         },
         {
