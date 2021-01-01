@@ -596,6 +596,16 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
 
     /**
+     * Get the volume level from the device's microphone.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current password for the sensor
+     * @returns {Array} A number representing the volume detected by the microphone.
+     */
+    SalIO.prototype.getMicrophoneLevel = function (sensor, password) {
+        return this._passToSensor('getMicrophoneLevel', arguments);
+    };
+
+    /**
      * Get the current location of the device.
      * This is a latitude longitude pair in degrees.
      * If the device does not have location enabled, returns (0, 0).

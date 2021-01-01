@@ -19,6 +19,7 @@ const { definedOrThrow } = require('./common');
 // L - linear acceleration
 // l - light level
 // M - magnetic field
+// m - microphone level
 // O - orientation calculator
 // P - proximity
 // R - rotation vector
@@ -470,6 +471,16 @@ Sensor.prototype.getMagneticFieldVectorNormalized = async function (sensor, args
     return common.normalize(await this.getMagneticFieldVector(sensor, args));  
 };
 
+Sensor.prototype.getMicrophoneLevel = async function (sensor, args) {
+    this._logger.log('get mic level ' + this.mac_addr);
+    const response = this.receiveFromSensor('miclevel');
+    const message = Buffer.alloc(9);
+    message.write('m', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    this.sendToSensor(message);
+    return common.definedOrThrow((await response).level, 'microphone not enabled or failed to auth');
+};
+
 Sensor.prototype.getProximity = async function (sensor, args) {
     this._logger.log('get proximity ' + this.mac_addr);
     const response = this.receiveFromSensor('proximity');
@@ -743,6 +754,11 @@ Sensor.prototype.onMessage = function (message) {
             z: message.readFloatBE(19),
         } : {});
     }
+    else if (command === 'm') {
+        this.sendToClient('miclevel', message.length === 15 ? {
+            level: message.readFloatBE(11),
+        } : {});
+    }
     else if (command === 'X') {
         this.sendToClient('location', message.length === 19 ? {
             lat: message.readFloatBE(11),
@@ -922,6 +938,12 @@ Sensor.prototype.onCommand = function(command) {
             regex: /^get magnetic field vector normalized$/,
             handler: () => {
                 return this.getMagneticFieldVectorNormalized();
+            }
+        },
+        {
+            regex: /^get microphone level$/,
+            handler: () => {
+                return this.getMicrophoneLevel();
             }
         },
         {
