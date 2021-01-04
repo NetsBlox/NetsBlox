@@ -7,6 +7,12 @@ class UserNotFound extends RequestError {
     }
 }
 
+class AddressNotFound extends RequestError {
+    constructor(addressString, sender) {
+        super(`Invalid address: ${addressString} from ${sender}`);
+    }
+}
+
 class IncorrectUserOrPassword extends RequestError {
     constructor() {
         super('Incorrect username or password');
@@ -93,4 +99,5 @@ module.exports.GroupNotFound = GroupNotFound;
 module.exports.ProjectNotFound = ProjectNotFound;
 module.exports.ProjectRoleNotFound = ProjectRoleNotFound;
 module.exports.LibraryNotFound = LibraryNotFound;
+module.exports.AddressNotFound = AddressNotFound;
 module.exports.RequestError = RequestError;

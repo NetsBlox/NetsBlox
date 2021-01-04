@@ -24,6 +24,7 @@ const BugReporter = require('./bug-reporter');
 const Projects = require('./storage/projects');
 const NetsBloxAddress = require('./netsblox-address');
 const NetworkTopology = require('./network-topology');
+const {RequestError} = require('./api/core/errors');
 
 class Client {
     constructor (logger, websocket, uuid) {
@@ -176,7 +177,15 @@ class Client {
 
         this.lastSocketActivity = Date.now();
         if (Client.MessageHandlers[type]) {
-            await Client.MessageHandlers[type].call(this, msg);
+            try {
+                await Client.MessageHandlers[type].call(this, msg);
+            } catch (err) {
+                if (err instanceof RequestError) {
+                    this._logger.trace(`Error w/ request: ${err.message}`);
+                } else {
+                    throw err;
+                }
+            }
         } else {
             this._logger.warn('message "' + JSON.stringify(msg) + '" not recognized');
         }
