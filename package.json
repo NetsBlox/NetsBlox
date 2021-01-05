@@ -33,7 +33,7 @@
     "@rgrove/parse-xml": "^2.0.2",
     "async": "^2.6.2",
     "aws-sdk": "^2.421.0",
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "bad-words": "^3.0.3",
     "body-parser": "^1.18.3",
     "cache-manager": "^2.0.0",
