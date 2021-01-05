@@ -292,8 +292,16 @@ Server.prototype.start = async function(seedDatabase=ENV === 'test') {
     this._wss = new WebSocketServer({server: this._server});
     this._wss.on('connection', (socket, req) => {
         socket.upgradeReq = req;
-        const client = new Client(this._logger, socket);
-        NetworkTopology.onConnect(client);
+        socket.once('message', data => {
+            const {type, clientId} = JSON.parse(data);
+            if (type !== 'set-uuid') {
+                this._logger.warn(`Invalid initial ws message: ${type}`);
+                socket.close();
+                return;
+            }
+            const client = NetworkTopology.onConnect(socket, clientId);
+            client.send({type: 'connected'});
+        });
     });
     const servicesApi = new ServicesPrivateAPI(this._logger);
     servicesApi.listen('tcp://127.0.0.1:' + (process.env.NETSBLOX_API_PORT || '1357'));

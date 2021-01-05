@@ -9,7 +9,6 @@
 //   - get(hash): Promise<data>
 
 const hash = require('../../../common/sha512').hex_sha512;
-const Q = require('q');
 
 // Backends
 const S3Backend = require('./s3');
@@ -33,11 +32,10 @@ class BlobStorage {
         return this.backend.get(id);
     }
 
-    store(data) {
+    async store(data) {
         const id = hash(data);
-        this.logger.trace(`Storing data for ${id}`);
-        return Q(this.backend.store(id, data))
-            .then(() => id);
+        await this.backend.store(id, data);
+        return id;
     }
 
     // List all ids (for migrations)

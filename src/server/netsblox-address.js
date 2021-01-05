@@ -1,5 +1,6 @@
 const Projects = require('./storage/projects');
 const PUBLIC_ROLE_FORMAT = /^.*@.*@?.*$/;
+const {AddressNotFound} = require('./api/core/errors');
 
 class NetsBloxAddress {
     constructor(projectId, roleIds) {
@@ -34,6 +35,10 @@ class NetsBloxAddress {
             const [ownerId, roomName, roleName] = dstId.split('@').reverse();
             return Projects.getProjectMetadata(ownerId, roomName, true)
                 .then(metadata => {
+                    if (!metadata) {
+                        throw new AddressNotFound(dstId, srcProjectId);
+                    }
+
                     const projectId = metadata._id.toString();
                     const isBroadcast = !roleName;
                     if (isBroadcast) {
@@ -47,7 +52,7 @@ class NetsBloxAddress {
                         if (roleId) {
                             return new NetsBloxAddress(projectId, [roleId]);
                         } else {
-                            throw new Error(`Invalid absolute address: ${dstId} from ${srcProjectId}`);
+                            throw new AddressNotFound(dstId, srcProjectId);
                         }
                     }
                 });

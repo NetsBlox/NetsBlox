@@ -1,4 +1,3 @@
-/*globals describe,it,before,beforeEach,afterEach*/
 describe('ConnectN Tests', function() {
     const utils = require('../../../../assets/utils');
     var ConnectN = utils.reqSrc('services/procedures/connect-n/connect-n.js'),

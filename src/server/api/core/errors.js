@@ -7,6 +7,12 @@ class UserNotFound extends RequestError {
     }
 }
 
+class AddressNotFound extends RequestError {
+    constructor(addressString, sender) {
+        super(`Invalid address: ${addressString} from ${sender}`);
+    }
+}
+
 class IncorrectUserOrPassword extends RequestError {
     constructor() {
         super('Incorrect username or password');
@@ -17,6 +23,14 @@ class ProjectNotFound extends RequestError {
     constructor(name) {
         const msg = name ? `Could not find project "${name}"` :
             'Project not found';
+        super(msg);
+    }
+}
+
+class ProjectRoleNotFound extends RequestError {
+    constructor(name) {
+        const msg = name ? `Could not find the given role in "${name}"` :
+            'Role not found';
         super(msg);
     }
 }
@@ -83,5 +97,7 @@ module.exports.InvalidArgument = InvalidArgument;
 module.exports.InvalidArgumentType = InvalidArgumentType;
 module.exports.GroupNotFound = GroupNotFound;
 module.exports.ProjectNotFound = ProjectNotFound;
+module.exports.ProjectRoleNotFound = ProjectRoleNotFound;
 module.exports.LibraryNotFound = LibraryNotFound;
+module.exports.AddressNotFound = AddressNotFound;
 module.exports.RequestError = RequestError;
