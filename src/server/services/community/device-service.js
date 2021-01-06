@@ -3,19 +3,18 @@ const InputTypes = require('../input-types');
 const createLogger = require('../procedures/utils/logger');
 const CacheManager = require('cache-manager');
 const fsStore = require('cache-manager-fs');
-const {CACHE_DIR='cache'} = process.env;
 const fs = require('fs');
 const {promisify} = require('util');
 const rm_rf = promisify(require('rimraf'));
 
 class DeviceService {
+
     constructor(record, cache=true) {
         this.serviceName = record.name;
         this._logger = createLogger(this.serviceName);
-        this._data = record.data;
-        this._docs = new DataDocs(record);
+
         this.COMPATIBILITY = {};
-        ensureExists(this._getCacheDir());
+
         record.methods.forEach(method => {
             try {
                 this._initializeRPC(method, cache);
@@ -23,40 +22,28 @@ class DeviceService {
                 this._logger.error(`Unable to load ${record.name}.${method.name}: ${err.message}`);
             }
         });
+
+        this._docs = {
+            description: 'help',
+            categories: [['Community', 'Device']],
+            getDocFor: (method) => {
+                return {
+                    name: method,
+                    description: 'help',
+                    args: []/*method.arguments.map(argument => ({
+                        name: argument,
+                        optional: false,
+                    }))*/,
+                };
+            }
+        };
     }
 
-    _getCacheDir() {
-        return `${CACHE_DIR}/Community/${this.serviceName}`;
-    }
-
-    async _initializeRPC(methodSpec, useCache) {
+    async _initializeRPC(methodSpec) {
         const method = new DeviceServiceMethod(this._data, methodSpec);
-        if (useCache) {
-            const cache = CacheManager.caching({
-                store: fsStore,
-                options: {
-                    ttl: 3600 * 24 * 14,
-                    maxsize: 1024*1000,
-                    path: `${this._getCacheDir()}/${methodSpec.name}`,
-                    preventfill: false,
-                    reviveBuffers: true
-                }
-            });
-
-            this[methodSpec.name] = function() {
-                const args = Array.prototype.slice.call(arguments);
-                const id = args.join('|');
-
-                return cache.wrap(
-                    id,
-                    async () => await method.invoke(...args)
-                );
-            };
-        } else {
-            this[methodSpec.name] = async function() {
-                return await method.invoke(...arguments);
-            };
-        }
+        this[methodSpec.name] = async function() {
+            return await method.invoke(...arguments);
+        };
     }
 
     async _getFunctionForMethod(method, data) {
@@ -111,29 +98,7 @@ class DeviceService {
     }
 
     async onDelete() {
-        await rm_rf(this._getCacheDir());
-    }
-}
-
-class DataDocs {
-    constructor(record) {
-        this.record = record;
-        this.description = record.help;
-        this.categories = [['Community', record.author]];
-    }
-
-    getDocFor(name) {
-        const method = this.record.methods.find(method => method.name === name);
-        if (method) {
-            return {
-                name,
-                description: method.help,
-                args: method.arguments.map(argument => ({
-                    name: argument,
-                    optional: false,
-                })),
-            };
-        }
+        
     }
 }
 
@@ -246,18 +211,6 @@ class DeviceServiceMethod {
             startIndex += count;
             return args;
         });
-    }
-}
-
-const path = require('path');
-function ensureExists(filepath) {
-    const parentDir = path.dirname(filepath);
-    if (parentDir !== filepath) {
-        ensureExists(parentDir);
-    }
-
-    if (!fs.existsSync(filepath)) {
-        fs.mkdirSync(filepath); 
     }
 }
 
