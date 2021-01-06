@@ -2,6 +2,7 @@ class CommunityService {
     constructor() {
         this.types = [
             require('./data-service'),
+            require('./device-service'),
         ];
     }
 
