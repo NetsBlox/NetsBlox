@@ -24,19 +24,6 @@ const getDatabase = function() {
 const MetaScape = {};
 MetaScape.serviceName = 'MetaScape';
 
-const toUpperCamelCase = name => {
-    const words = name.split(/[^a-zA-Z0-9\u00C0-\u02A0#$%]/);
-    return words
-        .filter(word => !!word)
-        .map(word => word[0].toUpperCase() + word.slice(1)).join('');
-};
-
-const ensureLoggedIn = function(caller) {
-    if (!caller.username) {
-        throw new Error('Login required.');
-    }
-};
-
 const fs = require('fs');
 const path = require('path');
 const normalizeServiceName = name => name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -51,36 +38,6 @@ const isValidServiceName = name => {
 
 const isValidRPCName = name => 
     !(!name || name.startsWith('_') ||  RESERVED_RPC_NAMES.includes(name));
-
-const validateOptions = options => {
-    if (!options.RPCs || !Array.isArray(options.RPCs)) {
-        throw new Error('"options" is not valid. "RPCs" must be a list.');
-    }
-
-    if (options.RPCs.length === 0) {
-        throw new Error('"options" is not valid. Cannot have empty list of RPCs');
-    }
-
-    options.RPCs.forEach((rpc, i) => {
-        const {name} = rpc;
-        try {
-            ensureValidRPCName(name);
-            if (!rpc.code && !rpc.query) {
-                throw new Error(`"options" is not valid. ${name} needs either "code" or "query"`);
-            }
-        } catch (err) {
-            throw new Error(`RPC #${i} is invalid: ${err.message}`);
-        }
-    });
-};
-
-const getBlockArgs = blockXml => {
-    const inputs = blockXml.split(/<\/?inputs>/, 2).pop()
-        .split(/<\/?input>/g)
-        .map(arg => arg.trim())
-        .filter(arg => !!arg);
-    return inputs;
-};
 
 /**
  * Create a service using a given dataset.
@@ -182,6 +139,7 @@ MetaScape.isSupported = function () {
     return !!process.env.METASCAPE_PORT;
 };
 
+// Clear old devices
 getDatabase().deleteMany({type: 'DeviceService'});
 
 module.exports = MetaScape;
