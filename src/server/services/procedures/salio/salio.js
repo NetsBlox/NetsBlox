@@ -337,6 +337,24 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
         return this._passToSensor('addCheckbox', arguments);
     };
     /**
+     * Add a custom toggle switch to the device, functionally equivalent to a checkbox but styled as a switch.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current password for the sensor
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
+     * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
+     * @param {Number=} textColor Color code of the text (if any) (defaults to black).
+     * @param {bool=} state Initial check state of the toggle switch (defaults to false).
+     * @param {Number} id Event ID to raise when the toggle switch is pressed (will also send a 'state' value in the message).
+     * @param {string} text The text to display next to the toggle switch
+     * @returns {boolean} True if the action is successful, false otherwise.
+     */
+    SalIO.prototype.addToggleswitch = function (sensor, password, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, text) {
+        arguments[4] = checkColor;
+        arguments[5] = textColor;
+        return this._passToSensor('addToggleswitch', arguments);
+    };
+    /**
      * Add a custom radio button to the device.
      * A radio button is like a checkbox, but they are arranged into groups.
      * Only one radio button in each group may be checked.

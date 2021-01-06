@@ -302,10 +302,10 @@ Sensor.prototype.addLabel = async function (sensor, args) {
     if (err !== null) throw new Error(err);
     return true;
 };
-Sensor.prototype.addCheckbox = async function (sensor, args) {
+Sensor.prototype.addCheckboxWithStyle = async function (sensor, args, style) {
     this._logger.log('add checkbox ' + this.mac_addr);
     const response = this.receiveFromSensor('addcheckbox');
-    const message = Buffer.alloc(30);
+    const message = Buffer.alloc(31);
     message.write('Z', 0, 1);
     message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     message.writeFloatBE(args[1], 9);
@@ -314,6 +314,7 @@ Sensor.prototype.addCheckbox = async function (sensor, args) {
     message.writeInt32BE(args[4], 21);
     message[25] = args[5] ? 1 : 0;
     message.writeInt32BE(args[6], 26);
+    message[30] = style;
     const text = Buffer.from(args[7], 'utf8');
     this.sendToSensor(Buffer.concat([message, text]));
     
@@ -321,6 +322,12 @@ Sensor.prototype.addCheckbox = async function (sensor, args) {
     if (err === undefined) throw new Error('failed add button or failed auth');
     if (err !== null) throw new Error(err);
     return true;
+};
+Sensor.prototype.addCheckbox = async function (sensor, args) {
+    return this.addCheckboxWithStyle(sensor, args, 0);
+};
+Sensor.prototype.addToggleswitch = async function (sensor, args) {
+    return this.addCheckboxWithStyle(sensor, args, 1);
 };
 Sensor.prototype.addRadioButton = async function (sensor, args) {
     this._logger.log('add radio button ' + this.mac_addr);
