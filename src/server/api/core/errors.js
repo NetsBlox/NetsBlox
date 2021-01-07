@@ -88,6 +88,24 @@ class MissingArguments extends RequestError {
     }
 }
 
+class LoginRequired extends RequestError {
+    constructor() {
+        super('Login Required.');
+    }
+}
+
+class OAuthClientNotFound extends RequestError {
+    constructor() {
+        super('OAuth client not found.');
+    }
+}
+
+class InvalidRedirectURL extends RequestError {
+    constructor() {
+        super('Invalid redirect URL. This is likely an issue with the client application.');
+    }
+}
+
 module.exports.StrategyNotFound = StrategyNotFound;
 module.exports.MissingArguments = MissingArguments;
 module.exports.UserNotFound = UserNotFound;
@@ -100,4 +118,7 @@ module.exports.ProjectNotFound = ProjectNotFound;
 module.exports.ProjectRoleNotFound = ProjectRoleNotFound;
 module.exports.LibraryNotFound = LibraryNotFound;
 module.exports.AddressNotFound = AddressNotFound;
+module.exports.LoginRequired = LoginRequired;
+module.exports.OAuthClientNotFound = OAuthClientNotFound;
+module.exports.InvalidRedirectURL = InvalidRedirectURL;
 module.exports.RequestError = RequestError;
