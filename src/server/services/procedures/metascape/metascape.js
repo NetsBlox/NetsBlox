@@ -83,12 +83,13 @@ MetaScape._createService = async function(definition) {
     const methods = Object.keys(methodsInfo).map(methodName => {
         const methodInfo = methodsInfo[methodName];
 
-        const method = {name: methodName, help: methodInfo.documentation};
+        const method = {name: methodName, documentation: methodInfo.documentation};
 
         method.arguments = methodInfo.params.map(param => { 
             return {
                 name: param.name,
                 optional: param.optional,
+                documentation: param.documentation,
             };
         });
         // if (code) {
@@ -123,7 +124,7 @@ MetaScape._createService = async function(definition) {
     const service = {
         name,
         type: 'DeviceService',
-        help: serviceInfo.documentation,
+        description: serviceInfo.description,
         author: 'MetaScape',
         createdAt: new Date(),
         methods,

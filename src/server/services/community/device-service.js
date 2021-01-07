@@ -1,11 +1,6 @@
 const _ = require('lodash');
 const InputTypes = require('../input-types');
 const createLogger = require('../procedures/utils/logger');
-const CacheManager = require('cache-manager');
-const fsStore = require('cache-manager-fs');
-const fs = require('fs');
-const {promisify} = require('util');
-const rm_rf = promisify(require('rimraf'));
 
 class DeviceService {
 
@@ -24,13 +19,13 @@ class DeviceService {
         });
 
         this._docs = {
-            description: 'help',
+            description: record.description,
             categories: [['Community', 'Device']],
             getDocFor: (method) => {
                 let m = record.methods.find((val) => val.name == method);
                 return {
                     name: m.name,
-                    description: 'help',
+                    description: m.documentation,
                     args: m.arguments.map(argument => ({
                         name: argument.name,
                         optional: argument.optional,
