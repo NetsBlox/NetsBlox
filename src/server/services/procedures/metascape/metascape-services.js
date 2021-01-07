@@ -11,6 +11,7 @@ socket.bind();
 const MetaScapeServices = {};
 
 MetaScapeServices._services = {};
+MetaScapeServices._serviceDefinitions = {};
 
 /**
  * Creates or updates the connection information for a remote service
@@ -18,8 +19,9 @@ MetaScapeServices._services = {};
  * @param {String} id 
  * @param {RemoteInfo} rinfo 
  */
-MetaScapeServices.updateOrCreateServiceInfo = function (name, id, rinfo) {
+MetaScapeServices.updateOrCreateServiceInfo = function (name, definition, id, rinfo) {
     let service = MetaScapeServices._services[name];
+    MetaScapeServices._serviceDefinitions[name] = definition;
     
     logger.log('Discovering ' + name + ':' + id + ' at ' + rinfo.address + ':' + rinfo.port);
     
@@ -73,6 +75,34 @@ MetaScapeServices._generateRequestID = function(){
 };
 
 MetaScapeServices._awaitingRequests = {};
+MetaScapeServices._listeningClients = {};
+
+/**
+ * Add a client to get event updates from a device
+ * @param {String} name Name of service
+ * @param {String} id ID of device
+ * @param {*} client Client to add to listeners
+ */
+MetaScapeServices.listen = function(name, client, id){
+    id = id.toString();
+
+    // Validate name and ID
+    if(!MetaScapeServices.deviceExists(name, id)){
+        return false;
+    }
+    
+    if(!Object.keys(MetaScapeServices._listeningClients).includes(name)){
+        MetaScapeServices._listeningClients[name] = {};
+    }
+
+    if(!Object.keys(MetaScapeServices._listeningClients[name]).includes(id)){
+        MetaScapeServices._listeningClients[name][id] = [];
+    }
+
+    if(!MetaScapeServices._listeningClients[name][id].includes(client)){
+        MetaScapeServices._listeningClients[name][id].push(client);
+    }
+};
 
 /**
  * Make a call to a MetaScape function
@@ -81,6 +111,8 @@ MetaScapeServices._awaitingRequests = {};
  * @param  {...any} args 
  */
 MetaScapeServices.call = async function (name, func, id, ...args) {
+    id = id.toString();
+
     // Validate name and ID
     if(!MetaScapeServices.deviceExists(name, id)){
         return false;
@@ -97,6 +129,21 @@ MetaScapeServices.call = async function (name, func, id, ...args) {
     let rinfo = MetaScapeServices.getInfo(name, id);
     socket.send(JSON.stringify(request), rinfo.port, rinfo.address);
 
+    // Determine response type
+    let methodInfo = MetaScapeServices._serviceDefinitions[name].methods[func];
+    let responseType = methodInfo.returns.type;
+
+    // No response required
+    if(responseType.length < 1 || responseType[0] == 'void'){
+        return;
+    }
+
+    // Event response type
+    if(responseType[0].startsWith('event')){
+        return;
+    }
+
+    // Expects a value response
     return Promise.race([
         new Promise((resolve) => {
             MetaScapeServices._awaitingRequests[reqid] = resolve;
@@ -114,14 +161,32 @@ MetaScapeServices.call = async function (name, func, id, ...args) {
 // Handle incoming responses
 socket.on('message', function (message) {
     const parsed = JSON.parse(message);
-    const id = parsed.id;
+    const requestID = parsed.request;
     
-    if(Object.keys(MetaScapeServices._awaitingRequests).includes(id.toString())){
+    if(Object.keys(MetaScapeServices._awaitingRequests).includes(requestID.toString())){
         if(parsed.response){
-            MetaScapeServices._awaitingRequests[id](...parsed.response);
-            delete MetaScapeServices._awaitingRequests[id];
+            MetaScapeServices._awaitingRequests[requestID](...parsed.response);
+            delete MetaScapeServices._awaitingRequests[requestID];
         }
-    } 
+    }
+
+    if(parsed.event){
+        // Find listening clients 
+        let clientsByID = MetaScapeServices._listeningClients[parsed.service];
+
+        if(clientsByID){
+            let clients = clientsByID[parsed.id.toString()];
+            
+            console.dir(clients);
+            
+            // Send responses
+            if(clients){
+                clients.forEach((client) => {
+                    client.sendMessage(parsed.event.type, parsed.event.args);
+                });
+            }
+        }
+    }
 });
 
 module.exports = MetaScapeServices;

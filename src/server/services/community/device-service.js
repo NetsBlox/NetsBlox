@@ -44,6 +44,10 @@ class DeviceService {
             this[methodSpec.name] = async function() {
                 return MetaScapeServices.getDevices(this.serviceName);
             };
+        } else if(methodSpec.name === 'listen'){
+            this[methodSpec.name] = async function() {
+                return MetaScapeServices.listen(this.serviceName, this.socket, ...arguments);
+            };
         } else {
             this[methodSpec.name] = async function() {
                 return await MetaScapeServices.call(this.serviceName, methodSpec.name, ...arguments);
