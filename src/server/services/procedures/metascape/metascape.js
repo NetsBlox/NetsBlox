@@ -14,41 +14,25 @@ const dgram = require('dgram'),
 const logger = require('../utils/logger')('metascape');
 const Storage = require('../../storage');
 const ServiceEvents = require('../utils/service-events');
-
-let mongoCollection = null;
-const getDatabase = function() {
-    if (!mongoCollection) {
-        mongoCollection = Storage.createCollection('netsblox:services:community');
-    }
-    return mongoCollection;
-};
+const MetaScapeServices = require('./metascape-services');
 
 const MetaScape = {};
 MetaScape.serviceName = 'MetaScape';
 
-/**
- * List of registered services, with a list of IDs and their respective hosts
- */
-MetaScape._services = [];
-
-
-/**
- * Creates or updates the connection information for a remote service
- * @param {String} name 
- * @param {String} id 
- * @param {RemoteInfo} rinfo 
- */
-MetaScape._updateOrCreateServiceInfo = function (name, id, rinfo) {
-    var service = this._services[name];
-    if (!service) {
-        // Service not added yet
-        logger.log('Discovering ' + name + ':' + id + ' at ' + rinfo.address + ':' + rinfo.port);
-        service = {id: rinfo};
-        this._services[name] = service;
-    } else {
-        // Add/update information for this device ID
-        service[id] = rinfo;
+MetaScape._mongoCollection = null;
+MetaScape._getDatabase = function() {
+    if (!MetaScape._mongoCollection) {
+        MetaScape._mongoCollection = Storage.createCollection('netsblox:services:community');
     }
+    return MetaScape._mongoCollection;
+};
+
+/**
+ * List IDs of devices associated for a service
+ * @param {String} name Name of service to get device IDs for
+ */
+MetaScape.getDevices = function (name) {
+    return MetaScapeServices.getDevices(name);
 };
 
 const normalizeServiceName = name => name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -65,9 +49,10 @@ const isValidRPCName = name =>
     !(!name || name.startsWith('_') ||  RESERVED_RPC_NAMES.includes(name));
 
 /**
- * Create a service using a given dataset.
+ * Create a service using a given definition.
  *
  * @param {String} definition Service definition
+ * @param {RemoteInfo} remote Remote host information
  */
 MetaScape._createService = async function(definition, remote) {    
     let parsed = JSON.parse(definition);
@@ -82,7 +67,12 @@ MetaScape._createService = async function(definition, remote) {
 
     logger.log(`Received definition for service ${name} v${version} from ID ${id}`);
     
-    const methods = Object.keys(methodsInfo).map(methodName => {
+    // Add getDevices method by default
+    let methods = [{
+        name: 'getDevices',
+        documentation: 'Get a list of device IDs for this service',
+        arguments: [],
+    }, ...Object.keys(methodsInfo).map(methodName => {
         const methodInfo = methodsInfo[methodName];
 
         const method = {name: methodName, documentation: methodInfo.documentation};
@@ -95,7 +85,7 @@ MetaScape._createService = async function(definition, remote) {
             };
         });
 
-        // Add ID argument
+        // Add ID argument to all non-getDevices methods
         method.arguments = [{
             name: 'id',
             optional: false,
@@ -103,7 +93,7 @@ MetaScape._createService = async function(definition, remote) {
         }, ...method.arguments];
 
         return method;
-    });
+    })];    
 
     const service = {
         name: name,
@@ -114,7 +104,7 @@ MetaScape._createService = async function(definition, remote) {
         methods,
     };
 
-    const storage = getDatabase();
+    const storage = MetaScape._getDatabase();
     if (!isValidServiceName(name)) {
         logger.warn(`Service with name "${name}" already exists.`);
     }
@@ -123,7 +113,7 @@ MetaScape._createService = async function(definition, remote) {
     try {
         await storage.updateOne({name}, query, {upsert: true});
         ServiceEvents.emit(ServiceEvents.UPDATE, name);
-        this._updateOrCreateServiceInfo(name, id, remote);
+        MetaScapeServices.updateOrCreateServiceInfo(name, id, remote);
     } catch (err) {
         if (err.message === MONGODB_DOC_TOO_LARGE) {
             throw new Error('Uploaded code is too large. Please decrease project (or dataset) size and try again.');
@@ -143,7 +133,11 @@ server.on('message', function (message, remote) {
 
 /* eslint no-console: off */
 if (process.env.METASCAPE_PORT) {
-    console.log('ROBOSCAPE_PORT is ' + process.env.METASCAPE_PORT);
+    console.log('METASCAPE_PORT is ' + process.env.METASCAPE_PORT);
+    
+    // Clear old devices
+    MetaScape._getDatabase().deleteMany({type: 'DeviceService'});
+
     server.bind(process.env.METASCAPE_PORT || 1975);
 }
 
@@ -153,8 +147,5 @@ MetaScape.isSupported = function () {
     }
     return !!process.env.METASCAPE_PORT;
 };
-
-// Clear old devices
-getDatabase().deleteMany({type: 'DeviceService'});
 
 module.exports = MetaScape;

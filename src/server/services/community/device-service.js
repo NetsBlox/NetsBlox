@@ -1,12 +1,14 @@
 const _ = require('lodash');
 const InputTypes = require('../input-types');
 const createLogger = require('../procedures/utils/logger');
+const MetaScapeServices = require('../procedures/metascape/metascape-services');
 
 /**
  * Represents a service created for a MetaScape device
  */
 class DeviceService {
-    constructor(record, cache=true) {
+    constructor(record) {
+        this._record = record;
         this.serviceName = record.name;
         this._logger = createLogger(this.serviceName);
 
@@ -14,7 +16,7 @@ class DeviceService {
 
         record.methods.forEach(method => {
             try {
-                this._initializeRPC(method, cache);
+                this._initializeRPC(method);
             } catch (err) {
                 this._logger.error(`Unable to load ${record.name}.${method.name}: ${err.message}`);
             }
@@ -38,17 +40,23 @@ class DeviceService {
     }
 
     async _initializeRPC(methodSpec) {
-        const method = new DeviceServiceMethod(methodSpec);
-        this[methodSpec.name] = async function() {
-            return await method.invoke(...arguments);
-        };
+        if(methodSpec.name === 'getDevices'){
+            this[methodSpec.name] = async function() {
+                return MetaScapeServices.getDevices(this.serviceName);
+            };
+        } else {
+            this[methodSpec.name] = async function() {
+                return await methodSpec.code.invoke(...arguments);
+            };
+        }
     }
 
     async _getFunctionForMethod(method) {
+        
         return () => async function() {
             const args = this._getArgs(method, arguments);
 
-            return 1;
+            return 2;
         };
     }
 
@@ -58,29 +66,6 @@ class DeviceService {
 
     async onDelete() {
         
-    }
-}
-
-class DeviceServiceMethod {
-    constructor(spec) {
-        this.spec = spec;
-    }
-
-    async invoke() {
-        return await 1;
-    }
-
-    _getArgs(method, allArgs) {
-        const queryArgCount = method.query.arguments.length-1;
-        const transformArgCount = method.transform ? method.transform.arguments.length-1 : 0;
-        const combineArgCount = method.combine ? method.combine.arguments.length - 2 : 0;
-
-        let startIndex = 0;
-        return [queryArgCount, transformArgCount, combineArgCount].map(count => {
-            const args = Array.prototype.slice.call(allArgs, startIndex, startIndex + count);
-            startIndex += count;
-            return args;
-        });
     }
 }
 
