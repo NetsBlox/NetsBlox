@@ -62,6 +62,12 @@ MetaScapeServices.getInfo = function(name, id){
     return MetaScapeServices._services[name][id];
 };
 
+MetaScapeServices._lastRequestID = 0;
+
+MetaScapeServices._generateRequestID = function(){
+    return MetaScapeServices._lastRequestID++;
+};
+
 /**
  * Make a call to a MetaScape function
  * @param {String} name Name of service
@@ -76,7 +82,7 @@ MetaScapeServices.call = async function (name, func, id, ...args) {
 
     // Create and send request
     let request = {
-        id:"1",
+        id: MetaScapeServices._generateRequestID(),
         function: func, 
         params: [...args]
     };
