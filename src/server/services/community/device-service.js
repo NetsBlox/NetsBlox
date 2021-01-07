@@ -2,8 +2,10 @@ const _ = require('lodash');
 const InputTypes = require('../input-types');
 const createLogger = require('../procedures/utils/logger');
 
+/**
+ * Represents a service created for a MetaScape device
+ */
 class DeviceService {
-
     constructor(record, cache=true) {
         this.serviceName = record.name;
         this._logger = createLogger(this.serviceName);
@@ -42,7 +44,7 @@ class DeviceService {
         };
     }
 
-    async _getFunctionForMethod(method, data) {
+    async _getFunctionForMethod(method) {
         return () => async function() {
             const args = this._getArgs(method, arguments);
 
