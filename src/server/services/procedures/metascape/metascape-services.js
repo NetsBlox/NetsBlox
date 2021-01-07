@@ -1,3 +1,7 @@
+
+const dgram = require('dgram'),
+    socket = dgram.createSocket('udp4');
+
 const logger = require('../utils/logger')('metascape-services');
 
 /**
@@ -36,6 +40,51 @@ MetaScapeServices.getDevices = function (name) {
     }
 
     return false;
+};
+
+/**
+ * Determine if a device with a given ID exists
+ * @param {String} name Name of service
+ * @param {String} id ID of device
+ * @returns {Boolean} If device exists
+ */
+MetaScapeServices.deviceExists = function(name, id){
+    let devices = MetaScapeServices.getDevices(name);
+    return devices && devices.includes(id);
+};
+
+/**
+ * Get the remote host of a MetaScape device
+ * @param {String} name Name of service
+ * @param {String} id ID of device
+ */
+MetaScapeServices.getInfo = function(name, id){
+    return MetaScapeServices._services[name][id];
+};
+
+/**
+ * Make a call to a MetaScape function
+ * @param {String} name Name of service
+ * @param {String} id ID of device
+ * @param  {...any} args 
+ */
+MetaScapeServices.call = async function (name, func, id, ...args) {
+    // Validate name and ID
+    if(!MetaScapeServices.deviceExists(name, id)){
+        return false;
+    }
+
+    // Create and send request
+    let request = {
+        id:"1",
+        function: func, 
+        params: [...args]
+    };
+    
+    let rinfo = MetaScapeServices.getInfo(name, id);
+    socket.send(JSON.stringify(request), rinfo.port, rinfo.address);
+
+    return 1;
 };
 
 module.exports = MetaScapeServices;
