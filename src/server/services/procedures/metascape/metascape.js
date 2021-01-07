@@ -95,6 +95,17 @@ MetaScape._createService = async function(definition, remote) {
         return method;
     })];    
 
+    // Add listen method by default
+    methods.push({
+        name: 'listen',
+        documentation: 'Register for receiving messages from the given id',
+        arguments: [{
+            name: 'id',
+            optional: false,
+            documentation: 'ID of device to send request to'
+        }],
+    });
+    
     const service = {
         name: name,
         type: 'DeviceService',
@@ -113,7 +124,7 @@ MetaScape._createService = async function(definition, remote) {
     try {
         await storage.updateOne({name}, query, {upsert: true});
         ServiceEvents.emit(ServiceEvents.UPDATE, name);
-        MetaScapeServices.updateOrCreateServiceInfo(name, id, remote);
+        MetaScapeServices.updateOrCreateServiceInfo(name, parsed, id, remote);
     } catch (err) {
         if (err.message === MONGODB_DOC_TOO_LARGE) {
             throw new Error('Uploaded code is too large. Please decrease project (or dataset) size and try again.');
