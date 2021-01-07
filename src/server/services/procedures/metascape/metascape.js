@@ -1,18 +1,20 @@
 /**
  *
  * The MetaScape Service enables remote devices to provide custom services. Custom
- * Services can be found under the "Community" section using the `call <RPC>`
+ * Services can be found under the "Community/Devices" section using the `call <RPC>`
  * block.
  *
  * @service
  */
-const _ = require('lodash');
+const fs = require('fs');
+const path = require('path');
 const dgram = require('dgram'),
     server = dgram.createSocket('udp4');
-const logger = require('../utils/logger')('metascape');
 
+const logger = require('../utils/logger')('metascape');
 const Storage = require('../../storage');
 const ServiceEvents = require('../utils/service-events');
+
 let mongoCollection = null;
 const getDatabase = function() {
     if (!mongoCollection) {
@@ -24,8 +26,31 @@ const getDatabase = function() {
 const MetaScape = {};
 MetaScape.serviceName = 'MetaScape';
 
-const fs = require('fs');
-const path = require('path');
+/**
+ * List of registered services, with a list of IDs and their respective hosts
+ */
+MetaScape._services = [];
+
+
+/**
+ * Creates or updates the connection information for a remote service
+ * @param {String} name 
+ * @param {String} id 
+ * @param {RemoteInfo} rinfo 
+ */
+MetaScape._updateOrCreateService = function (name, id, rinfo) {
+    var service = this._services[name];
+    if (!service) {
+        // Service not added yet
+        logger.log('Discovering ' + name + ':' + id + ' at ' + rinfo.address + ':' + rinfo.port);
+        service = {id: rinfo};
+        this._services[name] = service;
+    } else {
+        // Add/update information for this device ID
+        service[id] = rinfo;
+    }
+};
+
 const normalizeServiceName = name => name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 const RESERVED_RPC_NAMES = ['serviceName', 'COMPATIBILITY'];
 const RESERVED_SERVICE_NAMES = fs.readdirSync(path.join(__dirname, '..'))
@@ -60,6 +85,12 @@ MetaScape._createService = async function(definition) {
 
         const method = {name: methodName, help: methodInfo.documentation};
 
+        method.arguments = methodInfo.params.map(param => { 
+            return {
+                name: param.name,
+                optional: param.optional,
+            };
+        });
         // if (code) {
         //     method.arguments = getBlockArgs(code).slice(0, -1);
         //     method.code = code;
@@ -96,11 +127,9 @@ MetaScape._createService = async function(definition) {
         author: 'MetaScape',
         createdAt: new Date(),
         methods,
-        /** socket, */
     };
 
     const storage = getDatabase();
-    const existingService = await storage.findOne({name});
     if (!isValidServiceName(name)) {
         logger.warn(`Service with name "${name}" already exists.`);
     }

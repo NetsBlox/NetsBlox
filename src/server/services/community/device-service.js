@@ -27,74 +27,36 @@ class DeviceService {
             description: 'help',
             categories: [['Community', 'Device']],
             getDocFor: (method) => {
+                let m = record.methods.find((val) => val.name == method);
                 return {
-                    name: method,
+                    name: m.name,
                     description: 'help',
-                    args: []/*method.arguments.map(argument => ({
-                        name: argument,
-                        optional: false,
-                    }))*/,
+                    args: m.arguments.map(argument => ({
+                        name: argument.name,
+                        optional: argument.optional,
+                    })),
                 };
             }
         };
     }
 
     async _initializeRPC(methodSpec) {
-        const method = new DeviceServiceMethod(this._data, methodSpec);
+        const method = new DeviceServiceMethod(methodSpec);
         this[methodSpec.name] = async function() {
             return await method.invoke(...arguments);
         };
     }
 
     async _getFunctionForMethod(method, data) {
-        if (method.code) {
-            const fn = await InputTypes.parse.Function(method.code);
-            return () => fn;
-        } else if (method.query) {
-            const queryFn = await InputTypes.parse.Function(method.query.code);
-            const transformFn = method.transform ?
-                await InputTypes.parse.Function(method.transform.code) : row => row;
-            const combineFn = method.combine ?
-                await InputTypes.parse.Function(method.combine.code) : (list, item) => list.concat([item]);
+        return () => async function() {
+            const args = this._getArgs(method, arguments);
 
-            return () => async function() {
-                const [queryArgs, transformArgs, combineArgs] = this._getArgs(method, arguments);
-
-                let results = [];
-                for (let i = 1; i < data.length; i++) {
-                    const args = queryArgs.slice();
-                    const row = data[i];
-                    args.push(row);
-                    if (await queryFn.apply(null, args)) {
-                        let args = transformArgs.slice();
-                        args.push(row);
-                        const value = await transformFn.apply(null, args);
-
-                        args = combineArgs.slice();
-                        args.push(results, value);
-
-                        results = await combineFn.apply(null, args);
-                    }
-                }
-
-                return results;
-            };
-        } else {
-            this._logger.warn(`Malformed method ${method.name}. Needs "query" or "code"`);
-        }
+            return 1;
+        };
     }
 
-    _getArgs(method, allArgs) {
-        const queryArgCount = method.query.arguments.length-1;
-        const transformArgCount = method.transform ? method.transform.arguments.length-1 : 0;
-        const combineArgCount = method.combine ? method.combine.arguments.length - 2 : 0;
-
-        let startIndex = 0;
-        return [queryArgCount, transformArgCount, combineArgCount].map(count => {
-            const args = Array.prototype.slice.call(allArgs, startIndex, startIndex + count);
-            startIndex += count;
-            return args;
-        });
+    _getArgs(method) {
+        return this._docs.getDocFor(method).args.map(info => info.name);
     }
 
     async onDelete() {
@@ -103,101 +65,12 @@ class DeviceService {
 }
 
 class DeviceServiceMethod {
-    constructor(data, spec) {
-        this.data = data;
+    constructor(spec) {
         this.spec = spec;
-        this._compiled = null;
-        const seconds = 1000;
-        this.cacheTTL = 30*seconds;
-        this.clearCacheID = null;
     }
 
     async invoke() {
-        const factory = await this.func();
-        const fn = factory();
-        const data = this.data.slice(1);  // skip headers
-        const args = Array.prototype.slice.call(arguments);
-        args.push(data);
-
-        return await fn.apply(this, args);
-    }
-
-    async func() {
-        if (!this._compiled) {
-            this._compiled = await this.compile();
-            if (this.clearCacheID) {
-                clearTimeout(this.clearCacheID);
-            }
-            this.clearCacheID = setTimeout(
-                () => this.clearCache(),
-                this.cacheTTL
-            );
-        }
-        return this._compiled;
-    }
-
-    clearCache() {
-        this.clearCacheID = null;
-        this._compiled = null;
-    }
-
-    async compile(data=this.data, spec=this.spec) {
-        if (spec.code) {
-            const fn = await InputTypes.parse.Function(spec.code);
-            return () => fn;
-        } else if (spec.query) {
-            const queryFn = await InputTypes.parse.Function(spec.query.code);
-            const transformFn = spec.transform ?
-                await InputTypes.parse.Function(spec.transform.code) : row => row;
-
-            let combineFn, initialValue;
-            if (spec.combine) {
-                combineFn = await InputTypes.parse.Function(spec.combine.code);
-                initialValue = spec.initialValue !== undefined ?
-                    spec.initialValue : null;
-            } else {
-                combineFn = (list, item) => list.concat([item]);
-                initialValue = [];
-            }
-            const hasInitialValue = initialValue !== null;
-
-            return () => async function() {
-                const [queryArgs, transformArgs, combineArgs] = this._getArgs(spec, arguments);
-                const startIndex = hasInitialValue ? 1 : 2;
-                let results;
-
-                if (hasInitialValue) {
-                    results = _.cloneDeep(initialValue);
-                } else {
-                    const args = queryArgs.slice();
-                    const row = data[1];
-                    args.push(row);
-                    if (await queryFn.apply(null, args)) {
-                        let args = transformArgs.slice();
-                        args.push(row);
-                        results = await transformFn.apply(null, args);
-                    }
-                }
-
-                for (let i = startIndex; i < data.length; i++) {
-                    const args = queryArgs.slice();
-                    const row = data[i];
-                    args.push(row);
-                    if (await queryFn.apply(null, args)) {
-                        let args = transformArgs.slice();
-                        args.push(row);
-                        const value = await transformFn.apply(null, args);
-
-                        args = combineArgs.slice();
-                        args.push(results, value);
-
-                        results = await combineFn.apply(null, args);
-                    }
-                }
-
-                return results;
-            };
-        }
+        return await 1;
     }
 
     _getArgs(method, allArgs) {
