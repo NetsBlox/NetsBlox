@@ -1,8 +1,9 @@
+const logger = require('../utils/logger')('metascape-services');
 
 const dgram = require('dgram'),
     socket = dgram.createSocket('udp4');
 
-const logger = require('../utils/logger')('metascape-services');
+socket.bind();
 
 /**
  * Stores information about registered services, with a list of IDs and their respective hosts
@@ -64,9 +65,14 @@ MetaScapeServices.getInfo = function(name, id){
 
 MetaScapeServices._lastRequestID = 0;
 
+/**
+ * Get ID for a new request
+ */
 MetaScapeServices._generateRequestID = function(){
     return MetaScapeServices._lastRequestID++;
 };
+
+MetaScapeServices._awaitingRequests = {};
 
 /**
  * Make a call to a MetaScape function
@@ -81,8 +87,9 @@ MetaScapeServices.call = async function (name, func, id, ...args) {
     }
 
     // Create and send request
+    const reqid = MetaScapeServices._generateRequestID();
     let request = {
-        id: MetaScapeServices._generateRequestID(),
+        id: reqid,
         function: func, 
         params: [...args]
     };
@@ -90,7 +97,31 @@ MetaScapeServices.call = async function (name, func, id, ...args) {
     let rinfo = MetaScapeServices.getInfo(name, id);
     socket.send(JSON.stringify(request), rinfo.port, rinfo.address);
 
-    return 1;
+    return Promise.race([
+        new Promise((resolve) => {
+            MetaScapeServices._awaitingRequests[reqid] = resolve;
+        }), 
+        new Promise((_, reject) => {
+            // Time out eventually
+            setTimeout(() => {
+                delete MetaScapeServices._awaitingRequests[reqid];
+                reject();
+            }, 3000);
+        })
+    ]).then((result) => result).catch(() => false);
 };
+
+// Handle incoming responses
+socket.on('message', function (message) {
+    const parsed = JSON.parse(message);
+    const id = parsed.id;
+    
+    if(Object.keys(MetaScapeServices._awaitingRequests).includes(id.toString())){
+        if(parsed.response){
+            MetaScapeServices._awaitingRequests[id](...parsed.response);
+            delete MetaScapeServices._awaitingRequests[id];
+        }
+    } 
+});
 
 module.exports = MetaScapeServices;
