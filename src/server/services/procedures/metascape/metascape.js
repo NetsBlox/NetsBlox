@@ -38,7 +38,7 @@ MetaScape._services = [];
  * @param {String} id 
  * @param {RemoteInfo} rinfo 
  */
-MetaScape._updateOrCreateService = function (name, id, rinfo) {
+MetaScape._updateOrCreateServiceInfo = function (name, id, rinfo) {
     var service = this._services[name];
     if (!service) {
         // Service not added yet
@@ -69,17 +69,19 @@ const isValidRPCName = name =>
  *
  * @param {String} definition Service definition
  */
-MetaScape._createService = async function(definition) {    
+MetaScape._createService = async function(definition, remote) {    
     let parsed = JSON.parse(definition);
     const name = Object.keys(parsed)[0];
-
-    logger.log(`Received definition for service ${name}`);
-
+    
     parsed = parsed[name];
-    const serviceInfo = parsed['service'];
-    const methodsInfo = parsed['methods'];
-    const eventsInfo = parsed['events'];
+    const serviceInfo = parsed.service;
+    const methodsInfo = parsed.methods;
+    const eventsInfo = parsed.events;
+    const version = serviceInfo.version;
+    const id = parsed.id;
 
+    logger.log(`Received definition for service ${name} v${version} from ID ${id}`);
+    
     const methods = Object.keys(methodsInfo).map(methodName => {
         const methodInfo = methodsInfo[methodName];
 
@@ -92,37 +94,19 @@ MetaScape._createService = async function(definition) {
                 documentation: param.documentation,
             };
         });
-        // if (code) {
-        //     method.arguments = getBlockArgs(code).slice(0, -1);
-        //     method.code = code;
-        // } else {  // use query and transform instead
-        //     method.query = {
-        //         arguments: getBlockArgs(query),
-        //         code: query
-        //     };
-        //     method.arguments = method.query.arguments.slice(0, -1);
-        //     if (transform) {
-        //         method.transform = {
-        //             arguments: getBlockArgs(transform),
-        //             code: transform
-        //         };
-        //         method.arguments.push(...method.transform.arguments.slice(0, -1));
-        //     }
-        //     if (combine) {
-        //         method.combine = {
-        //             arguments: getBlockArgs(combine),
-        //             code: combine
-        //         };
-        //         method.arguments.push(...method.combine.arguments.slice(0, -2));
-        //         method.initialValue = initialValue;
-        //     }
-        // }
+
+        // Add ID argument
+        method.arguments = [{
+            name: 'id',
+            optional: false,
+            documentation: 'ID of device to send request to'
+        }, ...method.arguments];
 
         return method;
     });
 
     const service = {
-        name,
+        name: name,
         type: 'DeviceService',
         description: serviceInfo.description,
         author: 'MetaScape',
@@ -139,6 +123,7 @@ MetaScape._createService = async function(definition) {
     try {
         await storage.updateOne({name}, query, {upsert: true});
         ServiceEvents.emit(ServiceEvents.UPDATE, name);
+        this._updateOrCreateServiceInfo(name, id, remote);
     } catch (err) {
         if (err.message === MONGODB_DOC_TOO_LARGE) {
             throw new Error('Uploaded code is too large. Please decrease project (or dataset) size and try again.');
@@ -153,7 +138,7 @@ server.on('listening', function () {
 });
 
 server.on('message', function (message, remote) {
-    MetaScape._createService(message);
+    MetaScape._createService(message, remote);
 });
 
 /* eslint no-console: off */
