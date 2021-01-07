@@ -46,18 +46,9 @@ class DeviceService {
             };
         } else {
             this[methodSpec.name] = async function() {
-                return await methodSpec.code.invoke(...arguments);
+                return await MetaScapeServices.call(this.serviceName, methodSpec.name, ...arguments);
             };
         }
-    }
-
-    async _getFunctionForMethod(method) {
-        
-        return () => async function() {
-            const args = this._getArgs(method, arguments);
-
-            return 2;
-        };
     }
 
     _getArgs(method) {
