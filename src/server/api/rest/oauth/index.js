@@ -71,7 +71,6 @@ OAuthRouter.route('/code')
         const authCode = await OAuth.authorizeClient(username, clientId);
 
         // TODO: add client secret?
-        // TODO: add default for redirect uri...
         res.redirect(`${redirectUri}?code=${authCode}`);
     }))
     .options((req, res) => res.end());
