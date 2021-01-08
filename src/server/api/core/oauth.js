@@ -1,7 +1,7 @@
 const Logger = require('../../logger');
-const {OAuthClientNotFound, UserNotFound, RequestError} = require('./errors');
+const {OAuthClientNotFound, RequestError} = require('./errors');
+const {ObjectId} = require('mongodb');
 const OAuthStorage = require('../../storage/oauth');
-const Users = require('../../storage/users');
 
 class OAuth {
     constructor() {
@@ -31,14 +31,26 @@ class OAuth {
         return opts[Math.floor(Math.random() * opts.length)];
     }
 
-    verifyAuthCode() {
+    async getAuthData(authCode) {
+        const authData = await OAuthStorage.codes.findOne({_id: ObjectId(authCode)});
+        return authData;
     }
 
-    async authorizeClient(username, clientId) {
+    async createToken(username, clientId) {
+        const result = await OAuthStorage.tokens.insertOne({
+            clientId,
+            username,
+            createdAt: new Date(),
+        });
+        return result.insertedId;
+    }
+
+    async authorizeClient(username, clientId, redirectUri) {
         await this._verifyClientID(clientId);
         const result = await OAuthStorage.codes.insertOne({
             clientId,
             username,
+            redirectUri,
             createdAt: new Date(),
         });
 

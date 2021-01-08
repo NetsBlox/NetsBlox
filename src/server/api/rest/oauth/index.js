@@ -68,7 +68,7 @@ OAuthRouter.route('/code')
         }
 
         const clientId = req.query.client_id;
-        const authCode = await OAuth.authorizeClient(username, clientId);
+        const authCode = await OAuth.authorizeClient(username, clientId, redirectUri);
 
         // TODO: add client secret?
         res.redirect(`${redirectUri}?code=${authCode}`);
@@ -78,22 +78,46 @@ OAuthRouter.route('/code')
 OAuthRouter.route('/token')
     .post(handleErrors(async (req, res) => {
         const authCode = req.body.code;
-        if (!authCode)  throw new RequestError(); // TODO
-        // TODO: verify auth code
-        // TODO: create access token
+        if (!authCode)  {
+            const error = 'invalid_request';
+            const error_description = 'No authorization code';
+            return res.status(400).json({error, error_description});
+        }
+
+        if (!req.body.redirect_uri) {
+            const error = 'invalid_grant';
+            const error_description = 'Invalid redirect URI';
+            return res.status(400).json({error, error_description});
+        }
+
+        if (req.body.grant_type !== 'authorization_code') {
+            const error = 'invalid_grant';
+            return res.status(400).json({error});
+        }
+
+        const authData = await OAuth.getAuthData(authCode);
+        if (!authData) {
+            const error = 'invalid_client';
+            const error_description = 'Invalid authorization code';
+            return res.status(401).json({error, error_description});
+        }
+
+        const {username, clientId, redirectUri} = authData;
+        if (redirectUri !== req.body.redirect_uri) {
+            const error = 'invalid_grant';
+            const error_description = 'Invalid redirect URI';
+            return res.status(400).json({error, error_description});
+        }
+
+        const token = await OAuth.createToken(username, clientId);
+        res.set('Cache-Control', 'no-store');
+        res.set('Pragma', 'no-cache');
+        console.log('token', token);
         res.json({
             access_token: token,
-            expires_in: 60 * 60 * 24,  // TODO: should this be in the request?
         });
     }))
     .options((req, res) => res.end());
 
-//OAuthRouter.route('/secure')
-    //.post(handleErrors(async (req, res) => {
-        //// TODO: check the access tokens
-        //const projectId = req.body.projectId;
-        //const {username, password} = req.body.projectId;
-        //// TODO: login and set the session cookies
-    //}));
-
+//const OAuthError = {};
 module.exports = OAuthRouter;
