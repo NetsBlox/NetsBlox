@@ -1,5 +1,5 @@
 const Logger = require('../../logger');
-const {OAuthClientNotFound, RequestError} = require('./errors');
+const {OAuthClientNotFound} = require('./errors');
 const {ObjectId} = require('mongodb');
 const OAuthStorage = require('../../storage/oauth');
 
@@ -9,26 +9,10 @@ class OAuth {
     }
 
     async createClient(owner, name) {
-        const id = this._genGuid();
-        const client = {id, owner, name};
-        const result = await OAuthStorage.clients.updateOne(
-            {id},
-            {$setOnInsert: client},
-            {upsert: true}
+        const result = await OAuthStorage.clients.insertOne(
+            {owner, name},
         );
-        if (result.upsertedCount === 0) {
-            throw new RequestError('Unable to create client. Please try again.');
-        }
-        return id;
-    }
-
-    _genGuid(len=20) {
-        const chars = new Array(16).fill().map((_, i) => i.toString(16));
-        return new Array(len).fill().map(() => this._sample(chars)).join('');
-    }
-
-    _sample(opts) {
-        return opts[Math.floor(Math.random() * opts.length)];
+        return result.insertedId;
     }
 
     async getAuthData(authCode) {
@@ -58,7 +42,7 @@ class OAuth {
     }
 
     async getClient(id) {
-        const client = await OAuthStorage.clients.findOne({id});
+        const client = await OAuthStorage.clients.findOne({_id: ObjectId(id)});
         if (!client) {
             throw new OAuthClientNotFound();
         }
