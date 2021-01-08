@@ -1,5 +1,5 @@
 const OAuth = require('../../core/oauth');
-const {RequestError, LoginRequired, InvalidRedirectURL} = require('../../core/errors');
+const {LoginRequired, InvalidRedirectURL} = require('../../core/errors');
 const OAuthRouter = require('express').Router();
 const {handleErrors, setUsername} = require('../utils');
 const {SERVER_PROTOCOL, LOGIN_URL} = process.env;
@@ -10,7 +10,6 @@ const AuthorizeTemplate = _.template(fs.readFileSync(path.join(__dirname, 'index
 
 
 // TODO: Add endpoint for authorizing the application
-// TODO: If not logged in, redirect to the login endpoint?
 const DEFAULT_SCOPES = [
     'List your projects',
     'Send messages to your projects',
@@ -26,7 +25,6 @@ OAuthRouter.route('/')
     .get(setUsername, handleErrors(async (req, res) => {
         const {username} = req.session;
         const isLoggedIn = !!username;
-        console.log('originalUrl:', req.originalUrl);
         if (!isLoggedIn) {
             if (LOGIN_URL) {
                 const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
@@ -44,10 +42,6 @@ OAuthRouter.route('/')
 
 OAuthRouter.route('/code')
     .post(setUsername, handleErrors(async (req, res) => {
-        console.log('---> CODE');
-        // TODO: Add support for denying the request
-        // TODO: Do I need to validate the client?
-        // TODO: return an auth code
         const {username} = req.session;
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
@@ -55,7 +49,7 @@ OAuthRouter.route('/code')
         }
 
         const redirectUri = req.query.redirect_uri;
-        if (!redirectUri) {  // TODO: validate further?
+        if (!redirectUri) {
             throw new InvalidRedirectURL();
         }
 
@@ -70,7 +64,6 @@ OAuthRouter.route('/code')
         const clientId = req.query.client_id;
         const authCode = await OAuth.authorizeClient(username, clientId, redirectUri);
 
-        // TODO: add client secret?
         res.redirect(`${redirectUri}?code=${authCode}`);
     }))
     .options((req, res) => res.end());
@@ -112,12 +105,10 @@ OAuthRouter.route('/token')
         const token = await OAuth.createToken(username, clientId);
         res.set('Cache-Control', 'no-store');
         res.set('Pragma', 'no-cache');
-        console.log('token', token);
         res.json({
             access_token: token,
         });
     }))
     .options((req, res) => res.end());
 
-//const OAuthError = {};
 module.exports = OAuthRouter;
