@@ -5,7 +5,7 @@ const SKIP_FILES = ['utils.js', 'index.js'];
 
 module.exports = async function(app) {
     const routeFiles = (await readdir(__dirname))
-        .filter(filename => filename.endsWith('.js') && !SKIP_FILES.includes(filename))
+        .filter(filename => !SKIP_FILES.includes(filename))
         .map(filename => filename.replace(/\.js$/, ''));
 
     routeFiles.forEach(file => {
