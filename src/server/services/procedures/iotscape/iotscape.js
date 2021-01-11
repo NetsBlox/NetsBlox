@@ -1,6 +1,6 @@
 /**
  *
- * The MetaScape Service enables remote devices to provide custom services. Custom
+ * The IoTScape Service enables remote devices to provide custom services. Custom
  * Services can be found under the "Community/Devices" section using the `call <RPC>`
  * block.
  *
@@ -11,10 +11,10 @@ const path = require('path');
 const dgram = require('dgram'),
     server = dgram.createSocket('udp4');
 
-const logger = require('../utils/logger')('metascape');
+const logger = require('../utils/logger')('iotscape');
 const Storage = require('../../storage');
 const ServiceEvents = require('../utils/service-events');
-const MetaScapeServices = require('./metascape-services');
+const IoTScapeServices = require('./iotscape-services');
 
 const normalizeServiceName = name => name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 const RESERVED_RPC_NAMES = ['serviceName', 'COMPATIBILITY'];
@@ -29,30 +29,30 @@ const isValidServiceName = name => {
 const isValidRPCName = name => 
     !(!name || name.startsWith('_') ||  RESERVED_RPC_NAMES.includes(name));
 
-const MetaScape = {};
-MetaScape.serviceName = 'MetaScape';
+const IoTScape = {};
+IoTScape.serviceName = 'IoTScape';
 
-MetaScape._mongoCollection = null;
-MetaScape._getDatabase = function() {
-    if (!MetaScape._mongoCollection) {
-        MetaScape._mongoCollection = Storage.createCollection('netsblox:services:community');
+IoTScape._mongoCollection = null;
+IoTScape._getDatabase = function() {
+    if (!IoTScape._mongoCollection) {
+        IoTScape._mongoCollection = Storage.createCollection('netsblox:services:community');
     }
-    return MetaScape._mongoCollection;
+    return IoTScape._mongoCollection;
 };
 
 /**
  * List IDs of devices associated for a service
  * @param {String} name Name of service to get device IDs for
  */
-MetaScape.getDevices = function (name) {
-    return MetaScapeServices.getDevices(name);
+IoTScape.getDevices = function (name) {
+    return IoTScapeServices.getDevices(name);
 };
 
 /**
- * List all MetaScape services registered with the server 
+ * List all IoTScape services registered with the server 
  */
-MetaScape.getServices = function () {
-    return MetaScapeServices.getServices();
+IoTScape.getServices = function () {
+    return IoTScapeServices.getServices();
 };
 
 /**
@@ -61,7 +61,7 @@ MetaScape.getServices = function () {
  * @param {String} id ID of device to make call to
  * @param {String} string Input to RPC
  */
-MetaScape.call = function (service, id, string){
+IoTScape.call = function (service, id, string){
     let parts = string.split(/\s+/g);
 
     // Require at least a function name
@@ -69,7 +69,7 @@ MetaScape.call = function (service, id, string){
         return false;
     }
 
-    return MetaScapeServices.call(service, parts[0], id, ...parts.slice(1));
+    return IoTScapeServices.call(service, parts[0], id, ...parts.slice(1));
 };
 
 /**
@@ -78,7 +78,7 @@ MetaScape.call = function (service, id, string){
  * @param {String} definition Service definition
  * @param {RemoteInfo} remote Remote host information
  */
-MetaScape._createService = async function(definition, remote) {    
+IoTScape._createService = async function(definition, remote) {    
     let parsed = JSON.parse(definition);
     const name = Object.keys(parsed)[0];
     
@@ -134,12 +134,12 @@ MetaScape._createService = async function(definition, remote) {
         name: name,
         type: 'DeviceService',
         description: serviceInfo.description,
-        author: 'MetaScape',
+        author: 'IoTScape',
         createdAt: new Date(),
         methods,
     };
 
-    const storage = MetaScape._getDatabase();
+    const storage = IoTScape._getDatabase();
     if (!isValidServiceName(name)) {
         logger.warn(`Service with name "${name}" already exists.`);
     }
@@ -148,7 +148,7 @@ MetaScape._createService = async function(definition, remote) {
     try {
         await storage.updateOne({name}, query, {upsert: true});
         ServiceEvents.emit(ServiceEvents.UPDATE, name);
-        MetaScapeServices.updateOrCreateServiceInfo(name, parsed, id, remote);
+        IoTScapeServices.updateOrCreateServiceInfo(name, parsed, id, remote);
     } catch (err) {
         if (err.message === MONGODB_DOC_TOO_LARGE) {
             throw new Error('Uploaded code is too large. Please decrease project (or dataset) size and try again.');
@@ -163,24 +163,24 @@ server.on('listening', function () {
 });
 
 server.on('message', function (message, remote) {
-    MetaScape._createService(message, remote);
+    IoTScape._createService(message, remote);
 });
 
 /* eslint no-console: off */
-if (process.env.METASCAPE_PORT) {
-    console.log('METASCAPE_PORT is ' + process.env.METASCAPE_PORT);
+if (process.env.IOTSCAPE_PORT) {
+    console.log('IOTSCAPE_PORT is ' + process.env.IOTSCAPE_PORT);
     
     // Clear old devices
-    MetaScape._getDatabase().deleteMany({type: 'DeviceService'});
+    IoTScape._getDatabase().deleteMany({type: 'DeviceService'});
 
-    server.bind(process.env.METASCAPE_PORT || 1975);
+    server.bind(process.env.IOTSCAPE_PORT || 1975);
 }
 
-MetaScape.isSupported = function () {
-    if (!process.env.METASCAPE_PORT) {
-        console.log('METASCAPE_PORT is not set (to 1975), MetaScape is disabled');
+IoTScape.isSupported = function () {
+    if (!process.env.IOTSCAPE_PORT) {
+        console.log('IOTSCAPE_PORT is not set (to 1975), IoTScape is disabled');
     }
-    return !!process.env.METASCAPE_PORT;
+    return !!process.env.IOTSCAPE_PORT;
 };
 
-module.exports = MetaScape;
+module.exports = IoTScape;

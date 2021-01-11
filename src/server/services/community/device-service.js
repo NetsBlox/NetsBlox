@@ -1,10 +1,10 @@
 const _ = require('lodash');
 const InputTypes = require('../input-types');
 const createLogger = require('../procedures/utils/logger');
-const MetaScapeServices = require('../procedures/metascape/metascape-services');
+const IoTScapeServices = require('../procedures/iotscape/iotscape-services');
 
 /**
- * Represents a service created for a MetaScape device
+ * Represents a service created for a IoTScape device
  */
 class DeviceService {
     constructor(record) {
@@ -43,15 +43,15 @@ class DeviceService {
         // getDevices and listen have special implementations
         if(methodSpec.name === 'getDevices'){
             this[methodSpec.name] = async function() {
-                return MetaScapeServices.getDevices(this.serviceName);
+                return IoTScapeServices.getDevices(this.serviceName);
             };
         } else if(methodSpec.name === 'listen'){
             this[methodSpec.name] = async function() {
-                return MetaScapeServices.listen(this.serviceName, this.socket, ...arguments);
+                return IoTScapeServices.listen(this.serviceName, this.socket, ...arguments);
             };
         } else {
             this[methodSpec.name] = async function() {
-                return await MetaScapeServices.call(this.serviceName, methodSpec.name, ...arguments);
+                return await IoTScapeServices.call(this.serviceName, methodSpec.name, ...arguments);
             };
         }
     }
