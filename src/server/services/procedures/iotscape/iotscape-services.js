@@ -1,4 +1,4 @@
-const logger = require('../utils/logger')('metascape-services');
+const logger = require('../utils/logger')('iotscape-services');
 
 const dgram = require('dgram'),
     socket = dgram.createSocket('udp4');
@@ -8,10 +8,10 @@ socket.bind();
 /**
  * Stores information about registered services, with a list of IDs and their respective hosts
  */
-const MetaScapeServices = {};
+const IoTScapeServices = {};
 
-MetaScapeServices._services = {};
-MetaScapeServices._serviceDefinitions = {};
+IoTScapeServices._services = {};
+IoTScapeServices._serviceDefinitions = {};
 
 /**
  * Creates or updates the connection information for a remote service
@@ -19,15 +19,15 @@ MetaScapeServices._serviceDefinitions = {};
  * @param {String} id 
  * @param {RemoteInfo} rinfo 
  */
-MetaScapeServices.updateOrCreateServiceInfo = function (name, definition, id, rinfo) {
-    let service = MetaScapeServices._services[name];
-    MetaScapeServices._serviceDefinitions[name] = definition;
+IoTScapeServices.updateOrCreateServiceInfo = function (name, definition, id, rinfo) {
+    let service = IoTScapeServices._services[name];
+    IoTScapeServices._serviceDefinitions[name] = definition;
     
     logger.log('Discovering ' + name + ':' + id + ' at ' + rinfo.address + ':' + rinfo.port);
     
     if (!service) {
         // Service not added yet
-        service = MetaScapeServices._services[name] = {};
+        service = IoTScapeServices._services[name] = {};
     }
 
     service[id] = rinfo;
@@ -38,15 +38,15 @@ MetaScapeServices.updateOrCreateServiceInfo = function (name, definition, id, ri
  * @param {String} name Name of service
  * @param {String} id ID of device to remove
  */
-MetaScapeServices.removeDevice = function(name, id) {
-    if(!MetaScapeServices.deviceExists(name, id)){
+IoTScapeServices.removeDevice = function(name, id) {
+    if(!IoTScapeServices.deviceExists(name, id)){
         return;
     }
 
-    delete MetaScapeServices._services[name][id];
+    delete IoTScapeServices._services[name][id];
 
-    if(MetaScapeServices._listeningClients[name] !== undefined && MetaScapeServices._listeningClients[name][id] !== undefined){
-        delete MetaScapeServices._listeningClients[name][id];
+    if(IoTScapeServices._listeningClients[name] !== undefined && IoTScapeServices._listeningClients[name][id] !== undefined){
+        delete IoTScapeServices._listeningClients[name][id];
     }
     // TODO: fully remove services with zero devices
 };
@@ -55,9 +55,9 @@ MetaScapeServices.removeDevice = function(name, id) {
  * List IDs of devices associated for a service
  * @param {String} name Name of service to get device IDs for
  */
-MetaScapeServices.getDevices = function (name) {
-    if(Object.keys(MetaScapeServices._services).includes(name)){
-        return Object.keys(MetaScapeServices._services[name]);
+IoTScapeServices.getDevices = function (name) {
+    if(Object.keys(IoTScapeServices._services).includes(name)){
+        return Object.keys(IoTScapeServices._services[name]);
     }
 
     return false;
@@ -66,8 +66,8 @@ MetaScapeServices.getDevices = function (name) {
 /**
  * List services
  */
-MetaScapeServices.getServices = function () {
-    return Object.keys(MetaScapeServices._services);
+IoTScapeServices.getServices = function () {
+    return Object.keys(IoTScapeServices._services);
 };
 
 /**
@@ -76,8 +76,8 @@ MetaScapeServices.getServices = function () {
  * @param {String} id ID of device
  * @returns {Boolean} If device exists
  */
-MetaScapeServices.deviceExists = function(name, id){
-    let devices = MetaScapeServices.getDevices(name);
+IoTScapeServices.deviceExists = function(name, id){
+    let devices = IoTScapeServices.getDevices(name);
     return devices && devices.includes(id);
 };
 
@@ -88,21 +88,21 @@ MetaScapeServices.deviceExists = function(name, id){
  * @param {String} func Name of function
  * @returns {Boolean} If function exists
  */
-MetaScapeServices.functionExists = function(name, func){
-    if(!MetaScapeServices.getServices().includes(name)){
+IoTScapeServices.functionExists = function(name, func){
+    if(!IoTScapeServices.getServices().includes(name)){
         return false;
     }
     
-    return func === 'heartbeat' || MetaScapeServices.getFunctionInfo(name, func) !== undefined;
+    return func === 'heartbeat' || IoTScapeServices.getFunctionInfo(name, func) !== undefined;
 };
 
 /**
- * Get the remote host of a MetaScape device
+ * Get the remote host of a IoTScape device
  * @param {String} name Name of service
  * @param {String} id ID of device
  */
-MetaScapeServices.getInfo = function(name, id){
-    return MetaScapeServices._services[name][id];
+IoTScapeServices.getInfo = function(name, id){
+    return IoTScapeServices._services[name][id];
 };
 
 /**
@@ -110,25 +110,25 @@ MetaScapeServices.getInfo = function(name, id){
  * @param {String} name Name of service
  * @param {String} func Name of function
  */
-MetaScapeServices.getFunctionInfo = function(name, func) {
+IoTScapeServices.getFunctionInfo = function(name, func) {
     if(func === 'heartbeat'){
         return {returns: {type:['boolean']}};
     }
 
-    return MetaScapeServices._serviceDefinitions[name].methods[func];
+    return IoTScapeServices._serviceDefinitions[name].methods[func];
 };
 
-MetaScapeServices._lastRequestID = 0;
+IoTScapeServices._lastRequestID = 0;
 
 /**
  * Get ID for a new request
  */
-MetaScapeServices._generateRequestID = function(){
-    return MetaScapeServices._lastRequestID++;
+IoTScapeServices._generateRequestID = function(){
+    return IoTScapeServices._lastRequestID++;
 };
 
-MetaScapeServices._awaitingRequests = {};
-MetaScapeServices._listeningClients = {};
+IoTScapeServices._awaitingRequests = {};
+IoTScapeServices._listeningClients = {};
 
 /**
  * Add a client to get event updates from a device
@@ -136,54 +136,54 @@ MetaScapeServices._listeningClients = {};
  * @param {String} id ID of device
  * @param {*} client Client to add to listeners
  */
-MetaScapeServices.listen = function(name, client, id){
+IoTScapeServices.listen = function(name, client, id){
     id = id.toString();
 
     // Validate name and ID
-    if(!MetaScapeServices.deviceExists(name, id)){
+    if(!IoTScapeServices.deviceExists(name, id)){
         return false;
     }
     
-    if(!Object.keys(MetaScapeServices._listeningClients).includes(name)){
-        MetaScapeServices._listeningClients[name] = {};
+    if(!Object.keys(IoTScapeServices._listeningClients).includes(name)){
+        IoTScapeServices._listeningClients[name] = {};
     }
 
-    if(!Object.keys(MetaScapeServices._listeningClients[name]).includes(id)){
-        MetaScapeServices._listeningClients[name][id] = [];
+    if(!Object.keys(IoTScapeServices._listeningClients[name]).includes(id)){
+        IoTScapeServices._listeningClients[name][id] = [];
     }
 
-    if(!MetaScapeServices._listeningClients[name][id].includes(client)){
-        MetaScapeServices._listeningClients[name][id].push(client);
+    if(!IoTScapeServices._listeningClients[name][id].includes(client)){
+        IoTScapeServices._listeningClients[name][id].push(client);
     }
 };
 
 /**
- * Make a call to a MetaScape function
+ * Make a call to a IoTScape function
  * @param {String} name Name of service
  * @param {String} id ID of device
  * @param  {...any} args 
  */
-MetaScapeServices.call = async function (name, func, id, ...args) {
+IoTScapeServices.call = async function (name, func, id, ...args) {
     id = id.toString();
 
     // Validate name, ID, and function
-    if(!MetaScapeServices.deviceExists(name, id) || !MetaScapeServices.functionExists(name, func)){
+    if(!IoTScapeServices.deviceExists(name, id) || !IoTScapeServices.functionExists(name, func)){
         return false;
     }
 
     // Create and send request
-    const reqid = MetaScapeServices._generateRequestID();
+    const reqid = IoTScapeServices._generateRequestID();
     let request = {
         id: reqid,
         function: func, 
         params: [...args]
     };
     
-    let rinfo = MetaScapeServices.getInfo(name, id);
+    let rinfo = IoTScapeServices.getInfo(name, id);
     socket.send(JSON.stringify(request), rinfo.port, rinfo.address);
 
     // Determine response type
-    let methodInfo = MetaScapeServices.getFunctionInfo(name, func);
+    let methodInfo = IoTScapeServices.getFunctionInfo(name, func);
     let responseType = methodInfo.returns.type;
 
     // No response required
@@ -199,12 +199,12 @@ MetaScapeServices.call = async function (name, func, id, ...args) {
     // Expects a value response
     return Promise.race([
         new Promise((resolve) => {
-            MetaScapeServices._awaitingRequests[reqid] = resolve;
+            IoTScapeServices._awaitingRequests[reqid] = resolve;
         }), 
         new Promise((_, reject) => {
             // Time out eventually
             setTimeout(() => {
-                delete MetaScapeServices._awaitingRequests[reqid];
+                delete IoTScapeServices._awaitingRequests[reqid];
                 reject();
             }, 3000);
         })
@@ -216,16 +216,16 @@ socket.on('message', function (message) {
     const parsed = JSON.parse(message);
     const requestID = parsed.request;
     
-    if(Object.keys(MetaScapeServices._awaitingRequests).includes(requestID.toString())){
+    if(Object.keys(IoTScapeServices._awaitingRequests).includes(requestID.toString())){
         if(parsed.response){
-            MetaScapeServices._awaitingRequests[requestID](...parsed.response);
-            delete MetaScapeServices._awaitingRequests[requestID];
+            IoTScapeServices._awaitingRequests[requestID](...parsed.response);
+            delete IoTScapeServices._awaitingRequests[requestID];
         }
     }
 
     if(parsed.event){
         // Find listening clients 
-        let clientsByID = MetaScapeServices._listeningClients[parsed.service];
+        let clientsByID = IoTScapeServices._listeningClients[parsed.service];
 
         if(clientsByID){
             let clients = clientsByID[parsed.id.toString()];
@@ -242,18 +242,18 @@ socket.on('message', function (message) {
 
 // Request heartbeats on interval
 setInterval(async () => {
-    for (const service of MetaScapeServices.getServices()) {
-        MetaScapeServices.getDevices(service).forEach(async (device) => {
+    for (const service of IoTScapeServices.getServices()) {
+        IoTScapeServices.getDevices(service).forEach(async (device) => {
             logger.log(`heartbeat ${service}:${device}`);
-            let alive = await MetaScapeServices.call(service, 'heartbeat', device);
+            let alive = await IoTScapeServices.call(service, 'heartbeat', device);
             
             // Remove device if it didn't respond
             if(!alive) {
                 logger.log(`${service}:${device} did not respond to heartbeat, removing from active devices`);
-                MetaScapeServices.removeDevice(service, device);
+                IoTScapeServices.removeDevice(service, device);
             }
         });
     }
 }, 60 * 1000);
 
-module.exports = MetaScapeServices;
+module.exports = IoTScapeServices;
