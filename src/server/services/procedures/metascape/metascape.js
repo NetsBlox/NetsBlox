@@ -56,6 +56,23 @@ MetaScape.getServices = function () {
 };
 
 /**
+ * Make a call to a device as a text command
+ * @param {String} service Name of service to make call to
+ * @param {String} id ID of device to make call to
+ * @param {String} string Input to RPC
+ */
+MetaScape.call = function (service, id, string){
+    let parts = string.split(/\s+/g);
+
+    // Require at least a function name
+    if(parts.length < 1){
+        return false;
+    }
+
+    return MetaScapeServices.call(service, parts[0], id, ...parts.slice(1));
+};
+
+/**
  * Create a service using a given definition.
  *
  * @param {String} definition Service definition
