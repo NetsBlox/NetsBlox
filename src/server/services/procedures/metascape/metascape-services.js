@@ -46,6 +46,13 @@ MetaScapeServices.getDevices = function (name) {
 };
 
 /**
+ * List services
+ */
+MetaScapeServices.getServices = function () {
+    return Object.keys(MetaScapeServices._services);
+};
+
+/**
  * Determine if a device with a given ID exists
  * @param {String} name Name of service
  * @param {String} id ID of device

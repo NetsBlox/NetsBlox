@@ -16,6 +16,19 @@ const Storage = require('../../storage');
 const ServiceEvents = require('../utils/service-events');
 const MetaScapeServices = require('./metascape-services');
 
+const normalizeServiceName = name => name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+const RESERVED_RPC_NAMES = ['serviceName', 'COMPATIBILITY'];
+const RESERVED_SERVICE_NAMES = fs.readdirSync(path.join(__dirname, '..'))
+    .map(normalizeServiceName);
+const MONGODB_DOC_TOO_LARGE = 'Attempt to write outside buffer bounds';
+
+const isValidServiceName = name => {
+    !RESERVED_SERVICE_NAMES.includes(normalizeServiceName(name));
+};
+
+const isValidRPCName = name => 
+    !(!name || name.startsWith('_') ||  RESERVED_RPC_NAMES.includes(name));
+
 const MetaScape = {};
 MetaScape.serviceName = 'MetaScape';
 
@@ -35,18 +48,12 @@ MetaScape.getDevices = function (name) {
     return MetaScapeServices.getDevices(name);
 };
 
-const normalizeServiceName = name => name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-const RESERVED_RPC_NAMES = ['serviceName', 'COMPATIBILITY'];
-const RESERVED_SERVICE_NAMES = fs.readdirSync(path.join(__dirname, '..'))
-    .map(normalizeServiceName);
-const MONGODB_DOC_TOO_LARGE = 'Attempt to write outside buffer bounds';
-
-const isValidServiceName = name => {
-    !RESERVED_SERVICE_NAMES.includes(normalizeServiceName(name));
+/**
+ * List all MetaScape services registered with the server 
+ */
+MetaScape.getServices = function () {
+    return MetaScapeServices.getServices();
 };
-
-const isValidRPCName = name => 
-    !(!name || name.startsWith('_') ||  RESERVED_RPC_NAMES.includes(name));
 
 /**
  * Create a service using a given definition.
@@ -105,7 +112,7 @@ MetaScape._createService = async function(definition, remote) {
             documentation: 'ID of device to send request to'
         }],
     });
-    
+
     const service = {
         name: name,
         type: 'DeviceService',
