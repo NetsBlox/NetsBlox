@@ -40,6 +40,7 @@ class DeviceService {
     }
 
     async _initializeRPC(methodSpec) {
+        // getDevices and listen have special implementations
         if(methodSpec.name === 'getDevices'){
             this[methodSpec.name] = async function() {
                 return MetaScapeServices.getDevices(this.serviceName);
