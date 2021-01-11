@@ -63,6 +63,21 @@ MetaScapeServices.deviceExists = function(name, id){
     return devices && devices.includes(id);
 };
 
+
+/**
+ * Determine if a service has a given function
+ * @param {String} name Name of service
+ * @param {String} func Name of function
+ * @returns {Boolean} If function exists
+ */
+MetaScapeServices.functionExists = function(name, func){
+    if(!MetaScapeServices.getServices().includes(name)){
+        return false;
+    }
+    
+    return MetaScapeServices.getFunctionInfo(name, func) !== undefined;
+};
+
 /**
  * Get the remote host of a MetaScape device
  * @param {String} name Name of service
@@ -70,6 +85,15 @@ MetaScapeServices.deviceExists = function(name, id){
  */
 MetaScapeServices.getInfo = function(name, id){
     return MetaScapeServices._services[name][id];
+};
+
+/**
+ * Get definition information for a given function
+ * @param {String} name Name of service
+ * @param {String} func Name of function
+ */
+MetaScapeServices.getFunctionInfo = function(name, func) {
+    return MetaScapeServices._serviceDefinitions[name].methods[func];
 };
 
 MetaScapeServices._lastRequestID = 0;
@@ -120,8 +144,8 @@ MetaScapeServices.listen = function(name, client, id){
 MetaScapeServices.call = async function (name, func, id, ...args) {
     id = id.toString();
 
-    // Validate name and ID
-    if(!MetaScapeServices.deviceExists(name, id)){
+    // Validate name, ID, and function
+    if(!MetaScapeServices.deviceExists(name, id) || !MetaScapeServices.functionExists(name, func)){
         return false;
     }
 
@@ -137,7 +161,7 @@ MetaScapeServices.call = async function (name, func, id, ...args) {
     socket.send(JSON.stringify(request), rinfo.port, rinfo.address);
 
     // Determine response type
-    let methodInfo = MetaScapeServices._serviceDefinitions[name].methods[func];
+    let methodInfo = MetaScapeServices.getFunctionInfo(name, func);
     let responseType = methodInfo.returns.type;
 
     // No response required
@@ -183,8 +207,6 @@ socket.on('message', function (message) {
 
         if(clientsByID){
             let clients = clientsByID[parsed.id.toString()];
-            
-            console.dir(clients);
             
             // Send responses
             if(clients){
