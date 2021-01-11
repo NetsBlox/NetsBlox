@@ -34,6 +34,24 @@ MetaScapeServices.updateOrCreateServiceInfo = function (name, definition, id, ri
 };
 
 /**
+ * Remove a device from a service
+ * @param {String} name Name of service
+ * @param {String} id ID of device to remove
+ */
+MetaScapeServices.removeDevice = function(name, id) {
+    if(!MetaScapeServices.deviceExists(name, id)){
+        return;
+    }
+
+    delete MetaScapeServices._services[name][id];
+
+    if(MetaScapeServices._listeningClients[name] !== undefined && MetaScapeServices._listeningClients[name][id] !== undefined){
+        delete MetaScapeServices._listeningClients[name][id];
+    }
+    // TODO: fully remove services with zero devices
+};
+
+/**
  * List IDs of devices associated for a service
  * @param {String} name Name of service to get device IDs for
  */
@@ -75,7 +93,7 @@ MetaScapeServices.functionExists = function(name, func){
         return false;
     }
     
-    return MetaScapeServices.getFunctionInfo(name, func) !== undefined;
+    return func === 'heartbeat' || MetaScapeServices.getFunctionInfo(name, func) !== undefined;
 };
 
 /**
@@ -93,6 +111,10 @@ MetaScapeServices.getInfo = function(name, id){
  * @param {String} func Name of function
  */
 MetaScapeServices.getFunctionInfo = function(name, func) {
+    if(func === 'heartbeat'){
+        return {returns: {type:['boolean']}};
+    }
+
     return MetaScapeServices._serviceDefinitions[name].methods[func];
 };
 
@@ -217,5 +239,21 @@ socket.on('message', function (message) {
         }
     }
 });
+
+// Request heartbeats on interval
+setInterval(async () => {
+    for (const service of MetaScapeServices.getServices()) {
+        MetaScapeServices.getDevices(service).forEach(async (device) => {
+            logger.log(`heartbeat ${service}:${device}`);
+            let alive = await MetaScapeServices.call(service, 'heartbeat', device);
+            
+            // Remove device if it didn't respond
+            if(!alive) {
+                logger.log(`${service}:${device} did not respond to heartbeat, removing from active devices`);
+                MetaScapeServices.removeDevice(service, device);
+            }
+        });
+    }
+}, 60 * 1000);
 
 module.exports = MetaScapeServices;
