@@ -1,6 +1,6 @@
 const utils = require('../../../../assets/utils');
 
-describe.only(utils.suiteName(__filename), function() {
+describe(utils.suiteName(__filename), function() {
     const assert = require('assert').strict;
     const OAuthAPI = utils.reqSrc('./api/core/oauth');
     const Errors = utils.reqSrc('./api/core/errors');
@@ -31,6 +31,13 @@ describe.only(utils.suiteName(__filename), function() {
             assert(authCode);
         });
 
+        it('should throw error if invalid client', async function() {
+            await utils.shouldThrow(
+                () => OAuthAPI.authorizeClient(username, 'invalid', redirectUri),
+                Errors.OAuthClientNotFound,
+            );
+        });
+
         describe('access token', function() {
             let authCode;
             before(async () => {
@@ -40,6 +47,20 @@ describe.only(utils.suiteName(__filename), function() {
             it('should be able to fetch access token', async function() {
                 const token = await OAuthAPI.createToken(authCode, redirectUri);
                 assert(token);
+            });
+
+            it('should throw error if redirect URI doesnt match', async function() {
+                await utils.shouldThrow(
+                    () => OAuthAPI.createToken(authCode, 'http://localhost'),
+                    Errors.InvalidRedirectURL 
+                );
+            });
+
+            it('should throw error if invalid auth code', async function() {
+                await utils.shouldThrow(
+                    () => OAuthAPI.createToken('invalid', redirectUri),
+                    Errors.InvalidAuthorizationCode,
+                );
             });
         });
     });
