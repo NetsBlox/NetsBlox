@@ -6,6 +6,7 @@
  *
  * @service
  */
+const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
 const dgram = require('dgram'),
@@ -137,13 +138,42 @@ IoTScape._createService = async function(definition, remote) {
         author: 'IoTScape',
         createdAt: new Date(),
         methods,
+        version: serviceInfo.version
     };
 
     const storage = IoTScape._getDatabase();
     if (!isValidServiceName(name)) {
         logger.warn(`Service with name "${name}" already exists.`);
     }
-    
+
+    // Handle merge for existing service
+    let existing = await storage.findOne({name});
+
+    if(existing !== null){
+        let methodNames = _.uniq([
+            ...service.methods.map(method => method.name),
+            ...existing.methods.map(method => method.name)
+        ]);
+
+        // Use newer methods if available
+        service.methods = methodNames.map((name) => {
+            const existingMethod = existing.methods.find(method => method.name === name);
+            const incomingMethod = methods.find(method => method.name === name);
+
+            if(existing.version >= service.version){
+                return existingMethod || incomingMethod;
+            } else {
+                return incomingMethod || existingMethod;
+            }
+        });
+
+        // Use max of both versions
+        if(existing.version > service.version){
+            service.version = existing.version;
+        }
+    }
+
+
     const query = {$set: service};
     try {
         await storage.updateOne({name}, query, {upsert: true});
