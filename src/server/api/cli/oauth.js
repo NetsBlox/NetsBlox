@@ -19,6 +19,7 @@ program
     .description('Add new OAuth client application.')
     .action(name => initAndRun(async function() {
         const id = await OAuth.createClient(null, name);
+        /* eslint-disable-next-line */
         console.log(id);
     }));
 
