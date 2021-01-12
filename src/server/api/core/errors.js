@@ -100,9 +100,49 @@ class OAuthClientNotFound extends RequestError {
     }
 }
 
-class InvalidRedirectURL extends RequestError {
+// OAuthErrors are errors reported to the client when
+// performing the OAuth2 flow
+class OAuthFlowError extends RequestError {
+    constructor(name, desc, status=400) {
+        super(desc || name);
+        this.desc = desc;
+        this.errorName = name;
+        this.status = status;
+    }
+}
+
+class InvalidRedirectURL extends OAuthFlowError {
     constructor() {
-        super('Invalid redirect URL. This is likely an issue with the client application.');
+        super(
+            'invalid_grant',
+            'Invalid redirect URI',
+        );
+    }
+}
+
+class NoAuthorizationCode extends OAuthFlowError {
+    constructor() {
+        super(
+            'invalid_request',
+            'No authorization code',
+        );
+    }
+}
+
+class InvalidGrantType extends OAuthFlowError {
+    constructor() {
+        super(
+            'invalid_grant',
+        );
+    }
+}
+
+class InvalidAuthorizationCode extends OAuthFlowError {
+    constructor() {
+        super(
+            'invalid_client',
+            'Invalid authorization code',
+        );
     }
 }
 
@@ -120,5 +160,10 @@ module.exports.LibraryNotFound = LibraryNotFound;
 module.exports.AddressNotFound = AddressNotFound;
 module.exports.LoginRequired = LoginRequired;
 module.exports.OAuthClientNotFound = OAuthClientNotFound;
-module.exports.InvalidRedirectURL = InvalidRedirectURL;
 module.exports.RequestError = RequestError;
+
+module.exports.OAuthFlowError = OAuthFlowError;
+module.exports.InvalidRedirectURL = InvalidRedirectURL;
+module.exports.InvalidAuthorizationCode = InvalidAuthorizationCode;
+module.exports.NoAuthorizationCode = NoAuthorizationCode;
+module.exports.InvalidGrantType = InvalidGrantType;

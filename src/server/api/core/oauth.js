@@ -1,5 +1,5 @@
 const Logger = require('../../logger');
-const {OAuthClientNotFound} = require('./errors');
+const {OAuthClientNotFound, InvalidRedirectURL, InvalidAuthorizationCode} = require('./errors');
 const {ObjectId} = require('mongodb');
 const OAuthStorage = require('../../storage/oauth');
 
@@ -16,11 +16,21 @@ class OAuth {
     }
 
     async getAuthData(authCode) {
-        const authData = await OAuthStorage.codes.findOne({_id: ObjectId(authCode)});
+        const authData = await OAuthStorage.codes.findOne({_id: getObjectId(authCode, InvalidAuthorizationCode)});
         return authData;
     }
 
-    async createToken(username, clientId) {
+    async createToken(authCode, redirectUri) {
+        const authData = await this.getAuthData(authCode);
+        if (!authData) {
+            throw new InvalidAuthorizationCode();
+        }
+
+        const {username, clientId} = authData;
+        if (authData.redirectUri !== redirectUri) {
+            throw new InvalidRedirectURL();
+        }
+
         const result = await OAuthStorage.tokens.insertOne({
             clientId,
             username,
@@ -42,7 +52,7 @@ class OAuth {
     }
 
     async getClient(id) {
-        const client = await OAuthStorage.clients.findOne({_id: ObjectId(id)});
+        const client = await OAuthStorage.clients.findOne({_id: getObjectId(id)});
         if (!client) {
             throw new OAuthClientNotFound();
         }
@@ -53,14 +63,19 @@ class OAuth {
         return await OAuthStorage.clients.find({}).toArray();
     }
 
-    createAccessToken() {
-    }
-
-    async _verifyClientID(id, secret) {
-        const client = await OAuthStorage.clients.findOne({id, secret});
+    async _verifyClientID(id) {
+        const client = await OAuthStorage.clients.findOne({_id: getObjectId(id)});
         if (!client) {
             throw new OAuthClientNotFound();
         }
+    }
+}
+
+function getObjectId(id, ErrorClass=OAuthClientNotFound) {
+    try {
+        return ObjectId(id);
+    } catch (err) {
+        throw new ErrorClass();
     }
 }
 

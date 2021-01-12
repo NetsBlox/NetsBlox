@@ -1,5 +1,6 @@
 const OAuth = require('../../core/oauth');
-const {LoginRequired, InvalidRedirectURL} = require('../../core/errors');
+const {LoginRequired, InvalidRedirectURL, OAuthFlowError} = require('../../core/errors');
+const {NoAuthorizationCode, InvalidGrantType} = require('../../core/errors');
 const OAuthRouter = require('express').Router();
 const {handleErrors, setUsername} = require('../utils');
 const {SERVER_PROTOCOL, LOGIN_URL} = process.env;
@@ -7,7 +8,6 @@ const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
 const AuthorizeTemplate = _.template(fs.readFileSync(path.join(__dirname, 'index.html.ejs'), 'utf8'));
-
 
 // TODO: Add endpoint for authorizing the application
 const DEFAULT_SCOPES = [
@@ -69,46 +69,52 @@ OAuthRouter.route('/code')
     .options((req, res) => res.end());
 
 OAuthRouter.route('/token')
-    .post(handleErrors(async (req, res) => {
+    .post(handleErrors(handleOAuthErrors(async (req, res) => {
+        validateTokenRequest(req);
+
         const authCode = req.body.code;
-        if (!authCode)  {
-            const error = 'invalid_request';
-            const error_description = 'No authorization code';
-            return res.status(400).json({error, error_description});
-        }
-
-        if (!req.body.redirect_uri) {
-            const error = 'invalid_grant';
-            const error_description = 'Invalid redirect URI';
-            return res.status(400).json({error, error_description});
-        }
-
-        if (req.body.grant_type !== 'authorization_code') {
-            const error = 'invalid_grant';
-            return res.status(400).json({error});
-        }
-
-        const authData = await OAuth.getAuthData(authCode);
-        if (!authData) {
-            const error = 'invalid_client';
-            const error_description = 'Invalid authorization code';
-            return res.status(401).json({error, error_description});
-        }
-
-        const {username, clientId, redirectUri} = authData;
-        if (redirectUri !== req.body.redirect_uri) {
-            const error = 'invalid_grant';
-            const error_description = 'Invalid redirect URI';
-            return res.status(400).json({error, error_description});
-        }
-
-        const token = await OAuth.createToken(username, clientId);
+        const token = await OAuth.createToken(authCode, req.body.redirect_uri);
         res.set('Cache-Control', 'no-store');
         res.set('Pragma', 'no-cache');
         res.json({
             access_token: token,
         });
-    }))
+    })))
     .options((req, res) => res.end());
+
+function validateTokenRequest(req) {
+    if (!req.body.code)  {
+        throw new NoAuthorizationCode();
+    }
+
+    if (!req.body.redirect_uri) {
+        throw new InvalidRedirectURL();
+    }
+
+    if (req.body.grant_type !== 'authorization_code') {
+        throw new InvalidGrantType();
+    }
+}
+
+function handleOAuthErrors(fn) {
+    return async (req, res) => {
+        try {
+            await fn(req, res);
+        } catch (err) {
+            if (err instanceof OAuthFlowError) {
+                res.status(err.status);
+                const body = {
+                    error: err.errorName,
+                };
+                if (err.desc) {
+                    body.error_description = err.desc;
+                }
+                res.json(body);
+            } else {
+                throw err;
+            }
+        }
+    };
+}
 
 module.exports = OAuthRouter;
