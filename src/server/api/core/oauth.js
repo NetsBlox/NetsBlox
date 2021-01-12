@@ -15,13 +15,8 @@ class OAuth {
         return result.insertedId;
     }
 
-    async getAuthData(authCode) {
-        const authData = await OAuthStorage.codes.findOne({_id: getObjectId(authCode, InvalidAuthorizationCode)});
-        return authData;
-    }
-
     async createToken(authCode, redirectUri) {
-        const authData = await this.getAuthData(authCode);
+        const authData = await this._getAuthData(authCode);
         if (!authData) {
             throw new InvalidAuthorizationCode();
         }
@@ -68,6 +63,11 @@ class OAuth {
         if (!client) {
             throw new OAuthClientNotFound();
         }
+    }
+
+    async _getAuthData(authCode) {
+        const authData = await OAuthStorage.codes.findOne({_id: getObjectId(authCode, InvalidAuthorizationCode)});
+        return authData;
     }
 }
 
