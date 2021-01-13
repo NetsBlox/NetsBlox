@@ -169,69 +169,6 @@ SalIO.prototype.listen = async function (sensors) {
 };
 
 /**
- * Removes all the registered listeners for the given sensor.
- * @param {string} sensor name of the sensor (matches at the end)
- * @returns {boolean} Always returns true (success).
- */
-SalIO.prototype.removeAllEvents = async function (sensor) {
-    const _sensor = await this._getSensor(sensor);
-    for (const id in _sensor.customEvents) {
-        const customEvent = _sensor.customEvents[id];
-        for (const name in customEvent) {
-            const listeners = customEvent[name];
-            delete listeners[this.socket.clientId];
-        }
-    }
-    return true;
-};
-/**
- * Removes a specific event listener that was previously registerd.
- * If the specified event id or name was not previously registered, does nothing.
- * @param {string} sensor name of the sensor (matches at the end)
- * @param {BoundedNumber<0>} id numeric event id
- * @param {string} event name of the mapped event to remove
- * @returns {boolean} Always returns true (success).
- */
-SalIO.prototype.removeEvent = async function (sensor, id, event) {
-    const _sensor = await this._getSensor(sensor);
-    const customEvent = _sensor.customEvents[id];
-    if (customEvent !== undefined) {
-        const listeners = customEvent[event];
-        if (listeners !== undefined) {
-            delete listeners[this.socket.clientId];
-        }
-    }
-    return true;
-};
-/**
- * Adds a custom mapping from a numeric event id to a custom message type.
- * @param {string} sensor name of the sensor (matches at the end)
- * @param {string} password current password for the sensor
- * @param {BoundedNumber<0>} id numeric event id
- * @param {string} event name of the mapped event to add
- * @returns {boolean} True on success, otherwise throws an error.
- */
-SalIO.prototype.addEvent = async function (sensor, password, id, event) {
-    const _sensor = await this._getSensor(sensor);
-    if (!_sensor) throw new Error('failed to connect to sensor');
-    await _sensor.authenticate(_sensor, [password]); // throws on failure - we want this
-
-    let customEvent = _sensor.customEvents[id];
-    if (customEvent == undefined) {
-        customEvent = {};
-        _sensor.customEvents[id] = customEvent;
-    }
-    let listeners = customEvent[event];
-    if (listeners === undefined) {
-        listeners = {};
-        customEvent[event] = listeners;
-    }
-    listeners[this.socket.clientId] = this.socket;
-
-    return true;
-};
-
-/**
  * Returns the addresses of all authorized sensors.
  * @returns {array}
  */
@@ -309,11 +246,12 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} height Height of the button (percentage).
      * @param {Number=} color Color code of the button itself (defaults to light blue).
      * @param {Number=} textColor Color code of the button text (if any) (defaults to white).
-     * @param {Number} id Event ID to raise when the button is pressed
+     * @param {String} id Name of the button.
+     * @param {String} event Name of the event to fire when the button is pressed.
      * @param {string} text The text to display on the button
      * @returns {boolean} True if the action is successful, false otherwise.
      */
-    SalIO.prototype.addButton = function (sensor, password, x, y, width, height, color=this.getColor(66, 135, 245), textColor=this.getColor(255, 255, 255), id, text) {
+    SalIO.prototype.addButton = function (sensor, password, x, y, width, height, color=this.getColor(66, 135, 245), textColor=this.getColor(255, 255, 255), id, event, text) {
         arguments[6] = color;
         arguments[7] = textColor;
         return this._passToSensor('addButton', arguments);
@@ -327,11 +265,12 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
      * @param {Number=} textColor Color code of the text (if any) (defaults to black).
      * @param {bool=} state Initial check state of the checkbox (defaults to false).
-     * @param {Number} id Event ID to raise when the checkbox is pressed (will also send a 'state' value in the message).
+     * @param {String} id Name of the checkbox.
+     * @param {String} event Name of the event to fire when the button is pressed.
      * @param {string} text The text to display next to the checkbox
      * @returns {boolean} True if the action is successful, false otherwise.
      */
-    SalIO.prototype.addCheckbox = function (sensor, password, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, text) {
+    SalIO.prototype.addCheckbox = function (sensor, password, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, event, text) {
         arguments[4] = checkColor;
         arguments[5] = textColor;
         return this._passToSensor('addCheckbox', arguments);
@@ -345,11 +284,12 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
      * @param {Number=} textColor Color code of the text (if any) (defaults to black).
      * @param {bool=} state Initial check state of the toggle switch (defaults to false).
-     * @param {Number} id Event ID to raise when the toggle switch is pressed (will also send a 'state' value in the message).
+     * @param {String} id name of the toggle switch
+     * @param {String} event name of the event to raise for click events
      * @param {string} text The text to display next to the toggle switch
      * @returns {boolean} True if the action is successful, false otherwise.
      */
-    SalIO.prototype.addToggleswitch = function (sensor, password, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, text) {
+    SalIO.prototype.addToggleswitch = function (sensor, password, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, event, text) {
         arguments[4] = checkColor;
         arguments[5] = textColor;
         return this._passToSensor('addToggleswitch', arguments);
@@ -365,12 +305,13 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
      * @param {Number=} textColor Color code of the text (if any) (defaults to black).
      * @param {bool=} state Initial check state of the radio button (defaults to false) - All false in a group is OK, but you should avoid setting multiple explicitly to true.
-     * @param {Number} id Event ID to raise when the checkbox is pressed (will also send a 'state' value in the message).
-     * @param {Number} group Group number to use for for selection logic.
+     * @param {String} id name of the radio button
+     * @param {String} group name of the group (only one radio button in each group can be selected by the user)
+     * @param {String} event name of the event to raise for click events
      * @param {string} text The text to display next to the checkbox
      * @returns {boolean} True if the action is successful, false otherwise.
      */
-    SalIO.prototype.addRadioButton = function (sensor, password, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, group, text) {
+    SalIO.prototype.addRadioButton = function (sensor, password, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, group, event, text) {
         arguments[4] = checkColor;
         arguments[5] = textColor;
         return this._passToSensor('addRadioButton', arguments);
@@ -383,48 +324,34 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
      * @param {Number=} textColor Color code of the button text (if any) (defaults to black).
+     * @param {String} id Name of the label
      * @param {string} text The text to display on the button
      * @returns {boolean} True if the action is successful, false otherwise.
      */
-    SalIO.prototype.addLabel = function (sensor, password, x, y, textColor=this.getColor(0, 0, 0), text) {
+    SalIO.prototype.addLabel = function (sensor, password, x, y, textColor=this.getColor(0, 0, 0), id, text) {
         arguments[4] = textColor;
         return this._passToSensor('addLabel', arguments);
     };
     /**
-     * Get the number of active action listeners for events from the given device.
-     * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current password for the sensor
-     * @returns {Number} Number of active action listioners
-     */
-    SalIO.prototype.getListenersCount = function (sensor, password) {
-        return this._passToSensor('getListenersCount', arguments);
-    };
-    /**
-     * Removes all listeners for events coming from the given device.
+     * Begin listening for GUI events such as button presses.
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current password for the sensor
      * @returns {boolean} True if the action is successful, false otherwise.
      */
-    SalIO.prototype.clearListeners = function (sensor, password) {
-        return this._passToSensor('clearListeners', arguments);
-    };
-    /**
-     * Adds a new listener for an event coming from the given device.
-     * @param {string} sensor name of the sensor (matches at the end)
-     * @param {string} password current password for the sensor
-     * @param {Number} id Event ID to listen for
-     * @param {string} listener name of the listener event (message type) to raise
-     * @returns {boolean} True if the action is successful, false otherwise.
-     */
-    SalIO.prototype.addListener = function (sensor, password, id, listener) {
-        return this._passToSensor('addListener', arguments);
+    SalIO.prototype.guiListen = async function (sensor, password) {
+        const _sensor = await this._getSensor(sensor);
+        if (!_sensor) throw new Error('failed to connect to sensor');
+        await _sensor.authenticate(_sensor, [password]); // throws on failure - we want this
+
+        _sensor.guiListeners[this.socket.clientId] = this.socket;
+        return true;
     };
 
     /**
      * Gets the toggle state of any toggleable custom control.
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current password for the sensor
-     * @param {Number} id numeric id of the toggleable control to read
+     * @param {String} id name of the toggleable control to read
      * @returns {boolean} True or False, depending on the toggle state
      */
     SalIO.prototype.getToggleState = function (sensor, password, id) {

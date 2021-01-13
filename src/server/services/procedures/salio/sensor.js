@@ -87,7 +87,8 @@ var Sensor = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this._logger = getRPCLogger(`salio:${mac_addr}`);
     this.server = aServer; // a handle to the udp server for communication with the sensor
 
-    this.customEvents = {}; // Map<ID, Map<Name, Map<ClientID, Socket>>>
+    this.guiIdToEvent = {}; // Map<GUI ID, Event ID>
+    this.guiListeners = {}; // Map<ClientID, Socket>
 };
 
 Sensor.prototype.setTotalRate = function (rate) {
@@ -267,7 +268,11 @@ Sensor.prototype.clearControls = async function (sensor, args) {
 Sensor.prototype.addButton = async function (sensor, args) {
     this._logger.log('add button ' + this.mac_addr);
     const response = this.receiveFromSensor('addbutton');
-    const message = Buffer.alloc(37);
+
+    const id = Buffer.from(args[7], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const message = Buffer.alloc(34);
     message.write('B', 0, 1);
     message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     message.writeFloatBE(args[1], 9);
@@ -276,26 +281,35 @@ Sensor.prototype.addButton = async function (sensor, args) {
     message.writeFloatBE(args[4], 21);
     message.writeInt32BE(args[5], 25);
     message.writeInt32BE(args[6], 29);
-    message.writeInt32BE(args[7], 33);
-    const text = Buffer.from(args[8], 'utf8');
-    this.sendToSensor(Buffer.concat([message, text]));
+    message[33] = id.length;
+
+    const text = Buffer.from(args[9], 'utf8');
+    this.sendToSensor(Buffer.concat([message, id, text]));
     
     const err = (await response).err;
     if (err === undefined) throw new Error('failed add button or failed auth');
     if (err !== null) throw new Error(err);
+
+    sensor.guiIdToEvent[args[7]] = args[8];
     return true;
 };
 Sensor.prototype.addLabel = async function (sensor, args) {
     this._logger.log('add label ' + this.mac_addr);
     const response = this.receiveFromSensor('addlabel');
-    const message = Buffer.alloc(21);
+
+    const id = Buffer.from(args[4], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const message = Buffer.alloc(22);
     message.write('g', 0, 1);
     message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     message.writeFloatBE(args[1], 9);
     message.writeFloatBE(args[2], 13);
     message.writeInt32BE(args[3], 17);
-    const text = Buffer.from(args[4], 'utf8');
-    this.sendToSensor(Buffer.concat([message, text]));
+    message[21] = id.length;
+
+    const text = Buffer.from(args[5], 'utf8');
+    this.sendToSensor(Buffer.concat([message, id, text]));
     
     const err = (await response).err;
     if (err === undefined) throw new Error('failed add button or failed auth');
@@ -305,7 +319,11 @@ Sensor.prototype.addLabel = async function (sensor, args) {
 Sensor.prototype.addCheckboxWithStyle = async function (sensor, args, style) {
     this._logger.log('add checkbox ' + this.mac_addr);
     const response = this.receiveFromSensor('addcheckbox');
-    const message = Buffer.alloc(31);
+
+    const id = Buffer.from(args[6], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const message = Buffer.alloc(28);
     message.write('Z', 0, 1);
     message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     message.writeFloatBE(args[1], 9);
@@ -313,14 +331,17 @@ Sensor.prototype.addCheckboxWithStyle = async function (sensor, args, style) {
     message.writeInt32BE(args[3], 17);
     message.writeInt32BE(args[4], 21);
     message[25] = args[5] ? 1 : 0;
-    message.writeInt32BE(args[6], 26);
-    message[30] = style;
-    const text = Buffer.from(args[7], 'utf8');
-    this.sendToSensor(Buffer.concat([message, text]));
+    message[26] = style;
+    message[27] = id.length;
+
+    const text = Buffer.from(args[8], 'utf8');
+    this.sendToSensor(Buffer.concat([message, id, text]));
     
     const err = (await response).err;
     if (err === undefined) throw new Error('failed add button or failed auth');
     if (err !== null) throw new Error(err);
+
+    sensor.guiIdToEvent[args[6]] = args[7];
     return true;
 };
 Sensor.prototype.addCheckbox = async function (sensor, args) {
@@ -332,7 +353,16 @@ Sensor.prototype.addToggleswitch = async function (sensor, args) {
 Sensor.prototype.addRadioButton = async function (sensor, args) {
     this._logger.log('add radio button ' + this.mac_addr);
     const response = this.receiveFromSensor('addradiobutton');
-    const message = Buffer.alloc(34);
+
+    const id = Buffer.from(args[6], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const group = Buffer.from(args[7], 'utf8');
+    if (group.length > 255) throw new Error('group too long');
+    const groupPrefix = Buffer.alloc(1);
+    groupPrefix[0] = group.length;
+
+    const message = Buffer.alloc(27);
     message.write('y', 0, 1);
     message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
     message.writeFloatBE(args[1], 9);
@@ -340,25 +370,31 @@ Sensor.prototype.addRadioButton = async function (sensor, args) {
     message.writeInt32BE(args[3], 17);
     message.writeInt32BE(args[4], 21);
     message[25] = args[5] ? 1 : 0;
-    message.writeInt32BE(args[6], 26);
-    message.writeInt32BE(args[7], 30);
-    const text = Buffer.from(args[8], 'utf8');
-    this.sendToSensor(Buffer.concat([message, text]));
+    message[26] = id.length;
+
+    const text = Buffer.from(args[9], 'utf8');
+    this.sendToSensor(Buffer.concat([message, id, groupPrefix, group, text]));
     
     const err = (await response).err;
     if (err === undefined) throw new Error('failed add radio button or failed auth');
     if (err !== null) throw new Error(err);
+
+    sensor.guiIdToEvent[args[6]] = args[8];
     return true;
 };
 
 Sensor.prototype.getToggleState = async function (sensor, args) {
     this._logger.log('get toggle state ' + this.mac_addr);
     const response = this.receiveFromSensor('gettogglestate');
-    const message = Buffer.alloc(13);
+    
+    const id = Buffer.from(args[1], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const message = Buffer.alloc(9);
     message.write('W', 0, 1);
     message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    message.writeInt32BE(args[1], 9);
-    this.sendToSensor(message);
+    
+    this.sendToSensor(Buffer.concat([message, id]));
     
     const state = (await response).state;
     if (state === undefined) throw new Error('toggleable with given id did not exist or failed auth');
@@ -584,19 +620,15 @@ Sensor.prototype.sendToClient = function (msgType, content) {
 };
 
 Sensor.prototype._fireRawCustomEvent = function(id, content) {
-    const customEvent = this.customEvents[id];
-    if (customEvent !== undefined) {
-        for (const name in customEvent) {
-            const listeners = customEvent[name];
-            for (const clientID in listeners) {
-                const socket = listeners[clientID];
-                try {
-                    socket.sendMessage(name, content);
-                }
-                catch (ex) {
-                    this._logger.log(ex);
-                }
-            }
+    const event = this.guiIdToEvent[id];
+    if (event === undefined) return;
+    for (const listener in this.guiListeners) {
+        const socket = this.guiListeners[listener];
+        try {
+            socket.sendMessage(event, content);
+        }
+        catch (ex) {
+            this._logger.log(ex);
         }
     }
 };
@@ -656,6 +688,7 @@ Sensor.prototype.onMessage = function (message) {
         if (message.length === 12) switch (message[11]) {
             case 0: err = null; break;
             case 1: err = 'too many controls'; break;
+            case 2: err = 'item with id already existed'; break;
             default: err = 'unknown error'; break;
         }
         this.sendToClient('addlabel', { err });
@@ -665,12 +698,13 @@ Sensor.prototype.onMessage = function (message) {
         if (message.length === 12) switch (message[11]) {
             case 0: err = null; break;
             case 1: err = 'too many controls'; break;
+            case 2: err = 'item with id already existed'; break;
             default: err = 'unknown error'; break;
         }
         this.sendToClient('addbutton', { err });
     }
-    else if (command === 'b' && message.length === 15) {
-        const id = message.readUInt32BE(11);
+    else if (command === 'b' && message.length >= 11) {
+        const id = message.toString('utf8', 11);
         this._fireRawCustomEvent(id, {id});
     }
     else if (command === 'Z') {
@@ -678,6 +712,7 @@ Sensor.prototype.onMessage = function (message) {
         if (message.length === 12) switch (message[11]) {
             case 0: err = null; break;
             case 1: err = 'too many controls'; break;
+            case 2: err = 'item with id already existed'; break;
             default: err = 'unknown error'; break;
         }
         this.sendToClient('addcheckbox', { err });
@@ -687,13 +722,14 @@ Sensor.prototype.onMessage = function (message) {
         if (message.length === 12) switch (message[11]) {
             case 0: err = null; break;
             case 1: err = 'too many controls'; break;
+            case 2: err = 'item with id already existed'; break;
             default: err = 'unknown error'; break;
         }
         this.sendToClient('addradiobutton', { err });
     }
-    else if (command === 'z' && message.length === 16) {
-        const id = message.readUInt32BE(11);
-        const state = message[15] !== 0;
+    else if (command === 'z' && message.length >= 12) {
+        const state = message[11] !== 0;
+        const id = message.toString('utf8', 12, message.length);
         this._fireRawCustomEvent(id, { id, state });
     }
     else if (command === 'W') {
