@@ -35,4 +35,5 @@ program
     .command('add-key <username> <key> <value>', 'set an API key for a given user')
     .command('del-key <username> <key>', 'delete an API key for a given user')
     .command('services-hosts', 'manage custom services hosts')
+    .command('oauth', 'manage OAuth clients')
     .parse(process.argv);
