@@ -1,8 +1,7 @@
-/*globals describe,it,before,beforeEach,after*/
 'use strict';
 
-describe('Server Tests', function() {
-    const utils = require('../../assets/utils');
+const utils = require('../../assets/utils');
+describe(utils.suiteName(__filename), function() {
     var supertest = require('supertest'),
         assert = require('assert'),
         port = 8493,

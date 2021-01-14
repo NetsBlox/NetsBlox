@@ -1,6 +1,6 @@
-describe('data-service', function() {
+const utils = require('../../../../assets/utils');
+describe(utils.suiteName(__filename), function() {
     const assert = require('assert').strict;
-    const utils = require('../../../../assets/utils');
     const CommunityService = utils.reqSrc('services/community');
     const ServiceSpec = require('./data-service.json');
     const service = CommunityService.new(ServiceSpec, false);
