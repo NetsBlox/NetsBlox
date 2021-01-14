@@ -1,6 +1,7 @@
-describe('projects', function() {
+const utils = require('../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     this.timeout(5000);
-    const utils = require('../../../assets/utils');
     const Q = require('q');
     const assert = require('assert');
     const Projects = utils.reqSrc('storage/projects');

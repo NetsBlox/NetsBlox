@@ -1,6 +1,6 @@
-describe('ocean-data', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
 
+describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('OceanData', [
         ['getOxygenRatio', ['startYear', 'endYear']],
         ['getDeepOceanTemp', ['startYear', 'endYear']],

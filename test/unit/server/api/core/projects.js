@@ -1,6 +1,6 @@
-describe('projects', function() {
+const utils = require('../../../../assets/utils');
+describe(utils.suiteName(__filename), function() {
     const assert = require('assert');
-    const utils = require('../../../../assets/utils');
     const ProjectsAPI = utils.reqSrc('./api/core/projects');
     const Errors = utils.reqSrc('./api/core/errors');
     const SUtils = utils.reqSrc('./server-utils');

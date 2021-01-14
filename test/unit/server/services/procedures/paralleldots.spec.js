@@ -1,6 +1,6 @@
-describe('ParallelDots', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
 
+describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('ParallelDots', [
         ['getSentiment', ['text']],
         ['getSimilarity', ['text1', 'text2']],

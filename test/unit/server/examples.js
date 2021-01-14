@@ -1,5 +1,6 @@
 // test if the services are being extracted/identified correctly.
-describe('examples', function() {
+const utils = require('../../assets/utils');
+describe(utils.suiteName(__filename), function() {
     const assert = require('assert');
     const ROOT_DIR = '../../../';
     const EXAMPLES = require(ROOT_DIR + 'src/server/examples');

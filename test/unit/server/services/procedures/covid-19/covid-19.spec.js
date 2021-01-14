@@ -1,6 +1,6 @@
-describe('COVID-19', function() {
-    const utils = require('../../../../../assets/utils');
+const utils = require('../../../../../assets/utils');
 
+describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('COVID-19', [
         ['getLocationsWithData'],
         ['getLocationCoordinates', ['country', 'state', 'city']],

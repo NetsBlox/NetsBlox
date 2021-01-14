@@ -1,4 +1,6 @@
-describe('blob', function() {
+const utils = require('../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const sha = require('../../../../../src/common/sha512').hex_sha512;
     const blob = require('../../../../../src/server/storage/blob');
     const assert = require('assert');

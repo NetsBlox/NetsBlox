@@ -1,7 +1,7 @@
-describe('client (ws)', function() {
-    var ROOT_DIR = '../../../',
-        utils = require(ROOT_DIR + 'test/assets/utils'),
-        sUtils = utils.reqSrc('server-utils'),
+const ROOT_DIR = '../../../';
+const utils = require(ROOT_DIR + 'test/assets/utils');
+describe(utils.suiteName(__filename), function() {
+    let sUtils = utils.reqSrc('server-utils'),
         Client = utils.reqSrc('client'),
         Logger = utils.reqSrc('logger'),
         Constants = utils.reqSrc('../common/constants'),

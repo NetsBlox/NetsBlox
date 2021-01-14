@@ -1,6 +1,6 @@
-describe('star-map', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
 
+describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('StarMap', [
         ['arcHourMinSecToDeg', ['arcHour', 'arcMin', 'arcSec']],
         ['findObject', ['name']],

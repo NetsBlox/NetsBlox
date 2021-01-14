@@ -1,5 +1,6 @@
-describe('BaseX', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const RPCMock = require('../../../../assets/mock-service');
     const assert = require('assert').strict;
     const mockService = new RPCMock(utils.reqSrc('services/procedures/base-x/base-x'));
