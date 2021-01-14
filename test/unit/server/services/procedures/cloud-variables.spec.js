@@ -1,8 +1,9 @@
-describe('cloud-variables', function() {
+const utils = require('../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     this.timeout(20000);
 
     const Q = require('q');
-    const utils = require('../../../../assets/utils');
     const CloudVariables = utils.reqSrc('services/procedures/cloud-variables/cloud-variables');
     const RPCMock = require('../../../../assets/mock-service');
     const cloudvariables = new RPCMock(CloudVariables);

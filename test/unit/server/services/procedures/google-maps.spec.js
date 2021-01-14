@@ -1,5 +1,6 @@
-describe('googlemaps', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     var Googlemaps = utils.reqSrc('services/procedures/google-maps/google-maps'),
         RPCMock = require('../../../../assets/mock-service'),
         assert = require('assert'),

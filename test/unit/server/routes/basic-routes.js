@@ -1,5 +1,6 @@
-describe('basic-routes', function() {
-    const utils = require('../../../assets/utils');
+const utils = require('../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const hash = require('../../../../src/common/sha512').hex_sha512;
     const assert = require('assert');
     const supertest = require('supertest');

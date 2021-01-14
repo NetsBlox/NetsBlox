@@ -1,5 +1,6 @@
-describe('Storage', function() {
-    const utils = require('../../../assets/utils');
+const utils = require('../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const Storage = utils.reqSrc('storage/storage');
     const assert = require('assert');
 

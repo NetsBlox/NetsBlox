@@ -1,6 +1,6 @@
-describe('Pixabay', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
 
+describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('Pixabay', [
         ['getImage', ['url']],
         ['searchAll', ['keywords', 'maxHeight', 'minHeight']],

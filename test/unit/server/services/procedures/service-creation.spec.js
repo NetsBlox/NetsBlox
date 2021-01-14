@@ -1,5 +1,6 @@
-describe('service-creation', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const ServiceCreation = utils.reqSrc('services/procedures/service-creation/service-creation');
     const RPCMock = require('../../../../assets/mock-service');
     const service = new RPCMock(ServiceCreation);

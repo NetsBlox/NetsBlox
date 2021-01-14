@@ -1,5 +1,6 @@
-describe('publicroles', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const Projects = utils.reqSrc('storage/projects');
     const assert = require('assert');
     const PublicRoles = utils.reqSrc('services/procedures/public-roles/public-roles');

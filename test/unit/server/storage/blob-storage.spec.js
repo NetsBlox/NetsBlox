@@ -1,4 +1,6 @@
-describe.skip('blob-storage', function() {
+const utils = require('../../../assets/utils');
+
+describe.skip(utils.suiteName(__filename), function() {
     const blob = require('../../../../src/server/storage/blob'),
         assert = require('assert'),
         path = require('path'),
