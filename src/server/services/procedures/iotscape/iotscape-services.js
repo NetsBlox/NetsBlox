@@ -170,8 +170,10 @@ IoTScapeServices.call = async function (name, func, id, ...args) {
     const reqid = IoTScapeServices._generateRequestID();
     let request = {
         id: reqid,
+        service: name,
+        device: id,
         function: func, 
-        params: [...args]
+        params: [...args],
     };
     
     let rinfo = IoTScapeServices.getInfo(name, id);
