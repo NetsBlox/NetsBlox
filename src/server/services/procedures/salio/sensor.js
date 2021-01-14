@@ -12,6 +12,7 @@ const { definedOrThrow } = require('./common');
 // B - add custom button control
 // b - button press event
 // C - clear custom controls
+// c - remove custom control
 // D - image snapshot (TCP)
 // G - gravity
 // g - add custom label control
@@ -25,6 +26,8 @@ const { definedOrThrow } = require('./common');
 // R - rotation vector
 // r - game rotation vector
 // S - step counter
+// T - add custom text field
+// t - text field content
 // W - get toggle state
 // X - location
 // Y - gyroscope
@@ -265,6 +268,20 @@ Sensor.prototype.clearControls = async function (sensor, args) {
     this.sendToSensor(message);
     return definedOrThrow((await response).res, 'failed clear or failed auth');
 };
+Sensor.prototype.removeControl = async function (sensor, args) {
+    this._logger.log('remove control ' + this.mac_addr);
+    const response = this.receiveFromSensor('removecontrol');
+
+    const id = Buffer.from(args[1], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const message = Buffer.alloc(9);
+    message.write('c', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    this.sendToSensor(Buffer.concat([message, id]));
+
+    return definedOrThrow((await response).res, 'failed clear or failed auth');
+};
 Sensor.prototype.addButton = async function (sensor, args) {
     this._logger.log('add button ' + this.mac_addr);
     const response = this.receiveFromSensor('addbutton');
@@ -288,6 +305,34 @@ Sensor.prototype.addButton = async function (sensor, args) {
     
     const err = (await response).err;
     if (err === undefined) throw new Error('failed add button or failed auth');
+    if (err !== null) throw new Error(err);
+
+    sensor.guiIdToEvent[args[7]] = args[8];
+    return true;
+};
+Sensor.prototype.addTextField = async function (sensor, args) {
+    this._logger.log('add text field ' + this.mac_addr);
+    const response = this.receiveFromSensor('addtextfield');
+
+    const id = Buffer.from(args[7], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const message = Buffer.alloc(34);
+    message.write('T', 0, 1);
+    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeFloatBE(args[1], 9);
+    message.writeFloatBE(args[2], 13);
+    message.writeFloatBE(args[3], 17);
+    message.writeFloatBE(args[4], 21);
+    message.writeInt32BE(args[5], 25);
+    message.writeInt32BE(args[6], 29);
+    message[33] = id.length;
+
+    const text = Buffer.from(args[9], 'utf8');
+    this.sendToSensor(Buffer.concat([message, id, text]));
+    
+    const err = (await response).err;
+    if (err === undefined) throw new Error('failed add text field or failed auth');
     if (err !== null) throw new Error(err);
 
     sensor.guiIdToEvent[args[7]] = args[8];
@@ -644,7 +689,6 @@ Sensor.prototype.onMessage = function (message) {
     var oldTimestamp = this.timestamp;
     this.timestamp = message.readUInt32LE(6);
     var command = message.toString('ascii', 10, 11);
-    var state;
 
     if (command === 'I' && message.length === 11) {
         if (this.timestamp < oldTimestamp) {
@@ -654,34 +698,14 @@ Sensor.prototype.onMessage = function (message) {
             this.resetRates();
         }
     }
-    else if (command === 'P' && message.length === 12) {
-        state = message.readUInt8(11) == 0;
-        if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
-            this.sendToClient('button', {
-                pressed: state
-            });
-        }
-        if (SALIO_MODE === 'security' || SALIO_MODE === 'both') {
-            if (state) {
-                this.buttonDownTime = new Date().getTime();
-                setTimeout(function (sensor, pressed) {
-                    if (sensor.buttonDownTime === pressed) {
-                        sensor.resetSensor();
-                    }
-                }, 1000, this, this.buttonDownTime);
-            } else {
-                if (new Date().getTime() - this.buttonDownTime < 1000) {
-                    this.randomEncryption();
-                }
-                this.buttonDownTime = 0;
-            }
-        }
-    }
     else if (command === 'a') {
         this.sendToClient('auth', message.length === 11 ? { res: true } : {});
     }
     else if (command === 'C') {
         this.sendToClient('clearcontrols', message.length === 11 ? { res: true } : {});
+    }
+    else if (command === 'c') {
+        this.sendToClient('removecontrol', message.length === 11 ? { res: true } : {});
     }
     else if (command === 'g') {
         let err = undefined;
@@ -706,6 +730,24 @@ Sensor.prototype.onMessage = function (message) {
     else if (command === 'b' && message.length >= 11) {
         const id = message.toString('utf8', 11);
         this._fireRawCustomEvent(id, {id});
+    }
+    else if (command === 'T') {
+        let err = undefined;
+        if (message.length === 12) switch (message[11]) {
+            case 0: err = null; break;
+            case 1: err = 'too many controls'; break;
+            case 2: err = 'item with id already existed'; break;
+            default: err = 'unknown error'; break;
+        }
+        this.sendToClient('addtextfield', { err });
+    }
+    else if (command === 't' && message.length >= 12) {
+        const idlen = message[11] & 0xff;
+        if (message.length >= 12 + idlen) {
+            const id = message.toString('utf8', 12, 12 + idlen);
+            const text = message.toString('utf8', 12 + idlen);
+            this._fireRawCustomEvent(id, {id, text});
+        }
     }
     else if (command === 'Z') {
         let err = undefined;
@@ -852,9 +894,21 @@ Sensor.prototype.onCommand = function(command) {
             }
         },
         {
+            regex: /^remove control$/,
+            handler: () => {
+                return this.removeControl();
+            }
+        },
+        {
             regex: /^add button$/,
             handler: () => {
                 return this.addButton();
+            }
+        },
+        {
+            regex: /^add text field$/,
+            handler: () => {
+                return this.addTextField();
             }
         },
         {

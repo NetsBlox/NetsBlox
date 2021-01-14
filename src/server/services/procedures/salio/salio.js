@@ -237,6 +237,16 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
         return this._passToSensor('clearControls', arguments);
     };
     /**
+     * Removes the specified custom control from the device (if it exists).
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current password for the sensor
+     * @param {String} id name of the control to remove.
+     * @returns {boolean} True if the action is successful, false otherwise.
+     */
+    SalIO.prototype.removeControl = function (sensor, password) {
+        return this._passToSensor('removeControl', arguments);
+    };
+    /**
      * Add a custom button to the device.
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current password for the sensor
@@ -255,6 +265,26 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
         arguments[6] = color;
         arguments[7] = textColor;
         return this._passToSensor('addButton', arguments);
+    };
+    /**
+     * Add a custom text field to the device.
+     * @param {string} sensor name of the sensor (matches at the end)
+     * @param {string} password current password for the sensor
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the text field (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the text field (percentage).
+     * @param {BoundedNumber<0, 100>} width Width of the text field (percentage).
+     * @param {BoundedNumber<0, 100>} height Height of the text field (percentage).
+     * @param {Number=} color Color code of the text field itself (defaults to light blue).
+     * @param {Number=} textColor Color code of the text field's text (if any) (defaults to black).
+     * @param {String} id Name of the text field.
+     * @param {String} event Name of the event to fire when the text field content is changed by the user.
+     * @param {string} text The initial text to display
+     * @returns {boolean} True if the action is successful, false otherwise.
+     */
+    SalIO.prototype.addTextField = function (sensor, password, x, y, width, height, color=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), id, event, text) {
+        arguments[6] = color;
+        arguments[7] = textColor;
+        return this._passToSensor('addTextField', arguments);
     };
     /**
      * Add a custom checkbox to the device.
