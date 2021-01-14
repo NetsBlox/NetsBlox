@@ -35,7 +35,9 @@ class ServicesWorker {
         const CommunityServices = Storage.createCollection('netsblox:services:community');
         const serviceData = await CommunityServices.findOne({name});
         const service = CommunityService.new(serviceData);
-        this.registerRPC(service);
+        if (service) {
+            this.registerRPC(service);
+        }
     }
 
     async onDeleteService(serviceName) {
@@ -104,7 +106,8 @@ class ServicesWorker {
         const CommunityServices = Storage.createCollection('netsblox:services:community');
         const serviceData = await CommunityServices.find({}).toArray();
         const services = serviceData
-            .map(serviceInfo => CommunityService.new(serviceInfo));
+            .map(serviceInfo => CommunityService.new(serviceInfo))
+            .filter(service => !!service);
 
         return services;
     }
