@@ -104,7 +104,6 @@ skillBuilder.addRequestHandlers(
 const skill = skillBuilder.create();
 const adapter = new ExpressAdapter(skill, true, true);
 
-
 if (require.main === module) {
     const app = express();
     app.get('/test', (req, res) => res.send('working'));
