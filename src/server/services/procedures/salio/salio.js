@@ -128,45 +128,45 @@ SalIO.prototype._getRegistered = function () {
     return sensors;
 };
 
-/**
- * Registers for receiving messages from the given sensors.
- * @param {array} sensors one or a list of sensors
- * @deprecated
- */
-SalIO.prototype.eavesdrop = function (sensors) {
-    return this.listen(sensors);
-};
+// /**
+//  * Registers for receiving messages from the given sensors.
+//  * @param {array} sensors one or a list of sensors
+//  * @deprecated
+//  */
+// SalIO.prototype.eavesdrop = function (sensors) {
+//     return this.listen(sensors);
+// };
 
-/**
- * Registers for receiving messages from the given sensors.
- * @param {array} sensors one or a list of sensors
- */
-SalIO.prototype.listen = async function (sensors) {
-    var state = this._state;
+// /**
+//  * Registers for receiving messages from the given sensors.
+//  * @param {array} sensors one or a list of sensors
+//  */
+// SalIO.prototype.listen = async function (sensors) {
+//     var state = this._state;
 
-    for (var mac_addr in state.registered) {
-        if (this._sensors[mac_addr]) {
-            this._sensors[mac_addr].removeClientSocket(this.socket);
-        }
-    }
-    state.registered = {};
+//     for (var mac_addr in state.registered) {
+//         if (this._sensors[mac_addr]) {
+//             this._sensors[mac_addr].removeClientSocket(this.socket);
+//         }
+//     }
+//     state.registered = {};
 
-    if (!Array.isArray(sensors)) {
-        sensors = ('' + sensors).split(/[, ]/);
-    }
+//     if (!Array.isArray(sensors)) {
+//         sensors = ('' + sensors).split(/[, ]/);
+//     }
 
-    var ok = true;
-    for (var i = 0; i < sensors.length; i++) {
-        var sensor = await this._getSensor(sensors[i]);
-        if (sensor) {
-            state.registered[sensor.mac_addr] = sensor;
-            sensor.addClientSocket(this.socket);
-        } else {
-            ok = false;
-        }
-    }
-    return ok;
-};
+//     var ok = true;
+//     for (var i = 0; i < sensors.length; i++) {
+//         var sensor = await this._getSensor(sensors[i]);
+//         if (sensor) {
+//             state.registered[sensor.mac_addr] = sensor;
+//             sensor.addClientSocket(this.socket);
+//         } else {
+//             ok = false;
+//         }
+//     }
+//     return ok;
+// };
 
 /**
  * Returns the addresses of all authorized sensors.
@@ -243,7 +243,7 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * @param {String} id name of the control to remove.
      * @returns {boolean} True if the action is successful, false otherwise.
      */
-    SalIO.prototype.removeControl = function (sensor, password) {
+    SalIO.prototype.removeControl = function (sensor, password, id) {
         return this._passToSensor('removeControl', arguments);
     };
     /**
@@ -540,7 +540,6 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the current output of the game rotation sensor, which measures rotational orientation.
      * This is a 3D vector with units of rad around each axis from some standard basis.
      * Due to the arbitrary basis of getRotation, this is more appropriate for use in games.
-     * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current password for the sensor
      * @returns {Array} 3D rotational vector
@@ -552,7 +551,6 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Get the current output of the magnetic field sensor.
      * This is a 3D vector with units of μT (micro teslas) in each direction.
-     * If the device does not support this sensor, returns (0, 0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current password for the sensor
      * @returns {Array} magnetic field vector
@@ -583,7 +581,6 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Get the current location of the device.
      * This is a latitude longitude pair in degrees.
-     * If the device does not have location enabled, returns (0, 0).
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current password for the sensor
      * @returns {Array} latitude and longitude
@@ -596,7 +593,6 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
      * Get the current output of the proximity sensor.
      * This is a distance measured in cm.
      * Note that some devices only have binary proximity sensors (near/far), which will take discrete two values.
-     * If the device does not have a proximity sensor, returns 0.
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current password for the sensor
      * @returns {Number} distance from proximity sensor in cm
@@ -607,7 +603,6 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     /**
      * Get the current output of the step counter.
      * This measures the number of steps taken since the device was started.
-     * If the device does not have a step counter, returns 0.
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current password for the sensor
      * @returns {Number} number of steps taken
@@ -617,7 +612,6 @@ if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
     };
     /**
      * Get the current output of the light sensor.
-     * If the device does not have a light level sensor, returns 0.
      * @param {string} sensor name of the sensor (matches at the end)
      * @param {string} password current password for the sensor
      * @returns {Number} current light level reading
