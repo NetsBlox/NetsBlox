@@ -196,7 +196,11 @@ IoTScapeServices.call = async function (name, func, id, ...args) {
     // Expects a value response
     return Promise.race([
         new Promise((resolve) => {
-            IoTScapeServices._awaitingRequests[reqid] = resolve;
+            IoTScapeServices._awaitingRequests[reqid] = {
+                service: name,
+                function: func,
+                resolve
+            };
         }), 
         new Promise((_, reject) => {
             // Time out eventually
@@ -224,7 +228,16 @@ IoTScapeServices.start = function(socket){
         
         if(Object.keys(IoTScapeServices._awaitingRequests).includes(requestID.toString())){
             if(parsed.response){
-                IoTScapeServices._awaitingRequests[requestID](...parsed.response);
+                // Return multiple results as a list, single result as a value
+                let methodInfo = IoTScapeServices.getFunctionInfo(IoTScapeServices._awaitingRequests[requestID].service, IoTScapeServices._awaitingRequests[requestID].function);
+                let responseType = methodInfo.returns.type;
+
+                if(responseType.length > 1) {
+                    IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
+                } else {
+                    IoTScapeServices._awaitingRequests[requestID].resolve(...parsed.response);
+                }
+
                 delete IoTScapeServices._awaitingRequests[requestID];
             }
         }

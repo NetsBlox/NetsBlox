@@ -103,10 +103,14 @@ IoTScape._createService = async function(definition, remote) {
         name: 'getDevices',
         documentation: 'Get a list of device IDs for this service',
         arguments: [],
+        returns: {
+            documentation: '',
+            type: ['void']
+        }
     }, ...Object.keys(methodsInfo).map(methodName => {
         const methodInfo = methodsInfo[methodName];
 
-        const method = {name: methodName, documentation: methodInfo.documentation};
+        const method = {name: methodName, documentation: methodInfo.documentation, returns: methodInfo.returns};
 
         method.arguments = methodInfo.params.map(param => { 
             return {
@@ -135,6 +139,10 @@ IoTScape._createService = async function(definition, remote) {
             optional: false,
             documentation: 'ID of device to send request to'
         }],
+        returns: {
+            documentation: '',
+            type: ['void']
+        }
     });
 
     const service = {
