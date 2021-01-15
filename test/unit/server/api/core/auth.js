@@ -1,5 +1,5 @@
-describe('auth', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
+describe(utils.suiteName(__filename), function() {
     const Auth = utils.reqSrc('./api/core/auth');
     const P = Auth.Permission;
     const Errors = utils.reqSrc('./api/core/errors');

@@ -193,7 +193,8 @@ function suiteName(filename) {
     return filename
         .replace(PROJECT_ROOT, '')
         .replace(new RegExp('/test/(unit/server|[a-z]+)/'), '')
-        .replace(/\.js$/, '');
+        .replace(/\.js$/, '')
+        .replace(/\.spec$/, '');
 }
 
 async function expect(fn, err) {

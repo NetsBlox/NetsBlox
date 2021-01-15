@@ -1,5 +1,6 @@
-describe('services-api', function() {
-    const utils = require('../../../assets/utils');
+const utils = require('../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const ServicesAPI = require('../../../../src/server/services/api');
     const MockResponse = require('../../../assets/mock-response');
     const assert = require('assert');

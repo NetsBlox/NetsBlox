@@ -1,6 +1,6 @@
-describe('weather', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
 
+describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('Weather', [
         ['temperature', ['latitude', 'longitude']],
         ['temp', ['latitude', 'longitude']],

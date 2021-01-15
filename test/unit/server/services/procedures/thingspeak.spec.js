@@ -1,6 +1,6 @@
-describe('thing-speak', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
 
+describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('Thingspeak', [
         ['searchByTag', ['tag', 'limit']],
         ['searchByLocation', ['latitude', 'longitude', 'distance', 'limit']],

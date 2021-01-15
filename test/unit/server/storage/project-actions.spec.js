@@ -1,5 +1,6 @@
-describe('project-actions', function() {
-    const utils = require('../../../assets/utils');
+const utils = require('../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const _ = require('lodash');
     const assert = require('assert');
     const ProjectActions = utils.reqSrc('storage/project-actions');

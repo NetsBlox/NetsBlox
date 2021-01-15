@@ -1,4 +1,6 @@
-describe('ApiConsumer', function(){
+const utils = require('../../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const ApiConsumer = require('../../../../../../src/server/services/procedures/utils/api-consumer.js'),
         apiConsumer = new ApiConsumer('testConsumer',''),
         RPCMock = require('../../../../../assets/mock-service'),

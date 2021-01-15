@@ -1,5 +1,6 @@
-describe('KeyValueStore', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const KVStore = utils.reqSrc('services/procedures/key-value-store/key-value-store');
     const RPCMock = require('../../../../assets/mock-service');
     const kvstore = new RPCMock(KVStore);

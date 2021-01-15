@@ -1,7 +1,7 @@
-describe('jsdoc-extractor', () => {
+const utils = require('../../../assets/utils.js');
 
+describe(utils.suiteName(__filename), function() {
     const assert = require('assert'),
-        utils = require('../../../assets/utils.js'),
         jp = utils.reqSrc('services/jsdoc-extractor.js');
 
 

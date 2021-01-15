@@ -1,6 +1,7 @@
-describe('server-utils', function() {
-    const _ = require('lodash');
+const testUtils = require('../../assets/utils');
+describe(testUtils.suiteName(__filename), function() {
     const utils = require('../../../src/server/server-utils');
+    const _ = require('lodash');
     const assert = require('assert');
 
     [

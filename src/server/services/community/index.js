@@ -1,5 +1,8 @@
+const Logger = require('../../logger');
+
 class CommunityService {
-    constructor() {
+    constructor(logger) {
+        this.logger = logger;
         this.types = [
             require('./data-service'),
         ];
@@ -8,10 +11,11 @@ class CommunityService {
     new(data) {
         const Service = this.types.find(type => type.name === data.type);
         if (!Service) {
-            throw new Error(`Unsupported community service type: ${data.type}`);
+            this.logger.warn(`Unsupported community service type: ${data.type}`);
+            return null;
         }
         return new Service(...arguments);
     }
 }
 
-module.exports = new CommunityService();
+module.exports = new CommunityService(new Logger('netsblox:services:community'));

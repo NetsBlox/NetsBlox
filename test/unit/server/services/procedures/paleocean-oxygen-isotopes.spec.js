@@ -1,6 +1,6 @@
-describe('PaleoceanOxygenIsotopes', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
 
+describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('PaleoceanOxygenIsotopes', [
         ['getDelta18O', ['startyear', 'endyear']],
         ['getDelta18OError', ['startyear', 'endyear']],

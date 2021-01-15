@@ -1,5 +1,6 @@
-describe('services-worker', function() {
-    const utils = require('../../../assets/utils');
+const utils = require('../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const Logger = utils.reqSrc('./logger');
     const ServicesWorker = utils.reqSrc('./services/services-worker');
     const Services = new ServicesWorker(new Logger('netsblox:test:services'));

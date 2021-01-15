@@ -1,5 +1,6 @@
-describe('earthquakes', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     var EarthQuakes = utils.reqSrc('services/procedures/earthquakes/earthquakes'),
         RPCMock = require('../../../../assets/mock-service'),
         earthquakes,
