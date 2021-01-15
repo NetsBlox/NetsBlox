@@ -1,7 +1,7 @@
 const Logger = require('../../logger');
 const {OAuthClientNotFound, InvalidRedirectURL, InvalidAuthorizationCode, InvalidOAuthToken} = require('./errors');
-const {ObjectId} = require('mongodb');
 const OAuthStorage = require('../../storage/oauth');
+const uuid = require('uuid');
 
 class OAuth {
     constructor() {
@@ -9,9 +9,11 @@ class OAuth {
     }
 
     async createClient(owner, name) {
-        const result = await OAuthStorage.clients.insertOne(
-            {owner, name},
-        );
+        const result = await OAuthStorage.clients.insertOne({
+            _id: uuid.v4(),
+            owner,
+            name
+        });
         return result.insertedId;
     }
 
@@ -27,6 +29,7 @@ class OAuth {
         }
 
         const result = await OAuthStorage.tokens.insertOne({
+            _id: uuid.v4(),
             clientId,
             username,
             createdAt: new Date(),
@@ -37,6 +40,7 @@ class OAuth {
     async authorizeClient(username, clientId, redirectUri) {
         await this._verifyClientID(clientId);
         const result = await OAuthStorage.codes.insertOne({
+            _id: uuid.v4(),
             clientId,
             username,
             redirectUri,
@@ -47,7 +51,7 @@ class OAuth {
     }
 
     async getToken(id) {
-        const token = await OAuthStorage.tokens.findOne({_id: getObjectId(id, InvalidOAuthToken)});
+        const token = await OAuthStorage.tokens.findOne({_id: id});
         if (!token) {
             throw new InvalidOAuthToken();
         }
@@ -55,7 +59,7 @@ class OAuth {
     }
 
     async getClient(id) {
-        const client = await OAuthStorage.clients.findOne({_id: getObjectId(id)});
+        const client = await OAuthStorage.clients.findOne({_id: id});
         if (!client) {
             throw new OAuthClientNotFound();
         }
@@ -67,23 +71,15 @@ class OAuth {
     }
 
     async _verifyClientID(id) {
-        const client = await OAuthStorage.clients.findOne({_id: getObjectId(id)});
+        const client = await OAuthStorage.clients.findOne({_id: id});
         if (!client) {
             throw new OAuthClientNotFound();
         }
     }
 
     async _getAuthData(authCode) {
-        const authData = await OAuthStorage.codes.findOne({_id: getObjectId(authCode, InvalidAuthorizationCode)});
+        const authData = await OAuthStorage.codes.findOne({_id: authCode});
         return authData;
-    }
-}
-
-function getObjectId(id, ErrorClass=OAuthClientNotFound) {
-    try {
-        return ObjectId(id);
-    } catch (err) {
-        throw new ErrorClass();
     }
 }
 
