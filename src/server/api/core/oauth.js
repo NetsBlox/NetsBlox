@@ -47,7 +47,7 @@ class OAuth {
     }
 
     async getToken(id) {
-        const token = await OAuthStorage.tokens.findOne({_id: getObjectId(id)});
+        const token = await OAuthStorage.tokens.findOne({_id: getObjectId(id, InvalidOAuthToken)});
         if (!token) {
             throw new InvalidOAuthToken();
         }
