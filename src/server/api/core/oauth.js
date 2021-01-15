@@ -1,5 +1,5 @@
 const Logger = require('../../logger');
-const {OAuthClientNotFound, InvalidRedirectURL, InvalidAuthorizationCode} = require('./errors');
+const {OAuthClientNotFound, InvalidRedirectURL, InvalidAuthorizationCode, InvalidOAuthToken} = require('./errors');
 const {ObjectId} = require('mongodb');
 const OAuthStorage = require('../../storage/oauth');
 
@@ -44,6 +44,14 @@ class OAuth {
         });
 
         return result.insertedId;
+    }
+
+    async getToken(id) {
+        const token = await OAuthStorage.tokens.findOne({_id: getObjectId(id, InvalidOAuthToken)});
+        if (!token) {
+            throw new InvalidOAuthToken();
+        }
+        return token;
     }
 
     async getClient(id) {

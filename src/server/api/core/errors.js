@@ -100,6 +100,12 @@ class OAuthClientNotFound extends RequestError {
     }
 }
 
+class InvalidOAuthToken extends RequestError {
+    constructor() {
+        super('Invalid OAuth token.');
+    }
+}
+
 // OAuthErrors are errors reported to the client when
 // performing the OAuth2 flow
 class OAuthFlowError extends RequestError {
@@ -160,6 +166,7 @@ module.exports.LibraryNotFound = LibraryNotFound;
 module.exports.AddressNotFound = AddressNotFound;
 module.exports.LoginRequired = LoginRequired;
 module.exports.OAuthClientNotFound = OAuthClientNotFound;
+module.exports.InvalidOAuthToken = InvalidOAuthToken;
 module.exports.RequestError = RequestError;
 
 module.exports.OAuthFlowError = OAuthFlowError;

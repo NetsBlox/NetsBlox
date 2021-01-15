@@ -81,6 +81,14 @@ OAuthRouter.route('/token')
     })))
     .options((req, res) => res.end());
 
+// The following endpoint is primarily used for debugging
+OAuthRouter.route('/whoami')
+    .get(handleErrors(async (req, res) => {
+        const [/*prefix*/, tokenID] = req.get('Authorization').split(' ');
+        const token = await OAuth.getToken(tokenID);
+        res.send(token.username);
+    }));
+
 function validateTokenRequest(req) {
     if (!req.body.code)  {
         throw new NoAuthorizationCode();
