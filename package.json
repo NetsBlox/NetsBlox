@@ -83,6 +83,7 @@
     "temp-units-conv": "^0.1.1",
     "turf": "^3.0.14",
     "urlencode": "^1.1.0",
+    "uuid": "^8.3.2",
     "vantage": "^1.5.1",
     "vantage-repl": "^1.1.4",
     "ws": "^5.2.2",
