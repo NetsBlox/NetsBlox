@@ -52,7 +52,7 @@ OAuthRouter.route('/code')
             throw new InvalidRedirectURL();
         }
 
-        const {error} = req.query;
+        const {error, state} = req.query;
         if (error) {
             const desc = req.query.error_description ?
                 `&error_description=${req.query.error_description}` : '';
@@ -63,7 +63,7 @@ OAuthRouter.route('/code')
         const clientId = req.query.client_id;
         const authCode = await OAuth.authorizeClient(username, clientId, redirectUri);
 
-        res.redirect(`${redirectUri}?code=${authCode}`);
+        res.redirect(`${redirectUri}?code=${authCode}&state=${state}`);
     }))
     .options((req, res) => res.end());
 
