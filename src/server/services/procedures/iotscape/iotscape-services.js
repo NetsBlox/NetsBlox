@@ -1,10 +1,5 @@
 const logger = require('../utils/logger')('iotscape-services');
 
-const dgram = require('dgram'),
-    socket = dgram.createSocket('udp4');
-
-socket.bind();
-
 /**
  * Stores information about registered services, with a list of IDs and their respective hosts
  */
@@ -180,7 +175,7 @@ IoTScapeServices.call = async function (name, func, id, ...args) {
     };
     
     let rinfo = IoTScapeServices.getInfo(name, id);
-    socket.send(JSON.stringify(request), rinfo.port, rinfo.address);
+    IoTScapeServices.socket.send(JSON.stringify(request), rinfo.port, rinfo.address);
 
     // Determine response type
     let methodInfo = IoTScapeServices.getFunctionInfo(name, func);
@@ -211,49 +206,60 @@ IoTScapeServices.call = async function (name, func, id, ...args) {
     ]).then((result) => result).catch(() => false);
 };
 
-// Handle incoming responses
-socket.on('message', function (message) {
-    const parsed = JSON.parse(message);
-    const requestID = parsed.request;
-    
-    if(Object.keys(IoTScapeServices._awaitingRequests).includes(requestID.toString())){
-        if(parsed.response){
-            IoTScapeServices._awaitingRequests[requestID](...parsed.response);
-            delete IoTScapeServices._awaitingRequests[requestID];
+IoTScapeServices.start = function(socket){
+    IoTScapeServices.socket = socket;
+
+    // Handle incoming responses
+    IoTScapeServices.socket.on('message', function (message) {
+        const parsed = JSON.parse(message);
+
+        // Ignore other messages
+        if(!parsed.request){
+            return;
         }
-    }
 
-    if(parsed.event){
-        // Find listening clients 
-        let clientsByID = IoTScapeServices._listeningClients[parsed.service];
-
-        if(clientsByID){
-            let clients = clientsByID[parsed.id.toString()];
-            
-            // Send responses
-            if(clients){
-                clients.forEach((client) => {
-                    client.sendMessage(parsed.event.type, parsed.event.args);
-                });
+        const requestID = parsed.request;
+        
+        if(Object.keys(IoTScapeServices._awaitingRequests).includes(requestID.toString())){
+            if(parsed.response){
+                IoTScapeServices._awaitingRequests[requestID](...parsed.response);
+                delete IoTScapeServices._awaitingRequests[requestID];
             }
         }
-    }
-});
 
-// Request heartbeats on interval
-setInterval(async () => {
-    for (const service of IoTScapeServices.getServices()) {
-        IoTScapeServices.getDevices(service).forEach(async (device) => {
-            logger.log(`heartbeat ${service}:${device}`);
-            let alive = await IoTScapeServices.call(service, 'heartbeat', device);
-            
-            // Remove device if it didn't respond
-            if(!alive) {
-                logger.log(`${service}:${device} did not respond to heartbeat, removing from active devices`);
-                IoTScapeServices.removeDevice(service, device);
+        if(parsed.event){
+            // Find listening clients 
+            let clientsByID = IoTScapeServices._listeningClients[parsed.service];
+
+            if(clientsByID){
+                let clients = clientsByID[parsed.id.toString()];
+                
+                // Send responses
+                if(clients){
+                    clients.forEach((client) => {
+                        client.sendMessage(parsed.event.type, parsed.event.args);
+                    });
+                }
             }
-        });
-    }
-}, 60 * 1000);
+        }
+    });
+
+
+    // Request heartbeats on interval
+    setInterval(async () => {
+        for (const service of IoTScapeServices.getServices()) {
+            IoTScapeServices.getDevices(service).forEach(async (device) => {
+                logger.log(`heartbeat ${service}:${device}`);
+                let alive = await IoTScapeServices.call(service, 'heartbeat', device);
+                
+                // Remove device if it didn't respond
+                if(!alive) {
+                    logger.log(`${service}:${device} did not respond to heartbeat, removing from active devices`);
+                    IoTScapeServices.removeDevice(service, device);
+                }
+            });
+        }
+    }, 60 * 1000);
+};
 
 module.exports = IoTScapeServices;
