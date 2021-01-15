@@ -81,6 +81,12 @@ IoTScape.call = function (service, id, string){
  */
 IoTScape._createService = async function(definition, remote) {    
     let parsed = JSON.parse(definition);
+
+    // Ignore request messages sent to this method
+    if(parsed.request){
+        return;
+    }
+
     const name = Object.keys(parsed)[0];
     
     parsed = parsed[name];
@@ -195,6 +201,8 @@ server.on('listening', function () {
 server.on('message', function (message, remote) {
     IoTScape._createService(message, remote);
 });
+
+IoTScapeServices.start(server);
 
 /* eslint no-console: off */
 if (process.env.IOTSCAPE_PORT) {
