@@ -8,16 +8,16 @@ utils.dotProduct = function(a, b) {
     return total;
 }
 utils.magnitude = function(a) {
-    return Math.sqrt(dotProduct(a, a));
+    return Math.sqrt(utils.dotProduct(a, a));
 }
 utils.scale = function(a, f) {
     return a.map(x => x * f);
 }
 utils.normalize = function(a) {
-    return scale(a, 1.0 / magnitude(a));
+    return utils.scale(a, 1.0 / utils.magnitude(a));
 }
 utils.angle = function(a, b) {
-    return Math.acos(dotProduct(a, b) / (magnitude(a) * magnitude(b)));
+    return Math.acos(dotProduct(a, b) / (utils.magnitude(a) * utils.magnitude(b)));
 }
 
 utils.closestVector = function(val, def) {
@@ -49,17 +49,15 @@ utils.definedOrThrow = function(val, errorMsg) {
 }
 
 // parses a SalIO password and simplifies the error message (if any)
-utils.gracefullPasswordParse = function(password) {
+utils.gracefulPasswordParse = function(password) {
+    let res = undefined;
     try {
-        const res = BigInt('0x' + password);
-        if (res < 0 || res > 0x7fffffffffffffffn) {
-            throw new Error('invalid password');
-        }
-        return res;
+        res = BigInt('0x' + password);
+        if (res < 0 || res > 0x7fffffffffffffffn) res = undefined;
     }
-    catch (err) {
-        throw new Error('invalid password');
-    }
+    catch (_) { }
+    if (res === undefined) throw new Error('invalid password');
+    return res;
 }
 
 module.exports = utils;

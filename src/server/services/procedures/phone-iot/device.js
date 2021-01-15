@@ -1,7 +1,7 @@
 'use strict';
 const getRPCLogger = require('../utils/logger');
 const acl = require('../roboscape/accessControl');
-const SALIO_MODE = process.env.SALIO_MODE || 'both';
+const PHONE_IOT_MODE = process.env.PHONE_IOT_MODE || 'both';
 const ciphers = require('../roboscape/ciphers');
 const common = require('./common');
 const { definedOrThrow } = require('./common');
@@ -35,9 +35,9 @@ const { definedOrThrow } = require('./common');
 // Z - add custom checkbox control
 // z - checkbox press event
 
-// these might be better defined as an attribute on the sensor
-const FORGET_TIME = 120; // forgetting a sensor in seconds
-const RESPONSE_TIMEOUT = 5000; // ms (well over worst case)
+// these might be better defined as an attribute on the device
+const FORGET_TIME = 120; // forgetting a device in seconds
+const RESPONSE_TIMEOUT = 2000; // ms (well over worst case)
 
 const DIRECTIONS_3D = [
     [[0, 0, 1], 'up'],
@@ -68,13 +68,13 @@ const COMPASS_DIRECTIONS_8 = [
 
 const MAX_ACTION_LISTENERS = 10000;
 
-var Sensor = function (mac_addr, ip4_addr, ip4_port, aServer) {
+var Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.id = mac_addr;
     this.mac_addr = mac_addr;
     this.ip4_addr = ip4_addr;
     this.ip4_port = ip4_port;
     this.heartbeats = 0;
-    this.timestamp = -1; // time of last message in sensor time
+    this.timestamp = -1; // time of last message in device time
     this.sockets = []; // uuids of sockets of registered clients
     this.callbacks = {}; // callbacks keyed by msgType
     this.encryptionKey = [0]; // encryption key
@@ -87,25 +87,25 @@ var Sensor = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.clientPenalty = 0; // in seconds
     this.clientCounts = {};
     this.lastSeqNum = -1; // initially disabled
-    this._logger = getRPCLogger(`salio:${mac_addr}`);
-    this.server = aServer; // a handle to the udp server for communication with the sensor
+    this._logger = getRPCLogger(`PhoneIoT:${mac_addr}`);
+    this.server = aServer; // a handle to the udp server for communication with the device
 
     this.guiIdToEvent = {}; // Map<GUI ID, Event ID>
     this.guiListeners = {}; // Map<ClientID, Socket>
 };
 
-Sensor.prototype.setTotalRate = function (rate) {
+Device.prototype.setTotalRate = function (rate) {
     this._logger.log('set total rate ' + this.mac_addr + ' ' + rate);
     this.totalRate = Math.max(rate, 0);
 };
 
-Sensor.prototype.setClientRate = function (rate, penalty) {
+Device.prototype.setClientRate = function (rate, penalty) {
     this._logger.log('set client rate ' + this.mac_addr + ' ' + rate + ' ' + penalty);
     this.clientRate = Math.max(rate, 0);
     this.clientPenalty = Math.min(Math.max(penalty, 0), 60);
 };
 
-Sensor.prototype.resetRates = function () {
+Device.prototype.resetRates = function () {
     this._logger.log('reset rate limits');
     this.totalRate = 0;
     this.clientRate = 0;
@@ -115,29 +115,29 @@ Sensor.prototype.resetRates = function () {
 
 // resets the encryption
 // for backward compat sets it to caesar cipher with key [0]
-Sensor.prototype.resetEncryption = function () {
+Device.prototype.resetEncryption = function () {
     this._logger.log('resetting encryption');
     // null would make more sense but keeping backward compatibility here
     this.encryptionMethod = ciphers.caesar;
     this.encryptionKey = [0];
 };
 
-Sensor.prototype.resetSeqNum = function () {
+Device.prototype.resetSeqNum = function () {
     this._logger.log('resetting seq numbering');
     this.setSeqNum(-1);
 };
 
-Sensor.prototype.updateAddress = function (ip4_addr, ip4_port) {
+Device.prototype.updateAddress = function (ip4_addr, ip4_port) {
     this.ip4_addr = ip4_addr;
     this.ip4_port = ip4_port;
     this.heartbeats = 0;
 };
 
-Sensor.prototype.setSeqNum = function (seqNum) {
+Device.prototype.setSeqNum = function (seqNum) {
     this.lastSeqNum = seqNum;
 };
 
-Sensor.prototype.accepts = function (clientId, seqNum) {
+Device.prototype.accepts = function (clientId, seqNum) {
     if (this.lastSeqNum >= 0 && (seqNum <= this.lastSeqNum ||
             seqNum > this.lastSeqNum + 100)) {
         return false;
@@ -173,7 +173,7 @@ Sensor.prototype.accepts = function (clientId, seqNum) {
     return true;
 };
 
-Sensor.prototype.heartbeat = function () {
+Device.prototype.heartbeat = function () {
     this.totalCount = 0;
     for (var id in this.clientCounts) {
         var client = this.clientCounts[id];
@@ -193,15 +193,15 @@ Sensor.prototype.heartbeat = function () {
     return true;
 };
 
-Sensor.prototype.isAlive = function () {
+Device.prototype.isAlive = function () {
     return this.heartbeats <= 2;
 };
 
-Sensor.prototype.isMostlyAlive = function () {
+Device.prototype.isMostlyAlive = function () {
     return this.heartbeats <= FORGET_TIME;
 };
 
-Sensor.prototype.addClientSocket = function (socket) {
+Device.prototype.addClientSocket = function (socket) {
     const {clientId} = socket;
     var i = this.sockets.findIndex(s => s.clientId === clientId);
     if (i < 0) {
@@ -212,7 +212,7 @@ Sensor.prototype.addClientSocket = function (socket) {
     return false;
 };
 
-Sensor.prototype.removeClientSocket = function (socket) {
+Device.prototype.removeClientSocket = function (socket) {
     const {clientId} = socket;
     var i = this.sockets.findIndex(s => s.clientId === clientId);
     if (i >= 0) {
@@ -223,7 +223,7 @@ Sensor.prototype.removeClientSocket = function (socket) {
     return false;
 };
 
-Sensor.prototype.sendToSensor = function (message) {
+Device.prototype.sendToDevice = function (message) {
     this.server.send(message, this.ip4_port, this.ip4_addr, function (err) {
         if (err) {
             this._logger.log('send error ' + err);
@@ -231,7 +231,7 @@ Sensor.prototype.sendToSensor = function (message) {
     });
 };
 
-Sensor.prototype.receiveFromSensor = function (msgType, timeout) {
+Device.prototype.receiveFromDevice = function (msgType, timeout) {
     if (!this.callbacks[msgType]) {
         this.callbacks[msgType] = [];
     }
@@ -249,49 +249,49 @@ Sensor.prototype.receiveFromSensor = function (msgType, timeout) {
     });
 };
 
-Sensor.prototype.authenticate = async function (sensor, args) {
+Device.prototype.authenticate = async function (device, args) {
     this._logger.log('authenticate ' + this.mac_addr);
-    const response = this.receiveFromSensor('auth');
+    const response = this.receiveFromDevice('auth');
     const message = Buffer.alloc(9);
     message.write('a', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
-    return definedOrThrow((await response).res, 'sensor offline or failed to auth');
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
+    return definedOrThrow((await response).res, 'device offline or failed to auth');
 };
 
-Sensor.prototype.clearControls = async function (sensor, args) {
+Device.prototype.clearControls = async function (device, args) {
     this._logger.log('clear controls ' + this.mac_addr);
-    const response = this.receiveFromSensor('clearcontrols');
+    const response = this.receiveFromDevice('clearcontrols');
     const message = Buffer.alloc(9);
     message.write('C', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     return definedOrThrow((await response).res, 'failed clear or failed auth');
 };
-Sensor.prototype.removeControl = async function (sensor, args) {
+Device.prototype.removeControl = async function (device, args) {
     this._logger.log('remove control ' + this.mac_addr);
-    const response = this.receiveFromSensor('removecontrol');
+    const response = this.receiveFromDevice('removecontrol');
 
     const id = Buffer.from(args[1], 'utf8');
     if (id.length > 255) throw new Error('id too long');
 
     const message = Buffer.alloc(9);
     message.write('c', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(Buffer.concat([message, id]));
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(Buffer.concat([message, id]));
 
     return definedOrThrow((await response).res, 'failed clear or failed auth');
 };
-Sensor.prototype.addButton = async function (sensor, args) {
+Device.prototype.addButton = async function (device, args) {
     this._logger.log('add button ' + this.mac_addr);
-    const response = this.receiveFromSensor('addbutton');
+    const response = this.receiveFromDevice('addbutton');
 
     const id = Buffer.from(args[7], 'utf8');
     if (id.length > 255) throw new Error('id too long');
 
     const message = Buffer.alloc(34);
     message.write('B', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
     message.writeFloatBE(args[1], 9);
     message.writeFloatBE(args[2], 13);
     message.writeFloatBE(args[3], 17);
@@ -301,25 +301,25 @@ Sensor.prototype.addButton = async function (sensor, args) {
     message[33] = id.length;
 
     const text = Buffer.from(args[9], 'utf8');
-    this.sendToSensor(Buffer.concat([message, id, text]));
+    this.sendToDevice(Buffer.concat([message, id, text]));
     
     const err = (await response).err;
     if (err === undefined) throw new Error('failed add button or failed auth');
     if (err !== null) throw new Error(err);
 
-    sensor.guiIdToEvent[args[7]] = args[8];
+    device.guiIdToEvent[args[7]] = args[8];
     return true;
 };
-Sensor.prototype.addTextField = async function (sensor, args) {
+Device.prototype.addTextField = async function (device, args) {
     this._logger.log('add text field ' + this.mac_addr);
-    const response = this.receiveFromSensor('addtextfield');
+    const response = this.receiveFromDevice('addtextfield');
 
     const id = Buffer.from(args[7], 'utf8');
     if (id.length > 255) throw new Error('id too long');
 
     const message = Buffer.alloc(34);
     message.write('T', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
     message.writeFloatBE(args[1], 9);
     message.writeFloatBE(args[2], 13);
     message.writeFloatBE(args[3], 17);
@@ -329,48 +329,48 @@ Sensor.prototype.addTextField = async function (sensor, args) {
     message[33] = id.length;
 
     const text = Buffer.from(args[9], 'utf8');
-    this.sendToSensor(Buffer.concat([message, id, text]));
+    this.sendToDevice(Buffer.concat([message, id, text]));
     
     const err = (await response).err;
     if (err === undefined) throw new Error('failed add text field or failed auth');
     if (err !== null) throw new Error(err);
 
-    sensor.guiIdToEvent[args[7]] = args[8];
+    device.guiIdToEvent[args[7]] = args[8];
     return true;
 };
-Sensor.prototype.addLabel = async function (sensor, args) {
+Device.prototype.addLabel = async function (device, args) {
     this._logger.log('add label ' + this.mac_addr);
-    const response = this.receiveFromSensor('addlabel');
+    const response = this.receiveFromDevice('addlabel');
 
     const id = Buffer.from(args[4], 'utf8');
     if (id.length > 255) throw new Error('id too long');
 
     const message = Buffer.alloc(22);
     message.write('g', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
     message.writeFloatBE(args[1], 9);
     message.writeFloatBE(args[2], 13);
     message.writeInt32BE(args[3], 17);
     message[21] = id.length;
 
     const text = Buffer.from(args[5], 'utf8');
-    this.sendToSensor(Buffer.concat([message, id, text]));
+    this.sendToDevice(Buffer.concat([message, id, text]));
     
     const err = (await response).err;
     if (err === undefined) throw new Error('failed add button or failed auth');
     if (err !== null) throw new Error(err);
     return true;
 };
-Sensor.prototype.addCheckboxWithStyle = async function (sensor, args, style) {
+Device.prototype.addCheckboxWithStyle = async function (device, args, style) {
     this._logger.log('add checkbox ' + this.mac_addr);
-    const response = this.receiveFromSensor('addcheckbox');
+    const response = this.receiveFromDevice('addcheckbox');
 
     const id = Buffer.from(args[6], 'utf8');
     if (id.length > 255) throw new Error('id too long');
 
     const message = Buffer.alloc(28);
     message.write('Z', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
     message.writeFloatBE(args[1], 9);
     message.writeFloatBE(args[2], 13);
     message.writeInt32BE(args[3], 17);
@@ -380,24 +380,24 @@ Sensor.prototype.addCheckboxWithStyle = async function (sensor, args, style) {
     message[27] = id.length;
 
     const text = Buffer.from(args[8], 'utf8');
-    this.sendToSensor(Buffer.concat([message, id, text]));
+    this.sendToDevice(Buffer.concat([message, id, text]));
     
     const err = (await response).err;
     if (err === undefined) throw new Error('failed add button or failed auth');
     if (err !== null) throw new Error(err);
 
-    sensor.guiIdToEvent[args[6]] = args[7];
+    device.guiIdToEvent[args[6]] = args[7];
     return true;
 };
-Sensor.prototype.addCheckbox = async function (sensor, args) {
-    return this.addCheckboxWithStyle(sensor, args, 0);
+Device.prototype.addCheckbox = async function (device, args) {
+    return this.addCheckboxWithStyle(device, args, 0);
 };
-Sensor.prototype.addToggleswitch = async function (sensor, args) {
-    return this.addCheckboxWithStyle(sensor, args, 1);
+Device.prototype.addToggleswitch = async function (device, args) {
+    return this.addCheckboxWithStyle(device, args, 1);
 };
-Sensor.prototype.addRadioButton = async function (sensor, args) {
+Device.prototype.addRadioButton = async function (device, args) {
     this._logger.log('add radio button ' + this.mac_addr);
-    const response = this.receiveFromSensor('addradiobutton');
+    const response = this.receiveFromDevice('addradiobutton');
 
     const id = Buffer.from(args[6], 'utf8');
     if (id.length > 255) throw new Error('id too long');
@@ -409,7 +409,7 @@ Sensor.prototype.addRadioButton = async function (sensor, args) {
 
     const message = Buffer.alloc(27);
     message.write('y', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
     message.writeFloatBE(args[1], 9);
     message.writeFloatBE(args[2], 13);
     message.writeInt32BE(args[3], 17);
@@ -418,214 +418,214 @@ Sensor.prototype.addRadioButton = async function (sensor, args) {
     message[26] = id.length;
 
     const text = Buffer.from(args[9], 'utf8');
-    this.sendToSensor(Buffer.concat([message, id, groupPrefix, group, text]));
+    this.sendToDevice(Buffer.concat([message, id, groupPrefix, group, text]));
     
     const err = (await response).err;
     if (err === undefined) throw new Error('failed add radio button or failed auth');
     if (err !== null) throw new Error(err);
 
-    sensor.guiIdToEvent[args[6]] = args[8];
+    device.guiIdToEvent[args[6]] = args[8];
     return true;
 };
 
-Sensor.prototype.getToggleState = async function (sensor, args) {
+Device.prototype.getToggleState = async function (device, args) {
     this._logger.log('get toggle state ' + this.mac_addr);
-    const response = this.receiveFromSensor('gettogglestate');
+    const response = this.receiveFromDevice('gettogglestate');
     
     const id = Buffer.from(args[1], 'utf8');
     if (id.length > 255) throw new Error('id too long');
 
     const message = Buffer.alloc(9);
     message.write('W', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
     
-    this.sendToSensor(Buffer.concat([message, id]));
+    this.sendToDevice(Buffer.concat([message, id]));
     
     const state = (await response).state;
     if (state === undefined) throw new Error('toggleable with given id did not exist or failed auth');
     return state;
 };
 
-Sensor.prototype.getOrientation = async function (sensor, args) {
+Device.prototype.getOrientation = async function (device, args) {
     this._logger.log('get orientation ' + this.mac_addr);
-    const response = this.receiveFromSensor('orientation');
+    const response = this.receiveFromDevice('orientation');
     const message = Buffer.alloc(9);
     message.write('O', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     const res = await response;
-    return common.definedArrOrThrow([res.azimuth, res.pitch, res.roll], 'orientation sensor not enabled or failed to auth');
+    return common.definedArrOrThrow([res.azimuth, res.pitch, res.roll], 'orientation device not enabled or failed to auth');
 };
-Sensor.prototype.getCompassHeading = async function (sensor, args) {
-    return (await this.getOrientation(sensor, args))[0];
+Device.prototype.getCompassHeading = async function (device, args) {
+    return (await this.getOrientation(device, args))[0];
 };
-Sensor.prototype.getCompassHeadingDegrees = async function (sensor, args) {
-    return await this.getCompassHeading(sensor, args) * 180 / Math.PI;
+Device.prototype.getCompassHeadingDegrees = async function (device, args) {
+    return await this.getCompassHeading(device, args) * 180 / Math.PI;
 };
-Sensor.prototype.getCompassDirection = async function (sensor, args) {
-    return common.closestScalar(await this.getCompassHeading(sensor, args), COMPASS_DIRECTIONS_8);
+Device.prototype.getCompassDirection = async function (device, args) {
+    return common.closestScalar(await this.getCompassHeading(device, args), COMPASS_DIRECTIONS_8);
 };
-Sensor.prototype.getCompassCardinalDirection = async function (sensor, args) {
-    return common.closestScalar(await this.getCompassHeading(sensor, args), COMPASS_DIRECTIONS_4);
+Device.prototype.getCompassCardinalDirection = async function (device, args) {
+    return common.closestScalar(await this.getCompassHeading(device, args), COMPASS_DIRECTIONS_4);
 };
 
-Sensor.prototype.getAccelerometer = async function (sensor, args) {
+Device.prototype.getAccelerometer = async function (device, args) {
     this._logger.log('get accelerometer ' + this.mac_addr);
-    const response = this.receiveFromSensor('accelerometer');
+    const response = this.receiveFromDevice('accelerometer');
     const message = Buffer.alloc(9);
     message.write('A', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     const res = await response;
     return common.definedArrOrThrow([res.x, res.y, res.z], 'accelerometer not enabled or failed to auth');
 };
-Sensor.prototype.getAccelerometerNormalized = async function (sensor, args) {
-    return common.normalize(await this.getAccelerometer(sensor, args));  
+Device.prototype.getAccelerometerNormalized = async function (device, args) {
+    return common.normalize(await this.getAccelerometer(device, args));  
 };
-Sensor.prototype.getFacingDirection = async function (sensor, args) {
-    return common.closestVector(await this.getAccelerometer(sensor, args), DIRECTIONS_3D);
+Device.prototype.getFacingDirection = async function (device, args) {
+    return common.closestVector(await this.getAccelerometer(device, args), DIRECTIONS_3D);
 };
 
-Sensor.prototype.getGravity = async function (sensor, args) {
+Device.prototype.getGravity = async function (device, args) {
     this._logger.log('get gravity ' + this.mac_addr);
-    const response = this.receiveFromSensor('gravity');
+    const response = this.receiveFromDevice('gravity');
     const message = Buffer.alloc(9);
     message.write('G', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z], 'gravity sensor not enabled or failed to auth');
+    return common.definedArrOrThrow([res.x, res.y, res.z], 'gravity device not enabled or failed to auth');
 };
-Sensor.prototype.getGravityNormalized = async function (sensor, args) {
-    return common.normalize(await this.getGravity(sensor, args));  
+Device.prototype.getGravityNormalized = async function (device, args) {
+    return common.normalize(await this.getGravity(device, args));  
 };
 
-Sensor.prototype.getLinearAcceleration = async function (sensor, args) {
+Device.prototype.getLinearAcceleration = async function (device, args) {
     this._logger.log('get linear acceleration ' + this.mac_addr);
-    const response = this.receiveFromSensor('linear');
+    const response = this.receiveFromDevice('linear');
     const message = Buffer.alloc(9);
     message.write('L', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z], 'linear acceleration sensor not enabled or failed to auth');
+    return common.definedArrOrThrow([res.x, res.y, res.z], 'linear acceleration device not enabled or failed to auth');
 };
-Sensor.prototype.getLinearAccelerationNormalized = async function (sensor, args) {
-    return common.normalize(await this.getLinearAcceleration(sensor, args));  
+Device.prototype.getLinearAccelerationNormalized = async function (device, args) {
+    return common.normalize(await this.getLinearAcceleration(device, args));  
 };
 
-Sensor.prototype.getGyroscope = async function (sensor, args) {
+Device.prototype.getGyroscope = async function (device, args) {
     this._logger.log('get gyroscope ' + this.mac_addr);
-    const response = this.receiveFromSensor('gyroscope');
+    const response = this.receiveFromDevice('gyroscope');
     const message = Buffer.alloc(9);
     message.write('Y', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     const res = await response;
     return common.definedArrOrThrow([res.x, res.y, res.z], 'gyroscope not enabled or failed to auth');
 };
-Sensor.prototype.getRotation = async function (sensor, args) {
+Device.prototype.getRotation = async function (device, args) {
     this._logger.log('get rotation ' + this.mac_addr);
-    const response = this.receiveFromSensor('rotation');
+    const response = this.receiveFromDevice('rotation');
     const message = Buffer.alloc(9);
     message.write('R', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z, res.w], 'rotation sensor not enabled or failed to auth');
+    return common.definedArrOrThrow([res.x, res.y, res.z, res.w], 'rotation device not enabled or failed to auth');
 };
-Sensor.prototype.getGameRotation = async function (sensor, args) {
+Device.prototype.getGameRotation = async function (device, args) {
     this._logger.log('get game rotation ' + this.mac_addr);
-    const response = this.receiveFromSensor('gamerotation');
+    const response = this.receiveFromDevice('gamerotation');
     const message = Buffer.alloc(9);
     message.write('r', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z], 'game rotation sensor not enabled or failed to auth');
+    return common.definedArrOrThrow([res.x, res.y, res.z], 'game rotation device not enabled or failed to auth');
 };
 
-Sensor.prototype.getMagneticFieldVector = async function (sensor, args) {
+Device.prototype.getMagneticFieldVector = async function (device, args) {
     this._logger.log('get mag field ' + this.mac_addr);
-    const response = this.receiveFromSensor('magfield');
+    const response = this.receiveFromDevice('magfield');
     const message = Buffer.alloc(9);
     message.write('M', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z], 'magnetic field sensor not enabled or failed to auth');
+    return common.definedArrOrThrow([res.x, res.y, res.z], 'magnetic field device not enabled or failed to auth');
 };
-Sensor.prototype.getMagneticFieldVectorNormalized = async function (sensor, args) {
-    return common.normalize(await this.getMagneticFieldVector(sensor, args));  
+Device.prototype.getMagneticFieldVectorNormalized = async function (device, args) {
+    return common.normalize(await this.getMagneticFieldVector(device, args));  
 };
 
-Sensor.prototype.getMicrophoneLevel = async function (sensor, args) {
+Device.prototype.getMicrophoneLevel = async function (device, args) {
     this._logger.log('get mic level ' + this.mac_addr);
-    const response = this.receiveFromSensor('miclevel');
+    const response = this.receiveFromDevice('miclevel');
     const message = Buffer.alloc(9);
     message.write('m', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     return common.definedOrThrow((await response).level, 'microphone not enabled or failed to auth');
 };
 
-Sensor.prototype.getProximity = async function (sensor, args) {
+Device.prototype.getProximity = async function (device, args) {
     this._logger.log('get proximity ' + this.mac_addr);
-    const response = this.receiveFromSensor('proximity');
+    const response = this.receiveFromDevice('proximity');
     const message = Buffer.alloc(9);
     message.write('P', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
-    return common.definedOrThrow((await response).proximity, 'proximity sensor not enabled or failed to auth');
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
+    return common.definedOrThrow((await response).proximity, 'proximity device not enabled or failed to auth');
 };
-Sensor.prototype.getStepCount = async function (sensor, args) {
+Device.prototype.getStepCount = async function (device, args) {
     this._logger.log('get step count ' + this.mac_addr);
-    const response = this.receiveFromSensor('stepcount');
+    const response = this.receiveFromDevice('stepcount');
     const message = Buffer.alloc(9);
     message.write('S', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     return common.definedOrThrow((await response).count, 'step counter not enabled or failed to auth');
 };
-Sensor.prototype.getLightLevel = async function (sensor, args) {
+Device.prototype.getLightLevel = async function (device, args) {
     this._logger.log('get light level ' + this.mac_addr);
-    const response = this.receiveFromSensor('lightlevel');
+    const response = this.receiveFromDevice('lightlevel');
     const message = Buffer.alloc(9);
     message.write('l', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
-    return common.definedOrThrow((await response).level, 'light sensor not enabled or failed to auth');
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
+    return common.definedOrThrow((await response).level, 'light device not enabled or failed to auth');
 };
 
-Sensor.prototype.getLocation = async function (sensor, args) {
+Device.prototype.getLocation = async function (device, args) {
     this._logger.log('get location ' + this.mac_addr);
-    const response = this.receiveFromSensor('location');
+    const response = this.receiveFromDevice('location');
     const message = Buffer.alloc(9);
     message.write('X', 0, 1);
-    message.writeBigInt64BE(common.gracefullPasswordParse(args[0]), 1);
-    this.sendToSensor(message);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(message);
     const res = await response;
     return common.definedArrOrThrow([res.lat, res.long], 'location not enabled or failed to auth');
 };
 
-Sensor.prototype.commandToClient = function (command) {
-    if (SALIO_MODE === 'security' || SALIO_MODE === 'both') {
+Device.prototype.commandToClient = function (command) {
+    if (PHONE_IOT_MODE === 'security' || PHONE_IOT_MODE === 'both') {
         var mac_addr = this.mac_addr;
         this.sockets.forEach(socket => {
             const content = {
-                sensor: mac_addr,
+                device: mac_addr,
                 command: command
             };
-            socket.sendMessage('sensor command', content);
+            socket.sendMessage('device command', content);
         });
     }
 };
 
-Sensor.prototype.sendToClient = function (msgType, content) {
+Device.prototype.sendToClient = function (msgType, content) {
     var myself = this;
 
     let fields = ['time', ...Object.keys(content)];
-    content.sensor = this.mac_addr;
+    content.device = this.mac_addr;
     content.time = this.timestamp;
 
     if (msgType !== 'set led') {
@@ -642,29 +642,29 @@ Sensor.prototype.sendToClient = function (msgType, content) {
     }
 
     this.sockets.forEach(async socket => {
-        await acl.ensureAuthorized(socket.username, myself.mac_addr); // should use sensorId instead of mac_addr
+        await acl.ensureAuthorized(socket.username, myself.mac_addr); // should use deviceId instead of mac_addr
 
-        if (SALIO_MODE === 'native' || SALIO_MODE === 'both') {
+        if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             socket.sendMessage(msgType, content);
         }
 
-        if ((SALIO_MODE === 'security' && msgType !== 'set led') ||
-            SALIO_MODE === 'both') {
+        if ((PHONE_IOT_MODE === 'security' && msgType !== 'set led') ||
+            PHONE_IOT_MODE === 'both') {
             var text = msgType;
             for (var i = 0; i < fields.length; i++) {
                 text += ' ' + content[fields[i]];
             }
 
             const encryptedContent = {
-                sensor: myself.mac_addr,
+                device: myself.mac_addr,
                 message: this._hasValidEncryptionSet() ? myself.encrypt(text.trim()) : text.trim()
             };
-            socket.sendMessage('sensor message', encryptedContent);
+            socket.sendMessage('device message', encryptedContent);
         }
     });
 };
 
-Sensor.prototype._fireRawCustomEvent = function(id, content) {
+Device.prototype._fireRawCustomEvent = function(id, content) {
     const event = this.guiIdToEvent[id];
     if (event === undefined) return;
     for (const listener in this.guiListeners) {
@@ -678,8 +678,8 @@ Sensor.prototype._fireRawCustomEvent = function(id, content) {
     }
 };
 
-// used for handling incoming message from the sensor
-Sensor.prototype.onMessage = function (message) {
+// used for handling incoming message from the device
+Device.prototype.onMessage = function (message) {
     if (message.length < 11) {
         this._logger.log('invalid message ' + this.ip4_addr + ':' + this.ip4_port +
             ' ' + message.toString('hex'));
@@ -692,7 +692,7 @@ Sensor.prototype.onMessage = function (message) {
 
     if (command === 'I' && message.length === 11) {
         if (this.timestamp < oldTimestamp) {
-            this._logger.log('sensor was rebooted ' + this.mac_addr);
+            this._logger.log('device was rebooted ' + this.mac_addr);
             this.resetSeqNum();
             this.setEncryptionKey([]);
             this.resetRates();
@@ -871,8 +871,8 @@ Sensor.prototype.onMessage = function (message) {
     }
 };
 
-// handle user commands to the sensor (through the 'send' rpc)
-Sensor.prototype.onCommand = function(command) {
+// handle user commands to the device (through the 'send' rpc)
+Device.prototype.onCommand = function(command) {
     const cases = [
         {
             regex: /^is alive$/,
@@ -1123,12 +1123,12 @@ Sensor.prototype.onCommand = function(command) {
 };
 
 // determines whether encryption/decryption can be activated or not
-Sensor.prototype._hasValidEncryptionSet = function () {
+Device.prototype._hasValidEncryptionSet = function () {
     let verdict = (this.encryptionKey && this.encryptionMethod && Array.isArray(this.encryptionKey) && this.encryptionKey.length !== 0);
     return verdict;
 };
 
-Sensor.prototype.encrypt = function (text) {
+Device.prototype.encrypt = function (text) {
     if (!this._hasValidEncryptionSet()) {
         throw new Error('invalid encryption setup');
     }
@@ -1137,7 +1137,7 @@ Sensor.prototype.encrypt = function (text) {
     return output;
 };
 
-Sensor.prototype.decrypt = function (text) {
+Device.prototype.decrypt = function (text) {
     if (!this._hasValidEncryptionSet()) {
         throw new Error('invalid encryption setup');
     }
@@ -1147,11 +1147,11 @@ Sensor.prototype.decrypt = function (text) {
 };
 
 // disable encryption and decryption with minimal changes
-Sensor.prototype.disableEncryption = function () {
+Device.prototype.disableEncryption = function () {
     this.encryptionMethod = ciphers.plain;
 };
 
-Sensor.prototype.setEncryptionMethod = function (name) {
+Device.prototype.setEncryptionMethod = function (name) {
     if (!ciphers[name]) {
         this._logger.warn('invalid cipher name ' + name);
         return false;
@@ -1163,7 +1163,7 @@ Sensor.prototype.setEncryptionMethod = function (name) {
 };
 
 // WARN keys number?
-Sensor.prototype.setEncryptionKey = function (keys) {
+Device.prototype.setEncryptionKey = function (keys) {
     if (!this.encryptionMethod) {
         this._logger.warn('setting the key without a cipher ' + keys);
         return false;
@@ -1178,7 +1178,7 @@ Sensor.prototype.setEncryptionKey = function (keys) {
     }
 };
 
-Sensor.prototype.randomEncryption = function () {
+Device.prototype.randomEncryption = function () {
     var keys = [],
         blinks = [];
     for (var i = 0; i < 4; i++) {
@@ -1197,12 +1197,12 @@ Sensor.prototype.randomEncryption = function () {
 };
 
 // resets encryption, sequencing, and rate limits
-Sensor.prototype.resetSensor = function () {
-    this._logger.log('resetting sensor');
+Device.prototype.resetDevice = function () {
+    this._logger.log('resetting device');
     this.resetSeqNum();
     this.resetRates();
     this.resetEncryption();
     this.playBlinks([3]);
 };
 
-module.exports = Sensor;
+module.exports = Device;
