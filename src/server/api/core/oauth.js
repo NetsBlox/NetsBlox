@@ -17,6 +17,12 @@ class OAuth {
         return result.insertedId;
     }
 
+    async removeClient(requestor, id) {
+        // TODO: check permissions
+        const result = await OAuthStorage.clients.removeOne({_id: id});
+        return result.nRemoved;
+    }
+
     async createToken(authCode, redirectUri) {
         const authData = await this._getAuthData(authCode);
         if (!authData) {

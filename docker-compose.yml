@@ -11,7 +11,8 @@ services:
       - "MONGO_URI=mongodb://mongo:27017/netsblox"
       - "NETSBLOX_BLOB_DIR=/netsblox-blob"
       - "ROBOSCAPE=1973"
-    image: netsblox/server:stable
+      - "CORE_NLP_HOST=http://corenlp:9000"
+    image: netsblox/server:latest
     volumes:
       - netsblox-projects:/netsblox-blob
     ports:
@@ -20,6 +21,8 @@ services:
         - "1973:1973"
     depends_on:
       - mongo
+  corenlp:
+    image: graham3333/corenlp-complete
 
 volumes:
     netsblox-data:

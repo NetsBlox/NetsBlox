@@ -3,9 +3,9 @@ const Utils = {};
 const {setUsername} = require('../../routes/middleware');
 
 Utils.handleErrors = fn => {
-    return async (req, res) => {
+    return async function(req, res) {
         try {
-            await fn(req, res);
+            await fn(...arguments);
         } catch (err) {
             const statusCode = err instanceof RequestError ? 400 : 500;
             res.status(statusCode).send(`ERROR: ${err.message}`);

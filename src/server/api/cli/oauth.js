@@ -10,7 +10,7 @@ program
         const clients = await OAuth.getClients();
         /* eslint-disable no-console */
         console.log('ID\tName\tSecret');
-        clients.forEach(client => console.log([client.id, client.name, client.secret].join('\t')));
+        clients.forEach(client => console.log([client._id, client.name, client.secret].join('\t')));
         /* eslint-enable no-console */
     }));
 
