@@ -3,7 +3,7 @@ const Utils = {};
 const {setUsername} = require('../../routes/middleware');
 
 Utils.handleErrors = fn => {
-    return async function() {
+    return async function(req, res) {
         try {
             await fn(...arguments);
         } catch (err) {
