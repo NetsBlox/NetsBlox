@@ -1,3 +1,5 @@
+const OAuth = require('../../../api/core/oauth');
+const {handleErrors} = require('../../../api/rest/utils');
 const Alexa = require('ask-sdk-core');
 const express = require('express');
 const { ExpressAdapter } = require('ask-sdk-express-adapter');
@@ -106,12 +108,26 @@ const adapter = new ExpressAdapter(skill, true, true);
 
 if (require.main === module) {
     const app = express();
+    app.use(handleErrors(async (req, res, next) => {
+        const [/*prefix*/, tokenID] = req.get('Authorization').split(' ');
+        const token = await OAuth.getToken(tokenID);
+        req.token = token;
+        next();
+    }));
     app.get('/test', (req, res) => res.send('working'));
+    app.get('/whoami', (req, res) => res.send(req.token.username));
     app.use('/', adapter.getRequestHandlers());
     const port = process.env.PORT || 4675;
     app.listen(port);
 } else {
     const router = express();
+    router.use('/alexa', handleErrors(async (req, res, next) => {
+        const [/*prefix*/, tokenID] = req.get('Authorization').split(' ');
+        const token = await OAuth.getToken(tokenID);
+        req.token = token;
+        return next();
+    }));
     router.post('/alexa', adapter.getRequestHandlers());
+    router.get('/alexa/whoami', (req, res) => res.send(req.token.username));
     module.exports = router;
 }
