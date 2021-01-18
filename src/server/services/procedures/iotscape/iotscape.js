@@ -62,7 +62,7 @@ IoTScape.getServices = function () {
  * @param {String} id ID of device to make call to
  * @param {String} string Input to RPC
  */
-IoTScape.call = function (service, id, string){
+IoTScape.send = function (service, id, string){
     let parts = string.split(/\s+/g);
 
     // Require at least a function name
