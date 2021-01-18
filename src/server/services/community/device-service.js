@@ -33,6 +33,7 @@ class DeviceService {
                     args: m.arguments.map(argument => ({
                         name: argument.name,
                         optional: argument.optional,
+                        type: argument.type
                     })),
                 };
             }

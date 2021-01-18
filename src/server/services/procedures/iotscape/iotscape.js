@@ -88,8 +88,13 @@ IoTScape._createService = async function(definition, remote) {
     }
 
     const name = Object.keys(parsed)[0];
-    
     parsed = parsed[name];
+    
+    // Verify service definition in message
+    if(parsed.service == undefined){
+        return;
+    }
+
     const serviceInfo = parsed.service;
     const methodsInfo = parsed.methods;
     const eventsInfo = parsed.events;
@@ -113,10 +118,12 @@ IoTScape._createService = async function(definition, remote) {
         const method = {name: methodName, documentation: methodInfo.documentation, returns: methodInfo.returns};
 
         method.arguments = methodInfo.params.map(param => { 
+            let type = param.type === 'number'? { name: 'Number', params: []} : null;
             return {
                 name: param.name,
                 optional: param.optional,
                 documentation: param.documentation,
+                type
             };
         });
 
@@ -124,7 +131,7 @@ IoTScape._createService = async function(definition, remote) {
         method.arguments = [{
             name: 'id',
             optional: false,
-            documentation: 'ID of device to send request to'
+            documentation: 'ID of device to send request to',
         }, ...method.arguments];
 
         return method;
@@ -137,7 +144,7 @@ IoTScape._createService = async function(definition, remote) {
         arguments: [{
             name: 'id',
             optional: false,
-            documentation: 'ID of device to send request to'
+            documentation: 'ID of device to send request to',
         }],
         returns: {
             documentation: '',
