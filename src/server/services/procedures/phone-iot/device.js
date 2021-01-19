@@ -13,10 +13,10 @@ const { definedOrThrow } = require('./common');
 // b - button press event
 // C - clear custom controls
 // c - remove custom control
-// D - image snapshot (TCP)
 // G - gravity
 // g - add custom label control
 // I - heartbeat
+// i - set image
 // L - linear acceleration
 // l - light level
 // M - magnetic field
@@ -28,6 +28,8 @@ const { definedOrThrow } = require('./common');
 // S - step counter
 // T - add custom text field
 // t - text field content
+// U - add custom image box
+// u - image box content
 // W - get toggle state
 // X - location
 // Y - gyroscope
@@ -308,6 +310,65 @@ Device.prototype.addButton = async function (device, args) {
     if (err !== null) throw new Error(err);
 
     device.guiIdToEvent[args[7]] = args[8];
+    return true;
+};
+Device.prototype.addImageDisplay = async function (device, args) {
+    this._logger.log('add image display ' + this.mac_addr);
+    const response = this.receiveFromDevice('addimagedisplay');
+
+    const id = Buffer.from(args[5], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const message = Buffer.alloc(25);
+    message.write('U', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeFloatBE(args[1], 9);
+    message.writeFloatBE(args[2], 13);
+    message.writeFloatBE(args[3], 17);
+    message.writeFloatBE(args[4], 21);
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    const err = (await response).err;
+    if (err === undefined) throw new Error('failed add image box or failed auth');
+    if (err !== null) throw new Error(err);
+
+    device.guiIdToEvent[args[5]] = args[6];
+    return true;
+};
+Device.prototype.getImage = async function (device, args) {
+    this._logger.log('get image ' + this.mac_addr);
+    const response = this.receiveFromDevice('getimage');
+
+    const id = Buffer.from(args[1], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const message = Buffer.alloc(9);
+    message.write('u', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    const img = (await response).img;
+    if (img === undefined) throw new Error('no image box with matching id');
+    return img;
+};
+Device.prototype.setImage = async function (device, args) {
+    this._logger.log('set image ' + this.mac_addr);
+    const response = this.receiveFromDevice('setimage');
+
+    const id = Buffer.from(args[1], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const message = Buffer.alloc(10);
+    message.write('i', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message[9] = id.length;
+
+    const img = await common.prepImageToSend(args[2]);
+    this.sendToDevice(Buffer.concat([message, id, img]));
+    
+    const success = (await response).success;
+    if (success === undefined) throw new Error('failed to set image or failed auth');
+    if (!success) throw new Error('no image display with given id');
     return true;
 };
 Device.prototype.addTextField = async function (device, args) {
@@ -730,6 +791,23 @@ Device.prototype.onMessage = function (message) {
     else if (command === 'b' && message.length >= 11) {
         const id = message.toString('utf8', 11);
         this._fireRawCustomEvent(id, {id});
+    }
+    else if (command === 'U') {
+        let err = undefined;
+        if (message.length === 12) switch (message[11]) {
+            case 0: err = null; break;
+            case 1: err = 'too many controls'; break;
+            case 2: err = 'item with id already existed'; break;
+            default: err = 'unknown error'; break;
+        }
+        this.sendToClient('addimagedisplay', { err });
+    }
+    else if (command === 'u' && message.length >= 11) {
+        const img = message.slice(11);
+        this.sendToClient('getimage', img.length > 0 ? {img} : {});
+    }
+    else if (command === 'i') {
+        this.sendToClient('setimage', message.length === 12 ? { success: message[11] == 0 ? true : false } : {});
     }
     else if (command === 'T') {
         let err = undefined;

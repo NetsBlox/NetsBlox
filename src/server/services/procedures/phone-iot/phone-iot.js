@@ -17,17 +17,12 @@
 
 'use strict';
 
-const {PromiseSocket} = require('promise-socket');
-
 const logger = require('../utils/logger')('PhoneIoT');
 const Device = require('./device');
 const acl = require('../roboscape/accessControl');
-const common = require('./common');
 var dgram = require('dgram'),
     server = dgram.createSocket('udp4'),
     PHONE_IOT_MODE = process.env.PHONE_IOT_MODE || 'both';
-
-const PHONE_IOT_TCP_PORT = 8889; // tcp port used by the android app
 
 /*
  * PhoneIoT - This constructor is called on the first
@@ -215,6 +210,21 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         arguments[6] = color;
         arguments[7] = textColor;
         return this._passToDevice('addButton', arguments);
+    };
+    /**
+     * Add a custom image display to the device, which is initially empty.
+     * @param {string} device name of the device (matches at the end)
+     * @param {string} password current password for the device
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the image box (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the image box (percentage).
+     * @param {BoundedNumber<0, 100>} width Width of the image box (percentage).
+     * @param {BoundedNumber<0, 100>} height Height of the image box (percentage).
+     * @param {String} id Name of the image box.
+     * @param {String} event Name of the event to fire when the image box content is changed by the user.
+     * @returns {boolean} True if the action is successful, false otherwise.
+     */
+    PhoneIoT.prototype.addImageDisplay = function (device, password, x, y, width, height, id, event) {
+        return this._passToDevice('addImageDisplay', arguments);
     };
     /**
      * Add a custom text field to the device.
@@ -570,35 +580,30 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
 
     /**
-     * Get the most recent image snapshot from the device.
+     * Get the displayed image of a custom image box.
      * @param {string} device name of the device (matches at the end)
      * @param {string} password current password for the device
+     * @param {string} id the id of the custom image box
+     * @returns {object} the displayed image
      */
-    PhoneIoT.prototype.getImage = async function (device, password) {
-        const deviceObj = await this._getDevice(device);
-        const ip = deviceObj.ip4_addr;
+    PhoneIoT.prototype.getImage = async function (device, password, id) {
+        const bin = await this._passToDevice('getImage', arguments);
 
-        const msg = Buffer.alloc(9);
-        msg.write('D', 0, 1);
-        msg.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
-
-        const socket = new PromiseSocket();
-        socket.setTimeout(5000); // allow some time for starting connection and encoding result (well over worst case)
-        try {
-            await socket.connect(PHONE_IOT_TCP_PORT, ip);
-            await socket.writeAll(msg);
-            const bin = await socket.readAll();
-            if (bin.length === 0) throw 0; // failed request, return the default error message
-
-            const rsp = this.response;
-            rsp.set('content-type', 'image/jpeg');
-            rsp.set('content-length', bin.length);
-            rsp.set('connection', 'close');
-            return rsp.status(200).send(bin);
-        }
-        catch (err) {
-            throw new Error('get image not enabled or failed to auth');
-        }
+        const rsp = this.response;
+        rsp.set('content-type', 'image/jpeg');
+        rsp.set('content-length', bin.length);
+        rsp.set('connection', 'close');
+        return rsp.status(200).send(bin);
+    };
+    /**
+     * Get the displayed image of a custom image box.
+     * @param {string} device name of the device (matches at the end)
+     * @param {string} password current password for the device
+     * @param {string} id the id of the custom image box
+     * @param {ImageBitmap} img the new image to display
+     */
+    PhoneIoT.prototype.setImage = function (device, password, id, img) {
+        return this._passToDevice('setImage', arguments);
     };
 
     /**
