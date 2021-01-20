@@ -10,7 +10,7 @@
  * Based on the RoboScape procedure.
  *
  * Environment variables:
- *  PHONE_IOT_PORT: set it to the UDP port (1975) to enable this module
+ *  PHONE_IOT_PORT: set it to the UDP port (1976) to enable this module
  *  PHONE_IOT_MODE: sets the NetsBlox interface type, can be "security",
  *      "native" or "both" (default)
  */
@@ -20,9 +20,9 @@
 const logger = require('../utils/logger')('PhoneIoT');
 const Device = require('./device');
 const acl = require('../roboscape/accessControl');
-var dgram = require('dgram'),
-    server = dgram.createSocket('udp4'),
-    PHONE_IOT_MODE = process.env.PHONE_IOT_MODE || 'both';
+const dgram = require('dgram');
+const server = dgram.createSocket('udp4');
+const PHONE_IOT_MODE = process.env.PHONE_IOT_MODE || 'both';
 
 /*
  * PhoneIoT - This constructor is called on the first
@@ -30,7 +30,7 @@ var dgram = require('dgram'),
  * @constructor
  * @return {undefined}
  */
-var PhoneIoT = function () {
+const PhoneIoT = function () {
     this._state = {
         registered: {}
     };
@@ -47,7 +47,7 @@ PhoneIoT.prototype._ensureLoggedIn = function() {
 
 // fetch the device and updates its address. creates one if necessary
 PhoneIoT.prototype._getOrCreateDevice = function (mac_addr, ip4_addr, ip4_port) {
-    var device = this._devices[mac_addr];
+    let device = this._devices[mac_addr];
     if (!device) {
         logger.log('discovering ' + mac_addr + ' at ' + ip4_addr + ':' + ip4_port);
         device = new Device(mac_addr, ip4_addr, ip4_port, server);
@@ -70,7 +70,7 @@ PhoneIoT.prototype._getDevice = async function (deviceId) {
     if (deviceId.length === 12) {
         device = this._devices[deviceId];
     } else { // try to guess the rest of the id
-        for (var mac_addr in this._devices) { // pick the first match
+        for (const mac_addr in this._devices) { // pick the first match
             if (mac_addr.endsWith(deviceId)) {
                 deviceId = mac_addr;
                 device = this._devices[deviceId];
@@ -86,8 +86,8 @@ PhoneIoT.prototype._getDevice = async function (deviceId) {
 };
 
 PhoneIoT.prototype._heartbeat = function () {
-    for (var mac_addr in PhoneIoT.prototype._devices) {
-        var device = PhoneIoT.prototype._devices[mac_addr];
+    for (const mac_addr in PhoneIoT.prototype._devices) {
+        const device = PhoneIoT.prototype._devices[mac_addr];
         if (!device.heartbeat()) {
             logger.log('forgetting ' + mac_addr);
             delete PhoneIoT.prototype._devices[mac_addr];
@@ -101,9 +101,9 @@ PhoneIoT.prototype._heartbeat = function () {
  * @returns {array} the list of registered devices
  */
 PhoneIoT.prototype._getRegistered = function () {
-    var state = this._state,
-        devices = [];
-    for (var mac_addr in state.registered) {
+    const state = this._state;
+    const devices = [];
+    for (const mac_addr in state.registered) {
         if (this._devices[mac_addr].isMostlyAlive()) {
             devices.push(mac_addr);
         } else {
@@ -649,17 +649,15 @@ if (PHONE_IOT_MODE === 'security' || PHONE_IOT_MODE === 'both') {
             // for replay attacks
             device.commandToClient(command);
 
-            if (device._hasValidEncryptionSet()) // if encryption is set
-                command = device.decrypt(command);
+            // if encryption is set
+            if (device._hasValidEncryptionSet()) command = device.decrypt(command);
 
-            var seqNum = -1;
+            let seqNum = -1;
             if (command.match(/^(\d+)[, ](.*)$/)) {
                 seqNum = +RegExp.$1;
                 command = RegExp.$2;
             }
-            if (!device.accepts(this.caller.clientId, seqNum)) {
-                return false;
-            }
+            if (!device.accepts(this.caller.clientId, seqNum)) return false;
             device.setSeqNum(seqNum);
         }
 
@@ -668,18 +666,15 @@ if (PHONE_IOT_MODE === 'security' || PHONE_IOT_MODE === 'both') {
 }
 
 server.on('listening', function () {
-    var local = server.address();
+    const local = server.address();
     logger.log('listening on ' + local.address + ':' + local.port);
 });
 
 server.on('message', function (message, remote) {
-    if (message.length < 6) {
-        logger.log('invalid message ' + remote.address + ':' +
-            remote.port + ' ' + message.toString('hex'));
-    } else {
-        var mac_addr = message.toString('hex', 0, 6); // pull out the mac address
-        var device = PhoneIoT.prototype._getOrCreateDevice(
-            mac_addr, remote.address, remote.port);
+    if (message.length < 6) logger.log('invalid message ' + remote.address + ':' + remote.port + ' ' + message.toString('hex'));
+    else {
+        const mac_addr = message.toString('hex', 0, 6); // pull out the mac address
+        const device = PhoneIoT.prototype._getOrCreateDevice(mac_addr, remote.address, remote.port);
         device.onMessage(message);
     }
 });
@@ -687,14 +682,14 @@ server.on('message', function (message, remote) {
 /* eslint no-console: off */
 if (process.env.PHONE_IOT_PORT) {
     console.log('PHONE_IOT_PORT is ' + process.env.PHONE_IOT_PORT);
-    server.bind(process.env.PHONE_IOT_PORT || 1975);
+    server.bind(process.env.PHONE_IOT_PORT || 1976);
 
     setTimeout(PhoneIoT.prototype._heartbeat, 1000);
 }
 
 PhoneIoT.isSupported = function () {
     if (!process.env.PHONE_IOT_PORT) {
-        console.log('PHONE_IOT_PORT is not set (to 1975), PhoneIoT is disabled');
+        console.log('PHONE_IOT_PORT is not set (to 1976), PhoneIoT is disabled');
     }
     return !!process.env.PHONE_IOT_PORT;
 };

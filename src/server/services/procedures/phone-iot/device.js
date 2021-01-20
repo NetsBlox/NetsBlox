@@ -30,6 +30,7 @@ const { definedOrThrow } = require('./common');
 // t - text field content
 // U - add custom image box
 // u - image box content
+// v - image box updated
 // W - get toggle state
 // X - location
 // Y - gyroscope
@@ -68,9 +69,7 @@ const COMPASS_DIRECTIONS_8 = [
     [-Math.PI, 'S'],
 ];
 
-const MAX_ACTION_LISTENERS = 10000;
-
-var Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
+const Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.id = mac_addr;
     this.mac_addr = mac_addr;
     this.ip4_addr = ip4_addr;
@@ -145,7 +144,7 @@ Device.prototype.accepts = function (clientId, seqNum) {
         return false;
     }
 
-    var client = this.clientCounts[clientId];
+    let client = this.clientCounts[clientId];
     if (!client) {
         client = {
             count: 0,
@@ -177,35 +176,29 @@ Device.prototype.accepts = function (clientId, seqNum) {
 
 Device.prototype.heartbeat = function () {
     this.totalCount = 0;
-    for (var id in this.clientCounts) {
-        var client = this.clientCounts[id];
+    for (const id in this.clientCounts) {
+        const client = this.clientCounts[id];
         client.count = 0;
         if (client.penalty > 1) {
             client.count = 0;
             client.penalty -= 1;
-        } else {
-            delete this.clientCounts[id];
         }
+        else delete this.clientCounts[id];
     }
 
     this.heartbeats += 1;
-    if (this.heartbeats >= FORGET_TIME) {
-        return false;
-    }
-    return true;
+    return this.heartbeats <= FORGET_TIME;
 };
-
 Device.prototype.isAlive = function () {
     return this.heartbeats <= 2;
 };
-
 Device.prototype.isMostlyAlive = function () {
     return this.heartbeats <= FORGET_TIME;
 };
 
 Device.prototype.addClientSocket = function (socket) {
     const {clientId} = socket;
-    var i = this.sockets.findIndex(s => s.clientId === clientId);
+    const i = this.sockets.findIndex(s => s.clientId === clientId);
     if (i < 0) {
         this._logger.log('register ' + clientId + ' ' + this.mac_addr);
         this.sockets.push(socket);
@@ -216,7 +209,7 @@ Device.prototype.addClientSocket = function (socket) {
 
 Device.prototype.removeClientSocket = function (socket) {
     const {clientId} = socket;
-    var i = this.sockets.findIndex(s => s.clientId === clientId);
+    const i = this.sockets.findIndex(s => s.clientId === clientId);
     if (i >= 0) {
         this._logger.log('unregister ' + clientId + ' ' + this.mac_addr);
         this.sockets.splice(i, 1);
@@ -237,15 +230,13 @@ Device.prototype.receiveFromDevice = function (msgType, timeout) {
     if (!this.callbacks[msgType]) {
         this.callbacks[msgType] = [];
     }
-    var callbacks = this.callbacks[msgType];
+    const callbacks = this.callbacks[msgType];
 
     return new Promise(function (resolve) {
         callbacks.push(resolve);
         setTimeout(function () {
-            var i = callbacks.indexOf(resolve);
-            if (i >= 0) {
-                callbacks.splice(i, 1);
-            }
+            const i = callbacks.indexOf(resolve);
+            if (i >= 0) callbacks.splice(i, 1);
             resolve(false);
         }, timeout || RESPONSE_TIMEOUT);
     });
@@ -671,7 +662,7 @@ Device.prototype.getLocation = async function (device, args) {
 
 Device.prototype.commandToClient = function (command) {
     if (PHONE_IOT_MODE === 'security' || PHONE_IOT_MODE === 'both') {
-        var mac_addr = this.mac_addr;
+        const mac_addr = this.mac_addr;
         this.sockets.forEach(socket => {
             const content = {
                 device: mac_addr,
@@ -683,18 +674,16 @@ Device.prototype.commandToClient = function (command) {
 };
 
 Device.prototype.sendToClient = function (msgType, content) {
-    var myself = this;
+    const myself = this;
 
     let fields = ['time', ...Object.keys(content)];
     content.device = this.mac_addr;
     content.time = this.timestamp;
 
-    if (msgType !== 'set led') {
-        this._logger.log('event ' + msgType + ' ' + JSON.stringify(content));
-    }
+    this._logger.log('event ' + msgType);
 
     if (this.callbacks[msgType]) {
-        var callbacks = this.callbacks[msgType];
+        const callbacks = this.callbacks[msgType];
         delete this.callbacks[msgType];
         callbacks.forEach(function (callback) {
             callback(content);
@@ -711,8 +700,8 @@ Device.prototype.sendToClient = function (msgType, content) {
 
         if ((PHONE_IOT_MODE === 'security' && msgType !== 'set led') ||
             PHONE_IOT_MODE === 'both') {
-            var text = msgType;
-            for (var i = 0; i < fields.length; i++) {
+            let text = msgType;
+            for (let i = 0; i < fields.length; i++) {
                 text += ' ' + content[fields[i]];
             }
 
@@ -727,6 +716,7 @@ Device.prototype.sendToClient = function (msgType, content) {
 
 Device.prototype._fireRawCustomEvent = function(id, content) {
     const event = this.guiIdToEvent[id];
+    console.log('got event:', id, event, content);
     if (event === undefined) return;
     for (const listener in this.guiListeners) {
         const socket = this.guiListeners[listener];
@@ -739,19 +729,29 @@ Device.prototype._fireRawCustomEvent = function(id, content) {
     }
 };
 
+Device.prototype._sendAddControlResult = function(name, message) {
+    let err = undefined;
+    if (message.length === 12) switch (message[11]) {
+        case 0: err = null; break;
+        case 1: err = 'too many controls'; break;
+        case 2: err = 'item with id already existed'; break;
+        default: err = 'unknown error'; break;
+    }
+    this.sendToClient(name, { err });
+};
+
 // used for handling incoming message from the device
 Device.prototype.onMessage = function (message) {
     if (message.length < 11) {
-        this._logger.log('invalid message ' + this.ip4_addr + ':' + this.ip4_port +
-            ' ' + message.toString('hex'));
+        this._logger.log('invalid message ' + this.ip4_addr + ':' + this.ip4_port + ' ' + message.toString('hex'));
         return;
     }
 
-    var oldTimestamp = this.timestamp;
+    const oldTimestamp = this.timestamp;
     this.timestamp = message.readUInt32LE(6);
-    var command = message.toString('ascii', 10, 11);
+    const command = message.toString('ascii', 10, 11);
 
-    if (command === 'I' && message.length === 11) {
+    if (command === 'I') {
         if (this.timestamp < oldTimestamp) {
             this._logger.log('device was rebooted ' + this.mac_addr);
             this.resetSeqNum();
@@ -759,65 +759,23 @@ Device.prototype.onMessage = function (message) {
             this.resetRates();
         }
     }
-    else if (command === 'a') {
-        this.sendToClient('auth', message.length === 11 ? { res: true } : {});
-    }
-    else if (command === 'C') {
-        this.sendToClient('clearcontrols', message.length === 11 ? { res: true } : {});
-    }
-    else if (command === 'c') {
-        this.sendToClient('removecontrol', message.length === 11 ? { res: true } : {});
-    }
-    else if (command === 'g') {
-        let err = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: err = null; break;
-            case 1: err = 'too many controls'; break;
-            case 2: err = 'item with id already existed'; break;
-            default: err = 'unknown error'; break;
-        }
-        this.sendToClient('addlabel', { err });
-    }
-    else if (command === 'B') {
-        let err = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: err = null; break;
-            case 1: err = 'too many controls'; break;
-            case 2: err = 'item with id already existed'; break;
-            default: err = 'unknown error'; break;
-        }
-        this.sendToClient('addbutton', { err });
-    }
-    else if (command === 'b' && message.length >= 11) {
+    else if (command === 'a') this.sendToClient('auth', message.length === 11 ? { res: true } : {});
+    else if (command === 'C') this.sendToClient('clearcontrols', message.length === 11 ? { res: true } : {});
+    else if (command === 'c') this.sendToClient('removecontrol', message.length === 11 ? { res: true } : {});
+    else if (command === 'i') this.sendToClient('setimage', message.length === 12 ? { success: message[11] == 0 ? true : false } : {});
+    else if (command === 'g') this._sendAddControlResult('addlabel', message);
+    else if (command === 'B') this._sendAddControlResult('addbutton', message);
+    else if (command === 'Z') this._sendAddControlResult('addcheckbox', message);
+    else if (command === 'T') this._sendAddControlResult('addtextfield', message);
+    else if (command === 'y') this._sendAddControlResult('addradiobutton', message);
+    else if (command === 'U') this._sendAddControlResult('addimagedisplay', message);
+    else if (command === 'b') {
         const id = message.toString('utf8', 11);
         this._fireRawCustomEvent(id, {id});
     }
-    else if (command === 'U') {
-        let err = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: err = null; break;
-            case 1: err = 'too many controls'; break;
-            case 2: err = 'item with id already existed'; break;
-            default: err = 'unknown error'; break;
-        }
-        this.sendToClient('addimagedisplay', { err });
-    }
-    else if (command === 'u' && message.length >= 11) {
+    else if (command === 'u') {
         const img = message.slice(11);
         this.sendToClient('getimage', img.length > 0 ? {img} : {});
-    }
-    else if (command === 'i') {
-        this.sendToClient('setimage', message.length === 12 ? { success: message[11] == 0 ? true : false } : {});
-    }
-    else if (command === 'T') {
-        let err = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: err = null; break;
-            case 1: err = 'too many controls'; break;
-            case 2: err = 'item with id already existed'; break;
-            default: err = 'unknown error'; break;
-        }
-        this.sendToClient('addtextfield', { err });
     }
     else if (command === 't' && message.length >= 12) {
         const idlen = message[11] & 0xff;
@@ -826,26 +784,6 @@ Device.prototype.onMessage = function (message) {
             const text = message.toString('utf8', 12 + idlen);
             this._fireRawCustomEvent(id, {id, text});
         }
-    }
-    else if (command === 'Z') {
-        let err = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: err = null; break;
-            case 1: err = 'too many controls'; break;
-            case 2: err = 'item with id already existed'; break;
-            default: err = 'unknown error'; break;
-        }
-        this.sendToClient('addcheckbox', { err });
-    }
-    else if (command === 'y') {
-        let err = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: err = null; break;
-            case 1: err = 'too many controls'; break;
-            case 2: err = 'item with id already existed'; break;
-            default: err = 'unknown error'; break;
-        }
-        this.sendToClient('addradiobutton', { err });
     }
     else if (command === 'z' && message.length >= 12) {
         const state = message[11] !== 0;
@@ -917,36 +855,17 @@ Device.prototype.onMessage = function (message) {
             z: message.readFloatBE(19),
         } : {});
     }
-    else if (command === 'm') {
-        this.sendToClient('miclevel', message.length === 15 ? {
-            level: message.readFloatBE(11),
-        } : {});
-    }
     else if (command === 'X') {
         this.sendToClient('location', message.length === 19 ? {
             lat: message.readFloatBE(11),
             long: message.readFloatBE(15),
         } : {});
     }
-    else if (command === 'P') {
-        this.sendToClient('proximity', message.length === 15 ? {
-            proximity: message.readFloatBE(11),
-        } : {});
-    }
-    else if (command === 'S') {
-        this.sendToClient('stepcount', message.length === 15 ? {
-            count: message.readFloatBE(11),
-        } : {});
-    }
-    else if (command === 'l') {
-        this.sendToClient('lightlevel', message.length === 15 ? {
-            level: message.readFloatBE(11),
-        } : {});
-    }
-    else {
-        this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
-            ' ' + message.toString('hex'));
-    }
+    else if (command === 'm') this.sendToClient('miclevel', message.length === 15 ? { level: message.readFloatBE(11) } : {});
+    else if (command === 'P') this.sendToClient('proximity', message.length === 15 ? { proximity: message.readFloatBE(11) } : {});
+    else if (command === 'S') this.sendToClient('stepcount', message.length === 15 ? { count: message.readFloatBE(11) } : {});
+    else if (command === 'l') this.sendToClient('lightlevel', message.length === 15 ? { level: message.readFloatBE(11) } : {});
+    else this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port + ' ' + message.toString('hex'));
 };
 
 // handle user commands to the device (through the 'send' rpc)
@@ -960,209 +879,19 @@ Device.prototype.onCommand = function(command) {
             }
         },
         {
-            regex: /^authenticate$/,
-            handler: () => {
-                return this.authenticate();
-            }
-        },
-        {
-            regex: /^clear controls$/,
-            handler: () => {
-                return this.clearControls();
-            }
-        },
-        {
-            regex: /^remove control$/,
-            handler: () => {
-                return this.removeControl();
-            }
-        },
-        {
-            regex: /^add button$/,
-            handler: () => {
-                return this.addButton();
-            }
-        },
-        {
-            regex: /^add text field$/,
-            handler: () => {
-                return this.addTextField();
-            }
-        },
-        {
-            regex: /^add checkbox$/,
-            handler: () => {
-                return this.addCheckbox();
-            }
-        },
-        {
-            regex: /^add radio button$/,
-            handler: () => {
-                return this.addRadioButton();
-            }
-        },
-        {
-            regex: /^add label$/,
-            handler: () => {
-                return this.addLabel();
-            }
-        },
-        {
-            regex: /^get toggle state$/,
-            handler: () => {
-                return this.getToggleState();
-            }
-        },
-        {
-            regex: /^get orientation$/,
-            handler: () => {
-                return this.getOrientation();
-            }
-        },
-        {
-            regex: /^get compass heading$/,
-            handler: () => {
-                return this.getCompassHeading();
-            }
-        },
-        {
-            regex: /^get compass heading degrees$/,
-            handler: () => {
-                return this.getCompassHeadingDegrees();
-            }
-        },
-        {
-            regex: /^get compass direction$/,
-            handler: () => {
-                return this.getCompassDirection();
-            }
-        },
-        {
-            regex: /^get compass cardinal direction$/,
-            handler: () => {
-                return this.getCompassCardinalDirection();
-            }
-        },
-        {
-            regex: /^get accelerometer$/,
-            handler: () => {
-                return this.getAccelerometer();
-            }
-        },
-        {
-            regex: /^get accelerometer normalized$/,
-            handler: () => {
-                return this.getAccelerometerNormalized();
-            }
-        },
-        {
-            regex: /^get facing direction$/,
-            handler: () => {
-                return this.getFacingDirection();
-            }
-        },
-        {
-            regex: /^get gravity$/,
-            handler: () => {
-                return this.getGravity();
-            }
-        },
-        {
-            regex: /^get gravity normalized$/,
-            handler: () => {
-                return this.getGravityNormalized();
-            }
-        },
-        {
-            regex: /^get linear acceleration$/,
-            handler: () => {
-                return this.getLinearAcceleration();
-            }
-        },
-        {
-            regex: /^get linear acceleration normalized$/,
-            handler: () => {
-                return this.getLinearAccelerationNormalized();
-            }
-        },
-        {
-            regex: /^get gyroscope$/,
-            handler: () => {
-                return this.getGyroscope();
-            }
-        },
-        {
-            regex: /^get rotation$/,
-            handler: () => {
-                return this.getRotation();
-            }
-        },
-        {
-            regex: /^get game rotation$/,
-            handler: () => {
-                return this.getGameRotation();
-            }
-        },
-        {
-            regex: /^get magnetic field vector$/,
-            handler: () => {
-                return this.getMagneticFieldVector();
-            }
-        },
-        {
-            regex: /^get magnetic field vector normalized$/,
-            handler: () => {
-                return this.getMagneticFieldVectorNormalized();
-            }
-        },
-        {
-            regex: /^get microphone level$/,
-            handler: () => {
-                return this.getMicrophoneLevel();
-            }
-        },
-        {
-            regex: /^get location$/,
-            handler: () => {
-                return this.getLocation();
-            }
-        },
-        {
-            regex: /^get proximity$/,
-            handler: () => {
-                return this.getProximity();
-            }
-        },
-        {
-            regex: /^get step count$/,
-            handler: () => {
-                return this.getStepCount();
-            }
-        },
-        {
-            regex: /^get light level$/,
-            handler: () => {
-                return this.getLightLevel();
-            }
-        },
-        {
             regex: /^set encryption ([^ ]+)(| -?\d+([ ,]-?\d+)*)$/, // name of the cipher
             handler: () => {
-                let cipherName = RegExp.$1.toLowerCase();
-                var key = RegExp.$2.split(/[, ]/);
-                if (key[0] === '') {
-                    key.splice(0, 1);
-                }
+                const cipherName = RegExp.$1.toLowerCase();
+                const key = RegExp.$2.split(/[, ]/);
+                if (key[0] === '') key.splice(0, 1);
                 return this.setEncryptionMethod(cipherName) && this.setEncryptionKey(key);
             }
         },
         { // deprecated
             regex: /^set key(| -?\d+([ ,]-?\d+)*)$/,
             handler: () => {
-                var encryption = RegExp.$1.split(/[, ]/);
-                if (encryption[0] === '') {
-                    encryption.splice(0, 1);
-                }
+                const encryption = RegExp.$1.split(/[, ]/);
+                if (encryption[0] === '') encryption.splice(0, 1);
                 return this.setEncryptionKey(encryption.map(Number));
             }
         },
@@ -1257,10 +986,10 @@ Device.prototype.setEncryptionKey = function (keys) {
 };
 
 Device.prototype.randomEncryption = function () {
-    var keys = [],
-        blinks = [];
-    for (var i = 0; i < 4; i++) {
-        var a = Math.floor(Math.random() * 16);
+    const keys = [];
+    const blinks = [];
+    for (let i = 0; i < 4; i++) {
+        const a = Math.floor(Math.random() * 16);
         keys.push(a);
         blinks.push(a & 0x8 ? 2 : 1);
         blinks.push(a & 0x4 ? 2 : 1);
