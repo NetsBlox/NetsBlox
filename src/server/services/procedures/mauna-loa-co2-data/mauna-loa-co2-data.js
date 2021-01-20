@@ -21,6 +21,7 @@ const data = (function() {
 })();
 
 const MaunaLoaCO2Data = {};
+MaunaLoaCO2Data.serviceName = 'MaunaLoaCO2Data';
 
 /**
  * Get the mole fraction of CO2 (in parts per million) by year. Missing measurements
