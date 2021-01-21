@@ -157,7 +157,7 @@ describe('jsdoc-extractor', () => {
                 assert.deepEqual(arg.type.params, [10, 20]);
             });
 
-            it.only('should support nested param types', () => {
+            it('should support nested param types', () => {
                 const comment = `
                 /**
                  * this is the description
