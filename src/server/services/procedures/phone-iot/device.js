@@ -15,6 +15,8 @@ const { definedOrThrow } = require('./common');
 // c - remove custom control
 // G - gravity
 // g - add custom label control
+// H - set text
+// h - get text
 // I - heartbeat
 // i - set image
 // L - linear acceleration
@@ -361,6 +363,43 @@ Device.prototype.setImage = async function (device, args) {
     if (success === undefined) throw new Error('failed to set image or failed auth');
     if (!success) throw new Error('no image display with given id');
     return true;
+};
+Device.prototype.setText = async function (device, args) {
+    this._logger.log('set text ' + this.mac_addr);
+    const response = this.receiveFromDevice('settext');
+
+    const id = Buffer.from(args[1], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const message = Buffer.alloc(10);
+    message.write('H', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message[9] = id.length;
+
+    const text = Buffer.from(args[2], 'utf8');
+    this.sendToDevice(Buffer.concat([message, id, text]));
+    
+    const success = (await response).success;
+    if (success === undefined) throw new Error('failed to set text or failed auth');
+    if (!success) throw new Error('no text display with given id');
+    return true;
+};
+Device.prototype.getText = async function (device, args) {
+    this._logger.log('get text ' + this.mac_addr);
+    const response = this.receiveFromDevice('gettext');
+
+    const id = Buffer.from(args[1], 'utf8');
+    if (id.length > 255) throw new Error('id too long');
+
+    const message = Buffer.alloc(9);
+    message.write('h', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    const text = (await response).text;
+    if (text === undefined) throw new Error('failed to get text or failed auth');
+    if (text === null) throw new Error('no text display with given id');
+    return text;
 };
 Device.prototype.addTextField = async function (device, args) {
     this._logger.log('add text field ' + this.mac_addr);
@@ -763,6 +802,15 @@ Device.prototype.onMessage = function (message) {
     else if (command === 'C') this.sendToClient('clearcontrols', message.length === 11 ? { res: true } : {});
     else if (command === 'c') this.sendToClient('removecontrol', message.length === 11 ? { res: true } : {});
     else if (command === 'i') this.sendToClient('setimage', message.length === 12 ? { success: message[11] == 0 ? true : false } : {});
+    else if (command === 'u') {
+        const img = message.slice(11);
+        this.sendToClient('getimage', img.length > 0 ? {img} : {}); 
+    }
+    else if (command === 'H') { console.log('H', message); this.sendToClient('settext', message.length === 12 ? { success: message[11] == 0 ? true : false } : {}); }
+    else if (command === 'h') {
+        if (message.length < 12 || message[11] != 0) this.sendToClient('gettext', {text: null});
+        else { const text = message.toString('utf8', 12); this.sendToClient('gettext', {text}); }
+    }
     else if (command === 'g') this._sendAddControlResult('addlabel', message);
     else if (command === 'B') this._sendAddControlResult('addbutton', message);
     else if (command === 'Z') this._sendAddControlResult('addcheckbox', message);
@@ -772,10 +820,6 @@ Device.prototype.onMessage = function (message) {
     else if (command === 'b') {
         const id = message.toString('utf8', 11);
         this._fireRawCustomEvent(id, {id});
-    }
-    else if (command === 'u') {
-        const img = message.slice(11);
-        this.sendToClient('getimage', img.length > 0 ? {img} : {});
     }
     else if (command === 't' && message.length >= 12) {
         const idlen = message[11] & 0xff;

@@ -247,6 +247,27 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('addTextField', arguments);
     };
     /**
+     * Set the text on a control that displays text.
+     * @param {string} device name of the device (matches at the end)
+     * @param {string} password current password for the device
+     * @param {String} id Name of the control to change text on
+     * @param {string} text The new text to display
+     * @returns {boolean} True if the action is successful, false otherwise.
+     */
+    PhoneIoT.prototype.setText = function (device, password, id, text) {
+        return this._passToDevice('setText', arguments);
+    };
+    /**
+     * Get the text from a control that displays text.
+     * @param {string} device name of the device (matches at the end)
+     * @param {string} password current password for the device
+     * @param {String} id Name of the control to read text from
+     * @returns {boolean} The currently displayed text
+     */
+    PhoneIoT.prototype.getText = function (device, password, id) {
+        return this._passToDevice('getText', arguments);
+    };
+    /**
      * Add a custom checkbox to the device.
      * @param {string} device name of the device (matches at the end)
      * @param {string} password current password for the device
