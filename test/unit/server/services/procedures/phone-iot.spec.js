@@ -1,6 +1,6 @@
 const utils = require('../../../../assets/utils');
 
-describe.only(utils.suiteName(__filename), function() {
+describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('PhoneIoT', [
         ['getDevices', []],
         ['getColor', ['red', 'green', 'blue']],
