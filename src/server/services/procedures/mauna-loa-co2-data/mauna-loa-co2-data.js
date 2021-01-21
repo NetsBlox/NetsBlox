@@ -7,19 +7,16 @@
  * @category Science
  * @category Climate
  */
+
+const fs = require('fs');
+const path = require('path');
+
 const data = (function() {
-    const fs = require('fs');
-    const path = require('path');
     const filename = path.join(__dirname,'co2_mm_mlo.txt');
     const lines = fs.readFileSync(filename, 'utf8').split('\n');
-
-    while (lines[0].startsWith('#')) {
-        lines.shift();
-    }
-    return lines.map(line => {
-        const [,, date, avg, interpolated, trend] = line.split(/\s+/)
-            .map(txt => parseFloat(txt));
-        return {date, avg, interpolated, trend};
+    return lines.filter(x => !x.startsWith('#')).map(line => {
+        const [,, date, interpolated, trend] = line.split(/\s+/).map(parseFloat);
+        return {date, interpolated, trend};
     });
 })();
 
