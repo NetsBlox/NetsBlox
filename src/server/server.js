@@ -99,12 +99,14 @@ Server.prototype.configureRoutes = async function(servicesURL) {
     const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
 
     this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {
+        const now = Date.now();
         const sockets = NetworkTopology.sockets().map(socket => {
             return {
                 clientId: socket.uuid,
                 username: socket.username,
                 projectId: socket.projectId,
-                roleId: socket.roleId
+                roleId: socket.roleId,
+                secsSinceLastActivity: (now - socket.lastSocketActivity)/1000,
             };
         });
 
