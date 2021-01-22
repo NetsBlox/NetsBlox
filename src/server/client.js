@@ -14,8 +14,6 @@ var counter = 0,
         'user-action'
     ];
 
-let clientCounter = 0;
-
 const _ = require('lodash');
 const assert = require('assert');
 const Messages = require('./storage/messages');
@@ -26,12 +24,12 @@ const BugReporter = require('./bug-reporter');
 const Projects = require('./storage/projects');
 const NetsBloxAddress = require('./netsblox-address');
 const NetworkTopology = require('./network-topology');
+const {RequestError} = require('./api/core/errors');
 
 class Client {
-    constructor (logger, websocket) {
-        // QUESTION what is this.id used for? and why is it changing counter
-        this.id = (++counter);
-        this._logger = logger.fork('client-' + ++clientCounter);
+    constructor (logger, websocket, uuid) {
+        this.uuid = uuid;
+        this._logger = logger.fork(uuid);
 
         this.loggedIn = false;
         this.projectId = null;
@@ -51,12 +49,9 @@ class Client {
         this._logger.trace('created');
     }
 
-    hasProject (silent) {
-        const hasProject = !!this.projectId;
-        if (!hasProject && !silent) {
-            this._logger.error('user has no project!');
-        }
-        return hasProject;
+    reconnect(websocket) {
+        this._socket = websocket;
+        this.connError = null;
     }
 
     isOwner () {  // TODO: move to auth stuff...
@@ -64,15 +59,9 @@ class Client {
         return this.projectId;
     }
 
-    async sendEditMsg (msg) {
-        if (!this.hasProject()) {
-            this._logger.error(`Trying to send edit msg w/o project ${this.uuid}`);
-            return;
-        }
-
+    async sendEditMsg (msg) {  // TODO: validate the msg fields?
         // accept the event here and broadcast to everyone
-        const projectId = this.projectId;
-        const roleId = this.roleId;
+        const {projectId, roleId} = msg;
         const {canApply, actionId} = await this.canApplyAction(msg.action);
         const sockets = NetworkTopology.getSocketsAt(projectId, roleId);
 
@@ -103,11 +92,12 @@ class Client {
     }
 
     async recordAction(msg) {
-        const projectId = this.hasProject() ? this.projectId : 'n/a';
+        const {projectId, roleId} = msg;
         const record = {};
 
         record.username = this.username === this.uuid ? null : this.username;
         record.projectId = projectId;
+        record.roleId = roleId;
         record.sessionId = this.uuid;
         record.action = msg.action;
 
@@ -137,7 +127,19 @@ class Client {
             }
         });
 
-        this._socket.on('close', () => this.close(this.connError));
+        this._socket.on('close', () => {
+            if (!this.connError) {
+                return this.close();
+            } else {
+                const brokenSocket = this._socket;
+                setTimeout(() => {
+                    const reconnected = this._socket !== brokenSocket;
+                    if (!reconnected) {
+                        this.close(this.connError);
+                    }
+                }, 5 * Client.HEARTBEAT_INTERVAL);
+            }
+        });
 
         // change the heartbeat to use ping/pong from the ws spec
         this.keepAlive();
@@ -175,7 +177,15 @@ class Client {
 
         this.lastSocketActivity = Date.now();
         if (Client.MessageHandlers[type]) {
-            await Client.MessageHandlers[type].call(this, msg);
+            try {
+                await Client.MessageHandlers[type].call(this, msg);
+            } catch (err) {
+                if (err instanceof RequestError) {
+                    this._logger.trace(`Error w/ request: ${err.message}`);
+                } else {
+                    throw err;
+                }
+            }
         } else {
             this._logger.warn('message "' + JSON.stringify(msg) + '" not recognized');
         }
@@ -370,7 +380,7 @@ class Client {
     }
 
     toString() {
-        let attrs = ['id', 'uuid', 'username', 'roleId', 'projectId'];
+        let attrs = ['uuid', 'username', 'roleId', 'projectId'];
         let str = attrs
             .map(attr => {
                 let rv =  this[attr] ? `${attr}: ${this[attr]}` : undefined;
@@ -390,17 +400,6 @@ Client.prototype.CLOSED = 3;
 
 Client.MessageHandlers = {
     'pong': function() {
-    },
-
-    'set-uuid': function(msg) {
-        const {clientId} = msg;
-        if (this.uuid && this.uuid !== clientId) {
-            throw new Error(`client ${this.uuid} tried to reset clientId to ${clientId}`);
-        }
-
-        this.uuid = clientId;
-        this.username = this.username || clientId;
-        this.send({type: 'connected'});
     },
 
     'message': async function(msg) {
@@ -485,60 +484,7 @@ Client.MessageHandlers = {
             });
     },
 
-    'request-room-state': function() {
-        if (this.hasProject()) {
-            return NetworkTopology.getRoomState(this.projectId)
-                .then(msg => {
-                    msg.type = 'room-roles';
-                    this.send(msg);
-                });
-        }
-    },
-
     ///////////// Import/Export /////////////
-    'export-room': async function(msg) {
-        if (this.hasProject()) {
-            const projectId = this.projectId;
-            const occupantForRole = {};
-
-            // Get the first occupant for each role
-            NetworkTopology.getSocketsAtProject(projectId).reverse()
-                .forEach(socket => {
-                    occupantForRole[socket.roleId] = socket;
-                });
-
-            const project = await Projects.getById(this.projectId);
-            // For each role...
-            //   - if it is occupied, request the content
-            //   - else, use the content from the database
-            const ids = await project.getRoleIds();
-            const fetchers = ids.map(id => {
-                const occupant = occupantForRole[id];
-                if (occupant) {
-                    return occupant.getProjectJson()
-                        .catch(err => {
-                            this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
-                            return project.getRoleById(id);
-                        });
-                }
-                return project.getRoleById(id);
-            });
-
-            const roles = await Promise.all(fetchers);
-            const roleContents = roles.map(content =>
-                Utils.xml.format('<role name="@">', content.ProjectName)
-                + content.SourceCode + content.Media + '</role>'
-            );
-            const xml = Utils.xml.format('<room name="@" app="@">', project.name, Utils.APP) +
-                roleContents.join('') + '</room>';
-            this._logger.trace(`Exporting project for ${projectId}` +
-                ` to ${this.username}`);
-
-            _.extend(msg, {content: xml});
-            this.send(msg);
-        }
-    },
-
     'share-msg-type': function(msg) {
         this.sendToEveryone(msg);
     },
@@ -546,7 +492,51 @@ Client.MessageHandlers = {
     'request-actions': function(msg) {
         const {projectId, roleId, actionId, silent=true} = msg;
         return this.requestActionsAfter(projectId, roleId, actionId, silent);
-    }
+    },
+
+    // TODO: The following handler is deprecated and should be removed after the
+    // next release (ie, in 2 releases so there is time to transition away).
+    'export-room': async function(msg) {
+        const {projectId} = msg;
+        const occupantForRole = {};
+
+        // Get the first occupant for each role
+        NetworkTopology.getSocketsAtProject(projectId).reverse()
+            .forEach(socket => {
+                occupantForRole[socket.roleId] = socket;
+            });
+
+        const project = await Projects.getById(this.projectId);
+        // For each role...
+        //   - if it is occupied, request the content
+        //   - else, use the content from the database
+        const ids = await project.getRoleIds();
+        const fetchers = ids.map(id => {
+            const occupant = occupantForRole[id];
+            if (occupant) {
+                return occupant.getProjectJson()
+                    .catch(err => {
+                        this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
+                        return project.getRoleById(id);
+                    });
+            }
+            return project.getRoleById(id);
+        });
+
+        const roles = await Promise.all(fetchers);
+        const roleContents = roles.map(content =>
+            Utils.xml.format('<role name="@">', content.ProjectName)
+            + content.SourceCode + content.Media + '</role>'
+        );
+        const xml = Utils.xml.format('<room name="@" app="@">', project.name, Utils.APP) +
+            roleContents.join('') + '</room>';
+        this._logger.trace(`Exporting project for ${projectId}` +
+            ` to ${this.username}`);
+
+        _.extend(msg, {content: xml});
+        this.send(msg);
+    },
+
 };
 
 // Utilities for testing

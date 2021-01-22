@@ -96,8 +96,11 @@ types.Date = input => {
     return input;
 };
 
-types.Array = input => {
+types.Array = (input, innerType) => {
     if (!Array.isArray(input)) throw GENERIC_ERROR;
+    if (innerType) {
+        input = input.map(value => types[innerType](value));
+    }
     return input;
 };
 

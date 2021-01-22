@@ -1,4 +1,6 @@
-describe('RPC Input Types', function() {
+const utils = require('../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const typesParser = require('../../../../src/server/services/input-types').parse;
     const assert = require('assert');
 
@@ -39,6 +41,14 @@ describe('RPC Input Types', function() {
                 type = 'Array';
 
             assert.throws(() => typesParser[type](rawInput));
+        });
+
+        it('should throw invalid nested types', () => {
+            assert.throws(() => typesParser.Array(['text'], 'Number'));
+        });
+
+        it('should support nested types', () => {
+            typesParser.Array([1, 2], 'Number');
         });
     });
 

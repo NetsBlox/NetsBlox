@@ -1,5 +1,6 @@
-describe('api-keys', function() {
-    const utils = require('../../../assets/utils');
+const utils = require('../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const APIKeys = utils.reqSrc('services/api-keys');
     const APIKey = utils.reqSrc('services/procedures/utils/api-key');
     const assert = require('assert');

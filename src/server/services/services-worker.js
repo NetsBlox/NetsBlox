@@ -14,7 +14,7 @@ const {RESERVED_FN_NAMES} = require('../../common/constants').RPC;
 const ServerStorage = require('../storage/storage');
 const ServiceEvents = require('./procedures/utils/service-events');
 const Storage = require('./storage');
-const DataService = require('./data-service');
+const CommunityService = require('./community');
 const DEFAULT_COMPATIBILITY = {arguments: {}};
 const isProduction = process.env.ENV === 'production';
 
@@ -32,10 +32,12 @@ class ServicesWorker {
     async onUpdateService(name) {
         await this.onDeleteService(name);
         await ServerStorage.onConnected;
-        const DataServices = Storage.createCollection('netsblox:services:community');
-        const serviceData = await DataServices.findOne({name});
-        const service = new DataService(serviceData);
-        this.registerRPC(service);
+        const CommunityServices = Storage.createCollection('netsblox:services:community');
+        const serviceData = await CommunityServices.findOne({name});
+        const service = CommunityService.new(serviceData);
+        if (service) {
+            this.registerRPC(service);
+        }
     }
 
     async onDeleteService(serviceName) {
@@ -101,10 +103,11 @@ class ServicesWorker {
 
     async loadRPCsFromDatabase() {
         await ServerStorage.onConnected;
-        const DataServices = Storage.createCollection('netsblox:services:community');
-        const serviceData = await DataServices.find({}).toArray();
+        const CommunityServices = Storage.createCollection('netsblox:services:community');
+        const serviceData = await CommunityServices.find({}).toArray();
         const services = serviceData
-            .map(serviceInfo => new DataService(serviceInfo));
+            .map(serviceInfo => CommunityService.new(serviceInfo))
+            .filter(service => !!service);
 
         return services;
     }

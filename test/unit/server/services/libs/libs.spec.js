@@ -1,5 +1,6 @@
-describe('rpc libs', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     var fs = require('fs'),
         path = require('path'),
         PROJECT_ROOT = path.join(__dirname, '..', '..', '..', '..', '..'),

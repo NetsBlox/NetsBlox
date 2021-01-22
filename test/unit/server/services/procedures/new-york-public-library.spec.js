@@ -1,6 +1,6 @@
-describe('new-york-public-library', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
 
+describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('NewYorkPublicLibrary', [
         ['search', ['term', 'perPage', 'page']],
         ['getDetails', ['uuid']],

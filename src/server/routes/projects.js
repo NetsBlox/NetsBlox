@@ -11,7 +11,7 @@ var _ = require('lodash'),
     Jimp = require('jimp');
 
 const ProjectsData = require('../storage/projects');
-const Projects = new (require('../api/core/projects'))(logger);
+const Projects = require('../api/core/projects');
 const Users = require('../storage/users');
 
 ////////////////////// Project Helpers //////////////////////
@@ -160,7 +160,7 @@ module.exports = [
         Method: 'Get',
         middleware: ['isLoggedIn', 'noCache'],
         Handler: async function(req, res) {
-            const origin = `${req.protocol}://${req.get('host')}`;
+            const origin = `${process.env.SERVER_PROTOCOL || req.protocol}://${req.get('host')}`;
             const {username} = req.session;
 
             const previews = await Projects.getProjectList(username, origin);

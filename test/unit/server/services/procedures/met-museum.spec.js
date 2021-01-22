@@ -1,6 +1,6 @@
-describe('met-museum', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
 
+describe(utils.suiteName(__filename), function() {
     // converts a phrase into camel case format
     function toCamelCase(text) {
         // create uppercc

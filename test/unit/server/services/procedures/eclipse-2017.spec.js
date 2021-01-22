@@ -1,5 +1,6 @@
-describe('Eclipse 2017', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const Eclipse = utils.reqSrc('services/procedures/eclipse-2017/eclipse-2017'),
         { cronString } = utils.reqSrc('services/procedures/eclipse-2017/utils'),
         assert = require('assert'),

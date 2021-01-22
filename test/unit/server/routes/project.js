@@ -1,5 +1,6 @@
-describe('project routes', function() {
-    const utils = require('../../../assets/utils');
+const utils = require('../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     const assert = require('assert');
     const supertest = require('supertest');
     const Jimp = require('jimp');

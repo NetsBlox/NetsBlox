@@ -1,5 +1,6 @@
-describe('chart', function() {
-    const utils = require('../../../../../assets/utils');
+const utils = require('../../../../../assets/utils');
+
+describe(utils.suiteName(__filename), function() {
     var Chart = utils.reqSrc('services/procedures/chart/chart.js'),
         RPCMock = require('../../../../../assets/mock-service'),
         chart = new RPCMock(Chart),

@@ -1,6 +1,6 @@
-describe('this-x-does-not-exist', function() {
-    const utils = require('../../../../assets/utils');
+const utils = require('../../../../assets/utils');
 
+describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('ThisXDoesNotExist', [
         ['getPerson', []],
         ['getCat', []],

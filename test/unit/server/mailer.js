@@ -1,5 +1,5 @@
-describe('mailer', function() {
-    const utils = require('../../assets/utils');
+const utils = require('../../assets/utils');
+describe(utils.suiteName(__filename), function() {
     const mailer = utils.reqSrc('mailer');
     const assert = require('assert');
 

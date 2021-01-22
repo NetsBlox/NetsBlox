@@ -80,11 +80,10 @@ const canLoadXml = string => {
 // Create configured room helpers
 let logger = new Logger('netsblox:test');
 const createSocket = function(username) {
-    const socket = new Client(logger, new Socket());
-    socket.uuid = serverUtils.getNewClientId();
-    socket.username = username || socket.uuid;
-    NetworkTopology.onConnect(socket);
-    return socket;
+    const uuid = serverUtils.getNewClientId();
+    const client = NetworkTopology.onConnect(new Socket(), uuid);
+    client.username = username || client.uuid;
+    return client;
 };
 
 const createRoom = async function(config) {
@@ -194,7 +193,8 @@ function suiteName(filename) {
     return filename
         .replace(PROJECT_ROOT, '')
         .replace(new RegExp('/test/(unit/server|[a-z]+)/'), '')
-        .replace(/\.js$/, '');
+        .replace(/\.js$/, '')
+        .replace(/\.spec$/, '');
 }
 
 async function expect(fn, err) {
