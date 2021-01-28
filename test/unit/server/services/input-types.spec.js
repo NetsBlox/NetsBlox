@@ -44,11 +44,11 @@ describe(utils.suiteName(__filename), function() {
         });
 
         it('should throw invalid nested types', () => {
-            assert.throws(() => typesParser.Array(['text'], 'Number'));
+            assert.throws(() => typesParser.Array(['text'], ['Number']));
         });
 
         it('should support nested types', () => {
-            typesParser.Array([1, 2], 'Number');
+            typesParser.Array([1, 2], ['Number']);
         });
     });
 
