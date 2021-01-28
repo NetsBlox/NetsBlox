@@ -274,7 +274,7 @@ class ServicesWorker {
 
     // in: arg obj and input value
     // out: {isValid: boolean, value, msg}
-    parseArgValue(arg, input, ctx) {
+    async parseArgValue(arg, input, ctx) {
         const inputStatus = {isValid: true, msg: '', value: input};
         const isArgumentProvided = input !== '';
 
@@ -299,23 +299,15 @@ class ServicesWorker {
 
             if (InputTypes.parse.hasOwnProperty(typeName)) { // if we have the type handler
                 try {
-                    const args = [input].concat(arg.type.params);
-                    args.push(ctx);
-                    return Promise.resolve(InputTypes.parse[typeName].apply(null, args))
-                        .then(value => {
-                            inputStatus.value = value;
-                            return inputStatus;
-                        })
-                        .catch(e => {
-                            recordError(e);
-                            return inputStatus;
-                        });
+                    const value = await InputTypes.parse[typeName].call(null, input, arg.type.params, ctx);
+                    inputStatus.value = value;
+                    return inputStatus;
                 } catch (e) {
                     recordError(e);
                 }
             }
         }
-        return Promise.resolve(inputStatus);
+        return inputStatus;
     }
 
     sendRPCResult(response, result) {
