@@ -28,7 +28,7 @@ types.Number = input => {
 };
 
 types.BoundedNumber = (input, params) => {
-    const [min, max] = params.map(parseInt);
+    const [min, max] = params.map(num => parseInt(num));
     const number = types.Number(input);
     if (isNaN(max)) {  // only minimum specified
         if (number < min) {
@@ -52,7 +52,7 @@ types.BoundedNumber = (input, params) => {
 
 
 types.BoundedString = (input, params) => {
-    const [min, max] = params.map(parseInt);
+    const [min, max] = params.map(num => parseInt(num));
     const inString = input.toString();
 
     if(max == min)
