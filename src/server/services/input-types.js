@@ -133,7 +133,7 @@ types.Object = input => {
     return input;
 };
 
-types.Function = async (blockXml, _args, ctx) => {
+types.Function = async (blockXml, _params, ctx) => {
     let roleName = '';
     let roleNames = [''];
 

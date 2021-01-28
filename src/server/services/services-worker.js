@@ -307,7 +307,7 @@ class ServicesWorker {
                 }
             }
         }
-        return Promise.resolve(inputStatus);
+        return inputStatus;
     }
 
     sendRPCResult(response, result) {
