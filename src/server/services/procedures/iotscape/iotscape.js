@@ -17,15 +17,13 @@ const Storage = require('../../storage');
 const ServiceEvents = require('../utils/service-events');
 const IoTScapeServices = require('./iotscape-services');
 
-const normalizeServiceName = name => name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+const normalizeServiceName = name => name.toLowerCase().replace(/[^a-z0-9]/g, '');
 const RESERVED_RPC_NAMES = ['serviceName', 'COMPATIBILITY'];
 const RESERVED_SERVICE_NAMES = fs.readdirSync(path.join(__dirname, '..'))
     .map(normalizeServiceName);
 const MONGODB_DOC_TOO_LARGE = 'Attempt to write outside buffer bounds';
 
-const isValidServiceName = name => {
-    !RESERVED_SERVICE_NAMES.includes(normalizeServiceName(name));
-};
+const isValidServiceName = name => !RESERVED_SERVICE_NAMES.includes(normalizeServiceName(name));
 
 const isValidRPCName = name => 
     !(!name || name.startsWith('_') ||  RESERVED_RPC_NAMES.includes(name));
@@ -97,6 +95,12 @@ IoTScape._createService = async function(definition, remote) {
         return;
     }
 
+    // Validate service name
+    if(!isValidServiceName(name) || name.replace(/[^a-zA-Z0-9]/g, '') !== name){
+        logger.log(`Service name ${name} rejected`);
+        return;
+    }
+
     const serviceInfo = parsed.service;
     const methodsInfo = parsed.methods;
 
@@ -165,9 +169,6 @@ IoTScape._createService = async function(definition, remote) {
     };
 
     const storage = IoTScape._getDatabase();
-    if (!isValidServiceName(name)) {
-        logger.warn(`Service with name "${name}" already exists.`);
-    }
 
     // Handle merge for existing service
     let existing = await storage.findOne({name});
@@ -177,6 +178,9 @@ IoTScape._createService = async function(definition, remote) {
             ...service.methods.map(method => method.name),
             ...existing.methods.map(method => method.name)
         ]);
+
+        // Validate methods
+        methodNames = methodNames.filter(isValidRPCName);
 
         // Use newer methods if available
         service.methods = methodNames.map((name) => {
