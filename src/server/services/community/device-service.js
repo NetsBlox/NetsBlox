@@ -1,5 +1,3 @@
-const _ = require('lodash');
-const InputTypes = require('../input-types');
 const createLogger = require('../procedures/utils/logger');
 const IoTScapeServices = require('../procedures/iotscape/iotscape-services');
 
