@@ -110,6 +110,41 @@ IoTScape._createService = async function(definition, remote) {
     logger.log(`Received definition for service ${name} v${version} from ID ${id}`);
     
     // Add getDevices method by default
+    let methods = _generateMethods(methodsInfo);
+
+    let service = {
+        name: name,
+        type: 'DeviceService',
+        description: serviceInfo.description,
+        author: 'IoTScape',
+        createdAt: new Date(),
+        methods,
+        version: serviceInfo.version
+    };
+
+    
+    // Handle merge for existing service
+    service = await _mergeWithExistingService(name, service, methods);
+    
+    // Send to database
+    const query = {$set: service};
+    try {
+        await IoTScape._getDatabase().updateOne({name}, query, {upsert: true});
+        ServiceEvents.emit(ServiceEvents.UPDATE, name);
+        IoTScapeServices.updateOrCreateServiceInfo(name, parsed, id, remote);
+    } catch (err) {
+        if (err.message === MONGODB_DOC_TOO_LARGE) {
+            logger.log('Uploaded service is too large. Please decrease service size and try again.');
+        }
+        throw err;
+    }
+};
+
+/**
+ * Creates definitions for methods of an incoming service
+ * @param {Object} methodsInfo Methods from parsed JSON data
+ */
+function _generateMethods(methodsInfo) {
     let methods = [{
         name: 'getDevices',
         documentation: 'Get a list of device IDs for this service',
@@ -121,10 +156,10 @@ IoTScape._createService = async function(definition, remote) {
     }, ...Object.keys(methodsInfo).map(methodName => {
         const methodInfo = methodsInfo[methodName];
 
-        const method = {name: methodName, documentation: methodInfo.documentation, returns: methodInfo.returns};
+        const method = { name: methodName, documentation: methodInfo.documentation, returns: methodInfo.returns };
 
-        method.arguments = methodInfo.params.map(param => { 
-            let type = param.type === 'number'? { name: 'Number', params: []} : null;
+        method.arguments = methodInfo.params.map(param => {
+            let type = param.type === 'number' ? { name: 'Number', params: [] } : null;
             return {
                 name: param.name,
                 optional: param.optional,
@@ -141,7 +176,7 @@ IoTScape._createService = async function(definition, remote) {
         }, ...method.arguments];
 
         return method;
-    })];    
+    })];
 
     // Add listen method by default
     methods.push({
@@ -157,23 +192,18 @@ IoTScape._createService = async function(definition, remote) {
             type: ['void']
         }
     });
+    return methods;
+}
 
-    const service = {
-        name: name,
-        type: 'DeviceService',
-        description: serviceInfo.description,
-        author: 'IoTScape',
-        createdAt: new Date(),
-        methods,
-        version: serviceInfo.version
-    };
+/**
+ * Merges an incoming service with an existing version
+ * @param {String} name Name of service to look for
+ * @param {object} service Incoming service
+ */
+async function _mergeWithExistingService(name, service) {
+    let existing = await IoTScape._getDatabase().findOne({ name });
 
-    const storage = IoTScape._getDatabase();
-
-    // Handle merge for existing service
-    let existing = await storage.findOne({name});
-
-    if(existing !== null){
+    if (existing !== null) {
         let methodNames = _.uniq([
             ...service.methods.map(method => method.name),
             ...existing.methods.map(method => method.name)
@@ -185,9 +215,9 @@ IoTScape._createService = async function(definition, remote) {
         // Use newer methods if available
         service.methods = methodNames.map((name) => {
             const existingMethod = existing.methods.find(method => method.name === name);
-            const incomingMethod = methods.find(method => method.name === name);
+            const incomingMethod = service.methods.find(method => method.name === name);
 
-            if(existing.version >= service.version){
+            if (existing.version >= service.version) {
                 return existingMethod || incomingMethod;
             } else {
                 return incomingMethod || existingMethod;
@@ -195,24 +225,13 @@ IoTScape._createService = async function(definition, remote) {
         });
 
         // Use max of both versions
-        if(existing.version > service.version){
+        if (existing.version > service.version) {
             service.version = existing.version;
         }
     }
 
-
-    const query = {$set: service};
-    try {
-        await storage.updateOne({name}, query, {upsert: true});
-        ServiceEvents.emit(ServiceEvents.UPDATE, name);
-        IoTScapeServices.updateOrCreateServiceInfo(name, parsed, id, remote);
-    } catch (err) {
-        if (err.message === MONGODB_DOC_TOO_LARGE) {
-            throw new Error('Uploaded code is too large. Please decrease project (or dataset) size and try again.');
-        }
-        throw err;
-    }
-};
+    return service;
+}
 
 server.on('listening', function () {
     var local = server.address();

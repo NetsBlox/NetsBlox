@@ -43,7 +43,6 @@ IoTScapeServices.removeDevice = function(service, id) {
     if(IoTScapeServices._listeningClients[service] !== undefined && IoTScapeServices._listeningClients[service][id] !== undefined){
         delete IoTScapeServices._listeningClients[service][id];
     }
-    // TODO: fully remove services with zero devices
 };
 
 /**
