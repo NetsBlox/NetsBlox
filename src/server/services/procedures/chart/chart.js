@@ -27,7 +27,8 @@ const defaults = {
     grid: 'line',
     isTimeSeries: false,
     timeInputFormat: '%s',
-    timeDisplayFormat: '%H:%M'
+    timeDisplayFormat: '%H:%M',
+    logscale: undefined,
 };
 
 // calculates data stats
@@ -205,6 +206,22 @@ chart.draw = function(lines, options={}){
             lineType: 0,
             lineWidth: 2
         };
+    }
+
+    if (options.logscale) {
+        const val = options.logscale;
+        if (typeof val === 'string') opts.logscale = { axes: val, base: 10 };
+        else if (Array.isArray(val)) {
+            const axes = val[0];
+            let base = val[1];
+            if (typeof axes !== 'string') throw Error('logscale axes was not a string (text)');
+            if (base !== undefined) {
+                base = +base;
+                if (!base) throw Error('logscale base was not a number'); // not strictly necessary for gnuplot, but nice for users
+            }
+            opts.logscale = { axes, base: base || 10 };
+        }
+        else throw Error('logscale expected string (text) or list');
     }
 
     // if a specific number of ticks are requested
