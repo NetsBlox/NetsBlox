@@ -109,7 +109,6 @@ IoTScape._createService = async function(definition, remote) {
 
     logger.log(`Received definition for service ${name} v${version} from ID ${id}`);
     
-    // Add getDevices method by default
     let methods = _generateMethods(methodsInfo);
 
     let service = {
@@ -145,10 +144,24 @@ IoTScape._createService = async function(definition, remote) {
  * @param {Object} methodsInfo Methods from parsed JSON data
  */
 function _generateMethods(methodsInfo) {
+    // Add getDevices and listen methods by default
     let methods = [{
         name: 'getDevices',
         documentation: 'Get a list of device IDs for this service',
         arguments: [],
+        returns: {
+            documentation: '',
+            type: ['void']
+        }
+    }, 
+    {
+        name: 'listen',
+        documentation: 'Register for receiving messages from the given id',
+        arguments: [{
+            name: 'id',
+            optional: false,
+            documentation: 'ID of device to send request to',
+        }],
         returns: {
             documentation: '',
             type: ['void']
@@ -178,20 +191,6 @@ function _generateMethods(methodsInfo) {
         return method;
     })];
 
-    // Add listen method by default
-    methods.push({
-        name: 'listen',
-        documentation: 'Register for receiving messages from the given id',
-        arguments: [{
-            name: 'id',
-            optional: false,
-            documentation: 'ID of device to send request to',
-        }],
-        returns: {
-            documentation: '',
-            type: ['void']
-        }
-    });
     return methods;
 }
 
