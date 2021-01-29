@@ -30,29 +30,29 @@ IoTScapeServices.updateOrCreateServiceInfo = function (name, definition, id, rin
 
 /**
  * Remove a device from a service
- * @param {String} name Name of service
+ * @param {String} service Name of service
  * @param {String} id ID of device to remove
  */
-IoTScapeServices.removeDevice = function(name, id) {
-    if(!IoTScapeServices.deviceExists(name, id)){
+IoTScapeServices.removeDevice = function(service, id) {
+    if(!IoTScapeServices.deviceExists(service, id)){
         return;
     }
 
-    delete IoTScapeServices._services[name][id];
+    delete IoTScapeServices._services[service][id];
 
-    if(IoTScapeServices._listeningClients[name] !== undefined && IoTScapeServices._listeningClients[name][id] !== undefined){
-        delete IoTScapeServices._listeningClients[name][id];
+    if(IoTScapeServices._listeningClients[service] !== undefined && IoTScapeServices._listeningClients[service][id] !== undefined){
+        delete IoTScapeServices._listeningClients[service][id];
     }
     // TODO: fully remove services with zero devices
 };
 
 /**
  * List IDs of devices associated for a service
- * @param {String} name Name of service to get device IDs for
+ * @param {String} service Name of service to get device IDs for
  */
-IoTScapeServices.getDevices = function (name) {
-    if(Object.keys(IoTScapeServices._services).includes(name)){
-        return Object.keys(IoTScapeServices._services[name]);
+IoTScapeServices.getDevices = function (service) {
+    if(Object.keys(IoTScapeServices._services).includes(service)){
+        return Object.keys(IoTScapeServices._services[service]);
     }
 
     return false;
@@ -66,51 +66,66 @@ IoTScapeServices.getServices = function () {
 };
 
 /**
+ * List events associated with a service
+ * @param {string} service Name of service
+ */
+IoTScapeServices.getEvents = function(service) {
+    if(!IoTScapeServices.getServices().includes(service)){
+        return false;
+    }
+    
+    // Parse events into NetsBlox-friendlier format
+    let eventsInfo = IoTScapeServices._serviceDefinitions[service].events;
+    eventsInfo = Object.keys(eventsInfo).map(event => [event, eventsInfo[event].params]);
+    return eventsInfo;
+};
+
+/**
  * Determine if a device with a given ID exists
- * @param {String} name Name of service
+ * @param {String} service Name of service
  * @param {String} id ID of device
  * @returns {Boolean} If device exists
  */
-IoTScapeServices.deviceExists = function(name, id){
-    let devices = IoTScapeServices.getDevices(name);
+IoTScapeServices.deviceExists = function(service, id){
+    let devices = IoTScapeServices.getDevices(service);
     return devices && devices.includes(id);
 };
 
 
 /**
  * Determine if a service has a given function
- * @param {String} name Name of service
+ * @param {String} service Name of service
  * @param {String} func Name of function
  * @returns {Boolean} If function exists
  */
-IoTScapeServices.functionExists = function(name, func){
-    if(!IoTScapeServices.getServices().includes(name)){
+IoTScapeServices.functionExists = function(service, func){
+    if(!IoTScapeServices.getServices().includes(service)){
         return false;
     }
     
-    return func === 'heartbeat' || IoTScapeServices.getFunctionInfo(name, func) !== undefined;
+    return func === 'heartbeat' || IoTScapeServices.getFunctionInfo(service, func) !== undefined;
 };
 
 /**
  * Get the remote host of a IoTScape device
- * @param {String} name Name of service
+ * @param {String} service Name of service
  * @param {String} id ID of device
  */
-IoTScapeServices.getInfo = function(name, id){
-    return IoTScapeServices._services[name][id];
+IoTScapeServices.getInfo = function(service, id){
+    return IoTScapeServices._services[service][id];
 };
 
 /**
  * Get definition information for a given function
- * @param {String} name Name of service
+ * @param {String} service Name of service
  * @param {String} func Name of function
  */
-IoTScapeServices.getFunctionInfo = function(name, func) {
+IoTScapeServices.getFunctionInfo = function(service, func) {
     if(func === 'heartbeat'){
         return {returns: {type:['boolean']}};
     }
 
-    return IoTScapeServices._serviceDefinitions[name].methods[func];
+    return IoTScapeServices._serviceDefinitions[service].methods[func];
 };
 
 IoTScapeServices._lastRequestID = 0;
@@ -127,42 +142,42 @@ IoTScapeServices._listeningClients = {};
 
 /**
  * Add a client to get event updates from a device
- * @param {String} name Name of service
+ * @param {String} service Name of service
  * @param {String} id ID of device
  * @param {*} client Client to add to listeners
  */
-IoTScapeServices.listen = function(name, client, id){
+IoTScapeServices.listen = function(service, client, id){
     id = id.toString();
 
     // Validate name and ID
-    if(!IoTScapeServices.deviceExists(name, id)){
+    if(!IoTScapeServices.deviceExists(service, id)){
         return false;
     }
     
-    if(!Object.keys(IoTScapeServices._listeningClients).includes(name)){
-        IoTScapeServices._listeningClients[name] = {};
+    if(!Object.keys(IoTScapeServices._listeningClients).includes(service)){
+        IoTScapeServices._listeningClients[service] = {};
     }
 
-    if(!Object.keys(IoTScapeServices._listeningClients[name]).includes(id)){
-        IoTScapeServices._listeningClients[name][id] = [];
+    if(!Object.keys(IoTScapeServices._listeningClients[service]).includes(id)){
+        IoTScapeServices._listeningClients[service][id] = [];
     }
 
-    if(!IoTScapeServices._listeningClients[name][id].includes(client)){
-        IoTScapeServices._listeningClients[name][id].push(client);
+    if(!IoTScapeServices._listeningClients[service][id].includes(client)){
+        IoTScapeServices._listeningClients[service][id].push(client);
     }
 };
 
 /**
  * Make a call to a IoTScape function
- * @param {String} name Name of service
+ * @param {String} service Name of service
  * @param {String} id ID of device
  * @param  {...any} args 
  */
-IoTScapeServices.call = async function (name, func, id, ...args) {
+IoTScapeServices.call = async function (service, func, id, ...args) {
     id = id.toString();
 
     // Validate name, ID, and function
-    if(!IoTScapeServices.deviceExists(name, id) || !IoTScapeServices.functionExists(name, func)){
+    if(!IoTScapeServices.deviceExists(service, id) || !IoTScapeServices.functionExists(service, func)){
         return false;
     }
 
@@ -170,17 +185,17 @@ IoTScapeServices.call = async function (name, func, id, ...args) {
     const reqid = IoTScapeServices._generateRequestID();
     let request = {
         id: reqid,
-        service: name,
+        service: service,
         device: id,
         function: func, 
         params: [...args],
     };
     
-    let rinfo = IoTScapeServices.getInfo(name, id);
+    let rinfo = IoTScapeServices.getInfo(service, id);
     IoTScapeServices.socket.send(JSON.stringify(request), rinfo.port, rinfo.address);
 
     // Determine response type
-    let methodInfo = IoTScapeServices.getFunctionInfo(name, func);
+    let methodInfo = IoTScapeServices.getFunctionInfo(service, func);
     let responseType = methodInfo.returns.type;
 
     // No response required
@@ -197,7 +212,7 @@ IoTScapeServices.call = async function (name, func, id, ...args) {
     return Promise.race([
         new Promise((resolve) => {
             IoTScapeServices._awaitingRequests[reqid] = {
-                service: name,
+                service: service,
                 function: func,
                 resolve
             };

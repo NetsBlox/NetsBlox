@@ -45,25 +45,27 @@ IoTScape._getDatabase = function() {
  * List IDs of devices associated for a service
  * @param {String} name Name of service to get device IDs for
  */
-IoTScape.getDevices = function (name) {
-    return IoTScapeServices.getDevices(name);
-};
+IoTScape.getDevices = IoTScapeServices.getDevices;
 
 /**
  * List all IoTScape services registered with the server 
  */
-IoTScape.getServices = function () {
-    return IoTScapeServices.getServices();
-};
+IoTScape.getServices = IoTScapeServices.getServices;
+
+/**
+ * List the event types associated with a service
+ * @param {string} name Name of service to get events for
+ */
+IoTScape.getEvents = IoTScapeServices.getEvents;
 
 /**
  * Make a call to a device as a text command
  * @param {String} service Name of service to make call to
  * @param {String} id ID of device to make call to
- * @param {String} string Input to RPC
+ * @param {String} command Input to RPC
  */
-IoTScape.send = function (service, id, string){
-    let parts = string.split(/\s+/g);
+IoTScape.send = function (service, id, command){
+    let parts = command.split(/\s+/g);
 
     // Require at least a function name
     if(parts.length < 1){
@@ -97,7 +99,7 @@ IoTScape._createService = async function(definition, remote) {
 
     const serviceInfo = parsed.service;
     const methodsInfo = parsed.methods;
-    const eventsInfo = parsed.events;
+
     const version = serviceInfo.version;
     const id = parsed.id;
 
