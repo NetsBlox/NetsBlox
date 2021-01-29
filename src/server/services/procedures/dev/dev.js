@@ -65,4 +65,13 @@ dev.callerInfo = function() {
     return _.omit(this.caller, ['response', 'request', 'socket', 'apiKey']);
 };
 
+/**
+ * Return the sum of the inputs
+ *
+ * @param{Array<Number>} numbers
+ */
+dev.sum = function(numbers) {
+    return numbers.reduce((s, n) => s+n, 0);
+};
+
 module.exports = dev;

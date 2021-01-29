@@ -128,10 +128,20 @@ module.exports = [
             logger.log(`${inviter} is inviting ${invitee} to ${roleId} at ${projectId}`);
 
             // Record the invitation
+            const timer = setTimeout(
+                () => {
+                    const invite = invites[inviteId];
+                    if (invite && invite.timer === timer) {
+                        delete invites[inviteId];
+                    }
+                },
+                60000
+            );
             invites[inviteId] = {
                 projectId,
                 roleId,
-                invitee
+                invitee,
+                timer,
             };
 
             // If the user is online, send the invitation via ws to the browser
@@ -193,8 +203,11 @@ module.exports = [
             const invite = invites[id];
             delete invites[id];
 
-            if (!invite && response) {
-                return res.status(400).send('ERROR: invite no longer exists');
+            if (!invite) {
+                if (response) {
+                    return res.status(400).send('ERROR: invite no longer exists');
+                }
+                return res.sendStatus(200);
             }
 
             const {projectId, roleId, invitee} = invite;

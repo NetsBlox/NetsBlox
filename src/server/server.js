@@ -99,12 +99,14 @@ Server.prototype.configureRoutes = async function(servicesURL) {
     const stateEndpoint = process.env.STATE_ENDPOINT || 'state';
 
     this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {
+        const now = Date.now();
         const sockets = NetworkTopology.sockets().map(socket => {
             return {
                 clientId: socket.uuid,
                 username: socket.username,
                 projectId: socket.projectId,
-                roleId: socket.roleId
+                roleId: socket.roleId,
+                secsSinceLastActivity: (now - socket.lastSocketActivity)/1000,
             };
         });
 
@@ -151,7 +153,10 @@ Server.prototype.configureRoutes = async function(servicesURL) {
                 };
                 metaInfo.title = project.name;
                 metaInfo.description = project.notes;
-                this.addScraperSettings(req.headers['user-agent'], metaInfo);
+                const userAgent = req.headers['user-agent'];
+                if (userAgent) {
+                    this.addScraperSettings(userAgent, metaInfo);
+                }
             }
             return res.send(indexTpl(metaInfo));
         } else if (req.query.action === 'example' && EXAMPLES[projectName]) {
@@ -171,7 +176,10 @@ Server.prototype.configureRoutes = async function(servicesURL) {
             const notes = src.substring(startIndex + 7, endIndex);
 
             metaInfo.description = notes;
-            this.addScraperSettings(req.headers['user-agent'], metaInfo);
+            const userAgent = req.headers['user-agent'];
+            if (userAgent) {
+                this.addScraperSettings(userAgent, metaInfo);
+            }
             return res.send(indexTpl(metaInfo));
         }
         return res.send(indexTpl(metaInfo));

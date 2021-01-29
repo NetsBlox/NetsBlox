@@ -44,7 +44,7 @@ describe(utils.suiteName(__filename), function() {
                 authCode = await OAuthAPI.authorizeClient(username, clientId, redirectUri);
             });
 
-            it('should be able to fetch access token', async function() {
+            it('should be able to create access token', async function() {
                 const token = await OAuthAPI.createToken(authCode, redirectUri);
                 assert(token);
             });
@@ -61,6 +61,25 @@ describe(utils.suiteName(__filename), function() {
                     () => OAuthAPI.createToken('invalid', redirectUri),
                     Errors.InvalidAuthorizationCode,
                 );
+            });
+
+            describe('retrieval', function() {
+                let tokenID;
+                before(async () => {
+                    tokenID = await OAuthAPI.createToken(authCode, redirectUri);
+                });
+
+                it('should be able to retrieve a token based on ID', async function() {
+                    const token = await OAuthAPI.getToken(tokenID);
+                    assert(token);
+                });
+
+                it('should throw error if invalid token', async function() {
+                    await utils.shouldThrow(
+                        () => OAuthAPI.getToken('invalid'),
+                        Errors.InvalidOAuthToken,
+                    );
+                });
             });
         });
     });
