@@ -136,15 +136,19 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
     });
 }
 
+const AXES_REGEX = /(x2|y2|x|y|z|cb)/g;
+function isValidAxesString(axes) {
+    return (axes.match(AXES_REGEX) || []).reduce((a, v) => a + v.length, 0) == axes.length;
+};
+
 chart._parseDrawInputs = function(lines, options){
     // process the options
     Object.keys(options).forEach(key => {
         if (options[key] === 'null' || options[key] === ''){
             delete options[key];
         }
-
-        if (options[key] === 'true') options[key] = true;
-        if (options[key] === 'false') options[key] = false;
+        else if (options[key] === 'true') options[key] = true;
+        else if (options[key] === 'false') options[key] = false;
     });
     options = _.merge({}, defaults, options || {});
 
@@ -210,12 +214,15 @@ chart._parseDrawInputs = function(lines, options){
             let base = val[1];
             if (typeof axes !== 'string') throw Error('logscale axes was not a string (text)');
             if (base !== undefined) {
-                base = +base;
-                if (!base) throw Error('logscale base was not a number'); // not strictly necessary for gnuplot, but nice for users
+                const temp = +base;
+                if (Array.isArray(base) || !temp || temp <= 0) throw Error('Invalid logscale option: base must be a positive number');
+                base = temp;
             }
             opts.logscale = { axes, base: base || 10 };
         }
         else throw Error('logscale expected (axes name) or [(axes name), (base)]');
+
+        if (!isValidAxesString(opts.logscale.axes)) throw Error('axes must be a combination of x, y, x2, y2, z, cb');
     }
 
     // if a specific number of ticks are requested
@@ -237,7 +244,7 @@ chart._parseDrawInputs = function(lines, options){
  * @param {Object=} options Configuration for graph title, axes, and more
  */
 chart.draw = function(lines, options={}){
-    const [data, parsedOptions] = this._parseDrawInputs(options);
+    const [data, parsedOptions] = this._parseDrawInputs(lines, options);
     try {
         var chartStream = gnuPlot.draw(data, parsedOptions);
     } catch (e) {

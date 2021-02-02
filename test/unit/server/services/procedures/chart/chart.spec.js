@@ -32,16 +32,62 @@ describe(utils.suiteName(__filename), function() {
             'grid',
             'isTimeSeries',
             'timeInputFormat',
-            'timeDisplayFormat'
+            'timeDisplayFormat',
+            'logscale',
         ];
         assert.deepEqual(opts.map(i => i[0]), expectedOpts);
     });
 
     describe('logscale', function() {
+        it('should allow empty axes', function(){
+            const [, options] = Chart._parseDrawInputs([], {logscale: ''});
+            assert.equal(options.logscale, undefined);
+        });
+        it('should allow empty axes', function(){
+            const [, options] = Chart._parseDrawInputs([], {logscale: ['']});
+            assert.equal(options.logscale.axes, '');
+            assert.equal(options.logscale.base, 10);
+        });
         it('should parse string logscale (using base 10)', function(){
             const [, options] = Chart._parseDrawInputs([], {logscale: 'x'});
             assert.equal(options.logscale.axes, 'x');
             assert.equal(options.logscale.base, 10);
+        });
+        it('should parse string logscale (using base 10)', function(){
+            const [, options] = Chart._parseDrawInputs([], {logscale: ['z']});
+            assert.equal(options.logscale.axes, 'z');
+            assert.equal(options.logscale.base, 10);
+        });
+        it('should parse string logscale (using explicit base 2)', function(){
+            const [, options] = Chart._parseDrawInputs([], {logscale: ['cb', '2']});
+            assert.equal(options.logscale.axes, 'cb');
+            assert.equal(options.logscale.base, 2);
+        });
+        it('should parse string logscale (using explicit base 6)', function(){
+            const [, options] = Chart._parseDrawInputs([], {logscale: ['xyy2', 6]});
+            assert.equal(options.logscale.axes, 'xyy2');
+            assert.equal(options.logscale.base, 6);
+        });
+        it('should reject bases that are not positive numbers', function(){
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', -4]}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', '-9']}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', '0']}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', 'h']}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', []]}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', ['hello']]}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', ['5']]})); // don't allow arrays, even if js would technically allow it
+        });
+        it('should reject invalid axes spec', function(){
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyz2', 5]}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['h', 5]}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['  ', 5]}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: [[], 5]}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: [['x'], 5]})); // don't allow arrays
+
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: 'xyz2'}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: 'h'}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: '  '}));
+            assert.throws(() => Chart._parseDrawInputs([], {logscale: []}));
         });
     });
 
