@@ -37,6 +37,14 @@ describe(utils.suiteName(__filename), function() {
         assert.deepEqual(opts.map(i => i[0]), expectedOpts);
     });
 
+    describe('logscale', function() {
+        it('should parse string logscale (using base 10)', function(){
+            const [, options] = Chart._parseDrawInputs([], {logscale: 'x'});
+            assert.equal(options.logscale.axes, 'x');
+            assert.equal(options.logscale.base, 10);
+        });
+    });
+
     // test various options...
     it.skip('should support xTicks with time series data', function(){
         const opts = {

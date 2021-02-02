@@ -136,13 +136,7 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
     });
 }
 
-/**
- * Create charts and histograms from data
- *
- * @param {Array} lines a single line or list of lines. Each line should be in form of [[x1,y1], [x2,y2]]
- * @param {Object=} options Configuration for graph title, axes, and more
- */
-chart.draw = function(lines, options={}){
+chart._parseDrawInputs = function(lines, options){
     // process the options
     Object.keys(options).forEach(key => {
         if (options[key] === 'null' || options[key] === ''){
@@ -221,7 +215,7 @@ chart.draw = function(lines, options={}){
             }
             opts.logscale = { axes, base: base || 10 };
         }
-        else throw Error('logscale expected string (text) or list');
+        else throw Error('logscale expected (axes name) or [(axes name), (base)]');
     }
 
     // if a specific number of ticks are requested
@@ -231,15 +225,25 @@ chart.draw = function(lines, options={}){
         opts.xTicks = [stats.x.min, tickStep, stats.x.max];
     }
 
-    let data = genGnuData(lines, options.labels, options.types, options.smooth);
-    this._logger.trace('charting with options', opts);
+    const {labels, types, smooth} = options;
+    const data = genGnuData(lines, labels, types, smooth);
+    return [data, opts];
+};
+
+/**
+ * Create charts and histograms from data
+ *
+ * @param {Array} lines a single line or list of lines. Each line should be in form of [[x1,y1], [x2,y2]]
+ * @param {Object=} options Configuration for graph title, axes, and more
+ */
+chart.draw = function(lines, options={}){
+    const [data, parsedOptions] = this._parseDrawInputs(options);
     try {
-        var chartStream = gnuPlot.draw(data, opts);
+        var chartStream = gnuPlot.draw(data, parsedOptions);
     } catch (e) {
         this.response.status(500).send('error in drawing the plot. bad input.');
         return null;
     }
-
     return rpcUtils.collectStream(chartStream).then( buffer => {
         rpcUtils.sendImageBuffer(this.response, buffer, this._logger);
     }).catch(this._logger.error);
