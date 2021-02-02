@@ -237,7 +237,7 @@ chart._parseDrawInputs = function(lines, options){
  * @param {Object=} options Configuration for graph title, axes, and more
  */
 chart.draw = function(lines, options={}){
-    const [data, parsedOptions] = this._parseDrawInputs(options);
+    const [data, parsedOptions] = this._parseDrawInputs(lines, options);
     try {
         var chartStream = gnuPlot.draw(data, parsedOptions);
     } catch (e) {
