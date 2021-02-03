@@ -8,6 +8,7 @@ const NBService = require('../utils/service'),
     rpcUtils = require('../utils'),
     gnuPlot = require('./node-gnuplot.js'),
     _ = require('lodash');
+const InputTypes = require('../../input-types');
 
 let chart = new NBService('Chart');
 
@@ -138,7 +139,7 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
 
 const AXES_REGEX = /(x2|y2|x|y|z|cb)/g;
 function isValidAxesString(axes) {
-    return (axes.match(AXES_REGEX) || []).reduce((a, v) => a + v.length, 0) == axes.length;
+    return (axes.match(AXES_REGEX) || []).reduce((a, v) => a + v.length, 0) === axes.length;
 };
 
 chart._parseDrawInputs = function(lines, options){
@@ -214,15 +215,14 @@ chart._parseDrawInputs = function(lines, options){
             let base = val[1];
             if (typeof axes !== 'string') throw Error('logscale axes was not a string (text)');
             if (base !== undefined) {
-                const temp = +base;
-                if (Array.isArray(base) || !temp || temp <= 0) throw Error('Invalid logscale option: base must be a positive number');
-                base = temp;
+                try { base = InputTypes.parse.BoundedNumber(base, [1]); }
+                catch (_) { throw Error('Invalid logscale option: base must be a number >= 1'); }
             }
             opts.logscale = { axes, base: base || 10 };
         }
         else throw Error('logscale expected (axes name) or [(axes name), (base)]');
 
-        if (!isValidAxesString(opts.logscale.axes)) throw Error('axes must be a combination of x, y, x2, y2, z, cb');
+        if (!isValidAxesString(opts.logscale.axes)) throw Error('axes must be a combination of axis names like x or y');
     }
 
     // if a specific number of ticks are requested
