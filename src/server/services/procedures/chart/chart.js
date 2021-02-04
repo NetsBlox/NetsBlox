@@ -215,8 +215,11 @@ chart._parseDrawInputs = function(lines, options){
             let base = val[1];
             if (typeof axes !== 'string') throw Error('logscale axes was not a string (text)');
             if (base !== undefined) {
-                try { base = InputTypes.parse.BoundedNumber(base, [1]); }
-                catch (_) { throw Error('Invalid logscale option: base must be a number >= 1'); }
+                try {
+                    base = InputTypes.parse.BoundedNumber(base, [1]);
+                } catch (err) {
+                    throw Error(`Invalid logscale value: ${err.message}`);
+                }
             }
             opts.logscale = { axes, base: base || 10 };
         }
