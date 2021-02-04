@@ -57,7 +57,7 @@ class NetsBloxAddress {
                     }
                 });
 
-        } else {
+        } else if (srcProjectId) {
             return Projects.getProjectMetadataById(srcProjectId, {cache: true})
                 .then(metadata => {
                     if (!metadata) {
@@ -77,6 +77,8 @@ class NetsBloxAddress {
 
                     return new NetsBloxAddress(srcProjectId, roleIds);
                 });
+        } else {
+            throw new AddressNotFound(dstId);
         }
     }
 }
