@@ -104,7 +104,7 @@ class ServicesWorker {
     async loadRPCsFromDatabase() {
         await ServerStorage.onConnected;
         const CommunityServices = Storage.createCollection('netsblox:services:community');
-        const serviceData = await CommunityServices.find({type: 'DataService'}).toArray();
+        const serviceData = await CommunityServices.find({}).toArray();
         const services = serviceData
             .map(serviceInfo => CommunityService.new(serviceInfo))
             .filter(service => !!service);
