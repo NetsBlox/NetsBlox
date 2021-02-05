@@ -570,9 +570,6 @@ Device.prototype.getAccelerometer = async function (device, args) {
     const res = await response;
     return common.definedArrOrThrow([res.x, res.y, res.z], 'accelerometer not enabled or failed to auth');
 };
-Device.prototype.getAccelerometerNormalized = async function (device, args) {
-    return common.normalize(await this.getAccelerometer(device, args));  
-};
 Device.prototype.getFacingDirection = async function (device, args) {
     return common.closestVector(await this.getAccelerometer(device, args), DIRECTIONS_3D);
 };
@@ -587,9 +584,6 @@ Device.prototype.getGravity = async function (device, args) {
     const res = await response;
     return common.definedArrOrThrow([res.x, res.y, res.z], 'gravity device not enabled or failed to auth');
 };
-Device.prototype.getGravityNormalized = async function (device, args) {
-    return common.normalize(await this.getGravity(device, args));  
-};
 
 Device.prototype.getLinearAcceleration = async function (device, args) {
     this._logger.log('get linear acceleration ' + this.mac_addr);
@@ -600,9 +594,6 @@ Device.prototype.getLinearAcceleration = async function (device, args) {
     this.sendToDevice(message);
     const res = await response;
     return common.definedArrOrThrow([res.x, res.y, res.z], 'linear acceleration device not enabled or failed to auth');
-};
-Device.prototype.getLinearAccelerationNormalized = async function (device, args) {
-    return common.normalize(await this.getLinearAcceleration(device, args));  
 };
 
 Device.prototype.getGyroscope = async function (device, args) {
@@ -645,9 +636,6 @@ Device.prototype.getMagneticFieldVector = async function (device, args) {
     this.sendToDevice(message);
     const res = await response;
     return common.definedArrOrThrow([res.x, res.y, res.z], 'magnetic field device not enabled or failed to auth');
-};
-Device.prototype.getMagneticFieldVectorNormalized = async function (device, args) {
-    return common.normalize(await this.getMagneticFieldVector(device, args));  
 };
 
 Device.prototype.getMicrophoneLevel = async function (device, args) {

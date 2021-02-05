@@ -23,6 +23,7 @@ const acl = require('../roboscape/accessControl');
 const dgram = require('dgram');
 const server = dgram.createSocket('udp4');
 const PHONE_IOT_MODE = process.env.PHONE_IOT_MODE || 'both';
+const common = require('./common');
 
 /*
  * PhoneIoT - This constructor is called on the first
@@ -151,17 +152,26 @@ PhoneIoT.prototype.getColor = function (red, green, blue) {
     return 0xff000000 | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff);
 };
 
+/**
+ * Get the magnitude (length) of a vector.
+ * @param {List} vec the vector value
+ * @returns {Number} length of the vector
+ */
+PhoneIoT.prototype.magnitude = function (vec) {
+    console.log('got vec', vec);
+    return common.magnitude(vec);
+};
+/**
+ * Get the normalized form of a vector (same direction but magnitude of 1).
+ * @param {List} vec the vector value
+ * @returns {List} the normalized vector
+ */
+PhoneIoT.prototype.normalize = function (vec) {
+    return common.normalize(vec);
+};
+
 if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /* eslint-disable no-unused-vars */
-    /**
-     * Returns true if the given device is alive, sent messages in the
-     * last two seconds.
-     * @param {string} device name of the device (matches at the end)
-     * @returns {boolean} True if the device is alive
-     */
-    PhoneIoT.prototype.isAlive = function (device) {
-        return this._passToDevice('isAlive', arguments);
-    };
 
     /**
      * Checks for successful authentication.
@@ -169,7 +179,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {string} password current password for the device
      * @returns {boolean} True if authentication is successful, otherwise false.
      */
-    PhoneIoT.prototype.authenticate = function (device, password) {
+    PhoneIoT.prototype._authenticate = function (device, password) {
         return this._passToDevice('authenticate', arguments);
     };
     /**
@@ -343,6 +353,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         arguments[4] = textColor;
         return this._passToDevice('addLabel', arguments);
     };
+
     /**
      * Begin listening for events such as button presses.
      * @param {string} device name of the device (matches at the end)
@@ -351,7 +362,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      */
     PhoneIoT.prototype.listen = async function (device, password) {
         const _device = await this._getDevice(device);
-        await _device.authenticate(_device, [password]); // throws on failure - we want this
+        await _device._authenticate(_device, [password]); // throws on failure - we want this
 
         _device.guiListeners[this.socket.clientId] = this.socket;
         return true;
@@ -429,15 +440,6 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('getAccelerometer', arguments);
     };
     /**
-     * As getAccelerometer, but scaled to a magnitude of 1.
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} password current password for the device
-     * @returns {Array} accelerometer output, with magnitude 1
-     */
-    PhoneIoT.prototype.getAccelerometerNormalized = function (device, password) {
-        return this._passToDevice('getAccelerometerNormalized', arguments);
-    };
-    /**
      * Get a string representation of the general orientation of the device based on the accelerometer output.
      * In general, the values represent the direction the screen is facing. Possible values:
      *     "up" - the device (screen) is facing up.
@@ -465,15 +467,6 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     PhoneIoT.prototype.getGravity = function (device, password) {
         return this._passToDevice('getGravity', arguments);
     };
-    /**
-     * As getGravity, but scaled to a magnitude of 1.
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} password current password for the device
-     * @returns {Array} output of gravity device, with magnitude 1
-     */
-    PhoneIoT.prototype.getGravityNormalized = function (device, password) {
-        return this._passToDevice('getGravityNormalized', arguments);
-    };
 
     /**
      * Get the current output of the linear acceleration device.
@@ -484,15 +477,6 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      */
     PhoneIoT.prototype.getLinearAcceleration = function (device, password) {
         return this._passToDevice('getLinearAcceleration', arguments);
-    };
-    /**
-     * As getLinearAcceleration, but scaled to a magnitude of 1.
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} password current password for the device
-     * @returns {Array} linear acceleration vector, with magnitude 1
-     */
-    PhoneIoT.prototype.getLinearAccelerationNormalized = function (device, password) {
-        return this._passToDevice('getLinearAccelerationNormalized', arguments);
     };
 
     /**
@@ -537,15 +521,6 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      */
     PhoneIoT.prototype.getMagneticFieldVector = function (device, password) {
         return this._passToDevice('getMagneticFieldVector', arguments);
-    };
-    /**
-     * As getMagneticFieldVector, but scaled to a magnitude of 1.
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} password current password for the device
-     * @returns {Array} magnetic field vector, with magnitude 1
-     */
-    PhoneIoT.prototype.getMagneticFieldVectorNormalized = function (device, password) {
-        return this._passToDevice('getMagneticFieldVectorNormalized', arguments);
     };
 
     /**
@@ -627,63 +602,63 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('setImage', arguments);
     };
 
-    /**
-     * Sets the total message limit for the given device.
-     * @param {string} device name of the device (matches at the end)
-     * @param {number} rate number of messages per seconds
-     * @returns {boolean} True if the device was found
-     */
-    PhoneIoT.prototype.setTotalRate = function (device, rate) {
-        return this._passToDevice('setTotalRate', arguments);
-    };
+    // /**
+    //  * Sets the total message limit for the given device.
+    //  * @param {string} device name of the device (matches at the end)
+    //  * @param {number} rate number of messages per seconds
+    //  * @returns {boolean} True if the device was found
+    //  */
+    // PhoneIoT.prototype.setTotalRate = function (device, rate) {
+    //     return this._passToDevice('setTotalRate', arguments);
+    // };
 
-    /**
-     * Sets the client message limit and penalty for the given device.
-     * @param {string} device name of the device (matches at the end)
-     * @param {number} rate number of messages per seconds
-     * @param {number} penalty number seconds of penalty if rate is violated
-     * @returns {boolean} True if the device was found
-     */
-    PhoneIoT.prototype.setClientRate = function (device, rate, penalty) {
-        return this._passToDevice('setClientRate', arguments);
-    };
+    // /**
+    //  * Sets the client message limit and penalty for the given device.
+    //  * @param {string} device name of the device (matches at the end)
+    //  * @param {number} rate number of messages per seconds
+    //  * @param {number} penalty number seconds of penalty if rate is violated
+    //  * @returns {boolean} True if the device was found
+    //  */
+    // PhoneIoT.prototype.setClientRate = function (device, rate, penalty) {
+    //     return this._passToDevice('setClientRate', arguments);
+    // };
     /* eslint-enable no-unused-vars */
 }
 
 if (PHONE_IOT_MODE === 'security' || PHONE_IOT_MODE === 'both') {
-    /**
-     * Sends a textual command to the device
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} command textual command
-     * @returns {string} textual response
-     */
-    PhoneIoT.prototype.send = async function (device, command) {
-        device = await this._getDevice(device);
+    // /**
+    //  * Sends a textual command to the device
+    //  * @param {string} device name of the device (matches at the end)
+    //  * @param {string} command textual command
+    //  * @returns {string} textual response
+    //  */
+    // PhoneIoT.prototype.send = async function (device, command) {
+    //     device = await this._getDevice(device);
 
-        if (typeof command !== 'string') throw Error('command must be a string');
+    //     if (typeof command !== 'string') throw Error('command must be a string');
 
-        // figure out the raw command after processing special methods, encryption, seq and client rate
-        if (command.match(/^backdoor[, ](.*)$/)) { // if it is a backdoor directly set the command
-            command = RegExp.$1;
-            logger.log('executing ' + command);
-        } else { // if not a backdoor handle seq number and encryption
-            // for replay attacks
-            device.commandToClient(command);
+    //     // figure out the raw command after processing special methods, encryption, seq and client rate
+    //     if (command.match(/^backdoor[, ](.*)$/)) { // if it is a backdoor directly set the command
+    //         command = RegExp.$1;
+    //         logger.log('executing ' + command);
+    //     } else { // if not a backdoor handle seq number and encryption
+    //         // for replay attacks
+    //         device.commandToClient(command);
 
-            // if encryption is set
-            if (device._hasValidEncryptionSet()) command = device.decrypt(command);
+    //         // if encryption is set
+    //         if (device._hasValidEncryptionSet()) command = device.decrypt(command);
 
-            let seqNum = -1;
-            if (command.match(/^(\d+)[, ](.*)$/)) {
-                seqNum = +RegExp.$1;
-                command = RegExp.$2;
-            }
-            if (!device.accepts(this.caller.clientId, seqNum)) return false;
-            device.setSeqNum(seqNum);
-        }
+    //         let seqNum = -1;
+    //         if (command.match(/^(\d+)[, ](.*)$/)) {
+    //             seqNum = +RegExp.$1;
+    //             command = RegExp.$2;
+    //         }
+    //         if (!device.accepts(this.caller.clientId, seqNum)) return false;
+    //         device.setSeqNum(seqNum);
+    //     }
 
-        return device.onCommand(command);
-    };
+    //     return device.onCommand(command);
+    // };
 }
 
 server.on('listening', function () {
