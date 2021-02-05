@@ -19,13 +19,13 @@ utils.normalize = function(a) {
     return utils.scale(a, 1.0 / utils.magnitude(a));
 }
 utils.angle = function(a, b) {
-    return Math.acos(dotProduct(a, b) / (utils.magnitude(a) * utils.magnitude(b)));
+    return Math.acos(utils.dotProduct(a, b) / (utils.magnitude(a) * utils.magnitude(b)));
 }
 
 utils.closestVector = function(val, def) {
     let best = [Infinity, undefined];
     for (const dir of def) {
-        const t = angle(val, dir[0]);
+        const t = utils.angle(val, dir[0]);
         if (t < best[0]) best = [t, dir[1]];
     }
     return best[1];
