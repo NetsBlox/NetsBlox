@@ -52,10 +52,10 @@ IoTScape.getDevices = IoTScapeServices.getDevices;
 IoTScape.getServices = IoTScapeServices.getServices;
 
 /**
- * List the event types associated with a service
+ * List the message types associated with a service
  * @param {string} name Name of service to get events for
  */
-IoTScape.getEvents = IoTScapeServices.getEvents;
+IoTScape.getMessageTypes = IoTScapeServices.getEvents;
 
 /**
  * Make a call to a device as a text command
