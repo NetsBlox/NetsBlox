@@ -65,9 +65,9 @@ IoTScapeServices.getServices = function () {
  * List events associated with a service
  * @param {string} service Name of service
  */
-IoTScapeServices.getEvents = function(service) {
+IoTScapeServices.getMessageTypes = function(service) {
     if(!IoTScapeServices.serviceExists(service)){
-        return false;
+        return [];
     }
     
     // Parse events into NetsBlox-friendlier format

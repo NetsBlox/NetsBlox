@@ -46,7 +46,7 @@ IoTScape._getDatabase = function() {
  */
 IoTScape.getDevices = function(service){
     if(!IoTScapeServices.serviceExists(service)){
-        return false;
+        throw new Error('Service not found');
     }
     
     return IoTScapeServices.getDevices(service);
@@ -61,7 +61,13 @@ IoTScape.getServices = IoTScapeServices.getServices;
  * List the message types associated with a service
  * @param {string} name Name of service to get events for
  */
-IoTScape.getMessageTypes = IoTScapeServices.getEvents;
+IoTScape.getMessageTypes = function(service){
+    if(!IoTScapeServices.serviceExists(service)){
+        throw new Error('Service not found');
+    }
+    
+    return IoTScapeServices.getMessageTypes(service);
+};
 
 /**
  * Make a call to a device as a text command
@@ -70,12 +76,22 @@ IoTScape.getMessageTypes = IoTScapeServices.getEvents;
  * @param {String} command Input to RPC
  */
 IoTScape.send = function (service, id, command){
+
+    if(!IoTScapeServices.serviceExists(service)){
+        throw new Error('Service not found');
+    }
+    
+    if(!IoTScapeServices.deviceExists(service, id)){
+        throw new Error('Device not found');
+    }
+
     let parts = command.split(/\s+/g);
 
     // Require at least a function name
     if(parts.length < 1){
-        return false;
+        throw new Error('Command too short or invalid');
     }
+    
 
     return IoTScapeServices.call(service, parts[0], id, ...parts.slice(1));
 };
