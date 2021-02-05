@@ -59,7 +59,7 @@ IoTScape.getServices = IoTScapeServices.getServices;
 
 /**
  * List the message types associated with a service
- * @param {string} name Name of service to get events for
+ * @param {string} service Name of service to get events for
  */
 IoTScape.getMessageTypes = function(service){
     if(!IoTScapeServices.serviceExists(service)){

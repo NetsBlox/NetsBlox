@@ -4,7 +4,7 @@ describe(utils.suiteName(__filename), function() {
 
     utils.verifyRPCInterfaces('IoTScape', [
         ['getDevices', ['service']],
-        ['getEvents', ['service']],
+        ['getMessageTypes', ['service']],
         ['getServices', []],
         ['send', ['service', 'id', 'command']],
     ]);
