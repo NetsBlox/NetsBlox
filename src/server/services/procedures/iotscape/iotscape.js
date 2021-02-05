@@ -42,9 +42,15 @@ IoTScape._getDatabase = function() {
 
 /**
  * List IDs of devices associated for a service
- * @param {String} name Name of service to get device IDs for
+ * @param {String} service Name of service to get device IDs for
  */
-IoTScape.getDevices = IoTScapeServices.getDevices;
+IoTScape.getDevices = function(service){
+    if(!IoTScapeServices.serviceExists(service)){
+        return false;
+    }
+    
+    return IoTScapeServices.getDevices(service);
+};
 
 /**
  * List all IoTScape services registered with the server 

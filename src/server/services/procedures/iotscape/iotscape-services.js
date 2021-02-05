@@ -50,11 +50,8 @@ IoTScapeServices.removeDevice = function(service, id) {
  * @param {String} service Name of service to get device IDs for
  */
 IoTScapeServices.getDevices = function (service) {
-    if(Object.keys(IoTScapeServices._services).includes(service)){
-        return Object.keys(IoTScapeServices._services[service]);
-    }
-
-    return false;
+    const serviceDict = IoTScapeServices._services[service];
+    return Object.keys(serviceDict || []);
 };
 
 /**
@@ -69,7 +66,7 @@ IoTScapeServices.getServices = function () {
  * @param {string} service Name of service
  */
 IoTScapeServices.getEvents = function(service) {
-    if(!IoTScapeServices.getServices().includes(service)){
+    if(!IoTScapeServices.serviceExists(service)){
         return false;
     }
     
@@ -86,10 +83,17 @@ IoTScapeServices.getEvents = function(service) {
  * @returns {Boolean} If device exists
  */
 IoTScapeServices.deviceExists = function(service, id){
-    let devices = IoTScapeServices.getDevices(service);
-    return devices && devices.includes(id);
+    return IoTScapeServices.getDevices(service).includes(id);
 };
 
+/**
+ * Determine if a service exists
+ * @param {String} service Name of service
+ * @returns {Boolean} If service exists
+ */
+IoTScapeServices.serviceExists = function(service){
+    return IoTScapeServices.getServices().includes(service);
+};
 
 /**
  * Determine if a service has a given function
@@ -98,7 +102,7 @@ IoTScapeServices.deviceExists = function(service, id){
  * @returns {Boolean} If function exists
  */
 IoTScapeServices.functionExists = function(service, func){
-    if(!IoTScapeServices.getServices().includes(service)){
+    if(!IoTScapeServices.serviceExists(service)){
         return false;
     }
     
@@ -133,7 +137,7 @@ IoTScapeServices._lastRequestID = 0;
  * Get ID for a new request
  */
 IoTScapeServices._generateRequestID = function(){
-    return IoTScapeServices._lastRequestID++;
+    return (IoTScapeServices._lastRequestID++).toString() + Date.now();
 };
 
 IoTScapeServices._awaitingRequests = {};
@@ -190,12 +194,12 @@ IoTScapeServices.call = async function (service, func, id, ...args) {
         params: [...args],
     };
     
-    let rinfo = IoTScapeServices.getInfo(service, id);
+    const rinfo = IoTScapeServices.getInfo(service, id);
     IoTScapeServices.socket.send(JSON.stringify(request), rinfo.port, rinfo.address);
 
     // Determine response type
-    let methodInfo = IoTScapeServices.getFunctionInfo(service, func);
-    let responseType = methodInfo.returns.type;
+    const methodInfo = IoTScapeServices.getFunctionInfo(service, func);
+    const responseType = methodInfo.returns.type;
 
     // No response required
     if(responseType.length < 1 || responseType[0] == 'void'){
@@ -243,8 +247,8 @@ IoTScapeServices.start = function(socket){
         if(Object.keys(IoTScapeServices._awaitingRequests).includes(requestID.toString())){
             if(parsed.response){
                 // Return multiple results as a list, single result as a value
-                let methodInfo = IoTScapeServices.getFunctionInfo(IoTScapeServices._awaitingRequests[requestID].service, IoTScapeServices._awaitingRequests[requestID].function);
-                let responseType = methodInfo.returns.type;
+                const methodInfo = IoTScapeServices.getFunctionInfo(IoTScapeServices._awaitingRequests[requestID].service, IoTScapeServices._awaitingRequests[requestID].function);
+                const responseType = methodInfo.returns.type;
 
                 if(responseType.length > 1) {
                     IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
@@ -258,18 +262,13 @@ IoTScapeServices.start = function(socket){
 
         if(parsed.event){
             // Find listening clients 
-            let clientsByID = IoTScapeServices._listeningClients[parsed.service];
-
-            if(clientsByID){
-                let clients = clientsByID[parsed.id.toString()];
-                
-                // Send responses
-                if(clients){
-                    clients.forEach((client) => {
-                        client.sendMessage(parsed.event.type, parsed.event.args);
-                    });
-                }
-            }
+            const clientsByID = IoTScapeServices._listeningClients[parsed.service] || {};
+            const clients = clientsByID[parsed.id.toString()] || [];
+            
+            // Send responses
+            clients.forEach((client) => {
+                client.sendMessage(parsed.event.type, parsed.event.args);
+            });
         }
     });
 
