@@ -8,6 +8,7 @@ const NBService = require('../utils/service'),
     rpcUtils = require('../utils'),
     gnuPlot = require('./node-gnuplot.js'),
     _ = require('lodash');
+const InputTypes = require('../../input-types');
 
 let chart = new NBService('Chart');
 
@@ -27,7 +28,8 @@ const defaults = {
     grid: 'line',
     isTimeSeries: false,
     timeInputFormat: '%s',
-    timeDisplayFormat: '%H:%M'
+    timeDisplayFormat: '%H:%M',
+    logscale: undefined,
 };
 
 // calculates data stats
@@ -135,23 +137,51 @@ function genGnuData(lines, lineTitles, lineTypes, smoothing){
     });
 }
 
-/**
- * Create charts and histograms from data
- *
- * @param {Array} lines a single line or list of lines. Each line should be in form of [[x1,y1], [x2,y2]]
- * @param {Object=} options Configuration for graph title, axes, and more
- */
-chart.draw = function(lines, options={}){
-    // process the options
+function processOptions(options, defaults) {
     Object.keys(options).forEach(key => {
-        if (options[key] === 'null' || options[key] === ''){
-            delete options[key];
-        }
-
-        if (options[key] === 'true') options[key] = true;
-        if (options[key] === 'false') options[key] = false;
+        if (options[key] === 'null' || options[key] === '') delete options[key];
+        else if (options[key] === 'true') options[key] = true;
+        else if (options[key] === 'false') options[key] = false;
     });
-    options = _.merge({}, defaults, options || {});
+    return _.merge({}, defaults, options || {});
+}
+
+const GRID_TYPES = {
+    line: { lineType: 1, lineWidth: 1 },
+    dot: { lineType: 0, lineWidth: 2 },
+};
+
+const AXES_REGEX = /(x2|y2|x|y|z|cb)/g;
+function isValidAxesString(axes) {
+    return (axes.match(AXES_REGEX) || []).reduce((a, v) => a + v.length, 0) === axes.length;
+}
+function parseLogscale(options) {
+    const val = options.logscale;
+    if (!val) return undefined;
+
+    let res = undefined;
+    if (typeof val === 'string') res = { axes: val, base: 10 };
+    else if (Array.isArray(val)) {
+        const axes = val[0];
+        let base = val[1];
+        if (typeof axes !== 'string') throw Error('logscale axes was not a string (text)');
+        if (base !== undefined) {
+            try {
+                base = InputTypes.parse.BoundedNumber(base, [1]);
+            } catch (err) {
+                throw Error(`Invalid logscale value: ${err.message}`);
+            }
+        }
+        res = { axes, base: base || 10 };
+    }
+    else throw Error('logscale expected (axes name) or [(axes name), (base)]');
+
+    if (!isValidAxesString(res.axes)) throw Error('axes must be a combination of axis names like x or y');
+    return res;
+}
+
+chart._parseDrawInputs = function(lines, options){
+    options = processOptions(options, defaults);
 
     // prepare and check for errors in data
     try {
@@ -163,9 +193,7 @@ chart.draw = function(lines, options={}){
     }
     let stats = calcRanges(lines, options.isCategorical);
     this._logger.info('data stats:', stats);
-    const relativePadding = {
-        y: stats.y.range !== 0 ? stats.y.range * 0.05 : 1
-    };
+    const relativePadding = { y: stats.y.range !== 0 ? stats.y.range * 0.05 : 1 };
 
     //TODO auto set to boxes if categorical? 
 
@@ -175,16 +203,12 @@ chart.draw = function(lines, options={}){
         min: stats.y.min - relativePadding.y, 
         max: stats.y.max + relativePadding.y
     };
-
-    if (options.yRange.length === 2) opts.yRange = {min: options.yRange[0], max: options.yRange[1]};
+    if (options.yRange.length === 2) opts.yRange = { min: options.yRange[0], max: options.yRange[1] };
 
     if (!options.isCategorical){
         relativePadding.x = stats.x.range !== 0 ? stats.x.range * 0.05 : 1;
-        opts.xRange = {min: stats.x.min - relativePadding.x, max: stats.x.max + relativePadding.x};
-
-        if (options.xRange.length === 2) {
-            opts.xRange = {min: options.xRange[0], max: options.xRange[1]};
-        }
+        opts.xRange = { min: stats.x.min - relativePadding.x, max: stats.x.max + relativePadding.x };
+        if (options.xRange.length === 2) opts.xRange = { min: options.xRange[0], max: options.xRange[1] };
     }
 
     if (options.isTimeSeries) {
@@ -194,18 +218,13 @@ chart.draw = function(lines, options={}){
             outputFormat: options.timeDisplayFormat 
         };
     }
+
     // setup grid
-    if (options.grid === 'line'){
-        opts.grid = {
-            lineType: 1,
-            lineWidth: 1
-        };
-    }else if (options.grid === 'dot'){
-        opts.grid = {
-            lineType: 0,
-            lineWidth: 2
-        };
-    }
+    const grid = GRID_TYPES[options.grid];
+    if (grid !== undefined) opts.grid = grid;
+
+    const logscale = parseLogscale(options);
+    if (logscale !== undefined) opts.logscale = logscale;
 
     // if a specific number of ticks are requested
     if (options.xTicks) {
@@ -214,15 +233,25 @@ chart.draw = function(lines, options={}){
         opts.xTicks = [stats.x.min, tickStep, stats.x.max];
     }
 
-    let data = genGnuData(lines, options.labels, options.types, options.smooth);
-    this._logger.trace('charting with options', opts);
+    const {labels, types, smooth} = options;
+    const data = genGnuData(lines, labels, types, smooth);
+    return [data, opts];
+};
+
+/**
+ * Create charts and histograms from data
+ *
+ * @param {Array} lines a single line or list of lines. Each line should be in form of [[x1,y1], [x2,y2]]
+ * @param {Object=} options Configuration for graph title, axes, and more
+ */
+chart.draw = function(lines, options={}){
+    const [data, parsedOptions] = this._parseDrawInputs(lines, options);
     try {
-        var chartStream = gnuPlot.draw(data, opts);
+        var chartStream = gnuPlot.draw(data, parsedOptions);
     } catch (e) {
         this.response.status(500).send('error in drawing the plot. bad input.');
         return null;
     }
-
     return rpcUtils.collectStream(chartStream).then( buffer => {
         rpcUtils.sendImageBuffer(this.response, buffer, this._logger);
     }).catch(this._logger.error);

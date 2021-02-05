@@ -22,6 +22,7 @@ const optsDefaults = {
         inputFormat: undefined,
         outputFormat: undefined
     },
+    logscale: undefined,
     grid: {
         lineType: 0,
         lineWidth: 2
@@ -85,6 +86,7 @@ module.exports.draw = function(data, opts) {
         graph.set(`timefmt ${escape(opts.timeSeries.inputFormat)}`);
         graph.set(`format ${opts.timeSeries.axis} ${escape(opts.timeSeries.outputFormat)}`);
     }
+    if (opts.logscale) graph.set(`logscale ${opts.logscale.axes} ${opts.logscale.base}`);
 
     graph.plot(dataToPlot(data, opts),{end: true});
 
