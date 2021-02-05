@@ -227,7 +227,9 @@ IoTScapeServices.call = async function (service, func, id, ...args) {
                 reject();
             }, 3000);
         })
-    ]).then((result) => result).catch(() => false);
+    ]).then((result) => result).catch(() => {
+        throw new Error('Response timed out.');
+    });
 };
 
 IoTScapeServices.start = function(socket){
