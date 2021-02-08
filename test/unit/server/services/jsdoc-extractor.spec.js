@@ -156,6 +156,24 @@ describe(utils.suiteName(__filename), function() {
                 assert(arg.optional);
                 assert.deepEqual(arg.type.params, [10, 20]);
             });
+
+            it('should support nested param types', () => {
+                const comment = `
+                /**
+                 * this is the description
+                 * @param {Array<Array<BoundedNumber<1, 5>>>} numberLists
+                 * @name testNestedParams
+                 */
+                `;
+                const metadata = jp._parseSource(comment).rpcs[0];
+                const argMetadata = jp._simplify(metadata.parsed).args[0];
+                const nestedType = argMetadata.type.params[0];
+                assert.equal(
+                    nestedType && nestedType.name,
+                    'Array',
+                    `Expected to find nested Array type but found: ${nestedType}`
+                );
+            });
         });
 
     });

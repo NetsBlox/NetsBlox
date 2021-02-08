@@ -27,10 +27,9 @@ types.Number = input => {
     return input;
 };
 
-types.BoundedNumber = (input, min, max) => {
+types.BoundedNumber = (input, params) => {
+    const [min, max] = params.map(num => parseInt(num));
     const number = types.Number(input);
-    min = parseFloat(min);
-    max = parseFloat(max);
     if (isNaN(max)) {  // only minimum specified
         if (number < min) {
             throw new Error(`Number must be greater than ${min}`);
@@ -52,11 +51,9 @@ types.BoundedNumber = (input, min, max) => {
 };
 
 
-types.BoundedString = (input, min, max) => {
+types.BoundedString = (input, params) => {
+    const [min, max] = params.map(num => parseInt(num));
     const inString = input.toString();
-
-    min = parseInt(min);
-    max = parseInt(max);
 
     if(max == min)
     {
@@ -96,8 +93,12 @@ types.Date = input => {
     return input;
 };
 
-types.Array = input => {
+types.Array = (input, params) => {
+    const [innerType] = params;
     if (!Array.isArray(input)) throw GENERIC_ERROR;
+    if (innerType) {
+        input = input.map(value => types[innerType](value));
+    }
     return input;
 };
 
@@ -132,7 +133,7 @@ types.Object = input => {
     return input;
 };
 
-types.Function = async (blockXml, ctx) => {
+types.Function = async (blockXml, _params, ctx) => {
     let roleName = '';
     let roleNames = [''];
 

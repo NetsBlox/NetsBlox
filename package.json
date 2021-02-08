@@ -1,6 +1,6 @@
 {
   "name": "netsblox",
-  "version": "1.27.0",
+  "version": "1.29.0",
   "description": "Visual programming environment with networking support",
   "bin": {
     "netsblox": "./bin/netsblox"
@@ -36,7 +36,7 @@
     "ask-sdk-model": "^1.34.1",
     "async": "^2.6.2",
     "aws-sdk": "^2.421.0",
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "bad-words": "^3.0.3",
     "body-parser": "^1.18.3",
     "cache-manager": "^2.0.0",
@@ -54,7 +54,7 @@
     "epipebomb": "^1.0.0",
     "exists-file": "^3.0.1",
     "express": "^4.16.4",
-    "fast-csv": "^2.4.0",
+    "fast-csv": "^4.3.6",
     "fs-extra": "^7.0.1",
     "fse": "^4.0.1",
     "geolib": "^2.0.18",
@@ -76,6 +76,7 @@
     "nop": "^1.0.0",
     "osmosis": "^1.1.10",
     "progress": "^2.0.3",
+    "promise-socket": "^7.0.0",
     "q": "^1.5.1",
     "qs": "^6.6.0",
     "request": "^2.88.0",
