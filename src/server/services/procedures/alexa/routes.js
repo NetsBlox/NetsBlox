@@ -121,13 +121,13 @@ if (require.main === module) {
     app.listen(port);
 } else {
     const router = express();
-    router.use('/alexa', handleErrors(async (req, res, next) => {
+    router.use('/services/alexa', handleErrors(async (req, res, next) => {
         const [/*prefix*/, tokenID] = req.get('Authorization').split(' ');
         const token = await OAuth.getToken(tokenID);
         req.token = token;
         return next();
     }));
-    router.post('/alexa', adapter.getRequestHandlers());
-    router.get('/alexa/whoami', (req, res) => res.send(req.token.username));
+    router.post('/services/alexa', adapter.getRequestHandlers());
+    router.get('/services/alexa/whoami', (req, res) => res.send(req.token.username));
     module.exports = router;
 }
