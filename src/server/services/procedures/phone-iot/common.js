@@ -1,4 +1,5 @@
 const sharp = require('sharp');
+const logger = require('../utils/logger')('PhoneIoT-common');
 
 const utils = {};
 
@@ -68,14 +69,17 @@ utils.prepImageToSend = async function(raw) {
     let matches = raw.match(/^\s*\<costume .*image="data:image\/png;base64,([^"]+)".*\/\>\s*$/);
     if (matches) {
         const raw = Buffer.from(matches[1], 'base64');
-        return await sharp(raw)
+        const img = await sharp(raw)
             .flatten({ background: { r: 255, g: 255, b: 255 } })
             .toFormat('jpeg')
             .jpeg({
-                quality: 90,
+                quality: 80,
                 chromaSubsampling: '4:4:4',
                 force: true,
         }).toBuffer();
+
+        logger.log(`encoded image size: ${img.length}`);
+        return img;
     }
 
     throw Error('unsupported image type');

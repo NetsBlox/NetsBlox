@@ -519,6 +519,24 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     PhoneIoT.prototype.getLocation = function (device) {
         return this._passToDevice('getLocation', arguments);
     };
+    /**
+     * Get the current bearing from the location sensor (in degrees).
+     * This represents the observed direction of motion between two location samples,
+     * so it's only meaningful while you are moving.
+     * @param {string} device name of the device (matches at the end)
+     * @returns {Number} current bearing
+     */
+    PhoneIoT.prototype.getBearing = function (device) {
+        return this._passToDevice('getBearing', arguments);
+    };
+    /**
+     * Get the current altitude from the location sensor (in meters above sea level).
+     * @param {string} device name of the device (matches at the end)
+     * @returns {Number} current bearing
+     */
+    PhoneIoT.prototype.getAltitude = function (device) {
+        return this._passToDevice('getAltitude', arguments);
+    };
 
     /**
      * Get the current output of the proximity device.

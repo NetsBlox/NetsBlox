@@ -34,7 +34,7 @@ const { definedOrThrow } = require('./common');
 // u - image box content
 // v - image box updated
 // W - get toggle state
-// X - location
+// X - location (latlong + bearing + altitude)
 // Y - gyroscope
 // y - add custom radiobutton control
 // Z - add custom checkbox control
@@ -736,7 +736,7 @@ Device.prototype.getLightLevel = async function (device, args, clientId) {
     return common.definedOrThrow((await response).level, 'light device not enabled or failed to auth');
 };
 
-Device.prototype.getLocation = async function (device, args, clientId) {
+Device.prototype._getLocationRaw = async function (device, args, clientId) {
     const password = this.getPassword(clientId);
 
     this._logger.log('get location ' + this.mac_addr);
@@ -745,8 +745,19 @@ Device.prototype.getLocation = async function (device, args, clientId) {
     message.write('X', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    const res = await response;
+    return response;
+};
+Device.prototype.getLocation = async function (device, args, clientId) {
+    const res = await this._getLocationRaw(device, args, clientId);
     return common.definedArrOrThrow([res.lat, res.long], 'location not enabled or failed to auth');
+};
+Device.prototype.getBearing = async function (device, args, clientId) {
+    const res = await this._getLocationRaw(device, args, clientId);
+    return common.definedOrThrow(res.bearing, 'location not enabled or failed to auth');
+};
+Device.prototype.getAltitude = async function (device, args, clientId) {
+    const res = await this._getLocationRaw(device, args, clientId);
+    return common.definedOrThrow(res.altitude, 'location not enabled or failed to auth');
 };
 
 Device.prototype.commandToClient = function (command) {
@@ -828,6 +839,13 @@ Device.prototype._sendAddControlResult = function(name, message) {
     }
     this.sendToClient(name, { err });
 };
+Device.prototype._sendVec3Result = function(name, message) {
+    this.sendToClient(name, message.length === 35 ? {
+        x: message.readDoubleBE(11),
+        y: message.readDoubleBE(19),
+        z: message.readDoubleBE(27),
+    } : {});
+};
 
 // used for handling incoming message from the device
 Device.prototype.onMessage = function (message) {
@@ -893,72 +911,38 @@ Device.prototype.onMessage = function (message) {
         this.sendToClient('gettogglestate', { state });
     }
     else if (command === 'O') {
-        this.sendToClient('orientation', message.length === 23 ? {
-            azimuth: message.readFloatBE(11),
-            pitch: message.readFloatBE(15),
-            roll: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'A') {
-        this.sendToClient('accelerometer', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'G') {
-        this.sendToClient('gravity', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'L') {
-        this.sendToClient('linear', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'Y') {
-        this.sendToClient('gyroscope', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
+        this.sendToClient('orientation', message.length === 35 ? {
+            azimuth: message.readDoubleBE(11),
+            pitch: message.readDoubleBE(19),
+            roll: message.readDoubleBE(27),
         } : {});
     }
     else if (command === 'R') {
-        this.sendToClient('rotation', message.length === 27 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-            w: message.readFloatBE(23),
-        } : {});
-    }
-    else if (command === 'r') {
-        this.sendToClient('gamerotation', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'M') {
-        this.sendToClient('magfield', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
+        this.sendToClient('rotation', message.length === 43 ? {
+            x: message.readDoubleBE(11),
+            y: message.readDoubleBE(19),
+            z: message.readDoubleBE(27),
+            w: message.readDoubleBE(35),
         } : {});
     }
     else if (command === 'X') {
-        this.sendToClient('location', message.length === 19 ? {
-            lat: message.readFloatBE(11),
-            long: message.readFloatBE(15),
+        this.sendToClient('location', message.length === 43 ? {
+            lat: message.readDoubleBE(11),
+            long: message.readDoubleBE(19),
+            bearing: message.readDoubleBE(27),
+            altitude: message.readDoubleBE(35),
         } : {});
     }
-    else if (command === 'm') this.sendToClient('miclevel', message.length === 15 ? { level: message.readFloatBE(11) } : {});
-    else if (command === 'P') this.sendToClient('proximity', message.length === 15 ? { proximity: message.readFloatBE(11) } : {});
-    else if (command === 'S') this.sendToClient('stepcount', message.length === 15 ? { count: message.readFloatBE(11) } : {});
-    else if (command === 'l') this.sendToClient('lightlevel', message.length === 15 ? { level: message.readFloatBE(11) } : {});
+    else if (command === 'A') this._sendVec3Result('accelerometer', message);
+    else if (command === 'G') this._sendVec3Result('gravity', message);
+    else if (command === 'L') this._sendVec3Result('linear', message);
+    else if (command === 'Y') this._sendVec3Result('gyroscope', message);
+    else if (command === 'r') this._sendVec3Result('gamerotation', message);
+    else if (command === 'M') this._sendVec3Result('magfield', message);
+    else if (command === 'm') this.sendToClient('miclevel', message.length === 19 ? { level: message.readDoubleBE(11) } : {});
+    else if (command === 'P') this.sendToClient('proximity', message.length === 19 ? { proximity: message.readDoubleBE(11) } : {});
+    else if (command === 'S') this.sendToClient('stepcount', message.length === 19 ? { count: message.readDoubleBE(11) } : {});
+    else if (command === 'l') this.sendToClient('lightlevel', message.length === 19 ? { level: message.readDoubleBE(11) } : {});
     else this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port + ' ' + message.toString('hex'));
 };
 
