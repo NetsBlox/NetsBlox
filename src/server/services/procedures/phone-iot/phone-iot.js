@@ -158,13 +158,13 @@ PhoneIoT.prototype.getColor = function (red, green, blue) {
  * @param {List} vec the vector value
  * @returns {Number} length of the vector
  */
-PhoneIoT.prototype.magnitude = common.magnitude;
+PhoneIoT.prototype.magnitude = function(vec) { return common.magnitude(vec); };
 /**
  * Get the normalized form of a vector (same direction but magnitude of 1).
  * @param {List} vec the vector value
  * @returns {List} the normalized vector
  */
-PhoneIoT.prototype.normalize = common.normalize;
+PhoneIoT.prototype.normalize = function(vec) { return common.normalize(vec); };
 
 if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /* eslint-disable no-unused-vars */
