@@ -126,7 +126,7 @@ PhoneIoT.prototype.getDevices = async function () {
 
 /**
  * Performs the pre-checks and maps the incoming call to a device action.
- * @param {String} fnName name of the method/function to call on the device object
+ * @param {string} fnName name of the method/function to call on the device object
  * @param {Array} args array of arguments
  */
 PhoneIoT.prototype._passToDevice = async function (fnName, args) {
@@ -139,7 +139,7 @@ PhoneIoT.prototype._passToDevice = async function (fnName, args) {
         if (rv === undefined) rv = true;
         return rv;
     }
-    return false;
+    throw Error('response timeout');
 };
 
 /**
@@ -172,7 +172,6 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Clears all custom controls from the device.
      * @param {string} device name of the device (matches at the end)
-     * @returns {boolean} True if the action is successful, false otherwise.
      */
     PhoneIoT.prototype.clearControls = function (device) {
         return this._passToDevice('clearControls', arguments);
@@ -180,8 +179,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Removes the specified custom control from the device (if it exists).
      * @param {string} device name of the device (matches at the end)
-     * @param {String} id name of the control to remove.
-     * @returns {boolean} True if the action is successful, false otherwise.
+     * @param {string} id name of the control to remove.
      */
     PhoneIoT.prototype.removeControl = function (device, id) {
         return this._passToDevice('removeControl', arguments);
@@ -195,14 +193,14 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} height Height of the button (percentage).
      * @param {Number=} color Color code of the button itself (defaults to light blue).
      * @param {Number=} textColor Color code of the button text (if any) (defaults to white).
-     * @param {String} id Name of the button.
-     * @param {String} event Name of the event to fire when the button is pressed.
-     * @param {string} text The text to display on the button
-     * @returns {boolean} True if the action is successful, false otherwise.
+     * @param {string} id Name of the button.
+     * @param {string=} event Name of the event to fire when the button is pressed (defaults to none).
+     * @param {string=} text The text to display on the button (defaults to empty).
      */
-    PhoneIoT.prototype.addButton = function (device, x, y, width, height, color=this.getColor(66, 135, 245), textColor=this.getColor(255, 255, 255), id, event, text) {
+    PhoneIoT.prototype.addButton = function (device, x, y, width, height, color=this.getColor(66, 135, 245), textColor=this.getColor(255, 255, 255), id, event, text='') {
         arguments[5] = color;
         arguments[6] = textColor;
+        arguments[9] = text;
         return this._passToDevice('addButton', arguments);
     };
     /**
@@ -212,9 +210,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the image box (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the image box (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the image box (percentage).
-     * @param {String} id Name of the image box.
-     * @param {String} event Name of the event to fire when the image box content is changed by the user.
-     * @returns {boolean} True if the action is successful, false otherwise.
+     * @param {string} id Name of the image box.
+     * @param {string=} event Name of the event to fire when the image box content is changed by the user (defaults to none).
      */
     PhoneIoT.prototype.addImageDisplay = function (device, x, y, width, height, id, event) {
         return this._passToDevice('addImageDisplay', arguments);
@@ -228,31 +225,31 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} height Height of the text field (percentage).
      * @param {Number=} color Color code of the text field itself (defaults to light blue).
      * @param {Number=} textColor Color code of the text field's text (if any) (defaults to black).
-     * @param {String} id Name of the text field.
-     * @param {String} event Name of the event to fire when the text field content is changed by the user.
-     * @param {string} text The initial text to display
-     * @returns {boolean} True if the action is successful, false otherwise.
+     * @param {string} id Name of the text field.
+     * @param {string=} event Name of the event to fire when the text field content is changed by the user (defaults to none).
+     * @param {string=} text The initial text to display (defaults to empty)
      */
-    PhoneIoT.prototype.addTextField = function (device, x, y, width, height, color=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), id, event, text) {
+    PhoneIoT.prototype.addTextField = function (device, x, y, width, height, color=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), id, event, text='') {
         arguments[5] = color;
         arguments[6] = textColor;
+        arguments[9] = text;
         return this._passToDevice('addTextField', arguments);
     };
     /**
      * Set the text on a control that displays text.
      * @param {string} device name of the device (matches at the end)
-     * @param {String} id Name of the control to change text on
-     * @param {string} text The new text to display
-     * @returns {boolean} True if the action is successful, false otherwise.
+     * @param {string} id Name of the control to change text on
+     * @param {string=} text The new text to display (defaults to empty)
      */
-    PhoneIoT.prototype.setText = function (device, id, text) {
+    PhoneIoT.prototype.setText = function (device, id, text='') {
+        arguments[2] = text;
         return this._passToDevice('setText', arguments);
     };
     /**
      * Get the text from a control that displays text.
      * @param {string} device name of the device (matches at the end)
-     * @param {String} id Name of the control to read text from
-     * @returns {boolean} The currently displayed text
+     * @param {string} id Name of the control to read text from
+     * @returns {string} The currently displayed text
      */
     PhoneIoT.prototype.getText = function (device, id) {
         return this._passToDevice('getText', arguments);
@@ -265,14 +262,14 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
      * @param {Number=} textColor Color code of the text (if any) (defaults to black).
      * @param {bool=} state Initial check state of the checkbox (defaults to false).
-     * @param {String} id Name of the checkbox.
-     * @param {String} event Name of the event to fire when the button is pressed.
-     * @param {string} text The text to display next to the checkbox
-     * @returns {boolean} True if the action is successful, false otherwise.
+     * @param {string} id Name of the checkbox.
+     * @param {string=} event Name of the event to fire when the button is pressed (defaults to none)
+     * @param {string=} text The text to display next to the checkbox (defaults to empty)
      */
-    PhoneIoT.prototype.addCheckbox = function (device, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, event, text) {
+    PhoneIoT.prototype.addCheckbox = function (device, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, event, text='') {
         arguments[3] = checkColor;
         arguments[4] = textColor;
+        arguments[8] = text;
         return this._passToDevice('addCheckbox', arguments);
     };
     /**
@@ -283,14 +280,14 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
      * @param {Number=} textColor Color code of the text (if any) (defaults to black).
      * @param {bool=} state Initial check state of the toggle switch (defaults to false).
-     * @param {String} id name of the toggle switch
-     * @param {String} event name of the event to raise for click events
-     * @param {string} text The text to display next to the toggle switch
-     * @returns {boolean} True if the action is successful, false otherwise.
+     * @param {string} id name of the toggle switch
+     * @param {string=} event name of the event to raise for click events (defaults to none)
+     * @param {string=} text The text to display next to the toggle switch (defaults to empty)
      */
-    PhoneIoT.prototype.addToggleswitch = function (device, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, event, text) {
+    PhoneIoT.prototype.addToggleswitch = function (device, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, event, text='') {
         arguments[3] = checkColor;
         arguments[4] = textColor;
+        arguments[8] = text;
         return this._passToDevice('addToggleswitch', arguments);
     };
     /**
@@ -303,15 +300,16 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
      * @param {Number=} textColor Color code of the text (if any) (defaults to black).
      * @param {bool=} state Initial check state of the radio button (defaults to false) - All false in a group is OK, but you should avoid setting multiple explicitly to true.
-     * @param {String} id name of the radio button
-     * @param {String} group name of the group (only one radio button in each group can be selected by the user)
-     * @param {String} event name of the event to raise for click events
-     * @param {string} text The text to display next to the checkbox
-     * @returns {boolean} True if the action is successful, false otherwise.
+     * @param {string} id name of the radio button
+     * @param {string=} group name of the group (only one radio button in each group can be selected by the user) (defaults to "default")
+     * @param {string=} event name of the event to raise for click events (defaults to none)
+     * @param {string=} text The text to display next to the checkbox (defaults to empty)
      */
-    PhoneIoT.prototype.addRadioButton = function (device, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, group, event, text) {
+    PhoneIoT.prototype.addRadioButton = function (device, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, group='default', event, text='') {
         arguments[3] = checkColor;
         arguments[4] = textColor;
+        arguments[7] = group;
+        arguments[9] = text;
         return this._passToDevice('addRadioButton', arguments);
     };
     /**
@@ -321,19 +319,18 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
      * @param {Number=} textColor Color code of the button text (if any) (defaults to black).
-     * @param {String} id Name of the label
-     * @param {string} text The text to display on the button
-     * @returns {boolean} True if the action is successful, false otherwise.
+     * @param {string} id Name of the label
+     * @param {string=} text The text to display on the button (defaults to empty)
      */
-    PhoneIoT.prototype.addLabel = function (device, x, y, textColor=this.getColor(0, 0, 0), id, text) {
+    PhoneIoT.prototype.addLabel = function (device, x, y, textColor=this.getColor(0, 0, 0), id, text='') {
         arguments[3] = textColor;
+        arguments[5] = text;
         return this._passToDevice('addLabel', arguments);
     };
 
     /**
      * Checks for authentication, a no-op.
      * @param {string} device name of the device (matches at the end)
-     * @returns {boolean} True if the action is successful, false otherwise.
      */
     PhoneIoT.prototype.authenticate = async function (device) {
         return this._passToDevice('authenticate', arguments);
@@ -341,14 +338,12 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Begin listening for events such as button presses.
      * @param {string} device name of the device (matches at the end)
-     * @returns {boolean} True if the action is successful, false otherwise.
      */
     PhoneIoT.prototype.listen = async function (device) {
         if (!await this.authenticate(device)) throw Error('failed to authenticate');
         
         const _device = await this._getDevice(device);
         _device.guiListeners[this.socket.clientId] = this.socket;
-        return true;
     };
     /**
      * Sets the password (login) credentials for this device.
@@ -363,7 +358,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Gets the toggle state of any toggleable custom control.
      * @param {string} device name of the device (matches at the end)
-     * @param {String} id name of the toggleable control to read
+     * @param {string} id name of the toggleable control to read
      * @returns {boolean} True or False, depending on the toggle state
      */
     PhoneIoT.prototype.getToggleState = function (device, id) {
@@ -373,9 +368,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the orientation of the device relative to the Earth's magnetic reference frame.
      * This is returned as a list of 3 values:
-     * 1. The azimuth angle, effectively the compass heading [-pi, pi].
-     * 2. The pitch (vertical tilt) angle [-pi/2, pi/2].
-     * 3. The roll angle [-pi/2,pi/2].
+     * 1. The azimuth angle, effectively the compass heading [-180, 180].
+     * 2. The pitch (vertical tilt) angle [-90, 90].
+     * 3. The roll angle [-90, 90].
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} The orientation angles relative to the Earth's magnetic field.
      */
@@ -383,25 +378,17 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('getOrientation', arguments);
     };
     /**
-     * Get the compass heading in radians [-pi, pi].
+     * Get the compass heading in degrees [-180, 180].
      * @param {string} device name of the device (matches at the end)
-     * @returns {Number} The compass heading in radians.
+     * @returns {Number} The compass heading in degrees.
      */
     PhoneIoT.prototype.getCompassHeading = function (device) {
         return this._passToDevice('getCompassHeading', arguments);
     };
     /**
-     * Get the compass heading in degrees [-180, 180].
-     * @param {string} device name of the device (matches at the end)
-     * @returns {Number} The compass heading in radians.
-     */
-    PhoneIoT.prototype.getCompassHeadingDegrees = async function (device) {
-        return this._passToDevice('getCompassHeadingDegrees', arguments);
-    };
-    /**
      * Get the name of the closest compass direction (N, NE, E, SE, etc.).
      * @param {string} device name of the device (matches at the end)
-     * @returns {String} The compass direction name
+     * @returns {string} The compass direction name
      */
     PhoneIoT.prototype.getCompassDirection = function (device) {
         return this._passToDevice('getCompassDirection', arguments);
@@ -409,7 +396,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the name of the closest compass cardinal direction (N, E, S, W).
      * @param {string} device name of the device (matches at the end)
-     * @returns {String} The compass cardinal direction name
+     * @returns {string} The compass cardinal direction name
      */
     PhoneIoT.prototype.getCompassCardinalDirection = function (device) {
         return this._passToDevice('getCompassCardinalDirection', arguments);
@@ -463,7 +450,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 
     /**
      * Get the current output of the gyroscope, which measures rotational acceleration.
-     * This is a 3D vector with units of rad/s² around each axis.
+     * This is a 3D vector with units of degrees/s² around each axis.
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} output of gyroscope
      */
@@ -472,7 +459,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Get the current output of the rotation device, which measures rotational orientation.
-     * This is a 4D vector with units of rad around each of the 3 axes, plus a scalar component.
+     * This is a unitless 4D vector representing rotation on the 3 axes, plus a scalar component.
      * For most uses, getGameRotation is more convenient.
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} 4D rotational vector
@@ -482,8 +469,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Get the current output of the game rotation device, which measures rotational orientation.
-     * This is a 3D vector with units of rad around each axis from some standard basis.
-     * Due to the arbitrary basis of getRotation, this is more appropriate for use in games.
+     * This is a unitless 3D vector representing rotation around each axis.
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} 3D rotational vector
      */
@@ -656,12 +642,12 @@ server.on('listening', function () {
 });
 
 server.on('message', function (message, remote) {
-    if (message.length < 6) logger.log('invalid message ' + remote.address + ':' + remote.port + ' ' + message.toString('hex'));
-    else {
+    if (message.length >= 6) {
         const mac_addr = message.toString('hex', 0, 6); // pull out the mac address
         const device = PhoneIoT.prototype._getOrCreateDevice(mac_addr, remote.address, remote.port);
         device.onMessage(message);
     }
+    else if (message.length !== 0) logger.log('invalid message ' + remote.address + ':' + remote.port + ' ' + message.toString('hex'));
 });
 
 /* eslint no-console: off */
