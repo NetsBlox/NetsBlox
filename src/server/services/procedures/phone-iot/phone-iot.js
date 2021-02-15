@@ -340,7 +340,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {string} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.listen = async function (device) {
-        if (!await this.authenticate(device)) throw Error('failed to authenticate');
+        this.authenticate(device); // throws on failure - we want this
         
         const _device = await this._getDevice(device);
         _device.guiListeners[this.socket.clientId] = this.socket;
