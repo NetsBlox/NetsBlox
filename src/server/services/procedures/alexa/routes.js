@@ -1,10 +1,20 @@
 const OAuth = require('../../../api/core/oauth');
 const {handleErrors} = require('../../../api/rest/utils');
+const NetsBloxAddress = require('../../../netsblox-address');
 const Alexa = require('ask-sdk-core');
 const express = require('express');
 const { ExpressAdapter } = require('ask-sdk-express-adapter');
 
 const skillBuilder = Alexa.SkillBuilders.custom();
+
+/**
+ * Throws if user is not logged in.
+ */
+const ensureLoggedIn = function(caller) {
+    if (!caller.username) {
+        throw new Error('Login required.');
+    }
+};
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -28,6 +38,29 @@ const HelloWorldIntentHandler = {
     },
     handle(handlerInput) {
         const speechText = 'Hello World!';
+
+        const router = express();
+
+        ensureLoggedIn(this.caller);
+
+        router.post(
+            '/services/alexa/send/',
+            bodyParser.json({limit: '1mb'}),
+            async (req, res) => {
+                const address = "User@test@tabithalee";
+                const messageType = "Alexa";
+                const resolvedAddr = await NetsBloxAddress.new(address)
+                    .catch(err => {
+                        res.status(400).send(err.message);
+                    });
+
+                if (resolvedAddr) {
+                    const client = new RemoteClient(resolvedAddr.projectId);
+                    await client.sendMessageToRoom(messageType, speechText);
+                    res.sendStatus(200);
+                }
+            }
+        );
 
         return handlerInput.responseBuilder
             .speak(speechText)
