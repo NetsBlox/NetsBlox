@@ -5,6 +5,7 @@ class CommunityService {
         this.logger = logger;
         this.types = [
             require('./data-service'),
+            require('./device-service'),
         ];
     }
 
