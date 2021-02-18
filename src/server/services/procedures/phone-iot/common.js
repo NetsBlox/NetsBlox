@@ -40,17 +40,6 @@ utils.closestScalar = function(val, def) {
     return best[1];
 }
 
-// if arr contains only defined values, returns arr, otherwise throws Error(errorMsg)
-utils.definedArrOrThrow = function(arr, errorMsg) {
-    for (const val of arr) if (val === undefined) throw new Error(errorMsg);
-    return arr;
-}
-// if val is defined, returns val, otherwise throws Error(errorMsg)
-utils.definedOrThrow = function(val, errorMsg) {
-    if (val === undefined) throw new Error(errorMsg);
-    return val;
-}
-
 // parses a SalIO password and simplifies the error message (if any)
 utils.gracefulPasswordParse = function(password) {
     let res = undefined;
@@ -73,7 +62,7 @@ utils.prepImageToSend = async function(raw) {
         const raw = Buffer.from(matches[1], 'base64');
         const temp = await jimp.read(raw);
         
-        // TODO: change this to getBufferAsync when we update to a newer jimp
+        // change this to getBufferAsync when we update to a newer jimp
         const img = await new Promise((resolve, reject) => {
             temp.quality(80).background(0xffffffff).getBuffer(jimp.MIME_JPEG, (err, buffer) => {
                 if (err) reject(err);

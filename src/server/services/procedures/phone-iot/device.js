@@ -4,7 +4,6 @@ const acl = require('../roboscape/accessControl');
 const PHONE_IOT_MODE = process.env.PHONE_IOT_MODE || 'both';
 const ciphers = require('../roboscape/ciphers');
 const common = require('./common');
-const { definedOrThrow } = require('./common');
 
 // network protocols (UDP unless otherwise stated)
 // A - accelerometer
@@ -252,58 +251,60 @@ Device.prototype.receiveFromDevice = function (msgType, timeout) {
     });
 };
 
-Device.prototype.authenticate = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+// common function for all rpcs that start a request
+Device.prototype.rpcHeader = function (name, clientId) {
+    const password = this.getPassword(clientId); // do this first in case it fails
+    this._logger.log(`calling ${name} ${this.mac_addr}`);
+    const response = this.receiveFromDevice(name);
+    return { response, password };
+};
+function parseId(id) {
+    const res = Buffer.from(id, 'utf8');
+    if (res.length > 255) throw Error('id too long');
+    return res;
+}
+// if obj.err is defined, throws an error, otherwise returns obj
+function throwIfErr(obj) {
+    const err = obj.err;
+    if (err !== undefined) throw Error(err);
+    return obj;
+}
 
-    this._logger.log('authenticate ' + this.mac_addr);
-    const response = this.receiveFromDevice('auth');
+Device.prototype.authenticate = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('auth', clientId);
+
     const message = Buffer.alloc(9);
     message.write('a', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
 
-    const err = (await response).err;
-    if (err !== undefined) throw Error(err);
+    throwIfErr(await response);
 };
 
 Device.prototype.clearControls = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('clearcontrols', clientId);
 
-    this._logger.log('clear controls ' + this.mac_addr);
-    const response = this.receiveFromDevice('clearcontrols');
     const message = Buffer.alloc(9);
     message.write('C', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
 
-    const err = (await response).err;
-    if (err !== undefined) throw Error(err);
+    throwIfErr(await response);
 };
 Device.prototype.removeControl = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-
-    this._logger.log('remove control ' + this.mac_addr);
-    const response = this.receiveFromDevice('removecontrol');
-
-    const id = Buffer.from(args[0], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    const { response, password } = this.rpcHeader('removecontrol', clientId);
+    const id = parseId(args[0]);
 
     const message = Buffer.alloc(9);
     message.write('c', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(Buffer.concat([message, id]));
 
-    const err = (await response).err;
-    if (err !== undefined) throw Error(err);
+    throwIfErr(await response);
 };
 Device.prototype.addButton = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-
-    this._logger.log('add button ' + this.mac_addr);
-    const response = this.receiveFromDevice('addbutton');
-
-    const id = Buffer.from(args[6], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    const { response, password } = this.rpcHeader('addbutton', clientId);
+    const id = parseId(args[6]);
 
     const message = Buffer.alloc(34);
     message.write('B', 0, 1);
@@ -319,19 +320,13 @@ Device.prototype.addButton = async function (device, args, clientId) {
     const text = Buffer.from(args[8], 'utf8');
     this.sendToDevice(Buffer.concat([message, id, text]));
     
-    const err = (await response).err;
-    if (err !== undefined) throw Error(err);
+    throwIfErr(await response);
 
     device.guiIdToEvent[args[6]] = args[7];
 };
 Device.prototype.addImageDisplay = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-    
-    this._logger.log('add image display ' + this.mac_addr);
-    const response = this.receiveFromDevice('addimagedisplay');
-
-    const id = Buffer.from(args[4], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    const { response, password } = this.rpcHeader('addimagedisplay', clientId);
+    const id = parseId(args[4]);
 
     const message = Buffer.alloc(25);
     message.write('U', 0, 1);
@@ -342,37 +337,24 @@ Device.prototype.addImageDisplay = async function (device, args, clientId) {
     message.writeFloatBE(args[3], 21);
     this.sendToDevice(Buffer.concat([message, id]));
     
-    const err = (await response).err;
-    if (err !== undefined) throw Error(err);
+    throwIfErr(await response);
 
     device.guiIdToEvent[args[4]] = args[5];
 };
 Device.prototype.getImage = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-    
-    this._logger.log('get image ' + this.mac_addr);
-    const response = this.receiveFromDevice('getimage');
-
-    const id = Buffer.from(args[0], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    const { response, password } = this.rpcHeader('getimage', clientId);
+    const id = parseId(args[0]);
 
     const message = Buffer.alloc(9);
     message.write('u', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(Buffer.concat([message, id]));
     
-    const img = (await response).img;
-    if (img === undefined) throw new Error('no image display with matching id');
-    return img;
+    return throwIfErr(await response).img;
 };
 Device.prototype.setImage = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-
-    this._logger.log('set image ' + this.mac_addr);
-    const response = this.receiveFromDevice('setimage');
-
-    const id = Buffer.from(args[0], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    const { response, password } = this.rpcHeader('setimage', clientId);
+    const id = parseId(args[0]);
 
     const message = Buffer.alloc(10);
     message.write('i', 0, 1);
@@ -382,17 +364,11 @@ Device.prototype.setImage = async function (device, args, clientId) {
     const img = await common.prepImageToSend(args[1]);
     this.sendToDevice(Buffer.concat([message, id, img]));
     
-    const err = (await response).err;
-    if (err !== undefined) throw Error(err);
+    throwIfErr(await response);
 };
 Device.prototype.setText = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-
-    this._logger.log('set text ' + this.mac_addr);
-    const response = this.receiveFromDevice('settext');
-
-    const id = Buffer.from(args[0], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    const { response, password } = this.rpcHeader('settext', clientId);
+    const id = parseId(args[0]);
 
     const message = Buffer.alloc(10);
     message.write('H', 0, 1);
@@ -402,35 +378,22 @@ Device.prototype.setText = async function (device, args, clientId) {
     const text = Buffer.from(args[1], 'utf8');
     this.sendToDevice(Buffer.concat([message, id, text]));
     
-    const err = (await response).err;
-    if (err !== undefined) throw Error(err);
+    throwIfErr(await response);
 };
 Device.prototype.getText = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-
-    this._logger.log('get text ' + this.mac_addr);
-    const response = this.receiveFromDevice('gettext');
-
-    const id = Buffer.from(args[0], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    const { response, password } = this.rpcHeader('gettext', clientId);
+    const id = parseId(args[0]);
 
     const message = Buffer.alloc(9);
     message.write('h', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(Buffer.concat([message, id]));
     
-    const text = (await response).text;
-    if (text === undefined) throw Error('no text with matching id');
-    return text;
+    return throwIfErr(await response).text;
 };
 Device.prototype.addTextField = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-    
-    this._logger.log('add text field ' + this.mac_addr);
-    const response = this.receiveFromDevice('addtextfield');
-
-    const id = Buffer.from(args[6], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    const { response, password } = this.rpcHeader('addtextfield', clientId);
+    const id = parseId(args[6]);
 
     const message = Buffer.alloc(34);
     message.write('T', 0, 1);
@@ -446,19 +409,13 @@ Device.prototype.addTextField = async function (device, args, clientId) {
     const text = Buffer.from(args[8], 'utf8');
     this.sendToDevice(Buffer.concat([message, id, text]));
     
-    const err = (await response).err;
-    if (err !== undefined) throw Error(err);
+    throwIfErr(await response);
 
     device.guiIdToEvent[args[6]] = args[7];
 };
 Device.prototype.addLabel = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-    
-    this._logger.log('add label ' + this.mac_addr);
-    const response = this.receiveFromDevice('addlabel');
-
-    const id = Buffer.from(args[3], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    const { response, password } = this.rpcHeader('addlabel', clientId);
+    const id = parseId(args[3]);
 
     const message = Buffer.alloc(22);
     message.write('g', 0, 1);
@@ -471,17 +428,11 @@ Device.prototype.addLabel = async function (device, args, clientId) {
     const text = Buffer.from(args[4], 'utf8');
     this.sendToDevice(Buffer.concat([message, id, text]));
     
-    const err = (await response).err;
-    if (err !== undefined) throw Error(err);
+    throwIfErr(await response);
 };
 Device.prototype.addCheckboxWithStyle = async function (device, args, style, clientId) {
-    const password = this.getPassword(clientId);
-    
-    this._logger.log('add checkbox ' + this.mac_addr);
-    const response = this.receiveFromDevice('addcheckbox');
-
-    const id = Buffer.from(args[5], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    const { response, password } = this.rpcHeader('addcheckbox', clientId);
+    const id = parseId(args[5]);
 
     const message = Buffer.alloc(28);
     message.write('Z', 0, 1);
@@ -497,8 +448,7 @@ Device.prototype.addCheckboxWithStyle = async function (device, args, style, cli
     const text = Buffer.from(args[7], 'utf8');
     this.sendToDevice(Buffer.concat([message, id, text]));
     
-    const err = (await response).err;
-    if (err !== undefined) throw Error(err);
+    throwIfErr(await response);
 
     device.guiIdToEvent[args[5]] = args[6];
 };
@@ -509,16 +459,10 @@ Device.prototype.addToggleswitch = async function (device, args, clientId) {
     return this.addCheckboxWithStyle(device, args, 1, clientId);
 };
 Device.prototype.addRadioButton = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-    
-    this._logger.log('add radio button ' + this.mac_addr);
-    const response = this.receiveFromDevice('addradiobutton');
+    const { response, password } = this.rpcHeader('addradiobutton', clientId);
+    const id = parseId(args[5]);
+    const group = parseId(args[6]);
 
-    const id = Buffer.from(args[5], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
-
-    const group = Buffer.from(args[6], 'utf8');
-    if (group.length > 255) throw new Error('group too long');
     const groupPrefix = Buffer.alloc(1);
     groupPrefix[0] = group.length;
 
@@ -535,20 +479,14 @@ Device.prototype.addRadioButton = async function (device, args, clientId) {
     const text = Buffer.from(args[8], 'utf8');
     this.sendToDevice(Buffer.concat([message, id, groupPrefix, group, text]));
     
-    const err = (await response).err;
-    if (err !== undefined) throw Error(err);
+    throwIfErr(await response);
 
     device.guiIdToEvent[args[5]] = args[7];
 };
 
 Device.prototype.getToggleState = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-
-    this._logger.log('get toggle state ' + this.mac_addr);
-    const response = this.receiveFromDevice('gettogglestate');
-    
-    const id = Buffer.from(args[0], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    const { response, password } = this.rpcHeader('gettogglestate', clientId);
+    const id = parseId(args[0]);
 
     const message = Buffer.alloc(9);
     message.write('W', 0, 1);
@@ -556,24 +494,18 @@ Device.prototype.getToggleState = async function (device, args, clientId) {
     
     this.sendToDevice(Buffer.concat([message, id]));
     
-    const state = (await response).state;
-    if (state === undefined) throw new Error('no toggleable with matching id');
-    return state;
+    return throwIfErr(await response).state;
 };
 
 Device.prototype.getOrientation = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('orientation', clientId);
 
-    this._logger.log('get orientation ' + this.mac_addr);
-    const response = this.receiveFromDevice('orientation');
     const message = Buffer.alloc(9);
     message.write('O', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    const res = await response;
-    if (res.err) throw Error(res.err);
-    return common.scale(res.vals, 180 / Math.PI);
+    return common.scale(throwIfErr(await response).vals, 180 / Math.PI);
 };
 Device.prototype.getCompassHeading = async function (device, args, clientId) {
     return (await this.getOrientation(device, args, clientId))[0];
@@ -586,173 +518,127 @@ Device.prototype.getCompassCardinalDirection = async function (device, args, cli
 };
 
 Device.prototype.getAccelerometer = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('accelerometer', clientId);
 
-    this._logger.log('get accelerometer ' + this.mac_addr);
-    const response = this.receiveFromDevice('accelerometer');
     const message = Buffer.alloc(9);
     message.write('A', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    const res = await response;
-    if (res.err) throw Error(res.err);
-    return res.vals;
+    return throwIfErr(await response).vals;
 };
 Device.prototype.getFacingDirection = async function (device, args, clientId) {
     return common.closestVector(await this.getAccelerometer(device, args, clientId), DIRECTIONS_3D);
 };
 
 Device.prototype.getGravity = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('gravity', clientId);
 
-    this._logger.log('get gravity ' + this.mac_addr);
-    const response = this.receiveFromDevice('gravity');
     const message = Buffer.alloc(9);
     message.write('G', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    const res = await response;
-    if (res.err) throw Error(res.err);
-    return res.vals;
+    return throwIfErr(await response).vals;
 };
 
 Device.prototype.getLinearAcceleration = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('linear', clientId);
 
-    this._logger.log('get linear acceleration ' + this.mac_addr);
-    const response = this.receiveFromDevice('linear');
     const message = Buffer.alloc(9);
     message.write('L', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    const res = await response;
-    if (res.err) throw Error(res.err);
-    return res.vals;
+    return throwIfErr(await response).vals;
 };
 
 Device.prototype.getGyroscope = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('gyroscope', clientId);
 
-    this._logger.log('get gyroscope ' + this.mac_addr);
-    const response = this.receiveFromDevice('gyroscope');
     const message = Buffer.alloc(9);
     message.write('Y', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    const res = await response;
-    if (res.err) throw Error(res.err);
-    return common.scale(res.vals, 180 / Math.PI);
+    return common.scale(throwIfErr(await response).vals, 180 / Math.PI);
 };
 Device.prototype.getRotation = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('rotation', clientId);
 
-    this._logger.log('get rotation ' + this.mac_addr);
-    const response = this.receiveFromDevice('rotation');
     const message = Buffer.alloc(9);
     message.write('R', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
 
-    const res = await response;
-    if (res.err) throw Error(res.err);
-    return res.vals;
+    return throwIfErr(await response).vals;
 };
 Device.prototype.getGameRotation = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('gamerotation', clientId);
 
-    this._logger.log('get game rotation ' + this.mac_addr);
-    const response = this.receiveFromDevice('gamerotation');
     const message = Buffer.alloc(9);
     message.write('r', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    const res = await response;
-    if (res.err) throw Error(res.err);
-    return res.vals;
+    return throwIfErr(await response).vals;
 };
 
 Device.prototype.getMagneticFieldVector = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-    
-    this._logger.log('get mag field ' + this.mac_addr);
-    const response = this.receiveFromDevice('magfield');
+    const { response, password } = this.rpcHeader('magfield', clientId);
+
     const message = Buffer.alloc(9);
     message.write('M', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    const res = await response;
-    if (res.err) throw Error(res.err);
-    return res.vals;
+    return throwIfErr(await response).vals;
 };
 
 Device.prototype.getMicrophoneLevel = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('miclevel', clientId);
 
-    this._logger.log('get mic level ' + this.mac_addr);
-    const response = this.receiveFromDevice('miclevel');
     const message = Buffer.alloc(9);
     message.write('m', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
 
-    const res = await response;
-    if (res.err !== undefined) throw Error(res.err);
-    return res.vals[0];
+    return throwIfErr(await response).vals[0];
 };
 Device.prototype.getProximity = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('proximity', clientId);
 
-    this._logger.log('get proximity ' + this.mac_addr);
-    const response = this.receiveFromDevice('proximity');
     const message = Buffer.alloc(9);
     message.write('P', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    const res = await response;
-    if (res.err !== undefined) throw Error(res.err);
-    return res.vals[0];
+    return throwIfErr(await response).vals[0];
 };
 Device.prototype.getStepCount = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('stepcount', clientId);
 
-    this._logger.log('get step count ' + this.mac_addr);
-    const response = this.receiveFromDevice('stepcount');
     const message = Buffer.alloc(9);
     message.write('S', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
 
-    const res = await response;
-    if (res.err !== undefined) throw Error(res.err);
-    return res.vals[0];
+    return throwIfErr(await response).vals[0];
 };
 Device.prototype.getLightLevel = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
-    
-    this._logger.log('get light level ' + this.mac_addr);
-    const response = this.receiveFromDevice('lightlevel');
+    const { response, password } = this.rpcHeader('lightlevel', clientId);
+
     const message = Buffer.alloc(9);
     message.write('l', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    const res = await response;
-    if (res.err !== undefined) throw Error(res.err);
-    return res.vals[0];
+    return throwIfErr(await response).vals[0];
 };
 
 Device.prototype._getLocationRaw = async function (device, args, clientId) {
-    const password = this.getPassword(clientId);
+    const { response, password } = this.rpcHeader('location', clientId);
 
-    this._logger.log('get location ' + this.mac_addr);
-    const response = this.receiveFromDevice('location');
     const message = Buffer.alloc(9);
     message.write('X', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
@@ -760,19 +646,13 @@ Device.prototype._getLocationRaw = async function (device, args, clientId) {
     return response;
 };
 Device.prototype.getLocation = async function (device, args, clientId) {
-    const res = await this._getLocationRaw(device, args, clientId);
-    if (res.err) throw Error(res.err);
-    return res.vals.slice(0, 2);
+    return throwIfErr(await this._getLocationRaw(device, args, clientId)).vals.slice(0, 2);
 };
 Device.prototype.getBearing = async function (device, args, clientId) {
-    const res = await await this._getLocationRaw(device, args, clientId);
-    if (res.err) throw Error(res.err);
-    return res.vals[2];
+    return throwIfErr(await this._getLocationRaw(device, args, clientId)).vals[2];
 };
 Device.prototype.getAltitude = async function (device, args, clientId) {
-    const res = await await this._getLocationRaw(device, args, clientId);
-    if (res.err) throw Error(res.err);
-    return res.vals[3];
+    return throwIfErr(await this._getLocationRaw(device, args, clientId)).vals[3];
 };
 
 Device.prototype.commandToClient = function (command) {
@@ -892,11 +772,11 @@ Device.prototype.onMessage = function (message) {
     else if (command === 'c') this._sendVoidResult('removecontrol', message, 'failed to remove control');
     else if (command === 'u') {
         const img = message.slice(11);
-        this.sendToClient('getimage', img.length > 0 ? {img} : {});
+        this.sendToClient('getimage', img.length > 0 ? {img} : { err: 'no image display with matching id' });
     }
     else if (command === 'h') {
         const text = message.length >= 12 && message[11] === 0 ? message.toString('utf8', 12) : undefined;
-        this.sendToClient('gettext', {text});
+        this.sendToClient('gettext', text !== undefined ? {text} : { err: 'no text with matching id' });
     }
     else if (command === 'H') this._sendControlResult('settext', message);
     else if (command === 'i') this._sendControlResult('setimage', message);
@@ -933,7 +813,7 @@ Device.prototype.onMessage = function (message) {
             case 0: state = false; break;
             case 1: state = true; break;
         }
-        this.sendToClient('gettogglestate', { state });
+        this.sendToClient('gettogglestate', state !== undefined ? { state } : { err: 'no toggleable with matching id' });
     }
     else if (command === 'O') this._sendSensorResult('orientation', 'orientation sensor', message);
     else if (command === 'R') this._sendSensorResult('rotation', 'rotation sensor', message);
@@ -1020,7 +900,7 @@ Device.prototype._hasValidEncryptionSet = function () {
 
 Device.prototype.encrypt = function (text) {
     if (!this._hasValidEncryptionSet()) {
-        throw new Error('invalid encryption setup');
+        throw Error('invalid encryption setup');
     }
     let output = this.encryptionMethod.encrypt(text, this.encryptionKey);
     this._logger.log('"' + text + '" encrypted to "' + output + '"');
@@ -1029,7 +909,7 @@ Device.prototype.encrypt = function (text) {
 
 Device.prototype.decrypt = function (text) {
     if (!this._hasValidEncryptionSet()) {
-        throw new Error('invalid encryption setup');
+        throw Error('invalid encryption setup');
     }
     let output = this.encryptionMethod.decrypt(text, this.encryptionKey);
     this._logger.log('"' + text + '" decrypted to "' + output + '"');
@@ -1070,20 +950,13 @@ Device.prototype.setEncryptionKey = function (keys) {
 
 Device.prototype.randomEncryption = function () {
     const keys = [];
-    const blinks = [];
     for (let i = 0; i < 4; i++) {
         const a = Math.floor(Math.random() * 16);
         keys.push(a);
-        blinks.push(a & 0x8 ? 2 : 1);
-        blinks.push(a & 0x4 ? 2 : 1);
-        blinks.push(a & 0x2 ? 2 : 1);
-        blinks.push(a & 0x1 ? 2 : 1);
     }
-    blinks.push(3);
     this.resetSeqNum();
     this.resetRates();
     this.setEncryptionKey(keys);
-    this.playBlinks(blinks);
 };
 
 // resets encryption, sequencing, and rate limits
@@ -1092,7 +965,6 @@ Device.prototype.resetDevice = function () {
     this.resetSeqNum();
     this.resetRates();
     this.resetEncryption();
-    this.playBlinks([3]);
 };
 
 module.exports = Device;
