@@ -1,4 +1,4 @@
-const sharp = require('sharp');
+const jimp = require('jimp');
 const logger = require('../utils/logger')('PhoneIoT-common');
 
 const utils = {};
@@ -66,17 +66,20 @@ utils.gracefulPasswordParse = function(password) {
 // given some image source, attempts to convert it into a buffer for sending over UDP.
 // if the image type is not recognized, throws an error.
 utils.prepImageToSend = async function(raw) {
+    if (!raw) throw Error('input was not an image');
+
     let matches = raw.match(/^\s*\<costume .*image="data:image\/png;base64,([^"]+)".*\/\>\s*$/);
     if (matches) {
         const raw = Buffer.from(matches[1], 'base64');
-        const img = await sharp(raw)
-            .flatten({ background: { r: 255, g: 255, b: 255 } })
-            .toFormat('jpeg')
-            .jpeg({
-                quality: 80,
-                chromaSubsampling: '4:4:4',
-                force: true,
-        }).toBuffer();
+        const temp = await jimp.read(raw);
+        
+        // TODO: change this to getBufferAsync when we update to a newer jimp
+        const img = await new Promise((resolve, reject) => {
+            temp.quality(80).background(0xffffffff).getBuffer(jimp.MIME_JPEG, (err, buffer) => {
+                if (err) reject(err);
+                else resolve(buffer);
+            });
+        });
 
         logger.log(`encoded image size: ${img.length}`);
         return img;
