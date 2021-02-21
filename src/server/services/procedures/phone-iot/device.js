@@ -766,6 +766,11 @@ Device.prototype.onMessage = function (message) {
             this.setEncryptionKey([]);
             this.resetRates();
         }
+        if (message.length > 11) {
+            const rsp = Buffer.alloc(1);
+            rsp.write('I', 0, 1);
+            this.sendToDevice(rsp);
+        }
     }
     else if (command === 'a') this._sendVoidResult('auth', message, 'failed to auth');
     else if (command === 'C') this._sendVoidResult('clearcontrols', message, 'failed to clear controls');
@@ -828,7 +833,7 @@ Device.prototype.onMessage = function (message) {
     else if (command === 'P') this._sendSensorResult('proximity', 'proximity sensor', message);
     else if (command === 'S') this._sendSensorResult('stepcount', 'step counter', message);
     else if (command === 'l') this._sendSensorResult('lightlevel', 'light sensor', message);
-    else this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port + ' ' + message.toString('hex'));
+    else this._logger.log('unknown command from ' + this.ip4_addr + ':' + this.ip4_port + ' - content bin: ' + message.toString('hex'));
 };
 
 // handle user commands to the device (through the 'send' rpc)
