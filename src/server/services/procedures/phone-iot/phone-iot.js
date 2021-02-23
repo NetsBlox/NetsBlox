@@ -24,6 +24,7 @@ const dgram = require('dgram');
 const server = dgram.createSocket('udp4');
 const PHONE_IOT_MODE = process.env.PHONE_IOT_MODE || 'both';
 const common = require('./common');
+const types = require('../../input-types');
 
 /*
  * PhoneIoT - This constructor is called on the first
@@ -185,55 +186,155 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('removeControl', arguments);
     };
     /**
+     * Add a custom label to the device.
+     * Labels are similar to buttons except they cannot be clicked.
+     * Returns the id of the created control, which is used by other RPCs.
+     * @param {string} device name of the device (matches at the end)
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the label (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the label (percentage).
+     * @param {string=} text The text to display on the label (defaults to empty)
+     * @param {Object=} options Additional options: id, textColor
+     * @returns {string} id of the created label
+     */
+    PhoneIoT.prototype.addLabel = function (device, x, y, text='', options) {
+        arguments[3] = text;
+        arguments[4] = common.parseOptions(options, {
+            id: { parse: types.parse.String },
+            textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
+        });
+        return this._passToDevice('addLabel', arguments);
+    };
+    /**
      * Add a custom button to the device.
+     * Returns the id of the created control, which is used by other RPCs.
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the button (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the button (percentage).
-     * @param {Number=} color Color code of the button itself (defaults to light blue).
-     * @param {Number=} textColor Color code of the button text (if any) (defaults to white).
-     * @param {string} id Name of the button.
-     * @param {string=} event Name of the event to fire when the button is pressed (defaults to none).
-     * @param {string=} text The text to display on the button (defaults to empty).
+     * @param {Object=} options Additional options: id, event, text, color, textColor
+     * @returns {string} id of the created button
      */
-    PhoneIoT.prototype.addButton = function (device, x, y, width, height, color=this.getColor(66, 135, 245), textColor=this.getColor(255, 255, 255), id, event, text='') {
-        arguments[5] = color;
-        arguments[6] = textColor;
-        arguments[9] = text;
+    PhoneIoT.prototype.addButton = function (device, x, y, width, height, options) {
+        arguments[5] = common.parseOptions(options, {
+            id: { parse: types.parse.String },
+            event: { parse: types.parse.String },
+            text: { parse: types.parse.String, default: '' },
+            color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
+            textColor: { parse: types.parse.Number, default: this.getColor(255, 255, 255) },
+        });
         return this._passToDevice('addButton', arguments);
     };
     /**
      * Add a custom image display to the device, which is initially empty.
+     * Returns the id of the created control, which is used by other RPCs.
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the image box (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the image box (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the image box (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the image box (percentage).
-     * @param {string} id Name of the image box.
-     * @param {string=} event Name of the event to fire when the image box content is changed by the user (defaults to none).
+     * @param {Object=} options Additional options: id, event
+     * @returns {string} id of the created button
      */
-    PhoneIoT.prototype.addImageDisplay = function (device, x, y, width, height, id, event) {
+    PhoneIoT.prototype.addImageDisplay = function (device, x, y, width, height, options) {
+        arguments[5] = common.parseOptions(options, {
+            id: { parse: types.parse.String },
+            event: { parse: types.parse.String },
+        });
         return this._passToDevice('addImageDisplay', arguments);
     };
     /**
-     * Add a custom text field to the device.
+     * Add a custom text field to the device - users can click on it to enter text.
+     * Returns the id of the created control, which is used by other RPCs.
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the text field (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the text field (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the text field (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the text field (percentage).
-     * @param {Number=} color Color code of the text field itself (defaults to light blue).
-     * @param {Number=} textColor Color code of the text field's text (if any) (defaults to black).
-     * @param {string} id Name of the text field.
-     * @param {string=} event Name of the event to fire when the text field content is changed by the user (defaults to none).
-     * @param {string=} text The initial text to display (defaults to empty)
+     * @param {Object=} options Additional options: id, event, text, color, textColor
+     * @returns {string} id of the created button
      */
-    PhoneIoT.prototype.addTextField = function (device, x, y, width, height, color=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), id, event, text='') {
-        arguments[5] = color;
-        arguments[6] = textColor;
-        arguments[9] = text;
+    PhoneIoT.prototype.addTextField = function (device, x, y, width, height, options) {
+        arguments[5] = common.parseOptions(options, {
+            id: { parse: types.parse.String },
+            event: { parse: types.parse.String },
+            text: { parse: types.parse.String, default: '' },
+            color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
+            textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
+        });
         return this._passToDevice('addTextField', arguments);
+    };
+    /**
+     * Add a custom joystick control to the device.
+     * Returns the id of the created control, which is used by other RPCs.
+     * @param {string} device name of the device (matches at the end)
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the joystick (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the joystick (percentage).
+     * @param {BoundedNumber<0, 100>} width Width of the joystick (percentage).
+     * @param {Object=} options Additional options: id, color
+     * @returns {string} id of the created button
+     */
+    PhoneIoT.prototype.addJoystick = function (device, x, y, width, options) {
+        arguments[4] = common.parseOptions(options, {
+            id: { parse: types.parse.String },
+            color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
+        });
+        return this._passToDevice('addJoystick', arguments);
+    };
+    /**
+     * Add a custom toggle control to the device.
+     * The optional 'style' value changes the appearance, and can be 'checkbox' or 'switch' (default).
+     * Returns the id of the created control, which is used by other RPCs.
+     * @param {string} device name of the device (matches at the end)
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
+     * @param {string=} text The text to display next to the toggle (defaults to empty)
+     * @param {Object=} options Additional options: style, id, event, state, color, textColor
+     * @returns {string} id of the created button
+     */
+    PhoneIoT.prototype.addToggle = function (device, x, y, text='', options) {
+        arguments[3] = text;
+        arguments[4] = common.parseOptions(options, {
+            style: {
+                parse: v => {
+                    const lower = v.toLowerCase();
+                    if (lower === 'checkbox') return 0;
+                    if (lower === 'switch') return 1;
+                    throw Error(`unknown toggle style: ${v}`);
+                },
+                default: 1,
+            },
+            id: { parse: types.parse.String },
+            event: { parse: types.parse.String },
+            state: { parse: common.parseBool, default: false },
+            color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
+            textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
+        });
+        return this._passToDevice('addToggle', arguments);
+    };
+    /**
+     * Add a custom radio button to the device.
+     * A radio button is like a checkbox, but they are arranged into groups.
+     * Only one radio button in each group may be checked by the user.
+     * Returns the id of the created control, which is used by other RPCs.
+     * @param {string} device name of the device (matches at the end)
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
+     * @param {string=} text The text to display next to the checkbox (defaults to empty)
+     * @param {Object=} options Additional options: group, id, event, state, color, textColor
+     * @returns {string} id of the created button
+     */
+    PhoneIoT.prototype.addRadioButton = function (device, x, y, text='', options) {
+        arguments[3] = text;
+        arguments[4] = common.parseOptions(options, {
+            id: { parse: types.parse.String },
+            event: { parse: types.parse.String },
+            group: { parse: types.parse.String, default: 'main' },
+            state: { parse: common.parseBool, default: false },
+            color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
+            textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
+        });
+        return this._passToDevice('addRadioButton', arguments);
     };
     /**
      * Set the text on a control that displays text.
@@ -263,94 +364,6 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     PhoneIoT.prototype.getJoystickVector = function (device, id) {
         return this._passToDevice('getJoystickVector', arguments);
     };
-    /**
-     * Add a custom text field to the device.
-     * @param {string} device name of the device (matches at the end)
-     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the text field (percentage).
-     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the text field (percentage).
-     * @param {BoundedNumber<0, 100>} width Width of the text field (percentage).
-     * @param {Number=} color Color code of the text field itself (defaults to light blue).
-     * @param {string} id Name of the text field.
-     * @param {string=} event Name of the event to fire when the text field content is changed by the user (defaults to none).
-     */
-    PhoneIoT.prototype.addJoystick = function (device, x, y, width, color=this.getColor(66, 135, 245), id, event) {
-        arguments[4] = color;
-        return this._passToDevice('addJoystick', arguments);
-    };
-    /**
-     * Add a custom checkbox to the device.
-     * @param {string} device name of the device (matches at the end)
-     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
-     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
-     * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
-     * @param {Number=} textColor Color code of the text (if any) (defaults to black).
-     * @param {bool=} state Initial check state of the checkbox (defaults to false).
-     * @param {string} id Name of the checkbox.
-     * @param {string=} event Name of the event to fire when the button is pressed (defaults to none)
-     * @param {string=} text The text to display next to the checkbox (defaults to empty)
-     */
-    PhoneIoT.prototype.addCheckbox = function (device, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, event, text='') {
-        arguments[3] = checkColor;
-        arguments[4] = textColor;
-        arguments[8] = text;
-        return this._passToDevice('addCheckbox', arguments);
-    };
-    /**
-     * Add a custom toggle switch to the device, functionally equivalent to a checkbox but styled as a switch.
-     * @param {string} device name of the device (matches at the end)
-     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
-     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
-     * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
-     * @param {Number=} textColor Color code of the text (if any) (defaults to black).
-     * @param {bool=} state Initial check state of the toggle switch (defaults to false).
-     * @param {string} id name of the toggle switch
-     * @param {string=} event name of the event to raise for click events (defaults to none)
-     * @param {string=} text The text to display next to the toggle switch (defaults to empty)
-     */
-    PhoneIoT.prototype.addToggleswitch = function (device, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, event, text='') {
-        arguments[3] = checkColor;
-        arguments[4] = textColor;
-        arguments[8] = text;
-        return this._passToDevice('addToggleswitch', arguments);
-    };
-    /**
-     * Add a custom radio button to the device.
-     * A radio button is like a checkbox, but they are arranged into groups.
-     * Only one radio button in each group may be checked.
-     * @param {string} device name of the device (matches at the end)
-     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
-     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
-     * @param {Number=} checkColor Color code of the check box itself (defaults to light blue).
-     * @param {Number=} textColor Color code of the text (if any) (defaults to black).
-     * @param {bool=} state Initial check state of the radio button (defaults to false) - All false in a group is OK, but you should avoid setting multiple explicitly to true.
-     * @param {string} id name of the radio button
-     * @param {string=} group name of the group (only one radio button in each group can be selected by the user) (defaults to "default")
-     * @param {string=} event name of the event to raise for click events (defaults to none)
-     * @param {string=} text The text to display next to the checkbox (defaults to empty)
-     */
-    PhoneIoT.prototype.addRadioButton = function (device, x, y, checkColor=this.getColor(66, 135, 245), textColor=this.getColor(0, 0, 0), state=false, id, group='default', event, text='') {
-        arguments[3] = checkColor;
-        arguments[4] = textColor;
-        arguments[7] = group;
-        arguments[9] = text;
-        return this._passToDevice('addRadioButton', arguments);
-    };
-    /**
-     * Add a custom label to the device.
-     * Labels are similar to buttons except they cannot be clicked.
-     * @param {string} device name of the device (matches at the end)
-     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
-     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
-     * @param {Number=} textColor Color code of the button text (if any) (defaults to black).
-     * @param {string} id Name of the label
-     * @param {string=} text The text to display on the button (defaults to empty)
-     */
-    PhoneIoT.prototype.addLabel = function (device, x, y, textColor=this.getColor(0, 0, 0), id, text='') {
-        arguments[3] = textColor;
-        arguments[5] = text;
-        return this._passToDevice('addLabel', arguments);
-    };
-
     /**
      * Checks for authentication, a no-op.
      * @param {string} device name of the device (matches at the end)

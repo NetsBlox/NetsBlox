@@ -98,12 +98,17 @@ const Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
 
     this.guiIdToEvent = {}; // Map<GUI ID, Event ID>
     this.guiListeners = {}; // Map<ClientID, Socket>
+
+    this.controlCount = 0; // counter used to generate unique custom control ids
 };
 
 Device.prototype.getPassword = function (clientId) {
     const pass = this.credentials[clientId];
     if (pass === undefined) throw Error('no login credentials set for this device');
     return pass;
+};
+Device.prototype.getNewId = function (opts) {
+    return opts.id || `ctrl-${this.controlCount += 1}`;
 };
 
 Device.prototype.setTotalRate = function (rate) {
@@ -292,6 +297,8 @@ Device.prototype.clearControls = async function (device, args, clientId) {
     this.sendToDevice(message);
 
     throwIfErr(await response);
+
+    this.controlCount = 0; // we can safely reset this to zero and reuse old ids
 };
 Device.prototype.removeControl = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('removecontrol', clientId);
@@ -304,9 +311,32 @@ Device.prototype.removeControl = async function (device, args, clientId) {
 
     throwIfErr(await response);
 };
+Device.prototype.addLabel = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addlabel', clientId);
+    const opts = args[3];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(22);
+    message.write('g', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeInt32BE(opts.textColor, 17);
+    message[21] = idbuf.length;
+
+    const text = Buffer.from(args[2], 'utf8');
+    this.sendToDevice(Buffer.concat([message, idbuf, text]));
+    
+    throwIfErr(await response);
+
+    return id;
+};
 Device.prototype.addButton = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addbutton', clientId);
-    const id = parseId(args[6]);
+    const opts = args[4];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
 
     const message = Buffer.alloc(34);
     message.write('B', 0, 1);
@@ -315,38 +345,23 @@ Device.prototype.addButton = async function (device, args, clientId) {
     message.writeFloatBE(args[1], 13);
     message.writeFloatBE(args[2], 17);
     message.writeFloatBE(args[3], 21);
-    message.writeInt32BE(args[4], 25);
-    message.writeInt32BE(args[5], 29);
-    message[33] = id.length;
+    message.writeInt32BE(opts.color, 25);
+    message.writeInt32BE(opts.textColor, 29);
+    message[33] = idbuf.length;
 
-    const text = Buffer.from(args[8], 'utf8');
-    this.sendToDevice(Buffer.concat([message, id, text]));
+    const text = Buffer.from(opts.text, 'utf8');
+    this.sendToDevice(Buffer.concat([message, idbuf, text]));
     
     throwIfErr(await response);
 
-    device.guiIdToEvent[args[6]] = args[7];
-};
-Device.prototype.addJoystick = async function (device, args, clientId) {
-    const { response, password } = this.rpcHeader('addjoystick', clientId);
-    const id = parseId(args[4]);
-
-    const message = Buffer.alloc(25);
-    message.write('j', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
-    message.writeFloatBE(args[0], 9);
-    message.writeFloatBE(args[1], 13);
-    message.writeFloatBE(args[2], 17);
-    message.writeInt32BE(args[3], 21);
-
-    this.sendToDevice(Buffer.concat([message, id]));
-    
-    throwIfErr(await response);
-
-    device.guiIdToEvent[args[4]] = args[5];
+    device.guiIdToEvent[id] = opts.event;
+    return id;
 };
 Device.prototype.addImageDisplay = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addimagedisplay', clientId);
-    const id = parseId(args[4]);
+    const opts = args[4];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
 
     const message = Buffer.alloc(25);
     message.write('U', 0, 1);
@@ -355,11 +370,111 @@ Device.prototype.addImageDisplay = async function (device, args, clientId) {
     message.writeFloatBE(args[1], 13);
     message.writeFloatBE(args[2], 17);
     message.writeFloatBE(args[3], 21);
-    this.sendToDevice(Buffer.concat([message, id]));
+    this.sendToDevice(Buffer.concat([message, idbuf]));
     
     throwIfErr(await response);
 
-    device.guiIdToEvent[args[4]] = args[5];
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
+Device.prototype.addTextField = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addtextfield', clientId);
+    const opts = args[4];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(34);
+    message.write('T', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeFloatBE(args[2], 17);
+    message.writeFloatBE(args[3], 21);
+    message.writeInt32BE(opts.color, 25);
+    message.writeInt32BE(opts.textColor, 29);
+    message[33] = idbuf.length;
+
+    const text = Buffer.from(opts.text, 'utf8');
+    this.sendToDevice(Buffer.concat([message, idbuf, text]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
+Device.prototype.addJoystick = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addjoystick', clientId);
+    const opts = args[3];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(25);
+    message.write('j', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeFloatBE(args[2], 17);
+    message.writeInt32BE(opts.color, 21);
+
+    this.sendToDevice(Buffer.concat([message, idbuf]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
+Device.prototype.addToggle = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addtoggle', clientId);
+    const opts = args[3];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(28);
+    message.write('Z', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeInt32BE(opts.color, 17);
+    message.writeInt32BE(opts.textColor, 21);
+    message[25] = opts.state ? 1 : 0;
+    message[26] = opts.style;
+    message[27] = idbuf.length;
+
+    const text = Buffer.from(args[2], 'utf8');
+    this.sendToDevice(Buffer.concat([message, idbuf, text]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
+Device.prototype.addRadioButton = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addradiobutton', clientId);
+    const opts = args[3];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const group = parseId(opts.group);
+    const groupPrefix = Buffer.alloc(1);
+    groupPrefix[0] = group.length;
+
+    const message = Buffer.alloc(27);
+    message.write('y', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeInt32BE(opts.color, 17);
+    message.writeInt32BE(opts.textColor, 21);
+    message[25] = opts.state ? 1 : 0;
+    message[26] = idbuf.length;
+
+    const text = Buffer.from(args[2], 'utf8');
+    this.sendToDevice(Buffer.concat([message, idbuf, groupPrefix, group, text]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
 };
 Device.prototype.getImage = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('getimage', clientId);
@@ -422,99 +537,6 @@ Device.prototype.getJoystickVector = async function (device, args, clientId) {
     
     return throwIfErr(await response).vals;
 };
-Device.prototype.addTextField = async function (device, args, clientId) {
-    const { response, password } = this.rpcHeader('addtextfield', clientId);
-    const id = parseId(args[6]);
-
-    const message = Buffer.alloc(34);
-    message.write('T', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
-    message.writeFloatBE(args[0], 9);
-    message.writeFloatBE(args[1], 13);
-    message.writeFloatBE(args[2], 17);
-    message.writeFloatBE(args[3], 21);
-    message.writeInt32BE(args[4], 25);
-    message.writeInt32BE(args[5], 29);
-    message[33] = id.length;
-
-    const text = Buffer.from(args[8], 'utf8');
-    this.sendToDevice(Buffer.concat([message, id, text]));
-    
-    throwIfErr(await response);
-
-    device.guiIdToEvent[args[6]] = args[7];
-};
-Device.prototype.addLabel = async function (device, args, clientId) {
-    const { response, password } = this.rpcHeader('addlabel', clientId);
-    const id = parseId(args[3]);
-
-    const message = Buffer.alloc(22);
-    message.write('g', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
-    message.writeFloatBE(args[0], 9);
-    message.writeFloatBE(args[1], 13);
-    message.writeInt32BE(args[2], 17);
-    message[21] = id.length;
-
-    const text = Buffer.from(args[4], 'utf8');
-    this.sendToDevice(Buffer.concat([message, id, text]));
-    
-    throwIfErr(await response);
-};
-Device.prototype.addCheckboxWithStyle = async function (device, args, style, clientId) {
-    const { response, password } = this.rpcHeader('addcheckbox', clientId);
-    const id = parseId(args[5]);
-
-    const message = Buffer.alloc(28);
-    message.write('Z', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
-    message.writeFloatBE(args[0], 9);
-    message.writeFloatBE(args[1], 13);
-    message.writeInt32BE(args[2], 17);
-    message.writeInt32BE(args[3], 21);
-    message[25] = args[4] ? 1 : 0;
-    message[26] = style;
-    message[27] = id.length;
-
-    const text = Buffer.from(args[7], 'utf8');
-    this.sendToDevice(Buffer.concat([message, id, text]));
-    
-    throwIfErr(await response);
-
-    device.guiIdToEvent[args[5]] = args[6];
-};
-Device.prototype.addCheckbox = async function (device, args, clientId) {
-    return this.addCheckboxWithStyle(device, args, 0, clientId);
-};
-Device.prototype.addToggleswitch = async function (device, args, clientId) {
-    return this.addCheckboxWithStyle(device, args, 1, clientId);
-};
-Device.prototype.addRadioButton = async function (device, args, clientId) {
-    const { response, password } = this.rpcHeader('addradiobutton', clientId);
-    const id = parseId(args[5]);
-    const group = parseId(args[6]);
-
-    const groupPrefix = Buffer.alloc(1);
-    groupPrefix[0] = group.length;
-
-    const message = Buffer.alloc(27);
-    message.write('y', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
-    message.writeFloatBE(args[0], 9);
-    message.writeFloatBE(args[1], 13);
-    message.writeInt32BE(args[2], 17);
-    message.writeInt32BE(args[3], 21);
-    message[25] = args[4] ? 1 : 0;
-    message[26] = id.length;
-
-    const text = Buffer.from(args[8], 'utf8');
-    this.sendToDevice(Buffer.concat([message, id, groupPrefix, group, text]));
-    
-    throwIfErr(await response);
-
-    device.guiIdToEvent[args[5]] = args[7];
-};
-
 Device.prototype.getToggleState = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('gettogglestate', clientId);
     const id = parseId(args[0]);
@@ -823,7 +845,7 @@ Device.prototype.onMessage = function (message) {
     else if (command === 'g') this._sendControlResult('addlabel', message);
     else if (command === 'B') this._sendControlResult('addbutton', message);
     else if (command === 'j') this._sendControlResult('addjoystick', message);
-    else if (command === 'Z') this._sendControlResult('addcheckbox', message);
+    else if (command === 'Z') this._sendControlResult('addtoggle', message);
     else if (command === 'T') this._sendControlResult('addtextfield', message);
     else if (command === 'y') this._sendControlResult('addradiobutton', message);
     else if (command === 'U') this._sendControlResult('addimagedisplay', message);

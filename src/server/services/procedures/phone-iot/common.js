@@ -77,4 +77,26 @@ utils.prepImageToSend = async function(raw) {
     throw Error('unsupported image type');
 };
 
+utils.parseBool = function (val) {
+    const lower = val.toLowerCase();
+    if (lower === 'true' || lower === 'yes') return true;
+    if (lower === 'false' || lower === 'no') return false;
+    throw Error(`failed to parse bool: ${val}`);
+};
+
+// given an options dict and a rules dict, generates a sanitized options dict.
+utils.parseOptions = function (opts, rules) {
+    const res = {};
+    for (const key in opts) {
+        const value = opts[key];
+        const rule = rules[key];
+        if (rule === undefined) throw Error(`unknown option: ${key}`);
+        res[key] = rule.parse(value);
+    }
+    for (const key in rules) {
+        if (res[key] === undefined) res[key] = rules[key].default;
+    }
+    return res;
+};
+
 module.exports = utils;
