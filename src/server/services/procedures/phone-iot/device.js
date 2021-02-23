@@ -315,7 +315,7 @@ Device.prototype.removeControl = async function (device, args, clientId) {
 
     throwIfErr(await response);
 
-    delete this.joystickUpdateCounts[id]; // discard any joystick data relating to this id
+    delete this.joystickUpdateCounts[args[0]]; // discard any joystick data relating to this id
 };
 Device.prototype.addLabel = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addlabel', clientId);
@@ -340,11 +340,11 @@ Device.prototype.addLabel = async function (device, args, clientId) {
 };
 Device.prototype.addButton = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addbutton', clientId);
-    const opts = args[4];
+    const opts = args[5];
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(34);
+    const message = Buffer.alloc(35);
     message.write('B', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
@@ -353,9 +353,10 @@ Device.prototype.addButton = async function (device, args, clientId) {
     message.writeFloatBE(args[3], 21);
     message.writeInt32BE(opts.color, 25);
     message.writeInt32BE(opts.textColor, 29);
-    message[33] = idbuf.length;
+    message[33] = opts.style;
+    message[34] = idbuf.length;
 
-    const text = Buffer.from(opts.text, 'utf8');
+    const text = Buffer.from(args[4], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
     
     throwIfErr(await response);

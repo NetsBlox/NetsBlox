@@ -171,7 +171,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /* eslint-disable no-unused-vars */
 
     /**
-     * Clears all custom controls from the device.
+     * Removes all custom controls from the device.
      * @param {string} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.clearControls = function (device) {
@@ -187,7 +187,6 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Add a custom label to the device.
-     * Labels are similar to buttons except they cannot be clicked.
      * Returns the id of the created control, which is used by other RPCs.
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the label (percentage).
@@ -206,20 +205,34 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Add a custom button to the device.
+     * If an event is provided, it will be raised every time the button is pressed (params: 'id').
+     * The optional 'style' value can change the appearance - can be 'rectangle' (default), 'ellipse', 'square', or 'circle'.
      * Returns the id of the created control, which is used by other RPCs.
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the button (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the button (percentage).
-     * @param {Object=} options Additional options: id, event, text, color, textColor
+     * @param {string=} text text to display on the button (default empty).
+     * @param {Object=} options Additional options: id, event, style, color, textColor
      * @returns {string} id of the created button
      */
-    PhoneIoT.prototype.addButton = function (device, x, y, width, height, options) {
-        arguments[5] = common.parseOptions(options, {
+    PhoneIoT.prototype.addButton = function (device, x, y, width, height, text='', options) {
+        arguments[5] = text;
+        arguments[6] = common.parseOptions(options, {
+            style: {
+                parse: v => {
+                    const lower = v.toLowerCase();
+                    if (lower === 'rectangle') return 0;
+                    if (lower === 'ellipse') return 1;
+                    if (lower === 'square') return 2;
+                    if (lower === 'circle') return 3;
+                    throw Error(`unknown button style: ${v}`);
+                },
+                default: 0,
+            },
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
-            text: { parse: types.parse.String, default: '' },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(255, 255, 255) },
         });
@@ -227,12 +240,14 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Add a custom image display to the device, which is initially empty.
+     * This can be used to display an image, or to retrieve an image taken from the device's camera.
+     * If an event is provided, it will be raised every time the user stores a new image in it (params: 'id').
      * Returns the id of the created control, which is used by other RPCs.
      * @param {string} device name of the device (matches at the end)
-     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the image box (percentage).
-     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the image box (percentage).
-     * @param {BoundedNumber<0, 100>} width Width of the image box (percentage).
-     * @param {BoundedNumber<0, 100>} height Height of the image box (percentage).
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the image display (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the image display (percentage).
+     * @param {BoundedNumber<0, 100>} width Width of the image display (percentage).
+     * @param {BoundedNumber<0, 100>} height Height of the image display (percentage).
      * @param {Object=} options Additional options: id, event
      * @returns {string} id of the created button
      */
@@ -245,6 +260,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Add a custom text field to the device - users can click on it to enter text.
+     * If an event is provided, it will be raised every time the user enters new text (params: 'id', 'text').
      * Returns the id of the created control, which is used by other RPCs.
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the text field (percentage).
@@ -266,6 +282,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Add a custom joystick control to the device.
+     * If an event is provided, it will be raised every time the joystick is moved (params: 'id', 'x', 'y').
      * Returns the id of the created control, which is used by other RPCs.
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the joystick (percentage).
@@ -285,13 +302,14 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Add a custom toggle control to the device.
      * The optional 'style' value changes the appearance, and can be 'checkbox' or 'switch' (default).
+     * If an event is provided, it will be raised every time the control is clicked (params: 'id', 'state').
      * Returns the id of the created control, which is used by other RPCs.
      * @param {string} device name of the device (matches at the end)
-     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
-     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the toggle (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the toggle (percentage).
      * @param {string=} text The text to display next to the toggle (defaults to empty)
      * @param {Object=} options Additional options: style, id, event, state, color, textColor
-     * @returns {string} id of the created button
+     * @returns {string} id of the created toggle
      */
     PhoneIoT.prototype.addToggle = function (device, x, y, text='', options) {
         arguments[3] = text;
@@ -317,13 +335,14 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Add a custom radio button to the device.
      * A radio button is like a checkbox, but they are arranged into groups.
      * Only one radio button in each group may be checked by the user.
+     * If an event is provided, it will be raised every time the control is clicked (params: 'id', 'state').
      * Returns the id of the created control, which is used by other RPCs.
      * @param {string} device name of the device (matches at the end)
-     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
-     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the radio button (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the radio button (percentage).
      * @param {string=} text The text to display next to the checkbox (defaults to empty)
      * @param {Object=} options Additional options: group, id, event, state, color, textColor
-     * @returns {string} id of the created button
+     * @returns {string} id of the created radio button
      */
     PhoneIoT.prototype.addRadioButton = function (device, x, y, text='', options) {
         arguments[3] = text;
@@ -367,6 +386,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Checks for authentication, a no-op.
+     * This can be used if all you want to do is see if the login credentials are valid.
      * @param {string} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.authenticate = async function (device) {
@@ -374,6 +394,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Begin listening for events such as button presses.
+     * This will check for valid login credentials (see setCredentials).
      * @param {string} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.listen = async function (device) {
@@ -383,9 +404,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         _device.guiListeners[this.socket.clientId] = this.socket;
     };
     /**
-     * Sets the password (login) credentials for this device.
+     * Sets the login credentials for this device.
+     * Note: this does not set the password on the device. It sets what you will use to access it.
      * @param {string} device name of the device (matches at the end)
-     * @param {string} password the password to use
+     * @param {string} password the password to use for accessing the device.
      */
     PhoneIoT.prototype.setCredentials = async function (device, password) {
         const _device = await this._getDevice(device);
