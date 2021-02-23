@@ -20,6 +20,7 @@ const common = require('./common');
 // i - set image
 // J - get joystick vector
 // j - add joystick
+// K - joystick event
 // L - linear acceleration
 // l - light level
 // M - magnetic field
@@ -98,6 +99,8 @@ const Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
 
     this.guiIdToEvent = {}; // Map<GUI ID, Event ID>
     this.guiListeners = {}; // Map<ClientID, Socket>
+
+    this.joystickUpdateCounts = {}; // Map<GUI ID, time index>
 
     this.controlCount = 0; // counter used to generate unique custom control ids
 };
@@ -299,6 +302,7 @@ Device.prototype.clearControls = async function (device, args, clientId) {
     throwIfErr(await response);
 
     this.controlCount = 0; // we can safely reset this to zero and reuse old ids
+    this.joystickUpdateCounts = {}; // discard all the old joystick data
 };
 Device.prototype.removeControl = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('removecontrol', clientId);
@@ -310,6 +314,8 @@ Device.prototype.removeControl = async function (device, args, clientId) {
     this.sendToDevice(Buffer.concat([message, id]));
 
     throwIfErr(await response);
+
+    delete this.joystickUpdateCounts[id]; // discard any joystick data relating to this id
 };
 Device.prototype.addLabel = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addlabel', clientId);
@@ -537,8 +543,8 @@ Device.prototype.getJoystickVector = async function (device, args, clientId) {
     
     return throwIfErr(await response).vals;
 };
-Device.prototype.getToggleState = async function (device, args, clientId) {
-    const { response, password } = this.rpcHeader('gettogglestate', clientId);
+Device.prototype.getState = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('getState', clientId);
     const id = parseId(args[0]);
 
     const message = Buffer.alloc(9);
@@ -853,6 +859,16 @@ Device.prototype.onMessage = function (message) {
         const id = message.toString('utf8', 11);
         this._fireRawCustomEvent(id, {id});
     }
+    else if (command === 'K') {
+        if (message.length >= 23) {
+            const id = message.toString('utf8', 23);
+            const time = message.readInt32BE(11); // check the time index so we don't send events out of order
+            if (!(time < this.joystickUpdateCounts[id])) { // this way we include if it's undefined (in which case we set it
+                this.joystickUpdateCounts[id] = time;
+                this._fireRawCustomEvent(id, { id, x: message.readFloatBE(15), y: message.readFloatBE(19) });
+            }
+        }
+    }
     else if (command === 't') {
         if (message.length >= 12) {
             const idlen = message[11] & 0xff;
@@ -876,7 +892,7 @@ Device.prototype.onMessage = function (message) {
             case 0: state = false; break;
             case 1: state = true; break;
         }
-        this.sendToClient('gettogglestate', state !== undefined ? { state } : { err: 'no toggleable with matching id' });
+        this.sendToClient('getState', state !== undefined ? { state } : { err: 'no toggleable with matching id' });
     }
     else if (command === 'O') this._sendSensorResult('orientation', 'orientation sensor', message);
     else if (command === 'R') this._sendSensorResult('rotation', 'rotation sensor', message);

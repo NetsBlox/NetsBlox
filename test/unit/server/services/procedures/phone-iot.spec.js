@@ -15,7 +15,7 @@ describe(utils.suiteName(__filename), function() {
         ['addRadioButton', ['device', 'x', 'y', 'text', 'options']],
         ['addLabel', ['device', 'x', 'y', 'text', 'options']],
         ['listen', ['device']],
-        ['getToggleState', ['device', 'id']],
+        ['getState', ['device', 'id']],
         ['getJoystickVector', ['device', 'id']],
         ['getOrientation', ['device']],
         ['getCompassHeading', ['device']],

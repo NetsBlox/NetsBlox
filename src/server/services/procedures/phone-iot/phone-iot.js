@@ -271,12 +271,13 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the joystick (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the joystick (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the joystick (percentage).
-     * @param {Object=} options Additional options: id, color
+     * @param {Object=} options Additional options: id, event, color
      * @returns {string} id of the created button
      */
     PhoneIoT.prototype.addJoystick = function (device, x, y, width, options) {
         arguments[4] = common.parseOptions(options, {
             id: { parse: types.parse.String },
+            event: { parse: types.parse.String },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
         });
         return this._passToDevice('addJoystick', arguments);
@@ -392,13 +393,15 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
 
     /**
-     * Gets the toggle state of any toggleable custom control.
+     * Gets the (true/false, selected/non-selected) state of a custom control.
+     * For a toggle control, this gets whether it is on or off (checked or unchecked).
+     * For a button, this gets whether it is currently pressed.
      * @param {string} device name of the device (matches at the end)
-     * @param {string} id name of the toggleable control to read
-     * @returns {boolean} True or False, depending on the toggle state
+     * @param {string} id name of the control to read
+     * @returns {boolean} true or false, depending on the state
      */
-    PhoneIoT.prototype.getToggleState = function (device, id) {
-        return this._passToDevice('getToggleState', arguments);
+    PhoneIoT.prototype.getState = function (device, id) {
+        return this._passToDevice('getState', arguments);
     };
 
     /**
