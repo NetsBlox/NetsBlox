@@ -55,6 +55,7 @@ const HelloWorldIntentHandler = {
                     });
 
                 if (resolvedAddr) {
+                    console.log("Sending message to " + address);
                     const client = new RemoteClient(resolvedAddr.projectId);
                     await client.sendMessageToRoom(messageType, speechText);
                     res.sendStatus(200);
@@ -138,9 +139,11 @@ skillBuilder.addRequestHandlers(
 
 const skill = skillBuilder.create();
 const adapter = new ExpressAdapter(skill, true, true);
+const port = process.env.PORT || 4675;
 
 if (require.main === module) {
     const app = express();
+    console.log("Test 1" + port);
     app.use(handleErrors(async (req, res, next) => {
         const [/*prefix*/, tokenID] = req.get('Authorization').split(' ');
         const token = await OAuth.getToken(tokenID);
@@ -150,8 +153,9 @@ if (require.main === module) {
     app.get('/test', (req, res) => res.send('working'));
     app.get('/whoami', (req, res) => res.send(req.token.username));
     app.use('/', adapter.getRequestHandlers());
-    const port = process.env.PORT || 4675;
-    app.listen(port);
+    app.listen(port, function() {
+        console.log("Alexa: dev endpoint listening on port " + port);
+    });
 } else {
     const router = express();
     router.use('/services/alexa', handleErrors(async (req, res, next) => {
@@ -160,7 +164,17 @@ if (require.main === module) {
         req.token = token;
         return next();
     }));
-    router.post('/services/alexa', adapter.getRequestHandlers());
+    router.post('/services/alexa', adapter.getRequestHandlers(), function(req, res) {
+        console.log("Sending post request");
+        skill.invoke(req.body)
+            .then(function(responseBody) {
+                res.json(responseBody);
+            })
+            .catch(function(error) {
+                console.log(error);
+                res.status(500).send('Error during the request');
+            });
+    });
     router.get('/services/alexa/whoami', (req, res) => res.send(req.token.username));
     module.exports = router;
 }
