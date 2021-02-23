@@ -18,6 +18,8 @@ const common = require('./common');
 // h - get text
 // I - heartbeat
 // i - set image
+// J - get joystick vector
+// j - add joystick
 // L - linear acceleration
 // l - light level
 // M - magnetic field
@@ -324,6 +326,24 @@ Device.prototype.addButton = async function (device, args, clientId) {
 
     device.guiIdToEvent[args[6]] = args[7];
 };
+Device.prototype.addJoystick = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addjoystick', clientId);
+    const id = parseId(args[4]);
+
+    const message = Buffer.alloc(25);
+    message.write('j', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeFloatBE(args[2], 17);
+    message.writeInt32BE(args[3], 21);
+
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[args[4]] = args[5];
+};
 Device.prototype.addImageDisplay = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addimagedisplay', clientId);
     const id = parseId(args[4]);
@@ -390,6 +410,17 @@ Device.prototype.getText = async function (device, args, clientId) {
     this.sendToDevice(Buffer.concat([message, id]));
     
     return throwIfErr(await response).text;
+};
+Device.prototype.getJoystickVector = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('getjoystickvec', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(9);
+    message.write('J', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    return throwIfErr(await response).vals;
 };
 Device.prototype.addTextField = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addtextfield', clientId);
@@ -783,10 +814,15 @@ Device.prototype.onMessage = function (message) {
         const text = message.length >= 12 && message[11] === 0 ? message.toString('utf8', 12) : undefined;
         this.sendToClient('gettext', text !== undefined ? {text} : { err: 'no text with matching id' });
     }
+    else if (command === 'J') {
+        if (message.length === 11) this.sendToClient('getjoystickvec', { err: 'no joystick with matching id' });
+        else if (message.length === 19) this.sendToClient('getjoystickvec', { vals: [message.readFloatBE(11), message.readFloatBE(15)] });
+    }
     else if (command === 'H') this._sendControlResult('settext', message);
     else if (command === 'i') this._sendControlResult('setimage', message);
     else if (command === 'g') this._sendControlResult('addlabel', message);
     else if (command === 'B') this._sendControlResult('addbutton', message);
+    else if (command === 'j') this._sendControlResult('addjoystick', message);
     else if (command === 'Z') this._sendControlResult('addcheckbox', message);
     else if (command === 'T') this._sendControlResult('addtextfield', message);
     else if (command === 'y') this._sendControlResult('addradiobutton', message);

@@ -255,6 +255,29 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('getText', arguments);
     };
     /**
+     * Get the current vector output of a custom joystick control
+     * @param {string} device name of the device (matches at the end)
+     * @param {string} id Name of the control to read text from
+     * @returns {Array} The x and y components of the normalized vector
+     */
+    PhoneIoT.prototype.getJoystickVector = function (device, id) {
+        return this._passToDevice('getJoystickVector', arguments);
+    };
+    /**
+     * Add a custom text field to the device.
+     * @param {string} device name of the device (matches at the end)
+     * @param {BoundedNumber<0, 100>} x X position of the top left corner of the text field (percentage).
+     * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the text field (percentage).
+     * @param {BoundedNumber<0, 100>} width Width of the text field (percentage).
+     * @param {Number=} color Color code of the text field itself (defaults to light blue).
+     * @param {string} id Name of the text field.
+     * @param {string=} event Name of the event to fire when the text field content is changed by the user (defaults to none).
+     */
+    PhoneIoT.prototype.addJoystick = function (device, x, y, width, color=this.getColor(66, 135, 245), id, event) {
+        arguments[4] = color;
+        return this._passToDevice('addJoystick', arguments);
+    };
+    /**
      * Add a custom checkbox to the device.
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
