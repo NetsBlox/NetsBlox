@@ -26,7 +26,7 @@ describe(utils.suiteName(__filename), function() {
             setTimeout(() => {
                 client.reconnect(new MockWebSocket());
                 client.checkAlive = () => {
-                    client.close();
+                    delete client.checkAlive;
                     done();
                 };
             }, 12);
