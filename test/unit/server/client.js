@@ -12,6 +12,24 @@ describe(utils.suiteName(__filename), function() {
 
     const NetworkTopology = utils.reqSrc('network-topology');
 
+    describe('checkAlive', function() {
+        const originalHeartbeat = Client.HEARTBEAT_INTERVAL;
+        before(() => Client.HEARTBEAT_INTERVAL = 50);
+        after(() => Client.HEARTBEAT_INTERVAL = originalHeartbeat);
+
+        it.only('should check reconnected sockets', function(done) {
+            const client = new Client(logger, new MockWebSocket());
+            // close the client
+            client.connError = new Error('Test Error');
+            client._socket.terminate();
+
+            // reconnect
+            client.reconnect(new MockWebSocket());
+            // TODO: check that it calls checkAlive
+            client.checkAlive = done;
+        });
+    });
+
     describe('getNewName', function() {
 
         before(function() {
