@@ -17,7 +17,7 @@ describe(utils.suiteName(__filename), function() {
         before(() => Client.HEARTBEAT_INTERVAL = 5);
         after(() => Client.HEARTBEAT_INTERVAL = originalHeartbeat);
 
-        it.only('should check reconnected sockets', function(done) {
+        it('should check reconnected sockets', function(done) {
             const client = new Client(logger, new MockWebSocket());
             // close the client
             client.lastSocketActivity = 0;
