@@ -25,7 +25,10 @@ describe(utils.suiteName(__filename), function() {
             // reconnect
             setTimeout(() => {
                 client.reconnect(new MockWebSocket());
-                client.checkAlive = done;
+                client.checkAlive = () => {
+                    client.close();
+                    done();
+                };
             }, 12);
         });
     });
