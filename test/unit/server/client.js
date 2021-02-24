@@ -14,19 +14,19 @@ describe(utils.suiteName(__filename), function() {
 
     describe('checkAlive', function() {
         const originalHeartbeat = Client.HEARTBEAT_INTERVAL;
-        before(() => Client.HEARTBEAT_INTERVAL = 50);
+        before(() => Client.HEARTBEAT_INTERVAL = 5);
         after(() => Client.HEARTBEAT_INTERVAL = originalHeartbeat);
 
         it.only('should check reconnected sockets', function(done) {
             const client = new Client(logger, new MockWebSocket());
             // close the client
-            client.connError = new Error('Test Error');
-            client._socket.terminate();
+            client.lastSocketActivity = 0;
 
             // reconnect
-            client.reconnect(new MockWebSocket());
-            // TODO: check that it calls checkAlive
-            client.checkAlive = done;
+            setTimeout(() => {
+                client.reconnect(new MockWebSocket());
+                client.checkAlive = done;
+            }, 12);
         });
     });
 
