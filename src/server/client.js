@@ -127,17 +127,18 @@ class Client {
             }
         });
 
-        this._socket.on('close', () => {
-            if (!this.connError) {
-                return this.close();
-            } else {
+        this._socket.on('close', async () => {
+            if (this.connError) {
                 const brokenSocket = this._socket;
-                setTimeout(() => {
-                    const reconnected = this._socket !== brokenSocket;
-                    if (!reconnected) {
-                        this.close(this.connError);
-                    }
-                }, 5 * Client.HEARTBEAT_INTERVAL);
+                await sleep(5 * Client.HEARTBEAT_INTERVAL);
+                const reconnected = this._socket !== brokenSocket;
+                if (!reconnected) {
+                    this.close(this.connError);
+                } else {
+                    this.checkAlive();
+                }
+            } else {
+                return this.close();
             }
         });
 
@@ -204,8 +205,8 @@ class Client {
             if (this.nextHeartbeatCheck) {
                 clearTimeout(this.nextHeartbeatCheck);
             }
-            this.nextHeartbeatCheck = setTimeout(this.checkAlive.bind(this), Client.HEARTBEAT_INTERVAL);
         }
+        this.nextHeartbeatCheck = setTimeout(this.checkAlive.bind(this), Client.HEARTBEAT_INTERVAL);
     }
 
     keepAlive() {
@@ -538,6 +539,10 @@ Client.MessageHandlers = {
     },
 
 };
+
+function sleep(duration) {
+    return new Promise(resolve => setTimeout(resolve, duration));
+}
 
 // Utilities for testing
 Client.HEARTBEAT_INTERVAL = HEARTBEAT_INTERVAL;
