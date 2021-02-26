@@ -5,6 +5,7 @@ const Alexa = require('ask-sdk-core');
 const express = require('express');
 const { ExpressAdapter } = require('ask-sdk-express-adapter');
 const devLogger = require('../utils/dev-logger');
+const RemoteClient = require('../../remote-client');
 
 const skillBuilder = Alexa.SkillBuilders.custom();
 
@@ -37,32 +38,23 @@ const HelloWorldIntentHandler = {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
         && handlerInput.requestEnvelope.request.intent.name === 'HelloWorldIntent';
     },
-    handle(handlerInput) {
+    async handle(handlerInput) {
         const speechText = 'Hello World!';
 
-        const router = express();
+        devLogger.log("handling hello world intent");
+        const address = "test@tabithalee";
+        const messageType = "Alexa";
+        const resolvedAddr = await NetsBloxAddress.new(address);
+            //.catch(err => {
+                //res.status(400).send(err.message);
+            //});
 
-        ensureLoggedIn(this.caller);
-
-        router.post(
-            '/services/alexa/send/',
-            bodyParser.json({limit: '1mb'}),
-            async (req, res) => {
-                const address = "User@test@tabithalee";
-                const messageType = "Alexa";
-                const resolvedAddr = await NetsBloxAddress.new(address)
-                    .catch(err => {
-                        res.status(400).send(err.message);
-                    });
-
-                if (resolvedAddr) {
-                    devLogger.log("Sending message to " + address);
-                    const client = new RemoteClient(resolvedAddr.projectId);
-                    await client.sendMessageToRoom(messageType, speechText);
-                    res.sendStatus(200);
-                }
-            }
-        );
+        if (resolvedAddr) {
+            devLogger.log("Sending message to " + address);
+            const client = new RemoteClient(resolvedAddr.projectId);
+            await client.sendMessageToRoom(messageType, speechText);
+            // TODO: get a response from the netsblox client?
+        }
 
         return handlerInput.responseBuilder
             .speak(speechText)
