@@ -4,6 +4,7 @@ const NetsBloxAddress = require('../../../netsblox-address');
 const Alexa = require('ask-sdk-core');
 const express = require('express');
 const { ExpressAdapter } = require('ask-sdk-express-adapter');
+const devLogger = require('../utils/dev-logger');
 
 const skillBuilder = Alexa.SkillBuilders.custom();
 
@@ -55,7 +56,7 @@ const HelloWorldIntentHandler = {
                     });
 
                 if (resolvedAddr) {
-                    console.log("Sending message to " + address);
+                    devLogger.log("Sending message to " + address);
                     const client = new RemoteClient(resolvedAddr.projectId);
                     await client.sendMessageToRoom(messageType, speechText);
                     res.sendStatus(200);
@@ -119,7 +120,7 @@ const ErrorHandler = {
         return true;
     },
     handle(handlerInput, error) {
-        console.log(`Error handled: ${error.message}`);
+        devLogger.log(`Error handled: ${error.message}`);
 
         return handlerInput.responseBuilder
             .speak('Sorry, I can\'t understand the command. Please say again.')
@@ -143,7 +144,7 @@ const port = process.env.PORT || 4675;
 
 if (require.main === module) {
     const app = express();
-    console.log("Test 1" + port);
+    devLogger.log("Test 1" + port);
     app.use(handleErrors(async (req, res, next) => {
         const [/*prefix*/, tokenID] = req.get('Authorization').split(' ');
         const token = await OAuth.getToken(tokenID);
@@ -154,7 +155,7 @@ if (require.main === module) {
     app.get('/whoami', (req, res) => res.send(req.token.username));
     app.use('/', adapter.getRequestHandlers());
     app.listen(port, function() {
-        console.log("Alexa: dev endpoint listening on port " + port);
+        devLogger.log("Alexa: dev endpoint listening on port " + port);
     });
 } else {
     const router = express();
@@ -165,16 +166,17 @@ if (require.main === module) {
         return next();
     }));
     router.post('/services/alexa', adapter.getRequestHandlers(), function(req, res) {
-        console.log("Sending post request");
+        devLogger.log("Sending post request");
         skill.invoke(req.body)
             .then(function(responseBody) {
                 res.json(responseBody);
             })
             .catch(function(error) {
-                console.log(error);
+                devLogger.log(`ERROR: ${error.message}`);
                 res.status(500).send('Error during the request');
             });
     });
     router.get('/services/alexa/whoami', (req, res) => res.send(req.token.username));
+    devLogger.log('Mounting Alexa routes on NetsBlox');
     module.exports = router;
 }
