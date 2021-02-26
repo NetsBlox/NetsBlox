@@ -158,7 +158,7 @@
         }
 
         async blockifyTest(world, testCase) {
-            const block = testCase.getCustomBlockInstance(...testCase.inputs);
+            const block = testCase.getCustomBlockInstance(...testCase.inputs.map(toSnap));
             const equalsBlock = SpriteMorph.prototype.blockForSelector('reportEquals', true);
             let expectedValue;
             /* FIXME: Get the report */
@@ -168,6 +168,9 @@
                     SpriteMorph.prototype.blockForSelector('reportFalse', true);
             } else {
                 expectedValue = toSnap(testCase.output);
+                if (expectedValue instanceof List) {
+                    expectedValue = expectedValue.blockify();
+                }
             }
             const [left, right] = equalsBlock.inputs();
             equalsBlock.replaceInput(left, block);
