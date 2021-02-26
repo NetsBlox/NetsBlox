@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/NetsBlox/NetsBlox.svg?branch=master)](https://travis-ci.org/NetsBlox/NetsBlox)
-[![Join the chat at https://gitter.im/NetsBlox/NetsBlox](https://badges.gitter.im/NetsBlox/NetsBlox.svg)](https://gitter.im/NetsBlox/NetsBlox?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 # NetsBlox
 
 NetsBlox is a visual programming language which allows people to develop networked programs.

@@ -69,7 +69,7 @@ function calcRanges(lines, isCategorical){
     return stats;
 }
 
-function prepareData(input, options) {
+chart._prepareData = function(input, options=defaults){
     const xShouldBeNumeric = !options.isCategorical && !options.isTimeSeries;
     
     // if the input is one line convert it to appropriate format
@@ -89,7 +89,7 @@ function prepareData(input, options) {
 
         // If only one dimension is given
         if(line.every(pt => !Array.isArray(pt))){
-            line = line.map((pt,idx) => ([idx, pt]));
+            line = line.map((pt,idx) => ([idx + 1, pt]));
         }
 
         line.map(pt => {
@@ -111,7 +111,7 @@ function prepareData(input, options) {
         return line;
     });
     return input;
-}
+};
 
 /**
  * Truncates a string with an elipsis if it is too long.
@@ -185,7 +185,7 @@ chart._parseDrawInputs = function(lines, options){
 
     // prepare and check for errors in data
     try {
-        lines = prepareData(lines, options);
+        lines = this._prepareData(lines, options);
     } catch (e) {
         this._logger.error(e);
         this.response.status(500).send(e);

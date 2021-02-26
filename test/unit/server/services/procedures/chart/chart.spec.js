@@ -38,6 +38,26 @@ describe(utils.suiteName(__filename), function() {
         assert.deepEqual(opts.map(i => i[0]), expectedOpts);
     });
 
+    describe('parseDrawInputs', function() {
+        it('should support implicit x-values', function() {
+            const inputLine = [[2, 3, 4, 5, 6]];
+            const [lineData] = Chart._prepareData(inputLine);
+            lineData.forEach(pair => {
+                const [x, y] = pair;
+                assert.equal(x + 1, y);
+            });
+        });
+
+        it('should support single line input', function() {
+            const inputLine = [2, 3, 4, 5, 6];
+            const [lineData] = Chart._prepareData(inputLine);
+            lineData.forEach(pair => {
+                const [x, y] = pair;
+                assert.equal(x + 1, y);
+            });
+        });
+    });
+
     describe('logscale', function() {
         it('should allow empty axes', function(){
             let options = Chart._parseDrawInputs([], {logscale: ''})[1];
