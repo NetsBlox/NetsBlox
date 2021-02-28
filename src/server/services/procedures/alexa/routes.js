@@ -20,7 +20,7 @@ const ensureLoggedIn = function(caller) {
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
     handle(handlerInput) {
         const speechText = 'Welcome to the Alexa NetsBlox Skill, you can say hello!';
@@ -35,8 +35,8 @@ const LaunchRequestHandler = {
 
 const HelloWorldIntentHandler = {
     canHandle(handlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-        && handlerInput.requestEnvelope.request.intent.name === 'HelloWorldIntent';
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+        && Alexa.getRequestType(handlerInput.requestEnvelope) === 'HelloWorldIntent';
     },
     async handle(handlerInput) {
         const speechText = 'Hello World!';
@@ -65,8 +65,8 @@ const HelloWorldIntentHandler = {
 
 const HelpIntentHandler = {
     canHandle(handlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-        && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
+        return Alexa.getRequestType(handlerInput.requestEnvelope)  === 'IntentRequest'
+        && Alexa.getRequestType(handlerInput.requestEnvelope)  === 'AMAZON.HelpIntent';
     },
     handle(handlerInput) {
         const speechText = 'You can say hello to me!';
@@ -81,10 +81,9 @@ const HelpIntentHandler = {
 
 const CancelAndStopIntentHandler = {
     canHandle(handlerInput) {
-        const {request} = handlerInput.requestEnvelope;
-        return request.type === 'IntentRequest' &&
-            (request.intent.name === 'AMAZON.CancelIntent' ||
-                request.intent.name === 'AMAZON.StopIntent');
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            (Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.CancelIntent' ||
+                Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.StopIntent');
     },
     handle(handlerInput) {
         const speechText = 'Goodbye!';
@@ -99,7 +98,7 @@ const CancelAndStopIntentHandler = {
 
 const SessionEndedRequestHandler = {
     canHandle(handlerInput) {
-        return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'SessionEndedRequest';
     },
     handle(handlerInput) {
         // Log the reason why the session was ended
@@ -172,18 +171,7 @@ if (require.main === module) {
         req.token = token;
         return next();
     }));
-    router.post('/services/routes/alexa', adapter.getRequestHandlers(), function(req, res) {
-        devLogger.log("Sending post request");
-        skill.invoke(req.body)
-            .then(function(responseBody) {
-                devLogger.log(`Request: `);
-                res.json(responseBody);
-            })
-            .catch(function(error) {
-                devLogger.log(`ERROR: ${error.message}`);
-                res.status(500).send('Error during the request');
-            });
-    });
+    router.post('/services/routes/alexa', adapter.getRequestHandlers());
     router.get('/services/routes/alexa/whoami', (req, res) => res.send(req.token.username));
     devLogger.log('Mounting Alexa routes on NetsBlox');
     module.exports = router;
