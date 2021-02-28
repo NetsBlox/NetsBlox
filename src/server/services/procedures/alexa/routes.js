@@ -41,7 +41,7 @@ const HelloWorldIntentHandler = {
     async handle(handlerInput) {
         const speechText = 'Hello World!';
 
-        devLogger.log("handling hello world intent");
+        devLogger.log("Handling hello world intent");
         const address = "test@tabithalee";
         const messageType = "Alexa";
         const resolvedAddr = await NetsBloxAddress.new(address);
@@ -102,7 +102,10 @@ const SessionEndedRequestHandler = {
         return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
     },
     handle(handlerInput) {
-        //any cleanup logic goes here
+        // Log the reason why the session was ended
+        const reason = handlerInput.requestEnvelope.request.reason;
+        devLogger.log("==== SESSION ENDED WITH REASON ======");
+        devLogger.log(reason);
         return handlerInput.responseBuilder.getResponse();
     }
 };
@@ -121,6 +124,19 @@ const ErrorHandler = {
     },
 };
 
+/**
+ * Request Interceptor to log the request sent by Alexa
+ */
+const LogRequestInterceptor = {
+    process(handlerInput) {
+        // Log Request
+        devLogger.log("==== REQUEST ======");
+        devLogger.log(JSON.stringify(handlerInput.requestEnvelope, null, 2));
+    }
+};
+
+skillBuilder.addRequestInterceptors(LogRequestInterceptor);
+
 skillBuilder.addRequestHandlers(
     LaunchRequestHandler,
     HelloWorldIntentHandler,
@@ -136,7 +152,6 @@ const port = process.env.PORT || 4675;
 
 if (require.main === module) {
     const app = express();
-    devLogger.log("Test 1" + port);
     app.use(handleErrors(async (req, res, next) => {
         const [/*prefix*/, tokenID] = req.get('Authorization').split(' ');
         const token = await OAuth.getToken(tokenID);
@@ -161,6 +176,7 @@ if (require.main === module) {
         devLogger.log("Sending post request");
         skill.invoke(req.body)
             .then(function(responseBody) {
+                devLogger.log(`Request: `);
                 res.json(responseBody);
             })
             .catch(function(error) {
