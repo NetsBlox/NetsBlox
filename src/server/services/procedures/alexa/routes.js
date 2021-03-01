@@ -165,14 +165,14 @@ if (require.main === module) {
     });
 } else {
     const router = express();
-    router.use('/services/routes/alexa', handleErrors(async (req, res, next) => {
+    router.use('/services-routes/alexa', handleErrors(async (req, res, next) => {
         const [/*prefix*/, tokenID] = req.get('Authorization').split(' ');
         const token = await OAuth.getToken(tokenID);
         req.token = token;
         return next();
     }));
-    router.post('/services/routes/alexa', adapter.getRequestHandlers());
-    router.get('/services/routes/alexa/whoami', (req, res) => res.send(req.token.username));
+    router.post('/services-routes/alexa', adapter.getRequestHandlers());
+    router.get('/services-routes/alexa/whoami', (req, res) => res.send(req.token.username));
     devLogger.log('Mounting Alexa routes on NetsBlox');
     module.exports = router;
 }
