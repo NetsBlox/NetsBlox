@@ -348,6 +348,7 @@ function loadRoutes(logger) {
         .map(serviceDir => `./services/procedures/${serviceDir}/routes.js`)
         .flatMap(filePath => {
             logger.trace('about to load service route ' + filePath);
+            // TODO: mount these on /services/routes/<service name>?
             return require(filePath);
         });
 
