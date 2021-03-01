@@ -18,7 +18,7 @@ async function listen(port) {
         limit: '50mb',
         extended: true
     }));
-    app.use(bodyParser.json({limit: '50mb'}));
+    //app.use(bodyParser.json({limit: '50mb'}));
 
     // Session & Cookie settings
     app.use(cookieParser());
