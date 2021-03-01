@@ -167,14 +167,18 @@ if (require.main === module) {
     const router = express();
     router.get('/ping', (req, res) => res.send('pong'));
     router.use('/', handleErrors(async (req, res, next) => {
+        console.log('Checking authorization...');
         const authCode = req.get('Authorization');
         if (!authCode) {
+            console.log('no auth code');
             return res.status(400).send('Access denied.');  // TODO: better error message
         }
 
         const [/*prefix*/, tokenID] = authCode.split(' ');
+        console.log('fetching token w/ id:', tokenID);
         const token = await OAuth.getToken(tokenID);
         req.token = token;
+        console.log('token:', token);
         return next();
     }));
     router.post('/', adapter.getRequestHandlers());
