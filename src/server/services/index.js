@@ -7,21 +7,11 @@ const Storage = require('../storage/storage');
 const ServiceStorage = require('./storage');
 const ApiKeys = require('./api-keys');
 const Logger = require('../logger');
-const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
+const routeUtils = require('./procedures/utils/router-utils');
 
 async function listen(port) {
     const app = express();
     const logger = new Logger('services');
-
-    app.use(bodyParser.urlencoded({
-        limit: '50mb',
-        extended: true
-    }));
-    app.use(bodyParser.json({limit: '50mb'}));
-
-    // Session & Cookie settings
-    app.use(cookieParser());
 
     // CORS
     app.use(function(req, res, next) {
@@ -43,8 +33,11 @@ async function listen(port) {
         res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, PATCH, DELETE');
         next();
     });
-    app.use((req, res, next) => middleware.tryLogIn(req, res, next, true));
-    app.use('/keys', middleware.isLoggedIn, ApiKeys.router());
+    app.use('/keys',
+        ...routeUtils.allDefaults(),
+        middleware.isLoggedIn,
+        ApiKeys.router()
+    );
     app.use('/', ServicesAPI.router());
     const RPC_ROOT = path.join(__dirname, 'libs');
     const RPC_INDEX = fs.readFileSync(path.join(RPC_ROOT, 'LIBS'), 'utf8')

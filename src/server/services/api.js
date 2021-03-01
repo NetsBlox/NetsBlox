@@ -6,6 +6,7 @@ const Logger = require('../logger');
 const ApiKeys = require('./api-keys');
 const fs = require('fs');
 const path = require('path');
+const routeUtils = require('./procedures/utils/router-utils');
 
 class ServicesAPI {
     constructor() {
@@ -78,6 +79,7 @@ class ServicesAPI {
 
         this.addServiceRoutes(router);
 
+        router.use(...routeUtils.allDefaults());
         router.route('/').get((req, res) => {
             const metadata = Object.entries(this.services.metadata)
                 .filter(nameAndMetadata => this.isServiceLoaded(nameAndMetadata[0]))
