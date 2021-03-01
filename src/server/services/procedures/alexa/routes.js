@@ -181,6 +181,7 @@ if (require.main === module) {
         // (only to make development more convenient) and should be removed
         // before this is actually used.
         devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
+        console.log('body:', req.body);
         req.token = {username: 'tabithalee'};  // FIXME: REMOVE
         return next();  // FIXME: REMOVE!
 
