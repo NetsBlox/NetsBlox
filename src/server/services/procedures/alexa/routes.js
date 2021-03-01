@@ -20,6 +20,7 @@ const ensureLoggedIn = function(caller) {
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
+        devLogger.log('Checking if we can handle LaunchRequest');
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
     handle(handlerInput) {
@@ -35,6 +36,7 @@ const LaunchRequestHandler = {
 
 const HelloWorldIntentHandler = {
     canHandle(handlerInput) {
+        devLogger.log('Checking if we can handle HelloWorldIntent');
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
         && Alexa.getIntentName(handlerInput.requestEnvelope) === 'HelloWorldIntent';
     },
@@ -65,10 +67,12 @@ const HelloWorldIntentHandler = {
 
 const HelpIntentHandler = {
     canHandle(handlerInput) {
+        devLogger.log('Checking if we can handle HelpIntent');
         return Alexa.getRequestType(handlerInput.requestEnvelope)  === 'IntentRequest'
         && Alexa.getRequestType(handlerInput.requestEnvelope)  === 'AMAZON.HelpIntent';
     },
     handle(handlerInput) {
+        devLogger.log('handling HelpIntent...');
         const speechText = 'You can say hello to me!';
 
         return handlerInput.responseBuilder
@@ -81,11 +85,13 @@ const HelpIntentHandler = {
 
 const CancelAndStopIntentHandler = {
     canHandle(handlerInput) {
+        devLogger.log('Checking if we can handle CancelIntent');
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
             (Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.CancelIntent' ||
                 Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.StopIntent');
     },
     handle(handlerInput) {
+        devLogger.log('handling CancelIntent...');
         const speechText = 'Goodbye!';
 
         return handlerInput.responseBuilder
@@ -98,9 +104,11 @@ const CancelAndStopIntentHandler = {
 
 const SessionEndedRequestHandler = {
     canHandle(handlerInput) {
+        devLogger.log('Checking if we can handle SessionEnded');
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'SessionEndedRequest';
     },
     handle(handlerInput) {
+        devLogger.log('handling SessionEnded');
         // Log the reason why the session was ended
         const reason = handlerInput.requestEnvelope.request.reason;
         devLogger.log("==== SESSION ENDED WITH REASON ======");
@@ -111,9 +119,11 @@ const SessionEndedRequestHandler = {
 
 const ErrorHandler = {
     canHandle() {
+        devLogger.log('Checking if we can handle error');
         return true;
     },
     handle(handlerInput, error) {
+        devLogger.log('handling error');
         devLogger.log(`Error handled: ${error.message}`);
 
         return handlerInput.responseBuilder
@@ -170,7 +180,7 @@ if (require.main === module) {
         // The following two lines are a workaround to bypass authentication
         // (only to make development more convenient) and should be removed
         // before this is actually used.
-        devLogger.log('Bypassing authentication and setting user to tabithalee');
+        devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
         req.token = {username: 'tabithalee'};  // FIXME: REMOVE
         return next();  // FIXME: REMOVE!
 
