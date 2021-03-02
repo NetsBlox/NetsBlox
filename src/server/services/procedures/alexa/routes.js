@@ -186,7 +186,7 @@ if (require.main === module) {
 
         const authCode = req.get('Authorization');
         if (!authCode) {
-            return res.status(400).send('Access denied.');  // TODO: better error message
+            return res.status(401).send('Access denied.');  // TODO: better error message
         }
 
         const [/*prefix*/, tokenID] = authCode.split(' ');
