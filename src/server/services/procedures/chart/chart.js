@@ -78,33 +78,32 @@ chart._prepareData = function(input, options=defaults){
         input = [input];
     }
 
-    input = input.map( line => {
-
+    input = input.map(line => {
         chart._logger.info(line);
 
         if (!Array.isArray(line)) {
-            chart._logger.warn('input is not an array!', line);
-            throw 'Chart input must be an array';
+            chart._logger.warn('input line is not an array!', line);
+            throw Error('Chart input must be an array');
         }
 
         // If only one dimension is given
-        if(line.every(pt => !Array.isArray(pt))){
+        if (line.every(pt => !Array.isArray(pt))) {
             line = line.map((pt,idx) => ([idx + 1, pt]));
         }
 
         line.map(pt => {
-            let [x,y] = pt;
-            if (!Array.isArray(pt)) {
-                chart._logger.warn('input is not an array!', pt);
-                throw 'All input points should be in [x,y] form';
+            if (!Array.isArray(pt) || pt.length !== 2) {
+                chart._logger.warn('input point is not in [x,y] form', pt);
+                throw Error('All input points should be in [x,y] form');
             }
+            const [x,y] = pt;
             if (xShouldBeNumeric) pt[0] = parseFloat(pt[0]);
             pt[1] = parseFloat(pt[1]);
 
             if ((xShouldBeNumeric && isNaN(x)) || isNaN(y) ) {
                 let invalidValue = (xShouldBeNumeric && isNaN(x)) ? x : y;
                 invalidValue = truncate(invalidValue.toString(), 7);
-                throw `all [x,y] pairs should be numbers: ${invalidValue}`;
+                throw Error(`all [x,y] pairs should be numbers: ${invalidValue}`);
             }
             return pt;
         });
@@ -184,13 +183,7 @@ chart._parseDrawInputs = function(lines, options){
     options = processOptions(options, defaults);
 
     // prepare and check for errors in data
-    try {
-        lines = this._prepareData(lines, options);
-    } catch (e) {
-        this._logger.error(e);
-        this.response.status(500).send(e);
-        return null;
-    }
+    lines = this._prepareData(lines, options);
     let stats = calcRanges(lines, options.isCategorical);
     this._logger.info('data stats:', stats);
     const relativePadding = { y: stats.y.range !== 0 ? stats.y.range * 0.05 : 1 };
@@ -228,7 +221,7 @@ chart._parseDrawInputs = function(lines, options){
 
     // if a specific number of ticks are requested
     if (options.xTicks) {
-        if (options.isCategorical) throw 'can\'t change the number of xTicks in categorical charting';
+        if (options.isCategorical) throw Error('can\'t change the number of xTicks in categorical charting');
         let tickStep = (stats.x.max - stats.x.min)/options.xTicks;
         opts.xTicks = [stats.x.min, tickStep, stats.x.max];
     }
@@ -249,8 +242,7 @@ chart.draw = function(lines, options={}){
     try {
         var chartStream = gnuPlot.draw(data, parsedOptions);
     } catch (e) {
-        this.response.status(500).send('error in drawing the plot. bad input.');
-        return null;
+        throw Error('error in drawing the plot. bad input.'); // simplify error message for user
     }
     return rpcUtils.collectStream(chartStream).then( buffer => {
         rpcUtils.sendImageBuffer(this.response, buffer, this._logger);
