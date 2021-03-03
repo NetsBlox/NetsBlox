@@ -13,6 +13,7 @@ describe(utils.suiteName(__filename), function() {
 
     describe('annotate', function() {
         it('should detect cities', async function() {
+            this.retries(3);
             const text = 'I went to Paris last year.';
             const {sentences} = await nlp.annotate(text, ['tokenize', 'ssplit', 'pos', 'ner']);
             assert(sentences[0].entitymentions[0].ner, 'CITY');
