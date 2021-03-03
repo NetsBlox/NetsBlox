@@ -91,13 +91,6 @@ chart._prepareData = function(input, options=defaults){
             line = line.map((pt,idx) => ([idx + 1, pt]));
         }
 
-        // if we got 2xN for N >= 3, transpose it
-        if (line.length === 2 && line.every(pt => Array.isArray(pt) && pt.length >= 3) && line[0].length === line[1].length) {
-            const res = [];
-            for (let i = 0; i < line[0].length; ++i) res.push([line[0][i], line[1][i]]);
-            line = res;
-        }
-
         line.map(pt => {
             if (!Array.isArray(pt) || pt.length !== 2) {
                 chart._logger.warn('input point is not in [x,y] form', pt);
