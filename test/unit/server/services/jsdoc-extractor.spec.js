@@ -60,40 +60,27 @@ describe(utils.suiteName(__filename), function() {
         });
 
         it('should simplify the metadata', () => {
+            const arg = (name, type, description) => ({
+                name,
+                optional: false,
+                type: {
+                    name: type,
+                    params: []
+                },
+                description,
+            });
             let simpleMetadata = jp._simplify(metadata.parsed);
+
             assert.deepEqual(simpleMetadata, {
                 name: 'doStuff',
                 description: metadata.parsed.description,
                 deprecated: false,
                 args: [
-                    {
-                        name: 'address',
-                        optional: false,
-                        type: {
-                            name: 'String',
-                            params: []
-                        },
-                        description: 'target address'
-                    },
-                    {
-                        name: 'limit',
-                        optional: false,
-                        type: {
-                            name: 'Number',
-                            params: []
-                        },
-                        description: 'the results limit'
-                    },
-                    {
-                        name: 'options',
-                        optional: false,
-                        type: {
-                            name: 'Object',
-                            params: []
-                        },
-                        description: null
-                    }
+                    arg('address', 'String', 'target address'),
+                    arg('limit', 'Number', 'the results limit'),
+                    arg('options', 'Object', null),
                 ],
+                categories: [],
                 returns: {type: {name: 'String', params: []}, description: null}
             });
         });
