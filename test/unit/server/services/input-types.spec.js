@@ -44,11 +44,11 @@ describe(utils.suiteName(__filename), function() {
         });
 
         it('should throw invalid nested types', () => {
-            assert.throws(() => typesParser.Array(['text'], 'Number'));
+            assert.throws(() => typesParser.Array(['text'], ['Number']));
         });
 
         it('should support nested types', () => {
-            typesParser.Array([1, 2], 'Number');
+            typesParser.Array([1, 2], ['Number']);
         });
     });
 
@@ -114,39 +114,39 @@ describe(utils.suiteName(__filename), function() {
 
         it('should include minimum value', () => {
             let rawInput = '10';
-            typesParser[type](rawInput, 10, 180);
+            typesParser[type](rawInput, [10, 180]);
         });
 
         it('should not throw if within range', () => {
             let rawInput = '-151';
-            typesParser[type](rawInput, -180, 180);
+            typesParser[type](rawInput, [-180, 180]);
         });
 
         it('should return Number (not string)', () => {
             const input = '10';
-            const value = typesParser[type](input, 0, 21);
+            const value = typesParser[type](input, [0, 21]);
             assert.equal(typeof value, 'number');
         });
 
         it('should throw if less than min', () => {
             let rawInput = '-181';
-            assert.throws(() => typesParser[type](rawInput, -180, 180), /-180/);
+            assert.throws(() => typesParser[type](rawInput, [-180, 180]), /-180/);
         });
 
         it('should throw if more than max', () => {
             let rawInput = '181';
-            assert.throws(() => typesParser[type](rawInput, '-180', '180'), /180/);
+            assert.throws(() => typesParser[type](rawInput, ['-180', '180']), /180/);
         });
 
         it('should throw if below minimum (w/o max)', () => {
             let rawInput = '-181';
-            assert.throws(() => typesParser[type](rawInput, '-180'), /180/);
+            assert.throws(() => typesParser[type](rawInput, ['-180']), /180/);
         });
 
         it('should not print NaN in error if below minimum (w/o max)', () => {
             let rawInput = '-181';
             try {
-                typesParser[type](rawInput, '-180');
+                typesParser[type](rawInput, ['-180']);
             } catch (err) {
                 assert(!err.message.includes('NaN'));
             }
@@ -154,7 +154,7 @@ describe(utils.suiteName(__filename), function() {
 
         it('should accept if above minimum (w/o max)', () => {
             const rawInput = '10';
-            typesParser[type](rawInput, '9');
+            typesParser[type](rawInput, ['9']);
         });
     });
 
@@ -163,32 +163,32 @@ describe(utils.suiteName(__filename), function() {
 
         it('should include minimum length', () => {
             let rawInput = 'a';
-            typesParser[type](rawInput, 1, 180);
+            typesParser[type](rawInput, [1, 180]);
         });
 
         it('should not throw if within range', () => {
             let rawInput = 'abc';
-            typesParser[type](rawInput, 2, 180);
+            typesParser[type](rawInput, [2, 180]);
         });
 
         it('should throw if less than min', () => {
             let rawInput = 'a';
-            assert.throws(() => typesParser[type](rawInput, 4, 180), /4/);
+            assert.throws(() => typesParser[type](rawInput, [4, 180]), /4/);
         });
 
         it('should throw if more than max', () => {
             let rawInput = 'abcdefg';
-            assert.throws(() => typesParser[type](rawInput, 2, 4), /4/);
+            assert.throws(() => typesParser[type](rawInput, [2, 4]), /4/);
         });
 
         it('should throw if below minimum (w/o max)', () => {
             let rawInput = 'abc';
-            assert.throws(() => typesParser[type](rawInput, 5), /5/);
+            assert.throws(() => typesParser[type](rawInput, [5]), /5/);
         });
 
         it('should accept if above minimum (w/o max)', () => {
             const rawInput = 'abcdefg';
-            typesParser[type](rawInput, 5);
+            typesParser[type](rawInput, [5]);
         });
     });
 });

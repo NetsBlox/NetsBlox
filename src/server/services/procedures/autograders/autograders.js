@@ -13,9 +13,9 @@ const MONGODB_DOC_TOO_LARGE = 'Attempt to write outside buffer bounds';
 const getDatabase = require('./storage');
 
 const validateName = name => {
-    const validRegex = /^[a-zA-Z][a-zA-Z0-9_ -]*$/;
+    const validRegex = /^[a-zA-Z][a-zA-Z0-9_ :-]*$/;
     if (!validRegex.test(name)) {
-        throw new Error('Invalid name. Must start with a letter and be alphanumeric (+ underscores and dashes)');
+        throw new Error('Invalid name. Must start with a letter and be alphanumeric (+ underscores, dashes, and colons)');
     }
 };
 

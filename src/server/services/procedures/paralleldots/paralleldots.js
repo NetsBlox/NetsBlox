@@ -24,7 +24,7 @@ const toLowerCaseKeys = object => {
 };
 
 ParallelDots._parallelDotsRequest = async function(path, text){
-    let body = `api_key=${this.apiKey.value}&text=${encodeURI(text)}`;
+    let body = `api_key=${this.apiKey.value}&text=${encodeURIComponent(text)}`;
     const response = await this._sendAnswer({
         path: path,
         method: 'POST',
@@ -55,7 +55,7 @@ ParallelDots.getSentiment = async function(text) {
  * @param {String} text2 Long text (more than 2 words)
  */
 ParallelDots.getSimilarity = async function(text1, text2) {
-    const body = `api_key=${this.apiKey.value}&text_1=${encodeURI(text1)}&text_2=${encodeURI(text2)}`;
+    const body = `api_key=${this.apiKey.value}&text_1=${encodeURIComponent(text1)}&text_2=${encodeURIComponent(text2)}`;
     const result = await this._sendAnswer({
         path: '/similarity', method: 'POST',
         headers: {'Content-Type' : 'application/x-www-form-urlencoded'},

@@ -6,7 +6,8 @@ const logger = require('../utils/logger')('roboscape:routes');
 const Users = require('../../../storage/users');
 const RoboscapeCol = require('./database'); // roboscape model
 
-const BASE_ENDPOINT = 'roboscape/robots';
+const BASE_ENDPOINT = 'roboscape';
+const ROBOTS_ENDPOINT = BASE_ENDPOINT + '/robots';
 
 /**
  * routes for:
@@ -156,10 +157,9 @@ const routes = [
             return setUserAccess(req.params._id, body.username, body.hasAccess);
         }
     },
-
 ]
     .map(route => { // handle the actual sending of the results
-        route.URL = BASE_ENDPOINT + route.URL;
+        route.URL = ROBOTS_ENDPOINT + route.URL;
         let handler = route.Handler;
         route.Handler = async (req, res, next) => {
 
@@ -188,5 +188,16 @@ const routes = [
         };
         return route;
     });
+
+routes.push(
+    { // Get RoboScape port
+        URL: BASE_ENDPOINT + '/port',
+        Method: 'get',
+        middleware: [],
+        Handler: async (_, res) => {
+            res.status(200).send(process.env.ROBOSCAPE_PORT || 'RoboScape is not enabled.');
+        }
+    }
+);
 
 module.exports = routes;

@@ -9,7 +9,9 @@ class UserNotFound extends RequestError {
 
 class AddressNotFound extends RequestError {
     constructor(addressString, sender) {
-        super(`Invalid address: ${addressString} from ${sender}`);
+        const msg = sender ? `Invalid address: ${addressString} from ${sender}` :
+            `Invalid address: ${addressString}`;
+        super(msg);
     }
 }
 

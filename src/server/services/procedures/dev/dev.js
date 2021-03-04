@@ -6,6 +6,7 @@ const buffer = fs.readFileSync(logoPath);
 const utils = require('../utils');
 const logger = require('../utils/logger')('dev');
 const _ = require('lodash');
+const devLogger = require('../utils/dev-logger');
 
 const dev = {};
 dev.isSupported = () => process.env.ENV !== 'production';
@@ -72,6 +73,22 @@ dev.callerInfo = function() {
  */
 dev.sum = function(numbers) {
     return numbers.reduce((s, n) => s+n, 0);
+};
+
+/**
+ * Fetch debug logs for debugging remotely.
+ * @category logging
+ */
+dev.getLogs = function() {
+    return devLogger.read();
+};
+
+/**
+ * Fetch debug logs for debugging remotely.
+ * @category logging
+ */
+dev.clearLogs = function() {
+    return devLogger.clear();
 };
 
 module.exports = dev;
