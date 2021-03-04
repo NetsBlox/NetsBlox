@@ -176,6 +176,43 @@ describe(utils.suiteName(__filename), function() {
             });
         });
 
+        describe('categories', function() {
+            it('should parse category', () => {
+                const comment = `
+                /**
+                 * this is the description
+                 * @category TestCategory
+                 * @param {Array<Array<BoundedNumber<1, 5>>>} numberLists
+                 * @name testNestedParams
+                 */
+                `;
+                const metadata = jp._simplify(jp._parseSource(comment).rpcs[0].parsed);
+                const [category] = metadata.categories;
+                assert.equal(
+                    category,
+                    'TestCategory',
+                );
+            });
+
+            it('should parse multiple categories', () => {
+                const comment = `
+                /**
+                 * this is the description
+                 * @category Category0
+                 * @category Category1;Category2;Category3
+                 * @param {Array<Array<BoundedNumber<1, 5>>>} numberLists
+                 * @name testNestedParams
+                 */
+                `;
+                const metadata = jp._simplify(jp._parseSource(comment).rpcs[0].parsed);
+                const categories = metadata.categories;
+                assert.equal(categories.length, 2);
+                assert.equal(categories[0].length, 1);
+                assert.equal(categories[1].length, 3);
+
+                categories.flat().forEach((name, i) => assert.equal(name, `Category${i}`));
+            });
+        });
     });
 
     describe('Docs', () => {
