@@ -117,6 +117,7 @@ PhoneIoT.prototype._getRegistered = function () {
 
 /**
  * Returns the addresses of all authorized devices.
+ * @category Utility
  * @returns {array}
  */
 PhoneIoT.prototype.getDevices = async function () {
@@ -145,6 +146,7 @@ PhoneIoT.prototype._passToDevice = async function (fnName, args) {
 
 /**
  * Get the color code for the specified red green and blue levels.
+ * @category Utility
  * @param {BoundedNumber<0, 255>} red red level (0-255).
  * @param {BoundedNumber<0, 255>} green green level (0-255).
  * @param {BoundedNumber<0, 255>} blue blue level (0-255).
@@ -156,12 +158,14 @@ PhoneIoT.prototype.getColor = function (red, green, blue) {
 
 /**
  * Get the magnitude (length) of a vector.
+ * @category Utility
  * @param {List} vec the vector value
  * @returns {Number} length of the vector
  */
 PhoneIoT.prototype.magnitude = function(vec) { return common.magnitude(vec); };
 /**
  * Get the normalized form of a vector (same direction but magnitude of 1).
+ * @category Utility
  * @param {List} vec the vector value
  * @returns {List} the normalized vector
  */
@@ -172,6 +176,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 
     /**
      * Removes all custom controls from the device.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.clearControls = function (device) {
@@ -179,6 +184,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Removes the specified custom control from the device (if it exists).
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {string} id name of the control to remove.
      */
@@ -188,6 +194,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Add a custom label to the device.
      * Returns the id of the created control, which is used by other RPCs.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the label (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the label (percentage).
@@ -208,6 +215,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If an event is provided, it will be raised every time the button is pressed (params: 'id').
      * The optional 'style' value can change the appearance - can be 'rectangle' (default), 'ellipse', 'square', or 'circle'.
      * Returns the id of the created control, which is used by other RPCs.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
@@ -243,6 +251,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This can be used to display an image, or to retrieve an image taken from the device's camera.
      * If an event is provided, it will be raised every time the user stores a new image in it (params: 'id').
      * Returns the id of the created control, which is used by other RPCs.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the image display (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the image display (percentage).
@@ -262,6 +271,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Add a custom text field to the device - users can click on it to enter text.
      * If an event is provided, it will be raised every time the user enters new text (params: 'id', 'text').
      * Returns the id of the created control, which is used by other RPCs.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the text field (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the text field (percentage).
@@ -284,6 +294,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Add a custom joystick control to the device.
      * If an event is provided, it will be raised every time the joystick is moved (params: 'id', 'x', 'y').
      * Returns the id of the created control, which is used by other RPCs.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the joystick (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the joystick (percentage).
@@ -304,6 +315,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * The optional 'style' value changes the appearance, and can be 'checkbox' or 'switch' (default).
      * If an event is provided, it will be raised every time the control is clicked (params: 'id', 'state').
      * Returns the id of the created control, which is used by other RPCs.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the toggle (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the toggle (percentage).
@@ -337,6 +349,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Only one radio button in each group may be checked by the user.
      * If an event is provided, it will be raised every time the control is clicked (params: 'id', 'state').
      * Returns the id of the created control, which is used by other RPCs.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the radio button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the radio button (percentage).
@@ -358,6 +371,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Set the text on a control that displays text.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {string} id Name of the control to change text on
      * @param {string=} text The new text to display (defaults to empty)
@@ -368,6 +382,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Get the text from a control that displays text.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {string} id Name of the control to read text from
      * @returns {string} The currently displayed text
@@ -377,6 +392,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Get the current vector output of a custom joystick control
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {string} id Name of the control to read text from
      * @returns {Array} The x and y components of the normalized vector
@@ -418,6 +434,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Gets the (true/false, selected/non-selected) state of a custom control.
      * For a toggle control, this gets whether it is on or off (checked or unchecked).
      * For a button, this gets whether it is currently pressed.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {string} id name of the control to read
      * @returns {boolean} true or false, depending on the state
@@ -432,6 +449,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 1. The azimuth angle, effectively the compass heading [-180, 180].
      * 2. The pitch (vertical tilt) angle [-90, 90].
      * 3. The roll angle [-90, 90].
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} The orientation angles relative to the Earth's magnetic field.
      */
@@ -440,6 +458,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Get the compass heading in degrees [-180, 180].
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Number} The compass heading in degrees.
      */
@@ -448,6 +467,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Get the name of the closest compass direction (N, NE, E, SE, etc.).
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {string} The compass direction name
      */
@@ -456,6 +476,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Get the name of the closest compass cardinal direction (N, E, S, W).
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {string} The compass cardinal direction name
      */
@@ -466,6 +487,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current accelerometer output from the device.
      * This is a 3D vector with units of m/s².
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} accelerometer output
      */
@@ -481,6 +503,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      *     "upside down" - the device is vertical, but upside down.
      *     "left" - the device is horizontal, lying on its left side (facing the screen).
      *     "right" - the device is horizontal, lying on its right side (facing the screen).
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {string} name of facing direction
      */
@@ -492,6 +515,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current output of the gravity vector device.
      * This is a 3D vector with units of m/s².
      * This is similar to the Accelerometer, but tries to account for noise from linear movement.
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} output of gravity device
      */
@@ -502,6 +526,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current output of the linear acceleration device.
      * This is a 3D vector with units of m/s².
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} linear acceleration vector
      */
@@ -512,6 +537,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current output of the gyroscope, which measures rotational acceleration.
      * This is a 3D vector with units of degrees/s² around each axis.
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} output of gyroscope
      */
@@ -522,6 +548,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current output of the rotation device, which measures rotational orientation.
      * This is a unitless 4D vector representing rotation on the 3 axes, plus a scalar component.
      * For most uses, getGameRotation is more convenient.
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} 4D rotational vector
      */
@@ -531,6 +558,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current output of the game rotation device, which measures rotational orientation.
      * This is a unitless 3D vector representing rotation around each axis.
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} 3D rotational vector
      */
@@ -541,6 +569,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current output of the magnetic field device.
      * This is a 3D vector with units of μT (micro teslas) in each direction.
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} magnetic field vector
      */
@@ -550,6 +579,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 
     /**
      * Get the volume level from the device's microphone.
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} A number representing the volume detected by the microphone.
      */
@@ -560,6 +590,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current location of the device.
      * This is a latitude longitude pair in degrees.
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Array} latitude and longitude
      */
@@ -570,6 +601,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current bearing from the location sensor (in degrees).
      * This represents the observed direction of motion between two location samples,
      * so it's only meaningful while you are moving.
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Number} current bearing
      */
@@ -578,6 +610,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Get the current altitude from the location sensor (in meters above sea level).
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Number} current bearing
      */
@@ -589,6 +622,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current output of the proximity device.
      * This is a distance measured in cm.
      * Note that some devices only have binary proximity devices (near/far), which will take discrete two values.
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Number} distance from proximity device in cm
      */
@@ -598,6 +632,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current output of the step counter.
      * This measures the number of steps taken since the device was started.
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Number} number of steps taken
      */
@@ -606,6 +641,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Get the current output of the light device.
+     * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Number} current light level reading
      */
@@ -615,6 +651,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 
     /**
      * Get the displayed image of a custom image box.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {string} id the id of the custom image box
      * @returns {object} the displayed image
@@ -630,6 +667,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Get the displayed image of a custom image box.
+     * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {string} id the id of the custom image box
      * @param {ImageBitmap} img the new image to display

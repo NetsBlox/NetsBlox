@@ -8,7 +8,7 @@ describe(utils.suiteName(__filename), function() {
         ['clearControls', ['device']],
         ['removeControl', ['device', 'id']],
         ['addImageDisplay', ['device', 'x', 'y', 'width', 'height', 'options']],
-        ['addButton', ['device', 'x', 'y', 'width', 'height', 'options']],
+        ['addButton', ['device', 'x', 'y', 'width', 'height', 'text', 'options']],
         ['addJoystick', ['device', 'x', 'y', 'width', 'options']],
         ['addTextField', ['device', 'x', 'y', 'width', 'height', 'options']],
         ['addToggle', ['device', 'x', 'y', 'text', 'options']],
