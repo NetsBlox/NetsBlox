@@ -103,8 +103,8 @@ describe(utils.suiteName(__filename), function() {
 
             const projectId = project.getId();
             const [id1, id2] = await project.getRoleIdsFor(['role1', 'role2']);
-            [alice] = NetworkTopology.getSocketsAt(projectId, id1);
-            [bob, steve] = NetworkTopology.getSocketsAt(projectId, id2);
+            [alice] = NetworkTopology.getClientsAt(projectId, id1);
+            [bob, steve] = NetworkTopology.getClientsAt(projectId, id2);
         });
 
         it('should ignore bad dstId for interroom messages', function() {
@@ -213,7 +213,7 @@ describe(utils.suiteName(__filename), function() {
             });
             const [/*id1*/, id2] = await project.getRoleIdsFor(['role1', 'role2']);
             const projectId = project.getId();
-            [bob, steve] = NetworkTopology.getSocketsAt(projectId, id2);
+            [bob, steve] = NetworkTopology.getClientsAt(projectId, id2);
         });
 
         describe('user-action', function() {
