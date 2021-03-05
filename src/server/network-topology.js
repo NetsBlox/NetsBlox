@@ -224,7 +224,7 @@ NetworkTopology.prototype.socketsFor = function(username) {
 
 NetworkTopology.prototype.checkClients = function() {
     this._sockets.forEach(client => {
-        if (!client.isBroken) {
+        if (!client.isWaitingForReconnect) {
             client.checkAlive();
         }
     });

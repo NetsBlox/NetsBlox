@@ -49,7 +49,7 @@ class Client {
 
     reconnect(websocket) {
         this._socket = websocket;
-        this.isBroken = false;
+        this.isWaitingForReconnect = false;
         this.connError = null;
         this.lastSocketActivity = Date.now();
     }
@@ -129,14 +129,11 @@ class Client {
 
         this._socket.on('close', async () => {
             if (this.connError) {
-                const brokenSocket = this._socket;
-                this.isBroken = true;
-                await sleep(5 * Client.HEARTBEAT_INTERVAL);
-                const reconnected = this._socket !== brokenSocket;
-                if (!reconnected) {
-                    this.close(this.connError);
-                } else {
+                const reconnected = await this.waitForReconnect();
+                if (reconnected) {
                     this.checkAlive();
+                } else {
+                    this.close(this.connError);
                 }
             } else {
                 return this.close();
@@ -152,6 +149,15 @@ class Client {
             type: 'report-version',
             body: Utils.version
         });
+    }
+
+    async waitForReconnect () {
+        const brokenSocket = this._socket;
+        this.isWaitingForReconnect = true;
+        await sleep(5 * Client.HEARTBEAT_INTERVAL);
+        this.isWaitingForReconnect = false;
+        const reconnected = this._socket !== brokenSocket;
+        return reconnected;
     }
 
     close (err) {
