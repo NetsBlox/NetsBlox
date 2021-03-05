@@ -23,13 +23,12 @@ describe(utils.suiteName(__filename), function() {
             client.lastSocketActivity = 0;
 
             // reconnect
-            setTimeout(() => {
-                client.reconnect(new MockWebSocket());
-                client.checkAlive = () => {
-                    delete client.checkAlive;
-                    done();
-                };
-            }, 12);
+            client.checkAlive();
+            client.reconnect(new MockWebSocket());
+            client.checkAlive = () => {
+                delete client.checkAlive;
+                done();
+            };
         });
     });
 
@@ -179,14 +178,13 @@ describe(utils.suiteName(__filename), function() {
 
         it('should detect and close broken connections', function(done) {
             // Create a socket
-            let ws = new MockWebSocket();
-            let socket = new Client(logger, ws);
+            const ws = new MockWebSocket();
+            const client = new Client(logger, ws);
 
             // Verify that 'onclose' is called
-            socket.onclose.push(done);
-
-            // Disable 'pong' response
-            ws.ping = () => {};
+            client.onclose.push(done);
+            client.lastSocketActivity = 0;
+            client.checkAlive();
         });
     });
 
