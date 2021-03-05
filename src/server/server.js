@@ -100,17 +100,17 @@ Server.prototype.configureRoutes = async function(servicesURL) {
 
     this.app.get(`/${stateEndpoint}/sockets`, function(req, res) {
         const now = Date.now();
-        const sockets = NetworkTopology.sockets().map(socket => {
+        const clients = NetworkTopology.clients().map(client => {
             return {
-                clientId: socket.uuid,
-                username: socket.username,
-                projectId: socket.projectId,
-                roleId: socket.roleId,
-                secsSinceLastActivity: (now - socket.lastSocketActivity)/1000,
+                clientId: client.uuid,
+                username: client.username,
+                projectId: client.projectId,
+                roleId: client.roleId,
+                secsSinceLastActivity: (now - client.lastSocketActivity)/1000,
             };
         });
 
-        res.json(sockets);
+        res.json(clients);
     });
 
     // Initial page
@@ -209,7 +209,7 @@ Server.prototype.configureRoutes = async function(servicesURL) {
         }
 
         // This needs to...
-        //  + create the room for the socket
+        //  + create the room for the client
         example = _.cloneDeep(EXAMPLES[name]);
         var role,
             room;
@@ -218,7 +218,7 @@ Server.prototype.configureRoutes = async function(servicesURL) {
             return res.send(example.toString());
         } else {
             room = example;
-            //  + customize and return the room for the socket
+            //  + customize and return the room for the client
             room = _.extend(room, example);
             role = Object.keys(room.roles).shift();
         }
@@ -422,27 +422,27 @@ class ServicesPrivateAPI {
         this.logger = logger.fork('services');
 
         this.on(Messages.SendMessage, message => {
-            const socket = NetworkTopology.getSocket(message.clientId);
-            if (socket) {
-                const hasChangedSituation = message.projectId !== socket.projectId ||
-                    message.roleId !== socket.roleId;
+            const client = NetworkTopology.getClient(message.clientId);
+            if (client) {
+                const hasChangedSituation = message.projectId !== client.projectId ||
+                    message.roleId !== client.roleId;
 
                 if (!hasChangedSituation) {
-                    socket.sendMessage(message.type, message.contents);
+                    client.sendMessage(message.type, message.contents);
                 }
             } else {
-                this.logger.warn(`Could not find socket: ${message.clientId}`);
+                this.logger.warn(`Could not find client: ${message.clientId}`);
             }
         });
         this.on(Messages.SendMessageToRoom, message => {
             const {projectId, type, contents} = message;
-            const sockets = NetworkTopology.getSocketsAtProject(projectId);
-            sockets.forEach(socket => socket.sendMessage(type, contents));
+            const clients = NetworkTopology.getClientsAtProject(projectId);
+            clients.forEach(client => client.sendMessage(type, contents));
         });
         this.on(Messages.SendMessageToRole, message => {
             const {projectId, roleId, type, contents} = message;
-            const sockets = NetworkTopology.getSocketsAt(projectId, roleId);
-            sockets.forEach(socket => socket.sendMessage(type, contents));
+            const clients = NetworkTopology.getClientsAt(projectId, roleId);
+            clients.forEach(client => client.sendMessage(type, contents));
         });
     }
 

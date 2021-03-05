@@ -45,7 +45,7 @@ class Projects {
         assert(isValidRoleId, new ProjectRoleNotFound(project.name));
 
         // TODO: Can I ensure that I am getting the latest?
-        const [occupant] = NetworkTopology.getSocketsAt(projectId, roleId);
+        const [occupant] = NetworkTopology.getClientsAt(projectId, roleId);
         const content = occupant ? 
             await occupant.getProjectJson().catch(err => {
                 this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
@@ -270,7 +270,7 @@ class Projects {
     async getRoleToJoin(projectId) {
         const project = await this.getProjectSafe(projectId);
         const metadata = await project.getRawRoles();
-        const occupiedRoles = NetworkTopology.getSocketsAtProject(projectId)
+        const occupiedRoles = NetworkTopology.getClientsAtProject(projectId)
             .map(socket => socket.roleId);
         const unoccupiedRoles = metadata
             .filter(data => !occupiedRoles.includes(data.ID));

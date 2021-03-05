@@ -20,7 +20,7 @@ describe('collaboration', function() {
             });
             projectId = project.getId();
             roleId = await project.getRoleId('role');
-            [p1, p2] = NetworkTopology.getSocketsAt(project.getId(), roleId);
+            [p1, p2] = NetworkTopology.getClientsAt(project.getId(), roleId);
         });
 
         it('should block conflicting actions', async function() {
@@ -57,7 +57,7 @@ describe('collaboration', function() {
             });
             projectId = project.getId();
             roleId = await project.getRoleId('role');
-            [user] = NetworkTopology.getSocketsAt(project.getId(), roleId);
+            [user] = NetworkTopology.getClientsAt(project.getId(), roleId);
             const twentyActions = _.range(20)
                 .map(i => userAction(projectId, roleId, i));
 

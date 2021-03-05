@@ -63,11 +63,11 @@ class Client {
         // accept the event here and broadcast to everyone
         const {projectId, roleId} = msg;
         const {canApply, actionId} = await this.canApplyAction(msg.action);
-        const sockets = NetworkTopology.getSocketsAt(projectId, roleId);
+        const clients = NetworkTopology.getClientsAt(projectId, roleId);
 
         if (canApply) {
-            if (sockets.length > 1) {
-                sockets.forEach(socket => socket.send(msg));
+            if (clients.length > 1) {
+                clients.forEach(client => client.send(msg));
             }
             msg.projectId = projectId;
             // Only set the role's action id if not user action
@@ -256,8 +256,8 @@ class Client {
     }
 
     sendToEveryone (msg) {
-        const sockets = NetworkTopology.getSocketsAtProject(this.projectId);
-        sockets.forEach(socket => socket.send(msg));
+        const clients = NetworkTopology.getClientsAtProject(this.projectId);
+        clients.forEach(client => client.send(msg));
     }
 
     sendMessage (msgType, content) {
@@ -340,7 +340,7 @@ class Client {
         const clients = states
             .flatMap(state => {
                 const [projectId, roleId] = state;
-                return NetworkTopology.getSocketsAt(projectId, roleId);
+                return NetworkTopology.getClientsAt(projectId, roleId);
             });
 
         clients.forEach(client => {
@@ -457,7 +457,7 @@ Client.MessageHandlers = {
         const {projectId, roleId} = req;
         const hasMoved = projectId !== this.projectId || roleId !== this.roleId;
         if (hasMoved) {
-            const err = `socket moved from ${req.roleId}/${req.projectId} ` +
+            const err = `client moved from ${req.roleId}/${req.projectId} ` +
                 `to ${this.roleId}/${this.projectId}`;
             this._logger.log(`project request ${id} canceled: ${err}`);
             return req.promise.reject(err);
@@ -481,10 +481,10 @@ Client.MessageHandlers = {
         return Projects.getProjectMetadataById(this.projectId)
             .then(metadata => {
                 const {owner} = metadata;
-                const sockets = NetworkTopology.getSocketsAtProject(projectId);
-                const owners = sockets.filter(socket => socket.username === owner);
+                const clients = NetworkTopology.getClientsAtProject(projectId);
+                const owners = clients.filter(client => client.username === owner);
 
-                owners.forEach(socket => socket.send(msg));
+                owners.forEach(client => client.send(msg));
             });
     },
 
@@ -505,9 +505,9 @@ Client.MessageHandlers = {
         const occupantForRole = {};
 
         // Get the first occupant for each role
-        NetworkTopology.getSocketsAtProject(projectId).reverse()
-            .forEach(socket => {
-                occupantForRole[socket.roleId] = socket;
+        NetworkTopology.getClientsAtProject(projectId).reverse()
+            .forEach(client => {
+                occupantForRole[client.roleId] = client;
             });
 
         const project = await Projects.getById(this.projectId);

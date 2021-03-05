@@ -66,45 +66,45 @@ NetworkTopology.prototype.onConnect = function(socket, uuid) {
 };
 
 // input: client object (netsblox websocket)
-NetworkTopology.prototype.onDisconnect = function(socket) {
-    this._logger.trace(`client disconnected ${socket.toString()} total: ${this._sockets.length}`);
-    let hasSocket = this._sockets.isClientActive(socket);
-    if (hasSocket) {
-        this._sockets.removeClient(socket);
-        const {projectId, roleId} = socket;
+NetworkTopology.prototype.onDisconnect = function(client) {
+    this._logger.trace(`client disconnected ${client.toString()} total: ${this._sockets.length}`);
+    let isClientActive = this._sockets.isClientActive(client);
+    if (isClientActive) {
+        this._sockets.removeClient(client);
+        const {projectId, roleId} = client;
         if (projectId && roleId) {
             this.onClientLeave(projectId, roleId);
         }
     } else {
-        this._logger.error(`Could not find socket to disconnect: ${socket.toString()}`);
+        this._logger.error(`Could not find client to disconnect: ${client.toString()}`);
     }
-    return hasSocket;
+    return isClientActive;
 };
 
-NetworkTopology.prototype.getSocket = function(uuid) {
+NetworkTopology.prototype.getClient = function(uuid) {
     return this._sockets.find(socket => socket.uuid === uuid);
 };
 
-NetworkTopology.prototype.getSocketsAt = function(projectId, roleId) {
+NetworkTopology.prototype.getClientsAt = function(projectId, roleId) {
     projectId = projectId && projectId.toString();
     return this._sockets.filter(
         socket => socket.projectId === projectId && socket.roleId === roleId
     );
 };
 
-NetworkTopology.prototype.getSocketsAtProject = function(projectId) {
+NetworkTopology.prototype.getClientsAtProject = function(projectId) {
     projectId = projectId && projectId.toString();
     return this._sockets.filter(socket => socket.projectId === projectId);
 };
 
 NetworkTopology.prototype.isProjectActive = function(projectId, skipId) {
-    const sockets = this.getSocketsAtProject(projectId)
+    const sockets = this.getClientsAtProject(projectId)
         .filter(socket => socket.uuid !== skipId);
     return sockets.length > 0;
 };
 
 NetworkTopology.prototype.setClientState = async function(clientId, projectId, roleId, username) {
-    const client = this.getSocket(clientId);
+    const client = this.getClient(clientId);
 
     if (!client) {
         this._logger.warn(`Could not set client state for ${clientId}`);
@@ -135,7 +135,7 @@ NetworkTopology.prototype.getRoomState = function(projectId, refresh=false) {
             roles.forEach(pair => {
                 // Change this to use the socket id
                 const [name, id] = pair;
-                const occupants = this.getSocketsAt(projectId, id)
+                const occupants = this.getClientsAt(projectId, id)
                     .map(socket => {
                         return {
                             uuid: socket.uuid,
@@ -162,7 +162,7 @@ NetworkTopology.prototype.onRoomUpdate = function(projectId, refresh=false) {
     // push room update msg to the clients in the project
     return this.getRoomState(projectId, refresh)
         .then(state => {
-            const clients = this.getSocketsAtProject(projectId);
+            const clients = this.getClientsAtProject(projectId);
 
             const msg = state;
             msg.type = 'room-roles';
@@ -204,11 +204,11 @@ NetworkTopology.prototype.onRoleEmpty = async function(projectId, roleId) {
     return await ProjectActions.clearActionsAfter(projectId, roleId, actionId, endTime);
 };
 
-NetworkTopology.prototype.sockets = function() {
+NetworkTopology.prototype.clients = function() {
     return this._sockets.slice();
 };
 
-NetworkTopology.prototype.socketsFor = function(username) {
+NetworkTopology.prototype.getClientsWithUsername = function(username) {
     var uuids = Object.keys(this._sockets),
         sockets = [],
         socket;
