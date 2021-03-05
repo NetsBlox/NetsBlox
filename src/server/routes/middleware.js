@@ -177,9 +177,9 @@ async function login(req, res) {
         saveLogin(res, user, req.body.remember);
     }
 
-    const socket = NetworkTopology.getClient(clientId);
-    if (socket) {
-        socket.username = username;
+    const client = NetworkTopology.getClient(clientId);
+    if (client) {
+        client.username = username;
     }
 
     req.loggedIn = true;
