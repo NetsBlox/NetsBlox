@@ -37,11 +37,9 @@ class Client {
 
         this.user = null;
         this.username = this.uuid;
-        this._socket = websocket;
         this._projectRequests = {};  // saving
-        this.lastSocketActivity = Date.now();
         this.nextHeartbeat = null;
-        this.nextHeartbeatCheck = null;
+        this.reconnect(websocket);
 
         this.onclose = [];
         this._initialize();
@@ -51,7 +49,9 @@ class Client {
 
     reconnect(websocket) {
         this._socket = websocket;
+        this.isBroken = false;
         this.connError = null;
+        this.lastSocketActivity = Date.now();
     }
 
     isOwner () {  // TODO: move to auth stuff...
@@ -130,6 +130,7 @@ class Client {
         this._socket.on('close', async () => {
             if (this.connError) {
                 const brokenSocket = this._socket;
+                this.isBroken = true;
                 await sleep(5 * Client.HEARTBEAT_INTERVAL);
                 const reconnected = this._socket !== brokenSocket;
                 if (!reconnected) {
@@ -157,9 +158,6 @@ class Client {
         this._logger.trace(`closed socket for ${this.uuid} (${this.username})`);
         if (this.nextHeartbeat) {
             clearTimeout(this.nextHeartbeat);
-        }
-        if (this.nextHeartbeatCheck) {
-            clearTimeout(this.nextHeartbeatCheck);
         }
         this.onclose.forEach(fn => fn.call(this));
         this.onclose = [];  // ensure no double-calling of close
@@ -206,7 +204,6 @@ class Client {
                 clearTimeout(this.nextHeartbeatCheck);
             }
         }
-        this.nextHeartbeatCheck = setTimeout(this.checkAlive.bind(this), Client.HEARTBEAT_INTERVAL);
     }
 
     keepAlive() {

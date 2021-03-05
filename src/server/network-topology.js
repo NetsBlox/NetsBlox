@@ -14,10 +14,6 @@ class ClientList extends Array {
         super();
     }
 
-    init(logger) {
-        this.logger = logger;
-    }
-
     addClient(client) {
         this.push(client);
     }
@@ -47,9 +43,9 @@ let Client = null;
 NetworkTopology.prototype.init = function(logger, _Client) {
     this.initialized = true;
     this._logger = logger.fork('network-topology');
-    this._sockets.init(this._logger.fork('clients'));
 
     Client = _Client;
+    this.checkClients();
     const self = this;
     Client.prototype.onClose = function(err) {
         return self.onDisconnect(this, err);
@@ -224,6 +220,15 @@ NetworkTopology.prototype.socketsFor = function(username) {
         }
     }
     return sockets;
+};
+
+NetworkTopology.prototype.checkClients = function() {
+    this._sockets.forEach(client => {
+        if (!client.isBroken) {
+            client.checkAlive();
+        }
+    });
+    setTimeout(() => this.checkClients(), Client.HEARTBEAT_INTERVAL);
 };
 
 module.exports = new NetworkTopology();
