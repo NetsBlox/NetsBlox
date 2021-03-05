@@ -373,7 +373,7 @@ module.exports = [
                 this._logger.info('Received anonymous bug report');
             }
 
-            const socket = NetworkTopology.getSocket(report.clientUuid);
+            const socket = NetworkTopology.getClient(report.clientUuid);
             BugReporter.reportClientBug(socket, report);
 
             return res.sendStatus(200);

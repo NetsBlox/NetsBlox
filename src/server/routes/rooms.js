@@ -80,7 +80,7 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             const {evictedClientId, projectId} = req.body;
-            const socket = NetworkTopology.getSocket(evictedClientId);
+            const socket = NetworkTopology.getClient(evictedClientId);
 
             logger.log(`evicting ${evictedClientId} from ${projectId}`);
             if (!socket) {  // user is not online
@@ -254,7 +254,7 @@ module.exports = [
         Handler: function(req, res) {
             const {roleId, projectId} = req.body;
 
-            const clients = NetworkTopology.getSocketsAt(projectId, roleId);
+            const clients = NetworkTopology.getClientsAt(projectId, roleId);
             if (clients.length) {
                 return res.status(403).send('ERROR: Cannot delete occupied role. Remove the occupants first.');
             }
@@ -322,7 +322,7 @@ module.exports = [
 
             const {roleId, projectId} = req.body;
             const project = await Projects.getById(projectId);
-            const [client] = NetworkTopology.getSocketsAt(projectId, roleId);
+            const [client] = NetworkTopology.getClientsAt(projectId, roleId);
             const role = project.roles[roleId];
             if (!role) {
                 res.status(500).send(`no role with ID ${roleId}`);

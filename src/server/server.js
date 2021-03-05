@@ -422,7 +422,7 @@ class ServicesPrivateAPI {
         this.logger = logger.fork('services');
 
         this.on(Messages.SendMessage, message => {
-            const socket = NetworkTopology.getSocket(message.clientId);
+            const socket = NetworkTopology.getClient(message.clientId);
             if (socket) {
                 const hasChangedSituation = message.projectId !== socket.projectId ||
                     message.roleId !== socket.roleId;
@@ -436,12 +436,12 @@ class ServicesPrivateAPI {
         });
         this.on(Messages.SendMessageToRoom, message => {
             const {projectId, type, contents} = message;
-            const sockets = NetworkTopology.getSocketsAtProject(projectId);
+            const sockets = NetworkTopology.getClientsAtProject(projectId);
             sockets.forEach(socket => socket.sendMessage(type, contents));
         });
         this.on(Messages.SendMessageToRole, message => {
             const {projectId, roleId, type, contents} = message;
-            const sockets = NetworkTopology.getSocketsAt(projectId, roleId);
+            const sockets = NetworkTopology.getClientsAt(projectId, roleId);
             sockets.forEach(socket => socket.sendMessage(type, contents));
         });
     }

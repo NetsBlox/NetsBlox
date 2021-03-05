@@ -63,7 +63,7 @@ class Client {
         // accept the event here and broadcast to everyone
         const {projectId, roleId} = msg;
         const {canApply, actionId} = await this.canApplyAction(msg.action);
-        const sockets = NetworkTopology.getSocketsAt(projectId, roleId);
+        const sockets = NetworkTopology.getClientsAt(projectId, roleId);
 
         if (canApply) {
             if (sockets.length > 1) {
@@ -256,7 +256,7 @@ class Client {
     }
 
     sendToEveryone (msg) {
-        const sockets = NetworkTopology.getSocketsAtProject(this.projectId);
+        const sockets = NetworkTopology.getClientsAtProject(this.projectId);
         sockets.forEach(socket => socket.send(msg));
     }
 
@@ -340,7 +340,7 @@ class Client {
         const clients = states
             .flatMap(state => {
                 const [projectId, roleId] = state;
-                return NetworkTopology.getSocketsAt(projectId, roleId);
+                return NetworkTopology.getClientsAt(projectId, roleId);
             });
 
         clients.forEach(client => {
@@ -481,7 +481,7 @@ Client.MessageHandlers = {
         return Projects.getProjectMetadataById(this.projectId)
             .then(metadata => {
                 const {owner} = metadata;
-                const sockets = NetworkTopology.getSocketsAtProject(projectId);
+                const sockets = NetworkTopology.getClientsAtProject(projectId);
                 const owners = sockets.filter(socket => socket.username === owner);
 
                 owners.forEach(socket => socket.send(msg));
@@ -505,7 +505,7 @@ Client.MessageHandlers = {
         const occupantForRole = {};
 
         // Get the first occupant for each role
-        NetworkTopology.getSocketsAtProject(projectId).reverse()
+        NetworkTopology.getClientsAtProject(projectId).reverse()
             .forEach(socket => {
                 occupantForRole[socket.roleId] = socket;
             });

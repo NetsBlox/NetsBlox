@@ -45,7 +45,7 @@ module.exports = [
 
                 // get the socket and call onLogout
                 const {clientId} = req.body;
-                const socket = NetworkTopology.getSocket(clientId);
+                const socket = NetworkTopology.getClient(clientId);
                 if (socket) {
                     socket.onLogout();
                 }
