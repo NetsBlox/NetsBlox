@@ -210,6 +210,10 @@ const getNewClientId = function() {
     return clientId;
 };
 
+function sleep(duration) {
+    return new Promise(resolve => setTimeout(resolve, duration));
+}
+
 module.exports = {
     serialize,
     serializeArray,
@@ -229,5 +233,6 @@ module.exports = {
     APP,
     version,
     sortByDateField,
-    getNewClientId
+    getNewClientId,
+    sleep,
 };

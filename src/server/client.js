@@ -154,7 +154,7 @@ class Client {
     async waitForReconnect () {
         const brokenSocket = this._socket;
         this.isWaitingForReconnect = true;
-        await sleep(5 * Client.HEARTBEAT_INTERVAL);
+        await Utils.sleep(5 * Client.HEARTBEAT_INTERVAL);
         this.isWaitingForReconnect = false;
         const reconnected = this._socket !== brokenSocket;
         return reconnected;
@@ -542,10 +542,6 @@ Client.MessageHandlers = {
     },
 
 };
-
-function sleep(duration) {
-    return new Promise(resolve => setTimeout(resolve, duration));
-}
 
 // Utilities for testing
 Client.HEARTBEAT_INTERVAL = HEARTBEAT_INTERVAL;

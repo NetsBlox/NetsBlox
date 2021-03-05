@@ -45,7 +45,7 @@ NetworkTopology.prototype.init = function(logger, _Client) {
     this._logger = logger.fork('network-topology');
 
     Client = _Client;
-    this.checkClients();
+    this.startClientCheckInterval();
     const self = this;
     Client.prototype.onClose = function(err) {
         return self.onDisconnect(this, err);
@@ -222,13 +222,19 @@ NetworkTopology.prototype.socketsFor = function(username) {
     return sockets;
 };
 
-NetworkTopology.prototype.checkClients = function() {
-    this._sockets.forEach(client => {
+NetworkTopology.prototype.startClientCheckInterval = async function(duration=Client.HEARTBEAT_INTERVAL) {
+    while (true) {
+        this.checkClients(this._sockets);
+        await utils.sleep(duration);
+    }
+};
+
+NetworkTopology.prototype.checkClients = function(clients) {
+    clients.forEach(client => {
         if (!client.isWaitingForReconnect) {
             client.checkAlive();
         }
     });
-    setTimeout(() => this.checkClients(), Client.HEARTBEAT_INTERVAL);
 };
 
 module.exports = new NetworkTopology();
