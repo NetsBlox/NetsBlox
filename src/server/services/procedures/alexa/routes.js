@@ -34,17 +34,18 @@ const LaunchRequestHandler = {
     }
 };
 
-const HelloWorldIntentHandler = {
+const SendMessageIntentHandler = {
     canHandle(handlerInput) {
-        devLogger.log('Checking if we can handle HelloWorldIntent');
+        devLogger.log('Checking if we can handle SendMessageIntent');
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-        && Alexa.getIntentName(handlerInput.requestEnvelope) === 'HelloWorldIntent';
+        && Alexa.getIntentName(handlerInput.requestEnvelope) === 'SendMessageIntent';
     },
     async handle(handlerInput) {
-        const speechText = 'Hello World!';
+        const projectName = Alexa.getSlotValue(handlerInput.requestEnvelope, "project");
+        const speechText = 'Sending message to ' + projectName;
 
-        devLogger.log("Handling hello world intent");
-        const address = "test@tabithalee";
+        devLogger.log("Handling sending message intent");
+        const address = projectName + "@tabithalee";
         const messageType = "Alexa";
         const resolvedAddr = await NetsBloxAddress.new(address);
             //.catch(err => {
@@ -56,11 +57,12 @@ const HelloWorldIntentHandler = {
             const client = new RemoteClient(resolvedAddr.projectId);
             await client.sendMessageToRoom(messageType, speechText);
             // TODO: get a response from the netsblox client?
+            devLogger.log("Message sent to " + address);
         }
 
         return handlerInput.responseBuilder
             .speak(speechText)
-            .withSimpleCard('Hello World', speechText)
+            .withSimpleCard('Message sent', speechText)
             .getResponse();
     }
 };
@@ -148,7 +150,7 @@ skillBuilder.addRequestInterceptors(LogRequestInterceptor);
 
 skillBuilder.addRequestHandlers(
     LaunchRequestHandler,
-    HelloWorldIntentHandler,
+    SendMessageIntentHandler,
     HelpIntentHandler,
     CancelAndStopIntentHandler,
     SessionEndedRequestHandler,
