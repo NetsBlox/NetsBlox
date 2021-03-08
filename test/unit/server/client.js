@@ -181,7 +181,7 @@ describe(utils.suiteName(__filename), function() {
             const ws = new MockWebSocket();
             const client = new Client(logger, ws);
 
-            client.onClose = done;
+            client._socket.terminate = done;
             client.lastSocketActivity = 0;
             client.checkAlive();
         });
