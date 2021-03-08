@@ -3,6 +3,7 @@ class ClientRegistry {
 
     constructor() {
         this._clientsByUuid = {};
+        this._clientsByUsername = {};
         this._clientsByProjectRole = {};
         this._eventHandlers = {};
     }
@@ -11,6 +12,7 @@ class ClientRegistry {
         this._addEventHandlers(client);
         this._clientsByUuid[client.uuid] = client;
         this._addToRoleRecords(client);
+        this._addToUsernameRecords(client);
     }
 
     remove(client) {
@@ -24,7 +26,7 @@ class ClientRegistry {
     }
 
     withUsername(name) {
-        // TODO: This needs to be fast, too
+        return this._clientsByUsername[name] || [];
     }
 
     at(projectId, roleId) {
@@ -66,18 +68,26 @@ class ClientRegistry {
     }
 
     _addEventHandlers(client) {
-        const eventHandler = (oldProjectId, oldRoleId) => {
+        const updateHandler = (oldProjectId, oldRoleId) => {
             this._removeFromRoleRecords(client, oldProjectId, oldRoleId);
             this._addToRoleRecords(client);
         };
 
-        this._eventHandlers[client.uuid] = eventHandler;
-        client.on('update', eventHandler);
+        const updateUsernameHandler = oldUsername => {
+            this._removeFromUsernameRecords(client, oldUsername);
+            this._addToUsernameRecords(client);
+        };
+
+        client.on('update', updateHandler);
+        client.on('updateUsername', updateUsernameHandler);
+
+        this._eventHandlers[client.uuid] = [updateHandler, updateUsernameHandler];
     }
 
     _removeEventHandlers(client) {
-        const handler = this._eventHandlers[client.uuid];
-        client.off('update', handler);
+        const [updateHandler, updateUsernameHandler] = this._eventHandlers[client.uuid];
+        client.off('update', updateHandler);
+        client.off('updateUsername', updateUsernameHandler);
         delete this._eventHandlers[client.uuid];
     }
 
@@ -99,17 +109,48 @@ class ClientRegistry {
             return;
         }
 
-        if (!this._clientsByProjectRole[client.projectId]) {
-            this._clientsByProjectRole[client.projectId] = {};
-        }
-        if (!this._clientsByProjectRole[client.projectId][client.roleId]) {
-            this._clientsByProjectRole[client.projectId][client.roleId] = [];
-        }
+        this._ensureKeyExist(
+            this._clientsByProjectRole,
+            [client.projectId, client.roleId],
+            []
+        );
         this._clientsByProjectRole[client.projectId][client.roleId].push(client);
+    }
+
+    _addToUsernameRecords(client) {
+        if (client.loggedIn) {
+            this._ensureKeyExist(this._clientsByUsername, [client.username], []);
+            this._clientsByUsername[client.username].push(client);
+        }
+    }
+
+    _removeFromUsernameRecords(client, username=client.username) {
+        const clients = this._clientsByUsername[username] || [];
+        const index = clients.indexOf(client);
+        if (index > -1) {
+            clients.splice(index, 1);
+        }
+        if (clients.length === 0) {
+            delete this._clientsByUsername[username];
+        }
     }
 
     _hasNoNetworkState(client) {
         return !client.projectId || !client.roleId;
+    }
+
+    _ensureKeyExist(dict, keys, defValue) {
+        const lastKey = keys.pop();
+        const subDict = keys.reduce((dict, k) => {
+            if (!dict[k]) {
+                dict[k] = {};
+            }
+            return dict[k];
+        }, dict);
+
+        if (!subDict[lastKey]) {
+            subDict[lastKey] = defValue;
+        }
     }
 }
 

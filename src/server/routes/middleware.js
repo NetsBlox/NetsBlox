@@ -179,7 +179,7 @@ async function login(req, res) {
 
     const client = NetworkTopology.getClient(clientId);
     if (client) {
-        client.username = username;
+        client.setUsername(username);
     }
 
     req.loggedIn = true;

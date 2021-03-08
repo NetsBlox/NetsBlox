@@ -63,14 +63,26 @@ describe(utils.suiteName(__filename), function() {
             registry = new ClientRegistry();
             registry.add(client1);
             registry.add(client2);
-            // TODO: set the username of the client?
+            client1.setUsername('test');
         });
 
         it('should find client', function() {
+            const clients = registry.withUsername('test');
+            const uuids = clients.map(c => c.uuid);
+            assert.deepEqual(
+                uuids,
+                [client1.uuid]
+            );
         });
 
         it('should clear after removal', function() {
-            //assert.equal(count, 3);
+            client1.setUsername();
+            const clients = registry.withUsername('test');
+            const uuids = clients.map(c => c.uuid);
+            assert.deepEqual(
+                uuids,
+                []
+            );
         });
     });
 

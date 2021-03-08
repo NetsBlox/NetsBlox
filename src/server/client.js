@@ -236,9 +236,8 @@ class Client extends EventEmitter {
 
     onLogout () {
         this._logger.log(`${this.username} is logging out!`);
-        this.username = this.uuid;
+        this.setUsername();
         this.user = null;
-        this.loggedIn = false;
     }
 
     async getNewName (name) {
@@ -385,6 +384,13 @@ class Client extends EventEmitter {
         this.username = username;
         this.loggedIn = Utils.isSocketUuid(this.username);
         this.emit('update', oldProjectId, oldRoleId, projectId, roleId);
+    }
+
+    setUsername(name=this.uuid) {
+        const oldUsername = this.username;
+        this.username = name;
+        this.loggedIn = this.username !== this.uuid;
+        this.emit('updateUsername', oldUsername);
     }
 
     toString() {
