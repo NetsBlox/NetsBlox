@@ -24,12 +24,13 @@ const LaunchRequestHandler = {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
     handle(handlerInput) {
-        const speechText = 'Welcome to the Alexa NetsBlox Skill, you can say hello!';
+        const speechText = 'Welcome to the Alexa NetsBlox Skill. Would you like to send a message?';
 
         return handlerInput.responseBuilder
             .speak(speechText)
             .reprompt(speechText)
-            .withSimpleCard('Hello World', speechText)
+            .withSimpleCard('Skill launched', speechText)
+            .withShouldEndSession(false)
             .getResponse();
     }
 };
@@ -63,6 +64,7 @@ const SendMessageIntentHandler = {
         return handlerInput.responseBuilder
             .speak(speechText)
             .withSimpleCard('Message sent', speechText)
+            .withShouldEndSession(false)
             .getResponse();
     }
 };
@@ -129,8 +131,22 @@ const ErrorHandler = {
         devLogger.log(`Error handled: ${error.message}`);
 
         return handlerInput.responseBuilder
-            .speak('Sorry, I can\'t understand the command. Please say again.')
-            .reprompt('Sorry, I can\'t understand the command. Please say again.')
+            .speak('Sorry, I can\'t understand the command.')
+            .reprompt('How would you like to interact with NetsBlox?')
+            .getResponse();
+    },
+};
+
+const FallbackHandler = {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'AMAZON.FallbackIntent';
+    },
+    handle(handlerInput) {
+        return handlerInput.responseBuilder
+            .speak('Sorry, I can\'t understand the command.')
+            .reprompt('How would you like to interact with NetsBlox?')
             .getResponse();
     },
 };
@@ -146,6 +162,7 @@ const LogRequestInterceptor = {
     }
 };
 
+
 skillBuilder.addRequestInterceptors(LogRequestInterceptor);
 
 skillBuilder.addRequestHandlers(
@@ -155,6 +172,7 @@ skillBuilder.addRequestHandlers(
     CancelAndStopIntentHandler,
     SessionEndedRequestHandler,
     ErrorHandler,
+    FallbackHandler,
 );
 
 const skill = skillBuilder.create();
