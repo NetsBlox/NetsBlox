@@ -48,6 +48,7 @@ const SendMessageIntentHandler = {
         devLogger.log("Handling sending message intent");
         const address = projectName + "@tabithalee";
         const messageType = "Alexa";
+        const speechText = "Message '" + message + "' sent to " + address;
         const resolvedAddr = await NetsBloxAddress.new(address);
             //.catch(err => {
                 //res.status(400).send(err.message);
@@ -61,7 +62,7 @@ const SendMessageIntentHandler = {
         }
 
         return handlerInput.responseBuilder
-            .speak("Message '" + message + "' sent to " + address)
+            .speak(speechText)
             .withSimpleCard('Message sent', speechText)
             .withShouldEndSession(false)
             .getResponse();
