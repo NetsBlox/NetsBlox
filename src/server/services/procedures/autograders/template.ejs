@@ -46,8 +46,9 @@
         }
 
         async showResults(testResults) {
-            if (!this.resultsDialog) {
-                const world = this.ide.world();
+            const world = this.ide.parentThatIsA(WorldMorph);
+            const isAlreadyOpen = world.anyChild(child => child === this.resultsDialog);
+            if (!isAlreadyOpen) {
                 const dialog = new DialogBoxMorph().withKey('GradeAssignment');
                 const frame = new ScrollFrameMorph();
                 frame.acceptsDrops = false;
@@ -201,7 +202,6 @@
                 this.currentAssignment = assignment;
                 if (this.resultsDialog) {
                     this.resultsDialog.destroy();
-                    this.resultsDialog = null;
                 }
             }
         }
