@@ -1,4 +1,4 @@
-const ROOT_DIR = '../../../';
+const ROOT_DIR = '../../../../';
 const utils = require(ROOT_DIR + 'test/assets/utils');
 describe(utils.suiteName(__filename), function() {
     const Network = utils.reqSrc('network-topology');
