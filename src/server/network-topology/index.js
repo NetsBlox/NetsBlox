@@ -3,40 +3,14 @@
  */
 'use strict';
 
-const utils = require('./server-utils');
-const Projects = require('./storage/projects');
-const ProjectActions = require('./storage/project-actions');
-
-// active client list
-class ClientList extends Array {
-
-    constructor() {
-        super();
-    }
-
-    addClient(client) {
-        this.push(client);
-    }
-
-    findClientByID(id) {
-        return this.find(client => client.uuid === id);
-    }
-
-    isClientActive(client) {
-        let index = this.indexOf(client);
-        return index !== -1;
-    }
-
-    removeClient(client) {
-        const index = this.indexOf(client);
-        this.splice(index, 1);
-    }
-
-}
+const utils = require('../server-utils');
+const Projects = require('../storage/projects');
+const ProjectActions = require('../storage/project-actions');
+const ClientRegistry = require('./client-registry');
 
 var NetworkTopology = function() {
     this.initialized = false;
-    this._sockets = new ClientList();
+    this._clients = new ClientRegistry();
 };
 
 let Client = null;
@@ -54,23 +28,24 @@ NetworkTopology.prototype.init = function(logger, _Client) {
 
 // socket: new client object (netsblox websocket)
 NetworkTopology.prototype.onConnect = function(socket, uuid) {
-    let client = this._sockets.findClientByID(uuid);
+    let client = this._clients.withUuid(uuid);
     if (client) {
         client.reconnect(socket);
     } else {
         client = new Client(this._logger, socket, uuid);
-        this._sockets.addClient(client);
+        this._clients.add(client);
     }
-    this._logger.trace(`client (re)connected ${client.toString()} total: ${this._sockets.length}`);
+    this._logger.trace(`client (re)connected ${client.toString()} total: ${this._clients.count()}`);
+    // TODO: add event listener?
     return client;
 };
 
 // input: client object (netsblox websocket)
 NetworkTopology.prototype.onDisconnect = function(client) {
-    this._logger.trace(`client disconnected ${client.toString()} total: ${this._sockets.length}`);
-    let isClientActive = this._sockets.isClientActive(client);
+    this._logger.trace(`client disconnected ${client.toString()} total: ${this._clients.count()}`);
+    let isClientActive = this._clients.contains(client);
     if (isClientActive) {
-        this._sockets.removeClient(client);
+        this._clients.remove(client);
         const {projectId, roleId} = client;
         if (projectId && roleId) {
             this.onClientLeave(projectId, roleId);
@@ -82,19 +57,17 @@ NetworkTopology.prototype.onDisconnect = function(client) {
 };
 
 NetworkTopology.prototype.getClient = function(uuid) {
-    return this._sockets.find(socket => socket.uuid === uuid);
+    return this._clients.withUuid(uuid);
 };
 
 NetworkTopology.prototype.getClientsAt = function(projectId, roleId) {
     projectId = projectId && projectId.toString();
-    return this._sockets.filter(
-        socket => socket.projectId === projectId && socket.roleId === roleId
-    );
+    return this._clients.at(projectId, roleId);
 };
 
 NetworkTopology.prototype.getClientsAtProject = function(projectId) {
     projectId = projectId && projectId.toString();
-    return this._sockets.filter(socket => socket.projectId === projectId);
+    return this._clients.atProject(projectId);
 };
 
 NetworkTopology.prototype.isProjectActive = function(projectId, skipId) {
@@ -205,26 +178,16 @@ NetworkTopology.prototype.onRoleEmpty = async function(projectId, roleId) {
 };
 
 NetworkTopology.prototype.clients = function() {
-    return this._sockets.slice();
+    return this._clients.toArray();
 };
 
 NetworkTopology.prototype.getClientsWithUsername = function(username) {
-    var uuids = Object.keys(this._sockets),
-        sockets = [],
-        socket;
-
-    for (var i = uuids.length; i--;) {
-        socket = this._sockets[uuids[i]];
-        if (socket.username === username) {
-            sockets.push(socket);
-        }
-    }
-    return sockets;
+    return this._clients.withUsername(username);
 };
 
 NetworkTopology.prototype.startClientCheckInterval = async function(duration=Client.HEARTBEAT_INTERVAL) {
     while (true) {
-        this.checkClients(this._sockets);
+        this.checkClients(this.clients());
         await utils.sleep(duration);
     }
 };

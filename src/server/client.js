@@ -25,9 +25,11 @@ const Projects = require('./storage/projects');
 const NetsBloxAddress = require('./netsblox-address');
 const NetworkTopology = require('./network-topology');
 const {RequestError} = require('./api/core/errors');
+const EventEmitter = require('events');
 
-class Client {
+class Client extends EventEmitter {
     constructor (logger, websocket, uuid) {
+        super();
         this.uuid = uuid;
         this._logger = logger.fork(uuid);
 
@@ -41,7 +43,6 @@ class Client {
         this.nextHeartbeat = null;
         this.reconnect(websocket);
 
-        this.onclose = [];
         this._initialize();
 
         this._logger.trace('created');
@@ -165,8 +166,6 @@ class Client {
         if (this.nextHeartbeat) {
             clearTimeout(this.nextHeartbeat);
         }
-        this.onclose.forEach(fn => fn.call(this));
-        this.onclose = [];  // ensure no double-calling of close
         this.onClose(err);
     }
 
@@ -376,11 +375,16 @@ class Client {
         this.send({type: 'request-actions-complete'});
     }
 
-    setState(projectId, roleId, username) {
-        this.projectId = projectId && projectId.toString();
-        this.roleId = roleId || this.roleId;
-        this.username = username || this.uuid;
+    setState(projectId, roleId=this.roleId, username=this.uuid) {
+        const oldProjectId = this.projectId;
+        const oldRoleId = this.roleId;
+        projectId = projectId && projectId.toString();
+        this.projectId = projectId;
+        this.roleId = roleId;
+
+        this.username = username;
         this.loggedIn = Utils.isSocketUuid(this.username);
+        this.emit('update', oldProjectId, oldRoleId, projectId, roleId);
     }
 
     toString() {
