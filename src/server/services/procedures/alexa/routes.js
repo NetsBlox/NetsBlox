@@ -43,7 +43,7 @@ const SendMessageIntentHandler = {
     },
     async handle(handlerInput) {
         const projectName = Alexa.getSlotValue(handlerInput.requestEnvelope, "project");
-        const speechText = 'Sending message to ' + projectName;
+        const message = Alexa.getSlotValue(handlerInput.requestEnvelope, "message");
 
         devLogger.log("Handling sending message intent");
         const address = projectName + "@tabithalee";
@@ -56,13 +56,12 @@ const SendMessageIntentHandler = {
         if (resolvedAddr) {
             devLogger.log("Sending message to " + address);
             const client = new RemoteClient(resolvedAddr.projectId);
-            await client.sendMessageToRoom(messageType, speechText);
-            // TODO: get a response from the netsblox client?
+            await client.sendMessageToRoom(messageType, message);
             devLogger.log("Message sent to " + address);
         }
 
         return handlerInput.responseBuilder
-            .speak(speechText)
+            .speak("Message '" + message + "' sent to " + address)
             .withSimpleCard('Message sent', speechText)
             .withShouldEndSession(false)
             .getResponse();
