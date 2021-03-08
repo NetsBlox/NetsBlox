@@ -50,9 +50,6 @@ class ClientRegistry {
 
     contains(client) {
         const myClient = this.withUuid(client.uuid);
-        if (myClient !== client) {
-            // TODO
-        }
         return !!myClient;
     }
 
@@ -61,12 +58,14 @@ class ClientRegistry {
     }
 
     _cleanUpEmptyRecords(projectId, roleId) {
-        const clients = this._clientsByProjectRole[projectId][roleId];
-        if (clients.length === 0) {
-            delete this._clientsByProjectRole[projectId][roleId];
-            const roleCount = Object.keys(this._clientsByProjectRole[projectId]).length;
-            if (roleCount === 0) {
-                delete this._clientsByProjectRole[projectId];
+        if (this._clientsByProjectRole[projectId]) {
+            const clients = this._at(projectId, roleId);
+            if (clients.length === 0) {
+                delete this._clientsByProjectRole[projectId][roleId];
+                const roleCount = Object.keys(this._clientsByProjectRole[projectId] || {}).length;
+                if (roleCount === 0) {
+                    delete this._clientsByProjectRole[projectId];
+                }
             }
         }
     }

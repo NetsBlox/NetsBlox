@@ -36,7 +36,6 @@ NetworkTopology.prototype.onConnect = function(socket, uuid) {
         this._clients.add(client);
     }
     this._logger.trace(`client (re)connected ${client.toString()} total: ${this._clients.count()}`);
-    // TODO: add event listener?
     return client;
 };
 
