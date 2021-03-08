@@ -30,9 +30,13 @@ class ClientRegistry {
     }
 
     at(projectId, roleId) {
+        return this._at(projectId, roleId).slice();
+    }
+
+    _at(projectId, roleId) {
         const roleOccupants = this._clientsByProjectRole[projectId] || {};
         const occupants = roleOccupants[roleId] || [];
-        return occupants.slice();
+        return occupants;
     }
 
     atProject(projectId) {
@@ -95,7 +99,7 @@ class ClientRegistry {
         if (!projectId || !roleId) {
             return;
         }
-        const clients = this._clientsByProjectRole[projectId][roleId];
+        const clients = this._at(projectId, roleId);
         const index = clients.indexOf(client);
         if (index > -1) {
             clients.splice(index, 1);
