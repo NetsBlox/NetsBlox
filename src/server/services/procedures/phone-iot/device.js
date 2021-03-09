@@ -27,6 +27,7 @@ const common = require('./common');
 // m - microphone level
 // O - orientation calculator
 // P - proximity
+// Q - sensor packet
 // R - rotation vector
 // r - game rotation vector
 // S - step counter
@@ -100,7 +101,10 @@ const Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.guiIdToEvent = {}; // Map<GUI ID, Event ID>
     this.guiListeners = {}; // Map<ClientID, Socket>
 
-    this.joystickUpdateCounts = {}; // Map<GUI ID, time index>
+    this.sensorToListeners = {}; // Map<SensorID, Map<ClientID, Socket>>
+
+    this.joystickUpdateTimestamps = {}; // Map<GUI ID, time index>
+    this.sensorPacketTimestamp = -1; // timestamp of last sensor packet
 
     this.controlCount = 0; // counter used to generate unique custom control ids
 };
@@ -302,7 +306,7 @@ Device.prototype.clearControls = async function (device, args, clientId) {
     throwIfErr(await response);
 
     this.controlCount = 0; // we can safely reset this to zero and reuse old ids
-    this.joystickUpdateCounts = {}; // discard all the old joystick data
+    this.joystickUpdateTimestamps = {}; // discard all the old joystick data
 };
 Device.prototype.removeControl = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('removecontrol', clientId);
@@ -315,7 +319,7 @@ Device.prototype.removeControl = async function (device, args, clientId) {
 
     throwIfErr(await response);
 
-    delete this.joystickUpdateCounts[args[0]]; // discard any joystick data relating to this id
+    delete this.joystickUpdateTimestamps[args[0]]; // discard any joystick data relating to this id
 };
 Device.prototype.addLabel = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addlabel', clientId);
@@ -370,13 +374,14 @@ Device.prototype.addImageDisplay = async function (device, args, clientId) {
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(25);
+    const message = Buffer.alloc(26);
     message.write('U', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
     message.writeFloatBE(args[1], 13);
     message.writeFloatBE(args[2], 17);
     message.writeFloatBE(args[3], 21);
+    message[25] = opts.readonly ? 1 : 0;
     this.sendToDevice(Buffer.concat([message, idbuf]));
     
     throwIfErr(await response);
@@ -390,7 +395,7 @@ Device.prototype.addTextField = async function (device, args, clientId) {
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(34);
+    const message = Buffer.alloc(35);
     message.write('T', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
@@ -399,7 +404,8 @@ Device.prototype.addTextField = async function (device, args, clientId) {
     message.writeFloatBE(args[3], 21);
     message.writeInt32BE(opts.color, 25);
     message.writeInt32BE(opts.textColor, 29);
-    message[33] = idbuf.length;
+    message[33] = opts.readonly ? 1 : 0;
+    message[34] = idbuf.length;
 
     const text = Buffer.from(opts.text, 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
@@ -808,6 +814,62 @@ Device.prototype._sendSensorResult = function(name, sensorName, message) {
     }
 };
 
+const ORDERED_SENSOR_TYPES = [
+    'accelerometer',
+    'gravity',
+    'linear acceleration',
+    'gyroscope',
+    'rotation vector',
+    'game rotation vector',
+    'magnetic field',
+    'sound',
+    'proximity',
+    'step counter',
+    'light',
+    'location',
+    'orientation',
+];
+Device.prototype._parseSensorPacket = function (message, pos, stop) {
+    const res = {};
+    for (const sensor of ORDERED_SENSOR_TYPES) {
+        if (pos >= stop) {
+            logger.log('invalid sensor packet - missing items');
+            return {};
+        }
+        const len = message[pos++];
+        if (len === 0) continue;
+        if (pos + len * 8 > stop) {
+            logger.log('invalid sensor packet - missing data');
+            return {};
+        }
+
+        const vals = [];
+        for (let i = 0; i < len; ++i, pos += 8) {
+            vals.push(message.readDoubleBE(pos));
+        }
+
+        const packed = common.SENSOR_PACKERS[sensor](vals);
+        packed['device'] = this.mac_addr;
+        res[sensor] = packed;
+    }
+    return res;
+};
+Device.prototype._sendSensorPacketUpdates = function (packet) {
+    for (const sensor in packet) {
+        const content = packet[sensor];
+        const listeners = this.sensorToListeners[sensor] || {};
+        for (const listener in listeners) {
+            const socket = listeners[listener];
+            try {
+                socket.sendMessage(sensor, content);
+            }
+            catch (ex) {
+                this._logger.log(ex);
+            }
+        }
+    }
+};
+
 // used for handling incoming message from the device
 Device.prototype.onMessage = function (message) {
     if (message.length < 11) {
@@ -830,6 +892,16 @@ Device.prototype.onMessage = function (message) {
             const rsp = Buffer.alloc(1);
             rsp.write('I', 0, 1);
             this.sendToDevice(rsp);
+        }
+    }
+    else if (command === 'Q') {
+        if (message.length >= 15) {
+            const timestamp = message.readInt32BE(11);
+            if (timestamp > this.sensorPacketTimestamp) {
+                this.sensorPacketTimestamp = timestamp;
+                const packet = this._parseSensorPacket(message, 15, message.length);
+                this._sendSensorPacketUpdates(packet);
+            }
         }
     }
     else if (command === 'a') this._sendVoidResult('auth', message, 'failed to auth');
@@ -864,8 +936,8 @@ Device.prototype.onMessage = function (message) {
         if (message.length >= 23) {
             const id = message.toString('utf8', 23);
             const time = message.readInt32BE(11); // check the time index so we don't send events out of order
-            if (!(time < this.joystickUpdateCounts[id])) { // this way we include if it's undefined (in which case we set it
-                this.joystickUpdateCounts[id] = time;
+            if (!(time < this.joystickUpdateTimestamps[id])) { // this way we include if it's undefined (in which case we set it
+                this.joystickUpdateTimestamps[id] = time;
                 this._fireRawCustomEvent(id, { id, x: message.readFloatBE(15), y: message.readFloatBE(19) });
             }
         }

@@ -1,37 +1,37 @@
 const jimp = require('jimp');
 const logger = require('../utils/logger')('PhoneIoT-common');
 
-const utils = {};
+const common = {};
 
-utils.dotProduct = function(a, b) {
+common.dotProduct = function(a, b) {
     let total = 0;
     for (var i = 0; i < a.length; ++i) {
         total += a[i] * b[i];
     }
     return total;
 }
-utils.magnitude = function(a) {
-    return Math.sqrt(utils.dotProduct(a, a));
+common.magnitude = function(a) {
+    return Math.sqrt(common.dotProduct(a, a));
 }
-utils.scale = function(a, f) {
+common.scale = function(a, f) {
     return a.map(x => x * f);
 }
-utils.normalize = function(a) {
-    return utils.scale(a, 1.0 / utils.magnitude(a));
+common.normalize = function(a) {
+    return common.scale(a, 1.0 / common.magnitude(a));
 }
-utils.angle = function(a, b) {
-    return Math.acos(utils.dotProduct(a, b) / (utils.magnitude(a) * utils.magnitude(b)));
+common.angle = function(a, b) {
+    return Math.acos(common.dotProduct(a, b) / (common.magnitude(a) * common.magnitude(b)));
 }
 
-utils.closestVector = function(val, def) {
+common.closestVector = function(val, def) {
     let best = [Infinity, undefined];
     for (const dir of def) {
-        const t = utils.angle(val, dir[0]);
+        const t = common.angle(val, dir[0]);
         if (t < best[0]) best = [t, dir[1]];
     }
     return best[1];
 }
-utils.closestScalar = function(val, def) {
+common.closestScalar = function(val, def) {
     let best = [Infinity, undefined];
     for (const dir of def) {
         const t = Math.abs(val - dir[0]);
@@ -41,7 +41,7 @@ utils.closestScalar = function(val, def) {
 }
 
 // parses a SalIO password and simplifies the error message (if any)
-utils.gracefulPasswordParse = function(password) {
+common.gracefulPasswordParse = function(password) {
     let res = undefined;
     try {
         res = BigInt('0x' + password);
@@ -54,7 +54,7 @@ utils.gracefulPasswordParse = function(password) {
 
 // given some image source, attempts to convert it into a buffer for sending over UDP.
 // if the image type is not recognized, throws an error.
-utils.prepImageToSend = async function(raw) {
+common.prepImageToSend = async function(raw) {
     if (!raw) throw Error('input was not an image');
 
     let matches = raw.match(/^\s*\<costume .*image="data:image\/png;base64,([^"]+)".*\/\>\s*$/);
@@ -77,15 +77,15 @@ utils.prepImageToSend = async function(raw) {
     throw Error('unsupported image type');
 };
 
-utils.parseBool = function (val) {
-    const lower = val.toLowerCase();
+common.parseBool = function (val) {
+    const lower = val.toString().toLowerCase();
     if (lower === 'true' || lower === 'yes') return true;
     if (lower === 'false' || lower === 'no') return false;
     throw Error(`failed to parse bool: ${val}`);
 };
 
 // given an options dict and a rules dict, generates a sanitized options dict.
-utils.parseOptions = function (opts, rules) {
+common.parseOptions = function (opts, rules) {
     const res = {};
     for (const key in opts) {
         const value = opts[key];
@@ -99,4 +99,22 @@ utils.parseOptions = function (opts, rules) {
     return res;
 };
 
-module.exports = utils;
+function packXYZ(vals) { return { x: vals[0], y: vals[1], z: vals[2] }; };
+function packXYZW(vals) { return { x: vals[0], y: vals[1], z: vals[2], w: vals[2] }; };
+common.SENSOR_PACKERS = {
+    'gravity': packXYZ,
+    'gyroscope': packXYZ,
+    'orientation': packXYZ,
+    'accelerometer': packXYZ,
+    'magnetic field': packXYZ,
+    'rotation vector': packXYZW,
+    'linear acceleration': packXYZ,
+    'game rotation vector': packXYZ,
+    'light': vals => { return { value: vals[0] }; },
+    'sound': vals => { return { volume: vals[0] }; },
+    'proximity': vals => { return { distance: vals[0] }; },
+    'step counter': vals => { return { count: vals[0] }; },
+    'location': vals => { return { latitude: vals[0], longitude: vals[1], bearing: vals[2], altitude: vals[3] }; },
+};
+
+module.exports = common;
