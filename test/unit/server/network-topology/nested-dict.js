@@ -1,6 +1,6 @@
 const ROOT_DIR = '../../../../';
 const utils = require(ROOT_DIR + 'test/assets/utils');
-describe.only(utils.suiteName(__filename), function() {
+describe(utils.suiteName(__filename), function() {
     const NestedDict = utils.reqSrc('network-topology/nested-dict');
     const assert = require('assert').strict;
     let dict;
