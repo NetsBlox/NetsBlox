@@ -86,9 +86,11 @@ class ClientRegistry {
         const index = clients.indexOf(client);
         if (index > -1) {
             clients.splice(index, 1);
-        }
 
-        this._clientsByProjectRole.delete(projectId, roleId);
+            if (clients.length === 0) {
+                this._clientsByProjectRole.delete(projectId, roleId);
+            }
+        }
     }
 
     _addToRoleRecords(client) {
@@ -112,9 +114,9 @@ class ClientRegistry {
         const index = clients.indexOf(client);
         if (index > -1) {
             clients.splice(index, 1);
-        }
-        if (clients.length === 0) {
-            this._clientsByUsername.delete(username);
+            if (clients.length === 0) {
+                this._clientsByUsername.delete(username);
+            }
         }
     }
 
