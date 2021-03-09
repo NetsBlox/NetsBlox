@@ -1,10 +1,12 @@
 // active client list
+const NestedDict = require('./nested-dict');
+
 class ClientRegistry {
 
     constructor() {
         this._clientsByUuid = {};
-        this._clientsByUsername = {};
-        this._clientsByProjectRole = {};
+        this._clientsByUsername = new NestedDict();
+        this._clientsByProjectRole = new NestedDict();
         this._eventHandlers = {};
     }
 
@@ -26,21 +28,16 @@ class ClientRegistry {
     }
 
     withUsername(name) {
-        return this._clientsByUsername[name] || [];
+        return this._clientsByUsername.getOr(name, []);
     }
 
     at(projectId, roleId) {
-        return this._at(projectId, roleId).slice();
-    }
-
-    _at(projectId, roleId) {
-        const roleOccupants = this._clientsByProjectRole[projectId] || {};
-        const occupants = roleOccupants[roleId] || [];
-        return occupants;
+        const roleOccupants = this._clientsByProjectRole.getOr(projectId, roleId, []);
+        return roleOccupants.slice();
     }
 
     atProject(projectId) {
-        const roleOccupants = this._clientsByProjectRole[projectId] || {};
+        const roleOccupants = this._clientsByProjectRole.getOr(projectId, {});
         return Object.values(roleOccupants).flat();
     }
 
@@ -55,19 +52,6 @@ class ClientRegistry {
 
     toArray() {
         return Object.values(this._clientsByUuid);
-    }
-
-    _cleanUpEmptyRecords(projectId, roleId) {
-        if (this._clientsByProjectRole[projectId]) {
-            const clients = this._at(projectId, roleId);
-            if (clients.length === 0) {
-                delete this._clientsByProjectRole[projectId][roleId];
-                const roleCount = Object.keys(this._clientsByProjectRole[projectId] || {}).length;
-                if (roleCount === 0) {
-                    delete this._clientsByProjectRole[projectId];
-                }
-            }
-        }
     }
 
     _addEventHandlers(client) {
@@ -98,13 +82,13 @@ class ClientRegistry {
         if (!projectId || !roleId) {
             return;
         }
-        const clients = this._at(projectId, roleId);
+        const clients = this._clientsByProjectRole.getOr(projectId, roleId, []);
         const index = clients.indexOf(client);
         if (index > -1) {
             clients.splice(index, 1);
         }
 
-        this._cleanUpEmptyRecords(projectId, roleId);
+        this._clientsByProjectRole.delete(projectId, roleId);
     }
 
     _addToRoleRecords(client) {
@@ -112,48 +96,30 @@ class ClientRegistry {
             return;
         }
 
-        this._ensureKeyExist(
-            this._clientsByProjectRole,
-            [client.projectId, client.roleId],
-            []
-        );
-        this._clientsByProjectRole[client.projectId][client.roleId].push(client);
+        const clients = this._clientsByProjectRole.getOrSet(client.projectId, client.roleId, []);
+        clients.push(client);
     }
 
     _addToUsernameRecords(client) {
         if (client.loggedIn) {
-            this._ensureKeyExist(this._clientsByUsername, [client.username], []);
-            this._clientsByUsername[client.username].push(client);
+            const clients = this._clientsByUsername.getOrSet(client.username, []);
+            clients.push(client);
         }
     }
 
     _removeFromUsernameRecords(client, username=client.username) {
-        const clients = this._clientsByUsername[username] || [];
+        const clients = this._clientsByUsername.getOrSet(username, []);
         const index = clients.indexOf(client);
         if (index > -1) {
             clients.splice(index, 1);
         }
         if (clients.length === 0) {
-            delete this._clientsByUsername[username];
+            this._clientsByUsername.delete(username);
         }
     }
 
     _hasNoNetworkState(client) {
         return !client.projectId || !client.roleId;
-    }
-
-    _ensureKeyExist(dict, keys, defValue) {
-        const lastKey = keys.pop();
-        const subDict = keys.reduce((dict, k) => {
-            if (!dict[k]) {
-                dict[k] = {};
-            }
-            return dict[k];
-        }, dict);
-
-        if (!subDict[lastKey]) {
-            subDict[lastKey] = defValue;
-        }
     }
 }
 
