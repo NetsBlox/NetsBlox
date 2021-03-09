@@ -43,12 +43,14 @@ const SendMessageIntentHandler = {
     },
     async handle(handlerInput) {
         const projectName = Alexa.getSlotValue(handlerInput.requestEnvelope, "project");
-        const message = Alexa.getSlotValue(handlerInput.requestEnvelope, "message");
+        const content = {
+            message: Alexa.getSlotValue(handlerInput.requestEnvelope, "message"),
+        };
 
         devLogger.log("Handling sending message intent");
         const address = projectName + "@tabithalee";
         const messageType = "Alexa";
-        const speechText = "Message '" + message + "' sent to " + address;
+        const speechText = "Message '" + content.message + "' sent to " + address;
         const resolvedAddr = await NetsBloxAddress.new(address);
             //.catch(err => {
                 //res.status(400).send(err.message);
@@ -56,8 +58,9 @@ const SendMessageIntentHandler = {
 
         if (resolvedAddr) {
             devLogger.log("Sending message to " + address);
+            devLogger.log("Message is " + content.message);
             const client = new RemoteClient(resolvedAddr.projectId);
-            await client.sendMessageToRoom(messageType, message);
+            await client.sendMessageToRoom(messageType, content);
             devLogger.log("Message sent to " + address);
         }
 
