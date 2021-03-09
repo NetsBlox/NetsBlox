@@ -177,7 +177,6 @@ describe(utils.suiteName(__filename), function() {
         after(() => Client.resetHeartBeatInterval());
 
         it('should detect and close broken connections', function(done) {
-            // Create a socket
             const ws = new MockWebSocket();
             const client = new Client(logger, ws);
 
