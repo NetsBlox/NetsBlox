@@ -204,16 +204,12 @@ class Client extends EventEmitter {
         } else if (this.isSocketDead()) {
             this.connError = new Error('Websocket is broken');
             this._socket.terminate();
-        } else {
-            if (this.nextHeartbeatCheck) {
-                clearTimeout(this.nextHeartbeatCheck);
-            }
         }
     }
 
     keepAlive() {
         let sinceLastMsg = Date.now() - this.lastSocketActivity;
-        if (sinceLastMsg >= Client.HEARTBEAT_INTERVAL) {
+        if (sinceLastMsg >= Client.HEARTBEAT_INTERVAL && !this.isWaitingForReconnect) {
             this.ping();
             sinceLastMsg = 0;
         }
