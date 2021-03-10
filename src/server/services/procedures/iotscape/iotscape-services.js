@@ -280,10 +280,12 @@ IoTScapeServices.start = function(socket){
         for (const service of IoTScapeServices.getServices()) {
             IoTScapeServices.getDevices(service).forEach(async (device) => {
                 logger.log(`heartbeat ${service}:${device}`);
-                let alive = await IoTScapeServices.call(service, 'heartbeat', device);
                 
-                // Remove device if it didn't respond
-                if(!alive) {
+                try {
+                    // Send heartbeat request, will timeout if device does not respond
+                    await IoTScapeServices.call(service, 'heartbeat', device);
+                } catch(e) {
+                    // Remove device if it didn't respond
                     logger.log(`${service}:${device} did not respond to heartbeat, removing from active devices`);
                     IoTScapeServices.removeDevice(service, device);
                 }
