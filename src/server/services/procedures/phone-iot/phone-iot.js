@@ -222,7 +222,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} width Width of the button (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the button (percentage).
      * @param {string=} text text to display on the button (default empty).
-     * @param {Object=} options Additional options: id, event, style, color, textColor
+     * @param {Object=} options Additional options: id, event, style, color, textColor, landscape, fontSize
      * @returns {string} id of the created button
      */
     PhoneIoT.prototype.addButton = function (device, x, y, width, height, text='', options) {
@@ -243,6 +243,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             event: { parse: types.parse.String },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(255, 255, 255) },
+            landscape: { parse: common.parseBool, default: false },
+            fontSize: { parse: common.parseFontSize, default: 1.0 },
         });
         return this._passToDevice('addButton', arguments);
     };
@@ -302,7 +304,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the joystick (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the joystick (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the joystick (percentage).
-     * @param {Object=} options Additional options: id, event, color
+     * @param {Object=} options Additional options: id, event, color, landscape
      * @returns {string} id of the created button
      */
     PhoneIoT.prototype.addJoystick = function (device, x, y, width, options) {
@@ -310,6 +312,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
+            landscape: { parse: common.parseBool, default: false },
         });
         return this._passToDevice('addJoystick', arguments);
     };

@@ -1,5 +1,6 @@
 const jimp = require('jimp');
 const logger = require('../utils/logger')('PhoneIoT-common');
+const types = require('../../input-types');
 
 const common = {};
 
@@ -82,6 +83,9 @@ common.parseBool = function (val) {
     if (lower === 'true' || lower === 'yes') return true;
     if (lower === 'false' || lower === 'no') return false;
     throw Error(`failed to parse bool: ${val}`);
+};
+common.parseFontSize = function (val) {
+    return types.parse.BoundedNumber(val, [0.1, 10.0]);
 };
 
 // given an options dict and a rules dict, generates a sanitized options dict.

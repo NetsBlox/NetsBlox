@@ -348,7 +348,7 @@ Device.prototype.addButton = async function (device, args, clientId) {
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(35);
+    const message = Buffer.alloc(40);
     message.write('B', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
@@ -357,8 +357,10 @@ Device.prototype.addButton = async function (device, args, clientId) {
     message.writeFloatBE(args[3], 21);
     message.writeInt32BE(opts.color, 25);
     message.writeInt32BE(opts.textColor, 29);
-    message[33] = opts.style;
-    message[34] = idbuf.length;
+    message.writeFloatBE(opts.fontSize, 33);
+    message[37] = opts.style;
+    message[38] = opts.landscape ? 1 : 0;
+    message[39] = idbuf.length;
 
     const text = Buffer.from(args[4], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
@@ -421,13 +423,14 @@ Device.prototype.addJoystick = async function (device, args, clientId) {
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(25);
+    const message = Buffer.alloc(26);
     message.write('j', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
     message.writeFloatBE(args[1], 13);
     message.writeFloatBE(args[2], 17);
     message.writeInt32BE(opts.color, 21);
+    message[25] = opts.landscape ? 1 : 0;
 
     this.sendToDevice(Buffer.concat([message, idbuf]));
     
