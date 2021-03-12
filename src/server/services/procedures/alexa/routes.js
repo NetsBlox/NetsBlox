@@ -48,6 +48,10 @@ const SendMessageIntentHandler = {
         };
 
         devLogger.log("Handling sending message intent");
+        const token = handlerInput.requestEnvelope.context.System.user.accessToken;
+
+        devLogger.log("token: " + token);
+
         const address = projectName + "@tabithalee";
         const messageType = "Alexa";
         const speechText = "Message '" + content.message + "' sent to " + address;
