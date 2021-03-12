@@ -50,7 +50,7 @@ const SendMessageIntentHandler = {
         devLogger.log("Handling sending message intent");
         const token = handlerInput.requestEnvelope.context.System.user.accessToken;
 
-        devLogger.log("token: " + token);
+        devLogger.log("token as provided by Alexa: " + token);
 
         const address = projectName + "@tabithalee";
         const messageType = "Alexa";
@@ -207,9 +207,9 @@ if (require.main === module) {
         // The following two lines are a workaround to bypass authentication
         // (only to make development more convenient) and should be removed
         // before this is actually used.
-        devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
+        /*devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
         req.token = {username: 'tabithalee'};  // FIXME: REMOVE
-        return next();  // FIXME: REMOVE!
+        return next();  // FIXME: REMOVE!*/
 
         const authCode = req.get('Authorization');
         if (!authCode) {
@@ -218,6 +218,8 @@ if (require.main === module) {
 
         const [/*prefix*/, tokenID] = authCode.split(' ');
         const token = await OAuth.getToken(tokenID);
+
+        devLogger.log("oauth token: " + token);
         req.token = token;
         return next();
     }));
