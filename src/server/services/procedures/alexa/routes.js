@@ -207,17 +207,19 @@ if (require.main === module) {
         // The following two lines are a workaround to bypass authentication
         // (only to make development more convenient) and should be removed
         // before this is actually used.
-        /*devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
+        devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
         req.token = {username: 'tabithalee'};  // FIXME: REMOVE
-        return next();  // FIXME: REMOVE!*/
+        return next();  // FIXME: REMOVE!
 
         const authCode = req.get('Authorization');
         if (!authCode) {
+            devLogger.log("401 Error");
             return res.status(401).send('Access denied.');  // TODO: better error message
         }
 
         const [/*prefix*/, tokenID] = authCode.split(' ');
         const token = await OAuth.getToken(tokenID);
+        devLogger.log("Obtained token");
 
         //devLogger.log("oauth token: " + token.access_token);
         req.token = token;
