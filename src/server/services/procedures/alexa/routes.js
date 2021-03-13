@@ -219,7 +219,7 @@ if (require.main === module) {
         const [/*prefix*/, tokenID] = authCode.split(' ');
         const token = await OAuth.getToken(tokenID);
 
-        devLogger.log("oauth token: " + token.access_token);
+        //devLogger.log("oauth token: " + token.access_token);
         req.token = token;
         return next();
     }));
