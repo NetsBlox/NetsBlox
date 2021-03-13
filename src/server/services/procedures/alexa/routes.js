@@ -207,10 +207,9 @@ if (require.main === module) {
         // The following two lines are a workaround to bypass authentication
         // (only to make development more convenient) and should be removed
         // before this is actually used.
-        devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
+        /*devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
         req.token = {username: 'tabithalee'};  // FIXME: REMOVE
-        devLogger.log("netsblox-side token: " + req.token);
-        return next();  // FIXME: REMOVE!
+        return next();  // FIXME: REMOVE!*/
 
         const authCode = req.get('Authorization');
         if (!authCode) {
@@ -220,7 +219,7 @@ if (require.main === module) {
         const [/*prefix*/, tokenID] = authCode.split(' ');
         const token = await OAuth.getToken(tokenID);
 
-        devLogger.log("oauth token: " + token);
+        devLogger.log("oauth token: " + token.access_token);
         req.token = token;
         return next();
     }));
