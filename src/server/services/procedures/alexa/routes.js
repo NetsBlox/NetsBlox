@@ -213,9 +213,9 @@ if (require.main === module) {
         // The following two lines are a workaround to bypass authentication
         // (only to make development more convenient) and should be removed
         // before this is actually used.
-        //devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
-        //req.token = {username: 'tabithalee'};  // FIXME: REMOVE
-        //return next();  // FIXME: REMOVE!
+        devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
+        req.token = {username: 'tabithalee'};  // FIXME: REMOVE
+        return next();  // FIXME: REMOVE!
 
         const authCode = req.get('Authorization');
         devLogger.log("Authorization header: " + authCode);
