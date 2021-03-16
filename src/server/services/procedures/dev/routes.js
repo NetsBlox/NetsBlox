@@ -5,7 +5,7 @@ const RemoteClient = require('../../remote-client');
 const bodyParser = require('body-parser');
 
 router.post(
-    '/services/dev/send/',
+    '/send',
     bodyParser.json({limit: '1mb'}),
     async (req, res) => {
         const {address, messageType, data} = req.body;
