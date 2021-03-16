@@ -341,16 +341,18 @@ function loadRoutes(logger) {
 
     // load service routes
     const serviceRoutes = fs.readdirSync(path.join(__dirname, 'services', 'procedures'))
-        .filter(serviceDir => { // check if it has a routes file
-            return fs.readdirSync(path.join(__dirname, 'services','procedures', serviceDir))
-                .includes('routes.js');
+        .map(serviceDir => { // check if it has a routes file
+            const absServiceDir = path.join(__dirname, 'services','procedures', serviceDir);
+            const hasRoutes = fs.readdirSync(absServiceDir).includes('routes.js');
+            if (hasRoutes) {
+                const router = require(`./services/procedures/${serviceDir}/routes.js`);
+                if (Array.isArray(router)) {
+                    return router;
+                }
+            }
         })
-        .map(serviceDir => `./services/procedures/${serviceDir}/routes.js`)
-        .flatMap(filePath => {
-            logger.trace('about to load service route ' + filePath);
-            // TODO: mount these on /services/routes/<service name>?
-            return require(filePath);
-        });
+        .filter(routes => routes)
+        .flat();
 
     const routes = [...serverRoutes, ...serviceRoutes];
 
