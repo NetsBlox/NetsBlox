@@ -213,21 +213,26 @@ if (require.main === module) {
         // The following two lines are a workaround to bypass authentication
         // (only to make development more convenient) and should be removed
         // before this is actually used.
-        devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
-        req.token = {username: 'tabithalee'};  // FIXME: REMOVE
-        return next();  // FIXME: REMOVE!
+        //devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
+        //req.token = {username: 'tabithalee'};  // FIXME: REMOVE
+        //return next();  // FIXME: REMOVE!
 
         const authCode = req.get('Authorization');
+        devLogger.log("Authorization header: " + authCode);
         if (!authCode) {
             devLogger.log("401 Error");
             return res.status(401).send('Access denied.');  // TODO: better error message
         }
 
         const [/*prefix*/, tokenID] = authCode.split(' ');
+        devLogger.log("token ID: " + tokenID);
         const token = await OAuth.getToken(tokenID);
-        devLogger.log("Obtained token");
-
-        //devLogger.log("oauth token: " + token.access_token);
+        // "token" contains:
+        //   - username
+        //   - client ID (referring to the Alexa app in this case) (clientId)
+        //   - creation time (createdAt)
+        //   - token ID (_id)
+        devLogger.log("oauth token: " + JSON.stringify(token));
         req.token = token;
         return next();
     }));
