@@ -468,10 +468,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Gets a list of the names of all available sensors.
      * These are needed for listenToSensors.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
      * @returns {Array} list of sensor names
      */
-    PhoneIoT.prototype.getSensors = function (device) {
+    PhoneIoT.prototype.getSensors = function () {
         return Object.keys(common.SENSOR_PACKERS);
     };
     /**
