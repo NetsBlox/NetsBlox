@@ -214,33 +214,6 @@ if (require.main === module) {
 } else {
     const router = express();
     router.get('/ping', (req, res) => res.send('pong'));
-    router.use('/', handleErrors(async (req, res, next) => {
-        // The following two lines are a workaround to bypass authentication
-        // (only to make development more convenient) and should be removed
-        // before this is actually used.
-        devLogger.log(`Bypassing authentication and setting user to tabithalee (${req.method})`);
-        req.token = {username: 'tabithalee'};  // FIXME: REMOVE
-        return next();  // FIXME: REMOVE!
-
-        const authCode = req.get('Authorization');
-        devLogger.log("Authorization header: " + authCode);
-        if (!authCode) {
-            devLogger.log("401 Error");
-            return res.status(401).send('Access denied.');  // TODO: better error message
-        }
-
-        const [/*prefix*/, tokenID] = authCode.split(' ');
-        devLogger.log("token ID: " + tokenID);
-        const token = await OAuth.getToken(tokenID);
-        // "token" contains:
-        //   - username
-        //   - client ID (referring to the Alexa app in this case) (clientId)
-        //   - creation time (createdAt)
-        //   - token ID (_id)
-        devLogger.log("oauth token: " + JSON.stringify(token));
-        req.token = token;
-        return next();
-    }));
     router.post('/', adapter.getRequestHandlers());
     router.get('/whoami', (req, res) => res.send(req.token.username));
     devLogger.log('Mounting Alexa routes on NetsBlox');
