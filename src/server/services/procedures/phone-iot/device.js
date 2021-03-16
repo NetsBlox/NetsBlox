@@ -836,13 +836,13 @@ Device.prototype._parseSensorPacket = function (message, pos, stop) {
     const res = {};
     for (const sensor of ORDERED_SENSOR_TYPES) {
         if (pos >= stop) {
-            logger.log('invalid sensor packet - missing items');
+            this._logger.log('invalid sensor packet - missing items');
             return {};
         }
         const len = message[pos++];
         if (len === 0) continue;
         if (pos + len * 8 > stop) {
-            logger.log('invalid sensor packet - missing data');
+            this._logger.log('invalid sensor packet - missing data');
             return {};
         }
 
@@ -898,14 +898,13 @@ Device.prototype.onMessage = function (message) {
         }
     }
     else if (command === 'Q') {
-        if (message.length >= 15) {
-            const timestamp = message.readInt32BE(11);
-            if (timestamp > this.sensorPacketTimestamp) {
-                this.sensorPacketTimestamp = timestamp;
-                const packet = this._parseSensorPacket(message, 15, message.length);
-                this._sendSensorPacketUpdates(packet);
-            }
-        }
+        if (message.length < 15) return;
+        const timestamp = message.readInt32BE(11);
+        if (timestamp <= this.sensorPacketTimestamp) return;
+
+        this.sensorPacketTimestamp = timestamp;
+        const packet = this._parseSensorPacket(message, 15, message.length);
+        this._sendSensorPacketUpdates(packet);
     }
     else if (command === 'a') this._sendVoidResult('auth', message, 'failed to auth');
     else if (command === 'C') this._sendVoidResult('clearcontrols', message, 'failed to clear controls');
@@ -936,31 +935,30 @@ Device.prototype.onMessage = function (message) {
         this._fireRawCustomEvent(id, {id});
     }
     else if (command === 'K') {
-        if (message.length >= 23) {
-            const id = message.toString('utf8', 23);
-            const time = message.readInt32BE(11); // check the time index so we don't send events out of order
-            if (!(time < this.joystickUpdateTimestamps[id])) { // this way we include if it's undefined (in which case we set it
-                this.joystickUpdateTimestamps[id] = time;
-                this._fireRawCustomEvent(id, { id, x: message.readFloatBE(15), y: message.readFloatBE(19) });
-            }
-        }
+        if (message.length < 23) return;
+
+        const id = message.toString('utf8', 23);
+        const time = message.readInt32BE(11); // check the time index so we don't send events out of order
+        if (time < this.joystickUpdateTimestamps[id]) return; // important: allow undefined (in which case we set it)
+
+        this.joystickUpdateTimestamps[id] = time;
+        this._fireRawCustomEvent(id, { id, x: message.readFloatBE(15), y: message.readFloatBE(19) });
     }
     else if (command === 't') {
-        if (message.length >= 12) {
-            const idlen = message[11] & 0xff;
-            if (message.length >= 12 + idlen) {
-                const id = message.toString('utf8', 12, 12 + idlen);
-                const text = message.toString('utf8', 12 + idlen);
-                this._fireRawCustomEvent(id, {id, text});
-            }
-        }
+        if (message.length < 12) return;
+        const idlen = message[11] & 0xff;
+        if (message.length < 12 + idlen) return;
+
+        const id = message.toString('utf8', 12, 12 + idlen);
+        const text = message.toString('utf8', 12 + idlen);
+        this._fireRawCustomEvent(id, {id, text});
     }
     else if (command === 'z') {
-        if (message.length >= 12) {
-            const state = message[11] !== 0;
-            const id = message.toString('utf8', 12, message.length);
-            this._fireRawCustomEvent(id, { id, state });
-        }
+        if (message.length < 12) return;
+
+        const state = message[11] !== 0;
+        const id = message.toString('utf8', 12, message.length);
+        this._fireRawCustomEvent(id, { id, state });
     }
     else if (command === 'W') {
         let state = undefined;
