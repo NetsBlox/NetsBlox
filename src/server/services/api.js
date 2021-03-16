@@ -122,7 +122,6 @@ class ServicesAPI {
             const subrouter = require(routesPath);
             if (Array.isArray(subrouter)) {
                 this.logger.warn(`Routes defined as a list of objects is deprecated. Please update ${name} routes to return an express router.`);
-                console.log(`\n\n--- Routes defined as a list of objects is deprecated. Please update ${name} routes to return an express router.`);
                 return;
             }
             router.use(`/routes/${name}`, subrouter);
