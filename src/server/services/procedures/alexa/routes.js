@@ -52,9 +52,9 @@ const SendMessageIntentHandler = {
 
         devLogger.log("token as provided by Alexa: " + authCode);
         const [/*prefix*/, tokenID] = authCode.split(' ');
-        const token = await OAuth.getToken(tokenID);
+        //const token = await OAuth.getToken(tokenID);
 
-        devLogger.log("Resolved: " + JSON.stringify(token));
+        //devLogger.log("Resolved: " + JSON.stringify(token));
 
         //const username = token.username;
 
