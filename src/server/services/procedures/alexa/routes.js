@@ -168,10 +168,15 @@ const FallbackHandler = {
  * Request Interceptor to log the request sent by Alexa
  */
 const LogRequestInterceptor = {
-    process(handlerInput) {
+    async process(handlerInput) {
         // Log Request
         devLogger.log("==== REQUEST ======");
         devLogger.log(JSON.stringify(handlerInput.requestEnvelope, null, 2));
+
+        const {accessToken} = handlerInput.requestEnvelope.session.user;
+        const token = await OAuth.getToken(accessToken);
+        devLogger.log("Resolved username: " + token.username);
+
     }
 };
 
