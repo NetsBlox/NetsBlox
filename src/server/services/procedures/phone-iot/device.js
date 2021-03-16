@@ -4,7 +4,6 @@ const acl = require('../roboscape/accessControl');
 const PHONE_IOT_MODE = process.env.PHONE_IOT_MODE || 'both';
 const ciphers = require('../roboscape/ciphers');
 const common = require('./common');
-const { definedOrThrow } = require('./common');
 
 // network protocols (UDP unless otherwise stated)
 // A - accelerometer
@@ -13,10 +12,15 @@ const { definedOrThrow } = require('./common');
 // b - button press event
 // C - clear custom controls
 // c - remove custom control
-// D - image snapshot (TCP)
 // G - gravity
 // g - add custom label control
+// H - set text
+// h - get text
 // I - heartbeat
+// i - set image
+// J - get joystick vector
+// j - add joystick
+// K - joystick event
 // L - linear acceleration
 // l - light level
 // M - magnetic field
@@ -28,8 +32,11 @@ const { definedOrThrow } = require('./common');
 // S - step counter
 // T - add custom text field
 // t - text field content
+// U - add custom image box
+// u - image box content
+// v - image box updated
 // W - get toggle state
-// X - location
+// X - location (latlong + bearing + altitude)
 // Y - gyroscope
 // y - add custom radiobutton control
 // Z - add custom checkbox control
@@ -49,26 +56,24 @@ const DIRECTIONS_3D = [
 ];
 const COMPASS_DIRECTIONS_4 = [
     [0, 'N'],
-    [Math.PI / 2, 'E'],
-    [-Math.PI / 2, 'W'],
-    [Math.PI, 'S'],
-    [-Math.PI, 'S'],
+    [90, 'E'],
+    [-90, 'W'],
+    [180, 'S'],
+    [-180, 'S'],
 ];
 const COMPASS_DIRECTIONS_8 = [
     [0, 'N'],
-    [Math.PI / 4, 'NE'],
-    [-Math.PI / 4, 'NW'],
-    [Math.PI / 2, 'E'],
-    [-Math.PI / 2, 'W'],
-    [3 * Math.PI / 4, 'SE'],
-    [-3 * Math.PI / 4, 'SW'],
-    [Math.PI, 'S'],
-    [-Math.PI, 'S'],
+    [45, 'NE'],
+    [-45, 'NW'],
+    [90, 'E'],
+    [-90, 'W'],
+    [135, 'SE'],
+    [-135, 'SW'],
+    [180, 'S'],
+    [-180, 'S'],
 ];
 
-const MAX_ACTION_LISTENERS = 10000;
-
-var Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
+const Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.id = mac_addr;
     this.mac_addr = mac_addr;
     this.ip4_addr = ip4_addr;
@@ -90,8 +95,23 @@ var Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this._logger = getRPCLogger(`PhoneIoT:${mac_addr}`);
     this.server = aServer; // a handle to the udp server for communication with the device
 
+    this.credentials = {}; // Map<ClientID, password>
+
     this.guiIdToEvent = {}; // Map<GUI ID, Event ID>
     this.guiListeners = {}; // Map<ClientID, Socket>
+
+    this.joystickUpdateCounts = {}; // Map<GUI ID, time index>
+
+    this.controlCount = 0; // counter used to generate unique custom control ids
+};
+
+Device.prototype.getPassword = function (clientId) {
+    const pass = this.credentials[clientId];
+    if (pass === undefined) throw Error('no login credentials set for this device');
+    return pass;
+};
+Device.prototype.getNewId = function (opts) {
+    return opts.id || `ctrl-${this.controlCount += 1}`;
 };
 
 Device.prototype.setTotalRate = function (rate) {
@@ -143,7 +163,7 @@ Device.prototype.accepts = function (clientId, seqNum) {
         return false;
     }
 
-    var client = this.clientCounts[clientId];
+    let client = this.clientCounts[clientId];
     if (!client) {
         client = {
             count: 0,
@@ -175,35 +195,29 @@ Device.prototype.accepts = function (clientId, seqNum) {
 
 Device.prototype.heartbeat = function () {
     this.totalCount = 0;
-    for (var id in this.clientCounts) {
-        var client = this.clientCounts[id];
+    for (const id in this.clientCounts) {
+        const client = this.clientCounts[id];
         client.count = 0;
         if (client.penalty > 1) {
             client.count = 0;
             client.penalty -= 1;
-        } else {
-            delete this.clientCounts[id];
         }
+        else delete this.clientCounts[id];
     }
 
     this.heartbeats += 1;
-    if (this.heartbeats >= FORGET_TIME) {
-        return false;
-    }
-    return true;
+    return this.heartbeats <= FORGET_TIME;
 };
-
 Device.prototype.isAlive = function () {
     return this.heartbeats <= 2;
 };
-
 Device.prototype.isMostlyAlive = function () {
     return this.heartbeats <= FORGET_TIME;
 };
 
 Device.prototype.addClientSocket = function (socket) {
     const {clientId} = socket;
-    var i = this.sockets.findIndex(s => s.clientId === clientId);
+    const i = this.sockets.findIndex(s => s.clientId === clientId);
     if (i < 0) {
         this._logger.log('register ' + clientId + ' ' + this.mac_addr);
         this.sockets.push(socket);
@@ -214,7 +228,7 @@ Device.prototype.addClientSocket = function (socket) {
 
 Device.prototype.removeClientSocket = function (socket) {
     const {clientId} = socket;
-    var i = this.sockets.findIndex(s => s.clientId === clientId);
+    const i = this.sockets.findIndex(s => s.clientId === clientId);
     if (i >= 0) {
         this._logger.log('unregister ' + clientId + ' ' + this.mac_addr);
         this.sockets.splice(i, 1);
@@ -235,382 +249,475 @@ Device.prototype.receiveFromDevice = function (msgType, timeout) {
     if (!this.callbacks[msgType]) {
         this.callbacks[msgType] = [];
     }
-    var callbacks = this.callbacks[msgType];
+    const callbacks = this.callbacks[msgType];
 
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
         callbacks.push(resolve);
         setTimeout(function () {
-            var i = callbacks.indexOf(resolve);
-            if (i >= 0) {
-                callbacks.splice(i, 1);
-            }
-            resolve(false);
+            const i = callbacks.indexOf(resolve);
+            if (i >= 0) callbacks.splice(i, 1);
+            reject(Error('response timeout'));
         }, timeout || RESPONSE_TIMEOUT);
     });
 };
 
-Device.prototype.authenticate = async function (device, args) {
-    this._logger.log('authenticate ' + this.mac_addr);
-    const response = this.receiveFromDevice('auth');
+// common function for all rpcs that start a request
+Device.prototype.rpcHeader = function (name, clientId) {
+    const password = this.getPassword(clientId); // do this first in case it fails
+    this._logger.log(`calling ${name} ${this.mac_addr}`);
+    const response = this.receiveFromDevice(name);
+    return { response, password };
+};
+function parseId(id) {
+    const res = Buffer.from(id, 'utf8');
+    if (res.length > 255) throw Error('id too long');
+    return res;
+}
+// if obj.err is defined, throws an error, otherwise returns obj
+function throwIfErr(obj) {
+    const err = obj.err;
+    if (err !== undefined) throw Error(err);
+    return obj;
+}
+
+Device.prototype.authenticate = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('auth', clientId);
+
     const message = Buffer.alloc(9);
     message.write('a', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    return definedOrThrow((await response).res, 'device offline or failed to auth');
+
+    throwIfErr(await response);
 };
 
-Device.prototype.clearControls = async function (device, args) {
-    this._logger.log('clear controls ' + this.mac_addr);
-    const response = this.receiveFromDevice('clearcontrols');
+Device.prototype.clearControls = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('clearcontrols', clientId);
+
     const message = Buffer.alloc(9);
     message.write('C', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    return definedOrThrow((await response).res, 'failed clear or failed auth');
-};
-Device.prototype.removeControl = async function (device, args) {
-    this._logger.log('remove control ' + this.mac_addr);
-    const response = this.receiveFromDevice('removecontrol');
 
-    const id = Buffer.from(args[1], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    throwIfErr(await response);
+
+    this.controlCount = 0; // we can safely reset this to zero and reuse old ids
+    this.joystickUpdateCounts = {}; // discard all the old joystick data
+};
+Device.prototype.removeControl = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('removecontrol', clientId);
+    const id = parseId(args[0]);
 
     const message = Buffer.alloc(9);
     message.write('c', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(Buffer.concat([message, id]));
 
-    return definedOrThrow((await response).res, 'failed clear or failed auth');
+    throwIfErr(await response);
+
+    delete this.joystickUpdateCounts[args[0]]; // discard any joystick data relating to this id
 };
-Device.prototype.addButton = async function (device, args) {
-    this._logger.log('add button ' + this.mac_addr);
-    const response = this.receiveFromDevice('addbutton');
-
-    const id = Buffer.from(args[7], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
-
-    const message = Buffer.alloc(34);
-    message.write('B', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
-    message.writeFloatBE(args[1], 9);
-    message.writeFloatBE(args[2], 13);
-    message.writeFloatBE(args[3], 17);
-    message.writeFloatBE(args[4], 21);
-    message.writeInt32BE(args[5], 25);
-    message.writeInt32BE(args[6], 29);
-    message[33] = id.length;
-
-    const text = Buffer.from(args[9], 'utf8');
-    this.sendToDevice(Buffer.concat([message, id, text]));
-    
-    const err = (await response).err;
-    if (err === undefined) throw new Error('failed add button or failed auth');
-    if (err !== null) throw new Error(err);
-
-    device.guiIdToEvent[args[7]] = args[8];
-    return true;
-};
-Device.prototype.addTextField = async function (device, args) {
-    this._logger.log('add text field ' + this.mac_addr);
-    const response = this.receiveFromDevice('addtextfield');
-
-    const id = Buffer.from(args[7], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
-
-    const message = Buffer.alloc(34);
-    message.write('T', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
-    message.writeFloatBE(args[1], 9);
-    message.writeFloatBE(args[2], 13);
-    message.writeFloatBE(args[3], 17);
-    message.writeFloatBE(args[4], 21);
-    message.writeInt32BE(args[5], 25);
-    message.writeInt32BE(args[6], 29);
-    message[33] = id.length;
-
-    const text = Buffer.from(args[9], 'utf8');
-    this.sendToDevice(Buffer.concat([message, id, text]));
-    
-    const err = (await response).err;
-    if (err === undefined) throw new Error('failed add text field or failed auth');
-    if (err !== null) throw new Error(err);
-
-    device.guiIdToEvent[args[7]] = args[8];
-    return true;
-};
-Device.prototype.addLabel = async function (device, args) {
-    this._logger.log('add label ' + this.mac_addr);
-    const response = this.receiveFromDevice('addlabel');
-
-    const id = Buffer.from(args[4], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+Device.prototype.addLabel = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addlabel', clientId);
+    const opts = args[3];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
 
     const message = Buffer.alloc(22);
     message.write('g', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
-    message.writeFloatBE(args[1], 9);
-    message.writeFloatBE(args[2], 13);
-    message.writeInt32BE(args[3], 17);
-    message[21] = id.length;
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeInt32BE(opts.textColor, 17);
+    message[21] = idbuf.length;
 
-    const text = Buffer.from(args[5], 'utf8');
-    this.sendToDevice(Buffer.concat([message, id, text]));
+    const text = Buffer.from(args[2], 'utf8');
+    this.sendToDevice(Buffer.concat([message, idbuf, text]));
     
-    const err = (await response).err;
-    if (err === undefined) throw new Error('failed add button or failed auth');
-    if (err !== null) throw new Error(err);
-    return true;
-};
-Device.prototype.addCheckboxWithStyle = async function (device, args, style) {
-    this._logger.log('add checkbox ' + this.mac_addr);
-    const response = this.receiveFromDevice('addcheckbox');
+    throwIfErr(await response);
 
-    const id = Buffer.from(args[6], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    return id;
+};
+Device.prototype.addButton = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addbutton', clientId);
+    const opts = args[5];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(35);
+    message.write('B', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeFloatBE(args[2], 17);
+    message.writeFloatBE(args[3], 21);
+    message.writeInt32BE(opts.color, 25);
+    message.writeInt32BE(opts.textColor, 29);
+    message[33] = opts.style;
+    message[34] = idbuf.length;
+
+    const text = Buffer.from(args[4], 'utf8');
+    this.sendToDevice(Buffer.concat([message, idbuf, text]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
+Device.prototype.addImageDisplay = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addimagedisplay', clientId);
+    const opts = args[4];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(25);
+    message.write('U', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeFloatBE(args[2], 17);
+    message.writeFloatBE(args[3], 21);
+    this.sendToDevice(Buffer.concat([message, idbuf]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
+Device.prototype.addTextField = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addtextfield', clientId);
+    const opts = args[4];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(34);
+    message.write('T', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeFloatBE(args[2], 17);
+    message.writeFloatBE(args[3], 21);
+    message.writeInt32BE(opts.color, 25);
+    message.writeInt32BE(opts.textColor, 29);
+    message[33] = idbuf.length;
+
+    const text = Buffer.from(opts.text, 'utf8');
+    this.sendToDevice(Buffer.concat([message, idbuf, text]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
+Device.prototype.addJoystick = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addjoystick', clientId);
+    const opts = args[3];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(25);
+    message.write('j', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeFloatBE(args[2], 17);
+    message.writeInt32BE(opts.color, 21);
+
+    this.sendToDevice(Buffer.concat([message, idbuf]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
+Device.prototype.addToggle = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addtoggle', clientId);
+    const opts = args[3];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
 
     const message = Buffer.alloc(28);
     message.write('Z', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
-    message.writeFloatBE(args[1], 9);
-    message.writeFloatBE(args[2], 13);
-    message.writeInt32BE(args[3], 17);
-    message.writeInt32BE(args[4], 21);
-    message[25] = args[5] ? 1 : 0;
-    message[26] = style;
-    message[27] = id.length;
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeInt32BE(opts.color, 17);
+    message.writeInt32BE(opts.textColor, 21);
+    message[25] = opts.state ? 1 : 0;
+    message[26] = opts.style;
+    message[27] = idbuf.length;
 
-    const text = Buffer.from(args[8], 'utf8');
-    this.sendToDevice(Buffer.concat([message, id, text]));
+    const text = Buffer.from(args[2], 'utf8');
+    this.sendToDevice(Buffer.concat([message, idbuf, text]));
     
-    const err = (await response).err;
-    if (err === undefined) throw new Error('failed add button or failed auth');
-    if (err !== null) throw new Error(err);
+    throwIfErr(await response);
 
-    device.guiIdToEvent[args[6]] = args[7];
-    return true;
+    device.guiIdToEvent[id] = opts.event;
+    return id;
 };
-Device.prototype.addCheckbox = async function (device, args) {
-    return this.addCheckboxWithStyle(device, args, 0);
-};
-Device.prototype.addToggleswitch = async function (device, args) {
-    return this.addCheckboxWithStyle(device, args, 1);
-};
-Device.prototype.addRadioButton = async function (device, args) {
-    this._logger.log('add radio button ' + this.mac_addr);
-    const response = this.receiveFromDevice('addradiobutton');
+Device.prototype.addRadioButton = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addradiobutton', clientId);
+    const opts = args[3];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
 
-    const id = Buffer.from(args[6], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
-
-    const group = Buffer.from(args[7], 'utf8');
-    if (group.length > 255) throw new Error('group too long');
+    const group = parseId(opts.group);
     const groupPrefix = Buffer.alloc(1);
     groupPrefix[0] = group.length;
 
     const message = Buffer.alloc(27);
     message.write('y', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
-    message.writeFloatBE(args[1], 9);
-    message.writeFloatBE(args[2], 13);
-    message.writeInt32BE(args[3], 17);
-    message.writeInt32BE(args[4], 21);
-    message[25] = args[5] ? 1 : 0;
-    message[26] = id.length;
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeInt32BE(opts.color, 17);
+    message.writeInt32BE(opts.textColor, 21);
+    message[25] = opts.state ? 1 : 0;
+    message[26] = idbuf.length;
 
-    const text = Buffer.from(args[9], 'utf8');
-    this.sendToDevice(Buffer.concat([message, id, groupPrefix, group, text]));
+    const text = Buffer.from(args[2], 'utf8');
+    this.sendToDevice(Buffer.concat([message, idbuf, groupPrefix, group, text]));
     
-    const err = (await response).err;
-    if (err === undefined) throw new Error('failed add radio button or failed auth');
-    if (err !== null) throw new Error(err);
+    throwIfErr(await response);
 
-    device.guiIdToEvent[args[6]] = args[8];
-    return true;
+    device.guiIdToEvent[id] = opts.event;
+    return id;
 };
+Device.prototype.getImage = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('getimage', clientId);
+    const id = parseId(args[0]);
 
-Device.prototype.getToggleState = async function (device, args) {
-    this._logger.log('get toggle state ' + this.mac_addr);
-    const response = this.receiveFromDevice('gettogglestate');
+    const message = Buffer.alloc(9);
+    message.write('u', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    this.sendToDevice(Buffer.concat([message, id]));
     
-    const id = Buffer.from(args[1], 'utf8');
-    if (id.length > 255) throw new Error('id too long');
+    return throwIfErr(await response).img;
+};
+Device.prototype.setImage = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('setimage', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(10);
+    message.write('i', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message[9] = id.length;
+
+    const img = await common.prepImageToSend(args[1]);
+    this.sendToDevice(Buffer.concat([message, id, img]));
+    
+    throwIfErr(await response);
+};
+Device.prototype.setText = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('settext', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(10);
+    message.write('H', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message[9] = id.length;
+
+    const text = Buffer.from(args[1], 'utf8');
+    this.sendToDevice(Buffer.concat([message, id, text]));
+    
+    throwIfErr(await response);
+};
+Device.prototype.getText = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('gettext', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(9);
+    message.write('h', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    return throwIfErr(await response).text;
+};
+Device.prototype.getJoystickVector = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('getjoystickvec', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(9);
+    message.write('J', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    return throwIfErr(await response).vals;
+};
+Device.prototype.getState = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('getState', clientId);
+    const id = parseId(args[0]);
 
     const message = Buffer.alloc(9);
     message.write('W', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     
     this.sendToDevice(Buffer.concat([message, id]));
     
-    const state = (await response).state;
-    if (state === undefined) throw new Error('toggleable with given id did not exist or failed auth');
-    return state;
+    return throwIfErr(await response).state;
 };
 
-Device.prototype.getOrientation = async function (device, args) {
-    this._logger.log('get orientation ' + this.mac_addr);
-    const response = this.receiveFromDevice('orientation');
+Device.prototype.getOrientation = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('orientation', clientId);
+
     const message = Buffer.alloc(9);
     message.write('O', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    const res = await response;
-    return common.definedArrOrThrow([res.azimuth, res.pitch, res.roll], 'orientation device not enabled or failed to auth');
+    
+    return common.scale(throwIfErr(await response).vals, 180 / Math.PI);
 };
-Device.prototype.getCompassHeading = async function (device, args) {
-    return (await this.getOrientation(device, args))[0];
+Device.prototype.getCompassHeading = async function (device, args, clientId) {
+    return (await this.getOrientation(device, args, clientId))[0];
 };
-Device.prototype.getCompassHeadingDegrees = async function (device, args) {
-    return await this.getCompassHeading(device, args) * 180 / Math.PI;
+Device.prototype.getCompassDirection = async function (device, args, clientId) {
+    return common.closestScalar(await this.getCompassHeading(device, args, clientId), COMPASS_DIRECTIONS_8);
 };
-Device.prototype.getCompassDirection = async function (device, args) {
-    return common.closestScalar(await this.getCompassHeading(device, args), COMPASS_DIRECTIONS_8);
-};
-Device.prototype.getCompassCardinalDirection = async function (device, args) {
-    return common.closestScalar(await this.getCompassHeading(device, args), COMPASS_DIRECTIONS_4);
+Device.prototype.getCompassCardinalDirection = async function (device, args, clientId) {
+    return common.closestScalar(await this.getCompassHeading(device, args, clientId), COMPASS_DIRECTIONS_4);
 };
 
-Device.prototype.getAccelerometer = async function (device, args) {
-    this._logger.log('get accelerometer ' + this.mac_addr);
-    const response = this.receiveFromDevice('accelerometer');
+Device.prototype.getAccelerometer = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('accelerometer', clientId);
+
     const message = Buffer.alloc(9);
     message.write('A', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z], 'accelerometer not enabled or failed to auth');
+    
+    return throwIfErr(await response).vals;
 };
-Device.prototype.getAccelerometerNormalized = async function (device, args) {
-    return common.normalize(await this.getAccelerometer(device, args));  
-};
-Device.prototype.getFacingDirection = async function (device, args) {
-    return common.closestVector(await this.getAccelerometer(device, args), DIRECTIONS_3D);
+Device.prototype.getFacingDirection = async function (device, args, clientId) {
+    return common.closestVector(await this.getAccelerometer(device, args, clientId), DIRECTIONS_3D);
 };
 
-Device.prototype.getGravity = async function (device, args) {
-    this._logger.log('get gravity ' + this.mac_addr);
-    const response = this.receiveFromDevice('gravity');
+Device.prototype.getGravity = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('gravity', clientId);
+
     const message = Buffer.alloc(9);
     message.write('G', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z], 'gravity device not enabled or failed to auth');
-};
-Device.prototype.getGravityNormalized = async function (device, args) {
-    return common.normalize(await this.getGravity(device, args));  
+    
+    return throwIfErr(await response).vals;
 };
 
-Device.prototype.getLinearAcceleration = async function (device, args) {
-    this._logger.log('get linear acceleration ' + this.mac_addr);
-    const response = this.receiveFromDevice('linear');
+Device.prototype.getLinearAcceleration = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('linear', clientId);
+
     const message = Buffer.alloc(9);
     message.write('L', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z], 'linear acceleration device not enabled or failed to auth');
-};
-Device.prototype.getLinearAccelerationNormalized = async function (device, args) {
-    return common.normalize(await this.getLinearAcceleration(device, args));  
+    
+    return throwIfErr(await response).vals;
 };
 
-Device.prototype.getGyroscope = async function (device, args) {
-    this._logger.log('get gyroscope ' + this.mac_addr);
-    const response = this.receiveFromDevice('gyroscope');
+Device.prototype.getGyroscope = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('gyroscope', clientId);
+
     const message = Buffer.alloc(9);
     message.write('Y', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z], 'gyroscope not enabled or failed to auth');
+    
+    return common.scale(throwIfErr(await response).vals, 180 / Math.PI);
 };
-Device.prototype.getRotation = async function (device, args) {
-    this._logger.log('get rotation ' + this.mac_addr);
-    const response = this.receiveFromDevice('rotation');
+Device.prototype.getRotation = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('rotation', clientId);
+
     const message = Buffer.alloc(9);
     message.write('R', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z, res.w], 'rotation device not enabled or failed to auth');
+
+    return throwIfErr(await response).vals;
 };
-Device.prototype.getGameRotation = async function (device, args) {
-    this._logger.log('get game rotation ' + this.mac_addr);
-    const response = this.receiveFromDevice('gamerotation');
+Device.prototype.getGameRotation = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('gamerotation', clientId);
+
     const message = Buffer.alloc(9);
     message.write('r', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z], 'game rotation device not enabled or failed to auth');
+    
+    return throwIfErr(await response).vals;
 };
 
-Device.prototype.getMagneticFieldVector = async function (device, args) {
-    this._logger.log('get mag field ' + this.mac_addr);
-    const response = this.receiveFromDevice('magfield');
+Device.prototype.getMagneticFieldVector = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('magfield', clientId);
+
     const message = Buffer.alloc(9);
     message.write('M', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    const res = await response;
-    return common.definedArrOrThrow([res.x, res.y, res.z], 'magnetic field device not enabled or failed to auth');
-};
-Device.prototype.getMagneticFieldVectorNormalized = async function (device, args) {
-    return common.normalize(await this.getMagneticFieldVector(device, args));  
+    
+    return throwIfErr(await response).vals;
 };
 
-Device.prototype.getMicrophoneLevel = async function (device, args) {
-    this._logger.log('get mic level ' + this.mac_addr);
-    const response = this.receiveFromDevice('miclevel');
+Device.prototype.getMicrophoneLevel = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('miclevel', clientId);
+
     const message = Buffer.alloc(9);
     message.write('m', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    return common.definedOrThrow((await response).level, 'microphone not enabled or failed to auth');
-};
 
-Device.prototype.getProximity = async function (device, args) {
-    this._logger.log('get proximity ' + this.mac_addr);
-    const response = this.receiveFromDevice('proximity');
+    return throwIfErr(await response).vals[0];
+};
+Device.prototype.getProximity = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('proximity', clientId);
+
     const message = Buffer.alloc(9);
     message.write('P', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    return common.definedOrThrow((await response).proximity, 'proximity device not enabled or failed to auth');
+    
+    return throwIfErr(await response).vals[0];
 };
-Device.prototype.getStepCount = async function (device, args) {
-    this._logger.log('get step count ' + this.mac_addr);
-    const response = this.receiveFromDevice('stepcount');
+Device.prototype.getStepCount = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('stepcount', clientId);
+
     const message = Buffer.alloc(9);
     message.write('S', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    return common.definedOrThrow((await response).count, 'step counter not enabled or failed to auth');
+
+    return throwIfErr(await response).vals[0];
 };
-Device.prototype.getLightLevel = async function (device, args) {
-    this._logger.log('get light level ' + this.mac_addr);
-    const response = this.receiveFromDevice('lightlevel');
+Device.prototype.getLightLevel = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('lightlevel', clientId);
+
     const message = Buffer.alloc(9);
     message.write('l', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    return common.definedOrThrow((await response).level, 'light device not enabled or failed to auth');
+    
+    return throwIfErr(await response).vals[0];
 };
 
-Device.prototype.getLocation = async function (device, args) {
-    this._logger.log('get location ' + this.mac_addr);
-    const response = this.receiveFromDevice('location');
+Device.prototype._getLocationRaw = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('location', clientId);
+
     const message = Buffer.alloc(9);
     message.write('X', 0, 1);
-    message.writeBigInt64BE(common.gracefulPasswordParse(args[0]), 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    const res = await response;
-    return common.definedArrOrThrow([res.lat, res.long], 'location not enabled or failed to auth');
+    return response;
+};
+Device.prototype.getLocation = async function (device, args, clientId) {
+    return throwIfErr(await this._getLocationRaw(device, args, clientId)).vals.slice(0, 2);
+};
+Device.prototype.getBearing = async function (device, args, clientId) {
+    return throwIfErr(await this._getLocationRaw(device, args, clientId)).vals[2];
+};
+Device.prototype.getAltitude = async function (device, args, clientId) {
+    return throwIfErr(await this._getLocationRaw(device, args, clientId)).vals[3];
 };
 
 Device.prototype.commandToClient = function (command) {
     if (PHONE_IOT_MODE === 'security' || PHONE_IOT_MODE === 'both') {
-        var mac_addr = this.mac_addr;
+        const mac_addr = this.mac_addr;
         this.sockets.forEach(socket => {
             const content = {
                 device: mac_addr,
@@ -622,18 +729,16 @@ Device.prototype.commandToClient = function (command) {
 };
 
 Device.prototype.sendToClient = function (msgType, content) {
-    var myself = this;
+    const myself = this;
 
     let fields = ['time', ...Object.keys(content)];
     content.device = this.mac_addr;
     content.time = this.timestamp;
 
-    if (msgType !== 'set led') {
-        this._logger.log('event ' + msgType + ' ' + JSON.stringify(content));
-    }
+    this._logger.log('event ' + msgType);
 
     if (this.callbacks[msgType]) {
-        var callbacks = this.callbacks[msgType];
+        const callbacks = this.callbacks[msgType];
         delete this.callbacks[msgType];
         callbacks.forEach(function (callback) {
             callback(content);
@@ -650,8 +755,8 @@ Device.prototype.sendToClient = function (msgType, content) {
 
         if ((PHONE_IOT_MODE === 'security' && msgType !== 'set led') ||
             PHONE_IOT_MODE === 'both') {
-            var text = msgType;
-            for (var i = 0; i < fields.length; i++) {
+            let text = msgType;
+            for (let i = 0; i < fields.length; i++) {
                 text += ' ' + content[fields[i]];
             }
 
@@ -678,101 +783,109 @@ Device.prototype._fireRawCustomEvent = function(id, content) {
     }
 };
 
+Device.prototype._sendVoidResult = function(name, message, failureString) {
+    this.sendToClient(name, message.length === 11 ? {} : { err: failureString });
+};
+Device.prototype._sendControlResult = function(name, message) {
+    let err = 'unknown error';
+    if (message.length === 12) switch (message[11]) {
+        case 0: err = undefined; break;
+        case 1: err = 'too many controls'; break;
+        case 2: err = 'item with id already existed'; break;
+        case 3: err = 'control with id not found'; break;
+    }
+    this.sendToClient(name, { err });
+};
+Device.prototype._sendSensorResult = function(name, sensorName, message) {
+    if (message.length === 11) this.sendToClient(name, {err: `${sensorName} is disabled or not supported`});
+    else {
+        const vals = [];
+        let i = 11;
+        for (; i + 8 <= message.length; i += 8) {
+            vals.push(message.readDoubleBE(i));
+        }
+        if (i === message.length) this.sendToClient(name, {vals});
+    }
+};
+
 // used for handling incoming message from the device
 Device.prototype.onMessage = function (message) {
     if (message.length < 11) {
-        this._logger.log('invalid message ' + this.ip4_addr + ':' + this.ip4_port +
-            ' ' + message.toString('hex'));
+        this._logger.log('invalid message ' + this.ip4_addr + ':' + this.ip4_port + ' ' + message.toString('hex'));
         return;
     }
 
-    var oldTimestamp = this.timestamp;
+    const oldTimestamp = this.timestamp;
     this.timestamp = message.readUInt32LE(6);
-    var command = message.toString('ascii', 10, 11);
+    const command = message.toString('ascii', 10, 11);
 
-    if (command === 'I' && message.length === 11) {
+    if (command === 'I') {
         if (this.timestamp < oldTimestamp) {
             this._logger.log('device was rebooted ' + this.mac_addr);
             this.resetSeqNum();
             this.setEncryptionKey([]);
             this.resetRates();
         }
-    }
-    else if (command === 'a') {
-        this.sendToClient('auth', message.length === 11 ? { res: true } : {});
-    }
-    else if (command === 'C') {
-        this.sendToClient('clearcontrols', message.length === 11 ? { res: true } : {});
-    }
-    else if (command === 'c') {
-        this.sendToClient('removecontrol', message.length === 11 ? { res: true } : {});
-    }
-    else if (command === 'g') {
-        let err = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: err = null; break;
-            case 1: err = 'too many controls'; break;
-            case 2: err = 'item with id already existed'; break;
-            default: err = 'unknown error'; break;
+        if (message.length > 11) {
+            const rsp = Buffer.alloc(1);
+            rsp.write('I', 0, 1);
+            this.sendToDevice(rsp);
         }
-        this.sendToClient('addlabel', { err });
     }
-    else if (command === 'B') {
-        let err = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: err = null; break;
-            case 1: err = 'too many controls'; break;
-            case 2: err = 'item with id already existed'; break;
-            default: err = 'unknown error'; break;
-        }
-        this.sendToClient('addbutton', { err });
+    else if (command === 'a') this._sendVoidResult('auth', message, 'failed to auth');
+    else if (command === 'C') this._sendVoidResult('clearcontrols', message, 'failed to clear controls');
+    else if (command === 'c') this._sendVoidResult('removecontrol', message, 'failed to remove control');
+    else if (command === 'u') {
+        const img = message.slice(11);
+        this.sendToClient('getimage', img.length > 0 ? {img} : { err: 'no image display with matching id' });
     }
-    else if (command === 'b' && message.length >= 11) {
+    else if (command === 'h') {
+        const text = message.length >= 12 && message[11] === 0 ? message.toString('utf8', 12) : undefined;
+        this.sendToClient('gettext', text !== undefined ? {text} : { err: 'no text with matching id' });
+    }
+    else if (command === 'J') {
+        if (message.length === 11) this.sendToClient('getjoystickvec', { err: 'no joystick with matching id' });
+        else if (message.length === 19) this.sendToClient('getjoystickvec', { vals: [message.readFloatBE(11), message.readFloatBE(15)] });
+    }
+    else if (command === 'H') this._sendControlResult('settext', message);
+    else if (command === 'i') this._sendControlResult('setimage', message);
+    else if (command === 'g') this._sendControlResult('addlabel', message);
+    else if (command === 'B') this._sendControlResult('addbutton', message);
+    else if (command === 'j') this._sendControlResult('addjoystick', message);
+    else if (command === 'Z') this._sendControlResult('addtoggle', message);
+    else if (command === 'T') this._sendControlResult('addtextfield', message);
+    else if (command === 'y') this._sendControlResult('addradiobutton', message);
+    else if (command === 'U') this._sendControlResult('addimagedisplay', message);
+    else if (command === 'b') {
         const id = message.toString('utf8', 11);
         this._fireRawCustomEvent(id, {id});
     }
-    else if (command === 'T') {
-        let err = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: err = null; break;
-            case 1: err = 'too many controls'; break;
-            case 2: err = 'item with id already existed'; break;
-            default: err = 'unknown error'; break;
-        }
-        this.sendToClient('addtextfield', { err });
-    }
-    else if (command === 't' && message.length >= 12) {
-        const idlen = message[11] & 0xff;
-        if (message.length >= 12 + idlen) {
-            const id = message.toString('utf8', 12, 12 + idlen);
-            const text = message.toString('utf8', 12 + idlen);
-            this._fireRawCustomEvent(id, {id, text});
+    else if (command === 'K') {
+        if (message.length >= 23) {
+            const id = message.toString('utf8', 23);
+            const time = message.readInt32BE(11); // check the time index so we don't send events out of order
+            if (!(time < this.joystickUpdateCounts[id])) { // this way we include if it's undefined (in which case we set it
+                this.joystickUpdateCounts[id] = time;
+                this._fireRawCustomEvent(id, { id, x: message.readFloatBE(15), y: message.readFloatBE(19) });
+            }
         }
     }
-    else if (command === 'Z') {
-        let err = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: err = null; break;
-            case 1: err = 'too many controls'; break;
-            case 2: err = 'item with id already existed'; break;
-            default: err = 'unknown error'; break;
+    else if (command === 't') {
+        if (message.length >= 12) {
+            const idlen = message[11] & 0xff;
+            if (message.length >= 12 + idlen) {
+                const id = message.toString('utf8', 12, 12 + idlen);
+                const text = message.toString('utf8', 12 + idlen);
+                this._fireRawCustomEvent(id, {id, text});
+            }
         }
-        this.sendToClient('addcheckbox', { err });
     }
-    else if (command === 'y') {
-        let err = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: err = null; break;
-            case 1: err = 'too many controls'; break;
-            case 2: err = 'item with id already existed'; break;
-            default: err = 'unknown error'; break;
+    else if (command === 'z') {
+        if (message.length >= 12) {
+            const state = message[11] !== 0;
+            const id = message.toString('utf8', 12, message.length);
+            this._fireRawCustomEvent(id, { id, state });
         }
-        this.sendToClient('addradiobutton', { err });
-    }
-    else if (command === 'z' && message.length >= 12) {
-        const state = message[11] !== 0;
-        const id = message.toString('utf8', 12, message.length);
-        this._fireRawCustomEvent(id, { id, state });
     }
     else if (command === 'W') {
         let state = undefined;
@@ -780,95 +893,22 @@ Device.prototype.onMessage = function (message) {
             case 0: state = false; break;
             case 1: state = true; break;
         }
-        this.sendToClient('gettogglestate', { state });
+        this.sendToClient('getState', state !== undefined ? { state } : { err: 'no toggleable with matching id' });
     }
-    else if (command === 'O') {
-        this.sendToClient('orientation', message.length === 23 ? {
-            azimuth: message.readFloatBE(11),
-            pitch: message.readFloatBE(15),
-            roll: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'A') {
-        this.sendToClient('accelerometer', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'G') {
-        this.sendToClient('gravity', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'L') {
-        this.sendToClient('linear', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'Y') {
-        this.sendToClient('gyroscope', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'R') {
-        this.sendToClient('rotation', message.length === 27 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-            w: message.readFloatBE(23),
-        } : {});
-    }
-    else if (command === 'r') {
-        this.sendToClient('gamerotation', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'M') {
-        this.sendToClient('magfield', message.length === 23 ? {
-            x: message.readFloatBE(11),
-            y: message.readFloatBE(15),
-            z: message.readFloatBE(19),
-        } : {});
-    }
-    else if (command === 'm') {
-        this.sendToClient('miclevel', message.length === 15 ? {
-            level: message.readFloatBE(11),
-        } : {});
-    }
-    else if (command === 'X') {
-        this.sendToClient('location', message.length === 19 ? {
-            lat: message.readFloatBE(11),
-            long: message.readFloatBE(15),
-        } : {});
-    }
-    else if (command === 'P') {
-        this.sendToClient('proximity', message.length === 15 ? {
-            proximity: message.readFloatBE(11),
-        } : {});
-    }
-    else if (command === 'S') {
-        this.sendToClient('stepcount', message.length === 15 ? {
-            count: message.readFloatBE(11),
-        } : {});
-    }
-    else if (command === 'l') {
-        this.sendToClient('lightlevel', message.length === 15 ? {
-            level: message.readFloatBE(11),
-        } : {});
-    }
-    else {
-        this._logger.log('unknown ' + this.ip4_addr + ':' + this.ip4_port +
-            ' ' + message.toString('hex'));
-    }
+    else if (command === 'O') this._sendSensorResult('orientation', 'orientation sensor', message);
+    else if (command === 'R') this._sendSensorResult('rotation', 'rotation sensor', message);
+    else if (command === 'X') this._sendSensorResult('location', 'location', message);
+    else if (command === 'A') this._sendSensorResult('accelerometer', 'accelerometer', message);
+    else if (command === 'G') this._sendSensorResult('gravity', 'gravity sensor', message);
+    else if (command === 'L') this._sendSensorResult('linear', 'linear acceleration sensor', message);
+    else if (command === 'Y') this._sendSensorResult('gyroscope', 'gyroscope', message);
+    else if (command === 'r') this._sendSensorResult('gamerotation', 'game rotation sensor', message);
+    else if (command === 'M') this._sendSensorResult('magfield', 'magnetic field sensor', message);
+    else if (command === 'm') this._sendSensorResult('miclevel', 'microphone', message);
+    else if (command === 'P') this._sendSensorResult('proximity', 'proximity sensor', message);
+    else if (command === 'S') this._sendSensorResult('stepcount', 'step counter', message);
+    else if (command === 'l') this._sendSensorResult('lightlevel', 'light sensor', message);
+    else this._logger.log('unknown command from ' + this.ip4_addr + ':' + this.ip4_port + ' - content bin: ' + message.toString('hex'));
 };
 
 // handle user commands to the device (through the 'send' rpc)
@@ -882,209 +922,19 @@ Device.prototype.onCommand = function(command) {
             }
         },
         {
-            regex: /^authenticate$/,
-            handler: () => {
-                return this.authenticate();
-            }
-        },
-        {
-            regex: /^clear controls$/,
-            handler: () => {
-                return this.clearControls();
-            }
-        },
-        {
-            regex: /^remove control$/,
-            handler: () => {
-                return this.removeControl();
-            }
-        },
-        {
-            regex: /^add button$/,
-            handler: () => {
-                return this.addButton();
-            }
-        },
-        {
-            regex: /^add text field$/,
-            handler: () => {
-                return this.addTextField();
-            }
-        },
-        {
-            regex: /^add checkbox$/,
-            handler: () => {
-                return this.addCheckbox();
-            }
-        },
-        {
-            regex: /^add radio button$/,
-            handler: () => {
-                return this.addRadioButton();
-            }
-        },
-        {
-            regex: /^add label$/,
-            handler: () => {
-                return this.addLabel();
-            }
-        },
-        {
-            regex: /^get toggle state$/,
-            handler: () => {
-                return this.getToggleState();
-            }
-        },
-        {
-            regex: /^get orientation$/,
-            handler: () => {
-                return this.getOrientation();
-            }
-        },
-        {
-            regex: /^get compass heading$/,
-            handler: () => {
-                return this.getCompassHeading();
-            }
-        },
-        {
-            regex: /^get compass heading degrees$/,
-            handler: () => {
-                return this.getCompassHeadingDegrees();
-            }
-        },
-        {
-            regex: /^get compass direction$/,
-            handler: () => {
-                return this.getCompassDirection();
-            }
-        },
-        {
-            regex: /^get compass cardinal direction$/,
-            handler: () => {
-                return this.getCompassCardinalDirection();
-            }
-        },
-        {
-            regex: /^get accelerometer$/,
-            handler: () => {
-                return this.getAccelerometer();
-            }
-        },
-        {
-            regex: /^get accelerometer normalized$/,
-            handler: () => {
-                return this.getAccelerometerNormalized();
-            }
-        },
-        {
-            regex: /^get facing direction$/,
-            handler: () => {
-                return this.getFacingDirection();
-            }
-        },
-        {
-            regex: /^get gravity$/,
-            handler: () => {
-                return this.getGravity();
-            }
-        },
-        {
-            regex: /^get gravity normalized$/,
-            handler: () => {
-                return this.getGravityNormalized();
-            }
-        },
-        {
-            regex: /^get linear acceleration$/,
-            handler: () => {
-                return this.getLinearAcceleration();
-            }
-        },
-        {
-            regex: /^get linear acceleration normalized$/,
-            handler: () => {
-                return this.getLinearAccelerationNormalized();
-            }
-        },
-        {
-            regex: /^get gyroscope$/,
-            handler: () => {
-                return this.getGyroscope();
-            }
-        },
-        {
-            regex: /^get rotation$/,
-            handler: () => {
-                return this.getRotation();
-            }
-        },
-        {
-            regex: /^get game rotation$/,
-            handler: () => {
-                return this.getGameRotation();
-            }
-        },
-        {
-            regex: /^get magnetic field vector$/,
-            handler: () => {
-                return this.getMagneticFieldVector();
-            }
-        },
-        {
-            regex: /^get magnetic field vector normalized$/,
-            handler: () => {
-                return this.getMagneticFieldVectorNormalized();
-            }
-        },
-        {
-            regex: /^get microphone level$/,
-            handler: () => {
-                return this.getMicrophoneLevel();
-            }
-        },
-        {
-            regex: /^get location$/,
-            handler: () => {
-                return this.getLocation();
-            }
-        },
-        {
-            regex: /^get proximity$/,
-            handler: () => {
-                return this.getProximity();
-            }
-        },
-        {
-            regex: /^get step count$/,
-            handler: () => {
-                return this.getStepCount();
-            }
-        },
-        {
-            regex: /^get light level$/,
-            handler: () => {
-                return this.getLightLevel();
-            }
-        },
-        {
             regex: /^set encryption ([^ ]+)(| -?\d+([ ,]-?\d+)*)$/, // name of the cipher
             handler: () => {
-                let cipherName = RegExp.$1.toLowerCase();
-                var key = RegExp.$2.split(/[, ]/);
-                if (key[0] === '') {
-                    key.splice(0, 1);
-                }
+                const cipherName = RegExp.$1.toLowerCase();
+                const key = RegExp.$2.split(/[, ]/);
+                if (key[0] === '') key.splice(0, 1);
                 return this.setEncryptionMethod(cipherName) && this.setEncryptionKey(key);
             }
         },
         { // deprecated
             regex: /^set key(| -?\d+([ ,]-?\d+)*)$/,
             handler: () => {
-                var encryption = RegExp.$1.split(/[, ]/);
-                if (encryption[0] === '') {
-                    encryption.splice(0, 1);
-                }
+                const encryption = RegExp.$1.split(/[, ]/);
+                if (encryption[0] === '') encryption.splice(0, 1);
                 return this.setEncryptionKey(encryption.map(Number));
             }
         },
@@ -1130,7 +980,7 @@ Device.prototype._hasValidEncryptionSet = function () {
 
 Device.prototype.encrypt = function (text) {
     if (!this._hasValidEncryptionSet()) {
-        throw new Error('invalid encryption setup');
+        throw Error('invalid encryption setup');
     }
     let output = this.encryptionMethod.encrypt(text, this.encryptionKey);
     this._logger.log('"' + text + '" encrypted to "' + output + '"');
@@ -1139,7 +989,7 @@ Device.prototype.encrypt = function (text) {
 
 Device.prototype.decrypt = function (text) {
     if (!this._hasValidEncryptionSet()) {
-        throw new Error('invalid encryption setup');
+        throw Error('invalid encryption setup');
     }
     let output = this.encryptionMethod.decrypt(text, this.encryptionKey);
     this._logger.log('"' + text + '" decrypted to "' + output + '"');
@@ -1179,21 +1029,14 @@ Device.prototype.setEncryptionKey = function (keys) {
 };
 
 Device.prototype.randomEncryption = function () {
-    var keys = [],
-        blinks = [];
-    for (var i = 0; i < 4; i++) {
-        var a = Math.floor(Math.random() * 16);
+    const keys = [];
+    for (let i = 0; i < 4; i++) {
+        const a = Math.floor(Math.random() * 16);
         keys.push(a);
-        blinks.push(a & 0x8 ? 2 : 1);
-        blinks.push(a & 0x4 ? 2 : 1);
-        blinks.push(a & 0x2 ? 2 : 1);
-        blinks.push(a & 0x1 ? 2 : 1);
     }
-    blinks.push(3);
     this.resetSeqNum();
     this.resetRates();
     this.setEncryptionKey(keys);
-    this.playBlinks(blinks);
 };
 
 // resets encryption, sequencing, and rate limits
@@ -1202,7 +1045,6 @@ Device.prototype.resetDevice = function () {
     this.resetSeqNum();
     this.resetRates();
     this.resetEncryption();
-    this.playBlinks([3]);
 };
 
 module.exports = Device;

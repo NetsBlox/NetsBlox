@@ -38,7 +38,7 @@ var hasSocket = function(req, res, next) {
         (req.query && req.query.socketId);
 
     if (socketId) {
-        if (NetworkTopology.getSocket(socketId)) {
+        if (NetworkTopology.getClient(socketId)) {
             return next();
         }
         logger.error(`No socket found for ${socketId} (${req.get('User-Agent')})`);
@@ -177,9 +177,9 @@ async function login(req, res) {
         saveLogin(res, user, req.body.remember);
     }
 
-    const socket = NetworkTopology.getSocket(clientId);
-    if (socket) {
-        socket.username = username;
+    const client = NetworkTopology.getClient(clientId);
+    if (client) {
+        client.setUsername(username);
     }
 
     req.loggedIn = true;

@@ -14,6 +14,7 @@
                 new Assignment(
                     assignment.name,
                     assignment['starter template'],
+                    assignment.description,
                     assignment.tests.map(testConfig => {
                         if (testConfig.type === 'CustomBlockTest') {
                             return new ExactOutputTestCase(ide, testConfig.spec, testConfig.inputs, testConfig.output);
@@ -45,8 +46,9 @@
         }
 
         async showResults(testResults) {
-            if (!this.resultsDialog) {
-                const world = this.ide.world();
+            const world = this.ide.parentThatIsA(WorldMorph);
+            const isAlreadyOpen = world.anyChild(child => child === this.resultsDialog);
+            if (!isAlreadyOpen) {
                 const dialog = new DialogBoxMorph().withKey('GradeAssignment');
                 const frame = new ScrollFrameMorph();
                 frame.acceptsDrops = false;
@@ -193,11 +195,13 @@
             const confirmed = await this.ide.confirm(message, title);
             if (confirmed) {
                 const xml = await assignment.fetch();
-                this.ide.droppedText(xml);
+                await this.ide.droppedText(xml);
+                if (assignment.description) {
+                    this.ide.inform(`${assignment.name} Description`, assignment.description);
+                }
                 this.currentAssignment = assignment;
                 if (this.resultsDialog) {
                     this.resultsDialog.destroy();
-                    this.resultsDialog = null;
                 }
             }
         }
@@ -209,9 +213,10 @@
     }
 
     class Assignment {
-        constructor(name, url, tests) {
+        constructor(name, url, desc, tests) {
             this.name = name;
             this.url = url;
+            this.description = desc;
             this.tests = tests;
         }
 

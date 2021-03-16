@@ -23,13 +23,12 @@ describe(utils.suiteName(__filename), function() {
             client.lastSocketActivity = 0;
 
             // reconnect
-            setTimeout(() => {
-                client.reconnect(new MockWebSocket());
-                client.checkAlive = () => {
-                    delete client.checkAlive;
-                    done();
-                };
-            }, 12);
+            client.checkAlive();
+            client.reconnect(new MockWebSocket());
+            client.checkAlive = () => {
+                delete client.checkAlive;
+                done();
+            };
         });
     });
 
@@ -104,8 +103,8 @@ describe(utils.suiteName(__filename), function() {
 
             const projectId = project.getId();
             const [id1, id2] = await project.getRoleIdsFor(['role1', 'role2']);
-            [alice] = NetworkTopology.getSocketsAt(projectId, id1);
-            [bob, steve] = NetworkTopology.getSocketsAt(projectId, id2);
+            [alice] = NetworkTopology.getClientsAt(projectId, id1);
+            [bob, steve] = NetworkTopology.getClientsAt(projectId, id2);
         });
 
         it('should ignore bad dstId for interroom messages', function() {
@@ -178,15 +177,12 @@ describe(utils.suiteName(__filename), function() {
         after(() => Client.resetHeartBeatInterval());
 
         it('should detect and close broken connections', function(done) {
-            // Create a socket
-            let ws = new MockWebSocket();
-            let socket = new Client(logger, ws);
+            const ws = new MockWebSocket();
+            const client = new Client(logger, ws);
 
-            // Verify that 'onclose' is called
-            socket.onclose.push(done);
-
-            // Disable 'pong' response
-            ws.ping = () => {};
+            client._socket.terminate = done;
+            client.lastSocketActivity = 0;
+            client.checkAlive();
         });
     });
 
@@ -215,7 +211,7 @@ describe(utils.suiteName(__filename), function() {
             });
             const [/*id1*/, id2] = await project.getRoleIdsFor(['role1', 'role2']);
             const projectId = project.getId();
-            [bob, steve] = NetworkTopology.getSocketsAt(projectId, id2);
+            [bob, steve] = NetworkTopology.getClientsAt(projectId, id2);
         });
 
         describe('user-action', function() {
