@@ -85,7 +85,12 @@ common.parseBool = function (val) {
     throw Error(`failed to parse bool: ${val}`);
 };
 common.parseFontSize = function (val) {
-    return types.parse.BoundedNumber(val, [0.1, 10.0]);
+    try { return types.parse.BoundedNumber(val, [0.1, 10.0]); }
+    catch (e) { throw Error(`failed to parse '${val} as fontSize: ${e}`); }
+};
+common.parseSensorPeriod = function (val) {
+    try { return types.parse.BoundedNumber(val, [100, undefined]); }
+    catch (e) { throw Error(`failed to parse ${val} as sensor update period: ${e}`); }
 };
 
 // given an options dict and a rules dict, generates a sanitized options dict.

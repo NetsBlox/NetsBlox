@@ -420,13 +420,14 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {string} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.listenToGUI = async function (device) {
-        this.authenticate(device); // throws on failure - we want this
+        await this.authenticate(device); // throws on failure - we want this
         
         const _device = await this._getDevice(device);
         _device.guiListeners[this.socket.clientId] = this.socket;
     };
     /**
-     * Begin listening to sensor update events, which are sent on a regular basis.
+     * Listen for the specified sensor update events, with a specified minimum interval for each.
+     * This will discard any previous call to listenToSensors; thus, calling with an empty list will stop listening to all sensors.
      * This will check for valid login credentials (see setCredentials).
      * Calling getSensors will give you a list of all the sensor names.
      * The events are sent to a message type of the same name as the sensor.
@@ -438,30 +439,52 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * location - latitude, longitude, bearing, altitude
      * Additionally, all sensors receive an argument called 'device', which holds the device id.
      * @param {string} device name of the device (matches at the end)
-     * @param {Array} sensors list if sensors to listen for (events have same name)
+     * @param {Object} sensors structured data representing the minimum time in milliseconds between updates for each sensor type to listen for.
      */
     PhoneIoT.prototype.listenToSensors = async function (device, sensors) {
-        const items = new Set();
-
         // first, check that we got valid sensor names
-        for (const sensor of sensors) {
+        const items = {};
+        for (const sensor in sensors) {
             const lower = sensor.toString().toLowerCase();
             if (common.SENSOR_PACKERS[lower] === undefined) {
                 throw Error(`unknown sensor: ${sensor}`);
             }
-            items.add(lower);
+            items[lower] = common.parseSensorPeriod(sensors[sensor]);
         }
 
-        this.authenticate(device); // throws on failure - we want this
+        const clientID = this.socket.clientId;
         const _device = await this._getDevice(device);
-        
-        for (const sensor of items) {
-            let bucket = _device.sensorToListeners[sensor];
-            if (bucket === undefined) {
-                bucket = {};
-                _device.sensorToListeners[sensor] = bucket;
+
+        const periods = Object.values(items);
+        let minPeriod = Math.min(...periods);
+        for (const sensor in _device.sensorToListeners) {
+            const listeners = _device.sensorToListeners[sensor];
+            for (const listener in listeners) {
+                if (listener === clientID) continue; // skip ourselves since we're changing that
+                const period = listeners[listener][2];
+                if (period < minPeriod) minPeriod = period;
             }
-            bucket[this.socket.clientId] = this.socket;
+        }
+        await _device.setSensorUpdatePeriods(minPeriod === Infinity ? [] : [minPeriod], clientID); // throws on failure - we want this
+
+        // get a time stamp prior to max period so we'll receive an update immediately
+        const timestamp = new Date();
+        timestamp.setMilliseconds(timestamp.getMilliseconds() - Math.max(...periods));
+
+        // stop listening from all sensors
+        for (const sensor in _device.sensorToListeners) {
+            const listeners = _device.sensorToListeners[sensor];
+            delete listeners[clientID];
+        }
+
+        // start listening to the requested sensors
+        for (const sensor in items) {
+            let listeners = _device.sensorToListeners[sensor];
+            if (listeners === undefined) {
+                listeners = {};
+                _device.sensorToListeners[sensor] = listeners;
+            }
+            listeners[clientID] = [this.socket, timestamp, items[sensor]];
         }
     };
     /**

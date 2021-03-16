@@ -27,6 +27,7 @@ const common = require('./common');
 // m - microphone level
 // O - orientation calculator
 // P - proximity
+// p - set sensor update periods
 // Q - sensor packet
 // R - rotation vector
 // r - game rotation vector
@@ -101,7 +102,7 @@ const Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.guiIdToEvent = {}; // Map<GUI ID, Event ID>
     this.guiListeners = {}; // Map<ClientID, Socket>
 
-    this.sensorToListeners = {}; // Map<SensorID, Map<ClientID, Socket>>
+    this.sensorToListeners = {}; // Map<SensorID, Map<ClientID, (Socket, lastUpdate, period)>>
 
     this.joystickUpdateTimestamps = {}; // Map<GUI ID, time index>
     this.sensorPacketTimestamp = -1; // timestamp of last sensor packet
@@ -283,6 +284,18 @@ function throwIfErr(obj) {
     if (err !== undefined) throw Error(err);
     return obj;
 }
+
+Device.prototype.setSensorUpdatePeriods = async function (periods, clientId) {
+    const { response, password } = this.rpcHeader('setsensorperiods', clientId);
+
+    const message = Buffer.alloc(9 + 4 * periods.length);
+    message.write('p', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    for (let i = 0; i < periods.length; ++i) message.writeInt32BE(periods[i], 9 + 4 * i);
+    this.sendToDevice(message);
+
+    throwIfErr(await response);
+};
 
 Device.prototype.authenticate = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('auth', clientId);
@@ -858,11 +871,15 @@ Device.prototype._parseSensorPacket = function (message, pos, stop) {
     return res;
 };
 Device.prototype._sendSensorPacketUpdates = function (packet) {
+    const now = new Date();
     for (const sensor in packet) {
         const content = packet[sensor];
         const listeners = this.sensorToListeners[sensor] || {};
         for (const listener in listeners) {
-            const socket = listeners[listener];
+            const [socket, lastUpdate, period] = listeners[listener];
+            if (now - lastUpdate < period) continue;
+            listeners[listener][1] = now; // update lastUpdate
+
             try {
                 socket.sendMessage(sensor, content);
             }
@@ -908,6 +925,7 @@ Device.prototype.onMessage = function (message) {
         }
     }
     else if (command === 'a') this._sendVoidResult('auth', message, 'failed to auth');
+    else if (command === 'p') this._sendVoidResult('setsensorperiods', message, 'failed to set sensor periods');
     else if (command === 'C') this._sendVoidResult('clearcontrols', message, 'failed to clear controls');
     else if (command === 'c') this._sendVoidResult('removecontrol', message, 'failed to remove control');
     else if (command === 'u') {
