@@ -60,40 +60,27 @@ describe(utils.suiteName(__filename), function() {
         });
 
         it('should simplify the metadata', () => {
+            const arg = (name, type, description) => ({
+                name,
+                optional: false,
+                type: {
+                    name: type,
+                    params: []
+                },
+                description,
+            });
             let simpleMetadata = jp._simplify(metadata.parsed);
+
             assert.deepEqual(simpleMetadata, {
                 name: 'doStuff',
                 description: metadata.parsed.description,
                 deprecated: false,
                 args: [
-                    {
-                        name: 'address',
-                        optional: false,
-                        type: {
-                            name: 'String',
-                            params: []
-                        },
-                        description: 'target address'
-                    },
-                    {
-                        name: 'limit',
-                        optional: false,
-                        type: {
-                            name: 'Number',
-                            params: []
-                        },
-                        description: 'the results limit'
-                    },
-                    {
-                        name: 'options',
-                        optional: false,
-                        type: {
-                            name: 'Object',
-                            params: []
-                        },
-                        description: null
-                    }
+                    arg('address', 'String', 'target address'),
+                    arg('limit', 'Number', 'the results limit'),
+                    arg('options', 'Object', null),
                 ],
+                categories: [],
                 returns: {type: {name: 'String', params: []}, description: null}
             });
         });
@@ -176,6 +163,43 @@ describe(utils.suiteName(__filename), function() {
             });
         });
 
+        describe('categories', function() {
+            it('should parse category', () => {
+                const comment = `
+                /**
+                 * this is the description
+                 * @category TestCategory
+                 * @param {Array<Array<BoundedNumber<1, 5>>>} numberLists
+                 * @name testNestedParams
+                 */
+                `;
+                const metadata = jp._simplify(jp._parseSource(comment).rpcs[0].parsed);
+                const [category] = metadata.categories;
+                assert.equal(
+                    category,
+                    'TestCategory',
+                );
+            });
+
+            it('should parse multiple categories', () => {
+                const comment = `
+                /**
+                 * this is the description
+                 * @category Category0
+                 * @category Category1;Category2;Category3
+                 * @param {Array<Array<BoundedNumber<1, 5>>>} numberLists
+                 * @name testNestedParams
+                 */
+                `;
+                const metadata = jp._simplify(jp._parseSource(comment).rpcs[0].parsed);
+                const categories = metadata.categories;
+                assert.equal(categories.length, 2);
+                assert.equal(categories[0].length, 1);
+                assert.equal(categories[1].length, 3);
+
+                categories.flat().forEach((name, i) => assert.equal(name, `Category${i}`));
+            });
+        });
     });
 
     describe('Docs', () => {

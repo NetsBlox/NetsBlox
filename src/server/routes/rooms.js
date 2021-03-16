@@ -42,7 +42,7 @@ module.exports = [
                     return getFriendSockets(req.session.user);
                 })
                 .then(friends => {
-                    const usernames = _.uniq(friends.map(socket => socket.username));
+                    const usernames = _.uniq(friends.map(client => client.username));
 
                     return usernames.map(username => {
                         return {
@@ -80,17 +80,17 @@ module.exports = [
         Note: '',
         Handler: function(req, res) {
             const {evictedClientId, projectId} = req.body;
-            const socket = NetworkTopology.getSocket(evictedClientId);
+            const client = NetworkTopology.getClient(evictedClientId);
 
             logger.log(`evicting ${evictedClientId} from ${projectId}`);
-            if (!socket) {  // user is not online
+            if (!client) {  // user is not online
                 const err = `${evictedClientId} is not connected.`;
                 this._logger.warn(err);
                 return res.send('could not find user to evict.');
             }
 
-            // Get the socket at the given room role
-            if (socket.projectId !== projectId) {
+            // Get the client at the given room role
+            if (client.projectId !== projectId) {
                 const err = `${evictedClientId} is not at ${projectId}.`;
                 this._logger.warn(err);
                 return res.send('user has been evicted!');
@@ -98,7 +98,7 @@ module.exports = [
 
             // Remove the user from the room!
             logger.log(`evicted ${evictedClientId} from ${projectId}`);
-            socket.onEvicted();
+            client.onEvicted();
             return NetworkTopology.onRoomUpdate(projectId)
                 .then(state => res.json(state));
         }
@@ -160,10 +160,10 @@ module.exports = [
                     const roleName = metadata.roles[roleId].ProjectName;
                     const projectName = metadata.name;
 
-                    const inviteeSockets = NetworkTopology.socketsFor(invitee);
-                    inviteeSockets
-                        .filter(socket => socket.uuid !== req.body.socketId)
-                        .forEach(socket => {
+                    const inviteeClients = NetworkTopology.getClientsWithUsername(invitee);
+                    inviteeClients
+                        .filter(client => client.uuid !== req.body.socketId)
+                        .forEach(client => {
                             var msg = {
                                 type: 'room-invitation',
                                 id: inviteId,
@@ -171,7 +171,7 @@ module.exports = [
                                 inviter,
                                 role: roleName
                             };
-                            socket.send(msg);
+                            client.send(msg);
                         });
 
                     return res.send('ok');
@@ -213,9 +213,9 @@ module.exports = [
             const {projectId, roleId, invitee} = invite;
 
             // Notify other clients of response
-            NetworkTopology.socketsFor(invitee)
-                .filter(socket => socket.uuid !== socketId)
-                .forEach(socket => socket.send(closeInvite));
+            NetworkTopology.getClientsWithUsername(invitee)
+                .filter(client => client.uuid !== socketId)
+                .forEach(client => client.send(closeInvite));
 
             // Ignore if the invite no longer exists
 
@@ -254,7 +254,7 @@ module.exports = [
         Handler: function(req, res) {
             const {roleId, projectId} = req.body;
 
-            const clients = NetworkTopology.getSocketsAt(projectId, roleId);
+            const clients = NetworkTopology.getClientsAt(projectId, roleId);
             if (clients.length) {
                 return res.status(403).send('ERROR: Cannot delete occupied role. Remove the occupants first.');
             }
@@ -322,7 +322,7 @@ module.exports = [
 
             const {roleId, projectId} = req.body;
             const project = await Projects.getById(projectId);
-            const [client] = NetworkTopology.getSocketsAt(projectId, roleId);
+            const [client] = NetworkTopology.getClientsAt(projectId, roleId);
             const role = project.roles[roleId];
             if (!role) {
                 res.status(500).send(`no role with ID ${roleId}`);
@@ -359,7 +359,7 @@ module.exports = [
             const {invitee, projectId, role, roomName} = req.body;
             var inviter = req.session.username,
                 inviteId = ['collab', inviter, invitee, projectId, Date.now()].join('-'),
-                inviteeSockets = NetworkTopology.socketsFor(invitee);
+                inviteeClients = NetworkTopology.getClientsWithUsername(invitee);
 
             logger.log(`${inviter} is inviting ${invitee} to ${projectId}`);
 
@@ -371,9 +371,9 @@ module.exports = [
             };
 
             // If the user is online, send the invitation via ws to the browser
-            inviteeSockets
-                .filter(socket => socket.uuid !== req.body.socketId)
-                .forEach(socket => {
+            inviteeClients
+                .filter(client => client.uuid !== req.body.socketId)
+                .forEach(client => {
                     // Send the invite to the sockets
                     var msg = {
                         type: 'collab-invitation',
@@ -383,7 +383,7 @@ module.exports = [
                         inviter,
                         role: role
                     };
-                    socket.send(msg);
+                    client.send(msg);
                 }
                 );
             res.send('ok');
@@ -407,10 +407,10 @@ module.exports = [
                 };
 
             // Notify other clients of response
-            var allSockets = NetworkTopology.socketsFor(invitee),
+            var allClients = NetworkTopology.getClientsWithUsername(invitee),
                 invite = invites[inviteId];
 
-            allSockets.filter(socket => socket.uuid !== socketId)
+            allClients.filter(socket => socket.uuid !== socketId)
                 .forEach(socket => socket.send(closeInvite));
 
             // Ignore if the invite no longer exists
@@ -459,7 +459,7 @@ async function getFriendSockets(user) {
     const peers = await user.getGroupMembers();
     // OPT if user not in a group list and goes through all users without a group
     peers.forEach(peer => inGroup[peer.username] = true);
-    return NetworkTopology.sockets()
+    return NetworkTopology.clients()
         .filter(socket => !Utils.isSocketUuid(socket.username))
         .filter(socket => {
             return socket.username !== user.username && // is not the caller

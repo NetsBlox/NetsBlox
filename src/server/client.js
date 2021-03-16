@@ -25,9 +25,11 @@ const Projects = require('./storage/projects');
 const NetsBloxAddress = require('./netsblox-address');
 const NetworkTopology = require('./network-topology');
 const {RequestError} = require('./api/core/errors');
+const EventEmitter = require('events');
 
-class Client {
+class Client extends EventEmitter {
     constructor (logger, websocket, uuid) {
+        super();
         this.uuid = uuid;
         this._logger = logger.fork(uuid);
 
@@ -37,13 +39,10 @@ class Client {
 
         this.user = null;
         this.username = this.uuid;
-        this._socket = websocket;
         this._projectRequests = {};  // saving
-        this.lastSocketActivity = Date.now();
         this.nextHeartbeat = null;
-        this.nextHeartbeatCheck = null;
+        this.reconnect(websocket);
 
-        this.onclose = [];
         this._initialize();
 
         this._logger.trace('created');
@@ -51,7 +50,9 @@ class Client {
 
     reconnect(websocket) {
         this._socket = websocket;
+        this.isWaitingForReconnect = false;
         this.connError = null;
+        this.lastSocketActivity = Date.now();
     }
 
     isOwner () {  // TODO: move to auth stuff...
@@ -63,11 +64,11 @@ class Client {
         // accept the event here and broadcast to everyone
         const {projectId, roleId} = msg;
         const {canApply, actionId} = await this.canApplyAction(msg.action);
-        const sockets = NetworkTopology.getSocketsAt(projectId, roleId);
+        const clients = NetworkTopology.getClientsAt(projectId, roleId);
 
         if (canApply) {
-            if (sockets.length > 1) {
-                sockets.forEach(socket => socket.send(msg));
+            if (clients.length > 1) {
+                clients.forEach(client => client.send(msg));
             }
             msg.projectId = projectId;
             // Only set the role's action id if not user action
@@ -129,13 +130,11 @@ class Client {
 
         this._socket.on('close', async () => {
             if (this.connError) {
-                const brokenSocket = this._socket;
-                await sleep(5 * Client.HEARTBEAT_INTERVAL);
-                const reconnected = this._socket !== brokenSocket;
-                if (!reconnected) {
-                    this.close(this.connError);
-                } else {
+                const reconnected = await this.waitForReconnect();
+                if (reconnected) {
                     this.checkAlive();
+                } else {
+                    this.close(this.connError);
                 }
             } else {
                 return this.close();
@@ -153,16 +152,20 @@ class Client {
         });
     }
 
+    async waitForReconnect () {
+        const brokenSocket = this._socket;
+        this.isWaitingForReconnect = true;
+        await Utils.sleep(5 * Client.HEARTBEAT_INTERVAL);
+        this.isWaitingForReconnect = false;
+        const reconnected = this._socket !== brokenSocket;
+        return reconnected;
+    }
+
     close (err) {
         this._logger.trace(`closed socket for ${this.uuid} (${this.username})`);
         if (this.nextHeartbeat) {
             clearTimeout(this.nextHeartbeat);
         }
-        if (this.nextHeartbeatCheck) {
-            clearTimeout(this.nextHeartbeatCheck);
-        }
-        this.onclose.forEach(fn => fn.call(this));
-        this.onclose = [];  // ensure no double-calling of close
         this.onClose(err);
     }
 
@@ -201,17 +204,12 @@ class Client {
         } else if (this.isSocketDead()) {
             this.connError = new Error('Websocket is broken');
             this._socket.terminate();
-        } else {
-            if (this.nextHeartbeatCheck) {
-                clearTimeout(this.nextHeartbeatCheck);
-            }
         }
-        this.nextHeartbeatCheck = setTimeout(this.checkAlive.bind(this), Client.HEARTBEAT_INTERVAL);
     }
 
     keepAlive() {
         let sinceLastMsg = Date.now() - this.lastSocketActivity;
-        if (sinceLastMsg >= Client.HEARTBEAT_INTERVAL) {
+        if (sinceLastMsg >= Client.HEARTBEAT_INTERVAL && !this.isWaitingForReconnect) {
             this.ping();
             sinceLastMsg = 0;
         }
@@ -234,9 +232,8 @@ class Client {
 
     onLogout () {
         this._logger.log(`${this.username} is logging out!`);
-        this.username = this.uuid;
+        this.setUsername();
         this.user = null;
-        this.loggedIn = false;
     }
 
     async getNewName (name) {
@@ -253,8 +250,8 @@ class Client {
     }
 
     sendToEveryone (msg) {
-        const sockets = NetworkTopology.getSocketsAtProject(this.projectId);
-        sockets.forEach(socket => socket.send(msg));
+        const clients = NetworkTopology.getClientsAtProject(this.projectId);
+        clients.forEach(client => client.send(msg));
     }
 
     sendMessage (msgType, content) {
@@ -337,7 +334,7 @@ class Client {
         const clients = states
             .flatMap(state => {
                 const [projectId, roleId] = state;
-                return NetworkTopology.getSocketsAt(projectId, roleId);
+                return NetworkTopology.getClientsAt(projectId, roleId);
             });
 
         clients.forEach(client => {
@@ -373,11 +370,23 @@ class Client {
         this.send({type: 'request-actions-complete'});
     }
 
-    setState(projectId, roleId, username) {
-        this.projectId = projectId && projectId.toString();
-        this.roleId = roleId || this.roleId;
-        this.username = username || this.uuid;
+    setState(projectId, roleId=this.roleId, username=this.uuid) {
+        const oldProjectId = this.projectId;
+        const oldRoleId = this.roleId;
+        projectId = projectId && projectId.toString();
+        this.projectId = projectId;
+        this.roleId = roleId;
+
+        this.username = username;
         this.loggedIn = Utils.isSocketUuid(this.username);
+        this.emit('update', oldProjectId, oldRoleId, projectId, roleId);
+    }
+
+    setUsername(name=this.uuid) {
+        const oldUsername = this.username;
+        this.username = name;
+        this.loggedIn = this.username !== this.uuid;
+        this.emit('updateUsername', oldUsername);
     }
 
     toString() {
@@ -454,7 +463,7 @@ Client.MessageHandlers = {
         const {projectId, roleId} = req;
         const hasMoved = projectId !== this.projectId || roleId !== this.roleId;
         if (hasMoved) {
-            const err = `socket moved from ${req.roleId}/${req.projectId} ` +
+            const err = `client moved from ${req.roleId}/${req.projectId} ` +
                 `to ${this.roleId}/${this.projectId}`;
             this._logger.log(`project request ${id} canceled: ${err}`);
             return req.promise.reject(err);
@@ -478,10 +487,10 @@ Client.MessageHandlers = {
         return Projects.getProjectMetadataById(this.projectId)
             .then(metadata => {
                 const {owner} = metadata;
-                const sockets = NetworkTopology.getSocketsAtProject(projectId);
-                const owners = sockets.filter(socket => socket.username === owner);
+                const clients = NetworkTopology.getClientsAtProject(projectId);
+                const owners = clients.filter(client => client.username === owner);
 
-                owners.forEach(socket => socket.send(msg));
+                owners.forEach(client => client.send(msg));
             });
     },
 
@@ -502,9 +511,9 @@ Client.MessageHandlers = {
         const occupantForRole = {};
 
         // Get the first occupant for each role
-        NetworkTopology.getSocketsAtProject(projectId).reverse()
-            .forEach(socket => {
-                occupantForRole[socket.roleId] = socket;
+        NetworkTopology.getClientsAtProject(projectId).reverse()
+            .forEach(client => {
+                occupantForRole[client.roleId] = client;
             });
 
         const project = await Projects.getById(this.projectId);
@@ -539,10 +548,6 @@ Client.MessageHandlers = {
     },
 
 };
-
-function sleep(duration) {
-    return new Promise(resolve => setTimeout(resolve, duration));
-}
 
 // Utilities for testing
 Client.HEARTBEAT_INTERVAL = HEARTBEAT_INTERVAL;

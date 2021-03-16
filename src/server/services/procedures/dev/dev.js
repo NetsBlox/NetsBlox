@@ -77,6 +77,7 @@ dev.sum = function(numbers) {
 
 /**
  * Fetch debug logs for debugging remotely.
+ * @category logging
  */
 dev.getLogs = function() {
     return devLogger.read();
@@ -84,6 +85,7 @@ dev.getLogs = function() {
 
 /**
  * Fetch debug logs for debugging remotely.
+ * @category logging
  */
 dev.clearLogs = function() {
     return devLogger.clear();

@@ -43,11 +43,11 @@ module.exports = [
                     return res.status(400).send(err);
                 }
 
-                // get the socket and call onLogout
+                // get the client and call onLogout
                 const {clientId} = req.body;
-                const socket = NetworkTopology.getSocket(clientId);
-                if (socket) {
-                    socket.onLogout();
+                const client = NetworkTopology.getClient(clientId);
+                if (client) {
+                    client.onLogout();
                 }
 
                 logger.log(`${req.session.username} has logged out`);
