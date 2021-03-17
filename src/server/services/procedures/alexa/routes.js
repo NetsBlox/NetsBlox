@@ -42,52 +42,35 @@ const SendMessageIntentHandler = {
         && Alexa.getIntentName(handlerInput.requestEnvelope) === 'SendMessageIntent';
     },
     async handle(handlerInput) {
-        const {accessToken} = handlerInput.requestEnvelope.session.user;
-        if (accessToken === undefined) {
-            return handlerInput.responseBuilder
-                .speak('Please log into your Netsblox account. ')
-                .withLinkAccountCard()
-                .getResponse();
-        } else {
-            const projectName = Alexa.getSlotValue(handlerInput.requestEnvelope, "project");
-            const content = {
-                message: Alexa.getSlotValue(handlerInput.requestEnvelope, "message"),
-            };
+        const projectName = Alexa.getSlotValue(handlerInput.requestEnvelope, "project");
+        const content = {
+            message: Alexa.getSlotValue(handlerInput.requestEnvelope, "message"),
+        };
 
-            devLogger.log("Handling sending message intent");
+        devLogger.log("Handling sending message intent");
+        const accessToken = handlerInput.requestEnvelope.context.System.user.accessToken;
 
-            const token = await OAuth.getToken(accessToken);
-            const username = token.username;
-            devLogger.log("Logged in: " + username);
+        const address = projectName + "@tabithalee";
+        const messageType = "Alexa";
+        const speechText = "Message '" + content.message + "' sent to " + address;
+        const resolvedAddr = await NetsBloxAddress.new(address);
+        //.catch(err => {
+        //res.status(400).send(err.message);
+        //});
 
-            const address = projectName + "@tabithalee";
-            const messageType = "Alexa";
-            devLogger.log("Address: " + address);
-            const speechText = "Sent message to project " + project + " belonging to user " + username;
-            const resolvedAddr = await NetsBloxAddress.new(address);
-            devLogger.log("Resolved address");
-            //.catch(err => {
-            //res.status(400).send(err.message);
-            //});
+        if (resolvedAddr) {
+            devLogger.log("Sending message to " + address);
+            devLogger.log("Message is " + content.message);
+            const client = new RemoteClient(resolvedAddr.projectId);
+            await client.sendMessageToRoom(messageType, content);
+            devLogger.log("Message sent to " + address);
+        }
 
-            if (resolvedAddr) {
-                devLogger.log(speechText);
-                devLogger.log("Message is " + content.message);
-                const client = new RemoteClient(resolvedAddr.projectId);
-                await client.sendMessageToRoom(messageType, content);
-            } else {
-                return handlerInput.responseBuilder
-                    .speak('This project does not exist.')
-                    .withSimpleCard('Message failed', speechText)
-                    .withShouldEndSession(false)
-                    .getResponse();
-            }
-
-            return handlerInput.responseBuilder
-                .speak(speechText)
-                .withSimpleCard('Message sent', speechText)
-                .withShouldEndSession(false)
-                .getResponse();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .withSimpleCard('Message sent', speechText)
+            .withShouldEndSession(false)
+            .getResponse();
         }
     }
 };
