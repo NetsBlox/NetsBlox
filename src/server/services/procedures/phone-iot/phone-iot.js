@@ -222,7 +222,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} width Width of the button (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the button (percentage).
      * @param {string=} text text to display on the button (default empty).
-     * @param {Object=} options Additional options: id, event, style, color, textColor
+     * @param {Object=} options Additional options: id, event, style, color, textColor, landscape, fontSize
      * @returns {string} id of the created button
      */
     PhoneIoT.prototype.addButton = function (device, x, y, width, height, text='', options) {
@@ -243,12 +243,15 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             event: { parse: types.parse.String },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(255, 255, 255) },
+            landscape: { parse: common.parseBool, default: false },
+            fontSize: { parse: common.parseFontSize, default: 1.0 },
         });
         return this._passToDevice('addButton', arguments);
     };
     /**
      * Add a custom image display to the device, which is initially empty.
      * This can be used to display an image, or to retrieve an image taken from the device's camera.
+     * Unless set to readonly, a user can click on the control to take a new image from the camera.
      * If an event is provided, it will be raised every time the user stores a new image in it (params: 'id').
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
@@ -257,18 +260,19 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the image display (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the image display (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the image display (percentage).
-     * @param {Object=} options Additional options: id, event
+     * @param {Object=} options Additional options: id, event, readonly
      * @returns {string} id of the created button
      */
     PhoneIoT.prototype.addImageDisplay = function (device, x, y, width, height, options) {
         arguments[5] = common.parseOptions(options, {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
+            readonly: { parse: common.parseBool, default: false },
         });
         return this._passToDevice('addImageDisplay', arguments);
     };
     /**
-     * Add a custom text field to the device - users can click on it to enter text.
+     * Add a custom text field to the device - unless set to readonly, users can click on it to enter text.
      * If an event is provided, it will be raised every time the user enters new text (params: 'id', 'text').
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
@@ -277,7 +281,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the text field (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the text field (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the text field (percentage).
-     * @param {Object=} options Additional options: id, event, text, color, textColor
+     * @param {Object=} options Additional options: id, event, text, color, textColor, readonly
      * @returns {string} id of the created button
      */
     PhoneIoT.prototype.addTextField = function (device, x, y, width, height, options) {
@@ -287,6 +291,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             text: { parse: types.parse.String, default: '' },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
+            readonly: { parse: common.parseBool, default: false },
         });
         return this._passToDevice('addTextField', arguments);
     };
@@ -299,7 +304,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the joystick (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the joystick (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the joystick (percentage).
-     * @param {Object=} options Additional options: id, event, color
+     * @param {Object=} options Additional options: id, event, color, landscape
      * @returns {string} id of the created button
      */
     PhoneIoT.prototype.addJoystick = function (device, x, y, width, options) {
@@ -307,6 +312,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
+            landscape: { parse: common.parseBool, default: false },
         });
         return this._passToDevice('addJoystick', arguments);
     };
@@ -409,15 +415,63 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('authenticate', arguments);
     };
     /**
-     * Begin listening for events such as button presses.
+     * Begin listening to GUI events such as button presses.
      * This will check for valid login credentials (see setCredentials).
      * @param {string} device name of the device (matches at the end)
      */
-    PhoneIoT.prototype.listen = async function (device) {
+    PhoneIoT.prototype.listenToGUI = async function (device) {
         this.authenticate(device); // throws on failure - we want this
         
         const _device = await this._getDevice(device);
         _device.guiListeners[this.socket.clientId] = this.socket;
+    };
+    /**
+     * Begin listening to sensor update events, which are sent on a regular basis.
+     * This will check for valid login credentials (see setCredentials).
+     * Calling getSensors will give you a list of all the sensor names.
+     * The events are sent to a message type of the same name as the sensor.
+     * 3D values have arguments x, y, z. 4D values have x, y, z, w. Otherwise, see below:
+     * light - value
+     * sound - volume
+     * proximity - distance
+     * step counter - count
+     * location - latitude, longitude, bearing, altitude
+     * Additionally, all sensors receive an argument called 'device', which holds the device id.
+     * @param {string} device name of the device (matches at the end)
+     * @param {Array} sensors list if sensors to listen for (events have same name)
+     */
+    PhoneIoT.prototype.listenToSensors = async function (device, sensors) {
+        const items = new Set();
+
+        // first, check that we got valid sensor names
+        for (const sensor of sensors) {
+            const lower = sensor.toString().toLowerCase();
+            if (common.SENSOR_PACKERS[lower] === undefined) {
+                throw Error(`unknown sensor: ${sensor}`);
+            }
+            items.add(lower);
+        }
+
+        this.authenticate(device); // throws on failure - we want this
+        const _device = await this._getDevice(device);
+        
+        for (const sensor of items) {
+            let bucket = _device.sensorToListeners[sensor];
+            if (bucket === undefined) {
+                bucket = {};
+                _device.sensorToListeners[sensor] = bucket;
+            }
+            bucket[this.socket.clientId] = this.socket;
+        }
+    };
+    /**
+     * Gets a list of the names of all available sensors.
+     * These are needed for listenToSensors.
+     * @category Sensors
+     * @returns {Array} list of sensor names
+     */
+    PhoneIoT.prototype.getSensors = function () {
+        return Object.keys(common.SENSOR_PACKERS);
     };
     /**
      * Sets the login credentials for this device.
