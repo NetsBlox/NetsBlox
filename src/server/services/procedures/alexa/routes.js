@@ -62,6 +62,7 @@ const SendMessageIntentHandler = {
 
             const address = projectName + "@" + username;
             const messageType = "Alexa";
+            devLogger.log("Address: " + address);
             const speechText = "Sent message to project " + project + " belonging to user " + username;
             const resolvedAddr = await NetsBloxAddress.new(address);
             //.catch(err => {
@@ -73,6 +74,12 @@ const SendMessageIntentHandler = {
                 devLogger.log("Message is " + content.message);
                 const client = new RemoteClient(resolvedAddr.projectId);
                 await client.sendMessageToRoom(messageType, content);
+            } else {
+                return handlerInput.responseBuilder
+                    .speak('This project does not exist.')
+                    .withSimpleCard('Message failed', speechText)
+                    .withShouldEndSession(false)
+                    .getResponse();
             }
 
             return handlerInput.responseBuilder
