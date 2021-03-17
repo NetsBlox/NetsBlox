@@ -42,43 +42,45 @@ const SendMessageIntentHandler = {
         && Alexa.getIntentName(handlerInput.requestEnvelope) === 'SendMessageIntent';
     },
     async handle(handlerInput) {
-        const projectName = Alexa.getSlotValue(handlerInput.requestEnvelope, "project");
-        const content = {
-            message: Alexa.getSlotValue(handlerInput.requestEnvelope, "message"),
-        };
+        const {accessToken} = handlerInput.requestEnvelope.session.user;
+        if (accessToken === undefined) {
+            return handlerInput.responseBuilder
+                .speak('Please log into your Netsblox account. ')
+                .withLinkAccountCard()
+                .getResponse();
+        } else {
+            const projectName = Alexa.getSlotValue(handlerInput.requestEnvelope, "project");
+            const content = {
+                message: Alexa.getSlotValue(handlerInput.requestEnvelope, "message"),
+            };
 
-        devLogger.log("Handling sending message intent");
-        const authCode = handlerInput.requestEnvelope.context.System.user.accessToken;
+            devLogger.log("Handling sending message intent");
 
-        devLogger.log("token as provided by Alexa: " + authCode);
-        const [/*prefix*/, tokenID] = authCode.split(' ');
-        //const token = await OAuth.getToken(tokenID);
+            const token = await OAuth.getToken(accessToken);
+            const username = token.username;
+            devLogger.log("Logged in: " + username);
 
-        //devLogger.log("Resolved: " + JSON.stringify(token));
-
-        //const username = token.username;
-
-        const address = projectName + "@tabithalee";
-        const messageType = "Alexa";
-        const speechText = "Message '" + content.message + "' sent to " + address;
-        const resolvedAddr = await NetsBloxAddress.new(address);
+            const address = projectName + "@" + username;
+            const messageType = "Alexa";
+            const speechText = "Sent message to project " + project + " belonging to user " + username;
+            const resolvedAddr = await NetsBloxAddress.new(address);
             //.catch(err => {
-                //res.status(400).send(err.message);
+            //res.status(400).send(err.message);
             //});
 
-        if (resolvedAddr) {
-            devLogger.log("Sending message to " + address);
-            devLogger.log("Message is " + content.message);
-            const client = new RemoteClient(resolvedAddr.projectId);
-            await client.sendMessageToRoom(messageType, content);
-            devLogger.log("Message sent to " + address);
-        }
+            if (resolvedAddr) {
+                devLogger.log(speechText);
+                devLogger.log("Message is " + content.message);
+                const client = new RemoteClient(resolvedAddr.projectId);
+                await client.sendMessageToRoom(messageType, content);
+            }
 
-        return handlerInput.responseBuilder
-            .speak(speechText)
-            .withSimpleCard('Message sent', speechText)
-            .withShouldEndSession(false)
-            .getResponse();
+            return handlerInput.responseBuilder
+                .speak(speechText)
+                .withSimpleCard('Message sent', speechText)
+                .withShouldEndSession(false)
+                .getResponse();
+        }
     }
 };
 
@@ -172,11 +174,9 @@ const LogRequestInterceptor = {
         // Log Request
         devLogger.log("==== REQUEST ======");
         devLogger.log(JSON.stringify(handlerInput.requestEnvelope, null, 2));
-
         const {accessToken} = handlerInput.requestEnvelope.session.user;
         const token = await OAuth.getToken(accessToken);
         devLogger.log("Resolved username: " + token.username);
-
     }
 };
 
