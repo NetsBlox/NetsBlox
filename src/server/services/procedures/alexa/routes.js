@@ -60,11 +60,12 @@ const SendMessageIntentHandler = {
             const username = token.username;
             devLogger.log("Logged in: " + username);
 
-            const address = projectName + "@" + username;
+            const address = projectName + "@tabithalee";
             const messageType = "Alexa";
             devLogger.log("Address: " + address);
             const speechText = "Sent message to project " + project + " belonging to user " + username;
             const resolvedAddr = await NetsBloxAddress.new(address);
+            devLogger.log("Resolved address");
             //.catch(err => {
             //res.status(400).send(err.message);
             //});
