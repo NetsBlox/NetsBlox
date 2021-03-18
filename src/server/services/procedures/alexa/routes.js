@@ -71,7 +71,6 @@ const SendMessageIntentHandler = {
             .withSimpleCard('Message sent', speechText)
             .withShouldEndSession(false)
             .getResponse();
-        }
     }
 };
 
