@@ -43,12 +43,12 @@ const SendMessageIntentHandler = {
     },
     async handle(handlerInput) {
         const accessToken = handlerInput.requestEnvelope.context.System.user.accessToken;
-        if (accessToken === undefined) {
-            return handlerInput.responseBuilder
-                .speak('Please log into your Netsblox account. ')
-                .withLinkAccountCard()
-                .getResponse();
-        } else {
+        //if (accessToken === undefined) {
+        //    return handlerInput.responseBuilder
+        //        .speak('Please log into your Netsblox account. ')
+        //        .withLinkAccountCard()
+        //        .getResponse();
+        //} else {
             const projectName = Alexa.getSlotValue(handlerInput.requestEnvelope, "project");
             const content = {
                 message: Alexa.getSlotValue(handlerInput.requestEnvelope, "message"),
@@ -84,7 +84,7 @@ const SendMessageIntentHandler = {
                 .withShouldEndSession(false)
                 .getResponse();
         }
-    }
+    //}
 };
 
 const HelpIntentHandler = {
