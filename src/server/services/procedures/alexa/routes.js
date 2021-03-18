@@ -24,7 +24,7 @@ const LaunchRequestHandler = {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
     handle(handlerInput) {
-        const speechText = 'Welcome to the Alexa NetsBlox Skill. Would you like to send a message?';
+        const speechText = 'Welcome to the Alexa NetsBlox Skill. What would you like to do?';
 
         return handlerInput.responseBuilder
             .speak(speechText)
@@ -43,12 +43,12 @@ const SendMessageIntentHandler = {
     },
     async handle(handlerInput) {
         const accessToken = handlerInput.requestEnvelope.context.System.user.accessToken;
-        //if (accessToken === undefined) {
-        //    return handlerInput.responseBuilder
-        //        .speak('Please log into your Netsblox account. ')
-        //        .withLinkAccountCard()
-        //        .getResponse();
-        //} else {
+        if (accessToken === undefined) {
+            return handlerInput.responseBuilder
+                .speak('Please log into your Netsblox account.')
+                .withLinkAccountCard()
+                .getResponse();
+        } else {
             const projectName = Alexa.getSlotValue(handlerInput.requestEnvelope, "project");
             const content = {
                 message: Alexa.getSlotValue(handlerInput.requestEnvelope, "message"),
@@ -61,9 +61,7 @@ const SendMessageIntentHandler = {
 
             const address = projectName + "@" + username;
             const messageType = "Alexa";
-            devLogger.log("Address: " + address);
-            const speechText = "Message '" + content.message + "' sent to " + address;
-            devLogger.log(speechText);
+            const speechText = "Sent message '" + content.message + "' to " + projectName;
 
             const resolvedAddr = await NetsBloxAddress.new(address);
 
@@ -72,19 +70,20 @@ const SendMessageIntentHandler = {
                 await client.sendMessageToRoom(messageType, content);
             } else {
                 return handlerInput.responseBuilder
-                    .speak('This project does not exist.')
+                    .speak('This project does not exist. ')
                     .withSimpleCard('Message failed', speechText)
                     .withShouldEndSession(false)
                     .getResponse();
             }
 
+            devLogger.log(speechText);
             return handlerInput.responseBuilder
                 .speak(speechText)
                 .withSimpleCard('Message sent', speechText)
                 .withShouldEndSession(false)
                 .getResponse();
         }
-    //}
+    }
 };
 
 const HelpIntentHandler = {
@@ -95,7 +94,8 @@ const HelpIntentHandler = {
     },
     handle(handlerInput) {
         devLogger.log('handling HelpIntent...');
-        const speechText = 'You can say hello to me!';
+        const speechText = 'This skill is a tool to send messages from Alexa to your Netsblox projects. ' +
+            'Make sure you are connected to your Netsblox account, then say "Send a message!';
 
         return handlerInput.responseBuilder
             .speak(speechText)
