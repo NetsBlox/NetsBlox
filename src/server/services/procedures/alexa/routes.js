@@ -61,8 +61,8 @@ const SendMessageIntentHandler = {
 
             const address = projectName + "@" + username;
             const messageType = "Alexa";
-            const speechText = "Sent message '" + content.message + "' to project " + project
-                + " belonging to user " + username;
+            devLogger.log("Address: " + address);
+            const speechText = "Message '" + content.message + "' sent to " + address;
             devLogger.log(speechText);
 
             const resolvedAddr = await NetsBloxAddress.new(address);
