@@ -3,8 +3,8 @@ const path = require('path');
 const assert = require('assert');
 
 const dataFiles = [
-    ['Quelccaya Summit Dome', 'qsd.csv', 1784],
-    ['Quelccaya North Dome', 'qnd.csv', 100],
+    ['Quelccaya Summit', 'qsd.csv', 1784],
+    ['Quelccaya North', 'qnd.csv', 100],
     ['Huascaran Dome', 'huascaran.csv', 179],
 ];
 

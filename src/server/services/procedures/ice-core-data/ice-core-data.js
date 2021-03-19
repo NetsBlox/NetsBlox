@@ -147,7 +147,7 @@ IceCoreData._coreMetadata = {
         latitude: -13.9333118,
         longitude: -70.8420878,
     },
-    'Huascaran': {
+    'Huascaran Dome': {
         name: 'Huascaran Dome',
         description: 'Between 1990 and 1992 a survey of five glaciers located north-south along the Cordillera Blanca was conducted to identify the best sites for acquiring longer-term paleoclimatic and environmental records. In addition, satellite-linked automatic weather stations were established on two of the sites, Hualcán and Pucahirca, to record current meteorological conditions at the top of the Andes. The col of Huascarán, the highest (6048 m a.s.l) and coldest of the sites, was selected for drilling to bedrock as shallow cores from all five sites confirmed that it contained the best preserved stratigraphic records. In 1993 two ice cores were drilled to bedrock using a portable, light-weight, solar-powered thermal drilling system.',
         latitude: -9.1223601,
