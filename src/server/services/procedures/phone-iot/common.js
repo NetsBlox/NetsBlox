@@ -92,6 +92,13 @@ common.parseSensorPeriod = function (val) {
     try { return types.parse.BoundedNumber(val, [100, undefined]); }
     catch (e) { throw Error(`failed to parse ${val} as sensor update period: ${e}`); }
 };
+common.parseAlign = function (val) {
+    const lower = val.toString().toLowerCase();
+    if (lower === 'left') return 0;
+    if (lower === 'center') return 1;
+    if (lower === 'right') return 2;
+    throw Error(`unknown text align: ${val}`);
+};
 
 // given an options dict and a rules dict, generates a sanitized options dict.
 common.parseOptions = function (opts, rules) {

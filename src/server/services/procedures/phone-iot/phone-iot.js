@@ -199,7 +199,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the label (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the label (percentage).
      * @param {string=} text The text to display on the label (defaults to empty)
-     * @param {Object=} options Additional options: id, textColor
+     * @param {Object=} options Additional options: id, textColor, align, fontSize
      * @returns {string} id of the created label
      */
     PhoneIoT.prototype.addLabel = function (device, x, y, text='', options) {
@@ -207,6 +207,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         arguments[4] = common.parseOptions(options, {
             id: { parse: types.parse.String },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
+            fontSize: { parse: common.parseFontSize, default: 1.0 },
+            align: { parse: common.parseAlign, default: 0 },
         });
         return this._passToDevice('addLabel', arguments);
     };
@@ -281,7 +283,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the text field (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the text field (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the text field (percentage).
-     * @param {Object=} options Additional options: id, event, text, color, textColor, readonly
+     * @param {Object=} options Additional options: id, event, text, color, textColor, readonly, fontSize, align
      * @returns {string} id of the created button
      */
     PhoneIoT.prototype.addTextField = function (device, x, y, width, height, options) {
@@ -292,6 +294,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
             readonly: { parse: common.parseBool, default: false },
+            fontSize: { parse: common.parseFontSize, default: 1.0 },
+            align: { parse: common.parseAlign, default: 0 },
         });
         return this._passToDevice('addTextField', arguments);
     };
