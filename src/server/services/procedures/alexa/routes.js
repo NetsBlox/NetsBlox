@@ -53,13 +53,18 @@ const SendMessageIntentHandler = {
             const content = {
                 message: Alexa.getSlotValue(handlerInput.requestEnvelope, "message"),
             };
+            const role = Alexa.getSlotValue(handlerInput.requestEnvelope, "role");
 
             devLogger.log("Handling sending message intent");
 
             const token = await OAuth.getToken(accessToken);
             const username = token.username;
 
-            const address = projectName + "@" + username;
+            let address = projectName + "@" + username;
+
+            if (!role.toLowerCase().trim().localeCompare('all'))
+                address = role + address;
+
             const messageType = "Alexa";
             const speechText = "Sent message '" + content.message + "' to " + projectName;
 
@@ -77,8 +82,12 @@ const SendMessageIntentHandler = {
             }
 
             devLogger.log(speechText);
+
+            const reprompt = "What else would you like to do?";
+
             return handlerInput.responseBuilder
                 .speak(speechText)
+                .reprompt(reprompt)
                 .withSimpleCard('Message sent', speechText)
                 .withShouldEndSession(false)
                 .getResponse();
