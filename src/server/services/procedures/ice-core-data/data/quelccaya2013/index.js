@@ -18,7 +18,7 @@ const records = dataFiles.flatMap(datasetInfo => {
         value = parseFloat(value);
         assert(!isNaN(year), `Found NaN year: ${line}`);
         assert(!isNaN(value), `Found NaN value: ${line}`);
-        return {core, year, datatype: 'Deuterium', value};
+        return {core, year, datatype: 'Delta18O', value};
     });
     assert(
         records.length === recordCount,
