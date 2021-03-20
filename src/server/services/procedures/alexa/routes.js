@@ -62,8 +62,11 @@ const SendMessageIntentHandler = {
 
             let address = projectName + "@" + username;
 
-            if (!role.toLowerCase().trim().localeCompare('all'))
-                address = role + address;
+            if (!role.localeCompare('all')) {
+                address = role + "@" + address;
+            }
+
+            devLogger.log(address);
 
             const messageType = "Alexa";
             const speechText = "Sent message '" + content.message + "' to " + projectName;
