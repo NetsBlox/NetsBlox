@@ -53,7 +53,6 @@ const SendMessageIntentHandler = {
             const content = {
                 message: Alexa.getSlotValue(handlerInput.requestEnvelope, "message"),
             };
-            const role = Alexa.getSlotValue(handlerInput.requestEnvelope, "role");
 
             devLogger.log("Handling sending message intent");
 
@@ -62,9 +61,11 @@ const SendMessageIntentHandler = {
 
             let address = projectName + "@" + username;
 
-            if (!role.localeCompare('all')) {
+            //don't worry about roles for now
+            /*const role = Alexa.getSlotValue(handlerInput.requestEnvelope, "role");
+            if (role.localeCompare('all') !== 0) {
                 address = role + "@" + address;
-            }
+            }*/
 
             devLogger.log(address);
 
