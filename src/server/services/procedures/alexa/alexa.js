@@ -28,11 +28,17 @@ Alexa.getTokens = function() {
     var result = spawnSync('ask util generate-lwa-tokens',
         ['--client-id ' + clientID, '--client-confirmation '+ clientSecret]);
 
-    if (result.status === 0) {
-        var parseTokens = result.stdout;
-        devLogger.log(parseTokens);
-        return parseTokens;
-    }
+    var parseTokens = result.stdout;
+    devLogger.log(parseTokens);
+    return parseTokens;
+};
+
+Alexa.getAskVersion = function() {
+    var result = spawnSync('ask', ['--version']);
+
+    var data = result.stdout;
+    devLogger.log(data);
+    return data;
 };
 /*
 //basic listSkills RPC
