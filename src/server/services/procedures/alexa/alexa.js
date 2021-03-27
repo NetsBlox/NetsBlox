@@ -9,14 +9,6 @@ var spawnSync = require('child_process').spawnSync;
 var clientID = process.env.ALEXA_CLIENT_ID,
     clientSecret = process.env.ALEXA_CLIENT_SECRET;
 
-var result = spawnSync('ask util generate-lwa-tokens',
-    ['--client-id', clientID, '--client-confirmation', clientSecret]);
-
-if (result.status === 0) {
-    var parseTokens = result.stdout;
-    devLogger.log(parseTokens);
-}
-
 //temp
 var refreshToken = "";
 var vendorID = "";
@@ -32,6 +24,16 @@ const smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
     .withRefreshTokenConfig(refreshTokenConfig)
     .client();
 
+Alexa.getTokens = function() {
+    var result = spawnSync('ask util generate-lwa-tokens',
+        ['--client-id', clientID, '--client-confirmation', clientSecret]);
+
+    if (result.status === 0) {
+        var parseTokens = result.stdout;
+        devLogger.log(parseTokens);
+        return parseTokens;
+    }
+};
 
 //basic listSkills RPC
 Alexa.listSkills = function() {
