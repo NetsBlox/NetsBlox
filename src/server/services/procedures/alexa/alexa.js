@@ -2,7 +2,7 @@ const _ = require('lodash');
 
 const Alexa = {};
 
-const AlexaSMAPI = require('ask-smapi-sdk');
+//const AlexaSMAPI = require('ask-smapi-sdk');
 
 var spawnSync = require('child_process').spawnSync;
 
@@ -19,10 +19,10 @@ const refreshTokenConfig = {
     refreshToken,
 };
 
-//creates SMAPI client
+/*//creates SMAPI client
 const smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
     .withRefreshTokenConfig(refreshTokenConfig)
-    .client();
+    .client();*/
 
 Alexa.getTokens = function() {
     var result = spawnSync('ask util generate-lwa-tokens',
@@ -34,7 +34,7 @@ Alexa.getTokens = function() {
         return parseTokens;
     }
 };
-
+/*
 //basic listSkills RPC
 Alexa.listSkills = function() {
     smapiClient.listSkillsForVendorV1(vendorID)
@@ -58,6 +58,7 @@ Alexa.getSkillInfo = function(skillId, stage) {
             devLogger.log(JSON.stringify(err.response));
         });
 };
+*/
 /*
 Alexa.createSkill = function(description, examplePhrases, keywords, name) {
     var skillManifest =
