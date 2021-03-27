@@ -29,7 +29,6 @@ Alexa.getTokens = function() {
         ['--client-id ' + clientID, '--client-confirmation '+ clientSecret]);
 
     var parseTokens = result.stdout;
-    devLogger.log(parseTokens);
     return parseTokens;
 };
 
@@ -37,7 +36,6 @@ Alexa.getAskVersion = function() {
     var result = spawnSync('ask', ['--version']);
 
     var data = result.stdout;
-    devLogger.log(data);
     return data;
 };
 /*
