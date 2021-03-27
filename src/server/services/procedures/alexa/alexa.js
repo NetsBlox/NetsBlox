@@ -26,7 +26,7 @@ const smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
 
 Alexa.getTokens = function() {
     var result = spawnSync('ask util generate-lwa-tokens',
-        ['--client-id', clientID, '--client-confirmation', clientSecret]);
+        ['--client-id ' + clientID, '--client-confirmation '+ clientSecret]);
 
     if (result.status === 0) {
         var parseTokens = result.stdout;
