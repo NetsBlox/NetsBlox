@@ -4,7 +4,7 @@ const AutograderCode = fs.readFileSync(path.join(__dirname, 'template.ejs'), 'ut
 const getDatabase = require('./storage');
 const express = require('express');
 const router = express();
-const request = require('request');
+const axios = require('axios');
 
 router.get(
     '/:author/:name.js',
@@ -25,16 +25,17 @@ router.get(
 );
 
 router.post(
-    '/coursera',
+    '/submit/coursera',
     async (req, res) => {
         const url = 'https://www.coursera.org/api/onDemandProgrammingScriptSubmissions.v1';
-        const proxyReq = request({
+        const response = await axios({
             method: req.method,
-            uri: url,
-            body: req.body,
+            url: url,
             headers: req.headers,
+            responseType: 'stream',
+            data: req.body,
         });
-        return proxyReq.pipe(res);
+        return response.data.pipe(res);
     }
 );
 

@@ -259,7 +259,7 @@
                 secret,
                 parts: Object.fromEntries(partEntries),
             };
-            const url = this.getOriginURL() + '/services/routes/autograders/';
+            const url = this.getOriginURL() + '/services/routes/autograders/submit/coursera';
             const response = await fetch(url, {  // FIXME: send this through the netsblox server
                 method: 'POST',
                 headers: {
@@ -267,7 +267,6 @@
                     'Cache-Control': 'no-cache'
                 },
                 body: JSON.stringify(body),
-                mode: 'no-cors',  // FIXME: no status code!? annoying...
             });
             if (response.status < 400) {
                 this.ide.showMessage(`Successfully submitted ${assignment.name}!`);
