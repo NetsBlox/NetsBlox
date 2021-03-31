@@ -199,7 +199,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the label (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the label (percentage).
      * @param {string=} text The text to display on the label (defaults to empty)
-     * @param {Object=} options Additional options: id, textColor, align, fontSize
+     * @param {Object=} options Additional options: id, textColor, align, fontSize, landscape
      * @returns {string} id of the created label
      */
     PhoneIoT.prototype.addLabel = function (device, x, y, text='', options) {
@@ -209,6 +209,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
             fontSize: { parse: common.parseFontSize, default: 1.0 },
             align: { parse: common.parseAlign, default: 0 },
+            landscape: { parse: common.parseBool, default: false },
         });
         return this._passToDevice('addLabel', arguments);
     };
@@ -255,6 +256,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This can be used to display an image, or to retrieve an image taken from the device's camera.
      * Unless set to readonly, a user can click on the control to take a new image from the camera.
      * If an event is provided, it will be raised every time the user stores a new image in it (params: 'id').
+     * The fit option can be set to 'fit' (default), 'zoom', or 'stretch'.
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
      * @param {string} device name of the device (matches at the end)
@@ -262,7 +264,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the image display (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the image display (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the image display (percentage).
-     * @param {Object=} options Additional options: id, event, readonly
+     * @param {Object=} options Additional options: id, event, readonly, landscape, fit
      * @returns {string} id of the created button
      */
     PhoneIoT.prototype.addImageDisplay = function (device, x, y, width, height, options) {
@@ -270,6 +272,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
             readonly: { parse: common.parseBool, default: false },
+            landscape: { parse: common.parseBool, default: false },
+            fit: { parse: common.parseFit, default: 0 },
         });
         return this._passToDevice('addImageDisplay', arguments);
     };

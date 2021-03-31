@@ -340,7 +340,7 @@ Device.prototype.addLabel = async function (device, args, clientId) {
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(27);
+    const message = Buffer.alloc(28);
     message.write('g', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
@@ -348,7 +348,8 @@ Device.prototype.addLabel = async function (device, args, clientId) {
     message.writeInt32BE(opts.textColor, 17);
     message.writeFloatBE(opts.fontSize, 21);
     message[25] = opts.align;
-    message[26] = idbuf.length;
+    message[26] = opts.landscape ? 1 : 0
+    message[27] = idbuf.length;
 
     const text = Buffer.from(args[2], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
@@ -391,7 +392,7 @@ Device.prototype.addImageDisplay = async function (device, args, clientId) {
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(26);
+    const message = Buffer.alloc(28);
     message.write('U', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
@@ -399,6 +400,8 @@ Device.prototype.addImageDisplay = async function (device, args, clientId) {
     message.writeFloatBE(args[2], 17);
     message.writeFloatBE(args[3], 21);
     message[25] = opts.readonly ? 1 : 0;
+    message[26] = opts.landscape ? 1 : 0;
+    message[27] = opts.fit;
     this.sendToDevice(Buffer.concat([message, idbuf]));
     
     throwIfErr(await response);

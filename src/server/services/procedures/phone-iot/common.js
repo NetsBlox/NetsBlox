@@ -99,6 +99,13 @@ common.parseAlign = function (val) {
     if (lower === 'right') return 2;
     throw Error(`unknown text align: ${val}`);
 };
+common.parseFit = function (val) {
+    const lower = val.toString().toLowerCase();
+    if (lower === 'fit') return 0;
+    if (lower === 'zoom') return 1;
+    if (lower === 'stretch') return 2;
+    throw Error(`unknown fit mode: ${val}`);
+};
 
 // given an options dict and a rules dict, generates a sanitized options dict.
 common.parseOptions = function (opts, rules) {
