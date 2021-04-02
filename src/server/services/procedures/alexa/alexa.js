@@ -2,16 +2,17 @@ const _ = require('lodash');
 
 const Alexa = {};
 
-//const AlexaSMAPI = require('ask-smapi-sdk');
+const AlexaSMAPI = require('ask-smapi-sdk');
 
 var spawnSync = require('child_process').spawnSync;
 
 var clientID = process.env.ALEXA_CLIENT_ID,
-    clientSecret = process.env.ALEXA_CLIENT_SECRET;
+    clientSecret = process.env.ALEXA_CLIENT_SECRET,
+    refreshToken = process.env.ALEXA_REFRESH_TOKEN,
+    accessToken = process.env.ALEXA_ACCESS_TOKEN,
+    vendorID = process.env.ALEXA_VENDOR_ID;
 
 //temp
-var refreshToken = "";
-var vendorID = "";
 
 const refreshTokenConfig = {
     clientID,
@@ -19,26 +20,24 @@ const refreshTokenConfig = {
     refreshToken,
 };
 
-/*//creates SMAPI client
+//creates SMAPI client
 const smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
     .withRefreshTokenConfig(refreshTokenConfig)
-    .client();*/
+    .client();
 
 Alexa.getTokens = function() {
     var result = spawnSync('ask util generate-lwa-tokens',
         ['--client-id ' + clientID, '--client-confirmation '+ clientSecret]);
 
-    var parseTokens = result.stdout;
-    return parseTokens;
+    return result.stdout;
 };
 
 Alexa.getAskVersion = function() {
     var result = spawnSync('ask', ['--version']);
 
-    var data = result.stdout;
-    return data;
+    return result.stdout;
 };
-/*
+
 //basic listSkills RPC
 Alexa.listSkills = function() {
     smapiClient.listSkillsForVendorV1(vendorID)
@@ -62,26 +61,32 @@ Alexa.getSkillInfo = function(skillId, stage) {
             devLogger.log(JSON.stringify(err.response));
         });
 };
-*/
-/*
+
+//untested createSkill RPC
 Alexa.createSkill = function(description, examplePhrases, keywords, name) {
-    var skillManifest =
+    var skillRequest =
         {
-            'publishingInformation':
-            {
-                'locales':
-                    {
-                        'en-US':
-                            {
-                                'summary': description,
-                                'examplePhrases': examplePhrases,
-                                'keywords': keywords,
-                                'name': name,
-                            }
-                    }
+            "vendorId": vendorID,
+            "manifest": {
+                "publishingInformation": {
+                    "locales": {
+                        "en-US": {
+                            "summary": description,
+                            "examplePhrases": examplePhrases,
+                            "keywords": keywords,
+                            "name": name,
+                            "description": description
+                        }
+                    },
+                    "isAvailableWorldwide": false,
+                    "testingInstructions": "CUSTOM",
+                    "category": "",
+                    "distributionCountries": [
+                        "US",
+                    ]
+                }
             }
         };
-    var skillRequest = {'vendorId' : process.env.ALEXA_VENDOR_ID, 'manifest' : skillManifest};
     smapiClient.createSkillForVendorV1(skillRequest)
         .then((response) => {
             return (JSON.stringify(response));
@@ -90,7 +95,20 @@ Alexa.createSkill = function(description, examplePhrases, keywords, name) {
             devLogger(err.message);
             return (JSON.stringify(err.response));
         });
-};*/
+};
+
+//get interaction model of skill
+Alexa.getInteractionModel = function (skillId, stage) {
+    smapiClient.getInteractionModelV1(skillId, stage, 'en-US')
+        .then((response) => {
+            return (JSON.stringify(response));
+        })
+        .catch((err) => {
+            devLogger.log(err.message);
+            devLogger.log(JSON.stringify(err.response));
+        });
+};
+
 
 /**
  * Return the caller info as detected by the server.
