@@ -30,6 +30,20 @@ Alexa.getTokens = function() {
     return refreshTokenConfig;
 };
 
+Alexa.getVendorList = function () {
+    smapiClient.getVendorListV1()
+        .then((response) => {
+            return (JSON.stringify(response));
+        })
+        .catch((err) => {
+            return err.message + JSON.stringify(err.response);
+        });
+};
+
+Alexa.getVendorId = function () {
+    return vendorID;
+};
+
 Alexa.getAskVersion = function() {
     var result = spawnSync('ask', ['--version']);
 
