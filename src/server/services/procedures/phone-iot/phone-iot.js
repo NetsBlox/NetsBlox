@@ -287,7 +287,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the text field (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the text field (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the text field (percentage).
-     * @param {Object=} options Additional options: id, event, text, color, textColor, readonly, fontSize, align
+     * @param {Object=} options Additional options: id, event, text, color, textColor, readonly, fontSize, align, landscape
      * @returns {string} id of the created button
      */
     PhoneIoT.prototype.addTextField = function (device, x, y, width, height, options) {
@@ -300,6 +300,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             readonly: { parse: common.parseBool, default: false },
             fontSize: { parse: common.parseFontSize, default: 1.0 },
             align: { parse: common.parseAlign, default: 0 },
+            landscape: { parse: common.parseBool, default: false },
         });
         return this._passToDevice('addTextField', arguments);
     };

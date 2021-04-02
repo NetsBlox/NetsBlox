@@ -415,7 +415,7 @@ Device.prototype.addTextField = async function (device, args, clientId) {
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(40);
+    const message = Buffer.alloc(41);
     message.write('T', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
@@ -424,10 +424,11 @@ Device.prototype.addTextField = async function (device, args, clientId) {
     message.writeFloatBE(args[3], 21);
     message.writeInt32BE(opts.color, 25);
     message.writeInt32BE(opts.textColor, 29);
-    message[33] = opts.readonly ? 1 : 0;
-    message.writeFloatBE(opts.fontSize, 34);
-    message[38] = opts.align;
-    message[39] = idbuf.length;
+    message.writeFloatBE(opts.fontSize, 33);
+    message[37] = opts.align;
+    message[38] = opts.readonly ? 1 : 0;
+    message[39] = opts.landscape ? 1 : 0;
+    message[40] = idbuf.length;
 
     const text = Buffer.from(opts.text, 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
