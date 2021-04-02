@@ -15,9 +15,10 @@ var clientID = process.env.ALEXA_CLIENT_ID,
 //temp
 
 const refreshTokenConfig = {
-    clientID,
-    clientSecret,
-    refreshToken,
+    "clientId" : clientID,
+    "clientSecret": clientSecret,
+    "refreshToken": refreshToken,
+    "accessToken": accessToken,
 };
 
 //creates SMAPI client
