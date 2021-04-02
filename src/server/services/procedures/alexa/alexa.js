@@ -45,8 +45,7 @@ Alexa.listSkills = function() {
             return (JSON.stringify(response));
         })
         .catch((err) => {
-            devLogger.log(err.message);
-            devLogger.log(JSON.stringify(err.response));
+            return err.message + JSON.stringify(err.response);
         });
 };
 
@@ -57,8 +56,7 @@ Alexa.getSkillInfo = function(skillId, stage) {
             return (JSON.stringify(response));
         })
         .catch((err) => {
-            devLogger.log(err.message);
-            devLogger.log(JSON.stringify(err.response));
+            return err.message + JSON.stringify(err.response);
         });
 };
 
@@ -92,8 +90,7 @@ Alexa.createSkill = function(description, examplePhrases, keywords, name) {
             return (JSON.stringify(response));
         })
         .catch((err) => {
-            devLogger(err.message);
-            return (JSON.stringify(err.response));
+            return err.message + JSON.stringify(err.response);
         });
 };
 
@@ -104,8 +101,7 @@ Alexa.getInteractionModel = function (skillId, stage) {
             return (JSON.stringify(response));
         })
         .catch((err) => {
-            devLogger.log(err.message);
-            devLogger.log(JSON.stringify(err.response));
+            return err.message + JSON.stringify(err.response);
         });
 };
 
