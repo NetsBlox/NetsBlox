@@ -40,10 +40,12 @@ Alexa.getAskVersion = function() {
 Alexa.listSkills = function() {
     smapiClient.listSkillsForVendorV1(vendorID)
         .then((response) => {
-            return (JSON.stringify(response));
+            return 'test true';
+            //return (JSON.stringify(response));
         })
         .catch((err) => {
-            return err.message + JSON.stringify(err.response);
+            return 'test false';
+            //return err.message + JSON.stringify(err.response);
         });
 };
 
