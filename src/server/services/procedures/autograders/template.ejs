@@ -258,7 +258,7 @@
                 secret,
                 parts: Object.fromEntries(partEntries),
             };
-            const url = this.getOriginURL() + '/services/routes/autograders/submit/coursera';
+            const url = this.getOriginURL() + '/routes/autograders/submit/coursera';
             const response = await fetch(url, {  // FIXME: send this through the netsblox server
                 method: 'POST',
                 headers: {
@@ -275,9 +275,7 @@
         }
 
         getOriginURL() {
-            window.location.href.split('?')[1]
-            // FIXME: use the URL that loaded the extension
-            return window.location.origin;
+            return window.location.origin + '/services';
         }
 
         async promptCourseraCredentials() {
