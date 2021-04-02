@@ -282,11 +282,25 @@
         }
 
         async promptCourseraCredentials() {
-            const dialog = new DialogBoxMorph().withKey('CourseraCredentials');
+            const dialog = new CourseraCredentialsDialog();
+            const world = this.ide.parentThatIsA(WorldMorph);
+            dialog.popUp(world);
+
+            return dialog.askCredentials();
+        }
+    }
+
+    class CourseraCredentialsDialog extends DialogBoxMorph {
+        init(target, action, environment) {
+            super.init(target, action, environment);
+            this.key = 'CourseraCredentials';
+        }
+
+        askCredentials() {
             const eml = new InputFieldMorph();
             const secret = new InputFieldMorph();
             const inp = new AlignmentMorph('column', 2);
-            const bdy = new AlignmentMorph('column', dialog.padding);
+            const bdy = new AlignmentMorph('column', this.padding);
 
             function labelText(string) {
                 return new TextMorph(
@@ -304,8 +318,8 @@
             }
 
             inp.alignment = 'left';
-            inp.setColor(dialog.color);
-            bdy.setColor(dialog.color);
+            inp.setColor(this.color);
+            bdy.setColor(this.color);
 
             eml.setWidth(200);
             secret.setWidth(200);
@@ -321,15 +335,15 @@
             inp.fixLayout();
             bdy.fixLayout();
 
-            dialog.labelString = localize('Enter Coursera Submission Info');
-            dialog.createLabel();
+            this.labelString = localize('Enter Coursera Submission Info');
+            this.createLabel();
 
-            dialog.addBody(bdy);
+            this.addBody(bdy);
 
-            dialog.addButton('ok', 'OK');
-            dialog.addButton('cancel', 'Cancel');
+            this.addButton('ok', 'OK');
+            this.addButton('cancel', 'Cancel');
 
-            dialog.fixLayout();
+            this.fixLayout();
 
             function validInputs() {
                 var checklist,
@@ -365,26 +379,28 @@
                 return true;
             }
 
-            dialog.getInput = function () {
-                return {
-                    email: eml.getValue(),
-                    secret: secret.getValue(),
-                };
+            this.getInput = function () {
+                this.cache.email = eml.getValue();
+                this.cache.secret = secret.getValue();
+                return this.cache;
             };
 
-            const world = this.ide.parentThatIsA(WorldMorph);
-            dialog.popUp(world);
+            if (this.cache.email) {
+                eml.setContents(this.cache.email);
+                secret.setContents(this.cache.secret);
+            }
 
             const deferred = utils.defer();
-            dialog.accept = () => {
+            this.accept = () => {
                 if (validInputs()) {
-                    DialogBoxMorph.prototype.accept.call(dialog);
-                    deferred.resolve(dialog.getInput());
+                    DialogBoxMorph.prototype.accept.call(this);
+                    deferred.resolve(this.getInput());
                 }
             };
             return deferred.promise;
         }
     }
+    CourseraCredentialsDialog.prototype.cache = {};
 
     class Assignment {
         constructor(name, url, desc, tests, data) {
