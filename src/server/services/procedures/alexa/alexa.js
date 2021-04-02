@@ -31,7 +31,7 @@ Alexa.getTokens = function() {
 };
 
 Alexa.getVendorList = function () {
-    smapiClient.getVendorListV1()
+    return smapiClient.getVendorListV1()
         .then((response) => {
             return (JSON.stringify(response));
         })
@@ -52,7 +52,7 @@ Alexa.getAskVersion = function() {
 
 //basic listSkills RPC
 Alexa.listSkills = function() {
-    smapiClient.listSkillsForVendorV1(vendorID)
+    return smapiClient.listSkillsForVendorV1(vendorID)
         .then((response) => {
             return 'test true';
             //return (JSON.stringify(response));
@@ -65,7 +65,7 @@ Alexa.listSkills = function() {
 
 //gets skill Info
 Alexa.getSkillInfo = function(skillId, stage) {
-    smapiClient.getSkillManifestV1(skillId, stage)
+    return smapiClient.getSkillManifestV1(skillId, stage)
         .then((response) => {
             return (JSON.stringify(response));
         })
@@ -99,7 +99,7 @@ Alexa.createSkill = function(description, examplePhrases, keywords, name) {
                 }
             }
         };
-    smapiClient.createSkillForVendorV1(skillRequest)
+    return smapiClient.createSkillForVendorV1(skillRequest)
         .then((response) => {
             return (JSON.stringify(response));
         })
@@ -110,7 +110,7 @@ Alexa.createSkill = function(description, examplePhrases, keywords, name) {
 
 //get interaction model of skill
 Alexa.getInteractionModel = function (skillId, stage) {
-    smapiClient.getInteractionModelV1(skillId, stage, 'en-US')
+    return smapiClient.getInteractionModelV1(skillId, stage, 'en-US')
         .then((response) => {
             return (JSON.stringify(response));
         })
