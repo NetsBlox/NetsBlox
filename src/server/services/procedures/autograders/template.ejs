@@ -16,11 +16,6 @@
             this.currentAssignment = null;
             this.resultsDialog = null;
             this.integrations = config.integrations;
-            // TODO: check for coursera integration.
-            // The integration should:
-            //  - add a "submit" option to the test dialog?
-            //  - add a "submit" option in the menu for the current assignment
-            //  - add extra info to the assignments/tests?
             this.assignments = config.assignments.map(assignmentConfig => {
                 const data = omit(assignmentConfig, ['name', 'starter template', 'description', 'tests']);
                 return new Assignment(
@@ -29,7 +24,6 @@
                     assignmentConfig.description,
                     assignmentConfig.tests.map(testConfig => {
                         if (testConfig.type === 'CustomBlockTest') {
-                            // TODO: get the part ID
                             const opts = omit(testConfig, ['type', 'spec', 'inputs', 'output']);
                             return new ExactOutputTestCase(ide, testConfig.spec, testConfig.inputs, testConfig.output, opts);
                         } else {
@@ -259,7 +253,7 @@
                 parts: Object.fromEntries(partEntries),
             };
             const url = this.getOriginURL() + '/routes/autograders/submit/coursera';
-            const response = await fetch(url, {  // FIXME: send this through the netsblox server
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
