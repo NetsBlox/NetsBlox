@@ -36,13 +36,13 @@ Alexa.getTokens = function() {
 };
 
 Alexa.getVendorList = function () {
-    return smapiClient.getVendorListV1()
+    return JSON.stringify(smapiClient.getVendorListV1()
         .then((response) => {
-            return JSON.stringify(response);
+            return response;
         })
         .catch((err) => {
-            return JSON.stringify(err.message);
-        });
+            return err.message;
+        }));
 };
 
 Alexa.getVendorId = function () {
@@ -56,14 +56,10 @@ Alexa.getAskVersion = function() {
 };
 
 //basic listSkills RPC
-Alexa.listSkills = function() {
-    return smapiClient.listSkillsForVendorV1(vendorID)
-        .then((response) => {
-            return JSON.stringify(response);
-        })
-        .catch((err) => {
-            return JSON.stringify(err.message);
-        });
+Alexa.listSkills = async function() {
+    var response = await smapiClient.listSkillsForVendorV1(vendorID);
+
+    return JSON.stringify(response);
 };
 
 //gets skill Info
