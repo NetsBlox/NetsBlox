@@ -27,18 +27,11 @@ var smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
 
 //update tokens
 Alexa.getTokens = function() {
-    clientID = process.env.ALEXA_CLIENT_ID;
-    clientSecret = process.env.ALEXA_CLIENT_SECRET;
     refreshToken = process.env.ALEXA_REFRESH_TOKEN;
     accessToken = process.env.ALEXA_ACCESS_TOKEN;
-    vendorID = process.env.ALEXA_VENDOR_ID;
 
-    refreshTokenConfig = {
-        "clientId" : clientID,
-        "clientSecret": clientSecret,
-        "refreshToken": refreshToken,
-        "accessToken": accessToken,
-    };
+    refreshTokenConfig.refreshToken = refreshToken;
+    refreshTokenConfig.accessToken = accessToken;
 
     smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
         .withRefreshTokenConfig(refreshTokenConfig)
@@ -47,14 +40,10 @@ Alexa.getTokens = function() {
     return refreshTokenConfig;
 };
 
-Alexa.getVendorList = function () {
-    return JSON.stringify(smapiClient.getVendorListV1()
-        .then((response) => {
-            return response;
-        })
-        .catch((err) => {
-            return err.message;
-        }));
+Alexa.getVendorList = async function () {
+    var response = await smapiClient.getVendorListV1();
+
+    return JSON.stringify(response);
 };
 
 Alexa.getVendorId = function () {
@@ -69,20 +58,20 @@ Alexa.getAskVersion = function() {
 
 //basic listSkills RPC
 Alexa.listSkills = async function() {
-    var response = await smapiClient.listSkillsForVendorV1(vendorID);
-
-    return JSON.stringify(response);
-};
-
-//gets skill Info
-Alexa.getSkillInfo = function(skillId, stage) {
-    return smapiClient.getSkillManifestV1(skillId, stage)
+    return smapiClient.listSkillsForVendorV1(vendorID)
         .then((response) => {
             return JSON.stringify(response);
         })
         .catch((err) => {
             return JSON.stringify(err.message);
         });
+};
+
+//gets skill Info
+Alexa.getSkillInfo = async function(skillId, stage) {
+    var response = await smapiClient.getSkillManifestV1(skillId, stage);
+
+    return JSON.stringify(response);
 };
 
 //untested createSkill RPC
