@@ -13,14 +13,26 @@ var clientID = process.env.ALEXA_CLIENT_ID,
     vendorID = process.env.ALEXA_VENDOR_ID;
 
 //temp
-
-var refreshTokenConfig;
+var refreshTokenConfig = {
+    "clientId" : clientID,
+    "clientSecret": clientSecret,
+    "refreshToken": refreshToken,
+    "accessToken": accessToken,
+};
 
 //creates SMAPI client
-var smapiClient;
+var smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
+    .withRefreshTokenConfig(refreshTokenConfig)
+    .client();
 
 //update tokens
 Alexa.getTokens = function() {
+    clientID = process.env.ALEXA_CLIENT_ID;
+    clientSecret = process.env.ALEXA_CLIENT_SECRET;
+    refreshToken = process.env.ALEXA_REFRESH_TOKEN;
+    accessToken = process.env.ALEXA_ACCESS_TOKEN;
+    vendorID = process.env.ALEXA_VENDOR_ID;
+
     refreshTokenConfig = {
         "clientId" : clientID,
         "clientSecret": clientSecret,
