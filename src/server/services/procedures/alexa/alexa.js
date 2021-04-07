@@ -38,10 +38,10 @@ Alexa.getTokens = function() {
 Alexa.getVendorList = function () {
     return smapiClient.getVendorListV1()
         .then((response) => {
-            return (JSON.stringify(response));
+            return JSON.stringify(response);
         })
         .catch((err) => {
-            return err.message + JSON.stringify(err.response);
+            return JSON.stringify(err.message);
         });
 };
 
@@ -59,10 +59,10 @@ Alexa.getAskVersion = function() {
 Alexa.listSkills = function() {
     return smapiClient.listSkillsForVendorV1(vendorID)
         .then((response) => {
-            return (JSON.stringify(response));
+            return JSON.stringify(response);
         })
         .catch((err) => {
-            return err.message + JSON.stringify(err.response);
+            return JSON.stringify(err.message);
         });
 };
 
@@ -70,10 +70,10 @@ Alexa.listSkills = function() {
 Alexa.getSkillInfo = function(skillId, stage) {
     return smapiClient.getSkillManifestV1(skillId, stage)
         .then((response) => {
-            return (JSON.stringify(response));
+            return JSON.stringify(response);
         })
         .catch((err) => {
-            return err.message + JSON.stringify(err.response);
+            return JSON.stringify(err.message);
         });
 };
 
@@ -104,10 +104,10 @@ Alexa.createSkill = function(description, examplePhrases, keywords, name) {
         };
     return smapiClient.createSkillForVendorV1(skillRequest)
         .then((response) => {
-            return (JSON.stringify(response));
+            return JSON.stringify(response);
         })
         .catch((err) => {
-            return err.message + JSON.stringify(err.response);
+            return JSON.stringify(err.message);
         });
 };
 
@@ -115,10 +115,10 @@ Alexa.createSkill = function(description, examplePhrases, keywords, name) {
 Alexa.getInteractionModel = function (skillId, stage) {
     return smapiClient.getInteractionModelV1(skillId, stage, 'en-US')
         .then((response) => {
-            return (JSON.stringify(response));
+            return JSON.stringify(response);
         })
         .catch((err) => {
-            return err.message + JSON.stringify(err.response);
+            return JSON.stringify(err.message);
         });
 };
 
