@@ -150,10 +150,11 @@ PhoneIoT.prototype._passToDevice = async function (fnName, args) {
  * @param {BoundedNumber<0, 255>} red red level (0-255).
  * @param {BoundedNumber<0, 255>} green green level (0-255).
  * @param {BoundedNumber<0, 255>} blue blue level (0-255).
+ * @param {BoundedNumber<0, 255>=} alpha alpha (opacity) level (0-255).
  * @returns {Number} Constructed color code
  */
-PhoneIoT.prototype.getColor = function (red, green, blue) {
-    return 0xff000000 | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff);
+PhoneIoT.prototype.getColor = function (red, green, blue, alpha = 255) {
+    return ((alpha & 0xff) << 24) | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff);
 };
 
 /**
@@ -335,26 +336,21 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the toggle (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the toggle (percentage).
      * @param {string=} text The text to display next to the toggle (defaults to empty)
-     * @param {Object=} options Additional options: style, id, event, state, color, textColor
+     * @param {Object=} options Additional options: style, id, event, checked, color, textColor, fontSize, landscape, readonly
      * @returns {string} id of the created toggle
      */
     PhoneIoT.prototype.addToggle = function (device, x, y, text='', options) {
         arguments[3] = text;
         arguments[4] = common.parseOptions(options, {
-            style: {
-                parse: v => {
-                    const lower = v.toLowerCase();
-                    if (lower === 'checkbox') return 0;
-                    if (lower === 'switch') return 1;
-                    throw Error(`unknown toggle style: ${v}`);
-                },
-                default: 1,
-            },
+            style: { parse: common.parseToggleStyle, default: 0 },
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
-            state: { parse: common.parseBool, default: false },
+            checked: { parse: common.parseBool, default: false },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
+            fontSize: { parse: common.parseFontSize, default: 1 },
+            landscape: { parse: common.parseBool, default: false },
+            readonly: { parse: common.parseBool, default: false },
         });
         return this._passToDevice('addToggle', arguments);
     };
@@ -517,16 +513,35 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
 
     /**
-     * Gets the (true/false, selected/non-selected) state of a custom control.
-     * For a toggle control, this gets whether it is on or off (checked or unchecked).
-     * For a button, this gets whether it is currently pressed.
+     * Checks if a pressable control (like a button) is currently pressed (held) down.
+     * @category Display
+     * @param {string} device name of the device (matches at the end)
+     * @param {string} id name of the control to read
+     * @returns {boolean} true or false, depending on if the control is pressed
+     */
+     PhoneIoT.prototype.isPressed = function (device, id) {
+        return this._passToDevice('isPressed', arguments);
+    };
+
+    /**
+     * Gets the toggle state of a toggleable custom control.
      * @category Display
      * @param {string} device name of the device (matches at the end)
      * @param {string} id name of the control to read
      * @returns {boolean} true or false, depending on the state
      */
-    PhoneIoT.prototype.getState = function (device, id) {
-        return this._passToDevice('getState', arguments);
+    PhoneIoT.prototype.getToggleState = function (device, id) {
+        return this._passToDevice('getToggleState', arguments);
+    };
+    /**
+     * Sets the toggle state of a toggleable custom control.
+     * @category Display
+     * @param {string} device name of the device (matches at the end)
+     * @param {string} id name of the control to modify
+     * @param {boolean} state new value for the toggle state
+     */
+     PhoneIoT.prototype.setToggleState = function (device, id, state) {
+        return this._passToDevice('setToggleState', arguments);
     };
 
     /**

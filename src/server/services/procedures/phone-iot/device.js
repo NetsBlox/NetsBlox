@@ -36,8 +36,10 @@ const common = require('./common');
 // t - text field content
 // U - add custom image box
 // u - image box content
+// V - is pressed
 // v - image box updated
 // W - get toggle state
+// w - set toggle state
 // X - location (latlong + bearing + altitude)
 // Y - gyroscope
 // y - add custom radiobutton control
@@ -466,16 +468,19 @@ Device.prototype.addToggle = async function (device, args, clientId) {
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(28);
+    const message = Buffer.alloc(34);
     message.write('Z', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
     message.writeFloatBE(args[1], 13);
     message.writeInt32BE(opts.color, 17);
     message.writeInt32BE(opts.textColor, 21);
-    message[25] = opts.state ? 1 : 0;
-    message[26] = opts.style;
-    message[27] = idbuf.length;
+    message.writeFloatBE(opts.fontSize, 25);
+    message[29] = opts.checked ? 1 : 0;
+    message[30] = opts.style;
+    message[31] = opts.landscape ? 1 : 0;
+    message[32] = opts.readonly ? 1 : 0;
+    message[33] = idbuf.length;
 
     const text = Buffer.from(args[2], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
@@ -574,13 +579,40 @@ Device.prototype.getJoystickVector = async function (device, args, clientId) {
     
     return throwIfErr(await response).vals;
 };
-Device.prototype.getState = async function (device, args, clientId) {
-    const { response, password } = this.rpcHeader('getState', clientId);
+
+Device.prototype.isPressed = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('isPressed', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(9);
+    message.write('V', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    return throwIfErr(await response).state;
+};
+
+Device.prototype.getToggleState = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('getToggleState', clientId);
     const id = parseId(args[0]);
 
     const message = Buffer.alloc(9);
     message.write('W', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    return throwIfErr(await response).state;
+};
+Device.prototype.setToggleState = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('setToggleState', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(10);
+    message.write('w', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message[9] = args[1] ? 1 : 0;
     
     this.sendToDevice(Buffer.concat([message, id]));
     
@@ -897,6 +929,14 @@ Device.prototype._sendSensorPacketUpdates = function (packet) {
         }
     }
 };
+Device.prototype._sendBoolStateResult = function (name, meta, message) {
+    let state = undefined;
+    if (message.length === 12) switch (message[11]) {
+        case 0: state = false; break;
+        case 1: state = true; break;
+    }
+    this.sendToClient(name, state !== undefined ? { state } : { err: `no ${meta} with matching id` });
+};
 
 // used for handling incoming message from the device
 Device.prototype.onMessage = function (message) {
@@ -952,9 +992,10 @@ Device.prototype.onMessage = function (message) {
     else if (command === 'i') this._sendControlResult('setimage', message);
     else if (command === 'g') this._sendControlResult('addlabel', message);
     else if (command === 'B') this._sendControlResult('addbutton', message);
-    else if (command === 'j') this._sendControlResult('addjoystick', message);
     else if (command === 'Z') this._sendControlResult('addtoggle', message);
+    else if (command === 'j') this._sendControlResult('addjoystick', message);
     else if (command === 'T') this._sendControlResult('addtextfield', message);
+    else if (command === 'w') this._sendControlResult('setToggleState', message);
     else if (command === 'y') this._sendControlResult('addradiobutton', message);
     else if (command === 'U') this._sendControlResult('addimagedisplay', message);
     else if (command === 'b') {
@@ -988,27 +1029,21 @@ Device.prototype.onMessage = function (message) {
             this._fireRawCustomEvent(id, { id, state });
         }
     }
-    else if (command === 'W') {
-        let state = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: state = false; break;
-            case 1: state = true; break;
-        }
-        this.sendToClient('getState', state !== undefined ? { state } : { err: 'no toggleable with matching id' });
-    }
-    else if (command === 'O') this._sendSensorResult('orientation', 'orientation sensor', message);
-    else if (command === 'R') this._sendSensorResult('rotation', 'rotation sensor', message);
-    else if (command === 'X') this._sendSensorResult('location', 'location', message);
-    else if (command === 'A') this._sendSensorResult('accelerometer', 'accelerometer', message);
-    else if (command === 'G') this._sendSensorResult('gravity', 'gravity sensor', message);
-    else if (command === 'L') this._sendSensorResult('linear', 'linear acceleration sensor', message);
-    else if (command === 'Y') this._sendSensorResult('gyroscope', 'gyroscope', message);
+    else if (command === 'W') this._sendBoolStateResult('getToggleState', 'toggleable', message);
+    else if (command === 'V') this._sendBoolStateResult('isPressed', 'pressable', message);
     else if (command === 'r') this._sendSensorResult('gamerotation', 'game rotation sensor', message);
+    else if (command === 'L') this._sendSensorResult('linear', 'linear acceleration sensor', message);
     else if (command === 'M') this._sendSensorResult('magfield', 'magnetic field sensor', message);
-    else if (command === 'm') this._sendSensorResult('miclevel', 'microphone', message);
+    else if (command === 'O') this._sendSensorResult('orientation', 'orientation sensor', message);
+    else if (command === 'A') this._sendSensorResult('accelerometer', 'accelerometer', message);
     else if (command === 'P') this._sendSensorResult('proximity', 'proximity sensor', message);
-    else if (command === 'S') this._sendSensorResult('stepcount', 'step counter', message);
+    else if (command === 'R') this._sendSensorResult('rotation', 'rotation sensor', message);
     else if (command === 'l') this._sendSensorResult('lightlevel', 'light sensor', message);
+    else if (command === 'S') this._sendSensorResult('stepcount', 'step counter', message);
+    else if (command === 'G') this._sendSensorResult('gravity', 'gravity sensor', message);
+    else if (command === 'm') this._sendSensorResult('miclevel', 'microphone', message);
+    else if (command === 'Y') this._sendSensorResult('gyroscope', 'gyroscope', message);
+    else if (command === 'X') this._sendSensorResult('location', 'location', message);
     else this._logger.log('unknown command from ' + this.ip4_addr + ':' + this.ip4_port + ' - content bin: ' + message.toString('hex'));
 };
 

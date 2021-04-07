@@ -92,6 +92,12 @@ common.parseSensorPeriod = function (val) {
     try { return types.parse.BoundedNumber(val, [100, undefined]); }
     catch (e) { throw Error(`failed to parse ${val} as sensor update period: ${e}`); }
 };
+common.parseToggleStyle = function (val) {
+    const lower = val.toLowerCase();
+    if (lower === 'checkbox') return 1;
+    if (lower === 'switch') return 0;
+    throw Error(`unknown toggle style: ${val}`);
+};
 common.parseAlign = function (val) {
     const lower = val.toString().toLowerCase();
     if (lower === 'left') return 0;
