@@ -17,9 +17,7 @@ var clientID = process.env.ALEXA_CLIENT_ID,
 var refreshTokenConfig;
 
 //creates SMAPI client
-const smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
-    .withRefreshTokenConfig(refreshTokenConfig)
-    .client();
+var smapiClient;
 
 //update tokens
 Alexa.getTokens = function() {
@@ -29,6 +27,10 @@ Alexa.getTokens = function() {
         "refreshToken": refreshToken,
         "accessToken": accessToken,
     };
+
+    smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
+        .withRefreshTokenConfig(refreshTokenConfig)
+        .client();
 
     return refreshTokenConfig;
 };
