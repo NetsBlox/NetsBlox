@@ -35,8 +35,8 @@ Alexa.getTokens = function() {
     refreshTokenConfig.refreshToken = refreshToken;
     refreshTokenConfig.accessToken = accessToken;
 
-    devLogger(refreshTokenConfig.refreshToken);
-    devLogger(refreshTokenConfig.accessToken);
+    devLogger.log(refreshTokenConfig.refreshToken);
+    devLogger.log(refreshTokenConfig.accessToken);
 
     smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
         .withRefreshTokenConfig(refreshTokenConfig)
@@ -47,7 +47,6 @@ Alexa.getTokens = function() {
 
 Alexa.getVendorList = async function () {
     var response = await smapiClient.getVendorListV1();
-    devLogger.log(response);
 
     return JSON.stringify(response);
 };
@@ -66,10 +65,12 @@ Alexa.getAskVersion = function() {
 Alexa.listSkills = async function() {
     return smapiClient.listSkillsForVendorV1(vendorID)
         .then((response) => {
+            devLogger.log("listSkills success");
             devLogger.log(response);
             return JSON.stringify(response);
         })
         .catch((err) => {
+            devLogger.log("listSkills failure");
             devLogger.log(err.message);
             return JSON.stringify(err.message);
         });
