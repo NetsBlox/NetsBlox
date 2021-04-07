@@ -14,19 +14,22 @@ var clientID = process.env.ALEXA_CLIENT_ID,
 
 //temp
 
-const refreshTokenConfig = {
-    "clientId" : clientID,
-    "clientSecret": clientSecret,
-    "refreshToken": refreshToken,
-    "accessToken": accessToken,
-};
+var refreshTokenConfig;
 
 //creates SMAPI client
 const smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
     .withRefreshTokenConfig(refreshTokenConfig)
     .client();
 
+//update tokens
 Alexa.getTokens = function() {
+    refreshTokenConfig = {
+        "clientId" : clientID,
+        "clientSecret": clientSecret,
+        "refreshToken": refreshToken,
+        "accessToken": accessToken,
+    };
+
     return refreshTokenConfig;
 };
 
@@ -54,12 +57,10 @@ Alexa.getAskVersion = function() {
 Alexa.listSkills = function() {
     return smapiClient.listSkillsForVendorV1(vendorID)
         .then((response) => {
-            return 'test true';
-            //return (JSON.stringify(response));
+            return (JSON.stringify(response));
         })
         .catch((err) => {
-            return 'test false';
-            //return err.message + JSON.stringify(err.response);
+            return err.message + JSON.stringify(err.response);
         });
 };
 
