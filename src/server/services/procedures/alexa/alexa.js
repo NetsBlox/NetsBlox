@@ -47,6 +47,7 @@ Alexa.getTokens = function() {
 
 Alexa.getVendorList = async function () {
     var response = await smapiClient.getVendorListV1();
+    devLogger.log(JSON.stringify(response));
 
     return JSON.stringify(response);
 };
@@ -66,13 +67,14 @@ Alexa.listSkills = async function() {
     return smapiClient.listSkillsForVendorV1(vendorID)
         .then((response) => {
             devLogger.log("listSkills success");
-            devLogger.log(response);
+            devLogger.log(JSON.stringify(response));
             return JSON.stringify(response);
         })
         .catch((err) => {
             devLogger.log("listSkills failure");
             devLogger.log(err.message);
-            return JSON.stringify(err.message);
+            devLogger.log(JSON.stringify(err.response));
+            return JSON.stringify(err.response);
         });
 };
 
