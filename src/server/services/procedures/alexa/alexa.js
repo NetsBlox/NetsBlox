@@ -47,9 +47,10 @@ Alexa.getTokens = function() {
 
 Alexa.getVendorList = async function () {
     var response = await smapiClient.getVendorListV1();
-    devLogger.log(JSON.stringify(response));
+    response = JSON.stringify(response);
+    devLogger.log(response);
 
-    return JSON.stringify(response);
+    return response;
 };
 
 Alexa.getVendorId = function () {
@@ -64,18 +65,11 @@ Alexa.getAskVersion = function() {
 
 //basic listSkills RPC
 Alexa.listSkills = async function() {
-    return smapiClient.listSkillsForVendorV1(vendorID)
-        .then((response) => {
-            devLogger.log("listSkills success");
-            devLogger.log(JSON.stringify(response));
-            return JSON.stringify(response);
-        })
-        .catch((err) => {
-            devLogger.log("listSkills failure");
-            devLogger.log(err.message);
-            devLogger.log(JSON.stringify(err.response));
-            return JSON.stringify(err.response);
-        });
+    var response = await smapiClient.listSkillsForVendorV1(vendorID);
+    response = JSON.stringify(response);
+    devLogger.log(response);
+
+    return response;
 };
 
 //gets skill Info
