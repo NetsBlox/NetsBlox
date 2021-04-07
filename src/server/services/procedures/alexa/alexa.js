@@ -6,6 +6,8 @@ const AlexaSMAPI = require('ask-smapi-sdk');
 
 var spawnSync = require('child_process').spawnSync;
 
+const devLogger = require('../utils/dev-logger');
+
 var clientID = process.env.ALEXA_CLIENT_ID,
     clientSecret = process.env.ALEXA_CLIENT_SECRET,
     refreshToken = process.env.ALEXA_REFRESH_TOKEN,
@@ -33,6 +35,9 @@ Alexa.getTokens = function() {
     refreshTokenConfig.refreshToken = refreshToken;
     refreshTokenConfig.accessToken = accessToken;
 
+    devLogger(refreshTokenConfig.refreshToken);
+    devLogger(refreshTokenConfig.accessToken);
+
     smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
         .withRefreshTokenConfig(refreshTokenConfig)
         .client();
@@ -42,6 +47,7 @@ Alexa.getTokens = function() {
 
 Alexa.getVendorList = async function () {
     var response = await smapiClient.getVendorListV1();
+    devLogger.log(response);
 
     return JSON.stringify(response);
 };
@@ -60,9 +66,11 @@ Alexa.getAskVersion = function() {
 Alexa.listSkills = async function() {
     return smapiClient.listSkillsForVendorV1(vendorID)
         .then((response) => {
+            devLogger.log(response);
             return JSON.stringify(response);
         })
         .catch((err) => {
+            devLogger.log(err.message);
             return JSON.stringify(err.message);
         });
 };
