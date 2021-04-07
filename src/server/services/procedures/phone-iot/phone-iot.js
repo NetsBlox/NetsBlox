@@ -365,7 +365,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the radio button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the radio button (percentage).
      * @param {string=} text The text to display next to the checkbox (defaults to empty)
-     * @param {Object=} options Additional options: group, id, event, state, color, textColor
+     * @param {Object=} options Additional options: group, id, event, checked, color, textColor, fontSize, landscape, readonly
      * @returns {string} id of the created radio button
      */
     PhoneIoT.prototype.addRadioButton = function (device, x, y, text='', options) {
@@ -374,9 +374,12 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
             group: { parse: types.parse.String, default: 'main' },
-            state: { parse: common.parseBool, default: false },
+            checked: { parse: common.parseBool, default: false },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
+            fontSize: { parse: common.parseFontSize, default: 1 },
+            landscape: { parse: common.parseBool, default: false },
+            readonly: { parse: common.parseBool, default: false },
         });
         return this._passToDevice('addRadioButton', arguments);
     };

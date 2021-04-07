@@ -500,15 +500,18 @@ Device.prototype.addRadioButton = async function (device, args, clientId) {
     const groupPrefix = Buffer.alloc(1);
     groupPrefix[0] = group.length;
 
-    const message = Buffer.alloc(27);
+    const message = Buffer.alloc(33);
     message.write('y', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
     message.writeFloatBE(args[1], 13);
     message.writeInt32BE(opts.color, 17);
     message.writeInt32BE(opts.textColor, 21);
-    message[25] = opts.state ? 1 : 0;
-    message[26] = idbuf.length;
+    message.writeFloatBE(opts.fontSize, 25);
+    message[29] = opts.checked ? 1 : 0;
+    message[30] = opts.landscape ? 1 : 0;
+    message[31] = opts.readonly ? 1 : 0;
+    message[32] = idbuf.length;
 
     const text = Buffer.from(args[2], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, groupPrefix, group, text]));
