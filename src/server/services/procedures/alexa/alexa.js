@@ -46,9 +46,8 @@ Alexa.getTokens = function() {
 };
 
 Alexa.getVendorList = async function () {
-    var response = await smapiClient.getVendorListV1();
+    const response = await smapiClient.getVendorListV1();
     devLogger.log(JSON.stringify(response));
-    devLogger.log(typeof response);
 
     return response;
 };
@@ -65,9 +64,8 @@ Alexa.getAskVersion = function() {
 
 //basic listSkills RPC
 Alexa.listSkills = async function() {
-    var response = await smapiClient.listSkillsForVendorV1(vendorID);
-    response = JSON.stringify(response);
-    devLogger.log(response);
+    const response = await smapiClient.listSkillsForVendorV1(vendorID);
+    devLogger.log(JSON.stringify(response));
 
     return response;
 };
