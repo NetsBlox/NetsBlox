@@ -47,8 +47,8 @@ Alexa.getTokens = function() {
 
 Alexa.getVendorList = async function () {
     var response = await smapiClient.getVendorListV1();
-    response = JSON.stringify(response);
-    devLogger.log(response);
+    devLogger.log(JSON.stringify(response));
+    devLogger.log(typeof response);
 
     return response;
 };
