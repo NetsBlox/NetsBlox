@@ -134,6 +134,24 @@ IceCoreData._coreMetadata = {
         description: 'In January 1998, the collaborative ice-drilling project between Russia, the United States, and France at the Russian Vostok station in East Antarctica yielded the deepest ice core ever recovered, reaching a depth of 3,623 m (Petit et al. 1997, 1999).',
         latitude: -78.4644818,
         longitude: 106.8317313,
+    },
+    'Quelccaya Summit': {
+        name: 'Quelccaya Summit Dome',
+        description: 'Ice cores drilled in the ice sheets of Greenland and Antarctica are some of the most important sources of information about the paleoclimate of high latitudes. Comparable records from the tropics are rare, however, because there are so few locations at which long-lived, undisturbed ice can be found. Thompson et al. (p. 945, published online 4 April) report results obtained from one of the few such sites, the Quelccaya ice cap in the Peruvian Andes.',
+        latitude: -13.9333118,
+        longitude: -70.8420878,
+    },
+    'Quelccaya North': {
+        name: 'Quelccaya North Dome',
+        description: 'Ice cores drilled in the ice sheets of Greenland and Antarctica are some of the most important sources of information about the paleoclimate of high latitudes. Comparable records from the tropics are rare, however, because there are so few locations at which long-lived, undisturbed ice can be found. Thompson et al. (p. 945, published online 4 April) report results obtained from one of the few such sites, the Quelccaya ice cap in the Peruvian Andes.',
+        latitude: -13.9333118,
+        longitude: -70.8420878,
+    },
+    'Huascaran Dome': {
+        name: 'Huascaran Dome',
+        description: 'Between 1990 and 1992 a survey of five glaciers located north-south along the Cordillera Blanca was conducted to identify the best sites for acquiring longer-term paleoclimatic and environmental records. In addition, satellite-linked automatic weather stations were established on two of the sites, Hualcán and Pucahirca, to record current meteorological conditions at the top of the Andes. The col of Huascarán, the highest (6048 m a.s.l) and coldest of the sites, was selected for drilling to bedrock as shallow cores from all five sites confirmed that it contained the best preserved stratigraphic records. In 1993 two ice cores were drilled to bedrock using a portable, light-weight, solar-powered thermal drilling system.',
+        latitude: -9.1223601,
+        longitude: -77.6151026,
     }
 };
 

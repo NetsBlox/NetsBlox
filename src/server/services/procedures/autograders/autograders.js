@@ -11,6 +11,7 @@ const assert = require('assert');
 const _ = require('lodash');
 const MONGODB_DOC_TOO_LARGE = 'Attempt to write outside buffer bounds';
 const getDatabase = require('./storage');
+const Integrations = require('./integrations');
 
 const validateName = name => {
     const validRegex = /^[a-zA-Z][a-zA-Z0-9_ :-]*$/;
@@ -40,6 +41,11 @@ const validateAssignment = assignment => {
     assignment.tests.forEach(test => {
         assert(test.type, 'Unspecified type of test!');
     });
+
+    const integrationNames = (assignment.integrations || []).map(name => name.toLowerCase());
+    integrationNames
+        .map(name => Integrations.get(name))
+        .forEach(integration => integration.validate(assignment));
 };
 
 const validateConfig = config => {
