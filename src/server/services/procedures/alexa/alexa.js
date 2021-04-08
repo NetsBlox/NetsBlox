@@ -67,7 +67,7 @@ Alexa.listSkills = async function() {
     const response = await smapiClient.listSkillsForVendorV1(vendorID);
     devLogger.log(JSON.stringify(response));
 
-    return response;
+    return response.skills;
 };
 
 //gets skill Info
