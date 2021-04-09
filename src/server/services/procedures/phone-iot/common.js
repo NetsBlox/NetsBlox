@@ -85,7 +85,6 @@ common.parseBool = function (val) {
     throw Error(`failed to parse bool: ${val}`);
 };
 common.parseFontSize = function (val) {
-<<<<<<< HEAD
     try { return types.parse.BoundedNumber(val, [0.1, 10.0]); }
     catch (e) { throw Error(`failed to parse '${val} as fontSize: ${e}`); }
 };
@@ -112,9 +111,6 @@ common.parseFit = function (val) {
     if (lower === 'zoom') return 1;
     if (lower === 'stretch') return 2;
     throw Error(`unknown fit mode: ${val}`);
-=======
-    return types.parse.BoundedNumber(val, [0.1, 10.0]);
->>>>>>> master
 };
 
 // given an options dict and a rules dict, generates a sanitized options dict.
