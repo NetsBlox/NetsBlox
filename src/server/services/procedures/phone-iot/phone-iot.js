@@ -255,7 +255,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Add a custom image display to the device, which is initially empty.
      * This can be used to display an image, or to retrieve an image taken from the device's camera.
-     * Unless set to readonly, a user can click on the control to take a new image from the camera.
+     * Image displays default to readonly, meaning the user cannot modify their content from the phone (can only change from NetsBlox code).
+     * If not set to readonly (passing optional parameter readonly false), a user can click on the control to take a new image from the camera.
      * If an event is provided, it will be raised every time the user stores a new image in it (params: 'id').
      * The fit option can be set to 'fit' (default), 'zoom', or 'stretch'.
      * Returns the id of the created control, which is used by other RPCs.
@@ -272,7 +273,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         arguments[5] = common.parseOptions(options, {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
-            readonly: { parse: common.parseBool, default: false },
+            readonly: { parse: common.parseBool, default: true },
             landscape: { parse: common.parseBool, default: false },
             fit: { parse: common.parseFit, default: 0 },
         });
