@@ -27,6 +27,19 @@ var smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
     .withRefreshTokenConfig(refreshTokenConfig)
     .client();
 
+
+const validateList = list => {
+    if (!Array.isArray(list)) {
+        throw new Error('"data" must be a list of lists.');
+    }
+};
+
+const ensureLoggedIn = function(caller) {
+    if (!caller.username) {
+        throw new Error('Login required.');
+    }
+};
+
 //update tokens
 Alexa.getTokens = function() {
     refreshToken = process.env.ALEXA_REFRESH_TOKEN;
@@ -52,16 +65,6 @@ Alexa.getVendorList = async function () {
     return response;
 };
 
-Alexa.getVendorId = function () {
-    return vendorID;
-};
-
-Alexa.getAskVersion = function() {
-    const result = spawnSync('ask', ['--version']);
-
-    return result.stdout;
-};
-
 //basic listSkills RPC
 Alexa.listSkills = async function() {
     const response = await smapiClient.listSkillsForVendorV1(vendorID);
@@ -78,8 +81,11 @@ Alexa.getSkillInfo = async function(skillId, stage) {
     return response;
 };
 
+
 //untested createSkill RPC
-Alexa.createSkill = function(description, examplePhrases, keywords, name) {
+Alexa.createSkill = function(summary, description, examplePhrases, keywords, name) {
+    validateList(examplePhrases);
+    validateList(keywords);
     var skillRequest =
         {
             "vendorId": vendorID,
@@ -87,18 +93,11 @@ Alexa.createSkill = function(description, examplePhrases, keywords, name) {
                 "publishingInformation": {
                     "locales": {
                         "en-US": {
-                            "summary": "This is a sample Alexa custom skill.",
-                            "examplePhrases": [
-                                "Alexa, open sample custom skill.",
-                                "Alexa, play sample custom skill."
-                            ],
-                            "keywords": [
-                                "Descriptive_Phrase_1",
-                                "Descriptive_Phrase_2",
-                                "Descriptive_Phrase_3"
-                            ],
-                            "name": "Sample custom skill name.",
-                            "description": "This skill does interesting things."
+                            "summary": summary,
+                            "examplePhrases": examplePhrases,
+                            "keywords": keywords,
+                            "name": name,
+                            "description": description
                         }
                     },
                     "isAvailableWorldwide": false,
@@ -127,6 +126,7 @@ Alexa.createSkill = function(description, examplePhrases, keywords, name) {
                 },
             }
         };
+
     devLogger.log(JSON.stringify(skillRequest));
     const response = smapiClient.createSkillForVendorV1(skillRequest);
     devLogger.log(JSON.stringify(response));
@@ -149,6 +149,17 @@ Alexa.getInteractionModel = function (skillId, stage) {
  */
 Alexa.callerInfo = function() {
     return _.omit(this.caller, ['response', 'request', 'socket', 'apiKey']);
+};
+
+//further RPCs for testing only
+Alexa.getVendorId = function () {
+    return vendorID;
+};
+
+Alexa.getAskVersion = function() {
+    const result = spawnSync('ask', ['--version']);
+
+    return result.stdout;
 };
 
 module.exports = Alexa;
