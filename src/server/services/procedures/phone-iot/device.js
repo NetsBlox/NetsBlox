@@ -350,7 +350,7 @@ Device.prototype.addLabel = async function (device, args, clientId) {
     message.writeInt32BE(opts.textColor, 17);
     message.writeFloatBE(opts.fontSize, 21);
     message[25] = opts.align;
-    message[26] = opts.landscape ? 1 : 0
+    message[26] = opts.landscape ? 1 : 0;
     message[27] = idbuf.length;
 
     const text = Buffer.from(args[2], 'utf8');

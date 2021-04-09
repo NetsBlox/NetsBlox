@@ -522,7 +522,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {string} id name of the control to read
      * @returns {boolean} true or false, depending on if the control is pressed
      */
-     PhoneIoT.prototype.isPressed = function (device, id) {
+    PhoneIoT.prototype.isPressed = function (device, id) {
         return this._passToDevice('isPressed', arguments);
     };
 
@@ -543,7 +543,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {string} id name of the control to modify
      * @param {boolean} state new value for the toggle state
      */
-     PhoneIoT.prototype.setToggleState = function (device, id, state) {
+    PhoneIoT.prototype.setToggleState = function (device, id, state) {
         return this._passToDevice('setToggleState', arguments);
     };
 
