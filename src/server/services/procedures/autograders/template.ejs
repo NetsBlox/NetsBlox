@@ -4,32 +4,44 @@
 (function() {
     const config = AUTOGRADER_CONFIG;
 
+    class Integration {
+        constructor() {
+        }
+    }
+
     class CustomBlockAutograder extends Extension {
         constructor(ide) {  /* TODO: Use an API wrapper instead? */
             super(config.name);
             this.ide = ide;
             this.currentAssignment = null;
             this.resultsDialog = null;
-            this.assignments = config.assignments.map(assignment =>
-                new Assignment(
-                    assignment.name,
-                    assignment['starter template'],
-                    assignment.description,
-                    assignment.tests.map(testConfig => {
+            this.integrations = config.integrations;
+            this.assignments = config.assignments.map(assignmentConfig => {
+                const data = omit(assignmentConfig, ['name', 'starter template', 'description', 'tests']);
+                return new Assignment(
+                    assignmentConfig.name,
+                    assignmentConfig['starter template'],
+                    assignmentConfig.description,
+                    assignmentConfig.tests.map(testConfig => {
                         if (testConfig.type === 'CustomBlockTest') {
-                            return new ExactOutputTestCase(ide, testConfig.spec, testConfig.inputs, testConfig.output);
+                            const opts = omit(testConfig, ['type', 'spec', 'inputs', 'output']);
+                            return new ExactOutputTestCase(ide, testConfig.spec, testConfig.inputs, testConfig.output, opts);
                         } else {
                             throw new Error(`Unknown test type: ${testConfig.type}`);
                         }
-                    })
-                )
-            );
+                    }),
+                    data
+                );
+            });
         }
 
         getMenu() {
             const dict = {};
             if (this.currentAssignment) {
                 dict[`Grade assignment`] = () => this.grade(this.currentAssignment);
+                if (this.integrations.includes('coursera')) {
+                    dict[`Submit...`] = () => this.submit(this.currentAssignment);
+                }
                 dict['~'] = '~';
                 const submenu = {};
                 this.assignments.forEach(assignment => {
@@ -60,6 +72,13 @@
                 dialog.createLabel();
                 dialog.addBody(frame);
                 dialog.addButton('ok', 'Rerun');
+                if (this.integrations.includes('coursera')) {
+                    dialog.addButton('submit', 'Submit');
+                    dialog.submit = () => {
+                        this.submit(this.currentAssignment);
+                        dialog.destroy();
+                    };
+                }
                 dialog.addButton('cancel', 'Close');
                 dialog.ok = () => this.grade(this.currentAssignment);
                 dialog.cancel = () => {
@@ -210,14 +229,177 @@
             const testResults = await assignment.grade();
             this.showResults(testResults);
         }
+
+        async submit(assignment) {
+            const assignmentKey = assignment.data.CourseraAssignmentKey;
+            const partEntries = await assignment.tests.reduce(
+                async (entriesP, test) => {
+                    const entries = await entriesP;
+                    const testResult = await test.run();
+                    const result = {
+                        output: testResult.status ? '1' : '-1'
+                    };
+
+                    entries.push([test.data.CourseraPartID, result]);
+                    return entries;
+                },
+                Promise.resolve([])
+            );
+            const {email, secret} = await this.promptCourseraCredentials();
+            const body = {
+                assignmentKey,
+                submitterEmail: email,
+                secret,
+                parts: Object.fromEntries(partEntries),
+            };
+            const url = this.getOriginURL() + '/routes/autograders/submit/coursera';
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache'
+                },
+                body: JSON.stringify(body),
+            });
+            if (response.status < 400) {
+                this.ide.showMessage(`Successfully submitted ${assignment.name}!`);
+            } else {
+                this.ide.inform('Submission Failed', await response.text());
+            }
+        }
+
+        getOriginURL() {
+            return window.location.origin + '/services';
+        }
+
+        async promptCourseraCredentials() {
+            const dialog = new CourseraCredentialsDialog();
+            const world = this.ide.parentThatIsA(WorldMorph);
+            dialog.popUp(world);
+
+            return dialog.askCredentials();
+        }
     }
 
+    class CourseraCredentialsDialog extends DialogBoxMorph {
+        init(target, action, environment) {
+            super.init(target, action, environment);
+            this.key = 'CourseraCredentials';
+        }
+
+        askCredentials() {
+            const eml = new InputFieldMorph();
+            const secret = new InputFieldMorph();
+            const inp = new AlignmentMorph('column', 2);
+            const bdy = new AlignmentMorph('column', this.padding);
+
+            function labelText(string) {
+                return new TextMorph(
+                    localize(string),
+                    10,
+                    null, // style
+                    false, // bold
+                    null, // italic
+                    null, // alignment
+                    null, // width
+                    null, // font name
+                    MorphicPreferences.isFlat ? null : new Point(1, 1),
+                    WHITE // shadowColor
+                );
+            }
+
+            inp.alignment = 'left';
+            inp.setColor(this.color);
+            bdy.setColor(this.color);
+
+            eml.setWidth(200);
+            secret.setWidth(200);
+
+            inp.add(labelText('Coursera Email:'));
+            inp.add(eml);
+
+            inp.add(labelText('Token:'));
+            inp.add(secret);
+
+            bdy.add(inp);
+
+            inp.fixLayout();
+            bdy.fixLayout();
+
+            this.labelString = localize('Enter Coursera Submission Info');
+            this.createLabel();
+
+            this.addBody(bdy);
+
+            this.addButton('ok', 'OK');
+            this.addButton('cancel', 'Cancel');
+
+            this.fixLayout();
+
+            function validInputs() {
+                var checklist,
+                    empty,
+                    em = eml.getValue();
+
+                function indicate(morph, string) {
+                    var bubble = new SpeechBubbleMorph(localize(string));
+                    bubble.isPointingRight = false;
+                    bubble.fixLayout();
+                    bubble.popUp(
+                        world,
+                        morph.leftCenter().subtract(new Point(bubble.width() + 2, 0))
+                    );
+                    if (morph.edit) {
+                        morph.edit();
+                    }
+                }
+
+                empty = detect(
+                    [eml, secret],
+                    inp => !inp.getValue()
+                );
+                if (empty) {
+                    indicate(empty, 'please fill out\nthis field');
+                    return false;
+                }
+                if (em.indexOf(' ') > -1 || em.indexOf('@') === -1
+                        || em.indexOf('.') === -1 || em.length < 5) {
+                    indicate(eml, 'please provide a valid\nemail address');
+                    return false;
+                }
+                return true;
+            }
+
+            this.getInput = function () {
+                this.cache.email = eml.getValue();
+                this.cache.secret = secret.getValue();
+                return this.cache;
+            };
+
+            if (this.cache.email) {
+                eml.setContents(this.cache.email);
+                secret.setContents(this.cache.secret);
+            }
+
+            const deferred = utils.defer();
+            this.accept = () => {
+                if (validInputs()) {
+                    DialogBoxMorph.prototype.accept.call(this);
+                    deferred.resolve(this.getInput());
+                }
+            };
+            return deferred.promise;
+        }
+    }
+    CourseraCredentialsDialog.prototype.cache = {};
+
     class Assignment {
-        constructor(name, url, desc, tests) {
+        constructor(name, url, desc, tests, data) {
             this.name = name;
             this.url = url;
             this.description = desc;
             this.tests = tests;
+            this.data = data;
         }
 
         async fetch() {
@@ -231,12 +413,13 @@
     }
 
     class CustomBlockTestCase {
-        constructor(ide, spec, inputs, testFn) {
+        constructor(ide, spec, inputs, testFn, data) {
             this.ide = ide;
             this.blockSpec = spec;
             this.inputs = inputs;
             this.test = testFn;
             this.description = null;
+            this.data = data;
         }
 
         async run() {
@@ -316,8 +499,8 @@
     }
 
     class ExactOutputTestCase extends CustomBlockTestCase {
-        constructor(ide, spec, inputs, output) {
-            super(ide, spec, inputs, actual => snapEquals(actual, toSnap(output)));
+        constructor(ide, spec, inputs, output, data) {
+            super(ide, spec, inputs, actual => snapEquals(actual, toSnap(output)), data);
             this.output = output;
             this.description = `should report ${JSON.stringify(output)}`;
         }
@@ -389,6 +572,11 @@
         } else {
             return data;
         }
+    }
+
+    function omit(obj, keys) {
+        const entries = Object.entries(obj).filter(entry => !keys.includes(entry[0]));
+        return Object.fromEntries(entries);
     }
 
     NetsBloxExtensions.register(CustomBlockAutograder);

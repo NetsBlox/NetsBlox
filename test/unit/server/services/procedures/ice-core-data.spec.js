@@ -10,4 +10,8 @@ describe(utils.suiteName(__filename), function() {
         ['getTemperatureData', ['core', 'startyear', 'endyear']],
         ['getIceCoreMetadata', ['core']],
     ]);
+
+    it('should be able to parse data w/o error', function() {
+        utils.reqSrc('services/procedures/ice-core-data/data');
+    });
 });

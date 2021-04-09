@@ -2,7 +2,7 @@ const express = require('express');
 const router = express();
 
 router.get(
-    '/services/iotscape/port',
+    '/port',
     async (_, res) => {
         res.status(200).send(process.env.IOTSCAPE_PORT || 'IoTScape is not enabled.');
     }

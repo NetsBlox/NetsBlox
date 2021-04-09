@@ -4,6 +4,8 @@ const RemoteClient = require('./remote-client');
 const Services = require('./services-worker');
 const Logger = require('../logger');
 const ApiKeys = require('./api-keys');
+const fs = require('fs');
+const path = require('path');
 
 class ServicesAPI {
     constructor() {
@@ -74,6 +76,8 @@ class ServicesAPI {
     router() {
         const router = express.Router({mergeParams: true});
 
+        this.addServiceRoutes(router);
+
         router.route('/').get((req, res) => {
             const metadata = Object.entries(this.services.metadata)
                 .filter(nameAndMetadata => this.isServiceLoaded(nameAndMetadata[0]))
@@ -107,6 +111,21 @@ class ServicesAPI {
             });
 
         return router;
+    }
+
+    addServiceRoutes(router) {
+        const servicesWithRoutes = fs.readdirSync(path.join(__dirname, 'procedures'))
+            .filter(name => fs.existsSync(path.join(__dirname, 'procedures', name, 'routes.js')));
+
+        servicesWithRoutes.forEach(name => {
+            const routesPath = `./procedures/${name}/routes`;
+            const subrouter = require(routesPath);
+            if (Array.isArray(subrouter)) {
+                this.logger.warn(`Routes defined as a list of objects is deprecated. Please update ${name} routes to return an express router.`);
+                return;
+            }
+            router.use(`/routes/${name}`, subrouter);
+        });
     }
 
     exists(serviceName, rpcName) {
