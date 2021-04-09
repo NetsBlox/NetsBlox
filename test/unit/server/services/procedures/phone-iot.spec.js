@@ -3,7 +3,7 @@ const utils = require('../../../../assets/utils');
 describe(utils.suiteName(__filename), function() {
     utils.verifyRPCInterfaces('PhoneIoT', [
         ['getDevices', []],
-        ['getColor', ['red', 'green', 'blue']],
+        ['getColor', ['red', 'green', 'blue', 'alpha']],
         ['authenticate', ['device']],
         ['clearControls', ['device']],
         ['removeControl', ['device', 'id']],
@@ -17,7 +17,9 @@ describe(utils.suiteName(__filename), function() {
         ['listenToGUI', ['device']],
         ['listenToSensors', ['device', 'sensors']],
         ['getSensors', []],
-        ['getState', ['device', 'id']],
+        ['getToggleState', ['device', 'id']],
+        ['setToggleState', ['device', 'id', 'state']],
+        ['isPressed', ['device', 'id']],
         ['getJoystickVector', ['device', 'id']],
         ['getOrientation', ['device']],
         ['getCompassHeading', ['device']],
