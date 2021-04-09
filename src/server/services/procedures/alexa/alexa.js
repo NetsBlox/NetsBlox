@@ -57,7 +57,7 @@ Alexa.getVendorId = function () {
 };
 
 Alexa.getAskVersion = function() {
-    var result = spawnSync('ask', ['--version']);
+    const result = spawnSync('ask', ['--version']);
 
     return result.stdout;
 };
@@ -72,9 +72,10 @@ Alexa.listSkills = async function() {
 
 //gets skill Info
 Alexa.getSkillInfo = async function(skillId, stage) {
-    var response = await smapiClient.getSkillManifestV1(skillId, stage);
+    const response = await smapiClient.getSkillManifestV1(skillId, stage);
+    devLogger.log(JSON.stringify(response));
 
-    return JSON.stringify(response);
+    return response;
 };
 
 //untested createSkill RPC
@@ -86,11 +87,18 @@ Alexa.createSkill = function(description, examplePhrases, keywords, name) {
                 "publishingInformation": {
                     "locales": {
                         "en-US": {
-                            "summary": description,
-                            "examplePhrases": examplePhrases,
-                            "keywords": keywords,
-                            "name": name,
-                            "description": description
+                            "summary": "This is a sample Alexa custom skill.",
+                            "examplePhrases": [
+                                "Alexa, open sample custom skill.",
+                                "Alexa, play sample custom skill."
+                            ],
+                            "keywords": [
+                                "Descriptive_Phrase_1",
+                                "Descriptive_Phrase_2",
+                                "Descriptive_Phrase_3"
+                            ],
+                            "name": "Sample custom skill name.",
+                            "description": "This skill does interesting things."
                         }
                     },
                     "isAvailableWorldwide": false,
@@ -99,27 +107,39 @@ Alexa.createSkill = function(description, examplePhrases, keywords, name) {
                     "distributionCountries": [
                         "US",
                     ]
-                }
+                },
+                "apis": {
+                    "custom": {}
+                },
+                "manifestVersion": "1.0",
+                "privacyAndCompliance": {
+                    "allowsPurchases": false,
+                    "usesPersonalInfo": false,
+                    "isChildDirected": false,
+                    "isExportCompliant": true,
+                    "containsAds": false,
+                    "locales": {
+                        "en-US": {
+                            "privacyPolicyUrl": "https://editor.netsblox.org/privacy.html",
+                            "termsOfUseUrl": "https://editor.netsblox.org/tos.html"
+                        }
+                    }
+                },
             }
         };
-    return smapiClient.createSkillForVendorV1(skillRequest)
-        .then((response) => {
-            return JSON.stringify(response);
-        })
-        .catch((err) => {
-            return JSON.stringify(err.message);
-        });
+    devLogger.log(JSON.stringify(skillRequest));
+    const response = smapiClient.createSkillForVendorV1(skillRequest);
+    devLogger.log(JSON.stringify(response));
+
+    return response;
 };
 
 //get interaction model of skill
 Alexa.getInteractionModel = function (skillId, stage) {
-    return smapiClient.getInteractionModelV1(skillId, stage, 'en-US')
-        .then((response) => {
-            return JSON.stringify(response);
-        })
-        .catch((err) => {
-            return JSON.stringify(err.message);
-        });
+    const response = smapiClient.getInteractionModelV1(skillId, stage, 'en-US');
+    devLogger.log(JSON.stringify(response));
+
+    return response;
 };
 
 
