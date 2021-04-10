@@ -78,41 +78,6 @@ common.prepImageToSend = async function(raw) {
     throw Error('unsupported image type');
 };
 
-common.parseBool = function (val) {
-    const lower = val.toString().toLowerCase();
-    if (lower === 'true' || lower === 'yes') return true;
-    if (lower === 'false' || lower === 'no') return false;
-    throw Error(`failed to parse bool: ${val}`);
-};
-common.parseFontSize = function (val) {
-    try { return types.parse.BoundedNumber(val, [0.1, 10.0]); }
-    catch (e) { throw Error(`failed to parse '${val} as fontSize: ${e}`); }
-};
-common.parseSensorPeriod = function (val) {
-    try { return types.parse.BoundedNumber(val, [100, undefined]); }
-    catch (e) { throw Error(`failed to parse ${val} as sensor update period: ${e}`); }
-};
-common.parseToggleStyle = function (val) {
-    const lower = val.toLowerCase();
-    if (lower === 'checkbox') return 1;
-    if (lower === 'switch') return 0;
-    throw Error(`unknown toggle style: ${val}`);
-};
-common.parseAlign = function (val) {
-    const lower = val.toString().toLowerCase();
-    if (lower === 'left') return 0;
-    if (lower === 'center') return 1;
-    if (lower === 'right') return 2;
-    throw Error(`unknown text align: ${val}`);
-};
-common.parseFit = function (val) {
-    const lower = val.toString().toLowerCase();
-    if (lower === 'fit') return 0;
-    if (lower === 'zoom') return 1;
-    if (lower === 'stretch') return 2;
-    throw Error(`unknown fit mode: ${val}`);
-};
-
 // given an options dict and a rules dict, generates a sanitized options dict.
 common.parseOptions = function (opts, rules) {
     const res = {};
@@ -129,7 +94,7 @@ common.parseOptions = function (opts, rules) {
 };
 
 function packXYZ(vals) { return { x: vals[0], y: vals[1], z: vals[2] }; };
-function packXYZW(vals) { return { x: vals[0], y: vals[1], z: vals[2], w: vals[2] }; };
+function packXYZW(vals) { return { x: vals[0], y: vals[1], z: vals[2], w: vals[3] }; };
 common.SENSOR_PACKERS = {
     'gravity': packXYZ,
     'gyroscope': packXYZ,

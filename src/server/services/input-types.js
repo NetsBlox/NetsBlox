@@ -161,6 +161,36 @@ types.Function = async (blockXml, _params, ctx) => {
     };
 };
 
+types.Enum = (input, params) => {
+    const [id, variants, caseInsensitive] = params;
+    const temp = input.toString();
+    const s = caseInsensitive ? temp.toLowerCase() : temp; // defaults to case sensitive if undefined
+
+    if (Array.isArray(variants)) { // passing an array just checks that it is a valid variant and returns the variant
+        for (const variant of variants) {
+            const v = caseInsensitive ? variant.toLowerCase() : variant;
+            if (s === v) return variant;
+        }
+    }
+    else { // passing an object checks for validity and maps to the given value
+        for (const variant in variants) {
+            const v = caseInsensitive ? variant.toLowerCase() : variant;
+            if (s === v) return variants[variant];
+        }
+    }
+
+    throw Error(`Unknown ${id}: '${temp}'`);
+};
+
+types.Bool = input => types.Enum(input, ['Bool', { 'true': true, 'false': false, 'yes': true, 'no': false }, true]);
+
+// these types are used for communication with PhoneIoT
+types.ToggleStyle = input => types.Enum(input, ['Toggle Style', { switch: 0, checkbox: 1 }, true]);
+types.Align = input => types.Enum(input, ['Align', { left: 0, center: 1, right: 2 }, true]);
+types.Fit = input => types.Enum(input, ['Fit', { fit: 0, zoom: 1, stretch: 2 }, true]);
+types.FontSize = input => types.BoundedNumber(input, [0.1, 10.0]);
+types.SensorPeriod = input => types.BoundedNumber(input, [100, undefined]);
+
 types.String = input => input.toString();
 types.Any = input => input;
 

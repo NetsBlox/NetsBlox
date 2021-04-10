@@ -208,9 +208,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         arguments[4] = common.parseOptions(options, {
             id: { parse: types.parse.String },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-            fontSize: { parse: common.parseFontSize, default: 1.0 },
-            align: { parse: common.parseAlign, default: 0 },
-            landscape: { parse: common.parseBool, default: false },
+            fontSize: { parse: types.parse.FontSize, default: 1.0 },
+            align: { parse: types.parse.Align, default: 0 },
+            landscape: { parse: types.parse.Bool, default: false },
         });
         return this._passToDevice('addLabel', arguments);
     };
@@ -247,8 +247,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             event: { parse: types.parse.String },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(255, 255, 255) },
-            landscape: { parse: common.parseBool, default: false },
-            fontSize: { parse: common.parseFontSize, default: 1.0 },
+            landscape: { parse: types.parse.Bool, default: false },
+            fontSize: { parse: types.parse.FontSize, default: 1.0 },
         });
         return this._passToDevice('addButton', arguments);
     };
@@ -273,9 +273,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         arguments[5] = common.parseOptions(options, {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
-            readonly: { parse: common.parseBool, default: true },
-            landscape: { parse: common.parseBool, default: false },
-            fit: { parse: common.parseFit, default: 0 },
+            readonly: { parse: types.parse.Bool, default: true },
+            landscape: { parse: types.parse.Bool, default: false },
+            fit: { parse: types.parse.Fit, default: 0 },
         });
         return this._passToDevice('addImageDisplay', arguments);
     };
@@ -299,10 +299,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             text: { parse: types.parse.String, default: '' },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-            readonly: { parse: common.parseBool, default: false },
-            fontSize: { parse: common.parseFontSize, default: 1.0 },
-            align: { parse: common.parseAlign, default: 0 },
-            landscape: { parse: common.parseBool, default: false },
+            readonly: { parse: types.parse.Bool, default: false },
+            fontSize: { parse: types.parse.FontSize, default: 1.0 },
+            align: { parse: types.parse.Align, default: 0 },
+            landscape: { parse: types.parse.Bool, default: false },
         });
         return this._passToDevice('addTextField', arguments);
     };
@@ -323,7 +323,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
-            landscape: { parse: common.parseBool, default: false },
+            landscape: { parse: types.parse.Bool, default: false },
         });
         return this._passToDevice('addJoystick', arguments);
     };
@@ -343,15 +343,15 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     PhoneIoT.prototype.addToggle = function (device, x, y, text='', options) {
         arguments[3] = text;
         arguments[4] = common.parseOptions(options, {
-            style: { parse: common.parseToggleStyle, default: 0 },
+            style: { parse: types.parse.ToggleStyle, default: 0 },
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
-            checked: { parse: common.parseBool, default: false },
+            checked: { parse: types.parse.Bool, default: false },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-            fontSize: { parse: common.parseFontSize, default: 1 },
-            landscape: { parse: common.parseBool, default: false },
-            readonly: { parse: common.parseBool, default: false },
+            fontSize: { parse: types.parse.FontSize, default: 1 },
+            landscape: { parse: types.parse.Bool, default: false },
+            readonly: { parse: types.parse.Bool, default: false },
         });
         return this._passToDevice('addToggle', arguments);
     };
@@ -375,12 +375,12 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
             group: { parse: types.parse.String, default: 'main' },
-            checked: { parse: common.parseBool, default: false },
+            checked: { parse: types.parse.Bool, default: false },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-            fontSize: { parse: common.parseFontSize, default: 1 },
-            landscape: { parse: common.parseBool, default: false },
-            readonly: { parse: common.parseBool, default: false },
+            fontSize: { parse: types.parse.FontSize, default: 1 },
+            landscape: { parse: types.parse.Bool, default: false },
+            readonly: { parse: types.parse.Bool, default: false },
         });
         return this._passToDevice('addRadioButton', arguments);
     };
@@ -458,7 +458,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             if (common.SENSOR_PACKERS[lower] === undefined) {
                 throw Error(`unknown sensor: ${sensor}`);
             }
-            items[lower] = common.parseSensorPeriod(sensors[sensor]);
+            items[lower] = types.parse.SensorPeriod(sensors[sensor]);
         }
 
         const clientID = this.socket.clientId;

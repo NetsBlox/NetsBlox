@@ -8,7 +8,7 @@ describe(utils.suiteName(__filename), function() {
         it('should convert to a string', () => {
             let rawInput = 0;
             let parsedInput = typesParser.String(rawInput);
-            assert.equal(typeof parsedInput, 'string');
+            assert.strictEqual(typeof parsedInput, 'string');
         });
     });
 
@@ -16,7 +16,7 @@ describe(utils.suiteName(__filename), function() {
         it('should leave as a string', () => {
             let rawInput = '4.253';
             let parsedInput = typesParser.Any(rawInput);
-            assert.equal(parsedInput, rawInput);
+            assert.strictEqual(parsedInput, rawInput);
         });
     });
 
@@ -24,7 +24,7 @@ describe(utils.suiteName(__filename), function() {
         it('should parse into JS numbers', () => {
             let rawInput = '4.253';
             let parsedInput = typesParser.Number(rawInput);
-            assert.deepEqual(parsedInput, 4.253);
+            assert.deepStrictEqual(parsedInput, 4.253);
         });
     });
 
@@ -74,7 +74,7 @@ describe(utils.suiteName(__filename), function() {
         it('should parse structured data to json', () => {
             let rawInput = [['a', 234],['name', 'Hamid'], ['connections', ['b','c','d']], ['children']];
             let parsedInput = typesParser['Object'](rawInput);
-            assert.deepEqual(parsedInput.name, 'Hamid');
+            assert.deepStrictEqual(parsedInput.name, 'Hamid');
         });
 
     });
@@ -125,7 +125,7 @@ describe(utils.suiteName(__filename), function() {
         it('should return Number (not string)', () => {
             const input = '10';
             const value = typesParser[type](input, [0, 21]);
-            assert.equal(typeof value, 'number');
+            assert.strictEqual(typeof value, 'number');
         });
 
         it('should throw if less than min', () => {
@@ -189,6 +189,86 @@ describe(utils.suiteName(__filename), function() {
         it('should accept if above minimum (w/o max)', () => {
             const rawInput = 'abcdefg';
             typesParser[type](rawInput, [5]);
+        });
+    });
+
+    describe('Enum', function() {
+        const type = 'Enum';
+
+        it('should take an array of variants and return variant', () => {
+            const vars = ['dog', 'Cat', 'puPPy', 'KITTEN'];
+            assert.deepEqual(typesParser[type]('dog', ['', vars]), 'dog');
+            assert.deepEqual(typesParser[type]('Cat', ['', vars]), 'Cat');
+            assert.deepEqual(typesParser[type]('puPPy', ['', vars]), 'puPPy');
+            assert.deepEqual(typesParser[type]('KITTEN', ['', vars]), 'KITTEN');
+
+            assert.throws(() => typesParser[type]('something else', ['', vars]));
+            assert.throws(() => typesParser[type]('dOG', ['', vars]));
+            assert.throws(() => typesParser[type]('CAt', ['', vars]));
+            assert.throws(() => typesParser[type]('puppy', ['', vars]));
+            assert.throws(() => typesParser[type]('kitten', ['', vars]));
+        });
+        it('should take an object of variant key value pairs and return mapped value', () => {
+            const vars = { dog: 5, Cat: -6, puPPy: 3, KITTEN: ['hello', 'world'] };
+            assert.deepEqual(typesParser[type]('dog', ['', vars]), 5);
+            assert.deepEqual(typesParser[type]('Cat', ['', vars]), -6);
+            assert.deepEqual(typesParser[type]('puPPy', ['', vars]), 3);
+            assert.deepEqual(typesParser[type]('KITTEN', ['', vars]), ['hello', 'world']);
+
+            assert.throws(() => typesParser[type]('something else', ['', vars]));
+            assert.throws(() => typesParser[type]('dOG', ['', vars]));
+            assert.throws(() => typesParser[type]('CAt', ['', vars]));
+            assert.throws(() => typesParser[type]('puppy', ['', vars]));
+            assert.throws(() => typesParser[type]('kitten', ['', vars]));
+        });
+        it('should have a case insensitive mode for arrays', () => {
+            const vars = ['dog', 'Cat', 'puPPy', 'KITTEN'];
+
+            assert.deepEqual(typesParser[type]('dog', ['', vars, true]), 'dog');
+            assert.deepEqual(typesParser[type]('dOG', ['', vars, true]), 'dog');
+            assert.deepEqual(typesParser[type]('Cat', ['', vars, true]), 'Cat');
+            assert.deepEqual(typesParser[type]('cat', ['', vars, true]), 'Cat');
+            assert.deepEqual(typesParser[type]('puPPy', ['', vars, true]), 'puPPy');
+            assert.deepEqual(typesParser[type]('puppy', ['', vars, true]), 'puPPy');
+            assert.deepEqual(typesParser[type]('KITTEN', ['', vars, true]), 'KITTEN');
+            assert.deepEqual(typesParser[type]('kitten', ['', vars, true]), 'KITTEN');
+
+            assert.throws(() => typesParser[type]('something else', ['', vars, true]));
+        });
+        it('should have a case insensitive mode for objects', () => {
+            const vars = { dog: 5, Cat: -6, puPPy: 3, KITTEN: ['hello', 'world'] };
+
+            assert.deepEqual(typesParser[type]('dog', ['', vars, true]), 5);
+            assert.deepEqual(typesParser[type]('dOg', ['', vars, true]), 5);
+            assert.deepEqual(typesParser[type]('Cat', ['', vars, true]), -6);
+            assert.deepEqual(typesParser[type]('cat', ['', vars, true]), -6);
+            assert.deepEqual(typesParser[type]('puPPy', ['', vars, true]), 3);
+            assert.deepEqual(typesParser[type]('puppy', ['', vars, true]), 3);
+            assert.deepEqual(typesParser[type]('KITTEN', ['', vars, true]), ['hello', 'world']);
+            assert.deepEqual(typesParser[type]('KITteN', ['', vars, true]), ['hello', 'world']);
+
+            assert.throws(() => typesParser[type]('something else', ['', vars, true]));
+        });
+    });
+
+    describe('Bool', function() {
+        const type = 'Bool';
+
+        it('should accept true and false (actual bool values)', () => {
+            assert.strictEqual(typesParser[type](true), true);
+            assert.strictEqual(typesParser[type](false), false);
+        });
+        it('should accept true and false (case insensitive)', () => {
+            assert.strictEqual(typesParser[type]('true'), true);
+            assert.strictEqual(typesParser[type]('TrUe'), true);
+            assert.strictEqual(typesParser[type]('false'), false);
+            assert.strictEqual(typesParser[type]('faLSe'), false);
+        });
+        it('should accept yes and no (case insensitive)', () => {
+            assert.strictEqual(typesParser[type]('yes'), true);
+            assert.strictEqual(typesParser[type]('YES'), true);
+            assert.strictEqual(typesParser[type]('no'), false);
+            assert.strictEqual(typesParser[type]('nO'), false);
         });
     });
 });
