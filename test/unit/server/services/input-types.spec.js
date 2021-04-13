@@ -1,7 +1,8 @@
 const utils = require('../../../assets/utils');
 
 describe(utils.suiteName(__filename), function() {
-    const typesParser = require('../../../../src/server/services/input-types').parse;
+    const InputTypes = require('../../../../src/server/services/input-types');
+    const typesParser = InputTypes.parse;
     const assert = require('assert');
 
     describe('String', function() {
@@ -219,8 +220,8 @@ describe(utils.suiteName(__filename), function() {
         });
     });
 
-    describe('Bool', function() {
-        const type = 'Bool';
+    describe('Boolean', function() {
+        const type = 'Boolean';
 
         it('should accept true and false (actual bool values)', () => {
             assert.strictEqual(typesParser[type](true), true);
@@ -231,6 +232,14 @@ describe(utils.suiteName(__filename), function() {
             assert.strictEqual(typesParser[type]('TrUe'), true);
             assert.strictEqual(typesParser[type]('false'), false);
             assert.strictEqual(typesParser[type]('faLSe'), false);
+        });
+    });
+
+    describe('defineType', function() {
+        before(() => InputTypes.defineType('NewType', input => Math.pow(+input, 2)));
+
+        it('should not be able to define the same type twice', function() {
+            assert.throws(() => InputTypes.defineType('NewType', input => input));
         });
     });
 });

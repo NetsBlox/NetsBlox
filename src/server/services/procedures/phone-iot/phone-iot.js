@@ -220,7 +220,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
             fontSize: { parse: myTypes.FontSize, default: 1.0 },
             align: { parse: myTypes.Align, default: 0 },
-            landscape: { parse: types.parse.Bool, default: false },
+            landscape: { parse: types.parse.Boolean, default: false },
         });
         return this._passToDevice('addLabel', arguments);
     };
@@ -247,7 +247,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             event: { parse: types.parse.String },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(255, 255, 255) },
-            landscape: { parse: types.parse.Bool, default: false },
+            landscape: { parse: types.parse.Boolean, default: false },
             fontSize: { parse: myTypes.FontSize, default: 1.0 },
         });
         return this._passToDevice('addButton', arguments);
@@ -273,8 +273,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         arguments[5] = common.parseOptions(options, {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
-            readonly: { parse: types.parse.Bool, default: true },
-            landscape: { parse: types.parse.Bool, default: false },
+            readonly: { parse: types.parse.Boolean, default: true },
+            landscape: { parse: types.parse.Boolean, default: false },
             fit: { parse: myTypes.Fit, default: 0 },
         });
         return this._passToDevice('addImageDisplay', arguments);
@@ -299,10 +299,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             text: { parse: types.parse.String, default: '' },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-            readonly: { parse: types.parse.Bool, default: false },
+            readonly: { parse: types.parse.Boolean, default: false },
             fontSize: { parse: myTypes.FontSize, default: 1.0 },
             align: { parse: myTypes.Align, default: 0 },
-            landscape: { parse: types.parse.Bool, default: false },
+            landscape: { parse: types.parse.Boolean, default: false },
         });
         return this._passToDevice('addTextField', arguments);
     };
@@ -323,7 +323,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
-            landscape: { parse: types.parse.Bool, default: false },
+            landscape: { parse: types.parse.Boolean, default: false },
         });
         return this._passToDevice('addJoystick', arguments);
     };
@@ -346,12 +346,12 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             style: { parse: myTypes.ToggleStyle, default: 0 },
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
-            checked: { parse: types.parse.Bool, default: false },
+            checked: { parse: types.parse.Boolean, default: false },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
             fontSize: { parse: myTypes.FontSize, default: 1 },
-            landscape: { parse: types.parse.Bool, default: false },
-            readonly: { parse: types.parse.Bool, default: false },
+            landscape: { parse: types.parse.Boolean, default: false },
+            readonly: { parse: types.parse.Boolean, default: false },
         });
         return this._passToDevice('addToggle', arguments);
     };
@@ -375,12 +375,12 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
             group: { parse: types.parse.String, default: 'main' },
-            checked: { parse: types.parse.Bool, default: false },
+            checked: { parse: types.parse.Boolean, default: false },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
             fontSize: { parse: myTypes.FontSize, default: 1 },
-            landscape: { parse: types.parse.Bool, default: false },
-            readonly: { parse: types.parse.Bool, default: false },
+            landscape: { parse: types.parse.Boolean, default: false },
+            readonly: { parse: types.parse.Boolean, default: false },
         });
         return this._passToDevice('addRadioButton', arguments);
     };

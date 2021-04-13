@@ -161,63 +161,37 @@ types.Function = async (blockXml, _params, ctx) => {
     };
 };
 
-function _enumError(id, variants) {
-    if (variants.length <= 10) throw Error(`Unknown ${id}: should be ${variants.join(', ')}`);
-    else throw Error(`Unknown ${id}: should be ${variants.slice(0, 10).join(', ')}, ...`);
+class EnumError extends Error {
+    constructor(name, variants) {
+        const message = name ? `${name} must be one of ${variants.join(', ')}` :
+            `Must be one of ${variants.join(', ')}`;
+        super(message);
+    }
 }
-types.Enum = (input, params) => {
-    const [id, variants] = params;
+
+types.Enum = (input, variants, _ctx, name) => {
     const lower = input.toString().toLowerCase();
 
-    if (Array.isArray(variants)) { // passing an array just checks that it is a valid variant and returns the variant
-        for (const variant of variants) {
-            if (lower === variant.toLowerCase()) return variant;
-        }
-        _enumError(id, variants); // this throws
+    for (const variant of variants) {
+        if (lower === variant.toLowerCase()) return variant;
     }
-    else { // passing an object checks for validity and maps to the given value
-        for (const variant in variants) {
-            if (lower === variant.toLowerCase()) return variants[variant];
-        }
-        _enumError(id, Object.keys(variants)); // this throws
-    }
+    throw new EnumError(name, variants);
 };
 
-types.Bool = input => types.Enum(input, ['Bool', { 'true': true, 'false': false }]);
+types.Boolean = input => types.Enum(input, ['true', 'false'], _, 'Boolean') === 'true';
 
 types.String = input => input.toString();
 types.Any = input => input;
 
-const SERVICE_TYPES = {};
-const WAITING_TYPES = {};
-function defineForService(service, serviceTypes) {
-    const lower = service.toLowerCase();
-    if (SERVICE_TYPES[lower] !== undefined) throw Error(`input-types: types for service ${sevice} were already defined`);
-    SERVICE_TYPES[lower] = serviceTypes;
-
-    // resolve any waiters
-    const waiters = WAITING_TYPES[lower];
-    if (waiters !== undefined) {
-        delete WAITING_TYPES[lower];
-        for (const resolve of waiters) resolve(serviceTypes);
+function defineType(name, parser) {
+    if (types[name]) {
+        throw new Error(`Defining duplicate type: ${name}`);
     }
-}
-async function forService(service) {
-    return new Promise((resolve) => {
-        const lower = service.toLowerCase();
-        const res = SERVICE_TYPES[lower];
-        if (res !== undefined) resolve(res); // if it's already defined, we have the value
-        else { // otherwise wait for it to be defined
-            let waiters = WAITING_TYPES[lower];
-            if (waiters === undefined) waiters = (WAITING_TYPES[lower] = []);
-            waiters.push(resolve);
-        }
-    });
+    types[name] = parser;
 }
 
 module.exports = {
     parse: types,
     getNBType,
-    defineForService,
-    forService,
+    defineType,
 };
