@@ -289,10 +289,13 @@ class ServicesWorker {
             const recordError = err => {
                 inputStatus.isValid = false;
                 const netsbloxType = InputTypes.getNBType(typeName);
-                inputStatus.msg = `"${arg.name}" is not a valid ${netsbloxType}.`;
-                if (err.message.includes(netsbloxType)) {
-                    inputStatus.msg = `"${arg.name}" is not valid. ` + err.message;
-                } else if (err.message) {
+                const omitTypeName = err instanceof InputTypes.Errors.ParameterError ||
+                    err.message.includes(netsbloxType);
+                inputStatus.msg = omitTypeName ? 
+                    `"${arg.name}" is not valid.` :
+                    `"${arg.name}" is not a valid ${netsbloxType}.`;
+
+                if (err.message) {
                     inputStatus.msg += ' ' + err.message;
                 }
             };
