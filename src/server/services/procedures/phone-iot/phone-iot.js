@@ -120,7 +120,7 @@ PhoneIoT.prototype._getRegistered = function () {
  * @category Utility
  * @returns {array}
  */
-PhoneIoT.prototype.getDevices = async function () {
+PhoneIoT.prototype._getDevices = async function () {
     const availableDevices = Object.keys(this._devices);
     let devices = await acl.authorizedRobots(this.caller.username, availableDevices);
     return devices;
@@ -499,7 +499,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Gets a list of the names of all available sensors.
      * These are needed for listenToSensors.
-     * @category Sensors
+     * @category Utility
      * @returns {Array} list of sensor names
      */
     PhoneIoT.prototype.getSensors = function () {
@@ -617,19 +617,19 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
 
     /**
-     * Get the current output of the gravity vector device.
+     * Get the current output of the gravity vector sensor.
      * This is a 3D vector with units of m/s².
      * This is similar to the Accelerometer, but tries to account for noise from linear movement.
      * @category Sensors
      * @param {string} device name of the device (matches at the end)
-     * @returns {Array} output of gravity device
+     * @returns {Array} output of gravity sensor
      */
     PhoneIoT.prototype.getGravity = function (device) {
         return this._passToDevice('getGravity', arguments);
     };
 
     /**
-     * Get the current output of the linear acceleration device.
+     * Get the current output of the linear acceleration sensor.
      * This is a 3D vector with units of m/s².
      * @category Sensors
      * @param {string} device name of the device (matches at the end)
@@ -650,7 +650,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('getGyroscope', arguments);
     };
     /**
-     * Get the current output of the rotation device, which measures rotational orientation.
+     * Get the current output of the rotation sensor, which measures rotational orientation.
      * This is a unitless 4D vector representing rotation on the 3 axes, plus a scalar component.
      * For most uses, getGameRotation is more convenient.
      * @category Sensors
@@ -661,7 +661,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('getRotation', arguments);
     };
     /**
-     * Get the current output of the game rotation device, which measures rotational orientation.
+     * Get the current output of the game rotation sensor, which measures rotational orientation.
      * This is a unitless 3D vector representing rotation around each axis.
      * @category Sensors
      * @param {string} device name of the device (matches at the end)
@@ -672,7 +672,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
 
     /**
-     * Get the current output of the magnetic field device.
+     * Get the current output of the magnetic field sensor.
      * This is a 3D vector with units of μT (micro teslas) in each direction.
      * @category Sensors
      * @param {string} device name of the device (matches at the end)
@@ -724,12 +724,12 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
 
     /**
-     * Get the current output of the proximity device.
+     * Get the current output of the proximity sensor.
      * This is a distance measured in cm.
-     * Note that some devices only have binary proximity devices (near/far), which will take discrete two values.
+     * Note that some devices only have binary proximity sensors (near/far), which will take discrete two values.
      * @category Sensors
      * @param {string} device name of the device (matches at the end)
-     * @returns {Number} distance from proximity device in cm
+     * @returns {Number} distance from proximity sensor in cm
      */
     PhoneIoT.prototype.getProximity = function (device) {
         return this._passToDevice('getProximity', arguments);
@@ -745,7 +745,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('getStepCount', arguments);
     };
     /**
-     * Get the current output of the light device.
+     * Get the current output of the light sensor.
      * @category Sensors
      * @param {string} device name of the device (matches at the end)
      * @returns {Number} current light level reading
