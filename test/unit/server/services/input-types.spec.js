@@ -198,56 +198,24 @@ describe(utils.suiteName(__filename), function() {
         it('should take an array of variants and return variant', () => {
             const vars = ['dog', 'Cat', 'puPPy', 'KITTEN'];
             assert.deepEqual(typesParser[type]('dog', ['', vars]), 'dog');
+            assert.deepEqual(typesParser[type]('dOg', ['', vars]), 'dog');
             assert.deepEqual(typesParser[type]('Cat', ['', vars]), 'Cat');
+            assert.deepEqual(typesParser[type]('cat', ['', vars]), 'Cat');
             assert.deepEqual(typesParser[type]('puPPy', ['', vars]), 'puPPy');
+            assert.deepEqual(typesParser[type]('pupPY', ['', vars]), 'puPPy');
             assert.deepEqual(typesParser[type]('KITTEN', ['', vars]), 'KITTEN');
-
-            assert.throws(() => typesParser[type]('something else', ['', vars]));
-            assert.throws(() => typesParser[type]('dOG', ['', vars]));
-            assert.throws(() => typesParser[type]('CAt', ['', vars]));
-            assert.throws(() => typesParser[type]('puppy', ['', vars]));
-            assert.throws(() => typesParser[type]('kitten', ['', vars]));
+            assert.deepEqual(typesParser[type]('kitten', ['', vars]), 'KITTEN');
         });
         it('should take an object of variant key value pairs and return mapped value', () => {
             const vars = { dog: 5, Cat: -6, puPPy: 3, KITTEN: ['hello', 'world'] };
             assert.deepEqual(typesParser[type]('dog', ['', vars]), 5);
+            assert.deepEqual(typesParser[type]('dOG', ['', vars]), 5);
             assert.deepEqual(typesParser[type]('Cat', ['', vars]), -6);
+            assert.deepEqual(typesParser[type]('CAT', ['', vars]), -6);
             assert.deepEqual(typesParser[type]('puPPy', ['', vars]), 3);
+            assert.deepEqual(typesParser[type]('puppy', ['', vars]), 3);
             assert.deepEqual(typesParser[type]('KITTEN', ['', vars]), ['hello', 'world']);
-
-            assert.throws(() => typesParser[type]('something else', ['', vars]));
-            assert.throws(() => typesParser[type]('dOG', ['', vars]));
-            assert.throws(() => typesParser[type]('CAt', ['', vars]));
-            assert.throws(() => typesParser[type]('puppy', ['', vars]));
-            assert.throws(() => typesParser[type]('kitten', ['', vars]));
-        });
-        it('should have a case insensitive mode for arrays', () => {
-            const vars = ['dog', 'Cat', 'puPPy', 'KITTEN'];
-
-            assert.deepEqual(typesParser[type]('dog', ['', vars, true]), 'dog');
-            assert.deepEqual(typesParser[type]('dOG', ['', vars, true]), 'dog');
-            assert.deepEqual(typesParser[type]('Cat', ['', vars, true]), 'Cat');
-            assert.deepEqual(typesParser[type]('cat', ['', vars, true]), 'Cat');
-            assert.deepEqual(typesParser[type]('puPPy', ['', vars, true]), 'puPPy');
-            assert.deepEqual(typesParser[type]('puppy', ['', vars, true]), 'puPPy');
-            assert.deepEqual(typesParser[type]('KITTEN', ['', vars, true]), 'KITTEN');
-            assert.deepEqual(typesParser[type]('kitten', ['', vars, true]), 'KITTEN');
-
-            assert.throws(() => typesParser[type]('something else', ['', vars, true]));
-        });
-        it('should have a case insensitive mode for objects', () => {
-            const vars = { dog: 5, Cat: -6, puPPy: 3, KITTEN: ['hello', 'world'] };
-
-            assert.deepEqual(typesParser[type]('dog', ['', vars, true]), 5);
-            assert.deepEqual(typesParser[type]('dOg', ['', vars, true]), 5);
-            assert.deepEqual(typesParser[type]('Cat', ['', vars, true]), -6);
-            assert.deepEqual(typesParser[type]('cat', ['', vars, true]), -6);
-            assert.deepEqual(typesParser[type]('puPPy', ['', vars, true]), 3);
-            assert.deepEqual(typesParser[type]('puppy', ['', vars, true]), 3);
-            assert.deepEqual(typesParser[type]('KITTEN', ['', vars, true]), ['hello', 'world']);
-            assert.deepEqual(typesParser[type]('KITteN', ['', vars, true]), ['hello', 'world']);
-
-            assert.throws(() => typesParser[type]('something else', ['', vars, true]));
+            assert.deepEqual(typesParser[type]('kitteN', ['', vars]), ['hello', 'world']);
         });
     });
 
@@ -263,12 +231,6 @@ describe(utils.suiteName(__filename), function() {
             assert.strictEqual(typesParser[type]('TrUe'), true);
             assert.strictEqual(typesParser[type]('false'), false);
             assert.strictEqual(typesParser[type]('faLSe'), false);
-        });
-        it('should accept yes and no (case insensitive)', () => {
-            assert.strictEqual(typesParser[type]('yes'), true);
-            assert.strictEqual(typesParser[type]('YES'), true);
-            assert.strictEqual(typesParser[type]('no'), false);
-            assert.strictEqual(typesParser[type]('nO'), false);
         });
     });
 });

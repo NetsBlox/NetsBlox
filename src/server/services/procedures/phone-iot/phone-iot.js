@@ -26,6 +26,16 @@ const PHONE_IOT_MODE = process.env.PHONE_IOT_MODE || 'both';
 const common = require('./common');
 const types = require('../../input-types');
 
+// these types are used for communication with PhoneIoT
+const myTypes = {};
+myTypes.ButtonStyle = input => types.parse.Enum(input, ['Button Style', { rectangle: 0, ellipse: 1, square: 2, circle: 3 }]);
+myTypes.ToggleStyle = input => types.parse.Enum(input, ['Toggle Style', { switch: 0, checkbox: 1 }]);
+myTypes.Align = input => types.parse.Enum(input, ['Align', { left: 0, center: 1, right: 2 }]);
+myTypes.Fit = input => types.parse.Enum(input, ['Fit', { fit: 0, zoom: 1, stretch: 2 }]);
+myTypes.FontSize = input => types.parse.BoundedNumber(input, [0.1, 10.0]);
+myTypes.SensorPeriod = input => types.parse.BoundedNumber(input, [100, undefined]);
+types.defineForService('phone-iot', myTypes); // export them for others to use if needed
+
 /*
  * PhoneIoT - This constructor is called on the first
  * request to an RPC from a given room.
@@ -208,8 +218,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         arguments[4] = common.parseOptions(options, {
             id: { parse: types.parse.String },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-            fontSize: { parse: types.parse.FontSize, default: 1.0 },
-            align: { parse: types.parse.Align, default: 0 },
+            fontSize: { parse: myTypes.FontSize, default: 1.0 },
+            align: { parse: myTypes.Align, default: 0 },
             landscape: { parse: types.parse.Bool, default: false },
         });
         return this._passToDevice('addLabel', arguments);
@@ -232,23 +242,13 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     PhoneIoT.prototype.addButton = function (device, x, y, width, height, text='', options) {
         arguments[5] = text;
         arguments[6] = common.parseOptions(options, {
-            style: {
-                parse: v => {
-                    const lower = v.toLowerCase();
-                    if (lower === 'rectangle') return 0;
-                    if (lower === 'ellipse') return 1;
-                    if (lower === 'square') return 2;
-                    if (lower === 'circle') return 3;
-                    throw Error(`unknown button style: ${v}`);
-                },
-                default: 0,
-            },
+            style: { parse: myTypes.ButtonStyle, default: 0 },
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(255, 255, 255) },
             landscape: { parse: types.parse.Bool, default: false },
-            fontSize: { parse: types.parse.FontSize, default: 1.0 },
+            fontSize: { parse: myTypes.FontSize, default: 1.0 },
         });
         return this._passToDevice('addButton', arguments);
     };
@@ -275,7 +275,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             event: { parse: types.parse.String },
             readonly: { parse: types.parse.Bool, default: true },
             landscape: { parse: types.parse.Bool, default: false },
-            fit: { parse: types.parse.Fit, default: 0 },
+            fit: { parse: myTypes.Fit, default: 0 },
         });
         return this._passToDevice('addImageDisplay', arguments);
     };
@@ -300,8 +300,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
             readonly: { parse: types.parse.Bool, default: false },
-            fontSize: { parse: types.parse.FontSize, default: 1.0 },
-            align: { parse: types.parse.Align, default: 0 },
+            fontSize: { parse: myTypes.FontSize, default: 1.0 },
+            align: { parse: myTypes.Align, default: 0 },
             landscape: { parse: types.parse.Bool, default: false },
         });
         return this._passToDevice('addTextField', arguments);
@@ -343,13 +343,13 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     PhoneIoT.prototype.addToggle = function (device, x, y, text='', options) {
         arguments[3] = text;
         arguments[4] = common.parseOptions(options, {
-            style: { parse: types.parse.ToggleStyle, default: 0 },
+            style: { parse: myTypes.ToggleStyle, default: 0 },
             id: { parse: types.parse.String },
             event: { parse: types.parse.String },
             checked: { parse: types.parse.Bool, default: false },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-            fontSize: { parse: types.parse.FontSize, default: 1 },
+            fontSize: { parse: myTypes.FontSize, default: 1 },
             landscape: { parse: types.parse.Bool, default: false },
             readonly: { parse: types.parse.Bool, default: false },
         });
@@ -378,7 +378,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             checked: { parse: types.parse.Bool, default: false },
             color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
             textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-            fontSize: { parse: types.parse.FontSize, default: 1 },
+            fontSize: { parse: myTypes.FontSize, default: 1 },
             landscape: { parse: types.parse.Bool, default: false },
             readonly: { parse: types.parse.Bool, default: false },
         });
@@ -458,7 +458,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             if (common.SENSOR_PACKERS[lower] === undefined) {
                 throw Error(`unknown sensor: ${sensor}`);
             }
-            items[lower] = types.parse.SensorPeriod(sensors[sensor]);
+            items[lower] = myTypes.SensorPeriod(sensors[sensor]);
         }
 
         const clientID = this.socket.clientId;

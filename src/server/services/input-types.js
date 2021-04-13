@@ -161,40 +161,63 @@ types.Function = async (blockXml, _params, ctx) => {
     };
 };
 
+function _enumError(id, variants) {
+    if (variants.length <= 10) throw Error(`Unknown ${id}: should be ${variants.join(', ')}`);
+    else throw Error(`Unknown ${id}: should be ${variants.slice(0, 10).join(', ')}, ...`);
+}
 types.Enum = (input, params) => {
-    const [id, variants, caseInsensitive] = params;
-    const temp = input.toString();
-    const s = caseInsensitive ? temp.toLowerCase() : temp; // defaults to case sensitive if undefined
+    const [id, variants] = params;
+    const lower = input.toString().toLowerCase();
 
     if (Array.isArray(variants)) { // passing an array just checks that it is a valid variant and returns the variant
         for (const variant of variants) {
-            const v = caseInsensitive ? variant.toLowerCase() : variant;
-            if (s === v) return variant;
+            if (lower === variant.toLowerCase()) return variant;
         }
+        _enumError(id, variants); // this throws
     }
     else { // passing an object checks for validity and maps to the given value
         for (const variant in variants) {
-            const v = caseInsensitive ? variant.toLowerCase() : variant;
-            if (s === v) return variants[variant];
+            if (lower === variant.toLowerCase()) return variants[variant];
         }
+        _enumError(id, Object.keys(variants)); // this throws
     }
-
-    throw Error(`Unknown ${id}: '${temp}'`);
 };
 
-types.Bool = input => types.Enum(input, ['Bool', { 'true': true, 'false': false, 'yes': true, 'no': false }, true]);
-
-// these types are used for communication with PhoneIoT
-types.ToggleStyle = input => types.Enum(input, ['Toggle Style', { switch: 0, checkbox: 1 }, true]);
-types.Align = input => types.Enum(input, ['Align', { left: 0, center: 1, right: 2 }, true]);
-types.Fit = input => types.Enum(input, ['Fit', { fit: 0, zoom: 1, stretch: 2 }, true]);
-types.FontSize = input => types.BoundedNumber(input, [0.1, 10.0]);
-types.SensorPeriod = input => types.BoundedNumber(input, [100, undefined]);
+types.Bool = input => types.Enum(input, ['Bool', { 'true': true, 'false': false }]);
 
 types.String = input => input.toString();
 types.Any = input => input;
 
+const SERVICE_TYPES = {};
+const WAITING_TYPES = {};
+function defineForService(service, serviceTypes) {
+    const lower = service.toLowerCase();
+    if (SERVICE_TYPES[lower] !== undefined) throw Error(`input-types: types for service ${sevice} were already defined`);
+    SERVICE_TYPES[lower] = serviceTypes;
+
+    // resolve any waiters
+    const waiters = WAITING_TYPES[lower];
+    if (waiters !== undefined) {
+        delete WAITING_TYPES[lower];
+        for (const resolve of waiters) resolve(serviceTypes);
+    }
+}
+async function forService(service) {
+    return new Promise((resolve) => {
+        const lower = service.toLowerCase();
+        const res = SERVICE_TYPES[lower];
+        if (res !== undefined) resolve(res); // if it's already defined, we have the value
+        else { // otherwise wait for it to be defined
+            let waiters = WAITING_TYPES[lower];
+            if (waiters === undefined) waiters = (WAITING_TYPES[lower] = []);
+            waiters.push(resolve);
+        }
+    });
+}
+
 module.exports = {
     parse: types,
-    getNBType
+    getNBType,
+    defineForService,
+    forService,
 };
