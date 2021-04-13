@@ -17,6 +17,22 @@ class InputTypeError extends Error {
 class ParameterError extends InputTypeError {
 }
 
+function getErrorMessage(arg, err) {
+    const typeName = arg.type.name;
+    const netsbloxType = getNBType(typeName);
+    const omitTypeName = err instanceof ParameterError ||
+        err.message.includes(netsbloxType);
+    const msg = omitTypeName ? 
+        `"${arg.name}" is not valid.` :
+        `"${arg.name}" is not a valid ${netsbloxType}.`;
+
+    if (err.message) {
+        return msg + ' ' + err.message;
+    } else {
+        return msg;
+    }
+}
+
 // converts a javascript type name into netsblox type name
 function getNBType(jsType) {
     return NB_TYPES[jsType] || jsType;
@@ -142,10 +158,16 @@ types.Object = (input, params, ctx) => {
                 if (hasField) {
                     const value = input[param.name];
                     delete input[param.name];
-                    return [
-                        param.name,
-                        types[param.type.name](value, param.type.params, ctx)
-                    ];
+                    try {
+                        const parsedValue = types[param.type.name](value, param.type.params, ctx);
+                        return [
+                            param.name,
+                            parsedValue
+                        ];
+                    } catch(err) {
+                        const message = `Field ${getErrorMessage(param, err)}`;
+                        throw new ParameterError(message);
+                    }
                 } else if (!param.optional) {
                     throw new ParameterError(`It must contain a(n) ${param.name} field`);
                 }
@@ -196,6 +218,7 @@ types.Any = input => input;
 module.exports = {
     parse: types,
     getNBType,
+    getErrorMessage,
     Errors: {
         ParameterError,
         InputTypeError,
