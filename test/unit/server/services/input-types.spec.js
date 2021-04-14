@@ -78,6 +78,45 @@ describe(utils.suiteName(__filename), function() {
             assert.deepStrictEqual(parsedInput.name, 'Hamid');
         });
 
+        describe('duck typing', function() {
+            function param(name, type, optional=false) {
+                return {
+                    name,
+                    optional,
+                    type: {
+                        name: type
+                    }
+                };
+            }
+
+            it('should not support additional fields', function() {
+                const input = [['name', 'Donald Duck'], ['age', 50]];
+                assert.throws(
+                    () => typesParser.Object(input, [param('name', 'String')]),
+                    /extra fields/
+                );
+            });
+
+            it('should support optional fields', function() {
+                const input = [];
+                const parsedInput = typesParser.Object(input, [param('name', 'String', true)]);
+                assert.deepEqual(parsedInput, {});
+            });
+
+            it('should parse fields', function() {
+                const input = [['age', '50']];
+                const parsedInput = typesParser.Object(input, [param('age', 'Number')]);
+                assert.deepEqual(parsedInput.age, 50);
+            });
+
+            it('should support required fields', function() {
+                const input = [['name', 'Donald Duck']];
+                assert.throws(
+                    () => typesParser.Object(input, [param('name', 'String'), param('age', 'Number')]),
+                    /must contain/
+                );
+            });
+        });
     });
 
     describe('Latitude', function() {
