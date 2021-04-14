@@ -28,13 +28,12 @@ const types = require('../../input-types');
 
 // these types are used for communication with PhoneIoT
 const myTypes = {};
-myTypes.ButtonStyle = input => types.parse.Enum(input, ['Button Style', { rectangle: 0, ellipse: 1, square: 2, circle: 3 }]);
-myTypes.ToggleStyle = input => types.parse.Enum(input, ['Toggle Style', { switch: 0, checkbox: 1 }]);
-myTypes.Align = input => types.parse.Enum(input, ['Align', { left: 0, center: 1, right: 2 }]);
-myTypes.Fit = input => types.parse.Enum(input, ['Fit', { fit: 0, zoom: 1, stretch: 2 }]);
+myTypes.ButtonStyle = input => types.parse.Enum(input, { rectangle: 0, ellipse: 1, square: 2, circle: 3 }, undefined, 'Button Style');
+myTypes.ToggleStyle = input => types.parse.Enum(input, { switch: 0, checkbox: 1 }, undefined, 'Toggle Style');
+myTypes.Align = input => types.parse.Enum(input, { left: 0, center: 1, right: 2 }, undefined, 'Align');
+myTypes.Fit = input => types.parse.Enum(input, { fit: 0, zoom: 1, stretch: 2 }, undefined, 'Fit');
 myTypes.FontSize = input => types.parse.BoundedNumber(input, [0.1, 10.0]);
 myTypes.SensorPeriod = input => types.parse.BoundedNumber(input, [100, undefined]);
-types.defineForService('phone-iot', myTypes); // export them for others to use if needed
 
 /*
  * PhoneIoT - This constructor is called on the first

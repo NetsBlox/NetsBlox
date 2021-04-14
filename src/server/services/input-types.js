@@ -172,13 +172,21 @@ class EnumError extends Error {
 types.Enum = (input, variants, _ctx, name) => {
     const lower = input.toString().toLowerCase();
 
-    for (const variant of variants) {
-        if (lower === variant.toLowerCase()) return variant;
+    if (Array.isArray(variants)) {
+        for (const variant of variants) {
+            if (lower === variant.toLowerCase()) return variant;
+        }
+        throw new EnumError(name, variants);
     }
-    throw new EnumError(name, variants);
+    else {
+        for (const variant in variants) {
+            if (lower === variant.toLowerCase()) return variants[variant];
+        }
+        throw new EnumError(name, Object.keys(variants));
+    }
 };
 
-types.Boolean = input => types.Enum(input, ['true', 'false'], _, 'Boolean') === 'true';
+types.Boolean = input => types.Enum(input, ['true', 'false'], undefined, 'Boolean') === 'true';
 
 types.String = input => input.toString();
 types.Any = input => input;
