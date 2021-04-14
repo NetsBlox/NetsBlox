@@ -212,10 +212,10 @@ types.Function = async (blockXml, _params, ctx) => {
     };
 };
 
-class EnumError extends Error {
+class EnumError extends ParameterError {
     constructor(name, variants) {
         const message = name ? `${name} must be one of ${variants.join(', ')}` :
-            `Must be one of ${variants.join(', ')}`;
+            `It must be one of ${variants.join(', ')}`;
         super(message);
     }
 }
