@@ -112,7 +112,7 @@ describe(utils.suiteName(__filename), function() {
                 const input = [['name', 'Donald Duck']];
                 assert.throws(
                     () => typesParser.Object(input, [param('name', 'String'), param('age', 'Number')]),
-                    /Must contain/
+                    /must contain/
                 );
             });
         });
