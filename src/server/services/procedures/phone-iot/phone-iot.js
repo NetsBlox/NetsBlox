@@ -25,6 +25,7 @@ const server = dgram.createSocket('udp4');
 const PHONE_IOT_MODE = process.env.PHONE_IOT_MODE || 'both';
 const common = require('./common');
 const types = require('../../input-types');
+const _ = require('lodash');
 
 // these types are used for communication with PhoneIoT
 const myTypes = {};
@@ -210,17 +211,22 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the label (percentage).
      * @param {string=} text The text to display on the label (defaults to empty)
      * @param {Object=} options Additional options: id, textColor, align, fontSize, landscape
+     * @param {String=} options.id ID of the label
+     * @param {Number=} options.textColor Color of the text to display
+     * @param {FontSize=} options.fontSize Font size of label text
+     * @param {Align=} options.align Alignment of the label
+     * @param {Boolean=} options.landscape Set landscape mode (rather than portrait)
      * @returns {string} id of the created label
      */
     PhoneIoT.prototype.addLabel = function (device, x, y, text='', options) {
         arguments[3] = text;
-        arguments[4] = common.parseOptions(options, {
-            id: { parse: types.parse.String },
-            textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-            fontSize: { parse: myTypes.FontSize, default: 1.0 },
-            align: { parse: myTypes.Align, default: 0 },
-            landscape: { parse: types.parse.Boolean, default: false },
-        });
+        const DEFAULTS = {
+            textColor: this.getColor(0, 0, 0),
+            fontSize: 1.0,
+            align: 0,
+            landscape: false
+        };
+        arguments[4] = _.merge({}, DEFAULTS, options);
         return this._passToDevice('addLabel', arguments);
     };
     /**
