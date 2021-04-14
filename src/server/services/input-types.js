@@ -222,19 +222,15 @@ class EnumError extends Error {
 
 types.Enum = (input, variants, _ctx, name) => {
     const lower = input.toString().toLowerCase();
+    const variantDict = Array.isArray(variants) ?
+        _.fromPairs(variants.map(name => [name, name])) :
+        variants;
 
-    if (Array.isArray(variants)) {
-        for (const variant of variants) {
-            if (lower === variant.toLowerCase()) return variant;
-        }
-        throw new EnumError(name, variants);
+    for (const variant in variantDict) {
+        if (lower === variant.toLowerCase()) return variantDict[variant];
     }
-    else {
-        for (const variant in variants) {
-            if (lower === variant.toLowerCase()) return variants[variant];
-        }
-        throw new EnumError(name, Object.keys(variants));
-    }
+
+    throw new EnumError(name, Object.keys(variantDict));
 };
 
 types.Boolean = input => types.Enum(input, ['true', 'false'], undefined, 'Boolean') === 'true';
