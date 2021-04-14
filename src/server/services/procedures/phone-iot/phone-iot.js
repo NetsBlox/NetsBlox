@@ -206,10 +206,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Add a custom label to the device.
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
+     * @param {String} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the label (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the label (percentage).
-     * @param {string=} text The text to display on the label (defaults to empty)
+     * @param {String=} text The text to display on the label (defaults to empty)
      * @param {Object=} options Additional options: id, textColor, align, fontSize, landscape
      * @param {String=} options.id ID of the label
      * @param {Number=} options.textColor Color of the text to display
