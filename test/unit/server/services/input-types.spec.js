@@ -77,7 +77,7 @@ describe(utils.suiteName(__filename), function() {
             assert.deepEqual(parsedInput.name, 'Hamid');
         });
 
-        describe.only('duck typing', function() {
+        describe('duck typing', function() {
             function param(name, type, optional=false) {
                 return {
                     name,
