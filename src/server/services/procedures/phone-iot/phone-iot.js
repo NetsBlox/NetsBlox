@@ -216,7 +216,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {FontSize=} options.fontSize Font size of label text
      * @param {Align=} options.align Alignment of the label
      * @param {Boolean=} options.landscape Set landscape mode (rather than portrait)
-     * @returns {string} id of the created label
+     * @returns {String} id of the created label
      */
     PhoneIoT.prototype.addLabel = function (device, x, y, text='', options) {
         arguments[3] = text;
