@@ -6,7 +6,6 @@
  *
  * Original datasets are available at
  * https://www1.ncdc.noaa.gov/pub/data/paleo/contributions_by_author/lisiecki2005/lisiecki2005.txt
- * @alpha
  * @service
  * @category Science
  * @category Climate

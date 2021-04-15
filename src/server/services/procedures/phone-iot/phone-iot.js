@@ -1,8 +1,7 @@
 /**
- * PhoneIoT is meant to be used with the PhoneIoT app for android.
- * It allows your android device to be used as an sensor and input device accessible from inside Netsblox.
+ * PhoneIoT is meant to be used with the PhoneIoT mobile app.
+ * It allows your Android phone or iPhone to be used as an sensor and input device accessible from inside Netsblox.
  * 
- * @alpha
  * @service
  */
 
