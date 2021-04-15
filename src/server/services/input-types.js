@@ -40,6 +40,16 @@ function getNBType(jsType) {
 
 const types = {};
 
+function grabType(type) {
+    if (!type) return undefined;
+
+    const t = types[type];
+    if (t) return t;
+
+    const t2 = types[type.name]; // alias so we don't repeat lookups on every call of closure
+    return input => t2(input, type.params);
+}
+
 types.Number = input => {
     input = parseFloat(input);
     if (isNaN(input)) {
@@ -115,11 +125,21 @@ types.Date = input => {
 };
 
 types.Array = (input, params) => {
-    const [innerType] = params;
-    if (!Array.isArray(input)) throw GENERIC_ERROR;
+    const [_innerType, min, max] = params;
+    const innerType = grabType(_innerType);
+
+    if (!Array.isArray(input)) throw new InputTypeError('Not a list');
     if (innerType) {
-        input = input.map(value => types[innerType](value));
+        let i = 0
+        try {
+            for (; i < input.length; ++i) input[i] = innerType(input[i]);
+        }
+        catch (e) {
+            throw new ParameterError(`Item ${i+1} ${e}`);
+        }
     }
+    if (min && input.length < min) throw new ParameterError(`Length must be at least ${min}`);
+    if (max && input.length > max) throw new ParameterError(`Length must be at most ${max}`);
     return input;
 };
 
