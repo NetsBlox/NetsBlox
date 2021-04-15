@@ -81,7 +81,7 @@ Alexa.getSkillInfo = async function(skillId, stage) {
     return response;
 };
 
-Alexa.createManifest = function(summary, description, examplePhrases, keywords, name) {
+Alexa.createManifest = async function(summary, description, examplePhrases, keywords, name) {
     validateList(examplePhrases);
     validateList(keywords);
     var skillRequest =
@@ -125,7 +125,11 @@ Alexa.createManifest = function(summary, description, examplePhrases, keywords, 
             }
         };
 
-    return skillRequest;
+    devLogger.log(JSON.stringify(skillRequest));
+    const response = await smapiClient.createSkillForVendorV1(manifest);
+    devLogger.log(JSON.stringify(response));
+
+    return response;
 };
 
 Alexa.updateSkillManifest = async function(skillId, stage, manifest) {
@@ -137,6 +141,7 @@ Alexa.updateSkillManifest = async function(skillId, stage, manifest) {
 
 //untested createSkill RPC
 Alexa.createSkill = async function(manifest) {
+    devLogger.log(JSON.stringify(manifest));
     const response = await smapiClient.createSkillForVendorV1(manifest);
     devLogger.log(JSON.stringify(response));
 
@@ -183,7 +188,7 @@ Alexa.createSlot = function(intent, name, samples, prompts) {
             }
         );
     }
-    devLogger.log(slotInfo);
+    devLogger.log(JSON.stringify(slotInfo));
 
     return slotInfo;
 };
@@ -201,7 +206,7 @@ Alexa.createIntent = function (name, slots, samples) {
     for (let i in slots) {
         intent.slots.push(i.intentSlotInfo);
     }
-    devLogger.log(intent);
+    devLogger.log(JSON.stringify(intent));
 
     return intent;
 };
@@ -254,7 +259,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
             }
         };
 
-    devLogger.log(interactionModel);
+    devLogger.log(JSON.stringify(interactionModel));
 
     const response = await smapiClient.setInteractionModelV1(skillId, stage, 'en-US', interactionModel);
     devLogger.log(response);
