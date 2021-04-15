@@ -31,7 +31,7 @@ describe(utils.suiteName(__filename), function() {
         ['getGyroscope', ['device']],
         ['getRotation', ['device']],
         ['getGameRotation', ['device']],
-        ['getMagneticFieldVector', ['device']],
+        ['getMagneticField', ['device']],
         ['getMicrophoneLevel', ['device']],
         ['getLocation', ['device']],
         ['getProximity', ['device']],

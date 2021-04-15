@@ -709,7 +709,7 @@ Device.prototype.getGameRotation = async function (device, args, clientId) {
     return throwIfErr(await response).vals;
 };
 
-Device.prototype.getMagneticFieldVector = async function (device, args, clientId) {
+Device.prototype.getMagneticField = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('magfield', clientId);
 
     const message = Buffer.alloc(9);
@@ -876,15 +876,15 @@ Device.prototype._sendSensorResult = function(name, sensorName, message) {
 const ORDERED_SENSOR_TYPES = [
     'accelerometer',
     'gravity',
-    'linear acceleration',
+    'linearAcceleration',
     'gyroscope',
-    'rotation vector',
-    'game rotation vector',
-    'magnetic field',
-    'sound',
+    'rotation',
+    'gameRotation',
+    'magneticField',
+    'microphoneLevel',
     'proximity',
-    'step counter',
-    'light',
+    'stepCount',
+    'lightLevel',
     'location',
     'orientation',
 ];

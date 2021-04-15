@@ -104,7 +104,7 @@ On success, returns the facing direction, otherwise gives an error.
 
 Equivalent to the :ref:`getOrientation` RPC except that it gets the orientation relative to a fixed reference frame, thus making it good for use in games.
 
-Sensor name: ``game rotation vector``
+Sensor name: ``gameRotation``
 
 Message fields: ``x``, ``y``, ``z``
 
@@ -148,7 +148,7 @@ This is represented as a number with higher values being brighter.
 
 On success, returns the current light level, otherwise gives an error.
 
-Sensor name: ``light``
+Sensor name: ``lightLevel``
 
 Message fields: ``value``
 
@@ -165,7 +165,7 @@ The counterpart to this RPC is :ref:`getGravity`.
 
 on success, returns the current linear acceleration vector, otherwise gives an error.
 
-Sensor name: ``linear acceleration``
+Sensor name: ``linearAcceleration``
 
 Message fields: ``x``, ``y``, ``z``
 
@@ -183,9 +183,9 @@ Sensor name: ``location``
 
 Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``
 
-.. _getMagneticFieldVector:
+.. _getMagneticField:
 
-``getMagneticFieldVector(device)``
+``getMagneticField(device)``
 ----------------------------------
 
 Gets the current ouput of the magnetic field sensor, measured in μT (micro Tesla) along each axis of the device.
@@ -195,7 +195,7 @@ Notably, this RPC can be used as a compass (measuring Earth's magnetic field).
 
 On success, returns the magnetic field vector, otherwise gives an error.
 
-Sensor name: ``magnetic field``
+Sensor name: ``magneticField``
 
 Message fields: ``x``, ``y``, ``z``
 
@@ -209,7 +209,7 @@ This is specified as a number where ``0.0`` denotes silence and ``1.0`` is the m
 
 On success, returns the volume level, otherwise gives an error.
 
-Sensor name: ``microphone``
+Sensor name: ``microphoneLevel``
 
 Message fields: ``volume``
 
@@ -257,7 +257,7 @@ This is provided in case it is needed, but in practice, it's typically easier to
 
 On success, returns the rotation vector, otherwise gives an error.
 
-Sensor name: ``rotation vector``
+Sensor name: ``rotation``
 
 Message fields: ``x``, ``y``, ``z``, ``w``
 
@@ -271,6 +271,6 @@ Not all devices have a step counter sensor, but you can manually emulate one by 
 
 On success, returns the current step count, otherwise gives an error.
 
-Sensor name: ``step counter``
+Sensor name: ``stepCount``
 
 Message fields: ``count``

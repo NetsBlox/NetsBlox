@@ -78,21 +78,6 @@ common.prepImageToSend = async function(raw) {
     throw Error('unsupported image type');
 };
 
-// given an options dict and a rules dict, generates a sanitized options dict.
-common.parseOptions = function (opts, rules) {
-    const res = {};
-    for (const key in opts) {
-        const value = opts[key];
-        const rule = rules[key];
-        if (rule === undefined) throw Error(`unknown option: ${key}`);
-        res[key] = rule.parse(value);
-    }
-    for (const key in rules) {
-        if (res[key] === undefined) res[key] = rules[key].default;
-    }
-    return res;
-};
-
 function packXYZ(vals) { return { x: vals[0], y: vals[1], z: vals[2] }; };
 function packXYZW(vals) { return { x: vals[0], y: vals[1], z: vals[2], w: vals[3] }; };
 common.SENSOR_PACKERS = {
@@ -100,14 +85,14 @@ common.SENSOR_PACKERS = {
     'gyroscope': packXYZ,
     'orientation': packXYZ,
     'accelerometer': packXYZ,
-    'magnetic field': packXYZ,
-    'rotation vector': packXYZW,
-    'linear acceleration': packXYZ,
-    'game rotation vector': packXYZ,
-    'light': vals => { return { value: vals[0] }; },
-    'sound': vals => { return { volume: vals[0] }; },
+    'magneticField': packXYZ,
+    'rotation': packXYZW,
+    'linearAcceleration': packXYZ,
+    'gameRotation': packXYZ,
+    'lightLevel': vals => { return { value: vals[0] }; },
+    'microphoneLevel': vals => { return { volume: vals[0] }; },
     'proximity': vals => { return { distance: vals[0] }; },
-    'step counter': vals => { return { count: vals[0] }; },
+    'stepCount': vals => { return { count: vals[0] }; },
     'location': vals => { return { latitude: vals[0], longitude: vals[1], bearing: vals[2], altitude: vals[3] }; },
 };
 
