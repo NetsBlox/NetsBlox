@@ -126,10 +126,8 @@ Alexa.createManifest = async function(summary, description, examplePhrases, keyw
         };
 
     devLogger.log(JSON.stringify(skillRequest));
-    const response = await smapiClient.createSkillForVendorV1(skillRequest);
-    devLogger.log(JSON.stringify(response));
 
-    return response;
+    return skillRequest;
 };
 
 Alexa.updateSkillManifest = async function(skillId, stage, manifest) {
@@ -158,6 +156,15 @@ Alexa.getInteractionModel = async function (skillId, stage) {
 
 Alexa.createSlot = function(intent, name, samples, prompts) {
     validateList(prompts);
+    var variations = [];
+    for (let i in prompts) {
+        variations.push(
+            {
+                "type": "PlainText",
+                "value": i
+            }
+        );
+    }
     var slotInfo =
         {
             "intentSlotInfo" : {
@@ -176,18 +183,11 @@ Alexa.createSlot = function(intent, name, samples, prompts) {
             },
             "promptInfo" : {
                 "id": "Elicit.Intent-:" + intent + ".IntentSlot-" + name,
-                "variations": []
+                "variations": variations
             }
         };
 
-    for (let i in prompts) {
-        slotInfo.push.promptInfo.variations(
-            {
-                "type": "PlainText",
-                "value": i
-            }
-        );
-    }
+
     devLogger.log(JSON.stringify(slotInfo));
 
     return slotInfo;
@@ -213,14 +213,12 @@ Alexa.createIntent = function (name, slots, samples) {
 
 Alexa.createInteractionModel = async function (skillId, stage, intents) {
     var intentsArray = [];
-    var dialogArray =
-        {
-            "intents" : [],
-            "prompts" : [],
-        };
+    var intentsSlots = [];
+    var promptsSlots = [];
+
     for (let i of intents) {
         for (let j of i.slots) {
-            dialogArray.intents.push(
+            intentsSlots.push(
                 {
                     "name": "GetTravelTime",
                     "confirmationRequired": false,
@@ -228,7 +226,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
                     "slots": j.slotInfo
                 }
             );
-            dialogArray.prompts.push(j.promptInfo);
+            promptsSlots.push(j.promptInfo);
         }
         intentsArray.push(
             {
@@ -239,7 +237,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
         );
     }
 
-    var interactionModel =
+    const interactionModel =
         {
             "interactionModel": {
                 "languageModel": {
@@ -252,10 +250,10 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
                     "intents": intentsArray,
                 },
                 "dialog": {
-                    "intents": dialogArray.intents,
+                    "intents": intentsSlots,
                     "delegationStrategy": "ALWAYS"
                 },
-                "prompts": dialogArray.prompts
+                "prompts": promptsSlots
             }
         };
 
