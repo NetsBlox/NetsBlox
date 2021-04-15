@@ -8,7 +8,6 @@
  *
  * For more information, see https://www.mortality.org/.
  * 
- * @alpha
  * @service
  * @category Science
  */
