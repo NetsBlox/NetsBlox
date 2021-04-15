@@ -126,7 +126,7 @@ Alexa.createManifest = async function(summary, description, examplePhrases, keyw
         };
 
     devLogger.log(JSON.stringify(skillRequest));
-    const response = await smapiClient.createSkillForVendorV1(manifest);
+    const response = await smapiClient.createSkillForVendorV1(skillRequest);
     devLogger.log(JSON.stringify(response));
 
     return response;
