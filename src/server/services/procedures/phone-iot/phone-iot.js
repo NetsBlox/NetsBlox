@@ -36,6 +36,25 @@ myTypes.Fit = input => types.parse.Enum(input, { fit: 0, zoom: 1, stretch: 2 }, 
 myTypes.FontSize = input => types.parse.BoundedNumber(input, [0.1, 10.0]);
 myTypes.SensorPeriod = input => types.parse.BoundedNumber(input, [100, undefined]);
 myTypes.Color = input => types.parse.Number(input);
+myTypes.Device = async (input, params, ctx) => {
+    const deviceId = await types.parse.BoundedString(input, [4, 12]);
+    let device;
+
+    if (deviceId.length === 12) {
+        device = PhoneIoT.prototype._devices[deviceId];
+    } else { // try to guess the rest of the id
+        for (const mac_addr in this._devices) { // pick the first match
+            if (mac_addr.endsWith(deviceId)) {
+                const deviceId = mac_addr;
+                device = PhoneIoT.prototype._devices[deviceId];
+            }
+        }
+    }
+
+    if (!device) throw Error('Device not found.');
+    await acl.ensureAuthorized(ctx.caller.username, deviceId);
+    return device;
+};
 
 for (const type in myTypes) {
     types.defineType(type, myTypes[type]);
@@ -72,33 +91,6 @@ PhoneIoT.prototype._getOrCreateDevice = function (mac_addr, ip4_addr, ip4_port) 
     } else {
         device.updateAddress(ip4_addr, ip4_port);
     }
-    return device;
-};
-
-// find the device object based on the partial id or returns undefined
-PhoneIoT.prototype._getDevice = async function (deviceId) {
-    deviceId = '' + deviceId;
-    let device;
-
-    if (deviceId.length < 4) throw Error('id too short');
-    if (deviceId.length > 12) throw Error('id too long');
-
-    // autocomplete the deviceId and find the device object
-    if (deviceId.length === 12) {
-        device = this._devices[deviceId];
-    } else { // try to guess the rest of the id
-        for (const mac_addr in this._devices) { // pick the first match
-            if (mac_addr.endsWith(deviceId)) {
-                deviceId = mac_addr;
-                device = this._devices[deviceId];
-            }
-        }
-    }
-
-    // if couldn't find a live device
-    if (!device) throw Error('device not found');
-
-    await acl.ensureAuthorized(this.caller.username, deviceId);
     return device;
 };
 
@@ -148,9 +140,7 @@ PhoneIoT.prototype._getDevices = async function () {
  */
 PhoneIoT.prototype._passToDevice = async function (fnName, args) {
     args = Array.from(args);
-    let deviceId = args.shift();
-    const device = await this._getDevice(deviceId);
-    console.log('caller client id:', this.caller.clientId);
+    const device = args.shift();
     if (device.accepts(this.caller.clientId)) {
         let rv = device[fnName](device, args, this.caller.clientId);
         if (rv === undefined) rv = true;
@@ -193,7 +183,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Removes all custom controls from the device.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.clearControls = function (device) {
         return this._passToDevice('clearControls', arguments);
@@ -201,7 +191,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Removes the specified custom control from the device (if it exists).
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {String} id name of the control to remove.
      */
     PhoneIoT.prototype.removeControl = function (device, id) {
@@ -211,7 +201,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Add a custom label to the device.
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the label (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the label (percentage).
      * @param {String=} text The text to display on the label (defaults to empty)
@@ -240,7 +230,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * The optional 'style' value can change the appearance - can be 'rectangle' (default), 'ellipse', 'square', or 'circle'.
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the button (percentage).
@@ -277,7 +267,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * The fit option can be set to 'fit' (default), 'zoom', or 'stretch'.
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the image display (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the image display (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the image display (percentage).
@@ -304,7 +294,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If an event is provided, it will be raised every time the user enters new text (params: 'id', 'text').
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the text field (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the text field (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the text field (percentage).
@@ -339,7 +329,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If an event is provided, it will be raised every time the joystick is moved (params: 'id', 'x', 'y').
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the joystick (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the joystick (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the joystick (percentage).
@@ -364,7 +354,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If an event is provided, it will be raised every time the control is clicked (params: 'id', 'state').
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the toggle (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the toggle (percentage).
      * @param {String=} text The text to display next to the toggle (defaults to empty)
@@ -401,7 +391,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If an event is provided, it will be raised every time the control is clicked (params: 'id', 'state').
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the radio button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the radio button (percentage).
      * @param {String=} text The text to display next to the checkbox (defaults to empty)
@@ -434,7 +424,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Set the text on a control that displays text.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {String} id Name of the control to change text on
      * @param {String=} text The new text to display (defaults to empty)
      */
@@ -445,7 +435,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the text from a control that displays text.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {String} id Name of the control to read text from
      * @returns {String} The currently displayed text
      */
@@ -455,7 +445,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current vector output of a custom joystick control
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {String} id Name of the control to read text from
      * @returns {Array} The x and y components of the normalized vector
      */
@@ -465,7 +455,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Checks for authentication, a no-op.
      * This can be used if all you want to do is see if the login credentials are valid.
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.authenticate = async function (device) {
         return this._passToDevice('authenticate', arguments);
@@ -473,13 +463,12 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Begin listening to GUI events such as button presses.
      * This will check for valid login credentials (see setCredentials).
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.listenToGUI = async function (device) {
         await this.authenticate(device); // throws on failure - we want this
         
-        const _device = await this._getDevice(device);
-        _device.guiListeners[this.socket.clientId] = this.socket;
+        device.guiListeners[this.socket.clientId] = this.socket;
     };
     /**
      * Listen for the specified sensor update events, with a specified minimum interval for each.
@@ -494,7 +483,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * step counter - count
      * location - latitude, longitude, bearing, altitude
      * Additionally, all sensors receive an argument called 'device', which holds the device id.
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {Object=} sensors structured data representing the minimum time in milliseconds between updates for each sensor type to listen for.
      * @param {SensorPeriod=} sensors.gravity update period for gravity sensor
      * @param {SensorPeriod=} sensors.gyroscope update period for gyroscope sensor
@@ -512,36 +501,35 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      */
     PhoneIoT.prototype.listenToSensors = async function (device, sensors={}) {
         const clientID = this.socket.clientId;
-        const _device = await this._getDevice(device);
 
         const periods = Object.values(sensors);
         let minPeriod = Math.min(...periods);
-        for (const sensor in _device.sensorToListeners) {
-            const listeners = _device.sensorToListeners[sensor];
+        for (const sensor in device.sensorToListeners) {
+            const listeners = device.sensorToListeners[sensor];
             for (const listener in listeners) {
                 if (listener === clientID) continue; // skip ourselves since we're changing that
                 const period = listeners[listener][2];
                 if (period < minPeriod) minPeriod = period;
             }
         }
-        await _device.setSensorUpdatePeriods(minPeriod === Infinity ? [] : [minPeriod], clientID); // throws on failure - we want this
+        await device.setSensorUpdatePeriods(minPeriod === Infinity ? [] : [minPeriod], clientID); // throws on failure - we want this
 
         // get a time stamp prior to max period so we'll receive an update immediately
         const timestamp = new Date();
         timestamp.setMilliseconds(timestamp.getMilliseconds() - Math.max(...periods));
 
         // stop listening from all sensors
-        for (const sensor in _device.sensorToListeners) {
-            const listeners = _device.sensorToListeners[sensor];
+        for (const sensor in device.sensorToListeners) {
+            const listeners = device.sensorToListeners[sensor];
             delete listeners[clientID];
         }
 
         // start listening to the requested sensors
         for (const sensor in sensors) {
-            let listeners = _device.sensorToListeners[sensor];
+            let listeners = device.sensorToListeners[sensor];
             if (listeners === undefined) {
                 listeners = {};
-                _device.sensorToListeners[sensor] = listeners;
+                device.sensorToListeners[sensor] = listeners;
             }
             listeners[clientID] = [this.socket, timestamp, sensors[sensor]];
         }
@@ -558,18 +546,17 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Sets the login credentials for this device.
      * Note: this does not set the password on the device. It sets what you will use to access it.
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {String} password the password to use for accessing the device.
      */
     PhoneIoT.prototype.setCredentials = async function (device, password) {
-        const _device = await this._getDevice(device);
-        _device.credentials[this.socket.clientId] = password;
+        device.credentials[this.socket.clientId] = password;
     };
 
     /**
      * Checks if a pressable control (like a button) is currently pressed (held) down.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {String} id name of the control to read
      * @returns {boolean} true or false, depending on if the control is pressed
      */
@@ -580,7 +567,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Gets the toggle state of a toggleable custom control.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {String} id name of the control to read
      * @returns {boolean} true or false, depending on the state
      */
@@ -590,7 +577,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Sets the toggle state of a toggleable custom control.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {String} id name of the control to modify
      * @param {boolean} state new value for the toggle state
      */
@@ -605,7 +592,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 2. The pitch (vertical tilt) angle [-90, 90].
      * 3. The roll angle [-90, 90].
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} The orientation angles relative to the Earth's magnetic field.
      */
     PhoneIoT.prototype.getOrientation = function (device) {
@@ -614,7 +601,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the compass heading in degrees [-180, 180].
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Number} The compass heading in degrees.
      */
     PhoneIoT.prototype.getCompassHeading = function (device) {
@@ -623,7 +610,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the name of the closest compass direction (N, NE, E, SE, etc.).
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {String} The compass direction name
      */
     PhoneIoT.prototype.getCompassDirection = function (device) {
@@ -632,7 +619,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the name of the closest compass cardinal direction (N, E, S, W).
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {String} The compass cardinal direction name
      */
     PhoneIoT.prototype.getCompassCardinalDirection = function (device) {
@@ -643,7 +630,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current accelerometer output from the device.
      * This is a 3D vector with units of m/s².
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} accelerometer output
      */
     PhoneIoT.prototype.getAccelerometer = function (device) {
@@ -659,7 +646,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      *     "left" - the device is horizontal, lying on its left side (facing the screen).
      *     "right" - the device is horizontal, lying on its right side (facing the screen).
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {String} name of facing direction
      */
     PhoneIoT.prototype.getFacingDirection = function (device) {
@@ -671,7 +658,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This is a 3D vector with units of m/s².
      * This is similar to the Accelerometer, but tries to account for noise from linear movement.
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} output of gravity sensor
      */
     PhoneIoT.prototype.getGravity = function (device) {
@@ -682,7 +669,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current output of the linear acceleration sensor.
      * This is a 3D vector with units of m/s².
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} linear acceleration vector
      */
     PhoneIoT.prototype.getLinearAcceleration = function (device) {
@@ -693,7 +680,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current output of the gyroscope, which measures rotational acceleration.
      * This is a 3D vector with units of degrees/s² around each axis.
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} output of gyroscope
      */
     PhoneIoT.prototype.getGyroscope = function (device) {
@@ -704,7 +691,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This is a unitless 4D vector representing rotation on the 3 axes, plus a scalar component.
      * For most uses, getGameRotation is more convenient.
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} 4D rotational vector
      */
     PhoneIoT.prototype.getRotation = function (device) {
@@ -714,7 +701,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current output of the game rotation sensor, which measures rotational orientation.
      * This is a unitless 3D vector representing rotation around each axis.
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} 3D rotational vector
      */
     PhoneIoT.prototype.getGameRotation = function (device) {
@@ -725,7 +712,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current output of the magnetic field sensor.
      * This is a 3D vector with units of μT (micro teslas) in each direction.
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} magnetic field vector
      */
     PhoneIoT.prototype.getMagneticField = function (device) {
@@ -735,7 +722,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the volume level from the device's microphone.
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} A number representing the volume detected by the microphone.
      */
     PhoneIoT.prototype.getMicrophoneLevel = function (device) {
@@ -746,7 +733,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current location of the device.
      * This is a latitude longitude pair in degrees.
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} latitude and longitude
      */
     PhoneIoT.prototype.getLocation = function (device) {
@@ -757,7 +744,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This represents the observed direction of motion between two location samples,
      * so it's only meaningful while you are moving.
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Number} current bearing
      */
     PhoneIoT.prototype.getBearing = function (device) {
@@ -766,7 +753,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current altitude from the location sensor (in meters above sea level).
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Number} current bearing
      */
     PhoneIoT.prototype.getAltitude = function (device) {
@@ -778,7 +765,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This is a distance measured in cm.
      * Note that some devices only have binary proximity sensors (near/far), which will take discrete two values.
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Number} distance from proximity sensor in cm
      */
     PhoneIoT.prototype.getProximity = function (device) {
@@ -788,7 +775,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current output of the step counter.
      * This measures the number of steps taken since the device was started.
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Number} number of steps taken
      */
     PhoneIoT.prototype.getStepCount = function (device) {
@@ -797,7 +784,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current output of the light sensor.
      * @category Sensors
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Number} current light level reading
      */
     PhoneIoT.prototype.getLightLevel = function (device) {
@@ -807,7 +794,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the displayed image of a custom image box.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {String} id the id of the custom image box
      * @returns {object} the displayed image
      */
@@ -823,7 +810,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the displayed image of a custom image box.
      * @category Display
-     * @param {String} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {String} id the id of the custom image box
      * @param {ImageBitmap} img the new image to display
      */
@@ -833,7 +820,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 
     // /**
     //  * Sets the total message limit for the given device.
-    //  * @param {String} device name of the device (matches at the end)
+    //  * @param {Device} device name of the device (matches at the end)
     //  * @param {number} rate number of messages per seconds
     //  * @returns {boolean} True if the device was found
     //  */
@@ -843,7 +830,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 
     // /**
     //  * Sets the client message limit and penalty for the given device.
-    //  * @param {String} device name of the device (matches at the end)
+    //  * @param {Device} device name of the device (matches at the end)
     //  * @param {number} rate number of messages per seconds
     //  * @param {number} penalty number seconds of penalty if rate is violated
     //  * @returns {boolean} True if the device was found
@@ -857,13 +844,11 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 if (PHONE_IOT_MODE === 'security' || PHONE_IOT_MODE === 'both') {
     // /**
     //  * Sends a textual command to the device
-    //  * @param {String} device name of the device (matches at the end)
+    //  * @param {Device} device name of the device (matches at the end)
     //  * @param {String} command textual command
     //  * @returns {String} textual response
     //  */
     // PhoneIoT.prototype.send = async function (device, command) {
-    //     device = await this._getDevice(device);
-
     //     if (typeof command !== 'string') throw Error('command must be a string');
 
     //     // figure out the raw command after processing special methods, encryption, seq and client rate
