@@ -1,14 +1,15 @@
 const utils = require('../../../assets/utils');
 
 describe(utils.suiteName(__filename), function() {
-    const typesParser = require('../../../../src/server/services/input-types').parse;
+    const InputTypes = require('../../../../src/server/services/input-types');
+    const typesParser = InputTypes.parse;
     const assert = require('assert');
 
     describe('String', function() {
         it('should convert to a string', () => {
             let rawInput = 0;
             let parsedInput = typesParser.String(rawInput);
-            assert.equal(typeof parsedInput, 'string');
+            assert.strictEqual(typeof parsedInput, 'string');
         });
     });
 
@@ -16,7 +17,7 @@ describe(utils.suiteName(__filename), function() {
         it('should leave as a string', () => {
             let rawInput = '4.253';
             let parsedInput = typesParser.Any(rawInput);
-            assert.equal(parsedInput, rawInput);
+            assert.strictEqual(parsedInput, rawInput);
         });
     });
 
@@ -24,7 +25,7 @@ describe(utils.suiteName(__filename), function() {
         it('should parse into JS numbers', () => {
             let rawInput = '4.253';
             let parsedInput = typesParser.Number(rawInput);
-            assert.deepEqual(parsedInput, 4.253);
+            assert.deepStrictEqual(parsedInput, 4.253);
         });
     });
 
@@ -74,7 +75,7 @@ describe(utils.suiteName(__filename), function() {
         it('should parse structured data to json', () => {
             let rawInput = [['a', 234],['name', 'Hamid'], ['connections', ['b','c','d']], ['children']];
             let parsedInput = typesParser['Object'](rawInput);
-            assert.deepEqual(parsedInput.name, 'Hamid');
+            assert.deepStrictEqual(parsedInput.name, 'Hamid');
         });
 
         describe('duck typing', function() {
@@ -164,7 +165,7 @@ describe(utils.suiteName(__filename), function() {
         it('should return Number (not string)', () => {
             const input = '10';
             const value = typesParser[type](input, [0, 21]);
-            assert.equal(typeof value, 'number');
+            assert.strictEqual(typeof value, 'number');
         });
 
         it('should throw if less than min', () => {
@@ -228,6 +229,56 @@ describe(utils.suiteName(__filename), function() {
         it('should accept if above minimum (w/o max)', () => {
             const rawInput = 'abcdefg';
             typesParser[type](rawInput, [5]);
+        });
+    });
+
+    describe('Enum', function() {
+        const type = 'Enum';
+
+        it('should take an array of variants and return variant', () => {
+            const vars = ['dog', 'Cat', 'puPPy', 'KITTEN'];
+            assert.deepEqual(typesParser[type]('dog', vars), 'dog');
+            assert.deepEqual(typesParser[type]('dOg', vars), 'dog');
+            assert.deepEqual(typesParser[type]('Cat', vars), 'Cat');
+            assert.deepEqual(typesParser[type]('cat', vars), 'Cat');
+            assert.deepEqual(typesParser[type]('puPPy', vars), 'puPPy');
+            assert.deepEqual(typesParser[type]('pupPY', vars), 'puPPy');
+            assert.deepEqual(typesParser[type]('KITTEN', vars), 'KITTEN');
+            assert.deepEqual(typesParser[type]('kitten', vars), 'KITTEN');
+        });
+        it('should take an object of variant key value pairs and return mapped value', () => {
+            const vars = { dog: 5, Cat: -6, puPPy: 3, KITTEN: ['hello', 'world'] };
+            assert.deepEqual(typesParser[type]('dog', vars), 5);
+            assert.deepEqual(typesParser[type]('dOG', vars), 5);
+            assert.deepEqual(typesParser[type]('Cat', vars), -6);
+            assert.deepEqual(typesParser[type]('CAT', vars), -6);
+            assert.deepEqual(typesParser[type]('puPPy', vars), 3);
+            assert.deepEqual(typesParser[type]('puppy', vars), 3);
+            assert.deepEqual(typesParser[type]('KITTEN', vars), ['hello', 'world']);
+            assert.deepEqual(typesParser[type]('kitteN', vars), ['hello', 'world']);
+        });
+    });
+
+    describe('Boolean', function() {
+        const type = 'Boolean';
+
+        it('should accept true and false (actual bool values)', () => {
+            assert.strictEqual(typesParser[type](true), true);
+            assert.strictEqual(typesParser[type](false), false);
+        });
+        it('should accept true and false (case insensitive)', () => {
+            assert.strictEqual(typesParser[type]('true'), true);
+            assert.strictEqual(typesParser[type]('TrUe'), true);
+            assert.strictEqual(typesParser[type]('false'), false);
+            assert.strictEqual(typesParser[type]('faLSe'), false);
+        });
+    });
+
+    describe('defineType', function() {
+        before(() => InputTypes.defineType('NewType', input => Math.pow(+input, 2)));
+
+        it('should not be able to define the same type twice', function() {
+            assert.throws(() => InputTypes.defineType('NewType', input => input));
         });
     });
 });

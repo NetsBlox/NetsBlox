@@ -212,12 +212,43 @@ types.Function = async (blockXml, _params, ctx) => {
     };
 };
 
+class EnumError extends ParameterError {
+    constructor(name, variants) {
+        const message = name ? `${name} must be one of ${variants.join(', ')}` :
+            `It must be one of ${variants.join(', ')}`;
+        super(message);
+    }
+}
+
+types.Enum = (input, variants, _ctx, name) => {
+    const lower = input.toString().toLowerCase();
+    const variantDict = Array.isArray(variants) ?
+        _.fromPairs(variants.map(name => [name, name])) :
+        variants;
+
+    for (const variant in variantDict) {
+        if (lower === variant.toLowerCase()) return variantDict[variant];
+    }
+
+    throw new EnumError(name, Object.keys(variantDict));
+};
+
+types.Boolean = input => types.Enum(input, ['true', 'false'], undefined, 'Boolean') === 'true';
+
 types.String = input => input.toString();
 types.Any = input => input;
+
+function defineType(name, parser) {
+    if (types[name]) {
+        throw new Error(`Defining duplicate type: ${name}`);
+    }
+    types[name] = parser;
+}
 
 module.exports = {
     parse: types,
     getNBType,
+    defineType,
     getErrorMessage,
     Errors: {
         ParameterError,
