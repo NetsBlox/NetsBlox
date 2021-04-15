@@ -1,7 +1,6 @@
 /**
  * The New York Public Library (NYPL) Service provides access to NYPL's online repository of historical items.
  * 
- * @alpha
  * @service
  * @category History
  */
