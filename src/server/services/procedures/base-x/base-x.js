@@ -1,7 +1,6 @@
 /**
  * The BaseX Service provides access to an existing BaseX instance.
  *
- * @alpha
  * @service
  * @category Database
  */

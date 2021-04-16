@@ -8,7 +8,6 @@
  *
  * For more information, see https://www.mortality.org/.
  * 
- * @alpha
  * @service
  * @category Science
  */
@@ -16,6 +15,7 @@
 
 const logger = require('../utils/logger')('mortality');
 const axios = require('axios');
+const types = require('../../input-types');
 
 // this is a direct download link to the CSV file - if you need details on the structure,
 // download it, or check https://www.mortality.org/, which has much more detail.
@@ -40,6 +40,7 @@ const CATEGORIES = [
     'rate 85+',
     'rate total',
 ];
+types.defineType('MortalityCategory', input => types.parse.Enum(input, CATEGORIES));
 const GENDERS = [
     'male', 'female', 'both',
 ];
@@ -234,8 +235,8 @@ mortality.getAllDataForCountry = async function(country) {
  * of the percent of people in that country who are male/female.
  *
  * @param {String} country Name of the country to look up
- * @param {String=} gender Gender group for filtering. Defaults to 'both'.
- * @param {String=} category Category for filtering. Defaults to 'deaths total'.
+ * @param {Enum<male,female,both>=} gender Gender group for filtering. Defaults to 'both'.
+ * @param {MortalityCategory=} category Category for filtering. Defaults to 'deaths total'.
  * @returns {Array}
  */
 mortality.getTimeSeries = async function(country, gender='both', category='deaths total') {

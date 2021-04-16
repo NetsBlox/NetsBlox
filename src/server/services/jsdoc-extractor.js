@@ -4,6 +4,7 @@ const fse = require('fs-extra'),
     doctrine = require('doctrine');
 
 
+const assert = require('assert');
 const MARKER_START = '/**',
     MARKER_START_SKIP = '/***',
     MARKER_END = '*/';
@@ -37,7 +38,25 @@ function simplify(metadata) {
 
     let args = tags
         .filter(tag => tag.title === 'param')
-        .map(simplifyParam);
+        .map(simplifyParam)
+        .reduce((args, arg) => {
+            const {name} = arg;
+            const isFieldInObject = name.includes('.');
+            if (isFieldInObject) {
+                const [objectName, fieldName] = name.split('.');
+                const objectArg = args.find(arg => arg.name === objectName);
+                assert(objectArg, `Could not find ${objectName} argument expected for ${name}`);
+                assert.equal(
+                    objectArg.type.name, 'Object',
+                    `Cannot add field ${fieldName} to ${objectName}. Argument is not an object.`
+                );
+                arg.name = fieldName;
+                objectArg.type.params.push(arg);
+            } else {
+                args.push(arg);
+            }
+            return args;
+        }, []);
 
     // find and simplify the return doc
     let returns = tags.find(tag => tag.title === 'returns');

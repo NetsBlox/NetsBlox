@@ -5,7 +5,6 @@
  * For more information, check out https://github.com/NetsBlox/NetsBlox/wiki/Autograders-Overview
  *
  * @service
- * @alpha
  */
 const assert = require('assert');
 const _ = require('lodash');

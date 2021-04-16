@@ -2,7 +2,6 @@
  * The Smithsonian Service provides access to the Smithsonan open-access EDAN database,
  * containing catalogued information on millions of historical items.
  * 
- * @alpha
  * @service
  * @category History
  */

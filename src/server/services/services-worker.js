@@ -288,13 +288,7 @@ class ServicesWorker {
             const typeName = arg.type.name;
             const recordError = err => {
                 inputStatus.isValid = false;
-                const netsbloxType = InputTypes.getNBType(typeName);
-                inputStatus.msg = `"${arg.name}" is not a valid ${netsbloxType}.`;
-                if (err.message.includes(netsbloxType)) {
-                    inputStatus.msg = `"${arg.name}" is not valid. ` + err.message;
-                } else if (err.message) {
-                    inputStatus.msg += ' ' + err.message;
-                }
+                inputStatus.msg = InputTypes.getErrorMessage(arg, err);
             };
 
             if (InputTypes.parse.hasOwnProperty(typeName)) { // if we have the type handler

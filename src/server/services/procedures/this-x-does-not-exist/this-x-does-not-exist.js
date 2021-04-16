@@ -5,7 +5,6 @@
  * Put simply, this involves two AIs: one to make images and another to guess if they're real or fake, and making them compete to mutually improve.
  * For more information, see https://en.wikipedia.org/wiki/Generative_adversarial_network.
  * 
- * @alpha
  * @service
  * @category ArtificialIntelligence
  */

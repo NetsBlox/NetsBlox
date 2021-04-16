@@ -1,8 +1,7 @@
 /**
- * PhoneIoT is meant to be used with the PhoneIoT app for android.
- * It allows your android device to be used as an sensor and input device accessible from inside Netsblox.
+ * PhoneIoT is meant to be used with the PhoneIoT mobile app.
+ * It allows your Android phone or iPhone to be used as an sensor and input device accessible from inside Netsblox.
  * 
- * @alpha
  * @service
  */
 
@@ -25,6 +24,40 @@ const server = dgram.createSocket('udp4');
 const PHONE_IOT_MODE = process.env.PHONE_IOT_MODE || 'both';
 const common = require('./common');
 const types = require('../../input-types');
+const _ = require('lodash');
+
+// these types are used for communication with PhoneIoT
+const myTypes = {};
+myTypes.ButtonStyle = input => types.parse.Enum(input, { rectangle: 0, ellipse: 1, square: 2, circle: 3 }, undefined, 'Button Style');
+myTypes.ToggleStyle = input => types.parse.Enum(input, { switch: 0, checkbox: 1 }, undefined, 'Toggle Style');
+myTypes.Align = input => types.parse.Enum(input, { left: 0, center: 1, right: 2 }, undefined, 'Align');
+myTypes.Fit = input => types.parse.Enum(input, { fit: 0, zoom: 1, stretch: 2 }, undefined, 'Fit');
+myTypes.FontSize = input => types.parse.BoundedNumber(input, [0.1, 10.0]);
+myTypes.SensorPeriod = input => types.parse.BoundedNumber(input, [100, undefined]);
+myTypes.Color = input => types.parse.Number(input);
+myTypes.Device = async (input, params, ctx) => {
+    const deviceId = await types.parse.BoundedString(input, [4, 12]);
+    let device;
+
+    if (deviceId.length === 12) {
+        device = PhoneIoT.prototype._devices[deviceId];
+    } else { // try to guess the rest of the id
+        for (const mac_addr in this._devices) { // pick the first match
+            if (mac_addr.endsWith(deviceId)) {
+                const deviceId = mac_addr;
+                device = PhoneIoT.prototype._devices[deviceId];
+            }
+        }
+    }
+
+    if (!device) throw Error('Device not found.');
+    await acl.ensureAuthorized(ctx.caller.username, deviceId);
+    return device;
+};
+
+for (const type in myTypes) {
+    types.defineType(type, myTypes[type]);
+}
 
 /*
  * PhoneIoT - This constructor is called on the first
@@ -57,33 +90,6 @@ PhoneIoT.prototype._getOrCreateDevice = function (mac_addr, ip4_addr, ip4_port) 
     } else {
         device.updateAddress(ip4_addr, ip4_port);
     }
-    return device;
-};
-
-// find the device object based on the partial id or returns undefined
-PhoneIoT.prototype._getDevice = async function (deviceId) {
-    deviceId = '' + deviceId;
-    let device;
-
-    if (deviceId.length < 4) throw Error('id too short');
-    if (deviceId.length > 12) throw Error('id too long');
-
-    // autocomplete the deviceId and find the device object
-    if (deviceId.length === 12) {
-        device = this._devices[deviceId];
-    } else { // try to guess the rest of the id
-        for (const mac_addr in this._devices) { // pick the first match
-            if (mac_addr.endsWith(deviceId)) {
-                deviceId = mac_addr;
-                device = this._devices[deviceId];
-            }
-        }
-    }
-
-    // if couldn't find a live device
-    if (!device) throw Error('device not found');
-
-    await acl.ensureAuthorized(this.caller.username, deviceId);
     return device;
 };
 
@@ -120,7 +126,7 @@ PhoneIoT.prototype._getRegistered = function () {
  * @category Utility
  * @returns {array}
  */
-PhoneIoT.prototype.getDevices = async function () {
+PhoneIoT.prototype._getDevices = async function () {
     const availableDevices = Object.keys(this._devices);
     let devices = await acl.authorizedRobots(this.caller.username, availableDevices);
     return devices;
@@ -128,14 +134,12 @@ PhoneIoT.prototype.getDevices = async function () {
 
 /**
  * Performs the pre-checks and maps the incoming call to a device action.
- * @param {string} fnName name of the method/function to call on the device object
+ * @param {String} fnName name of the method/function to call on the device object
  * @param {Array} args array of arguments
  */
 PhoneIoT.prototype._passToDevice = async function (fnName, args) {
     args = Array.from(args);
-    let deviceId = args.shift();
-    const device = await this._getDevice(deviceId);
-    console.log('caller client id:', this.caller.clientId);
+    const device = args.shift();
     if (device.accepts(this.caller.clientId)) {
         let rv = device[fnName](device, args, this.caller.clientId);
         if (rv === undefined) rv = true;
@@ -150,10 +154,11 @@ PhoneIoT.prototype._passToDevice = async function (fnName, args) {
  * @param {BoundedNumber<0, 255>} red red level (0-255).
  * @param {BoundedNumber<0, 255>} green green level (0-255).
  * @param {BoundedNumber<0, 255>} blue blue level (0-255).
- * @returns {Number} Constructed color code
+ * @param {BoundedNumber<0, 255>=} alpha alpha (opacity) level (0-255).
+ * @returns {Color} Constructed color code
  */
-PhoneIoT.prototype.getColor = function (red, green, blue) {
-    return 0xff000000 | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff);
+PhoneIoT.prototype.getColor = function (red, green, blue, alpha = 255) {
+    return ((alpha & 0xff) << 24) | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff);
 };
 
 /**
@@ -177,7 +182,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Removes all custom controls from the device.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.clearControls = function (device) {
         return this._passToDevice('clearControls', arguments);
@@ -185,8 +190,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Removes the specified custom control from the device (if it exists).
      * @category Display
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} id name of the control to remove.
+     * @param {Device} device name of the device (matches at the end)
+     * @param {String} id name of the control to remove.
      */
     PhoneIoT.prototype.removeControl = function (device, id) {
         return this._passToDevice('removeControl', arguments);
@@ -195,19 +200,27 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Add a custom label to the device.
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the label (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the label (percentage).
-     * @param {string=} text The text to display on the label (defaults to empty)
-     * @param {Object=} options Additional options: id, textColor
-     * @returns {string} id of the created label
+     * @param {String=} text The text to display on the label (defaults to empty)
+     * @param {Object=} options Additional options: id, textColor, align, fontSize, landscape
+     * @param {String=} options.id ID of the label
+     * @param {Color=} options.textColor Color of the text to display
+     * @param {FontSize=} options.fontSize Font size of label text
+     * @param {Align=} options.align Alignment of the label
+     * @param {Boolean=} options.landscape Set landscape mode (rather than portrait)
+     * @returns {String} id of the created label
      */
     PhoneIoT.prototype.addLabel = function (device, x, y, text='', options) {
         arguments[3] = text;
-        arguments[4] = common.parseOptions(options, {
-            id: { parse: types.parse.String },
-            textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-        });
+        const DEFAULTS = {
+            textColor: this.getColor(0, 0, 0),
+            fontSize: 1.0,
+            align: 0,
+            landscape: false
+        };
+        arguments[4] = _.merge({}, DEFAULTS, options);
         return this._passToDevice('addLabel', arguments);
     };
     /**
@@ -216,59 +229,63 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * The optional 'style' value can change the appearance - can be 'rectangle' (default), 'ellipse', 'square', or 'circle'.
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the button (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the button (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the button (percentage).
-     * @param {string=} text text to display on the button (default empty).
+     * @param {String=} text text to display on the button (default empty).
      * @param {Object=} options Additional options: id, event, style, color, textColor, landscape, fontSize
-     * @returns {string} id of the created button
+     * @param {ButtonStyle=} options.style button appearance
+     * @param {String=} options.id button id (defaults to auto-generated)
+     * @param {String=} options.event click event (defaults to no event)
+     * @param {Color=} options.color background color
+     * @param {Color=} options.textColor text color
+     * @param {Boolean=} options.landscape true rotates the control 90 degrees on the display
+     * @param {FontSize=} options.fontSize size of text (default 1.0)
+     * @returns {String} id of the created button
      */
     PhoneIoT.prototype.addButton = function (device, x, y, width, height, text='', options) {
+        const DEFAULTS = {
+            style: 0,
+            color: this.getColor(66, 135, 245),
+            textColor: this.getColor(255, 255, 255),
+            landscape: false,
+            fontSize: 1.0,
+        };
         arguments[5] = text;
-        arguments[6] = common.parseOptions(options, {
-            style: {
-                parse: v => {
-                    const lower = v.toLowerCase();
-                    if (lower === 'rectangle') return 0;
-                    if (lower === 'ellipse') return 1;
-                    if (lower === 'square') return 2;
-                    if (lower === 'circle') return 3;
-                    throw Error(`unknown button style: ${v}`);
-                },
-                default: 0,
-            },
-            id: { parse: types.parse.String },
-            event: { parse: types.parse.String },
-            color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
-            textColor: { parse: types.parse.Number, default: this.getColor(255, 255, 255) },
-            landscape: { parse: common.parseBool, default: false },
-            fontSize: { parse: common.parseFontSize, default: 1.0 },
-        });
+        arguments[6] = _.merge({}, DEFAULTS, options);
         return this._passToDevice('addButton', arguments);
     };
     /**
      * Add a custom image display to the device, which is initially empty.
      * This can be used to display an image, or to retrieve an image taken from the device's camera.
-     * Unless set to readonly, a user can click on the control to take a new image from the camera.
+     * Image displays default to readonly, meaning the user cannot modify their content from the phone (can only change from NetsBlox code).
+     * If not set to readonly (passing optional parameter readonly false), a user can click on the control to take a new image from the camera.
      * If an event is provided, it will be raised every time the user stores a new image in it (params: 'id').
+     * The fit option can be set to 'fit' (default), 'zoom', or 'stretch'.
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the image display (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the image display (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the image display (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the image display (percentage).
-     * @param {Object=} options Additional options: id, event, readonly
-     * @returns {string} id of the created button
+     * @param {Object=} options Additional options: id, event, readonly, landscape, fit
+     * @param {String=} options.id id of the image display
+     * @param {String=} options.event message to send when image is changed by the user
+     * @param {Boolean=} options.readonly true to disable user from changing the image
+     * @param {Boolean=} options.landscape true to rotate 90 degrees to landscape mode
+     * @param {Fit=} options.fit sets how to position and scale the image in the display
+     * @returns {String} id of the created button
      */
     PhoneIoT.prototype.addImageDisplay = function (device, x, y, width, height, options) {
-        arguments[5] = common.parseOptions(options, {
-            id: { parse: types.parse.String },
-            event: { parse: types.parse.String },
-            readonly: { parse: common.parseBool, default: false },
-        });
+        const DEFAULTS = {
+            readonly: true,
+            landscape: false,
+            fit: 0,
+        };
+        arguments[5] = _.merge({}, DEFAULTS, options);
         return this._passToDevice('addImageDisplay', arguments);
     };
     /**
@@ -276,23 +293,34 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If an event is provided, it will be raised every time the user enters new text (params: 'id', 'text').
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the text field (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the text field (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the text field (percentage).
      * @param {BoundedNumber<0, 100>} height Height of the text field (percentage).
-     * @param {Object=} options Additional options: id, event, text, color, textColor, readonly
-     * @returns {string} id of the created button
+     * @param {Object=} options Additional options: id, event, text, color, textColor, readonly, fontSize, align, landscape
+     * @param {String=} options.id id of the new text field
+     * @param {String=} options.event event to send when the user changes the text
+     * @param {String=} options.text initial text to display (defaults to empty)
+     * @param {Color=} options.color color of the text field outline
+     * @param {Color=} options.textColor color of the text
+     * @param {Boolean=} options.readonly true to disable user from changing the text
+     * @param {FontSize=} options.fontSize size of the text (default 1.0)
+     * @param {Align=} options.align alignment of the text
+     * @param {Boolean=} options.landscape true to rotate 90 degrees to landscape mode
+     * @returns {String} id of the created button
      */
     PhoneIoT.prototype.addTextField = function (device, x, y, width, height, options) {
-        arguments[5] = common.parseOptions(options, {
-            id: { parse: types.parse.String },
-            event: { parse: types.parse.String },
-            text: { parse: types.parse.String, default: '' },
-            color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
-            textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-            readonly: { parse: common.parseBool, default: false },
-        });
+        const DEFAULTS = {
+            text: '',
+            color: this.getColor(66, 135, 245),
+            textColor: this.getColor(0, 0, 0),
+            readonly: false,
+            fontSize: 1.0,
+            align: 0,
+            landscape: false
+        };
+        arguments[5] = _.merge({}, DEFAULTS, options);
         return this._passToDevice('addTextField', arguments);
     };
     /**
@@ -300,20 +328,23 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If an event is provided, it will be raised every time the joystick is moved (params: 'id', 'x', 'y').
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the joystick (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the joystick (percentage).
      * @param {BoundedNumber<0, 100>} width Width of the joystick (percentage).
      * @param {Object=} options Additional options: id, event, color, landscape
-     * @returns {string} id of the created button
+     * @param {String=} options.id id of the new joystick (defaults to auto generated)
+     * @param {String=} options.event event to send when the joystick moves (defaults to no event)
+     * @param {Color=} options.color joystick color
+     * @param {Boolean=} options.landscape true to rotate x,y values to act as if in portrait mode
+     * @returns {String} id of the created button
      */
     PhoneIoT.prototype.addJoystick = function (device, x, y, width, options) {
-        arguments[4] = common.parseOptions(options, {
-            id: { parse: types.parse.String },
-            event: { parse: types.parse.String },
-            color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
-            landscape: { parse: common.parseBool, default: false },
-        });
+        const DEFAULTS = {
+            color: this.getColor(66, 135, 245),
+            landscape: false,
+        };
+        arguments[4] = _.merge({}, DEFAULTS, options);
         return this._passToDevice('addJoystick', arguments);
     };
     /**
@@ -322,31 +353,34 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If an event is provided, it will be raised every time the control is clicked (params: 'id', 'state').
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the toggle (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the toggle (percentage).
-     * @param {string=} text The text to display next to the toggle (defaults to empty)
-     * @param {Object=} options Additional options: style, id, event, state, color, textColor
-     * @returns {string} id of the created toggle
+     * @param {String=} text The text to display next to the toggle (defaults to empty)
+     * @param {Object=} options Additional options: style, id, event, checked, color, textColor, fontSize, landscape, readonly
+     * @param {ToggleStyle=} options.style toggle appearance
+     * @param {String=} options.id id of the toggle (defaults to auto generated)
+     * @param {String=} options.event event to send when toggle is clicked (defaults to no event)
+     * @param {Boolean=} options.checked sets the initial check state of the toggle
+     * @param {Color=} options.color toggle color
+     * @param {Color=} options.textColor toggle label color
+     * @param {FontSize=} options.fontSize font size of the label (also scales toggle size)
+     * @param {Boolean=} options.landscape true to rotate control 90 degrees to landscape
+     * @param {Boolean=} options.readonly true to prevent the user from clicking the toggle
+     * @returns {String} id of the created toggle
      */
     PhoneIoT.prototype.addToggle = function (device, x, y, text='', options) {
+        const DEFAULTS = {
+            style: 0,
+            checked: false,
+            color: this.getColor(66, 135, 245),
+            textColor: this.getColor(0, 0, 0),
+            fontSize: 1.0,
+            landscape: false,
+            readonly: false,
+        };
         arguments[3] = text;
-        arguments[4] = common.parseOptions(options, {
-            style: {
-                parse: v => {
-                    const lower = v.toLowerCase();
-                    if (lower === 'checkbox') return 0;
-                    if (lower === 'switch') return 1;
-                    throw Error(`unknown toggle style: ${v}`);
-                },
-                default: 1,
-            },
-            id: { parse: types.parse.String },
-            event: { parse: types.parse.String },
-            state: { parse: common.parseBool, default: false },
-            color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
-            textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-        });
+        arguments[4] = _.merge({}, DEFAULTS, options);
         return this._passToDevice('addToggle', arguments);
     };
     /**
@@ -356,31 +390,42 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If an event is provided, it will be raised every time the control is clicked (params: 'id', 'state').
      * Returns the id of the created control, which is used by other RPCs.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @param {BoundedNumber<0, 100>} x X position of the top left corner of the radio button (percentage).
      * @param {BoundedNumber<0, 100>} y Y position of the top left corner of the radio button (percentage).
-     * @param {string=} text The text to display next to the checkbox (defaults to empty)
-     * @param {Object=} options Additional options: group, id, event, state, color, textColor
-     * @returns {string} id of the created radio button
+     * @param {String=} text The text to display next to the checkbox (defaults to empty)
+     * @param {Object=} options Additional options: group, id, event, checked, color, textColor, fontSize, landscape, readonly
+     * @param {String=} options.id id of the radio button (default to auto-generated)
+     * @param {String=} options.event event to raise when user clicks the radio button (defaults to no event)
+     * @param {String=} options.group radio button group (defaults to 'main')
+     * @param {Boolean=} options.checked initial check state of the radio button
+     * @param {Color=} options.color color of the radio button itself
+     * @param {Color=} options.textColor radio button label text color
+     * @param {FontSize=} options.fontSize font size of the label text (also scales the radio button size)
+     * @param {Boolean=} options.landscape true to rotate 90 degrees to landscape mode
+     * @param {Boolean=} options.readonly true to disable users from checking the radio button
+     * @returns {String} id of the created radio button
      */
     PhoneIoT.prototype.addRadioButton = function (device, x, y, text='', options) {
+        const DEFAULTS = {
+            group: 'main',
+            checked: false,
+            color: this.getColor(66, 135, 245),
+            textColor: this.getColor(0, 0, 0),
+            fontSize: 1.0,
+            landscape: false,
+            readonly: false,
+        };
         arguments[3] = text;
-        arguments[4] = common.parseOptions(options, {
-            id: { parse: types.parse.String },
-            event: { parse: types.parse.String },
-            group: { parse: types.parse.String, default: 'main' },
-            state: { parse: common.parseBool, default: false },
-            color: { parse: types.parse.Number, default: this.getColor(66, 135, 245) },
-            textColor: { parse: types.parse.Number, default: this.getColor(0, 0, 0) },
-        });
+        arguments[4] = _.merge({}, DEFAULTS, options);
         return this._passToDevice('addRadioButton', arguments);
     };
     /**
      * Set the text on a control that displays text.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} id Name of the control to change text on
-     * @param {string=} text The new text to display (defaults to empty)
+     * @param {Device} device name of the device (matches at the end)
+     * @param {String} id Name of the control to change text on
+     * @param {String=} text The new text to display (defaults to empty)
      */
     PhoneIoT.prototype.setText = function (device, id, text='') {
         arguments[2] = text;
@@ -389,9 +434,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the text from a control that displays text.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} id Name of the control to read text from
-     * @returns {string} The currently displayed text
+     * @param {Device} device name of the device (matches at the end)
+     * @param {String} id Name of the control to read text from
+     * @returns {String} The currently displayed text
      */
     PhoneIoT.prototype.getText = function (device, id) {
         return this._passToDevice('getText', arguments);
@@ -399,8 +444,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current vector output of a custom joystick control
      * @category Display
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} id Name of the control to read text from
+     * @param {Device} device name of the device (matches at the end)
+     * @param {String} id Name of the control to read text from
      * @returns {Array} The x and y components of the normalized vector
      */
     PhoneIoT.prototype.getJoystickVector = function (device, id) {
@@ -409,7 +454,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Checks for authentication, a no-op.
      * This can be used if all you want to do is see if the login credentials are valid.
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.authenticate = async function (device) {
         return this._passToDevice('authenticate', arguments);
@@ -417,16 +462,16 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Begin listening to GUI events such as button presses.
      * This will check for valid login credentials (see setCredentials).
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      */
     PhoneIoT.prototype.listenToGUI = async function (device) {
-        this.authenticate(device); // throws on failure - we want this
+        await this.authenticate(device); // throws on failure - we want this
         
-        const _device = await this._getDevice(device);
-        _device.guiListeners[this.socket.clientId] = this.socket;
+        device.guiListeners[this.socket.clientId] = this.socket;
     };
     /**
-     * Begin listening to sensor update events, which are sent on a regular basis.
+     * Listen for the specified sensor update events, with a specified minimum interval for each.
+     * This will discard any previous call to listenToSensors; thus, calling with an empty list will stop listening to all sensors.
      * This will check for valid login credentials (see setCredentials).
      * Calling getSensors will give you a list of all the sensor names.
      * The events are sent to a message type of the same name as the sensor.
@@ -437,37 +482,61 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * step counter - count
      * location - latitude, longitude, bearing, altitude
      * Additionally, all sensors receive an argument called 'device', which holds the device id.
-     * @param {string} device name of the device (matches at the end)
-     * @param {Array} sensors list if sensors to listen for (events have same name)
+     * @param {Device} device name of the device (matches at the end)
+     * @param {Object=} sensors structured data representing the minimum time in milliseconds between updates for each sensor type to listen for.
+     * @param {SensorPeriod=} sensors.gravity update period for gravity sensor
+     * @param {SensorPeriod=} sensors.gyroscope update period for gyroscope sensor
+     * @param {SensorPeriod=} sensors.orientation update period for orientation sensor
+     * @param {SensorPeriod=} sensors.accelerometer update period for accelerometer sensor
+     * @param {SensorPeriod=} sensors.magneticField update period for magneticField sensor
+     * @param {SensorPeriod=} sensors.rotation update period for rotation sensor
+     * @param {SensorPeriod=} sensors.linearAcceleration update period for linearAcceleration sensor
+     * @param {SensorPeriod=} sensors.gameRotation update period for gameRotation sensor
+     * @param {SensorPeriod=} sensors.lightLevel update period for lightLevel sensor
+     * @param {SensorPeriod=} sensors.microphoneLevel update period for microphoneLevel sensor
+     * @param {SensorPeriod=} sensors.proximity update period for proximity sensor
+     * @param {SensorPeriod=} sensors.stepCount update period for stepCount sensor
+     * @param {SensorPeriod=} sensors.location update period for location sensor
      */
-    PhoneIoT.prototype.listenToSensors = async function (device, sensors) {
-        const items = new Set();
+    PhoneIoT.prototype.listenToSensors = async function (device, sensors={}) {
+        const clientID = this.socket.clientId;
 
-        // first, check that we got valid sensor names
-        for (const sensor of sensors) {
-            const lower = sensor.toString().toLowerCase();
-            if (common.SENSOR_PACKERS[lower] === undefined) {
-                throw Error(`unknown sensor: ${sensor}`);
+        const periods = Object.values(sensors);
+        let minPeriod = Math.min(...periods);
+        for (const sensor in device.sensorToListeners) {
+            const listeners = device.sensorToListeners[sensor];
+            for (const listener in listeners) {
+                if (listener === clientID) continue; // skip ourselves since we're changing that
+                const period = listeners[listener][2];
+                if (period < minPeriod) minPeriod = period;
             }
-            items.add(lower);
+        }
+        await device.setSensorUpdatePeriods(minPeriod === Infinity ? [] : [minPeriod], clientID); // throws on failure - we want this
+
+        // get a time stamp prior to max period so we'll receive an update immediately
+        const timestamp = new Date();
+        timestamp.setMilliseconds(timestamp.getMilliseconds() - Math.max(...periods));
+
+        // stop listening from all sensors
+        for (const sensor in device.sensorToListeners) {
+            const listeners = device.sensorToListeners[sensor];
+            delete listeners[clientID];
         }
 
-        this.authenticate(device); // throws on failure - we want this
-        const _device = await this._getDevice(device);
-        
-        for (const sensor of items) {
-            let bucket = _device.sensorToListeners[sensor];
-            if (bucket === undefined) {
-                bucket = {};
-                _device.sensorToListeners[sensor] = bucket;
+        // start listening to the requested sensors
+        for (const sensor in sensors) {
+            let listeners = device.sensorToListeners[sensor];
+            if (listeners === undefined) {
+                listeners = {};
+                device.sensorToListeners[sensor] = listeners;
             }
-            bucket[this.socket.clientId] = this.socket;
+            listeners[clientID] = [this.socket, timestamp, sensors[sensor]];
         }
     };
     /**
      * Gets a list of the names of all available sensors.
      * These are needed for listenToSensors.
-     * @category Sensors
+     * @category Utility
      * @returns {Array} list of sensor names
      */
     PhoneIoT.prototype.getSensors = function () {
@@ -476,25 +545,43 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Sets the login credentials for this device.
      * Note: this does not set the password on the device. It sets what you will use to access it.
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} password the password to use for accessing the device.
+     * @param {Device} device name of the device (matches at the end)
+     * @param {String} password the password to use for accessing the device.
      */
     PhoneIoT.prototype.setCredentials = async function (device, password) {
-        const _device = await this._getDevice(device);
-        _device.credentials[this.socket.clientId] = password;
+        device.credentials[this.socket.clientId] = password;
     };
 
     /**
-     * Gets the (true/false, selected/non-selected) state of a custom control.
-     * For a toggle control, this gets whether it is on or off (checked or unchecked).
-     * For a button, this gets whether it is currently pressed.
+     * Checks if a pressable control (like a button) is currently pressed (held) down.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} id name of the control to read
+     * @param {Device} device name of the device (matches at the end)
+     * @param {String} id name of the control to read
+     * @returns {boolean} true or false, depending on if the control is pressed
+     */
+    PhoneIoT.prototype.isPressed = function (device, id) {
+        return this._passToDevice('isPressed', arguments);
+    };
+
+    /**
+     * Gets the toggle state of a toggleable custom control.
+     * @category Display
+     * @param {Device} device name of the device (matches at the end)
+     * @param {String} id name of the control to read
      * @returns {boolean} true or false, depending on the state
      */
-    PhoneIoT.prototype.getState = function (device, id) {
-        return this._passToDevice('getState', arguments);
+    PhoneIoT.prototype.getToggleState = function (device, id) {
+        return this._passToDevice('getToggleState', arguments);
+    };
+    /**
+     * Sets the toggle state of a toggleable custom control.
+     * @category Display
+     * @param {Device} device name of the device (matches at the end)
+     * @param {String} id name of the control to modify
+     * @param {boolean} state new value for the toggle state
+     */
+    PhoneIoT.prototype.setToggleState = function (device, id, state) {
+        return this._passToDevice('setToggleState', arguments);
     };
 
     /**
@@ -504,7 +591,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 2. The pitch (vertical tilt) angle [-90, 90].
      * 3. The roll angle [-90, 90].
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} The orientation angles relative to the Earth's magnetic field.
      */
     PhoneIoT.prototype.getOrientation = function (device) {
@@ -513,7 +600,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the compass heading in degrees [-180, 180].
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Number} The compass heading in degrees.
      */
     PhoneIoT.prototype.getCompassHeading = function (device) {
@@ -522,8 +609,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the name of the closest compass direction (N, NE, E, SE, etc.).
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
-     * @returns {string} The compass direction name
+     * @param {Device} device name of the device (matches at the end)
+     * @returns {String} The compass direction name
      */
     PhoneIoT.prototype.getCompassDirection = function (device) {
         return this._passToDevice('getCompassDirection', arguments);
@@ -531,8 +618,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the name of the closest compass cardinal direction (N, E, S, W).
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
-     * @returns {string} The compass cardinal direction name
+     * @param {Device} device name of the device (matches at the end)
+     * @returns {String} The compass cardinal direction name
      */
     PhoneIoT.prototype.getCompassCardinalDirection = function (device) {
         return this._passToDevice('getCompassCardinalDirection', arguments);
@@ -542,7 +629,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current accelerometer output from the device.
      * This is a 3D vector with units of m/s².
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} accelerometer output
      */
     PhoneIoT.prototype.getAccelerometer = function (device) {
@@ -558,30 +645,30 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      *     "left" - the device is horizontal, lying on its left side (facing the screen).
      *     "right" - the device is horizontal, lying on its right side (facing the screen).
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
-     * @returns {string} name of facing direction
+     * @param {Device} device name of the device (matches at the end)
+     * @returns {String} name of facing direction
      */
     PhoneIoT.prototype.getFacingDirection = function (device) {
         return this._passToDevice('getFacingDirection', arguments);
     };
 
     /**
-     * Get the current output of the gravity vector device.
+     * Get the current output of the gravity vector sensor.
      * This is a 3D vector with units of m/s².
      * This is similar to the Accelerometer, but tries to account for noise from linear movement.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
-     * @returns {Array} output of gravity device
+     * @param {Device} device name of the device (matches at the end)
+     * @returns {Array} output of gravity sensor
      */
     PhoneIoT.prototype.getGravity = function (device) {
         return this._passToDevice('getGravity', arguments);
     };
 
     /**
-     * Get the current output of the linear acceleration device.
+     * Get the current output of the linear acceleration sensor.
      * This is a 3D vector with units of m/s².
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} linear acceleration vector
      */
     PhoneIoT.prototype.getLinearAcceleration = function (device) {
@@ -592,28 +679,28 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current output of the gyroscope, which measures rotational acceleration.
      * This is a 3D vector with units of degrees/s² around each axis.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} output of gyroscope
      */
     PhoneIoT.prototype.getGyroscope = function (device) {
         return this._passToDevice('getGyroscope', arguments);
     };
     /**
-     * Get the current output of the rotation device, which measures rotational orientation.
+     * Get the current output of the rotation sensor, which measures rotational orientation.
      * This is a unitless 4D vector representing rotation on the 3 axes, plus a scalar component.
      * For most uses, getGameRotation is more convenient.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} 4D rotational vector
      */
     PhoneIoT.prototype.getRotation = function (device) {
         return this._passToDevice('getRotation', arguments);
     };
     /**
-     * Get the current output of the game rotation device, which measures rotational orientation.
+     * Get the current output of the game rotation sensor, which measures rotational orientation.
      * This is a unitless 3D vector representing rotation around each axis.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} 3D rotational vector
      */
     PhoneIoT.prototype.getGameRotation = function (device) {
@@ -621,20 +708,20 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
 
     /**
-     * Get the current output of the magnetic field device.
+     * Get the current output of the magnetic field sensor.
      * This is a 3D vector with units of μT (micro teslas) in each direction.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} magnetic field vector
      */
-    PhoneIoT.prototype.getMagneticFieldVector = function (device) {
-        return this._passToDevice('getMagneticFieldVector', arguments);
+    PhoneIoT.prototype.getMagneticField = function (device) {
+        return this._passToDevice('getMagneticField', arguments);
     };
 
     /**
      * Get the volume level from the device's microphone.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} A number representing the volume detected by the microphone.
      */
     PhoneIoT.prototype.getMicrophoneLevel = function (device) {
@@ -645,7 +732,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current location of the device.
      * This is a latitude longitude pair in degrees.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Array} latitude and longitude
      */
     PhoneIoT.prototype.getLocation = function (device) {
@@ -656,7 +743,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This represents the observed direction of motion between two location samples,
      * so it's only meaningful while you are moving.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Number} current bearing
      */
     PhoneIoT.prototype.getBearing = function (device) {
@@ -665,7 +752,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the current altitude from the location sensor (in meters above sea level).
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Number} current bearing
      */
     PhoneIoT.prototype.getAltitude = function (device) {
@@ -673,12 +760,12 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
 
     /**
-     * Get the current output of the proximity device.
+     * Get the current output of the proximity sensor.
      * This is a distance measured in cm.
-     * Note that some devices only have binary proximity devices (near/far), which will take discrete two values.
+     * Note that some devices only have binary proximity sensors (near/far), which will take discrete two values.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
-     * @returns {Number} distance from proximity device in cm
+     * @param {Device} device name of the device (matches at the end)
+     * @returns {Number} distance from proximity sensor in cm
      */
     PhoneIoT.prototype.getProximity = function (device) {
         return this._passToDevice('getProximity', arguments);
@@ -687,16 +774,16 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Get the current output of the step counter.
      * This measures the number of steps taken since the device was started.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Number} number of steps taken
      */
     PhoneIoT.prototype.getStepCount = function (device) {
         return this._passToDevice('getStepCount', arguments);
     };
     /**
-     * Get the current output of the light device.
+     * Get the current output of the light sensor.
      * @category Sensors
-     * @param {string} device name of the device (matches at the end)
+     * @param {Device} device name of the device (matches at the end)
      * @returns {Number} current light level reading
      */
     PhoneIoT.prototype.getLightLevel = function (device) {
@@ -706,8 +793,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the displayed image of a custom image box.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} id the id of the custom image box
+     * @param {Device} device name of the device (matches at the end)
+     * @param {String} id the id of the custom image box
      * @returns {object} the displayed image
      */
     PhoneIoT.prototype.getImage = async function (device, id) {
@@ -722,8 +809,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Get the displayed image of a custom image box.
      * @category Display
-     * @param {string} device name of the device (matches at the end)
-     * @param {string} id the id of the custom image box
+     * @param {Device} device name of the device (matches at the end)
+     * @param {String} id the id of the custom image box
      * @param {ImageBitmap} img the new image to display
      */
     PhoneIoT.prototype.setImage = function (device, id, img) {
@@ -732,7 +819,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 
     // /**
     //  * Sets the total message limit for the given device.
-    //  * @param {string} device name of the device (matches at the end)
+    //  * @param {Device} device name of the device (matches at the end)
     //  * @param {number} rate number of messages per seconds
     //  * @returns {boolean} True if the device was found
     //  */
@@ -742,7 +829,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 
     // /**
     //  * Sets the client message limit and penalty for the given device.
-    //  * @param {string} device name of the device (matches at the end)
+    //  * @param {Device} device name of the device (matches at the end)
     //  * @param {number} rate number of messages per seconds
     //  * @param {number} penalty number seconds of penalty if rate is violated
     //  * @returns {boolean} True if the device was found
@@ -756,13 +843,11 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 if (PHONE_IOT_MODE === 'security' || PHONE_IOT_MODE === 'both') {
     // /**
     //  * Sends a textual command to the device
-    //  * @param {string} device name of the device (matches at the end)
-    //  * @param {string} command textual command
-    //  * @returns {string} textual response
+    //  * @param {Device} device name of the device (matches at the end)
+    //  * @param {String} command textual command
+    //  * @returns {String} textual response
     //  */
     // PhoneIoT.prototype.send = async function (device, command) {
-    //     device = await this._getDevice(device);
-
     //     if (typeof command !== 'string') throw Error('command must be a string');
 
     //     // figure out the raw command after processing special methods, encryption, seq and client rate
