@@ -81,9 +81,16 @@ Alexa.getSkillInfo = async function(skillId, stage) {
     return response;
 };
 
+/**
+ * TODO: add some description of the RPC
+ *
+ * @type {String} summary Summary of the skill request
+ * @type {String} description Description of the skill
+ * @type {Array<String>} examplePhrases
+ * @type {Array<String>} keywords
+ * @type {String} name
+ */
 Alexa.createManifest = async function(summary, description, examplePhrases, keywords, name) {
-    validateList(examplePhrases);
-    validateList(keywords);
     var skillRequest =
         {
             "vendorId": vendorID,
