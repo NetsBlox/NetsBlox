@@ -144,14 +144,14 @@ types.Longitude = input => {
 };
 
 // all Object types are going to be structured data (simplified json for snap environment)
-types.Object = (input, params, ctx) => {
+types.Object = (input, params=[], ctx) => {
     // check if it has the form of structured data
     let isArray = Array.isArray(input);
     if (!isArray || !input.every(pair => pair.length === 2 || pair.length === 1)) {
         throw new InputTypeError('It should be a list of (key, value) pairs.');
     }
     input = _.fromPairs(input);
-    if (params) {
+    if (params.length) {
         const pairs = params
             .map(param => {
                 const hasField = input.hasOwnProperty(param.name);

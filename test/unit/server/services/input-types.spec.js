@@ -116,6 +116,11 @@ describe(utils.suiteName(__filename), function() {
                     /must contain/
                 );
             });
+
+            it('should be optional if no params', function() {
+                const input = [['name', 'Donald Duck']];
+                typesParser.Object(input, []);
+            });
         });
     });
 
