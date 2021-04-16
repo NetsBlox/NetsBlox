@@ -1,5 +1,3 @@
-const _ = require('lodash');
-
 const Alexa = {};
 
 const AlexaSMAPI = require('ask-smapi-sdk');
@@ -84,11 +82,11 @@ Alexa.getSkillInfo = async function(skillId, stage) {
 /**
  * TODO: add some description of the RPC
  *
- * @type {String} summary Summary of the skill request
- * @type {String} description Description of the skill
- * @type {Array<String>} examplePhrases
- * @type {Array<String>} keywords
- * @type {String} name
+ * @param {String} summary Summary of the skill request
+ * @param {String} description Description of the skill
+ * @param {Array<String>} examplePhrases
+ * @param {Array<String>} keywords
+ * @param {String} name
  */
 Alexa.createManifest = async function(summary, description, examplePhrases, keywords, name) {
     var skillRequest =
@@ -270,14 +268,6 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
     devLogger.log(response);
 
     return response;
-};
-
-/**
- * Return the caller info as detected by the server.
- * This was added to test the github action and is hopefully useful! :)
- */
-Alexa.callerInfo = function() {
-    return _.omit(this.caller, ['response', 'request', 'socket', 'apiKey']);
 };
 
 //further RPCs for testing only
