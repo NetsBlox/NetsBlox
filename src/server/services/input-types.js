@@ -128,7 +128,7 @@ types.Array = (input, params=[]) => {
     const [typeParam, min=0, max=Infinity] = params;
     const innerType = getTypeParser(typeParam);
 
-    if (!Array.isArray(input)) throw new InputTypeError('Not a list');
+    if (!Array.isArray(input)) throw new InputTypeError();
     if (innerType) {
         let i = 0;
         try {
