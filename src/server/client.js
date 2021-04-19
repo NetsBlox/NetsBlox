@@ -22,6 +22,7 @@ const REQUEST_TIMEOUT = 60*1000;  // 1 minute
 const HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
 const BugReporter = require('./bug-reporter');
 const Projects = require('./storage/projects');
+const ProjectsAPI = require('./api/core/projects');
 const NetsBloxAddress = require('./netsblox-address');
 const NetworkTopology = require('./network-topology');
 const {RequestError} = require('./api/core/errors');
@@ -245,8 +246,12 @@ class Client extends EventEmitter {
         return name;
     }
 
-    onEvicted () {
-        this.send({type: 'evicted'});
+    async evict () {
+        const state = await ProjectsAPI.newProject(this.username, undefined, this.uuid);
+        this.send({
+            type: 'evicted',
+            state,
+        });
     }
 
     sendToEveryone (msg) {

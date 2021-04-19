@@ -98,7 +98,7 @@ module.exports = [
 
             // Remove the user from the room!
             logger.log(`evicted ${evictedClientId} from ${projectId}`);
-            client.onEvicted();
+            client.evict();
             return NetworkTopology.onRoomUpdate(projectId)
                 .then(state => res.json(state));
         }
