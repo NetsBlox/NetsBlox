@@ -40,7 +40,7 @@ function getNBType(jsType) {
 
 const types = {};
 
-function grabType(type) {
+function getTypeParser(type) {
     if (!type) return undefined;
 
     const t = types[type];
@@ -124,13 +124,13 @@ types.Date = input => {
     return input;
 };
 
-types.Array = (input, params) => {
-    const [_innerType, min, max] = params;
-    const innerType = grabType(_innerType);
+types.Array = (input, params=[]) => {
+    const [typeParam, min=0, max=Infinity] = params;
+    const innerType = getTypeParser(typeParam);
 
     if (!Array.isArray(input)) throw new InputTypeError('Not a list');
     if (innerType) {
-        let i = 0
+        let i = 0;
         try {
             for (; i < input.length; ++i) input[i] = innerType(input[i]);
         }
@@ -138,8 +138,9 @@ types.Array = (input, params) => {
             throw new ParameterError(`Item ${i+1} ${e}`);
         }
     }
-    if (min && input.length < min) throw new ParameterError(`Length must be at least ${min}`);
-    if (max && input.length > max) throw new ParameterError(`Length must be at most ${max}`);
+    if (min && min === max && input.length !== min) throw new ParameterError(`List must contain ${min} items`);
+    if (min && input.length < min) throw new ParameterError(`List must contain at least ${min} items`);
+    if (max && input.length > max) throw new ParameterError(`List must contain at most ${max} items`);
     return input;
 };
 
