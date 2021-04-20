@@ -37,6 +37,7 @@ const assert = require('assert');
 const request = require('request');
 const CustomServicesHosts = require('./api/core/services-hosts');
 const RestAPI = require('./api/rest');
+const {exec} = require('child_process');
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -296,6 +297,11 @@ Server.prototype.start = async function(seedDatabase=ENV === 'test') {
     // eslint-disable-next-line no-console
     console.log(`listening on port ${this.opts.port}`);
 
+    for (const docs of loadDocs(this._logger)) {
+        const info = await docs;
+        if (info) this.app.use(`/docs/services/${info.service}`, express.static(info.docPath));
+    }
+
     // Enable the websocket handling
     this._wss = new WebSocketServer({server: this._server});
     this._wss.on('connection', (socket, req) => {
@@ -325,6 +331,34 @@ Server.prototype.stop = function(done) {
     this._wss.close();
     this._server.close(done);
 };
+
+function loadDocs(logger) {
+    return fs.readdirSync(path.join(__dirname, 'services', 'procedures'))
+        .map(serviceDir => { // check if it has a docs directory
+            const absServiceDir = path.join(__dirname, 'services','procedures', serviceDir);
+            if (!fs.readdirSync(absServiceDir).includes('docs')) return;
+            const absDocsDir = path.join(absServiceDir, 'docs');
+            if (!fs.lstatSync(absDocsDir).isDirectory()) return;
+
+            return new Promise((resolve) => {
+                exec('make html', { cwd: absDocsDir }, (error, stdout, stderr) => {
+                    if (error) {
+                        logger.error(`failed to compile ${serviceDir} docs:`, error);
+                        resolve(undefined);
+                        return;
+                    }
+                    if (stderr.length !== 0) { // stderr can be string or Buffer, but length 0 works for either
+                        logger.error(`failed to compile ${serviceDir} docs:`, stderr);
+                        resolve(undefined);
+                        return;
+                    }
+                    logger.info(`compiled ${serviceDir} docs:`, stdout);
+                    resolve({ service: serviceDir, docPath: path.join(absDocsDir, '_build', 'html') });
+                });
+            });
+        })
+        .filter(routes => routes);
+}
 
 // Load the routes from routes/ dir
 function loadRoutes(logger) {
