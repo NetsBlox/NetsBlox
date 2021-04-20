@@ -12,12 +12,12 @@ describe(utils.suiteName(__filename), function() {
 
     const NetworkTopology = utils.reqSrc('network-topology');
 
-    describe('checkAlive', function() {
+    describe('reconnect', function() {
         const originalHeartbeat = Client.HEARTBEAT_INTERVAL;
         before(() => Client.HEARTBEAT_INTERVAL = 5);
         after(() => Client.HEARTBEAT_INTERVAL = originalHeartbeat);
 
-        it('should check reconnected sockets', function(done) {
+        it('should check liveness', function(done) {
             const client = new Client(logger, new MockWebSocket());
             // close the client
             client.lastSocketActivity = 0;
@@ -29,6 +29,22 @@ describe(utils.suiteName(__filename), function() {
                 delete client.checkAlive;
                 done();
             };
+        });
+
+        it('should reconnect event handlers', function() {
+            const client = new Client(logger, new MockWebSocket());
+            const socket = new MockWebSocket();
+            client.reconnect(socket);
+            let lastMessage;
+            client.onMessage = data => lastMessage = data;
+            socket.receive({
+                type: 'message',
+                dstId: 'role2',
+                content: {
+                    msg: 'worked'
+                }
+            });
+            assert(lastMessage, 'Message not handled from reconnected websocket');
         });
     });
 
