@@ -51,6 +51,28 @@ describe(utils.suiteName(__filename), function() {
         it('should support nested types', () => {
             typesParser.Array([1, 2], ['Number']);
         });
+        it('should support complex nested types', () => {
+            typesParser.Array([1, 2], [{ name: 'BoundedNumber', params: [1, 2] }]);
+        });
+
+        it('should enforce bounded lengths', () => {
+            assert.throws(() => typesParser.Array([], [undefined, 2]));
+            assert.throws(() => typesParser.Array([1], [undefined, 2]));
+            typesParser.Array([1, 2], [undefined, 2]);
+            typesParser.Array([1, 2, 3], [undefined, 2]);
+
+            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5, 6], [undefined, undefined, 4]));
+            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, undefined, 4]));
+            typesParser.Array([1, 2, 3, 4], [undefined, undefined, 4]);
+            typesParser.Array([1, 2, 3], [undefined, undefined, 4]);
+
+            assert.throws(() => typesParser.Array([], [undefined, 3, 4]));
+            assert.throws(() => typesParser.Array([1], [undefined, 3, 4]));
+            assert.throws(() => typesParser.Array([1, 2], [undefined, 3, 4]));
+            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, 3, 4]));
+            typesParser.Array([1, 2, 3, 4], [undefined, 3, 4]);
+            typesParser.Array([1, 2, 3], [undefined, 3, 4]);
+        });
     });
 
     describe('Object', function() {
