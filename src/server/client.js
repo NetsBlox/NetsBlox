@@ -53,7 +53,6 @@ class Client extends EventEmitter {
         this._socket = websocket;
         this.isWaitingForReconnect = false;
         this.connError = null;
-
         this.lastSocketActivity = Date.now();
 
         this._socket.on('message', data => {
