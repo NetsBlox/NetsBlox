@@ -138,9 +138,9 @@ types.Array = (input, params=[]) => {
             throw new ParameterError(`Item ${i+1} ${e}`);
         }
     }
-    if (min && min === max && input.length !== min) throw new ParameterError(`List must contain ${min} items`);
-    if (min && input.length < min) throw new ParameterError(`List must contain at least ${min} items`);
-    if (max && input.length > max) throw new ParameterError(`List must contain at most ${max} items`);
+    if (min === max && input.length !== min) throw new ParameterError(`List must contain ${min} items`);
+    if (input.length < min) throw new ParameterError(`List must contain at least ${min} items`);
+    if (input.length > max) throw new ParameterError(`List must contain at most ${max} items`);
     return input;
 };
 
