@@ -178,8 +178,9 @@ types.Object = (input, params=[], ctx) => {
     for (const param of params) {
         const value = input[param.name];
         delete input[param.name];
+        const isMissingField = value === undefined || value === null;
 
-        if (value === undefined || value === null) { // don't forward null values, cause they'll fail to parse
+        if (isMissingField) {
             if (param.optional) continue;
             throw new ParameterError(`It must contain a(n) ${param.name} field`);
         }
