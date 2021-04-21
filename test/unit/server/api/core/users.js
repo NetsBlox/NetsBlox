@@ -35,6 +35,30 @@ describe(utils.suiteName(__filename), function() {
         it('should not be able to add users to other groups', async function() {
             // TODO
         });
+
+        describe('dryrun', function() {
+            it('should not create user', async function() {
+                // TODO
+            });
+
+            it('should throw error if user exists', async function() {
+                // TODO
+            });
+        });
+    });
+
+    describe('get', function() {
+        it('should get user with given name', function() {
+            // TODO
+        });
+
+        it('should clean user', function() {
+            // TODO
+        });
+
+        it('should throw error if user doesnt exist', function() {
+            // TODO
+        });
     });
 
     describe('cancelAccount', function() {
@@ -83,6 +107,36 @@ describe(utils.suiteName(__filename), function() {
         });
 
         it('should email user new password', function() {
+            // TODO
+        });
+    });
+
+    describe('linkAccount', function() {
+        it('should register the new auth strategy', function() {
+            // TODO
+        });
+
+        it('should throw error if strategy not found', function() {
+            // TODO
+        });
+    });
+
+    describe('unlinkAccount', function() {
+        it('should remove the auth strategy', function() {
+            // TODO
+        });
+
+        it('should throw error if strategy not found', function() {
+            // TODO
+        });
+    });
+
+    describe('login', function() {
+        it('should log user in', function() {
+            // TODO
+        });
+
+        it('should throw error if password incorrect', function() {
             // TODO
         });
     });
