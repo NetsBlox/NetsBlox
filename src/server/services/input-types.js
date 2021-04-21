@@ -176,14 +176,13 @@ types.Object = (input, params=[], ctx) => {
 
     const res = {};
     for (const param of params) {
-        if (!input.hasOwnProperty(param.name)) {
-            if (param.optional) continue;
-            else throw new ParameterError(`It must contain a(n) ${param.name} field`);
-        }
-
         const value = input[param.name];
         delete input[param.name];
-        if (value === undefined || value === null) continue; // don't forward empty values, cause they'll fail to parse
+
+        if (value === undefined || value === null) { // don't forward null values, cause they'll fail to parse
+            if (param.optional) continue;
+            throw new ParameterError(`It must contain a(n) ${param.name} field`);
+        }
 
         try {
             res[param.name] = types[param.type.name](value, param.type.params, ctx);
