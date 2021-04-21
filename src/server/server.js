@@ -332,28 +332,32 @@ Server.prototype.stop = function(done) {
     this._server.close(done);
 };
 
+function hasDirectory(dir, subdir) {
+    return fs.readdirSync(dir).includes(subdir) && fs.lstatSync(path.join(dir, subdir)).isDirectory();
+}
 function loadDocs(logger) {
     return fs.readdirSync(path.join(__dirname, 'services', 'procedures'))
         .map(serviceDir => { // check if it has a docs directory
             const absServiceDir = path.join(__dirname, 'services','procedures', serviceDir);
-            if (!fs.readdirSync(absServiceDir).includes('docs')) return;
+            if (!hasDirectory(absServiceDir, 'docs')) return;
             const absDocsDir = path.join(absServiceDir, 'docs');
-            if (!fs.lstatSync(absDocsDir).isDirectory()) return;
 
-            return new Promise((resolve) => {
-                exec('make html', { cwd: absDocsDir }, (error, stdout, stderr) => {
-                    if (error) {
-                        logger.error(`failed to compile ${serviceDir} docs:`, error);
-                        resolve(undefined);
-                        return;
+            return new Promise(resolve => {
+                exec('make clean && make html', { cwd: absDocsDir }, (error, stdout, stderr) => {
+                    if (error || stderr.length !== 0) {
+                        logger.error(`failed to compile ${serviceDir} docs:`, error ? error : stderr);
                     }
-                    if (stderr.length !== 0) { // stderr can be string or Buffer, but length 0 works for either
-                        logger.error(`failed to compile ${serviceDir} docs:`, stderr);
-                        resolve(undefined);
-                        return;
+                    else if (!hasDirectory(absDocsDir, '_build')) {
+                        logger.error(`failed to find ${serviceDir} docs build directory`);
                     }
-                    logger.info(`compiled ${serviceDir} docs:`, stdout);
-                    resolve({ service: serviceDir, docPath: path.join(absDocsDir, '_build', 'html') });
+                    else if (!hasDirectory(path.join(absDocsDir, '_build'), 'html')) {
+                        logger.error(`failed to find html in ${serviceDir} docs build directory`);
+                    }
+                    else { // this is the success case
+                        logger.info(`compiled ${serviceDir} docs:`, stdout);
+                        return resolve({ service: serviceDir, docPath: path.join(absDocsDir, '_build', 'html') });
+                    }
+                    resolve(undefined); // in case of failure, resolve to nothing (we logged the error, and it's not critical to NetsBlox functionality)
                 });
             });
         })
