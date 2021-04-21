@@ -31,5 +31,69 @@ describe(utils.suiteName(__filename), function() {
                 /Invalid argument/
             );
         });
+
+        it('should not be able to add users to other groups', async function() {
+            // TODO
+        });
+    });
+
+    describe('cancelAccount', function() {
+        it('should delete user', function() {
+            // TODO
+        });
+
+        it('should delete user\'s projects', function() {
+            // TODO
+        });
+
+        it('should not delete other user accounts', function() {
+            // TODO
+        });
+
+        it('should delete member account', function() {
+            // TODO
+        });
+    });
+
+    describe('setPassword', function() {
+        it('should change user password', function() {
+            // TODO
+        });
+
+        it('should not change different user password', function() {
+            // TODO
+        });
+
+        it('should change member password', function() {
+            // TODO
+        });
+    });
+
+    describe('resetPassword', function() {
+        it('should change user password', function() {
+            // TODO
+        });
+
+        it('should not change different user password', function() {
+            // TODO
+        });
+
+        it('should change member password', function() {
+            // TODO
+        });
+
+        it('should email user new password', function() {
+            // TODO
+        });
+    });
+
+    describe('logout', function() {
+        it('should clear the users token', function() {
+            // TODO
+        });
+
+        it('should update the associated client', function() {
+            // TODO
+        });
     });
 });
