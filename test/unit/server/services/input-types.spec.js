@@ -125,6 +125,18 @@ describe(utils.suiteName(__filename), function() {
                 assert.deepEqual(parsedInput, {});
             });
 
+            it('should treat null values as unset', function() {
+                const input = [['name', null]];
+                const parsedInput = typesParser.Object(input, [param('name', 'String', true)]);
+                assert.deepEqual(parsedInput, {});
+            });
+
+            it('should treat undefined values as unset', function() {
+                const input = [['name', undefined]];
+                const parsedInput = typesParser.Object(input, [param('name', 'String', true)]);
+                assert.deepEqual(parsedInput, {});
+            });
+
             it('should parse fields', function() {
                 const input = [['age', '50']];
                 const parsedInput = typesParser.Object(input, [param('age', 'Number')]);

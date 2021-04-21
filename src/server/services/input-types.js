@@ -172,37 +172,31 @@ types.Object = (input, params=[], ctx) => {
         throw new InputTypeError('It should be a list of (key, value) pairs.');
     }
     input = _.fromPairs(input);
-    if (params.length) {
-        const pairs = params
-            .map(param => {
-                const hasField = input.hasOwnProperty(param.name);
-                if (hasField) {
-                    const value = input[param.name];
-                    delete input[param.name];
-                    try {
-                        const parsedValue = types[param.type.name](value, param.type.params, ctx);
-                        return [
-                            param.name,
-                            parsedValue
-                        ];
-                    } catch(err) {
-                        const message = `Field ${getErrorMessage(param, err)}`;
-                        throw new ParameterError(message);
-                    }
-                } else if (!param.optional) {
-                    throw new ParameterError(`It must contain a(n) ${param.name} field`);
-                }
-            })
-            .filter(pair => pair);
+    if (!params.length) return input; // no params means we accept anything, so return raw input as obj
 
-        const extraFields = Object.keys(input);
-        if (extraFields.length) {
-            throw new ParameterError(`It contains extra fields: ${extraFields.join(', ')}`);
+    const res = {};
+    for (const param of params) {
+        const value = input[param.name];
+        delete input[param.name];
+        const isMissingField = value === undefined || value === null;
+
+        if (isMissingField) {
+            if (param.optional) continue;
+            throw new ParameterError(`It must contain a(n) ${param.name} field`);
         }
-        return _.fromPairs(pairs);
-    } else {
-        return input;
+
+        try {
+            res[param.name] = types[param.type.name](value, param.type.params, ctx);
+        } catch(err) {
+            throw new ParameterError(`Field ${getErrorMessage(param, err)}`);
+        }
     }
+
+    const extraFields = Object.keys(input);
+    if (extraFields.length) {
+        throw new ParameterError(`It contains extra fields: ${extraFields.join(', ')}`);
+    }
+    return res;
 };
 
 types.Function = async (blockXml, _params, ctx) => {
