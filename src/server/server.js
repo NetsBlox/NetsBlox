@@ -37,7 +37,6 @@ const assert = require('assert');
 const request = require('request');
 const CustomServicesHosts = require('./api/core/services-hosts');
 const RestAPI = require('./api/rest');
-const {exec} = require('child_process');
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -297,8 +296,7 @@ Server.prototype.start = async function(seedDatabase=ENV === 'test') {
     // eslint-disable-next-line no-console
     console.log(`listening on port ${this.opts.port}`);
 
-    const docs = await loadDocs(this._logger);
-    this.app.use('/docs', express.static(docs.root));
+    this.app.use('/docs', express.static(path.join(__dirname, 'docs', 'content', '_build', 'html')));
 
     // Enable the websocket handling
     this._wss = new WebSocketServer({server: this._server});
@@ -329,30 +327,6 @@ Server.prototype.stop = function(done) {
     this._wss.close();
     this._server.close(done);
 };
-
-function hasDirectory(dir, subdir) {
-    return fs.readdirSync(dir).includes(subdir) && fs.lstatSync(path.join(dir, subdir)).isDirectory();
-}
-function loadDocs(logger) {
-    return new Promise((resolve, reject) => {
-        const docSrc = path.join(__dirname, 'docs', 'content');
-        exec('make clean && make html', { cwd: docSrc }, (error, stdout, stderr) => {
-            if (error || stderr.length !== 0) {
-                reject(Error(`failed to compile docs:`, error ? error : '', stderr, stdout));
-            }
-            else if (!hasDirectory(docSrc, '_build')) {
-                reject(Error(`failed to find docs build directory`));
-            }
-            else if (!hasDirectory(path.join(docSrc, '_build'), 'html')) {
-                reject(Error(`failed to find html in docs build directory`));
-            }
-            else {
-                logger.info(`compiled docs:`, stdout);
-                resolve({ root: path.join(docSrc, '_build', 'html') });
-            }
-        });
-    });
-}
 
 // Load the routes from routes/ dir
 function loadRoutes(logger) {

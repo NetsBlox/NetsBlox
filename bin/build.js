@@ -8,6 +8,7 @@ const srcPath = path.join(__dirname, '..', 'src', 'browser');
 const util = require('util');
 const execFile = util.promisify(require('child_process').execFile);
 const nop = () => {};
+const {exec} = require('child_process');
 
 process.chdir(srcPath);
 build().catch(err => console.error(err));
@@ -57,6 +58,32 @@ async function build() {
         console.log('output length:', srcLength);
         console.log('compression ratio:', 1-(minLength/srcLength));
     }
+
+    await compileDocs();
+}
+
+async function hasDirectory(dir, subdir) {
+    return (await fsp.readdir(dir)).includes(subdir) && (await fsp.lstat(path.join(dir, subdir))).isDirectory();
+}
+function compileDocs() {
+    return new Promise((resolve, reject) => {
+        const docSrc = path.join(__dirname, '..', 'src', 'server', 'docs', 'content');
+        exec('make clean && make html', { cwd: docSrc }, async (error, stdout, stderr) => {
+            if (error || stderr.length !== 0) {
+                reject(Error(`failed to compile docs: error: ${error ? error : ''}, stderr: ${stderr}, stdout: ${stdout}`));
+            }
+            else if (!await hasDirectory(docSrc, '_build')) {
+                reject(Error(`failed to find docs build directory`));
+            }
+            else if (!await hasDirectory(path.join(docSrc, '_build'), 'html')) {
+                reject(Error(`failed to find html in docs build directory`));
+            }
+            else {
+                console.log(`compiled docs:`, stdout);
+                resolve();
+            }
+        });
+    });
 }
 
 async function unlinkFile(path) {
