@@ -14,14 +14,30 @@ let parseSync = (filePath, searchScope = 5) => {
     return parseSource(source, searchScope);
 };
 
+const RTD_ROLE_REGEX = /:(\w+:)?\w+:`([^`]+)`/g;
+const RTD_CODE_REGEX = /``([^`]+)``/g;
+const RTD_LINK_REGEX = /`([^`]+)`_/g;
+function cleanMarkup(str) {
+    if (!str) return str;
+    str = str.replace(RTD_ROLE_REGEX, '$2');
+    str = str.replace(RTD_CODE_REGEX, '$1');
+    str = str.replace(RTD_LINK_REGEX, '$1');
+    return str;
+}
+
 //simplifies a single metadata returned by doctrine to be used within netsblox
 function simplify(metadata) {
     let {description, tags} = metadata;
+    description = cleanMarkup(description);
+    
     let fnName = tags.find(tag => tag.title === 'name').name;
 
     let simplifyParam = param => {
         let {name, type, description} = param;
+        description = cleanMarkup(description);
+
         let simpleParam = {name, description};
+
         // if type is defined
         if (type) {
             simpleParam.optional = type.type === 'OptionalType';
