@@ -145,10 +145,7 @@ Alexa.getInteractionModel = async function (skillId, stage) {
 };
 
 Alexa.createSlot = function(intent, name, samples, prompts) {
-    let list = [];
-
-    list.push([intent, name, samples, prompts]);
-    return list;
+    return [intent, name, samples, prompts];
 };
 
 const createSlotsObject = function(intent, name, samples, prompts) {
@@ -190,10 +187,7 @@ const createSlotsObject = function(intent, name, samples, prompts) {
 };
 
 Alexa.createIntent = function (name, slots, samples) {
-    let list = [];
-
-    list.push([name, slots, samples]);
-    return list;
+    return [name, slots, samples];
 };
 
 const createIntentsObject = function(name, slots, samples) {
@@ -217,7 +211,7 @@ const createIntentsObject = function(name, slots, samples) {
     return intent;
 };
 
-const createSecondIntentsObject = function(name, slots, samples) {
+const createSecondIntentsObject = function(name, slots) {
     let slotsObjectsList = [];
     let slotObjectsReturn = [];
 
@@ -239,7 +233,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
     let slotInfos = [];
     for (let i of intents) {
         intentsList.push(createIntentsObject(i[0], i[1], i[2]));
-        slotInfos.push(createSecondIntentsObject(i[0], i[1], i[2]));
+        slotInfos.push(createSecondIntentsObject(i[0], i[1]));
     }
 
     let intentsArray = [];
