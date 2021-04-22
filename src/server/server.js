@@ -297,10 +297,8 @@ Server.prototype.start = async function(seedDatabase=ENV === 'test') {
     // eslint-disable-next-line no-console
     console.log(`listening on port ${this.opts.port}`);
 
-    for (const docs of loadDocs(this._logger)) {
-        const info = await docs;
-        if (info) this.app.use(`/docs/services/${info.service}`, express.static(info.docPath));
-    }
+    const docs = await loadDocs(this._logger);
+    this.app.use('/docs', express.static(docs.root));
 
     // Enable the websocket handling
     this._wss = new WebSocketServer({server: this._server});
@@ -336,32 +334,24 @@ function hasDirectory(dir, subdir) {
     return fs.readdirSync(dir).includes(subdir) && fs.lstatSync(path.join(dir, subdir)).isDirectory();
 }
 function loadDocs(logger) {
-    return fs.readdirSync(path.join(__dirname, 'services', 'procedures'))
-        .map(serviceDir => { // check if it has a docs directory
-            const absServiceDir = path.join(__dirname, 'services','procedures', serviceDir);
-            if (!hasDirectory(absServiceDir, 'docs')) return;
-            const absDocsDir = path.join(absServiceDir, 'docs');
-
-            return new Promise(resolve => {
-                exec('make clean && make html', { cwd: absDocsDir }, (error, stdout, stderr) => {
-                    if (error || stderr.length !== 0) {
-                        logger.error(`failed to compile ${serviceDir} docs:`, error ? error : stderr);
-                    }
-                    else if (!hasDirectory(absDocsDir, '_build')) {
-                        logger.error(`failed to find ${serviceDir} docs build directory`);
-                    }
-                    else if (!hasDirectory(path.join(absDocsDir, '_build'), 'html')) {
-                        logger.error(`failed to find html in ${serviceDir} docs build directory`);
-                    }
-                    else { // this is the success case
-                        logger.info(`compiled ${serviceDir} docs:`, stdout);
-                        return resolve({ service: serviceDir, docPath: path.join(absDocsDir, '_build', 'html') });
-                    }
-                    resolve(undefined); // in case of failure, resolve to nothing (we logged the error, and it's not critical to NetsBlox functionality)
-                });
-            });
-        })
-        .filter(routes => routes);
+    return new Promise((resolve, reject) => {
+        const docSrc = path.join(__dirname, 'docs', 'content');
+        exec('make clean && make html', { cwd: docSrc }, (error, stdout, stderr) => {
+            if (error || stderr.length !== 0) {
+                reject(Error(`failed to compile docs:`, error ? error : '', stderr, stdout));
+            }
+            else if (!hasDirectory(docSrc, '_build')) {
+                reject(Error(`failed to find docs build directory`));
+            }
+            else if (!hasDirectory(path.join(docSrc, '_build'), 'html')) {
+                reject(Error(`failed to find html in docs build directory`));
+            }
+            else {
+                logger.info(`compiled docs:`, stdout);
+                resolve({ root: path.join(docSrc, '_build', 'html') });
+            }
+        });
+    });
 }
 
 // Load the routes from routes/ dir

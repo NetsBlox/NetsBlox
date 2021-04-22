@@ -10,22 +10,22 @@ Thus, a button at position ``[25, 25]`` and size ``[50, 50]`` will take up a fou
 
 Many controls take optional parameters, which are specified as a list of pairs (lists of size 2), where each pair is the name of an option and the desired value.
 For instance, most controls take one or more optional parameters to control the color of the display.
-You can obtain color codes from :func:`getColor`.
+You can obtain color codes from :func:`PhoneIoT.getColor`.
 
-.. autofunction:: addButton
-.. autofunction:: addImageDisplay
-.. autofunction:: addJoystick
-.. autofunction:: addLabel
-.. autofunction:: addRadioButton
-.. autofunction:: addTextField
-.. autofunction:: addToggle
-.. autofunction:: clearControls
-.. autofunction:: getImage
-.. autofunction:: getJoystickVector
-.. autofunction:: getText
-.. autofunction:: getToggleState
-.. autofunction:: isPressed
-.. autofunction:: removeControl
-.. autofunction:: setImage
-.. autofunction:: setText
-.. autofunction:: setToggleState
+.. autofunction:: PhoneIoT#addButton
+.. autofunction:: PhoneIoT#addImageDisplay
+.. autofunction:: PhoneIoT#addJoystick
+.. autofunction:: PhoneIoT#addLabel
+.. autofunction:: PhoneIoT#addRadioButton
+.. autofunction:: PhoneIoT#addTextField
+.. autofunction:: PhoneIoT#addToggle
+.. autofunction:: PhoneIoT#clearControls
+.. autofunction:: PhoneIoT#getImage
+.. autofunction:: PhoneIoT#getJoystickVector
+.. autofunction:: PhoneIoT#getText
+.. autofunction:: PhoneIoT#getToggleState
+.. autofunction:: PhoneIoT#isPressed
+.. autofunction:: PhoneIoT#removeControl
+.. autofunction:: PhoneIoT#setImage
+.. autofunction:: PhoneIoT#setText
+.. autofunction:: PhoneIoT#setToggleState

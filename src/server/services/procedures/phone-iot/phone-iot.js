@@ -193,7 +193,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 
     /**
      * Removes all controls from the device's canvas.
-     * If you would instead like to remove a specific control, see :func:`removeControl`.
+     * If you would instead like to remove a specific control, see :func:`PhoneIoT.removeControl`.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -204,7 +204,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Removes a control with the given ID if it exists.
      * If the control does not exist, does nothing (but still counts as success).
-     * If you would instead like to remove all controls, see :func:`clearControls`.
+     * If you would instead like to remove all controls, see :func:`PhoneIoT.clearControls`.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -216,11 +216,11 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Adds a label control to the canvas at the given position.
      * If ``text`` is not specified, it default to empty, which can be used to hide the label when nothing needs to be displayed.
-     * The text can be modified later via :func:`setText`.
+     * The text can be modified later via :func:`PhoneIoT.setText`.
      * 
      * Labels do not have a size, so they also don't do text wrapping.
      * Because of this, you should keep label text relatively short.
-     * If you need a large amount of text written, consider using :func:`addTextField` with ``readonly = true``.
+     * If you need a large amount of text written, consider using :func:`PhoneIoT.addTextField` with ``readonly = true``.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -249,7 +249,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Adds a button to the display with the given position and size.
      * If not specified, the default text for a button is empty, which can be used to just make a colored, unlabeled button.
-     * The text can be modified later via :func:`setText`.
+     * The text can be modified later via :func:`PhoneIoT.setText`.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -260,7 +260,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {String=} text text to display on the button (default empty)
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the button is pressed. You must call :func:`listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``.
+     * @param {String=} options.event The name of a message type to be sent each time the button is pressed. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``.
      * @param {ButtonStyle=} options.style The display style of the button on the screen. This can be ``rectangle`` (default), ``ellipse``, ``square``, or ``circle``. If ``square`` or ``circle`` is used, the height of the control is ignored (height equals width).
      * @param {Color=} options.color The background color of the button.
      * @param {Color=} options.textColor The text color of the button.
@@ -293,8 +293,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} height Height of the image display (percentage).
      * @param {Object=} options Additional options: id, event, readonly, landscape, fit
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the user updates the content (only possible if ``readonly = false``). You must call :func:`listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``.
-     * @param {Boolean=} options.readonly Specifies if the user is allowed to change the content (defaults to ``true``). Regardless of this setting, you can still modify the image programmatically via :func:`setImage`. Defaults to ``true``.
+     * @param {String=} options.event The name of a message type to be sent each time the user updates the content (only possible if ``readonly = false``). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``.
+     * @param {Boolean=} options.readonly Specifies if the user is allowed to change the content (defaults to ``true``). Regardless of this setting, you can still modify the image programmatically via :func:`PhoneIoT.setImage`. Defaults to ``true``.
      * @param {Boolean=} options.landscape If set to ``true``, rotates the image display ``90`` degrees around its top left corner.
      * @param {Fit=} options.fit The technique used to fit the image into the display, in case the image and the display have different aspect ratios. This can be ``fit`` (default), ``zoom``, or ``stretch``.
      * @returns {String} id of the created control
@@ -313,7 +313,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * These are typically used to display large blocks of text, or to accept input text from the user.
      * If not set to ``readonly``, the user can click on the text field to change its content.
      * 
-     * If you have a small amount of text you need to show and would otherwise make this control ``readonly``, consider using :func:`addLabel` instead.
+     * If you have a small amount of text you need to show and would otherwise make this control ``readonly``, consider using :func:`PhoneIoT.addLabel` instead.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -323,7 +323,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} height Height of the text field (percentage).
      * @param {Object=} options Additional options: id, event, text, color, textColor, readonly, fontSize, align, landscape
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of an event to send every time the user changes the text content (only possible if ``readonly = false``). Note that this event is only sent once the user clicks accept on the new content (you do not get an event for every key press). You must call :func:`listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``text``.
+     * @param {String=} options.event The name of an event to send every time the user changes the text content (only possible if ``readonly = false``). Note that this event is only sent once the user clicks accept on the new content (you do not get an event for every key press). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``text``.
      * @param {String=} options.text This can be used to set the initial text of the text field once created. Defaults to empty if not specified.
      * @param {Color=} options.color The color of the text field border.
      * @param {Color=} options.textColor The text color of the text field.
@@ -348,7 +348,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Adds a joystick control to the canvas at the given position and size.
-     * No height parameter is given because joysticks are always circular (similar to passing ``style = circle`` to :func:`addButton`).
+     * No height parameter is given because joysticks are always circular (similar to passing ``style = circle`` to :func:`PhoneIoT.addButton`).
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -357,7 +357,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} width Width of the joystick (percentage).
      * @param {Object=} options Additional options: id, event, color, landscape
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the user moves the joystick. You must call :func:`listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``x``, ``y``.
+     * @param {String=} options.event The name of a message type to be sent each time the user moves the joystick. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``x``, ``y``.
      * @param {Color=} options.color The color of the joystick.
      * @param {Boolean=} options.landscape If set to ``true``, the ``x`` and ``y`` values of the joystick are altered so that it acts correctly when in landscape mode. Unlike other controls, this option does not affect where the control is displayed on the screen (no rotation).
      * @returns {String} id of the created control
@@ -372,7 +372,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Adds a toggle control to the canvas at the given location.
-     * The ``text`` parameter can be used to set the initial text shown for the toggle (defaults to empty), but this can be changed later with :func:`setText`.
+     * The ``text`` parameter can be used to set the initial text shown for the toggle (defaults to empty), but this can be changed later with :func:`PhoneIoT.setText`.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -382,7 +382,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Object=} options Additional options: style, id, event, checked, color, textColor, fontSize, landscape, readonly
      * @param {ToggleStyle=} options.style The visual style of the toggle control. This can be ``switch`` (default) for a mobile-style toggle, or ``checkbox`` for a desktop-style toggle.
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message to be sent every time the checkbox is toggled by the user. You must call :func:`listenToGUI` to actually receive these messages. Message fields: ``id``, ``state``.
+     * @param {String=} options.event The name of a message to be sent every time the checkbox is toggled by the user. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. Message fields: ``id``, ``state``.
      * @param {Boolean=} options.checked Defaults to ``false``. If set to ``true``, the toggle will be initially checked.
      * @param {Color=} options.color The color of the toggle itself.
      * @param {Color=} options.textColor The text color of the toggle.
@@ -418,7 +418,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Object=} options Additional options: group, id, event, checked, color, textColor, fontSize, landscape, readonly
      * @param {String=} options.group The name of the group to associate this radio button with. You do not need this value to access the control later. If not specified, defaults to ``main``.
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of an event to send every time the user clicks the radio button. Note that clicking a radio button always checks it, unlike toggles. You must call :func:`listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``state``.
+     * @param {String=} options.event The name of an event to send every time the user clicks the radio button. Note that clicking a radio button always checks it, unlike toggles. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``state``.
      * @param {Boolean=} options.checked Defaults to ``false``. If set to ``true``, the radio button will be initially checked. Note that, while the user cannot check multiple radio buttons, you are free to do so programmatically.
      * @param {Color=} options.color The color of the radio button itself.
      * @param {Color=} options.textColor The text color of the radio button.
@@ -469,7 +469,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Gets the current ``x`` and ``y`` values for the stick position of a joystick control.
      * This vector is normalized to a length of ``1.0``.
-     * Instead of calling this in a loop, it is likely better to use the ``event`` optional parameter of :func:`addJoystick`.
+     * Instead of calling this in a loop, it is likely better to use the ``event`` optional parameter of :func:`PhoneIoT.addJoystick`.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -491,7 +491,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * This RPC requests that you receive any events from the `Graphical User Interface` (GUI) on the phone's display.
      * This is needed to receive any type of GUI event, including button clicks, joystick movements, and textbox update events.
-     * You only need to call this RPC once, which you can do at the start of your program (but after calling :func:`setCredentials`).
+     * You only need to call this RPC once, which you can do at the start of your program (but after calling :func:`PhoneIoT.setCredentials`).
      * 
      * See the :doc:`display` section for more information.
      * 
@@ -512,7 +512,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This method of accessing sensor data is often easier, as it doesn't require loops or error-checking code.
      * If a networking error occurs, you simply miss that single message.
      * 
-     * The :func:`getSensors` RPC can be used to get a list of the valid sensor names.
+     * The :func:`PhoneIoT.getSensors` RPC can be used to get a list of the valid sensor names.
      * See the :doc:`sensors` section for more information, esp. the required fields for each message type.
      * 
      * @param {Device} device id of the device
@@ -594,7 +594,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This can be used on any pressable control, which currently only includes buttons.
      * 
      * By calling this RPC in a loop, you could perform some action every second while a button is held down.
-     * If you would instead like to receive click events, see the ``event`` optional parameter of :func:`addButton`.
+     * If you would instead like to receive click events, see the ``event`` optional parameter of :func:`PhoneIoT.addButton`.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -654,7 +654,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('getOrientation', arguments);
     };
     /**
-     * Gets the current compass heading from the device. This is similar to :func:`getBearing`, except that it returns the angle from magnetic north, rather than the direction of travel.
+     * Gets the current compass heading from the device. This is similar to :func:`PhoneIoT.getBearing`, except that it returns the angle from magnetic north, rather than the direction of travel.
      * This is provided by the magnetic field sensor, so using this RPC on devices without a magnetometer will result in an error.
      * The output of this RPC assumes the device is face-up.
      * 
@@ -678,7 +678,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('getCompassDirection', arguments);
     };
     /**
-     * Equivalent to :func:`getCompassDirection`, except that it only returns ``N``, ``E``, ``S``, or ``W``.
+     * Equivalent to :func:`PhoneIoT.getCompassDirection`, except that it only returns ``N``, ``E``, ``S``, or ``W``.
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -729,7 +729,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * For example, even if you start running, this vector should always have roughly the same value.
      * This is provided by a hybrid sensor, and is not available on all devices.
      * 
-     * The counterpart to this RPC is :func:`getLinearAcceleration`.
+     * The counterpart to this RPC is :func:`PhoneIoT.getLinearAcceleration`.
      * 
      * Sensor name: ``gravity``
      * 
@@ -748,7 +748,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Theoretically, if the device is at rest this RPC would report a nearly-zero vector (nothing is ever perfectly still).
      * This is provided by a hybrid sensor, and is not available on all devices.
      * 
-     * The counterpart to this RPC is :func:`getGravity`.
+     * The counterpart to this RPC is :func:`PhoneIoT.getGravity`.
      * 
      * Sensor name: ``linearAcceleration``
      * 
@@ -779,7 +779,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Gets the current output of the rotation sensor.
      * This is a 4D rotation vector, given as rotation along 3 axes, plus a scalar component.
-     * This is provided in case it is needed, but in practice, it's typically easier to use 3D quantities, as provided by :func:`getOrientation`.
+     * This is provided in case it is needed, but in practice, it's typically easier to use 3D quantities, as provided by :func:`PhoneIoT.getOrientation`.
      * 
      * Sensor name: ``rotation``
      * 
@@ -793,7 +793,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('getRotation', arguments);
     };
     /**
-     * Equivalent to the :func:`getOrientation` RPC except that it gets the orientation relative to a fixed reference frame, thus making it good for use in games.
+     * Equivalent to the :func:`PhoneIoT.getOrientation` RPC except that it gets the orientation relative to a fixed reference frame, thus making it good for use in games.
      * 
      * Sensor name: ``gameRotation``
      * 
@@ -940,7 +940,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This can be used on any control that displays images, which is currently only image displays.
      * 
      * This can be used to retrieve images from the mobile device's camera, by having the user store an image in an image display that has ``readonly = false``.
-     * See the ``readonly`` optional parameter of :func:`addImageDisplay`.
+     * See the ``readonly`` optional parameter of :func:`PhoneIoT.addImageDisplay`.
      * 
      * @category Display
      * @param {Device} device id of the device

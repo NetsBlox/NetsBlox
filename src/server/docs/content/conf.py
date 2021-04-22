@@ -19,10 +19,9 @@ import sphinx_rtd_theme
 
 # -- Project information -----------------------------------------------------
 
-project = 'PhoneIoT'
+project = 'NetsBlox'
 copyright = '2021, Vanderbilt University'
-author = 'Devin Jean'
-
+author = 'NetsBlox Team'
 
 # -- General configuration ---------------------------------------------------
 

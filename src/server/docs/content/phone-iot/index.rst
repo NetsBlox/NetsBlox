@@ -1,14 +1,11 @@
-PhoneIoT Documentation
-======================
+PhoneIoT
+========
 
 PhoneIoT is a service in `NetsBlox <https://netsblox.org/>`_ that's meant to teach Internet of Things (IoT) topics as early as K-12 education.
 It allows you to programmatically access your smartphone's sensors and display.
 This includes accessing hardware sensors such as the accelerometer, gyroscope, microphone, camera, and many others depending on the device.
 PhoneIoT also allows you to control a customizable interactive display, enabling you to use your device as a custom remote control, or even create and run distributed (multiplayer) applications.
 The limits are up to your imagination!
-
-Getting Started
----------------
 
 To get started using PhoneIoT, download the PhoneIoT app on your mobile device, available for `Android <https://play.google.com/store/apps/details?id=org.netsblox.phoneiot>`_ and iOS (`coming soon`), and then go to the `NetsBlox editor <https://editor.NetsBlox.org>`_.
 In the top left of the editor, you should see a grid of several colored tabs.
