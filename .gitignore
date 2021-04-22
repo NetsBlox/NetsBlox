@@ -11,3 +11,4 @@ src/client/dist/
 blob-storage
 test-blob-storage
 cache
+_build/

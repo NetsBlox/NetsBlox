@@ -1,8 +1,3 @@
-.. PhoneIoT documentation master file, created by
-   sphinx-quickstart on Mon Apr 12 14:50:44 2021.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 PhoneIoT Documentation
 ======================
 
@@ -42,10 +37,3 @@ You're now ready to start using the other RPCs in PhoneIoT to communicate with t
    utility
    sensors
    display
-
-.. Indices and tables
-.. ==================
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`
