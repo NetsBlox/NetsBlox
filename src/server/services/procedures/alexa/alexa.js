@@ -1,5 +1,3 @@
-const _ = require('lodash');
-
 const Alexa = {};
 
 const AlexaSMAPI = require('ask-smapi-sdk');
@@ -72,7 +70,7 @@ Alexa.getSkillInfo = async function(skillId, stage) {
     return response;
 };
 
-createManifest = function(summary, description, examplePhrases, keywords, name) {
+const createManifestObject = function(summary, description, examplePhrases, keywords, name) {
     let skillRequest =
         {
             "vendorId": vendorID,
@@ -119,18 +117,31 @@ createManifest = function(summary, description, examplePhrases, keywords, name) 
     return skillRequest;
 };
 
-Alexa.updateSkillManifest = async function(skillId, stage, summary, description, examplePhrases, keywords, name) {
+/**
+ * TODO: add some description of the RPC
+ *
+ * @param {String} summary Summary of the skill request
+ * @param {String} description Description of the skill
+ * @param {Array<String>} examplePhrases
+ * @param {Array<String>} keywords
+ * @param {String} name
+ */
+Alexa.createManifest = async function(summary, description, examplePhrases, keywords, name) {
+    return [summary, description, examplePhrases, keywords, name];
+};
+
+Alexa.updateSkillManifest = async function(manifest) {
     const response = await smapiClient.createSkillForVendorV1(
-        createManifest(summary, description, examplePhrases, keywords, name));
+        createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4]));
     devLogger.log(JSON.stringify(response));
 
     return response;
 };
 
 //untested createSkill RPC
-Alexa.createSkill = async function(summary, description, examplePhrases, keywords, name) {
+Alexa.createSkill = async function(manifest) {
     const response = await smapiClient.createSkillForVendorV1(
-        createManifest(summary, description, examplePhrases, keywords, name));
+        createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4]));
     devLogger.log(JSON.stringify(response));
 
     return response;
@@ -289,14 +300,6 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
     devLogger.log(response);
 
     return response;
-};
-
-/**
- * Return the caller info as detected by the server.
- * This was added to test the github action and is hopefully useful! :)
- */
-Alexa.callerInfo = function() {
-    return _.omit(this.caller, ['response', 'request', 'socket', 'apiKey']);
 };
 
 //further RPCs for testing only

@@ -163,6 +163,36 @@ describe(utils.suiteName(__filename), function() {
             });
         });
 
+        describe('duck typing', function() {
+            let parsed;
+            before(() => {
+                const duckTypes = `
+                /**
+                 * this is the description
+                 * @param {Object} duck some duck-typed object (aka anonymous struct)
+                 * @param {String} duck.name name of the given duck
+                 * @param {Number} duck.age age of the given duck
+                 * @name doSomething
+                 */
+                `;
+                const metadata = jp._parseSource(duckTypes).rpcs[0];
+                parsed = jp._simplify(metadata.parsed);
+                console.log(parsed.args);
+            });
+
+            it('should parse field names', () => {
+                const [duckArg] = parsed.args;
+                const fieldNames = duckArg.type.params.map(field => field.name);
+                assert.deepEqual(fieldNames, ['name', 'age']);
+            });
+
+            it('should parse field types', () => {
+                const [duckArg] = parsed.args;
+                const fieldTypes = duckArg.type.params.map(field => field.type.name);
+                assert.deepEqual(fieldTypes, ['String', 'Number']);
+            });
+        });
+
         describe('categories', function() {
             it('should parse category', () => {
                 const comment = `

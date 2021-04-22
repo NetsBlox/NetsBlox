@@ -6,6 +6,7 @@
  * Terms of use: https://www.paralleldots.com/terms-and-conditions
  * @service
  * @category Language
+ * @category ArtificialIntelligence
  */
 
 const ApiConsumer = require('../utils/api-consumer');
