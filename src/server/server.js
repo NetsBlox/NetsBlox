@@ -292,11 +292,10 @@ Server.prototype.start = async function(seedDatabase=ENV === 'test') {
         }
     }
     await this.configureRoutes(this.opts.servicesURL);
+    this.app.use('/docs', express.static(path.join(__dirname, 'docs', 'content', '_build', 'html')));
     this._server = this.app.listen(this.opts.port);
     // eslint-disable-next-line no-console
     console.log(`listening on port ${this.opts.port}`);
-
-    this.app.use('/docs', express.static(path.join(__dirname, 'docs', 'content', '_build', 'html')));
 
     // Enable the websocket handling
     this._wss = new WebSocketServer({server: this._server});
