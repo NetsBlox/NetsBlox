@@ -4,8 +4,6 @@ const Alexa = {};
 
 const AlexaSMAPI = require('ask-smapi-sdk');
 
-var spawnSync = require('child_process').spawnSync;
-
 const devLogger = require('../utils/dev-logger');
 
 var clientID = process.env.ALEXA_CLIENT_ID,
@@ -26,13 +24,6 @@ var refreshTokenConfig = {
 var smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
     .withRefreshTokenConfig(refreshTokenConfig)
     .client();
-
-
-const validateList = list => {
-    if (!Array.isArray(list)) {
-        throw new Error('"data" must be a list of lists.');
-    }
-};
 
 const ensureLoggedIn = function(caller) {
     if (!caller.username) {
@@ -81,10 +72,8 @@ Alexa.getSkillInfo = async function(skillId, stage) {
     return response;
 };
 
-Alexa.createManifest = async function(summary, description, examplePhrases, keywords, name) {
-    validateList(examplePhrases);
-    validateList(keywords);
-    var skillRequest =
+createManifest = function(summary, description, examplePhrases, keywords, name) {
+    let skillRequest =
         {
             "vendorId": vendorID,
             "manifest": {
@@ -130,17 +119,18 @@ Alexa.createManifest = async function(summary, description, examplePhrases, keyw
     return skillRequest;
 };
 
-Alexa.updateSkillManifest = async function(skillId, stage, manifest) {
-    const response = await smapiClient.updateSkillManifestV1(skillId, stage, manifest);
+Alexa.updateSkillManifest = async function(skillId, stage, summary, description, examplePhrases, keywords, name) {
+    const response = await smapiClient.createSkillForVendorV1(
+        createManifest(summary, description, examplePhrases, keywords, name));
     devLogger.log(JSON.stringify(response));
 
     return response;
 };
 
 //untested createSkill RPC
-Alexa.createSkill = async function(manifest) {
-    devLogger.log(JSON.stringify(manifest));
-    const response = await smapiClient.createSkillForVendorV1(manifest);
+Alexa.createSkill = async function(summary, description, examplePhrases, keywords, name) {
+    const response = await smapiClient.createSkillForVendorV1(
+        createManifest(summary, description, examplePhrases, keywords, name));
     devLogger.log(JSON.stringify(response));
 
     return response;
@@ -155,8 +145,14 @@ Alexa.getInteractionModel = async function (skillId, stage) {
 };
 
 Alexa.createSlot = function(intent, name, samples, prompts) {
-    validateList(prompts);
-    var variations = [];
+    let list = [];
+
+    list.push([intent, name, samples, prompts]);
+    return list;
+};
+
+const createSlotsObject = function(intent, name, samples, prompts) {
+    let variations = [];
     for (let i in prompts) {
         variations.push(
             {
@@ -165,7 +161,7 @@ Alexa.createSlot = function(intent, name, samples, prompts) {
             }
         );
     }
-    var slotInfo =
+    let slotInfo =
         {
             "intentSlotInfo" : {
                 "name": name,
@@ -194,16 +190,26 @@ Alexa.createSlot = function(intent, name, samples, prompts) {
 };
 
 Alexa.createIntent = function (name, slots, samples) {
-    validateList(samples);
+    let list = [];
 
-    var intent =
+    list.push([name, slots, samples]);
+    return list;
+};
+
+const createIntentsObject = function(name, slots, samples) {
+    let slotsObjectsList = [];
+    for (let i in slots) {
+        slotsObjectsList.push(createSlotsObject(i[0], i[1], i[2], i[3]));
+    }
+
+    let intent =
         {
             "name": name,
             "slots": [],
             "samples": samples
         };
 
-    for (let i in slots) {
+    for (let i in slotsObjectsList) {
         intent.slots.push(i.intentSlotInfo);
     }
     devLogger.log(JSON.stringify(intent));
@@ -211,23 +217,37 @@ Alexa.createIntent = function (name, slots, samples) {
     return intent;
 };
 
-Alexa.createInteractionModel = async function (skillId, stage, intents) {
-    var intentsArray = [];
-    var intentsSlots = [];
-    var promptsSlots = [];
+const createSecondIntentsObject = function(name, slots, samples) {
+    let slotsObjectsList = [];
+    let slotObjectsReturn = [];
 
+    for (let i in slots) {
+        slotsObjectsList.push(createSlotsObject(i[0], i[1], i[2], i[3]));
+    }
+
+    for (let i in slotsObjectsList) {
+        slotObjectsReturn.push([i.slotInfo, i.promptInfo]);
+    }
+
+    devLogger.log(JSON.stringify(slotObjectsReturn));
+
+    return slotObjectsReturn;
+};
+
+Alexa.createInteractionModel = async function (skillId, stage, intents) {
+    let intentsList = [];
+    let slotInfos = [];
     for (let i of intents) {
-        for (let j of i.slots) {
-            intentsSlots.push(
-                {
-                    "name": "GetTravelTime",
-                    "confirmationRequired": false,
-                    "prompts": {},
-                    "slots": j.slotInfo
-                }
-            );
-            promptsSlots.push(j.promptInfo);
-        }
+        intentsList.push(createIntentsObject(i[0], i[1], i[2]));
+        slotInfos.push(createSecondIntentsObject(i[0], i[1], i[2]));
+    }
+
+    let intentsArray = [];
+    let intentsSlots = [];
+    let promptsSlots = [];
+
+    for (let i of intentsList) {
+
         intentsArray.push(
             {
                 "name": i.name,
@@ -235,6 +255,18 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
                 "samples": i.samples
             }
         );
+    }
+
+    for (let i of slotInfos) {
+        intentsSlots.push(
+            {
+                "name": "GetTravelTime",
+                "confirmationRequired": false,
+                "prompts": {},
+                "slots": i[0]
+            }
+        );
+        promptsSlots.push(i[1]);
     }
 
     const interactionModel =
@@ -276,12 +308,6 @@ Alexa.callerInfo = function() {
 //further RPCs for testing only
 Alexa.getVendorId = function () {
     return vendorID;
-};
-
-Alexa.getAskVersion = function() {
-    const result = spawnSync('ask', ['--version']);
-
-    return result.stdout;
 };
 
 module.exports = Alexa;
