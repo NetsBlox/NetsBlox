@@ -11,15 +11,13 @@ const execFile = util.promisify(require('child_process').execFile);
 const nop = () => {};
 const {exec} = require('child_process');
 const ServicesAPI = require('./../src/server/services/api');
-const storage = require('./../src/server/storage/storage');
+const utils = require('./../src/server/api/cli/utils');
 
 process.chdir(srcPath);
-build().catch(err => console.error(err));
+utils.runWithStorage(build).catch(err => console.error(err));
 
 async function build() {
-    // needed for docs and maybe other things in the future
-    await storage.connect();
-    await ServicesAPI.initialize();
+    await ServicesAPI.initialize(); // needed for docs
 
     // Get the given js files
     var devHtml = await fsp.readFile('index.dev.html', 'utf8'),
@@ -66,14 +64,7 @@ async function build() {
         console.log('compression ratio:', 1-(minLength/srcLength));
     }
 
-    try {
-        await compileDocs();
-    } catch (e) {
-        console.error(e);
-        process.exit(0xd0c5);
-    }
-
-    process.exit(0);
+    await compileDocs();
 }
 
 async function hasDirectory(dir, subdir) {
@@ -112,11 +103,13 @@ async function compileDocs() {
         return fse.copy(path.join(docsPath, file), path.join(generatedPath, file));
     }));
 
-    let serviceString = '.. toctree::\n    :maxdepth: 2\n    :caption: Services:\n\n';
+    const serviceCategories = { index: [] };
     for (const serviceName in ServicesAPI.services.metadata) {
-        const service = ServicesAPI.services.metadata[serviceName];
-        serviceString += `    ${serviceName}/index.rst\n`;
+        if (serviceCategories[serviceName] !== undefined) {
+            throw Error(`service name was a category name: ${serviceName}`);
+        }
 
+        const service = ServicesAPI.services.metadata[serviceName];
         const serviceDocs = path.join(generatedPath, serviceName);
         const index = path.join(serviceDocs, 'index.rst');
 
@@ -125,6 +118,14 @@ async function compileDocs() {
             await fsp.writeFile(index, `${serviceName}\n${'='.repeat(serviceName.length)}\n\n>>>DESC<<<\n\n.. toctree::\n    :maxdepth: 2\n    :caption: Categories:\n\n    >>>CATS<<<\n\n>>>RPCS<<<\n`);
         }
         
+        const serviceCats = service.categories ? service.categories : [];
+        for (const cat of serviceCats) {
+            const group = serviceCategories[cat];
+            if (group) group.push(serviceName);
+            else serviceCategories[cat] = [serviceName];
+        }
+        if (!serviceCats.length) serviceCategories.index.push(serviceName); // go in index if nothing else
+
         const categories = {};
         for (const rpcName in service.rpcs) {
             const rpc = service.rpcs[rpcName];
@@ -152,12 +153,7 @@ async function compileDocs() {
 
                 str += `.. function:: ${serviceName}.${rpcName}(${paramStrings.join(', ')})\n\n`;
                 if (rpc.rawDescription) {
-                    for (const line of rpc.rawDescription.split('\n')) {
-                        const trim = line.trim();
-                        if (trim === '') str += '\n\n';
-                        else str += `    ${trim}\n`;
-                    }
-                    str += '\n';
+                    str += `${rpc.rawDescription.split('\n').map(s => `    ${s}`).join('\n')}\n\n`;
                 }
                 if (args.length) {
                     str += '    **Arguments:**\n\n';
@@ -210,9 +206,29 @@ async function compileDocs() {
         await fsp.writeFile(index, indexContent);
     }
 
+    const serviceItems = new Set(Object.keys(serviceCategories));
+    serviceItems.delete('index');
+    for (const service of serviceCategories.index) serviceItems.add(service);
+
+    let servicesString = '.. toctree::\n    :maxdepth: 2\n    :caption: Services:\n\n';
+    for (const item of Array.from(serviceItems).sort()) {
+        const group = serviceCategories[item];
+        const isCategory = serviceCategories[item] !== undefined;
+
+        if (isCategory) {
+            let catstring = `${item}\n${'='.repeat(item.length)}\n\n.. toctree::\n    :maxdepth: 2\n    :caption: Services\n\n`;
+            for (const service of group) catstring += `    ${service}/index.rst\n`;
+            await fsp.writeFile(path.join(generatedPath, `${item}.rst`), catstring);
+            servicesString += `    ${item}.rst\n`;
+        }
+        else {
+            servicesString += `    ${item}/index.rst\n`;
+        }
+    }
+
     const index = path.join(generatedPath, 'index.rst');
     let indexContent = await fsp.readFile(index, { encoding: 'utf8' });
-    indexContent = indexContent.replace(SERVICES_REGEX, serviceString);
+    indexContent = indexContent.replace(SERVICES_REGEX, servicesString);
     await fsp.writeFile(index, indexContent);
 
     await new Promise((resolve, reject) => {
