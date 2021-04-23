@@ -29,7 +29,6 @@ author = 'NetsBlox Team'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx_js',
 ]
 primary_domain = 'js'
 

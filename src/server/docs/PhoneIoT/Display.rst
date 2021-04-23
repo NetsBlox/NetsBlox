@@ -12,20 +12,4 @@ Many controls take optional parameters, which are specified as a list of pairs (
 For instance, most controls take one or more optional parameters to control the color of the display.
 You can obtain color codes from :func:`PhoneIoT.getColor`.
 
-.. autofunction:: PhoneIoT#addButton
-.. autofunction:: PhoneIoT#addImageDisplay
-.. autofunction:: PhoneIoT#addJoystick
-.. autofunction:: PhoneIoT#addLabel
-.. autofunction:: PhoneIoT#addRadioButton
-.. autofunction:: PhoneIoT#addTextField
-.. autofunction:: PhoneIoT#addToggle
-.. autofunction:: PhoneIoT#clearControls
-.. autofunction:: PhoneIoT#getImage
-.. autofunction:: PhoneIoT#getJoystickVector
-.. autofunction:: PhoneIoT#getText
-.. autofunction:: PhoneIoT#getToggleState
-.. autofunction:: PhoneIoT#isPressed
-.. autofunction:: PhoneIoT#removeControl
-.. autofunction:: PhoneIoT#setImage
-.. autofunction:: PhoneIoT#setText
-.. autofunction:: PhoneIoT#setToggleState
+>>>RPCS<<<

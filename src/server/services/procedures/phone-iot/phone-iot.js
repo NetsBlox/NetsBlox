@@ -152,7 +152,7 @@ PhoneIoT.prototype._passToDevice = async function (fnName, args) {
 };
 
 /**
- * Many of the :doc:`display` RPCs take one or more optional parameters for controlling display color, which is specified as an integer.
+ * Many of the :doc:`Display` RPCs take one or more optional parameters for controlling display color, which is specified as an integer.
  * This RPC is a convenience function for constructing a color code from ``red``, ``green``, ``blue``, and ``alpha`` values (each is ``0-255``).
  * 
  * The ``alpha`` value controls transparency, with ``0`` being invisible and ``255`` being opaque.
@@ -493,7 +493,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This is needed to receive any type of GUI event, including button clicks, joystick movements, and textbox update events.
      * You only need to call this RPC once, which you can do at the start of your program (but after calling :func:`PhoneIoT.setCredentials`).
      * 
-     * See the :doc:`display` section for more information.
+     * See the :doc:`Display` section for more information.
      * 
      * @param {Device} device id of the device
      */
@@ -513,7 +513,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If a networking error occurs, you simply miss that single message.
      * 
      * The :func:`PhoneIoT.getSensors` RPC can be used to get a list of the valid sensor names.
-     * See the :doc:`sensors` section for more information, esp. the required fields for each message type.
+     * See the :doc:`Sensors` section for more information, esp. the required fields for each message type.
      * 
      * @param {Device} device id of the device
      * @param {Object=} sensors structured data representing the minimum time in milliseconds between updates for each sensor type to listen for
@@ -570,7 +570,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This RPC returns a list containing the name of every sensor supported by PhoneIoT.
      * Note that your specific device might not support all of these sensors, depending on the model.
      * 
-     * See :doc:`sensors` for more information.
+     * See :doc:`Sensors` for more information.
      * 
      * @category Utility
      * @returns {Array} A list of sensor names

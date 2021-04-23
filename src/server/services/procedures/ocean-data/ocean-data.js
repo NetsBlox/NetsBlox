@@ -3,8 +3,8 @@
  * temperature and sea level.
  *
  * For more information, check out:
- *              http://www.columbia.edu/~mhs119/Sensitivity+SL+CO2/
- *     https://www.paleo.bristol.ac.uk/~ggdjl/warm_climates/hansen_etal.pdf.
+ * - http://www.columbia.edu/~mhs119/Sensitivity+SL+CO2/
+ * - https://www.paleo.bristol.ac.uk/~ggdjl/warm_climates/hansen_etal.pdf.
  *
  * @service
  * @category Science

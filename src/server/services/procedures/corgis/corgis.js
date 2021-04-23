@@ -37,7 +37,7 @@ const datasetsMetadata = corgiDatasets.parseDatasetsInfo();
 /**
  * Search CORGIS' datasets as provided by https://think.cs.vt.edu/corgis/
  * Example queries:
- * cancer dataset: [*Year<2000 && Area=Arizona]
+ * cancer dataset: ``[*Year<2000 && Area=Arizona]``
  * @param {String} name dataset name
  * @param {String=} query search query. (read more: "npm json-query")
  * @param {Number=} limit limit the number of requested results. max 100.

@@ -292,7 +292,7 @@ Server.prototype.start = async function(seedDatabase=ENV === 'test') {
         }
     }
     await this.configureRoutes(this.opts.servicesURL);
-    this.app.use('/docs', express.static(path.join(__dirname, 'docs', 'content', '_build', 'html')));
+    this.app.use('/docs', express.static(path.join(__dirname, 'docs', '_generated', '_build', 'html')));
     this._server = this.app.listen(this.opts.port);
     // eslint-disable-next-line no-console
     console.log(`listening on port ${this.opts.port}`);

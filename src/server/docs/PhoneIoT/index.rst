@@ -26,11 +26,10 @@ If you click the ``call`` block to run it, you should get an ``OK`` result, mean
 You're now ready to start using the other RPCs in PhoneIoT to communicate with the device!
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-   
-   errors
-   mainrpcs
-   utility
-   sensors
-   display
+    :maxdepth: 2
+    :caption: Contents:
+    
+    Errors
+    >>>CATS<<<
+
+>>>RPCS<<<

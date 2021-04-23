@@ -28,15 +28,17 @@ function cleanMarkup(str) {
 //simplifies a single metadata returned by doctrine to be used within netsblox
 function simplify(metadata) {
     let {description, tags} = metadata;
+    const rawDescription = description;
     description = cleanMarkup(description);
     
     let fnName = tags.find(tag => tag.title === 'name').name;
 
     let simplifyParam = param => {
         let {name, type, description} = param;
+        const rawDescription = description;
         description = cleanMarkup(description);
 
-        let simpleParam = {name, description};
+        let simpleParam = {name, description, rawDescription};
 
         // if type is defined
         if (type) {
@@ -76,7 +78,11 @@ function simplify(metadata) {
 
     // find and simplify the return doc
     let returns = tags.find(tag => tag.title === 'returns');
-    if (returns) returns = {type: new InputType(returns.type), description: returns.description};
+    if (returns) returns = {
+        type: new InputType(returns.type),
+        description: cleanMarkup(returns.description),
+        rawDescription: returns.description,
+    };
 
     const isDeprecated = !!tags.find(tag => tag.title === 'deprecated');
     const categories = tags.filter(tag => tag.title === 'category')
@@ -86,6 +92,7 @@ function simplify(metadata) {
         deprecated: isDeprecated,
         categories,
         description,
+        rawDescription,
         args,
         returns
     };
@@ -122,7 +129,8 @@ function parseSource(source, searchScope) {
     const serviceAnnotation = blocks
         .find(block => block.parsed.tags.find(tag => tag.title === 'service'));
 
-    const description = serviceAnnotation && serviceAnnotation.parsed.description;
+    const rawDescription = serviceAnnotation && serviceAnnotation.parsed.description;
+    const description = rawDescription ? cleanMarkup(rawDescription) : rawDescription;
     let categories = [];
     let tags = [];
     if (serviceAnnotation) {
@@ -159,6 +167,7 @@ function parseSource(source, searchScope) {
 
     return {
         description,
+        rawDescription,
         categories,
         tags,
         rpcs: rpcDocs
@@ -290,6 +299,7 @@ function parseService(path, scope) {
 let Docs = function(servicePath) {
     const serviceDocs = parseService(servicePath);
     this.description = serviceDocs.description;
+    this.rawDescription = serviceDocs.rawDescription;
     this.rpcs = serviceDocs.rpcs.map(doc => doc.parsed);
     this.categories = serviceDocs.categories;
     this.tags = serviceDocs.tags;
