@@ -192,7 +192,6 @@ const createSlotsObject = function(intent, name, samples, prompts) {
         };
 
 
-    devLogger.log("Slot Object: ");
     devLogger.log(JSON.stringify(slotInfo));
 
     return slotInfo;
@@ -204,6 +203,8 @@ Alexa.createIntent = function (name, slots, samples) {
 
 const createIntentsObject = function(name, slots, samples) {
     let slotsObjectsList = [];
+    devLogger.log("Slots: ");
+    devLogger.log(JSON.stringify(slots));
     for (let i in slots) {
         slotsObjectsList.push(createSlotsObject(i[0], i[1], i[2], i[3]));
     }
