@@ -161,7 +161,7 @@ Alexa.createSlot = function(intent, name, samples, prompts) {
 
 const createSlotsObject = function(intent, name, samples, prompts) {
     let variations = [];
-    for (let i in prompts) {
+    for (let i of prompts) {
         variations.push(
             {
                 "type": "PlainText",
@@ -205,7 +205,8 @@ const createIntentsObject = function(name, slots, samples) {
     let slotsObjectsList = [];
     devLogger.log("Slots: ");
     devLogger.log(JSON.stringify(slots));
-    for (let i in slots) {
+    for (let i of slots) {
+        devLogger.log("Intent: " + i[0] + " Name: " + i[1] + " Samples: " + i[2] + " Prompts " + i[3]);
         slotsObjectsList.push(createSlotsObject(i[0], i[1], i[2], i[3]));
     }
 
@@ -216,7 +217,7 @@ const createIntentsObject = function(name, slots, samples) {
             "samples": samples
         };
 
-    for (let i in slotsObjectsList) {
+    for (let i of slotsObjectsList) {
         intent.slots.push(i.intentSlotInfo);
     }
     devLogger.log("First intents Object: ");
@@ -229,11 +230,11 @@ const createSecondIntentsObject = function(name, slots) {
     let slotsObjectsList = [];
     let slotObjectsReturn = [];
 
-    for (let i in slots) {
+    for (let i of slots) {
         slotsObjectsList.push(createSlotsObject(i[0], i[1], i[2], i[3]));
     }
 
-    for (let i in slotsObjectsList) {
+    for (let i of slotsObjectsList) {
         slotObjectsReturn.push([i.slotInfo, i.promptInfo]);
     }
 
