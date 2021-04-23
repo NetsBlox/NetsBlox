@@ -192,6 +192,7 @@ const createSlotsObject = function(intent, name, samples, prompts) {
         };
 
 
+    devLogger.log("Slot Object: ");
     devLogger.log(JSON.stringify(slotInfo));
 
     return slotInfo;
@@ -217,6 +218,7 @@ const createIntentsObject = function(name, slots, samples) {
     for (let i in slotsObjectsList) {
         intent.slots.push(i.intentSlotInfo);
     }
+    devLogger.log("First intents Object: ");
     devLogger.log(JSON.stringify(intent));
 
     return intent;
@@ -234,6 +236,7 @@ const createSecondIntentsObject = function(name, slots) {
         slotObjectsReturn.push([i.slotInfo, i.promptInfo]);
     }
 
+    devLogger.log("Second intents Object: ");
     devLogger.log(JSON.stringify(slotObjectsReturn));
 
     return slotObjectsReturn;
@@ -243,6 +246,8 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
     let intentsList = [];
     let slotInfos = [];
     for (let i of intents) {
+        devLogger.log("Interaction model line: ");
+        devLogger.log(JSON.stringify(i));
         intentsList.push(createIntentsObject(i[0], i[1], i[2]));
         slotInfos.push(createSecondIntentsObject(i[0], i[1]));
     }
@@ -252,7 +257,6 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
     let promptsSlots = [];
 
     for (let i of intentsList) {
-
         intentsArray.push(
             {
                 "name": i.name,
