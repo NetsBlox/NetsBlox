@@ -244,12 +244,11 @@ const createSecondIntentsObject = function(name, slots) {
     return slotObjectsReturn;
 };
 
-Alexa.createInteractionModel = async function (skillId, stage, intents) {
+Alexa.createInteractionModel = async function (skillId, stage, intents, invocationName) {
     let intentsList = [];
     let slotInfos = [];
     for (let i of intents) {
         devLogger.log("Interaction model line: ");
-        devLogger.log(JSON.stringify(i));
         intentsList.push(createIntentsObject(i[0], i[1], i[2]));
         slotInfos.push(createSecondIntentsObject(i[0], i[1]));
     }
@@ -284,7 +283,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
         {
             "interactionModel": {
                 "languageModel": {
-                    "invocationName": name,
+                    "invocationName": invocationName,
                     "modelConfiguration": {
                         "fallbackIntentSensitivity": {
                             "level": "LOW"
@@ -300,6 +299,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents) {
             }
         };
 
+    devLogger.log("Interaction Model: ");
     devLogger.log(JSON.stringify(interactionModel));
 
     const response = await smapiClient.setInteractionModelV1(skillId, stage, 'en-US', interactionModel);
