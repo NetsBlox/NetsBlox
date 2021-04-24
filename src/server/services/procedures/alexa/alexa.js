@@ -85,7 +85,7 @@ const createManifestObject = function(summary, description, examplePhrases, keyw
                             "description": description
                         }
                     },
-                    "isAvailableWorldwide": false,
+                    "isAvailableWorldwide": true,
                     "testingInstructions": "CUSTOM",
                     "category": "",
                     "distributionCountries": [
@@ -93,7 +93,11 @@ const createManifestObject = function(summary, description, examplePhrases, keyw
                     ]
                 },
                 "apis": {
-                    "custom": {}
+                    "custom": {
+                        "endpoint" : {
+                            "uri" : "https://alexa.netsblox.org/services/routes/alexa"
+                        }
+                    }
                 },
                 "manifestVersion": "1.0",
                 "privacyAndCompliance": {
