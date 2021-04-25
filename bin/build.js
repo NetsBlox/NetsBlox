@@ -18,7 +18,11 @@ utils.runWithStorage(build).catch(err => console.error(err));
 
 async function build() {
     await ServicesAPI.initialize(); // needed for docs
+    await minifyJS();
+    await compileDocs();
+}
 
+async function minifyJS() {
     // Get the given js files
     var devHtml = await fsp.readFile('index.dev.html', 'utf8'),
         re = /text\/javascript" src="(.*)">/,
@@ -64,7 +68,6 @@ async function build() {
         console.log('compression ratio:', 1-(minLength/srcLength));
     }
 
-    await compileDocs();
 }
 
 async function hasDirectory(dir, subdir) {
@@ -210,7 +213,7 @@ async function compileDocs() {
     serviceItems.delete('index');
     for (const service of serviceCategories.index) serviceItems.add(service);
 
-    let servicesString = '.. toctree::\n    :maxdepth: 2\n    :caption: Services:\n\n';
+    let servicesString = '.. toctree::\n    :maxdepth: 2\n    :caption: Services\n\n';
     for (const item of Array.from(serviceItems).sort()) {
         const group = serviceCategories[item];
         const isCategory = serviceCategories[item] !== undefined;
